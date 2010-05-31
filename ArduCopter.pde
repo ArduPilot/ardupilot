@@ -401,7 +401,7 @@ void setup()
   APM_RC_QUAD.OutputCh(2,MIN_THROTTLE+15);
   APM_RC_QUAD.OutputCh(3,MIN_THROTTLE+15);
   
-  #if (MAGNETOMTER==1)
+  #if (MAGNETOMETER)
     APM_Compass.Init();  // I2C initialization
   #endif
  
@@ -508,11 +508,12 @@ void loop(){
     
     // IMU DCM Algorithm
     Read_adc_raw();
-    #if (MAGNETOMETER==1)
+    #if (MAGNETOMETER)
     if (counter > 8)  // Read compass data at 10Hz... (7 loop runs)
       {
       counter=0;
       APM_Compass.Read();     // Read magnetometer
+      APM_Compass.Calculate(roll,pitch);  // Calculate heading
       }
     #endif
     Matrix_update(); 
