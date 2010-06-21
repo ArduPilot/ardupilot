@@ -7,7 +7,7 @@ void Read_adc_raw(void)
   for (int i=0;i<6;i++)
     AN[i] = APM_ADC.Ch(sensors[i]);
   
-  // Correction for non ratiometric sensor (test)
+  // Correction for non ratiometric sensor (test code)
   //temp = APM_ADC.Ch(3);
   //AN[0] += 1500-temp;
   //AN[1] += 1500-temp;
@@ -67,8 +67,8 @@ void Drift_correction(void)
   // Calculate the magnitude of the accelerometer vector
   Accel_magnitude = sqrt(Accel_Vector[0]*Accel_Vector[0] + Accel_Vector[1]*Accel_Vector[1] + Accel_Vector[2]*Accel_Vector[2]);
   Accel_magnitude = Accel_magnitude / GRAVITY; // Scale to gravity.
-  // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-  Accel_weight = constrain(1 - 2*abs(1 - Accel_magnitude),0,1);
+  // Weight for accelerometer info (<0.75G = 0.0, 1G = 1.0 , >1.25G = 0.0)
+  Accel_weight = constrain(1 - 4*abs(1 - Accel_magnitude),0,1);
 
   Vector_Cross_Product(&errorRollPitch[0],&Accel_Vector[0],&DCM_Matrix[2][0]); //adjust the ground of reference
   Vector_Scale(&Omega_P[0],&errorRollPitch[0],Kp_ROLLPITCH*Accel_weight);
@@ -109,9 +109,9 @@ void Matrix_update(void)
   //Accel_Vector[2]=read_adc(5); // acc z
   
   // Low pass filter on accelerometer data (to filter vibrations)
-  Accel_Vector[0]=Accel_Vector[0]*0.4 + (float)read_adc(3)*0.6; // acc x
-  Accel_Vector[1]=Accel_Vector[1]*0.4 + (float)read_adc(4)*0.6; // acc y
-  Accel_Vector[2]=Accel_Vector[2]*0.4 + (float)read_adc(5)*0.6; // acc z
+  Accel_Vector[0]=Accel_Vector[0]*0.5 + (float)read_adc(3)*0.5; // acc x
+  Accel_Vector[1]=Accel_Vector[1]*0.5 + (float)read_adc(4)*0.5; // acc y
+  Accel_Vector[2]=Accel_Vector[2]*0.5 + (float)read_adc(5)*0.5; // acc z
   
   Vector_Add(&Omega[0], &Gyro_Vector[0], &Omega_I[0]);//adding integrator
   Vector_Add(&Omega_Vector[0], &Omega[0], &Omega_P[0]);//adding proportional

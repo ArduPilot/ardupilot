@@ -5,10 +5,11 @@
 /* (Original ArduIMU code from Jordi Muñoz and William Premerlani)        */
 /* Ardupilot core code : from DIYDrones.com development team              */
 /* Quadcopter code from AeroQuad project and ArduIMU quadcopter project   */
-/* Authors : Jose Julio, Ted Carancho, Jordi Muñoz                        */
-/* Date : 27-05-2010                                                      */
-/* Version : 1.0 beta                                                     */
-/* Hardware : ArduPilot Mega + Sensor Shield (codename:FOXTRAP2)          */
+/* Authors : Jose Julio, Ted Carancho (aeroquad), Jordi Muñoz,            */
+/*           Roberto Navoni, ... (Arcucopter team)                        */
+/* Date : 17-06-2010                                                      */
+/* Version : 1.1 beta                                                     */
+/* Hardware : ArduPilot Mega + Sensor Shield (Production versions)        */
 /* This code use this libraries :                                         */
 /*   APM_RC_QUAD : Radio library (adapted for quads)                      */
 /*   APM_ADC : External ADC library                                       */
@@ -32,7 +33,7 @@
 #define LED_Green 37
 #define RELE_pin 47
 #define SW1_pin 41
-#define SW2_pin 42
+#define SW2_pin 40
 /* *** */
 
 /* ***************************************************************************** */
@@ -45,46 +46,46 @@
 #define MAGNETOMETER 1  // 0 : No magnetometer, 1: Magnetometer
 
 // QuadCopter Attitude control PID GAINS
-#define KP_QUAD_ROLL 1.7  // 1.5 //1.75
-#define KD_QUAD_ROLL 0.45 //0.35 // 0.4  //Absolute max:0.85
-#define KI_QUAD_ROLL 0.4  // 0.4 //0.45
-#define KP_QUAD_PITCH 1.7 
-#define KD_QUAD_PITCH 0.45  
-#define KI_QUAD_PITCH 0.4
-#define KP_QUAD_YAW 3.5 // 3.8
+#define KP_QUAD_ROLL 1.8  // 1.5 //1.75
+#define KD_QUAD_ROLL 0.48 //0.35 // 0.4  //Absolute max:0.85
+#define KI_QUAD_ROLL 0.30  // 0.4 //0.45
+#define KP_QUAD_PITCH 1.8 
+#define KD_QUAD_PITCH 0.48  
+#define KI_QUAD_PITCH 0.30  //0.4
+#define KP_QUAD_YAW 3.6 // 3.8
 #define KD_QUAD_YAW 1.2 // 1.3
 #define KI_QUAD_YAW 0.15 // 0.15
 
-#define KD_QUAD_COMMAND_PART 12.0   // for special KD implementation (in two parts). Higher values makes the quadcopter more responsive to user inputs
+#define KD_QUAD_COMMAND_PART 2.0   // for special KD implementation (in two parts). Higher values makes the quadcopter more responsive to user inputs
 
 // Position control PID GAINS
-#define KP_GPS_ROLL 0.03
-#define KD_GPS_ROLL 0.0
-#define KI_GPS_ROLL 0.01
-#define KP_GPS_PITCH 0.03
-#define KD_GPS_PITCH 0.0
-#define KI_GPS_PITCH 0.01
+#define KP_GPS_ROLL 0.012
+#define KD_GPS_ROLL 0.005
+#define KI_GPS_ROLL 0.004
+#define KP_GPS_PITCH 0.012
+#define KD_GPS_PITCH 0.005
+#define KI_GPS_PITCH 0.004
 
-#define GPS_MAX_ANGLE 16  // Maximun command roll and pitch angle from position control
+#define GPS_MAX_ANGLE 10  // Maximun command roll and pitch angle from position control
 
 // Altitude control PID GAINS
 #define KP_ALTITUDE 0.8
-#define KD_ALTITUDE 0.3
+#define KD_ALTITUDE 0.2
 #define KI_ALTITUDE 0.2
 
 // The IMU should be correctly adjusted : Gyro Gains and also initial IMU offsets:
 // We have to take this values with the IMU flat (0º roll, 0º pitch)
-#define acc_offset_x 2039 
-#define acc_offset_y 2035
-#define acc_offset_z 2014       // We need to rotate the IMU exactly 90º to take this value  
-#define gyro_offset_roll 1650  
-#define gyro_offset_pitch 1690
-#define gyro_offset_yaw 1690
+#define acc_offset_x 2079 
+#define acc_offset_y 2050
+#define acc_offset_z 2008       // We need to rotate the IMU exactly 90º to take this value  
+#define gyro_offset_roll 1659  //1650
+#define gyro_offset_pitch 1618 //1690
+#define gyro_offset_yaw 1673
 
 // ADC : Voltage reference 3.3v / 12bits(4096 steps) => 0.8mV/ADC step
 // ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
-// Tested value : 414
-#define GRAVITY 414 //this equivalent to 1G in the raw data coming from the accelerometer 
+// Tested value : 408
+#define GRAVITY 408 //this equivalent to 1G in the raw data coming from the accelerometer 
 #define Accel_Scale(x) x*(GRAVITY/9.81)//Scaling the raw data of the accel to actual acceleration in meters for seconds square
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
@@ -92,19 +93,17 @@
 
 // IDG500 Sensitivity (from datasheet) => 2.0mV/º/s, 0.8mV/ADC step => 0.8/3.33 = 0.4
 // Tested values : 
-#define Gyro_Gain_X 0.4 //X axis Gyro gain
+#define Gyro_Gain_X 0.4  //X axis Gyro gain
 #define Gyro_Gain_Y 0.41 //Y axis Gyro gain
 #define Gyro_Gain_Z 0.41 //Z axis Gyro gain
 #define Gyro_Scaled_X(x) x*ToRad(Gyro_Gain_X) //Return the scaled ADC raw data of the gyro in radians for second
 #define Gyro_Scaled_Y(x) x*ToRad(Gyro_Gain_Y) //Return the scaled ADC raw data of the gyro in radians for second
 #define Gyro_Scaled_Z(x) x*ToRad(Gyro_Gain_Z) //Return the scaled ADC raw data of the gyro in radians for second
 
-//#define Kp_ROLLPITCH 0.0125  //0.010 // Pitch&Roll Proportional Gain
-#define Kp_ROLLPITCH 0.002  //0.003125
-//#define Ki_ROLLPITCH 0.000010 // Pitch&Roll Integrator Gain
-#define Ki_ROLLPITCH 0.0000025
+#define Kp_ROLLPITCH 0.0032  //0.002  //0.003125 // Pitch&Roll Proportional Gain
+#define Ki_ROLLPITCH 0.000001 //0.000005 //0.0000025 // Pitch&Roll Integrator Gain
 #define Kp_YAW 1.5     // Yaw Porportional Gain  
-#define Ki_YAW 0.00005 // Yaw Integrator Gain
+#define Ki_YAW 0.00005 //0.00005 // Yaw Integrator Gain
 
 /*For debugging purposes*/
 #define OUTPUTMODE 1  //If value = 1 will print the corrected data, 0 will print uncorrected data of the gyros (with drift), 2 Accel only data
@@ -159,27 +158,11 @@ float Temporary_Matrix[3][3]={
 float speed_3d=0;
 int GPS_ground_speed=0;
 
-//Log variables
-int log_roll;
-int log_pitch;
-int log_yaw;
-
 long timer=0; //general porpuse timer 
 long timer_old;
 
-// Sonar variables
-static volatile unsigned long sonar_start_ms;
-static volatile unsigned char sonar_start_t0;
-static volatile unsigned long sonar_pulse_start_ms;
-static volatile unsigned char sonar_pulse_start_t0;
-static volatile unsigned long sonar_pulse_end_ms;
-static volatile unsigned char sonar_pulse_end_t0;
-static volatile byte sonar_status=0;
-static volatile byte sonar_new_data=0;
-int sonar_value=0;
-
 // Attitude control variables
-float command_rx_roll=0;        // comandos recibidos rx
+float command_rx_roll=0;        // User commands
 float command_rx_roll_old;
 float command_rx_roll_diff;
 float command_rx_pitch=0;
@@ -187,12 +170,12 @@ float command_rx_pitch_old;
 float command_rx_pitch_diff;
 float command_rx_yaw=0;
 float command_rx_yaw_diff;
-int control_roll;           // resultados del control
+int control_roll;           // PID control results
 int control_pitch;
 int control_yaw;
 float K_aux;
 
-// Attitude control
+// Attitude PID controls
 float roll_I=0;
 float roll_D;
 float err_roll;
@@ -227,6 +210,10 @@ float command_altitude;
 float altitude_I;
 float altitude_D;
 
+// Sonar variables
+int Sonar_value=0;
+#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
+int Sonar_Counter=0;
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;             
@@ -249,7 +236,7 @@ int ch_yaw;
 void Altitude_control(int target_sonar_altitude)
 {
   err_altitude_old = err_altitude;
-  err_altitude = target_sonar_altitude - sonar_value;  
+  err_altitude = target_sonar_altitude - Sonar_value;  
   altitude_D = (float)(err_altitude-err_altitude_old)/G_Dt;
   altitude_I += (float)err_altitude*G_Dt;
   altitude_I = constrain(altitude_I,-100,100);
@@ -316,7 +303,7 @@ void Attitude_control()
   roll_D = command_rx_roll_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[0]);  // Take into account Angular velocity of the stick (command)
   
   // PID control
-  control_roll = KP_QUAD_ROLL*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I; 
+  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I; 
   
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
@@ -332,7 +319,7 @@ void Attitude_control()
   pitch_D = command_rx_pitch_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[1]);
  
   // PID control
-  control_pitch = KP_QUAD_PITCH*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I; 
+  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I; 
   
   // YAW CONTROL
   
@@ -342,7 +329,7 @@ void Attitude_control()
     else if(err_yaw < -180)
       err_yaw += 360;
   
-  err_yaw = constrain(err_yaw,-25,25);  // to limit max yaw command...
+  err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
   
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
@@ -390,11 +377,14 @@ void setup()
   pinMode(RELE_pin,OUTPUT);      // Rele output
   digitalWrite(RELE_pin,LOW);
   
+  delay(250);
+  
   APM_RC_QUAD.Init();    // APM Radio initialization
   APM_ADC.Init();   // APM ADC library initialization
   DataFlash.Init(); // DataFlash log initialization
   GPS.Init();       // GPS Initialization
 
+  delay(100);
   // RC channels Initialization (Quad motors)  
   APM_RC_QUAD.OutputCh(0,MIN_THROTTLE+15);  // Motors stoped
   APM_RC_QUAD.OutputCh(1,MIN_THROTTLE+15);
@@ -498,6 +488,11 @@ void loop(){
   int aux;
   int i;
   float aux_float;
+  //Log variables
+  int log_roll;
+  int log_pitch;
+  int log_yaw;
+
   
   if((millis()-timer)>=14)   // Main loop 70Hz
   {
@@ -533,8 +528,16 @@ void loop(){
     Serial.print(",");
     Serial.print(log_yaw);
     
+    /*
+    for (int i=0;i<6;i++)
+      {
+      Serial.print(AN[i]);
+      Serial.print(",");
+      }
+    */
+    
     // Write Sensor raw data to DataFlash log
-    //Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
+    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
     // Write attitude to DataFlash log
     Log_Write_Attitude(log_roll,log_pitch,log_yaw);
     
@@ -547,10 +550,10 @@ void loop(){
       ch_throttle = channel_filter(APM_RC_QUAD.InputCh(2),ch_throttle);
       ch_yaw = channel_filter(APM_RC_QUAD.InputCh(3),ch_yaw);
       command_rx_roll_old = command_rx_roll;
-      command_rx_roll = (ch_roll-CHANN_CENTER)/15.0;
+      command_rx_roll = (ch_roll-CHANN_CENTER)/12.0;
       command_rx_roll_diff = command_rx_roll-command_rx_roll_old;
       command_rx_pitch_old = command_rx_pitch;
-      command_rx_pitch = (ch_pitch-CHANN_CENTER)/15.0;
+      command_rx_pitch = (ch_pitch-CHANN_CENTER)/12.0;
       command_rx_pitch_diff = command_rx_pitch-command_rx_pitch_old;
       aux_float = (ch_yaw-Neutro_yaw)/180.0;
       command_rx_yaw += aux_float;
@@ -562,14 +565,12 @@ void loop(){
         
       // I use K_aux (channel 6) to adjust gains linked to a knob in the radio... [not used now]
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
-      K_aux = K_aux*0.8 + ((APM_RC_QUAD.InputCh(5)-1500)/300.0 + 0.4)*0.2;
+      K_aux = K_aux*0.8 + ((APM_RC_QUAD.InputCh(5)-1500)/300.0 + 1.7)*0.2;   // /300 + 1.0
       if (K_aux < 0)
         K_aux = 0;
       
-      /*  
-      Serial.print(",");
-      Serial.print(K_aux);
-      */
+      //Serial.print(",");
+      //Serial.print(K_aux);
    
       // We read the Quad Mode from Channel 5
       if (APM_RC_QUAD.InputCh(4) < 1200)
