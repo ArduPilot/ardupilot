@@ -3,9 +3,7 @@ Install notes
 -------------
 
 To install the libraries:
- - copy Library Directories to your \arduino\hardware\lirbaries\ directory
+ - copy Library Directories to your \arduino\hardware\libraries\ or arduino\libraries directory
  - Restart arduino IDE
 
 Each library comes with a simple example. You can find the examples in menu File->Examples
-
-This code works with Ardupilot Mega Hardware and Beta sensor shield (FOXTRAP2).

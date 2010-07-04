@@ -1,17 +1,20 @@
 /* ********************************************************************** */
 /*                    ArduCopter Quadcopter code                          */
 /*                                                                        */
-/* Code based on ArduIMU DCM code from Diydrones.com                      */
+/* Quadcopter code from AeroQuad project and ArduIMU quadcopter project   */
+/* IMU DCM code from Diydrones.com                                        */
 /* (Original ArduIMU code from Jordi Muñoz and William Premerlani)        */
 /* Ardupilot core code : from DIYDrones.com development team              */
-/* Quadcopter code from AeroQuad project and ArduIMU quadcopter project   */
-/* Authors : Jose Julio, Ted Carancho (aeroquad), Jordi Muñoz,            */
-/*           Roberto Navoni, ... (Arcucopter team)                        */
-/* Date : 17-06-2010                                                      */
-/* Version : 1.1 beta                                                     */
+/* Authors : Arducopter development team                                  */
+/*           Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,            */
+/*           Jani Hirvinen, Ken McEwans, Roberto Navoni,                  */
+/*           Sandro Benigno, Chris Anderson                               */
+/* Date : 04-07-2010                                                      */
+/* Version : 1.3 beta                                                     */
 /* Hardware : ArduPilot Mega + Sensor Shield (Production versions)        */
+/* Mounting position : RC connectors pointing backwards                   */
 /* This code use this libraries :                                         */
-/*   APM_RC_QUAD : Radio library (adapted for quads)                      */
+/*   APM_RC : Radio library (with InstantPWM)                             */
 /*   APM_ADC : External ADC library                                       */
 /*   DataFlash : DataFlash log library                                    */
 /*   APM_BMP085 : BMP085 barometer library                                */
@@ -21,11 +24,15 @@
 
 #include <Wire.h>
 #include <APM_ADC.h>
-#include <APM_RC_QUAD.h>
+#include <APM_RC.h>
 #include <DataFlash.h>
 #include <APM_Compass.h>
 // Put your GPS library here:
 #include <GPS_NMEA.h>  // MTK GPS
+
+// EEPROM storage for user configurable values
+#include <EEPROM.h>
+#include "UserSettings.h"
 
 /* APM Hardware definitions */
 #define LED_Yellow 36
@@ -39,48 +46,6 @@
 /* ***************************************************************************** */
 /*  CONFIGURATION PART                                                           */
 /* ***************************************************************************** */
-//Adjust this parameter for your lattitude
-#define GEOG_CORRECTION_FACTOR 0.87 // cos(lattitude) 
-
-#define RADIO_TEST_MODE 0   // 0:Normal  1:Radio Test mode (to test radio channels)
-#define MAGNETOMETER 1  // 0 : No magnetometer, 1: Magnetometer
-
-// QuadCopter Attitude control PID GAINS
-#define KP_QUAD_ROLL 1.8  // 1.5 //1.75
-#define KD_QUAD_ROLL 0.48 //0.35 // 0.4  //Absolute max:0.85
-#define KI_QUAD_ROLL 0.30  // 0.4 //0.45
-#define KP_QUAD_PITCH 1.8 
-#define KD_QUAD_PITCH 0.48  
-#define KI_QUAD_PITCH 0.30  //0.4
-#define KP_QUAD_YAW 3.6 // 3.8
-#define KD_QUAD_YAW 1.2 // 1.3
-#define KI_QUAD_YAW 0.15 // 0.15
-
-#define KD_QUAD_COMMAND_PART 2.0   // for special KD implementation (in two parts). Higher values makes the quadcopter more responsive to user inputs
-
-// Position control PID GAINS
-#define KP_GPS_ROLL 0.012
-#define KD_GPS_ROLL 0.005
-#define KI_GPS_ROLL 0.004
-#define KP_GPS_PITCH 0.012
-#define KD_GPS_PITCH 0.005
-#define KI_GPS_PITCH 0.004
-
-#define GPS_MAX_ANGLE 10  // Maximun command roll and pitch angle from position control
-
-// Altitude control PID GAINS
-#define KP_ALTITUDE 0.8
-#define KD_ALTITUDE 0.2
-#define KI_ALTITUDE 0.2
-
-// The IMU should be correctly adjusted : Gyro Gains and also initial IMU offsets:
-// We have to take this values with the IMU flat (0º roll, 0º pitch)
-#define acc_offset_x 2079 
-#define acc_offset_y 2050
-#define acc_offset_z 2008       // We need to rotate the IMU exactly 90º to take this value  
-#define gyro_offset_roll 1659  //1650
-#define gyro_offset_pitch 1618 //1690
-#define gyro_offset_yaw 1673
 
 // ADC : Voltage reference 3.3v / 12bits(4096 steps) => 0.8mV/ADC step
 // ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
@@ -100,11 +65,6 @@
 #define Gyro_Scaled_Y(x) x*ToRad(Gyro_Gain_Y) //Return the scaled ADC raw data of the gyro in radians for second
 #define Gyro_Scaled_Z(x) x*ToRad(Gyro_Gain_Z) //Return the scaled ADC raw data of the gyro in radians for second
 
-#define Kp_ROLLPITCH 0.0032  //0.002  //0.003125 // Pitch&Roll Proportional Gain
-#define Ki_ROLLPITCH 0.000001 //0.000005 //0.0000025 // Pitch&Roll Integrator Gain
-#define Kp_YAW 1.5     // Yaw Porportional Gain  
-#define Ki_YAW 0.00005 //0.00005 // Yaw Integrator Gain
-
 /*For debugging purposes*/
 #define OUTPUTMODE 1  //If value = 1 will print the corrected data, 0 will print uncorrected data of the gyros (with drift), 2 Accel only data
 
@@ -112,7 +72,7 @@
 uint8_t sensors[6] = {1,2,0,4,5,6};  // For ArduPilot Mega Sensor Shield Hardware
 
 //Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
-int SENSOR_SIGN[]={-1,1,-1,1,-1,1,-1,-1,-1}; //{1,-1,-1,1,-1,1,-1,-1,-1}
+int SENSOR_SIGN[]={1,-1,-1,-1,1,1,-1,-1,-1};  //{-1,1,-1,1,-1,1,-1,-1,-1};
 
 int AN[6]; //array that store the 6 ADC channels
 int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
@@ -228,8 +188,24 @@ int ch_roll;
 int ch_pitch;
 int ch_throttle;
 int ch_yaw;
+int ch_aux;
+int ch_aux2;
 #define CHANN_CENTER 1500
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
+
+// Motor variables
+#define FLIGHT_MODE_+
+//#define FLIGHT_MODE_X
+int frontMotor;
+int backMotor;
+int leftMotor;
+int rightMotor;
+byte motorArmed = 0;
+
+// Serial communication
+#define CONFIGURATOR
+char queryType;
+long tlmTimer = 0;
 
 /* ************************************************************ */
 /* Altitude control... (based on sonar) */
@@ -303,6 +279,7 @@ void Attitude_control()
   roll_D = command_rx_roll_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[0]);  // Take into account Angular velocity of the stick (command)
   
   // PID control
+  K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
   control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I; 
   
   // PITCH CONTROL
@@ -319,6 +296,7 @@ void Attitude_control()
   pitch_D = command_rx_pitch_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[1]);
  
   // PID control
+  K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
   control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I; 
   
   // YAW CONTROL
@@ -337,6 +315,60 @@ void Attitude_control()
  
   // PID control
   control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
+}
+
+void Rate_control()
+{
+  static float previousRollRate, previousPitchRate, previousYawRate;
+  float currentRollRate, currentPitchRate, currentYawRate;
+  
+  // ROLL CONTROL
+  
+  // NOTE: We need to test THIS !! Plaese CHECK
+  #ifdef FLIGHT_MODE_+
+    currentRollRate = read_adc(0);      // I need a positive sign here
+  #endif
+  #ifdef FLIGHT_MODE_X
+    currentRollRate = -read_adc(0);     // Original from Ted
+  #endif
+  
+  err_roll = ((ch_roll-1500) * xmitFactor) - currentRollRate;
+  
+  roll_I += err_roll*G_Dt;
+  roll_I = constrain(roll_I,-20,20);
+
+  roll_D = currentRollRate - previousRollRate;
+  previousRollRate = currentRollRate;
+  
+  // PID control
+  control_roll = Kp_RateRoll*err_roll + Kd_RateRoll*roll_D + Ki_RateRoll*roll_I; 
+  
+  // PITCH CONTROL
+  currentPitchRate = read_adc(1);
+  err_pitch = ((ch_pitch-1500) * xmitFactor) - currentPitchRate;
+  
+  pitch_I += err_pitch*G_Dt;
+  pitch_I = constrain(pitch_I,-20,20);
+
+  pitch_D = currentPitchRate - previousPitchRate;
+  previousPitchRate = currentPitchRate;
+ 
+  // PID control
+  control_pitch = Kp_RatePitch*err_pitch + Kd_RatePitch*pitch_D + Ki_RatePitch*pitch_I; 
+  
+  // YAW CONTROL
+  currentYawRate = read_adc(2);
+  err_yaw = ((ch_yaw-1500)* xmitFactor) - currentYawRate;
+  
+  yaw_I += err_yaw*G_Dt;
+  yaw_I = constrain(yaw_I,-20,20);
+
+  yaw_D = currentYawRate - previousYawRate;
+  previousYawRate = currentYawRate;
+ 
+  // PID control
+  K_aux = KP_QUAD_YAW; // Comment this out if you want to use transmitter to adjust gain
+  control_yaw = Kp_RateYaw*err_yaw + Kd_RateYaw*yaw_D + Ki_RateYaw*yaw_I; 
 }
 
 // Maximun slope filter for radio inputs... (limit max differences between readings)
@@ -379,27 +411,28 @@ void setup()
   
   delay(250);
   
-  APM_RC_QUAD.Init();    // APM Radio initialization
+  APM_RC.Init();    // APM Radio initialization
   APM_ADC.Init();   // APM ADC library initialization
   DataFlash.Init(); // DataFlash log initialization
   GPS.Init();       // GPS Initialization
-
-  delay(100);
-  // RC channels Initialization (Quad motors)  
-  APM_RC_QUAD.OutputCh(0,MIN_THROTTLE+15);  // Motors stoped
-  APM_RC_QUAD.OutputCh(1,MIN_THROTTLE+15);
-  APM_RC_QUAD.OutputCh(2,MIN_THROTTLE+15);
-  APM_RC_QUAD.OutputCh(3,MIN_THROTTLE+15);
   
-  #if (MAGNETOMETER)
+  readUserConfig(); // Load user configurable items from EEPROM
+
+  // RC channels Initialization (Quad motors)  
+  APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
+  APM_RC.OutputCh(1,MIN_THROTTLE);
+  APM_RC.OutputCh(2,MIN_THROTTLE);
+  APM_RC.OutputCh(3,MIN_THROTTLE);
+  
+  if (MAGNETOMETER == 1)
     APM_Compass.Init();  // I2C initialization
-  #endif
  
   DataFlash.StartWrite(1);   // Start a write session on page 1
   
-  Serial.begin(57600);
-  Serial.println();
-  Serial.println("ArduCopter Quadcopter v1.0");
+  //Serial.begin(57600);
+  Serial.begin(115200);
+  //Serial.println();
+  //Serial.println("ArduCopter Quadcopter v1.0");
   
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
@@ -410,7 +443,7 @@ void setup()
     delay(30000);
     }
     
-  delay(3000);
+  //delay(3000);
   
   Read_adc_raw();
   delay(20);
@@ -424,7 +457,7 @@ void setup()
   aux_float[2] = gyro_offset_yaw;
  
   // Take the gyro offset values
-  for(i=0;i<250;i++)
+  for(i=0;i<300;i++)
     {
     Read_adc_raw();
     for(int y=0; y<=2; y++)   // Read initial ADC values for gyro offset.
@@ -439,34 +472,36 @@ void setup()
     }
   for(int y=0; y<=2; y++)   
     AN_OFFSET[y]=aux_float[y];
- 
+    
+  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
+  #ifndef CONFIGURATOR
   for(i=0;i<6;i++)
     {
     Serial.print("AN[]:");
     Serial.println(AN_OFFSET[i]);
     }
    
-  Neutro_yaw = APM_RC_QUAD.InputCh(3); // Take yaw neutral radio value
   Serial.print("Yaw neutral value:");
   Serial.println(Neutro_yaw);
+  #endif
   
   #if (RADIO_TEST_MODE)    // RADIO TEST MODE TO TEST RADIO CHANNELS
   while(1)
    {
-   if (APM_RC_QUAD.GetState()==1)
+   if (APM_RC.GetState()==1)
      {
      Serial.print("AIL:");
-     Serial.print(APM_RC_QUAD.InputCh(0));
+     Serial.print(APM_RC.InputCh(0));
      Serial.print("ELE:");
-     Serial.print(APM_RC_QUAD.InputCh(1));
+     Serial.print(APM_RC.InputCh(1));
      Serial.print("THR:");
-     Serial.print(APM_RC_QUAD.InputCh(2));
+     Serial.print(APM_RC.InputCh(2));
      Serial.print("YAW:");
-     Serial.print(APM_RC_QUAD.InputCh(3));
+     Serial.print(APM_RC.InputCh(3));
      Serial.print("AUX(mode):");
-     Serial.print(APM_RC_QUAD.InputCh(4));
+     Serial.print(APM_RC.InputCh(4));
      Serial.print("AUX2:");
-     Serial.print(APM_RC_QUAD.InputCh(5));
+     Serial.print(APM_RC.InputCh(5));
      Serial.println();
      delay(200);
      }
@@ -477,8 +512,10 @@ void setup()
   
   DataFlash.StartWrite(1);   // Start a write session on page 1
   timer = millis();
+  tlmTimer = millis();
   Read_adc_raw();        // Initialize ADC readings...
   delay(20);
+  motorArmed = 0;
   digitalWrite(LED_Green,HIGH);     // Ready to go...
 }
 
@@ -494,7 +531,7 @@ void loop(){
   int log_yaw;
 
   
-  if((millis()-timer)>=14)   // Main loop 70Hz
+  if((millis()-timer)>=10)   // Main loop 100Hz
   {
     counter++;
     timer_old = timer;
@@ -503,14 +540,14 @@ void loop(){
     
     // IMU DCM Algorithm
     Read_adc_raw();
-    #if (MAGNETOMETER)
-    if (counter > 8)  // Read compass data at 10Hz... (7 loop runs)
-      {
-      counter=0;
-      APM_Compass.Read();     // Read magnetometer
-      APM_Compass.Calculate(roll,pitch);  // Calculate heading
-      }
-    #endif
+    if (MAGNETOMETER == 1) {
+      if (counter > 10)  // Read compass data at 10Hz... (10 loop runs)
+        {
+        counter=0;
+        APM_Compass.Read();     // Read magnetometer
+        APM_Compass.Calculate(roll,pitch);  // Calculate heading
+        }
+    }
     Matrix_update(); 
     Normalize();
     Drift_correction();
@@ -521,34 +558,36 @@ void loop(){
     log_roll = ToDeg(roll)*10;
     log_pitch = ToDeg(pitch)*10;
     log_yaw = ToDeg(yaw)*10;
-    
+
+  #ifndef CONFIGURATOR    
     Serial.print(log_roll);
     Serial.print(",");
     Serial.print(log_pitch);
     Serial.print(",");
     Serial.print(log_yaw);
     
-    /*
     for (int i=0;i<6;i++)
       {
       Serial.print(AN[i]);
       Serial.print(",");
       }
-    */
+  #endif
     
     // Write Sensor raw data to DataFlash log
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
     // Write attitude to DataFlash log
     Log_Write_Attitude(log_roll,log_pitch,log_yaw);
     
-    if (APM_RC_QUAD.GetState()==1)   // New radio frame?
+    if (APM_RC.GetState()==1)   // New radio frame?
       {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
-      ch_roll = channel_filter(APM_RC_QUAD.InputCh(0),ch_roll);
-      ch_pitch = channel_filter(APM_RC_QUAD.InputCh(1),ch_pitch);
-      ch_throttle = channel_filter(APM_RC_QUAD.InputCh(2),ch_throttle);
-      ch_yaw = channel_filter(APM_RC_QUAD.InputCh(3),ch_yaw);
+      ch_roll = channel_filter(APM_RC.InputCh(0),ch_roll);
+      ch_pitch = channel_filter(APM_RC.InputCh(1),ch_pitch);
+      ch_throttle = channel_filter(APM_RC.InputCh(2),ch_throttle);
+      ch_yaw = channel_filter(APM_RC.InputCh(3),ch_yaw);
+      ch_aux = APM_RC.InputCh(4);
+      ch_aux2 = APM_RC.InputCh(5);
       command_rx_roll_old = command_rx_roll;
       command_rx_roll = (ch_roll-CHANN_CENTER)/12.0;
       command_rx_roll_diff = command_rx_roll-command_rx_roll_old;
@@ -562,18 +601,20 @@ void loop(){
         command_rx_yaw -= 360.0;
       else if (command_rx_yaw < -180)
         command_rx_yaw += 360.0;
-        
+      
+      // Read through comments in Attitude_control() if you wish to use transmitter to adjust P gains
       // I use K_aux (channel 6) to adjust gains linked to a knob in the radio... [not used now]
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
-      K_aux = K_aux*0.8 + ((APM_RC_QUAD.InputCh(5)-1500)/300.0 + 1.7)*0.2;   // /300 + 1.0
+      K_aux = K_aux*0.8 + ((ch_aux2-1500)/300.0 + 1.7)*0.2;   // /300 + 1.0
+
       if (K_aux < 0)
         K_aux = 0;
       
       //Serial.print(",");
       //Serial.print(K_aux);
-   
+ 
       // We read the Quad Mode from Channel 5
-      if (APM_RC_QUAD.InputCh(4) < 1200)
+      if (ch_aux < 1200)
         {
         AP_mode = 1;           // Position hold mode (GPS position control)
         digitalWrite(LED_Yellow,HIGH); // Yellow LED On
@@ -593,11 +634,13 @@ void loop(){
         {
         target_lattitude = GPS.Lattitude;
         target_longitude = GPS.Longitude;
+        #ifndef CONFIGURATOR
         Serial.println();
         Serial.print("* Target:");
         Serial.print(target_longitude);
         Serial.print(",");
         Serial.println(target_lattitude);
+        #endif
         target_position=1;
         //target_sonar_altitude = sonar_value;
         //Initial_Throttle = ch3;
@@ -635,13 +678,6 @@ void loop(){
         if ((target_position==1)&&(GPS.Fix))
           {
           Position_control(target_lattitude,target_longitude);  // Call position hold routine
-          /*
-          Serial.print("PC:");
-          Serial.print(command_gps_roll);
-          Serial.print(",");
-          Serial.print(command_gps_pitch);
-          Serial.println();
-          */
           }
         else
           {
@@ -652,30 +688,83 @@ void loop(){
         }
       }
     
-    // Attitude control (Roll, Pitch, yaw)
-    Attitude_control();
+    // Control methodology selected using AUX2
+    if (ch_aux2 < 1200)
+      Attitude_control();
+    else
+      {
+      Rate_control();
+      // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
+      command_rx_yaw = ToDeg(yaw);
+      command_rx_yaw_diff = 0;
+      }
+    // Arm motor output
+    if (ch_throttle < 1100) {
+      control_yaw = 0;
+      if (ch_yaw > 1800)
+        motorArmed = 1;
+      if (ch_yaw < 1200)
+        motorArmed = 0;
+    }
       
     // Quadcopter mix
+    // Ask Jose if we still need this IF statement, and if we want to do an ESC calibration
     if (ch_throttle > (MIN_THROTTLE+20))  // Minimun throttle to start control
       {
-      APM_RC_QUAD.OutputCh(0,ch_throttle - control_roll - control_yaw);    // Right motor
-      APM_RC_QUAD.OutputCh(1,ch_throttle + control_roll - control_yaw);    // Left motor
-      APM_RC_QUAD.OutputCh(2,ch_throttle + control_pitch + control_yaw);   // Front motor
-      APM_RC_QUAD.OutputCh(3,ch_throttle - control_pitch + control_yaw);   // Back motor
+        if (motorArmed == 1) {
+        #ifdef FLIGHT_MODE_+
+          rightMotor = ch_throttle - control_roll - control_yaw;
+          leftMotor = ch_throttle + control_roll - control_yaw;
+          frontMotor = ch_throttle + control_pitch + control_yaw;
+          backMotor = ch_throttle - control_pitch + control_yaw;
+        #endif
+        #ifdef FLIGHT_MODE_X
+          frontMotor = ch_throttle + control_roll - control_pitch - control_yaw; // front left motor
+          rightMotor = ch_throttle - control_roll - control_pitch + control_yaw; // front right motor
+          leftMotor = ch_throttle + control_roll + control_pitch + control_yaw;  // rear left motor
+          backMotor = ch_throttle - control_roll + control_pitch - control_yaw;  // rear right motor
+        #endif
+        }
+        if (motorArmed == 0) {
+          rightMotor = MIN_THROTTLE;
+          leftMotor = MIN_THROTTLE;
+          frontMotor = MIN_THROTTLE;
+          backMotor = MIN_THROTTLE;
+        }
+        APM_RC.OutputCh(0, rightMotor);    // Right motor
+        APM_RC.OutputCh(1, leftMotor);    // Left motor
+        APM_RC.OutputCh(2, frontMotor);   // Front motor
+        APM_RC.OutputCh(3, backMotor);   // Back motor     
+        // InstantPWM
+        APM_RC.Force_Out0_Out1();
+        APM_RC.Force_Out2_Out3();
       }
     else
       {
       roll_I = 0;     // reset I terms of PID controls
       pitch_I = 0;
       yaw_I = 0; 
-      APM_RC_QUAD.OutputCh(0,MIN_THROTTLE);  // Motors stoped
-      APM_RC_QUAD.OutputCh(1,MIN_THROTTLE);
-      APM_RC_QUAD.OutputCh(2,MIN_THROTTLE);
-      APM_RC_QUAD.OutputCh(3,MIN_THROTTLE);
-      // Initialize yaw command to actual yaw
+      APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
+      APM_RC.OutputCh(1,MIN_THROTTLE);
+      APM_RC.OutputCh(2,MIN_THROTTLE);
+      APM_RC.OutputCh(3,MIN_THROTTLE);
+      // InstantPWM
+      APM_RC.Force_Out0_Out1();
+      APM_RC.Force_Out2_Out3();
+      
+      // Initialize yaw command to actual yaw when throttle is down...
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
       }
+    #ifndef CONFIGURATOR
     Serial.println();  // Line END 
-    }
+    #endif
+ }
+  #ifdef CONFIGURATOR
+  if((millis()-tlmTimer)>=100) {
+    readSerialCommand();
+    sendSerialTelemetry();
+    tlmTimer = millis();
+  }
+  #endif
 }

@@ -23,7 +23,8 @@
 		Read() : Read Sensor data		
 
 	To do : Calibration of the sensor, code optimization
-	Mount position : Big capacitor pointing forward, connector backward
+	Mount position : UPDATED
+                Big capacitor pointing backward, connector forward
 		
 */
 extern "C" {
@@ -74,8 +75,8 @@ void APM_Compass_Class::Read()
   if (i==6)  // All bytes received?
     {
     // MSB byte first, then LSB, X,Y,Z
-    Mag_X = ((((int)buff[0]) << 8) | buff[1]);    // X axis
-    Mag_Y = -((((int)buff[2]) << 8) | buff[3]);    // Y axis
+    Mag_X = -((((int)buff[0]) << 8) | buff[1]);    // X axis
+    Mag_Y = ((((int)buff[2]) << 8) | buff[3]);    // Y axis
     Mag_Z = -((((int)buff[4]) << 8) | buff[5]);    // Z axis
     }
 }
@@ -103,7 +104,6 @@ void APM_Compass_Class::Calculate(float roll, float pitch)
   Heading_X = cos(Heading);
   Heading_Y = sin(Heading);
 }
-
 
 
 // make one instance for the user to use

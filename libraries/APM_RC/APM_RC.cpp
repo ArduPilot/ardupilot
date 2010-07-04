@@ -163,5 +163,25 @@ unsigned char APM_RC_Class::GetState(void)
   return(radio_status);
 }
 
+// InstantPWM implementation
+// This function forces the PWM output (reset PWM) on Out0 and Out1 (Timer5). For quadcopters use
+void APM_RC_Class::Force_Out0_Out1(void)
+{
+  if (TCNT5>5000)  // We take care that there are not a pulse in the output
+    TCNT5=39990;   // This forces the PWM output to reset in 5us (10 counts of 0.5us). The counter resets at 40000
+}
+// This function forces the PWM output (reset PWM) on Out2 and Out3 (Timer1). For quadcopters use
+void APM_RC_Class::Force_Out2_Out3(void)
+{
+  if (TCNT1>5000)
+    TCNT1=39990;
+}
+// This function forces the PWM output (reset PWM) on Out6 and Out7 (Timer3). For quadcopters use
+void APM_RC_Class::Force_Out6_Out7(void)
+{
+  if (TCNT3>5000)
+    TCNT3=39990;
+}
+
 // make one instance for the user to use
 APM_RC_Class APM_RC;

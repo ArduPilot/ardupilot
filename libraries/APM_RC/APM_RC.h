@@ -14,6 +14,9 @@ class APM_RC_Class
 	void OutputCh(unsigned char ch, int pwm);
 	int InputCh(unsigned char ch);
 	unsigned char GetState();
+	void Force_Out0_Out1(void);
+	void Force_Out2_Out3(void);
+	void Force_Out6_Out7(void);
 };
 
 extern APM_RC_Class APM_RC;
