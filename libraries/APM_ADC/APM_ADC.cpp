@@ -66,7 +66,7 @@ ISR (TIMER2_OVF_vect)
   //bit_set(PORTL,6); // To test performance
   bit_clear(PORTC,4);             // Enable Chip Select (PIN PC4)
   ADC_SPI_transfer(adc_cmd[0]);       // Command to read the first channel
-  for (ch=0;ch<7;ch++)
+  for (ch=0;ch<8;ch++)
       {
       adc_tmp = ADC_SPI_transfer(0)<<8;    // Read first byte
       adc_tmp |= ADC_SPI_transfer(adc_cmd[ch+1]);  // Read second byte and send next command
