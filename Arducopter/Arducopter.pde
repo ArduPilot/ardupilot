@@ -323,14 +323,7 @@ void Rate_control()
   float currentRollRate, currentPitchRate, currentYawRate;
   
   // ROLL CONTROL
-  
-  // NOTE: We need to test THIS !! Plaese CHECK
-  #ifdef FLIGHT_MODE_+
-    currentRollRate = read_adc(0);      // I need a positive sign here
-  #endif
-  #ifdef FLIGHT_MODE_X
-    currentRollRate = -read_adc(0);     // Original from Ted
-  #endif
+  currentRollRate = read_adc(0);      // I need a positive sign here
   
   err_roll = ((ch_roll-1500) * xmitFactor) - currentRollRate;
   
@@ -699,7 +692,7 @@ void loop(){
       command_rx_yaw_diff = 0;
       }
     // Arm motor output
-    if (ch_throttle < 1100) {
+    if (ch_throttle < 1200) {
       control_yaw = 0;
       if (ch_yaw > 1800)
         motorArmed = 1;
@@ -719,10 +712,10 @@ void loop(){
           backMotor = ch_throttle - control_pitch + control_yaw;
         #endif
         #ifdef FLIGHT_MODE_X
-          frontMotor = ch_throttle + control_roll - control_pitch - control_yaw; // front left motor
-          rightMotor = ch_throttle - control_roll - control_pitch + control_yaw; // front right motor
-          leftMotor = ch_throttle + control_roll + control_pitch + control_yaw;  // rear left motor
-          backMotor = ch_throttle - control_roll + control_pitch - control_yaw;  // rear right motor
+          frontMotor = ch_throttle + control_roll + control_pitch - control_yaw; // front left motor
+          rightMotor = ch_throttle - control_roll + control_pitch + control_yaw; // front right motor
+          leftMotor = ch_throttle + control_roll - control_pitch + control_yaw;  // rear left motor
+          backMotor = ch_throttle - control_roll - control_pitch - control_yaw;  // rear right motor
         #endif
         }
         if (motorArmed == 0) {
