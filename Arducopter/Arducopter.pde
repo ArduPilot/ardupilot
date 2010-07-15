@@ -194,13 +194,14 @@ int ch_aux2;
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
 // Motor variables
-#define FLIGHT_MODE_+
-//#define FLIGHT_MODE_X
+//#define FLIGHT_MODE_+
+#define FLIGHT_MODE_X
 int frontMotor;
 int backMotor;
 int leftMotor;
 int rightMotor;
 byte motorArmed = 0;
+int minThrottle = 0;
 
 // Serial communication
 #define CONFIGURATOR
@@ -338,7 +339,7 @@ void Rate_control()
   
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
-  err_pitch = ((ch_pitch-1500) * xmitFactor) - currentPitchRate;
+  err_pitch = ((1500-ch_pitch) * xmitFactor) - currentPitchRate;
   
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -585,7 +586,7 @@ void loop(){
       command_rx_roll = (ch_roll-CHANN_CENTER)/12.0;
       command_rx_roll_diff = command_rx_roll-command_rx_roll_old;
       command_rx_pitch_old = command_rx_pitch;
-      command_rx_pitch = (ch_pitch-CHANN_CENTER)/12.0;
+      command_rx_pitch = (CHANN_CENTER-ch_pitch)/12.0;
       command_rx_pitch_diff = command_rx_pitch-command_rx_pitch_old;
       aux_float = (ch_yaw-Neutro_yaw)/180.0;
       command_rx_yaw += aux_float;
@@ -691,64 +692,58 @@ void loop(){
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
       }
+      
     // Arm motor output
     if (ch_throttle < 1200) {
       control_yaw = 0;
-      if (ch_yaw > 1800)
+      command_rx_yaw = ToDeg(yaw);
+      command_rx_yaw_diff = 0;
+      if (ch_yaw > 1800) {
         motorArmed = 1;
-      if (ch_yaw < 1200)
+        minThrottle = 1100;
+      }
+      if (ch_yaw < 1200) {
         motorArmed = 0;
+        minThrottle = MIN_THROTTLE;
+      }
     }
       
     // Quadcopter mix
     // Ask Jose if we still need this IF statement, and if we want to do an ESC calibration
-    if (ch_throttle > (MIN_THROTTLE+20))  // Minimun throttle to start control
-      {
-        if (motorArmed == 1) {
-        #ifdef FLIGHT_MODE_+
-          rightMotor = ch_throttle - control_roll - control_yaw;
-          leftMotor = ch_throttle + control_roll - control_yaw;
-          frontMotor = ch_throttle + control_pitch + control_yaw;
-          backMotor = ch_throttle - control_pitch + control_yaw;
-        #endif
-        #ifdef FLIGHT_MODE_X
-          frontMotor = ch_throttle + control_roll + control_pitch - control_yaw; // front left motor
-          rightMotor = ch_throttle - control_roll + control_pitch + control_yaw; // front right motor
-          leftMotor = ch_throttle + control_roll - control_pitch + control_yaw;  // rear left motor
-          backMotor = ch_throttle - control_roll - control_pitch - control_yaw;  // rear right motor
-        #endif
-        }
-        if (motorArmed == 0) {
-          rightMotor = MIN_THROTTLE;
-          leftMotor = MIN_THROTTLE;
-          frontMotor = MIN_THROTTLE;
-          backMotor = MIN_THROTTLE;
-        }
-        APM_RC.OutputCh(0, rightMotor);    // Right motor
-        APM_RC.OutputCh(1, leftMotor);    // Left motor
-        APM_RC.OutputCh(2, frontMotor);   // Front motor
-        APM_RC.OutputCh(3, backMotor);   // Back motor     
-        // InstantPWM
-        APM_RC.Force_Out0_Out1();
-        APM_RC.Force_Out2_Out3();
-      }
-    else
-      {
+    if (motorArmed == 1) {        
+      #ifdef FLIGHT_MODE_+
+        rightMotor = constrain(ch_throttle - control_roll - control_yaw, minThrottle, 2000);
+        leftMotor = constrain(ch_throttle + control_roll - control_yaw, minThrottle, 2000);
+        frontMotor = constrain(ch_throttle + control_pitch + control_yaw, minThrottle, 2000);
+        backMotor = constrain(ch_throttle - control_pitch + control_yaw, minThrottle, 2000);
+      #endif
+      #ifdef FLIGHT_MODE_X
+        frontMotor = constrain(ch_throttle + control_roll + control_pitch - control_yaw, minThrottle, 2000); // front left motor
+        rightMotor = constrain(ch_throttle - control_roll + control_pitch + control_yaw, minThrottle, 2000); // front right motor
+        leftMotor = constrain(ch_throttle + control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear left motor
+        backMotor = constrain(ch_throttle - control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear right motor
+      #endif
+    }
+    if (motorArmed == 0) {
+      rightMotor = MIN_THROTTLE;
+      leftMotor = MIN_THROTTLE;
+      frontMotor = MIN_THROTTLE;
+      backMotor = MIN_THROTTLE;
       roll_I = 0;     // reset I terms of PID controls
       pitch_I = 0;
       yaw_I = 0; 
-      APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
-      APM_RC.OutputCh(1,MIN_THROTTLE);
-      APM_RC.OutputCh(2,MIN_THROTTLE);
-      APM_RC.OutputCh(3,MIN_THROTTLE);
-      // InstantPWM
-      APM_RC.Force_Out0_Out1();
-      APM_RC.Force_Out2_Out3();
-      
       // Initialize yaw command to actual yaw when throttle is down...
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
-      }
+    }
+    APM_RC.OutputCh(0, rightMotor);    // Right motor
+    APM_RC.OutputCh(1, leftMotor);    // Left motor
+    APM_RC.OutputCh(2, frontMotor);   // Front motor
+    APM_RC.OutputCh(3, backMotor);   // Back motor     
+    // InstantPWM
+    APM_RC.Force_Out0_Out1();
+    APM_RC.Force_Out2_Out3();
+
     #ifndef CONFIGURATOR
     Serial.println();  // Line END 
     #endif
