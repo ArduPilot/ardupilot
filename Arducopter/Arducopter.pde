@@ -210,8 +210,8 @@ int ch_aux2;
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
 // Motor variables
-//#define FLIGHT_MODE_+
-#define FLIGHT_MODE_X
+#define FLIGHT_MODE_+
+//#define FLIGHT_MODE_X
 int frontMotor;
 int backMotor;
 int leftMotor;
