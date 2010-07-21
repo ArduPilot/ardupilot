@@ -121,7 +121,7 @@ void Matrix_update(void)
   
   //Accel_adjust();//adjusting centrifugal acceleration. // Not used for quadcopter
   
- #if OUTPUTMODE==1
+ #if OUTPUTMODE==1 // corrected mode
   Update_Matrix[0][0]=0;
   Update_Matrix[0][1]=-G_Dt*Omega_Vector[2];//-z
   Update_Matrix[0][2]=G_Dt*Omega_Vector[1];//y
@@ -132,7 +132,7 @@ void Matrix_update(void)
   Update_Matrix[2][1]=G_Dt*Omega_Vector[0];//x
   Update_Matrix[2][2]=0;
   #endif
-  #if OUTPUTMODE==0
+  #if OUTPUTMODE==0 // uncorrected data of the gyros (with drift)
   Update_Matrix[0][0]=0;
   Update_Matrix[0][1]=-G_Dt*Gyro_Vector[2];//-z
   Update_Matrix[0][2]=G_Dt*Gyro_Vector[1];//y

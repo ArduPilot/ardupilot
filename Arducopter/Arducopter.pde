@@ -22,6 +22,21 @@
 /*   GPS_UBLOX or GPS_NMEA: GPS library    [optional]                     */
 /* ********************************************************************** */
 
+/*
+**** Switch Functions *****
+AUX1 ON = Stable Mode
+AUX1 OFF = Acro Mode
+GEAR ON = GPS Hold
+GEAR OFF = Flight Assist (Stable Mode)
+
+**** LED Feedback ****
+Green LED On = APM Initialization Finished
+Yellow LED On = GPS Hold Mode
+Yellow LED Off = Flight Assist Mode (No GPS)
+Red LED On = GPS Fix
+Red LED Off = No GPS Fix
+*/
+
 #include <Wire.h>
 #include <APM_ADC.h>
 #include <APM_RC.h>
@@ -29,6 +44,7 @@
 #include <APM_Compass.h>
 // Put your GPS library here:
 #include <GPS_NMEA.h>  // MTK GPS
+//#include <GPS_UBLOX.h>
 
 // EEPROM storage for user configurable values
 #include <EEPROM.h>
@@ -586,7 +602,7 @@ void loop(){
       command_rx_roll = (ch_roll-CHANN_CENTER)/12.0;
       command_rx_roll_diff = command_rx_roll-command_rx_roll_old;
       command_rx_pitch_old = command_rx_pitch;
-      command_rx_pitch = (CHANN_CENTER-ch_pitch)/12.0;
+      command_rx_pitch = (ch_pitch-CHANN_CENTER)/12.0;
       command_rx_pitch_diff = command_rx_pitch-command_rx_pitch_old;
       aux_float = (ch_yaw-Neutro_yaw)/180.0;
       command_rx_yaw += aux_float;
@@ -655,9 +671,9 @@ void loop(){
       
       //Output GPS data
       //Serial.print(",");
-      //Serial.print(GPS.Lattitude);
-      //Serial.print(",");
-      //Serial.print(GPS.Longitude);
+      Serial.print(GPS.Lattitude);
+      Serial.print(",");
+      Serial.print(GPS.Longitude);
      
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
