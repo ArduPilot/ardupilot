@@ -277,6 +277,8 @@ void Position_control(long lat_dest, long lon_dest)
 /* ************************************************************ */
 // ROLL, PITCH and YAW PID controls... 
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
+
+// Stable Mode
 void Attitude_control()
 {
   // ROLL CONTROL    
@@ -334,6 +336,7 @@ void Attitude_control()
   control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
 }
 
+// Acro Mode
 void Rate_control()
 {
   static float previousRollRate, previousPitchRate, previousYawRate;
@@ -355,7 +358,8 @@ void Rate_control()
   
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
-  err_pitch = ((1500-ch_pitch) * xmitFactor) - currentPitchRate;
+  // err_pitch = ((1500-ch_pitch) * xmitFactor) - currentPitchRate; // was incorrect, inverted ELE between Arco / Stable
+  err_pitch = ((ch_pitch - 1500) * xmitFactor) - currentPitchRate;  // correct one, now ELE is ok on both modes
   
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
