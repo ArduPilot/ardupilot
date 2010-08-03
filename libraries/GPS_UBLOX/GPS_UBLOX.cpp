@@ -226,6 +226,7 @@ void GPS_UBLOX_Class::parse_ubx_gps(void)
       Ground_Speed = join_4_bytes(&UBX_buffer[j]); // Ground speed 2D cm/s
       j+=4;
       Ground_Course = join_4_bytes(&UBX_buffer[j]); // Heading 2D deg*100000
+      Ground_course /= 1000;	// Rescale heading to deg * 100
       j+=4;
       /*
       sacc = join_4_bytes(&UBX_buffer[j]) // Speed accuracy
