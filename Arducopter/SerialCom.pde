@@ -33,7 +33,7 @@ void readSerialCommand() {
       KP_QUAD_YAW = readFloatSerial();
       KI_QUAD_YAW = readFloatSerial();
       KD_QUAD_YAW = readFloatSerial();
-      KD_QUAD_COMMAND_PART = readFloatSerial();
+      STABLE_MODE_KP_RATE = readFloatSerial();
       MAGNETOMETER = readFloatSerial();
       break;
     case 'C': // Receive GPS PID
@@ -96,7 +96,7 @@ void readSerialCommand() {
       writeEEPROM(KP_QUAD_YAW, KP_QUAD_YAW_ADR);
       writeEEPROM(KD_QUAD_YAW, KD_QUAD_YAW_ADR);
       writeEEPROM(KI_QUAD_YAW, KI_QUAD_YAW_ADR);
-      writeEEPROM(KD_QUAD_COMMAND_PART, KD_QUAD_COMMAND_PART_ADR);
+      writeEEPROM(STABLE_MODE_KP_RATE, STABLE_MODE_KP_RATE_ADR);
       writeEEPROM(KP_GPS_ROLL, KP_GPS_ROLL_ADR);
       writeEEPROM(KD_GPS_ROLL, KD_GPS_ROLL_ADR);
       writeEEPROM(KI_GPS_ROLL, KI_GPS_ROLL_ADR);
@@ -140,7 +140,7 @@ void readSerialCommand() {
       KP_QUAD_YAW = 3.6;
       KD_QUAD_YAW = 1.2;
       KI_QUAD_YAW = 0.15;
-      KD_QUAD_COMMAND_PART = 0.0;
+      STABLE_MODE_KP_RATE = 0.2;  // New param for stable mode
       KP_GPS_ROLL = 0.012;
       KD_GPS_ROLL = 0.005;
       KI_GPS_ROLL = 0.004;
@@ -217,7 +217,7 @@ void sendSerialTelemetry() {
     comma();
     Serial.print(KD_QUAD_YAW, 3);
     comma();
-    Serial.print(KD_QUAD_COMMAND_PART, 3);
+    Serial.print(STABLE_MODE_KP_RATE, 3);
     comma();
     Serial.println(MAGNETOMETER, 3);
     queryType = 'X';

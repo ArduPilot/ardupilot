@@ -281,73 +281,8 @@ void Position_control(long lat_dest, long lon_dest)
 // STABLE MODE
 // ROLL, PITCH and YAW PID controls... 
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
-void Attitude_control()
-{
-  // ROLL CONTROL    
-  if (AP_mode==2)        // Normal Mode => Stabilization mode
-    err_roll = command_rx_roll - ToDeg(roll);
-  else
-    err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control
-    
-  err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
-  
-  roll_I += err_roll*G_Dt;
-  roll_I = constrain(roll_I,-20,20);
-  // D term implementation => two parts: gyro part and command part
-  // To have a better (faster) response we can use the Gyro reading directly for the Derivative term...
-  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
-  // We also add a part that takes into account the command from user (stick) to make the system more responsive to user inputs
-  roll_D = command_rx_roll_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[0]);  // Take into account Angular velocity of the stick (command)
-  
-  // PID control
-  K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I; 
-  
-  // PITCH CONTROL
-  if (AP_mode==2)        // Normal mode => Stabilization mode
-    err_pitch = command_rx_pitch - ToDeg(pitch);
-  else
-    err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
-    
-  err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
-  
-  pitch_I += err_pitch*G_Dt;
-  pitch_I = constrain(pitch_I,-20,20);
-  // D term
-  pitch_D = command_rx_pitch_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[1]);
- 
-  // PID control
-  K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
-  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I; 
-  
-  // YAW CONTROL
-  
-    err_yaw = command_rx_yaw - ToDeg(yaw);
-    if (err_yaw > 180)    // Normalize to -180,180
-      err_yaw -= 360;
-    else if(err_yaw < -180)
-      err_yaw += 360;
-  
-  err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
-  
-  yaw_I += err_yaw*G_Dt;
-  yaw_I = constrain(yaw_I,-20,20);
-  yaw_D = command_rx_yaw_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[2]);
- 
-  // PID control
-  control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
-}
-
-/* ************************************************************ */
-// STABLE MODE
-// ROLL, PITCH and YAW PID controls... 
-// Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
 void Attitude_control_v2()
 {
-  
-  #define STABLE_MODE_KP_RATE_ROLL 0.2
-  #define STABLE_MODE_KP_RATE_PITCH 0.2
-  
   float err_roll_rate;
   float err_pitch_rate;
   float roll_rate;
@@ -374,7 +309,7 @@ void Attitude_control_v2()
   
   // PID control
   K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE_ROLL*err_roll_rate; ; 
+  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE*err_roll_rate; ; 
   
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
@@ -395,7 +330,7 @@ void Attitude_control_v2()
  
   // PID control
   K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
-  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I + STABLE_MODE_KP_RATE_PITCH*err_pitch_rate; 
+  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I + STABLE_MODE_KP_RATE*err_pitch_rate; 
   
   // YAW CONTROL
   err_yaw = command_rx_yaw - ToDeg(yaw);
@@ -408,7 +343,7 @@ void Attitude_control_v2()
   
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
-  yaw_D = command_rx_yaw_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[2]);
+  yaw_D = - ToDeg(Omega[2]);
  
   // PID control
   control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
@@ -559,7 +494,7 @@ void setup()
       }
     //Serial.println();
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
-    delay(14);
+    delay(10);
     }
   for(int y=0; y<=2; y++)   
     AN_OFFSET[y]=aux_float[y];
