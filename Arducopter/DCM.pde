@@ -8,7 +8,7 @@ void Read_adc_raw(void)
     AN[i] = APM_ADC.Ch(sensors[i]);
   
   // Correction for non ratiometric sensor (test code)
-  //temp = APM_ADC.Ch(3);
+  gyro_temp = APM_ADC.Ch(3);
   //AN[0] += 1500-temp;
   //AN[1] += 1500-temp;
   //AN[2] += 1500-temp;
@@ -59,24 +59,18 @@ void Drift_correction(void)
   float errorCourse;
   static float Scaled_Omega_P[3];
   static float Scaled_Omega_I[3];
-  float Accel_magnitude;
-  float Accel_weight;
   
   //*****Roll and Pitch***************
 
-  // Calculate the magnitude of the accelerometer vector
-  //Accel_magnitude = sqrt(Accel_Vector[0]*Accel_Vector[0] + Accel_Vector[1]*Accel_Vector[1] + Accel_Vector[2]*Accel_Vector[2]);
-  //Accel_magnitude = Accel_magnitude / GRAVITY; // Scale to gravity.
-  // Weight for accelerometer info (<0.75G = 0.0, 1G = 1.0 , >1.25G = 0.0)
-  // Accel_weight = constrain(1 - 4*abs(1 - Accel_magnitude),0,1);
-  // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-  //Accel_weight = constrain(1 - 2*abs(1 - Accel_magnitude),0,1);
-  Accel_weight = 1.0;
-
   Vector_Cross_Product(&errorRollPitch[0],&Accel_Vector[0],&DCM_Matrix[2][0]); //adjust the ground of reference
-  Vector_Scale(&Omega_P[0],&errorRollPitch[0],Kp_ROLLPITCH*Accel_weight);
+  // errorRollPitch are in Accel ADC units
+  // Limit max errorRollPitch to limit max Omega_P and Omega_I
+  errorRollPitch[0] = constrain(errorRollPitch[0],-50,50);
+  errorRollPitch[1] = constrain(errorRollPitch[1],-50,50);
+  errorRollPitch[2] = constrain(errorRollPitch[2],-50,50);
+  Vector_Scale(&Omega_P[0],&errorRollPitch[0],Kp_ROLLPITCH);
   
-  Vector_Scale(&Scaled_Omega_I[0],&errorRollPitch[0],Ki_ROLLPITCH*Accel_weight);
+  Vector_Scale(&Scaled_Omega_I[0],&errorRollPitch[0],Ki_ROLLPITCH);
   Vector_Add(Omega_I,Omega_I,Scaled_Omega_I);
   
   //*****YAW***************
@@ -107,14 +101,14 @@ void Matrix_update(void)
   Gyro_Vector[1]=Gyro_Scaled_Y(read_adc(1)); //gyro y pitch
   Gyro_Vector[2]=Gyro_Scaled_Z(read_adc(2)); //gyro Z yaw
   
-  Accel_Vector[0]=read_adc(3); // acc x
-  Accel_Vector[1]=read_adc(4); // acc y
-  Accel_Vector[2]=read_adc(5); // acc z
+  //Accel_Vector[0]=read_adc(3); // acc x
+  //Accel_Vector[1]=read_adc(4); // acc y
+  //Accel_Vector[2]=read_adc(5); // acc z
   
   // Low pass filter on accelerometer data (to filter vibrations)
-  //Accel_Vector[0]=Accel_Vector[0]*0.5 + (float)read_adc(3)*0.5; // acc x
-  //Accel_Vector[1]=Accel_Vector[1]*0.5 + (float)read_adc(4)*0.5; // acc y
-  //Accel_Vector[2]=Accel_Vector[2]*0.5 + (float)read_adc(5)*0.5; // acc z
+  Accel_Vector[0]=Accel_Vector[0]*0.6 + (float)read_adc(3)*0.4; // acc x
+  Accel_Vector[1]=Accel_Vector[1]*0.6 + (float)read_adc(4)*0.4; // acc y
+  Accel_Vector[2]=Accel_Vector[2]*0.6 + (float)read_adc(5)*0.4; // acc z
   
   Vector_Add(&Omega[0], &Gyro_Vector[0], &Omega_I[0]);//adding integrator
   Vector_Add(&Omega_Vector[0], &Omega[0], &Omega_P[0]);//adding proportional
@@ -167,4 +161,66 @@ void Euler_angles(void)
     yaw = atan2(DCM_Matrix[1][0],DCM_Matrix[0][0]);
   #endif
 }
+
+
+// VECTOR FUNCTIONS
+//Computes the dot product of two vectors
+float Vector_Dot_Product(float vector1[3],float vector2[3])
+{
+  float op=0;
+  
+  for(int c=0; c<3; c++)
+  {
+  op+=vector1[c]*vector2[c];
+  }
+  
+  return op; 
+}
+
+//Computes the cross product of two vectors
+void Vector_Cross_Product(float vectorOut[3], float v1[3],float v2[3])
+{
+  vectorOut[0]= (v1[1]*v2[2]) - (v1[2]*v2[1]);
+  vectorOut[1]= (v1[2]*v2[0]) - (v1[0]*v2[2]);
+  vectorOut[2]= (v1[0]*v2[1]) - (v1[1]*v2[0]);
+}
+
+//Multiply the vector by a scalar. 
+void Vector_Scale(float vectorOut[3],float vectorIn[3], float scale2)
+{
+  for(int c=0; c<3; c++)
+  {
+   vectorOut[c]=vectorIn[c]*scale2; 
+  }
+}
+
+void Vector_Add(float vectorOut[3],float vectorIn1[3], float vectorIn2[3])
+{
+  for(int c=0; c<3; c++)
+  {
+     vectorOut[c]=vectorIn1[c]+vectorIn2[c];
+  }
+}
+
+/********* MATRIX FUNCTIONS *****************************************/
+//Multiply two 3x3 matrixs. This function developed by Jordi can be easily adapted to multiple n*n matrix's. (Pero me da flojera!). 
+void Matrix_Multiply(float a[3][3], float b[3][3],float mat[3][3])
+{
+  float op[3]; 
+  for(int x=0; x<3; x++)
+  {
+    for(int y=0; y<3; y++)
+    {
+      for(int w=0; w<3; w++)
+      {
+       op[w]=a[x][w]*b[w][y];
+      } 
+      mat[x][y]=0;
+      mat[x][y]=op[0]+op[1]+op[2];
+      
+      float test=mat[x][y];
+    }
+  }
+}
+
 

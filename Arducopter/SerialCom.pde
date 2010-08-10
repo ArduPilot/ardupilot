@@ -132,15 +132,15 @@ void readSerialCommand() {
       break;
     case 'Y': // Initialize EEPROM with default values
       KP_QUAD_ROLL = 1.8;
-      KD_QUAD_ROLL = 0.48;
-      KI_QUAD_ROLL = 0.40;
+      KD_QUAD_ROLL = 0.4; //0.48
+      KI_QUAD_ROLL = 0.30; //0.4
       KP_QUAD_PITCH = 1.8;
-      KD_QUAD_PITCH = 0.48;
-      KI_QUAD_PITCH = 0.40;
+      KD_QUAD_PITCH = 0.4; //0.48
+      KI_QUAD_PITCH = 0.30; //0.4
       KP_QUAD_YAW = 3.6;
       KD_QUAD_YAW = 1.2;
       KI_QUAD_YAW = 0.15;
-      KD_QUAD_COMMAND_PART = 4.0;
+      KD_QUAD_COMMAND_PART = 0.0;
       KP_GPS_ROLL = 0.012;
       KD_GPS_ROLL = 0.005;
       KI_GPS_ROLL = 0.004;
@@ -157,9 +157,9 @@ void readSerialCommand() {
       gyro_offset_roll = 1659;
       gyro_offset_pitch = 1618;
       gyro_offset_yaw = 1673;
-      Kp_ROLLPITCH = 0.002;
-      Ki_ROLLPITCH = 0.0000005;
-      Kp_YAW = 1.5;
+      Kp_ROLLPITCH = 0.0014;
+      Ki_ROLLPITCH = 0.00000015;
+      Kp_YAW = 1.2;
       Ki_YAW = 0.00005;
       GEOG_CORRECTION_FACTOR = 0.87;
       MAGNETOMETER = 0;

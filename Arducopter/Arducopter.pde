@@ -9,7 +9,7 @@
 /*           Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,            */
 /*           Jani Hirvinen, Ken McEwans, Roberto Navoni,                  */
 /*           Sandro Benigno, Chris Anderson                               */
-/* Date : 04-07-2010                                                      */
+/* Date : 08-08-2010                                                      */
 /* Version : 1.3 beta                                                     */
 /* Hardware : ArduPilot Mega + Sensor Shield (Production versions)        */
 /* Mounting position : RC connectors pointing backwards                   */
@@ -19,7 +19,7 @@
 /*   DataFlash : DataFlash log library                                    */
 /*   APM_BMP085 : BMP085 barometer library                                */
 /*   APM_Compass : HMC5843 compass library [optional]                     */
-/*   GPS_UBLOX or GPS_NMEA: GPS library    [optional]                     */
+/*   GPS_UBLOX or GPS_NMEA or GPS_MTK : GPS library    [optional]         */
 /* ********************************************************************** */
 
 /*
@@ -43,7 +43,8 @@ Red LED Off = No GPS Fix
 #include <DataFlash.h>
 #include <APM_Compass.h>
 // Put your GPS library here:
-#include <GPS_NMEA.h>  // MTK GPS
+//#include <GPS_NMEA.h>  // MTK GPS
+#include <GPS_MTK.h>
 //#include <GPS_UBLOX.h>
 
 // EEPROM storage for user configurable values
@@ -92,6 +93,8 @@ int SENSOR_SIGN[]={1,-1,-1,-1,1,1,-1,-1,-1};  //{-1,1,-1,1,-1,1,-1,-1,-1};
 
 int AN[6]; //array that store the 6 ADC channels
 int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
+int gyro_temp;
+
 
 float G_Dt=0.02;    // Integration time for the gyros (DCM algorithm)
 
@@ -275,10 +278,9 @@ void Position_control(long lat_dest, long lon_dest)
 }
 
 /* ************************************************************ */
+// STABLE MODE
 // ROLL, PITCH and YAW PID controls... 
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
-
-// Stable Mode
 void Attitude_control()
 {
   // ROLL CONTROL    
@@ -336,7 +338,83 @@ void Attitude_control()
   control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
 }
 
-// Acro Mode
+/* ************************************************************ */
+// STABLE MODE
+// ROLL, PITCH and YAW PID controls... 
+// Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
+void Attitude_control_v2()
+{
+  
+  #define STABLE_MODE_KP_RATE_ROLL 0.2
+  #define STABLE_MODE_KP_RATE_PITCH 0.2
+  
+  float err_roll_rate;
+  float err_pitch_rate;
+  float roll_rate;
+  float pitch_rate;
+  
+  // ROLL CONTROL    
+  if (AP_mode==2)        // Normal Mode => Stabilization mode
+    err_roll = command_rx_roll - ToDeg(roll);
+  else
+    err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control
+    
+  err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
+  
+  // New control term...
+  roll_rate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
+  err_roll_rate = ((ch_roll-1500)>>1) - roll_rate;
+  
+  roll_I += err_roll*G_Dt;
+  roll_I = constrain(roll_I,-20,20);
+  // D term implementation => two parts: gyro part and command part
+  // To have a better (faster) response we can use the Gyro reading directly for the Derivative term...
+  // We also add a part that takes into account the command from user (stick) to make the system more responsive to user inputs
+  roll_D = - roll_rate;  // Take into account Angular velocity of the stick (command)
+  
+  // PID control
+  K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
+  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE_ROLL*err_roll_rate; ; 
+  
+  // PITCH CONTROL
+  if (AP_mode==2)        // Normal mode => Stabilization mode
+    err_pitch = command_rx_pitch - ToDeg(pitch);
+  else
+    err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
+    
+  err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
+  
+  // New control term...
+  pitch_rate = ToDeg(Omega[1]);
+  err_pitch_rate = ((ch_pitch-1500)>>1) - pitch_rate;
+  
+  pitch_I += err_pitch*G_Dt;
+  pitch_I = constrain(pitch_I,-20,20);
+  // D term
+  pitch_D = - pitch_rate;
+ 
+  // PID control
+  K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
+  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I + STABLE_MODE_KP_RATE_PITCH*err_pitch_rate; 
+  
+  // YAW CONTROL
+  err_yaw = command_rx_yaw - ToDeg(yaw);
+  if (err_yaw > 180)    // Normalize to -180,180
+    err_yaw -= 360;
+  else if(err_yaw < -180)
+    err_yaw += 360;
+  
+  err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
+  
+  yaw_I += err_yaw*G_Dt;
+  yaw_I = constrain(yaw_I,-20,20);
+  yaw_D = command_rx_yaw_diff*KD_QUAD_COMMAND_PART - ToDeg(Omega[2]);
+ 
+  // PID control
+  control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
+}
+
+// ACRO MODE
 void Rate_control()
 {
   static float previousRollRate, previousPitchRate, previousYawRate;
@@ -358,8 +436,7 @@ void Rate_control()
   
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
-  // err_pitch = ((1500-ch_pitch) * xmitFactor) - currentPitchRate; // was incorrect, inverted ELE between Arco / Stable
-  err_pitch = ((ch_pitch - 1500) * xmitFactor) - currentPitchRate;  // correct one, now ELE is ok on both modes
+  err_pitch = ((ch_pitch-1500) * xmitFactor) - currentPitchRate;
   
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -403,8 +480,8 @@ int channel_filter(int ch, int ch_old)
      if (diff_ch_old>40)    
        return(ch_old+40);
      }
-  //return((ch+ch_old)>>1);   // Small filtering
-  return(ch);
+  return((ch+ch_old)>>1);   // Small filtering
+  //return(ch);
 }
 
 
@@ -588,7 +665,7 @@ void loop(){
   #endif
     
     // Write Sensor raw data to DataFlash log
-    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
+    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],gyro_temp);
     // Write attitude to DataFlash log
     Log_Write_Attitude(log_roll,log_pitch,log_yaw);
     
@@ -675,9 +752,9 @@ void loop(){
       
       //Output GPS data
       //Serial.print(",");
-      Serial.print(GPS.Lattitude);
-      Serial.print(",");
-      Serial.print(GPS.Longitude);
+      //Serial.print(GPS.Lattitude);
+      //Serial.print(",");
+      //Serial.print(GPS.Longitude);
      
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
@@ -704,7 +781,7 @@ void loop(){
     
     // Control methodology selected using AUX2
     if (ch_aux2 < 1200)
-      Attitude_control();
+      Attitude_control_v2();
     else
       {
       Rate_control();
