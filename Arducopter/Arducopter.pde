@@ -227,6 +227,10 @@ int minThrottle = 0;
 char queryType;
 long tlmTimer = 0;
 
+// Arming/Disarming
+uint8_t Arming_counter=0;
+uint8_t Disarming_counter=0;
+
 /* ************************************************************ */
 /* Altitude control... (based on sonar) */
 void Altitude_control(int target_sonar_altitude)
@@ -725,19 +729,36 @@ void loop(){
       command_rx_yaw_diff = 0;
       }
       
-    // Arm motor output
+    // Arm motor output : Throttle down and full yaw right for more than 2 seconds
     if (ch_throttle < 1200) {
       control_yaw = 0;
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
       if (ch_yaw > 1800) {
-        motorArmed = 1;
-        minThrottle = 1100;
+        if (Arming_counter>240){
+          motorArmed = 1;
+          minThrottle = 1100;
+        }
+        else
+          Arming_counter++;
       }
+      else
+        Arming_counter=0;
+      // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
       if (ch_yaw < 1200) {
-        motorArmed = 0;
-        minThrottle = MIN_THROTTLE;
+        if (Disarming_counter>240){
+          motorArmed = 0;
+          minThrottle = MIN_THROTTLE;
+        }
+        else
+          Disarming_counter++;
       }
+      else
+        Disarming_counter=0;
+    }
+    else{
+      Arming_counter=0;
+      Disarming_counter=0;
     }
       
     // Quadcopter mix
