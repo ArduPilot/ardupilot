@@ -24,18 +24,18 @@
 
 /*
 **** Switch Functions *****
-AUX1 ON = Stable Mode
-AUX1 OFF = Acro Mode
-GEAR ON = GPS Hold
-GEAR OFF = Flight Assist (Stable Mode)
-
-**** LED Feedback ****
-Green LED On = APM Initialization Finished
-Yellow LED On = GPS Hold Mode
-Yellow LED Off = Flight Assist Mode (No GPS)
-Red LED On = GPS Fix
-Red LED Off = No GPS Fix
-*/
+ AUX1 ON = Stable Mode
+ AUX1 OFF = Acro Mode
+ GEAR ON = GPS Hold
+ GEAR OFF = Flight Assist (Stable Mode)
+ 
+ **** LED Feedback ****
+ Green LED On = APM Initialization Finished
+ Yellow LED On = GPS Hold Mode
+ Yellow LED Off = Flight Assist Mode (No GPS)
+ Red LED On = GPS Fix
+ Red LED Off = No GPS Fix
+ */
 
 #include <Wire.h>
 #include <APM_ADC.h>
@@ -59,6 +59,16 @@ Red LED Off = No GPS Fix
 #define SW1_pin 41
 #define SW2_pin 40
 /* *** */
+
+/* AM PIN Definitions */
+/* Can be changed in future to AN extension ports */
+
+#define FR_LED 3  // Mega PE4 pin
+#define RE_LED 2  // Mega PE5 pin
+#define RI_LED 7  // Mega PH4 pin
+#define LE_LED 8  // Mega PH5 pin
+
+/* AM PIN Definitions - END */
 
 /* ***************************************************************************** */
 /*  CONFIGURATION PART                                                           */
@@ -86,10 +96,12 @@ Red LED Off = No GPS Fix
 #define OUTPUTMODE 1  //If value = 1 will print the corrected data, 0 will print uncorrected data of the gyros (with drift), 2 Accel only data
 
 //Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
-uint8_t sensors[6] = {1,2,0,4,5,6};  // For ArduPilot Mega Sensor Shield Hardware
+uint8_t sensors[6] = {
+  1,2,0,4,5,6};  // For ArduPilot Mega Sensor Shield Hardware
 
 //Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
-int SENSOR_SIGN[]={1,-1,-1,-1,1,1,-1,-1,-1};  //{-1,1,-1,1,-1,1,-1,-1,-1};
+int SENSOR_SIGN[]={
+  1,-1,-1,-1,1,1,-1,-1,-1};  //{-1,1,-1,1,-1,1,-1,-1,-1};
 
 int AN[6]; //array that store the 6 ADC channels
 int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
@@ -98,18 +110,27 @@ int gyro_temp;
 
 float G_Dt=0.02;    // Integration time for the gyros (DCM algorithm)
 
-float Accel_Vector[3]= {0,0,0}; //Store the acceleration in a vector
-float Accel_Vector_unfiltered[3]= {0,0,0}; //Store the acceleration in a vector
+float Accel_Vector[3]= {
+  0,0,0}; //Store the acceleration in a vector
+float Accel_Vector_unfiltered[3]= {
+  0,0,0}; //Store the acceleration in a vector
 //float Accel_magnitude;
 //float Accel_weight;
-float Gyro_Vector[3]= {0,0,0};//Store the gyros rutn rate in a vector
-float Omega_Vector[3]= {0,0,0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {0,0,0};//Omega Proportional correction
-float Omega_I[3]= {0,0,0};//Omega Integrator
-float Omega[3]= {0,0,0};
+float Gyro_Vector[3]= {
+  0,0,0};//Store the gyros rutn rate in a vector
+float Omega_Vector[3]= {
+  0,0,0}; //Corrected Gyro_Vector data
+float Omega_P[3]= {
+  0,0,0};//Omega Proportional correction
+float Omega_I[3]= {
+  0,0,0};//Omega Integrator
+float Omega[3]= {
+  0,0,0};
 
-float errorRollPitch[3]= {0,0,0};
-float errorYaw[3]= {0,0,0};
+float errorRollPitch[3]= {
+  0,0,0};
+float errorYaw[3]= {
+  0,0,0};
 float errorCourse=0;
 float COGX=0; //Course overground X axis
 float COGY=1; //Course overground Y axis
@@ -121,16 +142,29 @@ float yaw=0;
 unsigned int counter=0;
 
 float DCM_Matrix[3][3]= {
-  {1,0,0}
-  ,{0,1,0}
-  ,{0,0,1}
+  {
+    1,0,0  }
+  ,{
+    0,1,0  }
+  ,{
+    0,0,1  }
 }; 
-float Update_Matrix[3][3]={{0,1,2},{3,4,5},{6,7,8}}; //Gyros here
+float Update_Matrix[3][3]={
+  {
+    0,1,2  }
+  ,{
+    3,4,5  }
+  ,{
+    6,7,8  }
+}; //Gyros here
 
 float Temporary_Matrix[3][3]={
-  {0,0,0}
-  ,{0,0,0}
-  ,{0,0,0}
+  {
+    0,0,0  }
+  ,{
+    0,0,0  }
+  ,{
+    0,0,0  }
 };
 
 // GPS variables
@@ -195,7 +229,12 @@ int Sonar_value=0;
 int Sonar_Counter=0;
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
-byte AP_mode = 2;             
+byte AP_mode = 2;  
+
+// Mode LED timers and variables, used to blink LED_Green
+byte gled_status = HIGH;
+long gled_timer;
+int gled_speed;
 
 long t0;
 int num_iter;
@@ -251,32 +290,32 @@ void Position_control(long lat_dest, long lon_dest)
   long Lat_diff;
   float gps_err_roll;
   float gps_err_pitch;
-  
+
   Lon_diff = lon_dest - GPS.Longitude;
   Lat_diff = lat_dest - GPS.Lattitude;
-  
+
   // ROLL
   gps_err_roll_old = gps_err_roll;
   //Optimization : cos(yaw) = DCM_Matrix[0][0] ;  sin(yaw) = DCM_Matrix[1][0] 
   gps_err_roll = (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[0][0] - (float)Lat_diff*DCM_Matrix[1][0];
-  
+
   gps_roll_D = (gps_err_roll-gps_err_roll_old)/G_Dt;
-  
+
   gps_roll_I += gps_err_roll*G_Dt;
   gps_roll_I = constrain(gps_roll_I,-500,500);
-  
+
   command_gps_roll = KP_GPS_ROLL*gps_err_roll + KD_GPS_ROLL*gps_roll_D + KI_GPS_ROLL*gps_roll_I;
   command_gps_roll = constrain(command_gps_roll,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
-  
+
   // PITCH
   gps_err_pitch_old = gps_err_pitch;
   gps_err_pitch = -(float)Lat_diff*DCM_Matrix[0][0]- (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[1][0];
-  
+
   gps_pitch_D = (gps_err_pitch-gps_err_pitch_old)/G_Dt;
-  
+
   gps_pitch_I += gps_err_pitch*G_Dt;
   gps_pitch_I = constrain(gps_pitch_I,-500,500);
-  
+
   command_gps_pitch = KP_GPS_PITCH*gps_err_pitch + KD_GPS_PITCH*gps_pitch_D + KI_GPS_PITCH*gps_pitch_I;
   command_gps_pitch = constrain(command_gps_pitch,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
 }
@@ -291,64 +330,65 @@ void Attitude_control_v2()
   float err_pitch_rate;
   float roll_rate;
   float pitch_rate;
-  
+
   // ROLL CONTROL    
   if (AP_mode==2)        // Normal Mode => Stabilization mode
     err_roll = command_rx_roll - ToDeg(roll);
   else
     err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control
-    
-  err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
-  
+
+    err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
+
   // New control term...
   roll_rate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
   err_roll_rate = ((ch_roll-1500)>>1) - roll_rate;
-  
+
   roll_I += err_roll*G_Dt;
   roll_I = constrain(roll_I,-20,20);
   // D term implementation => two parts: gyro part and command part
   // To have a better (faster) response we can use the Gyro reading directly for the Derivative term...
   // We also add a part that takes into account the command from user (stick) to make the system more responsive to user inputs
   roll_D = - roll_rate;  // Take into account Angular velocity of the stick (command)
-  
+
   // PID control
   K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE*err_roll_rate; ; 
-  
+  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE*err_roll_rate; 
+  ; 
+
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
     err_pitch = command_rx_pitch - ToDeg(pitch);
   else
     err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
-    
+
   err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
-  
+
   // New control term...
   pitch_rate = ToDeg(Omega[1]);
   err_pitch_rate = ((ch_pitch-1500)>>1) - pitch_rate;
-  
+
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
   // D term
   pitch_D = - pitch_rate;
- 
+
   // PID control
   K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
   control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I + STABLE_MODE_KP_RATE*err_pitch_rate; 
-  
+
   // YAW CONTROL
   err_yaw = command_rx_yaw - ToDeg(yaw);
   if (err_yaw > 180)    // Normalize to -180,180
-    err_yaw -= 360;
+      err_yaw -= 360;
   else if(err_yaw < -180)
     err_yaw += 360;
-  
+
   err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
-  
+
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
   yaw_D = - ToDeg(Omega[2]);
- 
+
   // PID control
   control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
 }
@@ -358,44 +398,44 @@ void Rate_control()
 {
   static float previousRollRate, previousPitchRate, previousYawRate;
   float currentRollRate, currentPitchRate, currentYawRate;
-  
+
   // ROLL CONTROL
   currentRollRate = read_adc(0);      // I need a positive sign here
-  
+
   err_roll = ((ch_roll-1500) * xmitFactor) - currentRollRate;
-  
+
   roll_I += err_roll*G_Dt;
   roll_I = constrain(roll_I,-20,20);
 
   roll_D = currentRollRate - previousRollRate;
   previousRollRate = currentRollRate;
-  
+
   // PID control
   control_roll = Kp_RateRoll*err_roll + Kd_RateRoll*roll_D + Ki_RateRoll*roll_I; 
-  
+
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
   err_pitch = ((ch_pitch-1500) * xmitFactor) - currentPitchRate;
-  
+
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
 
   pitch_D = currentPitchRate - previousPitchRate;
   previousPitchRate = currentPitchRate;
- 
+
   // PID control
   control_pitch = Kp_RatePitch*err_pitch + Kd_RatePitch*pitch_D + Ki_RatePitch*pitch_I; 
-  
+
   // YAW CONTROL
   currentYawRate = read_adc(2);
   err_yaw = ((ch_yaw-1500)* xmitFactor) - currentYawRate;
-  
+
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
 
   yaw_D = currentYawRate - previousYawRate;
   previousYawRate = currentYawRate;
- 
+
   // PID control
   K_aux = KP_QUAD_YAW; // Comment this out if you want to use transmitter to adjust gain
   control_yaw = Kp_RateYaw*err_yaw + Kd_RateYaw*yaw_D + Ki_RateYaw*yaw_I; 
@@ -405,20 +445,20 @@ void Rate_control()
 int channel_filter(int ch, int ch_old)
 {
   int diff_ch_old;
-  
+
   if (ch_old==0)      // ch_old not initialized
     return(ch);
   diff_ch_old = ch - ch_old;      // Difference with old reading
   if (diff_ch_old<0)
-     {
-     if (diff_ch_old<-40)
-       return(ch_old-40);        // We limit the max difference between readings
-     }
+  {
+    if (diff_ch_old<-40)
+      return(ch_old-40);        // We limit the max difference between readings
+  }
   else
-     {
-     if (diff_ch_old>40)    
-       return(ch_old+40);
-     }
+  {
+    if (diff_ch_old>40)    
+      return(ch_old+40);
+  }
   return((ch+ch_old)>>1);   // Small filtering
   //return(ch);
 }
@@ -429,23 +469,23 @@ void setup()
 {
   int i;
   float aux_float[3];
-  
+
   pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
   pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
   pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
-  
+
   pinMode(SW1_pin,INPUT);  //Switch SW1 (pin PG0)
-  
+
   pinMode(RELE_pin,OUTPUT);      // Rele output
   digitalWrite(RELE_pin,LOW);
-  
+
   delay(250);
-  
+
   APM_RC.Init();    // APM Radio initialization
   APM_ADC.Init();   // APM ADC library initialization
   DataFlash.Init(); // DataFlash log initialization
   GPS.Init();       // GPS Initialization
-  
+
   readUserConfig(); // Load user configurable items from EEPROM
 
   // RC channels Initialization (Quad motors)  
@@ -453,31 +493,31 @@ void setup()
   APM_RC.OutputCh(1,MIN_THROTTLE);
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
-  
+
   if (MAGNETOMETER == 1)
     APM_Compass.Init();  // I2C initialization
- 
+
   DataFlash.StartWrite(1);   // Start a write session on page 1
-  
-  //Serial.begin(57600);
+
+    //Serial.begin(57600);
   Serial.begin(115200);
   //Serial.println();
   //Serial.println("ArduCopter Quadcopter v1.0");
-  
+
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
   while (digitalRead(SW1_pin)==0)
-    {
+  {
     Serial.println("Entering Log Read Mode...");
     Log_Read(1,1000);
     delay(30000);
-    }
-    
+  }
+
   //delay(3000);
-  
+
   Read_adc_raw();
   delay(20);
- 
+
   // Offset values for accels and gyros...
   AN_OFFSET[3] = acc_offset_x;
   AN_OFFSET[4] = acc_offset_y;
@@ -485,73 +525,78 @@ void setup()
   aux_float[0] = gyro_offset_roll;
   aux_float[1] = gyro_offset_pitch;
   aux_float[2] = gyro_offset_yaw;
- 
+
   // Take the gyro offset values
   for(i=0;i<300;i++)
-    {
+  {
     Read_adc_raw();
     for(int y=0; y<=2; y++)   // Read initial ADC values for gyro offset.
-      {
+    {
       aux_float[y]=aux_float[y]*0.8 + AN[y]*0.2;
       //Serial.print(AN[y]);
       //Serial.print(",");
-      }
+    }
     //Serial.println();
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
     delay(10);
-    }
+  }
   for(int y=0; y<=2; y++)   
     AN_OFFSET[y]=aux_float[y];
-    
+
   Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
-  #ifndef CONFIGURATOR
+#ifndef CONFIGURATOR
   for(i=0;i<6;i++)
-    {
+  {
     Serial.print("AN[]:");
     Serial.println(AN_OFFSET[i]);
-    }
-   
+  }
+
   Serial.print("Yaw neutral value:");
   Serial.println(Neutro_yaw);
-  #endif
-  
-  #if (RADIO_TEST_MODE)    // RADIO TEST MODE TO TEST RADIO CHANNELS
+#endif
+
+#if (RADIO_TEST_MODE)    // RADIO TEST MODE TO TEST RADIO CHANNELS
   while(1)
-   {
-   if (APM_RC.GetState()==1)
-     {
-     Serial.print("AIL:");
-     Serial.print(APM_RC.InputCh(0));
-     Serial.print("ELE:");
-     Serial.print(APM_RC.InputCh(1));
-     Serial.print("THR:");
-     Serial.print(APM_RC.InputCh(2));
-     Serial.print("YAW:");
-     Serial.print(APM_RC.InputCh(3));
-     Serial.print("AUX(mode):");
-     Serial.print(APM_RC.InputCh(4));
-     Serial.print("AUX2:");
-     Serial.print(APM_RC.InputCh(5));
-     Serial.println();
-     delay(200);
-     }
-   } 
-  #endif  
+  {
+    if (APM_RC.GetState()==1)
+    {
+      Serial.print("AIL:");
+      Serial.print(APM_RC.InputCh(0));
+      Serial.print("ELE:");
+      Serial.print(APM_RC.InputCh(1));
+      Serial.print("THR:");
+      Serial.print(APM_RC.InputCh(2));
+      Serial.print("YAW:");
+      Serial.print(APM_RC.InputCh(3));
+      Serial.print("AUX(mode):");
+      Serial.print(APM_RC.InputCh(4));
+      Serial.print("AUX2:");
+      Serial.print(APM_RC.InputCh(5));
+      Serial.println();
+      delay(200);
+    }
+  } 
+#endif  
 
   delay(1000);
-  
+
   DataFlash.StartWrite(1);   // Start a write session on page 1
   timer = millis();
   tlmTimer = millis();
   Read_adc_raw();        // Initialize ADC readings...
   delay(20);
+  
+    // Switch Left & Right lights on
+  digitalWrite(RI_LED, HIGH);
+  digitalWrite(LE_LED, HIGH); 
+  
   motorArmed = 0;
   digitalWrite(LED_Green,HIGH);     // Ready to go...
 }
 
 /* ***** MAIN LOOP ***** */
 void loop(){
-  
+
   int aux;
   int i;
   float aux_float;
@@ -560,56 +605,56 @@ void loop(){
   int log_pitch;
   int log_yaw;
 
-  
+
   if((millis()-timer)>=10)   // Main loop 100Hz
   {
     counter++;
     timer_old = timer;
     timer=millis();
     G_Dt = (timer-timer_old)/1000.0;      // Real time of loop run 
-    
+
     // IMU DCM Algorithm
     Read_adc_raw();
     if (MAGNETOMETER == 1) {
       if (counter > 10)  // Read compass data at 10Hz... (10 loop runs)
-        {
+      {
         counter=0;
         APM_Compass.Read();     // Read magnetometer
         APM_Compass.Calculate(roll,pitch);  // Calculate heading
-        }
+      }
     }
     Matrix_update(); 
     Normalize();
     Drift_correction();
     Euler_angles();
     // *****************
-    
+
     // Output data
     log_roll = ToDeg(roll)*10;
     log_pitch = ToDeg(pitch)*10;
     log_yaw = ToDeg(yaw)*10;
 
-  #ifndef CONFIGURATOR    
+#ifndef CONFIGURATOR    
     Serial.print(log_roll);
     Serial.print(",");
     Serial.print(log_pitch);
     Serial.print(",");
     Serial.print(log_yaw);
-    
+
     for (int i=0;i<6;i++)
-      {
+    {
       Serial.print(AN[i]);
       Serial.print(",");
-      }
-  #endif
-    
+    }
+#endif
+
     // Write Sensor raw data to DataFlash log
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],gyro_temp);
     // Write attitude to DataFlash log
     Log_Write_Attitude(log_roll,log_pitch,log_yaw);
-    
+
     if (APM_RC.GetState()==1)   // New radio frame?
-      {
+    {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
       ch_roll = channel_filter(APM_RC.InputCh(0),ch_roll);
@@ -631,7 +676,7 @@ void loop(){
         command_rx_yaw -= 360.0;
       else if (command_rx_yaw < -180)
         command_rx_yaw += 360.0;
-      
+
       // Read through comments in Attitude_control() if you wish to use transmitter to adjust P gains
       // I use K_aux (channel 6) to adjust gains linked to a knob in the radio... [not used now]
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
@@ -639,38 +684,38 @@ void loop(){
 
       if (K_aux < 0)
         K_aux = 0;
-      
+
       //Serial.print(",");
       //Serial.print(K_aux);
- 
+
       // We read the Quad Mode from Channel 5
       if (ch_aux < 1200)
-        {
+      {
         AP_mode = 1;           // Position hold mode (GPS position control)
         digitalWrite(LED_Yellow,HIGH); // Yellow LED On
-        }
+      }
       else
-        {
+      {
         AP_mode = 2;          // Normal mode (Stabilization assist mode)
         digitalWrite(LED_Yellow,LOW); // Yellow LED off
-        }
+      }
       // Write Radio data to DataFlash log
       Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,int(K_aux*100),(int)AP_mode);
-      }  // END new radio data
-      
+    }  // END new radio data
+
     if (AP_mode==1)  // Position Control
-      {
+    {
       if (target_position==0)   // If this is the first time we switch to Position control, actual position is our target position
-        {
+      {
         target_lattitude = GPS.Lattitude;
         target_longitude = GPS.Longitude;
-        #ifndef CONFIGURATOR
+#ifndef CONFIGURATOR
         Serial.println();
         Serial.print("* Target:");
         Serial.print(target_longitude);
         Serial.print(",");
         Serial.println(target_lattitude);
-        #endif
+#endif
         target_position=1;
         //target_sonar_altitude = sonar_value;
         //Initial_Throttle = ch3;
@@ -678,57 +723,60 @@ void loop(){
         altitude_I = 0;
         gps_roll_I = 0;
         gps_pitch_I = 0;
-        }        
-      }
+      }        
+    }
     else
       target_position=0;
-      
+
     //Read GPS
     GPS.Read();
     if (GPS.NewData)  // New GPS data?
-      {
+    {
       GPS.NewData=0;  // We Reset the flag...
-      
+
       //Output GPS data
       //Serial.print(",");
       //Serial.print(GPS.Lattitude);
       //Serial.print(",");
       //Serial.print(GPS.Longitude);
-     
+
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
-      
+
       if (GPS.Fix)
         digitalWrite(LED_Red,HIGH);  // GPS Fix => Blue LED
       else
         digitalWrite(LED_Red,LOW);
-        
+
       if (AP_mode==1)
-        {
+      {
         if ((target_position==1)&&(GPS.Fix))
-          {
+        {
           Position_control(target_lattitude,target_longitude);  // Call position hold routine
-          }
+        }
         else
-          {
+        {
           //Serial.print("NOFIX");
           command_gps_roll=0;
           command_gps_pitch=0;
-          }
         }
       }
-    
+    }
+
     // Control methodology selected using AUX2
-    if (ch_aux2 < 1200)
+    if (ch_aux2 < 1200) {
+      gled_speed = 1200;
       Attitude_control_v2();
+    }
     else
-      {
+    {
+      gled_speed = 400;
       Rate_control();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
-      }
-      
+    }
+
     // Arm motor output : Throttle down and full yaw right for more than 2 seconds
     if (ch_throttle < 1200) {
       control_yaw = 0;
@@ -760,24 +808,29 @@ void loop(){
       Arming_counter=0;
       Disarming_counter=0;
     }
-      
+
     // Quadcopter mix
     // Ask Jose if we still need this IF statement, and if we want to do an ESC calibration
-    if (motorArmed == 1) {        
-      #ifdef FLIGHT_MODE_+
-        rightMotor = constrain(ch_throttle - control_roll - control_yaw, minThrottle, 2000);
-        leftMotor = constrain(ch_throttle + control_roll - control_yaw, minThrottle, 2000);
-        frontMotor = constrain(ch_throttle + control_pitch + control_yaw, minThrottle, 2000);
-        backMotor = constrain(ch_throttle - control_pitch + control_yaw, minThrottle, 2000);
-      #endif
-      #ifdef FLIGHT_MODE_X
-        frontMotor = constrain(ch_throttle + control_roll + control_pitch - control_yaw, minThrottle, 2000); // front left motor
-        rightMotor = constrain(ch_throttle - control_roll + control_pitch + control_yaw, minThrottle, 2000); // front right motor
-        leftMotor = constrain(ch_throttle + control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear left motor
-        backMotor = constrain(ch_throttle - control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear right motor
-      #endif
+    if (motorArmed == 1) {   
+       digitalWrite(FR_LED, HIGH);    // AM-Mode
+     
+#ifdef FLIGHT_MODE_+
+      rightMotor = constrain(ch_throttle - control_roll - control_yaw, minThrottle, 2000);
+      leftMotor = constrain(ch_throttle + control_roll - control_yaw, minThrottle, 2000);
+      frontMotor = constrain(ch_throttle + control_pitch + control_yaw, minThrottle, 2000);
+      backMotor = constrain(ch_throttle - control_pitch + control_yaw, minThrottle, 2000);
+#endif
+#ifdef FLIGHT_MODE_X
+      frontMotor = constrain(ch_throttle + control_roll + control_pitch - control_yaw, minThrottle, 2000); // front left motor
+      rightMotor = constrain(ch_throttle - control_roll + control_pitch + control_yaw, minThrottle, 2000); // front right motor
+      leftMotor = constrain(ch_throttle + control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear left motor
+      backMotor = constrain(ch_throttle - control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear right motor
+#endif
     }
     if (motorArmed == 0) {
+      digitalWrite(FR_LED, LOW);    // AM-Mode
+      digitalWrite(LED_Green,HIGH); // Ready LED on
+      
       rightMotor = MIN_THROTTLE;
       leftMotor = MIN_THROTTLE;
       frontMotor = MIN_THROTTLE;
@@ -797,15 +850,34 @@ void loop(){
     APM_RC.Force_Out0_Out1();
     APM_RC.Force_Out2_Out3();
 
-    #ifndef CONFIGURATOR
+#ifndef CONFIGURATOR
     Serial.println();  // Line END 
-    #endif
- }
-  #ifdef CONFIGURATOR
+#endif
+  }
+#ifdef CONFIGURATOR
   if((millis()-tlmTimer)>=100) {
     readSerialCommand();
     sendSerialTelemetry();
     tlmTimer = millis();
   }
-  #endif
+#endif
+
+  // AM and Mode lights
+  if(millis() - gled_timer > gled_speed) {
+    gled_timer = millis();
+    if(gled_status == HIGH) { 
+      digitalWrite(LED_Green, LOW);
+      digitalWrite(RE_LED, LOW);
+      gled_status = LOW;
+    } 
+    else {
+      digitalWrite(LED_Green, HIGH);
+      if(motorArmed) digitalWrite(RE_LED, HIGH);
+      gled_status = HIGH;
+    } 
+  }
+
+
+
 }
+
