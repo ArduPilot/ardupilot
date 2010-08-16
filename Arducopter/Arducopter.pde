@@ -1,5 +1,5 @@
 /* ********************************************************************** */
-/*                    ArduCopter Quadcopter code                          */
+/* j                   ArduCopter Quadcopter code                          */
 /*                                                                        */
 /* Quadcopter code from AeroQuad project and ArduIMU quadcopter project   */
 /* IMU DCM code from Diydrones.com                                        */
@@ -33,242 +33,60 @@
  Green LED On = APM Initialization Finished
  Yellow LED On = GPS Hold Mode
  Yellow LED Off = Flight Assist Mode (No GPS)
- Red LED On = GPS Fix
+ Red LED On = GPS Fix, 2D or 3D
  Red LED Off = No GPS Fix
- */
+
+ Green LED blink slow = Motors armed, Stable mode
+ Green LED blink rapid = Motors armed, Acro mode
+ 
+*/
+
+/* User definable modules */
+
+// Comment out with // modules that you are not using
+#define IsGPS    // Do we have a GPS connected
+#define IsNEWMTEK// Do we have MTEK with new firmware
+#define IsMAG    // Do we have a Magnetometer connected, if have remember to activate it from Configurator
+#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
+#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
+
+#define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
+
+/* User definable modules - END */
+
+// Frame build condiguration
+#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
+//#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
+
+
+/* ****************************************************************************** */
+/* ****************************** Includes ************************************** */
+/* ****************************************************************************** */
 
 #include <Wire.h>
 #include <APM_ADC.h>
 #include <APM_RC.h>
 #include <DataFlash.h>
 #include <APM_Compass.h>
-// Put your GPS library here:
-//#include <GPS_NMEA.h>  // MTK GPS
-#include <GPS_MTK.h>
-//#include <GPS_UBLOX.h>
+
+//#include <GPS_NMEA.h>   // General NMEA GPS 
+#include <GPS_MTK.h>      // MediaTEK DIY Drones GPS. 
+//#include <GPS_UBLOX.h>  // uBlox GPS
 
 // EEPROM storage for user configurable values
 #include <EEPROM.h>
-#include "UserSettings.h"
+#include "ArduCopter.h"
+#include "UserConfig.h"
 
-/* APM Hardware definitions */
-#define LED_Yellow 36
-#define LED_Red 35
-#define LED_Green 37
-#define RELE_pin 47
-#define SW1_pin 41
-#define SW2_pin 40
-/* *** */
+#define SWVER 1.31    // Current software version (only numeric values)
 
-/* AM PIN Definitions */
-/* Can be changed in future to AN extension ports */
-
-#define FR_LED 3  // Mega PE4 pin
-#define RE_LED 2  // Mega PE5 pin
-#define RI_LED 7  // Mega PH4 pin
-#define LE_LED 8  // Mega PH5 pin
-
-/* AM PIN Definitions - END */
 
 /* ***************************************************************************** */
-/*  CONFIGURATION PART                                                           */
+/* ************************ CONFIGURATION PART ********************************* */
 /* ***************************************************************************** */
 
-// ADC : Voltage reference 3.3v / 12bits(4096 steps) => 0.8mV/ADC step
-// ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
-// Tested value : 408
-#define GRAVITY 408 //this equivalent to 1G in the raw data coming from the accelerometer 
-#define Accel_Scale(x) x*(GRAVITY/9.81)//Scaling the raw data of the accel to actual acceleration in meters for seconds square
-
-#define ToRad(x) (x*0.01745329252)  // *pi/180
-#define ToDeg(x) (x*57.2957795131)  // *180/pi
-
-// IDG500 Sensitivity (from datasheet) => 2.0mV/º/s, 0.8mV/ADC step => 0.8/3.33 = 0.4
-// Tested values : 
-#define Gyro_Gain_X 0.4  //X axis Gyro gain
-#define Gyro_Gain_Y 0.41 //Y axis Gyro gain
-#define Gyro_Gain_Z 0.41 //Z axis Gyro gain
-#define Gyro_Scaled_X(x) x*ToRad(Gyro_Gain_X) //Return the scaled ADC raw data of the gyro in radians for second
-#define Gyro_Scaled_Y(x) x*ToRad(Gyro_Gain_Y) //Return the scaled ADC raw data of the gyro in radians for second
-#define Gyro_Scaled_Z(x) x*ToRad(Gyro_Gain_Z) //Return the scaled ADC raw data of the gyro in radians for second
-
-/*For debugging purposes*/
-#define OUTPUTMODE 1  //If value = 1 will print the corrected data, 0 will print uncorrected data of the gyros (with drift), 2 Accel only data
-
-//Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
-uint8_t sensors[6] = {
-  1,2,0,4,5,6};  // For ArduPilot Mega Sensor Shield Hardware
-
-//Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
-int SENSOR_SIGN[]={
-  1,-1,-1,-1,1,1,-1,-1,-1};  //{-1,1,-1,1,-1,1,-1,-1,-1};
-
-int AN[6]; //array that store the 6 ADC channels
-int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
-int gyro_temp;
-
-
-float G_Dt=0.02;    // Integration time for the gyros (DCM algorithm)
-
-float Accel_Vector[3]= {
-  0,0,0}; //Store the acceleration in a vector
-float Accel_Vector_unfiltered[3]= {
-  0,0,0}; //Store the acceleration in a vector
-//float Accel_magnitude;
-//float Accel_weight;
-float Gyro_Vector[3]= {
-  0,0,0};//Store the gyros rutn rate in a vector
-float Omega_Vector[3]= {
-  0,0,0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {
-  0,0,0};//Omega Proportional correction
-float Omega_I[3]= {
-  0,0,0};//Omega Integrator
-float Omega[3]= {
-  0,0,0};
-
-float errorRollPitch[3]= {
-  0,0,0};
-float errorYaw[3]= {
-  0,0,0};
-float errorCourse=0;
-float COGX=0; //Course overground X axis
-float COGY=1; //Course overground Y axis
-
-float roll=0;
-float pitch=0;
-float yaw=0;
-
-unsigned int counter=0;
-
-float DCM_Matrix[3][3]= {
-  {
-    1,0,0  }
-  ,{
-    0,1,0  }
-  ,{
-    0,0,1  }
-}; 
-float Update_Matrix[3][3]={
-  {
-    0,1,2  }
-  ,{
-    3,4,5  }
-  ,{
-    6,7,8  }
-}; //Gyros here
-
-float Temporary_Matrix[3][3]={
-  {
-    0,0,0  }
-  ,{
-    0,0,0  }
-  ,{
-    0,0,0  }
-};
-
-// GPS variables
-float speed_3d=0;
-int GPS_ground_speed=0;
-
-long timer=0; //general porpuse timer 
-long timer_old;
-
-// Attitude control variables
-float command_rx_roll=0;        // User commands
-float command_rx_roll_old;
-float command_rx_roll_diff;
-float command_rx_pitch=0;
-float command_rx_pitch_old;
-float command_rx_pitch_diff;
-float command_rx_yaw=0;
-float command_rx_yaw_diff;
-int control_roll;           // PID control results
-int control_pitch;
-int control_yaw;
-float K_aux;
-
-// Attitude PID controls
-float roll_I=0;
-float roll_D;
-float err_roll;
-float pitch_I=0;
-float pitch_D;
-float err_pitch;
-float yaw_I=0;
-float yaw_D;
-float err_yaw;
-
-//Position control
-long target_longitude;
-long target_lattitude;
-byte target_position;
-float gps_err_roll;
-float gps_err_roll_old;
-float gps_roll_D;
-float gps_roll_I=0;
-float gps_err_pitch;
-float gps_err_pitch_old;
-float gps_pitch_D;
-float gps_pitch_I=0;
-float command_gps_roll;
-float command_gps_pitch;
-
-//Altitude control
-int Initial_Throttle;
-int target_sonar_altitude;
-int err_altitude;
-int err_altitude_old;
-float command_altitude;
-float altitude_I;
-float altitude_D;
-
-// Sonar variables
-int Sonar_value=0;
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
-int Sonar_Counter=0;
-
-// AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
-byte AP_mode = 2;  
-
-// Mode LED timers and variables, used to blink LED_Green
-byte gled_status = HIGH;
-long gled_timer;
-int gled_speed;
-
-long t0;
-int num_iter;
-float aux_debug;
-
-// Radio definitions
-int Neutro_yaw;
-int ch_roll;
-int ch_pitch;
-int ch_throttle;
-int ch_yaw;
-int ch_aux;
-int ch_aux2;
-#define CHANN_CENTER 1500
-#define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
-
-// Motor variables
-#define FLIGHT_MODE_+
-//#define FLIGHT_MODE_X
-int frontMotor;
-int backMotor;
-int leftMotor;
-int rightMotor;
-byte motorArmed = 0;
-int minThrottle = 0;
-
-// Serial communication
-#define CONFIGURATOR
-char queryType;
-long tlmTimer = 0;
-
-// Arming/Disarming
-uint8_t Arming_counter=0;
-uint8_t Disarming_counter=0;
+// Normal users does not need to edit anything below these lines. If you have
+// need, go and change them in FrameConfig.h
 
 /* ************************************************************ */
 /* Altitude control... (based on sonar) */
@@ -276,10 +94,10 @@ void Altitude_control(int target_sonar_altitude)
 {
   err_altitude_old = err_altitude;
   err_altitude = target_sonar_altitude - Sonar_value;  
-  altitude_D = (float)(err_altitude-err_altitude_old)/G_Dt;
-  altitude_I += (float)err_altitude*G_Dt;
-  altitude_I = constrain(altitude_I,-100,100);
-  command_altitude = Initial_Throttle + KP_ALTITUDE*err_altitude + KD_ALTITUDE*altitude_D + KI_ALTITUDE*altitude_I;
+  altitude_D = (float)(err_altitude - err_altitude_old) / G_Dt;
+  altitude_I += (float)err_altitude * G_Dt;
+  altitude_I = constrain(altitude_I, -100, 100);
+  command_altitude = Initial_Throttle + KP_ALTITUDE * err_altitude + KD_ALTITUDE * altitude_D + KI_ALTITUDE * altitude_I;
 }
 
 /* ************************************************************ */
@@ -320,6 +138,8 @@ void Position_control(long lat_dest, long lon_dest)
   command_gps_pitch = constrain(command_gps_pitch,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
 }
 
+
+
 /* ************************************************************ */
 // STABLE MODE
 // ROLL, PITCH and YAW PID controls... 
@@ -332,19 +152,19 @@ void Attitude_control_v2()
   float pitch_rate;
 
   // ROLL CONTROL    
-  if (AP_mode==2)        // Normal Mode => Stabilization mode
+  if (AP_mode == 2)        // Normal Mode => Stabilization mode
     err_roll = command_rx_roll - ToDeg(roll);
   else
     err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control
 
-    err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
+    err_roll = constrain(err_roll, -25, 25);  // to limit max roll command...
 
   // New control term...
   roll_rate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
-  err_roll_rate = ((ch_roll-1500)>>1) - roll_rate;
+  err_roll_rate = ((ch_roll - ROLL_MID) >> 1) - roll_rate;
 
-  roll_I += err_roll*G_Dt;
-  roll_I = constrain(roll_I,-20,20);
+  roll_I += err_roll * G_Dt;
+  roll_I = constrain(roll_I, -20, 20);
   // D term implementation => two parts: gyro part and command part
   // To have a better (faster) response we can use the Gyro reading directly for the Derivative term...
   // We also add a part that takes into account the command from user (stick) to make the system more responsive to user inputs
@@ -352,8 +172,7 @@ void Attitude_control_v2()
 
   // PID control
   K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  control_roll = K_aux*err_roll + KD_QUAD_ROLL*roll_D + KI_QUAD_ROLL*roll_I + STABLE_MODE_KP_RATE*err_roll_rate; 
-  ; 
+  control_roll = K_aux * err_roll + KD_QUAD_ROLL * roll_D + KI_QUAD_ROLL * roll_I + STABLE_MODE_KP_RATE * err_roll_rate;  
 
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
@@ -365,7 +184,7 @@ void Attitude_control_v2()
 
   // New control term...
   pitch_rate = ToDeg(Omega[1]);
-  err_pitch_rate = ((ch_pitch-1500)>>1) - pitch_rate;
+  err_pitch_rate = ((ch_pitch - PITCH_MID) >> 1) - pitch_rate;
 
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -374,7 +193,7 @@ void Attitude_control_v2()
 
   // PID control
   K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
-  control_pitch = K_aux*err_pitch + KD_QUAD_PITCH*pitch_D + KI_QUAD_PITCH*pitch_I + STABLE_MODE_KP_RATE*err_pitch_rate; 
+  control_pitch = K_aux * err_pitch + KD_QUAD_PITCH * pitch_D + KI_QUAD_PITCH * pitch_I + STABLE_MODE_KP_RATE * err_pitch_rate; 
 
   // YAW CONTROL
   err_yaw = command_rx_yaw - ToDeg(yaw);
@@ -383,14 +202,14 @@ void Attitude_control_v2()
   else if(err_yaw < -180)
     err_yaw += 360;
 
-  err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
+  err_yaw = constrain(err_yaw, -60, 60);  // to limit max yaw command...
 
-  yaw_I += err_yaw*G_Dt;
-  yaw_I = constrain(yaw_I,-20,20);
+  yaw_I += err_yaw * G_Dt;
+  yaw_I = constrain(yaw_I, -20, 20);
   yaw_D = - ToDeg(Omega[2]);
 
   // PID control
-  control_yaw = KP_QUAD_YAW*err_yaw + KD_QUAD_YAW*yaw_D + KI_QUAD_YAW*yaw_I;
+  control_yaw = KP_QUAD_YAW * err_yaw + KD_QUAD_YAW * yaw_D + KI_QUAD_YAW * yaw_I;
 }
 
 // ACRO MODE
@@ -402,20 +221,20 @@ void Rate_control()
   // ROLL CONTROL
   currentRollRate = read_adc(0);      // I need a positive sign here
 
-  err_roll = ((ch_roll-1500) * xmitFactor) - currentRollRate;
+  err_roll = ((ch_roll - ROLL_MID) * xmitFactor) - currentRollRate;
 
-  roll_I += err_roll*G_Dt;
-  roll_I = constrain(roll_I,-20,20);
+  roll_I += err_roll * G_Dt;
+  roll_I = constrain(roll_I, -20, 20);
 
   roll_D = currentRollRate - previousRollRate;
   previousRollRate = currentRollRate;
 
   // PID control
-  control_roll = Kp_RateRoll*err_roll + Kd_RateRoll*roll_D + Ki_RateRoll*roll_I; 
+  control_roll = Kp_RateRoll * err_roll + Kd_RateRoll * roll_D + Ki_RateRoll * roll_I; 
 
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
-  err_pitch = ((ch_pitch-1500) * xmitFactor) - currentPitchRate;
+  err_pitch = ((ch_pitch - PITCH_MID) * xmitFactor) - currentPitchRate;
 
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -428,7 +247,7 @@ void Rate_control()
 
   // YAW CONTROL
   currentYawRate = read_adc(2);
-  err_yaw = ((ch_yaw-1500)* xmitFactor) - currentYawRate;
+  err_yaw = ((ch_yaw - YAW_MID) * xmitFactor) - currentYawRate;
 
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
@@ -459,12 +278,13 @@ int channel_filter(int ch, int ch_old)
     if (diff_ch_old>40)    
       return(ch_old+40);
   }
-  return((ch+ch_old)>>1);   // Small filtering
+  return((ch + ch_old) >> 1);   // Small filtering
   //return(ch);
 }
 
-
-/* ****** SETUP ********************************************************************* */
+/* ************************************************************ */
+/* **************** MAIN PROGRAM - SETUP ********************** */
+/* ************************************************************ */
 void setup()
 {
   int i;
@@ -474,17 +294,26 @@ void setup()
   pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
   pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
 
-  pinMode(SW1_pin,INPUT);  //Switch SW1 (pin PG0)
+  pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
 
-  pinMode(RELE_pin,OUTPUT);      // Rele output
+  pinMode(RELE_pin,OUTPUT);   // Rele output
   digitalWrite(RELE_pin,LOW);
 
-  delay(250);
+  delay(1000); // Wait until frame is not moving after initial power cord has connected
 
-  APM_RC.Init();    // APM Radio initialization
-  APM_ADC.Init();   // APM ADC library initialization
-  DataFlash.Init(); // DataFlash log initialization
-  GPS.Init();       // GPS Initialization
+  APM_RC.Init();             // APM Radio initialization
+  APM_ADC.Init();            // APM ADC library initialization
+  DataFlash.Init();          // DataFlash log initialization
+
+#ifdef IsGPS  
+  GPS.Init();                // GPS Initialization
+#ifdef IsNEWMTEK  
+  delay(250);
+  // DIY Drones MTEK GPS needs binary sentences activated if you upgraded to latest firmware.
+  // If your GPS shows solid blue but LED C (Red) does not go on, your GPS is on NMEA mode
+  Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n"); 
+#endif
+#endif
 
   readUserConfig(); // Load user configurable items from EEPROM
 
@@ -513,7 +342,6 @@ void setup()
     delay(30000);
   }
 
-  //delay(3000);
 
   Read_adc_raw();
   delay(20);
@@ -594,7 +422,10 @@ void setup()
   digitalWrite(LED_Green,HIGH);     // Ready to go...
 }
 
-/* ***** MAIN LOOP ***** */
+
+/* ************************************************************ */
+/* ************** MAIN PROGRAM - MAIN LOOP ******************** */
+/* ************************************************************ */
 void loop(){
 
   int aux;
@@ -615,6 +446,7 @@ void loop(){
 
     // IMU DCM Algorithm
     Read_adc_raw();
+#ifdef IsMAG
     if (MAGNETOMETER == 1) {
       if (counter > 10)  // Read compass data at 10Hz... (10 loop runs)
       {
@@ -623,6 +455,7 @@ void loop(){
         APM_Compass.Calculate(roll,pitch);  // Calculate heading
       }
     }
+#endif    
     Matrix_update(); 
     Normalize();
     Drift_correction();
@@ -630,9 +463,9 @@ void loop(){
     // *****************
 
     // Output data
-    log_roll = ToDeg(roll)*10;
-    log_pitch = ToDeg(pitch)*10;
-    log_yaw = ToDeg(yaw)*10;
+    log_roll = ToDeg(roll) * 10;
+    log_pitch = ToDeg(pitch) * 10;
+    log_yaw = ToDeg(yaw) * 10;
 
 #ifndef CONFIGURATOR    
     Serial.print(log_roll);
@@ -657,19 +490,19 @@ void loop(){
     {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
-      ch_roll = channel_filter(APM_RC.InputCh(0),ch_roll);
-      ch_pitch = channel_filter(APM_RC.InputCh(1),ch_pitch);
-      ch_throttle = channel_filter(APM_RC.InputCh(2),ch_throttle);
-      ch_yaw = channel_filter(APM_RC.InputCh(3),ch_yaw);
+      ch_roll = channel_filter(APM_RC.InputCh(0), ch_roll);
+      ch_pitch = channel_filter(APM_RC.InputCh(1), ch_pitch);
+      ch_throttle = channel_filter(APM_RC.InputCh(2), ch_throttle);
+      ch_yaw = channel_filter(APM_RC.InputCh(3), ch_yaw);
       ch_aux = APM_RC.InputCh(4);
       ch_aux2 = APM_RC.InputCh(5);
       command_rx_roll_old = command_rx_roll;
-      command_rx_roll = (ch_roll-CHANN_CENTER)/12.0;
-      command_rx_roll_diff = command_rx_roll-command_rx_roll_old;
+      command_rx_roll = (ch_roll-CHANN_CENTER) / 12.0;
+      command_rx_roll_diff = command_rx_roll - command_rx_roll_old;
       command_rx_pitch_old = command_rx_pitch;
-      command_rx_pitch = (ch_pitch-CHANN_CENTER)/12.0;
-      command_rx_pitch_diff = command_rx_pitch-command_rx_pitch_old;
-      aux_float = (ch_yaw-Neutro_yaw)/180.0;
+      command_rx_pitch = (ch_pitch-CHANN_CENTER) / 12.0;
+      command_rx_pitch_diff = command_rx_pitch - command_rx_pitch_old;
+      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
       command_rx_yaw += aux_float;
       command_rx_yaw_diff = aux_float;
       if (command_rx_yaw > 180)         // Normalize yaw to -180,180 degrees
@@ -680,7 +513,7 @@ void loop(){
       // Read through comments in Attitude_control() if you wish to use transmitter to adjust P gains
       // I use K_aux (channel 6) to adjust gains linked to a knob in the radio... [not used now]
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
-      K_aux = K_aux*0.8 + ((ch_aux2-1500)/300.0 + 1.7)*0.2;   // /300 + 1.0
+      K_aux = K_aux * 0.8 + ((ch_aux2-AUX_MID) / 300.0 + 1.7) * 0.2;   // /300 + 1.0
 
       if (K_aux < 0)
         K_aux = 0;
@@ -703,12 +536,14 @@ void loop(){
       Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,int(K_aux*100),(int)AP_mode);
     }  // END new radio data
 
+
     if (AP_mode==1)  // Position Control
     {
       if (target_position==0)   // If this is the first time we switch to Position control, actual position is our target position
       {
         target_lattitude = GPS.Lattitude;
         target_longitude = GPS.Longitude;
+
 #ifndef CONFIGURATOR
         Serial.println();
         Serial.print("* Target:");
@@ -743,14 +578,14 @@ void loop(){
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
 
-      if (GPS.Fix)
+      if (GPS.Fix >= 2)
         digitalWrite(LED_Red,HIGH);  // GPS Fix => Blue LED
       else
         digitalWrite(LED_Red,LOW);
 
       if (AP_mode==1)
       {
-        if ((target_position==1)&&(GPS.Fix))
+        if ((target_position==1) && (GPS.Fix))
         {
           Position_control(target_lattitude,target_longitude);  // Call position hold routine
         }
@@ -783,7 +618,7 @@ void loop(){
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
       if (ch_yaw > 1800) {
-        if (Arming_counter>240){
+        if (Arming_counter > ARM_DELAY){
           motorArmed = 1;
           minThrottle = 1100;
         }
@@ -794,7 +629,7 @@ void loop(){
         Arming_counter=0;
       // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
       if (ch_yaw < 1200) {
-        if (Disarming_counter>240){
+        if (Disarming_counter > DISARM_DELAY){
           motorArmed = 0;
           minThrottle = MIN_THROTTLE;
         }
@@ -846,6 +681,7 @@ void loop(){
     APM_RC.OutputCh(1, leftMotor);    // Left motor
     APM_RC.OutputCh(2, frontMotor);   // Front motor
     APM_RC.OutputCh(3, backMotor);   // Back motor     
+    
     // InstantPWM
     APM_RC.Force_Out0_Out1();
     APM_RC.Force_Out2_Out3();
@@ -862,17 +698,21 @@ void loop(){
   }
 #endif
 
-  // AM and Mode lights
+  // AM and Mode status LED lights
   if(millis() - gled_timer > gled_speed) {
     gled_timer = millis();
     if(gled_status == HIGH) { 
       digitalWrite(LED_Green, LOW);
+#ifdef IsAM      
       digitalWrite(RE_LED, LOW);
+#endif
       gled_status = LOW;
     } 
     else {
       digitalWrite(LED_Green, HIGH);
+#ifdef IsAM
       if(motorArmed) digitalWrite(RE_LED, HIGH);
+#endif
       gled_status = HIGH;
     } 
   }

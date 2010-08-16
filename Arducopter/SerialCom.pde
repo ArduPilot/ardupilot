@@ -1,22 +1,22 @@
 /*
   ArduCopter v1.2 - June 2010
-  www.ArduCopter.com
-  Copyright (c) 2010.  All rights reserved.
-  An Open Source Arduino based multicopter.
+ www.ArduCopter.com
+ Copyright (c) 2010.  All rights reserved.
+ An Open Source Arduino based multicopter.
  
-  This program is free software: you can redistribute it and/or modify 
-  it under the terms of the GNU General Public License as published by 
-  the Free Software Foundation, either version 3 of the License, or 
-  (at your option) any later version. 
-
-  This program is distributed in the hope that it will be useful, 
-  but WITHOUT ANY WARRANTY; without even the implied warranty of 
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
-  GNU General Public License for more details. 
-
-  You should have received a copy of the GNU General Public License 
-  along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ This program is free software: you can redistribute it and/or modify 
+ it under the terms of the GNU General Public License as published by 
+ the Free Software Foundation, either version 3 of the License, or 
+ (at your option) any later version. 
+ 
+ This program is distributed in the hope that it will be useful, 
+ but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ GNU General Public License for more details. 
+ 
+ You should have received a copy of the GNU General Public License 
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 void readSerialCommand() {
   // Check for serial message
@@ -182,19 +182,32 @@ void sendSerialTelemetry() {
   float aux_float[3]; // used for sensor calibration
   switch (queryType) {
   case '=': // Reserved debug command to view any variable from Serial Monitor
-    Serial.print("throttle =");Serial.println(ch_throttle);
-    Serial.print("control roll =");Serial.println(control_roll-CHANN_CENTER);
-    Serial.print("control pitch =");Serial.println(control_pitch-CHANN_CENTER);
-    Serial.print("control yaw =");Serial.println(control_yaw-CHANN_CENTER);
-    Serial.print("front left yaw =");Serial.println(frontMotor);
-    Serial.print("front right yaw =");Serial.println(rightMotor);
-    Serial.print("rear left yaw =");Serial.println(leftMotor);
-    Serial.print("rear right motor =");Serial.println(backMotor);Serial.println();
-    
-    Serial.print("current roll rate =");Serial.println(read_adc(0));
-    Serial.print("current pitch rate =");Serial.println(read_adc(1));
-    Serial.print("current yaw rate =");Serial.println(read_adc(2));
-    Serial.print("command rx yaw =");Serial.println(command_rx_yaw);
+    Serial.print("throttle =");
+    Serial.println(ch_throttle);
+    Serial.print("control roll =");
+    Serial.println(control_roll-CHANN_CENTER);
+    Serial.print("control pitch =");
+    Serial.println(control_pitch-CHANN_CENTER);
+    Serial.print("control yaw =");
+    Serial.println(control_yaw-CHANN_CENTER);
+    Serial.print("front left yaw =");
+    Serial.println(frontMotor);
+    Serial.print("front right yaw =");
+    Serial.println(rightMotor);
+    Serial.print("rear left yaw =");
+    Serial.println(leftMotor);
+    Serial.print("rear right motor =");
+    Serial.println(backMotor);
+    Serial.println();
+
+    Serial.print("current roll rate =");
+    Serial.println(read_adc(0));
+    Serial.print("current pitch rate =");
+    Serial.println(read_adc(1));
+    Serial.print("current yaw rate =");
+    Serial.println(read_adc(2));
+    Serial.print("command rx yaw =");
+    Serial.println(command_rx_yaw);
     Serial.println(); 
     queryType = 'X';
     break;
@@ -379,8 +392,11 @@ void sendSerialTelemetry() {
   case 'X': // Stop sending messages
     break;
   case '!': // Send flight software version
-    Serial.println("1.2");
+    Serial.println(SWVER);
     queryType = 'X';
+    break;
+  case '.': // Modify GPS settings
+    Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
     break;
   }
 }
@@ -401,10 +417,12 @@ float readFloatSerial() {
       timeout = 0;
       index++;
     }
-  }  while ((data[constrain(index-1, 0, 128)] != ';') && (timeout < 5) && (index < 128));
+  }  
+  while ((data[constrain(index-1, 0, 128)] != ';') && (timeout < 5) && (index < 128));
   return atof(data);
 }
 
 void comma() {
   Serial.print(',');
 }
+
