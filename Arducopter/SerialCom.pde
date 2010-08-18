@@ -129,6 +129,9 @@ void readSerialCommand() {
       writeEEPROM(Ki_RateYaw, KI_RATEYAW_ADR);
       writeEEPROM(Kd_RateYaw, KD_RATEYAW_ADR);
       writeEEPROM(xmitFactor, XMITFACTOR_ADR);
+      writeEEPROM(roll_mid, CHROLL_MID);
+      writeEEPROM(pitch_mid, CHPITCH_MID);
+      writeEEPROM(yaw_mid, CHYAW_MID);
       break;
     case 'Y': // Initialize EEPROM with default values
       KP_QUAD_ROLL = 1.8;
@@ -173,6 +176,9 @@ void readSerialCommand() {
       Ki_RateYaw = 0.3;
       Kd_RateYaw = 0;
       xmitFactor = 0.8;
+      roll_mid = 1500;
+      pitch_mid = 1500;
+      yaw_mid = 1500;
       break;
     }
   }
@@ -289,6 +295,7 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   case 'L': // Spare
+    RadioCalibration();
     queryType = 'X';
     break;
   case 'N': // Send magnetometer config
@@ -385,7 +392,14 @@ void sendSerialTelemetry() {
     comma();
     Serial.print(ch_aux); // AUX1 (Mode)
     comma();
-    Serial.println(ch_aux2); // AUX2  
+    Serial.print(ch_aux2); // AUX2 
+    comma();
+    Serial.print(roll_mid); // Roll MID value
+    comma();
+    Serial.print(pitch_mid); // Pitch MID value
+    comma();
+    Serial.println(yaw_mid); // Yaw MID Value
+
     break;
   case 'V': // Spare
     break;
@@ -422,7 +436,9 @@ float readFloatSerial() {
   return atof(data);
 }
 
+/*
 void comma() {
-  Serial.print(',');
-}
+ Serial.print(',');
+ }
+ */
 

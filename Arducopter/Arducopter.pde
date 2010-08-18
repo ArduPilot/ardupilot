@@ -161,7 +161,7 @@ void Attitude_control_v2()
 
   // New control term...
   roll_rate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
-  err_roll_rate = ((ch_roll - ROLL_MID) >> 1) - roll_rate;
+  err_roll_rate = ((ch_roll - roll_mid) >> 1) - roll_rate;
 
   roll_I += err_roll * G_Dt;
   roll_I = constrain(roll_I, -20, 20);
@@ -184,7 +184,7 @@ void Attitude_control_v2()
 
   // New control term...
   pitch_rate = ToDeg(Omega[1]);
-  err_pitch_rate = ((ch_pitch - PITCH_MID) >> 1) - pitch_rate;
+  err_pitch_rate = ((ch_pitch - pitch_mid) >> 1) - pitch_rate;
 
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -221,7 +221,7 @@ void Rate_control()
   // ROLL CONTROL
   currentRollRate = read_adc(0);      // I need a positive sign here
 
-  err_roll = ((ch_roll - ROLL_MID) * xmitFactor) - currentRollRate;
+  err_roll = ((ch_roll - roll_mid) * xmitFactor) - currentRollRate;
 
   roll_I += err_roll * G_Dt;
   roll_I = constrain(roll_I, -20, 20);
@@ -234,7 +234,7 @@ void Rate_control()
 
   // PITCH CONTROL
   currentPitchRate = read_adc(1);
-  err_pitch = ((ch_pitch - PITCH_MID) * xmitFactor) - currentPitchRate;
+  err_pitch = ((ch_pitch - pitch_mid) * xmitFactor) - currentPitchRate;
 
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
@@ -247,7 +247,7 @@ void Rate_control()
 
   // YAW CONTROL
   currentYawRate = read_adc(2);
-  err_yaw = ((ch_yaw - YAW_MID) * xmitFactor) - currentYawRate;
+  err_yaw = ((ch_yaw - yaw_mid) * xmitFactor) - currentYawRate;
 
   yaw_I += err_yaw*G_Dt;
   yaw_I = constrain(yaw_I,-20,20);
@@ -316,6 +316,12 @@ void setup()
 #endif
 
   readUserConfig(); // Load user configurable items from EEPROM
+  
+  // Safety measure for Channel mids
+  if(roll_mid < 1400 || roll_mid > 1600) roll_mid = 1500;
+  if(pitch_mid < 1400 || pitch_mid > 1600) pitch_mid = 1500;
+  if(yaw_mid < 1400 || yaw_mid > 1600) yaw_mid = 1500;
+
 
   // RC channels Initialization (Quad motors)  
   APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
@@ -341,7 +347,6 @@ void setup()
     Log_Read(1,1000);
     delay(30000);
   }
-
 
   Read_adc_raw();
   delay(20);
@@ -371,7 +376,7 @@ void setup()
   for(int y=0; y<=2; y++)   
     AN_OFFSET[y]=aux_float[y];
 
-  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
+//  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
 #ifndef CONFIGURATOR
   for(i=0;i<6;i++)
   {
@@ -380,10 +385,11 @@ void setup()
   }
 
   Serial.print("Yaw neutral value:");
-  Serial.println(Neutro_yaw);
+//  Serial.println(Neutro_yaw);
+  Serial.print(yaw_mid);
 #endif
 
-#if (RADIO_TEST_MODE)    // RADIO TEST MODE TO TEST RADIO CHANNELS
+#ifdef RADIO_TEST_MODE    // RADIO TEST MODE TO TEST RADIO CHANNELS
   while(1)
   {
     if (APM_RC.GetState()==1)
@@ -502,7 +508,8 @@ void loop(){
       command_rx_pitch_old = command_rx_pitch;
       command_rx_pitch = (ch_pitch-CHANN_CENTER) / 12.0;
       command_rx_pitch_diff = command_rx_pitch - command_rx_pitch_old;
-      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
+//      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
+      aux_float = (ch_yaw-yaw_mid) / 180.0;
       command_rx_yaw += aux_float;
       command_rx_yaw_diff = aux_float;
       if (command_rx_yaw > 180)         // Normalize yaw to -180,180 degrees

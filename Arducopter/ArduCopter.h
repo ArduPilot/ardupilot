@@ -19,6 +19,7 @@
 */
 
 #include "WProgram.h"
+#include "UserConfig.h"
 
 /*******************************************************************/
 // ArduPilot Mega specific hardware and software settings
@@ -214,6 +215,10 @@ int num_iter;
 float aux_debug;
 
 // Radio definitions
+int roll_mid;
+int pitch_mid;
+int yaw_mid;
+
 int Neutro_yaw;
 int ch_roll;
 int ch_pitch;
@@ -329,6 +334,9 @@ float xmitFactor;
 #define KP_RATEYAW_ADR 156
 #define KI_RATEYAW_ADR 160
 #define KD_RATEYAW_ADR 164
+#define CHROLL_MID 168
+#define CHPITCH_MID 172
+#define CHYAW_MID 176
 
 // Utilities for writing and reading from the EEPROM
 float readEEPROM(int address) {
@@ -396,4 +404,8 @@ void readUserConfig() {
   Ki_RateYaw = readEEPROM(KI_RATEYAW_ADR);
   Kd_RateYaw = readEEPROM(KD_RATEYAW_ADR);
   xmitFactor = readEEPROM(XMITFACTOR_ADR);
+  roll_mid = readEEPROM(CHROLL_MID);
+  pitch_mid = readEEPROM(CHPITCH_MID);
+  yaw_mid = readEEPROM(CHYAW_MID);
+
 }

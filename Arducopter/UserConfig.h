@@ -59,10 +59,10 @@ TODO:
 
 //#define RADIO_TEST_MODE
 
-#define ROLL_MID 1500    // Radio Roll channel mid value
-#define PITCH_MID 1500    // Radio Pitch channel mid value
+#define ROLL_MID 1478    // Radio Roll channel mid value
+#define PITCH_MID 1483    // Radio Pitch channel mid value
 #define YAW_MID 1500    // Radio Yaw channel mid value
-#define THROTTLE_MID 1500    // Radio Throttle channel mid value
+#define THROTTLE_MID 1502    // Radio Throttle channel mid value
 #define AUX_MID 1500
 
 #define CHANN_CENTER 1500       // Channel center, legacy
