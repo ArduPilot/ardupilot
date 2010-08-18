@@ -1,5 +1,5 @@
 /* ********************************************************************** */
-/* j                   ArduCopter Quadcopter code                          */
+/*                    ArduCopter Quadcopter code                          */
 /*                                                                        */
 /* Quadcopter code from AeroQuad project and ArduIMU quadcopter project   */
 /* IMU DCM code from Diydrones.com                                        */
@@ -87,58 +87,6 @@
 
 // Normal users does not need to edit anything below these lines. If you have
 // need, go and change them in FrameConfig.h
-
-/* ************************************************************ */
-/* Altitude control... (based on sonar) */
-void Altitude_control(int target_sonar_altitude)
-{
-  err_altitude_old = err_altitude;
-  err_altitude = target_sonar_altitude - Sonar_value;  
-  altitude_D = (float)(err_altitude - err_altitude_old) / G_Dt;
-  altitude_I += (float)err_altitude * G_Dt;
-  altitude_I = constrain(altitude_I, -100, 100);
-  command_altitude = Initial_Throttle + KP_ALTITUDE * err_altitude + KD_ALTITUDE * altitude_D + KI_ALTITUDE * altitude_I;
-}
-
-/* ************************************************************ */
-/* Position control... */
-void Position_control(long lat_dest, long lon_dest)
-{
-  long Lon_diff;
-  long Lat_diff;
-  float gps_err_roll;
-  float gps_err_pitch;
-
-  Lon_diff = lon_dest - GPS.Longitude;
-  Lat_diff = lat_dest - GPS.Lattitude;
-
-  // ROLL
-  gps_err_roll_old = gps_err_roll;
-  //Optimization : cos(yaw) = DCM_Matrix[0][0] ;  sin(yaw) = DCM_Matrix[1][0] 
-  gps_err_roll = (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[0][0] - (float)Lat_diff*DCM_Matrix[1][0];
-
-  gps_roll_D = (gps_err_roll-gps_err_roll_old)/G_Dt;
-
-  gps_roll_I += gps_err_roll*G_Dt;
-  gps_roll_I = constrain(gps_roll_I,-500,500);
-
-  command_gps_roll = KP_GPS_ROLL*gps_err_roll + KD_GPS_ROLL*gps_roll_D + KI_GPS_ROLL*gps_roll_I;
-  command_gps_roll = constrain(command_gps_roll,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
-
-  // PITCH
-  gps_err_pitch_old = gps_err_pitch;
-  gps_err_pitch = -(float)Lat_diff*DCM_Matrix[0][0]- (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[1][0];
-
-  gps_pitch_D = (gps_err_pitch-gps_err_pitch_old)/G_Dt;
-
-  gps_pitch_I += gps_err_pitch*G_Dt;
-  gps_pitch_I = constrain(gps_pitch_I,-500,500);
-
-  command_gps_pitch = KP_GPS_PITCH*gps_err_pitch + KD_GPS_PITCH*gps_pitch_D + KI_GPS_PITCH*gps_pitch_I;
-  command_gps_pitch = constrain(command_gps_pitch,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
-}
-
-
 
 /* ************************************************************ */
 // STABLE MODE
@@ -448,7 +396,7 @@ void loop(){
     counter++;
     timer_old = timer;
     timer=millis();
-    G_Dt = (timer-timer_old)/1000.0;      // Real time of loop run 
+    G_Dt = (timer-timer_old)*0.001;      // Real time of loop run 
 
     // IMU DCM Algorithm
     Read_adc_raw();
@@ -574,6 +522,9 @@ void loop(){
     GPS.Read();
     if (GPS.NewData)  // New GPS data?
     {
+      GPS_timer_old=GPS_timer;   // Update GPS timer
+      GPS_timer = timer;
+      GPS_Dt = (GPS_timer-GPS_timer_old)*0.001;   // GPS_Dt
       GPS.NewData=0;  // We Reset the flag...
 
       //Output GPS data

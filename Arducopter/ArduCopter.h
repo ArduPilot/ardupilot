@@ -145,8 +145,12 @@ float Temporary_Matrix[3][3]={
 float speed_3d=0;
 int GPS_ground_speed=0;
 
-long timer=0; //general porpuse timer 
+// Main timers
+long timer=0; 
 long timer_old;
+long GPS_timer;
+long GPS_timer_old;
+float GPS_Dt=0.2;   // GPS Dt
 
 // Attitude control variables
 float command_rx_roll=0;        // User commands
