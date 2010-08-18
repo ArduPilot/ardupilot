@@ -192,7 +192,8 @@ void GPS_UBLOX_Class::parse_ubx_gps(void)
       j+=4;
       //Altitude = join_4_bytes(&UBX_buffer[j]);  // elipsoid heigth mm
       j+=4;
-      Altitude = (float)join_4_bytes(&UBX_buffer[j]);  // MSL heigth mm
+      Altitude = (float)join_4_bytes(&UBX_buffer[j]);	// MSL heigth mm
+	  Altitude /= 10.;									// Rescale altitude to cm
       //j+=4;
       /*
       hacc = (float)join_4_bytes(&UBX_buffer[j])/(float)1000;
