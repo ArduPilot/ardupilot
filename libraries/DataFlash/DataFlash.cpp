@@ -21,6 +21,7 @@
 		WriteInt(data) :  Write an integer (2 bytes)
 		WriteLong(data) : Write a long (4 bytes)
 		StartRead(page) : Start a read on (page)
+		GetWritePage() : Returns the last page written to
 		GetPage() : Returns the last page read
 		ReadByte()
 		ReadInt()
@@ -272,6 +273,12 @@ void DataFlash_Class::WriteLong(long data)
   WriteByte(data>>16);
   WriteByte(data>>8);
   WriteByte(data&0xFF);  // Last byte
+}
+
+// Get the last page written to
+int DataFlash_Class::GetWritePage() 
+{
+  return(df_PageAdr);
 }
 
 // Get the last page read

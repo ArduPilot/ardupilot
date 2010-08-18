@@ -67,6 +67,7 @@ class DataFlash_Class
 	void Init();
 	void ReadManufacturerID();
 	int GetPage();
+	int GetWritePage();
 	void PageErase (unsigned int PageAdr);
 	// Write methods
 	void StartWrite(int PageAdr);
