@@ -33,27 +33,27 @@ void Position_control(long lat_dest, long lon_dest)
   // ROLL
   gps_err_roll_old = gps_err_roll;
   //Optimization : cos(yaw) = DCM_Matrix[0][0] ;  sin(yaw) = DCM_Matrix[1][0] 
-  gps_err_roll = (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[0][0] - (float)Lat_diff*DCM_Matrix[1][0];
+  gps_err_roll = (float)Lon_diff * GEOG_CORRECTION_FACTOR * DCM_Matrix[0][0] - (float)Lat_diff * DCM_Matrix[1][0];
 
-  gps_roll_D = (gps_err_roll-gps_err_roll_old)/GPS_Dt;
+  gps_roll_D = (gps_err_roll-gps_err_roll_old) / GPS_Dt;
 
-  gps_roll_I += gps_err_roll*GPS_Dt;
-  gps_roll_I = constrain(gps_roll_I,-800,800);
+  gps_roll_I += gps_err_roll * GPS_Dt;
+  gps_roll_I = constrain(gps_roll_I, -800, 800);
 
-  command_gps_roll = KP_GPS_ROLL*gps_err_roll + KD_GPS_ROLL*gps_roll_D + KI_GPS_ROLL*gps_roll_I;
-  command_gps_roll = constrain(command_gps_roll,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
+  command_gps_roll = KP_GPS_ROLL * gps_err_roll + KD_GPS_ROLL * gps_roll_D + KI_GPS_ROLL * gps_roll_I;
+  command_gps_roll = constrain(command_gps_roll, -GPS_MAX_ANGLE, GPS_MAX_ANGLE); // Limit max command
   
   // PITCH
   gps_err_pitch_old = gps_err_pitch;
-  gps_err_pitch = -(float)Lat_diff*DCM_Matrix[0][0]- (float)Lon_diff*GEOG_CORRECTION_FACTOR*DCM_Matrix[1][0];
+  gps_err_pitch = -(float)Lat_diff * DCM_Matrix[0][0] - (float)Lon_diff * GEOG_CORRECTION_FACTOR * DCM_Matrix[1][0];
 
-  gps_pitch_D = (gps_err_pitch-gps_err_pitch_old)/GPS_Dt;
+  gps_pitch_D = (gps_err_pitch - gps_err_pitch_old) / GPS_Dt;
 
-  gps_pitch_I += gps_err_pitch*GPS_Dt;
-  gps_pitch_I = constrain(gps_pitch_I,-800,800);
+  gps_pitch_I += gps_err_pitch * GPS_Dt;
+  gps_pitch_I = constrain(gps_pitch_I, -800, 800);
 
-  command_gps_pitch = KP_GPS_PITCH*gps_err_pitch + KD_GPS_PITCH*gps_pitch_D + KI_GPS_PITCH*gps_pitch_I;
-  command_gps_pitch = constrain(command_gps_pitch,-GPS_MAX_ANGLE,GPS_MAX_ANGLE); // Limit max command
+  command_gps_pitch = KP_GPS_PITCH * gps_err_pitch + KD_GPS_PITCH * gps_pitch_D + KI_GPS_PITCH * gps_pitch_I;
+  command_gps_pitch = constrain(command_gps_pitch, -GPS_MAX_ANGLE, GPS_MAX_ANGLE); // Limit max command
 }
 
 /* ************************************************************ */

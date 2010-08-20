@@ -25,13 +25,14 @@ TODO:
 
 ************************************************************* */
 
+                 
 
 /*************************************************************/
 // Safety & Security 
 
 // Arm & Disarm delays
-#define ARM_DELAY 200
-#define DISARM_DELAY 100
+#define ARM_DELAY 200      // milliseconds of how long you need to keep rudder to max right for arming motors
+#define DISARM_DELAY 100   // milliseconds of how long you need to keep rudder to max left for disarming motors
 
 
 /*************************************************************/
@@ -57,10 +58,10 @@ TODO:
 
 //#define RADIO_TEST_MODE
 
-#define ROLL_MID 1478    // Radio Roll channel mid value
-#define PITCH_MID 1483    // Radio Pitch channel mid value
+#define ROLL_MID 1500    // Radio Roll channel mid value
+#define PITCH_MID 1500    // Radio Pitch channel mid value
 #define YAW_MID 1500    // Radio Yaw channel mid value
-#define THROTTLE_MID 1502    // Radio Throttle channel mid value
+#define THROTTLE_MID 1505    // Radio Throttle channel mid value
 #define AUX_MID 1500
 
 #define CHANN_CENTER 1500       // Channel center, legacy
@@ -68,25 +69,25 @@ TODO:
 
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;
-float KD_QUAD_ROLL;
 float KI_QUAD_ROLL;
+float KD_QUAD_ROLL;
 float KP_QUAD_PITCH;
-float KD_QUAD_PITCH;
 float KI_QUAD_PITCH;
+float KD_QUAD_PITCH;
 float KP_QUAD_YAW;
-float KD_QUAD_YAW;
 float KI_QUAD_YAW;
+float KD_QUAD_YAW;
 float STABLE_MODE_KP_RATE;
 float KP_GPS_ROLL;
-float KD_GPS_ROLL;
 float KI_GPS_ROLL;
+float KD_GPS_ROLL;
 float KP_GPS_PITCH;
-float KD_GPS_PITCH;
 float KI_GPS_PITCH;
+float KD_GPS_PITCH;
 float GPS_MAX_ANGLE;
 float KP_ALTITUDE;
-float KD_ALTITUDE;
 float KI_ALTITUDE;
+float KD_ALTITUDE;
 int acc_offset_x;
 int acc_offset_y;
 int acc_offset_z;
@@ -126,25 +127,25 @@ float ch_aux2_offset = 0;
 // when a "Default EEPROM Value" command is sent through serial interface
 void setUserConfig() {
   KP_QUAD_ROLL = 1.8;
-  KD_QUAD_ROLL = 0.4; //0.48
   KI_QUAD_ROLL = 0.30; //0.4
+  KD_QUAD_ROLL = 0.4; //0.48
   KP_QUAD_PITCH = 1.8;
-  KD_QUAD_PITCH = 0.4; //0.48
   KI_QUAD_PITCH = 0.30; //0.4
+  KD_QUAD_PITCH = 0.4; //0.48
   KP_QUAD_YAW = 3.6;
-  KD_QUAD_YAW = 1.2;
   KI_QUAD_YAW = 0.15;
+  KD_QUAD_YAW = 1.2;
   STABLE_MODE_KP_RATE = 0.2;  // New param for stable mode
-  KP_GPS_ROLL = 0.012;
-  KD_GPS_ROLL = 0.005;
-  KI_GPS_ROLL = 0.004;
-  KP_GPS_PITCH = 0.012;
-  KD_GPS_PITCH = 0.005;
-  KI_GPS_PITCH = 0.004;
-  GPS_MAX_ANGLE = 10;
+  KP_GPS_ROLL = 0.02;
+  KI_GPS_ROLL = 0.008;
+  KD_GPS_ROLL = 0.006;
+  KP_GPS_PITCH = 0.02;
+  KI_GPS_PITCH = 0.008;
+  KD_GPS_PITCH = 0.006;
+  GPS_MAX_ANGLE = 18;
   KP_ALTITUDE = 0.8;
-  KD_ALTITUDE = 0.2;
   KI_ALTITUDE = 0.2;
+  KD_ALTITUDE = 0.2;
   acc_offset_x = 2073;
   acc_offset_y = 2056;
   acc_offset_z = 2010;
@@ -186,25 +187,25 @@ void setUserConfig() {
 
 // EEPROM storage addresses
 #define KP_QUAD_ROLL_ADR 0
-#define KD_QUAD_ROLL_ADR 4
 #define KI_QUAD_ROLL_ADR 8
+#define KD_QUAD_ROLL_ADR 4
 #define KP_QUAD_PITCH_ADR 12
-#define KD_QUAD_PITCH_ADR 16
 #define KI_QUAD_PITCH_ADR 20
+#define KD_QUAD_PITCH_ADR 16
 #define KP_QUAD_YAW_ADR 24
-#define KD_QUAD_YAW_ADR 28
 #define KI_QUAD_YAW_ADR 32
+#define KD_QUAD_YAW_ADR 28
 #define STABLE_MODE_KP_RATE_ADR 36
 #define KP_GPS_ROLL_ADR 40
-#define KD_GPS_ROLL_ADR 44
 #define KI_GPS_ROLL_ADR 48
+#define KD_GPS_ROLL_ADR 44
 #define KP_GPS_PITCH_ADR 52
-#define KD_GPS_PITCH_ADR 56
 #define KI_GPS_PITCH_ADR 60
+#define KD_GPS_PITCH_ADR 56
 #define GPS_MAX_ANGLE_ADR 64
 #define KP_ALTITUDE_ADR 68
-#define KD_ALTITUDE_ADR 72
 #define KI_ALTITUDE_ADR 76
+#define KD_ALTITUDE_ADR 72
 #define acc_offset_x_ADR 80
 #define acc_offset_y_ADR 84
 #define acc_offset_z_ADR 88
@@ -268,25 +269,25 @@ void writeEEPROM(float value, int address) {
 
 void readUserConfig() {
   KP_QUAD_ROLL = readEEPROM(KP_QUAD_ROLL_ADR);
-  KD_QUAD_ROLL = readEEPROM(KD_QUAD_ROLL_ADR);
   KI_QUAD_ROLL = readEEPROM(KI_QUAD_ROLL_ADR);
+  KD_QUAD_ROLL = readEEPROM(KD_QUAD_ROLL_ADR);
   KP_QUAD_PITCH = readEEPROM(KP_QUAD_PITCH_ADR);
-  KD_QUAD_PITCH = readEEPROM(KD_QUAD_PITCH_ADR);
   KI_QUAD_PITCH = readEEPROM(KI_QUAD_PITCH_ADR);
+  KD_QUAD_PITCH = readEEPROM(KD_QUAD_PITCH_ADR);
   KP_QUAD_YAW = readEEPROM(KP_QUAD_YAW_ADR);
-  KD_QUAD_YAW = readEEPROM(KD_QUAD_YAW_ADR);
   KI_QUAD_YAW = readEEPROM(KI_QUAD_YAW_ADR);
+  KD_QUAD_YAW = readEEPROM(KD_QUAD_YAW_ADR);
   STABLE_MODE_KP_RATE = readEEPROM(STABLE_MODE_KP_RATE_ADR);
   KP_GPS_ROLL = readEEPROM(KP_GPS_ROLL_ADR);
-  KD_GPS_ROLL = readEEPROM(KD_GPS_ROLL_ADR);
   KI_GPS_ROLL = readEEPROM(KI_GPS_ROLL_ADR);
+  KD_GPS_ROLL = readEEPROM(KD_GPS_ROLL_ADR);
   KP_GPS_PITCH = readEEPROM(KP_GPS_PITCH_ADR);
-  KD_GPS_PITCH = readEEPROM(KD_GPS_PITCH_ADR);
   KI_GPS_PITCH = readEEPROM(KI_GPS_PITCH_ADR);
+  KD_GPS_PITCH = readEEPROM(KD_GPS_PITCH_ADR);
   GPS_MAX_ANGLE = readEEPROM(GPS_MAX_ANGLE_ADR);
   KP_ALTITUDE = readEEPROM(KP_ALTITUDE_ADR);
-  KD_ALTITUDE = readEEPROM(KD_ALTITUDE_ADR);
   KI_ALTITUDE = readEEPROM(KI_ALTITUDE_ADR);
+  KD_ALTITUDE = readEEPROM(KD_ALTITUDE_ADR);
   acc_offset_x = readEEPROM(acc_offset_x_ADR);
   acc_offset_y = readEEPROM(acc_offset_y_ADR);
   acc_offset_z = readEEPROM(acc_offset_z_ADR);

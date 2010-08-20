@@ -375,7 +375,7 @@ void sendSerialTelemetry() {
   case 'X': // Stop sending messages
     break;
   case '!': // Send flight software version
-    Serial.println(SWVER);
+    Serial.println(VER);
     queryType = 'X';
     break;
   case '.': // Modify GPS settings

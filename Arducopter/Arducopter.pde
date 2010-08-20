@@ -30,14 +30,20 @@
  GEAR OFF = Flight Assist (Stable Mode)
  
  **** LED Feedback ****
+ Bootup Sequence:
+ 1) A, B, C LED's blinking rapidly while waiting ESCs to bootup and initial shake to end from connecting battery
+ 2) A, B, C LED's have running light while calibrating Gyro/Acc's
+ 3) Green LED Solid after initialization finished
+ 
  Green LED On = APM Initialization Finished
  Yellow LED On = GPS Hold Mode
  Yellow LED Off = Flight Assist Mode (No GPS)
  Red LED On = GPS Fix, 2D or 3D
  Red LED Off = No GPS Fix
-
+ 
  Green LED blink slow = Motors armed, Stable mode
  Green LED blink rapid = Motors armed, Acro mode 
+
 */
 
 /* User definable modules */
@@ -50,6 +56,18 @@
 #define IsAM     // Do we have motormount LED's. AM = Atraction Mode
 
 #define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
+
+
+
+/**********************************************/
+// Not in use yet, starting to work with battery monitors and pressure sensors. 
+// Added 19-08-2010
+
+//#define UseAirspeed
+//#define UseBMP
+//#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it wired up!)
+
+/**********************************************/
 
 /* User definable modules - END */
 
@@ -67,6 +85,9 @@
 #include <APM_RC.h>
 #include <DataFlash.h>
 #include <APM_Compass.h>
+#ifdef UseBMP
+#include <APM_BMP085.h>
+#endif
 
 //#include <GPS_NMEA.h>   // General NMEA GPS 
 #include <GPS_MTK.h>      // MediaTEK DIY Drones GPS. 
@@ -77,7 +98,8 @@
 #include "ArduCopter.h"
 #include "UserConfig.h"
 
-#define SWVER 1.31    // Current software version (only numeric values)
+/* Software version */
+#define VER 1.32    // Current software version (only numeric values)
 
 
 /* ***************************************************************************** */
@@ -85,7 +107,7 @@
 /* ***************************************************************************** */
 
 // Normal users does not need to edit anything below these lines. If you have
-// need, go and change them in FrameConfig.h
+// need, go and change them in UserConfig.h
 
 /* ************************************************************ */
 // STABLE MODE
@@ -127,14 +149,14 @@ void Attitude_control_v2()
   else
     err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
 
-  err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
+  err_pitch = constrain(err_pitch, -25, 25);  // to limit max pitch command...
 
   // New control term...
   pitch_rate = ToDeg(Omega[1]);
   err_pitch_rate = ((ch_pitch - pitch_mid) >> 1) - pitch_rate;
 
-  pitch_I += err_pitch*G_Dt;
-  pitch_I = constrain(pitch_I,-20,20);
+  pitch_I += err_pitch * G_Dt;
+  pitch_I = constrain(pitch_I, -20, 20);
   // D term
   pitch_D = - pitch_rate;
 
@@ -197,7 +219,7 @@ void Rate_control()
   err_yaw = ((ch_yaw - yaw_mid) * xmitFactor) - currentYawRate;
 
   yaw_I += err_yaw*G_Dt;
-  yaw_I = constrain(yaw_I,-20,20);
+  yaw_I = constrain(yaw_I, -20, 20);
 
   yaw_D = currentYawRate - previousYawRate;
   previousYawRate = currentYawRate;
@@ -215,15 +237,15 @@ int channel_filter(int ch, int ch_old)
   if (ch_old==0)      // ch_old not initialized
     return(ch);
   diff_ch_old = ch - ch_old;      // Difference with old reading
-  if (diff_ch_old<0)
+  if (diff_ch_old < 0)
   {
-    if (diff_ch_old<-40)
-      return(ch_old-40);        // We limit the max difference between readings
+    if (diff_ch_old <- 40)
+      return(ch_old - 40);        // We limit the max difference between readings
   }
   else
   {
-    if (diff_ch_old>40)    
-      return(ch_old+40);
+    if (diff_ch_old > 40)    
+      return(ch_old + 40);
   }
   return((ch + ch_old) >> 1);   // Small filtering
   //return(ch);
@@ -234,7 +256,7 @@ int channel_filter(int ch, int ch_old)
 /* ************************************************************ */
 void setup()
 {
-  int i;
+  int i, j;
   float aux_float[3];
 
   pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
@@ -246,7 +268,17 @@ void setup()
   pinMode(RELE_pin,OUTPUT);   // Rele output
   digitalWrite(RELE_pin,LOW);
 
-  delay(1000); // Wait until frame is not moving after initial power cord has connected
+  //  delay(1000); // Wait until frame is not moving after initial power cord has connected
+  for(i = 0; i <= 50; i++) {
+    digitalWrite(LED_Green, HIGH);
+    digitalWrite(LED_Yellow, HIGH);
+    digitalWrite(LED_Red, HIGH);
+    delay(20);
+    digitalWrite(LED_Green, LOW);
+    digitalWrite(LED_Yellow, LOW);
+    digitalWrite(LED_Red, LOW);
+    delay(20);
+  }
 
   APM_RC.Init();             // APM Radio initialization
   APM_ADC.Init();            // APM ADC library initialization
@@ -263,12 +295,11 @@ void setup()
 #endif
 
   readUserConfig(); // Load user configurable items from EEPROM
-  
+
   // Safety measure for Channel mids
   if(roll_mid < 1400 || roll_mid > 1600) roll_mid = 1500;
   if(pitch_mid < 1400 || pitch_mid > 1600) pitch_mid = 1500;
   if(yaw_mid < 1400 || yaw_mid > 1600) yaw_mid = 1500;
-
 
   // RC channels Initialization (Quad motors)  
   APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
@@ -306,6 +337,7 @@ void setup()
   aux_float[1] = gyro_offset_pitch;
   aux_float[2] = gyro_offset_yaw;
 
+  j = 0;
   // Take the gyro offset values
   for(i=0;i<300;i++)
   {
@@ -319,20 +351,42 @@ void setup()
     //Serial.println();
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
     delay(10);
+    
+    // Runnings lights effect to let user know that we are taking mesurements
+    if(j == 0) {
+      digitalWrite(LED_Green, HIGH);
+      digitalWrite(LED_Yellow, LOW);
+      digitalWrite(LED_Red, LOW);
+    } 
+    else if (j == 1) {
+      digitalWrite(LED_Green, LOW);
+      digitalWrite(LED_Yellow, HIGH);
+      digitalWrite(LED_Red, LOW);
+    } 
+    else {
+      digitalWrite(LED_Green, LOW);
+      digitalWrite(LED_Yellow, LOW);
+      digitalWrite(LED_Red, HIGH);
+    }
+    if((i % 5) == 0) j++;
+    if(j >= 3) j = 0;
   }
+  digitalWrite(LED_Green, LOW);
+  digitalWrite(LED_Yellow, LOW);
+  digitalWrite(LED_Red, LOW);
+
   for(int y=0; y<=2; y++)   
     AN_OFFSET[y]=aux_float[y];
 
-//  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
+  //  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
 #ifndef CONFIGURATOR
   for(i=0;i<6;i++)
   {
     Serial.print("AN[]:");
     Serial.println(AN_OFFSET[i]);
   }
-
   Serial.print("Yaw neutral value:");
-//  Serial.println(Neutro_yaw);
+  //  Serial.println(Neutro_yaw);
   Serial.print(yaw_mid);
 #endif
 
@@ -366,11 +420,13 @@ void setup()
   tlmTimer = millis();
   Read_adc_raw();        // Initialize ADC readings...
   delay(20);
-  
-    // Switch Left & Right lights on
+
+#ifdef IsAM
+  // Switch Left & Right lights on
   digitalWrite(RI_LED, HIGH);
   digitalWrite(LE_LED, HIGH); 
-  
+#endif
+
   motorArmed = 0;
   digitalWrite(LED_Green,HIGH);     // Ready to go...
 }
@@ -384,11 +440,11 @@ void loop(){
   int aux;
   int i;
   float aux_float;
+
   //Log variables
   int log_roll;
   int log_pitch;
   int log_yaw;
-
 
   if((millis()-timer)>=10)   // Main loop 100Hz
   {
@@ -409,12 +465,13 @@ void loop(){
       }
     }
 #endif    
+
     Matrix_update(); 
     Normalize();
     Drift_correction();
     Euler_angles();
-    // *****************
 
+    // *****************
     // Output data
     log_roll = ToDeg(roll) * 10;
     log_pitch = ToDeg(pitch) * 10;
@@ -427,7 +484,7 @@ void loop(){
     Serial.print(",");
     Serial.print(log_yaw);
 
-    for (int i=0;i<6;i++)
+    for (int i = 0; i < 6; i++)
     {
       Serial.print(AN[i]);
       Serial.print(",");
@@ -439,7 +496,7 @@ void loop(){
     // Write attitude to DataFlash log
     Log_Write_Attitude(log_roll,log_pitch,log_yaw);
 
-    if (APM_RC.GetState()==1)   // New radio frame?
+    if (APM_RC.GetState() == 1)   // New radio frame?
     {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
@@ -455,7 +512,7 @@ void loop(){
       command_rx_pitch_old = command_rx_pitch;
       command_rx_pitch = (ch_pitch-CHANN_CENTER) / 12.0;
       command_rx_pitch_diff = command_rx_pitch - command_rx_pitch_old;
-//      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
+      //      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
       aux_float = (ch_yaw-yaw_mid) / 180.0;
       command_rx_yaw += aux_float;
       command_rx_yaw_diff = aux_float;
@@ -604,8 +661,9 @@ void loop(){
     // Quadcopter mix
     // Ask Jose if we still need this IF statement, and if we want to do an ESC calibration
     if (motorArmed == 1) {   
-       digitalWrite(FR_LED, HIGH);    // AM-Mode
-     
+#ifdef IsAM
+      digitalWrite(FR_LED, HIGH);    // AM-Mode
+#endif
 #ifdef FLIGHT_MODE_+
       rightMotor = constrain(ch_throttle - control_roll - control_yaw, minThrottle, 2000);
       leftMotor = constrain(ch_throttle + control_roll - control_yaw, minThrottle, 2000);
@@ -620,9 +678,11 @@ void loop(){
 #endif
     }
     if (motorArmed == 0) {
+#ifdef IsAM
       digitalWrite(FR_LED, LOW);    // AM-Mode
+#endif
       digitalWrite(LED_Green,HIGH); // Ready LED on
-      
+
       rightMotor = MIN_THROTTLE;
       leftMotor = MIN_THROTTLE;
       frontMotor = MIN_THROTTLE;
@@ -638,8 +698,8 @@ void loop(){
     APM_RC.OutputCh(1, leftMotor);    // Left motor
     APM_RC.OutputCh(2, frontMotor);   // Front motor
     APM_RC.OutputCh(3, backMotor);   // Back motor     
-    
-    // InstantPWM
+
+      // InstantPWM
     APM_RC.Force_Out0_Out1();
     APM_RC.Force_Out2_Out3();
 
@@ -674,7 +734,10 @@ void loop(){
     } 
   }
 
+} // End of void loop()
 
 
-}
+// END of Arducopter.pde
+
+
 

@@ -27,6 +27,12 @@
 // User configurable settings are on UserConfig.h
 /*******************************************************************/
 
+/**************************************************************/
+// Special features that might disapear in future releases
+
+//#define jpframe  // This is only Jani's special frame, you should never use unless you know what you are doing
+                 // As default this should be always checked off.
+
 
 /* APM Hardware definitions */
 #define LED_Yellow 36
@@ -48,12 +54,16 @@
 uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Hardware
 
 // Sensor: GYROX, GYROY, GYROZ,   ACCELX, ACCELY, ACCELZ,     MAGX, MAGY, MAGZ
-int SENSOR_SIGN[]={
-  1, -1, -1,         // GYROX, GYROY, GYROZ
- -1, 1, 1,           // ACCELX, ACCELY, ACCELZ
- -1, -1, -1};        // MAGNETOX, MAGNETOY, MAGNETOZ
- //{-1,1,-1,1,-1,1,-1,-1,-1};
 
+#ifndef jpframe
+int SENSOR_SIGN[]={
+  1, -1, -1,    -1, 1, 1,     -1, -1, -1}; 
+ //{-1,1,-1,1,-1,1,-1,-1,-1};
+#else
+int SENSOR_SIGN[]={
+  1, -1, 1,    -1, 1, 1,     -1, -1, -1}; 
+ //{-1,1,-1,1,-1,1,-1,-1,-1};
+#endif
 
 /* APM Hardware definitions, END */
 
@@ -91,54 +101,42 @@ int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
 int gyro_temp;
 
 
-float G_Dt=0.02;    // Integration time for the gyros (DCM algorithm)
+float G_Dt=0.02;                  // Integration time for the gyros (DCM algorithm)
 float Accel_Vector[3]= {0, 0, 0}; //Store the acceleration in a vector
 float Accel_Vector_unfiltered[3]= {0, 0, 0}; //Store the acceleration in a vector
-float Gyro_Vector[3]= {0, 0, 0};//Store the gyros rutn rate in a vector
+float Gyro_Vector[3]= {0, 0, 0};  //Store the gyros rutn rate in a vector
 float Omega_Vector[3]= {0, 0, 0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {0, 0, 0};//Omega Proportional correction
-float Omega_I[3]= {0, 0, 0};//Omega Integrator
+float Omega_P[3]= {0, 0, 0};      //Omega Proportional correction
+float Omega_I[3]= {0, 0, 0};      //Omega Integrator
 float Omega[3]= {0, 0, 0};
 //float Accel_magnitude;
 //float Accel_weight;
 
-float errorRollPitch[3]= {0, 0, 0};
-float errorYaw[3]= {0, 0, 0};
-float errorCourse=0;
-float COGX=0; //Course overground X axis
-float COGY=1; //Course overground Y axis
+float errorRollPitch[3] = {0, 0, 0};
+float errorYaw[3] = {0, 0, 0};
+float errorCourse = 0;
+float COGX = 0; //Course overground X axis
+float COGY = 1; //Course overground Y axis
 
-float roll=0;
-float pitch=0;
-float yaw=0;
+float roll = 0;
+float pitch = 0;
+float yaw = 0;
 
-unsigned int counter=0;
+unsigned int counter = 0;
 
 float DCM_Matrix[3][3]= {
-  {
-    1,0,0  }
-  ,{
-    0,1,0  }
-  ,{
-    0,0,1  }
-}; 
+  { 1,0,0 },
+  { 0,1,0 },
+  { 0,0,1 }}; 
 float Update_Matrix[3][3]={
-  {
-    0,1,2  }
-  ,{
-    3,4,5  }
-  ,{
-    6,7,8  }
-}; //Gyros here
+  { 0,1,2 },
+  { 3,4,5 },
+  { 6,7,8 }}; //Gyros here
 
 float Temporary_Matrix[3][3]={
-  {
-    0,0,0  }
-  ,{
-    0,0,0  }
-  ,{
-    0,0,0  }
-};
+  { 0,0,0 },
+  { 0,0,0 },
+  { 0,0,0 }};
 
 // GPS variables
 float speed_3d=0;
@@ -199,6 +197,30 @@ int err_altitude_old;
 float command_altitude;
 float altitude_I;
 float altitude_D;
+
+//Pressure Sensor variables
+#ifdef UseBMP
+unsigned long abs_press 	        = 0;    
+unsigned long abs_press_filt            = 0;
+unsigned long abs_press_gnd             = 0;
+int 	ground_temperature	        = 0;    // 
+int 	temp_unfilt			= 0;
+long 	ground_alt			= 0;	// Ground altitude from gps at startup in centimeters
+long 	press_alt			= 0;	// Pressure altitude 
+#endif
+
+
+#define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
+
+#define AIRSPEED_PIN 1		// Need to correct value
+#define BATTERY_PIN 1		// Need to correct value
+#define RELAY_PIN 47
+#define LOW_VOLTAGE	11.4    // Pack voltage at which to trigger alarm
+#define INPUT_VOLTAGE 5.2	// (Volts) voltage your power regulator is feeding your ArduPilot to have an accurate pressure and battery level readings. (you need a multimeter to measure and set this of course)
+#define VOLT_DIV_RATIO 1.0	//  Voltage divider ratio set with thru-hole resistor (see manual)
+
+float 	battery_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage, initialized above threshold for filter
+
 
 // Sonar variables
 int Sonar_value=0;
