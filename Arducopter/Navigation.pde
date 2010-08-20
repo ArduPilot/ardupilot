@@ -1,5 +1,5 @@
 /*
- ArduCopter v1.3 - Aug 2010
+ ArduCopter v1.3 - August 2010
  www.ArduCopter.com
  Copyright (c) 2010.  All rights reserved.
  An Open Source Arduino based multicopter.
@@ -16,7 +16,7 @@
  
  You should have received a copy of the GNU General Public License 
  along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 /* ************************************************************ */
 /* GPS based Position control */

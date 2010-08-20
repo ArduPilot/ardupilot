@@ -37,8 +37,7 @@
  Red LED Off = No GPS Fix
 
  Green LED blink slow = Motors armed, Stable mode
- Green LED blink rapid = Motors armed, Acro mode
- 
+ Green LED blink rapid = Motors armed, Acro mode 
 */
 
 /* User definable modules */
@@ -444,12 +443,12 @@ void loop(){
     {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
-      ch_roll = channel_filter(APM_RC.InputCh(0), ch_roll);
-      ch_pitch = channel_filter(APM_RC.InputCh(1), ch_pitch);
-      ch_throttle = channel_filter(APM_RC.InputCh(2), ch_throttle);
-      ch_yaw = channel_filter(APM_RC.InputCh(3), ch_yaw);
-      ch_aux = APM_RC.InputCh(4);
-      ch_aux2 = APM_RC.InputCh(5);
+      ch_roll = channel_filter(APM_RC.InputCh(0), ch_roll) * ch_roll_slope + ch_roll_offset;
+      ch_pitch = channel_filter(APM_RC.InputCh(1), ch_pitch) * ch_pitch_slope + ch_pitch_offset;
+      ch_throttle = channel_filter(APM_RC.InputCh(2), ch_throttle) * ch_throttle_slope + ch_throttle_offset;
+      ch_yaw = channel_filter(APM_RC.InputCh(3), ch_yaw) * ch_yaw_slope + ch_yaw_offset;
+      ch_aux = APM_RC.InputCh(4) * ch_aux_slope + ch_aux_offset;
+      ch_aux2 = APM_RC.InputCh(5) * ch_aux2_slope + ch_aux2_offset;
       command_rx_roll_old = command_rx_roll;
       command_rx_roll = (ch_roll-CHANN_CENTER) / 12.0;
       command_rx_roll_diff = command_rx_roll - command_rx_roll_old;

@@ -1,5 +1,5 @@
 /*
-  ArduCopter v1.2 - June 2010
+ ArduCopter v1.3 - August 2010
  www.ArduCopter.com
  Copyright (c) 2010.  All rights reserved.
  An Open Source Arduino based multicopter.
@@ -16,7 +16,7 @@
  
  You should have received a copy of the GNU General Public License 
  along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 void readSerialCommand() {
   // Check for serial message
@@ -134,52 +134,22 @@ void readSerialCommand() {
       writeEEPROM(yaw_mid, CHYAW_MID);
       break;
     case 'Y': // Initialize EEPROM with default values
-      KP_QUAD_ROLL = 1.8;
-      KD_QUAD_ROLL = 0.4; //0.48
-      KI_QUAD_ROLL = 0.30; //0.4
-      KP_QUAD_PITCH = 1.8;
-      KD_QUAD_PITCH = 0.4; //0.48
-      KI_QUAD_PITCH = 0.30; //0.4
-      KP_QUAD_YAW = 3.6;
-      KD_QUAD_YAW = 1.2;
-      KI_QUAD_YAW = 0.15;
-      STABLE_MODE_KP_RATE = 0.2;  // New param for stable mode
-      KP_GPS_ROLL = 0.02;
-      KD_GPS_ROLL = 0.006;
-      KI_GPS_ROLL = 0.008;
-      KP_GPS_PITCH = 0.02;
-      KD_GPS_PITCH = 0.006;
-      KI_GPS_PITCH = 0.008;
-      GPS_MAX_ANGLE = 18;
-      KP_ALTITUDE = 0.8;
-      KD_ALTITUDE = 0.2;
-      KI_ALTITUDE = 0.2;
-      acc_offset_x = 2073;
-      acc_offset_y = 2056;
-      acc_offset_z = 2010;
-      gyro_offset_roll = 1659;
-      gyro_offset_pitch = 1618;
-      gyro_offset_yaw = 1673;
-      Kp_ROLLPITCH = 0.0014;
-      Ki_ROLLPITCH = 0.00000015;
-      Kp_YAW = 1.2;
-      Ki_YAW = 0.00005;
-      GEOG_CORRECTION_FACTOR = 0.87;
-      MAGNETOMETER = 0;
-      Kp_RateRoll = 0.6;
-      Ki_RateRoll = 0.1;
-      Kd_RateRoll = -0.8;
-      Kp_RatePitch = 0.6;
-      Ki_RatePitch = 0.1;
-      Kd_RatePitch = -0.8;  
-      Kp_RateYaw = 1.6;
-      Ki_RateYaw = 0.3;
-      Kd_RateYaw = 0;
-      xmitFactor = 0.8;
-      roll_mid = 1500;
-      pitch_mid = 1500;
-      yaw_mid = 1500;
+      setUserConfig();
       break;
+    case '1': // Receive transmitter calibration values
+      ch_roll_slope = readFloatSerial();
+      ch_roll_offset = readFloatSerial();
+      ch_pitch_slope = readFloatSerial();
+      ch_pitch_offset = readFloatSerial();
+      ch_yaw_slope = readFloatSerial();
+      ch_yaw_offset = readFloatSerial();
+      ch_throttle_slope = readFloatSerial();
+      ch_throttle_offset = readFloatSerial();
+      ch_aux_slope = readFloatSerial();
+      ch_aux_offset = readFloatSerial();
+      ch_aux2_slope = readFloatSerial();
+      ch_aux2_offset = readFloatSerial();
+    break;
     }
   }
 }
@@ -399,7 +369,6 @@ void sendSerialTelemetry() {
     Serial.print(pitch_mid); // Pitch MID value
     comma();
     Serial.println(yaw_mid); // Yaw MID Value
-
     break;
   case 'V': // Spare
     break;
@@ -435,10 +404,3 @@ float readFloatSerial() {
   while ((data[constrain(index-1, 0, 128)] != ';') && (timeout < 5) && (index < 128));
   return atof(data);
 }
-
-/*
-void comma() {
- Serial.print(',');
- }
- */
-
