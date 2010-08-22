@@ -125,7 +125,7 @@ float ch_aux2_offset = 0;
 
 // This function call contains the default values that are set to the ArduCopter
 // when a "Default EEPROM Value" command is sent through serial interface
-void setUserConfig() {
+void defaultUserConfig() {
   KP_QUAD_ROLL = 1.8;
   KI_QUAD_ROLL = 0.30; //0.4
   KD_QUAD_ROLL = 0.4; //0.48
@@ -313,10 +313,9 @@ void readUserConfig() {
   roll_mid = readEEPROM(CHROLL_MID);
   pitch_mid = readEEPROM(CHPITCH_MID);
   yaw_mid = readEEPROM(CHYAW_MID);
-  /* uncommented for now until flight tested
   ch_roll_slope = readEEPROM(ch_roll_slope_ADR);
   ch_pitch_slope = readEEPROM(ch_pitch_slope_ADR);
-  ch_throttle_slope readEEPROM(ch_throttle_slope_ADR);
+  ch_throttle_slope = readEEPROM(ch_throttle_slope_ADR);
   ch_yaw_slope = readEEPROM(ch_yaw_slope_ADR);
   ch_aux_slope = readEEPROM(ch_aux_slope_ADR);
   ch_aux2_slope = readEEPROM(ch_aux2_slope_ADR);
@@ -325,6 +324,65 @@ void readUserConfig() {
   ch_throttle_offset = readEEPROM(ch_throttle_offset_ADR);
   ch_yaw_offset = readEEPROM(ch_yaw_offset_ADR);
   ch_aux_offset = readEEPROM(ch_aux_offset_ADR);
-  ch_aux2_offset = readEEPROM(ch_aux2_offset_ADR); */
+  ch_aux2_offset = readEEPROM(ch_aux2_offset_ADR);
 }
 
+void writeUserConfig() {
+  writeEEPROM(KP_QUAD_ROLL, KP_QUAD_ROLL_ADR);
+  writeEEPROM(KD_QUAD_ROLL, KD_QUAD_ROLL_ADR);
+  writeEEPROM(KI_QUAD_ROLL, KI_QUAD_ROLL_ADR);
+  writeEEPROM(KP_QUAD_PITCH, KP_QUAD_PITCH_ADR);
+  writeEEPROM(KD_QUAD_PITCH, KD_QUAD_PITCH_ADR);
+  writeEEPROM(KI_QUAD_PITCH, KI_QUAD_PITCH_ADR);
+  writeEEPROM(KP_QUAD_YAW, KP_QUAD_YAW_ADR);
+  writeEEPROM(KD_QUAD_YAW, KD_QUAD_YAW_ADR);
+  writeEEPROM(KI_QUAD_YAW, KI_QUAD_YAW_ADR);
+  writeEEPROM(STABLE_MODE_KP_RATE, STABLE_MODE_KP_RATE_ADR);
+  writeEEPROM(KP_GPS_ROLL, KP_GPS_ROLL_ADR);
+  writeEEPROM(KD_GPS_ROLL, KD_GPS_ROLL_ADR);
+  writeEEPROM(KI_GPS_ROLL, KI_GPS_ROLL_ADR);
+  writeEEPROM(KP_GPS_PITCH, KP_GPS_PITCH_ADR);
+  writeEEPROM(KD_GPS_PITCH, KD_GPS_PITCH_ADR);
+  writeEEPROM(KI_GPS_PITCH, KI_GPS_PITCH_ADR);
+  writeEEPROM(GPS_MAX_ANGLE, GPS_MAX_ANGLE_ADR);
+  writeEEPROM(KP_ALTITUDE, KP_ALTITUDE_ADR);
+  writeEEPROM(KD_ALTITUDE, KD_ALTITUDE_ADR);
+  writeEEPROM(KI_ALTITUDE, KI_ALTITUDE_ADR);
+  writeEEPROM(acc_offset_x, acc_offset_x_ADR);
+  writeEEPROM(acc_offset_y, acc_offset_y_ADR);
+  writeEEPROM(acc_offset_z, acc_offset_z_ADR);
+  writeEEPROM(gyro_offset_roll, gyro_offset_roll_ADR);
+  writeEEPROM(gyro_offset_pitch, gyro_offset_pitch_ADR);
+  writeEEPROM(gyro_offset_yaw, gyro_offset_yaw_ADR);
+  writeEEPROM(Kp_ROLLPITCH, Kp_ROLLPITCH_ADR);
+  writeEEPROM(Ki_ROLLPITCH, Ki_ROLLPITCH_ADR);
+  writeEEPROM(Kp_YAW, Kp_YAW_ADR);
+  writeEEPROM(Ki_YAW, Ki_YAW_ADR);
+  writeEEPROM(GEOG_CORRECTION_FACTOR, GEOG_CORRECTION_FACTOR_ADR);
+  writeEEPROM(MAGNETOMETER, MAGNETOMETER_ADR);
+  writeEEPROM(Kp_RateRoll, KP_RATEROLL_ADR);
+  writeEEPROM(Ki_RateRoll, KI_RATEROLL_ADR);
+  writeEEPROM(Kd_RateRoll, KD_RATEROLL_ADR);
+  writeEEPROM(Kp_RatePitch, KP_RATEPITCH_ADR);
+  writeEEPROM(Ki_RatePitch, KI_RATEPITCH_ADR);
+  writeEEPROM(Kd_RatePitch, KD_RATEPITCH_ADR);
+  writeEEPROM(Kp_RateYaw, KP_RATEYAW_ADR);
+  writeEEPROM(Ki_RateYaw, KI_RATEYAW_ADR);
+  writeEEPROM(Kd_RateYaw, KD_RATEYAW_ADR);
+  writeEEPROM(xmitFactor, XMITFACTOR_ADR);
+  writeEEPROM(roll_mid, CHROLL_MID);
+  writeEEPROM(pitch_mid, CHPITCH_MID);
+  writeEEPROM(yaw_mid, CHYAW_MID);
+  writeEEPROM(ch_roll_slope, ch_roll_slope_ADR);
+  writeEEPROM(ch_pitch_slope, ch_pitch_slope_ADR);
+  writeEEPROM(ch_throttle_slope, ch_throttle_slope_ADR);
+  writeEEPROM(ch_yaw_slope, ch_yaw_slope_ADR);
+  writeEEPROM(ch_aux_slope, ch_aux_slope_ADR);
+  writeEEPROM(ch_aux2_slope, ch_aux2_slope_ADR);
+  writeEEPROM(ch_roll_offset, ch_roll_offset_ADR);
+  writeEEPROM(ch_pitch_offset, ch_pitch_offset_ADR);
+  writeEEPROM(ch_throttle_offset, ch_throttle_offset_ADR);
+  writeEEPROM(ch_yaw_offset, ch_yaw_offset_ADR);
+  writeEEPROM(ch_aux_offset, ch_aux_offset_ADR);
+  writeEEPROM(ch_aux2_offset, ch_aux2_offset_ADR);
+}

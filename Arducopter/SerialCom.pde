@@ -87,54 +87,10 @@ void readSerialCommand() {
       xmitFactor = readFloatSerial();
       break;
     case 'W': // Write all user configurable values to EEPROM
-      writeEEPROM(KP_QUAD_ROLL, KP_QUAD_ROLL_ADR);
-      writeEEPROM(KD_QUAD_ROLL, KD_QUAD_ROLL_ADR);
-      writeEEPROM(KI_QUAD_ROLL, KI_QUAD_ROLL_ADR);
-      writeEEPROM(KP_QUAD_PITCH, KP_QUAD_PITCH_ADR);
-      writeEEPROM(KD_QUAD_PITCH, KD_QUAD_PITCH_ADR);
-      writeEEPROM(KI_QUAD_PITCH, KI_QUAD_PITCH_ADR);
-      writeEEPROM(KP_QUAD_YAW, KP_QUAD_YAW_ADR);
-      writeEEPROM(KD_QUAD_YAW, KD_QUAD_YAW_ADR);
-      writeEEPROM(KI_QUAD_YAW, KI_QUAD_YAW_ADR);
-      writeEEPROM(STABLE_MODE_KP_RATE, STABLE_MODE_KP_RATE_ADR);
-      writeEEPROM(KP_GPS_ROLL, KP_GPS_ROLL_ADR);
-      writeEEPROM(KD_GPS_ROLL, KD_GPS_ROLL_ADR);
-      writeEEPROM(KI_GPS_ROLL, KI_GPS_ROLL_ADR);
-      writeEEPROM(KP_GPS_PITCH, KP_GPS_PITCH_ADR);
-      writeEEPROM(KD_GPS_PITCH, KD_GPS_PITCH_ADR);
-      writeEEPROM(KI_GPS_PITCH, KI_GPS_PITCH_ADR);
-      writeEEPROM(GPS_MAX_ANGLE, GPS_MAX_ANGLE_ADR);
-      writeEEPROM(KP_ALTITUDE, KP_ALTITUDE_ADR);
-      writeEEPROM(KD_ALTITUDE, KD_ALTITUDE_ADR);
-      writeEEPROM(KI_ALTITUDE, KI_ALTITUDE_ADR);
-      writeEEPROM(acc_offset_x, acc_offset_x_ADR);
-      writeEEPROM(acc_offset_y, acc_offset_y_ADR);
-      writeEEPROM(acc_offset_z, acc_offset_z_ADR);
-      writeEEPROM(gyro_offset_roll, gyro_offset_roll_ADR);
-      writeEEPROM(gyro_offset_pitch, gyro_offset_pitch_ADR);
-      writeEEPROM(gyro_offset_yaw, gyro_offset_yaw_ADR);
-      writeEEPROM(Kp_ROLLPITCH, Kp_ROLLPITCH_ADR);
-      writeEEPROM(Ki_ROLLPITCH, Ki_ROLLPITCH_ADR);
-      writeEEPROM(Kp_YAW, Kp_YAW_ADR);
-      writeEEPROM(Ki_YAW, Ki_YAW_ADR);
-      writeEEPROM(GEOG_CORRECTION_FACTOR, GEOG_CORRECTION_FACTOR_ADR);
-      writeEEPROM(MAGNETOMETER, MAGNETOMETER_ADR);
-      writeEEPROM(Kp_RateRoll, KP_RATEROLL_ADR);
-      writeEEPROM(Ki_RateRoll, KI_RATEROLL_ADR);
-      writeEEPROM(Kd_RateRoll, KD_RATEROLL_ADR);
-      writeEEPROM(Kp_RatePitch, KP_RATEPITCH_ADR);
-      writeEEPROM(Ki_RatePitch, KI_RATEPITCH_ADR);
-      writeEEPROM(Kd_RatePitch, KD_RATEPITCH_ADR);
-      writeEEPROM(Kp_RateYaw, KP_RATEYAW_ADR);
-      writeEEPROM(Ki_RateYaw, KI_RATEYAW_ADR);
-      writeEEPROM(Kd_RateYaw, KD_RATEYAW_ADR);
-      writeEEPROM(xmitFactor, XMITFACTOR_ADR);
-      writeEEPROM(roll_mid, CHROLL_MID);
-      writeEEPROM(pitch_mid, CHPITCH_MID);
-      writeEEPROM(yaw_mid, CHYAW_MID);
+      writeUserConfig();
       break;
     case 'Y': // Initialize EEPROM with default values
-      setUserConfig();
+      defaultUserConfig();
       break;
     case '1': // Receive transmitter calibration values
       ch_roll_slope = readFloatSerial();
@@ -158,7 +114,7 @@ void sendSerialTelemetry() {
   float aux_float[3]; // used for sensor calibration
   switch (queryType) {
   case '=': // Reserved debug command to view any variable from Serial Monitor
-    Serial.print("throttle =");
+/*    Serial.print("throttle =");
     Serial.println(ch_throttle);
     Serial.print("control roll =");
     Serial.println(control_roll-CHANN_CENTER);
@@ -185,7 +141,14 @@ void sendSerialTelemetry() {
     Serial.print("command rx yaw =");
     Serial.println(command_rx_yaw);
     Serial.println(); 
-    queryType = 'X';
+    queryType = 'X';*/
+    Serial.print(APM_RC.InputCh(0));
+    comma();
+    Serial.print(ch_roll_slope);
+    comma();
+    Serial.print(ch_roll_offset);
+    comma();
+    Serial.println(ch_roll);
     break;
   case 'B': // Send roll, pitch and yaw PID values
     Serial.print(KP_QUAD_ROLL, 3);
@@ -310,9 +273,9 @@ void sendSerialTelemetry() {
     comma();
     Serial.print(err_pitch);
     comma();
-    Serial.print(degrees(-roll));
+    Serial.print(degrees(roll));
     comma();
-    Serial.print(degrees(-pitch));
+    Serial.print(degrees(pitch));
     comma();
     Serial.println(degrees(yaw));
     break;
@@ -378,6 +341,32 @@ void sendSerialTelemetry() {
     Serial.println(VER);
     queryType = 'X';
     break;
+  case '2': // Send transmitter calibration values
+    Serial.print(ch_roll_slope);
+    comma();
+    Serial.print(ch_roll_offset);
+    comma();
+    Serial.print(ch_pitch_slope);
+    comma();
+    Serial.print(ch_pitch_offset);
+    comma();
+    Serial.print(ch_yaw_slope);
+    comma();
+    Serial.print(ch_yaw_offset);
+    comma();
+    Serial.print(ch_throttle_slope);
+    comma();
+    Serial.print(ch_throttle_offset);
+    comma();
+    Serial.print(ch_aux_slope);
+    comma();
+    Serial.print(ch_aux_offset);
+    comma();
+    Serial.print(ch_aux2_slope);
+    comma();
+    Serial.println(ch_aux2_offset);
+    queryType = 'X';
+  break;
   case '.': // Modify GPS settings
     Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
     break;

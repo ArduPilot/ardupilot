@@ -49,11 +49,11 @@
 /* User definable modules */
 
 // Comment out with // modules that you are not using
-#define IsGPS    // Do we have a GPS connected
-#define IsNEWMTEK// Do we have MTEK with new firmware
+//#define IsGPS    // Do we have a GPS connected
+//#define IsNEWMTEK// Do we have MTEK with new firmware
 #define IsMAG    // Do we have a Magnetometer connected, if have remember to activate it from Configurator
-#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
-#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
+//#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
+//#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
 
 #define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
 
@@ -72,8 +72,8 @@
 /* User definable modules - END */
 
 // Frame build condiguration
-#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
-//#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
+//#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
+#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
 
 
 /* ****************************************************************************** */
@@ -500,10 +500,10 @@ void loop(){
     {
       // Commands from radio Rx... 
       // Stick position defines the desired angle in roll, pitch and yaw
-      ch_roll = channel_filter(APM_RC.InputCh(0), ch_roll) * ch_roll_slope + ch_roll_offset;
-      ch_pitch = channel_filter(APM_RC.InputCh(1), ch_pitch) * ch_pitch_slope + ch_pitch_offset;
-      ch_throttle = channel_filter(APM_RC.InputCh(2), ch_throttle) * ch_throttle_slope + ch_throttle_offset;
-      ch_yaw = channel_filter(APM_RC.InputCh(3), ch_yaw) * ch_yaw_slope + ch_yaw_offset;
+      ch_roll = channel_filter(APM_RC.InputCh(0) * ch_roll_slope + ch_roll_offset, ch_roll);
+      ch_pitch = channel_filter(APM_RC.InputCh(1) * ch_pitch_slope + ch_pitch_offset, ch_pitch);
+      ch_throttle = channel_filter(APM_RC.InputCh(2) * ch_throttle_slope + ch_throttle_offset, ch_throttle);
+      ch_yaw = channel_filter(APM_RC.InputCh(3) * ch_yaw_slope + ch_yaw_offset, ch_yaw);
       ch_aux = APM_RC.InputCh(4) * ch_aux_slope + ch_aux_offset;
       ch_aux2 = APM_RC.InputCh(5) * ch_aux2_slope + ch_aux2_offset;
       command_rx_roll_old = command_rx_roll;
