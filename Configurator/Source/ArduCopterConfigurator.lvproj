@@ -131,7 +131,7 @@
 				<Property Name="App_companyName" Type="Str">DIY Drones</Property>
 				<Property Name="App_fileDescription" Type="Str">Executable</Property>
 				<Property Name="App_fileVersion.major" Type="Int">1</Property>
-				<Property Name="App_fileVersion.minor" Type="Int">1</Property>
+				<Property Name="App_fileVersion.minor" Type="Int">2</Property>
 				<Property Name="App_INI_aliasGUID" Type="Str">{F14B6D7F-FD1C-4300-959A-415C50A23107}</Property>
 				<Property Name="App_INI_GUID" Type="Str">{3CF6AC12-1862-43C4-B6C9-85F8B8E4BE2E}</Property>
 				<Property Name="App_INI_itemID" Type="Ref">/My Computer/ArduCopterConfigurator.ini</Property>
@@ -150,7 +150,7 @@
 				<Property Name="Destination[1].path" Type="Path">../builds/NI_AB_PROJECTNAME/Executable/data</Property>
 				<Property Name="DestinationCount" Type="Int">2</Property>
 				<Property Name="Exe_iconItemID" Type="Ref">/My Computer/Icon/Config-Tools.ico</Property>
-				<Property Name="Source[0].itemID" Type="Str">{54B03895-A105-477C-A02A-5A897C74E531}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{E5BDCBED-DA02-45B4-806A-83C65FB12061}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].itemID" Type="Ref">/My Computer/ArduCopterConfigurator.vi</Property>
@@ -213,7 +213,7 @@
 				<Property Name="OSCheck" Type="Int">0</Property>
 				<Property Name="OSCheck_Vista" Type="Bool">false</Property>
 				<Property Name="ProductName" Type="Str">ArduCopter Configurator</Property>
-				<Property Name="ProductVersion" Type="Str">1.1.0</Property>
+				<Property Name="ProductVersion" Type="Str">1.2.0</Property>
 				<Property Name="ReadmeFile" Type="Ref"></Property>
 				<Property Name="ShortcutInfo.Count" Type="Int">1</Property>
 				<Property Name="ShortcutInfo[0].DirTag" Type="Str">{B9E310F1-839C-48B7-8CAE-33000780C26E}</Property>
