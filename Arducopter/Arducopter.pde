@@ -53,7 +53,7 @@
 //#define IsNEWMTEK// Do we have MTEK with new firmware
 #define IsMAG    // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
-//#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
+#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
 
 #define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
 
@@ -631,8 +631,10 @@ void loop(){
       command_rx_yaw_diff = 0;
       if (ch_yaw < 1200) {
         if (Arming_counter > ARM_DELAY){
+          if(ch_throttle > 800) {
           motorArmed = 1;
           minThrottle = 1100;
+          }
         }
         else
           Arming_counter++;
