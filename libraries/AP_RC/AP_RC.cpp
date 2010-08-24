@@ -79,8 +79,8 @@ void AP_RC::init(int trims[])
 	TCCR1A = ((1 << WGM11) | (1 << COM1B1) | (1 << COM1A1));
 	TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
 	// apply initial values
-	set_ch_pwm(CH1, 1500);
-	set_ch_pwm(CH2, 1500);
+	set_ch_pwm(CH1, trims[CH1]);
+	set_ch_pwm(CH2, trims[CH2]);
 	ICR1 = 40000;
 
 	// Throttle;
@@ -90,8 +90,8 @@ void AP_RC::init(int trims[])
 	// apply initial values
 	//OCR2A = (trims[CH3]-1000) / 4;
 	//OCR2B = trims[CH4] / 4; // center the rudder
-	set_ch_pwm(CH3, CH3TRIM);
-	set_ch_pwm(CH4, 1500);
+	set_ch_pwm(CH3, trims[CH3]);
+	set_ch_pwm(CH4, trims[CH4]);
 
 	TIMSK1 |= _BV(ICIE1); 	// Timer / Counter1, Input Capture Interrupt Enable // PB0 - output throttle
 	TIMSK2 	= _BV(TOIE1) | _BV(OCIE2A) | _BV(OCIE2B);	// Timer / Counter2 Compare Match A	

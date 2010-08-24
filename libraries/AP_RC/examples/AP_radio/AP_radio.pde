@@ -19,7 +19,7 @@ void setup()
 	Serial.begin(38400);
 	Serial.println("ArduPilot RC library test");
 
-	int trims[] = {1500,1500,1200,1500};
+	int trims[] = {1500,1500,1100,1500};
 	rc.init(trims);
 
 	delay(1000);
