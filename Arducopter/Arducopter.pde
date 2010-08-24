@@ -57,8 +57,6 @@
 
 #define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
 
-
-
 /**********************************************/
 // Not in use yet, starting to work with battery monitors and pressure sensors. 
 // Added 19-08-2010
@@ -72,8 +70,8 @@
 /* User definable modules - END */
 
 // Frame build condiguration
-//#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
-#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
+#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
+//#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
 
 
 /* ****************************************************************************** */
@@ -99,7 +97,7 @@
 #include "UserConfig.h"
 
 /* Software version */
-#define VER 1.32    // Current software version (only numeric values)
+#define VER 1.33    // Current software version (only numeric values)
 
 
 /* ***************************************************************************** */
@@ -631,7 +629,7 @@ void loop(){
       control_yaw = 0;
       command_rx_yaw = ToDeg(yaw);
       command_rx_yaw_diff = 0;
-      if (ch_yaw > 1800) {
+      if (ch_yaw < 1200) {
         if (Arming_counter > ARM_DELAY){
           motorArmed = 1;
           minThrottle = 1100;
@@ -642,7 +640,7 @@ void loop(){
       else
         Arming_counter=0;
       // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
-      if (ch_yaw < 1200) {
+      if (ch_yaw > 1800) {
         if (Disarming_counter > DISARM_DELAY){
           motorArmed = 0;
           minThrottle = MIN_THROTTLE;
@@ -659,7 +657,6 @@ void loop(){
     }
 
     // Quadcopter mix
-    // Ask Jose if we still need this IF statement, and if we want to do an ESC calibration
     if (motorArmed == 1) {   
 #ifdef IsAM
       digitalWrite(FR_LED, HIGH);    // AM-Mode
@@ -671,10 +668,10 @@ void loop(){
       backMotor = constrain(ch_throttle - control_pitch + control_yaw, minThrottle, 2000);
 #endif
 #ifdef FLIGHT_MODE_X
-      frontMotor = constrain(ch_throttle + control_roll + control_pitch - control_yaw, minThrottle, 2000); // front left motor
-      rightMotor = constrain(ch_throttle - control_roll + control_pitch + control_yaw, minThrottle, 2000); // front right motor
-      leftMotor = constrain(ch_throttle + control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear left motor
-      backMotor = constrain(ch_throttle - control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear right motor
+      rightMotor = constrain(ch_throttle - control_roll + control_pitch - control_yaw, minThrottle, 2000); // front right motor
+      leftMotor = constrain(ch_throttle + control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear left motor
+      frontMotor = constrain(ch_throttle + control_roll + control_pitch + control_yaw, minThrottle, 2000); // front left motor
+      backMotor = constrain(ch_throttle - control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear right motor
 #endif
     }
     if (motorArmed == 0) {

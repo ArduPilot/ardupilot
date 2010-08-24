@@ -30,10 +30,6 @@
 /**************************************************************/
 // Special features that might disapear in future releases
 
-//#define jpframe  // This is only Jani's special frame, you should never use unless you know what you are doing
-                 // As default this should be always checked off.
-
-
 /* APM Hardware definitions */
 #define LED_Yellow 36
 #define LED_Red 35
@@ -54,17 +50,9 @@
 uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Hardware
 
 // Sensor: GYROX, GYROY, GYROZ,   ACCELX, ACCELY, ACCELZ,     MAGX, MAGY, MAGZ
-
-#ifndef jpframe
-int SENSOR_SIGN[]={
-  1, -1, -1,    -1, 1, 1,     -1, -1, -1}; 
- //{-1,1,-1,1,-1,1,-1,-1,-1};
-#else
 int SENSOR_SIGN[]={
   1, -1, 1,    -1, 1, 1,     -1, -1, -1}; 
  //{-1,1,-1,1,-1,1,-1,-1,-1};
-#endif
-
 /* APM Hardware definitions, END */
 
 /* General definitions */
