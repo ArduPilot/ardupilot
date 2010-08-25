@@ -10,6 +10,7 @@
 
 AP_GPS_MTK gps;
 #define T6 1000000
+#define T7 10000000
 
 void setup()
 {

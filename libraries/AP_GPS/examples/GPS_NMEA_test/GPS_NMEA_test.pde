@@ -10,7 +10,7 @@
 
 AP_GPS_NMEA gps;
 #define T6 1000000
-#define T7 1000000
+#define T7 10000000
 
 void setup()
 {
