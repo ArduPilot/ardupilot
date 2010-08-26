@@ -1,0 +1,6 @@
+APM_BinComm		KEYWORD1
+update			KEYWORD2
+messagesReceived	KEYWORD2
+badMessagesReceived	KEYWORD2
+messagesSent		KEYWORD2
+
