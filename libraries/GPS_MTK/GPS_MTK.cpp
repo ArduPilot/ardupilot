@@ -16,8 +16,8 @@
 		Read() : Call this funcion as often as you want to ensure you read the incomming gps data
 		
 	Properties:
-		Lattitude : Lattitude * 10000000 (long value)
-		Longitude : Longitude * 10000000 (long value)
+		Lattitude : Lattitude * 10,000,000 (long value)
+		Longitude : Longitude * 10,000,000 (long value)
 		Altitude :  Altitude * 100 (meters) (long value)
 		Ground_speed : Speed (m/s) * 100 (long value)
 		Ground_course : Course (degrees) * 100 (long value)
@@ -164,15 +164,15 @@ void GPS_MTK_Class::parse_ubx_gps(void)
 
     case 0x05: //ID Custom
       j=0;
-      Lattitude= join_4_bytes(&UBX_buffer[j]); // lon*10000000
+      Lattitude= join_4_bytes(&UBX_buffer[j]) * 10; // lon*10,000,000
       j+=4;
-      Longitude = join_4_bytes(&UBX_buffer[j]); // lat*10000000
+      Longitude = join_4_bytes(&UBX_buffer[j]) * 10; // lat*10000000
       j+=4;
       Altitude = join_4_bytes(&UBX_buffer[j]);  // MSL
       j+=4;
 	  Ground_Speed = join_4_bytes(&UBX_buffer[j]);
       j+=4;
-	  Ground_Course = join_4_bytes(&UBX_buffer[j]);
+	  Ground_Course = join_4_bytes(&UBX_buffer[j]) / 10000; // Heading 2D
       j+=4;
 	  NumSats=UBX_buffer[j];
 	  j++;
