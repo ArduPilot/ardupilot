@@ -285,3 +285,4 @@ FastSerial::transmit(void)
         if (_txBuffer.head == _txBuffer.tail)
                 *_ucsrb &= ~_portTxBits;
 }
+

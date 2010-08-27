@@ -96,4 +96,10 @@ private:
         TXBuffer        _txBuffer;
 };
 
+// For clients that want to assume that the default Serial* objects exist.
+extern class FastSerial Serial;
+extern class FastSerial Serial1;
+extern class FastSerial Serial2;
+extern class FastSerial Serial3;
+
 #endif // FastSerial_h
