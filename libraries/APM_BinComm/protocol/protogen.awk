@@ -16,14 +16,14 @@ END {
     EMIT_MESSAGE()
 
     #
-    # emit the messageID enum
+    # emit the MessageID enum
     #
     # XXX it would be elegant to sort the array here, but not
     #     everyone has GNU awk.
     #
     printf("\n//////////////////////////////////////////////////////////////////////\n")
     printf("/// Message ID values\n")
-    printf("enum messageID {\n")
+    printf("enum MessageID {\n")
     for (opcode in opcodes) {
 	printf("\t%s = 0x%x,\n", opcodes[opcode], opcode)
     }
@@ -60,7 +60,7 @@ function EMIT_MESSAGE(payloadSize)
 	# emit a routine to pack the message payload from a set of variables and send it
 	#
 	printf("/// Send a %s message\n", currentMessage)
-	printf("inline void\nBinComm::send_%s(\n", tolower(currentMessage))
+	printf("inline void\nsend_%s(\n", tolower(currentMessage))
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
 		printf("\tconst %s (&%s)[%d]", types[i], names[i], counts[i])
@@ -71,14 +71,14 @@ function EMIT_MESSAGE(payloadSize)
 		printf(",\n");
 	}	
 	printf(")\n{\n")
-	printf("\tuint8_t *p = &_encodeBuf.payload;\n")
+	printf("\tuint8_t *__p = &_encodeBuf.payload[0];\n")
 	payloadSize = 0;
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
-		printf("\t_pack(p, %s, %s);\n", names[i], counts[i])
+		printf("\t_pack(__p, %s, %s);\n", names[i], counts[i])
 		payloadSize += sizes[i] * counts[i]
 	    } else {
-		printf("\t_pack(p, %s);\n", names[i])
+		printf("\t_pack(__p, %s);\n", names[i])
 		payloadSize += sizes[i]
 	    }
 	}
@@ -92,7 +92,7 @@ function EMIT_MESSAGE(payloadSize)
 	# emit a routine to unpack the current message into a set of variables
 	#
 	printf("/// Unpack a %s message\n", currentMessage)
-	printf("inline void\nBinComm::unpack_%s(\n", tolower(currentMessage))
+	printf("inline void\nunpack_%s(\n", tolower(currentMessage))
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
 		printf("\t%s (&%s)[%d]", types[i], names[i], counts[i])
@@ -103,13 +103,13 @@ function EMIT_MESSAGE(payloadSize)
 		printf(",\n");
 	}	
 	printf(")\n{\n")
-	printf("\tuint8_t *p = &_decodeBuf.payload;\n")
+	printf("\tuint8_t *__p = &_decodeBuf.payload[0];\n")
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
-		printf("\t_unpack(p, %s, %s);\n", names[i], counts[i])
+		printf("\t_unpack(__p, %s, %s);\n", names[i], counts[i])
 		payloadSize += sizes[i] * counts[i]
 	    } else {
-		printf("\t_unpack(p, %s);\n", names[i])
+		printf("\t_unpack(__p, %s);\n", names[i])
 		payloadSize += sizes[i]
 	    }
 	}

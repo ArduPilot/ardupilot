@@ -30,10 +30,10 @@
 #ifndef APM_BinComm_h
 #define APM_BinComm_h
 
+#include <FastSerial.h>
 #include "WProgram.h"
 #include <string.h>
 #include <inttypes.h>
-#include <FastSerial.h>
 
 ///
 /// @class		BinComm
@@ -41,11 +41,71 @@
 ///				Mega binary telemetry protocol.
 ///
 class BinComm {
+
+private:
+	/// OTA message header
+	struct MessageHeader {
+        uint8_t         length;
+        uint8_t         messageID;
+        uint8_t         messageVersion;
+	};
+
+	/// Incoming header/packet buffer
+	/// XXX we could make this smaller
+	union {
+		uint8_t					bytes[0];
+		MessageHeader			header;
+		uint8_t					payload[256];
+	} _decodeBuf;
+
+	/// Outgoing header/packet buffer
+	/// XXX we could make this smaller
+	struct {
+		MessageHeader			header;
+		uint8_t					payload[256 - sizeof(MessageHeader)];
+	} _encodeBuf;
+
+
+	//////////////////////////////////////////////////////////////////////
+	/// @name		Message pack/unpack utility functions
+	///
+	//@{
+	inline void	_pack(uint8_t *&ptr, const uint8_t  x) { *(uint8_t  *)ptr = x; ptr += sizeof(x); };
+	inline void	_pack(uint8_t *&ptr, const uint16_t x) { *(uint16_t *)ptr = x; ptr += sizeof(x); };
+	inline void	_pack(uint8_t *&ptr, const int16_t  x) { *(int16_t  *)ptr = x; ptr += sizeof(x); };
+	inline void	_pack(uint8_t *&ptr, const uint32_t x) { *(uint32_t *)ptr = x; ptr += sizeof(x); };
+	inline void	_pack(uint8_t *&ptr, const int32_t  x) { *(int32_t  *)ptr = x; ptr += sizeof(x); };
+
+	inline void	_pack(uint8_t *&ptr, const char     *msg,    uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; };
+	inline void _pack(uint8_t *&ptr, const uint8_t  *values, uint8_t count) { memcpy(ptr, values, count); ptr += count; };
+	inline void _pack(uint8_t *&ptr, const uint16_t *values, uint8_t count) { memcpy(ptr, values, count * 2); ptr += count * 2; };
+	
+	inline void	_unpack(uint8_t *&ptr, uint8_t   &x) { x = *(uint8_t  *)ptr; ptr += sizeof(x); };
+	inline void	_unpack(uint8_t *&ptr, uint16_t  &x) { x = *(uint16_t *)ptr; ptr += sizeof(x); };
+	inline void	_unpack(uint8_t *&ptr, int16_t   &x) { x = *(int16_t  *)ptr; ptr += sizeof(x); };
+	inline void	_unpack(uint8_t *&ptr, uint32_t  &x) { x = *(uint32_t *)ptr; ptr += sizeof(x); };
+	inline void	_unpack(uint8_t *&ptr, int32_t   &x) { x = *(int32_t  *)ptr; ptr += sizeof(x); };
+
+	inline void _unpack(uint8_t *&ptr, char     *msg,     uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; };
+	inline void _unpack(uint8_t *&ptr, uint8_t  *values, uint8_t count) { memcpy(values, ptr, count); ptr += count; };
+	inline void _unpack(uint8_t *&ptr, uint16_t *values, uint8_t count) { memcpy(values, ptr, count * 2); ptr += count * 2; };
+	//@}
+
 public:
+	//////////////////////////////////////////////////////////////////////
+	/// @name		Protocol definition
+	///
+	/// The protocol definition, including structures describing messages,
+	/// MessageID values and helper functions for packing messages are
+	/// automatically generated.
+	//@{
+#include "protocol/protocol.h"
+	//@}
+
 	//////////////////////////////////////////////////////////////////////
 	/// @name		Protocol magic numbers
 	///
-	/// @note The messageID enum is automatically generated and thus not described here.
+	/// @note The MessageID enum is automatically generated and thus not described here.
 	/// 
 	//@{
 
@@ -166,9 +226,8 @@ public:
 
 
 private:
-
-	/// Serial port we send/receive using.
-	FastSerial				*_interface;
+	const MessageHandler	*_handlerTable; ///< callout table
+	FastSerial				*_interface;	///< Serial port we send/receive using.
 
 	/// Various magic numbers
 	enum MagicNumbers {
@@ -177,9 +236,9 @@ private:
 		MSG_VERSION_1			= 1,
 		MSG_VARIABLE_LENGTH		= 0xff
 	};
-	
+
 	//////////////////////////////////////////////////////////////////////
-	/// @name		Decoder
+	/// @name		Decoder state
 	//@{
 	uint8_t					_decodePhase;	///< decoder state machine phase
 	uint8_t					_bytesIn;		///< bytes received in the current phase
@@ -191,75 +250,17 @@ private:
 	uint8_t					_messageVersion;///< messageVersion from the packet being received
 
 	unsigned long			_lastReceived;	///< timestamp of last byte reception
+	//@}
 
-	/// Incoming header/packet buffer
-	/// XXX we could make this smaller
-	union {
-		uint8_t					bytes[0];
-		msg_packet_header		header;
-		uint8_t					payload[256];
-	} _decodeBuf;
-
-	const BCMessageHandler	*_handlerTable; ///< callout table
-
-	/// Decoder state machine
+	/// Decoder state machine.
 	///
 	/// @param inByte		  The byte to process.
 	///
 	void					_decode(uint8_t inByte);
 
-	//@}
-
-	//////////////////////////////////////////////////////////////////////
-	/// @name		Encoder
-	//@{
-
-	/// Send the packet in the encode buffer
+	/// Send the packet in the encode buffer.
 	///
 	void					_sendMessage(void);
-
-	/// Outgoing header/packet buffer
-	/// XXX we could make this smaller
-	struct {
-		msg_packet_header		header;
-		uint8_t					payload[256 - sizeof(msg_packet_header)];
-	} _encodeBuf;
-
-	//////////////////////////////////////////////////////////////////////
-	/// @name		Message pack/unpack utility functions
-	///
-	//@{
-
-	inline void	_pack(uint8_t *&ptr, const uint8_t  x) { (uint8_t  *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const uint16   x) { (uint16_t *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const int16    x) { (int16_t  *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const uint32_t x) { (uint32_t *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const int32_t  x) { (int32_t  *)ptr = x; ptr += sizeof(x); };
-
-	inline void	_pack(uint8_t *&ptr, const char *msg, uint8_t size) { strlcpy(ptr, msg, size); ptr += size; };
-	inline void _pack(uint8_t *&ptr, const uint16_t *values, uint8_t count) { memcpy(ptr, values, count * 2); ptr += count * 2; };
-	
-	inline void	_unpack(uint8_t *&ptr, uint8_t   &x) { x = *(uint8_t  *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, uint16_t  &x) { x = *(uint16_t *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, int16_t   &x) { x = *(int16_t  *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, uint32_t  &x) { x = *(uint32_t *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, int32_t   &x) { x = *(int32_t  *)ptr; ptr += sizeof(x); };
-
-	inline void _unpack(uint8_t *&ptr, char *msg, uint8_t size) { strlcpy(msg, ptr, size); ptr += size; };
-	inline void _unpack(uint8_t *&ptr, uint16_t *values, uint8_t count) { memcpy(values, ptr, count * 2); ptr += count * 2; };
-
-	//@}
-
-public:
-	//////////////////////////////////////////////////////////////////////
-	/// @name		Protocol definition
-	///
-	/// The protocol definition, including structures describing messages,
-	/// messageID values and helper functions for packing messages are
-	/// automatically generated.
-	//@{
-#include "protocol/protocol.h"
-	//@}
 };
 
 #endif // BinComm_h

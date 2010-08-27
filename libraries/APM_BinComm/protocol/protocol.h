@@ -15,13 +15,13 @@ struct msg_acknowledge {
 
 /// Send a MSG_ACKNOWLEDGE message
 inline void
-BinComm::send_msg_acknowledge(
+send_msg_acknowledge(
 	const uint8_t msgID,
 	const uint16_t msgSum)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, msgID);
-	_pack(p, msgSum);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, msgID);
+	_pack(__p, msgSum);
 	_encodeBuf.header.length = 3;
 	_encodeBuf.header.messageID = MSG_ACKNOWLEDGE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -30,13 +30,13 @@ BinComm::send_msg_acknowledge(
 
 /// Unpack a MSG_ACKNOWLEDGE message
 inline void
-BinComm::unpack_msg_acknowledge(
+unpack_msg_acknowledge(
 	uint8_t &msgID,
 	uint16_t &msgSum)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, msgID);
-	_unpack(p, msgSum);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, msgID);
+	_unpack(__p, msgSum);
 };
 //@}
 
@@ -54,17 +54,17 @@ struct msg_heartbeat {
 
 /// Send a MSG_HEARTBEAT message
 inline void
-BinComm::send_msg_heartbeat(
+send_msg_heartbeat(
 	const uint8_t flightMode,
 	const uint16_t timeStamp,
 	const uint16_t batteryVoltage,
 	const uint16_t commandIndex)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, flightMode);
-	_pack(p, timeStamp);
-	_pack(p, batteryVoltage);
-	_pack(p, commandIndex);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, flightMode);
+	_pack(__p, timeStamp);
+	_pack(__p, batteryVoltage);
+	_pack(__p, commandIndex);
 	_encodeBuf.header.length = 7;
 	_encodeBuf.header.messageID = MSG_HEARTBEAT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -73,17 +73,17 @@ BinComm::send_msg_heartbeat(
 
 /// Unpack a MSG_HEARTBEAT message
 inline void
-BinComm::unpack_msg_heartbeat(
+unpack_msg_heartbeat(
 	uint8_t &flightMode,
 	uint16_t &timeStamp,
 	uint16_t &batteryVoltage,
 	uint16_t &commandIndex)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, flightMode);
-	_unpack(p, timeStamp);
-	_unpack(p, batteryVoltage);
-	_unpack(p, commandIndex);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, flightMode);
+	_unpack(__p, timeStamp);
+	_unpack(__p, batteryVoltage);
+	_unpack(__p, commandIndex);
 };
 //@}
 
@@ -100,15 +100,15 @@ struct msg_attitude {
 
 /// Send a MSG_ATTITUDE message
 inline void
-BinComm::send_msg_attitude(
+send_msg_attitude(
 	const int16_t roll,
 	const int16_t pitch,
 	const int16_t yaw)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, roll);
-	_pack(p, pitch);
-	_pack(p, yaw);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, roll);
+	_pack(__p, pitch);
+	_pack(__p, yaw);
 	_encodeBuf.header.length = 6;
 	_encodeBuf.header.messageID = MSG_ATTITUDE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -117,15 +117,15 @@ BinComm::send_msg_attitude(
 
 /// Unpack a MSG_ATTITUDE message
 inline void
-BinComm::unpack_msg_attitude(
+unpack_msg_attitude(
 	int16_t &roll,
 	int16_t &pitch,
 	int16_t &yaw)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, roll);
-	_unpack(p, pitch);
-	_unpack(p, yaw);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, roll);
+	_unpack(__p, pitch);
+	_unpack(__p, yaw);
 };
 //@}
 
@@ -145,7 +145,7 @@ struct msg_location {
 
 /// Send a MSG_LOCATION message
 inline void
-BinComm::send_msg_location(
+send_msg_location(
 	const int32_t latitude,
 	const int32_t longitude,
 	const int16_t altitude,
@@ -153,13 +153,13 @@ BinComm::send_msg_location(
 	const int16_t groundCourse,
 	const uint16_t timeOfWeek)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, latitude);
-	_pack(p, longitude);
-	_pack(p, altitude);
-	_pack(p, groundSpeed);
-	_pack(p, groundCourse);
-	_pack(p, timeOfWeek);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, latitude);
+	_pack(__p, longitude);
+	_pack(__p, altitude);
+	_pack(__p, groundSpeed);
+	_pack(__p, groundCourse);
+	_pack(__p, timeOfWeek);
 	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_LOCATION;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -168,7 +168,7 @@ BinComm::send_msg_location(
 
 /// Unpack a MSG_LOCATION message
 inline void
-BinComm::unpack_msg_location(
+unpack_msg_location(
 	int32_t &latitude,
 	int32_t &longitude,
 	int16_t &altitude,
@@ -176,13 +176,13 @@ BinComm::unpack_msg_location(
 	int16_t &groundCourse,
 	uint16_t &timeOfWeek)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, latitude);
-	_unpack(p, longitude);
-	_unpack(p, altitude);
-	_unpack(p, groundSpeed);
-	_unpack(p, groundCourse);
-	_unpack(p, timeOfWeek);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, latitude);
+	_unpack(__p, longitude);
+	_unpack(__p, altitude);
+	_unpack(__p, groundSpeed);
+	_unpack(__p, groundCourse);
+	_unpack(__p, timeOfWeek);
 };
 //@}
 
@@ -198,13 +198,13 @@ struct msg_pressure {
 
 /// Send a MSG_PRESSURE message
 inline void
-BinComm::send_msg_pressure(
+send_msg_pressure(
 	const uint16_t pressureAltitude,
 	const uint16_t airSpeed)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, pressureAltitude);
-	_pack(p, airSpeed);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, pressureAltitude);
+	_pack(__p, airSpeed);
 	_encodeBuf.header.length = 4;
 	_encodeBuf.header.messageID = MSG_PRESSURE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -213,13 +213,13 @@ BinComm::send_msg_pressure(
 
 /// Unpack a MSG_PRESSURE message
 inline void
-BinComm::unpack_msg_pressure(
+unpack_msg_pressure(
 	uint16_t &pressureAltitude,
 	uint16_t &airSpeed)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, pressureAltitude);
-	_unpack(p, airSpeed);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, pressureAltitude);
+	_unpack(__p, airSpeed);
 };
 //@}
 
@@ -235,13 +235,13 @@ struct msg_status_text {
 
 /// Send a MSG_STATUS_TEXT message
 inline void
-BinComm::send_msg_status_text(
+send_msg_status_text(
 	const uint8_t severity,
 	const char (&text)[50])
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, severity);
-	_pack(p, text, 50);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, severity);
+	_pack(__p, text, 50);
 	_encodeBuf.header.length = 51;
 	_encodeBuf.header.messageID = MSG_STATUS_TEXT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -250,13 +250,13 @@ BinComm::send_msg_status_text(
 
 /// Unpack a MSG_STATUS_TEXT message
 inline void
-BinComm::unpack_msg_status_text(
+unpack_msg_status_text(
 	uint8_t &severity,
 	char (&text)[50])
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, severity);
-	_unpack(p, text, 50);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, severity);
+	_unpack(__p, text, 50);
 };
 //@}
 
@@ -277,7 +277,7 @@ struct msg_perf_report {
 
 /// Send a MSG_PERF_REPORT message
 inline void
-BinComm::send_msg_perf_report(
+send_msg_perf_report(
 	const uint32_t interval,
 	const uint16_t mainLoopCycles,
 	const uint8_t mainLoopTime,
@@ -286,14 +286,14 @@ BinComm::send_msg_perf_report(
 	const uint16_t imuHealth,
 	const uint16_t gcsMessageCount)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, interval);
-	_pack(p, mainLoopCycles);
-	_pack(p, mainLoopTime);
-	_pack(p, gyroSaturationCount);
-	_pack(p, adcConstraintCount);
-	_pack(p, imuHealth);
-	_pack(p, gcsMessageCount);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, interval);
+	_pack(__p, mainLoopCycles);
+	_pack(__p, mainLoopTime);
+	_pack(__p, gyroSaturationCount);
+	_pack(__p, adcConstraintCount);
+	_pack(__p, imuHealth);
+	_pack(__p, gcsMessageCount);
 	_encodeBuf.header.length = 13;
 	_encodeBuf.header.messageID = MSG_PERF_REPORT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -302,7 +302,7 @@ BinComm::send_msg_perf_report(
 
 /// Unpack a MSG_PERF_REPORT message
 inline void
-BinComm::unpack_msg_perf_report(
+unpack_msg_perf_report(
 	uint32_t &interval,
 	uint16_t &mainLoopCycles,
 	uint8_t &mainLoopTime,
@@ -311,14 +311,14 @@ BinComm::unpack_msg_perf_report(
 	uint16_t &imuHealth,
 	uint16_t &gcsMessageCount)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, interval);
-	_unpack(p, mainLoopCycles);
-	_unpack(p, mainLoopTime);
-	_unpack(p, gyroSaturationCount);
-	_unpack(p, adcConstraintCount);
-	_unpack(p, imuHealth);
-	_unpack(p, gcsMessageCount);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, interval);
+	_unpack(__p, mainLoopCycles);
+	_unpack(__p, mainLoopTime);
+	_unpack(__p, gyroSaturationCount);
+	_unpack(__p, adcConstraintCount);
+	_unpack(__p, imuHealth);
+	_unpack(__p, gcsMessageCount);
 };
 //@}
 
@@ -334,13 +334,13 @@ struct msg_version_request {
 
 /// Send a MSG_VERSION_REQUEST message
 inline void
-BinComm::send_msg_version_request(
+send_msg_version_request(
 	const uint8_t systemType,
 	const uint8_t systemID)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, systemType);
-	_pack(p, systemID);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, systemType);
+	_pack(__p, systemID);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_VERSION_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -349,13 +349,13 @@ BinComm::send_msg_version_request(
 
 /// Unpack a MSG_VERSION_REQUEST message
 inline void
-BinComm::unpack_msg_version_request(
+unpack_msg_version_request(
 	uint8_t &systemType,
 	uint8_t &systemID)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, systemType);
-	_unpack(p, systemID);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, systemType);
+	_unpack(__p, systemID);
 };
 //@}
 
@@ -372,15 +372,15 @@ struct msg_version {
 
 /// Send a MSG_VERSION message
 inline void
-BinComm::send_msg_version(
+send_msg_version(
 	const uint8_t systemType,
 	const uint8_t systemID,
 	const uint8_t (&firmwareVersion)[3])
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, systemType);
-	_pack(p, systemID);
-	_pack(p, firmwareVersion, 3);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, systemType);
+	_pack(__p, systemID);
+	_pack(__p, firmwareVersion, 3);
 	_encodeBuf.header.length = 5;
 	_encodeBuf.header.messageID = MSG_VERSION;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -389,15 +389,15 @@ BinComm::send_msg_version(
 
 /// Unpack a MSG_VERSION message
 inline void
-BinComm::unpack_msg_version(
+unpack_msg_version(
 	uint8_t &systemType,
 	uint8_t &systemID,
 	uint8_t (&firmwareVersion)[3])
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, systemType);
-	_unpack(p, systemID);
-	_unpack(p, firmwareVersion, 3);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, systemType);
+	_unpack(__p, systemID);
+	_unpack(__p, firmwareVersion, 3);
 };
 //@}
 
@@ -412,11 +412,11 @@ struct msg_command_request {
 
 /// Send a MSG_COMMAND_REQUEST message
 inline void
-BinComm::send_msg_command_request(
+send_msg_command_request(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_COMMAND_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -425,11 +425,11 @@ BinComm::send_msg_command_request(
 
 /// Unpack a MSG_COMMAND_REQUEST message
 inline void
-BinComm::unpack_msg_command_request(
+unpack_msg_command_request(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -451,7 +451,7 @@ struct msg_command_upload {
 
 /// Send a MSG_COMMAND_UPLOAD message
 inline void
-BinComm::send_msg_command_upload(
+send_msg_command_upload(
 	const uint8_t action,
 	const uint16_t itemNumber,
 	const int listLength,
@@ -461,15 +461,15 @@ BinComm::send_msg_command_upload(
 	const uint32_t p3,
 	const uint32_t p4)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, action);
-	_pack(p, itemNumber);
-	_pack(p, listLength);
-	_pack(p, commandID);
-	_pack(p, p1);
-	_pack(p, p2);
-	_pack(p, p3);
-	_pack(p, p4);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, action);
+	_pack(__p, itemNumber);
+	_pack(__p, listLength);
+	_pack(__p, commandID);
+	_pack(__p, p1);
+	_pack(__p, p2);
+	_pack(__p, p3);
+	_pack(__p, p4);
 	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_COMMAND_UPLOAD;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -478,7 +478,7 @@ BinComm::send_msg_command_upload(
 
 /// Unpack a MSG_COMMAND_UPLOAD message
 inline void
-BinComm::unpack_msg_command_upload(
+unpack_msg_command_upload(
 	uint8_t &action,
 	uint16_t &itemNumber,
 	int &listLength,
@@ -488,15 +488,15 @@ BinComm::unpack_msg_command_upload(
 	uint32_t &p3,
 	uint32_t &p4)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, action);
-	_unpack(p, itemNumber);
-	_unpack(p, listLength);
-	_unpack(p, commandID);
-	_unpack(p, p1);
-	_unpack(p, p2);
-	_unpack(p, p3);
-	_unpack(p, p4);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, action);
+	_unpack(__p, itemNumber);
+	_unpack(__p, listLength);
+	_unpack(__p, commandID);
+	_unpack(__p, p1);
+	_unpack(__p, p2);
+	_unpack(__p, p3);
+	_unpack(__p, p4);
 };
 //@}
 
@@ -517,7 +517,7 @@ struct msg_command_list {
 
 /// Send a MSG_COMMAND_LIST message
 inline void
-BinComm::send_msg_command_list(
+send_msg_command_list(
 	const int itemNumber,
 	const int listLength,
 	const uint8_t commandID,
@@ -526,14 +526,14 @@ BinComm::send_msg_command_list(
 	const uint32_t p3,
 	const uint32_t p4)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, itemNumber);
-	_pack(p, listLength);
-	_pack(p, commandID);
-	_pack(p, p1);
-	_pack(p, p2);
-	_pack(p, p3);
-	_pack(p, p4);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, itemNumber);
+	_pack(__p, listLength);
+	_pack(__p, commandID);
+	_pack(__p, p1);
+	_pack(__p, p2);
+	_pack(__p, p3);
+	_pack(__p, p4);
 	_encodeBuf.header.length = 14;
 	_encodeBuf.header.messageID = MSG_COMMAND_LIST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -542,7 +542,7 @@ BinComm::send_msg_command_list(
 
 /// Unpack a MSG_COMMAND_LIST message
 inline void
-BinComm::unpack_msg_command_list(
+unpack_msg_command_list(
 	int &itemNumber,
 	int &listLength,
 	uint8_t &commandID,
@@ -551,14 +551,14 @@ BinComm::unpack_msg_command_list(
 	uint32_t &p3,
 	uint32_t &p4)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, itemNumber);
-	_unpack(p, listLength);
-	_unpack(p, commandID);
-	_unpack(p, p1);
-	_unpack(p, p2);
-	_unpack(p, p3);
-	_unpack(p, p4);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, itemNumber);
+	_unpack(__p, listLength);
+	_unpack(__p, commandID);
+	_unpack(__p, p1);
+	_unpack(__p, p2);
+	_unpack(__p, p3);
+	_unpack(__p, p4);
 };
 //@}
 
@@ -573,11 +573,11 @@ struct msg_command_mode_change {
 
 /// Send a MSG_COMMAND_MODE_CHANGE message
 inline void
-BinComm::send_msg_command_mode_change(
+send_msg_command_mode_change(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_COMMAND_MODE_CHANGE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -586,11 +586,11 @@ BinComm::send_msg_command_mode_change(
 
 /// Unpack a MSG_COMMAND_MODE_CHANGE message
 inline void
-BinComm::unpack_msg_command_mode_change(
+unpack_msg_command_mode_change(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -606,13 +606,13 @@ struct msg_value_request {
 
 /// Send a MSG_VALUE_REQUEST message
 inline void
-BinComm::send_msg_value_request(
+send_msg_value_request(
 	const uint8_t valueID,
 	const uint8_t broadcast)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, valueID);
-	_pack(p, broadcast);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, valueID);
+	_pack(__p, broadcast);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_VALUE_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -621,13 +621,13 @@ BinComm::send_msg_value_request(
 
 /// Unpack a MSG_VALUE_REQUEST message
 inline void
-BinComm::unpack_msg_value_request(
+unpack_msg_value_request(
 	uint8_t &valueID,
 	uint8_t &broadcast)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, valueID);
-	_unpack(p, broadcast);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, valueID);
+	_unpack(__p, broadcast);
 };
 //@}
 
@@ -643,13 +643,13 @@ struct msg_value_set {
 
 /// Send a MSG_VALUE_SET message
 inline void
-BinComm::send_msg_value_set(
+send_msg_value_set(
 	const uint8_t valueID,
 	const uint32_t value)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, valueID);
-	_pack(p, value);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, valueID);
+	_pack(__p, value);
 	_encodeBuf.header.length = 5;
 	_encodeBuf.header.messageID = MSG_VALUE_SET;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -658,13 +658,13 @@ BinComm::send_msg_value_set(
 
 /// Unpack a MSG_VALUE_SET message
 inline void
-BinComm::unpack_msg_value_set(
+unpack_msg_value_set(
 	uint8_t &valueID,
 	uint32_t &value)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, valueID);
-	_unpack(p, value);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, valueID);
+	_unpack(__p, value);
 };
 //@}
 
@@ -680,13 +680,13 @@ struct msg_value {
 
 /// Send a MSG_VALUE message
 inline void
-BinComm::send_msg_value(
+send_msg_value(
 	const uint8_t valueID,
 	const uint32_t value)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, valueID);
-	_pack(p, value);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, valueID);
+	_pack(__p, value);
 	_encodeBuf.header.length = 5;
 	_encodeBuf.header.messageID = MSG_VALUE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -695,13 +695,13 @@ BinComm::send_msg_value(
 
 /// Unpack a MSG_VALUE message
 inline void
-BinComm::unpack_msg_value(
+unpack_msg_value(
 	uint8_t &valueID,
 	uint32_t &value)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, valueID);
-	_unpack(p, value);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, valueID);
+	_unpack(__p, value);
 };
 //@}
 
@@ -716,11 +716,11 @@ struct msg_pid_request {
 
 /// Send a MSG_PID_REQUEST message
 inline void
-BinComm::send_msg_pid_request(
+send_msg_pid_request(
 	const uint8_t pidSet)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, pidSet);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, pidSet);
 	_encodeBuf.header.length = 1;
 	_encodeBuf.header.messageID = MSG_PID_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -729,11 +729,11 @@ BinComm::send_msg_pid_request(
 
 /// Unpack a MSG_PID_REQUEST message
 inline void
-BinComm::unpack_msg_pid_request(
+unpack_msg_pid_request(
 	uint8_t &pidSet)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, pidSet);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, pidSet);
 };
 //@}
 
@@ -752,19 +752,19 @@ struct msg_pid_set {
 
 /// Send a MSG_PID_SET message
 inline void
-BinComm::send_msg_pid_set(
+send_msg_pid_set(
 	const uint8_t pidSet,
 	const int32_t p,
 	const int32_t i,
 	const int32_t d,
 	const int16_t integratorMax)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, pidSet);
-	_pack(p, p);
-	_pack(p, i);
-	_pack(p, d);
-	_pack(p, integratorMax);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, pidSet);
+	_pack(__p, p);
+	_pack(__p, i);
+	_pack(__p, d);
+	_pack(__p, integratorMax);
 	_encodeBuf.header.length = 15;
 	_encodeBuf.header.messageID = MSG_PID_SET;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -773,19 +773,19 @@ BinComm::send_msg_pid_set(
 
 /// Unpack a MSG_PID_SET message
 inline void
-BinComm::unpack_msg_pid_set(
+unpack_msg_pid_set(
 	uint8_t &pidSet,
 	int32_t &p,
 	int32_t &i,
 	int32_t &d,
 	int16_t &integratorMax)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, pidSet);
-	_unpack(p, p);
-	_unpack(p, i);
-	_unpack(p, d);
-	_unpack(p, integratorMax);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, pidSet);
+	_unpack(__p, p);
+	_unpack(__p, i);
+	_unpack(__p, d);
+	_unpack(__p, integratorMax);
 };
 //@}
 
@@ -804,19 +804,19 @@ struct msg_pid {
 
 /// Send a MSG_PID message
 inline void
-BinComm::send_msg_pid(
+send_msg_pid(
 	const uint8_t pidSet,
 	const int32_t p,
 	const int32_t i,
 	const int32_t d,
 	const int16_t integratorMax)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, pidSet);
-	_pack(p, p);
-	_pack(p, i);
-	_pack(p, d);
-	_pack(p, integratorMax);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, pidSet);
+	_pack(__p, p);
+	_pack(__p, i);
+	_pack(__p, d);
+	_pack(__p, integratorMax);
 	_encodeBuf.header.length = 15;
 	_encodeBuf.header.messageID = MSG_PID;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -825,19 +825,19 @@ BinComm::send_msg_pid(
 
 /// Unpack a MSG_PID message
 inline void
-BinComm::unpack_msg_pid(
+unpack_msg_pid(
 	uint8_t &pidSet,
 	int32_t &p,
 	int32_t &i,
 	int32_t &d,
 	int16_t &integratorMax)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, pidSet);
-	_unpack(p, p);
-	_unpack(p, i);
-	_unpack(p, d);
-	_unpack(p, integratorMax);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, pidSet);
+	_unpack(__p, p);
+	_unpack(__p, i);
+	_unpack(__p, d);
+	_unpack(__p, integratorMax);
 };
 //@}
 
@@ -852,11 +852,11 @@ struct msg_trim_startup {
 
 /// Send a MSG_TRIM_STARTUP message
 inline void
-BinComm::send_msg_trim_startup(
+send_msg_trim_startup(
 	const uint16_t (&value)[8])
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, value, 8);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, value, 8);
 	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_STARTUP;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -865,11 +865,11 @@ BinComm::send_msg_trim_startup(
 
 /// Unpack a MSG_TRIM_STARTUP message
 inline void
-BinComm::unpack_msg_trim_startup(
+unpack_msg_trim_startup(
 	uint16_t (&value)[8])
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, value, 8);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, value, 8);
 };
 //@}
 
@@ -884,11 +884,11 @@ struct msg_trim_min {
 
 /// Send a MSG_TRIM_MIN message
 inline void
-BinComm::send_msg_trim_min(
+send_msg_trim_min(
 	const uint16_t (&value)[8])
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, value, 8);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, value, 8);
 	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_MIN;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -897,11 +897,11 @@ BinComm::send_msg_trim_min(
 
 /// Unpack a MSG_TRIM_MIN message
 inline void
-BinComm::unpack_msg_trim_min(
+unpack_msg_trim_min(
 	uint16_t (&value)[8])
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, value, 8);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, value, 8);
 };
 //@}
 
@@ -916,11 +916,11 @@ struct msg_trim_max {
 
 /// Send a MSG_TRIM_MAX message
 inline void
-BinComm::send_msg_trim_max(
+send_msg_trim_max(
 	const uint16_t (&value)[8])
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, value, 8);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, value, 8);
 	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_MAX;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -929,11 +929,11 @@ BinComm::send_msg_trim_max(
 
 /// Unpack a MSG_TRIM_MAX message
 inline void
-BinComm::unpack_msg_trim_max(
+unpack_msg_trim_max(
 	uint16_t (&value)[8])
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, value, 8);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, value, 8);
 };
 //@}
 
@@ -948,11 +948,11 @@ struct msg_sensor {
 
 /// Send a MSG_SENSOR message
 inline void
-BinComm::send_msg_sensor(
+send_msg_sensor(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_SENSOR;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -961,11 +961,11 @@ BinComm::send_msg_sensor(
 
 /// Unpack a MSG_SENSOR message
 inline void
-BinComm::unpack_msg_sensor(
+unpack_msg_sensor(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -980,11 +980,11 @@ struct msg_sim {
 
 /// Send a MSG_SIM message
 inline void
-BinComm::send_msg_sim(
+send_msg_sim(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_SIM;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -993,11 +993,11 @@ BinComm::send_msg_sim(
 
 /// Unpack a MSG_SIM message
 inline void
-BinComm::unpack_msg_sim(
+unpack_msg_sim(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1012,11 +1012,11 @@ struct msg_pin_request {
 
 /// Send a MSG_PIN_REQUEST message
 inline void
-BinComm::send_msg_pin_request(
+send_msg_pin_request(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_PIN_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1025,11 +1025,11 @@ BinComm::send_msg_pin_request(
 
 /// Unpack a MSG_PIN_REQUEST message
 inline void
-BinComm::unpack_msg_pin_request(
+unpack_msg_pin_request(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1044,11 +1044,11 @@ struct msg_pin_set {
 
 /// Send a MSG_PIN_SET message
 inline void
-BinComm::send_msg_pin_set(
+send_msg_pin_set(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_PIN_SET;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1057,11 +1057,11 @@ BinComm::send_msg_pin_set(
 
 /// Unpack a MSG_PIN_SET message
 inline void
-BinComm::unpack_msg_pin_set(
+unpack_msg_pin_set(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1076,11 +1076,11 @@ struct msg_dataflash_request {
 
 /// Send a MSG_DATAFLASH_REQUEST message
 inline void
-BinComm::send_msg_dataflash_request(
+send_msg_dataflash_request(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_DATAFLASH_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1089,11 +1089,11 @@ BinComm::send_msg_dataflash_request(
 
 /// Unpack a MSG_DATAFLASH_REQUEST message
 inline void
-BinComm::unpack_msg_dataflash_request(
+unpack_msg_dataflash_request(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1108,11 +1108,11 @@ struct msg_dataflash_set {
 
 /// Send a MSG_DATAFLASH_SET message
 inline void
-BinComm::send_msg_dataflash_set(
+send_msg_dataflash_set(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_DATAFLASH_SET;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1121,11 +1121,11 @@ BinComm::send_msg_dataflash_set(
 
 /// Unpack a MSG_DATAFLASH_SET message
 inline void
-BinComm::unpack_msg_dataflash_set(
+unpack_msg_dataflash_set(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1140,11 +1140,11 @@ struct msg_eeprom_request {
 
 /// Send a MSG_EEPROM_REQUEST message
 inline void
-BinComm::send_msg_eeprom_request(
+send_msg_eeprom_request(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_EEPROM_REQUEST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1153,11 +1153,11 @@ BinComm::send_msg_eeprom_request(
 
 /// Unpack a MSG_EEPROM_REQUEST message
 inline void
-BinComm::unpack_msg_eeprom_request(
+unpack_msg_eeprom_request(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
@@ -1172,11 +1172,11 @@ struct msg_eeprom_set {
 
 /// Send a MSG_EEPROM_SET message
 inline void
-BinComm::send_msg_eeprom_set(
+send_msg_eeprom_set(
 	const uint16_t UNSPECIFIED)
 {
-	uint8_t *p = &_encodeBuf.payload;
-	_pack(p, UNSPECIFIED);
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
 	_encodeBuf.header.length = 2;
 	_encodeBuf.header.messageID = MSG_EEPROM_SET;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -1185,17 +1185,17 @@ BinComm::send_msg_eeprom_set(
 
 /// Unpack a MSG_EEPROM_SET message
 inline void
-BinComm::unpack_msg_eeprom_set(
+unpack_msg_eeprom_set(
 	uint16_t &UNSPECIFIED)
 {
-	uint8_t *p = &_decodeBuf.payload;
-	_unpack(p, UNSPECIFIED);
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
 };
 //@}
 
 //////////////////////////////////////////////////////////////////////
 /// Message ID values
-enum messageID {
+enum MessageID {
 	MSG_PID = 0x42,
 	MSG_DATAFLASH_REQUEST = 0x90,
 	MSG_DATAFLASH_SET = 0x91,

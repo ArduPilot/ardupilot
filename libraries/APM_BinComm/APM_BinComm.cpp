@@ -27,15 +27,15 @@
 /// @brief      Implementation of the ArduPilot Mega binary communications
 ///		library.
 
-#include "WProgram.h"
 #include "APM_BinComm.h"
+#include "WProgram.h"
 
 /// @name decoder state machine phases
 //@{
 #define DEC_WAIT_P1      0
 #define DEC_WAIT_P2      1
 #define DEC_WAIT_HEADER  2
-#define DEC_WAIT_PACKET  3
+#define DEC_WAIT_MESSAGE 3
 #define DEC_WAIT_SUM_A   4
 #define DEC_WAIT_SUM_B   5
 //@}
@@ -44,7 +44,7 @@
 /// inter-byte timeout for decode (ms)
 #define DEC_MESSAGE_TIMEOUT     100
 
-BinComm::BinComm(const BinComm::BCMessageHandler *handlerTable,
+BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
                  FastSerial *interface) :
         _handlerTable(handlerTable),
         _interface(interface)
@@ -119,7 +119,7 @@ BinComm::_decode(uint8_t inByte)
 
                         // prepare for the header
                         _bytesIn = 0;
-                        _bytesExpected = sizeof(struct msg_packet_header);
+                        _bytesExpected = sizeof(MessageHeader);
 
                         // intialise the checksum accumulators
                         _sumA = _sumB = 0;
@@ -163,7 +163,7 @@ BinComm::_decode(uint8_t inByte)
 
                 // receiving payload data
                 //
-        case DEC_WAIT_PACKET:
+        case DEC_WAIT_MESSAGE:
                 // do checksum accumulation
                 _sumA += inByte;
                 _sumB += _sumA;
@@ -181,7 +181,7 @@ BinComm::_decode(uint8_t inByte)
                 //
         case DEC_WAIT_SUM_A:
                 if (inByte != _sumA) {
-                        badPacketsReceived++;
+                        badMessagesReceived++;
                         _decodePhase = DEC_WAIT_P1;
                 } else {
                         _decodePhase++;
@@ -189,8 +189,8 @@ BinComm::_decode(uint8_t inByte)
                 break;
         case DEC_WAIT_SUM_B:
                 if (inByte == _sumB) {
-                        // if we got this far, we have a packet
-                        packetsReceived++;
+                        // if we got this far, we have a message
+                        messagesReceived++;
 
                         // call any handler interested in this message
                         for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++)
@@ -198,7 +198,7 @@ BinComm::_decode(uint8_t inByte)
                                     (_handlerTable[tableIndex].messageID == MSG_ANY))
                                         _handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg, _messageID, _messageVersion, &_decodeBuf);
                 } else {
-                        badPacketsReceived++;
+                        badMessagesReceived++;
                 }
                 _decodePhase = DEC_WAIT_P1;
                 break;
