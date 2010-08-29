@@ -1,6 +1,6 @@
 #include "Navigation.h"
 
-Navigation::Navigation(AP_GPS *withGPS) : 
+Navigation::Navigation(GPS *withGPS) : 
 		_gps(withGPS),
 		_hold_course(-1)
 {

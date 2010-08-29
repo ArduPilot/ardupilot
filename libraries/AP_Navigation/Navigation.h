@@ -1,6 +1,6 @@
 #define XTRACK_GAIN 10 					// Amount to compensate for crosstrack (degrees/100 per meter)
 #define XTRACK_ENTRY_ANGLE 3000			// Max angle used to correct for track following	degrees*100
-#include <AP_GPS.h>						// ArduPilot GPS Library
+#include <GPS.h>						// ArduPilot GPS Library
 #include "Waypoints.h"						// ArduPilot Waypoints Library
 #include "WProgram.h"
 
@@ -8,7 +8,7 @@
 
 class Navigation {
 public:
-	Navigation(AP_GPS *withGPS);
+	Navigation(GPS *withGPS);
 	
 	void 		update_gps(void);					// called 50 Hz
 	void		set_home(Waypoints::WP loc);
@@ -37,7 +37,7 @@ private:
 	int32_t		wrap_360(int32_t error);			// utility
 
 	int16_t		_old_bearing;						// used to track delta on the bearing
-	AP_GPS			*_gps;
+	GPS			*_gps;
 	long 		_crosstrack_bearing;				// deg * 100 : 0 to 360 desired angle of plane to target
 	float		_crosstrack_error;					// deg * 100 : 18000 to -18000  meters we are off trackline
 	long 		_hold_course;						// deg * 100 dir of plane

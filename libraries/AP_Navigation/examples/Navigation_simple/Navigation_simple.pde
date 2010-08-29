@@ -4,7 +4,7 @@
 
 
 AP_GPS_IMU gps;
-Navigation	nav((AP_GPS *) & gps);
+Navigation	nav((GPS *) & gps);
 
 void setup()
 {
