@@ -41,6 +41,8 @@ GPS_MTK_Class::GPS_MTK_Class()
 // Public Methods //////////////////////////////////////////////////////////////
 void GPS_MTK_Class::Init(void)
 {
+	delay(200);
+	Serial.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
 	ck_a=0;
 	ck_b=0;
 	UBX_step=0;
