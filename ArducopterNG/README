@@ -1,0 +1,12 @@
+Greetings to all,
+
+This is our net architectural layout for ArduCopter main code. It is
+work-on-progress code and currently does not work.
+
+So please do not use this code from ArducopterNG folder. After code is 
+working properly, it will be moved to Arducopter folder.
+
+We try to hammer it out as soon as possible...
+
+Best regards,
+ArduCopter TEAM

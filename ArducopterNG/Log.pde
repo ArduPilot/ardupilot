@@ -42,14 +42,14 @@ TODO:
 #define END_BYTE 0xBA      // Decimal 186
 
 #define LOG_ATTITUDE_MSG		0x01
-#define LOG_GPS_MSG				0x02
+#define LOG_GPS_MSG			0x02
 #define LOG_MODE_MSG			0X03
-#define LOG_CONTROL_TUNING_MSG	0X04
+#define LOG_CONTROL_TUNING_MSG	        0X04
 #define LOG_NAV_TUNING_MSG		0X05
 #define LOG_PERFORMANCE_MSG		0X06
-#define LOG_RAW_MSG				0x07
-#define LOG_RADIO_MSG    0x08
-#define LOG_SENSOR_MSG   0x09
+#define LOG_RAW_MSG			0x07
+#define LOG_RADIO_MSG                   0x08
+#define LOG_SENSOR_MSG                  0x09
 
 
 //  Function to display available logs and solicit action from the user.
@@ -69,7 +69,7 @@ void Print_Log_Menu(void)
 			log_start = eeprom_read_word((uint16_t *) (EE_LOG_1_START+(i-1)*0x02));			eeprom_busy_wait();	
 			log_end = eeprom_read_word((uint16_t *) (EE_LOG_1_START+(i)*0x02))-1;			eeprom_busy_wait();	
 			if (i == last_log_num) {	
-				log_end = eeprom_read_word((uint16_t *) EE_LAST_LOG_PAGE);					eeprom_busy_wait();	
+				log_end = eeprom_read_word((uint16_t *) EE_LAST_LOG_PAGE);			eeprom_busy_wait();	
 			}	
 			Serial.print("Log number ");
 			Serial.print(i);
