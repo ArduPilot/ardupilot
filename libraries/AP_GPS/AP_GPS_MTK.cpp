@@ -1,6 +1,6 @@
 /*
-	AP_GPS_MTK.cpp - Ublox GPS library for Arduino
-	Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
+	GPS_MTK.cpp - Ublox GPS library for Arduino
+	Code by Jordi Munoz and Jose Julio. DIYDrones.com
 	This code works with boards based on ATMega168 / 328 and ATMega1280 (Serial port 1)
 
 	This library is free software; you can redistribute it and / or
@@ -28,6 +28,7 @@
 */
 
 #include "AP_GPS_MTK.h"
+#include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_MTK::AP_GPS_MTK()
@@ -38,6 +39,8 @@ AP_GPS_MTK::AP_GPS_MTK()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
 {
+	Serial.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
+	
 	ck_a 		= 0;
 	ck_b 		= 0;
 	step 		= 0;
@@ -146,15 +149,15 @@ AP_GPS_MTK::parse_gps(void)
 			//Checking the UBX ID
 			case 0x05: // ID Custom
 				j = 0;
-				lattitude= join_4_bytes(&buffer[j]); // lon * 10000000
+				lattitude= join_4_bytes(&buffer[j]) * 10; // lon * 10000000
 				j += 4;
-				longitude = join_4_bytes(&buffer[j]); // lat * 10000000
+				longitude = join_4_bytes(&buffer[j]) * 10; // lat * 10000000
 				j += 4;
 				altitude = join_4_bytes(&buffer[j]);	// MSL
 				j += 4;
 				speed_3d = ground_speed = join_4_bytes(&buffer[j]);
 				j += 4;
-				ground_course = join_4_bytes(&buffer[j]);
+				ground_course = join_4_bytes(&buffer[j]) / 10000;
 				j += 4;
 				num_sats = buffer[j];
 				j++;

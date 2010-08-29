@@ -1,10 +1,10 @@
-#ifndef GPS_UBLOX_h
-#define GPS_UBLOX_h
+#ifndef AP_GPS_UBLOX_h
+#define AP_GPS_UBLOX_h
 
-#include <AP_GPS.h>
+#include <GPS.h>
 #define MAXPAYLOAD 60
 
-class AP_GPS_UBLOX : public AP_GPS
+class AP_GPS_UBLOX : public GPS
 {
   public:
     // Methods

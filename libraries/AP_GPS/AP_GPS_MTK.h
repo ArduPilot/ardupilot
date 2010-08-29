@@ -1,10 +1,10 @@
 #ifndef AP_GPS_MTK_h
 #define AP_GPS_MTK_h
 
-#include <AP_GPS.h>
+#include <GPS.h>
 #define MAXPAYLOAD 32
 
-class AP_GPS_MTK : public AP_GPS
+class AP_GPS_MTK : public GPS
 {
   public:
     // Methods

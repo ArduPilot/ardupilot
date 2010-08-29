@@ -1,10 +1,10 @@
 #ifndef AP_GPS_NMEA_h
 #define AP_GPS_NMEA_h
 
-#include "AP_GPS.h"
+#include <GPS.h>
 #define GPS_BUFFERSIZE 120 
 
-class AP_GPS_NMEA : public AP_GPS
+class AP_GPS_NMEA : public GPS
 {
   public:
     // Methods
@@ -29,7 +29,5 @@ class AP_GPS_NMEA : public AP_GPS
 	long parsenumber(char *str,uint8_t numdec);
 
 };
-
-extern AP_GPS_NMEA GPS;
 
 #endif

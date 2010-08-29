@@ -1,5 +1,5 @@
 /*
-	AP_GPS_UBLOX.cpp - Ublox GPS library for Arduino
+	GPS_UBLOX.cpp - Ublox GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
 	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
 
@@ -34,6 +34,7 @@
 */
 
 #include "AP_GPS_UBLOX.h"
+#include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_UBLOX::AP_GPS_UBLOX()

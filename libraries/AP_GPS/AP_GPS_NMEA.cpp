@@ -37,6 +37,7 @@
 	 NOTE : This code has been tested on a Locosys 20031 GPS receiver (MTK chipset)
 */
 #include "AP_GPS_NMEA.h"
+#include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_NMEA::AP_GPS_NMEA()
