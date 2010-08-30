@@ -66,3 +66,4 @@ class GPS_IMU_Class
 };
 
 extern GPS_IMU_Class GPS;
+#endif
