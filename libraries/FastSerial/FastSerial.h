@@ -44,11 +44,26 @@
 #ifndef FastSerial_h
 #define FastSerial_h
 
+// disable the stock Arduino serial driver
+#define HardwareSerial_h
+
 #include <inttypes.h>
 #include <Print.h>
 
-// disable the stock Arduino serial driver
-#define HardwareSerial_h
+//
+// Because Arduino libraries aren't really libraries, but we want to
+// only define interrupt handlers for serial ports that are actually
+// used, we have to force our users to define them using a macro.
+//
+// Due to the way interrupt vectors are specified, we have to have
+// a separate macro for every port.  Ugh.
+//
+#define FastSerialPort0(_portName)        FastSerial _portName(0); FastSerialHandler0
+#if defined(__AVR_ATmega1280__)
+#define FastSerialPort1(_portName)        FastSerial _portName(1); FastSerialHandler1
+#define FastSerialPort2(_portName)        FastSerial _portName(2); FastSerialHandler2
+#define FastSerialPort3(_portName)        FastSerial _portName(3); FastSerialHandler3
+#endif
 
 class FastSerial : public Print {
 public:
@@ -97,9 +112,40 @@ private:
 };
 
 // For clients that want to assume that the default Serial* objects exist.
+// Note that the application is responsible for ensuring that these actually get defined,
+// otherwise Arduino will suck in the HardwareSerial library and linking will fail.
 extern class FastSerial Serial;
 extern class FastSerial Serial1;
 extern class FastSerial Serial2;
 extern class FastSerial Serial3;
+
+// Used by the per-port interrupt vectors
+extern FastSerial       *__FastSerial__ports[];
+
+// Generic Rx/Tx vectors for a serial port - needs to know magic numbers
+#define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR)    \
+ISR(_RXVECTOR, ISR_BLOCK)                                       \
+{                                                               \
+        unsigned char c = _UDR;                                 \
+        __FastSerial__ports[_PORT]->receive(c);                 \
+}                                                               \
+ ISR(_TXVECTOR, ISR_BLOCK)                                      \
+{                                                               \
+        __FastSerial__ports[_PORT]->transmit();                 \
+}                                                               \
+struct hack
+
+// Magic numbers for the Rx/Tx vectors indexed by serial port number
+#if defined(__AVR_ATmega8__)
+# define FastSerialHandler0     FastSerialHandler(0, SIG_UART_RECV, SIG_UART_DATA, UDR);
+#else
+# define FastSerialHandler0     FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0);
+#endif
+#if defined(__AVR_ATmega1280__)
+# define FastSerialHandler1     FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1);
+# define FastSerialHandler2     FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2);
+# define FastSerialHandler3     FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3);
+#endif
+
 
 #endif // FastSerial_h

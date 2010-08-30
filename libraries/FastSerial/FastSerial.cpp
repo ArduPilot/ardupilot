@@ -29,10 +29,10 @@
 //
 
 
+#include "FastSerial.h"
 #include <wiring.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
-#include "FastSerial.h"
 
 #if defined(__AVR_ATmega1280__)
 # define FS_MAX_PORTS   4
@@ -40,13 +40,14 @@
 # define FS_MAX_PORTS   1
 #endif
 
-static FastSerial       *ports[FS_MAX_PORTS];
+FastSerial       *__FastSerial__ports[FS_MAX_PORTS];
 
 #define RX_BUFFER_SIZE  sizeof(((FastSerial::RXBuffer *)1)->bytes)
 #define TX_BUFFER_SIZE  sizeof(((FastSerial::TXBuffer *)1)->bytes)
 
 // Interrupt handlers //////////////////////////////////////////////////////////
 
+#if 0
 #define HANDLERS(_PORT, _RXVECTOR, _TXVECTOR, _UDR)     \
 SIGNAL(_RXVECTOR)                                       \
 {                                                       \
@@ -68,6 +69,7 @@ HANDLERS(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0);
 HANDLERS(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1);
 HANDLERS(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2);
 HANDLERS(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3);
+#endif
 #endif
 #endif
 
@@ -139,7 +141,7 @@ FastSerial::FastSerial(uint8_t portNumber)
         _rxBuffer.head = _rxBuffer.tail = 0;
 
         // claim the port
-        ports[portNumber] = this;
+        __FastSerial__ports[portNumber] = this;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
