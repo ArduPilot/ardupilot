@@ -1,6 +1,6 @@
 /*
   Example of APM_Compass library (HMC5843 sensor).
-  Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+  Code by Jordi MuÃ’oz and Jose Julio. DIYDrones.com
 */
 
 #include <Wire.h>
@@ -13,7 +13,7 @@ unsigned long timer;
 void setup()
 {  
   APM_Compass.Init();   // Initialization
-  Serial.begin(57600);
+  Serial.begin(38400);
   Serial.println("Compass library test (HMC5843)");
   delay(1000);
   timer = millis();
@@ -36,6 +36,6 @@ void loop()
     Serial.print(APM_Compass.Mag_Y);
     Serial.print(",");
     Serial.print(APM_Compass.Mag_Z);
-    Serial.println();
+    Serial.println(" )");
     }
 }
