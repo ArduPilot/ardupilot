@@ -107,7 +107,7 @@ AP_Compass::calculate(float roll, float pitch)
 	
 	// Magnetic heading
 	heading = atan2(-head_Y, head_X);
-	ground_course = degrees(heading) + 180;
+	ground_course = (degrees(heading) + 180) * 100;
 	
 	// Optimization for external DCM use. calculate normalized components
 	heading_X = cos(heading);

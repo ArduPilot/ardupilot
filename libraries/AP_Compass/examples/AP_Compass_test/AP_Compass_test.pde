@@ -28,13 +28,13 @@ void loop()
 		compass.update();
 		compass.calculate(0, 0);	// roll = 0, pitch = 0 for this example
 	    Serial.print("Heading:");
-		Serial.print(degrees(compass.heading));
+		Serial.print(compass.ground_course,DEC);
     	Serial.print("  (");
 		Serial.print(compass.mag_X);
 	    Serial.print(",");
 		Serial.print(compass.mag_Y);
     	Serial.print(",");
 		Serial.print(compass.mag_Z);
-		Serial.println();
+   		Serial.println(" )");
 	}
 }
