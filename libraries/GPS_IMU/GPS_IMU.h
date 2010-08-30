@@ -23,7 +23,6 @@ class GPS_IMU_Class
 	uint8_t ck_b;
 	uint8_t IMU_ck_a;
 	uint8_t IMU_ck_b;
-	
 	uint8_t IMU_step;
 	uint8_t IMU_class;
 	uint8_t message_num;
@@ -44,11 +43,12 @@ class GPS_IMU_Class
 	GPS_IMU_Class();
 	void Init();
 	void Read();
+	
 	// Properties
-	long roll_sensor;		// how much we're turning in deg * 100
-	long pitch_sensor;		// our angle of attack in deg * 100
-	int airspeed;
-	float imu_health;
+	long 	roll_sensor;		// how much we're turning in deg * 100
+	long 	pitch_sensor;		// our angle of attack in deg * 100
+	int 	airspeed;
+	float 	imu_health;
 	uint8_t imu_ok;
 	
 	long Time;          //GPS Millisecond Time of Week
@@ -58,6 +58,7 @@ class GPS_IMU_Class
 	long Ground_Speed;
 	long Ground_Course;
 	long Speed_3d;
+	
 	uint8_t NumSats;      // Number of visible satelites
 	uint8_t Fix;        // 1:GPS FIX   0:No FIX (normal logic)
 	uint8_t NewData;    // 1:New GPS Data
@@ -65,5 +66,3 @@ class GPS_IMU_Class
 };
 
 extern GPS_IMU_Class GPS;
-
-#endif

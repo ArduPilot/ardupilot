@@ -154,7 +154,7 @@ void GPS_IMU_Class::Read(void)
 		}// End for...
 	}
 	// If we don't receive GPS packets in 2 seconds => Bad FIX state
-	if ((millis() - GPS_timer)>2000){
+	if ((millis() - GPS_timer) > 3000){
 		Fix = 0;
 	}
 	if (PrintErrors){
