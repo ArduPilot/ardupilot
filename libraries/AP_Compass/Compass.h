@@ -13,6 +13,7 @@ class Compass
 	int16_t mag_X;
 	int16_t mag_Y;
 	int16_t mag_Z;
+	int32_t ground_course;
 	float heading;
 	float heading_X;
 	float heading_Y;
