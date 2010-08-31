@@ -29,10 +29,9 @@
 //
 
 
+#include "../AP_Common/AP_Common.h"
 #include "FastSerial.h"
-#include <wiring.h>
-#include <avr/interrupt.h>
-#include <avr/io.h>
+#include "WProgram.h"
 
 #if defined(__AVR_ATmega1280__)
 # define FS_MAX_PORTS   4
@@ -75,73 +74,37 @@ HANDLERS(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3);
 
 // Constructor /////////////////////////////////////////////////////////////////
 
-FastSerial::FastSerial(uint8_t portNumber)
+FastSerial::FastSerial(const uint8_t portNumber,
+                       volatile uint8_t *ubrrh,
+                       volatile uint8_t *ubrrl,
+                       volatile uint8_t *ucsra,
+                       volatile uint8_t *ucsrb,
+                       volatile uint8_t *udr,
+                       const uint8_t u2x,
+                       const uint8_t portEnableBits,
+                       const uint8_t portTxBits)
 {
-        switch(portNumber) {
-#if defined(__AVR_ATmega8__)
-        case 0:
-                _ubrrh = &UBRRH;
-                _ubrrl = &UBRRL;
-                _ucsra = &UCSRA;
-                _ucsrb = &UCSRB;
-                _udr   = &UDR;
-                _u2x   = U2X;
-                _portEnableBits = _BV(RXEN) |  _BV(TXEN) | _BV(RXCIE);
-                _portTxBits     = _BV(UDRIE);
-                break;
-#else
-        case 0:
-                _ubrrh = &UBRR0H;
-                _ubrrl = &UBRR0L;
-                _ucsra = &UCSR0A;
-                _ucsrb = &UCSR0B;
-                _udr   = &UDR0;
-                _u2x   = U2X0;
-                _portEnableBits = _BV(RXEN0) | _BV(TXEN0) | _BV(RXCIE0);
-                _portTxBits     = _BV(UDRIE0);
-                break;
-#if defined(__AVR_ATmega1280__)
-        case 1:
-                _ubrrh = &UBRR1H;
-                _ubrrl = &UBRR1L;
-                _ucsra = &UCSR1A;
-                _ucsrb = &UCSR1B;
-                _udr   = &UDR1;
-                _u2x   = U2X1;
-                _portEnableBits = _BV(RXEN1) | _BV(TXEN1) | _BV(RXCIE1);
-                _portTxBits     = _BV(UDRIE1);
-                break;
-        case 2:
-                _ubrrh = &UBRR2H;
-                _ubrrl = &UBRR2L;
-                _ucsra = &UCSR2A;
-                _ucsrb = &UCSR2B;
-                _udr   = &UDR2;
-                _u2x   = U2X2;
-                _portEnableBits = _BV(RXEN2) | _BV(TXEN2) | _BV(RXCIE2);
-                _portTxBits     = _BV(UDRIE2);
-                break;
-        case 3:
-                _ubrrh = &UBRR3H;
-                _ubrrl = &UBRR3L;
-                _ucsra = &UCSR3A;
-                _ucsrb = &UCSR3B;
-                _udr   = &UDR3;
-                _u2x   = U2X3;
-                _portEnableBits = _BV(RXEN3) | _BV(TXEN3) | _BV(RXCIE3);
-                _portTxBits     = _BV(UDRIE3);
-                break;
-#endif
-#endif
-        default:
-                return;
-        };
+        _ubrrh = ubrrh;
+        _ubrrl = ubrrl;
+        _ucsra = ucsra;
+        _ucsrb = ucsrb;
+        _udr   = udr;
+        _u2x   = u2x;
+        _portEnableBits = portEnableBits;
+        _portTxBits     = portTxBits;
 
+        // init buffers
         _txBuffer.head = _txBuffer.tail = 0;
         _rxBuffer.head = _rxBuffer.tail = 0;
 
         // claim the port
         __FastSerial__ports[portNumber] = this;
+
+        // init stdio
+        fdev_setup_stream(&_fd, &FastSerial::_putchar, NULL, _FDEV_SETUP_WRITE);
+        fdev_set_udata(&_fd, this);
+        if (0 == portNumber)
+                stdout = &_fd;          // serial port 0 is always the default console
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -254,6 +217,55 @@ FastSerial::write(const uint8_t *buffer, int count)
                 write(*buffer++);
 }
 
+// STDIO emulation /////////////////////////////////////////////////////////////
+
+int
+FastSerial::_putchar(char c, FILE *stream)
+{
+        FastSerial      *fs;
+
+        fs = (FastSerial *)fdev_get_udata(stream);
+        fs->write(c);
+        return(0);
+}
+
+int
+FastSerial::_getchar(FILE *stream)
+{
+        FastSerial      *fs;
+
+        fs = (FastSerial *)fdev_get_udata(stream);
+
+        // We return -1 if there is nothing to read, which the library interprets
+        // as an error, which our clients will need to deal with.
+        return(fs->read());
+}
+
+int
+FastSerial::printf(const char *fmt, ...)
+{
+        va_list ap;
+        int     i;
+
+        va_start(ap, fmt);
+        i = vfprintf(&_fd, fmt, ap);
+        va_end(ap);
+
+        return(i);
+}
+
+int
+FastSerial::printf_P(const char *fmt, ...)
+{
+        va_list ap;
+        int     i;
+
+        va_start(ap, fmt);
+        i = vfprintf_P(stdout, fmt, ap);
+        va_end(ap);
+
+        return(i);
+}
 
 // Interrupt methods ///////////////////////////////////////////////////////////
 

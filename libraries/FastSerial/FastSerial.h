@@ -35,7 +35,7 @@
 // Note that this library does not pre-declare drivers for serial
 // ports; the user must explicitly create drivers for the ports they
 // wish to use.  This is less friendly than the stock Arduino driver,
-// but it saves 256 bytes for every unused port.
+// but it saves ~200 bytes for every unused port.
 //
 // To adjust the transmit/receive buffer sizes, change the size of the
 // 'bytes' member in the RXBuffer and TXBuffer structures.
@@ -48,7 +48,9 @@
 #define HardwareSerial_h
 
 #include <inttypes.h>
+#include <stdio.h>
 #include <Print.h>
+#include <avr/interrupt.h>
 
 //
 // Because Arduino libraries aren't really libraries, but we want to
@@ -58,16 +60,39 @@
 // Due to the way interrupt vectors are specified, we have to have
 // a separate macro for every port.  Ugh.
 //
-#define FastSerialPort0(_portName)        FastSerial _portName(0); FastSerialHandler0
-#if defined(__AVR_ATmega1280__)
-#define FastSerialPort1(_portName)        FastSerial _portName(1); FastSerialHandler1
-#define FastSerialPort2(_portName)        FastSerial _portName(2); FastSerialHandler2
-#define FastSerialPort3(_portName)        FastSerial _portName(3); FastSerialHandler3
-#endif
+// The macros are:
+//
+// FastSerialPort0(<port name>)         creates <port name> referencing serial port 0
+// FastSerialPort1(<port name>)         creates <port name> referencing serial port 1
+// FastSerialPort2(<port name>)         creates <port name> referencing serial port 2
+// FastSerialPort3(<port name>)         creates <port name> referencing serial port 3
+//
+
+//
+// Forward declarations for clients that want to assume that the
+// default Serial* objects exist.
+//
+// Note that the application is responsible for ensuring that these
+// actually get defined, otherwise Arduino will suck in the
+// HardwareSerial library and linking will fail.
+//
+extern class FastSerial Serial;
+extern class FastSerial Serial1;
+extern class FastSerial Serial2;
+extern class FastSerial Serial3;
+
 
 class FastSerial : public Print {
 public:
-        FastSerial(uint8_t portNumber = 0);
+        FastSerial(const uint8_t portNumber,
+                   volatile uint8_t *ubrrh,
+                   volatile uint8_t *ubrrl,
+                   volatile uint8_t *ucsra,
+                   volatile uint8_t *ucsrb,
+                   volatile uint8_t *udr,
+                   const uint8_t u2x,
+                   const uint8_t portEnableBits,
+                   const uint8_t portTxBits);
 
         // Serial API
         void            begin(long baud);
@@ -78,6 +103,11 @@ public:
         void            write(uint8_t c);
         void            write(const uint8_t *buffer, int count);
         using Print::write;
+
+        // stdio extensions
+        int             printf(const char *fmt, ...);
+        int             printf_P(const char *fmt, ...);
+        FILE            *getfd(void) { return &_fd; };
 
         // Interrupt methods
         void            receive(uint8_t c);
@@ -109,15 +139,12 @@ private:
         };
         RXBuffer        _rxBuffer;
         TXBuffer        _txBuffer;
-};
 
-// For clients that want to assume that the default Serial* objects exist.
-// Note that the application is responsible for ensuring that these actually get defined,
-// otherwise Arduino will suck in the HardwareSerial library and linking will fail.
-extern class FastSerial Serial;
-extern class FastSerial Serial1;
-extern class FastSerial Serial2;
-extern class FastSerial Serial3;
+        // stdio emulation
+        FILE            _fd;
+        static int      _putchar(char c, FILE *stream);
+        static int      _getchar(FILE *stream);
+};
 
 // Used by the per-port interrupt vectors
 extern FastSerial       *__FastSerial__ports[];
@@ -129,23 +156,59 @@ ISR(_RXVECTOR, ISR_BLOCK)                                       \
         unsigned char c = _UDR;                                 \
         __FastSerial__ports[_PORT]->receive(c);                 \
 }                                                               \
- ISR(_TXVECTOR, ISR_BLOCK)                                      \
+ISR(_TXVECTOR, ISR_BLOCK)                                       \
 {                                                               \
         __FastSerial__ports[_PORT]->transmit();                 \
 }                                                               \
 struct hack
 
-// Magic numbers for the Rx/Tx vectors indexed by serial port number
-#if defined(__AVR_ATmega8__)
-# define FastSerialHandler0     FastSerialHandler(0, SIG_UART_RECV, SIG_UART_DATA, UDR);
-#else
-# define FastSerialHandler0     FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0);
-#endif
+// Macros defining serial ports
+// XXX note no ATMega8 support here...
+#define FastSerialPort0(_portName)                                      \
+	FastSerial _portName(0,                                         \
+                             &UBRR0H,                                   \
+                             &UBRR0L,                                   \
+                             &UCSR0A,                                   \
+                             &UCSR0B,                                   \
+                             &UDR0,                                     \
+                             U2X0,                                      \
+                             (_BV(RXEN0) |  _BV(TXEN0) | _BV(RXCIE0)),  \
+                             (_BV(UDRIE0)));                            \
+	FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0)
 #if defined(__AVR_ATmega1280__)
-# define FastSerialHandler1     FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1);
-# define FastSerialHandler2     FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2);
-# define FastSerialHandler3     FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3);
+#define FastSerialPort1(_portName)                                      \
+	FastSerial _portName(1,                                         \
+                             &UBRR1H,                                   \
+                             &UBRR1L,                                   \
+                             &UCSR1A,                                   \
+                             &UCSR1B,                                   \
+                             &UDR1,                                     \
+                             U2X1,                                      \
+                             (_BV(RXEN1) |  _BV(TXEN1) | _BV(RXCIE1)),  \
+                             (_BV(UDRIE1)));                            \
+	FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1)
+#define FastSerialPort2(_portName)                                      \
+	FastSerial _portName(2,                                         \
+                             &UBRR2H,                                   \
+                             &UBRR2L,                                   \
+                             &UCSR2A,                                   \
+                             &UCSR2B,                                   \
+                             &UDR2,                                     \
+                             U2X2,                                      \
+                             (_BV(RXEN2) |  _BV(TXEN2) | _BV(RXCIE2)),  \
+                             (_BV(UDRIE2)));                            \
+	FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2)
+#define FastSerialPort3(_portName)                                      \
+	FastSerial _portName(3,                                         \
+                             &UBRR3H,                                   \
+                             &UBRR3L,                                   \
+                             &UCSR3A,                                   \
+                             &UCSR3B,                                   \
+                             &UDR3,                                     \
+                             U2X3,                                      \
+                             (_BV(RXEN3) |  _BV(TXEN3) | _BV(RXCIE3)),  \
+                             (_BV(UDRIE3)));                            \
+	FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3)
 #endif
-
 
 #endif // FastSerial_h
