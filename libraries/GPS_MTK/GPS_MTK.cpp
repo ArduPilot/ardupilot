@@ -23,7 +23,7 @@
 		Ground_course : Course (degrees) * 100 (long value)
 		NewData : 1 when a new data is received.
 		          You need to write a 0 to NewData when you read the data
-		Fix : 1: GPS NO FIX, 2: 2D FIX, 3: 3D FIX.
+		Fix : 0: GPS NO FIX or 2D FIX, 1: 3D FIX.
 			
 */
 
@@ -42,7 +42,6 @@ GPS_MTK_Class::GPS_MTK_Class()
 void GPS_MTK_Class::Init(void)
 {
 	delay(200);
-	Serial.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
 	ck_a=0;
 	ck_b=0;
 	UBX_step=0;
@@ -56,6 +55,8 @@ void GPS_MTK_Class::Init(void)
 	#else
 		Serial.begin(38400);
 	#endif
+	Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
+	//Serial.println("sent config string");
 }
 
 // optimization : This code don´t wait for data, only proccess the data available
@@ -179,6 +180,10 @@ void GPS_MTK_Class::parse_ubx_gps(void)
 	  NumSats=UBX_buffer[j];
 	  j++;
 	  Fix=UBX_buffer[j];
+	  if (Fix==3)
+		Fix = 1;
+	  else
+		Fix = 0;
       j++;
 	  Time = join_4_bytes(&UBX_buffer[j]);
       NewData=1;
