@@ -8,7 +8,7 @@
 	License as published by the Free Software Foundation; either
 	version 2.1 of the License, or (at your option) any later version.
 
-	GPS configuration : Costum protocol
+	GPS configuration : Custum protocol
 	Baud rate : 38400
 
 	Methods:
@@ -23,7 +23,7 @@
 		ground_course : Course (degrees) * 100 (long value)
 		new_data : 1 when a new data is received.
 							You need to write a 0 to new_data when you read the data
-		fix : 1: GPS NO fix, 2: 2D fix, 3: 3D fix.
+		Fix : 0: GPS NO FIX or 2D FIX, 1: 3D FIX.
 			
 */
 
@@ -39,7 +39,6 @@ AP_GPS_MTK::AP_GPS_MTK()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
 {
-	Serial.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
 	
 	ck_a 		= 0;
 	ck_b 		= 0;
@@ -48,12 +47,13 @@ void AP_GPS_MTK::init(void)
 	fix 		= 0;
 	print_errors = 0;
 	
-	// initialize serial port
+	// initialize serial port for binary protocol use
 	#if defined(__AVR_ATmega1280__)
 		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
 	#else
 		Serial.begin(38400); 
 	#endif
+	Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
 }
 
 // optimization : This code don¥t wait for data, only proccess the data available
@@ -162,6 +162,10 @@ AP_GPS_MTK::parse_gps(void)
 				num_sats = buffer[j];
 				j++;
 				fix = buffer[j];
+				if (fix==3)
+					fix = 1;
+				else
+					fix = 0;
 				j++;
 				time = join_4_bytes(&buffer[j]);
 				new_data = 1;
