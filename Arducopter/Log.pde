@@ -9,6 +9,7 @@
 #define LOG_GPS_MSG      0x02
 #define LOG_RADIO_MSG    0x03
 #define LOG_SENSOR_MSG   0x04
+#define LOG_PID_MSG      0x05
 
 // Write a Sensor Raw data packet
 void Log_Write_Sensor(int s1, int s2, int s3,int s4, int s5, int s6, int s7)
@@ -35,6 +36,20 @@ void Log_Write_Attitude(int log_roll, int log_pitch, int log_yaw)
   DataFlash.WriteInt(log_roll);
   DataFlash.WriteInt(log_pitch);
   DataFlash.WriteInt(log_yaw);
+  DataFlash.WriteByte(END_BYTE);
+}
+
+// Write a PID control info
+void Log_Write_PID(byte num_PID, int P, int I,int D, int output)
+{
+  DataFlash.WriteByte(HEAD_BYTE1);
+  DataFlash.WriteByte(HEAD_BYTE2);
+  DataFlash.WriteByte(LOG_PID_MSG);
+  DataFlash.WriteByte(num_PID);
+  DataFlash.WriteInt(P);
+  DataFlash.WriteInt(I);
+  DataFlash.WriteInt(D);
+  DataFlash.WriteInt(output);
   DataFlash.WriteByte(END_BYTE);
 }
 
@@ -112,6 +127,22 @@ void Log_Read_Attitude()
   Serial.println();
 }
 
+// Read a Sensor raw data packet
+void Log_Read_PID()
+{  
+  Serial.print("PID:");
+  Serial.print((int)DataFlash.ReadByte());  // NUM_PID
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // P
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // I
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // D
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // output
+  Serial.println();
+}
+
 // Read a GPS packet
 void Log_Read_GPS()
 {
@@ -176,7 +207,7 @@ void Log_Read(int start_page, int end_page)
 {
   byte data;
   byte log_step=0;
-  int packet_count=0; 
+  long packet_count=0; 
 
   DataFlash.StartRead(start_page);
   while (DataFlash.GetPage() < end_page)
@@ -209,6 +240,10 @@ void Log_Read(int start_page, int end_page)
             break;
           case LOG_SENSOR_MSG:
             Log_Read_Sensor();
+            log_step++;
+            break;
+          case LOG_PID_MSG:
+            Log_Read_PID();
             log_step++;
             break;
           default:

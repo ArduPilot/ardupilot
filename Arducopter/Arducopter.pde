@@ -49,7 +49,7 @@
 /* User definable modules */
 
 // Comment out with // modules that you are not using
-//#define IsGPS    // Do we have a GPS connected
+#define IsGPS    // Do we have a GPS connected
 //#define IsNEWMTEK// Do we have MTEK with new firmware
 #define IsMAG    // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
@@ -87,8 +87,8 @@
 #include <APM_BMP085.h>
 #endif
 
-//#include <GPS_NMEA.h>   // General NMEA GPS 
-#include <GPS_MTK.h>      // MediaTEK DIY Drones GPS. 
+#include <GPS_NMEA.h>   // General NMEA GPS 
+//#include <GPS_MTK.h>      // MediaTEK DIY Drones GPS. 
 //#include <GPS_UBLOX.h>  // uBlox GPS
 
 // EEPROM storage for user configurable values
@@ -109,74 +109,64 @@
 
 /* ************************************************************ */
 // STABLE MODE
-// ROLL, PITCH and YAW PID controls... 
+// PI absolute angle control driving a P rate control
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
-void Attitude_control_v2()
+void Attitude_control_v3()
 {
-  float err_roll_rate;
-  float err_pitch_rate;
-  float roll_rate;
-  float pitch_rate;
-
+  float stable_roll,stable_pitch,stable_yaw;
+  
   // ROLL CONTROL    
-  if (AP_mode == 2)        // Normal Mode => Stabilization mode
+  if (AP_mode==2)        // Normal Mode => Stabilization mode
     err_roll = command_rx_roll - ToDeg(roll);
   else
-    err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control
+    err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control  
+  err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
+  
+  roll_I += err_roll*G_Dt;
+  roll_I = constrain(roll_I,-20,20);
 
-    err_roll = constrain(err_roll, -25, 25);  // to limit max roll command...
-
-  // New control term...
-  roll_rate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
-  err_roll_rate = ((ch_roll - roll_mid) >> 1) - roll_rate;
-
-  roll_I += err_roll * G_Dt;
-  roll_I = constrain(roll_I, -20, 20);
-  // D term implementation => two parts: gyro part and command part
-  // To have a better (faster) response we can use the Gyro reading directly for the Derivative term...
-  // We also add a part that takes into account the command from user (stick) to make the system more responsive to user inputs
-  roll_D = - roll_rate;  // Take into account Angular velocity of the stick (command)
-
-  // PID control
+  // PID absolute angle control
   K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  control_roll = K_aux * err_roll + KD_QUAD_ROLL * roll_D + KI_QUAD_ROLL * roll_I + STABLE_MODE_KP_RATE * err_roll_rate;  
-
+  stable_roll = K_aux*err_roll + KI_QUAD_ROLL*roll_I;
+  
+  // PD rate control (we use also the bias corrected gyro rates)
+  err_roll = stable_roll - ToDeg(Omega[0]); // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
+  control_roll = STABLE_MODE_KP_RATE_ROLL*err_roll;
+  
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
     err_pitch = command_rx_pitch - ToDeg(pitch);
-  else
+  else                   // GPS Position hold
     err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
-
-  err_pitch = constrain(err_pitch, -25, 25);  // to limit max pitch command...
-
-  // New control term...
-  pitch_rate = ToDeg(Omega[1]);
-  err_pitch_rate = ((ch_pitch - pitch_mid) >> 1) - pitch_rate;
-
-  pitch_I += err_pitch * G_Dt;
-  pitch_I = constrain(pitch_I, -20, 20);
-  // D term
-  pitch_D = - pitch_rate;
-
-  // PID control
+  err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
+  
+  pitch_I += err_pitch*G_Dt;
+  pitch_I = constrain(pitch_I,-20,20);
+ 
+  // PID absolute angle control
   K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
-  control_pitch = K_aux * err_pitch + KD_QUAD_PITCH * pitch_D + KI_QUAD_PITCH * pitch_I + STABLE_MODE_KP_RATE * err_pitch_rate; 
-
+  stable_pitch = K_aux*err_pitch + KI_QUAD_PITCH*pitch_I;
+  
+  // P rate control (we use also the bias corrected gyro rates)
+  err_pitch = stable_pitch - ToDeg(Omega[1]);
+  control_pitch = STABLE_MODE_KP_RATE_PITCH*err_pitch;
+  
   // YAW CONTROL
   err_yaw = command_rx_yaw - ToDeg(yaw);
   if (err_yaw > 180)    // Normalize to -180,180
-      err_yaw -= 360;
+    err_yaw -= 360;
   else if(err_yaw < -180)
     err_yaw += 360;
-
-  err_yaw = constrain(err_yaw, -60, 60);  // to limit max yaw command...
-
-  yaw_I += err_yaw * G_Dt;
-  yaw_I = constrain(yaw_I, -20, 20);
-  yaw_D = - ToDeg(Omega[2]);
-
-  // PID control
-  control_yaw = KP_QUAD_YAW * err_yaw + KD_QUAD_YAW * yaw_D + KI_QUAD_YAW * yaw_I;
+  err_yaw = constrain(err_yaw,-60,60);  // to limit max yaw command...
+  
+  yaw_I += err_yaw*G_Dt;
+  yaw_I = constrain(yaw_I,-20,20);
+ 
+  // PID absoulte angle control
+  stable_yaw = KP_QUAD_YAW*err_yaw + KI_QUAD_YAW*yaw_I;
+  // PD rate control (we use also the bias corrected gyro rates)
+  err_yaw = stable_yaw - ToDeg(Omega[2]);
+  control_yaw = STABLE_MODE_KP_RATE_YAW*err_yaw;
 }
 
 // ACRO MODE
@@ -227,6 +217,55 @@ void Rate_control()
   control_yaw = Kp_RateYaw*err_yaw + Kd_RateYaw*yaw_D + Ki_RateYaw*yaw_I; 
 }
 
+// RATE CONTROL MODE
+// Using Omega vector (bias corrected gyro rate)
+void Rate_control_v2()
+{
+  static float previousRollRate, previousPitchRate, previousYawRate;
+  float currentRollRate, currentPitchRate, currentYawRate;
+  
+  // ROLL CONTROL
+  currentRollRate = ToDeg(Omega[0]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
+  
+  err_roll = ((ch_roll- roll_mid) * xmitFactor) - currentRollRate;
+  
+  roll_I += err_roll*G_Dt;
+  roll_I = constrain(roll_I,-20,20);
+
+  roll_D = (currentRollRate - previousRollRate)/G_Dt;
+  previousRollRate = currentRollRate;
+  
+  // PID control
+  control_roll = Kp_RateRoll*err_roll + Kd_RateRoll*roll_D + Ki_RateRoll*roll_I; 
+  
+  // PITCH CONTROL
+  currentPitchRate = ToDeg(Omega[1]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
+  err_pitch = ((ch_pitch - pitch_mid) * xmitFactor) - currentPitchRate;
+  
+  pitch_I += err_pitch*G_Dt;
+  pitch_I = constrain(pitch_I,-20,20);
+
+  pitch_D = (currentPitchRate - previousPitchRate)/G_Dt;
+  previousPitchRate = currentPitchRate;
+ 
+  // PID control
+  control_pitch = Kp_RatePitch*err_pitch + Kd_RatePitch*pitch_D + Ki_RatePitch*pitch_I; 
+  
+  // YAW CONTROL
+  currentYawRate = ToDeg(Omega[2]);  // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected;
+  err_yaw = ((ch_yaw - yaw_mid)* xmitFactor) - currentYawRate;
+  
+  yaw_I += err_yaw*G_Dt;
+  yaw_I = constrain(yaw_I,-20,20);
+
+  yaw_D = (currentYawRate - previousYawRate)/G_Dt;
+  previousYawRate = currentYawRate;
+ 
+  // PID control
+  K_aux = KP_QUAD_YAW; // Comment this out if you want to use transmitter to adjust gain
+  control_yaw = Kp_RateYaw*err_yaw + Kd_RateYaw*yaw_D + Ki_RateYaw*yaw_I; 
+}
+
 // Maximun slope filter for radio inputs... (limit max differences between readings)
 int channel_filter(int ch, int ch_old)
 {
@@ -237,13 +276,13 @@ int channel_filter(int ch, int ch_old)
   diff_ch_old = ch - ch_old;      // Difference with old reading
   if (diff_ch_old < 0)
   {
-    if (diff_ch_old <- 40)
-      return(ch_old - 40);        // We limit the max difference between readings
+    if (diff_ch_old <- 60)
+      return(ch_old - 60);        // We limit the max difference between readings
   }
   else
   {
-    if (diff_ch_old > 40)    
-      return(ch_old + 40);
+    if (diff_ch_old > 60)    
+      return(ch_old + 60);
   }
   return((ch + ch_old) >> 1);   // Small filtering
   //return(ch);
@@ -265,6 +304,13 @@ void setup()
 
   pinMode(RELE_pin,OUTPUT);   // Rele output
   digitalWrite(RELE_pin,LOW);
+  
+  APM_RC.Init();             // APM Radio initialization
+  // RC channels Initialization (Quad motors)  
+  APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
+  APM_RC.OutputCh(1,MIN_THROTTLE);
+  APM_RC.OutputCh(2,MIN_THROTTLE);
+  APM_RC.OutputCh(3,MIN_THROTTLE);
 
   //  delay(1000); // Wait until frame is not moving after initial power cord has connected
   for(i = 0; i <= 50; i++) {
@@ -278,7 +324,6 @@ void setup()
     delay(20);
   }
 
-  APM_RC.Init();             // APM Radio initialization
   APM_ADC.Init();            // APM ADC library initialization
   DataFlash.Init();          // DataFlash log initialization
 
@@ -299,12 +344,6 @@ void setup()
   if(pitch_mid < 1400 || pitch_mid > 1600) pitch_mid = 1500;
   if(yaw_mid < 1400 || yaw_mid > 1600) yaw_mid = 1500;
 
-  // RC channels Initialization (Quad motors)  
-  APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
-  APM_RC.OutputCh(1,MIN_THROTTLE);
-  APM_RC.OutputCh(2,MIN_THROTTLE);
-  APM_RC.OutputCh(3,MIN_THROTTLE);
-
   if (MAGNETOMETER == 1)
     APM_Compass.Init();  // I2C initialization
 
@@ -320,12 +359,12 @@ void setup()
   while (digitalRead(SW1_pin)==0)
   {
     Serial.println("Entering Log Read Mode...");
-    Log_Read(1,1000);
+    Log_Read(1,2000);
     delay(30000);
   }
 
   Read_adc_raw();
-  delay(20);
+  delay(10);
 
   // Offset values for accels and gyros...
   AN_OFFSET[3] = acc_offset_x;
@@ -387,30 +426,6 @@ void setup()
   //  Serial.println(Neutro_yaw);
   Serial.print(yaw_mid);
 #endif
-
-#ifdef RADIO_TEST_MODE    // RADIO TEST MODE TO TEST RADIO CHANNELS
-  while(1)
-  {
-    if (APM_RC.GetState()==1)
-    {
-      Serial.print("AIL:");
-      Serial.print(APM_RC.InputCh(0));
-      Serial.print("ELE:");
-      Serial.print(APM_RC.InputCh(1));
-      Serial.print("THR:");
-      Serial.print(APM_RC.InputCh(2));
-      Serial.print("YAW:");
-      Serial.print(APM_RC.InputCh(3));
-      Serial.print("AUX(mode):");
-      Serial.print(APM_RC.InputCh(4));
-      Serial.print("AUX2:");
-      Serial.print(APM_RC.InputCh(5));
-      Serial.println();
-      delay(200);
-    }
-  } 
-#endif  
-
   delay(1000);
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
@@ -427,6 +442,7 @@ void setup()
 
   motorArmed = 0;
   digitalWrite(LED_Green,HIGH);     // Ready to go...
+  
 }
 
 
@@ -482,11 +498,11 @@ void loop(){
     Serial.print(",");
     Serial.print(log_yaw);
 
-    for (int i = 0; i < 6; i++)
-    {
-      Serial.print(AN[i]);
-      Serial.print(",");
-    }
+    //for (int i = 0; i < 6; i++)
+    //{
+    //  Serial.print(AN[i]);
+    //  Serial.print(",");
+    //}
 #endif
 
     // Write Sensor raw data to DataFlash log
@@ -500,33 +516,30 @@ void loop(){
       // Stick position defines the desired angle in roll, pitch and yaw
       ch_roll = channel_filter(APM_RC.InputCh(0) * ch_roll_slope + ch_roll_offset, ch_roll);
       ch_pitch = channel_filter(APM_RC.InputCh(1) * ch_pitch_slope + ch_pitch_offset, ch_pitch);
-      ch_throttle = channel_filter(APM_RC.InputCh(2) * ch_throttle_slope + ch_throttle_offset, ch_throttle);
+      //ch_throttle = channel_filter(APM_RC.InputCh(2) * ch_throttle_slope + ch_throttle_offset, ch_throttle);
+      ch_throttle = channel_filter(APM_RC.InputCh(2), ch_throttle); // Transmiter calibration not used on throttle
       ch_yaw = channel_filter(APM_RC.InputCh(3) * ch_yaw_slope + ch_yaw_offset, ch_yaw);
       ch_aux = APM_RC.InputCh(4) * ch_aux_slope + ch_aux_offset;
       ch_aux2 = APM_RC.InputCh(5) * ch_aux2_slope + ch_aux2_offset;
-      command_rx_roll_old = command_rx_roll;
-      command_rx_roll = (ch_roll-CHANN_CENTER) / 12.0;
-      command_rx_roll_diff = command_rx_roll - command_rx_roll_old;
-      command_rx_pitch_old = command_rx_pitch;
-      command_rx_pitch = (ch_pitch-CHANN_CENTER) / 12.0;
-      command_rx_pitch_diff = command_rx_pitch - command_rx_pitch_old;
-      //      aux_float = (ch_yaw-Neutro_yaw) / 180.0;
-      aux_float = (ch_yaw-yaw_mid) / 180.0;
+   
+      command_rx_roll = (ch_roll-roll_mid) / 12.0;
+      command_rx_pitch = (ch_pitch-pitch_mid) / 12.0;
+      //aux_float = (ch_yaw-Neutro_yaw) / 180.0;
+      if (abs(ch_yaw-yaw_mid)<12)   // Take into account a bit of "dead zone" on yaw
+        aux_float = 0.0;
+      else
+        aux_float = (ch_yaw-yaw_mid) / 180.0;
       command_rx_yaw += aux_float;
-      command_rx_yaw_diff = aux_float;
       if (command_rx_yaw > 180)         // Normalize yaw to -180,180 degrees
         command_rx_yaw -= 360.0;
       else if (command_rx_yaw < -180)
         command_rx_yaw += 360.0;
-
+        
       // Read through comments in Attitude_control() if you wish to use transmitter to adjust P gains
       // I use K_aux (channel 6) to adjust gains linked to a knob in the radio... [not used now]
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
       K_aux = K_aux * 0.8 + ((ch_aux2-AUX_MID) / 300.0 + 1.7) * 0.2;   // /300 + 1.0
-
-      if (K_aux < 0)
-        K_aux = 0;
-
+      if (K_aux < 0) K_aux = 0;
       //Serial.print(",");
       //Serial.print(K_aux);
 
@@ -590,7 +603,8 @@ void loop(){
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
 
-      if (GPS.Fix >= 2)
+      //if (GPS.Fix >= 2)
+      if (GPS.Fix)
         digitalWrite(LED_Red,HIGH);  // GPS Fix => Blue LED
       else
         digitalWrite(LED_Red,LOW);
@@ -613,27 +627,25 @@ void loop(){
     // Control methodology selected using AUX2
     if (ch_aux2 < 1200) {
       gled_speed = 1200;
-      Attitude_control_v2();
+      Attitude_control_v3();
     }
     else
     {
       gled_speed = 400;
-      Rate_control();
+      Rate_control_v2();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
       command_rx_yaw = ToDeg(yaw);
-      command_rx_yaw_diff = 0;
     }
 
     // Arm motor output : Throttle down and full yaw right for more than 2 seconds
-    if (ch_throttle < 1200) {
+    if (ch_throttle < (MIN_THROTTLE + 100)) {
       control_yaw = 0;
       command_rx_yaw = ToDeg(yaw);
-      command_rx_yaw_diff = 0;
-      if (ch_yaw < 1200) {
+      if (ch_yaw > 1850) {
         if (Arming_counter > ARM_DELAY){
           if(ch_throttle > 800) {
           motorArmed = 1;
-          minThrottle = 1100;
+          minThrottle = MIN_THROTTLE+60;  // A minimun value for mantain a bit if throttle
           }
         }
         else
@@ -642,7 +654,7 @@ void loop(){
       else
         Arming_counter=0;
       // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
-      if (ch_yaw > 1800) {
+      if (ch_yaw < 1150) {
         if (Disarming_counter > DISARM_DELAY){
           motorArmed = 0;
           minThrottle = MIN_THROTTLE;
@@ -664,16 +676,16 @@ void loop(){
       digitalWrite(FR_LED, HIGH);    // AM-Mode
 #endif
 #ifdef FLIGHT_MODE_+
-      rightMotor = constrain(ch_throttle - control_roll - control_yaw, minThrottle, 2000);
-      leftMotor = constrain(ch_throttle + control_roll - control_yaw, minThrottle, 2000);
-      frontMotor = constrain(ch_throttle + control_pitch + control_yaw, minThrottle, 2000);
-      backMotor = constrain(ch_throttle - control_pitch + control_yaw, minThrottle, 2000);
+      rightMotor = constrain(ch_throttle - control_roll + control_yaw, minThrottle, 2000);
+      leftMotor = constrain(ch_throttle + control_roll + control_yaw, minThrottle, 2000);
+      frontMotor = constrain(ch_throttle + control_pitch - control_yaw, minThrottle, 2000);
+      backMotor = constrain(ch_throttle - control_pitch - control_yaw, minThrottle, 2000);
 #endif
 #ifdef FLIGHT_MODE_X
-      rightMotor = constrain(ch_throttle - control_roll + control_pitch - control_yaw, minThrottle, 2000); // front right motor
-      leftMotor = constrain(ch_throttle + control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear left motor
-      frontMotor = constrain(ch_throttle + control_roll + control_pitch + control_yaw, minThrottle, 2000); // front left motor
-      backMotor = constrain(ch_throttle - control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear right motor
+      rightMotor = constrain(ch_throttle - control_roll + control_pitch + control_yaw, minThrottle, 2000); // front right motor
+      leftMotor = constrain(ch_throttle + control_roll - control_pitch + control_yaw, minThrottle, 2000);  // rear left motor
+      frontMotor = constrain(ch_throttle + control_roll + control_pitch - control_yaw, minThrottle, 2000); // front left motor
+      backMotor = constrain(ch_throttle - control_roll - control_pitch - control_yaw, minThrottle, 2000);  // rear right motor
 #endif
     }
     if (motorArmed == 0) {
@@ -691,7 +703,6 @@ void loop(){
       yaw_I = 0; 
       // Initialize yaw command to actual yaw when throttle is down...
       command_rx_yaw = ToDeg(yaw);
-      command_rx_yaw_diff = 0;
     }
     APM_RC.OutputCh(0, rightMotor);    // Right motor
     APM_RC.OutputCh(1, leftMotor);    // Left motor
@@ -734,7 +745,6 @@ void loop(){
   }
 
 } // End of void loop()
-
 
 // END of Arducopter.pde
 

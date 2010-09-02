@@ -51,7 +51,7 @@ uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Ha
 
 // Sensor: GYROX, GYROY, GYROZ,   ACCELX, ACCELY, ACCELZ,     MAGX, MAGY, MAGZ
 int SENSOR_SIGN[]={
-  1, -1, 1,    -1, 1, 1,     -1, -1, -1}; 
+  1, -1, -1,    -1, 1, 1,     -1, -1, -1}; 
  //{-1,1,-1,1,-1,1,-1,-1,-1};
 /* APM Hardware definitions, END */
 
@@ -139,13 +139,8 @@ float GPS_Dt=0.2;   // GPS Dt
 
 // Attitude control variables
 float command_rx_roll=0;        // User commands
-float command_rx_roll_old;
-float command_rx_roll_diff;
 float command_rx_pitch=0;
-float command_rx_pitch_old;
-float command_rx_pitch_diff;
 float command_rx_yaw=0;
-float command_rx_yaw_diff;
 int control_roll;           // PID control results
 int control_pitch;
 int control_yaw;
