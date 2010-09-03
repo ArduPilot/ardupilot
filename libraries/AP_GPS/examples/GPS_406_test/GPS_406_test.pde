@@ -14,6 +14,9 @@ AP_GPS_406 gps;
 
 void setup()
 {
+	Serial.begin(38400);
+	Serial.println("Switching to 57600 Baud");
+	delay(500);
 	Serial.begin(57600);
 	Serial.println("GPS 406 library test");
 	gps.init();	 // GPS Initialization
