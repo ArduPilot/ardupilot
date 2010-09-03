@@ -1,5 +1,5 @@
-#ifndef AP_GPS_UBLOX_h
-#define AP_GPS_UBLOX_h
+#ifndef AP_GPS_406_h
+#define AP_GPS_406_h
 
 #include <GPS.h>
 #define MAXPAYLOAD 100

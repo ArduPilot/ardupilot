@@ -1,6 +1,6 @@
 /*
-	GPS_UBLOX.cpp - Ublox GPS library for Arduino
-	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+	GPS_406.cpp - 406 GPS library for Arduino
+	Code by Jason Short, Jordi Muñoz and Jose Julio. DIYDrones.com
 	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
 
 	This library is free software; you can redistribute it and / or
@@ -8,27 +8,21 @@
 	License as published by the Free Software Foundation; either
 	version 2.1 of the License, or (at your option) any later version.
 
-	GPS configuration : Ublox protocol
-	Baud rate : 38400
-	Active messages : 
-		NAV - POSLLH Geodetic Position Solution, PAGE 66 of datasheet
-		NAV - VELNED Velocity Solution in NED, PAGE 71 of datasheet
-		NAV - STATUS Receiver Navigation Status
-			or 
-		NAV - SOL Navigation Solution Information
+	GPS configuration : 406 protocol
+	Baud rate : 57600
 
 	Methods:
 		init() : GPS initialization
 		update() : Call this funcion as often as you want to ensure you read the incomming gps data
 		
 	Properties:
-		Lattitude : Lattitude * 10000000 (long value)
-		Longitude : Longitude * 10000000 (long value)
+		Lattitude : Lattitude * 10,000,000 (long value)
+		Longitude : Longitude * 10,000,000 (long value)
 		altitude :	altitude * 100 (meters) (long value)
 		ground_speed : Speed (m/s) * 100 (long value)
 		ground_course : Course (degrees) * 100 (long value)
 		new_data : 1 when a new data is received.
-							You need to write a 0 to new_data when you read the data
+				You need to write a 0 to new_data when you read the data
 		fix : 1: GPS FIX, 0: No fix (normal logic)
 			
 */
@@ -36,7 +30,7 @@
 #include "AP_GPS_406.h"
 #include "WProgram.h"
 
-AP_GPS_406::buffer[MAXPAYLOAD] = {0x24,0x50,0x53,0x52,0x46,0x31,0x30,0x30,0x2C,0x30,0x2C,0x35,0x37,0x36,0x30,0x30,0x2C,0x38,0x2C,0x31,0x2C,0x30,0x2A,0x33,0x37,0x0D,0x0A};
+uint8_t AP_GPS_406::buffer[MAXPAYLOAD] = {0x24,0x50,0x53,0x52,0x46,0x31,0x30,0x30,0x2C,0x30,0x2C,0x35,0x37,0x36,0x30,0x30,0x2C,0x38,0x2C,0x31,0x2C,0x30,0x2A,0x33,0x37,0x0D,0x0A};
 
 
 #define PAYLOAD_LENGTH 92
