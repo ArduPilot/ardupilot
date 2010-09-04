@@ -8,6 +8,9 @@
 
 #include <GPS_MTK.h> // UBLOX GPS Library
 
+#define T6 1000000
+#define T7 10000000
+
 void setup()
 {
   Serial.begin(38400);
@@ -22,15 +25,15 @@ void loop()
     {
     Serial.print("GPS:");
     Serial.print(" Lat:");
-    Serial.print(GPS.Lattitude);
+    Serial.print((float)GPS.Lattitude/T7, DEC);
     Serial.print(" Lon:");
-    Serial.print(GPS.Longitude);
+    Serial.print((float)GPS.Longitude/T7, DEC);
     Serial.print(" Alt:");
-    Serial.print((float)GPS.Altitude/100.0);
+    Serial.print((float)GPS.Altitude/100.0, DEC);
     Serial.print(" GSP:");
-    Serial.print((float)GPS.Ground_Speed/100.0);
+    Serial.print((float)GPS.Ground_Speed/100.0, DEC);
     Serial.print(" COG:");
-    Serial.print(GPS.Ground_Course/1000000);
+    Serial.print(GPS.Ground_Course/100.0, DEC);
     Serial.print(" SAT:");
     Serial.print((int)GPS.NumSats);
     Serial.print(" FIX:");
