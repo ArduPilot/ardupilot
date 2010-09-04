@@ -26,15 +26,15 @@ void loop()
 	if (gps.new_data){
 		Serial.print("gps:");
 		Serial.print(" Lat:");
-		Serial.print((float)gps.lattitude / T6, DEC);
+		Serial.print((float)gps.lattitude / T7, DEC);
 		Serial.print(" Lon:");
-		Serial.print((float)gps.longitude / T6, DEC);
+		Serial.print((float)gps.longitude / T7, DEC);
 		Serial.print(" Alt:");
 		Serial.print((float)gps.altitude / 100.0, DEC);
 		Serial.print(" GSP:");
 		Serial.print(gps.ground_speed / 100.0);
 		Serial.print(" COG:");
-		Serial.print(gps.ground_course / 1000000, DEC);
+		Serial.print(gps.ground_course / 100.0, DEC);
 		Serial.print(" SAT:");
 		Serial.print(gps.num_sats, DEC);
 		Serial.print(" FIX:");

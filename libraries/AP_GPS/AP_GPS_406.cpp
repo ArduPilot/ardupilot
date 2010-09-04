@@ -1,7 +1,7 @@
 /*
 	GPS_406.cpp - 406 GPS library for Arduino
 	Code by Jason Short, Jordi Muñoz and Jose Julio. DIYDrones.com
-	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
+	This code works with boards based on ATMega168/328 ATMega1280 (Serial port 1)
 
 	This library is free software; you can redistribute it and / or
 	modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@ AP_GPS_406::AP_GPS_406()
 // Public Methods ////////////////////////////////////////////////////////////////////
 void AP_GPS_406::init(void)
 {
-	change_to_sirf_protocol();
+	change_to_sirf_protocol();		//Changes to SIFR protocol and sets baud rate
 	delay(100); //Waits fot the GPS to start_UP
 	configure_gps(); //Function to configure GPS, to output only the desired msg's
 
@@ -53,13 +53,7 @@ void AP_GPS_406::init(void)
 	new_data 	= 0;
 	fix 		= 0;
 	print_errors = 0;
-	
-	// initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
-	#else
-		Serial.begin(38400); 
-	#endif
+
 }
 
 // optimization : This code don´t wait for data, only proccess the data available
@@ -80,6 +74,8 @@ void AP_GPS_406::update(void)
 		for (int i = 0; i < numc; i++){	// Process bytes received
 		#if defined(__AVR_ATmega1280__)
 			data = Serial1.read();
+//Serial.print(data,HEX);
+//Serial.println(" ");
 		#else
 			data = Serial.read();
 		#endif
@@ -97,28 +93,28 @@ void AP_GPS_406::update(void)
 					step = 0;
 				break;
 
-			case 2:	
+/*			case 2:	
 				if(data == 0xA2)
 					step++;
 				else
 					step = 0;
 				break;
-
-			case 3:	
+*/
+			case 2:	
 				if(data == 0x00)
 					step++;
 				else
 					step = 0;
 				break;
 
-			case 4:
+			case 3:
 				if(data == 0x5B)
 					step++;
 				else
 					step = 0;
 				break;
 
-			case 5:
+			case 4:
 				if(data == 0x29){
 					payload_counter = 0;
 					step++;
@@ -126,7 +122,7 @@ void AP_GPS_406::update(void)
 					step = 0;
 				break;
 								
-			case 6:	// Payload data read...
+			case 5:	// Payload data read...
 				if (payload_counter <= PAYLOAD_LENGTH){	// We stay in this state until we reach the payload_length
 					buffer[payload_counter] = data;
 					payload_counter++;
@@ -147,7 +143,7 @@ AP_GPS_406::parse_gps(void)
 {
 	uint8_t j;
 
-	fix = (buffer[1] > 0) ? 1:0;
+	fix = (buffer[1] > 0) ? 0:1;
 
 	j = 22;
 	lattitude = join_4_bytes(&buffer[j]); // lat * 10, 000, 000
@@ -207,6 +203,22 @@ AP_GPS_406::configure_gps(void)
 	const uint8_t gps_ender[]		= {0xB0, 0xB3};
 	const uint8_t cero 				= 0x00;
 	
+	#if defined(__AVR_ATmega1280__)
+	for(int z = 0; z < 2; z++){
+		for(int x = 0; x < 5; x++){
+			for(int y = 0; y < 6; y++){
+				Serial1.print(gps_header[y]); // Prints the msg header, is the same header for all msg..	
+			}
+			Serial1.print(gps_payload[x]); // Prints the payload, is not the same for every msg
+			for(int y = 0; y < 6; y++){
+				Serial1.print(cero); // Prints 6 zeros
+			}
+			Serial1.print(gps_checksum[x]); // Print the Checksum
+			Serial1.print(gps_ender[0]);	// Print the Ender of the string, is same on all msg's. 
+			Serial1.print(gps_ender[1]);	// ender	
+		}
+	}	
+	#else
 	for(int z = 0; z < 2; z++){
 		for(int x = 0; x < 5; x++){
 			for(int y = 0; y < 6; y++){
@@ -221,27 +233,50 @@ AP_GPS_406::configure_gps(void)
 			Serial.print(gps_ender[1]);	// ender	
 		}
 	}	
+	#endif
 }
 
 void 
 AP_GPS_406::change_to_sirf_protocol(void)
 {
-	Serial.begin(4800); // First try in 4800
+	#if defined(__AVR_ATmega1280__)
+		Serial1.begin(4800);				 // Serial port 1 on ATMega1280	First try in 4800
+		delay(300);
+		for (byte x = 0; x <= 28; x++){
+			Serial1.print(buffer[x]); // Sending special bytes declared at the beginning 
+		}
+		delay(300);
 	
-	delay(300);
+		Serial1.begin(9600); // Then try in 9600 
+		delay(300);
+		for (byte x = 0; x <= 28; x++){
+			Serial1.print(buffer[x]);
+		}
+		delay(300);
+		
+		Serial1.begin(BAUD_RATE); // 
+		delay(300);
+		for (byte x = 0; x <= 28; x++){
+			Serial1.print(buffer[x]);
+		}
+		delay(300);
+		
+	#else
+		Serial.begin(4800);				 // Serial port (0) on AT168/328	First try in 4800
+		delay(300);
+		for (byte x = 0; x <= 28; x++){
+			Serial.print(buffer[x]); // Sending special bytes declared at the beginning 
+		}
+		delay(300);
 	
-	for (byte x = 0; x <= 28; x++){
-		Serial.print(buffer[x]); // Sending special bytes declared at the beginning 
-	}
-	delay(300);
-	
-	Serial.begin(9600); // Then try in 9600 
-	
-	delay(300);
-	
-	for (byte x = 0; x <= 28; x++){
-		Serial.print(buffer[x]);
-	}
-	Serial.begin(BAUD_RATE); // Universal Sincronus Asyncronus Receiveing Transmiting
+		Serial.begin(9600); // Then try in 9600 
+		delay(300);
+		for (byte x = 0; x <= 28; x++){
+			Serial.print(buffer[x]);
+		}
+		
+		Serial.begin(BAUD_RATE); // Universal Sincronus Asyncronus Receiveing Transmiting
+		
+	#endif
 }
 
