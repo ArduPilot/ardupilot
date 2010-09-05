@@ -45,11 +45,14 @@
 #define FastSerial_h
 
 // disable the stock Arduino serial driver
+#ifdef HardwareSerial_h
+# error Must include FastSerial.h before the Arduino serial driver is defined.
+#endif
 #define HardwareSerial_h
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <Print.h>
+#include <Stream.h>
 #include <avr/interrupt.h>
 
 //
@@ -82,7 +85,7 @@ extern class FastSerial Serial2;
 extern class FastSerial Serial3;
 
 
-class FastSerial : public Print {
+class FastSerial : public Stream {
 public:
         FastSerial(const uint8_t portNumber,
                    volatile uint8_t *ubrrh,
@@ -97,12 +100,12 @@ public:
         // Serial API
         void            begin(long baud);
         void            end(void);
-        uint8_t         available(void);
+        int             available(void);
         int             read(void);
         void            flush(void);
         void            write(uint8_t c);
         void            write(const uint8_t *buffer, int count);
-        using Print::write;
+        using Stream::write;
 
         // stdio extensions
         int             printf(const char *fmt, ...);

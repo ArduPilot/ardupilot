@@ -150,7 +150,7 @@ void FastSerial::end()
 }
 
 
-uint8_t
+int
 FastSerial::available(void)
 {
         return((RX_BUFFER_SIZE + _rxBuffer.head - _rxBuffer.tail) % RX_BUFFER_SIZE);

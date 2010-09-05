@@ -18,7 +18,7 @@
 // Create a FastSerial driver that looks just like the stock Arduino
 // driver.
 //
-FastSerial      Serial;
+FastSerialPort0(Serial);
 
 //
 // To create a driver for a different serial port, on a board that
