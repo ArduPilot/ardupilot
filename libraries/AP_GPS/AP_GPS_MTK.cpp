@@ -38,8 +38,7 @@ AP_GPS_MTK::AP_GPS_MTK()
 
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
-{
-	
+{	
 	ck_a 		= 0;
 	ck_b 		= 0;
 	step 		= 0;
@@ -50,10 +49,13 @@ void AP_GPS_MTK::init(void)
 	// initialize serial port for binary protocol use
 	#if defined(__AVR_ATmega1280__)
 		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
+		Serial1.print(MTK_SET_BINARY);
+		Serial1.print(MTK_OUTPUT_4HZ);
 	#else
 		Serial.begin(38400); 
+		Serial.print(MTK_SET_BINARY);
+		Serial.print(MTK_OUTPUT_4HZ);
 	#endif
-	Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
 }
 
 // optimization : This code don¥t wait for data, only proccess the data available
