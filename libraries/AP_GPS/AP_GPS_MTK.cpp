@@ -50,7 +50,7 @@ void AP_GPS_MTK::update(void)
 		data = _port->read();
 
 restart:		
-		switch(step){
+		switch(_step){
 
 			// Message preamble, class, ID detection
 			//
@@ -63,32 +63,32 @@ restart:
 			//
 		case 0:
 			if(PREAMBLE1 == data)
-				step++;
+				_step++;
 			break;
 		case 1:
 			if (PREAMBLE2 == data) {
-				step++;
+				_step++;
 				break;
 			}
-			step = 0;
+			_step = 0;
 			goto restart;
 		case 2:
 			if (MESSAGE_CLASS == data) {
-				step++;
-				ck_b = ck_a = data;					// reset the checksum accumulators
+				_step++;
+				_ck_b = _ck_a = data;					// reset the checksum accumulators
 			} else {
-				step = 0;							// reset and wait for a message of the right class
+				_step = 0;							// reset and wait for a message of the right class
 				goto restart;
 			}
 			break;
 		case 3:
 			if (MESSAGE_ID == data) {
-				step++;
-				ck_b += (ck_a += data);
-				payload_length = sizeof(buffer);	// prepare to receive our message
-				payload_counter = 0;
+				_step++;
+				_ck_b += (_ck_a += data);
+				_payload_length = sizeof(diyd_mtk_msg);	// prepare to receive our message
+				_payload_counter = 0;
 			} else {
-				step = 0;
+				_step = 0;
 				goto restart;
 			}
 			break;
@@ -96,24 +96,24 @@ restart:
 			// Receive message data
 			//
 		case 4:
-			buffer.bytes[payload_counter++] = data;
-			ck_b += (ck_a += data);
-			if (payload_counter == payload_length)
-				step++;
+			_buffer.bytes[_payload_counter++] = data;
+			_ck_b += (_ck_a += data);
+			if (_payload_counter == _payload_length)
+				_step++;
 			break;
 
 			// Checksum and message processing
 			//
 		case 5:
-			step++;
-			if (ck_a != data) {
+			_step++;
+			if (_ck_a != data) {
 				_error("GPS_MTK: checksum error\n");
-				step = 0;
+				_step = 0;
 			}
 			break;
 		case 6:
-			step = 0;
-			if (ck_b != data) {
+			_step = 0;
+			if (_ck_b != data) {
 				_error("GPS_MTK: checksum error\n");
 				break;
 			}
@@ -122,24 +122,23 @@ restart:
 	} 
 }
 
-
 // Private Methods 
 void 
 AP_GPS_MTK::_parse_gps(void)
 {
-	if (FIX_3D != buffer.msg.fix_type) {
+	if (FIX_3D != _buffer.msg.fix_type) {
 		fix = false;
 	} else {
 		fix = true;
-		latitude		= _swapl(&buffer.msg.latitude)  * 10;
-		longitude		= _swapl(&buffer.msg.longitude) * 10;
-		altitude		= _swapl(&buffer.msg.altitude);
-		ground_speed	= _swapl(&buffer.msg.ground_speed);
-		ground_course	= _swapl(&buffer.msg.ground_course) / 10000;
-		num_sats		= buffer.msg.satellites;
+		latitude		= _swapl(&_buffer.msg.latitude)  * 10;
+		longitude		= _swapl(&_buffer.msg.longitude) * 10;
+		altitude		= _swapl(&_buffer.msg.altitude);
+		ground_speed	= _swapl(&_buffer.msg.ground_speed);
+		ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
+		num_sats		= _buffer.msg.satellites;
 			
 		// XXX docs say this is UTC, but our clients expect msToW
-		time			= _swapl(&buffer.msg.utc_time);
+		time			= _swapl(&_buffer.msg.utc_time);
 	}
 	new_data = true;
 }

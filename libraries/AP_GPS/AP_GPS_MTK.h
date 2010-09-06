@@ -66,19 +66,19 @@ private:
 	};
 
 	// Packet checksum accumulators
-	uint8_t 	ck_a;
-	uint8_t 	ck_b;
+	uint8_t 	_ck_a;
+	uint8_t 	_ck_b;
 
 	// State machine state
-	uint8_t 	step;
-	uint8_t		payload_length;
-	uint8_t		payload_counter;
+	uint8_t 	_step;
+	uint8_t		_payload_length;
+	uint8_t		_payload_counter;
 
 	// Receive buffer
 	union {
 		diyd_mtk_msg	msg;
 		uint8_t			bytes[];
-	} buffer;
+	} _buffer;
 
 	// Buffer parse & GPS state update
 	void		_parse_gps();
