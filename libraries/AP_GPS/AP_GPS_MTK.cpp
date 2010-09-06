@@ -127,8 +127,8 @@ AP_GPS_MTK::parse_gps(void)
 		switch(id){
 			//Checking the UBX ID
 			case 0x05: // ID Custom
-				latitude      = _swapl(&buffer[0]);
-				longitude     = _swapl(&buffer[4]);
+				latitude      = _swapl(&buffer[0]) * 10;
+				longitude     = _swapl(&buffer[4]) * 10;
 				altitude      = _swapl(&buffer[8]);
 				speed_3d      = ground_speed = _swapl(&buffer[12]);
 				ground_course = _swapl(&buffer[16]) / 10000;

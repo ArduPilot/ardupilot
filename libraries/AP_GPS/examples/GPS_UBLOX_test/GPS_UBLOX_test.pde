@@ -42,7 +42,7 @@ void loop()
 		Serial.print(" GSP:");
 		Serial.print(gps.ground_speed / 100.0);
 		Serial.print(" COG:");
-		Serial.print(gps.ground_course / 100, DEC);
+		Serial.print(gps.ground_course / 100.0, DEC);
 		Serial.print(" SAT:");
 		Serial.print(gps.num_sats, DEC);
 		Serial.print(" FIX:");
