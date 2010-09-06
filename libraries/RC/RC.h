@@ -22,20 +22,17 @@ class RC
 {
   public:
   //	RC();
-	virtual void read_pwm();
-	virtual void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	virtual void init();
 	virtual void trim();
+	virtual void read_pwm();
+	virtual void output();
 	virtual void set_channel_direction(uint8_t ch, int8_t dir);
-	virtual void set_throttle(float percent);
+	virtual void set_ch_pwm(uint8_t ch, uint16_t pwm);
 
-	
 	void set_failsafe(uint16_t fs);
 	void set_mix_mode(uint8_t mode);
-
 	
 	uint8_t failsafe;
-	uint8_t reverse_throttle;
 	
   protected:
 	void check_throttle_failsafe(uint16_t throttle);
