@@ -12,7 +12,7 @@
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);
 
-AP_GPS_MTK gps(&Serial);
+AP_GPS_MTK gps(&Serial1);
 #define T6 1000000
 #define T7 10000000
 
