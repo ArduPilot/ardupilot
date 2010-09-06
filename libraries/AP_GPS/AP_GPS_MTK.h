@@ -1,4 +1,15 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+//
+//  DIYDrones Custom Mediatek GPS driver for ArduPilot and ArduPilotMega.
+//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//
+//	This library is free software; you can redistribute it and / or
+//	modify it under the terms of the GNU Lesser General Public
+//	License as published by the Free Software Foundation; either
+//	version 2.1 of the License, or (at your option) any later version.
+//
+//	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
+//
 #ifndef AP_GPS_MTK_h
 #define AP_GPS_MTK_h
 
@@ -22,30 +33,55 @@
 #define WAAS_ON			"$PSRF151,1*3F\r\n"
 #define WAAS_OFF		"$PSRF151,0*3E\r\n"
 
-class AP_GPS_MTK : public GPS
-{
-  public:
-    // Methods
+class AP_GPS_MTK : public GPS {
+public:
 	AP_GPS_MTK(Stream *s);
-	void init();
-	void update();
+	void		init();
+	void		update();
 
-  private:
-	// Packet checksums
-	uint8_t ck_a;     
-	uint8_t ck_b;
-	uint8_t GPS_ck_a;
-	uint8_t GPS_ck_b;
+private:
+#pragma pack(1)
+	struct diyd_mtk_msg {
+		int32_t		latitude;
+		int32_t		longitude;
+		int32_t		altitude;
+		int32_t		ground_speed;
+		int32_t		ground_course;
+		uint8_t		satellites;
+		uint8_t		fix_type;
+		uint32_t	utc_time;
+	};
+#pragma pack(pop)
+	enum diyd_mtk_fix_type {
+		FIX_NONE = 1,
+		FIX_2D = 2,
+		FIX_3D = 3
+	};
 
-	uint8_t step;
-	uint8_t msg_class;
-	uint8_t id;
-	uint8_t payload_length_hi;
-	uint8_t payload_length_lo;
-	uint8_t payload_counter;
-	uint8_t buffer[MAXPAYLOAD];
+	enum diyd_mtk_protocol_bytes {
+		PREAMBLE1 = 0xb5,
+		PREAMBLE2 = 0x62,
+		MESSAGE_CLASS = 1,
+		MESSAGE_ID = 5
+	};
 
-	void parse_gps();
-	void checksum(unsigned char data);
+	// Packet checksum accumulators
+	uint8_t 	ck_a;
+	uint8_t 	ck_b;
+
+	// State machine state
+	uint8_t 	step;
+	uint8_t		payload_length;
+	uint8_t		payload_counter;
+
+	// Receive buffer
+	union {
+		diyd_mtk_msg	msg;
+		uint8_t			bytes[];
+	} buffer;
+
+	// Buffer parse & GPS state update
+	void		_parse_gps();
 };
-#endif
+
+#endif	// AP_GPS_MTK_H

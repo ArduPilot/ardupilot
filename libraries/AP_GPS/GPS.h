@@ -64,14 +64,14 @@ protected:
 	///						long in the wrong byte order
 	/// @returns			endian-swapped value
 	///
-	long	_swapl(const uint8_t *bytes);
+	long	_swapl(const void *bytes);
 
 	/// perform an endian swap on an int
 	///
 	/// @param	bytes		pointer to a buffer containing bytes representing an
 	///						int in the wrong byte order
 	///	@returns			endian-swapped value
-	int		_swapi(const uint8_t *bytes);
+	int		_swapi(const void *bytes);
 
 	/// emit an error message
 	///
@@ -84,31 +84,33 @@ protected:
 };
 
 inline long
-GPS::_swapl(const uint8_t *bytes)
+GPS::_swapl(const void *bytes)
 {
+	const uint8_t	*b = (const uint8_t *)bytes;
 	union {
 		long	v;
 		uint8_t b[4];
 	} u;
 
-	u.b[0] = bytes[3];
-	u.b[1] = bytes[2];
-	u.b[2] = bytes[1];
-	u.b[3] = bytes[0];
+	u.b[0] = b[3];
+	u.b[1] = b[2];
+	u.b[2] = b[1];
+	u.b[3] = b[0];
 
 	return(u.v);
 }
 
 inline int16_t
-GPS::_swapi(const uint8_t *bytes)
+GPS::_swapi(const void *bytes)
 {
+	const uint8_t	*b = (const uint8_t *)bytes;
 	union {
 		int16_t	v;
 		uint8_t b[2];
 	} u;
 
-	u.b[0] = bytes[1];
-	u.b[1] = bytes[0];
+	u.b[0] = b[1];
+	u.b[1] = b[0];
 
 	return(u.v);
 }
