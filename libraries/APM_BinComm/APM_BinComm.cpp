@@ -45,7 +45,7 @@
 #define DEC_MESSAGE_TIMEOUT     100
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
-                 FastSerial *interface) :
+                 Stream *interface) :
         _handlerTable(handlerTable),
         _interface(interface)
 {

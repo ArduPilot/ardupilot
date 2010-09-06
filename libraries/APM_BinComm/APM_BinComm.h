@@ -30,7 +30,6 @@
 #ifndef APM_BinComm_h
 #define APM_BinComm_h
 
-#include <FastSerial.h>
 #include "WProgram.h"
 #include <string.h>
 #include <inttypes.h>
@@ -184,11 +183,11 @@ public:
 	///								registered; handlers are called in the order
 	///								they appear in the table.
 	///
-	/// @param interface			The FastSerial interface that will be used
+	/// @param interface			The stream that will be used
 	///								for telemetry communications.
 	///
 	BinComm(const MessageHandler *handlerTable,
-			FastSerial *interface);
+			Stream *interface);
 
 	//////////////////////////////////////////////////////////////////////
 	/// @name		Decoder interface
@@ -227,7 +226,7 @@ public:
 
 private:
 	const MessageHandler	*_handlerTable; ///< callout table
-	FastSerial				*_interface;	///< Serial port we send/receive using.
+	Stream					*_interface;	///< Serial port we send/receive using.
 
 	/// Various magic numbers
 	enum MagicNumbers {
