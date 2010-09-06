@@ -198,9 +198,9 @@ FastSerial::write(uint8_t c)
         uint8_t         i;
 
         // wait for room in the tx buffer
-        do {
-                i = (_txBuffer.head + 1) % RX_BUFFER_SIZE;
-        } while (i == _txBuffer.tail);
+        i = (_txBuffer.head + 1) % TX_BUFFER_SIZE;
+        while (i == _txBuffer.tail)
+                ;
 
         // add byte to the buffer
         _txBuffer.bytes[_txBuffer.head] = c;
@@ -208,13 +208,6 @@ FastSerial::write(uint8_t c)
 
         // enable the data-ready interrupt, as it may be off if the buffer is empty
         *_ucsrb |= _portTxBits;
-}
-
-void
-FastSerial::write(const uint8_t *buffer, int count)
-{
-        while (count--)
-                write(*buffer++);
 }
 
 // STDIO emulation /////////////////////////////////////////////////////////////

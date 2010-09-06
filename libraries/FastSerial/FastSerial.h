@@ -104,7 +104,6 @@ public:
         int             read(void);
         void            flush(void);
         void            write(uint8_t c);
-        void            write(const uint8_t *buffer, int count);
         using Stream::write;
 
         // stdio extensions
