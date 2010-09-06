@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 #ifndef AP_GPS_NMEA_h
 #define AP_GPS_NMEA_h
 
@@ -8,7 +9,7 @@ class AP_GPS_NMEA : public GPS
 {
   public:
     // Methods
-	AP_GPS_NMEA();
+	AP_GPS_NMEA(Stream *s);
 	void init();
 	void update();
 

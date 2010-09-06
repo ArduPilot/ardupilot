@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 #ifndef AP_GPS_406_h
 #define AP_GPS_406_h
 
@@ -6,21 +8,19 @@
 
 class AP_GPS_406 : public GPS
 {
-  public:
+public:
     // Methods
-	AP_GPS_406();
+	AP_GPS_406(Stream *port);
 	void init();
 	void update();
 
-  private:
+private:
     // Internal variables
 	uint8_t step;
 	uint8_t payload_counter;
 	static uint8_t buffer[MAXPAYLOAD];
 	
 	void parse_gps();
-	int32_t join_4_bytes(uint8_t Buffer[]);
-	int16_t join_2_bytes(uint8_t Buffer[]);
 	void change_to_sirf_protocol(void);
 	void configure_gps(void);
 };

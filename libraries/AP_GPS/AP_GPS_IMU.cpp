@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	GPS_MTK.cpp - Ublox GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -31,7 +32,7 @@
 
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_IMU::AP_GPS_IMU()
+AP_GPS_IMU::AP_GPS_IMU(Stream *s) : GPS(s)
 {
 }
 
@@ -39,19 +40,7 @@ AP_GPS_IMU::AP_GPS_IMU()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_IMU::init(void)
 {
-	ck_a			= 0;
-	ck_b			= 0;
-	step			= 0;
-	new_data		= 0;
-	fix 			= 0;
-	print_errors	= 0;
-
-	// initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
-	#else
-		Serial.begin(38400);
-	#endif
+	// we expect the stream to already be open at the corret bitrate
 }
 
 // optimization : This code doesn't wait for data. It only proccess the data available.
@@ -62,21 +51,13 @@ void AP_GPS_IMU::update(void)
 	byte data;
 	int numc = 0;
 	static byte message_num = 0;
-	
-	#if defined(__AVR_ATmega1280__)		// If AtMega1280 then Serial port 1...
-		numc = Serial.available();
-	#else
-		numc = Serial.available();
-	#endif
-	
+
+	numc = _port->available();
+
 	if (numc > 0){
 		for (int i=0;i<numc;i++){	// Process bytes received		
-	
-			#if defined(__AVR_ATmega1280__)
-				data = Serial.read();
-			#else
-				data = Serial.read();
-			#endif
+
+			data = _port->read();
 			
 			switch(step){		 //Normally we start from zero. This is a state machine
 				case 0:	
@@ -154,11 +135,10 @@ void AP_GPS_IMU::update(void)
 						} else if (message_num == 0x0a) {
 							//PERF_join_data();
 						} else {
-							Serial.print("Invalid message number = ");
-							Serial.println(message_num, DEC);
+							_error("Invalid message number = %d\n", (int)message_num);
 						}
 					} else {
-						Serial.println("XXX Checksum error");	//bad checksum
+						_error("XXX Checksum error\n");	//bad checksum
 						//imu_checksum_error_count++;
 					} 						 
 					// Variable initialization
@@ -178,50 +158,34 @@ void AP_GPS_IMU::update(void)
 
 void AP_GPS_IMU::join_data(void)
 {
-	int j = 0;
 	//Verifing if we are in class 1, you can change this "IF" for a "Switch" in case you want to use other IMU classes.. 
 	//In this case all the message im using are in class 1, to know more about classes check PAGE 60 of DataSheet.
 
 	 //Storing IMU roll
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	roll_sensor = intUnion.word;
+	roll_sensor = *(int *)&buffer[0];
 
 	 //Storing IMU pitch
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	pitch_sensor = intUnion.word;
+	pitch_sensor = *(int *)&buffer[2];
 
 	 //Storing IMU heading (yaw)
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	ground_course = intUnion.word;
+	ground_course = *(int *)&buffer[4];
 	imu_ok = true;
 }
 
 void AP_GPS_IMU::join_data_xplane()
 {
-	int j = 0;
-
 	 //Storing IMU roll
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	roll_sensor = intUnion.word;
+	roll_sensor = *(int *)&buffer[0];
+	
 
 	 //Storing IMU pitch
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	pitch_sensor = intUnion.word;
+	pitch_sensor = *(int *)&buffer[2];
 
 	 //Storing IMU heading (yaw)
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	ground_course = (unsigned int)intUnion.word;
+	ground_course = *(int *)&buffer[4];
 	
 	 //Storing airspeed
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	airspeed = intUnion.word;
+	airspeed = *(int *)&buffer[6];
 
 	imu_ok = true;
 
@@ -229,49 +193,24 @@ void AP_GPS_IMU::join_data_xplane()
 
 void AP_GPS_IMU::GPS_join_data(void)
 {
-	//gps_messages_received++;
-	int j = 0;				 
-
-	longitude = join_4_bytes(&buffer[j]);		// Lat and Lon * 10**7
-	j += 4;
-
-	lattitude = join_4_bytes(&buffer[j]);
-	j += 4;
+	longitude = *(long *)&buffer[0];	// degrees * 10e7
+	latitude  = *(long *)&buffer[4];
 
 	//Storing GPS Height above the sea level
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	altitude = (long)intUnion.word * 10;		 //	Altitude in meters * 100 
+	altitude = (long)*(int *)&buffer[8] * 10;
 
 	//Storing Speed
-	intUnion.byte[0] = buffer[j++];
-	intUnion.byte[1] = buffer[j++];
-	speed_3d = ground_speed = (float)intUnion.word;			// Speed in M/S * 100
+	speed_3d = ground_speed = (float)*(int *)&buffer[10];
 	
 	//We skip the gps ground course because we use yaw value from the IMU for ground course
-	j += 2;
-	time = join_4_bytes(&buffer[j]);		//	Time of Week in milliseconds
+	time = *(long *)&buffer[14];
 
-	j += 4;
-	imu_health = buffer[j++];
+	imu_health = buffer[15];
 	
-	new_data 	= 1;
-	fix 		= 1;
+	new_data 	= true;
+	fix 		= true;
 }
 
-
-/****************************************************************
- * 
- ****************************************************************/
- // Join 4 bytes into a long
-long AP_GPS_IMU::join_4_bytes(unsigned char Buffer[])
-{
-	longUnion.byte[0] = *Buffer;
-	longUnion.byte[1] = *(Buffer + 1);
-	longUnion.byte[2] = *(Buffer + 2);
-	longUnion.byte[3] = *(Buffer + 3);
-	return(longUnion.dword);
-}
 
 
 /****************************************************************

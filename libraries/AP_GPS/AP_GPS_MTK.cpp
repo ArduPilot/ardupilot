@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	GPS_MTK.cpp - Ublox GPS library for Arduino
 	Code by Jordi Munoz and Jose Julio. DIYDrones.com
@@ -31,7 +32,7 @@
 #include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK::AP_GPS_MTK()
+AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
 {
 }
 
@@ -39,45 +40,23 @@ AP_GPS_MTK::AP_GPS_MTK()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
 {	
-	ck_a 		= 0;
-	ck_b 		= 0;
-	step 		= 0;
-	new_data 	= 0;
-	fix 		= 0;
-	print_errors = 0;
-	
 	// initialize serial port for binary protocol use
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
-		Serial1.print(MTK_SET_BINARY);
-		Serial1.print(MTK_OUTPUT_4HZ);
-	#else
-		Serial.begin(38400); 
-		Serial.print(MTK_SET_BINARY);
-		Serial.print(MTK_OUTPUT_4HZ);
-	#endif
+	_port->print(MTK_SET_BINARY);
+	_port->print(MTK_OUTPUT_4HZ);
 }
 
-// optimization : This code don¥t wait for data, only proccess the data available
+// optimization : This code doesn't wait for data, only proccess the data available
 // We can call this function on the main loop (50Hz loop)
 // If we get a complete packet this function calls parse_gps() to parse and update the GPS info.
 void AP_GPS_MTK::update(void)
 {
 	byte data;
 	int numc;
-	
-	#if defined(__AVR_ATmega1280__)		// If AtMega1280 then Serial port 1...
-		numc = Serial1.available();
-	#else
-		numc = Serial.available();
-	#endif
+
+	numc = _port->available();
 	if (numc > 0)
 		for (int i = 0; i < numc; i++){	// Process bytes received
-		#if defined(__AVR_ATmega1280__)
-			data = Serial1.read();
-		#else
-			data = Serial.read();
-		#endif
+			data = _port->read();
 		
 		switch(step){
 			case 0:
@@ -126,8 +105,7 @@ void AP_GPS_MTK::update(void)
 				if((ck_a == GPS_ck_a) && (ck_b == GPS_ck_b)){	 // Verify the received checksum with the generated checksum.. 
 					parse_gps();							 // Parse the new GPS packet
 				}else {
-					if (print_errors)
-						Serial.println("ERR:GPS_CHK!!");
+					_error("ERR:GPS_CHK!!\n");
 				}
 				// Variable initialization
 				step = 0;
@@ -143,48 +121,24 @@ void AP_GPS_MTK::update(void)
 void 
 AP_GPS_MTK::parse_gps(void)
 {
-	int j;
 //Verifing if we are in class 1, you can change this "IF" for a "Switch" in case you want to use other UBX classes.. 
 //In this case all the message im using are in class 1, to know more about classes check PAGE 60 of DataSheet.
 	if(msg_class == 0x01) {
 		switch(id){
 			//Checking the UBX ID
 			case 0x05: // ID Custom
-				j = 0;
-				lattitude= join_4_bytes(&buffer[j]) * 10; // lon * 10000000
-				j += 4;
-				longitude = join_4_bytes(&buffer[j]) * 10; // lat * 10000000
-				j += 4;
-				altitude = join_4_bytes(&buffer[j]);	// MSL
-				j += 4;
-				speed_3d = ground_speed = join_4_bytes(&buffer[j]);
-				j += 4;
-				ground_course = join_4_bytes(&buffer[j]) / 10000;
-				j += 4;
-				num_sats = buffer[j];
-				j++;
-				fix = buffer[j];
-				if (fix==3)
-					fix = 1;
-				else
-					fix = 0;
-				j++;
-				time = join_4_bytes(&buffer[j]);
-				new_data = 1;
+				latitude      = _swapl(&buffer[0]);
+				longitude     = _swapl(&buffer[4]);
+				altitude      = _swapl(&buffer[8]);
+				speed_3d      = ground_speed = _swapl(&buffer[12]);
+				ground_course = _swapl(&buffer[16]) / 10000;
+				num_sats      = buffer[20];
+				fix           = buffer[21] == 3;
+				time          = _swapl(&buffer[22]);
+				new_data      = true;
 				break;
 		}
 	}
-}
-
- // Join 4 bytes into a long
-long 
-AP_GPS_MTK::join_4_bytes(unsigned char buffer[])
-{
-	longUnion.byte[3] = *buffer;
-	longUnion.byte[2] = *(buffer + 1);
-	longUnion.byte[1] = *(buffer + 2);
-	longUnion.byte[0] = *(buffer + 3);
-	return(longUnion.dword);
 }
 
 // checksum algorithm

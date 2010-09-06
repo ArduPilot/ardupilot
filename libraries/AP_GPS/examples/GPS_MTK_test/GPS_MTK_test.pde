@@ -3,18 +3,26 @@
 	Code by Jordi Munoz and Jose Julio. DIYDrones.com
 
 	Works with Ardupilot Mega Hardware (GPS on Serial Port1)
-	and with standard ATMega168 and ATMega328 on Serial Port 0
 */
 
-#include <AP_GPS_MTK.h> // UBLOX GPS Library
+#include <FastSerial.h>
+#include <AP_GPS_MTK.h>
+#include <stdio.h>
 
-AP_GPS_MTK gps;
+FastSerialPort0(Serial);
+FastSerialPort1(Serial1);
+
+AP_GPS_MTK gps(&Serial);
 #define T6 1000000
 #define T7 10000000
 
 void setup()
 {
 	Serial.begin(38400);
+	Serial1.begin(57600);
+	stderr = stdout;
+	gps.print_errors = true;
+
 	Serial.println("GPS MTK library test");
 	gps.init();	 // GPS Initialization
 	delay(1000);
@@ -26,7 +34,7 @@ void loop()
 	if (gps.new_data){
 		Serial.print("gps:");
 		Serial.print(" Lat:");
-		Serial.print((float)gps.lattitude / T7, DEC);
+		Serial.print((float)gps.latitude / T7, DEC);
 		Serial.print(" Lon:");
 		Serial.print((float)gps.longitude / T7, DEC);
 		Serial.print(" Alt:");

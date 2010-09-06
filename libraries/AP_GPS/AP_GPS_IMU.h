@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 #ifndef AP_GPS_IMU_h
 #define AP_GPS_IMU_h
 
@@ -7,8 +8,9 @@
 class AP_GPS_IMU : public GPS
 {
   public:
+
     // Methods
-	AP_GPS_IMU();
+	AP_GPS_IMU(Stream *s);
 	void init();
 	void update();
 	
@@ -37,7 +39,6 @@ class AP_GPS_IMU : public GPS
 	void join_data_xplane();
 	void GPS_join_data();
 	void checksum(unsigned char data);
-	long join_4_bytes(unsigned char Buffer[]);
 };
 
 #endif

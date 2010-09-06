@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 #ifndef AP_GPS_UBLOX_h
 #define AP_GPS_UBLOX_h
 
@@ -8,7 +9,7 @@ class AP_GPS_UBLOX : public GPS
 {
   public:
     // Methods
-	AP_GPS_UBLOX();
+	AP_GPS_UBLOX(Stream *s);
 	void init();
 	void update();
 

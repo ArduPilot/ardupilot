@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	GPS_NMEA.cpp - Generic NMEA GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -19,7 +20,7 @@
 		update() : Call this funcion as often as you want to ensure you read the incomming gps data
 		
 	Properties:
-		lattitude : lattitude * 10000000 (long value)
+		latitude : latitude * 10000000 (long value)
 		longitude : longitude * 10000000 (long value)
 		altitude :	altitude * 1000 (milimeters) (long value)
 		ground_speed : Speed (m / s) * 100 (long value)
@@ -40,7 +41,7 @@
 #include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_NMEA::AP_GPS_NMEA()
+AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) : GPS(s)
 {
 }
 
@@ -49,18 +50,6 @@ void
 AP_GPS_NMEA::init(void)
 {
 	//Type = 2;
-	GPS_checksum_calc = false;
-	bufferidx = 0;
-	new_data = 0;
-	fix = 0;
-	quality = 0;
-	print_errors = 0;	
-	// Initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
-	#else
-		Serial.begin(38400);
-	#endif
 }
 
 // This code don´t wait for data, only proccess the data available on serial port
@@ -72,20 +61,12 @@ AP_GPS_NMEA::update(void)
 	char c;
 	int numc;
 	int i;
- 
-	#if defined(__AVR_ATmega1280__)		// If AtMega1280 then Serial port 1...
-		numc = Serial1.available();		
-	#else
-		numc = Serial.available();
-	#endif
+
+	numc = _port->available();
 	
 	if (numc > 0){
 		for (i = 0; i < numc; i++){
-			#if defined(__AVR_ATmega1280__)		// If AtMega1280 then Serial port 1...
-				c = Serial1.read();	 
-			#else
-				c = Serial.read();
-			#endif
+			c = _port->read();
 			if (c == '$'){											// NMEA Start
 				bufferidx = 0;
 				buffer[bufferidx++] = c;
@@ -138,10 +119,10 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				//
 				aux_deg = parsedecimal(parseptr, 2);			// degrees
 				aux_min = parsenumber(parseptr + 2, 4);		 // minutes (sexagesimal) => Convert to decimal
-				lattitude = aux_deg * 10000000 + (aux_min * 50) / 3;	 // degrees + minutes / 0.6	( * 10000000) (0.6 = 3 / 5)
+				latitude = aux_deg * 10000000 + (aux_min * 50) / 3;	 // degrees + minutes / 0.6	( * 10000000) (0.6 = 3 / 5)
 				parseptr = strchr(parseptr, ', ')+1;
 				if ( * parseptr == 'S')
-					lattitude = -1 * lattitude;							// South lattitudes are negative
+					latitude = -1 * latitude;							// South latitudes are negative
 				parseptr = strchr(parseptr, ', ')+1;
 				// W longitudes are Negative
 				aux_deg = parsedecimal(parseptr, 3);			// degrees
@@ -170,8 +151,7 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				else
 					quality = 4;			// Good (HDOP < 25)
 			} else {
-				if (print_errors)
-					Serial.println("GPSERR: Checksum error!!");
+				_error("GPSERR: Checksum error!!\n");
 			}
 		}
 	} else if (strncmp(buffer,"$GPVTG",6)==0){				// Check if sentence begins with $GPVTG
@@ -190,14 +170,12 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				ground_speed = parsenumber(parseptr, 2) * 10 / 36; // Convert Km / h to m / s ( * 100)
 				//GPS_line = true;
 			} else {
-				if (print_errors)
-					Serial.println("GPSERR: Checksum error!!");
+				_error("GPSERR: Checksum error!!\n");
 			}
 		}
 	} else {
 		bufferidx = 0;
-		if (print_errors)
-			Serial.println("GPSERR: Bad sentence!!");
+		_error("GPSERR: Bad sentence!!\n");
 	}
 }
 
