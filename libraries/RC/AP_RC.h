@@ -9,10 +9,10 @@ class AP_RC : public RC
 {
   public:
 	AP_RC();
-	void read_pwm();
-	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void init();
-	void set_throttle(float percent);
+	void read_pwm();
+	void output();
+	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void trim();
 	
 	int16_t radio_in[4];
@@ -20,6 +20,7 @@ class AP_RC : public RC
 	int16_t radio_trim[4];
 	int16_t radio_max[4];
 	
+	int16_t servo_in[4];
 	float servo_out[4];
 
   private:

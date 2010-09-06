@@ -9,10 +9,10 @@ class APM2_RC : public RC
 {
   public:
 	APM2_RC();
-	void read_pwm();
-	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void init();
-	void set_throttle(float percent);
+	void read_pwm();
+	void output();
+	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void trim();
 
 	void force_out_0_1(void);
@@ -24,6 +24,7 @@ class APM2_RC : public RC
 	int16_t radio_trim[8];
 	int16_t radio_max[8];
 	
+	int16_t servo_in[8];
 	float servo_out[8];
 
   private:

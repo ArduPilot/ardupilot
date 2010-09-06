@@ -128,9 +128,34 @@ AP_RC::read_pwm()
 	
 	check_throttle_failsafe(radio_in[CH3]);
 
-	// output servo
-	servo_out[CH3] = (float)(radio_in[CH3] - radio_min[CH3]) / (float)(radio_max[CH3] - radio_min[CH3]) * 100.0;
-	servo_out[CH3] = constrain(servo_out[CH3], 0, 100);	
+	// output servos
+	for (uint8_t i = 0; i < 4; i++){
+		if (i == 3) continue;
+		if(radio_in[i] >= radio_trim[i])
+			servo_in[i] = (float)(radio_in[i] - radio_min[i]) / (float)(radio_max[i] - radio_min[i]) * 100.0;
+		else
+			servo_in[i] = (float)(radio_in[i] - radio_trim[i]) / (float)(radio_trim[i] - radio_min[i]) * 100.0;
+	}
+	servo_in[CH3] = (float)(radio_in[CH3] - radio_min[CH3]) / (float)(radio_max[CH3] - radio_min[CH3]) * 100.0;
+	servo_in[CH3] = constrain(servo_out[CH3], 0, 100);	
+}
+
+void
+AP_RC::output()
+{
+	uint16_t out;
+	for (uint8_t i = 0; i < 4; i++){
+		if (i == 3) continue;
+		if(radio_in[i] >= radio_trim[i])
+			out = ((servo_in[i] * (radio_max[i] - radio_trim[i])) / 100) + radio_trim[i];
+		else
+			out = ((servo_in[i] * (radio_max[i] - radio_trim[i])) / 100) + radio_trim[i];
+		set_ch_pwm(i, out);
+	}
+
+	out = (servo_out[CH3] * (float)(radio_max[CH3] - radio_min[CH3])) / 100.0;
+	out += radio_min[CH3];
+	set_ch_pwm(CH3, out);
 }
 
 void
@@ -150,14 +175,11 @@ AP_RC::trim()
 	//Serial.println(radio_trim[CH1], DEC);
 }
 
-void
+/*void
 AP_RC::set_throttle(float percent)
 {
-	uint16_t out = (percent * (float)(radio_max[CH3] - radio_min[CH3])) / 100.0;
-	out += radio_min[CH3];
-	set_ch_pwm(CH3, out);
 }
-
+*/
 void
 AP_RC::set_ch_pwm(uint8_t ch, uint16_t pwm)
 {
