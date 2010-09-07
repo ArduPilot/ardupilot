@@ -52,6 +52,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <Stream.h>
 #include <avr/interrupt.h>
 
@@ -99,6 +100,7 @@ public:
 
         // Serial API
         void            begin(long baud);
+        void            begin(long baud, unsigned int rxSpace, unsigned int txSpace);
         void            end(void);
         int             available(void);
         int             read(void);
@@ -129,18 +131,17 @@ private:
         uint8_t         _u2x;
 
         // ring buffers
-        struct RXBuffer {
-                volatile uint8_t head;
-                uint8_t         tail;
-                uint8_t         bytes[128];     // size must be power of 2 for best results
+        struct Buffer {
+                volatile int16_t head, tail;
+                uint8_t         *bytes;
+                uint16_t        mask;
         };
-        struct TXBuffer {
-                uint8_t         head;
-                volatile uint8_t tail;
-                uint8_t         bytes[64];      // size must be power of 2 for best results
-        };
-        RXBuffer        _rxBuffer;
-        TXBuffer        _txBuffer;
+        Buffer          _rxBuffer;
+        Buffer          _txBuffer;
+        bool            _open;
+
+        bool            _allocBuffer(Buffer *buffer, unsigned int size);
+        void            _freeBuffer(Buffer *buffer);
 
         // stdio emulation
         FILE            _fd;
