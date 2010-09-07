@@ -11,15 +11,12 @@
 
 #include "Waypoints.h"
 
-Waypoints::Waypoints(uint16_t start_byte, uint8_t wp_size, uint8_t total)
+Waypoints::Waypoints()
 {
-	_start_byte	= start_byte;
-	_wp_size	= wp_size;
-	_total		= total;
 }
 
 void 
-Waypoints::set_waypoint_with_index(Waypoints::WP wp, uint16_t i)
+Waypoints::set_waypoint_with_index(Waypoints::WP wp, uint8_t i)
 {
 	i = constrain(i, 0, _total);
 	uint32_t mem = _start_byte + (i * _wp_size);
@@ -45,7 +42,7 @@ Waypoints::set_waypoint_with_index(Waypoints::WP wp, uint16_t i)
 }
 
 Waypoints::WP
-Waypoints::get_waypoint_with_index(uint16_t i)
+Waypoints::get_waypoint_with_index(uint8_t i)
 {
 	Waypoints::WP wp;
 
@@ -79,6 +76,13 @@ Waypoints::get_next_waypoint(void)
 	_index++;
 	if (_index >= _total)
 		_index == 0;
+	return get_waypoint_with_index(_index);
+}
+
+Waypoints::WP
+Waypoints::get_current_waypoint(void)
+{
+	return get_waypoint_with_index(_index);
 }
 
 uint8_t
@@ -97,4 +101,21 @@ uint8_t
 Waypoints::get_total(void)
 {
 	return _total;
+}
+void
+Waypoints::set_total(uint8_t total)
+{
+	_total = total;
+}
+
+void
+Waypoints::set_start_byte(uint16_t start_byte)
+{
+	_start_byte = start_byte;
+}
+
+void
+Waypoints::set_wp_size(uint8_t wp_size)
+{
+	_wp_size = wp_size;
 }

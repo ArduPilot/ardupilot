@@ -6,7 +6,7 @@
 	(Works with last PPM_encoder firmware)
 */
 
-#include <AP_RC.h> // ArduPilot Mega RC Library
+#include <AP_RC.h> // ArduPilot RC Library
 AP_RC rc;
 
 #define CH_ROLL 0

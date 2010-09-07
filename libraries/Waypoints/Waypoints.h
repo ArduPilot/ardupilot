@@ -8,7 +8,7 @@
 class Waypoints
 {
   public:
-	Waypoints(uint16_t start_byte, uint8_t wp_size, uint8_t total);
+	Waypoints();
 
 	struct WP {
 		uint8_t id;					// for commands
@@ -17,16 +17,21 @@ class Waypoints
 		int32_t lat;				// Lattitude * 10**7
 		int32_t lng;				// Longitude * 10**7
 	};
-
-
-	Waypoints::WP get_waypoint_with_index(uint16_t i);
-	Waypoints::WP get_next_waypoint(void);
 	
-	void 		set_waypoint_with_index(Waypoints::WP wp, uint16_t i);
+	WP get_waypoint_with_index(uint16_t i);
+	WP get_current_waypoint(void);
+	WP get_next_waypoint(void);
+	
+	void 		set_waypoint_with_index(Waypoints::WP wp, uint8_t i);
+
+	void 		set_start_byte(uint16_t start_byte);
+	void 		set_wp_size(uint8_t wp_size);
+	
 	uint8_t 	get_index(void);
 	void 		set_index(uint8_t i);
 
 	uint8_t 	get_total(void);
+	void 		set_total(uint8_t total);
 	
 
 
