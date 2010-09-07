@@ -1,7 +1,8 @@
 #include "Navigation.h"
 
-Navigation::Navigation(GPS *withGPS) : 
+Navigation::Navigation(GPS *withGPS, Waypoints *withWP) : 
 		_gps(withGPS),
+		_wp(withWP),
 		_hold_course(-1)
 {
 }
@@ -42,10 +43,37 @@ Navigation::update_gps()
 }
 
 void
+Navigation::load_first_wp(void)
+{
+	set_next_wp(_wp->get_waypoint_with_index(1));
+}
+
+void
+Navigation::load_home(void)
+{
+	set_home(_wp->get_waypoint_with_index(0));
+}
+
+void
+Navigation::reload_wp(void)
+{
+	set_next_wp(_wp->get_current_waypoint());
+}
+
+void
+Navigation::load_wp_index(uint8_t i)
+{
+	_wp->set_index(i);
+	set_next_wp(_wp->get_current_waypoint());
+}
+
+
+void
 Navigation::set_home(Waypoints::WP loc)
 {
+	_wp->set_waypoint_with_index(loc, i);
 	home 		= loc;
-	location 	= home;
+	//location 	= home;
 }
 
 void
@@ -57,7 +85,7 @@ Navigation::set_next_wp(Waypoints::WP loc)
 	if(_scaleLongDown == 0)
 	calc_long_scaling(loc.lat);
 
-	total_distance 	= get_distance(&location, &next_wp);
+	total_distance 		= get_distance(&location, &next_wp);
 	distance			= total_distance;
 	
 	bearing 			= get_bearing(&location, &next_wp);
@@ -71,6 +99,7 @@ Navigation::set_next_wp(Waypoints::WP loc)
 	// ----------------------------
 	reset_crosstrack();
 }
+
 void 
 Navigation::calc_long_scaling(int32_t lat)
 {
@@ -81,12 +110,18 @@ Navigation::calc_long_scaling(int32_t lat)
 }
 
 void
-Navigation::hold_course(int8_t b)
+Navigation::set_hold_course(int16_t b)
 {
 	if(b)
 		_hold_course = bearing;
 	else
 		_hold_course = -1;
+}
+
+int16_t
+Navigation::get_hold_course(void)
+{
+	return _hold_course;
 }
 
 void
