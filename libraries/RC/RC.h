@@ -28,6 +28,7 @@ class RC
 	virtual void output();
 	virtual void set_channel_direction(uint8_t ch, int8_t dir);
 	virtual void set_ch_pwm(uint8_t ch, uint16_t pwm);
+	virtual void twitch_servos(void);
 
 	void set_failsafe(uint16_t fs);
 	void set_mix_mode(uint8_t mode);

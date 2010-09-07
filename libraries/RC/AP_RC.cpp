@@ -175,11 +175,23 @@ AP_RC::trim()
 	//Serial.println(radio_trim[CH1], DEC);
 }
 
-/*void
-AP_RC::set_throttle(float percent)
+void
+AP_RC::twitch_servos(uint8_t times)
 {
+	while (times > 0){
+		set_ch_pwm(CH1, radio_trim[CH1] + 100);
+		set_ch_pwm(CH2, radio_trim[CH2] + 100);
+		delay(400);
+		set_ch_pwm(CH1, radio_trim[CH1] - 100);
+		set_ch_pwm(CH2, radio_trim[CH2] - 100);
+		delay(200);
+		set_ch_pwm(CH1, radio_trim[CH1]);
+		set_ch_pwm(CH2, radio_trim[CH2]);
+		delay(30);
+		times--;
+	}
 }
-*/
+
 void
 AP_RC::set_ch_pwm(uint8_t ch, uint16_t pwm)
 {

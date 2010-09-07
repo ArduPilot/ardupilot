@@ -197,7 +197,11 @@ APM2_RC::trim()
 	for (int y = 0; y < 8; y++) 
 		radio_trim[y] = radio_in[y];
 }
-
+void
+AP_RC::twitch_servos(void)
+{
+	// todo
+}
 void
 APM2_RC::set_ch_pwm(uint8_t ch, uint16_t pwm)
 {	
