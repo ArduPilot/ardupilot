@@ -113,8 +113,6 @@ void AP_GPS_SIRF::update(void)
 					_msg_id = data;
 				}
 				break;
-			default:
-				_error("ignoring message %d\n", (int)data);
 			}
 			break;
 
