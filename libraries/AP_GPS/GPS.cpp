@@ -4,6 +4,16 @@
 #include <stdio.h>
 
 void
+GPS::init(void)
+{
+}
+
+void
+GPS::update(void)
+{
+}
+
+void
 GPS::_error(const char *fmt, ...)
 {
 	va_list	ap;

@@ -22,7 +22,7 @@ public:
 	///
 	/// @param	port	Stream connected to the GPS module.
 	///
-	GPS(Stream *port) : _port(port) {};
+	GPS(Stream *port = NULL) : _port(port) {};
 
 	/// Startup initialisation.
 	///
