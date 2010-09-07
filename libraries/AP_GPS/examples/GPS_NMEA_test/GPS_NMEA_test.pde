@@ -51,7 +51,7 @@ void loop()
 		Serial.print(" TIM:");
 		Serial.print(gps.time, DEC);
 		Serial.println();
-		gps.new_data = 0; // We have readed the data
+		gps.new_data = 0; // We have read the data
 		}
 }
 
