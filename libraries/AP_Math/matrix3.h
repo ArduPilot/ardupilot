@@ -13,6 +13,21 @@
  * By Bill Perone (billperone@yahoo.com)
  */
 
+//
+// 3x3 matrix implementation.
+//
+// Note that the matrix is organised in row-normal form (the same as
+// applies to array indexing).
+//
+// In addition to the template, this header defines the following types:
+//
+// Matrix3i		3x3 matrix of signed integers
+// Matrix3ui	3x3 matrix of unsigned integers
+// Matrix3l		3x3 matrix of signed longs
+// Matrix3ul	3x3 matrix of unsigned longs
+// Matrix3f		3x3 matrix of signed floats
+//
+
 #ifndef MATRIX3_H
 #define MATRIX3_H
 
@@ -85,7 +100,7 @@ public:
 						  c.x * v.z + c.y * v.z + c.z * v.z);
 	}
 
-	// multiplication by another Matrix3
+	// multiplication by another Matrix3<T>
 	const Matrix3<T> operator *(const Matrix3<T> &m) const
 	{
 		Matrix3<T> temp = (Vector3<T>(a.x * m.a.x + a.y * m.b.x + a.z * m.c.x,
@@ -102,19 +117,18 @@ public:
 	const Matrix3<T> operator *=(const Matrix3<T> &m)
 	{	return *this = this * m;	}
 
-	// rotation (90 degrees left)
-	const Matrix3<T> 	rotated(void)
+	// transpose the matrix
+	const Matrix3<T>	transposed(void)
 	{
-		return Matrix3<T>(Vector3<T>(a.z, b.z, c.z),
+		return Matrix3<T>(Vector3<T>(a.x, b.x, c.x),
 						  Vector3<T>(a.y, b.y, c.y),
-						  Vector3<T>(a.x, b.x, c.x));
+						  Vector3<T>(a.z, b.z, c.z));
 	}
-	const Matrix3<T>	rotate(void)
-	{	return *this = rotated();	}
+	const Matrix3<T>	transpose(void)
+	{	return *this = transposed();	}
 
 };
 
-// macro to make creating the ctors for derived matrices easier
 #define MATRIX3_CTORS(name, type)									\
 	/* trivial ctor */												\
 	name() {}														\
