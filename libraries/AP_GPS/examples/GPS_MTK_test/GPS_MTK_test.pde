@@ -19,7 +19,7 @@ AP_GPS_MTK gps(&Serial1);
 void setup()
 {
 	Serial.begin(38400);
-	Serial1.begin(57600);
+	Serial1.begin(38400);
 	stderr = stdout;
 	gps.print_errors = true;
 
