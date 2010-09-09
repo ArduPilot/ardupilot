@@ -119,7 +119,7 @@
 #include "UserConfig.h"
 
 /* Software version */
-#define VER 1.33    // Current software version (only numeric values)
+#define VER 1.34    // Current software version (only numeric values)
 
 
 /* ***************************************************************************** */
