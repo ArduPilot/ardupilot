@@ -51,7 +51,15 @@ Navigation::load_first_wp(void)
 void
 Navigation::load_home(void)
 {
-	set_home(_wp->get_waypoint_with_index(0));
+	home = _wp->get_waypoint_with_index(0);
+}
+
+void
+Navigation::return_to_home_with_alt(uint32_t alt)
+{
+	Waypoints::WP loc = _wp->get_waypoint_with_index(0);
+	loc.alt += alt;
+	set_next_wp(loc);
 }
 
 void
@@ -66,11 +74,17 @@ Navigation::load_wp_index(uint8_t i)
 	_wp->set_index(i);
 	set_next_wp(_wp->get_current_waypoint());
 }
-
+void
+Navigation::hold_location()
+{
+	
+	set_next_wp()
+}
 
 void
 Navigation::set_home(Waypoints::WP loc)
 {
+	Waypoints::WP loc
 	_wp->set_waypoint_with_index(loc, i);
 	home 		= loc;
 	//location 	= home;
@@ -150,6 +164,13 @@ Navigation::wrap_360(int32_t error)
 	return error;
 }
 
+void
+Navigation::set_bearing_error(int32_t error)
+{
+	bearing_error = wrap_360(error);
+}
+
+
 /*****************************************
  * Altitude error with Airspeed correction
  *****************************************/
@@ -164,6 +185,12 @@ Navigation::calc_altitude_error(void)
 		_target_altitude = constrain(_target_altitude, prev_wp.alt, next_wp.alt);
 	}
 	altitude_error 	= _target_altitude - location.alt;
+}
+
+void
+Navigation::set_loiter_vector(int16_t v)
+{
+	_vector = constrain(v, -18000, 18000);
 }
 
 void

@@ -13,14 +13,20 @@ public:
 	void 		update_gps(void);					// called 50 Hz
 	void		set_home(Waypoints::WP loc);
 	void 		load_first_wp(void);
-	void 		load_wp_index(uint8_t i);
+	void 		load_wp_with_index(uint8_t i);
 	void 		load_home(void);
+	void		return_to_home(void);
+
 	void		reload_wp(void);
 	void		set_wp(Waypoints::WP loc);
-	void		set_hold_course(int16_t b);				// 1 = hold a current course, 0 disables course hold
-	int16_t 	get_hold_course(void);				// 1 = hold a current course, 0 disables course hold
+
+	void		set_hold_course(int16_t b);				// -1 deisables, 0-36000 enables
+	int16_t 	get_hold_course(void);
+
 	int32_t 	get_distance(Waypoints::WP *loc1, Waypoints::WP *loc2);
 	int32_t 	get_bearing(Waypoints::WP *loc1, Waypoints::WP *loc2);
+	void		set_bearing_error(int32_t error);
+	
 	void 		update_crosstrack(void);
 	
 	int32_t		bearing;							// deg * 100 : 0 to 360 current desired bearing to navigate
