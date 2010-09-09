@@ -212,6 +212,8 @@ int Sonar_Counter=0;
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;  
+byte FL_mode = 0; // Flight mode : 0 => Stable, 1 => Acro mode. Stable as default
+
 
 // Mode LED timers and variables, used to blink LED_Green
 byte gled_status = HIGH;

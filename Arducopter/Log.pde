@@ -91,21 +91,21 @@ void Log_Write_Radio(int ch1, int ch2, int ch3,int ch4, int ch5, int ch6)
 // Read a Sensor raw data packet
 void Log_Read_Sensor()
 {  
-  Serial.print("SENSOR:");
-  Serial.print(DataFlash.ReadInt());  // GX
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // GY
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // GZ
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // ACCX
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // ACCY
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // ACCZ
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // AUX 
-  Serial.println();
+  SerPri("SENSOR:");
+  SerPri(DataFlash.ReadInt());  // GX
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // GY
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // GZ
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // ACCX
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // ACCY
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // ACCZ
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // AUX 
+  SerPriln();
 }
 
 // Read an attitude packet
@@ -118,29 +118,29 @@ void Log_Read_Attitude()
   log_roll = DataFlash.ReadInt();
   log_pitch = DataFlash.ReadInt();
   log_yaw = DataFlash.ReadInt(); 
-  Serial.print("ATT:");
-  Serial.print(log_roll);
-  Serial.print(",");
-  Serial.print(log_pitch);
-  Serial.print(",");
-  Serial.print(log_yaw);
-  Serial.println();
+  SerPri("ATT:");
+  SerPri(log_roll);
+  SerPri(",");
+  SerPri(log_pitch);
+  SerPri(",");
+  SerPri(log_yaw);
+  SerPriln();
 }
 
 // Read a Sensor raw data packet
 void Log_Read_PID()
 {  
-  Serial.print("PID:");
-  Serial.print((int)DataFlash.ReadByte());  // NUM_PID
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // P
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // I
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // D
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());  // output
-  Serial.println();
+  SerPri("PID:");
+  SerPri((int)DataFlash.ReadByte());  // NUM_PID
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // P
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // I
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // D
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());  // output
+  SerPriln();
 }
 
 // Read a GPS packet
@@ -164,42 +164,42 @@ void Log_Read_GPS()
   log_Ground_Speed = DataFlash.ReadLong();
   log_Ground_Course = DataFlash.ReadLong();
 
-  Serial.print("GPS:");
-  Serial.print(log_Time);
-  Serial.print(",");
-  Serial.print((int)log_Fix);
-  Serial.print(",");
-  Serial.print((int)log_NumSats);
-  Serial.print(",");
-  Serial.print(log_Lattitude);
-  Serial.print(",");
-  Serial.print(log_Longitude);
-  Serial.print(",");
-  Serial.print(log_Altitude);
-  Serial.print(",");
-  Serial.print(log_Ground_Speed);
-  Serial.print(",");
-  Serial.print(log_Ground_Course);
-  Serial.println();
+  SerPri("GPS:");
+  SerPri(log_Time);
+  SerPri(",");
+  SerPri((int)log_Fix);
+  SerPri(",");
+  SerPri((int)log_NumSats);
+  SerPri(",");
+  SerPri(log_Lattitude);
+  SerPri(",");
+  SerPri(log_Longitude);
+  SerPri(",");
+  SerPri(log_Altitude);
+  SerPri(",");
+  SerPri(log_Ground_Speed);
+  SerPri(",");
+  SerPri(log_Ground_Course);
+  SerPriln();
 
 }
 
 // Read an Radio packet
 void Log_Read_Radio()
 {  
-  Serial.print("RADIO:");
-  Serial.print(DataFlash.ReadInt());
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());
-  Serial.print(",");
-  Serial.print(DataFlash.ReadInt());
-  Serial.println();
+  SerPri("RADIO:");
+  SerPri(DataFlash.ReadInt());
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());
+  SerPri(",");
+  SerPri(DataFlash.ReadInt());
+  SerPriln();
 }
 
 // Read the DataFlash log memory : Packet Parser
@@ -247,8 +247,8 @@ void Log_Read(int start_page, int end_page)
             log_step++;
             break;
           default:
-            Serial.print("Error Reading Packet: ");
-            Serial.print(packet_count); 
+            SerPri("Error Reading Packet: ");
+            SerPri(packet_count); 
             log_step=0;   // Restart, we have a problem...
           }
         break;
@@ -256,12 +256,12 @@ void Log_Read(int start_page, int end_page)
         if(data==END_BYTE)
            packet_count++;
         else
-           Serial.println("Error Reading END_BYTE");
+           SerPriln("Error Reading END_BYTE");
         log_step=0;      // Restart sequence: new packet...        
       }
     }
-  Serial.print("Number of packets read: ");
-  Serial.println(packet_count);
+  SerPri("Number of packets read: ");
+  SerPriln(packet_count);
 }
 
 

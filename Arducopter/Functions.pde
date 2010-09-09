@@ -27,23 +27,23 @@ void RadioCalibration() {
   long pitch_new = 0;
   long yaw_new = 0;
 
-  Serial.flush();
-  Serial.println("Entering Radio Calibration mode");
-  Serial.println("Current channel MID values are:");
-  Serial.print("ROLL: ");
-  Serial.print(roll_mid);
-  Serial.print(" PITCH: ");
-  Serial.print(pitch_mid);
-  Serial.print(" YAW: ");
-  Serial.print(yaw_mid);
-  Serial.println();
-  Serial.println("Recalibrate Channel MID's [Y/N]?: ");
+  SerFlu();
+  SerPriln("Entering Radio Calibration mode");
+  SerPriln("Current channel MID values are:");
+  SerPri("ROLL: ");
+  SerPri(roll_mid);
+  SerPri(" PITCH: ");
+  SerPri(pitch_mid);
+  SerPri(" YAW: ");
+  SerPri(yaw_mid);
+  SerPriln();
+  SerPriln("Recalibrate Channel MID's [Y/N]?: ");
   command_timer = millis();
 
   // Start counter loop and wait serial input. If not input for 5 seconds, return to normal mode
   while(millis() - command_timer < 5000) {
-    if (Serial.available()) {
-      queryType = Serial.read();
+    if (SerAva()) {
+      queryType = SerRea();
       if(queryType == 'y' || queryType == 'Y') {  
         Cmd_ok = TRUE;
         break;    
@@ -56,16 +56,16 @@ void RadioCalibration() {
   }
   if(Cmd_ok) {
     // We have a go. Let's do new calibration
-    Serial.println("Starting calibration run in 5 seconds. Place all sticks to their middle including trims");
+    SerPriln("Starting calibration run in 5 seconds. Place all sticks to their middle including trims");
     for(counter = 5; counter >= 0; counter --) {
       command_timer = millis();
       while(millis() - command_timer < 1000) {
       }
-      Serial.println(counter);
+      SerPriln(counter);
     }
     // Do actual calibration now
-    Serial.println("Measuring average channel values");
-    Serial.println("ROLL, PITCH, YAW");
+    SerPriln("Measuring average channel values");
+    SerPriln("ROLL, PITCH, YAW");
 
     counter = 0; // Reset counter for just in case. 
     command_timer = millis();
@@ -80,42 +80,42 @@ void RadioCalibration() {
         ch_aux = APM_RC.InputCh(4);
         ch_aux2 = APM_RC.InputCh(5);
 
-        Serial.print(ch_roll);
+        SerPri(ch_roll);
         comma();
-        Serial.print(ch_pitch);
+        SerPri(ch_pitch);
         comma();
-        Serial.print(ch_yaw);
-        Serial.println();
+        SerPri(ch_yaw);
+        SerPriln();
         roll_new += ch_roll;
         pitch_new += ch_pitch; 
         yaw_new += ch_yaw;
         counter++;
       }
     }
-    Serial.print("New samples received: ");
-    Serial.println(counter);    
+    SerPri("New samples received: ");
+    SerPriln(counter);    
     roll_new = roll_new / counter;
     pitch_new = pitch_new / counter;
     yaw_new = yaw_new / counter;
-    Serial.print("New values as: ");
-    Serial.print("ROLL: ");
-    Serial.print(roll_new);
-    Serial.print(" PITCH: ");
-    Serial.print(pitch_new);
-    Serial.print(" YAW: ");
-    Serial.print(yaw_new);
-    Serial.println();
-    Serial.println("Accept & Save values [Y/N]?: ");
+    SerPri("New values as: ");
+    SerPri("ROLL: ");
+    SerPri(roll_new);
+    SerPri(" PITCH: ");
+    SerPri(pitch_new);
+    SerPri(" YAW: ");
+    SerPri(yaw_new);
+    SerPriln();
+    SerPriln("Accept & Save values [Y/N]?: ");
     Cmd_ok = FALSE;
     while(millis() - command_timer < 5000) {
-      if (Serial.available()) {
-        queryType = Serial.read();
+      if (SerAva()) {
+        queryType = SerRea();
         if(queryType == 'y' || queryType == 'Y') { 
           Cmd_ok = TRUE;
           roll_mid = roll_new;
           pitch_mid = pitch_new;
           yaw_mid = yaw_new;
-          Serial.println("Values accepted, remember to save them to EEPROM with 'W' command");
+          SerPriln("Values accepted, remember to save them to EEPROM with 'W' command");
           break;    
         } 
         else {
@@ -127,12 +127,12 @@ void RadioCalibration() {
   } 
   if(queryType == 'n' || queryType == 'N') Cmd_ok = TRUE;
   if(Cmd_ok)
-    Serial.println("Returning normal mode...");
-  else Serial.println("Command timeout, returning normal mode....");
+    SerPriln("Returning normal mode...");
+  else SerPriln("Command timeout, returning normal mode....");
 }
 
 void comma() {
-  Serial.print(',');
+  SerPri(',');
 }
 
 #if BATTERY_EVENT == 1

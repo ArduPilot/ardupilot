@@ -34,7 +34,7 @@
  1) A, B, C LED's blinking rapidly while waiting ESCs to bootup and initial shake to end from connecting battery
  2) A, B, C LED's have running light while calibrating Gyro/Acc's
  3) Green LED Solid after initialization finished
- 
+
  Green LED On = APM Initialization Finished
  Yellow LED On = GPS Hold Mode
  Yellow LED Off = Flight Assist Mode (No GPS)
@@ -49,11 +49,13 @@
 /* User definable modules */
 
 // Comment out with // modules that you are not using
-#define IsGPS    // Do we have a GPS connected
+#define IsGPS      // Do we have a GPS connected
 //#define IsNEWMTEK// Do we have MTEK with new firmware
-#define IsMAG    // Do we have a Magnetometer connected, if have remember to activate it from Configurator
+#define IsMAG      // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsTEL    // Do we have a telemetry connected, eg. XBee connected on Telemetry port
-#define IsAM     // Do we have motormount LED's. AM = Atraction Mode
+#define IsAM       // Do we have motormount LED's. AM = Atraction Mode
+#define AUTOMODE   // New experimental Automode to change between Stable <=> Acro. If pitch/roll stick move is more than 50% change mode
+//#define IsXBEE     // Moves all serial communication to Telemetry port when activated.
 
 #define CONFIGURATOR  // Do se use Configurator or normal text output over serial link
 
@@ -73,6 +75,26 @@
 #define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
 //#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
 
+// Quick and easy hack to change FTDI Serial output to Telemetry port. Just activate #define IsXBEE some lines earlier
+#ifndef IsXBEE
+#define SerBau  115200
+#define SerPri  Serial.print
+#define SerPriln Serial.println
+#define SerAva  Serial.available
+#define SerRea  Serial.read
+#define SerFlu  Serial.flush
+#define SerBeg  Serial.begin
+#define SerPor  "FTDI"
+#else
+#define SerBau  115200
+#define SerPri  Serial3.print
+#define SerPriln Serial3.println
+#define SerAva  Serial3.available
+#define SerRea  Serial3.read
+#define SerFlu  Serial3.flush
+#define SerBeg  Serial3.begin
+#define SerPor  "Telemetry"
+#endif
 
 /* ****************************************************************************** */
 /* ****************************** Includes ************************************** */
@@ -349,16 +371,19 @@ void setup()
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
-    //Serial.begin(57600);
-  Serial.begin(115200);
-  //Serial.println();
-  //Serial.println("ArduCopter Quadcopter v1.0");
+  SerBeg(SerBau);                      // Initialize SerialXX.port, IsXBEE define declares which port
+#ifndef CONFIGURATOR  
+  SerPri("ArduCopter Quadcopter v");
+  SerPriln(VER)
+  SerPri("Serial ready on port: ");    // Printout greeting to selecter serial port
+  SerPriln(SerPor);                    // Printout serial port name
+#endif
 
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
   while (digitalRead(SW1_pin)==0)
   {
-    Serial.println("Entering Log Read Mode...");
+    SerPriln("Entering Log Read Mode...");
     Log_Read(1,2000);
     delay(30000);
   }
@@ -382,10 +407,10 @@ void setup()
     for(int y=0; y<=2; y++)   // Read initial ADC values for gyro offset.
     {
       aux_float[y]=aux_float[y]*0.8 + AN[y]*0.2;
-      //Serial.print(AN[y]);
-      //Serial.print(",");
+      //SerPri(AN[y]);
+      //SerPri(",");
     }
-    //Serial.println();
+    //SerPriln();
     Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
     delay(10);
     
@@ -419,12 +444,12 @@ void setup()
 #ifndef CONFIGURATOR
   for(i=0;i<6;i++)
   {
-    Serial.print("AN[]:");
-    Serial.println(AN_OFFSET[i]);
+    SerPri("AN[]:");
+    SerPriln(AN_OFFSET[i]);
   }
-  Serial.print("Yaw neutral value:");
-  //  Serial.println(Neutro_yaw);
-  Serial.print(yaw_mid);
+  SerPri("Yaw neutral value:");
+  //  SerPriln(Neutro_yaw);
+  SerPri(yaw_mid);
 #endif
   delay(1000);
 
@@ -492,16 +517,16 @@ void loop(){
     log_yaw = ToDeg(yaw) * 10;
 
 #ifndef CONFIGURATOR    
-    Serial.print(log_roll);
-    Serial.print(",");
-    Serial.print(log_pitch);
-    Serial.print(",");
-    Serial.print(log_yaw);
+    SerPri(log_roll);
+    SerPri(",");
+    SerPri(log_pitch);
+    SerPri(",");
+    SerPri(log_yaw);
 
     //for (int i = 0; i < 6; i++)
     //{
-    //  Serial.print(AN[i]);
-    //  Serial.print(",");
+    //  SerPri(AN[i]);
+    //  SerPri(",");
     //}
 #endif
 
@@ -524,6 +549,28 @@ void loop(){
    
       command_rx_roll = (ch_roll-roll_mid) / 12.0;
       command_rx_pitch = (ch_pitch-pitch_mid) / 12.0;
+ 
+#ifdef AUTOMODE  
+      // New Automatic Stable <=> Acro switch. If pitch/roll stick is more than 60% from center, change to Acro    
+      if(command_rx_roll >= 30 || command_rx_roll <= -30 || 
+        command_rx_pitch >= 30 || command_rx_pitch <= -30 ) {
+       FL_mode = 1; 
+      } else FL_mode = 0;
+#endif
+
+      if(ch_aux2 > 1800) FL_mode = 1; // Force to Acro mode from radio
+      
+/*
+      // Debuging channels and fl_mode
+      SerPri(command_rx_roll);
+      comma();
+      SerPri(command_rx_pitch);
+      comma();
+      SerPri(FL_mode, DEC);
+      SerPriln();
+*/
+
+      
       //aux_float = (ch_yaw-Neutro_yaw) / 180.0;
       if (abs(ch_yaw-yaw_mid)<12)   // Take into account a bit of "dead zone" on yaw
         aux_float = 0.0;
@@ -540,11 +587,16 @@ void loop(){
       //K_aux = K_aux*0.8 + ((ch_aux-1500)/100.0 + 0.6)*0.2;
       K_aux = K_aux * 0.8 + ((ch_aux2-AUX_MID) / 300.0 + 1.7) * 0.2;   // /300 + 1.0
       if (K_aux < 0) K_aux = 0;
-      //Serial.print(",");
-      //Serial.print(K_aux);
+      //SerPri(",");
+      //SerPri(K_aux);
+
+
+
+    
+
 
       // We read the Quad Mode from Channel 5
-      if (ch_aux < 1200)
+      if (ch_aux > 1800)  // We really need to switch it ON from radio to activate GPS hold
       {
         AP_mode = 1;           // Position hold mode (GPS position control)
         digitalWrite(LED_Yellow,HIGH); // Yellow LED On
@@ -567,11 +619,11 @@ void loop(){
         target_longitude = GPS.Longitude;
 
 #ifndef CONFIGURATOR
-        Serial.println();
-        Serial.print("* Target:");
-        Serial.print(target_longitude);
-        Serial.print(",");
-        Serial.println(target_lattitude);
+        SerPriln();
+        SerPri("* Target:");
+        SerPri(target_longitude);
+        SerPri(",");
+        SerPriln(target_lattitude);
 #endif
         target_position=1;
         //target_sonar_altitude = sonar_value;
@@ -595,10 +647,10 @@ void loop(){
       GPS.NewData=0;  // We Reset the flag...
 
       //Output GPS data
-      //Serial.print(",");
-      //Serial.print(GPS.Lattitude);
-      //Serial.print(",");
-      //Serial.print(GPS.Longitude);
+      //SerPri(",");
+      //SerPri(GPS.Lattitude);
+      //SerPri(",");
+      //SerPri(GPS.Longitude);
 
       // Write GPS data to DataFlash log
       Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
@@ -617,15 +669,20 @@ void loop(){
         }
         else
         {
-          //Serial.print("NOFIX");
+          //SerPri("NOFIX");
           command_gps_roll=0;
           command_gps_pitch=0;
         }
       }
     }
 
+
+    
+
+
     // Control methodology selected using AUX2
-    if (ch_aux2 < 1200) {
+//    if (ch_aux2 < 1200) { 
+    if(FL_mode == 0) {        // Changed for variable
       gled_speed = 1200;
       Attitude_control_v3();
     }
@@ -714,7 +771,7 @@ void loop(){
     APM_RC.Force_Out2_Out3();
 
 #ifndef CONFIGURATOR
-    Serial.println();  // Line END 
+    SerPriln();  // Line END 
 #endif
   }
 #ifdef CONFIGURATOR

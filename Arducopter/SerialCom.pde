@@ -20,8 +20,8 @@
 
 void readSerialCommand() {
   // Check for serial message
-  if (Serial.available()) {
-    queryType = Serial.read();
+  if (SerAva()) {
+    queryType = SerRea();
     switch (queryType) {
     case 'A': // Stable PID
       KP_QUAD_ROLL = readFloatSerial();
@@ -114,114 +114,114 @@ void sendSerialTelemetry() {
   float aux_float[3]; // used for sensor calibration
   switch (queryType) {
   case '=': // Reserved debug command to view any variable from Serial Monitor
-/*    Serial.print("throttle =");
-    Serial.println(ch_throttle);
-    Serial.print("control roll =");
-    Serial.println(control_roll-CHANN_CENTER);
-    Serial.print("control pitch =");
-    Serial.println(control_pitch-CHANN_CENTER);
-    Serial.print("control yaw =");
-    Serial.println(control_yaw-CHANN_CENTER);
-    Serial.print("front left yaw =");
-    Serial.println(frontMotor);
-    Serial.print("front right yaw =");
-    Serial.println(rightMotor);
-    Serial.print("rear left yaw =");
-    Serial.println(leftMotor);
-    Serial.print("rear right motor =");
-    Serial.println(backMotor);
-    Serial.println();
+/*    SerPri("throttle =");
+    SerPriln(ch_throttle);
+    SerPri("control roll =");
+    SerPriln(control_roll-CHANN_CENTER);
+    SerPri("control pitch =");
+    SerPriln(control_pitch-CHANN_CENTER);
+    SerPri("control yaw =");
+    SerPriln(control_yaw-CHANN_CENTER);
+    SerPri("front left yaw =");
+    SerPriln(frontMotor);
+    SerPri("front right yaw =");
+    SerPriln(rightMotor);
+    SerPri("rear left yaw =");
+    SerPriln(leftMotor);
+    SerPri("rear right motor =");
+    SerPriln(backMotor);
+    SerPriln();
 
-    Serial.print("current roll rate =");
-    Serial.println(read_adc(0));
-    Serial.print("current pitch rate =");
-    Serial.println(read_adc(1));
-    Serial.print("current yaw rate =");
-    Serial.println(read_adc(2));
-    Serial.print("command rx yaw =");
-    Serial.println(command_rx_yaw);
-    Serial.println(); 
+    SerPri("current roll rate =");
+    SerPriln(read_adc(0));
+    SerPri("current pitch rate =");
+    SerPriln(read_adc(1));
+    SerPri("current yaw rate =");
+    SerPriln(read_adc(2));
+    SerPri("command rx yaw =");
+    SerPriln(command_rx_yaw);
+    SerPriln(); 
     queryType = 'X';*/
-    Serial.print(APM_RC.InputCh(0));
+    SerPri(APM_RC.InputCh(0));
     comma();
-    Serial.print(ch_roll_slope);
+    SerPri(ch_roll_slope);
     comma();
-    Serial.print(ch_roll_offset);
+    SerPri(ch_roll_offset);
     comma();
-    Serial.println(ch_roll);
+    SerPriln(ch_roll);
     break;
   case 'B': // Send roll, pitch and yaw PID values
-    Serial.print(KP_QUAD_ROLL, 3);
+    SerPri(KP_QUAD_ROLL, 3);
     comma();
-    Serial.print(KI_QUAD_ROLL, 3);
+    SerPri(KI_QUAD_ROLL, 3);
     comma();
-    Serial.print(STABLE_MODE_KP_RATE_ROLL, 3);
+    SerPri(STABLE_MODE_KP_RATE_ROLL, 3);
     comma();
-    Serial.print(KP_QUAD_PITCH, 3);
+    SerPri(KP_QUAD_PITCH, 3);
     comma();
-    Serial.print(KI_QUAD_PITCH, 3);
+    SerPri(KI_QUAD_PITCH, 3);
     comma();
-    Serial.print(STABLE_MODE_KP_RATE_PITCH, 3);
+    SerPri(STABLE_MODE_KP_RATE_PITCH, 3);
     comma();
-    Serial.print(KP_QUAD_YAW, 3);
+    SerPri(KP_QUAD_YAW, 3);
     comma();
-    Serial.print(KI_QUAD_YAW, 3);
+    SerPri(KI_QUAD_YAW, 3);
     comma();
-    Serial.print(STABLE_MODE_KP_RATE_YAW, 3);
+    SerPri(STABLE_MODE_KP_RATE_YAW, 3);
     comma();
-    Serial.print(STABLE_MODE_KP_RATE, 3);    // NOT USED NOW
+    SerPri(STABLE_MODE_KP_RATE, 3);    // NOT USED NOW
     comma();
-    Serial.println(MAGNETOMETER, 3);
+    SerPriln(MAGNETOMETER, 3);
     queryType = 'X';
     break;
   case 'D': // Send GPS PID
-    Serial.print(KP_GPS_ROLL, 3);
+    SerPri(KP_GPS_ROLL, 3);
     comma();
-    Serial.print(KI_GPS_ROLL, 3);
+    SerPri(KI_GPS_ROLL, 3);
     comma();
-    Serial.print(KD_GPS_ROLL, 3);
+    SerPri(KD_GPS_ROLL, 3);
     comma();
-    Serial.print(KP_GPS_PITCH, 3);
+    SerPri(KP_GPS_PITCH, 3);
     comma();
-    Serial.print(KI_GPS_PITCH, 3);
+    SerPri(KI_GPS_PITCH, 3);
     comma();
-    Serial.print(KD_GPS_PITCH, 3);
+    SerPri(KD_GPS_PITCH, 3);
     comma();
-    Serial.print(GPS_MAX_ANGLE, 3);
+    SerPri(GPS_MAX_ANGLE, 3);
     comma();
-    Serial.println(GEOG_CORRECTION_FACTOR, 3);
+    SerPriln(GEOG_CORRECTION_FACTOR, 3);
     queryType = 'X';
     break;
   case 'F': // Send altitude PID
-    Serial.print(KP_ALTITUDE, 3);
+    SerPri(KP_ALTITUDE, 3);
     comma();
-    Serial.print(KI_ALTITUDE, 3);
+    SerPri(KI_ALTITUDE, 3);
     comma();
-    Serial.println(KD_ALTITUDE, 3);
+    SerPriln(KD_ALTITUDE, 3);
     queryType = 'X';
     break;
   case 'H': // Send drift correction PID
-    Serial.print(Kp_ROLLPITCH, 4);
+    SerPri(Kp_ROLLPITCH, 4);
     comma();
-    Serial.print(Ki_ROLLPITCH, 7);
+    SerPri(Ki_ROLLPITCH, 7);
     comma();
-    Serial.print(Kp_YAW, 4);
+    SerPri(Kp_YAW, 4);
     comma();
-    Serial.println(Ki_YAW, 6);
+    SerPriln(Ki_YAW, 6);
     queryType = 'X';
     break;
   case 'J': // Send sensor offset
-    Serial.print(gyro_offset_roll);
+    SerPri(gyro_offset_roll);
     comma();
-    Serial.print(gyro_offset_pitch);
+    SerPri(gyro_offset_pitch);
     comma();
-    Serial.print(gyro_offset_yaw);
+    SerPri(gyro_offset_yaw);
     comma();
-    Serial.print(acc_offset_x);
+    SerPri(acc_offset_x);
     comma();
-    Serial.print(acc_offset_y);
+    SerPri(acc_offset_y);
     comma();
-    Serial.println(acc_offset_z);
+    SerPriln(acc_offset_z);
     AN_OFFSET[3] = acc_offset_x;
     AN_OFFSET[4] = acc_offset_y;
     AN_OFFSET[5] = acc_offset_z;
@@ -235,136 +235,136 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   case 'P': // Send rate control PID
-    Serial.print(Kp_RateRoll, 3);
+    SerPri(Kp_RateRoll, 3);
     comma();
-    Serial.print(Ki_RateRoll, 3);
+    SerPri(Ki_RateRoll, 3);
     comma();
-    Serial.print(Kd_RateRoll, 3);
+    SerPri(Kd_RateRoll, 3);
     comma();
-    Serial.print(Kp_RatePitch, 3);
+    SerPri(Kp_RatePitch, 3);
     comma();
-    Serial.print(Ki_RatePitch, 3);
+    SerPri(Ki_RatePitch, 3);
     comma();
-    Serial.print(Kd_RatePitch, 3);
+    SerPri(Kd_RatePitch, 3);
     comma();
-    Serial.print(Kp_RateYaw, 3);
+    SerPri(Kp_RateYaw, 3);
     comma();
-    Serial.print(Ki_RateYaw, 3);
+    SerPri(Ki_RateYaw, 3);
     comma();
-    Serial.print(Kd_RateYaw, 3);
+    SerPri(Kd_RateYaw, 3);
     comma();
-    Serial.println(xmitFactor, 3);
+    SerPriln(xmitFactor, 3);
     queryType = 'X';
     break;
   case 'Q': // Send sensor data
-    Serial.print(read_adc(0));
+    SerPri(read_adc(0));
     comma();
-    Serial.print(read_adc(1));
+    SerPri(read_adc(1));
     comma();
-    Serial.print(read_adc(2));
+    SerPri(read_adc(2));
     comma();
-    Serial.print(read_adc(4));
+    SerPri(read_adc(4));
     comma();
-    Serial.print(read_adc(3));
+    SerPri(read_adc(3));
     comma();
-    Serial.print(read_adc(5));
+    SerPri(read_adc(5));
     comma();
-    Serial.print(err_roll);
+    SerPri(err_roll);
     comma();
-    Serial.print(err_pitch);
+    SerPri(err_pitch);
     comma();
-    Serial.print(degrees(roll));
+    SerPri(degrees(roll));
     comma();
-    Serial.print(degrees(pitch));
+    SerPri(degrees(pitch));
     comma();
-    Serial.println(degrees(yaw));
+    SerPriln(degrees(yaw));
     break;
   case 'R': // Send raw sensor data
     break;
   case 'S': // Send all flight data
-    Serial.print(timer-timer_old);
+    SerPri(timer-timer_old);
     comma();
-    Serial.print(read_adc(0));
+    SerPri(read_adc(0));
     comma();
-    Serial.print(read_adc(1));
+    SerPri(read_adc(1));
     comma();
-    Serial.print(read_adc(2));
+    SerPri(read_adc(2));
     comma();
-    Serial.print(ch_throttle);
+    SerPri(ch_throttle);
     comma();
-    Serial.print(control_roll);
+    SerPri(control_roll);
     comma();
-    Serial.print(control_pitch);
+    SerPri(control_pitch);
     comma();
-    Serial.print(control_yaw);
+    SerPri(control_yaw);
     comma();
-    Serial.print(frontMotor); // Front Motor
+    SerPri(frontMotor); // Front Motor
     comma();
-    Serial.print(backMotor); // Back Motor
+    SerPri(backMotor); // Back Motor
     comma();
-    Serial.print(rightMotor); // Right Motor
+    SerPri(rightMotor); // Right Motor
     comma();
-    Serial.print(leftMotor); // Left Motor
+    SerPri(leftMotor); // Left Motor
     comma();
-    Serial.print(read_adc(4));
+    SerPri(read_adc(4));
     comma();
-    Serial.print(read_adc(3));
+    SerPri(read_adc(3));
     comma();
-    Serial.println(read_adc(5));
+    SerPriln(read_adc(5));
     break;
   case 'T': // Spare
     break;
   case 'U': // Send receiver values
-    Serial.print(ch_roll); // Aileron
+    SerPri(ch_roll); // Aileron
     comma();
-    Serial.print(ch_pitch); // Elevator
+    SerPri(ch_pitch); // Elevator
     comma();
-    Serial.print(ch_yaw); // Yaw
+    SerPri(ch_yaw); // Yaw
     comma();
-    Serial.print(ch_throttle); // Throttle
+    SerPri(ch_throttle); // Throttle
     comma();
-    Serial.print(ch_aux); // AUX1 (Mode)
+    SerPri(ch_aux); // AUX1 (Mode)
     comma();
-    Serial.print(ch_aux2); // AUX2 
+    SerPri(ch_aux2); // AUX2 
     comma();
-    Serial.print(roll_mid); // Roll MID value
+    SerPri(roll_mid); // Roll MID value
     comma();
-    Serial.print(pitch_mid); // Pitch MID value
+    SerPri(pitch_mid); // Pitch MID value
     comma();
-    Serial.println(yaw_mid); // Yaw MID Value
+    SerPriln(yaw_mid); // Yaw MID Value
     break;
   case 'V': // Spare
     break;
   case 'X': // Stop sending messages
     break;
   case '!': // Send flight software version
-    Serial.println(VER);
+    SerPriln(VER);
     queryType = 'X';
     break;
   case '2': // Send transmitter calibration values
-    Serial.print(ch_roll_slope);
+    SerPri(ch_roll_slope);
     comma();
-    Serial.print(ch_roll_offset);
+    SerPri(ch_roll_offset);
     comma();
-    Serial.print(ch_pitch_slope);
+    SerPri(ch_pitch_slope);
     comma();
-    Serial.print(ch_pitch_offset);
+    SerPri(ch_pitch_offset);
     comma();
-    Serial.print(ch_yaw_slope);
+    SerPri(ch_yaw_slope);
     comma();
-    Serial.print(ch_yaw_offset);
+    SerPri(ch_yaw_offset);
     comma();
-    Serial.print(ch_throttle_slope);
+    SerPri(ch_throttle_slope);
     comma();
-    Serial.print(ch_throttle_offset);
+    SerPri(ch_throttle_offset);
     comma();
-    Serial.print(ch_aux_slope);
+    SerPri(ch_aux_slope);
     comma();
-    Serial.print(ch_aux_offset);
+    SerPri(ch_aux_offset);
     comma();
-    Serial.print(ch_aux2_slope);
+    SerPri(ch_aux2_slope);
     comma();
-    Serial.println(ch_aux2_offset);
+    SerPriln(ch_aux2_offset);
     queryType = 'X';
   break;
   case '.': // Modify GPS settings
@@ -380,12 +380,12 @@ float readFloatSerial() {
   char data[128] = "";
 
   do {
-    if (Serial.available() == 0) {
+    if (SerAva() == 0) {
       delay(10);
       timeout++;
     }
     else {
-      data[index] = Serial.read();
+      data[index] = SerRea();
       timeout = 0;
       index++;
     }
