@@ -170,7 +170,9 @@ AP_GPS_SIRF::_parse_gps(void)
 		longitude		= _swapl(&_buffer.nav.longitude);
 		altitude		= _swapl(&_buffer.nav.altitude_msl);
 		ground_speed	= _swapi(&_buffer.nav.ground_speed);
-		ground_course	= _swapi(&_buffer.nav.ground_course);
+		// at low speeds, ground course wanders wildly; suppress changes if we are not moving
+		if (ground_speed > 50)
+			ground_course	= _swapi(&_buffer.nav.ground_course);
 		num_sats		= _buffer.nav.satellites;
 		break;
 	}
