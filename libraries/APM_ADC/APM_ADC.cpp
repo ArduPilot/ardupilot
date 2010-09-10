@@ -138,7 +138,7 @@ int APM_ADC_Class::Ch(unsigned char ch_num)
 
   cli();                                              // We stop interrupts to read the variables
   if (adc_counter[ch_num]>0)
-	result = adc_value[ch_num]/adc_counter[ch_num]);
+	result = adc_value[ch_num]/adc_counter[ch_num];
   else
 	result = 0;
   adc_value[ch_num] = 0;                              // Initialize for next reading

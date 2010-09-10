@@ -16,7 +16,7 @@ class APM_ADC_Class
   public:
 	APM_ADC_Class();  // Constructor
 	void Init();
-	float Ch(unsigned char ch_num);     // HJI Changed from int to float
+	int Ch(unsigned char ch_num);     
 };
 
 extern APM_ADC_Class APM_ADC;
