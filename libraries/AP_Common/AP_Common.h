@@ -9,6 +9,8 @@
 #ifndef _AP_COMMON_H
 #define _AP_COMMON_H
 
+#include <stdint.h>
+
 ///
 /// @file 		AP_Common.h
 /// @brief		Common definitions and utility routines for the ArduPilot
