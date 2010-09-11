@@ -10,7 +10,7 @@ class AP_RC : public RC
   public:
 	AP_RC();
 	void init();
-	void read_pwm();
+	void read();
 	void output();
 	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void trim();

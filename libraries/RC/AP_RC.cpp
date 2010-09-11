@@ -75,7 +75,7 @@ AP_RC::init()
 	// trim out the radio
 	for(int c = 0; c < 50; c++){
 		delay(20);
-		read_pwm();
+		read();
 	}
 	
 	trim();
@@ -90,7 +90,7 @@ AP_RC::init()
 }
 
 void 
-AP_RC::read_pwm()
+AP_RC::read()
 {	
 	if((_direction_mask & 1) == 0 )
 		timer1diff = REVERSE - timer1diff;
@@ -163,7 +163,7 @@ AP_RC::trim()
 {
 	uint8_t temp = _mix_mode;
 	_mix_mode = 0;
-	read_pwm();
+	read();
 	_mix_mode = temp;
 	
 	radio_trim[CH1] = radio_in[CH1];

@@ -24,7 +24,7 @@ class RC
   //	RC();
 	virtual void init();
 	virtual void trim();
-	virtual void read_pwm();
+	virtual void read();
 	virtual void output();
 	virtual void set_channel_direction(uint8_t ch, int8_t dir);
 	virtual void set_ch_pwm(uint8_t ch, uint16_t pwm);

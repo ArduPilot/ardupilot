@@ -99,7 +99,7 @@ APM2_RC::init()
 	// trim out the radio
 	for(int c = 0; c < 50; c++){
 		delay(20);
-		read_pwm();
+		read();
 	}
 	
 	trim();
@@ -109,7 +109,7 @@ APM2_RC::init()
 	}
 }
 
-void APM2_RC::read_pwm()
+void APM2_RC::read()
 {
 	//Serial.print("ch1 in ");
 	//Serial.print(raw[CH1],DEC);
@@ -189,7 +189,7 @@ APM2_RC::trim()
 {
 	uint8_t temp = _mix_mode;
 	_mix_mode = 0;
-	read_pwm();
+	read();
 	_mix_mode = temp;
 	
 	// Store the trim values
