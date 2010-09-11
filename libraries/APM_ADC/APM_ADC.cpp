@@ -50,11 +50,9 @@ extern "C" {
 
 #include "APM_ADC.h"
 
-// HJI - changed read order to p, q, r, ax, ay, az, gyro temperature, JP5 pin 3
+
 // Commands for reading ADC channels on ADS7844
-// Note change in read order              pRate  qRate  rRate  aX     aY     aZ     temp   JP5
-// ADC Input Channel                      Ch1    Ch2    Ch0    Ch4    Ch5    Ch6    Ch3    Ch7
-const unsigned char    adc_cmd[9]     = { 0xC7,  0x97,  0x87,  0xA7,  0xE7,  0xB7,  0xD7,  0xF7,  0x00 };
+const unsigned char adc_cmd[9]=  { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
 volatile long          adc_value[8]   = { 0, 0, 0, 0, 0, 0, 0, 0 };
 volatile unsigned char adc_counter[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
