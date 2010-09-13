@@ -22,9 +22,9 @@ FastSerialPort0(Serial);
 
 //
 // To create a driver for a different serial port, on a board that
-// supports more than one, pass an argument to the constructor:
+// supports more than one, use the appropriate macro:
 //
-//FastSerial      Serial2(2);
+//FastSerialPort2(Serial2);
 
 
 void setup(void)

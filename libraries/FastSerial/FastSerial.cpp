@@ -39,7 +39,8 @@
 # define FS_MAX_PORTS   1
 #endif
 
-FastSerial       *__FastSerial__ports[FS_MAX_PORTS];
+FastSerial::Buffer	__FastSerial__rxBuffer[FS_MAX_PORTS];
+FastSerial::Buffer	__FastSerial__txBuffer[FS_MAX_PORTS];
 
 // Default buffer sizes
 #define RX_BUFFER_SIZE  128
@@ -96,11 +97,10 @@ FastSerial::FastSerial(const uint8_t portNumber,
         _portTxBits     = portTxBits;
 
         // init buffers
-        _txBuffer.head = _txBuffer.tail = 0;
-        _rxBuffer.head = _rxBuffer.tail = 0;
-
-        // claim the port
-        __FastSerial__ports[portNumber] = this;
+        _rxBuffer = &__FastSerial__rxBuffer[portNumber];
+        _txBuffer->head = _txBuffer->tail = 0;
+        _txBuffer = &__FastSerial__txBuffer[portNumber];
+        _rxBuffer->head = _rxBuffer->tail = 0;
 
         // init stdio
         fdev_setup_stream(&_fd, &FastSerial::_putchar, NULL, _FDEV_SETUP_WRITE);
@@ -126,8 +126,8 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
                 end();
 
         // allocate buffers
-        if (!_allocBuffer(&_rxBuffer, rxSpace ? : RX_BUFFER_SIZE) ||
-            !_allocBuffer(&_txBuffer, txSpace ? : TX_BUFFER_SIZE)) {
+        if (!_allocBuffer(_rxBuffer, rxSpace ? : RX_BUFFER_SIZE) ||
+            !_allocBuffer(_txBuffer, txSpace ? : TX_BUFFER_SIZE)) {
                 end();
                 return;                 // couldn't allocate buffers - fatal
         }
@@ -167,8 +167,8 @@ void FastSerial::end()
 {
         *_ucsrb &= ~(_portEnableBits | _portTxBits);
 
-        _freeBuffer(&_rxBuffer);
-        _freeBuffer(&_txBuffer);
+        _freeBuffer(_rxBuffer);
+        _freeBuffer(_txBuffer);
         _open = false;
 }
 
@@ -177,7 +177,7 @@ FastSerial::available(void)
 {
         if (!_open)
                 return(-1);
-        return((_rxBuffer.head - _rxBuffer.tail) & _rxBuffer.mask);
+        return((_rxBuffer->head - _rxBuffer->tail) & _rxBuffer->mask);
 }
 
 int
@@ -186,12 +186,12 @@ FastSerial::read(void)
         uint8_t         c;
 
         // if the head and tail are equal, the buffer is empty
-        if (!_open || (_rxBuffer.head == _rxBuffer.tail))
+        if (!_open || (_rxBuffer->head == _rxBuffer->tail))
                 return(-1);
 
         // pull character from tail
-        c = _rxBuffer.bytes[_rxBuffer.tail];
-        _rxBuffer.tail = (_rxBuffer.tail + 1) & _rxBuffer.mask;
+        c = _rxBuffer->bytes[_rxBuffer->tail];
+        _rxBuffer->tail = (_rxBuffer->tail + 1) & _rxBuffer->mask;
 
         return(c);
 }
@@ -200,20 +200,20 @@ void
 FastSerial::flush(void)
 {
         // don't reverse this or there may be problems if the RX interrupt
-        // occurs after reading the value of _rxBuffer.head but before writing
-        // the value to _rxBuffer.tail; the previous value of head
+        // occurs after reading the value of _rxBuffer->head but before writing
+        // the value to _rxBuffer->tail; the previous value of head
         // may be written to tail, making it appear as if the buffer
         // don't reverse this or there may be problems if the RX interrupt
         // occurs after reading the value of head but before writing
         // the value to tail; the previous value of rx_buffer_head
         // may be written to tail, making it appear as if the buffer
         // were full, not empty.
-        _rxBuffer.head = _rxBuffer.tail;
+        _rxBuffer->head = _rxBuffer->tail;
 
         // don't reverse this or there may be problems if the TX interrupt
-        // occurs after reading the value of _txBuffer.tail but before writing
-        // the value to _txBuffer.head.
-        _txBuffer.tail = _rxBuffer.head;
+        // occurs after reading the value of _txBuffer->tail but before writing
+        // the value to _txBuffer->head.
+        _txBuffer->tail = _rxBuffer->head;
 }
 
 void
@@ -225,13 +225,13 @@ FastSerial::write(uint8_t c)
                 return;
 
         // wait for room in the tx buffer
-        i = (_txBuffer.head + 1) & _txBuffer.mask;
-        while (i == _txBuffer.tail)
+        i = (_txBuffer->head + 1) & _txBuffer->mask;
+        while (i == _txBuffer->tail)
                 ;
 
         // add byte to the buffer
-        _txBuffer.bytes[_txBuffer.head] = c;
-        _txBuffer.head = i;
+        _txBuffer->bytes[_txBuffer->head] = c;
+        _txBuffer->head = i;
 
         // enable the data-ready interrupt, as it may be off if the buffer is empty
         *_ucsrb |= _portTxBits;
@@ -287,39 +287,6 @@ FastSerial::printf_P(const char *fmt, ...)
         return(i);
 }
 
-// Interrupt methods ///////////////////////////////////////////////////////////
-
-void
-FastSerial::receive(uint8_t c)
-{
-        uint8_t         i;
-
-        // if we should be storing the received character into the location
-        // just before the tail (meaning that the head would advance to the
-        // current location of the tail), we're about to overflow the buffer
-        // and so we don't write the character or advance the head.
-
-        i = (_rxBuffer.head + 1) & _rxBuffer.mask;
-        if (i != _rxBuffer.tail) {
-                _rxBuffer.bytes[_rxBuffer.head] = c;
-                _rxBuffer.head = i;
-        }
-}
-
-void
-FastSerial::transmit(void)
-{
-        // if the buffer is not empty, send the next byte
-        if (_txBuffer.head != _txBuffer.tail) {
-                *_udr = _txBuffer.bytes[_txBuffer.tail];
-                _txBuffer.tail = (_txBuffer.tail + 1) & _txBuffer.mask;
-        }
-
-        // if the buffer is (now) empty, disable the interrupt
-        if (_txBuffer.head == _txBuffer.tail)
-                *_ucsrb &= ~_portTxBits;
-}
-
 // Buffer management ///////////////////////////////////////////////////////////
 
 bool
@@ -330,13 +297,12 @@ FastSerial::_allocBuffer(Buffer *buffer, unsigned int size)
         // init buffer state
         buffer->head = buffer->tail = 0;
 
-        // cap the buffer size
-        if (size > BUFFER_MAX)
-                size = BUFFER_MAX;
-
-        // compute the power of 2 greater or equal to the requested buffer size
-        // and then a mask to simplify wrapping operations
-        shift = 16 - __builtin_clz(size - 1);
+        // Compute the power of 2 greater or equal to the requested buffer size
+        // and then a mask to simplify wrapping operations.  Using __builtin_clz
+        // would seem to make sense, but it uses a 256(!) byte table.
+        // Note that we ignore requests for more than BUFFER_MAX space.
+        for (shift = 1; (1U << shift) < min(BUFFER_MAX, size); shift++)
+                ;
         buffer->mask = (1 << shift) - 1;
 
         // allocate memory for the buffer - if this fails, we fail

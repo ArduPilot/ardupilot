@@ -37,9 +37,6 @@
 // wish to use.  This is less friendly than the stock Arduino driver,
 // but it saves ~200 bytes for every unused port.
 //
-// To adjust the transmit/receive buffer sizes, change the size of the
-// 'bytes' member in the RXBuffer and TXBuffer structures.
-//
 
 #ifndef FastSerial_h
 #define FastSerial_h
@@ -113,9 +110,12 @@ public:
         int             printf_P(const char *fmt, ...);
         FILE            *getfd(void) { return &_fd; };
 
-        // Interrupt methods
-        void            receive(uint8_t c);
-        void            transmit(void);
+        // public so the interrupt handlers can see it
+        struct Buffer {
+                volatile uint16_t head, tail;
+                uint16_t        mask;
+                uint8_t         *bytes;
+        };
 
 private:
         // register accessors
@@ -131,13 +131,8 @@ private:
         uint8_t         _u2x;
 
         // ring buffers
-        struct Buffer {
-                volatile int16_t head, tail;
-                uint8_t         *bytes;
-                uint16_t        mask;
-        };
-        Buffer          _rxBuffer;
-        Buffer          _txBuffer;
+        Buffer          *_rxBuffer;
+        Buffer          *_txBuffer;
         bool            _open;
 
         bool            _allocBuffer(Buffer *buffer, unsigned int size);
@@ -150,19 +145,38 @@ private:
 };
 
 // Used by the per-port interrupt vectors
-extern FastSerial       *__FastSerial__ports[];
+extern FastSerial::Buffer	__FastSerial__rxBuffer[];
+extern FastSerial::Buffer	__FastSerial__txBuffer[];
 
 // Generic Rx/Tx vectors for a serial port - needs to know magic numbers
-#define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR)    \
-ISR(_RXVECTOR, ISR_BLOCK)                                       \
-{                                                               \
-        unsigned char c = _UDR;                                 \
-        __FastSerial__ports[_PORT]->receive(c);                 \
-}                                                               \
-ISR(_TXVECTOR, ISR_BLOCK)                                       \
-{                                                               \
-        __FastSerial__ports[_PORT]->transmit();                 \
-}                                                               \
+#define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR, _UCSRB, _TXBITS) \
+ISR(_RXVECTOR, ISR_BLOCK)                                               \
+{                                                                       \
+        uint8_t c;                                                      \
+        int16_t i;                                                      \
+                                                                        \
+        /* read the byte as quickly as possible */                      \
+        c = _UDR;                                                       \
+        /* work out where the head will go next */                      \
+        i = (__FastSerial__rxBuffer[_PORT].head + 1) & __FastSerial__rxBuffer[_PORT].mask; \
+        /* decide whether we have space for another byte */             \
+        if (i != __FastSerial__rxBuffer[_PORT].tail) {                  \
+                /* we do, move the head */                              \
+                __FastSerial__rxBuffer[_PORT].bytes[__FastSerial__rxBuffer[_PORT].head] = c; \
+                __FastSerial__rxBuffer[_PORT].head = i;                 \
+        }                                                               \
+}                                                                       \
+ISR(_TXVECTOR, ISR_BLOCK)                                               \
+{                                                                       \
+        /* if we have taken an interrupt we are ready to transmit the next byte */ \
+        _UDR = __FastSerial__txBuffer[_PORT].bytes[__FastSerial__txBuffer[_PORT].tail]; \
+        /* increment the tail */                                        \
+        __FastSerial__txBuffer[_PORT].tail =                            \
+                (__FastSerial__txBuffer[_PORT].tail + 1) & __FastSerial__txBuffer[_PORT].mask; \
+        /* if there are no more bytes to send, disable the interrupt */ \
+        if (__FastSerial__txBuffer[_PORT].head == __FastSerial__txBuffer[_PORT].tail) \
+                _UCSRB &= ~_TXBITS;                                     \
+}                                                                       \
 struct hack
 
 // Macros defining serial ports
@@ -177,7 +191,7 @@ struct hack
                              U2X0,                                      \
                              (_BV(RXEN0) |  _BV(TXEN0) | _BV(RXCIE0)),  \
                              (_BV(UDRIE0)));                            \
-	FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0)
+	FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0, UCSR0B, _BV(UDRIE0))
 #if defined(__AVR_ATmega1280__)
 #define FastSerialPort1(_portName)                                      \
 	FastSerial _portName(1,                                         \
@@ -189,7 +203,7 @@ struct hack
                              U2X1,                                      \
                              (_BV(RXEN1) |  _BV(TXEN1) | _BV(RXCIE1)),  \
                              (_BV(UDRIE1)));                            \
-	FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1)
+	FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1, UCSR1B, _BV(UDRIE1))
 #define FastSerialPort2(_portName)                                      \
 	FastSerial _portName(2,                                         \
                              &UBRR2H,                                   \
@@ -200,7 +214,7 @@ struct hack
                              U2X2,                                      \
                              (_BV(RXEN2) |  _BV(TXEN2) | _BV(RXCIE2)),  \
                              (_BV(UDRIE2)));                            \
-	FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2)
+	FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2, UCSR2B, _BV(UDRIE2))
 #define FastSerialPort3(_portName)                                      \
 	FastSerial _portName(3,                                         \
                              &UBRR3H,                                   \
@@ -211,7 +225,7 @@ struct hack
                              U2X3,                                      \
                              (_BV(RXEN3) |  _BV(TXEN3) | _BV(RXCIE3)),  \
                              (_BV(UDRIE3)));                            \
-	FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3)
+	FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3, UCSR3B, _BV(UDRIE3))
 #endif
 
 #endif // FastSerial_h
