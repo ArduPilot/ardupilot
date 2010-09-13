@@ -198,7 +198,7 @@ APM2_RC::trim()
 		radio_trim[y] = radio_in[y];
 }
 void
-AP_RC::twitch_servos(void)
+APM2_RC::twitch_servos(uint8_t times)
 {
 	// todo
 }

@@ -14,6 +14,7 @@ class AP_RC : public RC
 	void output();
 	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void trim();
+	void twitch_servos(uint8_t times);
 	
 	int16_t radio_in[4];
 	int16_t radio_min[4];

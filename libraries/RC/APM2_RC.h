@@ -14,6 +14,7 @@ class APM2_RC : public RC
 	void output();
 	void set_ch_pwm(uint8_t ch, uint16_t pwm);
 	void trim();
+	void twitch_servos(uint8_t times);
 
 	void force_out_0_1(void);
 	void force_out_2_3(void);
