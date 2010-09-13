@@ -1,3 +1,7 @@
+
+#ifndef AP_NAVIGATION_h
+#define AP_NAVIGATION_h
+
 #define XTRACK_GAIN 10 					// Amount to compensate for crosstrack (degrees/100 per meter)
 #define XTRACK_ENTRY_ANGLE 3000			// Max angle used to correct for track following	degrees*100
 #include <GPS.h>						// ArduPilot GPS Library
@@ -12,12 +16,15 @@ public:
 	
 	void 		update_gps(void);					// called 50 Hz
 	void		set_home(Waypoints::WP loc);
+	void		set_next_wp(Waypoints::WP loc);
 	void 		load_first_wp(void);
 	void 		load_wp_with_index(uint8_t i);
 	void 		load_home(void);
-	void		return_to_home(void);
+	void		return_to_home_with_alt(uint32_t alt);
 
 	void		reload_wp(void);
+	void		load_wp_index(uint8_t i);
+	void		hold_location();
 	void		set_wp(Waypoints::WP loc);
 
 	void		set_hold_course(int16_t b);				// -1 deisables, 0-36000 enables
@@ -27,6 +34,7 @@ public:
 	int32_t 	get_bearing(Waypoints::WP *loc1, Waypoints::WP *loc2);
 	void		set_bearing_error(int32_t error);
 	
+	void		set_loiter_vector(int16_t v);
 	void 		update_crosstrack(void);
 	
 	int32_t		bearing;							// deg * 100 : 0 to 360 current desired bearing to navigate
@@ -44,6 +52,7 @@ private:
 	void 		calc_bearing_error(void);
 	void		calc_altitude_error(void);
 	void		calc_distance_error(void);
+	void 		calc_long_scaling(int32_t lat);
 	void 		reset_crosstrack(void);
 	int32_t		wrap_360(int32_t error);			// utility
 
@@ -60,3 +69,6 @@ private:
 	float 		_scaleLongDown;				// used to reverse int32_ttitude scaling	
 	int16_t		_loiter_delta;
 };
+
+
+#endif // AP_NAVIGATION_h

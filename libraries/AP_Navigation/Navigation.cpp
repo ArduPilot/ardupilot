@@ -12,7 +12,7 @@ Navigation::update_gps()
 {
 	location.alt 		= _gps->altitude;
 	location.lng 		= _gps->longitude;
-	location.lat 		= _gps->lattitude;
+	location.lat 		= _gps->latitude;
 	
 	// target_bearing is where we should be heading 
 	bearing 			= get_bearing(&location, &next_wp);
@@ -74,18 +74,17 @@ Navigation::load_wp_index(uint8_t i)
 	_wp->set_index(i);
 	set_next_wp(_wp->get_current_waypoint());
 }
+
 void
 Navigation::hold_location()
 {
-	
-	set_next_wp()
+  //	set_next_wp()	XXX needs to be implemented
 }
 
 void
 Navigation::set_home(Waypoints::WP loc)
 {
-	Waypoints::WP loc
-	_wp->set_waypoint_with_index(loc, i);
+	_wp->set_waypoint_with_index(loc, 0);
 	home 		= loc;
 	//location 	= home;
 }
@@ -190,7 +189,7 @@ Navigation::calc_altitude_error(void)
 void
 Navigation::set_loiter_vector(int16_t v)
 {
-	_vector = constrain(v, -18000, 18000);
+  //	_vector = constrain(v, -18000, 18000);	XXX needs to be implemented
 }
 
 void
