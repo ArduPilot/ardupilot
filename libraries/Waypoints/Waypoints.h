@@ -18,7 +18,7 @@ class Waypoints
 		int32_t lng;				// Longitude * 10**7
 	};
 	
-	WP get_waypoint_with_index(uint16_t i);
+	WP get_waypoint_with_index(uint8_t i);
 	WP get_current_waypoint(void);
 	WP get_next_waypoint(void);
 	
