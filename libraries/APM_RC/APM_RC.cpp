@@ -23,6 +23,10 @@
 #include <avr/interrupt.h>
 #include "WProgram.h"
 
+#if !defined(__AVR_ATmega1280__)
+# error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
+#else
+
 // Variable definition for Input Capture interrupt
 volatile unsigned int ICR4_old;
 volatile unsigned char PPM_Counter=0;
@@ -185,3 +189,5 @@ void APM_RC_Class::Force_Out6_Out7(void)
 
 // make one instance for the user to use
 APM_RC_Class APM_RC;
+
+#endif // defined(ATMega1280)
