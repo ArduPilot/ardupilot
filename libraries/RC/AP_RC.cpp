@@ -40,13 +40,15 @@ volatile uint8_t 	_timer_ovf		= 0;
 AP_RC::AP_RC()
 {
 	_direction_mask = 255;	// move to super class
-	pinMode(11,INPUT); 	// PB3 - MOSI/OC2	- Throttle in
-	pinMode(13,INPUT); 	// PB5 - SCK		- Rudder in
-	pinMode(8, OUTPUT); // PB0 - AIN1		- OUTPUT THROTTLE
-	pinMode(9, OUTPUT);	// PB1 - OC1A		- Elevator PWM out
-	pinMode(10,OUTPUT);	// PB2 - OC1B		- Aileron PWM out
-	// set Analog out 4 to output
-	DDRC |= B00010000;	
+	pinMode(2,INPUT);	// PD2 - INT0 		- CH 1 in
+	pinMode(3,INPUT);	// PD3 - INT1 		- CH 2 in
+	pinMode(11,INPUT); 	// PB3 - MOSI/OC2	- CH 3 in
+	pinMode(13,INPUT); 	// PB5 - SCK		- CH 4 in
+
+	pinMode(10,OUTPUT);	// PB2 - OC1B		- CH 1 out
+	pinMode(8, OUTPUT); // PB0 - AIN1		- CH 3 out
+	pinMode(9, OUTPUT);	// PB1 - OC1A		- CH 2 out
+	DDRC |= B00010000;	// PC4 - 			- CH 4 out
 }
 
 void
