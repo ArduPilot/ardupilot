@@ -182,7 +182,7 @@ void AP_GPS_IMU::join_data_xplane()
 	pitch_sensor = *(int *)&buffer[2];
 
 	 //Storing IMU heading (yaw)
-	ground_course = *(int *)&buffer[4];
+	ground_course = *(unsigned int *)&buffer[4];
 	
 	 //Storing airspeed
 	airspeed = *(int *)&buffer[6];
