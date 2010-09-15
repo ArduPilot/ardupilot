@@ -54,6 +54,7 @@ private:
 	void		calc_distance_error(void);
 	void 		calc_long_scaling(int32_t lat);
 	void 		reset_crosstrack(void);
+	int32_t		wrap_180(int32_t error);			// utility
 	int32_t		wrap_360(int32_t error);			// utility
 
 	int16_t		_old_bearing;						// used to track delta on the bearing

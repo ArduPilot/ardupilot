@@ -149,24 +149,32 @@ void
 Navigation::calc_bearing_error(void)
 {
 	if(_hold_course == -1){
-		bearing_error = wrap_360(bearing - _gps->ground_course);
+		bearing_error = wrap_180(bearing - _gps->ground_course);
 	}else{
 		bearing_error = _hold_course;
 	}
 }
 
 int32_t
-Navigation::wrap_360(int32_t error)
+Navigation::wrap_180(int32_t error)
 {
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
 	return error;
 }
 
+int32_t
+Navigation::wrap_360(int32_t error)
+{
+	if (error > 36000)	error -= 36000;
+	if (error < 0)		error += 36000;
+	return error;
+}
+
 void
 Navigation::set_bearing_error(int32_t error)
 {
-	bearing_error = wrap_360(error);
+	bearing_error = wrap_180(error);
 }
 
 
