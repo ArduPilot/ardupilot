@@ -135,6 +135,7 @@
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
 void Attitude_control_v3()
 {
+  #define MAX_CONTROL_OUTPUT 250
   float stable_roll,stable_pitch,stable_yaw;
   
   // ROLL CONTROL    
@@ -154,6 +155,7 @@ void Attitude_control_v3()
   // PD rate control (we use also the bias corrected gyro rates)
   err_roll = stable_roll - ToDeg(Omega[0]); // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
   control_roll = STABLE_MODE_KP_RATE_ROLL*err_roll;
+  control_roll = constrain(control_roll,-MAX_CONTROL_OUTPUT,MAX_CONTROL_OUTPUT);
   
   // PITCH CONTROL
   if (AP_mode==2)        // Normal mode => Stabilization mode
@@ -172,6 +174,7 @@ void Attitude_control_v3()
   // P rate control (we use also the bias corrected gyro rates)
   err_pitch = stable_pitch - ToDeg(Omega[1]);
   control_pitch = STABLE_MODE_KP_RATE_PITCH*err_pitch;
+  control_pitch = constrain(control_pitch,-MAX_CONTROL_OUTPUT,MAX_CONTROL_OUTPUT);
   
   // YAW CONTROL
   err_yaw = command_rx_yaw - ToDeg(yaw);
@@ -189,6 +192,7 @@ void Attitude_control_v3()
   // PD rate control (we use also the bias corrected gyro rates)
   err_yaw = stable_yaw - ToDeg(Omega[2]);
   control_yaw = STABLE_MODE_KP_RATE_YAW*err_yaw;
+  control_yaw = constrain(control_yaw,-MAX_CONTROL_OUTPUT,MAX_CONTROL_OUTPUT);
 }
 
 // ACRO MODE
