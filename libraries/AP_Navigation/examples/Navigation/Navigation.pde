@@ -11,7 +11,7 @@ This test assumes you are at the LOWl demo Airport
 
 
 AP_GPS_IMU gps;
-Navigation	nav((GPS *) & gps);
+Navigation	nav((GPS *) &gps);
 AP_RC rc;
 
 #define CH_ROLL 0

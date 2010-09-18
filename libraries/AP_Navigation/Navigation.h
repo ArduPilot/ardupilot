@@ -5,7 +5,7 @@
 #define XTRACK_GAIN 10 					// Amount to compensate for crosstrack (degrees/100 per meter)
 #define XTRACK_ENTRY_ANGLE 3000			// Max angle used to correct for track following	degrees*100
 #include <GPS.h>						// ArduPilot GPS Library
-#include "Waypoints.h"						// ArduPilot Waypoints Library
+#include "Waypoints.h"					// ArduPilot Waypoints Library
 #include "WProgram.h"
 
 #define T7 10000000
@@ -36,6 +36,9 @@ public:
 	
 	void		set_loiter_vector(int16_t v);
 	void 		update_crosstrack(void);
+
+	int32_t		wrap_180(int32_t error);			// utility
+	int32_t		wrap_360(int32_t angle);			// utility
 	
 	int32_t		bearing;							// deg * 100 : 0 to 360 current desired bearing to navigate
 	int32_t		distance;							// meters : distance plane to next waypoint
@@ -54,8 +57,6 @@ private:
 	void		calc_distance_error(void);
 	void 		calc_long_scaling(int32_t lat);
 	void 		reset_crosstrack(void);
-	int32_t		wrap_180(int32_t error);			// utility
-	int32_t		wrap_360(int32_t error);			// utility
 
 	int16_t		_old_bearing;						// used to track delta on the bearing
 	GPS			*_gps;

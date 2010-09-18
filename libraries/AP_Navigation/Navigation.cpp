@@ -164,11 +164,11 @@ Navigation::wrap_180(int32_t error)
 }
 
 int32_t
-Navigation::wrap_360(int32_t error)
+Navigation::wrap_360(int32_t angle)
 {
-	if (error > 36000)	error -= 36000;
-	if (error < 0)		error += 36000;
-	return error;
+	if (angle > 36000)	angle -= 36000;
+	if (angle < 0)		angle += 36000;
+	return angle;
 }
 
 void

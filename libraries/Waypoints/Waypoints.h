@@ -18,15 +18,15 @@ class Waypoints
 		int32_t lng;				// Longitude * 10**7
 	};
 	
-	WP get_waypoint_with_index(uint8_t i);
-	WP get_current_waypoint(void);
-	WP get_next_waypoint(void);
-	
+	WP			get_waypoint_with_index(uint8_t i);
+	WP			get_current_waypoint(void);
+
 	void 		set_waypoint_with_index(Waypoints::WP wp, uint8_t i);
 
 	void 		set_start_byte(uint16_t start_byte);
 	void 		set_wp_size(uint8_t wp_size);
 	
+	void		next_index(void);
 	uint8_t 	get_index(void);
 	void 		set_index(uint8_t i);
 

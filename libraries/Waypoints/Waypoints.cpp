@@ -71,15 +71,6 @@ Waypoints::get_waypoint_with_index(uint8_t i)
 
 
 Waypoints::WP
-Waypoints::get_next_waypoint(void)
-{
-	_index++;
-	if (_index >= _total)
-		_index == 0;
-	return get_waypoint_with_index(_index);
-}
-
-Waypoints::WP
 Waypoints::get_current_waypoint(void)
 {
 	return get_waypoint_with_index(_index);
@@ -89,6 +80,14 @@ uint8_t
 Waypoints::get_index(void)
 {
 	return _index;
+}
+
+void
+Waypoints::next_index(void)
+{
+	_index++;
+	if (_index >= _total)
+		_index == 0;
 }
 
 void
