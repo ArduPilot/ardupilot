@@ -1,12 +1,12 @@
 /*
   Example of GPS IMU library.
-  Code by Jordi MuÔøΩoz, Jose Julio and, Jason Short . DIYDrones.com
+  Code by Jordi Munoz, Jose Julio and, Jason Short . DIYDrones.com
 
   Works with Ardupilot Mega Hardware (GPS on Serial Port1)
   and with standard ATMega168 and ATMega328 on Serial Port 0
 */
 
-#include <GPS_IMU.h> // UBLOX GPS Library
+#include <GPS_IMU.h> // GPS Library
 
 void setup()
 {
@@ -38,7 +38,7 @@ void loop()
     Serial.print(" TIM:");
     Serial.print(GPS.Time);
     Serial.println();
-    GPS.NewData = 0; // We have readed the data
+    GPS.NewData = 0; // We have read the data
     }
   delay(20);
 }
