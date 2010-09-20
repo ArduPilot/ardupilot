@@ -23,12 +23,45 @@
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-* ************************************************************** *
-ChangeLog:
-
-
-* ************************************************************** *
-TODO:
-
-
 * ************************************************************** */
+
+int readADC(byte channel) {
+  if (sensorSign[channel] < 0)
+    return (zeroADC[channel] - APM_ADC.Ch(channel));
+  else
+    return (APM_ADC.Ch(channel) - zeroADC[channel]);
+}
+
+void calibrateSensors(void) {
+  int j = 0;
+  // Take the gyro offset values
+  for(int i=0;i<300;i++) {
+    for (channel = GYROZ; channel < LASTSENSOR; channel++) {
+      rawADC[channel] = APM_ADC.Ch(channel);
+      zeroADC[channel] = (zeroADC[channel] * 0.8) + (rawADC[channel] * 0.2);
+      Log_Write_Sensor(rawADC[GYROZ], rawADC[GYROX], rawADC[GYROY], rawADC[ACCELX], rawADC[ACCELY], rawADC[ACCELZ], receiverData[THROTTLE]);
+    }
+    delay(5);
+    // Runnings lights effect to let user know that we are taking mesurements
+    if(j == 0) {
+      digitalWrite(LED_Green, HIGH);
+      digitalWrite(LED_Yellow, LOW);
+      digitalWrite(LED_Red, LOW);
+    } 
+    else if (j == 1) {
+      digitalWrite(LED_Green, LOW);
+      digitalWrite(LED_Yellow, HIGH);
+      digitalWrite(LED_Red, LOW);
+    } 
+    else {
+      digitalWrite(LED_Green, LOW);
+      digitalWrite(LED_Yellow, LOW);
+      digitalWrite(LED_Red, HIGH);
+    }
+    if((i % 5) == 0) j++;
+    if(j >= 3) j = 0;
+  }
+  digitalWrite(LED_Green, LOW);
+  digitalWrite(LED_Yellow, LOW);
+  digitalWrite(LED_Red, LOW);
+}

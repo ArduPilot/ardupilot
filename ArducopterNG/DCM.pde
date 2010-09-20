@@ -33,30 +33,6 @@ TODO:
 
 * ************************************************************** */
 
-/* ******* ADC functions ********************* */
-// Read all the ADC channles
-void Read_adc_raw(void)
-{
-  int temp;
-  
-  for (int i=0;i<6;i++)
-    AN[i] = APM_ADC.Ch(sensors[i]);
-  
-  // Correction for non ratiometric sensor (test code)
-  gyro_temp = APM_ADC.Ch(3);
-  //AN[0] += 1500-temp;
-  //AN[1] += 1500-temp;
-  //AN[2] += 1500-temp;
-}
-
-// Returns an analog value with the offset
-int read_adc(int select)
-{
-  if (SENSOR_SIGN[select]<0)
-    return (AN_OFFSET[select]-AN[select]);
-  else
-    return (AN[select]-AN_OFFSET[select]);
-}
 /* ******************************************* */
 
 /* ******* DCM IMU functions ********************* */
