@@ -105,8 +105,11 @@ FastSerial::FastSerial(const uint8_t portNumber,
         // init stdio
         fdev_setup_stream(&_fd, &FastSerial::_putchar, NULL, _FDEV_SETUP_WRITE);
         fdev_set_udata(&_fd, this);
-        if (0 == portNumber)
+        if (0 == portNumber) {
                 stdout = &_fd;          // serial port 0 is always the default console
+                stdin = &_fd;
+                stderr = &_fd;
+        }
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
