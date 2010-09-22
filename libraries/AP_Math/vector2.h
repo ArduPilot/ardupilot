@@ -58,7 +58,7 @@ struct Vector2
 	{	return (x!=v.x || y!=v.y);	}
 
 	// set to value
-	const Vector2<T> &operator =(const Vector2<T> &v)
+	Vector2<T> &operator =(const Vector2<T> &v)
 	{
 		x= v.x; y= v.y;
 		return *this;

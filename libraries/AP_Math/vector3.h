@@ -68,7 +68,7 @@ public:
 	{	return (x!=v.x || y!=v.y || z!=v.z);	}
 
 	// set to value
-	const Vector3<T> &operator =(const Vector3<T> &v)
+	Vector3<T> &operator =(const Vector3<T> &v)
 	{
 		x= v.x; y= v.y;	z= v.z;
 		return *this;
