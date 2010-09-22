@@ -168,14 +168,17 @@ ISR(_RXVECTOR, ISR_BLOCK)                                               \
 }                                                                       \
 ISR(_TXVECTOR, ISR_BLOCK)                                               \
 {                                                                       \
-        /* if we have taken an interrupt we are ready to transmit the next byte */ \
-        _UDR = __FastSerial__txBuffer[_PORT].bytes[__FastSerial__txBuffer[_PORT].tail]; \
-        /* increment the tail */                                        \
-        __FastSerial__txBuffer[_PORT].tail =                            \
-                (__FastSerial__txBuffer[_PORT].tail + 1) & __FastSerial__txBuffer[_PORT].mask; \
-        /* if there are no more bytes to send, disable the interrupt */ \
-        if (__FastSerial__txBuffer[_PORT].head == __FastSerial__txBuffer[_PORT].tail) \
-                _UCSRB &= ~_TXBITS;                                     \
+        /* if there is another character to send */                     \
+        if (__FastSerial__txBuffer[_PORT].tail != __FastSerial__txBuffer[_PORT].head) { \
+                _UDR = __FastSerial__txBuffer[_PORT].bytes[__FastSerial__txBuffer[_PORT].tail]; \
+                /* increment the tail */                                \
+                __FastSerial__txBuffer[_PORT].tail =                    \
+                        (__FastSerial__txBuffer[_PORT].tail + 1) & __FastSerial__txBuffer[_PORT].mask; \
+        } else {                                                        \
+                /* there are no more bytes to send, disable the interrupt */ \
+                if (__FastSerial__txBuffer[_PORT].head == __FastSerial__txBuffer[_PORT].tail) \
+                        _UCSRB &= ~_TXBITS;                             \
+        }                                                               \
 }                                                                       \
 struct hack
 
