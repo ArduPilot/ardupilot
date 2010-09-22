@@ -59,13 +59,6 @@ public:
 	bool operator != (const Matrix3<T> &m)
 	{	return (a!=m.a || b!=m.b || c!=m.c);	}
 
-	// set to value
-	Matrix3<T> &operator = (const Matrix3<T> &m)
-	{
-		a= m.a; b= m.b;	c= m.c;
-		return *this;
-	}
-
 	// negation
 	const Matrix3<T> operator - (void) const
 	{	return Matrix3<T>(-a,-b,-c);	}

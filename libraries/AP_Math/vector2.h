@@ -57,13 +57,6 @@ struct Vector2
 	bool operator!=(const Vector2<T> &v)
 	{	return (x!=v.x || y!=v.y);	}
 
-	// set to value
-	Vector2<T> &operator =(const Vector2<T> &v)
-	{
-		x= v.x; y= v.y;
-		return *this;
-	}
-
 	// negation
 	const Vector2<T> operator -(void) const
 	{	return Vector2<T>(-x, -y);	}

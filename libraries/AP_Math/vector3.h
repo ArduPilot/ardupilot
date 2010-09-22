@@ -67,13 +67,6 @@ public:
 	bool operator!=(const Vector3<T> &v)
 	{	return (x!=v.x || y!=v.y || z!=v.z);	}
 
-	// set to value
-	Vector3<T> &operator =(const Vector3<T> &v)
-	{
-		x= v.x; y= v.y;	z= v.z;
-		return *this;
-	}
-
 	// negation
 	const Vector3<T> operator -(void) const
 	{	return Vector3<T>(-x,-y,-z);	}
