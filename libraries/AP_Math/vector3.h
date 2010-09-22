@@ -68,54 +68,54 @@ public:
 	{	return (x!=v.x || y!=v.y || z!=v.z);	}
 
 	// negation
-	const Vector3<T> operator -(void) const
+	Vector3<T> operator -(void) const
 	{	return Vector3<T>(-x,-y,-z);	}
 
 	// addition
-	const Vector3<T> operator +(const Vector3<T> &v) const
+	Vector3<T> operator +(const Vector3<T> &v) const
 	{   return Vector3<T>(x+v.x, y+v.y, z+v.z);	 }
 
 	// subtraction
-	const Vector3<T> operator -(const Vector3<T> &v) const
+	Vector3<T> operator -(const Vector3<T> &v) const
 	{   return Vector3<T>(x-v.x, y-v.y, z-v.z);	 }
 
 	// uniform scaling
-	const Vector3<T> operator *(const T num) const
+	Vector3<T> operator *(const T num) const
 	{
 		Vector3<T> temp(*this);
 		return temp*=num;
 	}
 
 	// uniform scaling
-	const Vector3<T> operator /(const T num) const
+	Vector3<T> operator /(const T num) const
 	{
 		Vector3<T> temp(*this);
 		return temp/=num;
 	}
 
 	// addition
-	const Vector3<T> &operator +=(const Vector3<T> &v)
+	Vector3<T> &operator +=(const Vector3<T> &v)
 	{
 		x+=v.x;	y+=v.y;	z+=v.z;
 		return *this;
 	}
 
 	// subtraction
-	const Vector3<T> &operator -=(const Vector3<T> &v)
+	Vector3<T> &operator -=(const Vector3<T> &v)
 	{
 		x-=v.x;	y-=v.y;	z-=v.z;
 		return *this;
 	}
 
 	// uniform scaling
-	const Vector3<T> &operator *=(const T num)
+	Vector3<T> &operator *=(const T num)
 	{
 		x*=num; y*=num; z*=num;
 		return *this;
 	}
 
 	// uniform scaling
-	const Vector3<T> &operator /=(const T num)
+	Vector3<T> &operator /=(const T num)
 	{
 		x/=num; y/=num; z/=num;
 		return *this;
@@ -126,7 +126,7 @@ public:
 	{	return x*v.x + y*v.y + z*v.z;	}
 
 	// cross product
-	const Vector3<T> operator %(const Vector3<T> &v) const
+	Vector3<T> operator %(const Vector3<T> &v) const
 	{
 		Vector3<T> temp(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 		return temp;

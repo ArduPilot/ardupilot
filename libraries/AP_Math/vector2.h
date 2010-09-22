@@ -37,14 +37,6 @@ struct Vector2
 	// setting ctor
 	Vector2<T>(const T x0, const T y0): x(x0), y(y0) {}
 
-	// array indexing
-	T &operator [](unsigned int i)
-	{   return *(&x+i);   }
-
-	// array indexing
-	const T &operator [](unsigned int i) const
-	{	return *(&x+i);   }
-
 	// function call operator
 	void operator ()(const T x0, const T y0)
 	{	x= x0; y= y0;	}
@@ -58,54 +50,54 @@ struct Vector2
 	{	return (x!=v.x || y!=v.y);	}
 
 	// negation
-	const Vector2<T> operator -(void) const
+	Vector2<T> operator -(void) const
 	{	return Vector2<T>(-x, -y);	}
 
 	// addition
-	const Vector2<T> operator +(const Vector2<T> &v) const
+	Vector2<T> operator +(const Vector2<T> &v) const
 	{	return Vector2<T>(x+v.x, y+v.y);	}
 
 	// subtraction
-	const Vector2<T> operator -(const Vector2<T> &v) const
+	Vector2<T> operator -(const Vector2<T> &v) const
 	{   return Vector2<T>(x-v.x, y-v.y);	}
 
 	// uniform scaling
-	const Vector2<T> operator *(const T num) const
+	Vector2<T> operator *(const T num) const
 	{
 		Vector2<T> temp(*this);
 		return temp*=num;
 	}
 
 	// uniform scaling
-	const Vector2<T> operator /(const T num) const
+	Vector2<T> operator /(const T num) const
 	{
 		Vector2<T> temp(*this);
 		return temp/=num;
 	}
 
 	// addition
-	const Vector2<T> &operator +=(const Vector2<T> &v)
+	Vector2<T> &operator +=(const Vector2<T> &v)
 	{
 		x+=v.x;	y+=v.y;
 		return *this;
 	}
 
 	// subtraction
-	const Vector2<T> &operator -=(const Vector2<T> &v)
+	Vector2<T> &operator -=(const Vector2<T> &v)
 	{
 		x-=v.x;	y-=v.y;
 		return *this;
 	}
 
 	// uniform scaling
-	const Vector2<T> &operator *=(const T num)
+	Vector2<T> &operator *=(const T num)
 	{
 		x*=num;	y*=num;
 		return *this;
 	}
 
 	// uniform scaling
-	const Vector2<T> &operator /=(const T num)
+	Vector2<T> &operator /=(const T num)
 	{
 		x/=num;	y/=num;
 		return *this;

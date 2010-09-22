@@ -60,33 +60,33 @@ public:
 	{	return (a!=m.a || b!=m.b || c!=m.c);	}
 
 	// negation
-	const Matrix3<T> operator - (void) const
+	Matrix3<T> operator - (void) const
 	{	return Matrix3<T>(-a,-b,-c);	}
 
 	// addition
-	const Matrix3<T> operator + (const Matrix3<T> &m) const
+	Matrix3<T> operator + (const Matrix3<T> &m) const
 	{   return Matrix3<T>(a+m.a, b+m.b, c+m.c);	 }
-	const Matrix3<T> &operator += (const Matrix3<T> &m)
+	Matrix3<T> &operator += (const Matrix3<T> &m)
 	{	return *this = *this + m;	}
 
 	// subtraction
-	const Matrix3<T> operator - (const Matrix3<T> &m) const
+	Matrix3<T> operator - (const Matrix3<T> &m) const
 	{   return Matrix3<T>(a-m.a, b-m.b, c-m.c);	 }
-	const Matrix3<T> &operator -= (const Matrix3<T> &m)
+	Matrix3<T> &operator -= (const Matrix3<T> &m)
 	{	return *this = *this - m;	}
 	   
 	// uniform scaling
-	const Matrix3<T> operator * (const T num) const
+	Matrix3<T> operator * (const T num) const
 	{	return Matrix3<T>(a*num, b*num, c*num);	}
-	const Matrix3<T> operator *= (const T num)
+	Matrix3<T> operator *= (const T num)
 	{	return *this = *this * num;	}
-	const Matrix3<T> operator / (const T num) const
+	 Matrix3<T> operator / (const T num) const
 	{	return Matrix3<T>(a/num, b/num, c/num);	}
-	const Matrix3<T> operator /= (const T num)
+	Matrix3<T> operator /= (const T num)
 	{	return *this = *this / num;	}
 	
 	// multiplication by a vector
-	const Vector3<T> operator *(const Vector3<T> &v) const
+	Vector3<T> operator *(const Vector3<T> &v) const
 	{
 		return Vector3<T>(a.x * v.x + a.y * v.x + a.z * v.x,
 						  b.x * v.y + b.y * v.y + b.z * v.y,
@@ -94,7 +94,7 @@ public:
 	}
 
 	// multiplication by another Matrix3<T>
-	const Matrix3<T> operator *(const Matrix3<T> &m) const
+	Matrix3<T> operator *(const Matrix3<T> &m) const
 	{
 		Matrix3<T> temp (Vector3<T>(a.x * m.a.x + a.y * m.b.x + a.z * m.c.x,
 									a.x * m.a.y + a.y * m.b.y + a.z * m.c.y,
@@ -107,17 +107,17 @@ public:
 									c.x * m.a.z + c.y * m.b.z + c.z * m.c.z));
 		return temp;
 	}
-	const Matrix3<T> operator *=(const Matrix3<T> &m)
+	Matrix3<T> operator *=(const Matrix3<T> &m)
 	{	return *this = this * m;	}
 
 	// transpose the matrix
-	const Matrix3<T>	transposed(void)
+	Matrix3<T> transposed(void)
 	{
 		return Matrix3<T>(Vector3<T>(a.x, b.x, c.x),
 						  Vector3<T>(a.y, b.y, c.y),
 						  Vector3<T>(a.z, b.z, c.z));
 	}
-	const Matrix3<T>	transpose(void)
+	Matrix3<T> transpose(void)
 	{	return *this = transposed();	}
 
 };
