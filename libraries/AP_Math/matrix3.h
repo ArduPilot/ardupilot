@@ -78,11 +78,11 @@ public:
 	// uniform scaling
 	Matrix3<T> operator * (const T num) const
 	{	return Matrix3<T>(a*num, b*num, c*num);	}
-	Matrix3<T> operator *= (const T num)
+	Matrix3<T> &operator *= (const T num)
 	{	return *this = *this * num;	}
 	 Matrix3<T> operator / (const T num) const
 	{	return Matrix3<T>(a/num, b/num, c/num);	}
-	Matrix3<T> operator /= (const T num)
+	Matrix3<T> &operator /= (const T num)
 	{	return *this = *this / num;	}
 	
 	// multiplication by a vector
@@ -107,8 +107,8 @@ public:
 									c.x * m.a.z + c.y * m.b.z + c.z * m.c.z));
 		return temp;
 	}
-	Matrix3<T> operator *=(const Matrix3<T> &m)
-	{	return *this = this * m;	}
+	Matrix3<T> &operator *=(const Matrix3<T> &m)
+	{	return *this = *this * m;	}
 
 	// transpose the matrix
 	Matrix3<T> transposed(void)
@@ -126,7 +126,7 @@ public:
 	/* trivial ctor */												\
 	name() {}														\
 	/* make a,b,c combination into a matrix */						\
-	name(Vector3<type> &a0, Vector3<type> &b0, Vector3<type> &c0) : Matrix3<type>(a0, b0, c0) {}
+	name(const Vector3<type> &a0, const Vector3<type> &b0, const Vector3<type> &c0) : Matrix3<type>(a0, b0, c0) {}
 
 class Matrix3i : public Matrix3<int>
 {
