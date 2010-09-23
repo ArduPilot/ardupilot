@@ -5,6 +5,7 @@
 
 #include "AP_GPS_NMEA.h"
 #include "AP_GPS_SIRF.h"
+#include "AP_GPS_406.h"
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MTK.h"
 #include "AP_GPS_IMU.h"

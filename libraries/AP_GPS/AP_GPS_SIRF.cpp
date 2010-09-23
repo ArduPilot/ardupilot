@@ -165,7 +165,8 @@ AP_GPS_SIRF::_parse_gps(void)
 	switch(_msg_id) {
 	case MSG_GEONAV:
 		time			= _swapl(&_buffer.nav.time);
-		fix				= (0 == _buffer.nav.fix_invalid) && (FIX_3D == (_buffer.nav.fix_type & FIX_MASK));
+		//fix				= (0 == _buffer.nav.fix_invalid) && (FIX_3D == (_buffer.nav.fix_type & FIX_MASK));
+		fix				= (0 == _buffer.nav.fix_invalid);
 		latitude		= _swapl(&_buffer.nav.latitude);
 		longitude		= _swapl(&_buffer.nav.longitude);
 		altitude		= _swapl(&_buffer.nav.altitude_msl);

@@ -68,6 +68,14 @@ AP_GPS_406::_change_to_sirf_protocol(void)
 	_port->print(init_str);
 	delay(300);
 
+	fs->begin(9600);
+	delay(300);
+	_port->print(init_str);
+	delay(300);
+
 	fs->begin(GPS_406_BITRATE);
+	delay(300);
+	_port->print(init_str);
+	delay(300);
 }
 
