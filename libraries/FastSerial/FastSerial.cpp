@@ -121,9 +121,11 @@ void FastSerial::begin(long baud)
 
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 {
-        uint16_t        baud_setting;
-        bool            use_u2x;
-
+        uint16_t        ubrr;
+        bool            use_u2x = false;
+        int             ureg, u2;
+        long            breg, b2, dreg, d2;
+       
         // if we are currently open, close and restart
         if (_open)
                 end();
@@ -136,33 +138,38 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
         }
         _open = true;
 
-        // U2X mode is needed for baud rates higher than (CPU Hz / 16)
+        // U2X mode is needed for bitrates higher than (F_CPU / 16)
         if (baud > F_CPU / 16) {
                 use_u2x = true;
+                ubrr = F_CPU / (8 * baud) - 1;
         } else {
-                // figure out if U2X mode would allow for a better connection
+                // Determine whether u2x mode would give a closer
+                // approximation of the desired speed.
     
-                // calculate the percent difference between the baud-rate specified and
-                // the real baud rate for both U2X and non-U2X mode (0-255 error percent)
-                uint8_t nonu2x_baud_error = abs((int)(255-((F_CPU/(16*(((F_CPU/8/baud-1)/2)+1))*255)/baud)));
-                uint8_t u2x_baud_error = abs((int)(255-((F_CPU/(8*(((F_CPU/4/baud-1)/2)+1))*255)/baud)));
-    
-                // prefer non-U2X mode because it handles clock skew better
-                use_u2x = (nonu2x_baud_error > u2x_baud_error);
+                // ubrr for non-2x mode, corresponding baudrate and delta
+                ureg = F_CPU / 16 / baud - 1;
+                breg = F_CPU / 16 / (ureg + 1);
+                dreg = abs(baud - breg);
+                
+                // ubrr for 2x mode, corresponding bitrate and delta
+                u2   = F_CPU / 8 / baud - 1;
+                b2   = F_CPU / 8 / (u2 + 1); 
+                d2   = abs(baud - b2);
+
+                // Pick the setting that gives the smallest rate
+                // error, preferring non-u2x mode if the delta is
+                // identical.
+                if (dreg <= d2) {
+                        ubrr = ureg;
+                } else {
+                        ubrr = u2;
+                        use_u2x = true;
+                }                
         }
   
-        if (use_u2x) {
-                *_ucsra = _BV(_u2x);
-                baud_setting = (F_CPU / 4 / baud - 1) / 2;
-        } else {
-                *_ucsra = 0;
-                baud_setting = (F_CPU / 8 / baud - 1) / 2;
-        }
-
-        // assign the baud_setting, a.k.a. ubbr (USART Baud Rate Register)
-        *_ubrrh = baud_setting >> 8;
-        *_ubrrl = baud_setting;
-
+        *_ucsra = use_u2x ? _BV(_u2x) : 0;
+        *_ubrrh = ubrr >> 8;
+        *_ubrrl = ubrr;
         *_ucsrb |= _portEnableBits;
 }
 
