@@ -122,41 +122,10 @@ public:
 
 };
 
-#define MATRIX3_CTORS(name, type)									\
-	/* trivial ctor */												\
-	name() {}														\
-	/* down casting ctor */											\
-	name(const Matrix3<type> &m): Matrix3<type>(m.a, m.b, m.c) {}	\	
-	/* make a,b,c combination into a matrix */						\
-	name(const Vector3<type> &a0, const Vector3<type> &b0, const Vector3<type> &c0) : Matrix3<type>(a0, b0, c0) {}
-
-class Matrix3i : public Matrix3<int>
-{
-public:
-	MATRIX3_CTORS(Matrix3i, int)
-};
-
-class Matrix3ui : public Matrix3<unsigned int>
-{
-public:
-	MATRIX3_CTORS(Matrix3ui, unsigned int)
-};
-
-class Matrix3l : public Matrix3<long>
-{
-public:
-	MATRIX3_CTORS(Matrix3l, long)
-};
-class Matrix3ul : public Matrix3<unsigned long>
-{
-public:
-	MATRIX3_CTORS(Matrix3ul, unsigned long)
-};
-
-class Matrix3f : public Matrix3<float>
-{
-public:
-	MATRIX3_CTORS(Matrix3f, float)
-};
+typedef Matrix3<int>			Matrix3i;
+typedef Matrix3<unsigned int>	Matrix3ui;
+typedef Matrix3<long>			Matrix3l;
+typedef Matrix3<unsigned long>	Matrix3ul;
+typedef Matrix3<float>			Matrix3f;
 
 #endif // MATRIX3_H

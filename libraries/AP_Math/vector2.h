@@ -149,45 +149,10 @@ struct Vector2
 
 };
 
-
-// macro to make creating the ctors for derived vectors easier
-#define VECTOR2_CTORS(name, type)   \
-	/* trivial ctor */				\
-	name() {}						\
-	/* down casting ctor */			\
-	name(const Vector2<type> &v): Vector2<type>(v.x, v.y) {}	\
-	/* make x,y combination into a vector */					\
-	name(type x0, type y0): Vector2<type>(x0, y0) {}
-
-
-
-struct Vector2i: public Vector2<int>
-{
-	VECTOR2_CTORS(Vector2i, int)
-};
-
-
-struct Vector2ui: public Vector2<unsigned int>
-{
-	VECTOR2_CTORS(Vector2ui, unsigned int)
-};
-
-
-struct Vector2l: public Vector2<long>
-{
-	VECTOR2_CTORS(Vector2l, long)
-};
-
-
-struct Vector2ul: public Vector2<unsigned long>
-{
-	VECTOR2_CTORS(Vector2ul, unsigned long)
-};
-
-
-struct Vector2f: public Vector2<float>
-{
-	VECTOR2_CTORS(Vector2f, float)
-};
+typedef Vector2<int>			Vector2i;
+typedef Vector2<unsigned int>	Vector2ui;
+typedef Vector2<long>			Vector2l;
+typedef Vector2<unsigned long>	Vector2ul;
+typedef Vector2<float>			Vector2f;
 
 #endif // VECTOR2_H

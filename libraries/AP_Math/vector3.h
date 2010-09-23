@@ -174,50 +174,10 @@ public:
 
 };
 
-// macro to make creating the ctors for derived vectors easier
-#define VECTOR3_CTORS(name, type)   \
-	/* trivial ctor */				\
-	name() {}						\
-	/* down casting ctor */			\
-	name(const Vector3<type> &v): Vector3<type>(v.x, v.y, v.z) {}	\
-	/* make x,y,z combination into a vector */						\
-	name(type x0, type y0, type z0): Vector3<type>(x0, y0, z0) {}
-
-
-
-
-class Vector3i: public Vector3<int>
-{
-public:
-	VECTOR3_CTORS(Vector3i, int)
-};
-
-
-class Vector3ui: public Vector3<unsigned int>
-{
-public:
-	VECTOR3_CTORS(Vector3ui, unsigned int)
-};
-
-
-class Vector3l: public Vector3<long>
-{
-public:
-	VECTOR3_CTORS(Vector3l, long)
-};
-
-
-class Vector3ul: public Vector3<unsigned long>
-{
-public:
-	VECTOR3_CTORS(Vector3ul, unsigned long)
-};
-
-
-class Vector3f: public Vector3<float>
-{
-public:
-	VECTOR3_CTORS(Vector3f, float)
-};
+typedef Vector3<int>			Vector3i;
+typedef Vector3<unsigned int>	Vector3ui;
+typedef Vector3<long>			Vector3l;
+typedef Vector3<unsigned long>	Vector3ul;
+typedef Vector3<float>			Vector3f;
 
 #endif // VECTOR3_H
