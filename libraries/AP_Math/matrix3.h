@@ -125,6 +125,8 @@ public:
 #define MATRIX3_CTORS(name, type)									\
 	/* trivial ctor */												\
 	name() {}														\
+	/* down casting ctor */											\
+	name(const Matrix3<type> &m): Matrix3<type>(m.a, m.b, m.c) {}	\	
 	/* make a,b,c combination into a matrix */						\
 	name(const Vector3<type> &a0, const Vector3<type> &b0, const Vector3<type> &c0) : Matrix3<type>(a0, b0, c0) {}
 
