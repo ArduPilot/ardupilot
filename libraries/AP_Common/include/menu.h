@@ -26,7 +26,17 @@ public:
 	/// Note that the array of menu commands is expected to be in program 
 	/// memory.
 	struct command {
-		const char	command[MENU_COMMAND_MAX];						///< name of the command
+		/// Name of the command, as typed or received.
+		/// Command names are limited in size to keep this structure compact.
+		/// If the first command in the menu is named '*', it will be called
+		/// each time before printing the prompt.
+		const char	command[MENU_COMMAND_MAX];
+
+		/// The function to call when the command is received.
+		/// The \a argc argument will be at least 1, and no more than
+		/// MENU_ARGS_MAX.  The argv array will be populated with
+		/// arguments typed/received up to MENU_ARGS_MAX.  The command
+		/// name will always be in argv[0].
 		int			(*func)(uint8_t argc, const struct arg *argv);	///< callback function
 	};
 
@@ -42,7 +52,16 @@ public:
 	void				run(void);
 	
 private:
+	/// Implements the default 'help' command
+	///
 	void				_help(void);					///< implements the 'help' command
+
+	/// calls the function for the n'th menu item
+	///
+	/// @param n			Index for the menu item to call
+	/// @param argc			Number of arguments prepared for the menu item
+	///
+	int					_call(uint8_t n, uint8_t argc);
 	const char			*_prompt;						///< prompt to display
 	const command		*_commands;						///< array of commands
 	const uint8_t		_entries;						///< size of the menu

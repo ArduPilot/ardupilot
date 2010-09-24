@@ -18,7 +18,14 @@ menu_test(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+int
+menu_auto(uint8_t argc, const Menu::arg *argv)
+{
+	Serial.println("auto text");
+}
+
 const struct Menu::command top_menu_commands[] PROGMEM = {
+        {"*",                           menu_auto},
 	{"test",			menu_test},
 };
 

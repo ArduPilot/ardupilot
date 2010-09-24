@@ -31,10 +31,15 @@ Menu::run(void)
 	uint8_t		len, i, ret;
 	uint8_t		argc;
 	int			c;
-	func		fn;
 		
 	// loop performing commands
 	for (;;) {
+
+		// if the first command is called '*', call it before displaying the menu
+		if ("*", _commands[0].command) {
+			if (-2 == _call(0, 0))
+				return;
+		}
 	
 		// loop reading characters from the input
 		len = 0;
@@ -83,8 +88,7 @@ Menu::run(void)
 		// look for a command matching the first word (note that it may be empty)
 		for (i = 0; i < _entries; i++) {
 			if (!strcmp_P(_argv[0].str, _commands[i].command)) {
-				fn = (func)pgm_read_word(&_commands[i].func);
-				ret = fn(argc, &_argv[0]);
+				ret = _call(i, argc);
 				if (-2 == ret)
 					return;
 			}
@@ -105,4 +109,14 @@ Menu::_help(void)
 	Serial.println("Commands:");
 	for (i = 0; i < _entries; i++)
 		Serial.printf("  %S\n", _commands[i].command);
+}
+
+// run the n'th command in the menu
+int
+Menu::_call(uint8_t n, uint8_t argc)
+{
+	func		fn;
+
+	fn = (func)pgm_read_word(&_commands[n].func);
+	return(fn(argc, &_argv[0]));
 }
