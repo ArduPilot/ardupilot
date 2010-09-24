@@ -255,6 +255,8 @@ FastSerial::_putchar(char c, FILE *stream)
         FastSerial      *fs;
 
         fs = (FastSerial *)fdev_get_udata(stream);
+        if ('\n' == c)
+                fs->write('\r');        // ASCII translation on the cheap
         fs->write(c);
         return(0);
 }
