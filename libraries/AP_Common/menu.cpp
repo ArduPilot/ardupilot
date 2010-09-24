@@ -17,10 +17,11 @@ char Menu::_inbuf[MENU_COMMANDLINE_MAX];
 Menu::arg Menu::_argv[MENU_ARGS_MAX + 1];
 
 // constructor
-Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries) :
+Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
 	_prompt(prompt),
 	_commands(commands),
-	_entries(entries)
+	_entries(entries),
+	_ppfunc(ppfunc)
 {
 }
 
@@ -35,12 +36,10 @@ Menu::run(void)
 	// loop performing commands
 	for (;;) {
 
-		// if the first command is called '*', call it before displaying the menu
-		if ("*", _commands[0].command) {
-			if (-2 == _call(0, 0))
-				return;
-		}
-	
+		// run the pre-prompt function, if one is defined
+		if ((NULL != _ppfunc) && !_ppfunc())
+			return;
+
 		// loop reading characters from the input
 		len = 0;
 		Serial.printf("%S] ", _prompt);
@@ -91,12 +90,18 @@ Menu::run(void)
 				ret = _call(i, argc);
 				if (-2 == ret)
 					return;
+				break;
 			}
 		}
 
-		// if the menu doesn't provide more comprehensive help, print the command list
-		if ((i == _entries) && (!strcmp(_argv[0].str, "?") || (!strcmp_P(_argv[0].str, PSTR("help")))))
-			_help();
+		// implicit commands
+		if (i == _entries) {
+			if (!strcmp(_argv[0].str, "?") || (!strcmp_P(_argv[0].str, PSTR("help")))) {
+				_help();
+			} else if (!strcmp_P(_argv[0].str, PSTR("exit"))) {
+				return;
+			}
+		}
 	}			
 }
 
