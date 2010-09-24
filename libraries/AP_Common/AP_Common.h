@@ -6,23 +6,18 @@
 // your option) any later version.
 //
 
-#ifndef _AP_COMMON_H
-#define _AP_COMMON_H
-
-#include <stdint.h>
-
 ///
 /// @file 		AP_Common.h
 /// @brief		Common definitions and utility routines for the ArduPilot
 ///				libraries.
 ///
-/// @note		For correct operation, all sketches and libraries should
-///				include this header *before* any other.  In
-///				particular, this is critical for things like the
-///				FastSerial library, which need the opportunity to
-///				override parts of the Arduino infrastructure.
-///
 
+#ifndef _AP_COMMON_H
+#define _AP_COMMON_H
+
+#include <stdint.h>
+
+#include "include/menu.h"		/// simple menu subsystem
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Types
