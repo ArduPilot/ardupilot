@@ -75,6 +75,7 @@ Menu::run(void)
 		// split the input line into tokens
 		argc = 0;
 		_argv[argc++].str = strtok(_inbuf, " ");
+		// XXX should an empty line by itself back out of the current menu?
 		while (argc <= MENU_ARGS_MAX) {
 			_argv[argc].str = strtok(NULL, " ");
 			if ('\0' == _argv[argc].str)
@@ -86,7 +87,7 @@ Menu::run(void)
 			
 		// look for a command matching the first word (note that it may be empty)
 		for (i = 0; i < _entries; i++) {
-			if (!strcmp_P(_argv[0].str, _commands[i].command)) {
+			if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
 				ret = _call(i, argc);
 				if (-2 == ret)
 					return;
@@ -96,9 +97,9 @@ Menu::run(void)
 
 		// implicit commands
 		if (i == _entries) {
-			if (!strcmp(_argv[0].str, "?") || (!strcmp_P(_argv[0].str, PSTR("help")))) {
+			if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
 				_help();
-			} else if (!strcmp_P(_argv[0].str, PSTR("exit"))) {
+			} else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
 				return;
 			}
 		}
@@ -117,7 +118,7 @@ Menu::_help(void)
 }
 
 // run the n'th command in the menu
-int
+int8_t
 Menu::_call(uint8_t n, uint8_t argc)
 {
 	func		fn;

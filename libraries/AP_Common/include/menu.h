@@ -19,7 +19,7 @@ public:
 
 	/// menu command function
 	///
-	typedef int			(*func)(uint8_t argc, const struct arg *argv);
+	typedef int8_t			(*func)(uint8_t argc, const struct arg *argv);
 
 	/// menu pre-prompt function
 	///
@@ -42,7 +42,7 @@ public:
 		/// name will always be in argv[0].
 		/// Commands may return -2 to cause the menu itself to exit.
 		/// The "?", "help" and "exit" commands are always defined.
-		int			(*func)(uint8_t argc, const struct arg *argv);	///< callback function
+		int8_t			(*func)(uint8_t argc, const struct arg *argv);	///< callback function
 	};
 
 	/// constructor
@@ -66,7 +66,7 @@ private:
 	/// @param n			Index for the menu item to call
 	/// @param argc			Number of arguments prepared for the menu item
 	///
-	int					_call(uint8_t n, uint8_t argc);
+	int8_t				_call(uint8_t n, uint8_t argc);
 
 	const char			*_prompt;						///< prompt to display
 	const command		*_commands;						///< array of commands
