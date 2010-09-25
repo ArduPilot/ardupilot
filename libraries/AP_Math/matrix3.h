@@ -47,6 +47,9 @@ public:
 	// setting ctor
 	Matrix3<T>(const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0): a(a0), b(b0), c(c0) {}
 
+	// setting ctor
+	Matrix3<T>(const T ax, const T ay, const T az, const T bx, const T by, const T bz, const T cx, const T cy, const T cz): a(ax,ay,az), b(bx,by,bz), c(cx,cy,cz) {} 	
+	
 	// function call operator
 	void operator () (const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0)
 	{	a = a0; b = b0; c = c0;  }
@@ -88,9 +91,9 @@ public:
 	// multiplication by a vector
 	Vector3<T> operator *(const Vector3<T> &v) const
 	{
-		return Vector3<T>(a.x * v.x + a.y * v.x + a.z * v.x,
-						  b.x * v.y + b.y * v.y + b.z * v.y,
-						  c.x * v.z + c.y * v.z + c.z * v.z);
+		return Vector3<T>(a.x * v.x + a.y * v.y + a.z * v.z,
+						  b.x * v.x + b.y * v.y + b.z * v.z,
+						  c.x * v.x + c.y * v.y + c.z * v.z);						  
 	}
 
 	// multiplication by another Matrix3<T>
