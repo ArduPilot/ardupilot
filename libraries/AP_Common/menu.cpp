@@ -32,6 +32,7 @@ Menu::run(void)
 	uint8_t		len, i, ret;
 	uint8_t		argc;
 	int			c;
+	char		*s;
 		
 	// loop performing commands
 	for (;;) {
@@ -74,10 +75,10 @@ Menu::run(void)
 		
 		// split the input line into tokens
 		argc = 0;
-		_argv[argc++].str = strtok(_inbuf, " ");
+		_argv[argc++].str = strtok_r(_inbuf, " ", &s);
 		// XXX should an empty line by itself back out of the current menu?
 		while (argc <= MENU_ARGS_MAX) {
-			_argv[argc].str = strtok(NULL, " ");
+			_argv[argc].str = strtok_r(NULL, " ", &s);
 			if ('\0' == _argv[argc].str)
 				break;
 			_argv[argc].i = atol(_argv[argc].str);
