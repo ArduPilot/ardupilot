@@ -103,7 +103,7 @@ FastSerial::FastSerial(const uint8_t portNumber,
         _rxBuffer->head = _rxBuffer->tail = 0;
 
         // init stdio
-        fdev_setup_stream(&_fd, &FastSerial::_putchar, NULL, _FDEV_SETUP_WRITE);
+        fdev_setup_stream(&_fd, &FastSerial::_putchar, &FastSerial::_getchar, _FDEV_SETUP_RW);
         fdev_set_udata(&_fd, this);
         if (0 == portNumber) {
                 stdout = &_fd;          // serial port 0 is always the default console
