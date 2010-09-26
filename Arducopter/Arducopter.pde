@@ -105,6 +105,7 @@
 #include <APM_RC.h>
 #include <DataFlash.h>
 #include <APM_Compass.h>
+#include <AP_Math.h>
 #ifdef UseBMP
 #include <APM_BMP085.h>
 #endif
@@ -370,8 +371,10 @@ void setup()
   if(pitch_mid < 1400 || pitch_mid > 1600) pitch_mid = 1500;
   if(yaw_mid < 1400 || yaw_mid > 1600) yaw_mid = 1500;
 
-  if (MAGNETOMETER == 1)
+  if (MAGNETOMETER == 1) {
     APM_Compass.Init();  // I2C initialization
+    APM_Compass.SetOrientation(APM_COMPASS_COMPONENTS_UP_PINS_BACK);
+  }
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
