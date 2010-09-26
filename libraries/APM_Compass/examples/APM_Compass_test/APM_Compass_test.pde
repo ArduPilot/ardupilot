@@ -5,6 +5,7 @@
 
 #include <Wire.h>
 #include <APM_Compass.h> // Compass Library
+#include <AP_Math.h> // Math library
 
 #define ToDeg(x) (x*57.2957795131)  // *180/pi
 
