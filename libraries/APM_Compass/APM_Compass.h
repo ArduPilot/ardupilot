@@ -1,8 +1,6 @@
 #ifndef APM_Compass_h
 #define APM_Compass_h
 
-#include <AP_Math.h>
-
 #define APM_COMPASS_COMPONENTS_UP_PINS_BACK 0
 #define APM_COMPASS_COMPONENTS_UP_PINS_LEFT 1
 #define APM_COMPASS_COMPONENTS_UP_PINS_FORWARD 2

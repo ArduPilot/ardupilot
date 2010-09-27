@@ -35,6 +35,7 @@ extern "C" {
 
 #include <Wire.h>
 #include "APM_Compass.h"
+#include "../AP_Math/AP_Math.h"
 
 #define CompassAddress 0x1E
 
