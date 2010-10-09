@@ -374,6 +374,7 @@ void setup()
   if (MAGNETOMETER == 1) {
     APM_Compass.Init();  // I2C initialization
     APM_Compass.SetOrientation(APM_COMPASS_COMPONENTS_UP_PINS_BACK);
+    APM_Compass.SetDeclination(ToRad(0.0));
   }
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
