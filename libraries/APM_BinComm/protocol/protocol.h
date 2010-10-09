@@ -1,6 +1,7 @@
 //
 // THIS FILE WAS AUTOMATICALLY GENERATED - DO NOT EDIT
 //
+/// @file protocol.h
 #pragma pack(1)
 
 //////////////////////////////////////////////////////////////////////
@@ -938,6 +939,73 @@ unpack_msg_trim_max(
 //@}
 
 //////////////////////////////////////////////////////////////////////
+/// @name MSG_SERVOS 
+//@{
+
+/// Structure describing the payload section of the MSG_SERVOS message
+struct msg_servos {
+	int16_t ch1;
+	int16_t ch2;
+	int16_t ch3;
+	int16_t ch4;
+	int16_t ch5;
+	int16_t ch6;
+	int16_t ch7;
+	int16_t ch8;
+};
+
+/// Send a MSG_SERVOS message
+inline void
+send_msg_servos(
+	const int16_t ch1,
+	const int16_t ch2,
+	const int16_t ch3,
+	const int16_t ch4,
+	const int16_t ch5,
+	const int16_t ch6,
+	const int16_t ch7,
+	const int16_t ch8)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, ch1);
+	_pack(__p, ch2);
+	_pack(__p, ch3);
+	_pack(__p, ch4);
+	_pack(__p, ch5);
+	_pack(__p, ch6);
+	_pack(__p, ch7);
+	_pack(__p, ch8);
+	_encodeBuf.header.length = 16;
+	_encodeBuf.header.messageID = MSG_SERVOS;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_SERVOS message
+inline void
+unpack_msg_servos(
+	int16_t &ch1,
+	int16_t &ch2,
+	int16_t &ch3,
+	int16_t &ch4,
+	int16_t &ch5,
+	int16_t &ch6,
+	int16_t &ch7,
+	int16_t &ch8)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, ch1);
+	_unpack(__p, ch2);
+	_unpack(__p, ch3);
+	_unpack(__p, ch4);
+	_unpack(__p, ch5);
+	_unpack(__p, ch6);
+	_unpack(__p, ch7);
+	_unpack(__p, ch8);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
 /// @name MSG_SENSOR 
 //@{
 
@@ -1216,6 +1284,7 @@ enum MessageID {
 	MSG_PERF_REPORT = 0x6,
 	MSG_TRIM_MAX = 0x52,
 	MSG_VERSION_REQUEST = 0x7,
+	MSG_SERVOS = 0x53,
 	MSG_VERSION = 0x8,
 	MSG_COMMAND_REQUEST = 0x20,
 	MSG_COMMAND_UPLOAD = 0x21,

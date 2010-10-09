@@ -21,7 +21,6 @@
 #       word, either an integer from <inttypes.h> or "char".
 #	<NAME> is the name of the field; it should be unique within the message
 #	<COUNT> is an optional array count for fields that are arrays
-#	(note that currently there is only _pack support for character arrays)
 #
 
 #
@@ -163,7 +162,7 @@ message 0x42	MSG_PID
 
 
 #
-# Radio trim settings
+# Radio settings and values
 #
 message 0x50	MSG_TRIM_STARTUP
 	uint16_t		value	8
@@ -173,6 +172,16 @@ message 0x51	MSG_TRIM_MIN
 
 message 0x52	MSG_TRIM_MAX
 	uint16_t		value	8
+	
+message 0x53 	MSG_SERVOS
+	int16_t			ch1
+	int16_t 		ch2
+	int16_t 		ch3
+	int16_t 		ch4
+	int16_t 		ch5
+	int16_t 		ch6
+	int16_t 		ch7
+	int16_t 		ch8	
 
 #
 # Direct sensor access

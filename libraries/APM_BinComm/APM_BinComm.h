@@ -30,9 +30,9 @@
 #ifndef APM_BinComm_h
 #define APM_BinComm_h
 
-#include "WProgram.h"
 #include <string.h>
 #include <inttypes.h>
+#include "WProgram.h"
 
 ///
 /// @class		BinComm
@@ -40,6 +40,23 @@
 ///				Mega binary telemetry protocol.
 ///
 class BinComm {
+public:
+	struct MessageHandler;
+
+	//////////////////////////////////////////////////////////////////////
+	/// Constructor.
+	///
+	/// @param handlerTable			Array of callout functions to which
+	///								received messages will be sent.	 More than
+	///								one handler for a given messageID may be
+	///								registered; handlers are called in the order
+	///								they appear in the table.
+	///
+	/// @param interface			The stream that will be used
+	///								for telemetry communications.
+	///
+	BinComm(const MessageHandler *handlerTable,
+			Stream *interface);
 
 private:
 	/// OTA message header
@@ -69,25 +86,25 @@ private:
 	/// @name		Message pack/unpack utility functions
 	///
 	//@{
-	inline void	_pack(uint8_t *&ptr, const uint8_t  x) { *(uint8_t  *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const uint16_t x) { *(uint16_t *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const int16_t  x) { *(int16_t  *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const uint32_t x) { *(uint32_t *)ptr = x; ptr += sizeof(x); };
-	inline void	_pack(uint8_t *&ptr, const int32_t  x) { *(int32_t  *)ptr = x; ptr += sizeof(x); };
+	inline void	_pack(uint8_t *&ptr, const uint8_t  x) { *(uint8_t  *)ptr = x; ptr += sizeof(x); }
+	inline void	_pack(uint8_t *&ptr, const uint16_t x) { *(uint16_t *)ptr = x; ptr += sizeof(x); }
+	inline void	_pack(uint8_t *&ptr, const int16_t  x) { *(int16_t  *)ptr = x; ptr += sizeof(x); }
+	inline void	_pack(uint8_t *&ptr, const uint32_t x) { *(uint32_t *)ptr = x; ptr += sizeof(x); }
+	inline void	_pack(uint8_t *&ptr, const int32_t  x) { *(int32_t  *)ptr = x; ptr += sizeof(x); }
 
-	inline void	_pack(uint8_t *&ptr, const char     *msg,    uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; };
-	inline void _pack(uint8_t *&ptr, const uint8_t  *values, uint8_t count) { memcpy(ptr, values, count); ptr += count; };
-	inline void _pack(uint8_t *&ptr, const uint16_t *values, uint8_t count) { memcpy(ptr, values, count * 2); ptr += count * 2; };
+	inline void	_pack(uint8_t *&ptr, const char     *msg,    uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; }
+	inline void	_pack(uint8_t *&ptr, const uint8_t  *values, uint8_t count) { memcpy(ptr, values, count); ptr += count; }
+	inline void	_pack(uint8_t *&ptr, const uint16_t *values, uint8_t count) { memcpy(ptr, values, count * 2); ptr += count * 2; }
 	
-	inline void	_unpack(uint8_t *&ptr, uint8_t   &x) { x = *(uint8_t  *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, uint16_t  &x) { x = *(uint16_t *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, int16_t   &x) { x = *(int16_t  *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, uint32_t  &x) { x = *(uint32_t *)ptr; ptr += sizeof(x); };
-	inline void	_unpack(uint8_t *&ptr, int32_t   &x) { x = *(int32_t  *)ptr; ptr += sizeof(x); };
+	inline void	_unpack(uint8_t *&ptr, uint8_t   &x) { x = *(uint8_t  *)ptr; ptr += sizeof(x); }
+	inline void	_unpack(uint8_t *&ptr, uint16_t  &x) { x = *(uint16_t *)ptr; ptr += sizeof(x); }
+	inline void	_unpack(uint8_t *&ptr, int16_t   &x) { x = *(int16_t  *)ptr; ptr += sizeof(x); }
+	inline void	_unpack(uint8_t *&ptr, uint32_t  &x) { x = *(uint32_t *)ptr; ptr += sizeof(x); }
+	inline void	_unpack(uint8_t *&ptr, int32_t   &x) { x = *(int32_t  *)ptr; ptr += sizeof(x); }
 
-	inline void _unpack(uint8_t *&ptr, char     *msg,     uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; };
-	inline void _unpack(uint8_t *&ptr, uint8_t  *values, uint8_t count) { memcpy(values, ptr, count); ptr += count; };
-	inline void _unpack(uint8_t *&ptr, uint16_t *values, uint8_t count) { memcpy(values, ptr, count * 2); ptr += count * 2; };
+	inline void	_unpack(uint8_t *&ptr, char     *msg,     uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; }
+	inline void	_unpack(uint8_t *&ptr, uint8_t  *values, uint8_t count) { memcpy(values, ptr, count); ptr += count; }
+	inline void	_unpack(uint8_t *&ptr, uint16_t *values, uint8_t count) { memcpy(values, ptr, count * 2); ptr += count * 2; }
 	//@}
 
 public:
@@ -173,21 +190,6 @@ public:
 									void *messageData); ///< function to be called
 		void			*arg;							///< argument passed to function
 	};
-
-	//////////////////////////////////////////////////////////////////////
-	/// Constructor.
-	///
-	/// @param handlerTable			Array of callout functions to which
-	///								received messages will be sent.	 More than
-	///								one handler for a given messageID may be
-	///								registered; handlers are called in the order
-	///								they appear in the table.
-	///
-	/// @param interface			The stream that will be used
-	///								for telemetry communications.
-	///
-	BinComm(const MessageHandler *handlerTable,
-			Stream *interface);
 
 	//////////////////////////////////////////////////////////////////////
 	/// @name		Decoder interface
