@@ -21,7 +21,10 @@
 class APM_Compass_Class
 {
   private:	
-	float calibration[3]; 
+	int orientation;
+	float calibration[3];
+	int offset[3];
+	float declination;
   public:
 	int Mag_X;
 	int Mag_Y;
@@ -29,13 +32,14 @@ class APM_Compass_Class
 	float Heading;
 	float Heading_X;
 	float Heading_Y;
-	int orientation;
 	
 	APM_Compass_Class();  // Constructor
 	void Init();
 	void Read();
 	void Calculate(float roll, float pitch);
 	void SetOrientation(int newOrientation);
+	void SetOffsets(int x, int y, int z);
+	void SetDeclination(float radians);
 };
 
 extern APM_Compass_Class APM_Compass;

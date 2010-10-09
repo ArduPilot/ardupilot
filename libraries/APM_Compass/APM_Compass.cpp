@@ -68,8 +68,12 @@ const Matrix3f rotation[16] = {
 };
 
 // Constructors ////////////////////////////////////////////////////////////////
-APM_Compass_Class::APM_Compass_Class() : orientation(0)
+APM_Compass_Class::APM_Compass_Class() : orientation(0), declination(0.0)
 {
+  // mag x y z offset initialisation
+  offset[0] = 0;
+  offset[1] = 0;
+  offset[2] = 0;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -79,6 +83,7 @@ void APM_Compass_Class::Init(void)
   
   delay(10);
   
+  // calibration initialisation
   calibration[0] = 1.0;
   calibration[1] = 1.0;
   calibration[2] = 1.0;
@@ -166,9 +171,9 @@ void APM_Compass_Class::Calculate(float roll, float pitch)
   
   // rotate the magnetometer values depending upon orientation
   if( orientation == APM_COMPASS_COMPONENTS_UP_PINS_BACK)
-      rotMagVec = Vector3f(Mag_X,Mag_Y,Mag_Z);  
+      rotMagVec = Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]);  
   else
-      rotMagVec = rotation[orientation]*Vector3f(Mag_X,Mag_Y,Mag_Z);  
+      rotMagVec = rotation[orientation]*Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]);  
   
   // Tilt compensated Magnetic field X component:
   Head_X = rotMagVec.x*cos_pitch+rotMagVec.y*sin_roll*sin_pitch+rotMagVec.z*cos_roll*sin_pitch;
@@ -176,6 +181,17 @@ void APM_Compass_Class::Calculate(float roll, float pitch)
   Head_Y = rotMagVec.y*cos_roll-rotMagVec.z*sin_roll;
   // Magnetic Heading
   Heading = atan2(-Head_Y,Head_X);
+  
+  // Declination correction (if supplied)
+  if( declination != 0.0 ) 
+  {
+      Heading = Heading + declination;
+      if (Heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
+          Heading -= (2.0 * M_PI);
+      else if (Heading < -M_PI)
+          Heading += (2.0 * M_PI);
+  }
+	
   // Optimization for external DCM use. Calculate normalized components
   Heading_X = cos(Heading);
   Heading_Y = sin(Heading);
@@ -187,6 +203,17 @@ void APM_Compass_Class::SetOrientation(int newOrientation)
     orientation = newOrientation;
 }
 
+void APM_Compass_Class::SetOffsets(int x, int y, int z)
+{
+    offset[0] = x;
+	offset[1] = y;
+	offset[2] = z;
+}
+
+void APM_Compass_Class::SetDeclination(float radians)
+{
+    declination = radians;
+}
 
 // make one instance for the user to use
 APM_Compass_Class APM_Compass;

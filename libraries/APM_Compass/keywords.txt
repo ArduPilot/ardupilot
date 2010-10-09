@@ -5,6 +5,8 @@ Init	KEYWORD2
 Read	KEYWORD2
 Calculate	KEYWORD2
 SetOrientation	KEYWORD2
+SetOffsets	KEYWORDS2
+SetDeclination	KEYWORDS2
 Heading	KEYWORD2
 Heading_X	KEYWORD2
 Heading_Y	KEYWORD2
