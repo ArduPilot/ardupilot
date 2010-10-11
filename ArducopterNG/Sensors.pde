@@ -44,43 +44,40 @@ int read_adc(int select)
     return (AN[select]-AN_OFFSET[select]);
 }
 
-int readADC(byte channel) {
-  if (sensorSign[channel] < 0)
-    return (zeroADC[channel] - APM_ADC.Ch(channel));
-  else
-    return (APM_ADC.Ch(channel) - zeroADC[channel]);
-}
-
 void calibrateSensors(void) {
+  int i;
   int j = 0;
+  byte gyro;
+  float aux_float[3];
+  
+  Read_adc_raw();     // Read sensors data
+  delay(5);
+
+  // Offset values for accels and gyros...
+  AN_OFFSET[3] = acc_offset_x;                // Accel offset values are taken from external calibration (In Configurator)
+  AN_OFFSET[4] = acc_offset_y;
+  AN_OFFSET[5] = acc_offset_z;
+  aux_float[0] = gyro_offset_roll;
+  aux_float[1] = gyro_offset_pitch;
+  aux_float[2] = gyro_offset_yaw;
+
   // Take the gyro offset values
-  for(int i=0;i<300;i++) {
-    for (channel = GYROZ; channel < LASTSENSOR; channel++) {
-      rawADC[channel] = APM_ADC.Ch(channel);
-      zeroADC[channel] = (zeroADC[channel] * 0.8) + (rawADC[channel] * 0.2);
-      //Log_Write_Sensor(rawADC[GYROZ], rawADC[GYROX], rawADC[GYROY], rawADC[ACCELX], rawADC[ACCELY], rawADC[ACCELZ], receiverData[THROTTLE]);
-    }
+  for(i=0;i<600;i++)
+  {
+    Read_adc_raw();   // Read sensors
+    for(gyro=GYROZ; gyro<=GYROY; gyro++)   
+      aux_float[gyro]=aux_float[gyro]*0.8 + AN[gyro]*0.2;     // Filtering  
+    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],0);
     delay(5);
+    RunningLights(j);   // (in Functions.pde)
     // Runnings lights effect to let user know that we are taking mesurements
-    if(j == 0) {
-      digitalWrite(LED_Green, HIGH);
-      digitalWrite(LED_Yellow, LOW);
-      digitalWrite(LED_Red, LOW);
-    } 
-    else if (j == 1) {
-      digitalWrite(LED_Green, LOW);
-      digitalWrite(LED_Yellow, HIGH);
-      digitalWrite(LED_Red, LOW);
-    } 
-    else {
-      digitalWrite(LED_Green, LOW);
-      digitalWrite(LED_Yellow, LOW);
-      digitalWrite(LED_Red, HIGH);
-    }
     if((i % 5) == 0) j++;
     if(j >= 3) j = 0;
   }
-  digitalWrite(LED_Green, LOW);
-  digitalWrite(LED_Yellow, LOW);
-  digitalWrite(LED_Red, LOW);
+  
+  // Switch off all ABC lights
+  LightsOff();
+
+  for(gyro=GYROZ; gyro<=GYROY; gyro++)  
+    AN_OFFSET[gyro]=aux_float[gyro];    // Update sensor OFFSETs from values read
 }

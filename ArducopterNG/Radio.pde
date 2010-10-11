@@ -38,8 +38,6 @@ TODO:
 
 void read_radio()
 {
-  if (APM_RC.GetState() == 1)   // New radio frame?
-    {
     // Commands from radio Rx
     // We apply the Radio calibration parameters (from configurator) except for throttle
     ch_roll = channel_filter(APM_RC.InputCh(CH_ROLL) * ch_roll_slope + ch_roll_offset, ch_roll);
@@ -51,12 +49,12 @@ void read_radio()
     
     // Flight mode
     if(ch_aux2 > 1800) 
-      flightMode = 1;  // Force to Acro mode from radio
+      flightMode = ACRO_MODE;  // Force to Acro mode from radio
     else
-      flightMode = 0;  // Stable mode (default)
+      flightMode = STABLE_MODE;  // Stable mode (default)
 
     // Autopilot mode (only works on Stable mode)
-    if (flightMode == 0)
+    if (flightMode == STABLE_MODE)
       {
       if(ch_aux > 1800)
         AP_mode = 1;   // Automatic mode : GPS position hold mode + altitude hold
@@ -88,7 +86,6 @@ void read_radio()
     
     // Write Radio data to DataFlash log
     Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,int(K_aux*100),(int)AP_mode);
-    }  // END new radio data
 }
 
 

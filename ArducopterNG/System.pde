@@ -35,9 +35,6 @@ TODO:
 
 // General Initialization for all APM electronics
 void APM_Init() {
-  
-  int i, j;                  // Temporary variables used to count things
-  float aux_float[3];
 
   pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
   pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
@@ -94,44 +91,8 @@ void APM_Init() {
     Log_Read(1,1000);
     delay(30000);
   }
-
-  Read_adc_raw();
-  delay(10);
-
-  // Offset values for accels and gyros...
-  AN_OFFSET[3] = acc_offset_x;
-  AN_OFFSET[4] = acc_offset_y;
-  AN_OFFSET[5] = acc_offset_z;
-  aux_float[0] = gyro_offset_roll;
-  aux_float[1] = gyro_offset_pitch;
-  aux_float[2] = gyro_offset_yaw;
-
-  j = 0;
-  // Take the gyro offset values
-  for(i=0;i<300;i++)
-  {
-    Read_adc_raw();
-    for(int y=0; y<=2; y++)   // Read initial ADC values for gyro offset.
-    {
-      aux_float[y]=aux_float[y]*0.8 + AN[y]*0.2;
-      //Serial.print(AN[y]);
-      //Serial.print(",");
-    }
-    //Serial.println();
-    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],ch_throttle);
-    delay(10);
-    
-    RunningLights(j);
-    // Runnings lights effect to let user know that we are taking mesurements
-    if((i % 5) == 0) j++;
-    if(j >= 3) j = 0;
-  }
   
-  // Switch off all ABC lights
-  LightsOff();
-
-  for(int y=0; y<=2; y++)   
-    AN_OFFSET[y]=aux_float[y];
+  calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
   //  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
 #ifndef CONFIGURATOR

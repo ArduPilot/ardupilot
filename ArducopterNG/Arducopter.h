@@ -56,10 +56,9 @@ TODO:
 #define SLIDE_SWITCH_PIN 40
 #define PUSHBUTTON_PIN 41
 
-#define A_LED_PIN 37			//36 = B,	37 = A,	35 = C
+#define A_LED_PIN 37
 #define B_LED_PIN 36
 #define C_LED_PIN 35
-
 
 #define EE_LAST_LOG_PAGE 0xE00
 #define EE_LAST_LOG_NUM 0xE02
@@ -90,68 +89,7 @@ TODO:
 #define SerAv Serial.available
 #endif
 
-
-	
-								
-/****************************************************/
-/*Logging Stuff	- These should be 1 (on) or 0 (off)*/
-/****************************************************/	
-#define LOG_ATTITUDE 1	        // Logs basic attitude info
-#define LOG_GPS 1		// Logs GPS info
-#define LOG_PM 1		// Logs IMU performance monitoring info£
-#define LOG_CTUN 0		// Logs control loop tuning info
-#define LOG_NTUN 0		// Logs navigation loop tuning info
-#define LOG_MODE 1		// Logs mode changes
-#define LOG_RAW 0		// Logs raw accel/gyro data
-#define LOG_SEN 1               // Logs sensor data
-
-//  GCS Message ID's
-#define MSG_ACKNOWLEDGE 0x00
-#define MSG_HEARTBEAT 0x01
-#define MSG_ATTITUDE 0x02
-#define MSG_LOCATION 0x03
-#define MSG_PRESSURE 0x04
-#define MSG_STATUS_TEXT 0x05
-#define MSG_PERF_REPORT 0x06
-#define MSG_COMMAND 0x22
-#define MSG_VALUE 0x32
-#define MSG_PID 0x42
-#define MSG_TRIMS 0x50
-#define MSG_MINS 0x51
-#define MSG_MAXS 0x52
-#define MSG_IMU_OUT 0x53
-
-#define SEVERITY_LOW 1
-#define SEVERITY_MEDIUM 2
-#define SEVERITY_HIGH 3
-#define SEVERITY_CRITICAL 4
-
-// Debug options - set only one of these options to 1 at a time, set the others to 0
-#define DEBUG_SUBSYSTEM 0 		// 0 = no debug
-								// 1 = Debug the Radio input
-								// 2 = Debug the Servo output
-								// 3 = Debug the Sensor input
-								// 4 = Debug the GPS input
-								// 5 = Debug the GPS input - RAW HEX OUTPUT
-								// 6 = Debug the IMU
-								// 7 = Debug the Control Switch
-								// 8 = Debug the Servo DIP switches
-								// 9 = Debug the Relay out
-								// 10 = Debug the Magnetometer
-								// 11 = Debug the ABS pressure sensor
-								// 12 = Debug the stored waypoints
-								// 13 = Debug the Throttle
-								// 14 = Debug the Radio Min Max
-								// 15 = Debug the EEPROM - Hex Dump
-								
-
-#define DEBUG_LEVEL SEVERITY_LOW
-								// SEVERITY_LOW
-								// SEVERITY_MEDIUM
-								// SEVERITY_HIGH
-								// SEVERITY_CRITICAL
-
-
+// IMU definitions
 // Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
 uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Hardware
 
@@ -162,7 +100,6 @@ int SENSOR_SIGN[]={
 /* APM Hardware definitions, END */
 
 /* General definitions */
-
 #define TRUE 1
 #define FALSE 0
 #define ON 1
@@ -387,5 +324,65 @@ unsigned long dTnav					= 0;		// Delta Time in milliseconds for navigation compu
 int mainLoop_count 					= 0;
 unsigned long elapsedTime			= 0;		// for doing custom events
 //unsigned int GPS_timer				= 0;
+
+
+								
+/****************************************************/
+/*Logging Stuff	- These should be 1 (on) or 0 (off)*/
+/****************************************************/	
+#define LOG_ATTITUDE 1	        // Logs basic attitude info
+#define LOG_GPS 1		// Logs GPS info
+#define LOG_PM 1		// Logs IMU performance monitoring info£
+#define LOG_CTUN 0		// Logs control loop tuning info
+#define LOG_NTUN 0		// Logs navigation loop tuning info
+#define LOG_MODE 1		// Logs mode changes
+#define LOG_RAW 0		// Logs raw accel/gyro data
+#define LOG_SEN 1               // Logs sensor data
+
+//  GCS Message ID's
+#define MSG_ACKNOWLEDGE 0x00
+#define MSG_HEARTBEAT 0x01
+#define MSG_ATTITUDE 0x02
+#define MSG_LOCATION 0x03
+#define MSG_PRESSURE 0x04
+#define MSG_STATUS_TEXT 0x05
+#define MSG_PERF_REPORT 0x06
+#define MSG_COMMAND 0x22
+#define MSG_VALUE 0x32
+#define MSG_PID 0x42
+#define MSG_TRIMS 0x50
+#define MSG_MINS 0x51
+#define MSG_MAXS 0x52
+#define MSG_IMU_OUT 0x53
+
+#define SEVERITY_LOW 1
+#define SEVERITY_MEDIUM 2
+#define SEVERITY_HIGH 3
+#define SEVERITY_CRITICAL 4
+
+// Debug options - set only one of these options to 1 at a time, set the others to 0
+#define DEBUG_SUBSYSTEM 0 		// 0 = no debug
+								// 1 = Debug the Radio input
+								// 2 = Debug the Servo output
+								// 3 = Debug the Sensor input
+								// 4 = Debug the GPS input
+								// 5 = Debug the GPS input - RAW HEX OUTPUT
+								// 6 = Debug the IMU
+								// 7 = Debug the Control Switch
+								// 8 = Debug the Servo DIP switches
+								// 9 = Debug the Relay out
+								// 10 = Debug the Magnetometer
+								// 11 = Debug the ABS pressure sensor
+								// 12 = Debug the stored waypoints
+								// 13 = Debug the Throttle
+								// 14 = Debug the Radio Min Max
+								// 15 = Debug the EEPROM - Hex Dump
+								
+
+#define DEBUG_LEVEL SEVERITY_LOW
+								// SEVERITY_LOW
+								// SEVERITY_MEDIUM
+								// SEVERITY_HIGH
+								// SEVERITY_CRITICAL
 
 

@@ -92,28 +92,7 @@
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
 /* ************************************************************ */
-#define ROLL 0
-#define PITCH 1
-#define YAW 2
-#define XAXIS 0
-#define YAXIS 1
-#define ZAXIS 2
 
-#define GYROZ 0
-#define GYROX 1
-#define GYROY 2
-#define ACCELX 3
-#define ACCELY 4
-#define ACCELZ 5
-#define LASTSENSOR 6
-int rawADC[6];
-int zeroADC[6];
-int dataADC[6];
-byte channel;
-int sensorSign[6] = {1, 1, 1, 1, 1, 1}; // GYROZ, GYROX, GYROY, ACCELX, ACCELY, ACCELZ
-
-#define STABLE 0
-#define ACRO 1
 byte flightMode;
 
 unsigned long currentTime, previousTime, deltaTime;
@@ -128,7 +107,7 @@ unsigned long motorLoop = 0;
 /* ************************************************************ */
 void setup() {
   
-  APM_Init();    // APM Hardware initialization
+  APM_Init();    // APM Hardware initialization (in System.pde)
   
   previousTime = millis();
   motorArmed = 0;
@@ -190,10 +169,11 @@ void loop()
     Euler_angles();
 
     // Read radio values (if new data is available)
-    read_radio();
+    if (APM_RC.GetState() == 1)   // New radio frame?
+      read_radio();
 
     // Attitude control
-    if(flightMode == STABLE) {    // STABLE Mode
+    if(flightMode == STABLE_MODE) {    // STABLE Mode
       gled_speed = 1200;
       if (AP_mode == 0)           // Normal mode
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
@@ -207,7 +187,7 @@ void loop()
       command_rx_yaw = ToDeg(yaw);
       }
 
-    // Send output commands to motors...
+    // Send output commands to motor ESCs...
     motor_output();
 
     // Performance optimization: Magnetometer sensor and pressure sensor are slowly to read (I2C)
@@ -224,8 +204,9 @@ void loop()
     #endif
     #ifdef UseBMP
     #endif
+    
     // Slow loop (10Hz)
-    if((millis()-tlmTimer)>=100) {
+    if((currentTime-tlmTimer)>=100) {
     //#if BATTERY_EVENT == 1
     //  read_battery();         // Battery monitor
     //#endif
@@ -233,7 +214,7 @@ void loop()
       readSerialCommand();
       sendSerialTelemetry();
     #endif
-      tlmTimer = millis();   
+      tlmTimer = currentTime;   
     } 
   }
 }

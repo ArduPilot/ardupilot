@@ -56,10 +56,8 @@ TODO:
 
 /* AM PIN Definitions - END */
 
-
 /*************************************************************/
 // Radio related definitions
-
 #define CH_ROLL 0
 #define CH_PITCH 1
 #define CH_THROTTLE 2
@@ -81,6 +79,28 @@ TODO:
 
 #define CHANN_CENTER 1500       // Channel center, legacy
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
+
+/*************************************************************/
+// General definitions
+//Modes
+#define STABLE_MODE 0
+#define ACRO_MODE 1
+
+//Axis
+#define ROLL 0
+#define PITCH 1
+#define YAW 2
+#define XAXIS 0
+#define YAXIS 1
+#define ZAXIS 2
+
+#define GYROZ 0
+#define GYROX 1
+#define GYROY 2
+#define ACCELX 3
+#define ACCELY 4
+#define ACCELZ 5
+#define LASTSENSOR 6
 
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;
