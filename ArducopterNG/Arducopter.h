@@ -157,7 +157,7 @@ uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Ha
 
 // Sensor: GYROX, GYROY, GYROZ,   ACCELX, ACCELY, ACCELZ,     MAGX, MAGY, MAGZ
 int SENSOR_SIGN[]={
-  1, -1, 1,    -1, 1, 1,     -1, -1, -1}; 
+  1, -1, -1,    -1, 1, 1,     -1, -1, -1}; 
  //{-1,1,-1,1,-1,1,-1,-1,-1};
 /* APM Hardware definitions, END */
 
@@ -181,8 +181,8 @@ int SENSOR_SIGN[]={
 // IDG500 Sensitivity (from datasheet) => 2.0mV/º/s, 0.8mV/ADC step => 0.8/3.33 = 0.4
 // Tested values : 
 #define Gyro_Gain_X 0.4  //X axis Gyro gain
-#define Gyro_Gain_Y 0.41 //Y axis Gyro gain
-#define Gyro_Gain_Z 0.41 //Z axis Gyro gain
+#define Gyro_Gain_Y 0.4  //Y axis Gyro gain
+#define Gyro_Gain_Z 0.4  //Z axis Gyro gain
 #define Gyro_Scaled_X(x) x*ToRad(Gyro_Gain_X) //Return the scaled ADC raw data of the gyro in radians for second
 #define Gyro_Scaled_Y(x) x*ToRad(Gyro_Gain_Y) //Return the scaled ADC raw data of the gyro in radians for second
 #define Gyro_Scaled_Z(x) x*ToRad(Gyro_Gain_Z) //Return the scaled ADC raw data of the gyro in radians for second

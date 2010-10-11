@@ -51,6 +51,8 @@
 //#define UseBMP
 //#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it wired up!)
 
+#define CONFIGURATOR
+
 // Serial data, do we have FTDI cable or Xbee on Telemetry port as our primary command link
 #define Ser0          // FTDI/USB Port  Either one
 //#define Ser3          // Telemetry port
@@ -197,13 +199,13 @@ void loop()
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
       else                        // Automatic mode : GPS position hold mode
         Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
-    }
+      }
     else {   // ACRO Mode
       gled_speed = 400;
       Rate_control_v2();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
       command_rx_yaw = ToDeg(yaw);
-    }
+      }
 
     // Send output commands to motors...
     motor_output();
@@ -221,7 +223,18 @@ void loop()
     }
     #endif
     #ifdef UseBMP
-    #endif    
-    }
+    #endif
+    // Slow loop (10Hz)
+    if((millis()-tlmTimer)>=100) {
+    //#if BATTERY_EVENT == 1
+    //  read_battery();         // Battery monitor
+    //#endif
+    #ifdef CONFIGURATOR
+      readSerialCommand();
+      sendSerialTelemetry();
+    #endif
+      tlmTimer = millis();   
+    } 
+  }
 }
  
