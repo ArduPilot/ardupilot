@@ -56,48 +56,40 @@ TODO:
 // STABLE MODE
 // PI absolute angle control driving a P rate control
 // Input : desired Roll, Pitch and Yaw absolute angles. Output : Motor commands
-void Attitude_control_v3()
+void Attitude_control_v3(int command_roll, int command_pitch, int command_yaw)
 {
   float stable_roll,stable_pitch,stable_yaw;
   
   // ROLL CONTROL    
-  if (AP_mode==2)        // Normal Mode => Stabilization mode
-    err_roll = command_rx_roll - ToDeg(roll);
-  else
-    err_roll = (command_rx_roll + command_gps_roll) - ToDeg(roll);  // Position control  
+  err_roll = command_roll - ToDeg(roll);
   err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
   
   roll_I += err_roll*G_Dt;
   roll_I = constrain(roll_I,-20,20);
 
   // PID absolute angle control
-  K_aux = KP_QUAD_ROLL; // Comment this out if you want to use transmitter to adjust gain
-  stable_roll = K_aux*err_roll + KI_QUAD_ROLL*roll_I;
+  stable_roll = KP_QUAD_ROLL*err_roll + KI_QUAD_ROLL*roll_I;
   
   // PD rate control (we use also the bias corrected gyro rates)
   err_roll = stable_roll - ToDeg(Omega[0]); // Omega[] is the raw gyro reading plus Omega_I, so it´s bias corrected
   control_roll = STABLE_MODE_KP_RATE_ROLL*err_roll;
   
   // PITCH CONTROL
-  if (AP_mode==2)        // Normal mode => Stabilization mode
-    err_pitch = command_rx_pitch - ToDeg(pitch);
-  else                   // GPS Position hold
-    err_pitch = (command_rx_pitch + command_gps_pitch) - ToDeg(pitch);  // Position Control
+  err_pitch = command_pitch - ToDeg(pitch);
   err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
   
   pitch_I += err_pitch*G_Dt;
   pitch_I = constrain(pitch_I,-20,20);
  
   // PID absolute angle control
-  K_aux = KP_QUAD_PITCH; // Comment this out if you want to use transmitter to adjust gain
-  stable_pitch = K_aux*err_pitch + KI_QUAD_PITCH*pitch_I;
+  stable_pitch = KP_QUAD_PITCH*err_pitch + KI_QUAD_PITCH*pitch_I;
   
   // P rate control (we use also the bias corrected gyro rates)
   err_pitch = stable_pitch - ToDeg(Omega[1]);
   control_pitch = STABLE_MODE_KP_RATE_PITCH*err_pitch;
   
   // YAW CONTROL
-  err_yaw = command_rx_yaw - ToDeg(yaw);
+  err_yaw = command_yaw - ToDeg(yaw);
   if (err_yaw > 180)    // Normalize to -180,180
     err_yaw -= 360;
   else if(err_yaw < -180)

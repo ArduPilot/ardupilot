@@ -36,7 +36,7 @@ TODO:
 #define STICK_TO_ANGLE_FACTOR 12.0        // To convert stick position to absolute angles
 #define YAW_STICK_TO_ANGLE_FACTOR 150.0
 
-void Read_radio()
+void read_radio()
 {
   if (APM_RC.GetState() == 1)   // New radio frame?
     {
@@ -79,12 +79,11 @@ void Read_radio()
       #endif
 
       // YAW
-      if (abs(ch_yaw-yaw_mid)<8)   // Take into account a bit of "dead zone" on yaw
-        aux_float = 0.0;
-      else
-        aux_float = (ch_yaw-yaw_mid) / YAW_STICK_TO_ANGLE_FACTOR;
-      command_rx_yaw += aux_float;
-      command_rx_yaw = Normalize_angle(command_rx_yaw);    // Normalize angle to [-180,180]
+      if (abs(ch_yaw-yaw_mid)>6)   // Take into account a bit of "dead zone" on yaw
+        {
+        command_rx_yaw += (ch_yaw-yaw_mid) / YAW_STICK_TO_ANGLE_FACTOR;
+        command_rx_yaw = Normalize_angle(command_rx_yaw);    // Normalize angle to [-180,180]
+        }
       }
     
     // Write Radio data to DataFlash log
@@ -94,7 +93,7 @@ void Read_radio()
 
 
 // Send output commands to ESC´s
-void Motor_output()
+void motor_output()
 {
   // Quadcopter mix
   if (motorArmed == 1) 

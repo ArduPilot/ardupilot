@@ -115,6 +115,7 @@ int sensorSign[6] = {1, 1, 1, 1, 1, 1}; // GYROZ, GYROX, GYROY, ACCELX, ACCELY, 
 byte flightMode;
 
 unsigned long currentTime, previousTime, deltaTime;
+unsigned long mainLoop = 0;
 unsigned long sensorLoop = 0;
 unsigned long controlLoop = 0;
 unsigned long radioLoop = 0;
@@ -142,7 +143,7 @@ void setup() {
 
 // fast rate
 // read sensors
-// update attitude
+// IMU : update attitude
 // motor control
 
 // medium rate
@@ -154,69 +155,73 @@ void setup() {
 // external command/telemetry
 // GPS
 
+void loop()
+{
+  int aux;
+  int i;
+  float aux_float;
 
-void loop() {
   currentTime = millis();
-  deltaTime = currentTime - previousTime;
-  G_Dt = deltaTime / 1000.0;
-  previousTime = currentTime;
-  
-  // Read Sensors **************************************************
-  if (currentTime > sensorLoop + 2) { // 500Hz (every 2ms)
-    for (channel = GYROZ; channel < LASTSENSOR; channel++) {
-      dataADC[channel] = readADC(channel); // defined in Sensors.pde
-    }
-    sensorLoop = currentTime;
-  }
-  
-  // Update ArduCopter Control *************************************
-  if (currentTime > controlLoop + 5) { // 200Hz (every 5ms)
-    if(flightMode == STABLE) {        // Changed for variable
+  //deltaTime = currentTime - previousTime;
+  //G_Dt = deltaTime / 1000.0;
+  //previousTime = currentTime;
+
+  // Sensor reading loop is inside APM_ADC and runs at 400Hz
+  // Main loop at 200Hz (IMU + control)
+  if (currentTime > (mainLoop + 5))    // 200Hz (every 5ms)
+    {
+    G_Dt = (currentTime-mainLoop) / 1000.0;   // Microseconds!!!
+    mainLoop = currentTime;
+
+    //IMU DCM Algorithm
+    Read_adc_raw();       // Read sensors raw data
+    Matrix_update(); 
+    // Optimization: we don´t need to call this functions all the times
+    //if (IMU_cicle==0)
+    //  {
+      Normalize();          
+      Drift_correction();
+    //  IMU_cicle = 1;
+    //  }
+    //else
+    //  IMU_cicle = 0;
+    Euler_angles();
+
+    // Read radio values (if new data is available)
+    read_radio();
+
+    // Attitude control
+    if(flightMode == STABLE) {    // STABLE Mode
       gled_speed = 1200;
-      Attitude_control_v3();
+      if (AP_mode == 0)           // Normal mode
+        Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
+      else                        // Automatic mode : GPS position hold mode
+        Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
     }
-    else {
+    else {   // ACRO Mode
       gled_speed = 400;
       Rate_control_v2();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
       command_rx_yaw = ToDeg(yaw);
     }
-    controlLoop = currentTime;
-  }
-  
-    // Execute the fast loop
-    // ---------------------
-    // fast_loop();
-    // - PWM Updates
-    // - Stabilization
-    // - Altitude correction
-		
-  // Execute the medium loop 
-  // -----------------------
-  // medium_loop();
-  // - Radio read
-  // - GPS read
-  // - Drift correction
-  
 
+    // Send output commands to motors...
+    motor_output();
 
-		// Execute the slow loop 
-		// -----------------------
-		// slow_loop();
-                // - Battery usage
-                // - GCS updates
-                // - Garbage management
-
-		if (millis()- perf_mon_timer > 20000) {
-			if (mainLoop_count != 0) {
-	
-				//send_message(MSG_PERF_REPORT);
-				#if LOG_PM
-					Log_Write_Performance();
-				#endif
-				resetPerfData();
-			 }
-		}
-	}  
+    // Performance optimization: Magnetometer sensor and pressure sensor are slowly to read (I2C)
+    // so we read them at the end of the loop (all work is done in this loop run...)
+    #ifdef IsMAG
+    if (MAGNETOMETER == 1) {
+      if (MAG_counter > 20)  // Read compass data at 10Hz...
+      {
+        MAG_counter=0;
+        APM_Compass.Read();     // Read magnetometer
+        APM_Compass.Calculate(roll,pitch);  // Calculate heading
+      }
+    }
+    #endif
+    #ifdef UseBMP
+    #endif    
+    }
 }
-
+ 

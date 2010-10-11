@@ -174,6 +174,21 @@ void Log_Write_PID(byte num_PID, int P, int I,int D, int output)
   DataFlash.WriteByte(END_BYTE);
 }
 
+// Write a Radio packet
+void Log_Write_Radio(int ch1, int ch2, int ch3,int ch4, int ch5, int ch6)
+{
+  DataFlash.WriteByte(HEAD_BYTE1);
+  DataFlash.WriteByte(HEAD_BYTE2);
+  DataFlash.WriteByte(LOG_RADIO_MSG);
+  DataFlash.WriteInt(ch1);
+  DataFlash.WriteInt(ch2);
+  DataFlash.WriteInt(ch3);
+  DataFlash.WriteInt(ch4);
+  DataFlash.WriteInt(ch5);
+  DataFlash.WriteInt(ch6);
+  DataFlash.WriteByte(END_BYTE);
+}
+
 #if LOG_PM
 // Write a performance monitoring packet. Total length : 19 bytes
 void Log_Write_Performance()
@@ -362,6 +377,24 @@ void Log_Read_PID()
   Serial.print(DataFlash.ReadInt());  // D
   Serial.print(",");
   Serial.print(DataFlash.ReadInt());  // output
+  Serial.println();
+}
+
+// Read an Radio packet
+void Log_Read_Radio()
+{  
+  Serial.print("RADIO:");
+  Serial.print(DataFlash.ReadInt());
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());
   Serial.println();
 }
 

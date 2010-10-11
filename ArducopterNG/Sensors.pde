@@ -25,6 +25,25 @@
 
 * ************************************************************** */
 
+/* ******* ADC functions ********************* */
+// Read all the ADC channles
+void Read_adc_raw(void)
+{
+  //int temp;
+  
+  for (int i=0;i<6;i++)
+    AN[i] = APM_ADC.Ch(sensors[i]);
+}
+
+// Returns an analog value with the offset
+int read_adc(int select)
+{
+  if (SENSOR_SIGN[select]<0)
+    return (AN_OFFSET[select]-AN[select]);
+  else
+    return (AN[select]-AN_OFFSET[select]);
+}
+
 int readADC(byte channel) {
   if (sensorSign[channel] < 0)
     return (zeroADC[channel] - APM_ADC.Ch(channel));
@@ -39,7 +58,7 @@ void calibrateSensors(void) {
     for (channel = GYROZ; channel < LASTSENSOR; channel++) {
       rawADC[channel] = APM_ADC.Ch(channel);
       zeroADC[channel] = (zeroADC[channel] * 0.8) + (rawADC[channel] * 0.2);
-      Log_Write_Sensor(rawADC[GYROZ], rawADC[GYROX], rawADC[GYROY], rawADC[ACCELX], rawADC[ACCELY], rawADC[ACCELZ], receiverData[THROTTLE]);
+      //Log_Write_Sensor(rawADC[GYROZ], rawADC[GYROX], rawADC[GYROY], rawADC[ACCELX], rawADC[ACCELY], rawADC[ACCELZ], receiverData[THROTTLE]);
     }
     delay(5);
     // Runnings lights effect to let user know that we are taking mesurements
