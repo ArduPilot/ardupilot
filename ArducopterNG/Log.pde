@@ -50,6 +50,7 @@ TODO:
 #define LOG_RAW_MSG			0x07
 #define LOG_RADIO_MSG                   0x08
 #define LOG_SENSOR_MSG                  0x09
+#define LOG_PID_MSG                     0x0A
 
 
 //  Function to display available logs and solicit action from the user.
@@ -158,6 +159,20 @@ void Log_Write_Sensor(int s1, int s2, int s3,int s4, int s5, int s6, int s7)
   DataFlash.WriteByte(END_BYTE);
 }
 #endif
+
+// Write a PID control info
+void Log_Write_PID(byte num_PID, int P, int I,int D, int output)
+{
+  DataFlash.WriteByte(HEAD_BYTE1);
+  DataFlash.WriteByte(HEAD_BYTE2);
+  DataFlash.WriteByte(LOG_PID_MSG);
+  DataFlash.WriteByte(num_PID);
+  DataFlash.WriteInt(P);
+  DataFlash.WriteInt(I);
+  DataFlash.WriteInt(D);
+  DataFlash.WriteInt(output);
+  DataFlash.WriteByte(END_BYTE);
+}
 
 #if LOG_PM
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -334,6 +349,22 @@ void Log_Read_Attitude()
 	Serial.println();
 }
 
+// Read a Sensor raw data packet
+void Log_Read_PID()
+{  
+  Serial.print("PID:");
+  Serial.print((int)DataFlash.ReadByte());  // NUM_PID
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // P
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // I
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // D
+  Serial.print(",");
+  Serial.print(DataFlash.ReadInt());  // output
+  Serial.println();
+}
+
 // Read a mode packet
 void Log_Read_Mode()
 {	
@@ -476,6 +507,9 @@ void Log_Read(int start_page, int end_page)
 					
 				}else if(data==LOG_RAW_MSG){
 					Log_Read_Raw();
+					log_step++;
+                                }else if(data==LOG_PID_MSG){
+					Log_Read_PID();
 					log_step++;
 				}else {
 					if(data==LOG_GPS_MSG){
