@@ -59,6 +59,8 @@ void APM_Init() {
   delay(250);
   // DIY Drones MTEK GPS needs binary sentences activated if you upgraded to latest firmware.
   // If your GPS shows solid blue but LED C (Red) does not go on, your GPS is on NMEA mode
+  Serial1.print("$PMTK220,200*2C\r\n");          // 5Hz update rate
+  delay(200);
   Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n"); 
 #endif
 #endif
@@ -94,7 +96,7 @@ void APM_Init() {
   }
 
   Read_adc_raw();
-  delay(20);
+  delay(10);
 
   // Offset values for accels and gyros...
   AN_OFFSET[3] = acc_offset_x;
@@ -143,57 +145,20 @@ void APM_Init() {
   Serial.print(yaw_mid);
 #endif
 
-#ifdef RADIO_TEST_MODE    // RADIO TEST MODE TO TEST RADIO CHANNELS
-  while(1)
-  {
-    if (APM_RC.GetState()==1)
-    {
-      Serial.print("AIL:");
-      Serial.print(APM_RC.InputCh(0));
-      Serial.print("ELE:");
-      Serial.print(APM_RC.InputCh(1));
-      Serial.print("THR:");
-      Serial.print(APM_RC.InputCh(2));
-      Serial.print("YAW:");
-      Serial.print(APM_RC.InputCh(3));
-      Serial.print("AUX(mode):");
-      Serial.print(APM_RC.InputCh(4));
-      Serial.print("AUX2:");
-      Serial.print(APM_RC.InputCh(5));
-      Serial.println();
-      delay(200);
-    }
-  } 
-#endif  
+#ifdef UseBMP
+  APM_BMP085.Init();
+#endif
 
   delay(1000);
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
-  timer = millis();
-  tlmTimer = millis();
-  Read_adc_raw();        // Initialize ADC readings...
-  delay(20);
+  //timer = millis();
+  //tlmTimer = millis();
 
 #ifdef IsAM
   // Switch Left & Right lights on
   digitalWrite(RI_LED, HIGH);
   digitalWrite(LE_LED, HIGH); 
 #endif
-
-  motorArmed = 0;
-  digitalWrite(LED_Green,HIGH);     // Ready to go...
 }
-
-
-void resetPerfData(void) {
-	mainLoop_count = 0;
-	G_Dt_max = 0;
-	gyro_sat_count = 0;
-	adc_constraints = 0;
-	renorm_sqrt_count = 0;  
-	renorm_blowup_count = 0;
-	gps_fix_count = 0;
-	perf_mon_timer = millis();
-}
-
 

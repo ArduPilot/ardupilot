@@ -124,14 +124,13 @@ unsigned long motorLoop = 0;
 /* **************** MAIN PROGRAM - SETUP ********************** */
 /* ************************************************************ */
 void setup() {
-  APM_Init();
-  //APM_Init_ADC();
-  //APM_Init_Radio();
-  //APM_Init_Serial();
-  //APM_Init_xx
-
+  
+  APM_Init();    // APM Hardware initialization
+  
   previousTime = millis();
   motorArmed = 0;
+  Read_adc_raw();                   // Initialize ADC readings...
+  delay(20);
   digitalWrite(LED_Green,HIGH);     // Ready to go...  
 }
 
