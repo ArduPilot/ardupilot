@@ -3,8 +3,8 @@
  Copyright (c) 2010.  All rights reserved.
  An Open Source Arduino based multicopter.
  
- File     : Arducopter.pde
- Version  : v0.1, October 2010
+ File     : ArducopterNG.pde
+ Version  : v1.0, 11 October 2010
  Author(s): ArduCopter Team
              Ted Carancho (AeroQuad), Jose Julio, Jordi Muñoz,
              Jani Hirvinen, Ken McEwans, Roberto Navoni,          
@@ -32,7 +32,7 @@
 /*   DataFlash : DataFlash log library                                    */
 /*   APM_BMP085 : BMP085 barometer library                                */
 /*   APM_Compass : HMC5843 compass library [optional]                     */
-/*   GPS_UBLOX or GPS_NMEA or GPS_MTK : GPS library    [optional]         */
+/*   GPS_MTK or GPS_UBLOX or GPS_NMEA : GPS library    [optional]         */
 /* ********************************************************************** */
 
 /* ************************************************************ */
@@ -130,61 +130,6 @@ void setup() {
   //APM_Init_Serial();
   //APM_Init_xx
 
-  pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
-  pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
-  pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
-  pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
-  pinMode(RELE_pin,OUTPUT);   // Rele output
-  digitalWrite(RELE_pin,LOW);
-  
-  // APM Radio initialization
-  APM_RC.Init();
-  // RC channels Initialization (Quad motors)  
-  APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
-  APM_RC.OutputCh(1,MIN_THROTTLE);
-  APM_RC.OutputCh(2,MIN_THROTTLE);
-  APM_RC.OutputCh(3,MIN_THROTTLE);
-
-  for(i = 0; i <= 50; i++) {
-    digitalWrite(LED_Green, HIGH);
-    digitalWrite(LED_Yellow, HIGH);
-    digitalWrite(LED_Red, HIGH);
-    delay(20);
-    digitalWrite(LED_Green, LOW);
-    digitalWrite(LED_Yellow, LOW);
-    digitalWrite(LED_Red, LOW);
-    delay(20);
-  }
-
-  APM_ADC.Init();            // APM ADC library initialization
-
-  DataFlash.Init();          // DataFlash log initialization
-  DataFlash.StartWrite(1);   // Start a write session on page 1
-  // Check if we enable the DataFlash log Read Mode (switch)
-  // If we press switch 1 at startup we read the Dataflash eeprom
-  while (digitalRead(SW1_pin)==0) {
-    SerPriln("Entering Log Read Mode...");
-    Log_Read(1,2000);
-    delay(30000);
-  }
-
-  #ifdef IsGPS  
-    GPS.Init();                // GPS Initialization
-    #ifdef IsNEWMTEK  
-      delay(250);
-      // DIY Drones MTEK GPS needs binary sentences activated if you upgraded to latest firmware.
-      // If your GPS shows solid blue but LED C (Red) does not go on, your GPS is on NMEA mode
-      Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n"); 
-    #endif
-  #endif
-
-  readUserConfig(); // Load user configurable items from EEPROM
-
-  if (MAGNETOMETER == 1)
-    APM_Compass.Init();  // I2C initialization
-
-  calibrateSensors();
-  
   previousTime = millis();
   motorArmed = 0;
   digitalWrite(LED_Green,HIGH);     // Ready to go...  

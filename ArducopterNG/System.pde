@@ -42,16 +42,12 @@ void APM_Init() {
   pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
   pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
   pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
-
   pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
-
   pinMode(RELE_pin,OUTPUT);   // Rele output
- 
   digitalWrite(RELE_pin,LOW);
 
   //  delay(1000); // Wait until frame is not moving after initial power cord has connected
   FullBlink(50,20);
-
 
   APM_RC.Init();             // APM Radio initialization
   APM_ADC.Init();            // APM ADC library initialization
