@@ -77,14 +77,14 @@ TODO:
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;
 float KI_QUAD_ROLL;
-float KD_QUAD_ROLL;
+float STABLE_MODE_KP_RATE_ROLL;
 float KP_QUAD_PITCH;
 float KI_QUAD_PITCH;
-float KD_QUAD_PITCH;
+float STABLE_MODE_KP_RATE_PITCH;
 float KP_QUAD_YAW;
 float KI_QUAD_YAW;
-float KD_QUAD_YAW;
-float STABLE_MODE_KP_RATE;
+float STABLE_MODE_KP_RATE_YAW;
+float STABLE_MODE_KP_RATE;       //NOT USED NOW
 float KP_GPS_ROLL;
 float KI_GPS_ROLL;
 float KD_GPS_ROLL;
@@ -133,23 +133,23 @@ float ch_aux2_offset = 0;
 // This function call contains the default values that are set to the ArduCopter
 // when a "Default EEPROM Value" command is sent through serial interface
 void defaultUserConfig() {
-  KP_QUAD_ROLL = 1.8;
-  KI_QUAD_ROLL = 0.30; //0.4
-  KD_QUAD_ROLL = 0.4; //0.48
-  KP_QUAD_PITCH = 1.8;
-  KI_QUAD_PITCH = 0.30; //0.4
-  KD_QUAD_PITCH = 0.4; //0.48
-  KP_QUAD_YAW = 3.6;
+  KP_QUAD_ROLL = 4.0;
+  KI_QUAD_ROLL = 0.15;
+  STABLE_MODE_KP_RATE_ROLL = 1.2;
+  KP_QUAD_PITCH = 4.0;
+  KI_QUAD_PITCH = 0.15;
+  STABLE_MODE_KP_RATE_PITCH = 1.2;
+  KP_QUAD_YAW = 3.0;
   KI_QUAD_YAW = 0.15;
-  KD_QUAD_YAW = 1.2;
-  STABLE_MODE_KP_RATE = 0.2;  // New param for stable mode
-  KP_GPS_ROLL = 0.02;
-  KI_GPS_ROLL = 0.008;
-  KD_GPS_ROLL = 0.006;
-  KP_GPS_PITCH = 0.02;
-  KI_GPS_PITCH = 0.008;
-  KD_GPS_PITCH = 0.006;
-  GPS_MAX_ANGLE = 18;
+  STABLE_MODE_KP_RATE_YAW = 2.4;
+  STABLE_MODE_KP_RATE = 0.2;     // NOT USED NOW
+  KP_GPS_ROLL = 0.015;
+  KI_GPS_ROLL = 0.005;
+  KD_GPS_ROLL = 0.01;
+  KP_GPS_PITCH = 0.015;
+  KI_GPS_PITCH = 0.005;
+  KD_GPS_PITCH = 0.01;
+  GPS_MAX_ANGLE = 22;
   KP_ALTITUDE = 0.8;
   KI_ALTITUDE = 0.2;
   KD_ALTITUDE = 0.2;
@@ -165,16 +165,16 @@ void defaultUserConfig() {
   Ki_YAW = 0.00005;
   GEOG_CORRECTION_FACTOR = 0.87;
   MAGNETOMETER = 0;
-  Kp_RateRoll = 0.6;
-  Ki_RateRoll = 0.1;
-  Kd_RateRoll = -0.8;
-  Kp_RatePitch = 0.6;
-  Ki_RatePitch = 0.1;
-  Kd_RatePitch = -0.8;  
-  Kp_RateYaw = 1.6;
-  Ki_RateYaw = 0.3;
-  Kd_RateYaw = 0;
-  xmitFactor = 0.8;
+  Kp_RateRoll = 1.95;
+  Ki_RateRoll = 0.0;
+  Kd_RateRoll = 0.0;
+  Kp_RatePitch = 1.95;
+  Ki_RatePitch = 0.0;
+  Kd_RatePitch = 0.0;  
+  Kp_RateYaw = 3.2;
+  Ki_RateYaw = 0.0;
+  Kd_RateYaw = 0.0;
+  xmitFactor = 0.32;
   roll_mid = 1500;
   pitch_mid = 1500;
   yaw_mid = 1500;
@@ -195,14 +195,14 @@ void defaultUserConfig() {
 // EEPROM storage addresses
 #define KP_QUAD_ROLL_ADR 0
 #define KI_QUAD_ROLL_ADR 8
-#define KD_QUAD_ROLL_ADR 4
+#define STABLE_MODE_KP_RATE_ROLL_ADR 4
 #define KP_QUAD_PITCH_ADR 12
 #define KI_QUAD_PITCH_ADR 20
-#define KD_QUAD_PITCH_ADR 16
+#define STABLE_MODE_KP_RATE_PITCH_ADR 16
 #define KP_QUAD_YAW_ADR 24
 #define KI_QUAD_YAW_ADR 32
-#define KD_QUAD_YAW_ADR 28
-#define STABLE_MODE_KP_RATE_ADR 36
+#define STABLE_MODE_KP_RATE_YAW_ADR 28
+#define STABLE_MODE_KP_RATE_ADR 36      // NOT USED NOW
 #define KP_GPS_ROLL_ADR 40
 #define KI_GPS_ROLL_ADR 48
 #define KD_GPS_ROLL_ADR 44
@@ -250,5 +250,4 @@ void defaultUserConfig() {
 #define ch_yaw_offset_ADR 216
 #define ch_aux_offset_ADR 220
 #define ch_aux2_offset_ADR 224
-
 

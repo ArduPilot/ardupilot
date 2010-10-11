@@ -66,14 +66,14 @@ void readSerialCommand() {
     case 'A': // Stable PID
       KP_QUAD_ROLL = readFloatSerial();
       KI_QUAD_ROLL = readFloatSerial();
-      KD_QUAD_ROLL = readFloatSerial();
+      STABLE_MODE_KP_RATE_ROLL = readFloatSerial();
       KP_QUAD_PITCH = readFloatSerial();
       KI_QUAD_PITCH = readFloatSerial();
-      KD_QUAD_PITCH = readFloatSerial();
+      STABLE_MODE_KP_RATE_PITCH = readFloatSerial();
       KP_QUAD_YAW = readFloatSerial();
       KI_QUAD_YAW = readFloatSerial();
-      KD_QUAD_YAW = readFloatSerial();
-      STABLE_MODE_KP_RATE = readFloatSerial();
+      STABLE_MODE_KP_RATE_YAW = readFloatSerial();
+      STABLE_MODE_KP_RATE = readFloatSerial();   // NOT USED NOW
       MAGNETOMETER = readFloatSerial();
       break;
     case 'C': // Receive GPS PID
@@ -195,21 +195,21 @@ void sendSerialTelemetry() {
     comma();
     SerPr(KI_QUAD_ROLL, 3);
     comma();
-    SerPr(KD_QUAD_ROLL, 3);
+    SerPr(STABLE_MODE_KP_RATE_ROLL, 3);
     comma();
     SerPr(KP_QUAD_PITCH, 3);
     comma();
     SerPr(KI_QUAD_PITCH, 3);
     comma();
-    SerPr(KD_QUAD_PITCH, 3);
+    SerPr(STABLE_MODE_KP_RATE_PITCH, 3);
     comma();
     SerPr(KP_QUAD_YAW, 3);
     comma();
     SerPr(KI_QUAD_YAW, 3);
     comma();
-    SerPr(KD_QUAD_YAW, 3);
+    SerPr(STABLE_MODE_KP_RATE_YAW, 3);
     comma();
-    SerPr(STABLE_MODE_KP_RATE, 3);
+    SerPr(STABLE_MODE_KP_RATE, 3);    // NOT USED NOW
     comma();
     SerPrln(MAGNETOMETER, 3);
     queryType = 'X';
