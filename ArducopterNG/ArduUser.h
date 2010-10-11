@@ -60,10 +60,18 @@ TODO:
 /*************************************************************/
 // Radio related definitions
 
-// If you don't know these values, you can activate RADIO_TEST_MODE below
-// and check your mid values
-
-//#define RADIO_TEST_MODE
+#define CH_ROLL 0
+#define CH_PITCH 1
+#define CH_THROTTLE 2
+#define CH_RUDDER 3
+#define CH_1 0
+#define CH_2 1
+#define CH_3 2
+#define CH_4 3
+#define CH_5 4
+#define CH_6 5
+#define CH_7 6
+#define CH_8 7
 
 #define ROLL_MID 1500    // Radio Roll channel mid value
 #define PITCH_MID 1500    // Radio Pitch channel mid value

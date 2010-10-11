@@ -79,3 +79,36 @@ void LightsOff() {
   digitalWrite(LED_Red, LOW);
  
 }
+
+// Funtion to normalize an angle in degrees to -180,180 degrees
+float Normalize_angle(float angle)
+{
+  if (angle > 180)         
+    return (angle - 360.0);
+  else if (angle < -180)
+    return (angle + 360.0);
+  else
+    return(angle);
+}
+
+// Maximun slope filter for radio inputs... (limit max differences between readings)
+int channel_filter(int ch, int ch_old)
+{
+  int diff_ch_old;
+
+  if (ch_old==0)      // ch_old not initialized
+    return(ch);
+  diff_ch_old = ch - ch_old;      // Difference with old reading
+  if (diff_ch_old < 0)
+  {
+    if (diff_ch_old <- 60)
+      return(ch_old - 60);        // We limit the max difference between readings
+  }
+  else
+  {
+    if (diff_ch_old > 60)    
+      return(ch_old + 60);
+  }
+  return((ch + ch_old) >> 1);   // Small filtering
+  //return(ch);
+}
