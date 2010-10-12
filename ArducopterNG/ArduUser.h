@@ -33,14 +33,12 @@ TODO:
 
 * ************************************************************** */
 
-
 /*************************************************************/
 // Safety & Security 
 
 // Arm & Disarm delays
 #define ARM_DELAY 200      // milliseconds of how long you need to keep rudder to max right for arming motors
 #define DISARM_DELAY 100   // milliseconds of how long you need to keep rudder to max left for disarming motors
-
 
 /*************************************************************/
 // AM Mode & Flight information 
@@ -181,16 +179,16 @@ void defaultUserConfig() {
   KP_ALTITUDE = 0.8;
   KI_ALTITUDE = 0.2;
   KD_ALTITUDE = 0.2;
-  acc_offset_x = 2073;
-  acc_offset_y = 2056;
-  acc_offset_z = 2010;
+  acc_offset_x = 2048;
+  acc_offset_y = 2048;
+  acc_offset_z = 2048;
   gyro_offset_roll = 1659;
-  gyro_offset_pitch = 1618;
-  gyro_offset_yaw = 1673;
+  gyro_offset_pitch = 1650;
+  gyro_offset_yaw = 1650;
   Kp_ROLLPITCH = 0.0014;
   Ki_ROLLPITCH = 0.00000015;
-  Kp_YAW = 1.2;
-  Ki_YAW = 0.00005;
+  Kp_YAW = 1.0;
+  Ki_YAW = 0.00002;
   GEOG_CORRECTION_FACTOR = 0.87;
   MAGNETOMETER = 0;
   Kp_RateRoll = 1.95;

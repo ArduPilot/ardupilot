@@ -92,6 +92,11 @@ void Drift_correction(void)
   
     Vector_Scale(&Scaled_Omega_P[0],&errorYaw[0],Kp_YAW);
     Vector_Add(Omega_P,Omega_P,Scaled_Omega_P);//Adding  Proportional.
+    
+    // Limit max errorYaw to limit max Omega_I
+    errorYaw[0] = constrain(errorYaw[0],-50,50);
+    errorYaw[1] = constrain(errorYaw[1],-50,50);
+    errorYaw[2] = constrain(errorYaw[2],-50,50);
   
     Vector_Scale(&Scaled_Omega_I[0],&errorYaw[0],Ki_YAW);
     Vector_Add(Omega_I,Omega_I,Scaled_Omega_I);//adding integrator to the Omega_I
