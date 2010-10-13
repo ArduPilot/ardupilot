@@ -48,7 +48,7 @@ void read_radio()
     ch_aux2 = APM_RC.InputCh(CH_6) * ch_aux2_slope + ch_aux2_offset;
     
     // Flight mode
-    if(ch_aux2 > 1800) 
+    if(ch_aux2 > 1200) 
       flightMode = ACRO_MODE;  // Force to Acro mode from radio
     else
       flightMode = STABLE_MODE;  // Stable mode (default)
@@ -57,12 +57,12 @@ void read_radio()
     if (flightMode == STABLE_MODE)
       {
       if(ch_aux > 1800)
-        AP_mode = 1;   // Automatic mode : GPS position hold mode + altitude hold
+        AP_mode = AP_AUTOMATIC_MODE;   // Automatic mode : GPS position hold mode + altitude hold
       else 
-        AP_mode = 0;   // Normal mode
+        AP_mode = AP_NORMAL_MODE;   // Normal mode
       }
       
-    if (flightMode==0)  // IN STABLE MODE we convert stick positions to absoulte angles
+    if (flightMode==STABLE_MODE)  // IN STABLE MODE we convert stick positions to absoulte angles
       {
       // In Stable mode stick position defines the desired angle in roll, pitch and yaw
       #ifdef FLIGHT_MODE_X
@@ -85,13 +85,50 @@ void read_radio()
       }
     
     // Write Radio data to DataFlash log
-    Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,int(K_aux*100),(int)AP_mode);
+    Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,ch_aux,ch_aux2);
+    
+    // Motor arm logic
+    // Arm motor output : Throttle down and full yaw right for more than 2 seconds
+    if (ch_throttle < (MIN_THROTTLE + 100)) {
+      control_yaw = 0;
+      command_rx_yaw = ToDeg(yaw);
+      if (ch_yaw > 1850) {
+        if (Arming_counter > ARM_DELAY){
+          if(ch_throttle > 800) {
+          motorArmed = 1;
+          minThrottle = MIN_THROTTLE+60;  // A minimun value for mantain a bit if throttle
+          }
+        }
+        else
+          Arming_counter++;
+      }
+      else
+        Arming_counter=0;
+      // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
+      if (ch_yaw < 1150) {
+        if (Disarming_counter > DISARM_DELAY){
+          motorArmed = 0;
+          minThrottle = MIN_THROTTLE;
+        }
+        else
+          Disarming_counter++;
+      }
+      else
+        Disarming_counter=0;
+    }
+    else{
+      Arming_counter=0;
+      Disarming_counter=0;
+    }
 }
 
 
 // Send output commands to ESC´s
 void motor_output()
 {
+  if (ch_throttle < (MIN_THROTTLE + 100))  // If throttle is low we disable yaw (neccesary to arm/disarm motors safely)
+    control_yaw = 0;
+   
   // Quadcopter mix
   if (motorArmed == 1) 
     {   

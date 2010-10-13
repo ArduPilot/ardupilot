@@ -167,7 +167,6 @@ void Rate_control_v2()
   previousYawRate = currentYawRate;
  
   // PID control
-  K_aux = KP_QUAD_YAW; // Comment this out if you want to use transmitter to adjust gain
   control_yaw = Kp_RateYaw*err_yaw + Kd_RateYaw*yaw_D + Ki_RateYaw*yaw_I; 
 }
 

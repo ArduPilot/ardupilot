@@ -81,3 +81,20 @@ void calibrateSensors(void) {
   for(gyro=GYROZ; gyro<=GYROY; gyro++)  
     AN_OFFSET[gyro]=aux_float[gyro];    // Update sensor OFFSETs from values read
 }
+
+#ifdef UseBMP
+void read_baro(void)
+{
+  float tempPresAlt;
+  
+  tempPresAlt = float(APM_BMP085.Press)/101325.0;
+  //tempPresAlt = pow(tempPresAlt, 0.190284);
+  //press_alt = (1.0 - tempPresAlt) * 145366.45;
+  tempPresAlt = pow(tempPresAlt, 0.190295);
+  if (press_alt==0)
+    press_alt = (1.0 - tempPresAlt) * 4433000;      // Altitude in cm
+  else
+    press_alt = press_alt*0.9 + ((1.0 - tempPresAlt) * 443300);  // Altitude in cm (filtered)
+}
+#endif
+

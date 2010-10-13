@@ -192,7 +192,7 @@ float command_rx_yaw_diff;
 int control_roll;           // PID control results
 int control_pitch;
 int control_yaw;
-float K_aux;
+//float K_aux;
 
 // Attitude PID controls
 float roll_I=0;
@@ -206,11 +206,9 @@ float yaw_D;
 float err_yaw;
 
 //Position control
-#ifdef IsGPS
 long target_longitude;
 long target_lattitude;
 byte target_position;
-#endif
 float gps_err_roll;
 float gps_err_roll_old;
 float gps_roll_D;
@@ -232,15 +230,8 @@ float altitude_I;
 float altitude_D;
 
 //Pressure Sensor variables
-#ifdef UseBMP
-unsigned long abs_press 	        = 0;    
-unsigned long abs_press_filt            = 0;
-unsigned long abs_press_gnd             = 0;
-int 	ground_temperature	        = 0;    // 
-int 	temp_unfilt			= 0;
-long 	ground_alt			= 0;	// Ground altitude from gps at startup in centimeters
-long 	press_alt			= 0;	// Pressure altitude 
-#endif
+long target_baro_altitude;
+long 	press_alt			= 0;
 
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO

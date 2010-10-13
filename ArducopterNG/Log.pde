@@ -277,7 +277,6 @@ void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long 
 	DataFlash.WriteLong(log_Ground_Speed);
 	DataFlash.WriteLong(log_Ground_Course);
 	DataFlash.WriteByte(END_BYTE);
-	DataFlash.WriteByte(END_BYTE);
 }
 #endif
 

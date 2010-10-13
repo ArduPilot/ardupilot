@@ -80,14 +80,14 @@
 #include "Arducopter.h"
 #include "ArduUser.h"
 
-// GPS
+// GPS library (Include only one library)
 #include <GPS_MTK.h>		// ArduPilot MTK GPS Library
 //#include <GPS_IMU.h>		// ArduPilot IMU/SIM GPS Library
 //#include <GPS_UBLOX.h>	// ArduPilot Ublox GPS Library
 //#include <GPS_NMEA.h> 	// ArduPilot NMEA GPS library
 
 /* Software version */
-#define VER 0.1    // Current software version (only numeric values)
+#define VER 1.5    // Current software version (only numeric values)
 
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
@@ -95,12 +95,10 @@
 
 byte flightMode;
 
-unsigned long currentTime, previousTime, deltaTime;
+unsigned long currentTime, previousTime;
 unsigned long mainLoop = 0;
-unsigned long sensorLoop = 0;
-unsigned long controlLoop = 0;
-unsigned long radioLoop = 0;
-unsigned long motorLoop = 0;
+unsigned long mediumLoop = 0;
+unsigned long slowLoop = 0;
 
 /* ************************************************************ */
 /* **************** MAIN PROGRAM - SETUP ********************** */
@@ -109,63 +107,54 @@ void setup() {
   
   APM_Init();    // APM Hardware initialization (in System.pde)
   
-  previousTime = millis();
+  mainLoop = millis();              // Initialize timers
+  mediumLoop = mainLoop;
+  GPS_timer = mainLoop;
   motorArmed = 0;
   Read_adc_raw();                   // Initialize ADC readings...
-  delay(20);
+  delay(10);
   digitalWrite(LED_Green,HIGH);     // Ready to go...  
 }
-
 
 
 /* ************************************************************ */
 /* ************** MAIN PROGRAM - MAIN LOOP ******************** */
 /* ************************************************************ */
 
-// fast rate
+// Sensor reading loop is inside APM_ADC and runs at 400Hz (based on Timer2 interrupt)
+
+// * fast rate loop => Main loop => 200Hz
 // read sensors
 // IMU : update attitude
 // motor control
-
-// medium rate
-// read transmitter
+// Asyncronous task : read transmitter
+// * medium rate loop (60Hz)
+// Asyncronous task : read GPS
+// * slow rate loop (10Hz)
 // magnetometer
-// barometer
-
-// slow rate
+// barometer (20Hz)
 // external command/telemetry
-// GPS
+// Battery monitor
 
 void loop()
 {
-  int aux;
-  int i;
-  float aux_float;
+  //int aux;
+  //int i;
+  //float aux_float;
 
   currentTime = millis();
-  //deltaTime = currentTime - previousTime;
-  //G_Dt = deltaTime / 1000.0;
-  //previousTime = currentTime;
-
-  // Sensor reading loop is inside APM_ADC and runs at 400Hz
+  
   // Main loop at 200Hz (IMU + control)
-  if (currentTime > (mainLoop + 5))    // 200Hz (every 5ms)
+  if ((currentTime-mainLoop) > 5)    // 200Hz (every 5ms)
     {
-    G_Dt = (currentTime-mainLoop) / 1000.0;   // Microseconds!!!
+    G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
     mainLoop = currentTime;
 
     //IMU DCM Algorithm
     Read_adc_raw();       // Read sensors raw data
     Matrix_update(); 
-    // Optimization: we don´t need to call this functions all the times
-    //if (IMU_cicle==0)
-    //  {
-      Normalize();          
-      Drift_correction();
-    //  IMU_cicle = 1;
-    //  }
-    //else
-    //  IMU_cicle = 0;
+    Normalize();          
+    Drift_correction();
     Euler_angles();
 
     // Read radio values (if new data is available)
@@ -175,12 +164,12 @@ void loop()
     // Attitude control
     if(flightMode == STABLE_MODE) {    // STABLE Mode
       gled_speed = 1200;
-      if (AP_mode == 0)           // Normal mode
+      if (AP_mode == AP_NORMAL_MODE)    // Normal mode
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
       else                        // Automatic mode : GPS position hold mode
         Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
       }
-    else {   // ACRO Mode
+    else {                 // ACRO Mode
       gled_speed = 400;
       Rate_control_v2();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
@@ -189,33 +178,90 @@ void loop()
 
     // Send output commands to motor ESCs...
     motor_output();
-
-    // Performance optimization: Magnetometer sensor and pressure sensor are slowly to read (I2C)
-    // so we read them at the end of the loop (all work is done in this loop run...)
-    #ifdef IsMAG
-    if (MAGNETOMETER == 1) {
-      if (MAG_counter > 20)  // Read compass data at 10Hz...
+    
+    // Autopilot mode functions
+    if (AP_mode == AP_AUTOMATIC_MODE)
       {
-        MAG_counter=0;
-        APM_Compass.Read();     // Read magnetometer
-        APM_Compass.Calculate(roll,pitch);  // Calculate heading
+      if (target_position)
+        {
+        if (GPS.NewData)     // New GPS info?
+          {
+          read_GPS_data();
+          Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
+          }
+        }
+      else   // First time we enter in GPS position hold we capture the target position as the actual position
+        {
+        if (GPS.Fix){   // We need a GPS Fix to capture the actual position...
+          target_lattitude = GPS.Lattitude;
+          target_longitude = GPS.Longitude;
+          target_position=1;
+          //target_sonar_altitude = sonar_value;
+          target_baro_altitude = press_alt;
+          Initial_Throttle = ch_throttle;
+          Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
+          }
+        command_gps_roll=0;
+        command_gps_pitch=0;
+        }
+      }
+    else
+      target_position=0;
+    }
+    
+    // Medium loop (about 60Hz) 
+    if ((currentTime-mediumLoop)>=17){
+      mediumLoop = currentTime;
+      GPS.Read();     // Read GPS data 
+      // Each of the six cases executes at 10Hz
+      switch (medium_loopCounter){
+        case 0:   // Magnetometer reading (10Hz)
+          medium_loopCounter++;
+          slowLoop++;
+          #ifdef IsMAG
+          if (MAGNETOMETER == 1) {
+            APM_Compass.Read();     // Read magnetometer
+            APM_Compass.Calculate(roll,pitch);  // Calculate heading
+          }
+          #endif
+          break;
+        case 1:  // Barometer reading (2x10Hz = 20Hz)
+          medium_loopCounter++;
+          #ifdef UseBMP
+          if (APM_BMP085.Read()){
+            read_baro();
+            Baro_new_data = 1;
+            }
+          #endif
+          break;
+        case 2:  // Send serial telemetry (10Hz)
+          medium_loopCounter++;
+          #ifdef CONFIGURATOR
+          sendSerialTelemetry();
+          #endif
+          break;
+        case 3:  // Read serial telemetry (10Hz)
+          medium_loopCounter++;
+          #ifdef CONFIGURATOR
+          readSerialCommand();
+          #endif
+          break;
+        case 4:  // second Barometer reading (2x10Hz = 20Hz)
+          medium_loopCounter++;
+          #ifdef UseBMP
+          if (APM_BMP085.Read()){
+            read_baro();
+            Baro_new_data = 1;
+            }
+          #endif
+          break;
+        case 5:  //  Battery monitor (10Hz)
+          medium_loopCounter=0;
+          #if BATTERY_EVENT == 1
+          read_battery();         // Battery monitor
+          #endif
+	  break;	
       }
     }
-    #endif
-    #ifdef UseBMP
-    #endif
-    
-    // Slow loop (10Hz)
-    if((currentTime-tlmTimer)>=100) {
-    //#if BATTERY_EVENT == 1
-    //  read_battery();         // Battery monitor
-    //#endif
-    #ifdef CONFIGURATOR
-      readSerialCommand();
-      sendSerialTelemetry();
-    #endif
-      tlmTimer = currentTime;   
-    } 
-  }
 }
  

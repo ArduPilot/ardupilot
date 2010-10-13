@@ -37,8 +37,8 @@ TODO:
 // Safety & Security 
 
 // Arm & Disarm delays
-#define ARM_DELAY 200      // milliseconds of how long you need to keep rudder to max right for arming motors
-#define DISARM_DELAY 100   // milliseconds of how long you need to keep rudder to max left for disarming motors
+#define ARM_DELAY 50      // how long you need to keep rudder to max right for arming motors (units*0.02, 50=1second)
+#define DISARM_DELAY 25   // how long you need to keep rudder to max left for disarming motors
 
 /*************************************************************/
 // AM Mode & Flight information 
@@ -83,6 +83,8 @@ TODO:
 //Modes
 #define STABLE_MODE 0
 #define ACRO_MODE 1
+#define AP_NORMAL_MODE 0       // AP disabled => manual flight
+#define AP_AUTOMATIC_MODE 1    // AP Enabled  => Automatic mode (GPS position hold)
 
 //Axis
 #define ROLL 0

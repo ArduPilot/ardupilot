@@ -42,11 +42,16 @@ void APM_Init() {
   pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
   pinMode(RELE_pin,OUTPUT);   // Rele output
   digitalWrite(RELE_pin,LOW);
-
-  //  delay(1000); // Wait until frame is not moving after initial power cord has connected
-  FullBlink(50,20);
-
+ 
   APM_RC.Init();             // APM Radio initialization
+  // RC channels Initialization (Quad motors)  
+  APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
+  APM_RC.OutputCh(1,MIN_THROTTLE);
+  APM_RC.OutputCh(2,MIN_THROTTLE);
+  APM_RC.OutputCh(3,MIN_THROTTLE);
+  
+  FullBlink(50,20);
+  
   APM_ADC.Init();            // APM ADC library initialization
   DataFlash.Init();          // DataFlash log initialization
 
