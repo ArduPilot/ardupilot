@@ -2,6 +2,7 @@
 /*
 	GPS_NMEA.cpp - Generic NMEA GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+	Edits by HappyKillmore
 	This code works with boards based on ATMega168 / 328 and ATMega1280 (Serial port 1)
 
 	This library is free software; you can redistribute it and / or
@@ -50,6 +51,12 @@ void
 AP_GPS_NMEA::init(void)
 {
 	//Type = 2;
+	// initialize serial port for binary protocol use
+	_port->print(NMEA_OUTPUT_SENTENCES);
+	_port->print(NMEA_OUTPUT_4HZ);
+	_port->print(SBAS_ON);
+	_port->print(DGPS_SBAS);
+	_port->print(DATUM_GOOGLE);
 }
 
 // This code don´t wait for data, only proccess the data available on serial port
@@ -79,7 +86,7 @@ AP_GPS_NMEA::update(void)
 				parse_nmea_gps();
 			} else {
 				if (bufferidx < (GPS_BUFFERSIZE - 1)){
-					if (c == ' * ')
+					if (c == '*')
 						GPS_checksum_calc = false;		// Checksum calculation end
 					buffer[bufferidx++] = c;
 					if (GPS_checksum_calc){
@@ -112,33 +119,33 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 			if (GPS_checksum == NMEA_check){			// Checksum validation
 				//Serial.println("buffer");
 				new_data = 1;	// New GPS Data
-				parseptr = strchr(buffer, ', ')+1;
+				parseptr = strchr(buffer, ',')+1;
 				//parseptr = strchr(parseptr, ',')+1;
 				time = parsenumber(parseptr, 2);					// GPS UTC time hhmmss.ss
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				//
 				aux_deg = parsedecimal(parseptr, 2);			// degrees
 				aux_min = parsenumber(parseptr + 2, 4);		 // minutes (sexagesimal) => Convert to decimal
 				latitude = aux_deg * 10000000 + (aux_min * 50) / 3;	 // degrees + minutes / 0.6	( * 10000000) (0.6 = 3 / 5)
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				if ( * parseptr == 'S')
 					latitude = -1 * latitude;							// South latitudes are negative
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				// W longitudes are Negative
 				aux_deg = parsedecimal(parseptr, 3);			// degrees
 				aux_min = parsenumber(parseptr + 3, 4);		 // minutes (sexagesimal)
 				longitude = aux_deg * 10000000 + (aux_min * 50) / 3;	// degrees + minutes / 0.6 ( * 10000000)
 				//longitude = -1*longitude;									 // This Assumes that we are in W longitudes...
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				if ( * parseptr == 'W')
 					longitude = -1 * longitude;							// West longitudes are negative
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				fix = parsedecimal(parseptr, 1);
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				num_sats = parsedecimal(parseptr, 2);
-				parseptr = strchr(parseptr, ', ')+1; 
+				parseptr = strchr(parseptr, ',')+1; 
 				HDOP = parsenumber(parseptr, 1);					// HDOP * 10
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				altitude = parsenumber(parseptr, 1) * 100;	// altitude in decimeters * 100 = milimeters
 				if (fix < 1)
 					quality = 0;			// No FIX
@@ -159,14 +166,14 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
 			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
 			if (GPS_checksum == NMEA_check){			// Checksum validation
-				parseptr = strchr(buffer, ', ')+1;
+				parseptr = strchr(buffer, ',')+1;
 				ground_course = parsenumber(parseptr, 2);			// Ground course in degrees * 100
-				parseptr = strchr(parseptr, ', ')+1;
-				parseptr = strchr(parseptr, ', ')+1;
-				parseptr = strchr(parseptr, ', ')+1;
-				parseptr = strchr(parseptr, ', ')+1;
-				parseptr = strchr(parseptr, ', ')+1;
-				parseptr = strchr(parseptr, ', ')+1;
+				parseptr = strchr(parseptr, ',')+1;
+				parseptr = strchr(parseptr, ',')+1;
+				parseptr = strchr(parseptr, ',')+1;
+				parseptr = strchr(parseptr, ',')+1;
+				parseptr = strchr(parseptr, ',')+1;
+				parseptr = strchr(parseptr, ',')+1;
 				ground_speed = parsenumber(parseptr, 2) * 10 / 36; // Convert Km / h to m / s ( * 100)
 				//GPS_line = true;
 			} else {
