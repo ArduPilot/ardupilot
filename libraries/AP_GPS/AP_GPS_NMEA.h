@@ -25,11 +25,11 @@
 #define WAAS_ON			"$PSRF151,1*3F\r\n"
 #define WAAS_OFF		"$PSRF151,0*3E\r\n"
 
-#define DGPS_OFF "$PMTK301,0*2C\r\n"
-#define DGPS_RTCM "$PMTK301,1*2D\r\n"
-#define DGPS_SBAS "$PMTK301,2*2E\r\n"
+#define DGPS_OFF		"$PMTK301,0*2C\r\n"
+#define DGPS_RTCM		"$PMTK301,1*2D\r\n"
+#define DGPS_SBAS		"$PMTK301,2*2E\r\n"
 
-#define DATUM_GOOGLE "$PMTK330,0*2E\r\n"
+#define DATUM_GOOGLE		"$PMTK330,0*2E\r\n"
 
 class AP_GPS_NMEA : public GPS
 {
