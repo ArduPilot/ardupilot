@@ -10,8 +10,18 @@
 
 static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
-GPS *
-AP_GPS_Auto::detect(void)
+void
+AP_GPS_Auto::init(void)
+{
+}
+
+//
+// Called the first time that a client tries to kick the GPS to update.
+//
+// We detect the real GPS, then update the pointer we have been called through
+// and return.
+void
+AP_GPS_Auto::update(void)
 {
 	GPS		*gps;
 	int		i;
@@ -20,10 +30,21 @@ AP_GPS_Auto::detect(void)
 	for (;;) {
 		// loop through possible baudrates
 		for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
-			printf("autodetect at %d:%u\n", i, baudrates[i]);
+			printf("GPS autodetect at %d:%u\n", i, baudrates[i]);
 			_port->begin(baudrates[i]);
-			if (NULL != (gps = _detect()))
-				return(gps);
+			if (NULL != (gps = _detect())) {
+				// make the detected GPS the default
+				*_gps = gps;
+				
+				// configure the detected GPS and run one update
+				gps->print_errors = true;	// XXX
+				gps->init();
+				gps->update();
+
+				// drop back to our caller - subsequent calls through
+				// the global will not come here
+				return;
+			}
 		}
 	}
 }
@@ -128,12 +149,6 @@ AP_GPS_Auto::_detect(void)
 			gps = new AP_GPS_NMEA(_port);
 			break;
 		}
-	}
-
-	// If we detected a GPS, call its init routine
-	if (NULL != gps) {
-		gps->print_errors = true;	// XXX
-		gps->init();
 	}
 	return(gps);
 }

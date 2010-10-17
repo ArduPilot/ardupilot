@@ -4,15 +4,21 @@
 
 #include <FastSerial.h>
 #include <AP_GPS.h>
+#include <stdlib.h>
 
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);
 
 GPS	    *gps;
-AP_GPS_Auto GPS(&Serial1);
+AP_GPS_Auto GPS(&Serial1, &gps);
 
 #define T6 1000000
 #define T7 10000000
+
+void * operator new(size_t size) 
+{
+	return(calloc(size, 1));
+}
 
 void setup()
 {
@@ -20,7 +26,8 @@ void setup()
 	Serial1.begin(38400);
 
 	Serial.println("GPS AUTO library test");
-	gps = GPS.detect();		 // GPS Initialization
+	gps = &GPS;
+	gps->init();
 	delay(1000);
 }
 void loop()
