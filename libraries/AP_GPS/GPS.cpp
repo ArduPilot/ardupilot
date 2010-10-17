@@ -4,13 +4,9 @@
 #include "WProgram.h"
 #include <stdio.h>
 
-void
-GPS::_setTime(void){
-	_lastTime = millis();
-}
-
 int
-GPS::status(void){
+GPS::status(void)
+{
 	if (millis() - _lastTime >= 500){
 		return 0;
 	} else if (fix == 0) {
@@ -18,6 +14,12 @@ GPS::status(void){
 	} else {
 		return 2;
 	}
+}
+
+void
+GPS::_setTime(void)
+{
+	_lastTime = millis();
 }
 
 void

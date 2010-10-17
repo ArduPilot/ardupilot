@@ -130,11 +130,7 @@ restart:
 void 
 AP_GPS_MTK::_parse_gps(void)
 {
-	if (_buffer.msg.fix_type-1 >= 1){
-		fix = true;
-	} else {
-		fix = false;
-	}
+	fix				= (_buffer.msg.fix_type == FIX_3D);
 	latitude		= _swapl(&_buffer.msg.latitude)  * 10;
 	longitude		= _swapl(&_buffer.msg.longitude) * 10;
 	altitude		= _swapl(&_buffer.msg.altitude);

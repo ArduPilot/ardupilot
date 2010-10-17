@@ -31,6 +31,8 @@ public:
 	/// This routine performs any one-off initialisation required to set the
 	/// GPS up for use.
 	///
+	/// Must be implemented by the GPS driver.
+	///
 	/// @param	s	Stream connected to the GPS module.  If NULL, assumed to
 	///				have been set up at constructor time.
 	///
@@ -40,7 +42,22 @@ public:
 	///
 	/// This routine must be called periodically to process incoming data.
 	///
+	/// Must be implemented by the GPS driver.
+	///
 	virtual void	update(void) = 0;
+
+	/// Query GPS status
+	///
+	/// The 'valid message' status indicates that a recognised message was
+	/// received from the GPS within the last 500ms.
+	///
+	/// @todo should probably return an enumeration here.
+	///
+	/// @return	0			No GPS connected/detected
+	/// @return 1			Receiving valid GPS messages but no lock
+	/// @return 2			Receiving valid messages and locked
+	///
+	int				status(void);
 
 	// Properties
 	long	time;			///< GPS time in milliseconds from the start of the week
@@ -51,20 +68,26 @@ public:
 	long	ground_course;	///< ground course in 100ths of a degree
 	long	speed_3d;		///< 3D speed in cm/sec (not always available)
 	uint8_t num_sats;		///< Number of visible satelites
-	bool	fix;			///< true if we have a position fix
-	
+
 	/// Set to true when new data arrives.  A client may set this
 	/// to false in order to avoid processing data they have
 	/// already seen.
 	bool	new_data;
-	bool	valid_read;
 
-	int	status(void);		///< 0 = Not Connected, 1 = Receiving Valid Messages but No Lock, 2 = Locked
+	// Deprecated properties
+	bool	fix;			///< true if we have a position fix (use ::status instead)
+	bool	valid_read;		///< true if we have seen data from the GPS (use ::status instead)
 
+	// Debug support
 	bool	print_errors; 	///< if true, errors will be printed to stderr
 
 protected:
-	Stream	*_port;			///< stream port the GPS is attached to
+	Stream	*_port;				///< stream port the GPS is attached to
+	unsigned long _lastTime;	///< Timer for lost connection
+
+	/// reset the last-message-received timer used by ::status
+	///
+	void	_setTime(void);
 
 	/// perform an endian swap on a long
 	///
@@ -73,10 +96,6 @@ protected:
 	/// @returns			endian-swapped value
 	///
 	long	_swapl(const void *bytes);
-
-	unsigned long _lastTime;	///< Timer for lost connection
-
-	void	_setTime(void);
 
 	/// perform an endian swap on an int
 	///
