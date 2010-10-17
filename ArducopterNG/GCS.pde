@@ -44,7 +44,7 @@ TODO:
 void send_message(byte severity, const char *str)		// This is the instance of send_message for message 0x05
 {
 	if(severity >= DEBUG_LEVEL){
-		SerPr("MSG: ");
+		SerPri("MSG: ");
 		SerPrln(str);
 	}
 }
@@ -60,8 +60,8 @@ void send_message(byte severity, const char *str)		// This is the instance of se
 //
 void readSerialCommand() {
   // Check for serial message
-  if (SerAv()) {
-    queryType = SerRe();
+  if (SerAva()) {
+
     switch (queryType) {
     case 'A': // Stable PID
       KP_QUAD_ROLL = readFloatSerial();
@@ -154,112 +154,112 @@ void sendSerialTelemetry() {
   float aux_float[3]; // used for sensor calibration
   switch (queryType) {
   case '=': // Reserved debug command to view any variable from Serial Monitor
-/*    SerPr("throttle =");
+/*    SerPri(("throttle =");
     SerPrln(ch_throttle);
-    SerPr("control roll =");
+    SerPri("control roll =");
     SerPrln(control_roll-CHANN_CENTER);
-    SerPr("control pitch =");
+    SerPri("control pitch =");
     SerPrln(control_pitch-CHANN_CENTER);
-    SerPr("control yaw =");
+    SerPri("control yaw =");
     SerPrln(control_yaw-CHANN_CENTER);
-    SerPr("front left yaw =");
+    SerPri("front left yaw =");
     SerPrln(frontMotor);
-    SerPr("front right yaw =");
+    SerPri("front right yaw =");
     SerPrln(rightMotor);
-    SerPr("rear left yaw =");
+    SerPri("rear left yaw =");
     SerPrln(leftMotor);
-    SerPr("rear right motor =");
+    SerPri("rear right motor =");
     SerPrln(backMotor);
     SerPrln();
 
-    SerPr("current roll rate =");
+    SerPri("current roll rate =");
     SerPrln(read_adc(0));
-    SerPr("current pitch rate =");
+    SerPri("current pitch rate =");
     SerPrln(read_adc(1));
-    SerPr("current yaw rate =");
+    SerPri("current yaw rate =");
     SerPrln(read_adc(2));
-    SerPr("command rx yaw =");
+    SerPri("command rx yaw =");
     SerPrln(command_rx_yaw);
     SerPrln(); 
     queryType = 'X';*/
-    SerPr(APM_RC.InputCh(0));
+    SerPri(APM_RC.InputCh(0));
     comma();
-    SerPr(ch_roll_slope);
+    SerPri(ch_roll_slope);
     comma();
-    SerPr(ch_roll_offset);
+    SerPri(ch_roll_offset);
     comma();
     SerPrln(ch_roll);
     break;
   case 'B': // Send roll, pitch and yaw PID values
-    SerPr(KP_QUAD_ROLL, 3);
+    SerPri(KP_QUAD_ROLL, 3);
     comma();
-    SerPr(KI_QUAD_ROLL, 3);
+    SerPri(KI_QUAD_ROLL, 3);
     comma();
-    SerPr(STABLE_MODE_KP_RATE_ROLL, 3);
+    SerPri(STABLE_MODE_KP_RATE_ROLL, 3);
     comma();
-    SerPr(KP_QUAD_PITCH, 3);
+    SerPri(KP_QUAD_PITCH, 3);
     comma();
-    SerPr(KI_QUAD_PITCH, 3);
+    SerPri(KI_QUAD_PITCH, 3);
     comma();
-    SerPr(STABLE_MODE_KP_RATE_PITCH, 3);
+    SerPri(STABLE_MODE_KP_RATE_PITCH, 3);
     comma();
-    SerPr(KP_QUAD_YAW, 3);
+    SerPri(KP_QUAD_YAW, 3);
     comma();
-    SerPr(KI_QUAD_YAW, 3);
+    SerPri(KI_QUAD_YAW, 3);
     comma();
-    SerPr(STABLE_MODE_KP_RATE_YAW, 3);
+    SerPri(STABLE_MODE_KP_RATE_YAW, 3);
     comma();
-    SerPr(STABLE_MODE_KP_RATE, 3);    // NOT USED NOW
+    SerPri(STABLE_MODE_KP_RATE, 3);    // NOT USED NOW
     comma();
     SerPrln(MAGNETOMETER, 3);
     queryType = 'X';
     break;
   case 'D': // Send GPS PID
-    SerPr(KP_GPS_ROLL, 3);
+    SerPri(KP_GPS_ROLL, 3);
     comma();
-    SerPr(KI_GPS_ROLL, 3);
+    SerPri(KI_GPS_ROLL, 3);
     comma();
-    SerPr(KD_GPS_ROLL, 3);
+    SerPri(KD_GPS_ROLL, 3);
     comma();
-    SerPr(KP_GPS_PITCH, 3);
+    SerPri(KP_GPS_PITCH, 3);
     comma();
-    SerPr(KI_GPS_PITCH, 3);
+    SerPri(KI_GPS_PITCH, 3);
     comma();
-    SerPr(KD_GPS_PITCH, 3);
+    SerPri(KD_GPS_PITCH, 3);
     comma();
-    SerPr(GPS_MAX_ANGLE, 3);
+    SerPri(GPS_MAX_ANGLE, 3);
     comma();
     SerPrln(GEOG_CORRECTION_FACTOR, 3);
     queryType = 'X';
     break;
   case 'F': // Send altitude PID
-    SerPr(KP_ALTITUDE, 3);
+    SerPri(KP_ALTITUDE, 3);
     comma();
-    SerPr(KI_ALTITUDE, 3);
+    SerPri(KI_ALTITUDE, 3);
     comma();
     SerPrln(KD_ALTITUDE, 3);
     queryType = 'X';
     break;
   case 'H': // Send drift correction PID
-    SerPr(Kp_ROLLPITCH, 4);
+    SerPri(Kp_ROLLPITCH, 4);
     comma();
-    SerPr(Ki_ROLLPITCH, 7);
+    SerPri(Ki_ROLLPITCH, 7);
     comma();
-    SerPr(Kp_YAW, 4);
+    SerPri(Kp_YAW, 4);
     comma();
     SerPrln(Ki_YAW, 6);
     queryType = 'X';
     break;
   case 'J': // Send sensor offset
-    SerPr(gyro_offset_roll);
+    SerPri(gyro_offset_roll);
     comma();
-    SerPr(gyro_offset_pitch);
+    SerPri(gyro_offset_pitch);
     comma();
-    SerPr(gyro_offset_yaw);
+    SerPri(gyro_offset_yaw);
     comma();
-    SerPr(acc_offset_x);
+    SerPri(acc_offset_x);
     comma();
-    SerPr(acc_offset_y);
+    SerPri(acc_offset_y);
     comma();
     SerPrln(acc_offset_z);
     AN_OFFSET[3] = acc_offset_x;
@@ -275,101 +275,101 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   case 'P': // Send rate control PID
-    SerPr(Kp_RateRoll, 3);
+    SerPri(Kp_RateRoll, 3);
     comma();
-    SerPr(Ki_RateRoll, 3);
+    SerPri(Ki_RateRoll, 3);
     comma();
-    SerPr(Kd_RateRoll, 3);
+    SerPri(Kd_RateRoll, 3);
     comma();
-    SerPr(Kp_RatePitch, 3);
+    SerPri(Kp_RatePitch, 3);
     comma();
-    SerPr(Ki_RatePitch, 3);
+    SerPri(Ki_RatePitch, 3);
     comma();
-    SerPr(Kd_RatePitch, 3);
+    SerPri(Kd_RatePitch, 3);
     comma();
-    SerPr(Kp_RateYaw, 3);
+    SerPri(Kp_RateYaw, 3);
     comma();
-    SerPr(Ki_RateYaw, 3);
+    SerPri(Ki_RateYaw, 3);
     comma();
-    SerPr(Kd_RateYaw, 3);
+    SerPri(Kd_RateYaw, 3);
     comma();
     SerPrln(xmitFactor, 3);
     queryType = 'X';
     break;
   case 'Q': // Send sensor data
-    SerPr(read_adc(0));
+    SerPri(read_adc(0));
     comma();
-    SerPr(read_adc(1));
+    SerPri(read_adc(1));
     comma();
-    SerPr(read_adc(2));
+    SerPri(read_adc(2));
     comma();
-    SerPr(read_adc(4));
+    SerPri(read_adc(4));
     comma();
-    SerPr(read_adc(3));
+    SerPri(read_adc(3));
     comma();
-    SerPr(read_adc(5));
+    SerPri(read_adc(5));
     comma();
-    SerPr(err_roll);
+    SerPri(err_roll);
     comma();
-    SerPr(err_pitch);
+    SerPri(err_pitch);
     comma();
-    SerPr(degrees(roll));
+    SerPri(degrees(roll));
     comma();
-    SerPr(degrees(pitch));
+    SerPri(degrees(pitch));
     comma();
     SerPrln(degrees(yaw));
     break;
   case 'R': // Send raw sensor data
     break;
   case 'S': // Send all flight data
-    SerPr(timer-timer_old);
+    SerPri(timer-timer_old);
     comma();
-    SerPr(read_adc(0));
+    SerPri(read_adc(0));
     comma();
-    SerPr(read_adc(1));
+    SerPri(read_adc(1));
     comma();
-    SerPr(read_adc(2));
+    SerPri(read_adc(2));
     comma();
-    SerPr(ch_throttle);
+    SerPri(ch_throttle);
     comma();
-    SerPr(control_roll);
+    SerPri(control_roll);
     comma();
-    SerPr(control_pitch);
+    SerPri(control_pitch);
     comma();
-    SerPr(control_yaw);
+    SerPri(control_yaw);
     comma();
-    SerPr(frontMotor); // Front Motor
+    SerPri(frontMotor); // Front Motor
     comma();
-    SerPr(backMotor); // Back Motor
+    SerPri(backMotor); // Back Motor
     comma();
-    SerPr(rightMotor); // Right Motor
+    SerPri(rightMotor); // Right Motor
     comma();
-    SerPr(leftMotor); // Left Motor
+    SerPri(leftMotor); // Left Motor
     comma();
-    SerPr(read_adc(4));
+    SerPri(read_adc(4));
     comma();
-    SerPr(read_adc(3));
+    SerPri(read_adc(3));
     comma();
     SerPrln(read_adc(5));
     break;
   case 'T': // Spare
     break;
   case 'U': // Send receiver values
-    SerPr(ch_roll); // Aileron
+    SerPri(ch_roll); // Aileron
     comma();
-    SerPr(ch_pitch); // Elevator
+    SerPri(ch_pitch); // Elevator
     comma();
-    SerPr(ch_yaw); // Yaw
+    SerPri(ch_yaw); // Yaw
     comma();
-    SerPr(ch_throttle); // Throttle
+    SerPri(ch_throttle); // Throttle
     comma();
-    SerPr(ch_aux); // AUX1 (Mode)
+    SerPri(ch_aux); // AUX1 (Mode)
     comma();
-    SerPr(ch_aux2); // AUX2 
+    SerPri(ch_aux2); // AUX2 
     comma();
-    SerPr(roll_mid); // Roll MID value
+    SerPri(roll_mid); // Roll MID value
     comma();
-    SerPr(pitch_mid); // Pitch MID value
+    SerPri(pitch_mid); // Pitch MID value
     comma();
     SerPrln(yaw_mid); // Yaw MID Value
     break;
@@ -382,27 +382,27 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   case '2': // Send transmitter calibration values
-    SerPr(ch_roll_slope);
+    SerPri(ch_roll_slope);
     comma();
-    SerPr(ch_roll_offset);
+    SerPri(ch_roll_offset);
     comma();
-    SerPr(ch_pitch_slope);
+    SerPri(ch_pitch_slope);
     comma();
-    SerPr(ch_pitch_offset);
+    SerPri(ch_pitch_offset);
     comma();
-    SerPr(ch_yaw_slope);
+    SerPri(ch_yaw_slope);
     comma();
-    SerPr(ch_yaw_offset);
+    SerPri(ch_yaw_offset);
     comma();
-    SerPr(ch_throttle_slope);
+    SerPri(ch_throttle_slope);
     comma();
-    SerPr(ch_throttle_offset);
+    SerPri(ch_throttle_offset);
     comma();
-    SerPr(ch_aux_slope);
+    SerPri(ch_aux_slope);
     comma();
-    SerPr(ch_aux_offset);
+    SerPri(ch_aux_offset);
     comma();
-    SerPr(ch_aux2_slope);
+    SerPri(ch_aux2_slope);
     comma();
     SerPrln(ch_aux2_offset);
     queryType = 'X';
@@ -414,7 +414,7 @@ void sendSerialTelemetry() {
 }
 
 void comma() {
-  SerPr(',');
+  SerPri(',');
 }
 
 
@@ -425,12 +425,12 @@ float readFloatSerial() {
   char data[128] = "";
 
   do {
-    if (SerAv() == 0) {
+    if (SerAva() == 0) {
       delay(10);
       timeout++;
     }
     else {
-      data[index] = SerRe();
+      data[index] = SerRea();
       timeout = 0;
       index++;
     }

@@ -54,7 +54,10 @@
 #define CONFIGURATOR
 
 // Serial data, do we have FTDI cable or Xbee on Telemetry port as our primary command link
-#define Ser0          // FTDI/USB Port  Either one
+// If we are using normal FTDI/USB port as our telemetry/configuration, comment out next line
+//#define SerXbee
+
+//#define Ser0          // FTDI/USB Port  Either one
 //#define Ser3          // Telemetry port
 
 // Frame build condiguration

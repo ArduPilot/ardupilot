@@ -44,7 +44,7 @@ TODO:
 #define SW1_pin 41
 #define SW2_pin 40
 
-//#define VDIV1 AN1
+//#define VDIV1 AN1  // Insert correct PIN values for these, JP/17-10-10
 //#define VDIV2 AN2
 //#define VDIV3 AN3
 //#define VDIV4 AN4
@@ -60,33 +60,45 @@ TODO:
 #define B_LED_PIN 36
 #define C_LED_PIN 35
 
+#define DIP1    // Insert correct PIN values for these, JP/17-10-10
+#define DIP2
+#define DIP3
+#define DIP4
+
 #define EE_LAST_LOG_PAGE 0xE00
 #define EE_LAST_LOG_NUM 0xE02
 #define EE_LOG_1_START 0xE04
 
 // Serial ports
-#define SERIAL0_BAUD 38400		// this is the main USB out 38400 57600 115200
+#define SERIAL0_BAUD 38400      // this is the main USB out 38400 57600 115200
 #define SERIAL1_BAUD 115200
 #define SERIAL2_BAUD 115200
 #define SERIAL3_BAUD 115200
 
-
-#ifdef Ser3
-#define SerPr Serial3.print
+#ifdef SerXbee                  // Xbee/Telemetry port 
+#define SerPri  Serial3.print
 #define SerPrln Serial3.println
-#define SerRe Serial3.read
-#define SerAv Serial3.available
+#define SerRea  Serial3.read
+#define SerAva  Serial3.available
+#define SerRea  Serial3.read
+#define SerFlu  Serial3.flush
+#define SerBeg  Serial3.begin
+#define SerPor  "FTDI"
 #endif
 
-
-#ifndef SerPr
-#define Ser10
+#ifndef SerPri              // If we don't have SerPri set yet, it means we have are using Serial0
+#define SerUSB
 #endif
-#ifdef Ser10
-#define SerPr Serial.print
+
+#ifdef SerUSB                 // Defines for normal Serial0 port
+#define SerPri  Serial.print
 #define SerPrln Serial.println
-#define SerRe Serial.read
-#define SerAv Serial.available
+#define SerRea  Serial.read
+#define SerAva  Serial.available
+#define SerRea  Serial.read
+#define SerFlu  Serial.flush
+#define SerBeg  Serial.begin
+#define SerPor  "Telemetry"
 #endif
 
 // IMU definitions
@@ -98,6 +110,7 @@ int SENSOR_SIGN[]={
   1, -1, -1,    -1, 1, 1,     -1, -1, -1}; 
  //{-1,1,-1,1,-1,1,-1,-1,-1};
 /* APM Hardware definitions, END */
+
 
 /* General definitions */
 #define TRUE 1
