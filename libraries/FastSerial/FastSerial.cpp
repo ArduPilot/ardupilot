@@ -116,6 +116,18 @@ FastSerial::FastSerial(const uint8_t portNumber,
 
 void FastSerial::begin(long baud)
 {
+        unsigned int    rxb, txb;
+
+        // If we are re-configuring an already-open port, preserve the
+        // existing buffer sizes.
+        if (_open) {
+                rxb = _rxBuffer->mask + 1;
+                txb = _txBuffer->mask + 1;
+        } else {
+                rxb = RX_BUFFER_SIZE;
+                txb = TX_BUFFER_SIZE;
+        }
+
         begin(baud, RX_BUFFER_SIZE, TX_BUFFER_SIZE);
 }
 
