@@ -85,9 +85,14 @@ void APM_Init() {
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
-  Serial.begin(115200);
-  //Serial.println("ArduCopter Quadcopter v1.0");
+//  Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
 
+  //Serial.println("ArduCopter Quadcopter v1.0");
+ 
+  // Proper Serial port/baud are defined on main .pde and then Arducopter.h with
+  // Choises of Xbee or 
+  SerBeg(SerBau);
+  
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
   while (digitalRead(SW1_pin)==0)
@@ -126,5 +131,6 @@ void APM_Init() {
   digitalWrite(RI_LED, HIGH);
   digitalWrite(LE_LED, HIGH); 
 #endif
+
 }
 

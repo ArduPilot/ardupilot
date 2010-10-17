@@ -75,7 +75,8 @@ TODO:
 #define SERIAL2_BAUD 115200
 #define SERIAL3_BAUD 115200
 
-#ifdef SerXbee                  // Xbee/Telemetry port 
+#ifdef SerXbee               // Xbee/Telemetry port 
+//#define SerBau  115200      // Baud setting moved close next to port selection
 #define SerPri  Serial3.print
 #define SerPrln Serial3.println
 #define SerRea  Serial3.read
@@ -86,11 +87,8 @@ TODO:
 #define SerPor  "FTDI"
 #endif
 
-#ifndef SerPri              // If we don't have SerPri set yet, it means we have are using Serial0
-#define SerUSB
-#endif
-
-#ifdef SerUSB                 // Defines for normal Serial0 port
+#ifndef SerXbee              // If we don't have SerXbee set, it means we have are using Serial0
+//#define SerBau  115200      // Baud setting moved close next to port selection
 #define SerPri  Serial.print
 #define SerPrln Serial.println
 #define SerRea  Serial.read

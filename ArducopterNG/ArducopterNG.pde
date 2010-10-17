@@ -6,9 +6,9 @@
  File     : ArducopterNG.pde
  Version  : v1.0, 11 October 2010
  Author(s): ArduCopter Team
-             Ted Carancho (AeroQuad), Jose Julio, Jordi Muñoz,
-             Jani Hirvinen, Ken McEwans, Roberto Navoni,          
-             Sandro Benigno, Chris Anderson
+ Ted Carancho (AeroQuad), Jose Julio, Jordi Muñoz,
+ Jani Hirvinen, Ken McEwans, Roberto Navoni,          
+ Sandro Benigno, Chris Anderson
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+ 
 /* ********************************************************************** */
 /* Hardware : ArduPilot Mega + Sensor Shield (Production versions)        */
 /* Mounting position : RC connectors pointing backwards                   */
@@ -45,24 +45,40 @@
 //#define IsGPS       // Do we have a GPS connected
 //#define IsNEWMTEK   // Do we have MTEK with new firmware
 //#define IsMAG         // Do we have a Magnetometer connected, if have remember to activate it from Configurator
-//#define IsTEL       // Do we have a telemetry connected, eg. XBee connected on Telemetry port
-//#define IsAM          // Do we have motormount LED's. AM = Atraction Mode
+//LEGACY-jp #define IsTEL       // Do we have a telemetry connected, eg. XBee connected on Telemetry port
+#define IsAM          // Do we have motormount LED's. AM = Atraction Mode
+
 //#define UseAirspeed
+
 //#define UseBMP
-//#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it wired up!)
+
+//#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it _wired_ up!)
 
 #define CONFIGURATOR
 
+
+////////////////////
+// Telemetry
+
 // Serial data, do we have FTDI cable or Xbee on Telemetry port as our primary command link
-// If we are using normal FTDI/USB port as our telemetry/configuration, comment out next line
+// If we are using normal FTDI/USB port as our telemetry/configuration, disable next
 //#define SerXbee
 
-//#define Ser0          // FTDI/USB Port  Either one
-//#define Ser3          // Telemetry port
+// Telemetry port speed, default is 115200
+#define SerBau  115200
+
+
+
+//////////////////////
+// Flight orientation
 
 // Frame build condiguration
 #define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
 //#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
+
+
+
+
 
 /* ************************************************************ */
 /* **************** MAIN PROGRAM - INCLUDES ******************* */
@@ -92,6 +108,7 @@
 /* Software version */
 #define VER 1.5    // Current software version (only numeric values)
 
+
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
 /* ************************************************************ */
@@ -107,9 +124,9 @@ unsigned long slowLoop = 0;
 /* **************** MAIN PROGRAM - SETUP ********************** */
 /* ************************************************************ */
 void setup() {
-  
+
   APM_Init();    // APM Hardware initialization (in System.pde)
-  
+
   mainLoop = millis();              // Initialize timers
   mediumLoop = mainLoop;
   GPS_timer = mainLoop;
@@ -146,10 +163,10 @@ void loop()
   //float aux_float;
 
   currentTime = millis();
-  
+
   // Main loop at 200Hz (IMU + control)
   if ((currentTime-mainLoop) > 5)    // 200Hz (every 5ms)
-    {
+  {
     G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
     mainLoop = currentTime;
 
@@ -170,31 +187,31 @@ void loop()
       if (AP_mode == AP_NORMAL_MODE)    // Normal mode
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
       else                        // Automatic mode : GPS position hold mode
-        Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
-      }
+      Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
+    }
     else {                 // ACRO Mode
       gled_speed = 400;
       Rate_control_v2();
       // Reset yaw, so if we change to stable mode we continue with the actual yaw direction
       command_rx_yaw = ToDeg(yaw);
-      }
+    }
 
     // Send output commands to motor ESCs...
     motor_output();
-    
+
     // Autopilot mode functions
     if (AP_mode == AP_AUTOMATIC_MODE)
-      {
+    {
       if (target_position)
-        {
+      {
         if (GPS.NewData)     // New GPS info?
-          {
+        {
           read_GPS_data();
           Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
-          }
         }
+      }
       else   // First time we enter in GPS position hold we capture the target position as the actual position
-        {
+      {
         if (GPS.Fix){   // We need a GPS Fix to capture the actual position...
           target_lattitude = GPS.Lattitude;
           target_longitude = GPS.Longitude;
@@ -203,68 +220,90 @@ void loop()
           target_baro_altitude = press_alt;
           Initial_Throttle = ch_throttle;
           Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
-          }
+        }
         command_gps_roll=0;
         command_gps_pitch=0;
-        }
       }
+    }
     else
       target_position=0;
-    }
-    
-    // Medium loop (about 60Hz) 
-    if ((currentTime-mediumLoop)>=17){
-      mediumLoop = currentTime;
-      GPS.Read();     // Read GPS data 
-      // Each of the six cases executes at 10Hz
-      switch (medium_loopCounter){
-        case 0:   // Magnetometer reading (10Hz)
-          medium_loopCounter++;
-          slowLoop++;
-          #ifdef IsMAG
-          if (MAGNETOMETER == 1) {
-            APM_Compass.Read();     // Read magnetometer
-            APM_Compass.Calculate(roll,pitch);  // Calculate heading
-          }
-          #endif
-          break;
-        case 1:  // Barometer reading (2x10Hz = 20Hz)
-          medium_loopCounter++;
-          #ifdef UseBMP
-          if (APM_BMP085.Read()){
-            read_baro();
-            Baro_new_data = 1;
-            }
-          #endif
-          break;
-        case 2:  // Send serial telemetry (10Hz)
-          medium_loopCounter++;
-          #ifdef CONFIGURATOR
-          sendSerialTelemetry();
-          #endif
-          break;
-        case 3:  // Read serial telemetry (10Hz)
-          medium_loopCounter++;
-          #ifdef CONFIGURATOR
-          readSerialCommand();
-          #endif
-          break;
-        case 4:  // second Barometer reading (2x10Hz = 20Hz)
-          medium_loopCounter++;
-          #ifdef UseBMP
-          if (APM_BMP085.Read()){
-            read_baro();
-            Baro_new_data = 1;
-            }
-          #endif
-          break;
-        case 5:  //  Battery monitor (10Hz)
-          medium_loopCounter=0;
-          #if BATTERY_EVENT == 1
-          read_battery();         // Battery monitor
-          #endif
-	  break;	
+  }
+
+  // Medium loop (about 60Hz) 
+  if ((currentTime-mediumLoop)>=17){
+    mediumLoop = currentTime;
+    GPS.Read();     // Read GPS data 
+    // Each of the six cases executes at 10Hz
+    switch (medium_loopCounter){
+    case 0:   // Magnetometer reading (10Hz)
+      medium_loopCounter++;
+      slowLoop++;
+#ifdef IsMAG
+      if (MAGNETOMETER == 1) {
+        APM_Compass.Read();     // Read magnetometer
+        APM_Compass.Calculate(roll,pitch);  // Calculate heading
       }
+#endif
+      break;
+    case 1:  // Barometer reading (2x10Hz = 20Hz)
+      medium_loopCounter++;
+#ifdef UseBMP
+      if (APM_BMP085.Read()){
+        read_baro();
+        Baro_new_data = 1;
+      }
+#endif
+      break;
+    case 2:  // Send serial telemetry (10Hz)
+      medium_loopCounter++;
+#ifdef CONFIGURATOR
+      sendSerialTelemetry();
+#endif
+      break;
+    case 3:  // Read serial telemetry (10Hz)
+      medium_loopCounter++;
+#ifdef CONFIGURATOR
+      readSerialCommand();
+#endif
+      break;
+    case 4:  // second Barometer reading (2x10Hz = 20Hz)
+      medium_loopCounter++;
+#ifdef UseBMP
+      if (APM_BMP085.Read()){
+        read_baro();
+        Baro_new_data = 1;
+      }
+#endif
+      break;
+    case 5:  //  Battery monitor (10Hz)
+      medium_loopCounter=0;
+#if BATTERY_EVENT == 1
+      read_battery();         // Battery monitor
+#endif
+      break;	
     }
+  }
+
+  // AM and Mode status LED lights
+  if(millis() - gled_timer > gled_speed) {
+    gled_timer = millis();
+    if(gled_status == HIGH) { 
+      digitalWrite(LED_Green, LOW);
+#ifdef IsAM      
+      digitalWrite(RE_LED, LOW);
+#endif
+      gled_status = LOW;
+//      SerPrln("L");
+    } 
+    else {
+      digitalWrite(LED_Green, HIGH);
+#ifdef IsAM
+      if(motorArmed) digitalWrite(RE_LED, HIGH);
+#endif
+      gled_status = HIGH;
+    } 
+  }
+
 }
- 
+
+

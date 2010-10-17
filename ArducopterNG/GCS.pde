@@ -6,9 +6,9 @@
  File     : GCS.pde
  Version  : v1.0, Aug 27, 2010
  Author(s): ArduCopter Team
-             Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
-             Jani Hirvinen, Ken McEwans, Roberto Navoni,          
-             Sandro Benigno, Chris Anderson
+ Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
+ Jani Hirvinen, Ken McEwans, Roberto Navoni,          
+ Sandro Benigno, Chris Anderson
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -22,16 +22,16 @@
  
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-* ************************************************************** *
-ChangeLog:
-
-
-* ************************************************************** *
-TODO:
-
-
-* ************************************************************** */
+ 
+ * ************************************************************** *
+ ChangeLog:
+ 
+ 
+ * ************************************************************** *
+ TODO:
+ 
+ 
+ * ************************************************************** */
 //
 // Function  : send_message()
 //
@@ -43,10 +43,10 @@ TODO:
 
 void send_message(byte severity, const char *str)		// This is the instance of send_message for message 0x05
 {
-	if(severity >= DEBUG_LEVEL){
-		SerPri("MSG: ");
-		SerPrln(str);
-	}
+  if(severity >= DEBUG_LEVEL){
+    SerPri("MSG: ");
+    SerPrln(str);
+  }
 }
 
 
@@ -61,7 +61,7 @@ void send_message(byte severity, const char *str)		// This is the instance of se
 void readSerialCommand() {
   // Check for serial message
   if (SerAva()) {
-
+    queryType = SerRea();
     switch (queryType) {
     case 'A': // Stable PID
       KP_QUAD_ROLL = readFloatSerial();
@@ -106,14 +106,14 @@ void readSerialCommand() {
       acc_offset_z = readFloatSerial();
       break;
     case 'K': // Spare
-      break;
+      break;      
     case 'M': // Receive debug motor commands
       frontMotor = readFloatSerial();
       backMotor = readFloatSerial();
       rightMotor = readFloatSerial();
       leftMotor = readFloatSerial();
       motorArmed = readFloatSerial();
-      break;
+      break;     
     case 'O': // Rate Control PID
       Kp_RateRoll = readFloatSerial();
       Ki_RateRoll = readFloatSerial();
@@ -126,7 +126,7 @@ void readSerialCommand() {
       Kd_RateYaw = readFloatSerial();
       xmitFactor = readFloatSerial();
       break;
-    case 'W': // Write all user configurable values to EEPROM
+   case 'W': // Write all user configurable values to EEPROM
       writeUserConfig();
       break;
     case 'Y': // Initialize EEPROM with default values
@@ -145,7 +145,7 @@ void readSerialCommand() {
       ch_aux_offset = readFloatSerial();
       ch_aux2_slope = readFloatSerial();
       ch_aux2_offset = readFloatSerial();
-    break;
+      break;
     }
   }
 }
@@ -154,34 +154,34 @@ void sendSerialTelemetry() {
   float aux_float[3]; // used for sensor calibration
   switch (queryType) {
   case '=': // Reserved debug command to view any variable from Serial Monitor
-/*    SerPri(("throttle =");
-    SerPrln(ch_throttle);
-    SerPri("control roll =");
-    SerPrln(control_roll-CHANN_CENTER);
-    SerPri("control pitch =");
-    SerPrln(control_pitch-CHANN_CENTER);
-    SerPri("control yaw =");
-    SerPrln(control_yaw-CHANN_CENTER);
-    SerPri("front left yaw =");
-    SerPrln(frontMotor);
-    SerPri("front right yaw =");
-    SerPrln(rightMotor);
-    SerPri("rear left yaw =");
-    SerPrln(leftMotor);
-    SerPri("rear right motor =");
-    SerPrln(backMotor);
-    SerPrln();
-
-    SerPri("current roll rate =");
-    SerPrln(read_adc(0));
-    SerPri("current pitch rate =");
-    SerPrln(read_adc(1));
-    SerPri("current yaw rate =");
-    SerPrln(read_adc(2));
-    SerPri("command rx yaw =");
-    SerPrln(command_rx_yaw);
-    SerPrln(); 
-    queryType = 'X';*/
+    /*    SerPri(("throttle =");
+     SerPrln(ch_throttle);
+     SerPri("control roll =");
+     SerPrln(control_roll-CHANN_CENTER);
+     SerPri("control pitch =");
+     SerPrln(control_pitch-CHANN_CENTER);
+     SerPri("control yaw =");
+     SerPrln(control_yaw-CHANN_CENTER);
+     SerPri("front left yaw =");
+     SerPrln(frontMotor);
+     SerPri("front right yaw =");
+     SerPrln(rightMotor);
+     SerPri("rear left yaw =");
+     SerPrln(leftMotor);
+     SerPri("rear right motor =");
+     SerPrln(backMotor);
+     SerPrln();
+     
+     SerPri("current roll rate =");
+     SerPrln(read_adc(0));
+     SerPri("current pitch rate =");
+     SerPrln(read_adc(1));
+     SerPri("current yaw rate =");
+     SerPrln(read_adc(2));
+     SerPri("command rx yaw =");
+     SerPrln(command_rx_yaw);
+     SerPrln(); 
+     queryType = 'X';*/
     SerPri(APM_RC.InputCh(0));
     comma();
     SerPri(ch_roll_slope);
@@ -268,7 +268,7 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   case 'L': // Spare
-//    RadioCalibration();
+    //    RadioCalibration();
     queryType = 'X';
     break;
   case 'N': // Send magnetometer config
@@ -351,6 +351,20 @@ void sendSerialTelemetry() {
     SerPri(read_adc(3));
     comma();
     SerPrln(read_adc(5));
+/*    comma();
+    SerPri(APM_Compass.Heading, 4);
+    comma();
+    SerPri(APM_Compass.Heading_X, 4);
+    comma();
+    SerPri(APM_Compass.Heading_Y, 4);
+    comma();
+    SerPri(APM_Compass.Mag_X);
+    comma();    
+    SerPri(APM_Compass.Mag_Y);
+    comma();
+    SerPri(APM_Compass.Mag_Z);
+    comma();
+*/
     break;
   case 'T': // Spare
     break;
@@ -406,7 +420,7 @@ void sendSerialTelemetry() {
     comma();
     SerPrln(ch_aux2_offset);
     queryType = 'X';
-  break;
+    break;
   case '.': // Modify GPS settings, print directly to GPS Port
     Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
     break;
@@ -438,3 +452,4 @@ float readFloatSerial() {
   while ((data[constrain(index-1, 0, 128)] != ';') && (timeout < 5) && (index < 128));
   return atof(data);
 }
+
