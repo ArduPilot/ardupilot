@@ -13,6 +13,7 @@ Heading_Y	KEYWORD2
 Mag_X	KEYWORD2
 Mag_Y	KEYWORD2
 Mag_Z	KEYWORD2
+lastUpdate	KEYWORD2
 
 
 
