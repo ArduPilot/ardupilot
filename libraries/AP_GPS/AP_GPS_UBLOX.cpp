@@ -24,6 +24,8 @@ void AP_GPS_UBLOX::init(void)
 {
 	// XXX it might make sense to send some CFG_MSG,CFG_NMEA messages to get the 
 	// right reporting configuration.
+
+	_port->flush();
 }
 
 // Process bytes available from the stream

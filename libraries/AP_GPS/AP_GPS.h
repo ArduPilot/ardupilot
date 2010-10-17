@@ -10,4 +10,4 @@
 #include "AP_GPS_MTK.h"
 #include "AP_GPS_IMU.h"
 #include "AP_GPS_None.h"
-
+#include "AP_GPS_Auto.h"

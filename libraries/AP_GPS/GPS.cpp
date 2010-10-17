@@ -5,16 +5,6 @@
 #include <stdio.h>
 
 void
-GPS::init(void)
-{
-}
-
-void
-GPS::update(void)
-{
-}
-
-void
 GPS::_setTime(void){
 	_lastTime = millis();
 }

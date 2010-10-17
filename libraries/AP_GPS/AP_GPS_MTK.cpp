@@ -22,8 +22,12 @@ AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
 {	
+	_port->flush();
 	// initialize serial port for binary protocol use
+	// XXX should assume binary, let GPS_AUTO handle dynamic config?
 	_port->print(MTK_SET_BINARY);
+
+	// set 4Hz update rate
 	_port->print(MTK_OUTPUT_4HZ);
 }
 

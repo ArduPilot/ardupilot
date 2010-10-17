@@ -31,9 +31,13 @@ AP_GPS_SIRF::AP_GPS_SIRF(Stream *s) : GPS(s)
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_SIRF::init(void)
 {	
-	// For modules that default to something other than SiRF binary,
-	// the module-specific subclass should take care of switching to binary mode.
+	_port->flush();
 
+	// For modules that default to something other than SiRF binary,
+	// the module-specific subclass should take care of switching to binary mode
+	// before calling us.
+
+	// send SiRF binary setup messages
 	_port->write(init_messages, sizeof(init_messages));
 }
 

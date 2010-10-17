@@ -13,12 +13,14 @@
 
 #include <GPS.h>
 
+#define UBLOX_SET_BINARY	"$PUBX,41,1,0003,0001,38400,0*26"
+
 class AP_GPS_UBLOX : public GPS
 {
 public:
     // Methods
-	AP_GPS_UBLOX(Stream *s);
-	void		init();
+	AP_GPS_UBLOX(Stream *s = NULL);
+	void		init(void);
 	void		update();
 
 private:

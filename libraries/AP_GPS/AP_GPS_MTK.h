@@ -36,8 +36,8 @@
 class AP_GPS_MTK : public GPS {
 public:
 	AP_GPS_MTK(Stream *s);
-	void		init();
-	void		update();
+	virtual void	init(void);
+	virtual void	update(void);
 
 private:
 #pragma pack(1)

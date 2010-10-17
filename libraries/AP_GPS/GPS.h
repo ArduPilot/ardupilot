@@ -20,22 +20,27 @@ public:
 	/// @note The stream is expected to be set up and configured for the
 	///       correct bitrate before ::init is called.
 	///
-	/// @param	port	Stream connected to the GPS module.
+	/// @param	s	Stream connected to the GPS module.  If NULL, assumed
+	///				to be set up at ::init time.  Support for setting 
+	///				the port in the ctor for backwards compatibility.
 	///
-	GPS(Stream *port = NULL) : _port(port) {};
+	GPS(Stream *s = NULL) : _port(s) {};
 
 	/// Startup initialisation.
 	///
 	/// This routine performs any one-off initialisation required to set the
 	/// GPS up for use.
 	///
-	virtual void	init();
+	/// @param	s	Stream connected to the GPS module.  If NULL, assumed to
+	///				have been set up at constructor time.
+	///
+	virtual void	init(void) = 0;
 
 	/// Update GPS state based on possible bytes received from the module.
 	///
 	/// This routine must be called periodically to process incoming data.
 	///
-	virtual void	update();
+	virtual void	update(void) = 0;
 
 	// Properties
 	long	time;			///< GPS time in milliseconds from the start of the week

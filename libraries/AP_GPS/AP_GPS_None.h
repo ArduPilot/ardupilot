@@ -7,5 +7,7 @@
 
 class AP_GPS_None : public GPS
 {
+	virtual void init(void) {};
+	virtual void update(void) {};
 };
 #endif
