@@ -35,7 +35,7 @@ class APM_Compass_Class
 	unsigned long lastUpdate;	
 	
 	APM_Compass_Class();  // Constructor
-	void Init();
+	bool Init();
 	void Read();
 	void Calculate(float roll, float pitch);
 	void SetOrientation(int newOrientation);

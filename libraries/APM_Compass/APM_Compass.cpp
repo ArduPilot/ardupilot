@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 3; indent-tabs-mode: t -*-
 /*
 	APM_Compass.cpp - Arduino Library for HMC5843 I2C Magnetometer
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -78,7 +79,7 @@ APM_Compass_Class::APM_Compass_Class() : orientation(0), declination(0.0)
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_Compass_Class::Init(void)
+bool APM_Compass_Class::Init(void)
 {
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
@@ -102,7 +103,8 @@ void APM_Compass_Class::Init(void)
 	  Wire.beginTransmission(CompassAddress);
 	  Wire.send(ConfigRegA);
 	  Wire.send(PositiveBiasConfig);
-	  Wire.endTransmission();
+	  if (0 != Wire.endTransmission())
+		 continue;			// compass not responding on the bus
 	  delay(50);
 	  
 	  // set gains
@@ -146,6 +148,7 @@ void APM_Compass_Class::Init(void)
 	  Wire.endTransmission();                 // End transmission
 	  delay(50);
   }
+  return(success);
 }
 
 // Read Sensor data
