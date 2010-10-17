@@ -126,19 +126,21 @@ restart:
 void 
 AP_GPS_MTK::_parse_gps(void)
 {
-	if (FIX_3D != _buffer.msg.fix_type) {
-		fix = false;
-	} else {
+	if (_buffer.msg.fix_type-1 >= 1){
 		fix = true;
-		latitude		= _swapl(&_buffer.msg.latitude)  * 10;
-		longitude		= _swapl(&_buffer.msg.longitude) * 10;
-		altitude		= _swapl(&_buffer.msg.altitude);
-		ground_speed	= _swapl(&_buffer.msg.ground_speed);
-		ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
-		num_sats		= _buffer.msg.satellites;
-			
-		// XXX docs say this is UTC, but our clients expect msToW
-		time			= _swapl(&_buffer.msg.utc_time);
+	} else {
+		fix = false;
 	}
+	latitude		= _swapl(&_buffer.msg.latitude)  * 10;
+	longitude		= _swapl(&_buffer.msg.longitude) * 10;
+	altitude		= _swapl(&_buffer.msg.altitude);
+	ground_speed	= _swapl(&_buffer.msg.ground_speed);
+	ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
+	num_sats		= _buffer.msg.satellites;
+			
+	// XXX docs say this is UTC, but our clients expect msToW
+	time			= _swapl(&_buffer.msg.utc_time);
+	_setTime();
+	valid_read = true;
 	new_data = true;
 }

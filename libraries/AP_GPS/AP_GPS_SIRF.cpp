@@ -175,6 +175,8 @@ AP_GPS_SIRF::_parse_gps(void)
 		if (ground_speed > 50)
 			ground_course	= _swapi(&_buffer.nav.ground_course);
 		num_sats		= _buffer.nav.satellites;
+		_setTime();
+		valid_read = 1;
 		break;
 	}
 	new_data = true;

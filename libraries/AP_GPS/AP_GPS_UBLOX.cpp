@@ -184,5 +184,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 		ground_course = _buffer.velned.heading_2d / 1000;	// Heading 2D deg * 100000 rescaled to deg * 100
 		break;
 	}
-	new_data = true;
+	_setTime();
+	valid_read = 1;
+	new_data = 1;
 }

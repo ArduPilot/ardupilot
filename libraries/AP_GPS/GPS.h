@@ -52,6 +52,9 @@ public:
 	/// to false in order to avoid processing data they have
 	/// already seen.
 	bool	new_data;
+	bool	valid_read;
+
+	int	status(void);		///< 0 = Not Connected, 1 = Receiving Valid Messages but No Lock, 2 = Locked
 
 	bool	print_errors; 	///< if true, errors will be printed to stderr
 
@@ -65,6 +68,10 @@ protected:
 	/// @returns			endian-swapped value
 	///
 	long	_swapl(const void *bytes);
+
+	unsigned long _lastTime;	///< Timer for lost connection
+
+	void	_setTime(void);
 
 	/// perform an endian swap on an int
 	///
@@ -81,6 +88,7 @@ protected:
 	/// @param	fmt			printf-like format string
 	///
 	void	_error(const char *msg, ...);
+	
 };
 
 inline long

@@ -112,18 +112,18 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 	long aux_min;
 	char *parseptr;
 
-	
 	if (strncmp(buffer,"$GPGGA",6)==0){					// Check if sentence begins with $GPGGA
 		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
 			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
 			if (GPS_checksum == NMEA_check){			// Checksum validation
 				//Serial.println("buffer");
-				new_data = 1;	// New GPS Data
+				_setTime();
+				valid_read = true;
+				new_data = true;	// New GPS Data
 				parseptr = strchr(buffer, ',')+1;
 				//parseptr = strchr(parseptr, ',')+1;
 				time = parsenumber(parseptr, 2);					// GPS UTC time hhmmss.ss
 				parseptr = strchr(parseptr, ',')+1;
-				//
 				aux_deg = parsedecimal(parseptr, 2);			// degrees
 				aux_min = parsenumber(parseptr + 2, 4);		 // minutes (sexagesimal) => Convert to decimal
 				latitude = aux_deg * 10000000 + (aux_min * 50) / 3;	 // degrees + minutes / 0.6	( * 10000000) (0.6 = 3 / 5)
@@ -166,6 +166,9 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
 			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
 			if (GPS_checksum == NMEA_check){			// Checksum validation
+				_setTime();
+				valid_read = true;
+				new_data = true;	// New GPS Data
 				parseptr = strchr(buffer, ',')+1;
 				ground_course = parsenumber(parseptr, 2);			// Ground course in degrees * 100
 				parseptr = strchr(parseptr, ',')+1;
