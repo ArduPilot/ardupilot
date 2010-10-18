@@ -305,7 +305,7 @@ FastSerial::printf_P(const char *fmt, ...)
         int     i;
 
         va_start(ap, fmt);
-        i = vfprintf_P(stdout, fmt, ap);
+        i = vfprintf_P(&_fd, fmt, ap);
         va_end(ap);
 
         return(i);
