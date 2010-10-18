@@ -112,3 +112,23 @@ int channel_filter(int ch, int ch_old)
   return((ch + ch_old) >> 1);   // Small filtering
   //return(ch);
 }
+
+
+// Special APM PinMode settings and others
+void APMPinMode(volatile unsigned char &Port, byte Pin, boolean Set)
+{
+  if (Set)  {
+    Port |=   (1 << Pin);
+  } else  {
+    Port &=  ~(1 << Pin);
+  }
+}
+
+boolean APMPinRead(volatile unsigned char &Port, byte Pin)
+{
+  if(Port   &   (1 << Pin))
+    return 1;
+  else
+    return 0;
+}
+

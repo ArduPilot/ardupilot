@@ -205,6 +205,12 @@ int control_pitch;
 int control_yaw;
 //float K_aux;
 
+
+boolean SW_DIP1;  // closest to SW2 slider switch
+boolean SW_DIP2;
+boolean SW_DIP3;
+boolean SW_DIP4;  // closest to header pins
+
 // Attitude PID controls
 float roll_I=0;
 float roll_D;

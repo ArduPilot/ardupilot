@@ -41,6 +41,13 @@ void APM_Init() {
   pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
   pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
   pinMode(RELE_pin,OUTPUT);   // Rele output
+  
+  APMPinMode(DDRE,7,INPUT); //DIP1
+  APMPinMode(DDRE,6,INPUT); //DIP2
+  APMPinMode(DDRL,6,INPUT); //DIP3
+  APMPinMode(DDRL,7,INPUT); //DIP4
+
+  
   digitalWrite(RELE_pin,LOW);
  
   APM_RC.Init();             // APM Radio initialization
@@ -121,6 +128,22 @@ void APM_Init() {
 #endif
 
   delay(1000);
+
+  // Read DIP Switches and other important values. DIP switches needs special functions to 
+  // read due they are not defined as normal pins like other GPIO's are. 
+  SW_DIP1 = APMPinRead(PINE, 7);
+  SW_DIP2 = APMPinRead(PINE, 6);
+  SW_DIP3 = APMPinRead(PINL, 6);
+  SW_DIP4 = APMPinRead(PINL, 7);
+
+  /* Works, tested 18-10-10 JP
+  if(SW_DIP1) {
+    SerPrln("+ mode");
+  } else {
+    SerPrln("x mode");
+  } 
+  */
+
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
   //timer = millis();
