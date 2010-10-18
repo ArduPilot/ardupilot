@@ -125,13 +125,15 @@ unsigned long slowLoop = 0;
 /* ************************************************************ */
 void setup() {
 
-  APM_Init();    // APM Hardware initialization (in System.pde)
+  APM_Init();                // APM Hardware initialization (in System.pde)
 
-  mainLoop = millis();              // Initialize timers
+  mainLoop = millis();       // Initialize timers
   mediumLoop = mainLoop;
   GPS_timer = mainLoop;
   motorArmed = 0;
-  Read_adc_raw();                   // Initialize ADC readings...
+
+  Read_adc_raw();            // Initialize ADC readings...
+
   delay(10);
   digitalWrite(LED_Green,HIGH);     // Ready to go...  
 }

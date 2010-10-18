@@ -36,40 +36,71 @@ TODO:
 #include "WProgram.h"
 
 
+/* ************************************************************** */
 /* APM Hardware definitions */
-#define LED_Yellow 36
-#define LED_Red 35
-#define LED_Green 37
-#define RELE_pin 47
-#define SW1_pin 41
-#define SW2_pin 40
 
-//#define VDIV1 AN1  // Insert correct PIN values for these, JP/17-10-10
-//#define VDIV2 AN2
-//#define VDIV3 AN3
-//#define VDIV4 AN4
+#define LED_Yellow 36  // A_LED
+#define LED_Green 37   // B_LED
+#define LED_Red 35     // C_LED
 
-//#define AN5
-//#define AN6
+#define A_LED_PIN   LED_Green  // For legacy issues
+#define B_LED_PIN   LED_Yellow
+#define C_LED_PIN   LED_Red
 
-// Hardware Parameters
-#define SLIDE_SWITCH_PIN 40
-#define PUSHBUTTON_PIN 41
+// Programmable hardware switches/relays 
+#define RELAY 47  // Onboard relay (PL2)
+#define SW1 41    // Push button close to I2C port (PG0)
+#define SW2 40    // Slide switch next to DIP switched (PG1)
 
-#define A_LED_PIN 37
-#define B_LED_PIN 36
-#define C_LED_PIN 35
+// Due limitations of Arduino libraries, these pins needs to be controlled differently so no real PIN numbers
+//#define DIP1  (PE7)
+//#define DIP2  (PE6) 
+//#define DIP3  (PL6)
+//#define DIP4  (PL/)
 
-#define DIP1    // Insert correct PIN values for these, JP/17-10-10
-#define DIP2
-#define DIP3
-#define DIP4
+/* ************************************************************** */
+/* Expansion PIN's that people can use for various things. */
 
+// AN0 - 7 are located at edge of IMU PCB "above" pressure sensor and Expansion port
+// AN0 - 5 are also located next to voltage dividers and sliding SW2 switch
+// AN0 - 3 has 10kOhm resistor in serial, include 3.9kOhm to make it as voltage divider
+// AN4 - 5 are direct GPIO pins from atmega1280 and they are the latest pins next to SW2 switch
+// Look more ArduCopter Wiki for voltage dividers and other ports
+#define AN0  54  // resistor, vdiv use, divider 1 closest to relay
+#define AN1  55  // resistor, vdiv use, divider 2
+#define AN2  56  // resistor, vdiv use, divider 3
+#define AN3  57  // resistor, vdiv use, divider 4 closest to SW2
+#define AN4  58  // direct GPIO pin, default as analog input, next to SW2 switch
+#define AN5  59  // direct GPIO pin, default as analog input, next to SW2 switch
+#define AN6  60  // direct GPIO pin, default as analog input, close to Pressure sensor, Expansion Ports
+#define AN7  61  // direct GPIO pin, default as analog input, close to Pressure sensor, Expansion Ports
+
+// AN8 - 15 are located at edge of IMU PCB "above" pressure sensor and Expansion port
+// AN8 - 15 PINs are not connected anywhere, they are located as last 8 pins on edge of the board above Expansion Ports
+// even pins (8,10,12,14) are at edge of board, Odd pins (9,11,13,15) are on inner row
+#define AN8  62  // NC
+#define AN9  63  // NC
+#define AN10  64 // NC
+#define AN11  65 // NC
+#define AN12  66 // NC
+#define AN13  67 // NC
+#define AN14  68 // NC
+#define AN15  69 // NC
+
+// Defines for Voltage Dividers
+#define VDIV1  AN0  // AN0 as default and primary
+#define VDIV2  AN1  // AN1 for secondary battery
+#define VDIV3  AN2
+#define VDIV4  AN3
+
+
+/* ************************************************** */
 #define EE_LAST_LOG_PAGE 0xE00
 #define EE_LAST_LOG_NUM 0xE02
 #define EE_LOG_1_START 0xE04
 
-// Serial ports
+/* ************************************************** */
+/* Serial port definitions */
 #define SERIAL0_BAUD 38400      // this is the main USB out 38400 57600 115200
 #define SERIAL1_BAUD 115200
 #define SERIAL2_BAUD 115200
@@ -99,6 +130,8 @@ TODO:
 #define SerPor  "Telemetry"
 #endif
 
+
+/* *********************************************** */
 // IMU definitions
 // Sensor: GYROX, GYROY, GYROZ, ACCELX, ACCELY, ACCELZ
 uint8_t sensors[6] = {1, 2, 0, 4, 5, 6};  // For ArduPilot Mega Sensor Shield Hardware
@@ -109,7 +142,7 @@ int SENSOR_SIGN[]={
  //{-1,1,-1,1,-1,1,-1,-1,-1};
 /* APM Hardware definitions, END */
 
-
+/* *********************************************** */
 /* General definitions */
 #define TRUE 1
 #define FALSE 0
@@ -144,12 +177,12 @@ int gyro_temp;
 
 
 float G_Dt=0.02;                  // Integration time for the gyros (DCM algorithm)
-float Accel_Vector[3]= {0, 0, 0}; //Store the acceleration in a vector
-float Accel_Vector_unfiltered[3]= {0, 0, 0}; //Store the acceleration in a vector
-float Gyro_Vector[3]= {0, 0, 0};  //Store the gyros rutn rate in a vector
-float Omega_Vector[3]= {0, 0, 0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {0, 0, 0};      //Omega Proportional correction
-float Omega_I[3]= {0, 0, 0};      //Omega Integrator
+float Accel_Vector[3]= {0, 0, 0}; // Store the acceleration in a vector
+float Accel_Vector_unfiltered[3]= {0, 0, 0}; // Store the acceleration in a vector
+float Gyro_Vector[3]= {0, 0, 0};  // Store the gyros rutn rate in a vector
+float Omega_Vector[3]= {0, 0, 0}; // Corrected Gyro_Vector data
+float Omega_P[3]= {0, 0, 0};      // Omega Proportional correction
+float Omega_I[3]= {0, 0, 0};      // Omega Integrator
 float Omega[3]= {0, 0, 0};
 //float Accel_magnitude;
 //float Accel_weight;
@@ -157,8 +190,8 @@ float Omega[3]= {0, 0, 0};
 float errorRollPitch[3] = {0, 0, 0};
 float errorYaw[3] = {0, 0, 0};
 float errorCourse = 0;
-float COGX = 0; //Course overground X axis
-float COGY = 1; //Course overground Y axis
+float COGX = 0; // Course overground X axis
+float COGY = 1; // Course overground Y axis
 
 float roll = 0;
 float pitch = 0;
@@ -170,6 +203,7 @@ float DCM_Matrix[3][3]= {
   { 1,0,0 },
   { 0,1,0 },
   { 0,0,1 }}; 
+  
 float Update_Matrix[3][3]={
   { 0,1,2 },
   { 3,4,5 },
@@ -257,7 +291,8 @@ long 	press_alt			= 0;
 #define BATTERY_PIN 1		// Need to correct value
 #define RELAY_PIN 47
 #define LOW_VOLTAGE	11.4    // Pack voltage at which to trigger alarm
-#define INPUT_VOLTAGE 5.2	// (Volts) voltage your power regulator is feeding your ArduPilot to have an accurate pressure and battery level readings. (you need a multimeter to measure and set this of course)
+#define INPUT_VOLTAGE 5.2	// (Volts) voltage your power regulator is feeding your ArduPilot to have an accurate pressure and battery 
+                                // level readings. (you need a multimeter to measure and set this of course)
 #define VOLT_DIV_RATIO 1.0	//  Voltage divider ratio set with thru-hole resistor (see manual)
 
 float 	battery_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage, initialized above threshold for filter
@@ -265,8 +300,9 @@ float 	battery_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage, initialized a
 
 // Sonar variables
 int Sonar_value=0;
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 int Sonar_Counter=0;
+
+#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;  
@@ -311,33 +347,32 @@ uint8_t Disarming_counter=0;
 // Performance monitoring
 // ----------------------
 long 	perf_mon_timer 				= 0;
-float 	imu_health 					= 0;		//Metric based on accel gain deweighting
-int 	G_Dt_max 					= 0;		//Max main loop cycle time in milliseconds
+float 	imu_health 				= 0;		//Metric based on accel gain deweighting
+int 	G_Dt_max 				= 0;		//Max main loop cycle time in milliseconds
 byte 	gyro_sat_count 				= 0;
 byte 	adc_constraints 			= 0;
 byte 	renorm_sqrt_count 			= 0;
 byte 	renorm_blowup_count 		        = 0;
 int 	gps_fix_count				= 0;
-
 byte	gcs_messages_sent			= 0;
 
 // System Timers
 // --------------
-unsigned long fast_loopTimer		= 0;		// Time in miliseconds of main control loop
-unsigned long medium_loopTimer		= 0;		// Time in miliseconds of navigation control loop
+unsigned long fast_loopTimer		        = 0;		// Time in miliseconds of main control loop
+unsigned long medium_loopTimer		        = 0;		// Time in miliseconds of navigation control loop
 byte medium_loopCounter				= 0;		// Counters for branching from main control loop to slower loops
 byte slow_loopCounter				= 0;		// 
-unsigned long deltaMiliSeconds 		= 0;		// Delta Time in miliseconds
-unsigned long dTnav					= 0;		// Delta Time in milliseconds for navigation computations
-int mainLoop_count 					= 0;
+unsigned long deltaMiliSeconds 		        = 0;		// Delta Time in miliseconds
+unsigned long dTnav				= 0;		// Delta Time in milliseconds for navigation computations
+int mainLoop_count 				= 0;
 unsigned long elapsedTime			= 0;		// for doing custom events
-//unsigned int GPS_timer				= 0;
+//unsigned int GPS_timer			= 0;
 
 
 								
-/****************************************************/
-/*Logging Stuff	- These should be 1 (on) or 0 (off)*/
-/****************************************************/	
+/* ******************************************************** */
+/* Logging Stuff	- These should be 1 (on) or 0 (off) */
+
 #define LOG_ATTITUDE 1	        // Logs basic attitude info
 #define LOG_GPS 1		// Logs GPS info
 #define LOG_PM 1		// Logs IMU performance monitoring info£
@@ -370,27 +405,27 @@ unsigned long elapsedTime			= 0;		// for doing custom events
 
 // Debug options - set only one of these options to 1 at a time, set the others to 0
 #define DEBUG_SUBSYSTEM 0 		// 0 = no debug
-								// 1 = Debug the Radio input
-								// 2 = Debug the Servo output
-								// 3 = Debug the Sensor input
-								// 4 = Debug the GPS input
-								// 5 = Debug the GPS input - RAW HEX OUTPUT
-								// 6 = Debug the IMU
-								// 7 = Debug the Control Switch
-								// 8 = Debug the Servo DIP switches
-								// 9 = Debug the Relay out
-								// 10 = Debug the Magnetometer
-								// 11 = Debug the ABS pressure sensor
-								// 12 = Debug the stored waypoints
-								// 13 = Debug the Throttle
-								// 14 = Debug the Radio Min Max
-								// 15 = Debug the EEPROM - Hex Dump
+					// 1 = Debug the Radio input
+					// 2 = Debug the Servo output
+					// 3 = Debug the Sensor input
+					// 4 = Debug the GPS input
+					// 5 = Debug the GPS input - RAW HEX OUTPUT
+					// 6 = Debug the IMU
+					// 7 = Debug the Control Switch
+					// 8 = Debug the Servo DIP switches
+					// 9 = Debug the Relay out
+					// 10 = Debug the Magnetometer
+					// 11 = Debug the ABS pressure sensor
+					// 12 = Debug the stored waypoints
+					// 13 = Debug the Throttle
+					// 14 = Debug the Radio Min Max
+					// 15 = Debug the EEPROM - Hex Dump
 								
 
 #define DEBUG_LEVEL SEVERITY_LOW
-								// SEVERITY_LOW
-								// SEVERITY_MEDIUM
-								// SEVERITY_HIGH
-								// SEVERITY_CRITICAL
+					// SEVERITY_LOW
+					// SEVERITY_MEDIUM
+					// SEVERITY_HIGH
+					// SEVERITY_CRITICAL
 
 

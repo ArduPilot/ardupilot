@@ -36,41 +36,60 @@ TODO:
 // General Initialization for all APM electronics
 void APM_Init() {
 
-  pinMode(LED_Yellow,OUTPUT); //Yellow LED A  (PC1)
-  pinMode(LED_Red,OUTPUT);    //Red LED B     (PC2)
-  pinMode(LED_Green,OUTPUT);  //Green LED C   (PC0)
-  pinMode(SW1_pin,INPUT);     //Switch SW1 (pin PG0)
-  pinMode(RELE_pin,OUTPUT);   // Rele output
+  // Setup proper PIN modes for our switched, LEDs, Relays etc on IMU Board
+  pinMode(LED_Yellow,OUTPUT); // Yellow LED A  (PC1)
+  pinMode(LED_Red,OUTPUT);    // Red LED    B  (PC2)
+  pinMode(LED_Green,OUTPUT);  // Green LED  C  (PC0)
+  pinMode(RELAY,OUTPUT);      // Relay output  (PL2)
+  pinMode(SW1,INPUT);         // Switch SW1    (PG0)
+  pinMode(SW2,INPUT);         // Switch SW2    (PG1)
   
-  APMPinMode(DDRE,7,INPUT); //DIP1
-  APMPinMode(DDRE,6,INPUT); //DIP2
-  APMPinMode(DDRL,6,INPUT); //DIP3
-  APMPinMode(DDRL,7,INPUT); //DIP4
+  // Because DDRE and DDRL Ports are not included to normal Arduino Libraries, we need to
+  // initialize them with a special command
+  APMPinMode(DDRE,7,INPUT);   // DIP1, (PE7), Closest to sliding SW2 switch
+  APMPinMode(DDRE,6,INPUT);   // DIP2, (PE6)
+  APMPinMode(DDRL,6,INPUT);   // DIP3, (PL6)
+  APMPinMode(DDRL,7,INPUT);   // DIP4, (PL7)
+   
+  // Is CLI mode active or not, if it is fire it up and never return.
+  if(digitalRead(SW2)) {
+     SerPrln("Entering CLI Mode..");
+     RunCLI();
+  }
 
+/* ********************************************************* */
+///////////////////////////////////////////////////////// 
+  // Normal Initialization sequence starts from here.
   
-  digitalWrite(RELE_pin,LOW);
- 
   APM_RC.Init();             // APM Radio initialization
+
   // RC channels Initialization (Quad motors)  
   APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
   APM_RC.OutputCh(1,MIN_THROTTLE);
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
-  
+
+  // Make sure that Relay is switched off.
+  digitalWrite(RELAY,LOW);
+
+  // Wiggle LEDs while ESCs are rebooting  
   FullBlink(50,20);
-  
+
   APM_ADC.Init();            // APM ADC library initialization
   DataFlash.Init();          // DataFlash log initialization
 
 #ifdef IsGPS  
   GPS.Init();                // GPS Initialization
+
 #ifdef IsNEWMTEK  
   delay(250);
+
   // DIY Drones MTEK GPS needs binary sentences activated if you upgraded to latest firmware.
   // If your GPS shows solid blue but LED C (Red) does not go on, your GPS is on NMEA mode
   Serial1.print("$PMTK220,200*2C\r\n");          // 5Hz update rate
   delay(200);
   Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n"); 
+
 #endif
 #endif
 
@@ -92,22 +111,23 @@ void APM_Init() {
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
-//  Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
-
+  //Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
   //Serial.println("ArduCopter Quadcopter v1.0");
+
  
   // Proper Serial port/baud are defined on main .pde and then Arducopter.h with
-  // Choises of Xbee or 
+  // Choises of Xbee or normal serial port
   SerBeg(SerBau);
   
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
-  while (digitalRead(SW1_pin)==0)
+  while (digitalRead(SW1)==0)
   {
-    Serial.println("Entering Log Read Mode...");
+    Serial.println("Entering Log Read Mode...");    // This will be obsole soon due moving to CLI system
     Log_Read(1,1000);
     delay(30000);
   }
+
   
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
