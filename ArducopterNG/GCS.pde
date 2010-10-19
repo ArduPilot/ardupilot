@@ -146,6 +146,10 @@ void readSerialCommand() {
       ch_aux2_slope = readFloatSerial();
       ch_aux2_offset = readFloatSerial();
       break;
+    case '5': // Special debug features
+            
+
+      break;    
     }
   }
 }

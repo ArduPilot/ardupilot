@@ -25,31 +25,143 @@
  
  * ************************************************************** *
  ChangeLog:
- 
+ - 19-10-10 Initial CLI
  
  * ************************************************************** *
  TODO:
- 
+ - Full menu systems, debug, settings
  
  * ************************************************************** */
+
+boolean ShowMainMenu;
+
 
 // CLI Functions
 // This can be moved later to CLI.pde
 void RunCLI () {
 
+  ShowMainMenu = TRUE;
   // We need to initialize Serial again due it was not initialized during startup. 
   SerBeg(SerBau);   
-  SerPri("Welcome to ArduCopter CLI"); 
+  SerPrln();
+  SerPrln("Welcome to ArduCopter CLI"); 
   SerPri("Firmware: ");
-  SerPri(VER);
-  
+  SerPrln(VER);
+  SerPrln();
+
+  if(ShowMainMenu) Show_MainMenu();
+
   // Our main loop that never ends. Only way to get away from here is to reboot APM
   for (;;) { 
+    if(ShowMainMenu) Show_MainMenu();    
+    if (SerAva()) {
+      ShowMainMenu = TRUE;
+      queryType = SerRea();
+      switch (queryType) {
+      case 'c':
+        CALIB_CompassOffset();
+        break;
 
-
-
+      }
+    }
   } // Mainloop ends
 
 }
+
+void Show_MainMenu() {
+  ShowMainMenu = FALSE; 
+  SerPrln("CLI Menu - Type your command on command prompt");
+  SerPrln("----------------------------------------------");
+  SerPrln(" c - Show compass offsets (no return, reboot)");
+  SerPrln(" ");
+}
+
+
+/* ************************************************************** */
+// Compass/Magnetometer Offset Calibration
+void CALIB_CompassOffset() {
+
+#ifdef IsMAG  
+  SerPrln("Rotate/Pitch/Roll your ArduCopter untill offset variables are not");
+  SerPrln("anymore changing, write down your offset values and update them ");
+  SerPrln("to their correct location.  Starting in..");
+  SerPrln("2 secs.");
+  delay(1000);
+  SerPrln("1 secs.");
+  delay(1000);
+  SerPrln("starting now....");
+
+  APM_Compass.Init();   // Initialization
+  APM_Compass.SetOrientation(MAGORIENTATION);         // set compass's orientation on aircraft
+  APM_Compass.SetOffsets(0,0,0);                      // set offsets to account for surrounding interference
+  APM_Compass.SetDeclination(ToRad(DECLINATION));  // set local difference between magnetic north and true north
+  int counter = 0; 
+
+  for(;;) {
+    static float min[3], max[3], offset[3];
+    if((millis()- timer) > 100)  {
+      timer = millis();
+      APM_Compass.Read();
+      APM_Compass.Calculate(0,0);  // roll = 0, pitch = 0 for this example
+
+      // capture min
+      if( APM_Compass.Mag_X < min[0] ) min[0] = APM_Compass.Mag_X;
+      if( APM_Compass.Mag_Y < min[1] ) min[1] = APM_Compass.Mag_Y;
+      if( APM_Compass.Mag_Z < min[2] ) min[2] = APM_Compass.Mag_Z;
+
+      // capture max
+      if( APM_Compass.Mag_X > max[0] ) max[0] = APM_Compass.Mag_X;
+      if( APM_Compass.Mag_Y > max[1] ) max[1] = APM_Compass.Mag_Y;
+      if( APM_Compass.Mag_Z > max[2] ) max[2] = APM_Compass.Mag_Z;
+
+      // calculate offsets
+      offset[0] = -(max[0]+min[0])/2;
+      offset[1] = -(max[1]+min[1])/2;
+      offset[2] = -(max[2]+min[2])/2;
+
+      // display all to user
+      SerPri("Heading:");
+      SerPri(ToDeg(APM_Compass.Heading));
+      SerPri("  \t(");
+      SerPri(APM_Compass.Mag_X);
+      SerPri(",");
+      SerPri(APM_Compass.Mag_Y);
+      SerPri(",");    
+      SerPri(APM_Compass.Mag_Z);
+      SerPri(")");
+
+      // display offsets
+      SerPri("\t offsets(");
+      SerPri(offset[0]);
+      SerPri(",");
+      SerPri(offset[1]);
+      SerPri(",");
+      SerPri(offset[2]);
+      SerPri(")");
+      SerPrln();
+
+      if(counter == 50) {
+        counter = 0;
+        SerPrln();
+        SerPrln("Roll and Rotate your quad untill offsets are not changing!");
+        SerPrln("to exit from this loop, reboot your APM");        
+        SerPrln();        
+        delay(500);
+      }
+      counter++;
+    }
+  }
+#else
+  SerPrln("Magneto module is not activated on Arducopter.pde");
+  SerPrln("Check your program #definitions, upload firmware and try again!!");
+  //  SerPrln("Now reboot your APM");
+  //  for(;;)
+  //    delay(10);
+#endif      
+
+}
+
+
+
 
 

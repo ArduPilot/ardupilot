@@ -39,44 +39,88 @@
 /* **************** MAIN PROGRAM - MODULES ******************** */
 /* ************************************************************ */
 
-/* User definable modules */
-// Comment out with   // modules that you are not using
+/* ************************************************************ */
+// User definable modules, check them every time you have new 
+// software version at your hand.
+
+// Comment out with // modules that you are not using
 
 //#define IsGPS       // Do we have a GPS connected
 //#define IsNEWMTEK   // Do we have MTEK with new firmware
-//#define IsMAG         // Do we have a Magnetometer connected, if have remember to activate it from Configurator
-//LEGACY-jp #define IsTEL       // Do we have a telemetry connected, eg. XBee connected on Telemetry port
-#define IsAM          // Do we have motormount LED's. AM = Atraction Mode
+//#define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
+//#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
 
-//#define UseAirspeed
-
+//#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
 //#define UseBMP
-
 //#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it _wired_ up!)
 
 #define CONFIGURATOR
 
 
 ////////////////////
-// Telemetry
+// Serial ports & speeds
 
 // Serial data, do we have FTDI cable or Xbee on Telemetry port as our primary command link
-// If we are using normal FTDI/USB port as our telemetry/configuration, disable next
+// If we are using normal FTDI/USB port as our telemetry/configuration, keep next line disabled
 //#define SerXbee
 
 // Telemetry port speed, default is 115200
+//#define SerBau  19200
+//#define SerBau  38400
+//#define SerBau  57600
 #define SerBau  115200
 
 
+// For future use, for now don't activate any!
+// Serial1 speed for GPS, mostly 38.4k, done from libraries
+//#define GpsBau  19200
+//#define GpsBau  38400
+//#define GpsBau  57600
+//#define GpsBau  115200
 
-//////////////////////
-// Flight orientation
+
+
+/* ************************************************* */
+// Flight & Electronics orientation
 
 // Frame build condiguration
 #define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
 //#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
 
 
+// Magneto orientation and corrections.
+// If you don't have magneto actiavted, It is safe to ignore these
+#ifdef IsMAG
+#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
+//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
+//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
+
+// To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
+// you need to roll/bank/tilt/yaw/shake etc your ArduCoptet. Don't kick like Jani always does :)
+#define MAGOFFSET 0,0,0
+
+// Declination is a correction factor between North Pole and real magnetic North. This is different on every location
+// IF you want to use really accurate headholding and future navigation features, you should update this
+// You can check Declination to your location from http://www.magnetic-declination.com/
+#define DECLINATION 0.0
+
+// And remember result from NOAA website is in form of DEGREES°MINUTES'. Degrees you can use directly but Minutes you need to 
+// recalculate due they one degree is 60 minutes.. For example Jani's real declination is 0.61, correct way to calculate this is
+// 37 / 60 = 0.61 and for Helsinki it would be 7°44' eg 7. and then 44/60 = 0.73 so declination for Helsinki/South Finland would be 7.73
+
+// East values are positive
+// West values are negative
+
+// Some of devel team's Declinations and their Cities
+//#define DECLINATION 0.61      // Jani, Bangkok, 0°37' E  (Due I live almost at Equator, my Declination is rather small)
+//#define DECLINATION 7.73      // Jani, Helsinki,7°44' E  (My "summer" home back at Finland)
+//#define DECLINATION -20.68    // Sandro, Belo Horizonte, 22°08' W  (Whoah... Sandro is really DECLINED)
+//#define DECLINATION 7.03      // Randy, Tokyo, 7°02'E
+//#define DECLINATION 8.91      // Doug, Denver, 8°55'E
+//#define DECLINATION -6.08     // Jose, Canary Islands, 6°5'W
+//#define DECLINATION 0.73      // Tony, Minneapolis, 0°44'E
+
+#endif
 
 
 
@@ -106,7 +150,7 @@
 //#include <GPS_NMEA.h> 	// ArduPilot NMEA GPS library
 
 /* Software version */
-#define VER 1.5    // Current software version (only numeric values)
+#define VER 1.51    // Current software version (only numeric values)
 
 
 /* ************************************************************ */

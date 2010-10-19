@@ -6,9 +6,9 @@
  File     : System.pde
  Version  : v1.0, Aug 27, 2010
  Author(s): ArduCopter Team
-             Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
-             Jani Hirvinen, Ken McEwans, Roberto Navoni,          
-             Sandro Benigno, Chris Anderson
+ Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
+ Jani Hirvinen, Ken McEwans, Roberto Navoni,          
+ Sandro Benigno, Chris Anderson
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -22,16 +22,16 @@
  
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-* ************************************************************** *
-ChangeLog:
-
-
-* ************************************************************** *
-TODO:
-
-
-* ************************************************************** */
+ 
+ * ************************************************************** *
+ ChangeLog:
+ 
+ 
+ * ************************************************************** *
+ TODO:
+ 
+ 
+ * ************************************************************** */
 
 // General Initialization for all APM electronics
 void APM_Init() {
@@ -43,24 +43,24 @@ void APM_Init() {
   pinMode(RELAY,OUTPUT);      // Relay output  (PL2)
   pinMode(SW1,INPUT);         // Switch SW1    (PG0)
   pinMode(SW2,INPUT);         // Switch SW2    (PG1)
-  
+
   // Because DDRE and DDRL Ports are not included to normal Arduino Libraries, we need to
   // initialize them with a special command
-  APMPinMode(DDRE,7,INPUT);   // DIP1, (PE7), Closest to sliding SW2 switch
+  APMPinMode(DDRE,7,INPUT);   // DIP1, (PE7), Closest DIP to sliding SW2 switch
   APMPinMode(DDRE,6,INPUT);   // DIP2, (PE6)
   APMPinMode(DDRL,6,INPUT);   // DIP3, (PL6)
-  APMPinMode(DDRL,7,INPUT);   // DIP4, (PL7)
-   
+  APMPinMode(DDRL,7,INPUT);   // DIP4, (PL7), Furthest DIP from sliding SW2 switch
+
   // Is CLI mode active or not, if it is fire it up and never return.
   if(digitalRead(SW2)) {
-     SerPrln("Entering CLI Mode..");
-     RunCLI();
+    RunCLI();
+    // Btw.. We never return from this....
   }
 
-/* ********************************************************* */
-///////////////////////////////////////////////////////// 
+  /* ********************************************************* */
+  ///////////////////////////////////////////////////////// 
   // Normal Initialization sequence starts from here.
-  
+
   APM_RC.Init();             // APM Radio initialization
 
   // RC channels Initialization (Quad motors)  
@@ -106,19 +106,25 @@ void APM_Init() {
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
 
-  if (MAGNETOMETER == 1)
+#ifdef IsMag
+  if (MAGNETOMETER == 1) {
     APM_Compass.Init();  // I2C initialization
+    APM_Compass.SetOrientation(MAGORIENTATION);
+    APM_Compass.SetOffsets(MAGOFFSET);
+    APM_Compass.SetDeclination(ToRad(DECLINATION));
+  }
+#endif
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
-  //Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
+    //Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
   //Serial.println("ArduCopter Quadcopter v1.0");
 
- 
+
   // Proper Serial port/baud are defined on main .pde and then Arducopter.h with
   // Choises of Xbee or normal serial port
   SerBeg(SerBau);
-  
+
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
   while (digitalRead(SW1)==0)
@@ -128,7 +134,7 @@ void APM_Init() {
     delay(30000);
   }
 
-  
+
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
   //  Neutro_yaw = APM_RC.InputCh(3); // Take yaw neutral radio value
@@ -157,12 +163,12 @@ void APM_Init() {
   SW_DIP4 = APMPinRead(PINL, 7);
 
   /* Works, tested 18-10-10 JP
-  if(SW_DIP1) {
-    SerPrln("+ mode");
-  } else {
-    SerPrln("x mode");
-  } 
-  */
+   if(SW_DIP1) {
+   SerPrln("+ mode");
+   } else {
+   SerPrln("x mode");
+   } 
+   */
 
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
@@ -176,4 +182,5 @@ void APM_Init() {
 #endif
 
 }
+
 
