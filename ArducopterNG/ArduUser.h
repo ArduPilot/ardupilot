@@ -83,7 +83,7 @@ TODO:
 #define AUX_MID 1500
 
 #define CHANN_CENTER 1500       // Channel center, legacy
-#define MIN_THROTTLE 1080       // Throttle pulse width at minimun...
+#define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
 /*************************************************************/
 // General definitions

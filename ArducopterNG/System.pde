@@ -93,7 +93,23 @@ void APM_Init() {
 #endif
 #endif
 
-  readUserConfig(); // Load user configurable items from EEPROM
+  // Read DIP Switches and other important values. DIP switches needs special functions to 
+  // read due they are not defined as normal pins like other GPIO's are. 
+  SW_DIP1 = APMPinRead(PINE, 7);
+  SW_DIP2 = APMPinRead(PINE, 6);
+  SW_DIP3 = APMPinRead(PINL, 6);
+  SW_DIP4 = APMPinRead(PINL, 7);
+
+  /* Works, tested 18-10-10 JP
+   if(SW_DIP1) {
+   SerPrln("+ mode");
+   } else {
+   SerPrln("x mode");
+   } 
+   */
+
+  flightOrientation = SW_DIP1;    // DIP1 off = we are in + mode, DIP1 on = we are in x mode
+  readUserConfig();               // Load user configurable items from EEPROM
 
   // Safety measure for Channel mids
   if(roll_mid < 1400 || roll_mid > 1600) roll_mid = 1500;
@@ -154,22 +170,6 @@ void APM_Init() {
 #endif
 
   delay(1000);
-
-  // Read DIP Switches and other important values. DIP switches needs special functions to 
-  // read due they are not defined as normal pins like other GPIO's are. 
-  SW_DIP1 = APMPinRead(PINE, 7);
-  SW_DIP2 = APMPinRead(PINE, 6);
-  SW_DIP3 = APMPinRead(PINL, 6);
-  SW_DIP4 = APMPinRead(PINL, 7);
-
-  /* Works, tested 18-10-10 JP
-   if(SW_DIP1) {
-   SerPrln("+ mode");
-   } else {
-   SerPrln("x mode");
-   } 
-   */
-
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
   //timer = millis();

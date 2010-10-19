@@ -84,9 +84,11 @@
 // Flight & Electronics orientation
 
 // Frame build condiguration
-#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
+//#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
 //#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
-
+// 19-10-10 by JP
+// This feature has been disabled for now, if you want to change between flight orientations
+// just use DIP switch for that. DIP1 down = X, DIP1 up = +
 
 // Magneto orientation and corrections.
 // If you don't have magneto actiavted, It is safe to ignore these
@@ -202,6 +204,10 @@ void setup() {
 // external command/telemetry
 // Battery monitor
 
+
+
+/* ***************************************************** */
+// Main loop 
 void loop()
 {
   //int aux;

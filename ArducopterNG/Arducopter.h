@@ -335,6 +335,7 @@ int leftMotor;
 int rightMotor;
 byte motorArmed = 0;
 int minThrottle = 0;
+boolean flightOrientation = 0;                    // 0 = +, 1 = x this is read from DIP1 switch during system bootup
 
 // Serial communication
 char queryType;
