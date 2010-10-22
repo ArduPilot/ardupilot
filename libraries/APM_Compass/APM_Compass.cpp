@@ -18,12 +18,17 @@
 		Mag_X : Raw X axis magnetometer data
 		Mag_Y : Raw Y axis magnetometer data
 		Mag_Z : Raw Z axis magnetometer data		
+		lastUpdate : the time of the last successful reading		
 	
 	Methods:
 		Init() : Initialization of I2C and sensor
-		Read() : Read Sensor data		
+		Read() : Read Sensor data	
+		Calculate(float roll, float pitch) : Calculate tilt adjusted heading
+		SetOrientation(const Matrix3f &rotationMatrix) : Set orientation of compass
+		SetOffsets(int x, int y, int z) : Set adjustments for HardIron disturbances
+		SetDeclination(float radians) : Set heading adjustment between true north and magnetic north
 
-	To do : Calibration of the sensor, code optimization
+	To do : code optimization
 	Mount position : UPDATED
                 Big capacitor pointing backward, connector forward
 		
@@ -36,7 +41,6 @@ extern "C" {
 
 #include <Wire.h>
 #include "APM_Compass.h"
-#include "../AP_Math/AP_Math.h"
 
 #define CompassAddress       0x1E
 #define ConfigRegA           0x00
@@ -49,26 +53,6 @@ extern "C" {
 #define ContinuousConversion 0x00
 #define SingleConversion     0x01
 
-// constant rotation matrices
-const Matrix3f rotation[16] = { 
-	Matrix3f( 1, 0, 0, 0, 1, 0, 0 ,0, 1 ),   //  COMPONENTS_UP_PINS_FORWARD = no rotation
-	Matrix3f( 0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1 ), // COMPONENTS_UP_PINS_FORWARD_RIGHT = rotation_yaw_45
-	Matrix3f( 0, -1, 0, 1, 0, 0, 0, 0, 1 ),  //  COMPONENTS_UP_PINS_RIGHT = rotation_yaw_90
-	Matrix3f( -0.70710678, -0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, 1 ), // COMPONENTS_UP_PINS_BACK_RIGHT = rotation_yaw_135
-	Matrix3f( -1, 0, 0, 0, -1, 0, 0, 0, 1 ), //  COMPONENTS_UP_PINS_BACK = rotation_yaw_180
-	Matrix3f( -0.70710678, 0.70710678, 0, -0.70710678, -0.70710678, 0, 0, 0, 1 ), // COMPONENTS_UP_PINS_BACK_LEFT = rotation_yaw_225
-	Matrix3f( 0, 1, 0, -1, 0, 0, 0, 0, 1 ),  //  COMPONENTS_UP_PINS_LEFT = rotation_yaw_270
-	Matrix3f( 0.70710678, 0.70710678, 0, -0.70710678, 0.70710678, 0, 0, 0, 1 ), //COMPONENTS_UP_PINS_FORWARD_LEFT = rotation_yaw_315
-	Matrix3f( 1, 0, 0, 0, -1, 0, 0, 0, -1 ), //  COMPONENTS_DOWN_PINS_FORWARD = rotation_roll_180
-	Matrix3f( 0.70710678, 0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, -1 ), // COMPONENTS_DOWN_PINS_FORWARD_RIGHT = rotation_roll_180_yaw_45
-	Matrix3f( 0, 1, 0, 1, 0, 0, 0, 0, -1 ),  //  COMPONENTS_DOWN_PINS_RIGHT = rotation_roll_180_yaw_90
-	Matrix3f( -0.70710678, 0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, -1 ), // COMPONENTS_DOWN_PINS_BACK_RIGHT = rotation_roll_180_yaw_135
-	Matrix3f( -1, 0, 0, 0, 1, 0, 0, 0, -1 ), //  COMPONENTS_DOWN_PINS_BACK = rotation_pitch_180
-	Matrix3f( -0.70710678, -0.70710678, 0, -0.70710678, 0.70710678, 0, 0, 0, -1 ), // COMPONENTS_DOWN_PINS_BACK_LEFT = rotation_roll_180_yaw_225
-	Matrix3f( 0, -1, 0, -1, 0, 0, 0, 0, -1 ),//  COMPONENTS_DOWN_PINS_LEFT = rotation_roll_180_yaw_270
-	Matrix3f( 0.70710678, -0.70710678, 0, -0.70710678, -0.70710678, 0, 0, 0, -1 ) // COMPONENTS_DOWN_PINS_FORWARD_LEFT = rotation_roll_180_yaw_315
-};
-
 // Constructors ////////////////////////////////////////////////////////////////
 APM_Compass_Class::APM_Compass_Class() : orientation(0), declination(0.0)
 {
@@ -76,6 +60,9 @@ APM_Compass_Class::APM_Compass_Class() : orientation(0), declination(0.0)
   offset[0] = 0;
   offset[1] = 0;
   offset[2] = 0;
+  
+  // initialise orientation matrix
+  orientationMatrix = ROTATION_NONE;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -196,10 +183,10 @@ void APM_Compass_Class::Calculate(float roll, float pitch)
   sin_pitch = sin(pitch);
   
   // rotate the magnetometer values depending upon orientation
-  if( orientation == APM_COMPASS_COMPONENTS_UP_PINS_FORWARD)
+  if( orientation == 0 )
       rotMagVec = Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]);  
   else
-      rotMagVec = rotation[orientation]*Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]);  
+      rotMagVec = orientationMatrix*Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]); 
   
   // Tilt compensated Magnetic field X component:
   Head_X = rotMagVec.x*cos_pitch+rotMagVec.y*sin_roll*sin_pitch+rotMagVec.z*cos_roll*sin_pitch;
@@ -223,10 +210,13 @@ void APM_Compass_Class::Calculate(float roll, float pitch)
   Heading_Y = sin(Heading);
 }
 
-
-void APM_Compass_Class::SetOrientation(int newOrientation)
+void APM_Compass_Class::SetOrientation(const Matrix3f &rotationMatrix)
 {
-    orientation = newOrientation;
+    orientationMatrix = rotationMatrix;
+	if( orientationMatrix == ROTATION_NONE )
+	    orientation = 0;
+	else
+	    orientation = 1;
 }
 
 void APM_Compass_Class::SetOffsets(int x, int y, int z)
