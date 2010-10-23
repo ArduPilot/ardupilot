@@ -50,8 +50,9 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <Stream.h>
 #include <avr/interrupt.h>
+
+#include "BetterStream.h"
 
 //
 // Because Arduino libraries aren't really libraries, but we want to
@@ -82,8 +83,7 @@ extern class FastSerial Serial1;
 extern class FastSerial Serial2;
 extern class FastSerial Serial3;
 
-
-class FastSerial : public Stream {
+class FastSerial : public BetterStream {
 public:
         FastSerial(const uint8_t portNumber,
                    volatile uint8_t *ubrrh,
@@ -96,19 +96,14 @@ public:
                    const uint8_t portTxBits);
 
         // Serial API
-        void            begin(long baud);
-        void            begin(long baud, unsigned int rxSpace, unsigned int txSpace);
-        void            end(void);
-        int             available(void);
-        int             read(void);
-        void            flush(void);
-        void            write(uint8_t c);
-        using Stream::write;
-
-        // stdio extensions
-        int             printf(const char *fmt, ...);
-        int             printf_P(const char *fmt, ...);
-        FILE            *getfd(void) { return &_fd; };
+        virtual void    begin(long baud);
+        virtual void    begin(long baud, unsigned int rxSpace, unsigned int txSpace);
+        virtual void    end(void);
+        virtual int     available(void);
+        virtual int     read(void);
+        virtual void    flush(void);
+        virtual void    write(uint8_t c);
+        using BetterStream::write;
 
         // public so the interrupt handlers can see it
         struct Buffer {
@@ -137,11 +132,6 @@ private:
 
         bool            _allocBuffer(Buffer *buffer, unsigned int size);
         void            _freeBuffer(Buffer *buffer);
-
-        // stdio emulation
-        FILE            _fd;
-        static int      _putchar(char c, FILE *stream);
-        static int      _getchar(FILE *stream);
 };
 
 // Used by the per-port interrupt vectors

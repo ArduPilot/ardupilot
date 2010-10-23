@@ -38,6 +38,8 @@ void setup(void)
         // And send a message.
         //
         Serial.println("begin");
+        Serial.printf("printf\n");
+        Serial.println_P(PSTR("progmem"));
 }
 
 void

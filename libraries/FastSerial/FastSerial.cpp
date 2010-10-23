@@ -102,13 +102,10 @@ FastSerial::FastSerial(const uint8_t portNumber,
         _txBuffer = &__FastSerial__txBuffer[portNumber];
         _rxBuffer->head = _rxBuffer->tail = 0;
 
-        // init stdio
-        fdev_setup_stream(&_fd, &FastSerial::_putchar, &FastSerial::_getchar, _FDEV_SETUP_RW);
-        fdev_set_udata(&_fd, this);
         if (0 == portNumber) {
-                stdout = &_fd;          // serial port 0 is always the default console
-                stdin = &_fd;
-                stderr = &_fd;
+                stdout = &fd;          // serial port 0 is always the default console
+                stdin  = &fd;
+                stderr = &fd;
         }
 }
 
@@ -257,58 +254,6 @@ FastSerial::write(uint8_t c)
 
         // enable the data-ready interrupt, as it may be off if the buffer is empty
         *_ucsrb |= _portTxBits;
-}
-
-// STDIO emulation /////////////////////////////////////////////////////////////
-
-int
-FastSerial::_putchar(char c, FILE *stream)
-{
-        FastSerial      *fs;
-
-        fs = (FastSerial *)fdev_get_udata(stream);
-        if ('\n' == c)
-                fs->write('\r');        // ASCII translation on the cheap
-        fs->write(c);
-        return(0);
-}
-
-int
-FastSerial::_getchar(FILE *stream)
-{
-        FastSerial      *fs;
-
-        fs = (FastSerial *)fdev_get_udata(stream);
-
-        // We return -1 if there is nothing to read, which the library interprets
-        // as an error, which our clients will need to deal with.
-        return(fs->read());
-}
-
-int
-FastSerial::printf(const char *fmt, ...)
-{
-        va_list ap;
-        int     i;
-
-        va_start(ap, fmt);
-        i = vfprintf(&_fd, fmt, ap);
-        va_end(ap);
-
-        return(i);
-}
-
-int
-FastSerial::printf_P(const char *fmt, ...)
-{
-        va_list ap;
-        int     i;
-
-        va_start(ap, fmt);
-        i = vfprintf_P(&_fd, fmt, ap);
-        va_end(ap);
-
-        return(i);
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
