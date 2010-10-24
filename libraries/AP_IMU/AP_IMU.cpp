@@ -1,5 +1,5 @@
 
-#include "AP_IMU.h"
+#include <AP_IMU.h>
 
 #define A_LED_PIN 37			//37 = A,	35 = C
 #define C_LED_PIN 35
@@ -82,7 +82,7 @@ AP_IMU::init(void)
 	for(int i = 0; i < 200; i++){		// We take some readings...
 		for (int j = 0; j < 6; j++) {
 			_adc_in[j] = APM_ADC.Ch(_sensors[j]);
-			_adc_in[j] -= _gyro_temp_comp(j, tc_temp);		// Subtract temp compensated typical gyro bias
+			_adc_in[j] -= _gyro_temp_curve(j, tc_temp);		// Subtract temp compensated typical gyro bias
 			if (_sensor_signs[j] < 0)
 				temp = (_adc_offset[j] - _adc_in[j]);
 			else
@@ -119,7 +119,7 @@ AP_IMU::get_gyro(void)
 	
 	for (int i = 0; i < 3; i++) {
 		_adc_in[i] = APM_ADC.Ch(_sensors[i]);
-		_adc_in[i] -= _gyro_temp_comp(i, tc_temp);		// Subtract temp compensated typical gyro bias
+		_adc_in[i] -= _gyro_temp_curve(i, tc_temp);		// Subtract temp compensated typical gyro bias
 		if (_sensor_signs[i] < 0)
 			temp = (_adc_offset[i] - _adc_in[i]);
 		else

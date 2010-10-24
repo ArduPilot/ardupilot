@@ -8,7 +8,7 @@
 #include <APM_Compass.h>
 #include <APM_ADC.h>
 #include <AP_GPS.h>
-#include "AP_IMU.h"
+#include <AP_IMU.h>
 
 
 class AP_DCM_FW
