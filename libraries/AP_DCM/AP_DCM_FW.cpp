@@ -7,8 +7,8 @@
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
-#define Kp_ROLLPITCH 0.0014	 		// .0014 Pitch&Roll Drift Correction Proportional Gain
-#define Ki_ROLLPITCH 0.0000003 		// 0.0000003 Pitch&Roll Drift Correction Integrator Gain
+#define Kp_ROLLPITCH 0.5852	 		// .0014 * 418 Pitch&Roll Drift Correction Proportional Gain
+#define Ki_ROLLPITCH 0.0001254 		// 0.0000003 * 418 Pitch&Roll Drift Correction Integrator Gain
 #define Kp_YAW 0.8		 			// Yaw Drift Correction Porportional Gain	
 #define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
 
@@ -154,7 +154,7 @@ AP_DCM_FW::_accel_adjust(void)
 	Vector3f _veloc, _temp;
 	float _vel;
 	
-	_veloc.x = _gps->ground_speed / 100;
+	_veloc.x = (_gps->ground_speed / 100) / 9.81;		// We are working with acceleration in g units
 	
 	//_accel_vector += _omega_integ_corr % _veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
 	_temp.y = _omega_integ_corr.z * _veloc.x; 			// only computing the non-zero terms
@@ -253,9 +253,9 @@ AP_DCM_FW::drift_correction(void)
 
 	// error_roll_pitch are in Accel ADC units
 	// Limit max error_roll_pitch to limit max omega_P and omega_I
-	_error_roll_pitch.x = constrain(_error_roll_pitch.x, -50, 50);
-	_error_roll_pitch.y = constrain(_error_roll_pitch.y, -50, 50);
-	_error_roll_pitch.z = constrain(_error_roll_pitch.z, -50, 50);
+	_error_roll_pitch.x = constrain(_error_roll_pitch.x, -.1196f, .1196f);
+	_error_roll_pitch.y = constrain(_error_roll_pitch.y, -.1196f, .1196f);
+	_error_roll_pitch.z = constrain(_error_roll_pitch.z, -.1196f, .1196f);
 
 	_omega_P = _error_roll_pitch * (Kp_ROLLPITCH * accel_weight);
 	_omega_I += _error_roll_pitch * (Ki_ROLLPITCH * accel_weight);
