@@ -85,6 +85,8 @@ TODO:
 #define CHANN_CENTER 1500       // Channel center, legacy
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
+#define CAM_CENT  1500          // Camera center
+
 /*************************************************************/
 // General definitions
 //Modes

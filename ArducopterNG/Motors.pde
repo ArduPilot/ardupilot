@@ -78,7 +78,11 @@ void motor_output()
   APM_RC.OutputCh(1, leftMotor);
   APM_RC.OutputCh(2, frontMotor);
   APM_RC.OutputCh(3, backMotor);
+  
+  // Do we have cameras stabilization connected and in use?
+  if(SW_DIP2) camera_output();
 
+  
   // InstantPWM => Force inmediate output on PWM signals
   APM_RC.Force_Out0_Out1();
   APM_RC.Force_Out2_Out3();

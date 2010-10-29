@@ -251,6 +251,8 @@ void loop()
     // Send output commands to motor ESCs...
     motor_output();
 
+//    camera_output();
+
     // Autopilot mode functions
     if (AP_mode == AP_AUTOMATIC_MODE)
     {

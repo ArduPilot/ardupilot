@@ -6,9 +6,9 @@
  File     : Functions.pde
  Version  : v1.0, Aug 28, 2010
  Author(s): ArduCopter Team
-             Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
-             Jani Hirvinen, Ken McEwans, Roberto Navoni,          
-             Sandro Benigno, Chris Anderson
+ Ted Carancho (aeroquad), Jose Julio, Jordi Muñoz,
+ Jani Hirvinen, Ken McEwans, Roberto Navoni,          
+ Sandro Benigno, Chris Anderson
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -22,16 +22,16 @@
  
  You should have received a copy of the GNU General Public License
  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-* ************************************************************** *
-ChangeLog:
-
-
-* ************************************************************** *
-TODO:
-
-
-* ************************************************************** */
+ 
+ * ************************************************************** *
+ ChangeLog:
+ 
+ 
+ * ************************************************************** *
+ TODO:
+ 
+ 
+ * ************************************************************** */
 
 
 // Flash those A,B,C LEDs on IMU Board
@@ -39,7 +39,7 @@ TODO:
 // Function: FullBlink(int, int);
 //           int 1 = 
 void FullBlink(int count, int blinkdelay) {
-    for(int i = 0; i <= count; i++) {
+  for(int i = 0; i <= count; i++) {
     digitalWrite(LED_Green, HIGH);
     digitalWrite(LED_Yellow, HIGH);
     digitalWrite(LED_Red, HIGH);
@@ -53,31 +53,31 @@ void FullBlink(int count, int blinkdelay) {
 
 
 void RunningLights(int LightStep) {
-  
-     if(LightStep == 0) {
-      digitalWrite(LED_Green, HIGH);
-      digitalWrite(LED_Yellow, LOW);
-      digitalWrite(LED_Red, LOW);
-    } 
-    else if (LightStep == 1) {
-      digitalWrite(LED_Green, LOW);
-      digitalWrite(LED_Yellow, HIGH);
-      digitalWrite(LED_Red, LOW);
-    } 
-    else {
-      digitalWrite(LED_Green, LOW);
-      digitalWrite(LED_Yellow, LOW);
-      digitalWrite(LED_Red, HIGH);
-    }
-  
+
+  if(LightStep == 0) {
+    digitalWrite(LED_Green, HIGH);
+    digitalWrite(LED_Yellow, LOW);
+    digitalWrite(LED_Red, LOW);
+  } 
+  else if (LightStep == 1) {
+    digitalWrite(LED_Green, LOW);
+    digitalWrite(LED_Yellow, HIGH);
+    digitalWrite(LED_Red, LOW);
+  } 
+  else {
+    digitalWrite(LED_Green, LOW);
+    digitalWrite(LED_Yellow, LOW);
+    digitalWrite(LED_Red, HIGH);
+  }
+
 }
 
 void LightsOff() {
-  
+
   digitalWrite(LED_Green, LOW);
   digitalWrite(LED_Yellow, LOW);
   digitalWrite(LED_Red, LOW);
- 
+
 }
 
 // Funtion to normalize an angle in degrees to -180,180 degrees
@@ -119,7 +119,8 @@ void APMPinMode(volatile unsigned char &Port, byte Pin, boolean Set)
 {
   if (Set)  {
     Port |=   (1 << Pin);
-  } else  {
+  } 
+  else  {
     Port &=  ~(1 << Pin);
   }
 }
@@ -131,5 +132,21 @@ boolean APMPinRead(volatile unsigned char &Port, byte Pin)
   else
     return 0;
 }
+
+
+/* **************************************************** */
+// Camera stabilization
+//
+// Stabilization for three different camera styles
+// 1) Camera mounts that have tilt / pan
+// 2) Camera mounts that have tilt / roll
+// 3) Camera mounts that have tilt / roll / pan
+
+void camera_output() {
+  
+
+
+}
+
 
 

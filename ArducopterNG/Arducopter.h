@@ -306,6 +306,7 @@ int Sonar_Counter=0;
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;  
+byte cam_mode = 0;
 
 // Mode LED timers and variables, used to blink LED_Green
 byte gled_status = HIGH;
