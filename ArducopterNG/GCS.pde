@@ -105,7 +105,10 @@ void readSerialCommand() {
       acc_offset_y = readFloatSerial();
       acc_offset_z = readFloatSerial();
       break;
-    case 'K': // Spare
+    case 'K': // Camera mode
+              // 1 = Tilt / Roll without 
+      cam_mode = readFloatSerial();
+      //BATTLOW = readFloatSerial();
       break;      
     case 'M': // Receive debug motor commands
       frontMotor = readFloatSerial();
@@ -126,7 +129,7 @@ void readSerialCommand() {
       Kd_RateYaw = readFloatSerial();
       xmitFactor = readFloatSerial();
       break;
-   case 'W': // Write all user configurable values to EEPROM
+    case 'W': // Write all user configurable values to EEPROM
       writeUserConfig();
       break;
     case 'Y': // Initialize EEPROM with default values
@@ -147,7 +150,7 @@ void readSerialCommand() {
       ch_aux2_offset = readFloatSerial();
       break;
     case '5': // Special debug features
-            
+
 
       break;    
     }
@@ -271,8 +274,11 @@ void sendSerialTelemetry() {
     AN_OFFSET[5] = acc_offset_z;
     queryType = 'X';
     break;
-  case 'L': // Spare
-    //    RadioCalibration();
+  case 'L': // Camera settings and 
+    SerPri(cam_mode, DEC);
+    tab();
+    SerPri(BATTLOW, DEC);
+    tab();
     queryType = 'X';
     break;
   case 'N': // Send magnetometer config
@@ -354,21 +360,22 @@ void sendSerialTelemetry() {
     comma();
     SerPri(read_adc(3));
     comma();
-    SerPrln(read_adc(5));
-/*    comma();
-    SerPri(APM_Compass.Heading, 4);
-    comma();
-    SerPri(APM_Compass.Heading_X, 4);
-    comma();
-    SerPri(APM_Compass.Heading_Y, 4);
-    comma();
-    SerPri(APM_Compass.Mag_X);
-    comma();    
-    SerPri(APM_Compass.Mag_Y);
-    comma();
-    SerPri(APM_Compass.Mag_Z);
-    comma();
-*/
+    SerPri(read_adc(5));
+    /*    comma();
+     SerPri(APM_Compass.Heading, 4);
+     comma();
+     SerPri(APM_Compass.Heading_X, 4);
+     comma();
+     SerPri(APM_Compass.Heading_Y, 4);
+     comma();
+     SerPri(APM_Compass.Mag_X);
+     comma();    
+     SerPri(APM_Compass.Mag_Y);
+     comma();
+     SerPri(APM_Compass.Mag_Z);
+     comma();
+     */
+    SerPriln();
     break;
   case 'T': // Spare
     break;
@@ -425,6 +432,29 @@ void sendSerialTelemetry() {
     SerPrln(ch_aux2_offset);
     queryType = 'X';
     break;
+  case '3':  // Jani's debugs
+    SerPri(yaw);
+    tab();
+    SerPri(command_rx_yaw);
+    tab();
+    SerPri(control_yaw);
+    tab();
+    SerPri(err_yaw);
+    tab();
+    SerPri(AN[0]);
+    tab();
+    SerPri(AN[1]);
+    tab();
+    SerPri(AN[2] - gyro_offset_yaw);
+    tab();
+    SerPri(gyro_offset_yaw - AN[2]);
+    tab();
+    SerPri(gyro_offset_yaw);
+    tab();
+    SerPri(1500 - (gyro_offset_yaw - AN[2]));
+    tab();
+    SerPriln();
+    break;
   case '.': // Modify GPS settings, print directly to GPS Port
     Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
     break;
@@ -459,4 +489,5 @@ float readFloatSerial() {
   while ((data[constrain(index-1, 0, 128)] != ';') && (timeout < 5) && (index < 128));
   return atof(data);
 }
+
 

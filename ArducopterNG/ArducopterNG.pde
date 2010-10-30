@@ -49,9 +49,10 @@
 //#define IsNEWMTEK   // Do we have MTEK with new firmware
 //#define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
+//#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
 
 //#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
-//#define UseBMP
+//#define UseBMP       // Use pressure sensor
 //#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it _wired_ up!)
 
 #define CONFIGURATOR
@@ -98,7 +99,7 @@
 //#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
-// you need to roll/bank/tilt/yaw/shake etc your ArduCoptet. Don't kick like Jani always does :)
+// you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
 #define MAGOFFSET 0,0,0
 
 // Declination is a correction factor between North Pole and real magnetic North. This is different on every location
@@ -152,7 +153,7 @@
 //#include <GPS_NMEA.h> 	// ArduPilot NMEA GPS library
 
 /* Software version */
-#define VER 1.51    // Current software version (only numeric values)
+#define VER 1.52    // Current software version (only numeric values)
 
 
 /* ************************************************************ */
@@ -251,8 +252,10 @@ void loop()
     // Send output commands to motor ESCs...
     motor_output();
 
+#ifdef IsCAM
   // Do we have cameras stabilization connected and in use?
   if(!SW_DIP2) camera_output();
+#endif
 
     // Autopilot mode functions
     if (AP_mode == AP_AUTOMATIC_MODE)

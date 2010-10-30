@@ -81,17 +81,27 @@ TODO:
 #define CH_7 6
 #define CH_8 7
 
-#define ROLL_MID 1500    // Radio Roll channel mid value
-#define PITCH_MID 1500    // Radio Pitch channel mid value
-#define YAW_MID 1500    // Radio Yaw channel mid value
-#define THROTTLE_MID 1505    // Radio Throttle channel mid value
+#define ROLL_MID 1500           // Radio Roll channel mid value
+#define PITCH_MID 1500          // Radio Pitch channel mid value
+#define YAW_MID 1500            // Radio Yaw channel mid value
+#define THROTTLE_MID 1505       // Radio Throttle channel mid value
 #define AUX_MID 1500
 
 #define CHANN_CENTER 1500       // Channel center, legacy
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
+/* ******************************************************** */
+// Camera related settings
+
 #define CAM_CENT  1500          // Camera center
-#define CAM_SMOOTHING 1000      // Camera movement smoothing
+#define CAM_SMOOTHING 1000      // Camera movement smoothing on pitch axis
+#define CAM_SMOOTHING_ROLL -400 // Camera movement smoothing on roll axis
+
+#define CAM_TILT_OUT   6        // OUTx pin for Tilt servo
+#define CAM_ROLL_OUT   7        // OUTx pin for Roll servo
+#define CAM_YAW_OUT    7        // OUTx pin for Yaw servo (often same as Roll)
+
+#define CAM_TILT_CH  CH_7       // Channel for radio knob to controll tilt "zerolevel" 
 
 /*************************************************************/
 // General definitions

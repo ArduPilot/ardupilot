@@ -114,6 +114,7 @@ void readUserConfig() {
   ch_yaw_offset = readEEPROM(ch_yaw_offset_ADR);
   ch_aux_offset = readEEPROM(ch_aux_offset_ADR);
   ch_aux2_offset = readEEPROM(ch_aux2_offset_ADR);
+  cam_mode = readEEPROM(cam_mode_ADR);
 }
 
 void writeUserConfig() {
@@ -174,4 +175,6 @@ void writeUserConfig() {
   writeEEPROM(ch_yaw_offset, ch_yaw_offset_ADR);
   writeEEPROM(ch_aux_offset, ch_aux_offset_ADR);
   writeEEPROM(ch_aux2_offset, ch_aux2_offset_ADR);
+  writeEEPROM(cam_mode, cam_mode_ADR);
+  
 }
