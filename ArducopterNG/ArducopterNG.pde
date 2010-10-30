@@ -251,7 +251,8 @@ void loop()
     // Send output commands to motor ESCs...
     motor_output();
 
-//    camera_output();
+  // Do we have cameras stabilization connected and in use?
+  if(!SW_DIP2) camera_output();
 
     // Autopilot mode functions
     if (AP_mode == AP_AUTOMATIC_MODE)

@@ -66,9 +66,11 @@ void calibrateSensors(void) {
   {
     Read_adc_raw();   // Read sensors
     for(gyro=GYROZ; gyro<=GYROY; gyro++)   
-      aux_float[gyro]=aux_float[gyro]*0.8 + AN[gyro]*0.2;     // Filtering  
-    Log_Write_Sensor(AN[0],AN[1],AN[2],AN[3],AN[4],AN[5],0);
+      aux_float[gyro] = aux_float[gyro] * 0.8 + AN[gyro] * 0.2;     // Filtering  
+    Log_Write_Sensor(AN[0], AN[1], AN[2], AN[3], AN[4], AN[5], 0);
+
     delay(5);
+
     RunningLights(j);   // (in Functions.pde)
     // Runnings lights effect to let user know that we are taking mesurements
     if((i % 5) == 0) j++;
@@ -78,8 +80,8 @@ void calibrateSensors(void) {
   // Switch off all ABC lights
   LightsOff();
 
-  for(gyro=GYROZ; gyro<=GYROY; gyro++)  
-    AN_OFFSET[gyro]=aux_float[gyro];    // Update sensor OFFSETs from values read
+  for(gyro = GYROZ; gyro <= GYROY; gyro++)  
+    AN_OFFSET[gyro] = aux_float[gyro];    // Update sensor OFFSETs from values read
 }
 
 #ifdef UseBMP
@@ -91,10 +93,10 @@ void read_baro(void)
   //tempPresAlt = pow(tempPresAlt, 0.190284);
   //press_alt = (1.0 - tempPresAlt) * 145366.45;
   tempPresAlt = pow(tempPresAlt, 0.190295);
-  if (press_alt==0)
+  if (press_alt == 0)
     press_alt = (1.0 - tempPresAlt) * 4433000;      // Altitude in cm
   else
-    press_alt = press_alt*0.9 + ((1.0 - tempPresAlt) * 443300);  // Altitude in cm (filtered)
+    press_alt = press_alt * 0.9 + ((1.0 - tempPresAlt) * 443300);  // Altitude in cm (filtered)
 }
 #endif
 

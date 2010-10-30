@@ -110,6 +110,7 @@ TODO:
 //#define SerBau  115200      // Baud setting moved close next to port selection
 #define SerPri  Serial3.print
 #define SerPrln Serial3.println
+#define SerPriln Serial3.println
 #define SerRea  Serial3.read
 #define SerAva  Serial3.available
 #define SerRea  Serial3.read
@@ -122,6 +123,7 @@ TODO:
 //#define SerBau  115200      // Baud setting moved close next to port selection
 #define SerPri  Serial.print
 #define SerPrln Serial.println
+#define SerPriln Serial.println
 #define SerRea  Serial.read
 #define SerAva  Serial.available
 #define SerRea  Serial.read
@@ -155,6 +157,10 @@ int SENSOR_SIGN[]={
 // Tested value : 408
 #define GRAVITY 408 //this equivalent to 1G in the raw data coming from the accelerometer 
 #define Accel_Scale(x) x*(GRAVITY/9.81)//Scaling the raw data of the accel to actual acceleration in meters for seconds square
+
+#define ROLL_DEF  0      // Level values for roll, used to calculate roll_acc_offset
+#define PITCH_DEF 0      // Level values for pitch, used to calculate pitch_acc_offset
+#define Z_DEF  GRAVITY   // Stable level value for Z, used to calculate z_acc_offset, same as GRAVITY
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 #define ToDeg(x) (x*57.2957795131)  // *180/pi

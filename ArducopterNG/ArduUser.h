@@ -59,6 +59,11 @@ TODO:
 #define RI_LED AN10  // Mega PH4 pin, OUT5
 #define LE_LED AN8  // Mega PH5 pin, OUT4
 
+#define GPS_AM_PAT1 L\0x00\0x00\0x05
+#define GPS_AM_PAT2 L\0xFF\0xFF\0x05
+#define GPS_AM_PAT3 L\0xF0\0xF0\0x05
+
+
 /* AM PIN Definitions - END */
 
 /*************************************************************/
@@ -86,6 +91,7 @@ TODO:
 #define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
 #define CAM_CENT  1500          // Camera center
+#define CAM_SMOOTHING 1000      // Camera movement smoothing
 
 /*************************************************************/
 // General definitions

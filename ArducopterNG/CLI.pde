@@ -7,8 +7,7 @@
  Version  : v1.0, Oct 18, 2010
  Author(s): ArduCopter Team
  Jani Hirvinen, Jose Julio, Jordi Muñoz,
- Ted Carancho (aeroquad), Ken McEwans, Roberto Navoni,          
- Sandro Benigno, Chris Anderson, Randy McEvans
+ Ken McEwans, Roberto Navoni, Sandro Benigno, Chris Anderson, Randy McEvans
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -40,6 +39,10 @@ boolean ShowMainMenu;
 // This can be moved later to CLI.pde
 void RunCLI () {
 
+//  APM_RC.Init();             // APM Radio initialization
+  
+  readUserConfig();          // Read memory values from EEPROM
+    
   ShowMainMenu = TRUE;
   // We need to initialize Serial again due it was not initialized during startup. 
   SerBeg(SerBau);   
@@ -61,7 +64,9 @@ void RunCLI () {
       case 'c':
         CALIB_CompassOffset();
         break;
-
+      case 'i':
+        CALIB_AccOffset();
+        break; 
       }
     }
   } // Mainloop ends
@@ -73,6 +78,7 @@ void Show_MainMenu() {
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
   SerPrln(" c - Show compass offsets (no return, reboot)");
+  SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" ");
 }
 
@@ -162,6 +168,59 @@ void CALIB_CompassOffset() {
 }
 
 
+/* ************************************************************** */
+// Accell calibration
+void CALIB_AccOffset() {
 
+  uint8_t loopy;
+  uint16_t xx = 0, xy = 0, xz = 0; 
+
+  APM_ADC.Init();            // APM ADC library initialization
+//  delay(250);                // Giving small moment before starting
+
+  calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
+
+  SerPrln();
+  SerPrln("Sampling 10 samples from Accelerometers, don't move your ArduCopter!");
+  SerPrln("Sample:\tAcc-X\tAxx-Y\tAcc-Z");
+
+  for(loopy = 1; loopy <= 5; loopy++) {
+    SerPri("  ");
+    SerPri(loopy);
+    SerPri(":");
+    tab();
+/*    SerPri(xx += read_adc(4));
+    tab();
+    SerPri(xy += -read_adc(3));
+    tab();
+    SerPrln(xz += read_adc(5));
+*/
+    SerPri(xx += APM_ADC.Ch(4));
+    tab();
+    SerPri(xy += APM_ADC.Ch(5));
+    tab();
+    SerPrln(xz += APM_ADC.Ch(3));
+
+
+
+  }
+  
+  xx = xx / (loopy - 1);
+  xy = xy / (loopy - 1);
+  xz = xz / (loopy - 1) ;
+  
+  SerPriln("Averages as follows");
+  SerPri("  ");
+  tab();
+  SerPri(xx);
+  tab();
+  SerPri(xy);
+  tab();
+  SerPri(xz);
+  SerPriln();
+
+
+
+}
 
 

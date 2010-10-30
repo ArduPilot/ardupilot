@@ -51,11 +51,6 @@ void APM_Init() {
   APMPinMode(DDRL,6,INPUT);   // DIP3, (PL6)
   APMPinMode(DDRL,7,INPUT);   // DIP4, (PL7), Furthest DIP from sliding SW2 switch
 
-  // Is CLI mode active or not, if it is fire it up and never return.
-  if(digitalRead(SW2)) {
-    RunCLI();
-    // Btw.. We never return from this....
-  }
 
   /* ********************************************************* */
   ///////////////////////////////////////////////////////// 
@@ -92,6 +87,14 @@ void APM_Init() {
 
 #endif
 #endif
+
+
+  // Is CLI mode active or not, if it is fire it up and never return.
+  if(digitalRead(SW2)) {
+    RunCLI();
+    // Btw.. We never return from this....
+  }
+
 
   // Read DIP Switches and other important values. DIP switches needs special functions to 
   // read due they are not defined as normal pins like other GPIO's are. 
@@ -143,7 +146,7 @@ void APM_Init() {
 
   // Check if we enable the DataFlash log Read Mode (switch)
   // If we press switch 1 at startup we read the Dataflash eeprom
-  while (digitalRead(SW1)==0)
+  while (digitalRead(SW1)==0)  // LEGACY remove soon by jp, 30-10-10
   {
     Serial.println("Entering Log Read Mode...");    // This will be obsole soon due moving to CLI system
     Log_Read(1,1000);

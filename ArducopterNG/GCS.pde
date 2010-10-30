@@ -435,6 +435,9 @@ void comma() {
   SerPri(',');
 }
 
+void tab() {
+  SerPri("\t");
+}
 
 // Used to read floating point values from the serial port
 float readFloatSerial() {
