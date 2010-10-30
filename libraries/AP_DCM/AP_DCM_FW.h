@@ -64,8 +64,6 @@ private:
 	
 	Matrix3f	_dcm_matrix;
 
-	float 		_adc_in[6];					// array that store the 6 ADC channels used by IMU
-	float 		_adc_offset[6]; 			// Array that store the Offset of the gyros and accelerometers
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector
 	Vector3f 	_gyro_vector;				//Store the gyros turn rate in a vector
 	Vector3f	_omega_P;					//Omega Proportional correction
@@ -78,11 +76,6 @@ private:
 	float 		_course_over_ground_x; 		//Course overground X axis
 	float 		_course_over_ground_y; 		//Course overground Y axis
 
-	// constants
-	static const uint8_t	_sensors[6];
-	static const int    	_sensor_signs[9];
-	static const uint8_t	_gyro_temp_ch = 3; 						// The ADC channel reading the gyro temperature
-	static const float 		_gyro_temp_curve[3][3];
 };
 
 #endif

@@ -1,19 +1,43 @@
+/*
+	APM_DCM_FW.cpp - DCM AHRS Library, fixed wing version, for Ardupilot Mega
+		Code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
 
+	This library works with the ArduPilot Mega and "Oilpan"
+	
+	This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+        Methods:
+                quick_init()		: For air restart
+                init() 				: For ground start.  Calibrates the IMU
+				update_DCM(_G_Dt)	: Updates the AHRS by integrating the rotation matrix over time _G_Dt using the IMU object data
+				get_roll_sensor()	: Returns roll in degrees * 100
+				get_roll()			: Returns roll in radians
+				get_pitch_sensor()	: Returns pitch in degrees * 100
+				get_pitch()			: Returns pitch in radians
+				get_yaw_sensor()	: Returns yaw in degrees * 100
+				get_yaw()			: Returns yaw in radians
+
+*/
 #include <AP_DCM_FW.h>
 
 #define OUTPUTMODE 1	// This is just used for debugging, remove later
+#define TRUE 1
+#define FALSE 0
 
 
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
-#define Kp_ROLLPITCH 0.5852	 		// .0014 * 418 Pitch&Roll Drift Correction Proportional Gain
-#define Ki_ROLLPITCH 0.0001254 		// 0.0000003 * 418 Pitch&Roll Drift Correction Integrator Gain
+#define Kp_ROLLPITCH 0.05967 		// .0014 * 418/9.81 Pitch&Roll Drift Correction Proportional Gain
+#define Ki_ROLLPITCH 0.00001278		// 0.0000003 * 418/9.81 Pitch&Roll Drift Correction Integrator Gain
 #define Kp_YAW 0.8		 			// Yaw Drift Correction Porportional Gain	
 #define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
 
 
-#define SPEEDFILT 400			// centimeters/second
+#define SPEEDFILT 300			// centimeters/second
 #define ADC_CONSTRAINT 900
 
 
@@ -154,11 +178,11 @@ AP_DCM_FW::_accel_adjust(void)
 	Vector3f _veloc, _temp;
 	float _vel;
 	
-	_veloc.x = (_gps->ground_speed / 100) / 9.81;		// We are working with acceleration in g units
+	_veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 	
 	//_accel_vector += _omega_integ_corr % _veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
 	_temp.y = _omega_integ_corr.z * _veloc.x; 			// only computing the non-zero terms
-	_temp.z = -1.0f * _omega_integ_corr.y * _veloc.x; 
+	_temp.z = -1.0f * _omega_integ_corr.y * _veloc.x;	// After looking at the compiler issue lets remove _veloc and simlify 
 
 	_accel_vector -= _temp;
 	
@@ -234,11 +258,12 @@ AP_DCM_FW::drift_correction(void)
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
+	static bool last_speed_below_thresh = TRUE;
 	
 	//*****Roll and Pitch***************
 
 	// Calculate the magnitude of the accelerometer vector
-	accel_magnitude = _accel_vector.length();
+	accel_magnitude = _accel_vector.length() / 9.80665f;
 
 	// Dynamic weighting of accelerometer info (reliability filter)
 	// Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
@@ -268,7 +293,11 @@ AP_DCM_FW::drift_correction(void)
 		error_course= (_dcm_matrix.a.x * _compass->Heading_Y) - (_dcm_matrix.b.x * _compass->Heading_X);	// Equation 23, Calculating YAW error	
 	} else {
 		// Use GPS Ground course to correct yaw gyro drift
-		if (_gps->ground_speed >= SPEEDFILT) {
+		if (_gps->ground_speed >= SPEEDFILT && last_speed_below_thresh) {
+			last_speed_below_thresh = FALSE;
+			//  *** Need to put code here to compute the rotation matrix to update the DCM matrix to the correct yaw value now that we have a reference.
+			//  *** Not having that code at present doesn't really hurt anything.  It just delays the beginning of yaw drift correction by 1 gps sample in time.
+		} else if (_gps->ground_speed >= SPEEDFILT) {
 			_course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
 			_course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
 			// Optimization: Pass these in as arguments to update so they don't have to be calculated here and the AP code
@@ -276,6 +305,7 @@ AP_DCM_FW::drift_correction(void)
 			error_course = (_dcm_matrix.a.x * _course_over_ground_y) - (_dcm_matrix.b.x * _course_over_ground_x);	// Equation 23, Calculating YAW error
 		} else {
 			error_course = 0;
+			last_speed_below_thresh = TRUE;
 		}
 	}	
 	

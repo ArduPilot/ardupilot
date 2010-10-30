@@ -1,3 +1,21 @@
+/*
+	APM_IMU.cpp - IMU Sensor Library for Ardupilot Mega
+		Code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+
+	This library works with the ArduPilot Mega and "Oilpan"
+	
+	This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+        Methods:
+                quick_init()	: For air restart
+                init() 			: For ground start.  Calibration
+				get_gyro()		: Returns gyro vector.  Elements in radians/second
+				get_accel()		: Returns acceleration vector.  Elements in meters/seconds squared
+
+*/
 
 #include <AP_IMU.h>
 
@@ -8,7 +26,7 @@
 // ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
 // Tested value : 418
 #define GRAVITY 418 //this equivalent to 1G in the raw data coming from the accelerometer 
-#define accel_scale(x) (x/GRAVITY)//Scaling the raw data of the accel to actual acceleration in meters per second squared
+#define accel_scale(x) (x*9.80665/GRAVITY)//Scaling the raw data of the accel to actual acceleration in meters per second squared
 
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
