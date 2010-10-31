@@ -125,7 +125,7 @@ void APM_Init() {
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
 
-#ifdef IsMag
+#ifdef IsMAG
   if (MAGNETOMETER == 1) {
     APM_Compass.Init();  // I2C initialization
     APM_Compass.SetOrientation(MAGORIENTATION);
