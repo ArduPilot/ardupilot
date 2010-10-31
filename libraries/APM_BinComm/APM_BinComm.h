@@ -39,6 +39,18 @@
 /// @brief		Class providing protocol en/decoding services for the ArduPilot
 ///				Mega binary telemetry protocol.
 ///
+/// The protocol definition, including structures describing
+/// messages, MessageID values and helper functions for sending
+/// and unpacking messages are automatically generated.
+///
+/// See protocol/protocol.def for a description of the message
+/// definitions, and protocol/protocol.h for the generated
+/// definitions.
+///
+/// Protocol messages are sent using the send_* functions defined in
+/// protocol/protocol.h, and handled on reception by functions defined
+/// in the handlerTable array passed to the constructor.
+///
 class BinComm {
 public:
 	struct MessageHandler;
@@ -50,7 +62,10 @@ public:
 	///								received messages will be sent.	 More than
 	///								one handler for a given messageID may be
 	///								registered; handlers are called in the order
-	///								they appear in the table.
+	///								they appear in the table.  A single handler
+	///								may be registered for more than one message,
+	///								as the message ID is passed to the handler
+	///								when it is received.
 	///
 	/// @param interface			The stream that will be used
 	///								for telemetry communications.
@@ -111,9 +126,6 @@ public:
 	//////////////////////////////////////////////////////////////////////
 	/// @name		Protocol definition
 	///
-	/// The protocol definition, including structures describing messages,
-	/// MessageID values and helper functions for packing messages are
-	/// automatically generated.
 	//@{
 #include "protocol/protocol.h"
 	//@}

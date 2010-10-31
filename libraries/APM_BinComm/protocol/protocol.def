@@ -1,15 +1,17 @@
 #
 # Message definitions for the ArduPilot Mega binary communications protocol.
 #
-# Process this file using:
+# Process this file to generate protocol.h, using:
 #
-# awk -f protogen.awk protocol.def > protocol.h
+#    awk -f protogen.awk protocol.def > protocol.h
 #
 # Messages are declared with
 #
 #     message <MESSAGE_ID> <MESSAGE_NAME>
 #
-#       <MESSAGE_NAME> is a valid member of BinComm::MessageID.
+#       <MESSAGE_NAME> is a unique name by which the message will
+#		       be known.
+#
 #       <MESSAGE_ID> is the message ID byte
 #
 # Following a message declaration the fields of the message are
@@ -21,6 +23,38 @@
 #       word, either an integer from <inttypes.h> or "char".
 #	<NAME> is the name of the field; it should be unique within the message
 #	<COUNT> is an optional array count for fields that are arrays
+#
+# Each message causes the definition of several items in the APM_BinComm
+# class.  Note that <MESSAGE_NAME> is uppercase, and <message_name> is
+# lowercase.
+#
+#    BinComm::<MESSAGE_NAME>
+#
+#	An enumeration with the value <MESSAGE_ID>
+#
+#    BinComm::<message_name>
+#
+#	A structure which corresponds to the layout of the message payload.
+#	In a message reception callout function the messageData pointer can
+#	be cast to this type to directly access specific elements of the
+#	message.  Do not modify fields in the structure in this case.
+#
+#    BinComm::send_<message_name>(<TYPE> <NAME>[, <TYPE> <NAME>...])
+#
+#	A function which takes arguments as listed in the message definition
+#	and which constructs and sends the message.
+#	The send_<message_name> functions queue data for transmission but
+#	do not wait for the message to be completed before returning, as long
+#	as there is space in the Stream buffer for the message.
+#	These functions are not re-entrant, and must not be called from an
+#	interrupt handler.
+#
+#    BinComm::unpack_<message_name>(<TYPE> &<NAME>[, <TYPE> &<NAME>...])
+#
+#	A function which unpacks the message.  Use this instead of casting
+#	to the structure when you intend to use most of the values from the
+#	message.  Must only be called inside the message reception callout
+#	function, as it references the message receive buffer directly.
 #
 
 #
