@@ -8,6 +8,9 @@
 // your option) any later version.
 //
 
+#ifndef __BETTERSTREAM_H
+#define __BETTERSTREAM_H
+
 #include <Stream.h>
 #include <avr/pgmspace.h>
 
@@ -36,3 +39,6 @@ private:
         static int      _putchar(char c, FILE *stream);
         static int      _getchar(FILE *stream);
 };
+
+#endif // __BETTERSTREAM_H
+
