@@ -85,6 +85,15 @@ Menu::run(void)
 			_argv[argc].f = atof(_argv[argc].str);	// calls strtod, > 700B !
 			argc++;
 		}
+
+		// populate arguments that have not been specified with "" and 0
+		// this is safer than NULL in the case where commands may look
+		// without testing argc
+		while (argc <= MENU_ARGS_MAX) {
+			_argv[argc].str = "";
+			_argv[argc].i = 0;
+			_argv[argc].f = 0;
+		}
 			
 		// look for a command matching the first word (note that it may be empty)
 		for (i = 0; i < _entries; i++) {
