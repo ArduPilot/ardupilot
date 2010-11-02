@@ -25,6 +25,8 @@ public:
 	float	get_roll(void);						// Radians
 	float	get_pitch(void);					// Radians
 	float	get_yaw(void);						// Radians
+	Vector3f	get_gyros(void);
+	Vector3f	get_accels(void);
 	
 	// Methods
 	void	quick_init(void);
