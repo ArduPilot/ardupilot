@@ -447,6 +447,11 @@ unsigned long elapsedTime			= 0;		// for doing custom events
 #define GPSDEV_IMU      4
 #define GPSDEV_NMEA     5
 
+// Radio Modes, mainly just Mode2 
+#define MODE1           1 
+#define MODE2           2
+#define MODE3           3
+#define MODE4           4
 
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;

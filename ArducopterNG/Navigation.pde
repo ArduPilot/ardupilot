@@ -42,7 +42,7 @@ void read_GPS_data()
   GPS.NewData=0;    // We Reset the flag...
 
   // Write GPS data to DataFlash log
-  Log_Write_GPS(GPS.Time, GPS.Lattitude,GPS.Longitude,GPS.Altitude,GPS.Altitude,GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
+  Log_Write_GPS(GPS.Time, GPS.Lattitude, GPS.Longitude, GPS.Altitude, GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
 
   //if (GPS.Fix >= 2)
   if (GPS.Fix)

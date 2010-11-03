@@ -96,6 +96,14 @@
 //#define GpsBau  115200
 
 
+/* ************************************************* */
+// Radio modes
+#define RADIOMODE  MODE2    // Most users have this eg: left stick: Throttle/Rudder, right stick: Elevator/Aileron
+//#define RADIOMODE  MODE1  // Only if you are sure that you have Mode 1 radio. 
+
+// NOTE! MODE1 is not working yet, we need to have input from users to be sure of channel orders.  03-11-10, jp
+
+
 
 /* ************************************************* */
 // Flight & Electronics orientation
@@ -141,6 +149,8 @@
 //#define DECLINATION 0.73      // Tony, Minneapolis, 0°44'E
 
 //#endif
+
+
 
 
 
