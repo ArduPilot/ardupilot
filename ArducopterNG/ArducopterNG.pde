@@ -40,10 +40,18 @@
 /* ************************************************************ */
 
 /* ************************************************************ */
-// User definable modules, check them every time you have new 
-// software version at your hand.
-
+// User MODULES
+//
+// Please check your modules settings for every new software downloads you have.
+// Also check repository / ArduCopter wiki pages for ChangeLogs and software notes
+//
 // Comment out with // modules that you are not using
+//
+// Do check ArduUser.h settings file too !!
+//
+///////////////////////////////////////
+//  Modules Config
+// --------------------------
 
 //#define IsGPS       // Do we have a GPS connected
 //#define IsNEWMTEK   // Do we have MTEK with new firmware
@@ -57,6 +65,14 @@
 
 #define CONFIGURATOR
 
+///////////////////////////////////////
+// GPS Selection
+
+#define GPSDEVICE GPSDEV_DIYMTEK    // For DIY Drones MediaTek
+//#define GPSDEVICE  GPSDEV_DIYUBLOX   // For DIY Drones uBlox GPS
+//#define GPSDEVICE  GPSDEV_FPUBLOX    // For Fah Pah Special ArduCopter GPS
+//#define GPSDEVICE  GPSDEV_NMEA       // For general NMEA compatible GPSEs
+//#dedine GPSDEVICE  GPSDEV_IMU        // For IMU Simulations only
 
 ////////////////////
 // Serial ports & speeds
@@ -88,12 +104,13 @@
 //#define FLIGHT_MODE_+    // Traditional "one arm as nose" frame configuration
 //#define FLIGHT_MODE_X  // Frame orientation 45 deg to CCW, nose between two arms
 // 19-10-10 by JP
+
 // This feature has been disabled for now, if you want to change between flight orientations
 // just use DIP switch for that. DIP1 down = X, DIP1 up = +
 
 // Magneto orientation and corrections.
-// If you don't have magneto actiavted, It is safe to ignore these
-#ifdef IsMAG
+// If you don't have magneto activated, It is safe to ignore these
+//#ifdef IsMAG
 #define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
 //#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
 //#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
@@ -123,7 +140,7 @@
 //#define DECLINATION -6.08     // Jose, Canary Islands, 6°5'W
 //#define DECLINATION 0.73      // Tony, Minneapolis, 0°44'E
 
-#endif
+//#endif
 
 
 
@@ -131,6 +148,7 @@
 /* **************** MAIN PROGRAM - INCLUDES ******************* */
 /* ************************************************************ */
 
+//#include <AP_GPS.h>
 #include <avr/io.h>
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
@@ -143,14 +161,18 @@
 #include <Wire.h>               // I2C Communication library
 #include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library 
 #include <EEPROM.h>             // EEPROM 
+//#include <AP_GPS.h>
 #include "Arducopter.h"
 #include "ArduUser.h"
 
+#ifdef IsGPS
 // GPS library (Include only one library)
-#include <GPS_MTK.h>		// ArduPilot MTK GPS Library
-//#include <GPS_IMU.h>		// ArduPilot IMU/SIM GPS Library
-//#include <GPS_UBLOX.h>	// ArduPilot Ublox GPS Library
-//#include <GPS_NMEA.h> 	// ArduPilot NMEA GPS library
+#include <GPS_MTK.h>            // ArduPilot MTK GPS Library
+//#include <GPS_IMU.h>            // ArduPilot IMU/SIM GPS Library
+//#include <GPS_UBLOX.h>  // ArduPilot Ublox GPS Library
+//#include <GPS_NMEA.h>   // ArduPilot NMEA GPS library
+#endif
+
 
 /* Software version */
 #define VER 1.52    // Current software version (only numeric values)
@@ -262,14 +284,17 @@ void loop()
     {
       if (target_position)
       {
+        #ifdef IsGPS
         if (GPS.NewData)     // New GPS info?
         {
           read_GPS_data();
           Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
         }
+        #endif
       }
       else   // First time we enter in GPS position hold we capture the target position as the actual position
       {
+        #ifdef IsGPS
         if (GPS.Fix){   // We need a GPS Fix to capture the actual position...
           target_lattitude = GPS.Lattitude;
           target_longitude = GPS.Longitude;
@@ -279,6 +304,7 @@ void loop()
           Initial_Throttle = ch_throttle;
           Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
         }
+        #endif
         command_gps_roll=0;
         command_gps_pitch=0;
       }
@@ -290,7 +316,9 @@ void loop()
   // Medium loop (about 60Hz) 
   if ((currentTime-mediumLoop)>=17){
     mediumLoop = currentTime;
+#ifdef IsGPS
     GPS.Read();     // Read GPS data 
+#endif
     // Each of the six cases executes at 10Hz
     switch (medium_loopCounter){
     case 0:   // Magnetometer reading (10Hz)

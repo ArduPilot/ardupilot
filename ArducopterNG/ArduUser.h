@@ -59,10 +59,19 @@ TODO:
 #define RI_LED AN10  // Mega PH4 pin, OUT5
 #define LE_LED AN8  // Mega PH5 pin, OUT4
 
+
+
+/*************************************************************/
+// Special patterns for future use
+
+/*
+#define POFF  L1\0x00\0x00\0x05
+#define PALL  L1\0xFF\0xFF\0x05
+
 #define GPS_AM_PAT1 L\0x00\0x00\0x05
 #define GPS_AM_PAT2 L\0xFF\0xFF\0x05
 #define GPS_AM_PAT3 L\0xF0\0xF0\0x05
-
+*/
 
 /* AM PIN Definitions - END */
 
@@ -102,6 +111,8 @@ TODO:
 #define CAM_YAW_OUT    7        // OUTx pin for Yaw servo (often same as Roll)
 
 #define CAM_TILT_CH  CH_7       // Channel for radio knob to controll tilt "zerolevel" 
+
+
 
 /*************************************************************/
 // General definitions

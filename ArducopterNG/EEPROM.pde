@@ -57,6 +57,8 @@ void writeEEPROM(float value, int address) {
 }
 
 void readUserConfig() {
+//  eeprom_counter = readEEPROM(eeprom_counter_ADR);
+//  eeprom_checker = readEEPROM(eeprom_checker_ADR);
   KP_QUAD_ROLL = readEEPROM(KP_QUAD_ROLL_ADR);
   KI_QUAD_ROLL = readEEPROM(KI_QUAD_ROLL_ADR);
   STABLE_MODE_KP_RATE_ROLL = readEEPROM(STABLE_MODE_KP_RATE_ROLL_ADR);
@@ -115,9 +117,19 @@ void readUserConfig() {
   ch_aux_offset = readEEPROM(ch_aux_offset_ADR);
   ch_aux2_offset = readEEPROM(ch_aux2_offset_ADR);
   cam_mode = readEEPROM(cam_mode_ADR);
+  mag_orientation = readEEPROM(mag_orientation_ADR);
+  mag_declination = readEEPROM(mag_declination_ADR);
+  mag_offset_x = readEEPROM(mag_offset_x_ADR);
+  mag_offset_y = readEEPROM(mag_offset_y_ADR);
+  mag_offset_z = readEEPROM(mag_offset_z_ADR);
+  
 }
 
 void writeUserConfig() {
+//  eeprom_counter = readEEPROM(eeprom_counter_ADR);
+//  if(eeprom_counter > 0) eeprom_counter = 0;
+//  eeprom_counter++;
+//  writeEEPROM(eeprom_counter, eeprom_counter_ADR);
   writeEEPROM(KP_QUAD_ROLL, KP_QUAD_ROLL_ADR);
   writeEEPROM(KI_QUAD_ROLL, KI_QUAD_ROLL_ADR);
   writeEEPROM(STABLE_MODE_KP_RATE_ROLL, STABLE_MODE_KP_RATE_ROLL_ADR);
@@ -176,5 +188,11 @@ void writeUserConfig() {
   writeEEPROM(ch_aux_offset, ch_aux_offset_ADR);
   writeEEPROM(ch_aux2_offset, ch_aux2_offset_ADR);
   writeEEPROM(cam_mode, cam_mode_ADR);
+  writeEEPROM(mag_orientation, mag_orientation_ADR);
+  writeEEPROM(mag_declination, mag_declination_ADR);
+  writeEEPROM(mag_offset_x, mag_offset_x_ADR);
+  writeEEPROM(mag_offset_y, mag_offset_y_ADR);
+  writeEEPROM(mag_offset_z, mag_offset_z_ADR);
+  
   
 }

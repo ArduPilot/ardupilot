@@ -315,7 +315,7 @@ int Sonar_Counter=0;
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;  
-//byte cam_mode = 0;
+//byte cam_mode = 0;  // moved to general settings, 31-10-10, jp
 
 // Mode LED timers and variables, used to blink LED_Green
 byte gled_status = HIGH;
@@ -439,6 +439,15 @@ unsigned long elapsedTime			= 0;		// for doing custom events
 					// SEVERITY_HIGH
 					// SEVERITY_CRITICAL
 
+// Different GPS devices, 
+
+#define GPSDEV_DIYMTEK  1
+#define GPSDEV_DIYUBLOX 2
+#define GPSDEV_FPUBLOX  3
+#define GPSDEV_IMU      4
+#define GPSDEV_NMEA     5
+
+
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;
 float KI_QUAD_ROLL;
@@ -495,6 +504,13 @@ float ch_yaw_offset          = 0;
 float ch_aux_offset          = 0;
 float ch_aux2_offset         = 0;
 byte cam_mode                = 0;
+byte mag_orientation         = 0;    // mag variables, reserved for future use, 31-10-10, jp
+float mag_declination        = 0.0;  
+float mag_offset_x           = 0;    // is int enough for offsets.. checkit, 31-10-10, jp
+float mag_offset_y           = 0;
+float mag_offset_z           = 0;
+//float eeprom_counter;                // reserved for eeprom write counter, 31-10-10, jp
+//float eeprom_checker;                // reserved for eeprom checksums, 01-11-10, jp
 
 // This function call contains the default values that are set to the ArduCopter
 // when a "Default EEPROM Value" command is sent through serial interface
@@ -557,6 +573,11 @@ void defaultUserConfig() {
   ch_aux_offset              = 0;
   ch_aux2_offset             = 0;
   cam_mode                   = 0;
+  mag_orientation            = 0;  // reserved for future, 31-10-10, jp
+  mag_declination            = 0.0;
+  mag_offset_x               = 0;
+  mag_offset_y               = 0;
+  mag_offset_z               = 0;
 }
 
 // EEPROM storage addresses
@@ -618,4 +639,16 @@ void defaultUserConfig() {
 #define ch_aux_offset_ADR      220
 #define ch_aux2_offset_ADR     224
 #define cam_mode_ADR           226
+#define mag_orientation_ADR    228  // reserved for future, 31-10-10, jp
+#define mag_declination_ADR    230  // reserved for future, 31-10-10, jp
+#define mag_offset_x_ADR       232
+#define mag_offset_y_ADR       234
+#define mag_offset_z_ADR       236
 
+
+//#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp
+//#define eeprom_checker_ADR     240  // this too... , 31-10-10, jp
+
+
+
+// end of file
