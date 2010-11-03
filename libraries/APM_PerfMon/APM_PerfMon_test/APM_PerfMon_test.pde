@@ -24,11 +24,10 @@ void loop()
     }
     
     APM_PerfMon::DisplayResults(&Serial);
+ 
+    delay(10000); 
     
     APM_PerfMon::ClearAll();
-    
-    delay(10000);
-    
 }
 
 void testFunction()

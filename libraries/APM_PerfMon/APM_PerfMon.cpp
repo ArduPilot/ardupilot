@@ -86,29 +86,61 @@ int APM_PerfMon::recordFunctionName(const char funcName[])
 void APM_PerfMon::ClearAll()
 {
     int i;
-	
-	allStartTime = 0;
-	allEndTime = 0;
+	APM_PerfMon *p = lastCreated;
 	
 	for(i=0; i<PERFMON_MAX_FUNCTIONS; i++)
 	{
 		time[i] = 0;  // reset times
 		numCalls[i] = 0;  // reset num times called
 	}
+
+	// reset start time to now
+	allStartTime = micros();	
+	allEndTime = 0;
+	
+	// reset start times of any active counters
+	while( p != NULL ) {
+	    p->_startTime = allStartTime;
+		p = p->_parent;
+	}
 }
 
 // ClearAll - clears all data from static members
 void APM_PerfMon::DisplayResults(HardwareSerial* aSerial)
 {
-    int i,j,padding;
+    int i,j,k,padding,changed;
 	float hz;
 	float pct;
 	unsigned long totalTime;
 	unsigned long sumOfTime = 0;
 	unsigned long unExplainedTime;
+	int order[PERFMON_MAX_FUNCTIONS];
+	APM_PerfMon* p = lastCreated;
 	
+	// record end time
 	if( allEndTime == 0 )
 	    allEndTime = micros();
+		
+    // turn off any time recording
+	if( lastCreated != NULL )
+	    lastCreated->stop();
+	
+	// reorder results
+	for(i=0; i<nextFuncNum; i++)
+	    order[i] = i;
+	changed=0;
+	do{
+	    changed = 0;
+	    for(i=0; i<nextFuncNum-1; i++)
+		    if(time[order[i]]<time[order[i+1]])
+			{
+			    j = order[i];
+				order[i] = order[i+1];
+				order[i+1] = j;
+				changed = 1;
+			}
+	}while(changed != 0);
+	// sort results
 	
 	totalTime = allEndTime - allStartTime;
 	
@@ -123,20 +155,21 @@ void APM_PerfMon::DisplayResults(HardwareSerial* aSerial)
 	aSerial->println("PerfMon:           \tcpu%\tmils\t#called\tHz");
 	for( i=0; i<nextFuncNum; i++ )
 	{
-	    sumOfTime += time[i];
-	    hz = numCalls[i]/(totalTime/1000000);
-		pct = ((float)time[i] / (float)totalTime) * 100.0;
-		padding = PERFMON_FUNCTION_NAME_LENGTH - strLen(functionNames[i]);
+	    j=order[i];
+	    sumOfTime += time[j];
+	    hz = numCalls[j]/(totalTime/1000000);
+		pct = ((float)time[j] / (float)totalTime) * 100.0;
+		padding = PERFMON_FUNCTION_NAME_LENGTH - strLen(functionNames[j]);
 		
-		aSerial->print(functionNames[i]);
-		for(j=0;j<padding;j++)
+		aSerial->print(functionNames[j]);
+		for(k=0;k<padding;k++)
 		    aSerial->print(" ");
 		aSerial->print("\t");
 		aSerial->print(pct);
 		aSerial->print("%\t");
-		aSerial->print(time[i]/1000);
+		aSerial->print(time[j]/1000);
 		aSerial->print("\t");
-		aSerial->print(numCalls[i]);
+		aSerial->print(numCalls[j]);
 		aSerial->print("\t");		
 		aSerial->print(hz,0);
 		aSerial->print("hz");
@@ -153,7 +186,10 @@ void APM_PerfMon::DisplayResults(HardwareSerial* aSerial)
 	aSerial->print("%\t");
 	aSerial->print(unExplainedTime/1000);
 	aSerial->println();
-
+	
+	// turn back on any time recording
+	if( lastCreated != NULL )
+	    lastCreated->start();
 }
 
 int APM_PerfMon::strLen(char* str)
