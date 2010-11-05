@@ -71,7 +71,18 @@ public:
 	///								for telemetry communications.
 	///
 	BinComm(const MessageHandler *handlerTable,
-			Stream *interface);
+			Stream *interface = NULL);
+
+	///
+	/// Optional initialiser.
+	///
+	/// If the interface stream isn't known at construction time, it
+	/// can be set here instead.
+	///
+	/// @param interface			The stream that will be used for telemetry
+	///								communications.
+	///
+	void			init(Stream *interface);
 
 private:
 	/// OTA message header
@@ -101,25 +112,58 @@ private:
 	/// @name		Message pack/unpack utility functions
 	///
 	//@{
-	inline void	_pack(uint8_t *&ptr, const uint8_t  x) { *(uint8_t  *)ptr = x; ptr += sizeof(x); }
-	inline void	_pack(uint8_t *&ptr, const uint16_t x) { *(uint16_t *)ptr = x; ptr += sizeof(x); }
-	inline void	_pack(uint8_t *&ptr, const int16_t  x) { *(int16_t  *)ptr = x; ptr += sizeof(x); }
-	inline void	_pack(uint8_t *&ptr, const uint32_t x) { *(uint32_t *)ptr = x; ptr += sizeof(x); }
-	inline void	_pack(uint8_t *&ptr, const int32_t  x) { *(int32_t  *)ptr = x; ptr += sizeof(x); }
 
-	inline void	_pack(uint8_t *&ptr, const char     *msg,    uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; }
-	inline void	_pack(uint8_t *&ptr, const uint8_t  *values, uint8_t count) { memcpy(ptr, values, count); ptr += count; }
-	inline void	_pack(uint8_t *&ptr, const uint16_t *values, uint8_t count) { memcpy(ptr, values, count * 2); ptr += count * 2; }
-	
-	inline void	_unpack(uint8_t *&ptr, uint8_t   &x) { x = *(uint8_t  *)ptr; ptr += sizeof(x); }
-	inline void	_unpack(uint8_t *&ptr, uint16_t  &x) { x = *(uint16_t *)ptr; ptr += sizeof(x); }
-	inline void	_unpack(uint8_t *&ptr, int16_t   &x) { x = *(int16_t  *)ptr; ptr += sizeof(x); }
-	inline void	_unpack(uint8_t *&ptr, uint32_t  &x) { x = *(uint32_t *)ptr; ptr += sizeof(x); }
-	inline void	_unpack(uint8_t *&ptr, int32_t   &x) { x = *(int32_t  *)ptr; ptr += sizeof(x); }
+	/// Pack any scalar type
+	///
+	/// @param ptr				Buffer pointer.
+	/// @param x				Value to pack.
+	///
+	template <typename T> inline void _pack(uint8_t *&ptr, const T x) { *(T *)ptr = x; ptr += sizeof(T); }
 
-	inline void	_unpack(uint8_t *&ptr, char     *msg,     uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; }
-	inline void	_unpack(uint8_t *&ptr, uint8_t  *values, uint8_t count) { memcpy(values, ptr, count); ptr += count; }
-	inline void	_unpack(uint8_t *&ptr, uint16_t *values, uint8_t count) { memcpy(values, ptr, count * 2); ptr += count * 2; }
+	/// Pack an array of any scalar type
+	///
+	/// @param ptr				Buffer pointer.
+	/// @param x				Array to pack.
+	/// @param count			Array size.
+	///
+	template <typename T> inline void _pack(uint8_t *&ptr, const T *values, uint8_t count) {
+		memcpy(ptr, values, count * sizeof(T));
+		ptr += count * sizeof(T);
+	}
+
+	/// Pack a string into a fixed-size buffer.
+	///
+	/// @param ptr				Buffer pointer
+	/// @param msg				The NUL-terminated string to pack.
+	/// @param size				The size of the buffer (which limits the quantity of the string
+	///							that is actually copied.
+	///
+	inline void	_pack(uint8_t *&ptr, const char *msg, uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; }
+
+	/// Unpack any scalar type
+	///
+	/// @param buf				Buffer pointer.
+	/// @param x				Unpacked result.
+	///
+	template <typename T> inline void _unpack(uint8_t *&ptr, T &x) { x = *(T *)ptr; ptr += sizeof(T); }
+
+	/// Unpack an array of any scalar type.
+	///
+	/// @param buf				Buffer pointer.
+	/// @param values			Array to receive the unpacked values.
+	///
+	template <typename T> inline void _unpack(uint8_t *&ptr, T *values, uint8_t count) {
+		memcpy(values, ptr, count * sizeof(T)); 
+		ptr += count * sizeof(T); 
+	}
+
+	/// Unpack a string from a fixed-size buffer.
+	///
+	/// @param ptr				Buffer pointer.
+	/// @param msg				Pointer to the result buffer.
+	/// @param size				The size of the buffer.
+	///
+	inline void	_unpack(uint8_t *&ptr, char *msg, uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; }
 	//@}
 
 public:

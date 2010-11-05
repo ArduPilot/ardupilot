@@ -11,18 +11,21 @@
 /// Structure describing the payload section of the MSG_ACKNOWLEDGE message
 struct msg_acknowledge {
 	uint8_t msgID;
-	uint16_t msgSum;
+	uint8_t sum1;
+	uint8_t sum2;
 };
 
 /// Send a MSG_ACKNOWLEDGE message
 inline void
 send_msg_acknowledge(
 	const uint8_t msgID,
-	const uint16_t msgSum)
+	const uint8_t sum1,
+	const uint8_t sum2)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, msgID);
-	_pack(__p, msgSum);
+	_pack(__p, sum1);
+	_pack(__p, sum2);
 	_encodeBuf.header.length = 3;
 	_encodeBuf.header.messageID = MSG_ACKNOWLEDGE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
@@ -33,11 +36,13 @@ send_msg_acknowledge(
 inline void
 unpack_msg_acknowledge(
 	uint8_t &msgID,
-	uint16_t &msgSum)
+	uint8_t &sum1,
+	uint8_t &sum2)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, msgID);
-	_unpack(__p, msgSum);
+	_unpack(__p, sum1);
+	_unpack(__p, sum2);
 };
 //@}
 
@@ -269,9 +274,12 @@ unpack_msg_status_text(
 struct msg_perf_report {
 	uint32_t interval;
 	uint16_t mainLoopCycles;
-	uint8_t mainLoopTime;
+	uint8_t mainLoopCycleTime;
 	uint8_t gyroSaturationCount;
 	uint8_t adcConstraintCount;
+	uint8_t renormSqrtCount;
+	uint8_t renormBlowupCount;
+	uint8_t gpsFixCount;
 	uint16_t imuHealth;
 	uint16_t gcsMessageCount;
 };
@@ -281,21 +289,27 @@ inline void
 send_msg_perf_report(
 	const uint32_t interval,
 	const uint16_t mainLoopCycles,
-	const uint8_t mainLoopTime,
+	const uint8_t mainLoopCycleTime,
 	const uint8_t gyroSaturationCount,
 	const uint8_t adcConstraintCount,
+	const uint8_t renormSqrtCount,
+	const uint8_t renormBlowupCount,
+	const uint8_t gpsFixCount,
 	const uint16_t imuHealth,
 	const uint16_t gcsMessageCount)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, interval);
 	_pack(__p, mainLoopCycles);
-	_pack(__p, mainLoopTime);
+	_pack(__p, mainLoopCycleTime);
 	_pack(__p, gyroSaturationCount);
 	_pack(__p, adcConstraintCount);
+	_pack(__p, renormSqrtCount);
+	_pack(__p, renormBlowupCount);
+	_pack(__p, gpsFixCount);
 	_pack(__p, imuHealth);
 	_pack(__p, gcsMessageCount);
-	_encodeBuf.header.length = 13;
+	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_PERF_REPORT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -306,18 +320,24 @@ inline void
 unpack_msg_perf_report(
 	uint32_t &interval,
 	uint16_t &mainLoopCycles,
-	uint8_t &mainLoopTime,
+	uint8_t &mainLoopCycleTime,
 	uint8_t &gyroSaturationCount,
 	uint8_t &adcConstraintCount,
+	uint8_t &renormSqrtCount,
+	uint8_t &renormBlowupCount,
+	uint8_t &gpsFixCount,
 	uint16_t &imuHealth,
 	uint16_t &gcsMessageCount)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, interval);
 	_unpack(__p, mainLoopCycles);
-	_unpack(__p, mainLoopTime);
+	_unpack(__p, mainLoopCycleTime);
 	_unpack(__p, gyroSaturationCount);
 	_unpack(__p, adcConstraintCount);
+	_unpack(__p, renormSqrtCount);
+	_unpack(__p, renormBlowupCount);
+	_unpack(__p, gpsFixCount);
 	_unpack(__p, imuHealth);
 	_unpack(__p, gcsMessageCount);
 };
@@ -848,17 +868,17 @@ unpack_msg_pid(
 
 /// Structure describing the payload section of the MSG_TRIM_STARTUP message
 struct msg_trim_startup {
-	uint16_t value[8];
+	int value[8];
 };
 
 /// Send a MSG_TRIM_STARTUP message
 inline void
 send_msg_trim_startup(
-	const uint16_t (&value)[8])
+	const int (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 8;
 	_encodeBuf.header.messageID = MSG_TRIM_STARTUP;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -867,7 +887,7 @@ send_msg_trim_startup(
 /// Unpack a MSG_TRIM_STARTUP message
 inline void
 unpack_msg_trim_startup(
-	uint16_t (&value)[8])
+	int (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);
@@ -880,17 +900,17 @@ unpack_msg_trim_startup(
 
 /// Structure describing the payload section of the MSG_TRIM_MIN message
 struct msg_trim_min {
-	uint16_t value[8];
+	int value[8];
 };
 
 /// Send a MSG_TRIM_MIN message
 inline void
 send_msg_trim_min(
-	const uint16_t (&value)[8])
+	const int (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 8;
 	_encodeBuf.header.messageID = MSG_TRIM_MIN;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -899,7 +919,7 @@ send_msg_trim_min(
 /// Unpack a MSG_TRIM_MIN message
 inline void
 unpack_msg_trim_min(
-	uint16_t (&value)[8])
+	int (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);
@@ -912,17 +932,17 @@ unpack_msg_trim_min(
 
 /// Structure describing the payload section of the MSG_TRIM_MAX message
 struct msg_trim_max {
-	uint16_t value[8];
+	int value[8];
 };
 
 /// Send a MSG_TRIM_MAX message
 inline void
 send_msg_trim_max(
-	const uint16_t (&value)[8])
+	const int (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 8;
 	_encodeBuf.header.messageID = MSG_TRIM_MAX;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -931,7 +951,7 @@ send_msg_trim_max(
 /// Unpack a MSG_TRIM_MAX message
 inline void
 unpack_msg_trim_max(
-	uint16_t (&value)[8])
+	int (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);

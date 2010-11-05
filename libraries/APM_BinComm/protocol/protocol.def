@@ -62,7 +62,8 @@
 #
 message 0x00	MSG_ACKNOWLEDGE 
 	uint8_t			msgID
-	uint16_t		msgSum
+	uint8_t			sum1
+	uint8_t			sum2
 
 #
 # System heartbeat
@@ -112,9 +113,12 @@ message 0x05	MSG_STATUS_TEXT
 message 0x06	MSG_PERF_REPORT 
 	uint32_t		interval
 	uint16_t		mainLoopCycles
-	uint8_t			mainLoopTime
+	uint8_t			mainLoopCycleTime
 	uint8_t			gyroSaturationCount
 	uint8_t			adcConstraintCount
+	uint8_t			renormSqrtCount
+	uint8_t			renormBlowupCount
+	uint8_t			gpsFixCount
 	uint16_t		imuHealth
 	uint16_t		gcsMessageCount
 
@@ -198,14 +202,20 @@ message 0x42	MSG_PID
 #
 # Radio settings and values
 #
+# The trim/radio values should be unsigned, but
+# currently aren't.
+#
 message 0x50	MSG_TRIM_STARTUP
-	uint16_t		value	8
+	int			value	8
+#	uint16_t		value	8
 
 message 0x51	MSG_TRIM_MIN
-	uint16_t		value	8
+	int			value	8
+#	uint16_t		value	8
 
 message 0x52	MSG_TRIM_MAX
-	uint16_t		value	8
+	int			value	8
+#	uint16_t		value	8
 	
 message 0x53 	MSG_SERVOS
 	int16_t			ch1
