@@ -46,7 +46,9 @@
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
                  Stream *interface) :
-        _handlerTable(handlerTable)
+        _handlerTable(handlerTable),
+        _decodePhase(DEC_WAIT_P1),
+        _lastReceived(millis())
 {
         init(interface);
 };
@@ -108,6 +110,7 @@ BinComm::_decode(uint8_t inByte)
         //
         if ((millis() - _lastReceived) > DEC_MESSAGE_TIMEOUT)
                 _decodePhase = DEC_WAIT_P1;
+        _lastReceived = millis();
 
         // run the decode state machine
         //
@@ -206,7 +209,10 @@ BinComm::_decode(uint8_t inByte)
                 } else {
                         badMessagesReceived++;
                 }
+                // FALLTHROUGH
+        default:
                 _decodePhase = DEC_WAIT_P1;
                 break;
+
         }
 }
