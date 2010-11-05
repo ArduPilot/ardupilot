@@ -46,7 +46,7 @@
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
                  Stream *interface) :
-        _handlerTable(handlerTable),
+        _handlerTable(handlerTable)
 {
         init(interface);
 };
