@@ -2,6 +2,7 @@
 // THIS FILE WAS AUTOMATICALLY GENERATED - DO NOT EDIT
 //
 /// @file protocol.h
+#pragma pack(push)
 #pragma pack(1)
 
 //////////////////////////////////////////////////////////////////////

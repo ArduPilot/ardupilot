@@ -7,6 +7,7 @@
 BEGIN {
     printf("//\n// THIS FILE WAS AUTOMATICALLY GENERATED - DO NOT EDIT\n//\n")
     printf("/// @file protocol.h\n")
+    printf("#pragma pack(push)\n");
     printf("#pragma pack(1)\n");
     
     currentMessage = ""
