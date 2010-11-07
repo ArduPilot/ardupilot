@@ -88,7 +88,7 @@ message 0x02	MSG_ATTITUDE
 message 0x03	MSG_LOCATION 
 	int32_t			latitude
 	int32_t			longitude
-	int16_t			altitude
+	int32_t			altitude
 	uint16_t		groundSpeed
 	uint16_t		groundCourse
 	uint32_t		timeOfWeek
@@ -97,8 +97,8 @@ message 0x03	MSG_LOCATION
 # Optional pressure-based location report
 #
 message 0x04	MSG_PRESSURE 
-	int16_t			pressureAltitude
-	int16_t		airSpeed
+	int32_t			pressureAltitude
+	int16_t			airSpeed
 
 #
 # Text status message

@@ -144,7 +144,7 @@ unpack_msg_attitude(
 struct msg_location {
 	int32_t latitude;
 	int32_t longitude;
-	int16_t altitude;
+	int32_t altitude;
 	uint16_t groundSpeed;
 	uint16_t groundCourse;
 	uint32_t timeOfWeek;
@@ -155,7 +155,7 @@ inline void
 send_msg_location(
 	const int32_t latitude,
 	const int32_t longitude,
-	const int16_t altitude,
+	const int32_t altitude,
 	const uint16_t groundSpeed,
 	const uint16_t groundCourse,
 	const uint32_t timeOfWeek)
@@ -167,7 +167,7 @@ send_msg_location(
 	_pack(__p, groundSpeed);
 	_pack(__p, groundCourse);
 	_pack(__p, timeOfWeek);
-	_encodeBuf.header.length = 18;
+	_encodeBuf.header.length = 20;
 	_encodeBuf.header.messageID = MSG_LOCATION;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -178,7 +178,7 @@ inline void
 unpack_msg_location(
 	int32_t &latitude,
 	int32_t &longitude,
-	int16_t &altitude,
+	int32_t &altitude,
 	uint16_t &groundSpeed,
 	uint16_t &groundCourse,
 	uint32_t &timeOfWeek)
@@ -199,20 +199,20 @@ unpack_msg_location(
 
 /// Structure describing the payload section of the MSG_PRESSURE message
 struct msg_pressure {
-	int16_t pressureAltitude;
+	int32_t pressureAltitude;
 	int16_t airSpeed;
 };
 
 /// Send a MSG_PRESSURE message
 inline void
 send_msg_pressure(
-	const int16_t pressureAltitude,
+	const int32_t pressureAltitude,
 	const int16_t airSpeed)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, pressureAltitude);
 	_pack(__p, airSpeed);
-	_encodeBuf.header.length = 4;
+	_encodeBuf.header.length = 6;
 	_encodeBuf.header.messageID = MSG_PRESSURE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -221,7 +221,7 @@ send_msg_pressure(
 /// Unpack a MSG_PRESSURE message
 inline void
 unpack_msg_pressure(
-	int16_t &pressureAltitude,
+	int32_t &pressureAltitude,
 	int16_t &airSpeed)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
