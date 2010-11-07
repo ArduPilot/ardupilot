@@ -205,7 +205,10 @@ BinComm::_decode(uint8_t inByte)
                         for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++)
                                 if ((_handlerTable[tableIndex].messageID == _messageID) ||
                                     (_handlerTable[tableIndex].messageID == MSG_ANY))
+								{
                                         _handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg, _messageID, _messageVersion, &_decodeBuf);
+										send_msg_acknowledge(_messageID,_sumA,_sumB);
+								}
                 } else {
                         badMessagesReceived++;
                 }
