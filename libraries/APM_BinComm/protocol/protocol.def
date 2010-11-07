@@ -80,7 +80,7 @@ message 0x01	MSG_HEARTBEAT
 message 0x02	MSG_ATTITUDE 
 	int16_t			roll
 	int16_t			pitch
-	int16_t			yaw
+	uint16_t		yaw
 
 #
 # Location report

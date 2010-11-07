@@ -102,7 +102,7 @@ unpack_msg_heartbeat(
 struct msg_attitude {
 	int16_t roll;
 	int16_t pitch;
-	int16_t yaw;
+	uint16_t yaw;
 };
 
 /// Send a MSG_ATTITUDE message
@@ -110,7 +110,7 @@ inline void
 send_msg_attitude(
 	const int16_t roll,
 	const int16_t pitch,
-	const int16_t yaw)
+	const uint16_t yaw)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, roll);
@@ -127,7 +127,7 @@ inline void
 unpack_msg_attitude(
 	int16_t &roll,
 	int16_t &pitch,
-	int16_t &yaw)
+	uint16_t &yaw)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, roll);
