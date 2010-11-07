@@ -89,16 +89,16 @@ message 0x03	MSG_LOCATION
 	int32_t			latitude
 	int32_t			longitude
 	int16_t			altitude
-	int16_t			groundSpeed
-	int16_t			groundCourse
-	uint16_t		timeOfWeek
+	uint16_t		groundSpeed
+	uint16_t		groundCourse
+	uint32_t		timeOfWeek
 
 #
 # Optional pressure-based location report
 #
 message 0x04	MSG_PRESSURE 
-	uint16_t		pressureAltitude
-	uint16_t		airSpeed
+	int16_t			pressureAltitude
+	int16_t		airSpeed
 
 #
 # Text status message
@@ -143,22 +143,23 @@ message 0x20	MSG_COMMAND_REQUEST
 message 0x21	MSG_COMMAND_UPLOAD
 	uint8_t			action
 	uint16_t		itemNumber
-	int			listLength
+	uint16_t		listLength
 	uint8_t			commandID
 	uint8_t			p1
-	uint16_t		p2
-	uint32_t		p3
-	uint32_t		p4
+	int16_t			p2
+	int32_t			p3
+	int32_t			p4
 
 message 0x22	MSG_COMMAND_LIST
-	int			itemNumber
-	int			listLength
+	uint16_t		itemNumber
+	uint16_t		listLength
 	uint8_t			commandID
 	uint8_t			p1
-	uint16_t		p2
-	uint32_t		p3
-	uint32_t		p4
+	int16_t			p2
+	int32_t			p3
+	int32_t			p4
 
+# this message is not in the standard
 message 0x23	MSG_COMMAND_MODE_CHANGE
 	uint16_t		UNSPECIFIED
 
@@ -202,42 +203,36 @@ message 0x42	MSG_PID
 #
 # Radio settings and values
 #
-# The trim/radio values should be unsigned, but
-# currently aren't.
-#
 message 0x50	MSG_TRIM_STARTUP
-	int			value	8
-#	uint16_t		value	8
+	uint16_t		value	8
 
 message 0x51	MSG_TRIM_MIN
-	int			value	8
-#	uint16_t		value	8
+	uint16_t		value	8
 
 message 0x52	MSG_TRIM_MAX
-	int			value	8
-#	uint16_t		value	8
+	uint16_t		value	8
 	
-message 0x53 	MSG_SERVOS
-	int16_t			ch1
-	int16_t 		ch2
-	int16_t 		ch3
-	int16_t 		ch4
-	int16_t 		ch5
-	int16_t 		ch6
-	int16_t 		ch7
-	int16_t 		ch8	
+message 0x53 	MSG_RADIO_OUT
+	uint16_t		value   8
 
 #
 # Direct sensor access
 #
 message 0x60	MSG_SENSOR
-	uint16_t		UNSPECIFIED
+	uint16_t	UNSPECIFIED
 
 #
 # Simulation-related messages
 #
-message 0x70	MSG_SIM
-	uint16_t		UNSPECIFIED
+message 0x70 	MSG_SERVO_OUT_PLANE
+	int16_t    	rollServo
+	int16_t    	pitchServo
+	uint16_t    throttleServo
+	int16_t    	yawServo
+	int16_t    	aux1
+	int16_t    	aux2
+	int16_t    	aux3
+	int16_t    	aux4
 
 #
 # Direct I/O pin control

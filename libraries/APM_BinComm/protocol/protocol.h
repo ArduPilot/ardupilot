@@ -145,9 +145,9 @@ struct msg_location {
 	int32_t latitude;
 	int32_t longitude;
 	int16_t altitude;
-	int16_t groundSpeed;
-	int16_t groundCourse;
-	uint16_t timeOfWeek;
+	uint16_t groundSpeed;
+	uint16_t groundCourse;
+	uint32_t timeOfWeek;
 };
 
 /// Send a MSG_LOCATION message
@@ -156,9 +156,9 @@ send_msg_location(
 	const int32_t latitude,
 	const int32_t longitude,
 	const int16_t altitude,
-	const int16_t groundSpeed,
-	const int16_t groundCourse,
-	const uint16_t timeOfWeek)
+	const uint16_t groundSpeed,
+	const uint16_t groundCourse,
+	const uint32_t timeOfWeek)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, latitude);
@@ -167,7 +167,7 @@ send_msg_location(
 	_pack(__p, groundSpeed);
 	_pack(__p, groundCourse);
 	_pack(__p, timeOfWeek);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 18;
 	_encodeBuf.header.messageID = MSG_LOCATION;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -179,9 +179,9 @@ unpack_msg_location(
 	int32_t &latitude,
 	int32_t &longitude,
 	int16_t &altitude,
-	int16_t &groundSpeed,
-	int16_t &groundCourse,
-	uint16_t &timeOfWeek)
+	uint16_t &groundSpeed,
+	uint16_t &groundCourse,
+	uint32_t &timeOfWeek)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, latitude);
@@ -199,15 +199,15 @@ unpack_msg_location(
 
 /// Structure describing the payload section of the MSG_PRESSURE message
 struct msg_pressure {
-	uint16_t pressureAltitude;
-	uint16_t airSpeed;
+	int16_t pressureAltitude;
+	int16_t airSpeed;
 };
 
 /// Send a MSG_PRESSURE message
 inline void
 send_msg_pressure(
-	const uint16_t pressureAltitude,
-	const uint16_t airSpeed)
+	const int16_t pressureAltitude,
+	const int16_t airSpeed)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, pressureAltitude);
@@ -221,8 +221,8 @@ send_msg_pressure(
 /// Unpack a MSG_PRESSURE message
 inline void
 unpack_msg_pressure(
-	uint16_t &pressureAltitude,
-	uint16_t &airSpeed)
+	int16_t &pressureAltitude,
+	int16_t &airSpeed)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, pressureAltitude);
@@ -463,12 +463,12 @@ unpack_msg_command_request(
 struct msg_command_upload {
 	uint8_t action;
 	uint16_t itemNumber;
-	int listLength;
+	uint16_t listLength;
 	uint8_t commandID;
 	uint8_t p1;
-	uint16_t p2;
-	uint32_t p3;
-	uint32_t p4;
+	int16_t p2;
+	int32_t p3;
+	int32_t p4;
 };
 
 /// Send a MSG_COMMAND_UPLOAD message
@@ -476,12 +476,12 @@ inline void
 send_msg_command_upload(
 	const uint8_t action,
 	const uint16_t itemNumber,
-	const int listLength,
+	const uint16_t listLength,
 	const uint8_t commandID,
 	const uint8_t p1,
-	const uint16_t p2,
-	const uint32_t p3,
-	const uint32_t p4)
+	const int16_t p2,
+	const int32_t p3,
+	const int32_t p4)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, action);
@@ -492,7 +492,7 @@ send_msg_command_upload(
 	_pack(__p, p2);
 	_pack(__p, p3);
 	_pack(__p, p4);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 17;
 	_encodeBuf.header.messageID = MSG_COMMAND_UPLOAD;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -503,12 +503,12 @@ inline void
 unpack_msg_command_upload(
 	uint8_t &action,
 	uint16_t &itemNumber,
-	int &listLength,
+	uint16_t &listLength,
 	uint8_t &commandID,
 	uint8_t &p1,
-	uint16_t &p2,
-	uint32_t &p3,
-	uint32_t &p4)
+	int16_t &p2,
+	int32_t &p3,
+	int32_t &p4)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, action);
@@ -528,25 +528,25 @@ unpack_msg_command_upload(
 
 /// Structure describing the payload section of the MSG_COMMAND_LIST message
 struct msg_command_list {
-	int itemNumber;
-	int listLength;
+	uint16_t itemNumber;
+	uint16_t listLength;
 	uint8_t commandID;
 	uint8_t p1;
-	uint16_t p2;
-	uint32_t p3;
-	uint32_t p4;
+	int16_t p2;
+	int32_t p3;
+	int32_t p4;
 };
 
 /// Send a MSG_COMMAND_LIST message
 inline void
 send_msg_command_list(
-	const int itemNumber,
-	const int listLength,
+	const uint16_t itemNumber,
+	const uint16_t listLength,
 	const uint8_t commandID,
 	const uint8_t p1,
-	const uint16_t p2,
-	const uint32_t p3,
-	const uint32_t p4)
+	const int16_t p2,
+	const int32_t p3,
+	const int32_t p4)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, itemNumber);
@@ -556,7 +556,7 @@ send_msg_command_list(
 	_pack(__p, p2);
 	_pack(__p, p3);
 	_pack(__p, p4);
-	_encodeBuf.header.length = 14;
+	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_COMMAND_LIST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -565,13 +565,13 @@ send_msg_command_list(
 /// Unpack a MSG_COMMAND_LIST message
 inline void
 unpack_msg_command_list(
-	int &itemNumber,
-	int &listLength,
+	uint16_t &itemNumber,
+	uint16_t &listLength,
 	uint8_t &commandID,
 	uint8_t &p1,
-	uint16_t &p2,
-	uint32_t &p3,
-	uint32_t &p4)
+	int16_t &p2,
+	int32_t &p3,
+	int32_t &p4)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, itemNumber);
@@ -869,17 +869,17 @@ unpack_msg_pid(
 
 /// Structure describing the payload section of the MSG_TRIM_STARTUP message
 struct msg_trim_startup {
-	int value[8];
+	uint16_t value[8];
 };
 
 /// Send a MSG_TRIM_STARTUP message
 inline void
 send_msg_trim_startup(
-	const int (&value)[8])
+	const uint16_t (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 8;
+	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_STARTUP;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -888,7 +888,7 @@ send_msg_trim_startup(
 /// Unpack a MSG_TRIM_STARTUP message
 inline void
 unpack_msg_trim_startup(
-	int (&value)[8])
+	uint16_t (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);
@@ -901,17 +901,17 @@ unpack_msg_trim_startup(
 
 /// Structure describing the payload section of the MSG_TRIM_MIN message
 struct msg_trim_min {
-	int value[8];
+	uint16_t value[8];
 };
 
 /// Send a MSG_TRIM_MIN message
 inline void
 send_msg_trim_min(
-	const int (&value)[8])
+	const uint16_t (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 8;
+	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_MIN;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -920,7 +920,7 @@ send_msg_trim_min(
 /// Unpack a MSG_TRIM_MIN message
 inline void
 unpack_msg_trim_min(
-	int (&value)[8])
+	uint16_t (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);
@@ -933,17 +933,17 @@ unpack_msg_trim_min(
 
 /// Structure describing the payload section of the MSG_TRIM_MAX message
 struct msg_trim_max {
-	int value[8];
+	uint16_t value[8];
 };
 
 /// Send a MSG_TRIM_MAX message
 inline void
 send_msg_trim_max(
-	const int (&value)[8])
+	const uint16_t (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, value, 8);
-	_encodeBuf.header.length = 8;
+	_encodeBuf.header.length = 16;
 	_encodeBuf.header.messageID = MSG_TRIM_MAX;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -952,7 +952,7 @@ send_msg_trim_max(
 /// Unpack a MSG_TRIM_MAX message
 inline void
 unpack_msg_trim_max(
-	int (&value)[8])
+	uint16_t (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, value, 8);
@@ -960,69 +960,34 @@ unpack_msg_trim_max(
 //@}
 
 //////////////////////////////////////////////////////////////////////
-/// @name MSG_SERVOS 
+/// @name MSG_RADIO_OUT 
 //@{
 
-/// Structure describing the payload section of the MSG_SERVOS message
-struct msg_servos {
-	int16_t ch1;
-	int16_t ch2;
-	int16_t ch3;
-	int16_t ch4;
-	int16_t ch5;
-	int16_t ch6;
-	int16_t ch7;
-	int16_t ch8;
+/// Structure describing the payload section of the MSG_RADIO_OUT message
+struct msg_radio_out {
+	uint16_t value[8];
 };
 
-/// Send a MSG_SERVOS message
+/// Send a MSG_RADIO_OUT message
 inline void
-send_msg_servos(
-	const int16_t ch1,
-	const int16_t ch2,
-	const int16_t ch3,
-	const int16_t ch4,
-	const int16_t ch5,
-	const int16_t ch6,
-	const int16_t ch7,
-	const int16_t ch8)
+send_msg_radio_out(
+	const uint16_t (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, ch1);
-	_pack(__p, ch2);
-	_pack(__p, ch3);
-	_pack(__p, ch4);
-	_pack(__p, ch5);
-	_pack(__p, ch6);
-	_pack(__p, ch7);
-	_pack(__p, ch8);
+	_pack(__p, value, 8);
 	_encodeBuf.header.length = 16;
-	_encodeBuf.header.messageID = MSG_SERVOS;
+	_encodeBuf.header.messageID = MSG_RADIO_OUT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
 };
 
-/// Unpack a MSG_SERVOS message
+/// Unpack a MSG_RADIO_OUT message
 inline void
-unpack_msg_servos(
-	int16_t &ch1,
-	int16_t &ch2,
-	int16_t &ch3,
-	int16_t &ch4,
-	int16_t &ch5,
-	int16_t &ch6,
-	int16_t &ch7,
-	int16_t &ch8)
+unpack_msg_radio_out(
+	uint16_t (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, ch1);
-	_unpack(__p, ch2);
-	_unpack(__p, ch3);
-	_unpack(__p, ch4);
-	_unpack(__p, ch5);
-	_unpack(__p, ch6);
-	_unpack(__p, ch7);
-	_unpack(__p, ch8);
+	_unpack(__p, value, 8);
 };
 //@}
 
@@ -1059,34 +1024,69 @@ unpack_msg_sensor(
 //@}
 
 //////////////////////////////////////////////////////////////////////
-/// @name MSG_SIM 
+/// @name MSG_SERVO_OUT_PLANE 
 //@{
 
-/// Structure describing the payload section of the MSG_SIM message
-struct msg_sim {
-	uint16_t UNSPECIFIED;
+/// Structure describing the payload section of the MSG_SERVO_OUT_PLANE message
+struct msg_servo_out_plane {
+	int16_t rollServo;
+	int16_t pitchServo;
+	uint16_t throttleServo;
+	int16_t yawServo;
+	int16_t aux1;
+	int16_t aux2;
+	int16_t aux3;
+	int16_t aux4;
 };
 
-/// Send a MSG_SIM message
+/// Send a MSG_SERVO_OUT_PLANE message
 inline void
-send_msg_sim(
-	const uint16_t UNSPECIFIED)
+send_msg_servo_out_plane(
+	const int16_t rollServo,
+	const int16_t pitchServo,
+	const uint16_t throttleServo,
+	const int16_t yawServo,
+	const int16_t aux1,
+	const int16_t aux2,
+	const int16_t aux3,
+	const int16_t aux4)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, UNSPECIFIED);
-	_encodeBuf.header.length = 2;
-	_encodeBuf.header.messageID = MSG_SIM;
+	_pack(__p, rollServo);
+	_pack(__p, pitchServo);
+	_pack(__p, throttleServo);
+	_pack(__p, yawServo);
+	_pack(__p, aux1);
+	_pack(__p, aux2);
+	_pack(__p, aux3);
+	_pack(__p, aux4);
+	_encodeBuf.header.length = 16;
+	_encodeBuf.header.messageID = MSG_SERVO_OUT_PLANE;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
 };
 
-/// Unpack a MSG_SIM message
+/// Unpack a MSG_SERVO_OUT_PLANE message
 inline void
-unpack_msg_sim(
-	uint16_t &UNSPECIFIED)
+unpack_msg_servo_out_plane(
+	int16_t &rollServo,
+	int16_t &pitchServo,
+	uint16_t &throttleServo,
+	int16_t &yawServo,
+	int16_t &aux1,
+	int16_t &aux2,
+	int16_t &aux3,
+	int16_t &aux4)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, UNSPECIFIED);
+	_unpack(__p, rollServo);
+	_unpack(__p, pitchServo);
+	_unpack(__p, throttleServo);
+	_unpack(__p, yawServo);
+	_unpack(__p, aux1);
+	_unpack(__p, aux2);
+	_unpack(__p, aux3);
+	_unpack(__p, aux4);
 };
 //@}
 
@@ -1285,37 +1285,37 @@ unpack_msg_eeprom_set(
 //////////////////////////////////////////////////////////////////////
 /// Message ID values
 enum MessageID {
-	MSG_PID = 0x42,
-	MSG_DATAFLASH_REQUEST = 0x90,
-	MSG_DATAFLASH_SET = 0x91,
-	MSG_SENSOR = 0x60,
-	MSG_VALUE_REQUEST = 0x30,
-	MSG_VALUE_SET = 0x31,
-	MSG_VALUE = 0x32,
-	MSG_PIN_REQUEST = 0x80,
-	MSG_PIN_SET = 0x81,
 	MSG_ACKNOWLEDGE = 0x0,
 	MSG_HEARTBEAT = 0x1,
 	MSG_ATTITUDE = 0x2,
 	MSG_LOCATION = 0x3,
 	MSG_PRESSURE = 0x4,
-	MSG_TRIM_STARTUP = 0x50,
 	MSG_STATUS_TEXT = 0x5,
-	MSG_TRIM_MIN = 0x51,
-	MSG_PERF_REPORT = 0x6,
-	MSG_TRIM_MAX = 0x52,
-	MSG_VERSION_REQUEST = 0x7,
-	MSG_SERVOS = 0x53,
-	MSG_VERSION = 0x8,
 	MSG_COMMAND_REQUEST = 0x20,
+	MSG_PERF_REPORT = 0x6,
 	MSG_COMMAND_UPLOAD = 0x21,
+	MSG_VERSION_REQUEST = 0x7,
 	MSG_COMMAND_LIST = 0x22,
+	MSG_VERSION = 0x8,
+	MSG_VALUE_REQUEST = 0x30,
 	MSG_COMMAND_MODE_CHANGE = 0x23,
-	MSG_SIM = 0x70,
-	MSG_EEPROM_REQUEST = 0xa0,
-	MSG_EEPROM_SET = 0xa1,
+	MSG_VALUE_SET = 0x31,
+	MSG_VALUE = 0x32,
 	MSG_PID_REQUEST = 0x40,
 	MSG_PID_SET = 0x41,
+	MSG_PID = 0x42,
+	MSG_TRIM_STARTUP = 0x50,
+	MSG_TRIM_MIN = 0x51,
+	MSG_TRIM_MAX = 0x52,
+	MSG_SENSOR = 0x60,
+	MSG_RADIO_OUT = 0x53,
+	MSG_EEPROM_REQUEST = 0xa0,
+	MSG_EEPROM_SET = 0xa1,
+	MSG_SERVO_OUT_PLANE = 0x70,
+	MSG_PIN_REQUEST = 0x80,
+	MSG_PIN_SET = 0x81,
+	MSG_DATAFLASH_REQUEST = 0x90,
+	MSG_DATAFLASH_SET = 0x91,
 	MSG_ANY = 0xfe,
 	MSG_NULL = 0xff
 };
