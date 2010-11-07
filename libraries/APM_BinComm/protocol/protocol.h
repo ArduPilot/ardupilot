@@ -466,7 +466,7 @@ struct msg_command_upload {
 	uint16_t listLength;
 	uint8_t commandID;
 	uint8_t p1;
-	int16_t p2;
+	int32_t p2;
 	int32_t p3;
 	int32_t p4;
 };
@@ -479,7 +479,7 @@ send_msg_command_upload(
 	const uint16_t listLength,
 	const uint8_t commandID,
 	const uint8_t p1,
-	const int16_t p2,
+	const int32_t p2,
 	const int32_t p3,
 	const int32_t p4)
 {
@@ -492,7 +492,7 @@ send_msg_command_upload(
 	_pack(__p, p2);
 	_pack(__p, p3);
 	_pack(__p, p4);
-	_encodeBuf.header.length = 17;
+	_encodeBuf.header.length = 19;
 	_encodeBuf.header.messageID = MSG_COMMAND_UPLOAD;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -506,7 +506,7 @@ unpack_msg_command_upload(
 	uint16_t &listLength,
 	uint8_t &commandID,
 	uint8_t &p1,
-	int16_t &p2,
+	int32_t &p2,
 	int32_t &p3,
 	int32_t &p4)
 {
@@ -532,7 +532,7 @@ struct msg_command_list {
 	uint16_t listLength;
 	uint8_t commandID;
 	uint8_t p1;
-	int16_t p2;
+	int32_t p2;
 	int32_t p3;
 	int32_t p4;
 };
@@ -544,7 +544,7 @@ send_msg_command_list(
 	const uint16_t listLength,
 	const uint8_t commandID,
 	const uint8_t p1,
-	const int16_t p2,
+	const int32_t p2,
 	const int32_t p3,
 	const int32_t p4)
 {
@@ -556,7 +556,7 @@ send_msg_command_list(
 	_pack(__p, p2);
 	_pack(__p, p3);
 	_pack(__p, p4);
-	_encodeBuf.header.length = 16;
+	_encodeBuf.header.length = 18;
 	_encodeBuf.header.messageID = MSG_COMMAND_LIST;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
@@ -569,7 +569,7 @@ unpack_msg_command_list(
 	uint16_t &listLength,
 	uint8_t &commandID,
 	uint8_t &p1,
-	int16_t &p2,
+	int32_t &p2,
 	int32_t &p3,
 	int32_t &p4)
 {

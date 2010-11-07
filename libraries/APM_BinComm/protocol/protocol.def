@@ -146,7 +146,7 @@ message 0x21	MSG_COMMAND_UPLOAD
 	uint16_t		listLength
 	uint8_t			commandID
 	uint8_t			p1
-	int16_t			p2
+	int32_t			p2
 	int32_t			p3
 	int32_t			p4
 
@@ -155,7 +155,7 @@ message 0x22	MSG_COMMAND_LIST
 	uint16_t		listLength
 	uint8_t			commandID
 	uint8_t			p1
-	int16_t			p2
+	int32_t			p2
 	int32_t			p3
 	int32_t			p4
 
