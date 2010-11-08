@@ -170,14 +170,14 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				valid_read = true;
 				new_data = true;	// New GPS Data
 				parseptr = strchr(buffer, ',')+1;
-				ground_course = parsenumber(parseptr, 2);			// Ground course in degrees * 100
+				ground_course = parsenumber(parseptr, 1) * 10;			// Ground course in degrees * 100
 				parseptr = strchr(parseptr, ',')+1;
 				parseptr = strchr(parseptr, ',')+1;
 				parseptr = strchr(parseptr, ',')+1;
 				parseptr = strchr(parseptr, ',')+1;
 				parseptr = strchr(parseptr, ',')+1;
 				parseptr = strchr(parseptr, ',')+1;
-				ground_speed = parsenumber(parseptr, 2) * 10 / 36; // Convert Km / h to m / s ( * 100)
+				ground_speed = parsenumber(parseptr, 1) * 100 / 36; // Convert Km / h to m / s ( * 100)
 				//GPS_line = true;
 			} else {
 				_error("GPSERR: Checksum error!!\n");
