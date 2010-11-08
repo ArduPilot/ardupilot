@@ -204,16 +204,13 @@ BinComm::_decode(uint8_t inByte)
 
                         // call any handler interested in this message
                         for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++)
-								if(_handlerTable[tableIndex].messageID == MSG_ACKNOWLEDGE)
-								{
-									// don't acknowledge, to avoid infinite ack echo
-								}
-								else if(_handlerTable[tableIndex].messageID == MSG_ANY ||
+								if(_handlerTable[tableIndex].messageID == MSG_ANY ||
 									_handlerTable[tableIndex].messageID == _messageID )
 								{
 									_handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg,
 										_messageID, _messageVersion, &_decodeBuf);
-									send_msg_acknowledge(_messageID,_sumA,_sumB);
+									// dont' acknowledge an acknowledgement, will echo infinetly
+									if (_messageID != MSG_ACKNOWLEDGE) send_msg_acknowledge(_messageID,_sumA,_sumB);
 								}
                 } else {
                         badMessagesReceived++;
