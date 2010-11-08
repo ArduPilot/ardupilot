@@ -42,7 +42,7 @@
 
 
 /// inter-byte timeout for decode (ms)
-#define DEC_MESSAGE_TIMEOUT     100
+#define DEC_MESSAGE_TIMEOUT     1000
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
                  Stream *interface) :
@@ -97,6 +97,13 @@ BinComm::update(void)
         //
         // XXX we might want to further constrain this count
         count = _interface->available();
+
+		//if (count > 0)
+		//{
+			//Serial.print("count: ");
+			//Serial.println(count,DEC);
+		//}
+
         while (count--)
                 _decode(_interface->read());
 }
@@ -114,6 +121,8 @@ BinComm::_decode(uint8_t inByte)
 
         // run the decode state machine
         //
+		//Serial.print("decode phase: "); Serial.println(_decodePhase,DEC);
+		//Serial.print("in byte: "); Serial.println(inByte,HEX);
         switch (_decodePhase) {
 
                 // Preamble detection
@@ -203,11 +212,20 @@ BinComm::_decode(uint8_t inByte)
 
                         // call any handler interested in this message
                         for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++)
-                                if ((_handlerTable[tableIndex].messageID == _messageID) ||
-                                    (_handlerTable[tableIndex].messageID == MSG_ANY))
+								if(_handlerTable[tableIndex].messageID == MSG_ACKNOWLEDGE)
 								{
-                                        _handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg, _messageID, _messageVersion, &_decodeBuf);
-										send_msg_acknowledge(_messageID,_sumA,_sumB);
+									// don't acknowledge, to avoid infinite ack echo
+								}
+								else if(_handlerTable[tableIndex].messageID == MSG_ANY ||
+									_handlerTable[tableIndex].messageID == _messageID )
+								{
+									_handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg,
+										_messageID, _messageVersion, &_decodeBuf);
+									send_msg_acknowledge(_messageID,_sumA,_sumB);
+								}
+								else
+								{
+									Serial.println("unhandled message");
 								}
                 } else {
                         badMessagesReceived++;
