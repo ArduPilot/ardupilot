@@ -98,12 +98,6 @@ BinComm::update(void)
         // XXX we might want to further constrain this count
         count = _interface->available();
 
-		//if (count > 0)
-		//{
-			//Serial.print("count: ");
-			//Serial.println(count,DEC);
-		//}
-
         while (count--)
                 _decode(_interface->read());
 }
@@ -121,8 +115,6 @@ BinComm::_decode(uint8_t inByte)
 
         // run the decode state machine
         //
-		//Serial.print("decode phase: "); Serial.println(_decodePhase,DEC);
-		//Serial.print("in byte: "); Serial.println(inByte,HEX);
         switch (_decodePhase) {
 
                 // Preamble detection
@@ -222,10 +214,6 @@ BinComm::_decode(uint8_t inByte)
 									_handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg,
 										_messageID, _messageVersion, &_decodeBuf);
 									send_msg_acknowledge(_messageID,_sumA,_sumB);
-								}
-								else
-								{
-									Serial.println("unhandled message");
 								}
                 } else {
                         badMessagesReceived++;
