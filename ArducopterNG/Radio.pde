@@ -56,7 +56,7 @@ void read_radio()
     // Autopilot mode (only works on Stable mode)
     if (flightMode == STABLE_MODE)
       {
-      if(ch_aux > 1800)
+      if(ch_aux < 1200)
         AP_mode = AP_AUTOMATIC_MODE;   // Automatic mode : GPS position hold mode + altitude hold
       else 
         AP_mode = AP_NORMAL_MODE;   // Normal mode

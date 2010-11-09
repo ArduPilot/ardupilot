@@ -250,7 +250,7 @@ void loop()
   currentTime = millis();
 
   // Main loop at 200Hz (IMU + control)
-  if ((currentTime-mainLoop) > 5)    // 200Hz (every 5ms)
+  if ((currentTime-mainLoop) > 5)    // about 200Hz (every 5ms)
   {
     G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
     mainLoop = currentTime;
@@ -271,8 +271,8 @@ void loop()
       gled_speed = 1200;
       if (AP_mode == AP_NORMAL_MODE)    // Normal mode
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
-      else                        // Automatic mode : GPS position hold mode
-      Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
+      else                              // Automatic mode : GPS position hold mode
+        Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
     }
     else {                 // ACRO Mode
       gled_speed = 400;
@@ -292,13 +292,22 @@ void loop()
     // Autopilot mode functions
     if (AP_mode == AP_AUTOMATIC_MODE)
     {
-      if (target_position)
+      digitalWrite(LED_Yellow,HIGH);      // Yellow LED ON : GPS Position Hold MODE
+      if (target_position) 
       {
         #ifdef IsGPS
         if (GPS.NewData)     // New GPS info?
         {
-          read_GPS_data();
-          Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
+          if (GPS.Fix)
+            {
+            read_GPS_data();    // In Navigation.pde
+            Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
+            }
+          else
+            {
+            command_gps_roll=0;
+            command_gps_pitch=0;
+            }
         }
         #endif
       }
@@ -320,7 +329,10 @@ void loop()
       }
     }
     else
+      {
+      digitalWrite(LED_Yellow,LOW);
       target_position=0;
+      }
   }
 
   // Medium loop (about 60Hz) 
