@@ -53,9 +53,9 @@
 //  Modules Config
 // --------------------------
 
-//#define IsGPS       // Do we have a GPS connected
-//#define IsNEWMTEK   // Do we have MTEK with new firmware
-//#define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
+#define IsGPS       // Do we have a GPS connected
+#define IsNEWMTEK   // Do we have MTEK with new firmware
+#define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
 //#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
 
