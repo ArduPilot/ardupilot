@@ -89,10 +89,12 @@ Menu::run(void)
 		// populate arguments that have not been specified with "" and 0
 		// this is safer than NULL in the case where commands may look
 		// without testing argc
-		while (argc <= MENU_ARGS_MAX) {
-			_argv[argc].str = "";
-			_argv[argc].i = 0;
-			_argv[argc].f = 0;
+		i = argc;
+		while (i <= MENU_ARGS_MAX) {
+			_argv[i].str = "";
+			_argv[i].i = 0;
+			_argv[i].f = 0;
+			i++;
 		}
 			
 		// look for a command matching the first word (note that it may be empty)
