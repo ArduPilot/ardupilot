@@ -138,7 +138,9 @@ private:
 	/// @param size				The size of the buffer (which limits the quantity of the string
 	///							that is actually copied.
 	///
-	inline void	_pack(uint8_t *&ptr, const char *msg, uint8_t size) { strlcpy((char *)ptr, msg, size); ptr += size; }
+	inline void	_pack(uint8_t *&ptr, const char *msg, uint8_t size) {
+		strncpy((char *)ptr, msg, size); ptr[size-1] = '\0'; ptr += size;
+	}
 
 	/// Unpack any scalar type
 	///
@@ -163,7 +165,9 @@ private:
 	/// @param msg				Pointer to the result buffer.
 	/// @param size				The size of the buffer.
 	///
-	inline void	_unpack(uint8_t *&ptr, char *msg, uint8_t size) { strlcpy(msg, (char *)ptr, size); ptr += size; }
+	inline void	_unpack(uint8_t *&ptr, char *msg, uint8_t size) {
+		strncpy(msg, (char *)ptr, size); msg[size-1] = '\0'; ptr += size;
+	}
 	//@}
 
 public:
