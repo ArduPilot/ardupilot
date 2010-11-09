@@ -98,6 +98,13 @@ BinComm::update(void)
         // XXX we might want to further constrain this count
         count = _interface->available();
 
+		if (count >= 128)
+		{
+			char text[50];
+			strncpy(text,"buffer overflow",50);
+			send_msg_status_text(1,text);
+		}
+
         while (count--)
                 _decode(_interface->read());
 }
