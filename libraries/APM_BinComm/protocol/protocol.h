@@ -1024,69 +1024,34 @@ unpack_msg_sensor(
 //@}
 
 //////////////////////////////////////////////////////////////////////
-/// @name MSG_SERVO_OUT_PLANE 
+/// @name MSG_SERVO_OUT 
 //@{
 
-/// Structure describing the payload section of the MSG_SERVO_OUT_PLANE message
-struct msg_servo_out_plane {
-	int16_t rollServo;
-	int16_t pitchServo;
-	uint16_t throttleServo;
-	int16_t yawServo;
-	int16_t aux1;
-	int16_t aux2;
-	int16_t aux3;
-	int16_t aux4;
+/// Structure describing the payload section of the MSG_SERVO_OUT message
+struct msg_servo_out {
+	int16_t value[8];
 };
 
-/// Send a MSG_SERVO_OUT_PLANE message
+/// Send a MSG_SERVO_OUT message
 inline void
-send_msg_servo_out_plane(
-	const int16_t rollServo,
-	const int16_t pitchServo,
-	const uint16_t throttleServo,
-	const int16_t yawServo,
-	const int16_t aux1,
-	const int16_t aux2,
-	const int16_t aux3,
-	const int16_t aux4)
+send_msg_servo_out(
+	const int16_t (&value)[8])
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, rollServo);
-	_pack(__p, pitchServo);
-	_pack(__p, throttleServo);
-	_pack(__p, yawServo);
-	_pack(__p, aux1);
-	_pack(__p, aux2);
-	_pack(__p, aux3);
-	_pack(__p, aux4);
+	_pack(__p, value, 8);
 	_encodeBuf.header.length = 16;
-	_encodeBuf.header.messageID = MSG_SERVO_OUT_PLANE;
+	_encodeBuf.header.messageID = MSG_SERVO_OUT;
 	_encodeBuf.header.messageVersion = MSG_VERSION_1;
 	_sendMessage();
 };
 
-/// Unpack a MSG_SERVO_OUT_PLANE message
+/// Unpack a MSG_SERVO_OUT message
 inline void
-unpack_msg_servo_out_plane(
-	int16_t &rollServo,
-	int16_t &pitchServo,
-	uint16_t &throttleServo,
-	int16_t &yawServo,
-	int16_t &aux1,
-	int16_t &aux2,
-	int16_t &aux3,
-	int16_t &aux4)
+unpack_msg_servo_out(
+	int16_t (&value)[8])
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, rollServo);
-	_unpack(__p, pitchServo);
-	_unpack(__p, throttleServo);
-	_unpack(__p, yawServo);
-	_unpack(__p, aux1);
-	_unpack(__p, aux2);
-	_unpack(__p, aux3);
-	_unpack(__p, aux4);
+	_unpack(__p, value, 8);
 };
 //@}
 
@@ -1311,7 +1276,7 @@ enum MessageID {
 	MSG_RADIO_OUT = 0x53,
 	MSG_EEPROM_REQUEST = 0xa0,
 	MSG_EEPROM_SET = 0xa1,
-	MSG_SERVO_OUT_PLANE = 0x70,
+	MSG_SERVO_OUT = 0x70,
 	MSG_PIN_REQUEST = 0x80,
 	MSG_PIN_SET = 0x81,
 	MSG_DATAFLASH_REQUEST = 0x90,

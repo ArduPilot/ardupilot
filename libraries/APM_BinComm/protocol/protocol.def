@@ -224,15 +224,8 @@ message 0x60	MSG_SENSOR
 #
 # Simulation-related messages
 #
-message 0x70 	MSG_SERVO_OUT_PLANE
-	int16_t    	rollServo
-	int16_t    	pitchServo
-	uint16_t    throttleServo
-	int16_t    	yawServo
-	int16_t    	aux1
-	int16_t    	aux2
-	int16_t    	aux3
-	int16_t    	aux4
+message 0x70 	MSG_SERVO_OUT
+	int16_t			value	8
 
 #
 # Direct I/O pin control
