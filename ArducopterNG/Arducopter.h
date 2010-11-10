@@ -484,7 +484,7 @@ float Kp_ROLLPITCH;
 float Ki_ROLLPITCH;
 float Kp_YAW;
 float Ki_YAW;
-float GEOG_CORRECTION_FACTOR;
+float GEOG_CORRECTION_FACTOR=0;
 int MAGNETOMETER;
 float Kp_RateRoll;
 float Ki_RateRoll;
@@ -550,7 +550,7 @@ void defaultUserConfig() {
   Ki_ROLLPITCH               = 0.00000015;
   Kp_YAW                     = 1.0;
   Ki_YAW                     = 0.00002;
-  GEOG_CORRECTION_FACTOR     = 0.87;
+  GEOG_CORRECTION_FACTOR     = 0.0;      // will be automatically calculated
   MAGNETOMETER               = 0;
   Kp_RateRoll                = 1.95;
   Ki_RateRoll                = 0.0;

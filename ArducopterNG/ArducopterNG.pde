@@ -210,6 +210,8 @@ void setup() {
   mediumLoop = mainLoop;
   GPS_timer = mainLoop;
   motorArmed = 0;
+  
+  GEOG_CORRECTION_FACTOR = 0;   // Geographic correction factor will be automatically calculated
 
   Read_adc_raw();            // Initialize ADC readings...
 

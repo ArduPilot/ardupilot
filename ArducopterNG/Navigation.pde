@@ -58,12 +58,15 @@ void Position_control(long lat_dest, long lon_dest)
   long Lon_diff;
   long Lat_diff;
 
-#ifdef IsGPS   // it is safe to disable this, if no IsGPS we never come here anyways
   Lon_diff = lon_dest - GPS.Longitude;
   Lat_diff = lat_dest - GPS.Lattitude;
-#endif
+
+  //If we have not calculated GEOG_CORRECTION_FACTOR we calculate it here as cos(lattitude)
+  if (GEOG_CORRECTION_FACTOR==0)
+    GEOG_CORRECTION_FACTOR = cos(ToRad(GPS.Lattitude/10000000.0));
+
   // ROLL
-  //Optimization : cos(yaw) = DCM_Matrix[0][0] ;  sin(yaw) = DCM_Matrix[1][0] 
+  //Optimization : cos(yaw) = DCM_Matrix[0][0] ;  sin(yaw) = DCM_Matrix[1][0]   [This simplification is valid for low roll angles]
   gps_err_roll = (float)Lon_diff * GEOG_CORRECTION_FACTOR * DCM_Matrix[0][0] - (float)Lat_diff * DCM_Matrix[1][0];
 
   gps_roll_D = (gps_err_roll-gps_err_roll_old) / GPS_Dt;
