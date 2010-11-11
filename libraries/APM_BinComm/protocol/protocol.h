@@ -1248,6 +1248,248 @@ unpack_msg_eeprom_set(
 //@}
 
 //////////////////////////////////////////////////////////////////////
+/// @name MSG_EEPROM_SET 
+//@{
+
+/// Structure describing the payload section of the MSG_EEPROM_SET message
+struct msg_eeprom_set {
+	uint16_t UNSPECIFIED;
+};
+
+/// Send a MSG_EEPROM_SET message
+inline void
+send_msg_eeprom_set(
+	const uint16_t UNSPECIFIED)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
+	_encodeBuf.header.length = 2;
+	_encodeBuf.header.messageID = MSG_EEPROM_SET;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_EEPROM_SET message
+inline void
+unpack_msg_eeprom_set(
+	uint16_t &UNSPECIFIED)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
+/// @name MSG_EEPROM_SET 
+//@{
+
+/// Structure describing the payload section of the MSG_EEPROM_SET message
+struct msg_eeprom_set {
+	uint16_t UNSPECIFIED;
+};
+
+/// Send a MSG_EEPROM_SET message
+inline void
+send_msg_eeprom_set(
+	const uint16_t UNSPECIFIED)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, UNSPECIFIED);
+	_encodeBuf.header.length = 2;
+	_encodeBuf.header.messageID = MSG_EEPROM_SET;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_EEPROM_SET message
+inline void
+unpack_msg_eeprom_set(
+	uint16_t &UNSPECIFIED)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, UNSPECIFIED);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
+/// @name MSG_POSITION_CORRECT 
+//@{
+
+/// Structure describing the payload section of the MSG_POSITION_CORRECT message
+struct msg_position_correct {
+	int16_t latError;
+	int16_t lonError;
+	int16_t altError;
+	int16_t groundSpeedError;
+};
+
+/// Send a MSG_POSITION_CORRECT message
+inline void
+send_msg_position_correct(
+	const int16_t latError,
+	const int16_t lonError,
+	const int16_t altError,
+	const int16_t groundSpeedError)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, latError);
+	_pack(__p, lonError);
+	_pack(__p, altError);
+	_pack(__p, groundSpeedError);
+	_encodeBuf.header.length = 8;
+	_encodeBuf.header.messageID = MSG_POSITION_CORRECT;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_POSITION_CORRECT message
+inline void
+unpack_msg_position_correct(
+	int16_t &latError,
+	int16_t &lonError,
+	int16_t &altError,
+	int16_t &groundSpeedError)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, latError);
+	_unpack(__p, lonError);
+	_unpack(__p, altError);
+	_unpack(__p, groundSpeedError);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
+/// @name MSG_ATTITUDE_CORRECT 
+//@{
+
+/// Structure describing the payload section of the MSG_ATTITUDE_CORRECT message
+struct msg_attitude_correct {
+	int16_t rollError;
+	int16_t pitchError;
+	int16_t yawError;
+};
+
+/// Send a MSG_ATTITUDE_CORRECT message
+inline void
+send_msg_attitude_correct(
+	const int16_t rollError,
+	const int16_t pitchError,
+	const int16_t yawError)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, rollError);
+	_pack(__p, pitchError);
+	_pack(__p, yawError);
+	_encodeBuf.header.length = 6;
+	_encodeBuf.header.messageID = MSG_ATTITUDE_CORRECT;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_ATTITUDE_CORRECT message
+inline void
+unpack_msg_attitude_correct(
+	int16_t &rollError,
+	int16_t &pitchError,
+	int16_t &yawError)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, rollError);
+	_unpack(__p, pitchError);
+	_unpack(__p, yawError);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
+/// @name MSG_POSITION_SET 
+//@{
+
+/// Structure describing the payload section of the MSG_POSITION_SET message
+struct msg_position_set {
+	int32_t latitude;
+	int32_t longitude;
+	int32_t altitude;
+	uint16_t heading;
+};
+
+/// Send a MSG_POSITION_SET message
+inline void
+send_msg_position_set(
+	const int32_t latitude,
+	const int32_t longitude,
+	const int32_t altitude,
+	const uint16_t heading)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, latitude);
+	_pack(__p, longitude);
+	_pack(__p, altitude);
+	_pack(__p, heading);
+	_encodeBuf.header.length = 14;
+	_encodeBuf.header.messageID = MSG_POSITION_SET;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_POSITION_SET message
+inline void
+unpack_msg_position_set(
+	int32_t &latitude,
+	int32_t &longitude,
+	int32_t &altitude,
+	uint16_t &heading)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, latitude);
+	_unpack(__p, longitude);
+	_unpack(__p, altitude);
+	_unpack(__p, heading);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
+/// @name MSG_ATTITUDE_SET 
+//@{
+
+/// Structure describing the payload section of the MSG_ATTITUDE_SET message
+struct msg_attitude_set {
+	int16_t roll;
+	int16_t pitch;
+	unt16_t yaw;
+};
+
+/// Send a MSG_ATTITUDE_SET message
+inline void
+send_msg_attitude_set(
+	const int16_t roll,
+	const int16_t pitch,
+	const unt16_t yaw)
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, roll);
+	_pack(__p, pitch);
+	_pack(__p, yaw);
+	_encodeBuf.header.length = 6;
+	_encodeBuf.header.messageID = MSG_ATTITUDE_SET;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_ATTITUDE_SET message
+inline void
+unpack_msg_attitude_set(
+	int16_t &roll,
+	int16_t &pitch,
+	unt16_t &yaw)
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, roll);
+	_unpack(__p, pitch);
+	_unpack(__p, yaw);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
 /// Message ID values
 enum MessageID {
 	MSG_ACKNOWLEDGE = 0x0,
@@ -1277,7 +1519,11 @@ enum MessageID {
 	MSG_EEPROM_REQUEST = 0xa0,
 	MSG_EEPROM_SET = 0xa1,
 	MSG_SERVO_OUT = 0x70,
+	MSG_POSITION_CORRECT = 0xb0,
+	MSG_ATTITUDE_CORRECT = 0xb1,
+	MSG_POSITION_SET = 0xb2,
 	MSG_PIN_REQUEST = 0x80,
+	MSG_ATTITUDE_SET = 0xb3,
 	MSG_PIN_SET = 0x81,
 	MSG_DATAFLASH_REQUEST = 0x90,
 	MSG_DATAFLASH_SET = 0x91,
