@@ -59,11 +59,17 @@
 
 #
 # Acknowledge message
-#
+# Required by protocol, don't change
 message 0x00	MSG_ACKNOWLEDGE 
 	uint8_t			msgID
 	uint8_t			sum1
 	uint8_t			sum2
+#
+# Text status message
+# Required by protocol, don't change
+message 0x05	MSG_STATUS_TEXT 
+	uint8_t			severity
+	char			text		50
 
 #
 # System heartbeat
@@ -99,13 +105,6 @@ message 0x03	MSG_LOCATION
 message 0x04	MSG_PRESSURE 
 	int32_t			pressureAltitude
 	int16_t			airSpeed
-
-#
-# Text status message
-#
-message 0x05	MSG_STATUS_TEXT 
-	uint8_t			severity
-	char			text		50
 
 #
 # Algorithm performance report

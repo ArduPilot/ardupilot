@@ -102,7 +102,7 @@ BinComm::update(void)
 		{
 			char text[50];
 			strncpy(text,"buffer overflow",50);
-			send_msg_status_text(1,text);
+			send_msg_status_text(SEVERITY_LOW,text);
 		}
 
         while (count--)
@@ -218,6 +218,12 @@ BinComm::_decode(uint8_t inByte)
 										_messageID, _messageVersion, &_decodeBuf);
 									// dont' acknowledge an acknowledgement, will echo infinetly
 									if (_messageID != MSG_ACKNOWLEDGE) send_msg_acknowledge(_messageID,_sumA,_sumB);
+								}
+								else
+								{
+									char str[50];
+									sprintf(str,"<bincomm> unhandled messageID:%x",_messageID);
+									send_msg_status_text(SEVERITY_LOW,str);
 								}
                 } else {
                         badMessagesReceived++;

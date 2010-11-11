@@ -184,6 +184,15 @@ public:
 	/// @note The MessageID enum is automatically generated and thus not described here.
 	/// 
 	//@{
+	
+	/// Message serverities
+	enum severities
+	{
+		SEVERITY_LOW 		= 1,
+		SEVERITY_MEDIUM 	= 2,
+		SEVERITY_HIGH 		= 3,
+		SEVERITY_CRITICAL 	= 4,
+	};
 
 	/// Variables defined
 	/// XXX these should probably be handled by the database/MIB?

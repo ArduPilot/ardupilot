@@ -48,6 +48,43 @@ unpack_msg_acknowledge(
 //@}
 
 //////////////////////////////////////////////////////////////////////
+/// @name MSG_STATUS_TEXT 
+//@{
+
+/// Structure describing the payload section of the MSG_STATUS_TEXT message
+struct msg_status_text {
+	uint8_t severity;
+	char text[50];
+};
+
+/// Send a MSG_STATUS_TEXT message
+inline void
+send_msg_status_text(
+	const uint8_t severity,
+	const char (&text)[50])
+{
+	uint8_t *__p = &_encodeBuf.payload[0];
+	_pack(__p, severity);
+	_pack(__p, text, 50);
+	_encodeBuf.header.length = 51;
+	_encodeBuf.header.messageID = MSG_STATUS_TEXT;
+	_encodeBuf.header.messageVersion = MSG_VERSION_1;
+	_sendMessage();
+};
+
+/// Unpack a MSG_STATUS_TEXT message
+inline void
+unpack_msg_status_text(
+	uint8_t &severity,
+	char (&text)[50])
+{
+	uint8_t *__p = &_decodeBuf.payload[0];
+	_unpack(__p, severity);
+	_unpack(__p, text, 50);
+};
+//@}
+
+//////////////////////////////////////////////////////////////////////
 /// @name MSG_HEARTBEAT 
 //@{
 
@@ -227,43 +264,6 @@ unpack_msg_pressure(
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, pressureAltitude);
 	_unpack(__p, airSpeed);
-};
-//@}
-
-//////////////////////////////////////////////////////////////////////
-/// @name MSG_STATUS_TEXT 
-//@{
-
-/// Structure describing the payload section of the MSG_STATUS_TEXT message
-struct msg_status_text {
-	uint8_t severity;
-	char text[50];
-};
-
-/// Send a MSG_STATUS_TEXT message
-inline void
-send_msg_status_text(
-	const uint8_t severity,
-	const char (&text)[50])
-{
-	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, severity);
-	_pack(__p, text, 50);
-	_encodeBuf.header.length = 51;
-	_encodeBuf.header.messageID = MSG_STATUS_TEXT;
-	_encodeBuf.header.messageVersion = MSG_VERSION_1;
-	_sendMessage();
-};
-
-/// Unpack a MSG_STATUS_TEXT message
-inline void
-unpack_msg_status_text(
-	uint8_t &severity,
-	char (&text)[50])
-{
-	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, severity);
-	_unpack(__p, text, 50);
 };
 //@}
 
