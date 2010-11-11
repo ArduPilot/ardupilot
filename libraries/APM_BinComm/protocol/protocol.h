@@ -1248,70 +1248,6 @@ unpack_msg_eeprom_set(
 //@}
 
 //////////////////////////////////////////////////////////////////////
-/// @name MSG_EEPROM_SET 
-//@{
-
-/// Structure describing the payload section of the MSG_EEPROM_SET message
-struct msg_eeprom_set {
-	uint16_t UNSPECIFIED;
-};
-
-/// Send a MSG_EEPROM_SET message
-inline void
-send_msg_eeprom_set(
-	const uint16_t UNSPECIFIED)
-{
-	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, UNSPECIFIED);
-	_encodeBuf.header.length = 2;
-	_encodeBuf.header.messageID = MSG_EEPROM_SET;
-	_encodeBuf.header.messageVersion = MSG_VERSION_1;
-	_sendMessage();
-};
-
-/// Unpack a MSG_EEPROM_SET message
-inline void
-unpack_msg_eeprom_set(
-	uint16_t &UNSPECIFIED)
-{
-	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, UNSPECIFIED);
-};
-//@}
-
-//////////////////////////////////////////////////////////////////////
-/// @name MSG_EEPROM_SET 
-//@{
-
-/// Structure describing the payload section of the MSG_EEPROM_SET message
-struct msg_eeprom_set {
-	uint16_t UNSPECIFIED;
-};
-
-/// Send a MSG_EEPROM_SET message
-inline void
-send_msg_eeprom_set(
-	const uint16_t UNSPECIFIED)
-{
-	uint8_t *__p = &_encodeBuf.payload[0];
-	_pack(__p, UNSPECIFIED);
-	_encodeBuf.header.length = 2;
-	_encodeBuf.header.messageID = MSG_EEPROM_SET;
-	_encodeBuf.header.messageVersion = MSG_VERSION_1;
-	_sendMessage();
-};
-
-/// Unpack a MSG_EEPROM_SET message
-inline void
-unpack_msg_eeprom_set(
-	uint16_t &UNSPECIFIED)
-{
-	uint8_t *__p = &_decodeBuf.payload[0];
-	_unpack(__p, UNSPECIFIED);
-};
-//@}
-
-//////////////////////////////////////////////////////////////////////
 /// @name MSG_POSITION_CORRECT 
 //@{
 
@@ -1455,7 +1391,7 @@ unpack_msg_position_set(
 struct msg_attitude_set {
 	int16_t roll;
 	int16_t pitch;
-	unt16_t yaw;
+	uint16_t yaw;
 };
 
 /// Send a MSG_ATTITUDE_SET message
@@ -1463,7 +1399,7 @@ inline void
 send_msg_attitude_set(
 	const int16_t roll,
 	const int16_t pitch,
-	const unt16_t yaw)
+	const uint16_t yaw)
 {
 	uint8_t *__p = &_encodeBuf.payload[0];
 	_pack(__p, roll);
@@ -1480,7 +1416,7 @@ inline void
 unpack_msg_attitude_set(
 	int16_t &roll,
 	int16_t &pitch,
-	unt16_t &yaw)
+	uint16_t &yaw)
 {
 	uint8_t *__p = &_decodeBuf.payload[0];
 	_unpack(__p, roll);

@@ -253,12 +253,6 @@ message 0xa0	MSG_EEPROM_REQUEST
 message 0xa1	MSG_EEPROM_SET
 	uint16_t		UNSPECIFIED
 
-message 0xb0	MSG_EEPROM_SET
-	uint16_t		UNSPECIFIED
-
-message 0xb1	MSG_EEPROM_SET
-	uint16_t		UNSPECIFIED
-
 #
 # Navigation Augmentation
 #
@@ -282,4 +276,4 @@ message 0xb2 	MSG_POSITION_SET
 message 0xb3 	MSG_ATTITUDE_SET
 	int16_t 		roll
 	int16_t 		pitch
-	unt16_t 		yaw
+	uint16_t 		yaw
