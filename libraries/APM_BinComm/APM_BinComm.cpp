@@ -1,4 +1,4 @@
-// -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 //
 // Copyright (c) 2010 Michael Smith. All rights reserved.
 // 
@@ -45,194 +45,192 @@
 #define DEC_MESSAGE_TIMEOUT     1000
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
-                 uint16_t rxBufferSize, Stream *interface) :
-        _handlerTable(handlerTable),
-        _decodePhase(DEC_WAIT_P1),
-        _lastReceived(millis()),
-        _rxBufferSize(rxBufferSize)
+                 Stream *interface) :
+	_handlerTable(handlerTable),
+	_decodePhase(DEC_WAIT_P1),
+	_lastReceived(millis())
 {
-        init(interface);
+	init(interface);
 };
 
 void
 BinComm::init(Stream *interface)
 {
-        _interface = interface;
+	_interface = interface;
 }
 
 void
-BinComm::_sendMessage(void)
+BinComm::_startMessage(uint8_t messageId, uint8_t messageLength, uint8_t messageVersion)
 {
-        uint8_t bytesToSend;
-        uint8_t sumA, sumB;
-        const uint8_t *p;
+	// send the preamble first
+	_interface->write((uint8_t)MSG_PREAMBLE_1);
+	_interface->write((uint8_t)MSG_PREAMBLE_2);
 
-        // send the preamble first
-        _interface->write((uint8_t)MSG_PREAMBLE_1);
-        _interface->write((uint8_t)MSG_PREAMBLE_2);
+	// initialise the checksum accumulators
+	_encoderSumA = _encoderSumB = 0;
 
-        // set up to send the payload
-        bytesToSend = _encodeBuf.header.length + sizeof(_encodeBuf.header);
-        sumA = sumB = 0;
-        p = (const uint8_t *)&_encodeBuf;
+	// send the header
+	_emit(messageLength);
+	_emit(messageId);
+	_emit(messageVersion);
+}
 
-        // send message bytes and compute checksum on the fly
-        while (bytesToSend--) {
-                sumA += *p;
-                sumB += sumA;
-                _interface->write(*p++);
-        }
+void
+BinComm::_send(const void *bytes, uint8_t count)
+{
+	const uint8_t *p = (const uint8_t *)bytes;
+	uint8_t		c;
 
-        // send the checksum
-        _interface->write(sumA);
-        _interface->write(sumB);
+	while (count--) {
+		c = *p++;
+		_encoderSumA += c;
+		_encoderSumB += _encoderSumA;
+		_interface->write(c);
+	}
+}
+
+void
+BinComm::_endMessage(void)
+{
+	_interface->write(_encoderSumA);
+	_interface->write(_encoderSumB);
 }
 
 void
 BinComm::update(void)
 {
-        uint8_t         count;
+	uint8_t         count;
 
-        // Ensure that we don't spend too long here by only processing
-        // the bytes that were available when we started.
-        //
-        // XXX we might want to further constrain this count
-        count = _interface->available();
+	// Ensure that we don't spend too long here by only processing
+	// the bytes that were available when we started.
+	//
+	// XXX we might want to further constrain this count
+	count = _interface->available();
 
-		if (count >= _rxBufferSize)
-		{
-			char text[50];
-			strncpy(text,"<bincomm> buffer overflow",50);
-			send_msg_status_text(SEVERITY_LOW,text);
-		}
-
-        while (count--)
-                _decode(_interface->read());
+	while (count--)
+		_decode(_interface->read());
 }
 
 void
 BinComm::_decode(uint8_t inByte)
 {
-        uint8_t         tableIndex;
+	uint8_t         tableIndex;
 
-        // handle inter-byte timeouts (resync after link loss, etc.)
-        //
-        if ((millis() - _lastReceived) > DEC_MESSAGE_TIMEOUT)
-                _decodePhase = DEC_WAIT_P1;
-        _lastReceived = millis();
+	// handle inter-byte timeouts (resync after link loss, etc.)
+	//
+	if ((millis() - _lastReceived) > DEC_MESSAGE_TIMEOUT)
+		_decodePhase = DEC_WAIT_P1;
+	_lastReceived = millis();
 
-        // run the decode state machine
-        //
-        switch (_decodePhase) {
+	// run the decode state machine
+	//
+	switch (_decodePhase) {
 
-                // Preamble detection
-                //
-                // Note the fallthrough from P2 to P1 deals with the case where
-                // we see 0x34, 0x34, 0x44 where the first 0x34 is garbage or 
-                // a SUM_B byte we never looked at.
-                //
-        case DEC_WAIT_P2:
-                if (MSG_PREAMBLE_2 == inByte) {
-                        _decodePhase++;
+		// Preamble detection
+		//
+		// Note the fallthrough from P2 to P1 deals with the case where
+		// we see 0x34, 0x34, 0x44 where the first 0x34 is garbage or 
+		// a SUM_B byte we never looked at.
+		//
+	case DEC_WAIT_P2:
+		if (MSG_PREAMBLE_2 == inByte) {
+			_decodePhase++;
 
-                        // prepare for the header
-                        _bytesIn = 0;
-                        _bytesExpected = sizeof(MessageHeader);
+			// prepare for the header
+			_bytesIn = 0;
+			_bytesExpected = sizeof(MessageHeader);
 
-                        // intialise the checksum accumulators
-                        _sumA = _sumB = 0;
+			// intialise the checksum accumulators
+			_decoderSumA = _decoderSumB = 0;
 
-                        break;
-                }
-                _decodePhase = DEC_WAIT_P1;
-                // FALLTHROUGH
-        case DEC_WAIT_P1:
-                if (MSG_PREAMBLE_1 == inByte) {
-                        _decodePhase++;
-                }
-                break;
+			break;
+		}
+		_decodePhase = DEC_WAIT_P1;
+		// FALLTHROUGH
+	case DEC_WAIT_P1:
+		if (MSG_PREAMBLE_1 == inByte) {
+			_decodePhase++;
+		}
+		break;
 
-                // receiving the header
-                //
-        case DEC_WAIT_HEADER:
-                // do checksum accumulation
-                _sumA += inByte;
-                _sumB += _sumA;
+		// receiving the header
+		//
+	case DEC_WAIT_HEADER:
+		// do checksum accumulation
+		_decoderSumA += inByte;
+		_decoderSumB += _decoderSumA;
 
-                // store the byte
-                _decodeBuf.bytes[_bytesIn++] = inByte;
+		// store the byte
+		_decodeBuf.bytes[_bytesIn++] = inByte;
 
-                // check for complete header received
-                if (_bytesIn == _bytesExpected) {
-                        _decodePhase++;
+		// check for complete header received
+		if (_bytesIn == _bytesExpected) {
+			_decodePhase++;
 
-                        // prepare for the payload
-                        // variable-length data?
-                        _bytesIn = 0;
-                        _bytesExpected = _decodeBuf.header.length;
-                        _messageID = _decodeBuf.header.messageID;
-                        _messageVersion = _decodeBuf.header.messageVersion;
+			// prepare for the payload
+			// variable-length data?
+			_bytesIn = 0;
+			_bytesExpected = _decodeBuf.header.length;
+			_messageID = _decodeBuf.header.messageID;
+			_messageVersion = _decodeBuf.header.messageVersion;
 
-                        // sanity check to avoid buffer overflow - revert back to waiting
-                        if (_bytesExpected > sizeof(_decodeBuf))
-                                _decodePhase = DEC_WAIT_P1;
-                }
-                break;
+			// sanity check to avoid buffer overflow - revert back to waiting
+			if (_bytesExpected > sizeof(_decodeBuf))
+				_decodePhase = DEC_WAIT_P1;
+		}
+		break;
 
-                // receiving payload data
-                //
-        case DEC_WAIT_MESSAGE:
-                // do checksum accumulation
-                _sumA += inByte;
-                _sumB += _sumA;
+		// receiving payload data
+		//
+	case DEC_WAIT_MESSAGE:
+		// do checksum accumulation
+		_decoderSumA += inByte;
+		_decoderSumB += _decoderSumA;
 
-                // store the byte
-                _decodeBuf.bytes[_bytesIn++] = inByte;
+		// store the byte
+		_decodeBuf.bytes[_bytesIn++] = inByte;
 
-                // check for complete payload received
-                if (_bytesIn == _bytesExpected) {
-                        _decodePhase++;
-                }
-                break;
+		// check for complete payload received
+		if (_bytesIn == _bytesExpected) {
+			_decodePhase++;
+		}
+		break;
 
-                // waiting for the checksum bytes
-                //
-        case DEC_WAIT_SUM_A:
-                if (inByte != _sumA) {
-                        badMessagesReceived++;
-                        _decodePhase = DEC_WAIT_P1;
-                } else {
-                        _decodePhase++;
-                }
-                break;
-        case DEC_WAIT_SUM_B:
-                if (inByte == _sumB) {
-                        // if we got this far, we have a message
-                        messagesReceived++;
+		// waiting for the checksum bytes
+		//
+	case DEC_WAIT_SUM_A:
+		if (inByte != _decoderSumA) {
+			badMessagesReceived++;
+			_decodePhase = DEC_WAIT_P1;
+		} else {
+			_decodePhase++;
+		}
+		break;
+	case DEC_WAIT_SUM_B:
+		if (inByte == _decoderSumB) {
+			// if we got this far, we have a message
+			messagesReceived++;
 
-                        // call any handler interested in this message
-                        for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++)
-								if(_handlerTable[tableIndex].messageID == MSG_ANY ||
-									_handlerTable[tableIndex].messageID == _messageID )
-								{
-									_handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg,
-										_messageID, _messageVersion, &_decodeBuf);
-									// dont' acknowledge an acknowledgement, will echo infinetly
-									if (_messageID != MSG_ACKNOWLEDGE) send_msg_acknowledge(_messageID,_sumA,_sumB);
-								}
-								else
-								{
-									char str[50];
-									sprintf(str,"<bincomm> unhandled messageID:%x",_messageID);
-									send_msg_status_text(SEVERITY_LOW,str);
-								}
-                } else {
-                        badMessagesReceived++;
-                }
-                // FALLTHROUGH
-        default:
-                _decodePhase = DEC_WAIT_P1;
-                break;
+			// call any handler interested in this message
+			for (tableIndex = 0; MSG_NULL != _handlerTable[tableIndex].messageID; tableIndex++) {
+				if(_handlerTable[tableIndex].messageID == MSG_ANY ||
+				   _handlerTable[tableIndex].messageID == _messageID ) {
+					_handlerTable[tableIndex].handler(_handlerTable[tableIndex].arg,
+													  _messageID, _messageVersion, &_decodeBuf);
+					// dont' acknowledge an acknowledgement, will echo infinetly
+					if (_messageID != MSG_ACKNOWLEDGE) 
+						send_msg_acknowledge(_messageID, _decoderSumA, _decoderSumB);
+				} else {
+					// XXX should send a NAK of some sort here
+				}
+			}
+		} else {
+			badMessagesReceived++;
+		}
+		// FALLTHROUGH
+	default:
+		_decodePhase = DEC_WAIT_P1;
+		break;
 
-        }
+	}
 }

@@ -11,6 +11,7 @@ BEGIN {
     printf("#pragma pack(1)\n");
     
     currentMessage = ""
+    structureCount = 0
 }
 
 END {
@@ -32,6 +33,15 @@ END {
     printf("\tMSG_ANY = 0xfe,\n")
     printf("\tMSG_NULL = 0xff\n")
     printf("};\n")    
+
+    printf("\n//////////////////////////////////////////////////////////////////////\n")
+    printf("/// Message buffer sizing\n")
+    printf("union _binCommBufferSizer {\n");
+    for (i = 0; i < structureCount; i++) {
+	printf("\tstruct %s %s;\n", structs[i], structs[i]);
+    }
+    printf("};\n");
+    printf("#define BINCOMM_MAX_MESSAGE_SIZE sizeof(union _binCommBufferSizer)\n\n");
 
     printf("#pragma pack(pop)\n")
 }
@@ -57,9 +67,15 @@ function EMIT_MESSAGE(payloadSize)
 	    printf(";\n")
 	}
 	printf("};\n\n")
+	
+	#
+	# Record the structure name for later use sizing the receive buffer.
+	#
+	structs[structureCount] = tolower(currentMessage);
+	structureCount++;
 
 	#
-	# emit a routine to pack the message payload from a set of variables and send it
+	# emit a routine to emit the message payload from a set of variables
 	#
 	printf("/// Send a %s message\n", currentMessage)
 	printf("inline void\nsend_%s(\n", tolower(currentMessage))
@@ -73,21 +89,23 @@ function EMIT_MESSAGE(payloadSize)
 		printf(",\n");
 	}	
 	printf(")\n{\n")
-	printf("\tuint8_t *__p = &_encodeBuf.payload[0];\n")
-	payloadSize = 0;
+	printf("\t_startMessage(%s,", currentMessage);
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
-		printf("\t_pack(__p, %s, %s);\n", names[i], counts[i])
-		payloadSize += sizes[i] * counts[i]
+		printf("\n\t\t(sizeof(%s[0]) * %d) +", names[i], counts[i]);
 	    } else {
-		printf("\t_pack(__p, %s);\n", names[i])
-		payloadSize += sizes[i]
+		printf("\n\t\tsizeof(%s) +", names[i]);
 	    }
 	}
-	printf("\t_encodeBuf.header.length = %s;\n", payloadSize)
-	printf("\t_encodeBuf.header.messageID = %s;\n", currentMessage)
-	printf("\t_encodeBuf.header.messageVersion = MSG_VERSION_1;\n")
-	printf("\t_sendMessage();\n")
+	printf(" 0);\n");
+	for (i = 0; i < fieldCount; i++) {
+	    if (counts[i]) {
+		printf("\t_emit(%s, %s);\n", names[i], counts[i])
+	    } else {
+		printf("\t_emit(%s);\n", names[i])
+	    }
+	}
+	printf("\t_endMessage();\n")
 	printf("};\n\n")
 
 	#
@@ -109,10 +127,8 @@ function EMIT_MESSAGE(payloadSize)
 	for (i = 0; i < fieldCount; i++) {
 	    if (counts[i]) {
 		printf("\t_unpack(__p, %s, %s);\n", names[i], counts[i])
-		payloadSize += sizes[i] * counts[i]
 	    } else {
 		printf("\t_unpack(__p, %s);\n", names[i])
-		payloadSize += sizes[i]
 	    }
 	}
 	printf("};\n")
@@ -144,7 +160,6 @@ $1=="message" {
     fieldCount = 0
     delete types
     delete names
-    delete sizes
     delete counts
 
     next
@@ -158,13 +173,6 @@ NF >= 2 {
     # save the field definition
     types[fieldCount] = $1
     names[fieldCount] = $2
-
-    # guess the field size, note that we only support <inttypes.h> and "char"
-    sizes[fieldCount] = 1
-    if ($1 ~ ".*16.*") 
-	sizes[fieldCount] = 2
-    if ($1 ~ ".*32.*") 
-	sizes[fieldCount] = 4
 
     # if an array size was supplied, save it
     if (NF >= 3) {

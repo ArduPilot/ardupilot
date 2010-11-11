@@ -76,7 +76,7 @@ public:
 
 	///
 	BinComm(const MessageHandler *handlerTable,
-			uint16_t rxBufferSize, Stream *interface = NULL);
+			Stream *interface = NULL);
 
 	///
 	/// Optional initialiser.
@@ -105,51 +105,42 @@ private:
 		uint8_t					payload[256];
 	} _decodeBuf;
 
-	uint16_t _rxBufferSize;
-
-	/// Outgoing header/packet buffer
-	/// XXX we could make this smaller
-	struct {
-		MessageHeader			header;
-		uint8_t					payload[256 - sizeof(MessageHeader)];
-	} _encodeBuf;
-
-
 	//////////////////////////////////////////////////////////////////////
 	/// @name		Message pack/unpack utility functions
 	///
 	//@{
 
-	/// Pack any scalar type
+	/// Emit any scalar type.
 	///
-	/// @param ptr				Buffer pointer.
-	/// @param x				Value to pack.
+	/// @param x				Value to emit.
 	///
-	template <typename T> inline void _pack(uint8_t *&ptr, const T x) { *(T *)ptr = x; ptr += sizeof(T); }
+	template <typename T> inline void _emit(const T x) { _send(&x, sizeof(T)); }
 
-	/// Pack an array of any scalar type
+	/// Emit an array of any scalar type.
 	///
-	/// @param ptr				Buffer pointer.
-	/// @param x				Array to pack.
+	/// @param x				Array to emit.
 	/// @param count			Array size.
 	///
-	template <typename T> inline void _pack(uint8_t *&ptr, const T *values, uint8_t count) {
-		memcpy(ptr, values, count * sizeof(T));
-		ptr += count * sizeof(T);
+	template <typename T> inline void _emit(const T *values, uint8_t count) { _send(values, count * sizeof(T)); }
+	
+
+	/// Emit a fixed-size string, from a NUL-terminated buffer.
+	///
+	/// The string is NUL-padded if the buffer is larger than the string.
+	///
+	/// @param msg				The NUL-terminated string to emit.
+	/// @param size				The maximum length of the string to emit.
+	///
+	inline void	_emit(const char *msg, uint8_t size) { 
+		while (size--) {
+			char	c = *msg;
+			_emit(c);
+			if (0 != c)
+				msg++;
+		}
 	}
 
-	/// Pack a string into a fixed-size buffer.
-	///
-	/// @param ptr				Buffer pointer
-	/// @param msg				The NUL-terminated string to pack.
-	/// @param size				The size of the buffer (which limits the quantity of the string
-	///							that is actually copied.
-	///
-	inline void	_pack(uint8_t *&ptr, const char *msg, uint8_t size) {
-		strncpy((char *)ptr, msg, size); ptr[size-1] = '\0'; ptr += size;
-	}
-
-	/// Unpack any scalar type
+	/// Unpack any scalar type.
 	///
 	/// @param buf				Buffer pointer.
 	/// @param x				Unpacked result.
@@ -320,8 +311,8 @@ private:
 	uint8_t					_decodePhase;	///< decoder state machine phase
 	uint8_t					_bytesIn;		///< bytes received in the current phase
 	uint8_t					_bytesExpected; ///< bytes expected in the current phase
-	uint8_t					_sumA;			///< sum of incoming bytes
-	uint8_t					_sumB;			///< sum of _sumA values
+	uint8_t					_decoderSumA;	///< sum of incoming bytes
+	uint8_t					_decoderSumB;	///< sum of _sumA values
 
 	uint8_t					_messageID;		///< messageID from the packet being received
 	uint8_t					_messageVersion;///< messageVersion from the packet being received
@@ -335,9 +326,30 @@ private:
 	///
 	void					_decode(uint8_t inByte);
 
-	/// Send the packet in the encode buffer.
+	//////////////////////////////////////////////////////////////////////
+	/// @name		Encoder state
+	//@{
+	uint8_t					_encoderSumA;	///< sum of outgoing bytes
+	uint8_t					_encoderSumB;	///< sum of _sumA values
+	//@}
+
+	/// Start transmitting a message.
 	///
-	void					_sendMessage(void);
+	/// @param	messageId		The ID of the message to be sent
+	/// @param	messageLength	The protocol-defined length of the message in bytes
+	/// @param	messageVersion	The message version (optional)
+	///
+	void					_startMessage(uint8_t messageId, uint8_t messageLength, uint8_t messageVersion = 1);
+
+	/// Send bytes as part of a message.
+	///
+	/// @param	bytes			Pointer to the byte(s) to send.
+	/// @param	count			Count of bytes to send.
+	void					_send(const void *bytes, uint8_t count);
+
+	/// Finalise message transmission.
+	///
+	void					_endMessage(void);
 };
 
 #endif // BinComm_h

@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "WProgram.h"
 
@@ -51,6 +52,7 @@ Stream::read(void)
 
         switch(::read(port_fd, &c, 1)) {
         case 1:
+                printf("0x%02x\n", c);
                 return c;
         case 0:
                 errx(1, "device disappeared");
