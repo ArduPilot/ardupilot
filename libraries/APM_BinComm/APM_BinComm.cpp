@@ -45,10 +45,11 @@
 #define DEC_MESSAGE_TIMEOUT     1000
 
 BinComm::BinComm(const BinComm::MessageHandler *handlerTable,
-                 Stream *interface) :
+                 uint16_t rxBufferSize, Stream *interface) :
         _handlerTable(handlerTable),
         _decodePhase(DEC_WAIT_P1),
-        _lastReceived(millis())
+        _lastReceived(millis()),
+        _rxBufferSize(rxBufferSize)
 {
         init(interface);
 };
@@ -98,10 +99,10 @@ BinComm::update(void)
         // XXX we might want to further constrain this count
         count = _interface->available();
 
-		if (count >= 128)
+		if (count >= _rxBufferSize)
 		{
 			char text[50];
-			strncpy(text,"buffer overflow",50);
+			strncpy(text,"<bincomm> buffer overflow",50);
 			send_msg_status_text(SEVERITY_LOW,text);
 		}
 

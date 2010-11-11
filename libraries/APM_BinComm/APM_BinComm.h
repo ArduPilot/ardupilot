@@ -70,8 +70,13 @@ public:
 	/// @param interface			The stream that will be used
 	///								for telemetry communications.
 	///
+	/// @param rxBuffSize		    Size of receive buffer allocated by interface.
+	///								This is used to warn for buffer overflow.
+	///
+
+	///
 	BinComm(const MessageHandler *handlerTable,
-			Stream *interface = NULL);
+			uint16_t rxBufferSize, Stream *interface = NULL);
 
 	///
 	/// Optional initialiser.
@@ -99,6 +104,8 @@ private:
 		MessageHeader			header;
 		uint8_t					payload[256];
 	} _decodeBuf;
+
+	uint16_t _rxBufferSize;
 
 	/// Outgoing header/packet buffer
 	/// XXX we could make this smaller
