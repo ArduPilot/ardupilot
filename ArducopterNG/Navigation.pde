@@ -125,5 +125,25 @@ int Altitude_control_baro(int altitude, int target_altitude)
   return command_altitude;
 }
 
+/* Altitude control... (based on sonar) */
+/* CONTROL PARAMETERS FOR SONAR ALTITUDE CONTROL (TEMPORATLY HERE) */
+#define KP_SONAR_ALTITUDE 0.8
+#define KD_SONAR_ALTITUDE 0.7
+#define KI_SONAR_ALTITUDE 0.3
+int Altitude_control_Sonar(int Sonar_altitude, int target_sonar_altitude)
+{
+  #define ALTITUDE_CONTROL_SONAR_OUTPUT_MIN 60
+  #define ALTITUDE_CONTROL_SONAR_OUTPUT_MAX 80
+  
+  int command_altitude;
+   
+  err_altitude_old = err_altitude;
+  err_altitude = target_sonar_altitude - Sonar_altitude;  
+  altitude_D = (float)(err_altitude-err_altitude_old)/0.05;
+  altitude_I += (float)err_altitude*0.05;
+  altitude_I = constrain(altitude_I,-1000,1000);
+  command_altitude = KP_SONAR_ALTITUDE*err_altitude + KD_SONAR_ALTITUDE*altitude_D + KI_SONAR_ALTITUDE*altitude_I;
+  return (Initial_Throttle + constrain(command_altitude,-ALTITUDE_CONTROL_SONAR_OUTPUT_MIN,ALTITUDE_CONTROL_SONAR_OUTPUT_MAX));
+}
 
 
