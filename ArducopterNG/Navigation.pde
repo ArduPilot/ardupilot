@@ -102,4 +102,28 @@ void Reset_I_terms_navigation()
   gps_pitch_I = 0;  
 }
 
+/* ************************************************************ */
+/* Altitude control... (based on barometer) */
+int Altitude_control_baro(int altitude, int target_altitude)
+{ 
+  #define ALTITUDE_CONTROL_BARO_OUTPUT_MIN 50
+  #define ALTITUDE_CONTROL_BARO_OUTPUT_MAX 90
+  
+  #define KP_BARO_ALTITUDE 0.65
+  #define KD_BARO_ALTITUDE 0.05
+  #define KI_BARO_ALTITUDE 0.1
+  
+  int command_altitude;
+  
+  err_altitude_old = err_altitude;
+  err_altitude = target_altitude - altitude;  
+  altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz
+  altitude_I += (float)err_altitude*0.05;
+  altitude_I = constrain(altitude_I,-100,100);
+  command_altitude = KP_BARO_ALTITUDE*err_altitude + KD_BARO_ALTITUDE*altitude_D + KI_BARO_ALTITUDE*altitude_I;
+  command_altitude = Initial_Throttle + constrain(command_altitude,-ALTITUDE_CONTROL_BARO_OUTPUT_MIN,ALTITUDE_CONTROL_BARO_OUTPUT_MAX);
+  return command_altitude;
+}
+
+
 
