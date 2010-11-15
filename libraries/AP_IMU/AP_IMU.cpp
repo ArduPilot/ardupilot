@@ -64,16 +64,16 @@ AP_IMU::AP_IMU(void)
 
 /**************************************************/
 void
-AP_IMU::quick_init(void)
+AP_IMU::quick_init(uint16_t *_offset_address)
 {
-	
-//  NOTE ***  Need to addd code to retrieve values from EEPROM
+	// We read the imu offsets from EEPROM for a quick air restart
+	eeprom_read_block((void*)&_adc_offset, _offset_address, sizeof(_adc_offset));
 }
 
 
 /**************************************************/
 void
-AP_IMU::init(void)
+AP_IMU::init(uint16_t *_offset_address)
 {
 	
 	float temp;
@@ -97,7 +97,7 @@ AP_IMU::init(void)
 		for (int j = 0; j < 6; j++) {
 			_adc_in[j] = APM_ADC.Ch(_sensors[j]);
 			if (j < 3) {	
-				_adc_in[j] -= _gyro_temp_comp(j, tc_temp);		// Subtract temp compensated typical gyro bias
+				_adc_in[j] -= gyro_temp_comp(j, tc_temp);		// Subtract temp compensated typical gyro bias
 			} else {
 				_adc_in[j] -= 2025;
 			}
@@ -121,7 +121,9 @@ AP_IMU::init(void)
 	
 	_adc_offset[5] += GRAVITY * _sensor_signs[5];
 	
-//  NOTE ***  Need to addd code to save values to EEPROM
+	//  Save offset values to EEPROM for use in an air restart
+ 	eeprom_write_block((const void *)&_adc_offset, _offset_address, sizeof(_adc_offset));
+	
 }
 
 
@@ -129,7 +131,7 @@ AP_IMU::init(void)
 // Returns the temperature compensated raw gyro value
 //---------------------------------------------------
 float
-AP_IMU::_gyro_temp_comp(int i, int temp) const
+AP_IMU::gyro_temp_comp(int i, int temp) const
 {
 	// We use a 2nd order curve of the form Gtc = A + B * Graw + C * (Graw)**2
 	//------------------------------------------------------------------------
@@ -143,7 +145,7 @@ AP_IMU::get_gyro(void)
 	
 	for (int i = 0; i < 3; i++) {
 		_adc_in[i] = APM_ADC.Ch(_sensors[i]);
-		_adc_in[i] -= _gyro_temp_comp(i,tc_temp);		// Subtract temp compensated typical gyro bias
+		_adc_in[i] -= gyro_temp_comp(i,tc_temp);		// Subtract temp compensated typical gyro bias
 		if (_sensor_signs[i] < 0)
 			_adc_in[i] = (_adc_offset[i] - _adc_in[i]);
 		else

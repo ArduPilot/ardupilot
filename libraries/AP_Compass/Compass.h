@@ -2,6 +2,7 @@
 #define Compass_h
 
 #include <inttypes.h>
+#include <AP_Math>
 
 class Compass
 {
@@ -10,6 +11,7 @@ class Compass
 	virtual void update();
 	virtual void calculate(float roll, float pitch);
 
+	Vector3f mag;
 	int16_t mag_X;
 	int16_t mag_Y;
 	int16_t mag_Z;

@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include "WProgram.h"
 #include <APM_ADC.h>
+#include <avr/eeprom.h>
 
 
 class AP_IMU
@@ -15,8 +16,8 @@ public:
 	AP_IMU();									// Default Constructor
 	
 	// Methods
-	void		quick_init(void);				// For air start
-	void		init(void);						// For ground start
+	void		quick_init(uint16_t *_offset_address);				// For air start
+	void		init(uint16_t *_offset_address);						// For ground start
 	Vector3f	get_gyro(void);					// Radians/second
 	Vector3f	get_accel(void);				// meters/seconds squared
 
@@ -27,10 +28,11 @@ public:
 private:
 	// Methods
 	void 		read_adc_raw(void);
-	float 		_gyro_temp_comp(int i, int temp) const;
+	float 		gyro_temp_comp(int i, int temp) const;
 	float 		read_adc(int select);
 
 	// members
+	//uint16_t	_offset_address;			// EEPROM start address for saving/retrieving offsets
 	float 		_adc_in[6];					// array that store the 6 ADC channels used by IMU
 	float 		_adc_offset[6]; 			// Array that store the Offset of the gyros and accelerometers
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector

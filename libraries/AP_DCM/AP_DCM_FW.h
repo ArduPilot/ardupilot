@@ -27,10 +27,11 @@ public:
 	float	get_yaw(void);						// Radians
 	Vector3f	get_gyros(void);
 	Vector3f	get_accels(void);
+	Matrix3f	get_dcm_matrix(void);
 	
 	// Methods
-	void	quick_init(void);
-	void	init(void);
+	void	quick_init(uint16_t *_offset_address);
+	void	init(uint16_t *_offset_address);
 	void 	update_DCM(float _G_Dt);   
 
 	float 		imu_health;						//Metric based on accel gain deweighting
@@ -42,12 +43,11 @@ public:
 private:
 	// Methods
 	void 		read_adc_raw(void);
-	void 		_accel_adjust(void);
-	float 		_gyro_temp_comp(int i, int temp) const;
+	void 		accel_adjust(void);
 	float 		read_adc(int select);
 	void 		matrix_update(float _G_Dt);
 	void 		normalize(void);
-	Vector3f 	_renorm(Vector3f const &a, int &problem);
+	Vector3f 	renorm(Vector3f const &a, int &problem);
 	void 		drift_correction(void);
 	void 		euler_angles(void);
 
@@ -56,13 +56,9 @@ private:
 	GPS 		*_gps;
 	AP_IMU		_imu;
 
-	long	roll_sensor;						// degrees * 100
-	long	pitch_sensor;						// degrees * 100
-	long	yaw_sensor;							// degrees * 100
-
-	float 		roll;						// radians
-	float 		pitch;						// radians
-	float 		yaw;						// radians
+	float 		_roll;						// radians
+	float 		_pitch;						// radians
+	float 		_yaw;						// radians
 	
 	Matrix3f	_dcm_matrix;
 

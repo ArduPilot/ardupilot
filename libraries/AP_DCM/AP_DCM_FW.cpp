@@ -82,33 +82,33 @@ AP_DCM_FW::update_DCM(float _G_Dt)
 
 /**************************************************/
 void
-AP_DCM_FW::quick_init(void)
+AP_DCM_FW::quick_init(uint16_t *_offset_address)
 {
-	_imu.quick_init();
+	_imu.quick_init(_offset_address);
 }
 /**************************************************/
 void
-AP_DCM_FW::init(void)
+AP_DCM_FW::init(uint16_t *_offset_address)
 {
-	_imu.init();
+	_imu.init(_offset_address);
 }
 
 
 /**************************************************/
 long
 AP_DCM_FW::get_roll_sensor(void)
-{	return degrees(roll) * 100;}
+{	return degrees(_roll) * 100;}
 
 /**************************************************/
 long
 AP_DCM_FW::get_pitch_sensor(void)
-{	return degrees(pitch) * 100;}
+{	return degrees(_pitch) * 100;}
 
 /**************************************************/
 long
 AP_DCM_FW::get_yaw_sensor(void)
 {	
-	long yaw_sensor = degrees(yaw) * 100;
+	long yaw_sensor = degrees(_yaw) * 100;
 	if (yaw_sensor < 0)	yaw_sensor += 36000;
 	return yaw_sensor;
 }
@@ -116,17 +116,17 @@ AP_DCM_FW::get_yaw_sensor(void)
 /**************************************************/
 float
 AP_DCM_FW::get_roll(void)
-{	return roll;}
+{	return _roll;}
 
 /**************************************************/
 float
 AP_DCM_FW::get_pitch(void)
-{	return pitch;}
+{	return _pitch;}
 
 /**************************************************/
 float
 AP_DCM_FW::get_yaw(void)
-{	return yaw;}
+{	return _yaw;}
 
 /**************************************************/
 Vector3f
@@ -139,11 +139,29 @@ AP_DCM_FW::get_accels(void)
 {	return _accel_vector;}
 
 /**************************************************/
+Matrix3f
+AP_DCM_FW::get_dcm_matrix(void)
+{	return _dcm_matrix;}
+
+
+/*    For Debugging
+void
+printm(const char *l, Matrix3f &m)
+{ Serial.println(l);
+ Serial.print(m.a.x, 12); Serial.print(" "); Serial.print(m.a.y, 12); Serial.print(" "); Serial.println(m.a.z, 12);
+ Serial.print(m.b.x, 12); Serial.print(" "); Serial.print(m.b.y, 12); Serial.print(" "); Serial.println(m.b.z, 12);
+ Serial.print(m.c.x, 12); Serial.print(" "); Serial.print(m.c.y, 12); Serial.print(" "); Serial.println(m.c.z, 12);  
+ Serial.print(*(uint32_t *)&(m.a.x), HEX); Serial.print(" "); Serial.print(*(uint32_t *)&(m.a.y), HEX); Serial.print(" ");  Serial.println(*(uint32_t *)&(m.a.z), HEX);
+ Serial.print(*(uint32_t *)&(m.b.x), HEX); Serial.print(" "); Serial.print(*(uint32_t *)&(m.b.y), HEX); Serial.print(" ");  Serial.println(*(uint32_t *)&(m.b.z), HEX);
+ Serial.print(*(uint32_t *)&(m.c.x), HEX); Serial.print(" "); Serial.print(*(uint32_t *)&(m.c.y), HEX); Serial.print(" ");  Serial.println(*(uint32_t *)&(m.c.z), HEX);
+ }
+ */
+ 
+/**************************************************/
 void 
 AP_DCM_FW::matrix_update(float _G_Dt)
 {
-	Matrix3f	_update_matrix;
-	static int8_t timer;
+	Matrix3f	update_matrix;
 	
 	//Record when you saturate any of the gyros.
 	if((abs(_gyro_vector.x) >= radians(300)) || 
@@ -154,115 +172,52 @@ AP_DCM_FW::matrix_update(float _G_Dt)
 	_omega_integ_corr = _gyro_vector + _omega_I;		// Used for centrep correction (theoretically better than _omega)
 	_omega = _omega_integ_corr + _omega_P;				// Equation 16, adding proportional and integral correction terms
 	
-	_accel_adjust();				// Remove centrifugal acceleration.
-	
-	
+	accel_adjust();				// Remove centrifugal acceleration.
+
  #if OUTPUTMODE == 1				 
-	_update_matrix.a.x = 0;
-	_update_matrix.a.y = -_G_Dt * _omega.z; 		// -delta Theta z
-	_update_matrix.a.z =  _G_Dt * _omega.y; 		// delta Theta y
-	_update_matrix.b.x =  _G_Dt * _omega.z; 		// delta Theta z
-	_update_matrix.b.y = 0;
-	_update_matrix.b.z = -_G_Dt * _omega.x; 		// -delta Theta x
-	_update_matrix.c.x = -_G_Dt * _omega.y; 		// -delta Theta y
-	_update_matrix.c.y =  _G_Dt * _omega.x; 		// delta Theta x
-	_update_matrix.c.z = 0;
+	update_matrix.a.x = 0;
+	update_matrix.a.y = -_G_Dt * _omega.z; 		// -delta Theta z
+	update_matrix.a.z =  _G_Dt * _omega.y; 		// delta Theta y
+	update_matrix.b.x =  _G_Dt * _omega.z; 		// delta Theta z
+	update_matrix.b.y = 0;
+	update_matrix.b.z = -_G_Dt * _omega.x; 		// -delta Theta x
+	update_matrix.c.x = -_G_Dt * _omega.y; 		// -delta Theta y
+	update_matrix.c.y =  _G_Dt * _omega.x; 		// delta Theta x
+	update_matrix.c.z = 0;
  #else										// Uncorrected data (no drift correction)				 
-	_update_matrix.a.x = 0;
-	_update_matrix.a.y = -_G_Dt * _gyro_vector.z; 		
-	_update_matrix.a.z =  _G_Dt * _gyro_vector.y;
-	_update_matrix.b.x =  _G_Dt * _gyro_vector.z; 		
-	_update_matrix.b.y = 0;
-	_update_matrix.b.z = -_G_Dt * _gyro_vector.x; 		
-	_update_matrix.c.x = -_G_Dt * _gyro_vector.y; 		
-	_update_matrix.c.y =  _G_Dt * _gyro_vector.x; 		
-	_update_matrix.c.z = 0;
+	update_matrix.a.x = 0;
+	update_matrix.a.y = -_G_Dt * _gyro_vector.z; 		
+	update_matrix.a.z =  _G_Dt * _gyro_vector.y;
+	update_matrix.b.x =  _G_Dt * _gyro_vector.z; 		
+	update_matrix.b.y = 0;
+	update_matrix.b.z = -_G_Dt * _gyro_vector.x; 		
+	update_matrix.c.x = -_G_Dt * _gyro_vector.y; 		
+	update_matrix.c.y =  _G_Dt * _gyro_vector.x; 		
+	update_matrix.c.z = 0;
  #endif
 	
-Serial.println("update matrix before");
-Serial.println(_update_matrix.a.x);
-Serial.println(_update_matrix.a.y);
-Serial.println(_update_matrix.a.z);
-Serial.println(_update_matrix.b.x);
-Serial.println(_update_matrix.b.y);
-Serial.println(_update_matrix.b.z);
-Serial.println(_update_matrix.c.x);
-Serial.println(_update_matrix.c.y);
-Serial.println(_update_matrix.c.z);
-Serial.println("dcm matrix before");
-Serial.println(_dcm_matrix.a.x);
-Serial.println(_dcm_matrix.a.y);
-Serial.println(_dcm_matrix.a.z);
-Serial.println(_dcm_matrix.b.x);
-Serial.println(_dcm_matrix.b.y);
-Serial.println(_dcm_matrix.b.z);
-Serial.println(_dcm_matrix.c.x);
-Serial.println(_dcm_matrix.c.y);
-Serial.println(_dcm_matrix.c.z);
-	// update
-	_update_matrix = _dcm_matrix * _update_matrix;		// Equation 17
-	
-Serial.println("update matrix middle");
-Serial.println(_update_matrix.a.x,12);
-Serial.println(_update_matrix.a.y,12);
-Serial.println(_update_matrix.a.z,12);
-Serial.println(_update_matrix.b.x,12);
-Serial.println(_update_matrix.b.y,12);
-Serial.println(_update_matrix.b.z,12);
-Serial.println(_update_matrix.c.x,12);
-Serial.println(_update_matrix.c.y,12);
-Serial.println(_update_matrix.c.z,12);
-Serial.println("dcm matrix middle");
-Serial.println(_dcm_matrix.a.x,12);
-Serial.println(_dcm_matrix.a.y,12);
-Serial.println(_dcm_matrix.a.z,12);
-Serial.println(_dcm_matrix.b.x,12);
-Serial.println(_dcm_matrix.b.y,12);
-Serial.println(_dcm_matrix.b.z,12);
-Serial.println(_dcm_matrix.c.x,12);
-Serial.println(_dcm_matrix.c.y,12);
-Serial.println(_dcm_matrix.c.z,12);
-
-	_dcm_matrix = _dcm_matrix + _update_matrix;		// Equation 17
+	_dcm_matrix = _dcm_matrix + update_matrix;		// Equation 17
 		
-Serial.println("update matrix after");
-Serial.println(_update_matrix.a.x);
-Serial.println(_update_matrix.a.y);
-Serial.println(_update_matrix.a.z);
-Serial.println(_update_matrix.b.x);
-Serial.println(_update_matrix.b.y);
-Serial.println(_update_matrix.b.z);
-Serial.println(_update_matrix.c.x);
-Serial.println(_update_matrix.c.y);
-Serial.println(_update_matrix.c.z);
-Serial.println("dcm matrix after");
-Serial.println(_dcm_matrix.a.x);
-Serial.println(_dcm_matrix.a.y);
-Serial.println(_dcm_matrix.a.z);
-Serial.println(_dcm_matrix.b.x);
-Serial.println(_dcm_matrix.b.y);
-Serial.println(_dcm_matrix.b.z);
-Serial.println(_dcm_matrix.c.x);
-Serial.println(_dcm_matrix.c.y);
-Serial.println(_dcm_matrix.c.z);
 }
 
 
 /**************************************************/
 void 
-AP_DCM_FW::_accel_adjust(void)
+AP_DCM_FW::accel_adjust(void)
 {
-	Vector3f _veloc, _temp;
-	float _vel;
+	Vector3f veloc, temp;
+	float vel;
 	
-	_veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
+	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 	
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
+	
 	//_accel_vector -= _omega_integ_corr % _veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
-	_temp.y = _omega_integ_corr.z * _veloc.x; 			// only computing the non-zero terms
-	_temp.z = -1.0f * _omega_integ_corr.y * _veloc.x;	// After looking at the compiler issue lets remove _veloc and simlify 
+	temp.x = 0;
+	temp.y = _omega_integ_corr.z * veloc.x; 			// only computing the non-zero terms
+	temp.z = -1.0f * _omega_integ_corr.y * veloc.x;	// After looking at the compiler issue lets remove _veloc and simlify 
 
-	_accel_vector -= _temp;
+	_accel_vector -= temp;
 
 }
 
@@ -285,9 +240,9 @@ AP_DCM_FW::normalize(void)
 
 	temporary[2] = temporary[0] % temporary[1];							// c= a x b // eq.20
 
-	_dcm_matrix.a = _renorm(temporary[0], problem);
-	_dcm_matrix.b = _renorm(temporary[1], problem);
-	_dcm_matrix.c = _renorm(temporary[2], problem);
+	_dcm_matrix.a = renorm(temporary[0], problem);
+	_dcm_matrix.b = renorm(temporary[1], problem);
+	_dcm_matrix.c = renorm(temporary[2], problem);
 	
 	if (problem == 1) {		// Our solution is blowing up and we will force back to initial condition.	Hope we are not upside down!
 		_dcm_matrix.a.x = 1.0f;
@@ -299,24 +254,12 @@ AP_DCM_FW::normalize(void)
 		_dcm_matrix.c.x = 0.0f;
 		_dcm_matrix.c.y = 0.0f;
 		_dcm_matrix.c.z = 1.0f;
-Serial.println("Solution blew up");	
-/*
-Serial.println(_dcm_matrix.a.x);
-Serial.println(_dcm_matrix.a.y);
-Serial.println(_dcm_matrix.a.z);
-Serial.println(_dcm_matrix.b.x);
-Serial.println(_dcm_matrix.b.y);
-Serial.println(_dcm_matrix.b.z);
-Serial.println(_dcm_matrix.c.x);
-Serial.println(_dcm_matrix.c.y);
-Serial.println(_dcm_matrix.c.z);
-*/
 	}
 }
 
 /**************************************************/
 Vector3f
-AP_DCM_FW::_renorm(Vector3f const &a, int &problem)
+AP_DCM_FW::renorm(Vector3f const &a, int &problem)
 {
 	float	renorm;
 
@@ -349,7 +292,7 @@ AP_DCM_FW::drift_correction(void)
 	float accel_weight;
 	float integrator_magnitude;
 	static bool in_motion = FALSE;
-	Matrix3f _rot_mat;
+	Matrix3f rot_mat;
 	
 	//*****Roll and Pitch***************
 
@@ -384,48 +327,39 @@ AP_DCM_FW::drift_correction(void)
 		error_course= (_dcm_matrix.a.x * _compass->Heading_Y) - (_dcm_matrix.b.x * _compass->Heading_X);	// Equation 23, Calculating YAW error	
 	} else {
 		// Use GPS Ground course to correct yaw gyro drift
-	//	if (_gps->ground_speed >= SPEEDFILT) {
-			//_course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
-			//_course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
-Serial.println(_dcm_matrix.a.x);
-Serial.println(_dcm_matrix.a.y);
-Serial.println(_dcm_matrix.a.z);
-Serial.println(_dcm_matrix.b.x);
-Serial.println(_dcm_matrix.b.y);
-Serial.println(_dcm_matrix.b.z);
-Serial.println(_dcm_matrix.c.x);
-Serial.println(_dcm_matrix.c.y);
-Serial.println(_dcm_matrix.c.z);
-			_course_over_ground_x = 1;
-			_course_over_ground_y = 0;
-Serial.print("in motion = ");
-Serial.print(in_motion);
-Serial.print("\t");
+		if (_gps->ground_speed >= SPEEDFILT) {
+			_course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
+			_course_over_ground_y = sin(ToRad(_gps->ground_course/100.0));
 			if(in_motion) {
 				error_course = (_dcm_matrix.a.x * _course_over_ground_y) - (_dcm_matrix.b.x * _course_over_ground_x);	// Equation 23, Calculating YAW error
 			} else  {
-Serial.println("in yaw reset");
 				float cos_psi_err, sin_psi_err;
 				
-				yaw = atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
-				cos_psi_err = cos(yaw - ToRad(_gps->ground_course/100.0));
-				sin_psi_err = sin(yaw - ToRad(_gps->ground_course/100.0));
+				_yaw = atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+				cos_psi_err = cos(_yaw - ToRad(_gps->ground_course/100.0));
+				sin_psi_err = sin(_yaw - ToRad(_gps->ground_course/100.0));
 				// Rxx = cos psi err, Rxy = - sin psi err, Rxz = 0
 				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
 				// Rzx = Rzy = Rzz = 0
-				_rot_mat.a.x = cos_psi_err;
-				_rot_mat.a.y = - sin_psi_err;
-				_rot_mat.b.x = sin_psi_err;
-				_rot_mat.b.y = cos_psi_err;
-				_dcm_matrix = _rot_mat * _dcm_matrix;
+				rot_mat.a.x = cos_psi_err;
+				rot_mat.a.y = - sin_psi_err;
+				rot_mat.b.x = sin_psi_err;
+				rot_mat.b.y = cos_psi_err;
+				rot_mat.a.z = 0;
+				rot_mat.b.z = 0;
+				rot_mat.c.x = 0;
+				rot_mat.c.y = 0;
+				rot_mat.c.z = 0;
+				
+				_dcm_matrix = rot_mat * _dcm_matrix;
 				in_motion =  TRUE;
 				error_course = 0;
 				
 			}	
-	/*	} else {
+		} else {
 			error_course = 0;
 			in_motion = FALSE;
-		}	*/
+		}	
 	}	
 	
 	_error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
@@ -447,13 +381,13 @@ void
 AP_DCM_FW::euler_angles(void)
 {
 	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
-	roll 		= atan2(_accel_vector.y, _accel_vector.z);		// atan2(acc_y, acc_z)
-	pitch 		= -asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
-	yaw 			= 0;
+	_roll 		= atan2(_accel_vector.y, _accel_vector.z);		// atan2(acc_y, acc_z)
+	_pitch 		= -asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
+	_yaw 			= 0;
 	#else
-	pitch 		= -asin(_dcm_matrix.c.x);
-	roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
-	yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+	_pitch 		= -asin(_dcm_matrix.c.x);
+	_roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
+	_yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
 	#endif
 
 }

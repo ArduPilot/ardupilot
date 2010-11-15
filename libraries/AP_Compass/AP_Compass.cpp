@@ -82,6 +82,9 @@ AP_Compass::update()
 		mag_Y =  ((((int)buff[2]) << 8) | buff[3]);		// Y axis
 		mag_Z = -((((int)buff[4]) << 8) | buff[5]);		// Z axis
 	}
+	mag.x = mag_X;
+	mag.y = mag_Y;
+	mag.z = mag_Z
 }
 
 void
