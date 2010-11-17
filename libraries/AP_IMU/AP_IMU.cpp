@@ -11,7 +11,8 @@
 
         Methods:
                 quick_init()	: For air restart
-                init() 			: For ground start.  Calibration
+                init() 			: Calibration
+                gyro_init() 			: For ground start using saved accel offsets
 				get_gyro()		: Returns gyro vector.  Elements in radians/second
 				get_accel()		: Returns acceleration vector.  Elements in meters/seconds squared
 
@@ -68,12 +69,13 @@ AP_IMU::quick_init(uint16_t *_offset_address)
 {
 	// We read the imu offsets from EEPROM for a quick air restart
 	eeprom_read_block((void*)&_adc_offset, _offset_address, sizeof(_adc_offset));
+	
 }
 
 
 /**************************************************/
 void
-AP_IMU::init(uint16_t *_offset_address)
+AP_IMU::read_offsets(void)
 {
 	
 	float temp;
@@ -120,10 +122,37 @@ AP_IMU::init(uint16_t *_offset_address)
 	}
 	
 	_adc_offset[5] += GRAVITY * _sensor_signs[5];
-	
-	//  Save offset values to EEPROM for use in an air restart
+
+}
+
+/**************************************************/
+void
+AP_IMU::init(uint16_t *_offset_address)
+{	
+
+	read_offsets();
+
+	//  Save offset values to EEPROM for use in an air restart, gyro only restart
  	eeprom_write_block((const void *)&_adc_offset, _offset_address, sizeof(_adc_offset));
 	
+}
+
+
+/**************************************************/
+void
+AP_IMU::gyro_init(uint16_t *_offset_address)
+{	
+	float temp[6];
+	read_offsets();
+	// We read the imu offsets from EEPROM to reuse the saved accel values.
+	// This way we do not need the IMU to be level during calibration.
+	eeprom_read_block((void*)&temp, _offset_address, sizeof(_adc_offset));
+	_adc_offset[3] = temp[3];
+	_adc_offset[4] = temp[4];
+	_adc_offset[5] = temp[5];
+
+	//  Save offset values to EEPROM for use in an air restart
+ 	eeprom_write_block((const void *)&_adc_offset, _offset_address, sizeof(_adc_offset));
 }
 
 

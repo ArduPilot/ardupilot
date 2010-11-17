@@ -31,6 +31,7 @@ public:
 	
 	// Methods
 	void	quick_init(uint16_t *_offset_address);
+	void	gyro_init(uint16_t *_offset_address);
 	void	init(uint16_t *_offset_address);
 	void 	update_DCM(float _G_Dt);   
 

@@ -1,7 +1,7 @@
 #ifndef AP_IMU_h
 #define AP_IMU_h
 
-//#include <FastSerial.h>
+#include <FastSerial.h>
 #include <AP_Math.h>
 #include <inttypes.h>
 #include "WProgram.h"
@@ -17,7 +17,8 @@ public:
 	
 	// Methods
 	void		quick_init(uint16_t *_offset_address);				// For air start
-	void		init(uint16_t *_offset_address);						// For ground start
+	void		init(uint16_t *_offset_address);					// For calibration (includes accels)
+	void		gyro_init(uint16_t *_offset_address);				// Read gyro offsets, use stored accel offsets
 	Vector3f	get_gyro(void);					// Radians/second
 	Vector3f	get_accel(void);				// meters/seconds squared
 
@@ -27,9 +28,8 @@ public:
 	
 private:
 	// Methods
-	void 		read_adc_raw(void);
+	void		read_offsets(void);
 	float 		gyro_temp_comp(int i, int temp) const;
-	float 		read_adc(int select);
 
 	// members
 	//uint16_t	_offset_address;			// EEPROM start address for saving/retrieving offsets
