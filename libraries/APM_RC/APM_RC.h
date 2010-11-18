@@ -5,14 +5,16 @@
 #define MIN_PULSEWIDTH 900
 #define MAX_PULSEWIDTH 2100
 
+#include <inttypes.h>
+
 class APM_RC_Class
 {
   private:
   public:
 	APM_RC_Class();
 	void Init();
-	void OutputCh(unsigned char ch, int pwm);
-	int InputCh(unsigned char ch);
+	void OutputCh(unsigned char ch, uint16_t pwm);
+	uint16_t InputCh(unsigned char ch);
 	unsigned char GetState();
 	void Force_Out0_Out1(void);
 	void Force_Out2_Out3(void);

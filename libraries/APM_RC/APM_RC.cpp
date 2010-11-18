@@ -30,7 +30,7 @@
 // Variable definition for Input Capture interrupt
 volatile unsigned int ICR4_old;
 volatile unsigned char PPM_Counter=0;
-volatile unsigned int PWM_RAW[8] = {2400,2400,2400,2400,2400,2400,2400,2400};
+volatile uint16_t PWM_RAW[8] = {2400,2400,2400,2400,2400,2400,2400,2400};
 volatile unsigned char radio_status=0;
 
 /****************************************************
@@ -123,7 +123,7 @@ void APM_RC_Class::Init(void)
   TIMSK4 |= (1<<ICIE4); // Enable Input Capture interrupt. Timer interrupt mask
 }
 
-void APM_RC_Class::OutputCh(unsigned char ch, int pwm)
+void APM_RC_Class::OutputCh(unsigned char ch, uint16_t pwm)
 {
   pwm=constrain(pwm,MIN_PULSEWIDTH,MAX_PULSEWIDTH);
   pwm<<=1;   // pwm*2;
@@ -144,10 +144,10 @@ void APM_RC_Class::OutputCh(unsigned char ch, int pwm)
   } 
 }
 
-int APM_RC_Class::InputCh(unsigned char ch)
+uint16_t APM_RC_Class::InputCh(unsigned char ch)
 {
-  int result;
-  int result2;
+  uint16_t result;
+  uint16_t result2;
   
   // Because servo pulse variables are 16 bits and the interrupts are running values could be corrupted.
   // We dont want to stop interrupts to read radio channels so we have to do two readings to be sure that the value is correct...
