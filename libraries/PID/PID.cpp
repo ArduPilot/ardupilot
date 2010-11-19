@@ -21,11 +21,7 @@ PID::get_pid(long err, long dt, float scaler)
 	if(_kd != 0){
 		// Compute derivative component
 		//derivative = (error - previous_error)/dt
-		float derivative 	= (error - _last_error) / dt;
-		
-		//Serial.print("d: ");
-		//Serial.println(derivative,DEC);
-
+		float derivative 	= 1000 * (error - _last_error) / dt;
 		_last_error 		= error;
 		output 				+= _kd * derivative;			// Sum the derivative component
 	}
