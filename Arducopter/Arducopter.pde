@@ -102,12 +102,15 @@
 
 #include <Wire.h>
 #include <APM_ADC.h>
+APM_ADC_Class APM_ADC;
 #include <APM_RC.h>
 #include <DataFlash.h>
 #include <APM_Compass.h>
+APM_Compass_Class APM_Compass;
 #include <AP_Math.h>
 #ifdef UseBMP
 #include <APM_BMP085.h>
+APM_BMP085_Class APM_BMP085;
 #endif
 
 #include <GPS_NMEA.h>   // General NMEA GPS 
