@@ -165,12 +165,18 @@ int APM_ADC_HIL_Class::Ch(unsigned char ch_num)
 int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
     float aX, float aY, float aZ, float diffPress)
 {
+    static const float adcPerG = 418;
+    static const float gyroGainX = 0.4;
+    static const float gyroGainY = 0.41;
+    static const float gyroGainZ = 0.41;
+    static const float deg2rad = 3.14159/180.0;
     // TODO: map floats to raw
-    adc_value[0] = r;
-    adc_value[1] = p;
-    adc_value[2] = q;
+    adc_value[0] = r/(gyroGainX*deg2rad) + 1665;
+    adc_value[1] = p/(gyroGainY*deg2rad) + 1665;
+    adc_value[2] = q/(gyroGainZ*deg2rad) + 1665;
     adc_value[4] = gyroTemp; 
-    adc_value[5] = aX;
-    adc_value[6] = aY;
-    adc_value[7] = aZ;
+    adc_value[5] = -(aX*adcPerG)/1e3 + 2025;
+    adc_value[6] = -(aY*adcPerG)/1e3 + 2025;
+    adc_value[7] = -(aZ*adcPerG)/1e3 + 2025;
+    adc_value[8] = diffPress;
 }
