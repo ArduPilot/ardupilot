@@ -145,5 +145,32 @@ int APM_ADC_Class::Ch(unsigned char ch_num)
   return(result);
 }
 
-// make one instance for the user to use
-APM_ADC_Class APM_ADC;
+// Constructors ////////////////////////////////////////////////////////////////
+APM_ADC_HIL_Class::APM_ADC_HIL_Class()
+{
+}
+
+// Public Methods //////////////////////////////////////////////////////////////
+void APM_ADC_HIL_Class::Init(void)
+{
+}
+
+// Read one channel value
+int APM_ADC_HIL_Class::Ch(unsigned char ch_num)         
+{
+  return adc_value[ch_num];
+}
+
+// Set one channel value
+int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
+    float aX, float aY, float aZ, float diffPress)
+{
+    // TODO: map floats to raw
+    adc_value[0] = r;
+    adc_value[1] = p;
+    adc_value[2] = q;
+    adc_value[4] = gyroTemp; 
+    adc_value[5] = aX;
+    adc_value[6] = aY;
+    adc_value[7] = aZ;
+}

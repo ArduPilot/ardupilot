@@ -83,6 +83,31 @@ class APM_Compass_Class
 	void SetDeclination(float radians);
 };
 
-extern APM_Compass_Class APM_Compass;
+class APM_Compass_HIL_Class
+{
+  private:
+	int orientation;
+	Matrix3f orientationMatrix;
+	float calibration[3];
+	int offset[3];
+	float declination;
+  public:
+	int Mag_X;
+	int Mag_Y;
+	int Mag_Z;
+	float Heading;
+	float Heading_X;
+	float Heading_Y;
+	unsigned long lastUpdate;	
+	
+	APM_Compass_HIL_Class();  // Constructor
+	bool Init();
+	void Read();
+	void Calculate(float roll, float pitch);
+	void SetOrientation(const Matrix3f &rotationMatrix);
+	void SetOffsets(int x, int y, int z);
+	void SetDeclination(float radians);
+    void setHIL(float Mag_X, float Mag_Y, float Mag_Z);
+};
 
 #endif

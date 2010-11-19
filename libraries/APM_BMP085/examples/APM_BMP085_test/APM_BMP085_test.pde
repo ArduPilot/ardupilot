@@ -6,6 +6,8 @@
 #include <Wire.h>
 #include <APM_BMP085.h> // ArduPilot Mega BMP085 Library
 
+APM_BMP085_Class APM_BMP085;
+
 unsigned long timer;
 
 void setup()

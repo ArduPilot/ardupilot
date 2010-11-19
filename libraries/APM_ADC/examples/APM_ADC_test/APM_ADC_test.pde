@@ -7,6 +7,8 @@
 
 unsigned long timer;
 
+APM_ADC_Class APM_ADC;
+
 void setup()
 {  
   APM_ADC.Init();   // APM ADC initialization

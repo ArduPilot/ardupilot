@@ -29,6 +29,21 @@ class APM_BMP085_Class
 	uint8_t Read();	
 };
 
-extern APM_BMP085_Class APM_BMP085;
+class APM_BMP085_HIL_Class
+{
+  private:
+    uint8_t BMP085_State;
+  public:
+	int32_t RawPress;
+	int32_t RawTemp;
+	int16_t Temp;
+	int32_t Press;
+	//int Altitude;
+	uint8_t oss;
+	APM_BMP085_HIL_Class();  // Constructor
+	void Init();
+	uint8_t Read();	
+    void setHIL(float Temp, float Press);
+};
 
 #endif

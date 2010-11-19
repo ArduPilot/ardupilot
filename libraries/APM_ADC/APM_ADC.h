@@ -19,6 +19,15 @@ class APM_ADC_Class
 	int Ch(unsigned char ch_num);     
 };
 
-extern APM_ADC_Class APM_ADC;
+class APM_ADC_HIL_Class
+{
+  private:
+  public:
+	APM_ADC_HIL_Class();  // Constructor
+	void Init();
+	int Ch(unsigned char ch_num);     
+	int setHIL(float p, float q, float r, float gyroTemp,
+            float aX, float aY, float aZ, float diffPress);     
+};
 
 #endif

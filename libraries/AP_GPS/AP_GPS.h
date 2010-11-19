@@ -11,3 +11,4 @@
 #include "AP_GPS_IMU.h"
 #include "AP_GPS_None.h"
 #include "AP_GPS_Auto.h"
+#include "AP_GPS_HIL.h"

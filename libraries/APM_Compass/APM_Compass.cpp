@@ -231,5 +231,128 @@ void APM_Compass_Class::SetDeclination(float radians)
     declination = radians;
 }
 
-// make one instance for the user to use
-APM_Compass_Class APM_Compass;
+
+// Constructors ////////////////////////////////////////////////////////////////
+APM_Compass_HIL_Class::APM_Compass_HIL_Class() : orientation(0), declination(0.0)
+{
+  // mag x y z offset initialisation
+  offset[0] = 0;
+  offset[1] = 0;
+  offset[2] = 0;
+  
+  // initialise orientation matrix
+  orientationMatrix = ROTATION_NONE;
+}
+
+// Public Methods //////////////////////////////////////////////////////////////
+bool APM_Compass_HIL_Class::Init(void)
+{
+  unsigned long currentTime = millis();  // record current time
+  int numAttempts = 0;
+  int success = 0;
+  
+  // calibration initialisation
+  calibration[0] = 1.0;
+  calibration[1] = 1.0;
+  calibration[2] = 1.0;
+  
+  while( success == 0 && numAttempts < 5 )
+  {
+      // record number of attempts at initialisation
+	  numAttempts++;
+  
+	  // read values from the compass
+	  Read();
+	  delay(10);
+
+	  // calibrate
+	  if( abs(Mag_X) > 500 && abs(Mag_X) < 1000 && abs(Mag_Y) > 500 && abs(Mag_Y) < 1000 && abs(Mag_Z) > 500 && abs(Mag_Z) < 1000)
+	  {
+		  calibration[0] = abs(715.0 / Mag_X);
+		  calibration[1] = abs(715.0 / Mag_Y);
+		  calibration[2] = abs(715.0 / Mag_Z);
+		  
+		  // mark success
+		  success = 1;
+	  }
+  }
+  return(success);
+}
+
+// Read Sensor data
+void APM_Compass_HIL_Class::Read()
+{
+    // values set by setHIL function
+}
+
+void APM_Compass_HIL_Class::Calculate(float roll, float pitch)
+{
+  float Head_X;
+  float Head_Y;
+  float cos_roll;
+  float sin_roll;
+  float cos_pitch;
+  float sin_pitch;
+  Vector3f rotMagVec;
+  
+  cos_roll = cos(roll);  // Optimizacion, se puede sacar esto de la matriz DCM?
+  sin_roll = sin(roll);
+  cos_pitch = cos(pitch);
+  sin_pitch = sin(pitch);
+  
+  // rotate the magnetometer values depending upon orientation
+  if( orientation == 0 )
+      rotMagVec = Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]);  
+  else
+      rotMagVec = orientationMatrix*Vector3f(Mag_X+offset[0],Mag_Y+offset[1],Mag_Z+offset[2]); 
+  
+  // Tilt compensated Magnetic field X component:
+  Head_X = rotMagVec.x*cos_pitch+rotMagVec.y*sin_roll*sin_pitch+rotMagVec.z*cos_roll*sin_pitch;
+  // Tilt compensated Magnetic field Y component:
+  Head_Y = rotMagVec.y*cos_roll-rotMagVec.z*sin_roll;
+  // Magnetic Heading
+  Heading = atan2(-Head_Y,Head_X);
+  
+  // Declination correction (if supplied)
+  if( declination != 0.0 ) 
+  {
+      Heading = Heading + declination;
+      if (Heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
+          Heading -= (2.0 * M_PI);
+      else if (Heading < -M_PI)
+          Heading += (2.0 * M_PI);
+  }
+	
+  // Optimization for external DCM use. Calculate normalized components
+  Heading_X = cos(Heading);
+  Heading_Y = sin(Heading);
+}
+
+void APM_Compass_HIL_Class::SetOrientation(const Matrix3f &rotationMatrix)
+{
+    orientationMatrix = rotationMatrix;
+	if( orientationMatrix == ROTATION_NONE )
+	    orientation = 0;
+	else
+	    orientation = 1;
+}
+
+void APM_Compass_HIL_Class::SetOffsets(int x, int y, int z)
+{
+    offset[0] = x;
+	offset[1] = y;
+	offset[2] = z;
+}
+
+void APM_Compass_HIL_Class::SetDeclination(float radians)
+{
+    declination = radians;
+}
+
+void APM_Compass_HIL_Class::setHIL(float _Mag_X, float _Mag_Y, float _Mag_Z)
+{
+    // TODO: map floats to raw
+    Mag_X = _Mag_X;
+    Mag_Y = _Mag_Y;
+    Mag_Z = _Mag_Z;
+}
