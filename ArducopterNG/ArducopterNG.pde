@@ -60,7 +60,7 @@
 //#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
 
 //#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
-//#define UseBMP       // Use pressure sensor
+#define UseBMP       // Use pressure sensor
 //#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it _wired_ up!)
 
 #define CONFIGURATOR
@@ -314,6 +314,15 @@ void loop()
             }
         }
         #endif
+        #ifdef UseBMP
+        if (Baro_new_data)   // New altitude data?
+          {
+          ch_throttle_altitude_hold = Altitude_control_baro(press_alt,target_baro_altitude);   // Altitude control
+          Baro_new_data=0;
+          Serial.println(ch_throttle_altitude_hold);
+          }
+        ch_throttle = ch_throttle_altitude_hold;
+        #endif
       }
       else   // First time we enter in GPS position hold we capture the target position as the actual position
       {
@@ -322,14 +331,14 @@ void loop()
           target_lattitude = GPS.Lattitude;
           target_longitude = GPS.Longitude;
           target_position=1;
-          //target_sonar_altitude = sonar_value;
-          target_baro_altitude = press_alt;
-          Initial_Throttle = ch_throttle;
-          Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
         }
         #endif
         command_gps_roll=0;
         command_gps_pitch=0;
+        target_baro_altitude = press_alt;
+        Initial_Throttle = ch_throttle;
+        ch_throttle_altitude_hold = ch_throttle;
+        Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
       }
     }
     else
@@ -384,6 +393,8 @@ void loop()
       if (APM_BMP085.Read()){
         read_baro();
         Baro_new_data = 1;
+        //Serial.print("B ");
+        //Serial.println(press_alt);
       }
 #endif
       break;

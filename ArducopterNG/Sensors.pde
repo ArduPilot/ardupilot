@@ -96,7 +96,7 @@ void read_baro(void)
   if (press_alt == 0)
     press_alt = (1.0 - tempPresAlt) * 4433000;      // Altitude in cm
   else
-    press_alt = press_alt * 0.9 + ((1.0 - tempPresAlt) * 443300);  // Altitude in cm (filtered)
+    press_alt = press_alt * 0.75 + ((1.0 - tempPresAlt) * 4433000)*0.25;  // Altitude in cm (filtered)
 }
 #endif
 

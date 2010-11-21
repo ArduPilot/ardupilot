@@ -288,10 +288,12 @@ int err_altitude_old;
 float command_altitude;
 float altitude_I;
 float altitude_D;
+int ch_throttle_altitude_hold;
 
 //Pressure Sensor variables
-long target_baro_altitude;
+long target_baro_altitude;         // Altitude in cm
 long 	press_alt			= 0;
+byte    Baro_new_data                   = 0;
 
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO

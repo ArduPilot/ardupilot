@@ -106,11 +106,11 @@ void Reset_I_terms_navigation()
 /* Altitude control... (based on barometer) */
 int Altitude_control_baro(int altitude, int target_altitude)
 { 
-  #define ALTITUDE_CONTROL_BARO_OUTPUT_MIN 50
-  #define ALTITUDE_CONTROL_BARO_OUTPUT_MAX 90
+  #define ALTITUDE_CONTROL_BARO_OUTPUT_MIN 40
+  #define ALTITUDE_CONTROL_BARO_OUTPUT_MAX 80
   
-  #define KP_BARO_ALTITUDE 0.65
-  #define KD_BARO_ALTITUDE 0.05
+  #define KP_BARO_ALTITUDE 0.25  //0.3
+  #define KD_BARO_ALTITUDE 0.09 //0.09
   #define KI_BARO_ALTITUDE 0.1
   
   int command_altitude;
@@ -119,7 +119,7 @@ int Altitude_control_baro(int altitude, int target_altitude)
   err_altitude = target_altitude - altitude;  
   altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz
   altitude_I += (float)err_altitude*0.05;
-  altitude_I = constrain(altitude_I,-100,100);
+  altitude_I = constrain(altitude_I,-120,120);
   command_altitude = KP_BARO_ALTITUDE*err_altitude + KD_BARO_ALTITUDE*altitude_D + KI_BARO_ALTITUDE*altitude_I;
   command_altitude = Initial_Throttle + constrain(command_altitude,-ALTITUDE_CONTROL_BARO_OUTPUT_MIN,ALTITUDE_CONTROL_BARO_OUTPUT_MAX);
   return command_altitude;
