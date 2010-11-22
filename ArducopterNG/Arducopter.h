@@ -645,12 +645,12 @@ void defaultUserConfig() {
 #define ch_yaw_offset_ADR      216
 #define ch_aux_offset_ADR      220
 #define ch_aux2_offset_ADR     224
-#define cam_mode_ADR           226
-#define mag_orientation_ADR    228  // reserved for future, 31-10-10, jp
-#define mag_declination_ADR    230  // reserved for future, 31-10-10, jp
-#define mag_offset_x_ADR       232
-#define mag_offset_y_ADR       234
-#define mag_offset_z_ADR       236
+#define cam_mode_ADR           228
+#define mag_orientation_ADR    232  // reserved for future, 31-10-10, jp
+#define mag_declination_ADR    236  // reserved for future, 31-10-10, jp
+#define mag_offset_x_ADR       240
+#define mag_offset_y_ADR       244
+#define mag_offset_z_ADR       248
 
 
 //#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp
