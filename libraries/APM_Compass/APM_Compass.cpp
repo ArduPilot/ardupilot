@@ -66,13 +66,14 @@ APM_Compass_Class::APM_Compass_Class() : orientation(0), declination(0.0)
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool APM_Compass_Class::Init(void)
+bool APM_Compass_Class::Init(int initialiseWireLib)
 {
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
   int success = 0;
   
-  Wire.begin();
+  if( initialiseWireLib != 0 )
+      Wire.begin();
   
   delay(10);
   
@@ -245,7 +246,7 @@ APM_Compass_HIL_Class::APM_Compass_HIL_Class() : orientation(0), declination(0.0
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool APM_Compass_HIL_Class::Init(void)
+bool APM_Compass_HIL_Class::Init(int initialiseWireLib)
 {
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;

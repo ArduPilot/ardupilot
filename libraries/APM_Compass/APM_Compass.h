@@ -75,7 +75,7 @@ class APM_Compass_Class
 	unsigned long lastUpdate;	
 	
 	APM_Compass_Class();  // Constructor
-	bool Init();
+	bool Init(int initialiseWireLib = 1);
 	void Read();
 	void Calculate(float roll, float pitch);
 	void SetOrientation(const Matrix3f &rotationMatrix);
@@ -101,7 +101,7 @@ class APM_Compass_HIL_Class
 	unsigned long lastUpdate;	
 	
 	APM_Compass_HIL_Class();  // Constructor
-	bool Init();
+	bool Init(int initialiseWireLib = 1);
 	void Read();
 	void Calculate(float roll, float pitch);
 	void SetOrientation(const Matrix3f &rotationMatrix);
