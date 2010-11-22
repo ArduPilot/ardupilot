@@ -32,7 +32,7 @@ struct Vector2
 
 
 	// trivial ctor
-	Vector2<T>() {}
+	Vector2<T>(): x(0),y(0) {}
 
 	// setting ctor
 	Vector2<T>(const T x0, const T y0): x(x0), y(y0) {}
