@@ -165,12 +165,9 @@
 #include <math.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
 #include <APM_ADC.h>		// ArduPilot Mega Analog to Digital Converter Library 
-APM_ADC_Class APM_ADC;      // Declare an instance
 #include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library 
-APM_BMP085_Class APM_BMP085;// Declare an instance
 #include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
 #include <APM_Compass.h>	// ArduPilot Mega Magnetometer Library
-APM_Compass_Class APM_Compass; // Declare an instance
 #include <Wire.h>               // I2C Communication library
 #include <EEPROM.h>             // EEPROM 
 //#include <AP_GPS.h>
@@ -189,6 +186,10 @@ APM_Compass_Class APM_Compass; // Declare an instance
 /* Software version */
 #define VER 1.52    // Current software version (only numeric values)
 
+// Sensors - declare one global instance
+APM_ADC_Class		APM_ADC;
+APM_BMP085_Class	APM_BMP085;
+APM_Compass_Class	APM_Compass;
 
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */

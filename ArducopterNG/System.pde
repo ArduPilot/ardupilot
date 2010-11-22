@@ -125,9 +125,12 @@ void APM_Init() {
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
 
+  // Initialise Wire library used by Magnetometer and Barometer
+  Wire.begin();
+
 #ifdef IsMAG
   if (MAGNETOMETER == 1) {
-    APM_Compass.Init();  // I2C initialization
+    APM_Compass.Init(FALSE);  // I2C initialization
     APM_Compass.SetOrientation(MAGORIENTATION);
     APM_Compass.SetOffsets(MAGOFFSET);
     APM_Compass.SetDeclination(ToRad(DECLINATION));
@@ -169,7 +172,7 @@ void APM_Init() {
 #endif
 
 #ifdef UseBMP
-  APM_BMP085.Init();
+  APM_BMP085.Init(FALSE);
 #endif
 
   delay(1000);
