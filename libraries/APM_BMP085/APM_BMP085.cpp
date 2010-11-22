@@ -52,14 +52,16 @@ APM_BMP085_Class::APM_BMP085_Class()
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_BMP085_Class::Init(void)
+void APM_BMP085_Class::Init(int initialiseWireLib)
 {
   unsigned char tmp;
   byte buff[22];
   int i=0;
 
   pinMode(BMP085_EOC,INPUT);   // End Of Conversion (PC7) input
-  Wire.begin();
+  
+  if( initialiseWireLib != 0 )
+      Wire.begin();
   oss = 3;           // Over Sampling setting 3 = High resolution
   BMP085_State = 0;     // Initial state
 
@@ -244,7 +246,7 @@ APM_BMP085_HIL_Class::APM_BMP085_HIL_Class()
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_BMP085_HIL_Class::Init(void)
+void APM_BMP085_HIL_Class::Init(int initialiseWireLib)
 {
   BMP085_State=1;
 }

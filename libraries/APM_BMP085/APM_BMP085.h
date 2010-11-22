@@ -25,7 +25,7 @@ class APM_BMP085_Class
 	//int32_t Press0;  // Pressure at sea level
 
 	APM_BMP085_Class();  // Constructor
-	void Init();
+	void Init(int initialiseWireLib = 1);
 	uint8_t Read();	
 };
 
@@ -41,7 +41,7 @@ class APM_BMP085_HIL_Class
 	//int Altitude;
 	uint8_t oss;
 	APM_BMP085_HIL_Class();  // Constructor
-	void Init();
+	void Init(int initialiseWireLib = 1);
 	uint8_t Read();	
     void setHIL(float Temp, float Press);
 };
