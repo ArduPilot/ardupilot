@@ -217,4 +217,3 @@ AP_IMU::get_accel(void)
 	
 	return _accel_vector;
 }
-
