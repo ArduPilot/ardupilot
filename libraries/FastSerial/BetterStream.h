@@ -22,11 +22,14 @@ public:
         // Stream extensions
         void            print_P(const char *);
         void            println_P(const char *);
-        void            printf(const char *, ...);
-        void            printf_P(const char *, ...);
+        void            printf(const char *, ...)
+                __attribute__ ((format(__printf__, 2, 3)));
+        void            printf_P(const char *, ...)
+                __attribute__ ((format(__printf__, 2, 3)));
 
 private:
-        void            _vprintf(unsigned char, const char *, va_list);
+        void            _vprintf(unsigned char, const char *, va_list)
+                __attribute__ ((format(__printf__, 3, 0)));
 };
 
 #endif // __BETTERSTREAM_H
