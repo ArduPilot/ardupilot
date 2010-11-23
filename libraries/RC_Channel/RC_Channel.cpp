@@ -27,7 +27,7 @@ RC_Channel::set_radio_range(int r_min, int r_max)
 
 // setup the control preferences
 void 	
-RC_Channel::set_range(int high, int low)
+RC_Channel::set_range(int low, int high)
 {
 	_type 	= RANGE;
 	_high 	= high;
@@ -51,13 +51,16 @@ RC_Channel::set_trim(int pwm)
 // read input from APM_RC - create a control_in value
 void
 RC_Channel::set_pwm(int pwm)
-{	
+{
+	//Serial.print(pwm,DEC);
+
 	if(_radio_in == 0)
 		_radio_in = pwm;
 	else
 		_radio_in = ((pwm + _radio_in) >> 1);		// Small filtering
 
 	if(_type == RANGE){
+		//Serial.print("range ");
 		control_in = pwm_to_range();
 	}else{
 		control_in = pwm_to_angle();

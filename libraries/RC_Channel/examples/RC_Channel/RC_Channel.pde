@@ -22,6 +22,7 @@ void setup()
 {
 	Serial.begin(38400);
 	Serial.println("ArduPilot RC Channel test");
+	APM_RC.Init();		// APM Radio initialization
 
 	delay(1000);
 	// setup radio
@@ -53,6 +54,7 @@ void loop()
 	rc_2.set_pwm(APM_RC.InputCh(CH_2));
 	rc_3.set_pwm(APM_RC.InputCh(CH_3));
 	rc_4.set_pwm(APM_RC.InputCh(CH_4));
+	
 	print_pwm();
 }
 
@@ -65,5 +67,5 @@ void print_pwm()
 	Serial.print("\tch3 :");
 	Serial.print(rc_3.control_in, DEC);
 	Serial.print("\tch4 :");
-	Serial.print(rc_4.control_in, DEC);
+	Serial.println(rc_4.control_in, DEC);
 }

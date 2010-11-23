@@ -21,7 +21,7 @@ class RC_Channel
 	void 		set_radio_range(int r_min, int r_max);
 
 	// setup the control preferences
-	void 		set_range(int high, int low);
+	void 		set_range(int low, int high);
 	void 		set_angle(int angle);
 
 	// call after first read
