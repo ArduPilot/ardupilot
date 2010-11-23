@@ -54,7 +54,8 @@ const float   AP_IMU::_gyro_temp_curve[3][3] = {
 	{1665,0,0}
 };	// To Do - make additional constructors to pass this in.
 
-
+// Someone is responsible for providing an APM_ADC instance.
+extern APM_ADC_Class	APM_ADC;
 
 // Constructors ////////////////////////////////////////////////////////////////
 
