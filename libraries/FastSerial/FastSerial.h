@@ -48,7 +48,6 @@
 #define HardwareSerial_h
 
 #include <inttypes.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
 

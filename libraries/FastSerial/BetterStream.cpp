@@ -32,55 +32,23 @@ BetterStream::println_P(const char *s)
         println();
 }
 
-// STDIO emulation /////////////////////////////////////////////////////////////
-
-int
-BetterStream::_putchar(char c, FILE *stream)
-{
-        BetterStream      *bs;
-
-        bs = (BetterStream *)fdev_get_udata(stream);
-        if ('\n' == c)
-                bs->write('\r');        // ASCII translation on the cheap
-        bs->write(c);
-        return(0);
-}
-
-int
-BetterStream::_getchar(FILE *stream)
-{
-        BetterStream      *bs;
-
-        bs = (BetterStream *)fdev_get_udata(stream);
-
-        // We return -1 if there is nothing to read, which the library interprets
-        // as an error, which our clients will need to deal with.
-        return(bs->read());
-}
-
-int
+void
 BetterStream::printf(const char *fmt, ...)
 {
         va_list ap;
-        int     i;
 
         va_start(ap, fmt);
-        i = vfprintf(&fd, fmt, ap);
+        _vprintf(0, fmt, ap);
         va_end(ap);
-
-        return(i);
 }
 
-int
+void
 BetterStream::printf_P(const char *fmt, ...)
 {
         va_list ap;
-        int     i;
 
         va_start(ap, fmt);
-        i = vfprintf_P(&fd, fmt, ap);
+        _vprintf(1, fmt, ap);
         va_end(ap);
-
-        return(i);
 }
 

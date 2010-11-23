@@ -17,27 +17,16 @@
 class BetterStream : public Stream {
 public:
         BetterStream(void) {
-                // init stdio
-                fdev_setup_stream(&fd, &BetterStream::_putchar, &BetterStream::_getchar, _FDEV_SETUP_RW);
-                fdev_set_udata(&fd, this);
         }
 
         // Stream extensions
-        void            print_P(const char *s);
-        void            println_P(const char *s);
-
-        // stdio extensions
-        int             printf(const char *fmt, ...);
-        int             printf_P(const char *fmt, ...);
-
-protected:
-        // subclasses can use this to e.g. set up stdin/stdout/stderr.
-        FILE            fd;
+        void            print_P(const char *);
+        void            println_P(const char *);
+        void            printf(const char *, ...);
+        void            printf_P(const char *, ...);
 
 private:
-        // stdio emulation
-        static int      _putchar(char c, FILE *stream);
-        static int      _getchar(FILE *stream);
+        void            _vprintf(unsigned char, const char *, va_list);
 };
 
 #endif // __BETTERSTREAM_H

@@ -101,12 +101,6 @@ FastSerial::FastSerial(const uint8_t portNumber,
         _txBuffer->head = _txBuffer->tail = 0;
         _txBuffer = &__FastSerial__txBuffer[portNumber];
         _rxBuffer->head = _rxBuffer->tail = 0;
-
-        if (0 == portNumber) {
-                stdout = &fd;          // serial port 0 is always the default console
-                stdin  = &fd;
-                stderr = &fd;
-        }
 }
 
 // Public Methods //////////////////////////////////////////////////////////////

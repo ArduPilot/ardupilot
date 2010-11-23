@@ -35,11 +35,16 @@ void setup(void)
 	Serial.begin(38400);
 
         //
-        // And send a message.
+        // Test printing things
         //
-        Serial.println("begin");
-        Serial.printf("printf\n");
+        Serial.print("test");
+        Serial.println(" begin");
+        Serial.println(1000);
+        Serial.println(1000, 8);
+        Serial.println(1000, 10);
+        Serial.println(1000, 16);
         Serial.println_P(PSTR("progmem"));
+        Serial.printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
 }
 
 void
