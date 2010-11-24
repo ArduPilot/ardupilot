@@ -12,10 +12,6 @@
 
 #include "include/menu.h"
 
-// Workaround for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734 
-#undef PSTR
-#define PSTR(s) (__extension__({static prog_char __c[] = (s); &__c[0];}))
-
 // statics
 char Menu::_inbuf[MENU_COMMANDLINE_MAX];
 Menu::arg Menu::_argv[MENU_ARGS_MAX + 1];
