@@ -72,10 +72,6 @@ extern "C" {
 })
 */
 
-// Workaround for http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34734 
-#undef PSTR
-#define PSTR(s) (__extension__({static prog_char __c[] = (s); &__c[0];}))
-
 #define FL_ZFILL	0x01
 #define FL_PLUS		0x02
 #define FL_SPACE	0x04
