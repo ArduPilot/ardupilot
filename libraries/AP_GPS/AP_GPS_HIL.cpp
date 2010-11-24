@@ -30,20 +30,24 @@ void AP_GPS_HIL::update(void)
 
 int AP_GPS_HIL::status(void)
 {
-    return 2; // gps locked
-    // TODO: show as locked after first packet received
+    if (valid_read)
+    {
+        if (fix) return 2;
+        else return 1;
+    }
+    else return 0;
 }
 
-void AP_GPS_HIL::setHIL(long _time, long _latitude, long _longitude, long _altitude,
-    long _ground_speed, long _ground_course, long _speed_3d, uint8_t _num_sats)
+void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _altitude,
+    float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
     time = _time;
-    latitude = _latitude*1e7;
-    longitude = _longitude*1e7;
-    altitude = _altitude*1e2;
-    ground_speed = _ground_speed*1e2;
-    ground_course = _ground_course*1e2;
-    speed_3d = _speed_3d*1e2;
+    latitude = _latitude*1.0e7;
+    longitude = _longitude*1.0e7;
+    altitude = _altitude*1.0e2;
+    ground_speed = _ground_speed*1.0e2;
+    ground_course = _ground_course*1.0e2;
+    speed_3d = _speed_3d*1.0e2;
     num_sats = _num_sats;
     new_data = true;
     fix = true;

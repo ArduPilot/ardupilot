@@ -30,8 +30,8 @@ public:
      * @param speed_3d - ground speed in meters/second
      * @param altitude - altitude in meters
      */
-    void setHIL(long time, long latitude, long longitude, long altitude,
-            long ground_speed, long ground_course, long speed_3d, uint8_t num_sats);
+    void setHIL(long time, float latitude, float longitude, float altitude,
+            float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 };
 
 #endif	// AP_GPS_HIL_H
