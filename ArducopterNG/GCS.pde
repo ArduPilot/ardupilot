@@ -134,6 +134,9 @@ void readSerialCommand() {
       break;
     case 'Y': // Initialize EEPROM with default values
       defaultUserConfig();
+#if AIRFRAME == HELI
+      heli_defaultUserConfig();
+#endif      
       break;
     case '1': // Receive transmitter calibration values
       ch_roll_slope = readFloatSerial();

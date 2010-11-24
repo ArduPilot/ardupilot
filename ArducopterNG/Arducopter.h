@@ -264,6 +264,7 @@ float err_pitch;
 float yaw_I=0;
 float yaw_D;
 float err_yaw;
+float heading_I=0;  // used only by heli
 
 //Position control
 long target_longitude;

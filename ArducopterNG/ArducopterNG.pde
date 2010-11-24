@@ -182,6 +182,9 @@
 //#include <GPS_NMEA.h>   // ArduPilot NMEA GPS library
 #endif
 
+#if AIRFRAME == HELI
+#include "Heli.h"
+#endif
 
 /* Software version */
 #define VER 1.52    // Current software version (only numeric values)
@@ -197,7 +200,8 @@ APM_Compass_Class	APM_Compass;
 
 byte flightMode;
 
-unsigned long currentTime, previousTime;
+unsigned long currentTime;  // current time in milliseconds
+unsigned long currentTimeMicros = 0, previousTimeMicros = 0;  // current and previous loop time in microseconds
 unsigned long mainLoop = 0;
 unsigned long mediumLoop = 0;
 unsigned long slowLoop = 0;
@@ -252,13 +256,16 @@ void loop()
   //int i;
   //float aux_float;
 
-  currentTime = millis();
+  currentTimeMicros = micros();
+  currentTime = currentTimeMicros / 1000;
 
   // Main loop at 200Hz (IMU + control)
   if ((currentTime-mainLoop) > 5)    // about 200Hz (every 5ms)
   {
-    G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
+    //G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
+    G_Dt = (currentTimeMicros-previousTimeMicros) * 0.000001;   // Microseconds!!!
     mainLoop = currentTime;
+    previousTimeMicros = currentTimeMicros;
 
     //IMU DCM Algorithm
     Read_adc_raw();       // Read sensors raw data
@@ -268,16 +275,33 @@ void loop()
     Euler_angles();
 
     // Read radio values (if new data is available)
-    if (APM_RC.GetState() == 1)   // New radio frame?
+    if (APM_RC.GetState() == 1) {  // New radio frame?
+#if AIRFRAME == QUAD    
       read_radio();
+#endif
+#if AIRFRAME == HELI
+      heli_read_radio();
+#endif
+    }
 
     // Attitude control
     if(flightMode == STABLE_MODE) {    // STABLE Mode
       gled_speed = 1200;
-      if (AP_mode == AP_NORMAL_MODE)    // Normal mode
+      if (AP_mode == AP_NORMAL_MODE) {   // Normal mode
+#if AIRFRAME == QUAD
         Attitude_control_v3(command_rx_roll,command_rx_pitch,command_rx_yaw);
-      else                              // Automatic mode : GPS position hold mode
+#endif        
+#if AIRFRAME == HELI
+        heli_attitude_control(command_rx_roll,command_rx_pitch,command_rx_collective,command_rx_yaw);
+#endif
+      }else{                        // Automatic mode : GPS position hold mode
+#if AIRFRAME == QUAD      
         Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
+#endif        
+#if AIRFRAME == HELI
+        heli_attitude_control(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_collective,command_rx_yaw);
+#endif
+      }
     }
     else {                 // ACRO Mode
       gled_speed = 400;
@@ -287,7 +311,9 @@ void loop()
     }
 
     // Send output commands to motor ESCs...
+#if AIRFRAME == QUAD     // we update the heli swashplate at about 60hz
     motor_output();
+#endif    
 
 #ifdef IsCAM
   // Do we have cameras stabilization connected and in use?
@@ -354,6 +380,11 @@ void loop()
     mediumLoop = currentTime;
 #ifdef IsGPS
     GPS.Read();     // Read GPS data 
+#endif
+    
+#if AIRFRAME == HELI    
+    // Send output commands to heli swashplate...
+    heli_moveSwashPlate();
 #endif
     // Each of the six cases executes at 10Hz
     switch (medium_loopCounter){

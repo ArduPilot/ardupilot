@@ -55,6 +55,7 @@ void read_GPS_data()
 /* GPS based Position control */
 void Position_control(long lat_dest, long lon_dest)
 {
+#ifdef IsGPS
   long Lon_diff;
   long Lat_diff;
 
@@ -93,6 +94,7 @@ void Position_control(long lat_dest, long lon_dest)
   command_gps_pitch = constrain(command_gps_pitch, -GPS_MAX_ANGLE, GPS_MAX_ANGLE); // Limit max command
 
   //Log_Write_PID(2,KP_GPS_PITCH*gps_err_pitch*10,KI_GPS_PITCH*gps_pitch_I*10,KD_GPS_PITCH*gps_pitch_D*10,command_gps_pitch*10);
+#endif  
 }
 
 void Reset_I_terms_navigation()

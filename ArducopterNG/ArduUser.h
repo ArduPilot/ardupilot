@@ -34,6 +34,13 @@ TODO:
 * ************************************************************** */
 
 /*************************************************************/
+// Airframe
+#define QUAD 0
+#define HELI 1
+
+#define AIRFRAME QUAD
+
+/*************************************************************/
 // Safety & Security 
 
 // Arm & Disarm delays
@@ -137,6 +144,4 @@ TODO:
 #define ACCELY 4
 #define ACCELZ 5
 #define LASTSENSOR 6
-
-
 

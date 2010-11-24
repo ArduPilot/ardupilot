@@ -58,12 +58,21 @@ void APM_Init() {
 
   APM_RC.Init();             // APM Radio initialization
 
+#if AIRFRAME == QUAD
   // RC channels Initialization (Quad motors)  
   APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
   APM_RC.OutputCh(1,MIN_THROTTLE);
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
+#endif  
 
+#if AIRFRAME == HELI
+  // RC channels Initialization (heli servos)  
+  APM_RC.OutputCh(0,CHANN_CENTER);  // mid position
+  APM_RC.OutputCh(1,CHANN_CENTER);
+  APM_RC.OutputCh(2,CHANN_CENTER);
+  APM_RC.OutputCh(3,CHANN_CENTER);
+#endif 
   // Make sure that Relay is switched off.
   digitalWrite(RELAY,LOW);
 
@@ -119,11 +128,21 @@ void APM_Init() {
   if(pitch_mid < 1400 || pitch_mid > 1600) pitch_mid = 1500;
   if(yaw_mid < 1400 || yaw_mid > 1600) yaw_mid = 1500;
 
+#if AIRFRAME == QUAD
   // RC channels Initialization (Quad motors)  
   APM_RC.OutputCh(0,MIN_THROTTLE);  // Motors stoped
   APM_RC.OutputCh(1,MIN_THROTTLE);
   APM_RC.OutputCh(2,MIN_THROTTLE);
   APM_RC.OutputCh(3,MIN_THROTTLE);
+#endif  
+
+#if AIRFRAME == HELI
+  // RC channels Initialization (heli servos)  
+  APM_RC.OutputCh(0,CHANN_CENTER);  // mid position
+  APM_RC.OutputCh(1,CHANN_CENTER);
+  APM_RC.OutputCh(2,CHANN_CENTER);
+  APM_RC.OutputCh(3,CHANN_CENTER);
+#endif 
 
   // Initialise Wire library used by Magnetometer and Barometer
   Wire.begin();
@@ -180,6 +199,11 @@ void APM_Init() {
   DataFlash.StartWrite(1);   // Start a write session on page 1
   //timer = millis();
   //tlmTimer = millis();
+
+  // initialise helicopter
+#if AIRFRAME == HELI
+  heli_setup();
+#endif
 
 #ifdef IsAM
   // Switch Left & Right lights on
