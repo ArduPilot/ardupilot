@@ -28,10 +28,17 @@ void setup()
 	// setup radio
 	
 	// read eepom or set manually
-	rc_1.set_radio_range(1100,1900);
-	rc_2.set_radio_range(1100,1900);
-	rc_3.set_radio_range(1100,1900);
-	rc_4.set_radio_range(1100,1900);
+	rc_1.radio_min = 1100;
+	rc_1.radio_max = 1900;
+	
+	rc_2.radio_min = 1100;
+	rc_2.radio_max = 1900;
+
+	rc_3.radio_min = 1100;
+	rc_3.radio_max = 1900;
+
+	rc_4.radio_min = 1100;
+	rc_4.radio_max = 1900;
 	
 	// set type of output, symmetrical angles or a number range;
 	rc_1.set_angle(4500);
@@ -40,11 +47,15 @@ void setup()
 	rc_4.set_angle(3000);
 	
 	// set midpoint value
-	rc_1.set_trim(APM_RC.InputCh(CH_1));
-	rc_2.set_trim(APM_RC.InputCh(CH_2));
-	rc_3.set_trim(APM_RC.InputCh(CH_3));
-	rc_4.set_trim(APM_RC.InputCh(CH_4));
-	
+	rc_1.set_pwm(APM_RC.InputCh(CH_1));
+	rc_2.set_pwm(APM_RC.InputCh(CH_2));
+	rc_3.set_pwm(APM_RC.InputCh(CH_3));
+	rc_4.set_pwm(APM_RC.InputCh(CH_4));
+
+	rc_1.trim();
+	rc_2.trim();
+	rc_3.trim();
+	rc_4.trim();
 }
 
 void loop()	
