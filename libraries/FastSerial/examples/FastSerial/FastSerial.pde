@@ -45,6 +45,8 @@ void setup(void)
         Serial.println(1000, 16);
         Serial.println_P(PSTR("progmem"));
         Serial.printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
+        Serial.printf_P(PSTR("printf_P %d %u %#x %p %f %S\n"), -1000, 1000, 1000, 1000, 1.2345, PSTR("progmem"));
+        Serial.println("done");
 }
 
 void
