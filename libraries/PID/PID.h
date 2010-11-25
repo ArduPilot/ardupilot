@@ -32,6 +32,12 @@ public:
 	
 
 private:
+	static uint8_t RC = 20; // low pass filter cut frequency
+	// for derivative calculation,
+	// set to 20 Hz becasue anything over that
+	// is probably noise, see
+	// http://en.wikipedia.org/wiki/Low-pass_filter
+
 };
 
 #endif

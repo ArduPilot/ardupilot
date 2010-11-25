@@ -20,9 +20,19 @@ PID::get_pid(long err, long dt, float scaler)
 
 	if(_kd != 0){
 		// Compute derivative component
-		//derivative = (error - previous_error)/dt
-		float derivative 	= 1000 * (error - _last_error) / dt;
+		//derivative = (error - previous_error)/delta_time
+		float derivative 	= (error - _last_error) / delta_time;
+
+		// discrete low pass filter, cuts out the 
+		// high frequency noise that can drive the controller crazy
+		derivative = _last_derivative + delta_time/
+			(RC + delta_time)*(derivative - _last_derivative);
+		
+		//Serial.print("d: ");
+		//Serial.println(derivative,DEC);
+
 		_last_error 		= error;
+		_last_derivative    = derivative;
 		output 				+= _kd * derivative;			// Sum the derivative component
 	}
 	
@@ -30,7 +40,7 @@ PID::get_pid(long err, long dt, float scaler)
 	
 	// Compute integral component
 	if(_ki != 0){
-		_integrator 		+= (error * _ki) * scaler * dt *.001; 
+		_integrator 		+= (error * _ki) * scaler * delta_time; 
 		_integrator 		= constrain(_integrator, -_imax, _imax);
 		output 				+= _integrator;
 	}
@@ -44,6 +54,7 @@ PID::reset_I(void)
 {
 	_integrator = 0;
 	_last_error = 0;
+	_last_error_derivative = 0;
 }
 
 
