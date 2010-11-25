@@ -118,6 +118,9 @@ BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                 c = GETBYTE (in_progmem, 1, fmt);
                                 if (c != '%') break;
                         }
+                        /* emit cr before lf to make most terminals happy */
+                        if (c == '\n')
+                                write('\r');
                         write(c);
                 }
 
