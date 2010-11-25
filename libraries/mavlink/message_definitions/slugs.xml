@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<mavlink>
+<include>common.xml</include>
+<messages>
+   <message name="CPU_LOAD" id="190">
+     Sensor and DSC control loads.
+     <field name="target" type="uint8_t">The system reporting the CPU load</field>
+     <field name="sensLoad" type="uint8_t">Sensor DSC Load</field>
+     <field name="ctrlLoad" type="uint8_t">Control DSC Load</field>
+     <field name="batVolt" type="uint16_t">Battery Voltage in millivolts</field>     
+   </message>
+   <message name="AIR_DATA" id="191">
+     Air data for altitude and airspeed computation.
+     <field name="target" type="uint8_t">The system reporting the air data</field>
+     <field name="dynamicPressure" type="float">Dynamic pressure (Pa)</field>
+     <field name="staticPressure" type="float">Static pressure (Pa)</field>
+     <field name="temperature" type="uint16_t">Board temperature</field>     
+   </message>
+   
+   <message name="SENSOR_BIAS" id="192">
+     Accelerometer and gyro biases.
+     <field name="target" type="uint8_t">The system reporting the biases</field>
+     <field name="axBias" type="float">Accelerometer X bias (m/s)</field>
+     <field name="ayBias" type="float">Accelerometer Y bias (m/s)</field>
+     <field name="azBias" type="float">Accelerometer Z bias (m/s)</field>
+     <field name="gxBias" type="float">Gyro X bias (rad/s)</field>
+     <field name="gyBias" type="float">Gyro Y bias (rad/s)</field>
+     <field name="gzBias" type="float">Gyro Z bias (rad/s)</field>
+   </message>
+   
+  <message name="DIAGNOSTIC" id="193">
+     Configurable diagnostic messages.
+     <field name="target" type="uint8_t">The system reporting the diagnostic</field>
+     <field name="diagFl1" type="float">Diagnostic float 1</field>
+     <field name="diagFl2" type="float">Diagnostic float 2</field>
+     <field name="diagFl3" type="float">Diagnostic float 3</field>
+     <field name="diagSh1" type="int16_t">Diagnostic short 1</field>
+     <field name="diagSh2" type="int16_t">Diagnostic short 2</field>
+     <field name="diagSh3" type="int16_t">Diagnostic short 3</field>
+   </message>
+   
+  <message name="PILOT_CONSOLE" id="194">
+     Pilot console PWM messges.
+     <field name="target" type="uint8_t">The system reporting the diagnostic</field>
+     <field name="dt" type="uint16_t">Pilot's console throttle command </field>
+     <field name="dla" type="uint16_t">Pilot's console left aileron command </field>
+     <field name="dra" type="uint16_t">Pilot's console right aileron command </field>
+     <field name="dr" type="uint16_t">Pilot's console rudder command </field>
+     <field name="de" type="uint16_t">Pilot's console elevator command </field>
+   </message>
+   
+   <message name="PWM_COMMANDS" id="195">
+     PWM Commands from the AP to the control surfaces.
+     <field name="target" type="uint8_t">The system reporting the diagnostic</field>
+     <field name="dt_c" type="uint16_t">AutoPilot's throttle command </field>
+     <field name="dla_c" type="uint16_t">AutoPilot's left aileron command </field>
+     <field name="dra_c" type="uint16_t">AutoPilot's right aileron command </field>
+     <field name="dr_c" type="uint16_t">AutoPilot's rudder command </field>
+     <field name="dle_c" type="uint16_t">AutoPilot's left elevator command </field>
+     <field name="dre_c" type="uint16_t">AutoPilot's right elevator command </field>
+     <field name="dlf_c" type="uint16_t">AutoPilot's left  flap command </field>
+     <field name="drf_c" type="uint16_t">AutoPilot's right flap command </field>
+     <field name="aux1" type="uint16_t">AutoPilot's aux1 command </field>
+     <field name="aux2" type="uint16_t">AutoPilot's aux2 command </field>
+   </message>
+</messages>
+</mavlink>

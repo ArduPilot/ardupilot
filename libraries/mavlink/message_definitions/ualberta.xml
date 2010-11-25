@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>common.xml</include>
+  <messages>
+    <message name="NAV_FILTER_BIAS" id="220">
+      <description>Accelerometer and Gyro biases from the navigation filter</description>
+      <field name="usec" type="uint64_t">Timestamp (microseconds)</field>
+      <field name="accel_0" type="float">b_f[0]</field>
+      <field name="accel_1" type="float">b_f[1]</field>
+      <field name="accel_2" type="float">b_f[2]</field>
+      <field name="gyro_0" type="float">b_f[0]</field>
+      <field name="gyro_1" type="float">b_f[1]</field>
+      <field name="gyro_2" type="float">b_f[2]</field>
+    </message>
+    <message name="REQUEST_RC_CHANNELS" id="221">
+      <description>Request raw and normalized rc data from the UAV</description>
+      <field name="enabled" type="uint8_t">True: start sending data; False: stop sending data</field>
+    </message>
+    <message name="RADIO_CALIBRATION" id="222">
+      <description>Complete set of calibration parameters for the radio</description>
+      <field name="aileron" type="float[3]">Aileron setpoints: high, center, low</field>
+      <field name="elevator" type="float[3]">Elevator setpoints: high, center, low</field>
+      <field name="rudder" type="float[3]">Rudder setpoints: high, center, low</field>
+      <field name="gyro" type="float[2]">Tail gyro mode/gain setpoints: heading hold, rate mode</field>
+      <field name="pitch" type="float[5]">Pitch curve setpoints (every 25%)</field>
+      <field name="throttle" type="float[5]">Throttle curve setpoints (every 25%)</field>
+    </message>
+  </messages>
+</mavlink>

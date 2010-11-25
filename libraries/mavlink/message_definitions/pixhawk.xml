@@ -1,0 +1,228 @@
+<?xml version="1.0"?>
+<mavlink>
+<include>common.xml</include>
+<messages>
+   <message name="SET_ALTITUDE" id="80">
+     <field name="target" type="uint8_t">The system setting the altitude</field>
+     <field name="mode" type="uint32_t">The new altitude in meters</field>
+   </message>
+
+  <message name="REQUEST_DATA_STREAM" id="81">
+     <field name="target_system" type="uint8_t">The target requested to send the message stream.</field>
+     <field name="target_component" type="uint8_t">The target requested to send the message stream.</field>
+     <field name="req_stream_id" type="uint8_t">The ID of the requested message type</field>
+     <field name="req_message_rate" type="uint16_t">The requested interval between two messages of this type</field>
+     <field name="start_stop" type="uint8_t">1 to start sending, 0 to stop sending.</field>
+   </message>
+
+   <message name="REQUEST_DYNAMIC_GYRO_CALIBRATION" id="82">
+     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
+<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
+     <field name="mode" type="float">The current ground-truth rpm</field>
+     <field name="axis" type="uint8_t">The axis to calibrate: 0 roll, 1 pitch, 2 yaw</field>
+      <field name="time" type="uint16_t">The time to average over in ms</field>
+   </message>
+
+   <message name="REQUEST_STATIC_CALIBRATION" id="83">
+     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
+<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
+      <field name="time" type="uint16_t">The time to average over in ms</field>
+   </message>
+
+   <message name="MANUAL_CONTROL" id="84">
+     <field name="target" type="uint8_t">The system to be controlled</field>
+     <field name="roll" type="float">roll</field>
+     <field name="pitch" type="float">pitch</field>
+     <field name="yaw" type="float">yaw</field>
+     <field name="thrust" type="float">thrust</field>
+     <field name="roll_manual" type="uint8_t">roll control enabled auto:0, manual:1</field>
+     <field name="pitch_manual" type="uint8_t">pitch auto:0, manual:1</field>
+     <field name="yaw_manual" type="uint8_t">yaw auto:0, manual:1</field>
+     <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
+   </message>
+
+  <message name="ATTITUDE_CONTROL" id="85">
+     <field name="target" type="uint8_t">The system to be controlled</field>
+     <field name="roll" type="float">roll</field>
+     <field name="pitch" type="float">pitch</field>
+     <field name="yaw" type="float">yaw</field>
+     <field name="thrust" type="float">thrust</field>
+     <field name="roll_manual" type="uint8_t">roll control enabled auto:0, manual:1</field>
+     <field name="pitch_manual" type="uint8_t">pitch auto:0, manual:1</field>
+     <field name="yaw_manual" type="uint8_t">yaw auto:0, manual:1</field>
+     <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
+   </message>
+
+   <message name="DEBUG_VECT" id="90">
+    <field name="name" type="array[10]">Name</field>
+     <field name="usec" type="uint64_t">Timestamp</field>
+     <field name="x" type="float">x</field>
+     <field name="y" type="float">y</field>
+     <field name="z" type="float">z</field>
+   </message>
+
+ <message name="SET_CAM_SHUTTER" id="100">
+     <field name="cam_no" type="uint8_t">Camera id</field>
+     <field name="cam_mode" type="uint8_t">Camera mode: 0 = auto, 1 = manual</field>
+     <field name="trigger_pin" type="uint8_t">Trigger pin, 0-3 for PtGrey FireFly</field>
+     <field name="interval" type="uint16_t">Shutter interval, in microseconds</field>
+     <field name="exposure" type="uint16_t">Exposure time, in microseconds</field>
+     <field name="gain" type="float">Camera gain</field>
+   </message>
+
+   <message name="IMAGE_TRIGGERED" id="101">
+     <field name="timestamp" type="uint64_t">Timestamp</field>
+     <field name="seq" type="uint32_t">IMU seq</field>
+     <field name="roll" type="float">Roll angle in rad</field>
+     <field name="pitch" type="float">Pitch angle in rad</field>
+   </message>
+
+   <message name="IMAGE_TRIGGER_CONTROL" id="102">
+     <field name="enable" type="uint8_t">0 to disable, 1 to enable</field>
+   </message>
+
+   <message name="IMAGE_AVAILABLE" id="103">
+     <field name="cam_id" type="uint64_t">Camera id</field>
+     <field name="cam_no" type="uint8_t">Camera # (starts with 0)</field>
+     <field name="timestamp" type="uint64_t">Timestamp</field>
+     <field name="valid_until" type="uint64_t">Until which timestamp this buffer will stay valid</field>
+     <field name="img_seq" type="uint32_t">The image sequence number</field>
+     <field name="img_buf_index" type="uint32_t">Position of the image in the buffer, starts with 0</field>
+     <field name="width" type="uint16_t">Image width</field>
+     <field name="height" type="uint16_t">Image height</field>
+     <field name="depth" type="uint16_t">Image depth</field>
+     <field name="channels" type="uint8_t">Image channels</field>
+     <field name="key" type="uint32_t">Shared memory area key</field>
+     <field name="exposure" type="uint32_t">Exposure time, in microseconds</field>
+     <field name="gain" type="float">Camera gain</field>
+     <field name="roll" type="float">Roll angle in rad</field>
+     <field name="pitch" type="float">Pitch angle in rad</field>
+   </message>
+
+   <message name="VISION_POSITION_ESTIMATE" id="111">
+     <field name="usec" type="uint64_t">Timestamp (milliseconds)</field>
+     <field name="x"   type="float">Global X position</field>
+     <field name="y"   type="float">Global Y position</field>
+     <field name="z"   type="float">Global Z position</field>
+     <field name="roll" type="float">Roll angle in rad</field>
+     <field name="pitch" type="float">Pitch angle in rad</field>
+     <field name="yaw" type="float">Yaw angle in rad</field>
+   </message>
+
+   <message name="VICON_POSITION_ESTIMATE" id="112">
+     <field name="usec" type="uint64_t">Timestamp (milliseconds)</field>
+     <field name="x"   type="float">Global X position</field>
+     <field name="y"   type="float">Global Y position</field>
+     <field name="z"   type="float">Global Z position</field>
+     <field name="roll" type="float">Roll angle in rad</field>
+     <field name="pitch" type="float">Pitch angle in rad</field>
+     <field name="yaw" type="float">Yaw angle in rad</field>
+   </message>
+
+   <message name="POSITION_CONTROL_SETPOINT_SET" id="120">
+     <description>Message sent to the MAV to set a new position as reference for the controller</description>
+     <field name="target_system" type="uint8_t">System ID</field>
+     <field name="target_component" type="uint8_t">Component ID</field>
+     <field name="id" type="uint16_t">ID of waypoint, 0 for plain position</field>
+     <field name="x" type="float">x position</field>
+     <field name="y" type="float">y position</field>
+     <field name="z" type="float">z position</field>
+     <field name="yaw" type="float">yaw orientation in radians, 0 = NORTH</field>
+   </message>
+
+   <message name="POSITION_CONTROL_OFFSET_SET" id="154">
+     <description>Message sent to the MAV to set a new offset from the currently controlled position</description>
+     <field name="target_system" type="uint8_t">System ID</field>
+     <field name="target_component" type="uint8_t">Component ID</field>
+     <field name="x" type="float">x position offset</field>
+     <field name="y" type="float">y position offset</field>
+     <field name="z" type="float">z position offset</field>
+     <field name="yaw" type="float">yaw orientation offset in radians, 0 = NORTH</field>
+   </message>
+
+  <!-- Message sent by the MAV once it sets a new position as reference in the controller -->
+   <message name="POSITION_CONTROL_SETPOINT" id="121">
+     <field name="id" type="uint16_t">ID of waypoint, 0 for plain position</field>
+     <field name="x" type="float">x position</field>
+     <field name="y" type="float">y position</field>
+     <field name="z" type="float">z position</field>
+     <field name="yaw" type="float">yaw orientation in radians, 0 = NORTH</field>
+   </message>
+
+   <message name="MARKER" id="130">
+     <field name="id" type="uint16_t">ID</field>
+     <field name="x" type="float">x position</field>
+     <field name="y" type="float">y position</field>
+     <field name="z" type="float">z position</field>
+     <field name="roll" type="float">roll orientation</field>
+     <field name="pitch" type="float">pitch orientation</field>
+     <field name="yaw" type="float">yaw orientation</field>
+   </message>
+
+   <message name="RAW_AUX" id="141">
+     <field name="adc1" type="uint16_t">ADC1 (J405 ADC3, LPC2148 AD0.6)</field>
+     <field name="adc2" type="uint16_t">ADC2 (J405 ADC5, LPC2148 AD0.2)</field>
+     <field name="adc3" type="uint16_t">ADC3 (J405 ADC6, LPC2148 AD0.1)</field>
+     <field name="adc4" type="uint16_t">ADC4 (J405 ADC7, LPC2148 AD1.3)</field>
+     <field name="vbat" type="uint16_t">Battery voltage</field>
+     <field name="temp"  type="int16_t">Temperature (degrees celcius)</field>
+     <field name="baro"  type="int32_t">Barometric pressure (hecto Pascal)</field>
+   </message>
+
+   <message name="AUX_STATUS" id="142">
+     <field name="load" type="uint16_t">Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000</field>
+     <field name="i2c0_err_count" type="uint16_t">Number of I2C errors since startup</field>
+<field name="i2c1_err_count" type="uint16_t">Number of I2C errors since startup</field>
+  <field name="spi0_err_count" type="uint16_t">Number of I2C errors since startup</field>
+<field name="spi1_err_count" type="uint16_t">Number of I2C errors since startup</field>
+  <field name="uart_total_err_count" type="uint16_t">Number of I2C errors since startup</field>
+   </message>
+
+   <message name="CONTROL_STATUS" id="143">
+     <field name="position_fix" type="uint8_t">Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix </field>
+     <field name="vision_fix" type="uint8_t">Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix </field>
+     <field name="gps_fix" type="uint8_t">GPS position fix: 0: no reception, 1: Minimum 1 satellite, but no position fix, 2: 2D position fix, 3: 3D position fix </field>
+     <field name="control_att" type="uint8_t">0: Attitude control disabled, 1: enabled</field>
+<field name="control_pos_xy" type="uint8_t">0: X, Y position control disabled, 1: enabled</field>
+<field name="control_pos_z" type="uint8_t">0: Z position control disabled, 1: enabled</field>
+<field name="control_pos_yaw" type="uint8_t">0: Yaw angle control disabled, 1: enabled</field>
+   </message>
+
+  <message name="WATCHDOG_HEARTBEAT" id="150">
+    <field name="watchdog_id" type="uint16_t">Watchdog ID</field>
+    <field name="process_count" type="uint16_t">Number of processes</field>
+  </message>
+
+  <message name="WATCHDOG_PROCESS_INFO" id="151">
+    <field name="watchdog_id" type="uint16_t">Watchdog ID</field>
+    <field name="process_id" type="uint16_t">Process ID</field>
+    <field name="name" type="array[100]">Process name</field>
+    <field name="arguments" type="array[147]">Process arguments</field>
+    <field name="timeout" type="int32_t">Timeout (seconds)</field>
+  </message>
+
+  <message name="WATCHDOG_PROCESS_STATUS" id="152">
+    <field name="watchdog_id" type="uint16_t">Watchdog ID</field>
+    <field name="process_id" type="uint16_t">Process ID</field>
+    <field name="state" type="uint8_t">Is running / finished / suspended / crashed</field>
+    <field name="muted" type="uint8_t">Is muted</field>
+    <field name="pid" type="int32_t">PID</field>
+    <field name="crashes" type="uint16_t">Number of crashes</field>
+  </message>
+
+  <message name="WATCHDOG_COMMAND" id="153">
+    <field name="target_system_id" type="uint8_t">Target system ID</field>
+    <field name="watchdog_id" type="uint16_t">Watchdog ID</field>
+    <field name="process_id" type="uint16_t">Process ID</field>
+    <field name="command_id" type="uint8_t">Command ID</field>
+  </message>
+
+  <message name="PATTERN_DETECTED" id="160">
+    <field name="type" type="uint8_t">0: Pattern, 1: Letter</field>
+    <field name="confidence" type="float">Confidence of detection</field>
+    <field name="file" type="array[100]">Pattern file name</field>
+    <field name="detected" type="uint8_t">Accepted as true detection, 0 no, 1 yes</field>
+   </message>
+
+</messages>
+</mavlink>
