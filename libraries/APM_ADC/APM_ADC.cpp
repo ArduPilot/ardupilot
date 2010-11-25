@@ -170,13 +170,25 @@ int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
     static const float gyroGainY = 0.41;
     static const float gyroGainZ = 0.41;
     static const float deg2rad = 3.14159/180.0;
-    // TODO: map floats to raw
-    adc_value[0] = r/(gyroGainX*deg2rad) + 1665;
-    adc_value[1] = p/(gyroGainY*deg2rad) + 1665;
-    adc_value[2] = q/(gyroGainZ*deg2rad) + 1665;
-    adc_value[4] = gyroTemp; 
-    adc_value[5] = -(aX*adcPerG)/1e3 + 2025;
-    adc_value[6] = -(aY*adcPerG)/1e3 + 2025;
-    adc_value[7] = -(aZ*adcPerG)/1e3 + 2025;
-    adc_value[8] = diffPress;
+    static const uint8_t sensors[6] 	= {1,2,0,4,5,6};				// For ArduPilot Mega Sensor Shield Hardware
+    static const int SENSOR_SIGN[]	= { 1, -1, -1,
+					       -1,  1,  1,
+					       -1, -1, -1};	
+    // TODO: map temp and press to raw
+    
+    // gyros
+    /* 0 */ adc_value[sensors[0]] = SENSOR_SIGN[0]* p/(gyroGainX*deg2rad) + 1665; // note apm says 1,2,0 gyro order, but 
+    /* 1 */ adc_value[sensors[1]] = SENSOR_SIGN[1]* q/(gyroGainY*deg2rad) + 1665; // this says 0,1,2
+    /* 2 */ adc_value[sensors[2]] = SENSOR_SIGN[2]* r/(gyroGainZ*deg2rad) + 1665;
+
+    // gyro temp
+    /* 3 */ adc_value[3] = SENSOR_SIGN[3]* 0; //gyroTemp; 
+
+    // accelerometers
+    /* 4 */ adc_value[sensors[3]] = SENSOR_SIGN[4]* (aX*adcPerG)/1.0e3 + 2025;
+    /* 5 */ adc_value[sensors[4]] = SENSOR_SIGN[5]* (aY*adcPerG)/1.0e3 + 2025;
+    /* 6 */ adc_value[sensors[5]] = SENSOR_SIGN[6]* (aZ*adcPerG)/1.0e3 + 2025;
+
+    // differential pressure
+    /* 7 */ adc_value[7] = SENSOR_SIGN[7]* 0; //diffPress;
 }
