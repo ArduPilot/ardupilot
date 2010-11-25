@@ -48,6 +48,12 @@ extern "C" {
 #include "xtoa_fast.h"
 }
 
+// workaround for GCC bug c++/34734
+#undef PROGMEM 
+#define PROGMEM __attribute__(( section(".progmem.data") )) 
+#undef PSTR 
+#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
+
 #define GETBYTE(flag, mask, pnt)        ({                              \
                         unsigned char __c;                              \
                         asm (                                           \
