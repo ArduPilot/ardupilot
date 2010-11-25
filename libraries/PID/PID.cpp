@@ -132,6 +132,24 @@ PID::save_gains(int address)
 	eeprom_write_word((uint16_t *)	(address + 6), 	(int)_imax/100);
 }
 
+void
+PID::load_gains(float * gain_array)
+{
+	_kp 	= gain_array[0]/ 1000.0;
+	_ki 	= gain_array[1]/ 1000.0;
+	_kd 	= gain_array[2]/ 1000.0;
+	_imax 	= gain_array[3]/ 1000.0;
+}
+
+void
+PID::save_gains(float * gain_array)
+{
+	gain_array[0] = _kp * 1000;
+	gain_array[1] = _ki * 1000;
+	gain_array[2] = _kd * 1000;
+	gain_array[3] = _imax * 1000;
+}
+
 /*
 float
 read_EE_compressed_float(int address, byte places)

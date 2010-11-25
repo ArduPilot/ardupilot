@@ -13,6 +13,8 @@ public:
 	void	reset_I();
 	void 	load_gains(int address);
 	void 	save_gains(int address);
+	void 	load_gains(float * gain_array);
+	void 	save_gains(float * gain_array);
 	void 	set_P(float p);
 	void 	set_I(float i);
 	void 	set_D(float d);
