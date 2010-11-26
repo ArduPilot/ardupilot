@@ -3,6 +3,7 @@
 /// @file	PID.cpp
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
+#include <math.h>
 #include "PID.h"
 
 long
@@ -37,7 +38,11 @@ PID::get_pid(long error, long dt, float scaler)
 	// Compute integral component if time has elapsed
 	if (_ki && (dt > 0)) {
 		_integrator 		+= (error * _ki) * scaler * delta_time; 
-		_integrator 		= constrain(_integrator, -_imax, _imax);
+		if (_integrator < -_imax) {
+			_integrator = -_imax;
+		} else if (_integrator > _imax) {
+			_integrator = _imax;
+		}
 		output 				+= _integrator;
 	}
 	
@@ -45,11 +50,9 @@ PID::get_pid(long error, long dt, float scaler)
 }
 
 void
-PID::reset_I(void)
+PID::imax(float v)
 {
-	_integrator = 0;
-	_last_error = 0;
-	_last_error_derivative = 0;
+	_imax = fabs(v); 
 }
 
 void
