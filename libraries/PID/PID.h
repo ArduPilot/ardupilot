@@ -50,7 +50,7 @@ public:
 	///
 	/// @returns		The updated control output.
 	///
-	long 	get_pid(long err, long dt, float scaler);
+	long 	get_pid(long err, long dt, float scaler=1);
 
 	/// Reset the PID integrator
 	///
