@@ -4,6 +4,8 @@
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
 #include <math.h>
+#include <avr/eeprom.h>
+
 #include "PID.h"
 
 long

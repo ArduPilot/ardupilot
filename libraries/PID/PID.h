@@ -7,7 +7,6 @@
 #define PID_h
 
 #include <stdint.h>
-#include <avr/eeprom.h>
 
 /// @class	PID
 /// @brief	Object managing one PID control
