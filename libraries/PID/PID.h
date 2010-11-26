@@ -1,52 +1,100 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
+/// @file	PID.h
+/// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
+
 #ifndef PID_h
 #define PID_h
 
+#include <stdint.h>
 #include <avr/eeprom.h>
-#include "WProgram.h"
 
-//#define PID_SIZE 8
-
+/// @class	PID
+/// @brief	Object managing one PID control
 class PID {
 public:
-	// note, if using the eeprom load_gains/save_gains functions
-	// it is not necessary to pass a gain_array pointer, instead
-	// you need to pass address to load_gains/ save_gains functions
-	PID(float * gain_array = 0);
-	long 	get_pid(long err, long dt, float scaler);
-	void	reset_I();
-	void 	load_gains(int address);
-	void 	save_gains(int address);
-	void 	load_gains();
-	void 	save_gains();
-	void 	set_P(float p);
-	void 	set_I(float i);
-	void 	set_D(float d);
-	void 	set_imax(int imax);
-	void 	test(void);
+	/// Constructor
+	///
+	/// @param address	EEPROM base address at which PID parameters
+	///					are stored.  Zero if the PID does not support
+	///					save/restore.
+	///
+	PID(uint16_t address = 0) :
+		_gain_array(0),
+		_address(address),
+		_integrator(0),
+		_last_error(0),
+		_last_error_derivative(0)
+	{}
 
-	float 	get_P(void);
-	float 	get_I(void);
-	float 	get_D(void);
-	int 	get_imax(void);
-	float _imax;		// integrator max
-	float _integrator;	// integrator value
-	float _last_error;	// last error for derivative
-	float _kp;
-	float _ki;
-	float _kd;
-	
+	/// Constructor
+	///
+	/// @param gain_array	Address of an array of floats from which
+	///						gains will be loaded and to which they
+	///						are saved.
+	///
+	PID(float *gain_array) :
+		_gain_array(gain_array),
+		_address(0),
+		_integrator(0),
+		_last_error(0),
+		_last_error_derivative(0)
+	{}
+
+	/// Iterate the PID, return the new control value
+	///
+	/// Positive error produces positive output.
+	///
+	/// @param err		The measured error value
+	/// @param dt		The time delta in milliseconds
+	/// @param scaler	An arbitrary scale factor
+	///
+	/// @returns		The updated control output.
+	///
+	long 	get_pid(long err, long dt, float scaler);
+
+	/// Reset the PID integrator
+	///
+	void	reset_I() { _integrator = 0; _last_error = 0; }
+
+	/// Load gain properties
+	///
+	void 	load_gains();
+
+	/// Save gain properties
+	///
+	void 	save_gains();
+
+	/// @name	parameter accessors
+	//@{
+	float	 kP()	{ return _kp; }
+	float	&kP()	{ return _kp; }
+	float	 kI()	{ return _ki; }
+	float	&kI()	{ return _kd; }
+	float	 kD()	{ return _kd; }
+	float	&kD()	{ return _kd; }
+	float	 imax()	{ return _imax; }
+	float	&imax()	{ return _imax; }
+	//@}
 
 private:
-	// low pass filter cut frequency
-	// for derivative calculation,
-	// set to 20 Hz becasue anything over that
-	// is probably noise, see
-	// http://en.wikipedia.org/wiki/Low-pass_filter
-	static uint8_t RC = 20; 
-	
-	// pointer to the gains for this pid,
-	// if not using eeprom save/load
-	float * gain_array; 
+	uint16_t	_address		///< EEPROM address for save/restore of P/I/D
+	float		*_gain_array; 	///< pointer to the gains for this pid
+
+	float		_kp;			///< proportional gain
+	float		_ki;			///< integral gain
+	float		_kd;			///< derivative gain
+	float		_imax;			///< integrator magnitude clamp
+
+	float		_integrator;	///< integrator value
+	int32_t		_last_error;	///< last error for derivative
+
+	/// low pass filter cut frequency
+	/// for derivative calculation,
+	/// set to 20 Hz becasue anything over that
+	/// is probably noise, see
+	/// http://en.wikipedia.org/wiki/Low-pass_filter
+	static uint8_t _RC = 20; 
 };
 
 #endif

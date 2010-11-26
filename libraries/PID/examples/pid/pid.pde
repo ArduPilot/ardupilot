@@ -20,10 +20,10 @@ void setup()
 	//rc.trim();
 	radio_trim = APM_RC.InputCh(0);
 
-	pid.set_P(1);
-	pid.set_I(0);
-	pid.set_D(.5);
-	pid.set_imax(50);
+	pid.kP() = 1;
+	pid.kI() = 0;
+	pid.kD() = 0.5;
+	pid.imax() = 50;
 }
 
 void loop()
