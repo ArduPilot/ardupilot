@@ -66,10 +66,10 @@ PID::load_gains()
 		_kd 	= (float)(eeprom_read_word((uint16_t *)	(_address + 4))) / 1000.0;
 		_imax 	= eeprom_read_word((uint16_t *)	(_address + 6)) * 100;
 	} else {
-		_kp 	= _gain_array[0]/ 1000.0;
-		_ki 	= _gain_array[1]/ 1000.0;
-		_kd 	= _gain_array[2]/ 1000.0;
-		_imax 	= _gain_array[3]/ 1000.0;
+		_kp 	= _gain_array[0];
+		_ki 	= _gain_array[1];
+		_kd 	= _gain_array[2];
+		_imax 	= _gain_array[3];
 	}
 }
 
@@ -82,10 +82,10 @@ PID::save_gains()
 		eeprom_write_word((uint16_t *)	(_address + 4), (int)(_kd * 1000));
 		eeprom_write_word((uint16_t *)	(_address + 6), (int)_imax/100);
 	} else {
-		_gain_array[0] = _kp * 1000;
-		_gain_array[1] = _ki * 1000;
-		_gain_array[2] = _kd * 1000;
-		_gain_array[3] = _imax * 1000;
+		_gain_array[0] = _kp;
+		_gain_array[1] = _ki;
+		_gain_array[2] = _kd;
+		_gain_array[3] = _imax;
 	}
 }
 
