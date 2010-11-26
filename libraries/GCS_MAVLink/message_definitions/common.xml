@@ -8,7 +8,7 @@
    </message>
  
    <message name="BOOT" id="1">
-	<description>The boot message indicates that a system is starting. The onboard software version allows to keep track of onboard soft/firmware revisions.</description>
+    <description>The boot message indicates that a system is starting. The onboard software version allows to keep track of onboard soft/firmware revisions.</description>
      <field name="version" type="uint32_t">The onboard software version</field>
    </message>
 
@@ -26,14 +26,14 @@
    </message>
 
    <message name="ACTION" id="10">
-	<description>An action message allows to execute a certain onboard action. These include liftoff, land, storing parameters too EEPROM, shutddown, etc. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
+    <description>An action message allows to execute a certain onboard action. These include liftoff, land, storing parameters too EEPROM, shutddown, etc. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
      <field name="target" type="uint8_t">The system executing the action</field>
      <field name="target_component" type="uint8_t">The component executing the action</field>
      <field name="action" type="uint8_t">The action id</field>
    </message>
 
    <message name="ACTION_ACK" id="62">
-	<description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
+    <description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
      <field name="action" type="uint8_t">The action id</field>
      <field name="result" type="uint8_t">0: Action DENIED, 1: Action executed</field>
    </message>
@@ -86,9 +86,9 @@
      <field name="xacc"  type="int16_t">X acceleration (mg raw)</field>
      <field name="yacc"  type="int16_t">Y acceleration (mg raw)</field>
      <field name="zacc"  type="int16_t">Z acceleration (mg raw)</field>
-     <field name="xgyro" type="uint16_t">Angular speed around X axis (adc units)</field>
-     <field name="ygyro" type="uint16_t">Angular speed around Y axis (adc units)</field>
-     <field name="zgyro" type="uint16_t">Angular speed around Z axis (adc units)</field>
+     <field name="xgyro" type="int16_t">Angular speed around X axis (millirad /sec)</field>
+     <field name="ygyro" type="int16_t">Angular speed around Y axis (millirad /sec)</field>
+     <field name="zgyro" type="int16_t">Angular speed around Z axis (millirad /sec)</field>
      <field name="xmag"  type="int16_t">X Magnetic field (milli tesla)</field>
      <field name="ymag"  type="int16_t">Y Magnetic field (milli tesla)</field>
      <field name="zmag"  type="int16_t">Z Magnetic field (milli tesla)</field>

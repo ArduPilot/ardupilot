@@ -8,9 +8,9 @@ typedef struct __mavlink_raw_imu_t
 	int16_t xacc; ///< X acceleration (mg raw)
 	int16_t yacc; ///< Y acceleration (mg raw)
 	int16_t zacc; ///< Z acceleration (mg raw)
-	uint16_t xgyro; ///< Angular speed around X axis (adc units)
-	uint16_t ygyro; ///< Angular speed around Y axis (adc units)
-	uint16_t zgyro; ///< Angular speed around Z axis (adc units)
+	int16_t xgyro; ///< Angular speed around X axis (millirad /sec)
+	int16_t ygyro; ///< Angular speed around Y axis (millirad /sec)
+	int16_t zgyro; ///< Angular speed around Z axis (millirad /sec)
 	int16_t xmag; ///< X Magnetic field (milli tesla)
 	int16_t ymag; ///< Y Magnetic field (milli tesla)
 	int16_t zmag; ///< Z Magnetic field (milli tesla)
@@ -26,15 +26,15 @@ typedef struct __mavlink_raw_imu_t
  * @param xacc X acceleration (mg raw)
  * @param yacc Y acceleration (mg raw)
  * @param zacc Z acceleration (mg raw)
- * @param xgyro Angular speed around X axis (adc units)
- * @param ygyro Angular speed around Y axis (adc units)
- * @param zgyro Angular speed around Z axis (adc units)
+ * @param xgyro Angular speed around X axis (millirad /sec)
+ * @param ygyro Angular speed around Y axis (millirad /sec)
+ * @param zgyro Angular speed around Z axis (millirad /sec)
  * @param xmag X Magnetic field (milli tesla)
  * @param ymag Y Magnetic field (milli tesla)
  * @param zmag Z Magnetic field (milli tesla)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_raw_imu_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t usec, int16_t xacc, int16_t yacc, int16_t zacc, uint16_t xgyro, uint16_t ygyro, uint16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag)
+static inline uint16_t mavlink_msg_raw_imu_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t usec, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_RAW_IMU;
@@ -43,9 +43,9 @@ static inline uint16_t mavlink_msg_raw_imu_pack(uint8_t system_id, uint8_t compo
 	i += put_int16_t_by_index(xacc, i, msg->payload); //X acceleration (mg raw)
 	i += put_int16_t_by_index(yacc, i, msg->payload); //Y acceleration (mg raw)
 	i += put_int16_t_by_index(zacc, i, msg->payload); //Z acceleration (mg raw)
-	i += put_uint16_t_by_index(xgyro, i, msg->payload); //Angular speed around X axis (adc units)
-	i += put_uint16_t_by_index(ygyro, i, msg->payload); //Angular speed around Y axis (adc units)
-	i += put_uint16_t_by_index(zgyro, i, msg->payload); //Angular speed around Z axis (adc units)
+	i += put_int16_t_by_index(xgyro, i, msg->payload); //Angular speed around X axis (millirad /sec)
+	i += put_int16_t_by_index(ygyro, i, msg->payload); //Angular speed around Y axis (millirad /sec)
+	i += put_int16_t_by_index(zgyro, i, msg->payload); //Angular speed around Z axis (millirad /sec)
 	i += put_int16_t_by_index(xmag, i, msg->payload); //X Magnetic field (milli tesla)
 	i += put_int16_t_by_index(ymag, i, msg->payload); //Y Magnetic field (milli tesla)
 	i += put_int16_t_by_index(zmag, i, msg->payload); //Z Magnetic field (milli tesla)
@@ -60,7 +60,7 @@ static inline uint16_t mavlink_msg_raw_imu_encode(uint8_t system_id, uint8_t com
 
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_raw_imu_send(mavlink_channel_t chan, uint64_t usec, int16_t xacc, int16_t yacc, int16_t zacc, uint16_t xgyro, uint16_t ygyro, uint16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag)
+static inline void mavlink_msg_raw_imu_send(mavlink_channel_t chan, uint64_t usec, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag)
 {
 	mavlink_message_t msg;
 	mavlink_msg_raw_imu_pack(mavlink_system.sysid, mavlink_system.compid, &msg, usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag);
@@ -131,40 +131,40 @@ static inline int16_t mavlink_msg_raw_imu_get_zacc(const mavlink_message_t* msg)
 /**
  * @brief Get field xgyro from raw_imu message
  *
- * @return Angular speed around X axis (adc units)
+ * @return Angular speed around X axis (millirad /sec)
  */
-static inline uint16_t mavlink_msg_raw_imu_get_xgyro(const mavlink_message_t* msg)
+static inline int16_t mavlink_msg_raw_imu_get_xgyro(const mavlink_message_t* msg)
 {
 	generic_16bit r;
 	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
 	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
-	return (uint16_t)r.s;
+	return (int16_t)r.s;
 }
 
 /**
  * @brief Get field ygyro from raw_imu message
  *
- * @return Angular speed around Y axis (adc units)
+ * @return Angular speed around Y axis (millirad /sec)
  */
-static inline uint16_t mavlink_msg_raw_imu_get_ygyro(const mavlink_message_t* msg)
+static inline int16_t mavlink_msg_raw_imu_get_ygyro(const mavlink_message_t* msg)
 {
 	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t))[0];
-	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t))[1];
-	return (uint16_t)r.s;
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
+	return (int16_t)r.s;
 }
 
 /**
  * @brief Get field zgyro from raw_imu message
  *
- * @return Angular speed around Z axis (adc units)
+ * @return Angular speed around Z axis (millirad /sec)
  */
-static inline uint16_t mavlink_msg_raw_imu_get_zgyro(const mavlink_message_t* msg)
+static inline int16_t mavlink_msg_raw_imu_get_zgyro(const mavlink_message_t* msg)
 {
 	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t))[0];
-	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t))[1];
-	return (uint16_t)r.s;
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
+	return (int16_t)r.s;
 }
 
 /**
@@ -175,8 +175,8 @@ static inline uint16_t mavlink_msg_raw_imu_get_zgyro(const mavlink_message_t* ms
 static inline int16_t mavlink_msg_raw_imu_get_xmag(const mavlink_message_t* msg)
 {
 	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t))[0];
-	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
 	return (int16_t)r.s;
 }
 
@@ -188,8 +188,8 @@ static inline int16_t mavlink_msg_raw_imu_get_xmag(const mavlink_message_t* msg)
 static inline int16_t mavlink_msg_raw_imu_get_ymag(const mavlink_message_t* msg)
 {
 	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(int16_t))[0];
-	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(int16_t))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
 	return (int16_t)r.s;
 }
 
@@ -201,8 +201,8 @@ static inline int16_t mavlink_msg_raw_imu_get_ymag(const mavlink_message_t* msg)
 static inline int16_t mavlink_msg_raw_imu_get_zmag(const mavlink_message_t* msg)
 {
 	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
-	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(uint16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[1];
 	return (int16_t)r.s;
 }
 
