@@ -21,7 +21,7 @@ PID::get_pid(long error, long dt, float scaler)
 		// discrete low pass filter, cuts out the 
 		// high frequency noise that can drive the controller crazy
 		derivative = _last_derivative + 
-			((delta_time / (RC + delta_time)) * (derivative - _last_derivative));
+			((delta_time / (_RC + delta_time)) * (derivative - _last_derivative));
 
 		// update state
 		_last_error 		= error;

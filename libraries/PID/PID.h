@@ -67,14 +67,15 @@ public:
 
 	/// @name	parameter accessors
 	//@{
-	float	 kP()	{ return _kp; }
-	float	&kP()	{ return _kp; }
-	float	 kI()	{ return _ki; }
-	float	&kI()	{ return _kd; }
-	float	 kD()	{ return _kd; }
-	float	&kD()	{ return _kd; }
-	float	 imax()	{ return _imax; }
-	float	&imax()	{ return _imax; }
+	float	kP()			{ return _kp; }
+	float	kI()			{ return _ki; }
+	float	kD()			{ return _kd; }
+	float	imax()			{ return _imax; }
+
+	void	kP(float v)		{ _kp = v; }
+	void	kI(float v)		{ _ki = v; }
+	void	kD(float v)		{ _kd = v; }
+	void	imax(float v)	{ _imax = v; }
 	//@}
 
 private:
