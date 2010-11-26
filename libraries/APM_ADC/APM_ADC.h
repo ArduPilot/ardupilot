@@ -26,8 +26,8 @@ class APM_ADC_HIL_Class
 	APM_ADC_HIL_Class();  // Constructor
 	void Init();
 	int Ch(unsigned char ch_num);     
-	int setHIL(float p, float q, float r, float gyroTemp,
-            float aX, float aY, float aZ, float diffPress);     
+	int setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
+            int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress);     
 };
 
 #endif

@@ -162,10 +162,10 @@ int APM_ADC_HIL_Class::Ch(unsigned char ch_num)
 }
 
 // Set one channel value
-int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
-    float aX, float aY, float aZ, float diffPress)
+int APM_ADC_HIL_Class::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
+    int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress)
 {
-    static const float adcPerG = 418;
+    static const uint16_t adcPerG = 418;
     static const float gyroGainX = 0.4;
     static const float gyroGainY = 0.41;
     static const float gyroGainZ = 0.41;
@@ -177,12 +177,12 @@ int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
     // TODO: map temp and press to raw
     
     // gyros
-    /* 0 */ adc_value[sensors[0]] = SENSOR_SIGN[0]* p/(gyroGainX*deg2rad) + 1665; // note apm says 1,2,0 gyro order, but 
-    /* 1 */ adc_value[sensors[1]] = SENSOR_SIGN[1]* q/(gyroGainY*deg2rad) + 1665; // this says 0,1,2
-    /* 2 */ adc_value[sensors[2]] = SENSOR_SIGN[2]* r/(gyroGainZ*deg2rad) + 1665;
+    /* 0 */ adc_value[sensors[0]] = SENSOR_SIGN[0]* p/(gyroGainX*deg2rad*1000) + 1665; // note apm says 1,2,0 gyro order, but 
+    /* 1 */ adc_value[sensors[1]] = SENSOR_SIGN[1]* q/(gyroGainY*deg2rad*1000) + 1665; // this says 0,1,2
+    /* 2 */ adc_value[sensors[2]] = SENSOR_SIGN[2]* r/(gyroGainZ*deg2rad*1000) + 1665;
 
     // gyro temp
-    /* 3 */ adc_value[3] = SENSOR_SIGN[3]* 0; //gyroTemp; 
+    /* 3 */ adc_value[3] = SENSOR_SIGN[3]* gyroTemp; //gyroTemp XXX: fix scaling; 
 
     // accelerometers
     /* 4 */ adc_value[sensors[3]] = SENSOR_SIGN[4]* (aX*adcPerG)/1.0e3 + 2025;
@@ -190,5 +190,5 @@ int APM_ADC_HIL_Class::setHIL(float p, float q, float r, float gyroTemp,
     /* 6 */ adc_value[sensors[5]] = SENSOR_SIGN[6]* (aZ*adcPerG)/1.0e3 + 2025;
 
     // differential pressure
-    /* 7 */ adc_value[7] = SENSOR_SIGN[7]* 0; //diffPress;
+    /* 7 */ adc_value[7] = SENSOR_SIGN[7]* diffPress; //diffPress XXX: fix scaling;
 }
