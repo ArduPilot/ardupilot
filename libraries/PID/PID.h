@@ -44,13 +44,16 @@ public:
 	///
 	/// Positive error produces positive output.
 	///
-	/// @param err		The measured error value
-	/// @param dt		The time delta in milliseconds
+	/// @param error	The measured error value
+	/// @param dt		The time delta in milliseconds (note
+	///					that update interval cannot be more
+	///					than 65.535 seconds due to limited range
+	///					of the data type).
 	/// @param scaler	An arbitrary scale factor
 	///
 	/// @returns		The updated control output.
 	///
-	long 	get_pid(long err, long dt, float scaler=1);
+	long 	get_pid(int32_t error, uint16_t dt, float scaler = 1.0);
 
 	/// Reset the PID integrator
 	///
@@ -94,11 +97,11 @@ private:
 	int32_t		_last_error;	///< last error for derivative
 	float		_last_derivative; ///< last derivative for low-pass filter
 
-	/// low pass filter cut frequency
-	/// for derivative calculation,
-	/// set to 20 Hz becasue anything over that
-	/// is probably noise, see
-	/// http://en.wikipedia.org/wiki/Low-pass_filter
+	/// Low pass filter cut frequency for derivative calculation.
+	///
+	/// 20 Hz becasue anything over that is probably noise, see
+	/// http://en.wikipedia.org/wiki/Low-pass_filter.
+	///
 	static const uint8_t _RC = 20; 
 };
 

@@ -9,7 +9,7 @@
 #include "PID.h"
 
 long
-PID::get_pid(long error, long dt, float scaler)
+PID::get_pid(int32_t error, uint16_t dt, float scaler)
 {
 	float output		= 0;
  	float delta_time	= (float)dt / 1000;
