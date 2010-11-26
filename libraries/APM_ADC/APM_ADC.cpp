@@ -191,4 +191,7 @@ int APM_ADC_HIL_Class::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
 
     // differential pressure
     /* 7 */ adc_value[7] = SENSOR_SIGN[7]* diffPress; //diffPress XXX: fix scaling;
+
+	// set count as 1 so no averaging occurs
+	for (int i=0;i<7;i++) adc_counter[i] = 1;
 }
