@@ -8,13 +8,16 @@
 
 class PID {
 public:
-	PID();
+	// note, if using the eeprom load_gains/save_gains functions
+	// it is not necessary to pass a gain_array pointer, instead
+	// you need to pass address to load_gains/ save_gains functions
+	PID(float * gain_array = 0);
 	long 	get_pid(long err, long dt, float scaler);
 	void	reset_I();
 	void 	load_gains(int address);
 	void 	save_gains(int address);
-	void 	load_gains(float * gain_array);
-	void 	save_gains(float * gain_array);
+	void 	load_gains();
+	void 	save_gains();
 	void 	set_P(float p);
 	void 	set_I(float i);
 	void 	set_D(float d);
@@ -34,12 +37,16 @@ public:
 	
 
 private:
-	static uint8_t RC = 20; // low pass filter cut frequency
+	// low pass filter cut frequency
 	// for derivative calculation,
 	// set to 20 Hz becasue anything over that
 	// is probably noise, see
 	// http://en.wikipedia.org/wiki/Low-pass_filter
-
+	static uint8_t RC = 20; 
+	
+	// pointer to the gains for this pid,
+	// if not using eeprom save/load
+	float * gain_array; 
 };
 
 #endif

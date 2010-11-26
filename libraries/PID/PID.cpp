@@ -1,8 +1,8 @@
 #include "PID.h"
 
-PID::PID()
+PID::PID(float * _gain_array) :
+	gain_array(_gain_array)
 {
-
 }
 
 long
@@ -18,7 +18,7 @@ PID::get_pid(long err, long dt, float scaler)
 		output 				+= (_kp * error);
 	}
 
-	if(_kd != 0){
+	if(_kd != 0 && dt > 0){
 		// Compute derivative component
 		//derivative = (error - previous_error)/delta_time
 		float derivative 	= (error - _last_error) / delta_time;
@@ -39,7 +39,7 @@ PID::get_pid(long err, long dt, float scaler)
 	output *= scaler;
 	
 	// Compute integral component
-	if(_ki != 0){
+	if(_ki != 0 && dt > 0){
 		_integrator 		+= (error * _ki) * scaler * delta_time; 
 		_integrator 		= constrain(_integrator, -_imax, _imax);
 		output 				+= _integrator;
@@ -133,7 +133,7 @@ PID::save_gains(int address)
 }
 
 void
-PID::load_gains(float * gain_array)
+PID::load_gains()
 {
 	_kp 	= gain_array[0]/ 1000.0;
 	_ki 	= gain_array[1]/ 1000.0;
@@ -142,7 +142,7 @@ PID::load_gains(float * gain_array)
 }
 
 void
-PID::save_gains(float * gain_array)
+PID::save_gains()
 {
 	gain_array[0] = _kp * 1000;
 	gain_array[1] = _ki * 1000;
