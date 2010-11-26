@@ -165,6 +165,11 @@ printm(const char *l, Matrix3f &m)
 	Serial.print(*(uint32_t *)&(m.c.x), HEX); Serial.print(" "); Serial.print(*(uint32_t *)&(m.c.y), HEX); Serial.print(" ");  Serial.println(*(uint32_t *)&(m.c.z), HEX);
 }
 */
+
+/**************************************************/
+AP_IMU *
+AP_DCM_FW::get_imu(void)
+{	return &_imu;}
  
 /**************************************************/
 void 

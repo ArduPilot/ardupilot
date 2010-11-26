@@ -28,6 +28,7 @@ public:
 	Vector3f	get_gyros(void);
 	Vector3f	get_accels(void);
 	Matrix3f	get_dcm_matrix(void);
+	AP_IMU * get_imu(void);
 	
 	// Methods
 	void	quick_init(uint16_t *_offset_address);
