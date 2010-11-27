@@ -142,9 +142,9 @@ AP_DCM_FW::matrix_update(float _G_Dt)
 	Matrix3f	temp_matrix;
 	
 	//Record when you saturate any of the gyros.
-	if((abs(_gyro_vector.x) >= radians(300)) || 
-	   (abs(_gyro_vector.y) >= radians(300)) || 
-	   (abs(_gyro_vector.z) >= radians(300)))
+	if((fabs(_gyro_vector.x) >= radians(300)) || 
+	   (fabs(_gyro_vector.y) >= radians(300)) || 
+	   (fabs(_gyro_vector.z) >= radians(300)))
 		gyro_sat_count++;
 
 	_omega_integ_corr = _gyro_vector + _omega_I;		// Used for centrep correction (theoretically better than _omega)
@@ -280,7 +280,7 @@ AP_DCM_FW::drift_correction(void)
 
 	// Dynamic weighting of accelerometer info (reliability filter)
 	// Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-	accel_weight = constrain(1 - 2 * abs(1 - accel_magnitude), 0, 1);	//	
+	accel_weight = constrain(1 - 2 * fabs(1 - accel_magnitude), 0, 1);	//	
 	
 	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
 	imu_health = imu_health + 0.02 * (accel_weight-.5);
