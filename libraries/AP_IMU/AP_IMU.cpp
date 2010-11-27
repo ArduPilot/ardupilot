@@ -1,5 +1,5 @@
 /*
-	APM_IMU.cpp - IMU Sensor Library for Ardupilot Mega
+	AP_IMU.cpp - IMU Sensor Library for Ardupilot Mega
 		Code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
 
 	This library works with the ArduPilot Mega and "Oilpan"
@@ -54,12 +54,10 @@ const float   AP_IMU::_gyro_temp_curve[3][3] = {
 	{1665,0,0}
 };	// To Do - make additional constructors to pass this in.
 
-// Someone is responsible for providing an APM_ADC instance.
-extern APM_ADC_Class	APM_ADC;
-
 // Constructors ////////////////////////////////////////////////////////////////
 
-AP_IMU::AP_IMU(void)
+AP_IMU::AP_IMU(AP_ADC * adc)
+	: _adc(adc)
 {
 }
 
@@ -81,7 +79,7 @@ AP_IMU::read_offsets(void)
 	
 	float temp;
 	int flashcount = 0;
-	int tc_temp = APM_ADC.Ch(_gyro_temp_ch);
+	int tc_temp = _adc->Ch(_gyro_temp_ch);
  	delay(500);
  	
 	for(int c = 0; c < 200; c++)
@@ -90,7 +88,7 @@ AP_IMU::read_offsets(void)
 		digitalWrite(C_LED_PIN, HIGH);
 		delay(20);
 		for (int i = 0; i < 6; i++) 
-			_adc_in[i] = APM_ADC.Ch(_sensors[i]);
+			_adc_in[i] = _adc->Ch(_sensors[i]);
 		digitalWrite(C_LED_PIN, LOW);
 		digitalWrite(A_LED_PIN, HIGH);
 		delay(20);
@@ -98,7 +96,7 @@ AP_IMU::read_offsets(void)
 
 	for(int i = 0; i < 200; i++){		// We take some readings...
 		for (int j = 0; j < 6; j++) {
-			_adc_in[j] = APM_ADC.Ch(_sensors[j]);
+			_adc_in[j] = _adc->Ch(_sensors[j]);
 			if (j < 3) {	
 				_adc_in[j] -= gyro_temp_comp(j, tc_temp);		// Subtract temp compensated typical gyro bias
 			} else {
@@ -171,10 +169,10 @@ AP_IMU::gyro_temp_comp(int i, int temp) const
 Vector3f
 AP_IMU::get_gyro(void)
 {	
-	int tc_temp = APM_ADC.Ch(_gyro_temp_ch);
+	int tc_temp = _adc->Ch(_gyro_temp_ch);
 	
 	for (int i = 0; i < 3; i++) {
-		_adc_in[i] = APM_ADC.Ch(_sensors[i]);
+		_adc_in[i] = _adc->Ch(_sensors[i]);
 		_adc_in[i] -= gyro_temp_comp(i,tc_temp);		// Subtract temp compensated typical gyro bias
 		if (_sensor_signs[i] < 0)
 			_adc_in[i] = (_adc_offset[i] - _adc_in[i]);
@@ -199,7 +197,7 @@ Vector3f
 AP_IMU::get_accel(void)
 {	
 	for (int i = 3; i < 6; i++) {
-		_adc_in[i] = APM_ADC.Ch(_sensors[i]);
+		_adc_in[i] = _adc->Ch(_sensors[i]);
 		_adc_in[i] -= 2025;								// Subtract typical accel bias
 		if (_sensor_signs[i] < 0)
 			_adc_in[i] = (_adc_offset[i] - _adc_in[i]);

@@ -5,7 +5,7 @@
 #include <AP_Math.h>
 #include <inttypes.h>
 #include "WProgram.h"
-#include <APM_ADC.h>
+#include <AP_ADC.h>
 #include <avr/eeprom.h>
 
 
@@ -13,7 +13,7 @@ class AP_IMU
 {
 public:
 	// Constructors
-	AP_IMU();									// Default Constructor
+	AP_IMU(AP_ADC * adc);									// Default Constructor
 	
 	// Methods
 	void		quick_init(uint16_t *_offset_address);				// For air start
@@ -37,6 +37,7 @@ private:
 	float 		_adc_offset[6]; 			// Array that store the Offset of the gyros and accelerometers
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
+	AP_ADC * 	_adc; 						// Analog to digital converter pointer
 
 	// constants
 	static const uint8_t	_sensors[6];
