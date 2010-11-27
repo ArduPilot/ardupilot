@@ -28,7 +28,7 @@
 /* Mounting position : RC connectors pointing backwards                   */
 /* This code use this libraries :                                         */
 /*   APM_RC : Radio library (with InstantPWM)                             */
-/*   APM_ADC : External ADC library                                       */
+/*   AP_ADC : External ADC library                                       */
 /*   DataFlash : DataFlash log library                                    */
 /*   APM_BMP085 : BMP085 barometer library                                */
 /*   APM_Compass : HMC5843 compass library [optional]                     */
@@ -164,7 +164,7 @@
 #include <avr/pgmspace.h>
 #include <math.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
-#include <APM_ADC.h>		// ArduPilot Mega Analog to Digital Converter Library 
+#include <AP_ADC.h>		// ArduPilot Mega Analog to Digital Converter Library 
 #include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library 
 #include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
 #include <APM_Compass.h>	// ArduPilot Mega Magnetometer Library
@@ -190,7 +190,7 @@
 #define VER 1.52    // Current software version (only numeric values)
 
 // Sensors - declare one global instance
-APM_ADC_Class		APM_ADC;
+AP_ADC_ADS7844		adc;
 APM_BMP085_Class	APM_BMP085;
 APM_Compass_Class	APM_Compass;
 
@@ -231,7 +231,7 @@ void setup() {
 /* ************** MAIN PROGRAM - MAIN LOOP ******************** */
 /* ************************************************************ */
 
-// Sensor reading loop is inside APM_ADC and runs at 400Hz (based on Timer2 interrupt)
+// Sensor reading loop is inside AP_ADC and runs at 400Hz (based on Timer2 interrupt)
 
 // * fast rate loop => Main loop => 200Hz
 // read sensors

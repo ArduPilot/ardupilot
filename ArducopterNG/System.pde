@@ -79,7 +79,7 @@ void APM_Init() {
   // Wiggle LEDs while ESCs are rebooting  
   FullBlink(50,20);
 
-  APM_ADC.Init();            // APM ADC library initialization
+  adc.Init();            // APM ADC library initialization
   DataFlash.Init();          // DataFlash log initialization
 
 #ifdef IsGPS  

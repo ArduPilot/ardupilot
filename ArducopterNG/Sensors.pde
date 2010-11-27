@@ -32,7 +32,7 @@ void Read_adc_raw(void)
   //int temp;
   
   for (int i=0;i<6;i++)
-    AN[i] = APM_ADC.Ch(sensors[i]);
+    AN[i] = adc.Ch(sensors[i]);
 }
 
 // Returns an analog value with the offset

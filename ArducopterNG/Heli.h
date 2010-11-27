@@ -40,7 +40,7 @@ TODO:
 #include "WProgram.h"
 #include <Wire.h>
 #include <EEPROM.h>   // added by Randy
-#include <APM_ADC.h>                                   // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC.h>                                   // ArduPilot Mega Analog to Digital Converter Library
 #include <APM_RC.h>                                    // ArduPilot Mega RC Library
 #include <APM_Compass.h>                               // ArduPilot Mega Compass Library
 #include <DataFlash.h>                                 // ArduPilot Mega DataFlash Library.

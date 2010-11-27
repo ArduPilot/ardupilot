@@ -175,7 +175,7 @@ void CALIB_AccOffset() {
   uint8_t loopy;
   uint16_t xx = 0, xy = 0, xz = 0; 
 
-  APM_ADC.Init();            // APM ADC library initialization
+  adc.Init();            // APM ADC library initialization
 //  delay(250);                // Giving small moment before starting
 
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
@@ -195,11 +195,11 @@ void CALIB_AccOffset() {
     tab();
     SerPrln(xz += read_adc(5));
 */
-    SerPri(xx += APM_ADC.Ch(4));
+    SerPri(xx += adc.Ch(4));
     tab();
-    SerPri(xy += APM_ADC.Ch(5));
+    SerPri(xy += adc.Ch(5));
     tab();
-    SerPrln(xz += APM_ADC.Ch(3));
+    SerPrln(xz += adc.Ch(3));
 
 
 
