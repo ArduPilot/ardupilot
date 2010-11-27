@@ -100,6 +100,7 @@ public:
         virtual void    end(void);
         virtual int     available(void);
         virtual int     read(void);
+        virtual int     peek(void);
         virtual void    flush(void);
         virtual void    write(uint8_t c);
         using BetterStream::write;

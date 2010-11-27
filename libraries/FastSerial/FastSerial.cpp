@@ -209,6 +209,19 @@ FastSerial::read(void)
         return(c);
 }
 
+int
+FastSerial::peek(void)
+{
+
+        // if the head and tail are equal, the buffer is empty
+        if (!_open || (_rxBuffer->head == _rxBuffer->tail))
+                return(-1);
+
+        // pull character from tail
+        return(_rxBuffer->bytes[_rxBuffer->tail]);
+}
+
+
 void
 FastSerial::flush(void)
 {
