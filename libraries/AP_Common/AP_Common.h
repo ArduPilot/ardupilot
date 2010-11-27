@@ -16,8 +16,54 @@
 #define _AP_COMMON_H
 
 #include <stdint.h>
-
 #include "include/menu.h"		/// simple menu subsystem
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name	Warning control
+//@{
+//
+// Turn on/off warnings of interest.
+//
+// These warnings are normally suppressed by the Arduino IDE,
+// but with some minor hacks it's possible to have warnings
+// emitted.  This helps greatly when diagnosing subtle issues.
+//
+#pragma GCC diagnostic warning "-Wall"
+#pragma GCC diagnostic warning "-Wextra"
+#pragma GCC diagnostic warning "-Wlogical-op"
+#pragma GCC diagnostic ignored "-Wredundant-decls"
+
+// Make some dire warnings into errors
+//
+// Some warnings indicate questionable code; rather than let
+// these slide, we force them to become errors so that the
+// developer has to find a safer alternative.
+//
+#pragma GCC diagnostic error "-Wfloat-equal"
+
+// The following is strictly for type-checking arguments to printf_P calls
+// in conjunction with a suitably modified Arduino IDE; never define for
+// production as it generates bad code.
+//
+#if PRINTF_FORMAT_WARNING_DEBUG
+# undef PSTR
+# define PSTR(_x)		_x		// help the compiler with printf_P
+# define float double			// silence spurious format warnings for %f
+#else
+// This is a workaround for GCC bug c++/34734.
+//
+// The C++ compiler normally emits many spurious warnings for the use
+// of PSTR (even though it generates correct code).  This workaround
+// has an equivalent effect but avoids the warnings, which otherwise
+// make finding real issues difficult.
+//
+# undef PROGMEM 
+# define PROGMEM __attribute__(( section(".progmem.data") )) 
+# undef PSTR 
+# define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
+#endif
+
+//@}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Types
