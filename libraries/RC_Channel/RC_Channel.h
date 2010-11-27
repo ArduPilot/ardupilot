@@ -42,7 +42,9 @@ class RC_Channel
 	// value generated from PWM
 	int16_t 	control_in;
 	int8_t 		dead_zone; // used to keep noise down and create a dead zone.
-
+	
+	int			control_mix(float value);
+	
 	// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
 	int16_t 	servo_out;
 

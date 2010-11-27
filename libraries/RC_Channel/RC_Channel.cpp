@@ -63,6 +63,12 @@ RC_Channel::set_pwm(int pwm)
 	}
 }
 
+int
+RC_Channel::control_mix(float value)
+{
+	return (1 - abs(control_in / _high)) * value + control_in;
+}
+
 // are we below a threshold?
 boolean
 RC_Channel::get_failsafe(void)
