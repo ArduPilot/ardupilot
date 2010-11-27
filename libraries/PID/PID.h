@@ -20,10 +20,7 @@ public:
 	///
 	PID(uint16_t address = 0) :
 		_gain_array(0),
-		_address(address),
-		_integrator(0),
-		_last_error(0),
-		_last_derivative(0)
+		_address(address)
 	{}
 
 	/// Constructor
@@ -34,10 +31,7 @@ public:
 	///
 	PID(float *gain_array) :
 		_gain_array(gain_array),
-		_address(0),
-		_integrator(0),
-		_last_error(0),
-		_last_derivative(0)
+		_address(0)
 	{}
 
 	/// Iterate the PID, return the new control value
