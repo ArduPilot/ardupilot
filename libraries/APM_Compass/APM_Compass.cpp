@@ -115,9 +115,9 @@ bool APM_Compass_Class::Init(int initialiseWireLib)
 	  // calibrate
 	  if( abs(Mag_X) > 500 && abs(Mag_X) < 1000 && abs(Mag_Y) > 500 && abs(Mag_Y) < 1000 && abs(Mag_Z) > 500 && abs(Mag_Z) < 1000)
 	  {
-		  calibration[0] = abs(715.0 / Mag_X);
-		  calibration[1] = abs(715.0 / Mag_Y);
-		  calibration[2] = abs(715.0 / Mag_Z);
+		  calibration[0] = fabs(715.0 / Mag_X);
+		  calibration[1] = fabs(715.0 / Mag_Y);
+		  calibration[2] = fabs(715.0 / Mag_Z);
 		  
 		  // mark success
 		  success = 1;
@@ -269,9 +269,9 @@ bool APM_Compass_HIL_Class::Init(int initialiseWireLib)
 	  // calibrate
 	  if( abs(Mag_X) > 500 && abs(Mag_X) < 1000 && abs(Mag_Y) > 500 && abs(Mag_Y) < 1000 && abs(Mag_Z) > 500 && abs(Mag_Z) < 1000)
 	  {
-		  calibration[0] = abs(715.0 / Mag_X);
-		  calibration[1] = abs(715.0 / Mag_Y);
-		  calibration[2] = abs(715.0 / Mag_Z);
+		  calibration[0] = fabs(715.0 / Mag_X);
+		  calibration[1] = fabs(715.0 / Mag_Y);
+		  calibration[2] = fabs(715.0 / Mag_Z);
 		  
 		  // mark success
 		  success = 1;
