@@ -6,7 +6,7 @@
 #include <inttypes.h>
 #include "WProgram.h"
 #include <APM_Compass.h>
-#include <APM_ADC.h>
+#include <AP_ADC.h>
 #include <AP_GPS.h>
 #include <AP_IMU.h>
 
@@ -15,8 +15,8 @@ class AP_DCM_FW
 {
 public:
 	// Constructors
-	AP_DCM_FW(GPS *GPS);										// Constructor - no magnetometer
-	AP_DCM_FW(GPS *GPS, APM_Compass_Class *withCompass);		// Constructor for case with magnetometer
+	AP_DCM_FW(AP_ADC * adc, GPS *gps);										// Constructor - no magnetometer
+	AP_DCM_FW(AP_ADC * adc, GPS *gps, APM_Compass_Class *withCompass);		// Constructor for case with magnetometer
 	
 	// Accessors
 	Vector3f	get_gyros(void);

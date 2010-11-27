@@ -40,28 +40,28 @@
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-AP_DCM_FW::AP_DCM_FW(GPS *GPS) :
-	_gps(GPS),
+AP_DCM_FW::AP_DCM_FW(AP_ADC * adc, GPS *gps) :
+	_gps(gps),
 	_compass(0),
 	_dcm_matrix(1, 0, 0,
 				0, 1, 0,
 				0, 0, 1),
 	_course_over_ground_x(0),
-	_course_over_ground_y(1)
+	_course_over_ground_y(1),
+	_imu(adc)
 {
-	AP_IMU _imu();
 }
 
-AP_DCM_FW::AP_DCM_FW(GPS *GPS, APM_Compass_Class *withCompass) :
-	_gps(GPS),
+AP_DCM_FW::AP_DCM_FW(AP_ADC * adc, GPS *gps, APM_Compass_Class *withCompass) :
+	_gps(gps),
 	_compass(withCompass),
 	_dcm_matrix(1, 0, 0,
 				0, 1, 0,
 				0, 0, 1),
 	_course_over_ground_x(0),
-	_course_over_ground_y(1)
+	_course_over_ground_y(1),
+	_imu(adc)
 {
-	AP_IMU _imu();
 }
 
 /**************************************************/
