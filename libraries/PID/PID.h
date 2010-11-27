@@ -18,8 +18,7 @@ public:
 	///					are stored.  Zero if the PID does not support
 	///					save/restore.
 	///
-	PID(uint16_t address = 0) :
-		_gain_array(0),
+	PID(uint16_t address) :
 		_address(address)
 	{}
 
@@ -31,7 +30,7 @@ public:
 	///
 	PID(float *gain_array) :
 		_gain_array(gain_array),
-		_address(0)
+		_address(0)		// must init address to zero to have gain_array respected
 	{}
 
 	/// Iterate the PID, return the new control value
