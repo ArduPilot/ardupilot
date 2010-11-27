@@ -3,15 +3,15 @@
   Code by Jordi Muñoz and Jose Julio. DIYDrones.com
 */
 
-#include <APM_ADC.h> // ArduPilot Mega ADC Library
+#include <AP_ADC.h> // ArduPilot Mega ADC Library
 
 unsigned long timer;
 
-APM_ADC_Class APM_ADC;
+AP_ADC_ADS7844 adc;
 
 void setup()
 {  
-  APM_ADC.Init();   // APM ADC initialization
+  adc.Init();   // APM ADC initialization
   Serial.begin(57600);
   Serial.println("ArduPilot Mega ADC library test");
   delay(1000);
@@ -27,7 +27,7 @@ void loop()
     timer = millis();
     for (ch=0;ch<7;ch++)
       {
-      Serial.print(APM_ADC.Ch(ch));
+      Serial.print(adc.Ch(ch));
       Serial.print(",");
       }
     Serial.println();
