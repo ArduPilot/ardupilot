@@ -79,7 +79,7 @@ public:
 	bool	valid_read;		///< true if we have seen data from the GPS (use ::status instead)
 
 	// Debug support
-	bool	print_errors; 	///< if true, errors will be printed to stderr
+	bool	print_errors; 	///< deprecated
 
 protected:
 	Stream	*_port;				///< stream port the GPS is attached to
@@ -111,7 +111,10 @@ protected:
 	///
 	/// @param	fmt			printf-like format string
 	///
-	void	_error(const char *msg, ...);
+	/// @note deprecated as-is due to the difficulty of hooking up to a working
+	///       printf vs. the potential benefits
+	///
+	void	_error(const char *msg, ...) {};
 	
 };
 
