@@ -19,12 +19,6 @@ public:
 	AP_DCM_FW(GPS *GPS, APM_Compass_Class *withCompass);		// Constructor for case with magnetometer
 	
 	// Accessors
-	long	get_roll_sensor(void);				// Degrees * 100
-	long	get_pitch_sensor(void);				// Degrees * 100
-	long	get_yaw_sensor(void);				// Degrees * 100
-	float	get_roll(void);						// Radians
-	float	get_pitch(void);					// Radians
-	float	get_yaw(void);						// Radians
 	Vector3f	get_gyros(void);
 	Vector3f	get_accels(void);
 	Matrix3f	get_dcm_matrix(void);
@@ -36,6 +30,12 @@ public:
 	void	init(uint16_t *_offset_address);
 	void 	update_DCM(float _G_Dt);   
 
+	long		roll_sensor;					// Degrees * 100
+	long		pitch_sensor;					// Degrees * 100
+	long		yaw_sensor;						// Degrees * 100
+	float		roll;							// Radians
+	float		pitch;							// Radians
+	float		yaw;							// Radians
 	float 		imu_health;						//Metric based on accel gain deweighting
 	uint8_t 	gyro_sat_count;
 	uint8_t 	adc_constraints;
@@ -58,10 +58,6 @@ private:
 	GPS 		*_gps;
 	AP_IMU		_imu;
 
-	float 		_roll;						// radians
-	float 		_pitch;						// radians
-	float 		_yaw;						// radians
-	
 	Matrix3f	_dcm_matrix;
 
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector

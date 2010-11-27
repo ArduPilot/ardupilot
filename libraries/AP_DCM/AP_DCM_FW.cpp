@@ -13,12 +13,9 @@
                 quick_init()		: For air restart
                 init() 				: For ground start.  Calibrates the IMU
 				update_DCM(_G_Dt)	: Updates the AHRS by integrating the rotation matrix over time _G_Dt using the IMU object data
-				get_roll_sensor()	: Returns roll in degrees * 100
-				get_roll()			: Returns roll in radians
-				get_pitch_sensor()	: Returns pitch in degrees * 100
-				get_pitch()			: Returns pitch in radians
-				get_yaw_sensor()	: Returns yaw in degrees * 100
-				get_yaw()			: Returns yaw in radians
+				get_gyros()			: Returns gyro vector corrected for bias
+				get_accels()		: Returns accelerometer vector
+				get_dcm_matrix()	: Returns dcm matrix
 
 */
 #include <AP_DCM_FW.h>
@@ -101,40 +98,6 @@ AP_DCM_FW::init(uint16_t *_offset_address)
 	_imu.init(_offset_address);
 }
 
-
-/**************************************************/
-long
-AP_DCM_FW::get_roll_sensor(void)
-{	return degrees(_roll) * 100;}
-
-/**************************************************/
-long
-AP_DCM_FW::get_pitch_sensor(void)
-{	return degrees(_pitch) * 100;}
-
-/**************************************************/
-long
-AP_DCM_FW::get_yaw_sensor(void)
-{	
-	long yaw_sensor = degrees(_yaw) * 100;
-	if (yaw_sensor < 0)	yaw_sensor += 36000;
-	return yaw_sensor;
-}
-
-/**************************************************/
-float
-AP_DCM_FW::get_roll(void)
-{	return _roll;}
-
-/**************************************************/
-float
-AP_DCM_FW::get_pitch(void)
-{	return _pitch;}
-
-/**************************************************/
-float
-AP_DCM_FW::get_yaw(void)
-{	return _yaw;}
 
 /**************************************************/
 Vector3f
@@ -352,9 +315,9 @@ AP_DCM_FW::drift_correction(void)
 				float cos_psi_err, sin_psi_err;
 				// This is the case for when we first start moving and reset the DCM so that yaw matches the gps ground course
 				// This is just to get a reasonable estimate faster
-				_yaw = atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
-				cos_psi_err = cos(ToRad(_gps->ground_course/100.0) - _yaw);
-				sin_psi_err = sin(ToRad(_gps->ground_course/100.0) - _yaw);
+				yaw = atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+				cos_psi_err = cos(ToRad(_gps->ground_course/100.0) - yaw);
+				sin_psi_err = sin(ToRad(_gps->ground_course/100.0) - yaw);
 				// Rxx = cos psi err, Rxy = - sin psi err, Rxz = 0
 				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
 				// Rzx = Rzy = 0, Rzz = 1
@@ -398,14 +361,19 @@ void
 AP_DCM_FW::euler_angles(void)
 {
 	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
-	_roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
-	_pitch 		= asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
-	_yaw 			= 0;
+	roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
+	pitch 		= asin((_accel_vector.x) / (double)9.81); // asin(acc_x)
+	yaw 			= 0;
 	#else
-	_pitch 		= -asin(_dcm_matrix.c.x);
-	_roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
-	_yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
+	pitch 		= -asin(_dcm_matrix.c.x);
+	roll 		= atan2(_dcm_matrix.c.y, _dcm_matrix.c.z);
+	yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
 	#endif
+	
+	roll_sensor = degrees(roll) * 100;
+	pitch_sensor = degrees(pitch) * 100;
+	yaw_sensor = degrees(yaw) * 100;
+	if (yaw_sensor < 0)	yaw_sensor += 36000;
 
 }
 
