@@ -14,6 +14,14 @@ class PID {
 public:
 	/// Constructor
 	///
+	/// A PID constructed in this fashion does not support save/restore.
+	///
+	PID() :
+		_address(0)
+	{}
+
+	/// Constructor
+	///
 	/// @param address	EEPROM base address at which PID parameters
 	///					are stored.  Zero if the PID does not support
 	///					save/restore.
