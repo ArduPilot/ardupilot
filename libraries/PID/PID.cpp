@@ -8,6 +8,12 @@
 
 #include "PID.h"
 
+// make the gain array members a little easier to identify
+#define	_kp		_gain_array[0]
+#define	_ki		_gain_array[1]
+#define	_kd		_gain_array[2]
+#define	_imax	_gain_array[3]
+
 long
 PID::get_pid(int32_t error, uint16_t dt, float scaler)
 {
@@ -60,32 +66,24 @@ PID::imax(float v)
 void
 PID::load_gains()
 {
-	if (_address) {
+	if ((_gain_array == &_local_gains[0]) && (_address)) {
 		_kp 	= (float)(eeprom_read_word((uint16_t *)	 _address))      / 1000.0;
 		_ki 	= (float)(eeprom_read_word((uint16_t *)	(_address + 2))) / 1000.0;
 		_kd 	= (float)(eeprom_read_word((uint16_t *)	(_address + 4))) / 1000.0;
 		_imax 	= eeprom_read_word((uint16_t *)	(_address + 6)) * 100;
-	} else {
-		_kp 	= _gain_array[0];
-		_ki 	= _gain_array[1];
-		_kd 	= _gain_array[2];
-		_imax 	= _gain_array[3];
 	}
+	// load is a NOP if the gain array is managed externally
 }
 
 void
 PID::save_gains()
 {
-	if (_address) {
+	if ((_gain_array == &_local_gains[0]) && (_address)) {
 		eeprom_write_word((uint16_t *)	 _address, 		(int)(_kp * 1000));
 		eeprom_write_word((uint16_t *)	(_address + 2), (int)(_ki * 1000));
 		eeprom_write_word((uint16_t *)	(_address + 4), (int)(_kd * 1000));
 		eeprom_write_word((uint16_t *)	(_address + 6), (int)_imax/100);
-	} else {
-		_gain_array[0] = _kp;
-		_gain_array[1] = _ki;
-		_gain_array[2] = _kd;
-		_gain_array[3] = _imax;
 	}
+	// save is a NOP if the gain array is managed externally
 }
 

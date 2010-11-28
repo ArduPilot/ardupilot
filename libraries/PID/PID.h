@@ -15,30 +15,37 @@ public:
 	/// Constructor
 	///
 	/// A PID constructed in this fashion does not support save/restore.
+	/// Gains are managed internally, and must be read/written using the
+	/// accessor functions.
 	///
 	PID() :
-		_address(0)
+		_address(0),
+		_gain_array(&_local_gains[0])
 	{}
 
 	/// Constructor
+	///
+	/// The PID will manage gains internally, and the load/save functions
+	/// will use 16 bytes of EEPROM storage to store gain values.
 	///
 	/// @param address	EEPROM base address at which PID parameters
-	///					are stored.  Zero if the PID does not support
-	///					save/restore.
+	///					are stored.
 	///
 	PID(uint16_t address) :
-		_address(address)
+		_address(address),
+		_gain_array(&_local_gains[0])
 	{}
 
 	/// Constructor
 	///
-	/// @param gain_array	Address of an array of floats from which
-	///						gains will be loaded and to which they
-	///						are saved.
+	/// Gain values for the PID are managed externally; load/save are a NOP.
+	///
+	/// @param gain_array	Address of an array of float values.  The
+	///						array is used as kP, kI, kD and imax
+	///						respectively.
 	///
 	PID(float *gain_array) :
-		_gain_array(gain_array),
-		_address(0)		// must init address to zero to have gain_array respected
+		_gain_array(gain_array)
 	{}
 
 	/// Iterate the PID, return the new control value
@@ -74,29 +81,30 @@ public:
 
 	/// @name	parameter accessors
 	//@{
-	float	kP()			{ return _kp; }
-	float	kI()			{ return _ki; }
-	float	kD()			{ return _kd; }
-	float	imax()			{ return _imax; }
+	float	kP()			{ return _gain_array[0]; }
+	float	kI()			{ return _gain_array[1]; }
+	float	kD()			{ return _gain_array[2]; }
+	float	imax()			{ return _gain_array[3]; }
 
-	void	kP(float v)		{ _kp = v; }
-	void	kI(float v)		{ _ki = v; }
-	void	kD(float v)		{ _kd = v; }
-	void	imax(float v);
+	void	kP(const float v)		{ _gain_array[0] = v; }
+	void	kI(const float v)		{ _gain_array[1] = v; }
+	void	kD(const float v)		{ _gain_array[2] = v; }
+	void	imax(const float v);
+
+	// one-shot operator for setting all of the gain properties at once
+	void operator ()(const float p, const float i, const float d, const float max)
+	{ kP(p); kI(i); kD(d); imax(max); }
 	//@}
 
 private:
-	uint16_t	_address;		///< EEPROM address for save/restore of P/I/D
-	float		*_gain_array; 	///< pointer to the gains for this pid
+	uint16_t	_address;			///< EEPROM address for save/restore of P/I/D
+	float		*_gain_array; 		///< pointer to the gains for this pid
 
-	float		_kp;			///< proportional gain
-	float		_ki;			///< integral gain
-	float		_kd;			///< derivative gain
-	float		_imax;			///< integrator magnitude clamp
+	float		_local_gains[4];	///< local storage for gains when not globally managed
 
-	float		_integrator;	///< integrator value
-	int32_t		_last_error;	///< last error for derivative
-	float		_last_derivative; ///< last derivative for low-pass filter
+	float		_integrator;		///< integrator value
+	int32_t		_last_error;		///< last error for derivative
+	float		_last_derivative; 	///< last derivative for low-pass filter
 
 	/// Low pass filter cut frequency for derivative calculation.
 	///
