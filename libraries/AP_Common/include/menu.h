@@ -12,7 +12,9 @@
 ///
 /// Arguments passed to the handler function are pre-converted to both
 /// long and float for convenience.
-///
+
+#ifndef __AP_COMMON_MENU_H
+#define __AP_COMMON_MENU_H
 
 #define MENU_COMMANDLINE_MAX	32	///< maximum input line length
 #define MENU_ARGS_MAX			4	///< maximum number of arguments
@@ -136,3 +138,4 @@ private:
 	static const char __menu_name__ ##name[] PROGMEM = prompt;	\
 	static Menu name(__menu_name__ ##name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
 
+#endif
