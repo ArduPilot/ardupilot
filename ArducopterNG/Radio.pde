@@ -58,7 +58,7 @@ void read_radio()
                 // if throttle has increased suddenly, disarm motors 
                 if( (tempThrottle - ch_throttle) > SAFETY_MAX_THROTTLE_INCREASE  ) {     
                     motorArmed = 0;
-                }else{ // if it hasn't increased too quickly not turn off the safety
+                }else{ // if it hasn't increased too quickly turn off the safety
                     motorSafety = 0;
                 }
             }
@@ -69,7 +69,9 @@ void read_radio()
             motorSafety = 1;
             Safety_counter = 0;
         }
-    }
+    }else{  // throttle is over MIN so make sure to reset Safety_counter
+         Safety_counter = 0;
+    } 
     // normal throttle filtering.  Note: Transmiter calibration not used on throttle
     ch_throttle = channel_filter(tempThrottle, ch_throttle);
         
