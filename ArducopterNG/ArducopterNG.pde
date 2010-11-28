@@ -125,13 +125,14 @@
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
 // you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
-//#define MAGOFFSET 0,0,0
-#define MAGOFFSET 19.00,-72.00,-79.50
+#define MAGOFFSET 0,0,0
+
+//#define MAGOFFSET 19.00,-72.00,-79.50
 
 // Declination is a correction factor between North Pole and real magnetic North. This is different on every location
 // IF you want to use really accurate headholding and future navigation features, you should update this
 // You can check Declination to your location from http://www.magnetic-declination.com/
-#define DECLINATION 0.61
+#define DECLINATION 0.00
 
 // And remember result from NOAA website is in form of DEGREES°MINUTES'. Degrees you can use directly but Minutes you need to 
 // recalculate due they one degree is 60 minutes.. For example Jani's real declination is 0.61, correct way to calculate this is
