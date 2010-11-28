@@ -20,8 +20,21 @@ const float AP_ADC_HIL::accelBias[3]	= {2025,2025,2025};
 const float AP_ADC_HIL::gyroScale[3] = {142.239, 139.746, 139.746}; 
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
 
-AP_ADC_HIL::AP_ADC_HIL() : adcValue()
+AP_ADC_HIL::AP_ADC_HIL()
 {
+	// gyros set to zero for calibration
+	setGyro(0,0);
+	setGyro(1,0);
+	setGyro(2,0);
+
+	// accels set to zero for calibration
+	setAccel(0,0);
+	setAccel(1,0);
+	setAccel(2,0);
+
+	// set diff press and temp to zero
+	setGyroTemp(0);
+	setPressure(0);
 }
 
 void AP_ADC_HIL::Init(void)
@@ -48,8 +61,8 @@ int AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
 
 	// accel
 	setAccel(0,aX);
-	setAccel(0,aY);
-	setAccel(0,aZ);
+	setAccel(1,aY);
+	setAccel(2,aZ);
 
     // differential pressure
 	setPressure(diffPress);

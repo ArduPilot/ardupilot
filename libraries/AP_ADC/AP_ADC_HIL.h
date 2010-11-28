@@ -63,7 +63,7 @@ class AP_ADC_HIL : public AP_ADC
 	// @param index the axis for the gyro(0-x,1-y,2-z)
 	inline void setGyro(uint8_t index, int16_t val) {
 		int16_t temp = val * gyroScale[index] / 1000 + gyroBias[index];
-		adcValue[index] = (sensorSign[index] < 0) ? -temp : temp;
+		adcValue[sensors[index]] = (sensorSign[index] < 0) ? -temp : temp;
 	}
 
 	///
@@ -72,7 +72,7 @@ class AP_ADC_HIL : public AP_ADC
 	// @param index the axis for the accelerometer(0-x,1-y,2-z)
 	inline void setAccel(uint8_t index, int16_t val) {
 		int16_t temp = val * accelScale[index] / 1000 + accelBias[index];
-		adcValue[index+3] = (sensorSign[index+3] < 0) ? -temp : temp;
+		adcValue[sensors[index+3]] = (sensors[index+3] < 0) ? -temp : temp;
 	}
 
 	///
