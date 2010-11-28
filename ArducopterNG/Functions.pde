@@ -139,6 +139,25 @@ int limitRange(int data, int minLimit, int maxLimit) {
 }
 
 
+
+void CLILeds (byte ledstep) {
+  
+  
+}
+
+void LEDAllON() {
+        digitalWrite(LED_Green, HIGH);
+        digitalWrite(LED_Red, HIGH);
+        digitalWrite(LED_Yellow, HIGH);
+}
+
+void LEDAllOFF() {
+        digitalWrite(LED_Green, LOW);
+        digitalWrite(LED_Red, LOW);
+        digitalWrite(LED_Yellow, LOW);
+}
+
+
 //
 // Camera functions moved to event due it's and event 31-10-10, jp
 

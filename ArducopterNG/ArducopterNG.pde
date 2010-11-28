@@ -119,18 +119,19 @@
 // Magneto orientation and corrections.
 // If you don't have magneto activated, It is safe to ignore these
 //#ifdef IsMAG
-#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
+//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
 //#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
-//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
+#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
 // you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
-#define MAGOFFSET 0,0,0
+//#define MAGOFFSET 0,0,0
+#define MAGOFFSET 19.00,-72.00,-79.50
 
 // Declination is a correction factor between North Pole and real magnetic North. This is different on every location
 // IF you want to use really accurate headholding and future navigation features, you should update this
 // You can check Declination to your location from http://www.magnetic-declination.com/
-#define DECLINATION 0.0
+#define DECLINATION 0.61
 
 // And remember result from NOAA website is in form of DEGREES°MINUTES'. Degrees you can use directly but Minutes you need to 
 // recalculate due they one degree is 60 minutes.. For example Jani's real declination is 0.61, correct way to calculate this is
@@ -221,6 +222,19 @@ void setup() {
   GEOG_CORRECTION_FACTOR = 0;   // Geographic correction factor will be automatically calculated
 
   Read_adc_raw();            // Initialize ADC readings...
+  
+#ifdef SerXbee
+  Serial.begin(SerBau);
+  Serial.print("ArduCopter v");
+  Serial.println(VER);
+  Serial.println("Serial data on Telemetry port");
+  Serial.println("No commands or output on this serial, check your Arducopter.pde if needed to change.");
+  Serial.println();
+  Serial.println("General info:");
+  if(!SW_DIP1) Serial.println("Flight mode: + ");
+  if(SW_DIP1) Serial.println("Flight mode: x ");
+#endif 
+
 
   delay(10);
   digitalWrite(LED_Green,HIGH);     // Ready to go...  

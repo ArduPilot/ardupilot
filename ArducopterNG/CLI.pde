@@ -39,10 +39,10 @@ boolean ShowMainMenu;
 // This can be moved later to CLI.pde
 void RunCLI () {
 
-//  APM_RC.Init();             // APM Radio initialization
-  
+  //  APM_RC.Init();             // APM Radio initialization
+
   readUserConfig();          // Read memory values from EEPROM
-    
+
   ShowMainMenu = TRUE;
   // We need to initialize Serial again due it was not initialized during startup. 
   SerBeg(SerBau);   
@@ -69,6 +69,22 @@ void RunCLI () {
         break; 
       }
     }
+    
+    // Changing LED statuses to inform that we are in CLI mode
+    // Blinking Red, Yellow, Green when in CLI mode
+    if(millis() - cli_timer > 1000) {
+      cli_timer = millis();
+      if(cli_status == HIGH) { 
+        LEDAllOFF();
+        cli_status = LOW;
+      } 
+      else {
+        LEDAllON();
+        cli_status = HIGH; 
+      }
+    }
+
+
   } // Mainloop ends
 
 }
@@ -78,7 +94,7 @@ void Show_MainMenu() {
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
   SerPrln(" c - Show compass offsets (no return, reboot)");
-  SerPrln(" i - Initialize and calibrate Accel offsets");
+  SerPrln(" i - Initialize and calibrate Accel offsets (under work)");
   SerPrln(" ");
 }
 
@@ -176,7 +192,7 @@ void CALIB_AccOffset() {
   uint16_t xx = 0, xy = 0, xz = 0; 
 
   adc.Init();            // APM ADC library initialization
-//  delay(250);                // Giving small moment before starting
+  //  delay(250);                // Giving small moment before starting
 
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
@@ -189,12 +205,12 @@ void CALIB_AccOffset() {
     SerPri(loopy);
     SerPri(":");
     tab();
-/*    SerPri(xx += read_adc(4));
-    tab();
-    SerPri(xy += -read_adc(3));
-    tab();
-    SerPrln(xz += read_adc(5));
-*/
+    /*    SerPri(xx += read_adc(4));
+     tab();
+     SerPri(xy += -read_adc(3));
+     tab();
+     SerPrln(xz += read_adc(5));
+     */
     SerPri(xx += adc.Ch(4));
     tab();
     SerPri(xy += adc.Ch(5));
@@ -204,11 +220,11 @@ void CALIB_AccOffset() {
 
 
   }
-  
+
   xx = xx / (loopy - 1);
   xy = xy / (loopy - 1);
   xz = xz / (loopy - 1) ;
-  
+
   SerPriln("Averages as follows");
   SerPri("  ");
   tab();
@@ -222,5 +238,7 @@ void CALIB_AccOffset() {
 
 
 }
+
+
 
 

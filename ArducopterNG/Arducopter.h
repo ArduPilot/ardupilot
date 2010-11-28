@@ -325,6 +325,9 @@ byte gled_status = HIGH;
 long gled_timer;
 int gled_speed;
 
+long cli_timer;
+byte cli_status = LOW;
+
 long  t0;
 int   num_iter;
 float aux_debug;

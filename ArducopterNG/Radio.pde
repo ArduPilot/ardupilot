@@ -76,7 +76,7 @@ void read_radio()
     ch_throttle = channel_filter(tempThrottle, ch_throttle);
         
     // Flight mode
-    if(ch_aux2 > 1200) 
+    if(ch_aux2 > 1300) 
       flightMode = ACRO_MODE;  // Force to Acro mode from radio
     else
       flightMode = STABLE_MODE;  // Stable mode (default)
@@ -84,7 +84,7 @@ void read_radio()
     // Autopilot mode (only works on Stable mode)
     if (flightMode == STABLE_MODE)
       {
-      if(ch_aux < 1200)
+      if(ch_aux < 1300)
         AP_mode = AP_AUTOMATIC_MODE;   // Automatic mode : GPS position hold mode + altitude hold
       else 
         AP_mode = AP_NORMAL_MODE;   // Normal mode

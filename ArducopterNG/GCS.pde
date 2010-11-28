@@ -364,7 +364,8 @@ void sendSerialTelemetry() {
     SerPri(read_adc(3));
     comma();
     SerPri(read_adc(5));
-    /*    comma();
+
+       comma();
      SerPri(APM_Compass.Heading, 4);
      comma();
      SerPri(APM_Compass.Heading_X, 4);
@@ -377,7 +378,7 @@ void sendSerialTelemetry() {
      comma();
      SerPri(APM_Compass.Mag_Z);
      comma();
-     */
+     
     SerPriln();
     break;
   case 'T': // Spare
@@ -458,6 +459,30 @@ void sendSerialTelemetry() {
     tab();
     SerPriln();
     break;
+#ifdef IsGPS
+  case '4':  // Jani's debugs
+//  Log_Write_GPS(GPS.Time, GPS.Lattitude, GPS.Longitude, GPS.Altitude, GPS.Altitude, GPS.Ground_Speed, GPS.Ground_Course, GPS.Fix, GPS.NumSats);
+
+    SerPri(GPS.Time);
+    tab();
+    SerPri(GPS.Lattitude);
+    tab();
+    SerPri(GPS.Longitude);
+    tab();
+    SerPri(GPS.Altitude);
+    tab();
+    SerPri(GPS.Ground_Speed);
+    tab();
+    SerPri(GPS.Ground_Course);
+    tab();
+    SerPri(GPS.Fix);
+    tab();
+    SerPri(GPS.NumSats);
+
+    tab();
+    SerPriln();
+    break;
+#endif    
   case '.': // Modify GPS settings, print directly to GPS Port
     Serial1.print("$PGCMD,16,0,0,0,0,0*6A\r\n");
     break;
