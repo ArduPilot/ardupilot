@@ -9,14 +9,13 @@
 
 */
 
+#include <math.h>
+#include <avr/eeprom.h>
+#include "WProgram.h"
 #include "RC_Channel.h"
 
 #define ANGLE 0
 #define RANGE 1
-
-RC_Channel::RC_Channel() : _high(1)
-{
-}
 
 // setup the control preferences
 void 	
@@ -34,6 +33,12 @@ RC_Channel::set_angle(int angle)
 	_high 	= angle;
 }
 
+void
+RC_Channel::set_filter(bool filter)
+{
+	_filter = filter;
+}
+
 // call after first read
 void
 RC_Channel::trim()
@@ -48,11 +53,15 @@ RC_Channel::set_pwm(int pwm)
 {
 	//Serial.print(pwm,DEC);
 
-	if(radio_in == 0)
+	if(_filter){
+		if(radio_in == 0)
+			radio_in = pwm;
+		else
+			radio_in = ((pwm + radio_in) >> 1);		// Small filtering
+	}else{
 		radio_in = pwm;
-	else
-		radio_in = ((pwm + radio_in) >> 1);		// Small filtering
-
+	}
+	
 	if(_type == RANGE){
 		//Serial.print("range ");
 		control_in = pwm_to_range();
@@ -70,7 +79,7 @@ RC_Channel::control_mix(float value)
 }
 
 // are we below a threshold?
-boolean
+bool
 RC_Channel::get_failsafe(void)
 {
 	return (radio_in < (radio_min - 50));
@@ -90,28 +99,30 @@ RC_Channel::calc_pwm(void)
 }
 
 void
-RC_Channel::load_eeprom(int address)
+RC_Channel::load_eeprom(void)
 {
-	radio_min 	= eeprom_read_word((uint16_t *)	address);
-	radio_max	= eeprom_read_word((uint16_t *)	(address + 2));
-	radio_trim 	= eeprom_read_word((uint16_t *)	(address + 4));
+	radio_min 	= eeprom_read_word((uint16_t *)	_address);
+	radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
+	radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
 }
 
 void
-RC_Channel::save_eeprom(int address)
+RC_Channel::save_eeprom(void)
 {
-	eeprom_write_word((uint16_t *)	address, 		radio_min);
-	eeprom_write_word((uint16_t *)	(address + 2), 	radio_max);
-	eeprom_write_word((uint16_t *)	(address + 4), 	radio_trim);
+	eeprom_write_word((uint16_t *)	_address, 		radio_min);
+	eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
+	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
 }
 
 // ------------------------------------------
+
 void
 RC_Channel::update_min_max()
 {
 	radio_min = min(radio_min, radio_in);
-	radio_max = min(radio_max, radio_in);
+	radio_max = max(radio_max, radio_in);
 }
+
 // ------------------------------------------
 
 int16_t 

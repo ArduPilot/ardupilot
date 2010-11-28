@@ -1,27 +1,44 @@
-/*
-	RC_Channel library.
-	Code by Jason Short. 2010 
-	DIYDrones.com
-*/
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
+/// @file	RC_Channel.h
+/// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
 
 #ifndef RC_Channel_h
 #define RC_Channel_h
 
-#include <inttypes.h>
-#include <avr/eeprom.h>
-#include "WProgram.h"
+#include <stdint.h>
 
-class RC_Channel
-{
-  public:
-	RC_Channel();
-	
-	// setup in CLI
+/// @class	RC_Channel
+/// @brief	Object managing one RC channel
+class RC_Channel{
+  public:	
+	/// Constructor
+	///
+	/// A RC_Channel constructed in this fashion does not support save/restore.
+	///
+	RC_Channel() :
+		_address(0)
+	{}
+
+	/// Constructor
+	///
+	/// @param address	EEPROM base address at which RC_Channel parameters
+	///					are stored.  Zero if the RC_Channel does not support
+	///					save/restore.
+	///
+	RC_Channel(uint16_t address) :
+		_address(address),
+		_high(1),
+		_filter(true)
+	{}
+
+	// setup min and max radio values in CLI
 	void 		update_min_max();
 	
 	// startup
-	void 		load_eeprom(int address);
-	void 		save_eeprom(int address);		
+	void 		load_eeprom(void);
+	void 		save_eeprom(void);		
+	void		set_filter(bool filter);
 
 	// setup the control preferences
 	void 		set_range(int low, int high);
@@ -37,7 +54,7 @@ class RC_Channel
 	void 		trim();
 	
 	// did our read come in 50µs below the min?
-	boolean		get_failsafe(void);
+	bool		get_failsafe(void);
 	
 	// value generated from PWM
 	int16_t 	control_in;
@@ -63,17 +80,14 @@ class RC_Channel
 	//int16_t 	get_radio_out(void);
 	
   private:
-	int16_t		channel_filter();
+	bool		_filter;
 	int16_t		pwm_to_angle();
 	int16_t		angle_to_pwm();
 	int16_t		pwm_to_range();
 	int16_t		range_to_pwm();
 
-	byte 		_channel;
-	boolean 	_type;
-	boolean 	_filter;
-
-		
+	int16_t		_address;			///< EEPROM address for save/restore of P/I/D
+	bool 		_type;				
 	int16_t 	_high;
 	int16_t 	_low;
 };
