@@ -47,6 +47,8 @@ TODO:
 // Arm & Disarm delays
 #define ARM_DELAY 50      // how long you need to keep rudder to max right for arming motors (units*0.02, 50=1second)
 #define DISARM_DELAY 25   // how long you need to keep rudder to max left for disarming motors
+#define SAFETY_DELAY 25   // how long you need to keep throttle to min before safety activates and does not allow sudden throttle increases
+#define SAFETY_MAX_THROTTLE_INCREASE 100  // how much of jump in throttle (within a single cycle, 5ms) will cause motors to disarm
 
 /*************************************************************/
 // AM Mode & Flight information 

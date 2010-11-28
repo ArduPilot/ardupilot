@@ -38,15 +38,41 @@ TODO:
 
 void read_radio()
 {
+    int tempThrottle = 0;
+  
     // Commands from radio Rx
     // We apply the Radio calibration parameters (from configurator) except for throttle
     ch_roll = channel_filter(APM_RC.InputCh(CH_ROLL) * ch_roll_slope + ch_roll_offset, ch_roll);
     ch_pitch = channel_filter(APM_RC.InputCh(CH_PITCH) * ch_pitch_slope + ch_pitch_offset, ch_pitch);
-    ch_throttle = channel_filter(APM_RC.InputCh(CH_THROTTLE), ch_throttle); // Transmiter calibration not used on throttle
     ch_yaw = channel_filter(APM_RC.InputCh(CH_RUDDER) * ch_yaw_slope + ch_yaw_offset, ch_yaw);
     ch_aux = APM_RC.InputCh(CH_5) * ch_aux_slope + ch_aux_offset;
-    ch_aux2 = APM_RC.InputCh(CH_6) * ch_aux2_slope + ch_aux2_offset;
+    ch_aux2 = APM_RC.InputCh(CH_6) * ch_aux2_slope + ch_aux2_offset;   
     
+    // special checks for throttle
+    tempThrottle = APM_RC.InputCh(CH_THROTTLE);
+
+    // throttle safety check
+    if( motorSafety == 1 ) {
+        if( motorArmed == 1 ) {
+            if( ch_throttle > MIN_THROTTLE + 100 ) { // if throttle is now over MIN..
+                // if throttle has increased suddenly, disarm motors 
+                if( (tempThrottle - ch_throttle) > SAFETY_MAX_THROTTLE_INCREASE  ) {     
+                    motorArmed = 0;
+                }else{ // if it hasn't increased too quickly not turn off the safety
+                    motorSafety = 0;
+                }
+            }
+        }
+    }else if( ch_throttle < MIN_THROTTLE + 100 ) { // Safety logic: hold throttle low for more than 1 second, safety comes on which stops sudden increases in throttle
+        Safety_counter++;
+        if( Safety_counter > SAFETY_DELAY ) {
+            motorSafety = 1;
+            Safety_counter = 0;
+        }
+    }
+    // normal throttle filtering.  Note: Transmiter calibration not used on throttle
+    ch_throttle = channel_filter(tempThrottle, ch_throttle);
+        
     // Flight mode
     if(ch_aux2 > 1200) 
       flightMode = ACRO_MODE;  // Force to Acro mode from radio
@@ -89,10 +115,11 @@ void read_radio()
     Log_Write_Radio(ch_roll,ch_pitch,ch_throttle,ch_yaw,ch_aux,ch_aux2);
     
     // Motor arm logic
-    // Arm motor output : Throttle down and full yaw right for more than 2 seconds
     if (ch_throttle < (MIN_THROTTLE + 100)) {
       control_yaw = 0;
       command_rx_yaw = ToDeg(yaw);
+      
+      // Arm motor output : Throttle down and full yaw right for more than 2 seconds
       if (ch_yaw > 1850) {
         if (Arming_counter > ARM_DELAY){
           if(ch_throttle > 800) {
@@ -105,6 +132,7 @@ void read_radio()
       }
       else
         Arming_counter=0;
+        
       // To Disarm motor output : Throttle down and full yaw left for more than 2 seconds
       if (ch_yaw < 1150) {
         if (Disarming_counter > DISARM_DELAY){

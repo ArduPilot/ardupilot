@@ -347,6 +347,7 @@ int   backMotor;
 int   leftMotor;
 int   rightMotor;
 byte  motorArmed = 0;                              // 0 = motors disarmed, 1 = motors armed
+byte  motorSafety = 1;                             // 0 = safety off, 1 = on.  When On, sudden increases in throttle not allowed
 int   minThrottle = 0;
 boolean flightOrientation = 0;                    // 0 = +, 1 = x this is read from DIP1 switch during system bootup
 
@@ -357,6 +358,7 @@ long   tlmTimer = 0;
 // Arming/Disarming
 uint8_t Arming_counter=0;
 uint8_t Disarming_counter=0;
+uint8_t Safety_counter=0;
 
 // Performance monitoring
 // ----------------------
