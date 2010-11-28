@@ -74,6 +74,31 @@
 //#define GPSDEVICE  GPSDEV_NMEA       // For general NMEA compatible GPSEs
 //#dedine GPSDEVICE  GPSDEV_IMU        // For IMU Simulations only
 
+
+////////////////////////////////////////
+// Frame / Motor / ESC definitions
+
+// Introducing new frame / Motor / ESC definitions for future expansion. Currently these are not in 
+// use but they need to be here so implementation work can continue.
+
+                             // New frame model definitions. (not in use yet, 28-11-10 jp)
+#define FRAME_MODEL QUAD     // Quad frame model 
+//#define FRAME_MODEL HEXA     // Quad frame model 
+//#define FRAME_MODEL OCTO     // Quad frame model 
+
+
+                             // New motor definition for different frame type (not in use yet, 28-11-10 jp)
+#define MAX_MOTORS  4        // Are we using more motors than 4, possible choises are 4, 6, 8
+                             // This has to be on main .pde to get included on all other header etc files
+
+                             // Not in use yet, 28-11-10 jp
+#define MOTORTYPE  PWM       // Traditional PWM ESC's controlling motors
+//#define MOTORTYPE  I2C     // I2C style ESC's controlling motors
+//#define MOTORTYPE UART     // UART style ESC's controlling motors
+
+
+
+
 ////////////////////
 // Serial ports & speeds
 

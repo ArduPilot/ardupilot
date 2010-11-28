@@ -226,18 +226,27 @@ void CALIB_AccOffset() {
 
   xx = xx / (loopy - 1);
   xy = xy / (loopy - 1);
-  xz = xz / (loopy - 1) ;
-
+  xz = xz / (loopy - 1);
+  xz += 500;               // Z-Axis correction
+  
   SerPriln("Averages as follows");
   SerPri("  ");
   tab();
   SerPri(xx);
+  
   tab();
   SerPri(xy);
   tab();
   SerPri(xz);
   SerPriln();
 
+    acc_offset_y = xy;
+    acc_offset_x = xx;
+    acc_offset_z = xz;
+
+    AN_OFFSET[3] = acc_offset_x;
+    AN_OFFSET[4] = acc_offset_y;
+    AN_OFFSET[5] = acc_offset_z;
 
 
 }

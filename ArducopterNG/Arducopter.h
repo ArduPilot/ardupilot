@@ -462,6 +462,20 @@ unsigned long elapsedTime			= 0;		// for doing custom events
 #define MODE3           3
 #define MODE4           4
 
+// Frame models
+#define QUAD            0            // Normal Quad 
+#define QUADCOAX        1            // Quad with double motors as coax
+#define HEXA            2            // Hexa
+#define HEXARADIAL      3
+#define HEXACOAX        4
+#define OCTO            5
+
+#define PWM             0
+#define I2C             1
+#define UART            2
+
+
+
 // Following variables stored in EEPROM
 float KP_QUAD_ROLL;
 float KI_QUAD_ROLL;

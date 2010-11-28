@@ -74,6 +74,7 @@ void motor_output()
     command_rx_yaw = ToDeg(yaw);
   }
 
+//#if MOTORTYPE == PWM
   // Send commands to motors
   APM_RC.OutputCh(0, rightMotor);
   APM_RC.OutputCh(1, leftMotor);
@@ -83,7 +84,11 @@ void motor_output()
   // InstantPWM => Force inmediate output on PWM signals
   APM_RC.Force_Out0_Out1();
   APM_RC.Force_Out2_Out3();
-  
+//#elif MOTORTYPE == I2C
+
+//#else
+//# error You need to define your motor type on ArduUder.pde file
+//#endif    
 }
 
 
