@@ -139,9 +139,30 @@ int limitRange(int data, int minLimit, int maxLimit) {
 }
 
 
-
-void CLILeds (byte ledstep) {
+// Stepping G, Y, R Leds
+// Call CLILedStep(); to change led statuses
+// Used on CLI as showing that we are in CLI mode
+void CLILedStep () {
   
+  switch(cli_step) {
+  case 1:
+        digitalWrite(LED_Green, HIGH);
+        digitalWrite(LED_Yellow, LOW);
+        digitalWrite(LED_Red, LOW);
+  break;
+  case 2:
+        digitalWrite(LED_Green, LOW);
+        digitalWrite(LED_Yellow, HIGH);
+        digitalWrite(LED_Red, LOW);
+  break;
+  case 3:
+        digitalWrite(LED_Green, LOW);
+        digitalWrite(LED_Yellow, LOW);
+        digitalWrite(LED_Red, HIGH);
+  break;
+  }
+  cli_step ++; 
+  if(cli_step == 4) cli_step = 1;  
   
 }
 

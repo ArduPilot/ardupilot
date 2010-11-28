@@ -189,7 +189,7 @@
 #endif
 
 /* Software version */
-#define VER 1.52    // Current software version (only numeric values)
+#define VER 1.53    // Current software version (only numeric values)
 
 // Sensors - declare one global instance
 AP_ADC_ADS7844		adc;

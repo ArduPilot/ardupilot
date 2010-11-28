@@ -327,6 +327,7 @@ int gled_speed;
 
 long cli_timer;
 byte cli_status = LOW;
+byte cli_step;
 
 long  t0;
 int   num_iter;

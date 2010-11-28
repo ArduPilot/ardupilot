@@ -74,6 +74,7 @@ void RunCLI () {
     // Blinking Red, Yellow, Green when in CLI mode
     if(millis() - cli_timer > 1000) {
       cli_timer = millis();
+/*
       if(cli_status == HIGH) { 
         LEDAllOFF();
         cli_status = LOW;
@@ -82,6 +83,8 @@ void RunCLI () {
         LEDAllON();
         cli_status = HIGH; 
       }
+      */
+      CLILedStep();
     }
 
 
