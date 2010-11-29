@@ -38,6 +38,7 @@ class RC_Channel{
 	// startup
 	void 		load_eeprom(void);
 	void 		save_eeprom(void);		
+	void 		save_trim(void);		
 	void		set_filter(bool filter);
 
 	// setup the control preferences
@@ -58,7 +59,7 @@ class RC_Channel{
 	
 	// value generated from PWM
 	int16_t 	control_in;
-	int8_t 		dead_zone; // used to keep noise down and create a dead zone.
+	int16_t 	dead_zone; // used to keep noise down and create a dead zone.
 	
 	int			control_mix(float value);
 	
