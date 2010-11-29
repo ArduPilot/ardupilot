@@ -18,7 +18,7 @@ long
 PID::get_pid(int32_t error, uint16_t dt, float scaler)
 {
 	float output		= 0;
- 	float delta_time	= (float)dt / 1000;
+ 	float delta_time	= (float)dt / 1000.0;
 
 	// Compute proportional component
 	output += error * _kp;
