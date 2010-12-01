@@ -11,20 +11,33 @@
 
 class AP_IMU
 {
+
 public:
 	// Constructors
-	AP_IMU(AP_ADC * adc);									// Default Constructor
+	AP_IMU(AP_ADC *adc, uint16_t address) :
+		_adc(adc), 
+		_address(address)
+	{}
 	
 	// Methods
-	void		quick_init(uint16_t *_offset_address);				// For air start
-	void		init(uint16_t *_offset_address);					// For calibration (includes accels)
-	void		gyro_init(uint16_t *_offset_address);				// Read gyro offsets, use stored accel offsets
-	Vector3f	get_gyro(void);					// Radians/second
-	Vector3f	get_accel(void);				// meters/seconds squared
+	void		init(void);					// inits both
+	void		init_accel(void);			// just Accels
+	void		init_gyro(void);			// just gyros
+	
+	void		load_gyro_eeprom(void);
+	void		save_gyro_eeprom(void);
+	void		load_accel_eeprom(void);
+	void		save_accel_eeprom(void);	
 
+	// raw ADC values - called by DCM
+	Vector3f	get_gyro(void);									// Radians/second
+	Vector3f	get_accel(void);								// meters/seconds squared
+
+	void		set_health(float health);
+	float		get_health(void);
+				
 	// Members
-	uint8_t 	gyro_sat_count;
-	uint8_t 	adc_constraints;
+	uint8_t 	adc_constraints;		// a check of how many times we get non-sensical values
 	
 private:
 	// Methods
@@ -32,12 +45,16 @@ private:
 	float 		gyro_temp_comp(int i, int temp) const;
 
 	// members
-	//uint16_t	_offset_address;			// EEPROM start address for saving/retrieving offsets
+	uint16_t	_address;					// EEPROM start address for saving/retrieving offsets
 	float 		_adc_in[6];					// array that store the 6 ADC channels used by IMU
 	float 		_adc_offset[6]; 			// Array that store the Offset of the gyros and accelerometers
+	float		_health;
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
-	AP_ADC * 	_adc; 						// Analog to digital converter pointer
+	AP_ADC		* _adc; 					// Analog to digital converter pointer
+	
+	float 		read_EE_float(int address);
+	void 		write_EE_float(float value, int address);
 
 	// constants
 	static const uint8_t	_sensors[6];

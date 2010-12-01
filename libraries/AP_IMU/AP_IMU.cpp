@@ -54,106 +54,119 @@ const float   AP_IMU::_gyro_temp_curve[3][3] = {
 	{1665,0,0}
 };	// To Do - make additional constructors to pass this in.
 
-// Constructors ////////////////////////////////////////////////////////////////
-
-AP_IMU::AP_IMU(AP_ADC * adc)
-	: _adc(adc)
-{
-}
-
 
 /**************************************************/
 void
-AP_IMU::quick_init(uint16_t *_offset_address)
+AP_IMU::set_health(float health)
 {
-	// We read the imu offsets from EEPROM for a quick air restart
-	eeprom_read_block((void*)&_adc_offset, _offset_address, sizeof(_adc_offset));
-	
+	_health += constrain(health, 0, 1);
 }
 
+float
+AP_IMU::get_health(void)
+{
+	return _health;
+}
 
+void
+AP_IMU::init(void)
+{
+	init_gyro();
+	init_accel();
+}
 /**************************************************/
 void
-AP_IMU::read_offsets(void)
+AP_IMU::init_gyro(void)
 {
 	
 	float temp;
 	int flashcount = 0;
 	int tc_temp = _adc->Ch(_gyro_temp_ch);
  	delay(500);
+	Serial.println("Init Gyro");
  	
-	for(int c = 0; c < 200; c++)
-	{ 
+	for(int c = 0; c < 200; c++){
 		digitalWrite(A_LED_PIN, LOW);
 		digitalWrite(C_LED_PIN, HIGH);
 		delay(20);
-		for (int i = 0; i < 6; i++) 
+		
+		for (int i = 0; i < 6; i++)
 			_adc_in[i] = _adc->Ch(_sensors[i]);
-		digitalWrite(C_LED_PIN, LOW);
+
 		digitalWrite(A_LED_PIN, HIGH);
+		digitalWrite(C_LED_PIN, LOW);
 		delay(20);
 	}
 
-	for(int i = 0; i < 200; i++){		// We take some readings...
-		for (int j = 0; j < 6; j++) {
+	for(int i = 0; i < 200; i++){
+		for (int j = 0; j <= 2; j++){
 			_adc_in[j] = _adc->Ch(_sensors[j]);
-			if (j < 3) {	
-				_adc_in[j] -= gyro_temp_comp(j, tc_temp);		// Subtract temp compensated typical gyro bias
-			} else {
-				_adc_in[j] -= 2025;
-			}
-				
+			
+			// Subtract temp compensated typical gyro bias
+			_adc_in[j] -= gyro_temp_comp(j, tc_temp);
+			
+			// filter
 			_adc_offset[j] = _adc_offset[j] * 0.9 + _adc_in[j] * 0.1;
-
 		}
 
 		delay(20);
 		if(flashcount == 5) {
-		digitalWrite(A_LED_PIN, LOW);
-		digitalWrite(C_LED_PIN, HIGH);
+			Serial.print("*");
+			digitalWrite(A_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, HIGH);
 		}
+		
 		if(flashcount >= 10) {
 			flashcount = 0;
-		digitalWrite(C_LED_PIN, LOW);
-		digitalWrite(A_LED_PIN, HIGH);
+			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(A_LED_PIN, HIGH);
 		}
 		flashcount++;
 	}
 	
 	_adc_offset[5] += GRAVITY * _sensor_signs[5];
-
+	save_gyro_eeprom();
 }
 
-/**************************************************/
+
 void
-AP_IMU::init(uint16_t *_offset_address)
-{	
+AP_IMU::init_accel(void) // 3, 4, 5
+{
+	float temp;
+	int flashcount = 0;
+ 	delay(500);
 
-	read_offsets();
-
-	//  Save offset values to EEPROM for use in an air restart, gyro only restart
- 	eeprom_write_block((const void *)&_adc_offset, _offset_address, sizeof(_adc_offset));
+	Serial.println("Init Accel");
 	
+	for(int c = 0; c < 200; c++){
+		for (int i = 0; i < 6; i++)
+			_adc_in[i] = _adc->Ch(_sensors[i]);
+	}
+
+	for(int i = 0; i < 200; i++){		// We take some readings...
+		for (int j = 3; j <= 5; j++){
+			_adc_in[j] 		= _adc->Ch(_sensors[j]);
+			_adc_in[j] 		-= 2025;
+			_adc_offset[j]	= _adc_offset[j] * 0.9 + _adc_in[j] * 0.1;
+		}
+
+		delay(20);
+		if(flashcount == 5) {
+			Serial.print("*");
+			digitalWrite(A_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, HIGH);
+		}
+		
+		if(flashcount >= 10) {
+			flashcount = 0;
+			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(A_LED_PIN, HIGH);
+		}
+		flashcount++;
+	}
+	_adc_offset[5] += GRAVITY * _sensor_signs[5];
+	save_accel_eeprom();
 }
-
-
-/**************************************************/
-void
-AP_IMU::gyro_init(uint16_t *_offset_address)
-{	
-	float temp[6];
-	read_offsets();
-	// We read the imu offsets from EEPROM to reuse the saved accel values.
-	// This way we do not need the IMU to be level during calibration.
-	eeprom_read_block((void*)&temp, _offset_address, sizeof(_adc_offset));
-	_adc_offset[3] = temp[3];
-	_adc_offset[4] = temp[4];
-	_adc_offset[5] = temp[5];
-
-	//  Save offset values to EEPROM for use in an air restart
- 	eeprom_write_block((const void *)&_adc_offset, _offset_address, sizeof(_adc_offset));
-}
-
 
 /**************************************************/
 // Returns the temperature compensated raw gyro value
@@ -165,10 +178,11 @@ AP_IMU::gyro_temp_comp(int i, int temp) const
 	//------------------------------------------------------------------------
 	return _gyro_temp_curve[i][0] + _gyro_temp_curve[i][1] * temp + _gyro_temp_curve[i][2] * temp * temp;	
 }
+
 /**************************************************/
 Vector3f
 AP_IMU::get_gyro(void)
-{	
+{
 	int tc_temp = _adc->Ch(_gyro_temp_ch);
 	
 	for (int i = 0; i < 3; i++) {
@@ -215,3 +229,69 @@ AP_IMU::get_accel(void)
 	
 	return _accel_vector;
 }
+
+/********************************************************************************/
+
+void
+AP_IMU::load_gyro_eeprom(void)
+{
+	_adc_offset[0] = read_EE_float(_address );
+	_adc_offset[1] = read_EE_float(_address + 4);
+	_adc_offset[2] = read_EE_float(_address + 8);
+}
+
+void
+AP_IMU::save_gyro_eeprom(void)
+{
+	write_EE_float(_adc_offset[0], _address);
+	write_EE_float(_adc_offset[1], _address + 4);
+	write_EE_float(_adc_offset[2], _address + 8);
+}
+
+/********************************************************************************/
+
+void
+AP_IMU::load_accel_eeprom(void)
+{
+	_adc_offset[3] = read_EE_float(_address + 12);
+	_adc_offset[4] = read_EE_float(_address + 16);
+	_adc_offset[5] = read_EE_float(_address + 20);
+}
+
+void
+AP_IMU::save_accel_eeprom(void)
+{
+	write_EE_float(_adc_offset[3], _address + 12);
+	write_EE_float(_adc_offset[4], _address + 16);
+	write_EE_float(_adc_offset[5], _address + 20);
+}
+
+
+/********************************************************************************/
+
+float
+AP_IMU::read_EE_float(int address)
+{
+	union {
+		byte bytes[4];
+		float value;
+	} _floatOut;
+	
+	for (int i = 0; i < 4; i++) 
+		_floatOut.bytes[i] = eeprom_read_byte((uint8_t *) (address + i));
+	return _floatOut.value;
+}
+
+void
+AP_IMU::write_EE_float(float value, int address)
+{
+	union {
+		byte bytes[4];
+		float value;
+	} _floatIn;
+	
+	_floatIn.value = value;
+	for (int i = 0; i < 4; i++) 
+		eeprom_write_byte((uint8_t *) (address + i), _floatIn.bytes[i]);
+}
+
