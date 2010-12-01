@@ -10,21 +10,15 @@
     version 2.1 of the License, or (at your option) any later version.
 
         Methods:
-                quick_init()		: For air restart
-                init() 				: For ground start.  Calibrates the IMU
 				update_DCM(_G_Dt)	: Updates the AHRS by integrating the rotation matrix over time _G_Dt using the IMU object data
-				get_gyros()			: Returns gyro vector corrected for bias
-				get_accels()		: Returns accelerometer vector
+				get_gyro()			: Returns gyro vector corrected for bias
+				get_accel()		: Returns accelerometer vector
 				get_dcm_matrix()	: Returns dcm matrix
 
 */
-#include <AP_DCM_FW.h>
+#include <AP_DCM.h>
 
-#define OUTPUTMODE 1	// This is just used for debugging, remove later
-#define TRUE 1
-#define FALSE 0
-
-
+#define OUTPUTMODE 1				// This is just used for debugging, remove later
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
@@ -33,43 +27,19 @@
 #define Kp_YAW 0.8		 			// Yaw Drift Correction Porportional Gain	
 #define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
 
-
-#define SPEEDFILT 300			// centimeters/second
+#define SPEEDFILT 300				// centimeters/second
 #define ADC_CONSTRAINT 900
 
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-AP_DCM_FW::AP_DCM_FW(AP_ADC * adc, GPS *gps) :
-	_gps(gps),
-	_compass(0),
-	_dcm_matrix(1, 0, 0,
-				0, 1, 0,
-				0, 0, 1),
-	_course_over_ground_x(0),
-	_course_over_ground_y(1),
-	_imu(adc)
-{
-}
-
-AP_DCM_FW::AP_DCM_FW(AP_ADC * adc, GPS *gps, APM_Compass_Class *withCompass) :
-	_gps(gps),
-	_compass(withCompass),
-	_dcm_matrix(1, 0, 0,
-				0, 1, 0,
-				0, 0, 1),
-	_course_over_ground_x(0),
-	_course_over_ground_y(1),
-	_imu(adc)
-{
-}
 
 /**************************************************/
 void
-AP_DCM_FW::update_DCM(float _G_Dt)
+AP_DCM::update_DCM(float _G_Dt)
 {
-	_gyro_vector = _imu.get_gyro();			// Get current values for IMU sensors
-	_accel_vector = _imu.get_accel();			// Get current values for IMU sensors
+	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
+	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
 	
 	matrix_update(_G_Dt); 	// Integrate the DCM matrix
 	normalize();			// Normalize the DCM matrix
@@ -78,41 +48,26 @@ AP_DCM_FW::update_DCM(float _G_Dt)
 	euler_angles();			// Calculate pitch, roll, yaw for stabilization and navigation
 }
 
-
 /**************************************************/
-void
-AP_DCM_FW::quick_init(uint16_t *_offset_address)
+Vector3f
+AP_DCM::get_gyro(void)
 {
-	_imu.quick_init(_offset_address);
-}
-/**************************************************/
-void
-AP_DCM_FW::gyro_init(uint16_t *_offset_address)
-{
-	_imu.gyro_init(_offset_address);
-}
-/**************************************************/
-void
-AP_DCM_FW::init(uint16_t *_offset_address)
-{
-	_imu.init(_offset_address);
-}
-
+	return _omega_integ_corr;
+}	// We return the raw gyro vector corrected for bias
 
 /**************************************************/
 Vector3f
-AP_DCM_FW::get_gyros(void)
-{	return _omega_integ_corr;}	// We return the raw gyro vector corrected for bias
-
-/**************************************************/
-Vector3f
-AP_DCM_FW::get_accels(void)
-{	return _accel_vector;}
+AP_DCM::get_accel(void)
+{
+	return _accel_vector;
+}
 
 /**************************************************/
 Matrix3f
-AP_DCM_FW::get_dcm_matrix(void)
-{	return _dcm_matrix;}
+AP_DCM::get_dcm_matrix(void)
+{
+	return _dcm_matrix;
+}
 
 
     //For Debugging
@@ -128,15 +83,10 @@ printm(const char *l, Matrix3f &m)
 	Serial.print(*(uint32_t *)&(m.c.x), HEX); Serial.print(" "); Serial.print(*(uint32_t *)&(m.c.y), HEX); Serial.print(" ");  Serial.println(*(uint32_t *)&(m.c.z), HEX);
 }
 */
-
-/**************************************************/
-AP_IMU *
-AP_DCM_FW::get_imu(void)
-{	return &_imu;}
  
 /**************************************************/
 void 
-AP_DCM_FW::matrix_update(float _G_Dt)
+AP_DCM::matrix_update(float _G_Dt)
 {
 	Matrix3f	update_matrix;
 	Matrix3f	temp_matrix;
@@ -147,8 +97,8 @@ AP_DCM_FW::matrix_update(float _G_Dt)
 	   (fabs(_gyro_vector.z) >= radians(300)))
 		gyro_sat_count++;
 
-	_omega_integ_corr = _gyro_vector + _omega_I;		// Used for centrep correction (theoretically better than _omega)
-	_omega = _omega_integ_corr + _omega_P;				// Equation 16, adding proportional and integral correction terms
+	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for centrep correction (theoretically better than _omega)
+	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
 	
 	accel_adjust();				// Remove centrifugal acceleration.
 
@@ -182,7 +132,7 @@ AP_DCM_FW::matrix_update(float _G_Dt)
 
 /**************************************************/
 void 
-AP_DCM_FW::accel_adjust(void)
+AP_DCM::accel_adjust(void)
 {
 	Vector3f veloc, temp;
 	float vel;
@@ -190,20 +140,19 @@ AP_DCM_FW::accel_adjust(void)
 	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 	
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
-	
+
 	//_accel_vector -= _omega_integ_corr % _veloc;		// Equation 26  This line is giving the compiler a problem so we break it up below
 	temp.x = 0;
 	temp.y = _omega_integ_corr.z * veloc.x; 			// only computing the non-zero terms
 	temp.z = -1.0f * _omega_integ_corr.y * veloc.x;	// After looking at the compiler issue lets remove _veloc and simlify 
 
 	_accel_vector -= temp;
-
 }
 
 
 /**************************************************/
 void 
-AP_DCM_FW::normalize(void)
+AP_DCM::normalize(void)
 {
 	float error = 0;
 	Vector3f	temporary[3];
@@ -238,7 +187,7 @@ AP_DCM_FW::normalize(void)
 
 /**************************************************/
 Vector3f
-AP_DCM_FW::renorm(Vector3f const &a, int &problem)
+AP_DCM::renorm(Vector3f const &a, int &problem)
 {
 	float	renorm;
 
@@ -259,18 +208,18 @@ AP_DCM_FW::renorm(Vector3f const &a, int &problem)
 
 /**************************************************/
 void 
-AP_DCM_FW::drift_correction(void)
+AP_DCM::drift_correction(void)
 {
 	//Compensation the Roll, Pitch and Yaw drift. 
 	float mag_heading_x;
 	float mag_heading_y;
-	float error_course = 0;
-	static float scaled_omega_P[3];
-	static float scaled_omega_I[3];
+	float error_course;
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
-	static bool in_motion = FALSE;
+	static float scaled_omega_P[3];
+	static float scaled_omega_I[3];
+	static bool in_motion = false;
 	Matrix3f rot_mat;
 	
 	//*****Roll and Pitch***************
@@ -283,8 +232,7 @@ AP_DCM_FW::drift_correction(void)
 	accel_weight = constrain(1 - 2 * fabs(1 - accel_magnitude), 0, 1);	//	
 	
 	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
-	imu_health = imu_health + 0.02 * (accel_weight-.5);
-	imu_health = constrain(imu_health, 0, 1);
+	_imu->set_health(0.02 * (accel_weight-.5));
 	
 	// adjust the ground of reference 
 	_error_roll_pitch =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???
@@ -332,15 +280,15 @@ AP_DCM_FW::drift_correction(void)
 				rot_mat.c.z = 1.0;
 				
 				_dcm_matrix = rot_mat * _dcm_matrix;
-				in_motion =  TRUE;
+				in_motion =  true;
 				error_course = 0;
 				
 			}	
 		} else {
 			error_course = 0;
-			in_motion = FALSE;
+			in_motion = false;
 		}	
-	}	
+	}
 	
 	_error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
 	
@@ -358,7 +306,7 @@ AP_DCM_FW::drift_correction(void)
 
 /**************************************************/
 void 
-AP_DCM_FW::euler_angles(void)
+AP_DCM::euler_angles(void)
 {
 	#if (OUTPUTMODE == 2)				 // Only accelerometer info (debugging purposes)
 	roll 		= atan2(_accel_vector.y, -_accel_vector.z);		// atan2(acc_y, acc_z)
@@ -370,13 +318,15 @@ AP_DCM_FW::euler_angles(void)
 	yaw 		= atan2(_dcm_matrix.b.x, _dcm_matrix.a.x);
 	#endif
 	
-	roll_sensor = degrees(roll) * 100;
-	pitch_sensor = degrees(pitch) * 100;
-	yaw_sensor = degrees(yaw) * 100;
-	if (yaw_sensor < 0)	yaw_sensor += 36000;
+	roll_sensor 	= degrees(roll)  * 100;
+	pitch_sensor 	= degrees(pitch) * 100;
+	yaw_sensor 		= degrees(yaw)   * 100;
 
+	if (yaw_sensor < 0)
+		yaw_sensor += 36000;
 }
 
 /**************************************************/
+
 
 
