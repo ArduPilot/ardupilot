@@ -97,10 +97,11 @@ AP_DCM::matrix_update(float _G_Dt)
 		(fabs(_gyro_vector.z) >= radians(300)))
 		gyro_sat_count++;
 
-	if(_centrifugal){
-		_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for centrep correction (theoretically better than _omega)
+		_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
 		_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms		
-		accel_adjust();				// Remove centrifugal acceleration.
+
+	if(_centripetal){
+		accel_adjust();				// Remove _centripetal acceleration.
 	}
 	
  #if OUTPUTMODE == 1				 
@@ -242,8 +243,8 @@ AP_DCM::drift_correction(void)
 	accel_weight = constrain(1 - 2 * fabs(1 - accel_magnitude), 0, 1);	//	
 	
 	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
-	_imu->set_health(0.02 * (accel_weight-.5));
-	
+	_health += constrain((0.02 * (accel_weight - .5)), 0, 1);
+
 	// adjust the ground of reference 
 	_error_roll_pitch =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???
 
@@ -338,5 +339,10 @@ AP_DCM::euler_angles(void)
 
 /**************************************************/
 
+float
+AP_DCM::get_health(void)
+{
+	return _health;
+}
 
 

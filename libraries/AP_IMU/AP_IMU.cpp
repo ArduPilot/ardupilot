@@ -55,18 +55,6 @@ const float   AP_IMU::_gyro_temp_curve[3][3] = {
 };	// To Do - make additional constructors to pass this in.
 
 
-/**************************************************/
-void
-AP_IMU::set_health(float health)
-{
-	_health += constrain(health, 0, 1);
-}
-
-float
-AP_IMU::get_health(void)
-{
-	return _health;
-}
 
 void
 AP_IMU::init(void)

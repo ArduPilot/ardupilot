@@ -42,10 +42,12 @@ public:
 	Vector3f	get_accel(void);
 	Matrix3f	get_dcm_matrix(void);
 	
-	void		set_centrifugal(bool b);
+	void		set_centripetal(bool b);
 
 	// Methods
 	void 		update_DCM(float _G_Dt);
+
+	float		get_health(void);
 
 	long		roll_sensor;					// Degrees * 100
 	long		pitch_sensor;					// Degrees * 100
@@ -88,7 +90,8 @@ private:
 	float 		_errorCourse;
 	float 		_course_over_ground_x; 		// Course overground X axis
 	float 		_course_over_ground_y; 		// Course overground Y axis
-	bool		_centrifugal;
+	float		_health;
+	bool		_centripetal;
 };
 
 #endif

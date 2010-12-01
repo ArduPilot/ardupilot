@@ -32,9 +32,6 @@ public:
 	// raw ADC values - called by DCM
 	Vector3f	get_gyro(void);									// Radians/second
 	Vector3f	get_accel(void);								// meters/seconds squared
-
-	void		set_health(float health);
-	float		get_health(void);
 				
 	// Members
 	uint8_t 	adc_constraints;		// a check of how many times we get non-sensical values
@@ -48,7 +45,6 @@ private:
 	uint16_t	_address;					// EEPROM start address for saving/retrieving offsets
 	float 		_adc_in[6];					// array that store the 6 ADC channels used by IMU
 	float 		_adc_offset[6]; 			// Array that store the Offset of the gyros and accelerometers
-	float		_health;
 	Vector3f 	_accel_vector;				// Store the acceleration in a vector
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
 	AP_ADC		* _adc; 					// Analog to digital converter pointer
