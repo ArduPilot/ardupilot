@@ -93,15 +93,16 @@ AP_DCM::matrix_update(float _G_Dt)
 	
 	//Record when you saturate any of the gyros.
 	if((fabs(_gyro_vector.x) >= radians(300)) || 
-	   (fabs(_gyro_vector.y) >= radians(300)) || 
-	   (fabs(_gyro_vector.z) >= radians(300)))
+		(fabs(_gyro_vector.y) >= radians(300)) || 
+		(fabs(_gyro_vector.z) >= radians(300)))
 		gyro_sat_count++;
 
-	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for centrep correction (theoretically better than _omega)
-	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
+	if(_centrifugal){
+		_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for centrep correction (theoretically better than _omega)
+		_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms		
+		accel_adjust();				// Remove centrifugal acceleration.
+	}
 	
-	accel_adjust();				// Remove centrifugal acceleration.
-
  #if OUTPUTMODE == 1				 
 	update_matrix.a.x = 0;
 	update_matrix.a.y = -_G_Dt * _omega.z; 		// -delta Theta z
@@ -150,7 +151,16 @@ AP_DCM::accel_adjust(void)
 }
 
 
-/**************************************************/
+/*************************************************
+Direction Cosine Matrix IMU: Theory
+William Premerlani and Paul Bizard
+
+Numerical errors will gradually reduce the orthogonality conditions expressed by equation 5 
+to approximations rather than identities. In effect, the axes in the two frames of reference no 
+longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a 
+simple matter to stay ahead of it.
+We call the process of enforcing the orthogonality conditions “renormalization”.
+*/
 void 
 AP_DCM::normalize(void)
 {

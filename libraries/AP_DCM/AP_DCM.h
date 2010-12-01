@@ -42,6 +42,8 @@ public:
 	Vector3f	get_accel(void);
 	Matrix3f	get_dcm_matrix(void);
 	
+	void		set_centrifugal(bool b);
+
 	// Methods
 	void 		update_DCM(float _G_Dt);
 
@@ -86,7 +88,7 @@ private:
 	float 		_errorCourse;
 	float 		_course_over_ground_x; 		// Course overground X axis
 	float 		_course_over_ground_y; 		// Course overground Y axis
-
+	bool		_centrifugal;
 };
 
 #endif
