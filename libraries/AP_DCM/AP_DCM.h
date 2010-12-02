@@ -5,7 +5,7 @@
 #include <AP_Math.h>
 #include <inttypes.h>
 #include "WProgram.h"
-#include <APM_Compass.h>
+#include <AP_Compass.h>
 #include <AP_ADC.h>
 #include <AP_GPS.h>
 #include <AP_IMU.h>
@@ -26,7 +26,7 @@ public:
 		_course_over_ground_y(1)
 	{}
 	
-	AP_DCM(AP_IMU *imu, GPS *gps, APM_Compass_Class *withCompass) :
+	AP_DCM(AP_IMU *imu, GPS *gps, Compass *withCompass) :
 		_imu(imu),
 		_gps(gps),
 		_compass(withCompass),
@@ -73,7 +73,7 @@ private:
 	void 		euler_angles(void);
 
 	// members
-	APM_Compass_Class 	* _compass;
+	Compass 	* _compass;
 	GPS 				* _gps;
 	AP_IMU 				* _imu;
 
