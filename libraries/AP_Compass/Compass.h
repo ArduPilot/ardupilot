@@ -2,24 +2,25 @@
 #define Compass_h
 
 #include <inttypes.h>
-#include <AP_Math>
+#include <AP_Math.h>
 
 class Compass
 {
   public:
-	virtual void init();
-	virtual void update();
-	virtual void calculate(float roll, float pitch);
-
-	Vector3f mag;
-	int16_t mag_X;
-	int16_t mag_Y;
-	int16_t mag_Z;
-	int32_t ground_course;
+	int magX;
+	int magY;
+	int magZ;
 	float heading;
-	float heading_X;
-	float heading_Y;
-
+	float headingX;
+	float headingY;
+	unsigned long lastUpdate;	
+	
+	// 
+	virtual bool init(int initialiseWireLib = 1);
+	virtual void read();
+	virtual void calculate(float roll, float pitch);
+	virtual void setOrientation(const Matrix3f &rotationMatrix);
+	virtual void setOffsets(int x, int y, int z);
+	virtual void setDeclination(float radians);
 };
-
 #endif

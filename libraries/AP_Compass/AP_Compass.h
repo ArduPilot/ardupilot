@@ -1,17 +1,7 @@
-#ifndef AP_Compass_h
-#define AP_Compass_h
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-#include <Compass.h>
+/// @file	AP_Compass.h
+/// @brief	Catch-all header that defines all supported compass classes.
 
-class AP_Compass : public Compass
-{
-  public:
-	AP_Compass();  // Constructor
-	void init();
-	void update();
-	void calculate(float roll, float pitch);
-	
-  private:	
-};
-
-#endif
+#include "AP_Compass_HMC5843.h"
+#include "AP_Compass_HIL.h"
