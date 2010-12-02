@@ -5,6 +5,7 @@
 
 #include <Wire.h>
 #include <AP_Compass_HMC5843.h> // Compass Library
+#include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 
 AP_Compass_HMC5843 compass;
 
