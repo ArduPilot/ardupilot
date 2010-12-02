@@ -45,11 +45,11 @@ bool AP_Compass_HIL::init(int initialise_wire_lib)
           delay(10);
 
           // calibrate
-          if( abs(magX) > 500 && abs(magX) < 1000 && abs(magY) > 500 && abs(magY) < 1000 && abs(magZ) > 500 && abs(magZ) < 1000)
+          if( abs(mag_x) > 500 && abs(mag_x) < 1000 && abs(mag_y) > 500 && abs(mag_y) < 1000 && abs(mag_z) > 500 && abs(mag_z) < 1000)
           {
-                  calibration[0] = fabs(715.0 / magX);
-                  calibration[1] = fabs(715.0 / magY);
-                  calibration[2] = fabs(715.0 / magZ);
+                  calibration[0] = fabs(715.0 / mag_x);
+                  calibration[1] = fabs(715.0 / mag_y);
+                  calibration[2] = fabs(715.0 / mag_z);
                   
                   // mark success
                   success = 1;
@@ -81,9 +81,9 @@ void AP_Compass_HIL::calculate(float roll, float pitch)
   
   // rotate the magnetometer values depending upon orientation
   if( orientation == 0 )
-      rotMagVec = Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]);  
+      rotMagVec = Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]);  
   else
-      rotMagVec = orientation_matrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
+      rotMagVec = orientation_matrix*Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]); 
   
   // Tilt compensated Magnetic field X component:
   headX = rotMagVec.x*cos_pitch+rotMagVec.y*sin_roll*sin_pitch+rotMagVec.z*cos_roll*sin_pitch;
@@ -128,10 +128,10 @@ void AP_Compass_HIL::set_declination(float radians)
     declination = radians;
 }
 
-void AP_Compass_HIL::setHIL(float _magX, float _magY, float _magZ)
+void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
 {
     // TODO: map floats to raw
-    magX = _magX;
-    magY = _magY;
-    magZ = _magZ;
+    mag_x = _mag_x;
+    mag_y = _mag_y;
+    mag_z = _mag_z;
 }

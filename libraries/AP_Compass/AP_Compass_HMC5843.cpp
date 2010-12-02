@@ -15,9 +15,9 @@
 		heading : magnetic heading
 		heading_x : magnetic heading X component
 		heading_y : magnetic heading Y component
-		magX : Raw X axis magnetometer data
-		magY : Raw Y axis magnetometer data
-		magZ : Raw Z axis magnetometer data		
+		mag_x : Raw X axis magnetometer data
+		mag_y : Raw Y axis magnetometer data
+		mag_z : Raw Z axis magnetometer data		
 		last_update : the time of the last successful reading		
 	
 	Methods:
@@ -71,7 +71,7 @@ bool AP_Compass_HMC5843::init(int initialise_wire_lib)
   int numAttempts = 0;
   int success = 0;
   
-  if( initialiseWireLib != 0 )
+  if( initialise_wire_lib != 0 )
       Wire.begin();
   
   delay(10);
@@ -112,11 +112,11 @@ bool AP_Compass_HMC5843::init(int initialise_wire_lib)
 	  delay(10);
 
 	  // calibrate
-	  if( abs(magX) > 500 && abs(magX) < 1000 && abs(magY) > 500 && abs(magY) < 1000 && abs(magZ) > 500 && abs(magZ) < 1000)
+	  if( abs(mag_x) > 500 && abs(mag_x) < 1000 && abs(mag_y) > 500 && abs(mag_y) < 1000 && abs(mag_z) > 500 && abs(mag_z) < 1000)
 	  {
-		  calibration[0] = fabs(715.0 / magX);
-		  calibration[1] = fabs(715.0 / magY);
-		  calibration[2] = fabs(715.0 / magZ);
+		  calibration[0] = fabs(715.0 / mag_x);
+		  calibration[1] = fabs(715.0 / mag_y);
+		  calibration[2] = fabs(715.0 / mag_z);
 		  
 		  // mark success
 		  success = 1;
@@ -160,9 +160,9 @@ void AP_Compass_HMC5843::read()
   if (i==6)  // All bytes received?
   {
     // MSB byte first, then LSB, X,Y,Z
-    magX = -((((int)buff[0]) << 8) | buff[1]) * calibration[0];    // X axis
-    magY = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
-    magZ = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
+    mag_x = -((((int)buff[0]) << 8) | buff[1]) * calibration[0];    // X axis
+    mag_y = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
+    mag_z = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
     last_update = millis();  // record time of update
   }
 }
@@ -184,9 +184,9 @@ void AP_Compass_HMC5843::calculate(float roll, float pitch)
   
   // rotate the magnetometer values depending upon orientation
   if( orientation == 0 )
-      rotmagVec = Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]);  
+      rotmagVec = Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]);  
   else
-      rotmagVec = orientation_matrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
+      rotmagVec = orientation_matrix*Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]); 
   
   // Tilt compensated magnetic field X component:
   headX = rotmagVec.x*cos_pitch+rotmagVec.y*sin_roll*sin_pitch+rotmagVec.z*cos_roll*sin_pitch;
