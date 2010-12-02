@@ -7,20 +7,19 @@
 class Compass
 {
   public:
-	int magX;
-	int magY;
-	int magZ;
+	int mag_x;
+	int mag_y;
+	int mag_z;
 	float heading;
-	float headingX;
-	float headingY;
-	unsigned long lastUpdate;	
+	float heading_x;
+	float heading_y;
+	unsigned long last_update;	
 	
-	// 
-	virtual bool init(int initialiseWireLib = 1);
+	virtual bool init(int initialise_wire_lib = 1);
 	virtual void read();
 	virtual void calculate(float roll, float pitch);
-	virtual void setOrientation(const Matrix3f &rotationMatrix);
-	virtual void setOffsets(int x, int y, int z);
-	virtual void setDeclination(float radians);
+	virtual void set_orientation(const Matrix3f &rotation_matrix);
+	virtual void set_offsets(int x, int y, int z);
+	virtual void set_declination(float radians);
 };
 #endif

@@ -14,9 +14,9 @@
 		heading : Magnetic heading
 		heading_X : Magnetic heading X component
 		heading_Y : Magnetic heading Y component
-		mag_X : Raw X axis magnetometer data
-		mag_Y : Raw Y axis magnetometer data
-		mag_Z : Raw Z axis magnetometer data		
+		mag_x : Raw X axis magnetometer data
+		mag_y : Raw Y axis magnetometer data
+		mag_z : Raw Z axis magnetometer data		
 	
 	Methods:
 		init() : initialization of I2C and sensor
@@ -78,13 +78,13 @@ AP_Compass::update()
 	// All bytes received?
 	if (i == 6)	{
 		// MSB byte first, then LSB, X,Y,Z
-		mag_X = -((((int)buff[0]) << 8) | buff[1]);		// X axis
-		mag_Y =  ((((int)buff[2]) << 8) | buff[3]);		// Y axis
-		mag_Z = -((((int)buff[4]) << 8) | buff[5]);		// Z axis
+		mag_x = -((((int)buff[0]) << 8) | buff[1]);		// X axis
+		mag_y =  ((((int)buff[2]) << 8) | buff[3]);		// Y axis
+		mag_z = -((((int)buff[4]) << 8) | buff[5]);		// Z axis
 	}
-	mag.x = mag_X;
-	mag.y = mag_Y;
-	mag.z = mag_Z
+	mag.x = mag_x;
+	mag.y = mag_y;
+	mag.z = mag_z
 }
 
 void
@@ -103,10 +103,10 @@ AP_Compass::calculate(float roll, float pitch)
 	sin_pitch = sin(pitch);
 	
 	// Tilt compensated Magnetic field X component:
-	head_X = mag_X * cos_pitch + mag_Y * sin_roll * sin_pitch + mag_Z * cos_roll * sin_pitch;
+	head_X = mag_x * cos_pitch + mag_y * sin_roll * sin_pitch + mag_z * cos_roll * sin_pitch;
 	
 	// Tilt compensated Magnetic field Y component:
-	head_Y = mag_Y * cos_roll - mag_Z * sin_roll;
+	head_Y = mag_y * cos_roll - mag_z * sin_roll;
 	
 	// Magnetic heading
 	heading = atan2(-head_Y, head_X);

@@ -13,20 +13,20 @@
 	
 	Variables:
 		heading : magnetic heading
-		headingX : magnetic heading X component
-		headingY : magnetic heading Y component
+		heading_x : magnetic heading X component
+		heading_y : magnetic heading Y component
 		magX : Raw X axis magnetometer data
 		magY : Raw Y axis magnetometer data
 		magZ : Raw Z axis magnetometer data		
-		lastUpdate : the time of the last successful reading		
+		last_update : the time of the last successful reading		
 	
 	Methods:
 		init() : Initialization of I2C and sensor
 		read() : Read Sensor data	
 		calculate(float roll, float pitch) : Calculate tilt adjusted heading
-		setOrientation(const Matrix3f &rotationMatrix) : Set orientation of compass
-		setOffsets(int x, int y, int z) : Set adjustments for HardIron disturbances
-		setDeclination(float radians) : Set heading adjustment between true north and magnetic north
+		set_orientation(const Matrix3f &rotation_matrix) : Set orientation of compass
+		set_offsets(int x, int y, int z) : Set adjustments for HardIron disturbances
+		set_declination(float radians) : Set heading adjustment between true north and magnetic north
 
 	To do : code optimization
 	Mount position : UPDATED
@@ -41,7 +41,7 @@
 #include <Wire.h>
 #include "AP_Compass_HMC5843.h"
 
-#define CompassAddress       0x1E
+#define COMPASS_ADDRESS       0x1E
 #define ConfigRegA           0x00
 #define ConfigRegB           0x01
 #define magGain              0x20
@@ -61,11 +61,11 @@ AP_Compass_HMC5843::AP_Compass_HMC5843() : orientation(0), declination(0.0)
   offset[2] = 0;
   
   // initialise orientation matrix
-  orientationMatrix = ROTATION_NONE;
+  orientation_matrix = ROTATION_NONE;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Compass_HMC5843::init(int initialiseWireLib)
+bool AP_Compass_HMC5843::init(int initialise_wire_lib)
 {
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
@@ -87,7 +87,7 @@ bool AP_Compass_HMC5843::init(int initialiseWireLib)
 	  numAttempts++;
   
 	  // force positiveBias (compass should return 715 for all channels)
-	  Wire.beginTransmission(CompassAddress);
+	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ConfigRegA);
 	  Wire.send(PositiveBiasConfig);
 	  if (0 != Wire.endTransmission())
@@ -95,13 +95,13 @@ bool AP_Compass_HMC5843::init(int initialiseWireLib)
 	  delay(50);
 	  
 	  // set gains
-	  Wire.beginTransmission(CompassAddress);
+	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ConfigRegB);
 	  Wire.send(magGain);
 	  Wire.endTransmission();
 	  delay(10);  
 
-	  Wire.beginTransmission(CompassAddress);
+	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ModeRegister);
 	  Wire.send(SingleConversion);
 	  Wire.endTransmission();
@@ -123,13 +123,13 @@ bool AP_Compass_HMC5843::init(int initialiseWireLib)
 	  }
 		
 	  // leave test mode
-	  Wire.beginTransmission(CompassAddress);
+	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ConfigRegA);
 	  Wire.send(NormalOperation);
 	  Wire.endTransmission();
 	  delay(50);
 
-	  Wire.beginTransmission(CompassAddress);
+	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ModeRegister);
 	  Wire.send(ContinuousConversion);        // Set continuous mode (default to 10Hz)
 	  Wire.endTransmission();                 // End transmission
@@ -144,12 +144,12 @@ void AP_Compass_HMC5843::read()
   int i = 0;
   byte buff[6];
  
-  Wire.beginTransmission(CompassAddress); 
+  Wire.beginTransmission(COMPASS_ADDRESS); 
   Wire.send(0x03);        //sends address to read from
   Wire.endTransmission(); //end transmission
   
-  //Wire.beginTransmission(CompassAddress); 
-  Wire.requestFrom(CompassAddress, 6);    // request 6 bytes from device
+  //Wire.beginTransmission(COMPASS_ADDRESS); 
+  Wire.requestFrom(COMPASS_ADDRESS, 6);    // request 6 bytes from device
   while(Wire.available())     
   { 
     buff[i] = Wire.receive();  // receive one byte
@@ -163,7 +163,7 @@ void AP_Compass_HMC5843::read()
     magX = -((((int)buff[0]) << 8) | buff[1]) * calibration[0];    // X axis
     magY = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
     magZ = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
-    lastUpdate = millis();  // record time of update
+    last_update = millis();  // record time of update
   }
 }
 
@@ -186,7 +186,7 @@ void AP_Compass_HMC5843::calculate(float roll, float pitch)
   if( orientation == 0 )
       rotmagVec = Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]);  
   else
-      rotmagVec = orientationMatrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
+      rotmagVec = orientation_matrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
   
   // Tilt compensated magnetic field X component:
   headX = rotmagVec.x*cos_pitch+rotmagVec.y*sin_roll*sin_pitch+rotmagVec.z*cos_roll*sin_pitch;
@@ -206,27 +206,27 @@ void AP_Compass_HMC5843::calculate(float roll, float pitch)
   }
 	
   // Optimization for external DCM use. Calculate normalized components
-  headingX = cos(heading);
-  headingY = sin(heading);
+  heading_x = cos(heading);
+  heading_y = sin(heading);
 }
 
-void AP_Compass_HMC5843::setOrientation(const Matrix3f &rotationMatrix)
+void AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
 {
-    orientationMatrix = rotationMatrix;
-	if( orientationMatrix == ROTATION_NONE )
+    orientation_matrix = rotation_matrix;
+	if( orientation_matrix == ROTATION_NONE )
 	    orientation = 0;
 	else
 	    orientation = 1;
 }
 
-void AP_Compass_HMC5843::setOffsets(int x, int y, int z)
+void AP_Compass_HMC5843::set_offsets(int x, int y, int z)
 {
     offset[0] = x;
 	offset[1] = y;
 	offset[2] = z;
 }
 
-void AP_Compass_HMC5843::setDeclination(float radians)
+void AP_Compass_HMC5843::set_declination(float radians)
 {
     declination = radians;
 }

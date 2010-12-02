@@ -4,9 +4,9 @@
 */
 
 #include <Wire.h>
-#include <AP_Compass.h> // Compass Library
+#include <AP_Compass_HMC5843.h> // Compass Library
 
-AP_Compass compass;
+AP_Compass_HMC5843 compass;
 
 unsigned long timer;
 
@@ -14,7 +14,7 @@ void setup()
 {	
 	compass.init();	 // Initialization
 	Serial.begin(38400);
-  Serial.println("AP Compass library test (HMC5843)");
+	Serial.println("AP Compass library test (HMC5843)");
 	delay(1000);
 	timer = millis();
 }
@@ -25,16 +25,16 @@ void loop()
 	
 	if((millis()- timer) > 100){
 		timer = millis();
-		compass.update();
+		compass.read();
 		compass.calculate(0, 0);	// roll = 0, pitch = 0 for this example
 	    Serial.print("Heading:");
-		Serial.print(compass.ground_course,DEC);
+		Serial.print(compass.heading, DEC);
     	Serial.print("  (");
-		Serial.print(compass.mag_X);
+		Serial.print(compass.mag_x);
 	    Serial.print(",");
-		Serial.print(compass.mag_Y);
+		Serial.print(compass.mag_y);
     	Serial.print(",");
-		Serial.print(compass.mag_Z);
+		Serial.print(compass.mag_z);
    		Serial.println(" )");
 	}
 }

@@ -62,7 +62,7 @@ class AP_Compass_HMC5843 : public Compass
 {
   private:
 	int orientation;
-	Matrix3f orientationMatrix;
+	Matrix3f orientation_matrix;
 	float calibration[3];
 	int offset[3];
 	float declination;
@@ -71,8 +71,8 @@ class AP_Compass_HMC5843 : public Compass
 	bool init(int initialiseWireLib = 1);
 	void read();
 	void calculate(float roll, float pitch);
-	void setOrientation(const Matrix3f &rotationMatrix);
-	void setOffsets(int x, int y, int z);
-	void setDeclination(float radians);
+	void set_orientation(const Matrix3f &rotation_matrix);
+	void set_offsets(int x, int y, int z);
+	void set_declination(float radians);
 };
 #endif

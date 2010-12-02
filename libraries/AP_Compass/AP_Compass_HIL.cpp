@@ -20,11 +20,11 @@ AP_Compass_HIL::AP_Compass_HIL() : orientation(0), declination(0.0)
   offset[2] = 0;
   
   // initialise orientation matrix
-  orientationMatrix = ROTATION_NONE;
+  orientation_matrix = ROTATION_NONE;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Compass_HIL::init(int initialiseWireLib)
+bool AP_Compass_HIL::init(int initialise_wire_lib)
 {
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
@@ -83,7 +83,7 @@ void AP_Compass_HIL::calculate(float roll, float pitch)
   if( orientation == 0 )
       rotMagVec = Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]);  
   else
-      rotMagVec = orientationMatrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
+      rotMagVec = orientation_matrix*Vector3f(magX+offset[0],magY+offset[1],magZ+offset[2]); 
   
   // Tilt compensated Magnetic field X component:
   headX = rotMagVec.x*cos_pitch+rotMagVec.y*sin_roll*sin_pitch+rotMagVec.z*cos_roll*sin_pitch;
@@ -103,27 +103,27 @@ void AP_Compass_HIL::calculate(float roll, float pitch)
   }
         
   // Optimization for external DCM use. Calculate normalized components
-  headingX = cos(heading);
-  headingY = sin(heading);
+  heading_x = cos(heading);
+  heading_y = sin(heading);
 }
 
-void AP_Compass_HIL::setOrientation(const Matrix3f &rotationMatrix)
+void AP_Compass_HIL::set_orientation(const Matrix3f &rotation_matrix)
 {
-    orientationMatrix = rotationMatrix;
-        if( orientationMatrix == ROTATION_NONE )
+    orientation_matrix = rotation_matrix;
+        if( orientation_matrix == ROTATION_NONE )
             orientation = 0;
         else
             orientation = 1;
 }
 
-void AP_Compass_HIL::setOffsets(int x, int y, int z)
+void AP_Compass_HIL::set_offsets(int x, int y, int z)
 {
     offset[0] = x;
         offset[1] = y;
         offset[2] = z;
 }
 
-void AP_Compass_HIL::setDeclination(float radians)
+void AP_Compass_HIL::set_declination(float radians)
 {
     declination = radians;
 }

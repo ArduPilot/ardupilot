@@ -7,9 +7,9 @@ calculate	KEYWORD2
 heading	KEYWORD2
 heading_X	KEYWORD2
 heading_Y	KEYWORD2
-mag_X	KEYWORD2
-mag_Y	KEYWORD2
-mag_Z	KEYWORD2
+mag_x	KEYWORD2
+mag_y	KEYWORD2
+mag_z	KEYWORD2
 
 
 
