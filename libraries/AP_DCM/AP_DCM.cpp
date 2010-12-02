@@ -94,11 +94,12 @@ AP_DCM::matrix_update(float _G_Dt)
 	//Record when you saturate any of the gyros.
 	if((fabs(_gyro_vector.x) >= radians(300)) || 
 		(fabs(_gyro_vector.y) >= radians(300)) || 
-		(fabs(_gyro_vector.z) >= radians(300)))
+		(fabs(_gyro_vector.z) >= radians(300))){
 		gyro_sat_count++;
+	}
 
-		_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
-		_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms		
+	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
+	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms		
 
 	if(_centripetal){
 		accel_adjust();				// Remove _centripetal acceleration.
@@ -222,14 +223,14 @@ void
 AP_DCM::drift_correction(void)
 {
 	//Compensation the Roll, Pitch and Yaw drift. 
-	float mag_heading_x;
-	float mag_heading_y;
+	//float mag_heading_x;
+	//float mag_heading_y;
 	float error_course;
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
-	static float scaled_omega_P[3];
-	static float scaled_omega_I[3];
+	//static float scaled_omega_P[3];
+	//static float scaled_omega_I[3];
 	static bool in_motion = false;
 	Matrix3f rot_mat;
 	
@@ -311,7 +312,7 @@ AP_DCM::drift_correction(void)
 	if (integrator_magnitude > radians(300)) {
 		_omega_I *= (0.5f * radians(300) / integrator_magnitude);		// Why do we have this discontinuous?  EG, why the 0.5?
 	}
-
+	//Serial.print("*");
 }
 
 

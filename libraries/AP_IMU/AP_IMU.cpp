@@ -95,7 +95,10 @@ AP_IMU::init_gyro(void)
 			
 			// filter
 			_adc_offset[j] = _adc_offset[j] * 0.9 + _adc_in[j] * 0.1;
+			//Serial.print(_adc_offset[j], 1);
+			//Serial.print(", ");
 		}
+		//Serial.println(" ");
 
 		delay(20);
 		if(flashcount == 5) {
@@ -111,7 +114,8 @@ AP_IMU::init_gyro(void)
 		}
 		flashcount++;
 	}
-	
+	Serial.println(" ");
+
 	_adc_offset[5] += GRAVITY * _sensor_signs[5];
 	save_gyro_eeprom();
 }
@@ -125,20 +129,31 @@ AP_IMU::init_accel(void) // 3, 4, 5
  	delay(500);
 
 	Serial.println("Init Accel");
-	
-	for(int c = 0; c < 200; c++){
-		for (int i = 0; i < 6; i++)
-			_adc_in[i] = _adc->Ch(_sensors[i]);
-	}
 
+	for (int j = 3; j <= 5; j++){
+		_adc_in[j] 		= _adc->Ch(_sensors[j]);
+		_adc_in[j] 		-= 2025;
+		_adc_offset[j]	= _adc_in[j];
+	}
+	
 	for(int i = 0; i < 200; i++){		// We take some readings...
+		
+		delay(20);
+		
 		for (int j = 3; j <= 5; j++){
 			_adc_in[j] 		= _adc->Ch(_sensors[j]);
 			_adc_in[j] 		-= 2025;
 			_adc_offset[j]	= _adc_offset[j] * 0.9 + _adc_in[j] * 0.1;
+			//Serial.print(j);
+			//Serial.print(": ");
+			//Serial.print(_adc_in[j], 1);
+			//Serial.print(" | ");
+			//Serial.print(_adc_offset[j], 1);
+			//Serial.print(", ");
 		}
+		
+		//Serial.println(" ");
 
-		delay(20);
 		if(flashcount == 5) {
 			Serial.print("*");
 			digitalWrite(A_LED_PIN, LOW);
@@ -152,6 +167,7 @@ AP_IMU::init_accel(void) // 3, 4, 5
 		}
 		flashcount++;
 	}
+	Serial.println(" ");
 	_adc_offset[5] += GRAVITY * _sensor_signs[5];
 	save_accel_eeprom();
 }
@@ -253,6 +269,29 @@ AP_IMU::save_accel_eeprom(void)
 	write_EE_float(_adc_offset[4], _address + 16);
 	write_EE_float(_adc_offset[5], _address + 20);
 }
+
+void 
+AP_IMU::print_accel_offsets(void)
+{
+	Serial.print("Accel offsets: ");
+	Serial.print(_adc_offset[3], 2);
+	Serial.print(", ");
+	Serial.print(_adc_offset[4], 2);
+	Serial.print(", ");
+	Serial.println(_adc_offset[5], 2);
+}
+
+void 
+AP_IMU::print_gyro_offsets(void)
+{
+	Serial.print("Gyro offsets: ");
+	Serial.print(_adc_offset[0], 2);
+	Serial.print(", ");
+	Serial.print(_adc_offset[1], 2);
+	Serial.print(", ");
+	Serial.println(_adc_offset[2], 2);
+}
+
 
 
 /********************************************************************************/

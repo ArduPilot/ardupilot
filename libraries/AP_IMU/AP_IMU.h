@@ -27,7 +27,9 @@ public:
 	void		load_gyro_eeprom(void);
 	void		save_gyro_eeprom(void);
 	void		load_accel_eeprom(void);
-	void		save_accel_eeprom(void);	
+	void		save_accel_eeprom(void);
+	void 		print_accel_offsets(void);
+	void 		print_gyro_offsets(void);
 
 	// raw ADC values - called by DCM
 	Vector3f	get_gyro(void);									// Radians/second
