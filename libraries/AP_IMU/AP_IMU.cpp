@@ -116,7 +116,6 @@ AP_IMU::init_gyro(void)
 	}
 	Serial.println(" ");
 
-	_adc_offset[5] += GRAVITY * _sensor_signs[5];
 	save_gyro_eeprom();
 }
 
