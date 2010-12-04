@@ -43,6 +43,7 @@ public:
 	Matrix3f	get_dcm_matrix(void);
 	
 	void		set_centripetal(bool b);
+	void		set_compass(Compass *compass);
 
 	// Methods
 	void 		update_DCM(float _G_Dt);

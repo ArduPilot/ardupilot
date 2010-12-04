@@ -31,8 +31,11 @@
 #define ADC_CONSTRAINT 900
 
 
-// Constructors ////////////////////////////////////////////////////////////////
-
+void
+AP_DCM::set_compass(Compass *compass)
+{
+	_compass = compass;
+}
 
 /**************************************************/
 void
@@ -263,8 +266,10 @@ AP_DCM::drift_correction(void)
 	
 	if (_compass) {
 		// We make the gyro YAW drift correction based on compass magnetic heading
-		error_course= (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);	// Equation 23, Calculating YAW error	
+		error_course = (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);	// Equation 23, Calculating YAW error	
+		
 	} else {
+	
 		// Use GPS Ground course to correct yaw gyro drift
 		if (_gps->ground_speed >= SPEEDFILT) {
 			_course_over_ground_x = cos(ToRad(_gps->ground_course/100.0));
@@ -279,7 +284,7 @@ AP_DCM::drift_correction(void)
 				cos_psi_err = cos(ToRad(_gps->ground_course/100.0) - yaw);
 				sin_psi_err = sin(ToRad(_gps->ground_course/100.0) - yaw);
 				// Rxx = cos psi err, Rxy = - sin psi err, Rxz = 0
-				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
+				// Ryx = sin psi err, R	yy = cos psi err,   Ryz = 0
 				// Rzx = Rzy = 0, Rzz = 1
 				rot_mat.a.x = cos_psi_err;
 				rot_mat.a.y = - sin_psi_err;

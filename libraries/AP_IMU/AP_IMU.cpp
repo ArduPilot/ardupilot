@@ -54,15 +54,15 @@ const float   AP_IMU::_gyro_temp_curve[3][3] = {
 	{1665,0,0}
 };	// To Do - make additional constructors to pass this in.
 
-
-
 void
 AP_IMU::init(void)
 {
 	init_gyro();
 	init_accel();
 }
+
 /**************************************************/
+
 void
 AP_IMU::init_gyro(void)
 {
