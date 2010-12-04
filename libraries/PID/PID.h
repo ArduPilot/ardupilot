@@ -12,6 +12,15 @@
 /// @brief	Object managing one PID control
 class PID {
 public:
+	///
+	// EEProm Storage Type
+	enum storage_t
+	{
+		STORE_OFF,
+		STORE_EEPROM_FLOAT,
+		STORE_EEPROM_UINT16
+	} _storage;
+
 	/// Constructor
 	///
 	/// A PID constructed in this fashion does not support save/restore.
@@ -19,6 +28,7 @@ public:
 	/// accessor functions.
 	///
 	PID() :
+		_storage(STORE_OFF),
 		_address(0),
 		_gain_array(&_local_gains[0])
 	{}
@@ -31,7 +41,8 @@ public:
 	/// @param address	EEPROM base address at which PID parameters
 	///					are stored.
 	///
-	PID(uint16_t address) :
+	PID(uint16_t address, storage_t storage = STORE_EEPROM_UINT16) :
+		_storage(storage),
 		_address(address),
 		_gain_array(&_local_gains[0])
 	{}
@@ -45,6 +56,7 @@ public:
 	///						respectively.
 	///
 	PID(float *gain_array) :
+		_storage(STORE_OFF),
 		_gain_array(gain_array)
 	{}
 

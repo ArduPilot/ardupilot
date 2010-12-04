@@ -66,24 +66,46 @@ PID::imax(float v)
 void
 PID::load_gains()
 {
-	if ((_gain_array == &_local_gains[0]) && (_address)) {
-		_kp 	= (float)(eeprom_read_word((uint16_t *)	 _address))      / 1000.0;
-		_ki 	= (float)(eeprom_read_word((uint16_t *)	(_address + 2))) / 1000.0;
-		_kd 	= (float)(eeprom_read_word((uint16_t *)	(_address + 4))) / 1000.0;
-		_imax 	= eeprom_read_word((uint16_t *)	(_address + 6)) * 100;
+	switch(_storage)
+	{
+		case STORE_OFF:
+			// load is a NOP if the gain array is managed externally
+			break;
+		case STORE_EEPROM_UINT16:
+			_kp 	= (float)(eeprom_read_word((uint16_t *)	 _address))      / 1000.0;
+			_ki 	= (float)(eeprom_read_word((uint16_t *)	(_address + 2))) / 1000.0;
+			_kd 	= (float)(eeprom_read_word((uint16_t *)	(_address + 4))) / 1000.0;
+			_imax 	= eeprom_read_word((uint16_t *)	(_address + 6)) * 100;
+			break;
+		case STORE_EEPROM_FLOAT:
+			eeprom_read_block((void*)&_kp,(const void*)(_address),sizeof(_kp));
+			eeprom_read_block((void*)&_ki,(const void*)(_address+4),sizeof(_ki));
+			eeprom_read_block((void*)&_kd,(const void*)(_address+8),sizeof(_kd));
+			eeprom_read_block((void*)&_imax,(const void*)(_address+12),sizeof(_imax));
+			break;
 	}
-	// load is a NOP if the gain array is managed externally
 }
 
 void
 PID::save_gains()
 {
-	if ((_gain_array == &_local_gains[0]) && (_address)) {
-		eeprom_write_word((uint16_t *)	 _address, 		(int)(_kp * 1000));
-		eeprom_write_word((uint16_t *)	(_address + 2), (int)(_ki * 1000));
-		eeprom_write_word((uint16_t *)	(_address + 4), (int)(_kd * 1000));
-		eeprom_write_word((uint16_t *)	(_address + 6), (int)_imax/100);
+	switch(_storage)
+	{
+		case STORE_OFF:
+			// save is a NOP if the gain array is managed externally
+			break;
+		case STORE_EEPROM_UINT16:
+			eeprom_write_word((uint16_t *)	 _address, 		(int)(_kp * 1000));
+			eeprom_write_word((uint16_t *)	(_address + 2), (int)(_ki * 1000));
+			eeprom_write_word((uint16_t *)	(_address + 4), (int)(_kd * 1000));
+			eeprom_write_word((uint16_t *)	(_address + 6), (int)_imax/100);
+			break;
+		case STORE_EEPROM_FLOAT:
+			eeprom_write_block((const void *)&_kp,(void *)(_address),sizeof(_kp));
+			eeprom_write_block((const void *)&_ki,(void *)(_address+4),sizeof(_ki));
+			eeprom_write_block((const void *)&_kd,(void *)(_address+8),sizeof(_kd));
+			eeprom_write_block((const void *)&_imax,(void *)(_address+12),sizeof(_imax));
+			break;
 	}
-	// save is a NOP if the gain array is managed externally
 }
 
