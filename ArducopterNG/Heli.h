@@ -76,10 +76,6 @@ TODO:
 #define HELI_STICK_TO_ANGLE_FACTOR 2.0   // To convert ccpm values (-50 ~ 50 ) to absolute angles.  larger number means less lean
 #define HELI_YAW_STICK_TO_ANGLE_FACTOR 0.5  // convert yaw (-50 ~ 50) to turn rate in degrees per second.  larger number means slower turn rate
 
-// roll and pitch adjustment - attitude close to what's required to keep heli in one place when hovering.  This will be added to the roll/pitch commands from the pilot
-#define HELI_ADJUST_ROLL 4
-#define HELI_ADJUST_PITCH -3
-
 // CCPM Types
 #define HELI_CCPM_120_TWO_FRONT_ONE_BACK 0
 #define HELI_CCPM_120_ONE_FRONT_TWO_BACK 1
@@ -149,6 +145,17 @@ float control_collective;
 float command_rx_collective;
 float yawPercent;
 float targetHeading;
+
+// trims
+float trim_roll = 0.0;
+float trim_pitch = 0.0;
+float trim_yaw = 0.0;
+
+// axis under APM control
+int roll_control_switch = 1;
+int pitch_control_switch = 1;
+int yaw_control_switch = 1;
+int collective_control_switch = 0;
 
 /// for sending values out to servos
 Vector3f ccpmPercents_out;            // Array of ccpm input values, converted to percents

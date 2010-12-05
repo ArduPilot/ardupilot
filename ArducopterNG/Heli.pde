@@ -72,21 +72,21 @@ void heli_defaultUserConfig()
   yawMax =                  1800; 
   
   // default PID values - Roll
-  KP_QUAD_ROLL               = 1.000;
-  KI_QUAD_ROLL               = 0.150;
-  STABLE_MODE_KP_RATE_ROLL   = 0.000;
+  KP_QUAD_ROLL               = 1.100;
+  KI_QUAD_ROLL               = 0.200;
+  STABLE_MODE_KP_RATE_ROLL   = -0.001;
   
   // default PID values - Pitch
-  KP_QUAD_PITCH              = 1.200;
+  KP_QUAD_PITCH              = 1.100;
   KI_QUAD_PITCH              = 0.120;
-  STABLE_MODE_KP_RATE_PITCH  = 0.000;
+  STABLE_MODE_KP_RATE_PITCH  = -0.001;
   
   // default PID values - Yaw
-  Kp_RateYaw                 = 2.000;  // heading P term
+  Kp_RateYaw                 = 3.500;  // heading P term
   Ki_RateYaw                 = 0.100;  // heading I term
-  KP_QUAD_YAW                = 0.150;  // yaw rate P term
-  KI_QUAD_YAW                = 0.030;  // yaw rate I term
-  STABLE_MODE_KP_RATE_YAW    = 0.000;  // not used
+  KP_QUAD_YAW                = 0.200;  // yaw rate P term
+  KI_QUAD_YAW                = 0.040;  // yaw rate I term
+  STABLE_MODE_KP_RATE_YAW    = -0.010;  // yaw rate D term
 }
 
 /**********************************************************************/
@@ -151,11 +151,67 @@ void heli_setup()
   yawSlope =                100 / (yawMax - yawMin);
   yawIntercept =            50 - (yawSlope * yawMax);
   
+  // capture trims
+  heli_read_radio_trims();
+  
   // hardcode mids because we will use ccpm
   roll_mid = ROLL_MID;
   pitch_mid = PITCH_MID;
   collective_mid = 1500;
   yaw_mid = (yawMin+yawMax)/2;
+  
+  // determine which axis APM will control
+  roll_control_switch = !SW_DIP1;
+  pitch_control_switch = !SW_DIP2;
+  yaw_control_switch = !SW_DIP3; 
+  collective_control_switch = !SW_DIP4;
+}
+
+/*****************************************************************************************************/
+// heli_read_radio_trims - captures roll, pitch and yaw trims (mids) although only yaw is actually used
+//                         trim_yaw is used to center output to the tail which tends to be far from the
+//                         physical middle of where the rudder can move.  This helps keep the PID's I
+//                         value low and avoid sudden turns left on takeoff
+void heli_read_radio_trims()
+{
+    int i;
+    float sumRoll = 0, sumPitch = 0, sumYaw = 0;
+    
+    // initialiase trims to zero incase this is called more than once
+    trim_roll = 0.0;
+    trim_pitch = 0.0;
+    trim_yaw = 0.0;
+    
+    // read radio a few times
+    for(int i=0; i<10; i++ )
+    {
+        // make sure new data has arrived
+        while( APM_RC.GetState() != 1 )
+        {
+            delay(20);
+        }
+        heli_read_radio();
+        sumRoll += ch_roll;
+        sumPitch += ch_pitch;
+        sumYaw += ch_yaw;
+    }
+    
+    // set trim to average 
+    trim_roll = sumRoll / 10.0;
+    trim_pitch = sumPitch / 10.0;
+    trim_yaw = sumYaw / 10.0;
+    
+    // double check all is ok
+    if( trim_roll > 50.0 || trim_roll < -50 )
+        trim_roll = 0.0;
+    if( trim_pitch >50.0 || trim_roll < -50.0 )
+        trim_pitch = 0.0;
+    if( trim_yaw > 50.0 || trim_yaw < -50.0 )
+        trim_yaw = 0.0;
+        
+    //Serial.print("trim_yaw = " );
+    //Serial.print(trim_yaw);
+    //Serial.println();
 }
 
 /**********************************************************************/
@@ -190,10 +246,10 @@ void heli_read_radio()
         ch_yaw = yawPercent;
     
     // convert to absolute angles
-    command_rx_roll = ch_roll / HELI_STICK_TO_ANGLE_FACTOR + HELI_ADJUST_ROLL;        // Convert stick position to absolute angles
-    command_rx_pitch = ch_pitch / HELI_STICK_TO_ANGLE_FACTOR + HELI_ADJUST_PITCH;      // Convert stick position to absolute angles
+    command_rx_roll = ch_roll / HELI_STICK_TO_ANGLE_FACTOR;        // Convert stick position to absolute angles
+    command_rx_pitch = ch_pitch / HELI_STICK_TO_ANGLE_FACTOR;      // Convert stick position to absolute angles
     command_rx_collective = ch_collective;
-    command_rx_yaw = ch_yaw / HELI_YAW_STICK_TO_ANGLE_FACTOR;      // Convert stick position to turn rate
+    command_rx_yaw = (ch_yaw-trim_yaw) / HELI_YAW_STICK_TO_ANGLE_FACTOR;      // Convert stick position to turn rate
     
     // hardcode flight mode
     flightMode = STABLE_MODE;
@@ -255,79 +311,98 @@ void heli_attitude_control(int command_roll, int command_pitch, int command_coll
     // always pass through collective command
     control_collective = command_rx_collective;
 
-    // ROLL CONTROL -- TWO PIDS - ANGLE CONTROL + RATE CONTROL
-    // P term
-    err_roll = command_roll - ToDeg(roll);    
-    err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
-    // I term
-    roll_I += err_roll*heli_G_Dt*KI_QUAD_ROLL;
-    roll_I = constrain(roll_I,-10,10);
-    // D term
-    roll_D = ToDeg(Omega[0]) * STABLE_MODE_KP_RATE_ROLL;  // Take into account Angular velocity
-    roll_D = constrain(roll_D,-25,25);
+    // ROLL CONTROL -- ONE PID
+    if( roll_control_switch ) 
+    {
+        // P term
+        err_roll = command_roll - ToDeg(roll);    
+        err_roll = constrain(err_roll,-25,25);  // to limit max roll command...
+        // I term
+        roll_I += err_roll*heli_G_Dt*KI_QUAD_ROLL;
+        roll_I = constrain(roll_I,-10,10);
+        // D term
+        roll_D = ToDeg(Omega[0]) * STABLE_MODE_KP_RATE_ROLL;  // Take into account Angular velocity
+        roll_D = constrain(roll_D,-25,25);
+      
+        // PID control
+        control_roll = KP_QUAD_ROLL*err_roll + roll_I + roll_D;
+        control_roll = constrain(control_roll,-50,50);
+    }else{
+        // straight pass through
+        control_roll = ch_roll;
+    }
   
-    // PID control
-    control_roll = KP_QUAD_ROLL*err_roll + roll_I + roll_D;
-    control_roll = constrain(control_roll,-50,50);
-  
-    // PITCH CONTROL -- TWO PIDS - ANGLE CONTROL + RATE CONTROL
-    // P term
-    err_pitch = command_pitch - ToDeg(pitch);
-    err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
-    // I term
-    pitch_I += err_pitch * heli_G_Dt * KI_QUAD_PITCH;
-    pitch_I = constrain(pitch_I,-10,10);
-    // D term
-    pitch_D = ToDeg(Omega[1]) * STABLE_MODE_KP_RATE_PITCH; // Take into account Angular velocity
-    pitch_D = constrain(pitch_D,-25,25);
-    // PID control
-    control_pitch = KP_QUAD_PITCH*err_pitch + pitch_I + pitch_D;
-    control_pitch = constrain(control_pitch,-50,50);
-
+    // PITCH CONTROL -- ONE PIDS
+    if( pitch_control_switch ) 
+    {    
+        // P term
+        err_pitch = command_pitch - ToDeg(pitch);
+        err_pitch = constrain(err_pitch,-25,25);  // to limit max pitch command...
+        // I term
+        pitch_I += err_pitch * heli_G_Dt * KI_QUAD_PITCH;
+        pitch_I = constrain(pitch_I,-10,10);
+        // D term
+        pitch_D = ToDeg(Omega[1]) * STABLE_MODE_KP_RATE_PITCH; // Take into account Angular velocity
+        pitch_D = constrain(pitch_D,-25,25);
+        // PID control
+        control_pitch = KP_QUAD_PITCH*err_pitch + pitch_I + pitch_D;
+        control_pitch = constrain(control_pitch,-50,50);
+    }else{
+        control_pitch = ch_pitch;
+    }
 
     // YAW CONTROL
-    if( command_yaw == 0 )  // heading hold mode 
-    {
-        // check we don't need to reset targetHeading
-        if( command_yaw_previous != 0 )
-            targetHeading = ToDeg(yaw);
-
-        // ensure reasonable targetHeading
-        if( firstIteration || targetHeading > 180 || targetHeading < -180 )
+    if( yaw_control_switch ) 
+    {     
+        if( command_yaw == 0 )  // heading hold mode 
         {
-            firstIteration = 0;
-            targetHeading = ToDeg(yaw);
+            // check we don't need to reset targetHeading
+            if( command_yaw_previous != 0 )
+                targetHeading = ToDeg(yaw);
+    
+            // ensure reasonable targetHeading
+            if( firstIteration || targetHeading > 180 || targetHeading < -180 )
+            {
+                firstIteration = 0;
+                targetHeading = ToDeg(yaw);
+            }
+                
+            err_heading = Normalize_angle(targetHeading - ToDeg(yaw));     
+            err_heading = constrain(err_heading,-90,90);  // don't make it travel any faster beyond 90 degrees
+          
+            // I term
+            heading_I += err_heading * heli_G_Dt * Ki_RateYaw;
+            heading_I = constrain(heading_I,-20,20);
+    
+            // PID control - a bit bad - we're using the acro mode's PID values because there's not PID for heading
+            control_yaw_rate = Kp_RateYaw*err_heading + heading_I;
+            control_yaw_rate = constrain(control_yaw_rate,-100,100);  // to limit max yaw command
+        }else{      // rate mode
+            err_heading = 0;
+            control_yaw_rate = command_yaw;
         }
-            
-        err_heading = Normalize_angle(targetHeading - ToDeg(yaw));     
-        err_heading = constrain(err_heading,-90,90);  // don't make it travel any faster beyond 90 degrees
+        command_yaw_previous = command_yaw;
+    
+        // YAW RATE CONTROL
+        currentYawRate = ToDeg(Gyro_Scaled_Z(read_adc(2)));
+        //currentYawRate = ToDeg(Omega_Vector[2]);  <-- makes things very unstable!!
+        err_yaw = control_yaw_rate-currentYawRate;
       
-        heading_I += err_heading * heli_G_Dt * Ki_RateYaw;
-        heading_I = constrain(heading_I,-20,20);
-
-        // PID control - a bit bad - we're using the acro mode's PID values because there's not PID for heading
-        control_yaw_rate = Kp_RateYaw*err_heading + heading_I;
-        control_yaw_rate = constrain(control_yaw_rate,-100,100);  // to limit max yaw command
-    }else{      // rate mode
-        err_heading = 0;
-        control_yaw_rate = command_yaw;
+        // I term
+        yaw_I += err_yaw * heli_G_Dt * KI_QUAD_YAW;
+        yaw_I = constrain(yaw_I, -20, 20);
+        // D term
+        yaw_D = (currentYawRate-previousYawRate) * STABLE_MODE_KP_RATE_YAW; // Take into account the change in angular velocity
+        yaw_D = constrain(yaw_D,-25,25);    
+        previousYawRate = currentYawRate;
+      
+        // PID control
+        control_yaw = trim_yaw + (KP_QUAD_YAW*err_yaw + yaw_I + yaw_D);  // add back in the yaw trim so that it is our center point
+        control_yaw = constrain(control_yaw,-50,50);
+    }else{
+        // straight pass through
+        control_yaw = ch_yaw;
     }
-    command_yaw_previous = command_yaw;
-
-    // YAW RATE CONTROL
-    currentYawRate = ToDeg(Gyro_Scaled_Z(read_adc(2)));
-    //currentYawRate = ToDeg(Omega_Vector[2]);  <-- makes things very unstable!!
-    err_yaw = control_yaw_rate-currentYawRate;
-  
-    yaw_I += err_yaw * heli_G_Dt * KI_QUAD_YAW;
-    yaw_I = constrain(yaw_I, -20, 20);
-  
-    //yaw_D = currentYawRate - previousYawRate;
-    previousYawRate = currentYawRate;
-  
-    // PID control
-    control_yaw = (KP_QUAD_YAW*err_yaw + yaw_I);
-    control_yaw = constrain(control_yaw,-50,50);
 }
 
 #endif  // #if AIRFRAME == HELI
