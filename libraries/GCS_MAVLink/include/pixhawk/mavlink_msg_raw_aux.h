@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_raw_aux_pack(uint8_t system_id, uint8_t compo
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_raw_aux_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t adc1, uint16_t adc2, uint16_t adc3, uint16_t adc4, uint16_t vbat, int16_t temp, int32_t baro)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_RAW_AUX;
+
+	i += put_uint16_t_by_index(adc1, i, msg->payload); //ADC1 (J405 ADC3, LPC2148 AD0.6)
+	i += put_uint16_t_by_index(adc2, i, msg->payload); //ADC2 (J405 ADC5, LPC2148 AD0.2)
+	i += put_uint16_t_by_index(adc3, i, msg->payload); //ADC3 (J405 ADC6, LPC2148 AD0.1)
+	i += put_uint16_t_by_index(adc4, i, msg->payload); //ADC4 (J405 ADC7, LPC2148 AD1.3)
+	i += put_uint16_t_by_index(vbat, i, msg->payload); //Battery voltage
+	i += put_int16_t_by_index(temp, i, msg->payload); //Temperature (degrees celcius)
+	i += put_int32_t_by_index(baro, i, msg->payload); //Barometric pressure (hecto Pascal)
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_raw_aux_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_raw_aux_t* raw_aux)
 {
 	return mavlink_msg_raw_aux_pack(system_id, component_id, msg, raw_aux->adc1, raw_aux->adc2, raw_aux->adc3, raw_aux->adc4, raw_aux->vbat, raw_aux->temp, raw_aux->baro);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_raw_aux_encode(uint8_t system_id, uint8_t com
 static inline void mavlink_msg_raw_aux_send(mavlink_channel_t chan, uint16_t adc1, uint16_t adc2, uint16_t adc3, uint16_t adc4, uint16_t vbat, int16_t temp, int32_t baro)
 {
 	mavlink_message_t msg;
-	mavlink_msg_raw_aux_pack(mavlink_system.sysid, mavlink_system.compid, &msg, adc1, adc2, adc3, adc4, vbat, temp, baro);
+	mavlink_msg_raw_aux_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, adc1, adc2, adc3, adc4, vbat, temp, baro);
 	mavlink_send_uart(chan, &msg);
 }
 

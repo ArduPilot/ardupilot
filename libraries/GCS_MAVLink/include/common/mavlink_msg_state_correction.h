@@ -50,6 +50,24 @@ static inline uint16_t mavlink_msg_state_correction_pack(uint8_t system_id, uint
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_state_correction_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float xErr, float yErr, float zErr, float rollErr, float pitchErr, float yawErr, float vxErr, float vyErr, float vzErr)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_STATE_CORRECTION;
+
+	i += put_float_by_index(xErr, i, msg->payload); //x position error
+	i += put_float_by_index(yErr, i, msg->payload); //y position error
+	i += put_float_by_index(zErr, i, msg->payload); //z position error
+	i += put_float_by_index(rollErr, i, msg->payload); //roll error (radians)
+	i += put_float_by_index(pitchErr, i, msg->payload); //pitch error (radians)
+	i += put_float_by_index(yawErr, i, msg->payload); //yaw error (radians)
+	i += put_float_by_index(vxErr, i, msg->payload); //x velocity
+	i += put_float_by_index(vyErr, i, msg->payload); //y velocity
+	i += put_float_by_index(vzErr, i, msg->payload); //z velocity
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_state_correction_t* state_correction)
 {
 	return mavlink_msg_state_correction_pack(system_id, component_id, msg, state_correction->xErr, state_correction->yErr, state_correction->zErr, state_correction->rollErr, state_correction->pitchErr, state_correction->yawErr, state_correction->vxErr, state_correction->vyErr, state_correction->vzErr);
@@ -60,7 +78,7 @@ static inline uint16_t mavlink_msg_state_correction_encode(uint8_t system_id, ui
 static inline void mavlink_msg_state_correction_send(mavlink_channel_t chan, float xErr, float yErr, float zErr, float rollErr, float pitchErr, float yawErr, float vxErr, float vyErr, float vzErr)
 {
 	mavlink_message_t msg;
-	mavlink_msg_state_correction_pack(mavlink_system.sysid, mavlink_system.compid, &msg, xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr);
+	mavlink_msg_state_correction_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr);
 	mavlink_send_uart(chan, &msg);
 }
 

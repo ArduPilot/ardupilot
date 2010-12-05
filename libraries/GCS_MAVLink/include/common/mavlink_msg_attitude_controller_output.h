@@ -38,6 +38,20 @@ static inline uint16_t mavlink_msg_attitude_controller_output_pack(uint8_t syste
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_attitude_controller_output_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t enabled, int8_t roll, int8_t pitch, int8_t yaw, int8_t thrust)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_ATTITUDE_CONTROLLER_OUTPUT;
+
+	i += put_uint8_t_by_index(enabled, i, msg->payload); //1: enabled, 0: disabled
+	i += put_int8_t_by_index(roll, i, msg->payload); //Attitude roll: -128: -100%, 127: +100%
+	i += put_int8_t_by_index(pitch, i, msg->payload); //Attitude pitch: -128: -100%, 127: +100%
+	i += put_int8_t_by_index(yaw, i, msg->payload); //Attitude yaw: -128: -100%, 127: +100%
+	i += put_int8_t_by_index(thrust, i, msg->payload); //Attitude thrust: -128: -100%, 127: +100%
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_attitude_controller_output_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_attitude_controller_output_t* attitude_controller_output)
 {
 	return mavlink_msg_attitude_controller_output_pack(system_id, component_id, msg, attitude_controller_output->enabled, attitude_controller_output->roll, attitude_controller_output->pitch, attitude_controller_output->yaw, attitude_controller_output->thrust);
@@ -48,7 +62,7 @@ static inline uint16_t mavlink_msg_attitude_controller_output_encode(uint8_t sys
 static inline void mavlink_msg_attitude_controller_output_send(mavlink_channel_t chan, uint8_t enabled, int8_t roll, int8_t pitch, int8_t yaw, int8_t thrust)
 {
 	mavlink_message_t msg;
-	mavlink_msg_attitude_controller_output_pack(mavlink_system.sysid, mavlink_system.compid, &msg, enabled, roll, pitch, yaw, thrust);
+	mavlink_msg_attitude_controller_output_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, enabled, roll, pitch, yaw, thrust);
 	mavlink_send_uart(chan, &msg);
 }
 

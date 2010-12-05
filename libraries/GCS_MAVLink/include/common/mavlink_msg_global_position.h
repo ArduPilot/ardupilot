@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_global_position_pack(uint8_t system_id, uint8
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_global_position_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, float lat, float lon, float alt, float vx, float vy, float vz)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_GLOBAL_POSITION;
+
+	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds since unix epoch)
+	i += put_float_by_index(lat, i, msg->payload); //X Position
+	i += put_float_by_index(lon, i, msg->payload); //Y Position
+	i += put_float_by_index(alt, i, msg->payload); //Z Position
+	i += put_float_by_index(vx, i, msg->payload); //X Speed
+	i += put_float_by_index(vy, i, msg->payload); //Y Speed
+	i += put_float_by_index(vz, i, msg->payload); //Z Speed
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_global_position_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_global_position_t* global_position)
 {
 	return mavlink_msg_global_position_pack(system_id, component_id, msg, global_position->usec, global_position->lat, global_position->lon, global_position->alt, global_position->vx, global_position->vy, global_position->vz);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_global_position_encode(uint8_t system_id, uin
 static inline void mavlink_msg_global_position_send(mavlink_channel_t chan, uint64_t usec, float lat, float lon, float alt, float vx, float vy, float vz)
 {
 	mavlink_message_t msg;
-	mavlink_msg_global_position_pack(mavlink_system.sysid, mavlink_system.compid, &msg, usec, lat, lon, alt, vx, vy, vz);
+	mavlink_msg_global_position_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, usec, lat, lon, alt, vx, vy, vz);
 	mavlink_send_uart(chan, &msg);
 }
 

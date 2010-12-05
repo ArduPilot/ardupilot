@@ -35,6 +35,19 @@ static inline uint16_t mavlink_msg_raw_pressure_pack(uint8_t system_id, uint8_t 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_raw_pressure_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, int32_t press_abs, int32_t press_diff1, int32_t press_diff2)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_RAW_PRESSURE;
+
+	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds since UNIX epoch)
+	i += put_int32_t_by_index(press_abs, i, msg->payload); //Absolute pressure (hectopascal)
+	i += put_int32_t_by_index(press_diff1, i, msg->payload); //Differential pressure 1 (hectopascal)
+	i += put_int32_t_by_index(press_diff2, i, msg->payload); //Differential pressure 2 (hectopascal)
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_raw_pressure_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_raw_pressure_t* raw_pressure)
 {
 	return mavlink_msg_raw_pressure_pack(system_id, component_id, msg, raw_pressure->usec, raw_pressure->press_abs, raw_pressure->press_diff1, raw_pressure->press_diff2);
@@ -45,7 +58,7 @@ static inline uint16_t mavlink_msg_raw_pressure_encode(uint8_t system_id, uint8_
 static inline void mavlink_msg_raw_pressure_send(mavlink_channel_t chan, uint64_t usec, int32_t press_abs, int32_t press_diff1, int32_t press_diff2)
 {
 	mavlink_message_t msg;
-	mavlink_msg_raw_pressure_pack(mavlink_system.sysid, mavlink_system.compid, &msg, usec, press_abs, press_diff1, press_diff2);
+	mavlink_msg_raw_pressure_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, usec, press_abs, press_diff1, press_diff2);
 	mavlink_send_uart(chan, &msg);
 }
 

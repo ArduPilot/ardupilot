@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Sunday, October 24 2010, 08:47 UTC
+ *	 Generated on Thursday, December 2 2010, 10:44 UTC
  */
 #ifndef SLUGS_H
 #define SLUGS_H
@@ -17,6 +17,11 @@ extern "C" {
 
 
 #include "../common/common.h"
+// ENUM DEFINITIONS
+
+
+// MESSAGE DEFINITIONS
+
 #include "./mavlink_msg_cpu_load.h"
 #include "./mavlink_msg_air_data.h"
 #include "./mavlink_msg_sensor_bias.h"

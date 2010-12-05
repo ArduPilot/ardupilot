@@ -189,7 +189,8 @@ typedef struct __mavlink_status {
 	uint8_t parse_error;                ///< Number of parse errors
 	mavlink_parse_state_t parse_state;  ///< Parsing state machine
 	uint8_t packet_idx;                 ///< Index in current packet
-	uint8_t current_seq;                ///< Sequence number of last packet
+	uint8_t current_rx_seq;             ///< Sequence number of last packet received
+	uint8_t current_tx_seq;             ///< Sequence number of last packet sent
 	uint16_t packet_rx_success_count;   ///< Received packets
 	uint16_t packet_rx_drop_count;      ///< Number of packet drops
 } mavlink_status_t;

@@ -29,6 +29,17 @@ static inline uint16_t mavlink_msg_heartbeat_pack(uint8_t system_id, uint8_t com
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_heartbeat_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t type, uint8_t autopilot)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_HEARTBEAT;
+
+	i += put_uint8_t_by_index(type, i, msg->payload); //Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
+	i += put_uint8_t_by_index(autopilot, i, msg->payload); //Type of the Autopilot: 0: Generic, 1: PIXHAWK, 2: SLUGS, 3: Ardupilot (up to 15 types), defined in MAV_AUTOPILOT_TYPE ENUM
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_heartbeat_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_heartbeat_t* heartbeat)
 {
 	return mavlink_msg_heartbeat_pack(system_id, component_id, msg, heartbeat->type, heartbeat->autopilot);
@@ -39,7 +50,7 @@ static inline uint16_t mavlink_msg_heartbeat_encode(uint8_t system_id, uint8_t c
 static inline void mavlink_msg_heartbeat_send(mavlink_channel_t chan, uint8_t type, uint8_t autopilot)
 {
 	mavlink_message_t msg;
-	mavlink_msg_heartbeat_pack(mavlink_system.sysid, mavlink_system.compid, &msg, type, autopilot);
+	mavlink_msg_heartbeat_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, type, autopilot);
 	mavlink_send_uart(chan, &msg);
 }
 

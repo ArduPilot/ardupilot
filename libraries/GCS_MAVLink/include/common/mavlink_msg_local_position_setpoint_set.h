@@ -41,6 +41,21 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_pack(uint8_t syst
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_local_position_setpoint_set_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, float x, float y, float z, float yaw)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_SET;
+
+	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
+	i += put_float_by_index(x, i, msg->payload); //x position 1
+	i += put_float_by_index(y, i, msg->payload); //y position 1
+	i += put_float_by_index(z, i, msg->payload); //z position 1
+	i += put_float_by_index(yaw, i, msg->payload); //x position 2
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_local_position_setpoint_set_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_local_position_setpoint_set_t* local_position_setpoint_set)
 {
 	return mavlink_msg_local_position_setpoint_set_pack(system_id, component_id, msg, local_position_setpoint_set->target_system, local_position_setpoint_set->target_component, local_position_setpoint_set->x, local_position_setpoint_set->y, local_position_setpoint_set->z, local_position_setpoint_set->yaw);
@@ -51,7 +66,7 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_encode(uint8_t sy
 static inline void mavlink_msg_local_position_setpoint_set_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, float x, float y, float z, float yaw)
 {
 	mavlink_message_t msg;
-	mavlink_msg_local_position_setpoint_set_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target_system, target_component, x, y, z, yaw);
+	mavlink_msg_local_position_setpoint_set_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, x, y, z, yaw);
 	mavlink_send_uart(chan, &msg);
 }
 

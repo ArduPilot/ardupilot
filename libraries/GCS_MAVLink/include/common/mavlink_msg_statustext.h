@@ -30,6 +30,17 @@ static inline uint16_t mavlink_msg_statustext_pack(uint8_t system_id, uint8_t co
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_statustext_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t severity, const int8_t* text)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_STATUSTEXT;
+
+	i += put_uint8_t_by_index(severity, i, msg->payload); //Severity of status, 0 = info message, 255 = critical fault
+	i += put_array_by_index(text, 50, i, msg->payload); //Status text message, without null termination character
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_statustext_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_statustext_t* statustext)
 {
 	return mavlink_msg_statustext_pack(system_id, component_id, msg, statustext->severity, statustext->text);
@@ -40,7 +51,7 @@ static inline uint16_t mavlink_msg_statustext_encode(uint8_t system_id, uint8_t 
 static inline void mavlink_msg_statustext_send(mavlink_channel_t chan, uint8_t severity, const int8_t* text)
 {
 	mavlink_message_t msg;
-	mavlink_msg_statustext_pack(mavlink_system.sysid, mavlink_system.compid, &msg, severity, text);
+	mavlink_msg_statustext_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, severity, text);
 	mavlink_send_uart(chan, &msg);
 }
 

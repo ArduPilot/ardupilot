@@ -50,6 +50,24 @@ static inline uint16_t mavlink_msg_gps_raw_pack(uint8_t system_id, uint8_t compo
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_gps_raw_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, uint8_t fix_type, float lat, float lon, float alt, float eph, float epv, float v, float hdg)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_GPS_RAW;
+
+	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds since unix epoch)
+	i += put_uint8_t_by_index(fix_type, i, msg->payload); //0-1: no fix, 2: 2D fix, 3: 3D fix
+	i += put_float_by_index(lat, i, msg->payload); //X Position
+	i += put_float_by_index(lon, i, msg->payload); //Y Position
+	i += put_float_by_index(alt, i, msg->payload); //Z Position in meters
+	i += put_float_by_index(eph, i, msg->payload); //Uncertainty in meters of latitude
+	i += put_float_by_index(epv, i, msg->payload); //Uncertainty in meters of longitude
+	i += put_float_by_index(v, i, msg->payload); //Overall speed
+	i += put_float_by_index(hdg, i, msg->payload); //Heading, in FIXME
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_gps_raw_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_gps_raw_t* gps_raw)
 {
 	return mavlink_msg_gps_raw_pack(system_id, component_id, msg, gps_raw->usec, gps_raw->fix_type, gps_raw->lat, gps_raw->lon, gps_raw->alt, gps_raw->eph, gps_raw->epv, gps_raw->v, gps_raw->hdg);
@@ -60,7 +78,7 @@ static inline uint16_t mavlink_msg_gps_raw_encode(uint8_t system_id, uint8_t com
 static inline void mavlink_msg_gps_raw_send(mavlink_channel_t chan, uint64_t usec, uint8_t fix_type, float lat, float lon, float alt, float eph, float epv, float v, float hdg)
 {
 	mavlink_message_t msg;
-	mavlink_msg_gps_raw_pack(mavlink_system.sysid, mavlink_system.compid, &msg, usec, fix_type, lat, lon, alt, eph, epv, v, hdg);
+	mavlink_msg_gps_raw_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, usec, fix_type, lat, lon, alt, eph, epv, v, hdg);
 	mavlink_send_uart(chan, &msg);
 }
 

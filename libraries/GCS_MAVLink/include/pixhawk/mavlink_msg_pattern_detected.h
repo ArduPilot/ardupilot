@@ -36,6 +36,19 @@ static inline uint16_t mavlink_msg_pattern_detected_pack(uint8_t system_id, uint
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_pattern_detected_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t type, float confidence, const int8_t* file, uint8_t detected)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_PATTERN_DETECTED;
+
+	i += put_uint8_t_by_index(type, i, msg->payload); //0: Pattern, 1: Letter
+	i += put_float_by_index(confidence, i, msg->payload); //Confidence of detection
+	i += put_array_by_index(file, 100, i, msg->payload); //Pattern file name
+	i += put_uint8_t_by_index(detected, i, msg->payload); //Accepted as true detection, 0 no, 1 yes
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_pattern_detected_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_pattern_detected_t* pattern_detected)
 {
 	return mavlink_msg_pattern_detected_pack(system_id, component_id, msg, pattern_detected->type, pattern_detected->confidence, pattern_detected->file, pattern_detected->detected);
@@ -46,7 +59,7 @@ static inline uint16_t mavlink_msg_pattern_detected_encode(uint8_t system_id, ui
 static inline void mavlink_msg_pattern_detected_send(mavlink_channel_t chan, uint8_t type, float confidence, const int8_t* file, uint8_t detected)
 {
 	mavlink_message_t msg;
-	mavlink_msg_pattern_detected_pack(mavlink_system.sysid, mavlink_system.compid, &msg, type, confidence, file, detected);
+	mavlink_msg_pattern_detected_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, type, confidence, file, detected);
 	mavlink_send_uart(chan, &msg);
 }
 

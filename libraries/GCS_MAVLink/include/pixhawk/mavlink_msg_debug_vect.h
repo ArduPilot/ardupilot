@@ -39,6 +39,20 @@ static inline uint16_t mavlink_msg_debug_vect_pack(uint8_t system_id, uint8_t co
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_debug_vect_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const int8_t* name, uint64_t usec, float x, float y, float z)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_DEBUG_VECT;
+
+	i += put_array_by_index(name, 10, i, msg->payload); //Name
+	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp
+	i += put_float_by_index(x, i, msg->payload); //x
+	i += put_float_by_index(y, i, msg->payload); //y
+	i += put_float_by_index(z, i, msg->payload); //z
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_debug_vect_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_debug_vect_t* debug_vect)
 {
 	return mavlink_msg_debug_vect_pack(system_id, component_id, msg, debug_vect->name, debug_vect->usec, debug_vect->x, debug_vect->y, debug_vect->z);
@@ -49,7 +63,7 @@ static inline uint16_t mavlink_msg_debug_vect_encode(uint8_t system_id, uint8_t 
 static inline void mavlink_msg_debug_vect_send(mavlink_channel_t chan, const int8_t* name, uint64_t usec, float x, float y, float z)
 {
 	mavlink_message_t msg;
-	mavlink_msg_debug_vect_pack(mavlink_system.sysid, mavlink_system.compid, &msg, name, usec, x, y, z);
+	mavlink_msg_debug_vect_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, name, usec, x, y, z);
 	mavlink_send_uart(chan, &msg);
 }
 

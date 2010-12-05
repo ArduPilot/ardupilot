@@ -46,6 +46,21 @@ static inline uint16_t mavlink_msg_gps_status_pack(uint8_t system_id, uint8_t co
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_gps_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t satellites_visible, const int8_t* satellite_prn, const int8_t* satellite_used, const int8_t* satellite_elevation, const int8_t* satellite_azimuth, const int8_t* satellite_snr)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_GPS_STATUS;
+
+	i += put_uint8_t_by_index(satellites_visible, i, msg->payload); //Number of satellites visible
+	i += put_array_by_index(satellite_prn, 20, i, msg->payload); //Global satellite ID
+	i += put_array_by_index(satellite_used, 20, i, msg->payload); //0: Satellite not used, 1: used for localization
+	i += put_array_by_index(satellite_elevation, 20, i, msg->payload); //Elevation (0: right on top of receiver, 90: on the horizon) of satellite
+	i += put_array_by_index(satellite_azimuth, 20, i, msg->payload); //Direction of satellite, 0: 0 deg, 255: 360 deg.
+	i += put_array_by_index(satellite_snr, 20, i, msg->payload); //Signal to noise ratio of satellite
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_gps_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_gps_status_t* gps_status)
 {
 	return mavlink_msg_gps_status_pack(system_id, component_id, msg, gps_status->satellites_visible, gps_status->satellite_prn, gps_status->satellite_used, gps_status->satellite_elevation, gps_status->satellite_azimuth, gps_status->satellite_snr);
@@ -56,7 +71,7 @@ static inline uint16_t mavlink_msg_gps_status_encode(uint8_t system_id, uint8_t 
 static inline void mavlink_msg_gps_status_send(mavlink_channel_t chan, uint8_t satellites_visible, const int8_t* satellite_prn, const int8_t* satellite_used, const int8_t* satellite_elevation, const int8_t* satellite_azimuth, const int8_t* satellite_snr)
 {
 	mavlink_message_t msg;
-	mavlink_msg_gps_status_pack(mavlink_system.sysid, mavlink_system.compid, &msg, satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr);
+	mavlink_msg_gps_status_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr);
 	mavlink_send_uart(chan, &msg);
 }
 

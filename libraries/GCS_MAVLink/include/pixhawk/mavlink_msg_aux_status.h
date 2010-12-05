@@ -41,6 +41,21 @@ static inline uint16_t mavlink_msg_aux_status_pack(uint8_t system_id, uint8_t co
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_aux_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t load, uint16_t i2c0_err_count, uint16_t i2c1_err_count, uint16_t spi0_err_count, uint16_t spi1_err_count, uint16_t uart_total_err_count)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_AUX_STATUS;
+
+	i += put_uint16_t_by_index(load, i, msg->payload); //Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+	i += put_uint16_t_by_index(i2c0_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(i2c1_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi0_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi1_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(uart_total_err_count, i, msg->payload); //Number of I2C errors since startup
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_aux_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_aux_status_t* aux_status)
 {
 	return mavlink_msg_aux_status_pack(system_id, component_id, msg, aux_status->load, aux_status->i2c0_err_count, aux_status->i2c1_err_count, aux_status->spi0_err_count, aux_status->spi1_err_count, aux_status->uart_total_err_count);
@@ -51,7 +66,7 @@ static inline uint16_t mavlink_msg_aux_status_encode(uint8_t system_id, uint8_t 
 static inline void mavlink_msg_aux_status_send(mavlink_channel_t chan, uint16_t load, uint16_t i2c0_err_count, uint16_t i2c1_err_count, uint16_t spi0_err_count, uint16_t spi1_err_count, uint16_t uart_total_err_count)
 {
 	mavlink_message_t msg;
-	mavlink_msg_aux_status_pack(mavlink_system.sysid, mavlink_system.compid, &msg, load, i2c0_err_count, i2c1_err_count, spi0_err_count, spi1_err_count, uart_total_err_count);
+	mavlink_msg_aux_status_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, load, i2c0_err_count, i2c1_err_count, spi0_err_count, spi1_err_count, uart_total_err_count);
 	mavlink_send_uart(chan, &msg);
 }
 

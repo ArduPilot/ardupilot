@@ -35,6 +35,19 @@ static inline uint16_t mavlink_msg_cpu_load_pack(uint8_t system_id, uint8_t comp
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_cpu_load_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint8_t sensLoad, uint8_t ctrlLoad, uint16_t batVolt)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_CPU_LOAD;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the CPU load
+	i += put_uint8_t_by_index(sensLoad, i, msg->payload); //Sensor DSC Load
+	i += put_uint8_t_by_index(ctrlLoad, i, msg->payload); //Control DSC Load
+	i += put_uint16_t_by_index(batVolt, i, msg->payload); //Battery Voltage in millivolts
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_cpu_load_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_cpu_load_t* cpu_load)
 {
 	return mavlink_msg_cpu_load_pack(system_id, component_id, msg, cpu_load->target, cpu_load->sensLoad, cpu_load->ctrlLoad, cpu_load->batVolt);
@@ -45,7 +58,7 @@ static inline uint16_t mavlink_msg_cpu_load_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_cpu_load_send(mavlink_channel_t chan, uint8_t target, uint8_t sensLoad, uint8_t ctrlLoad, uint16_t batVolt)
 {
 	mavlink_message_t msg;
-	mavlink_msg_cpu_load_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, sensLoad, ctrlLoad, batVolt);
+	mavlink_msg_cpu_load_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, sensLoad, ctrlLoad, batVolt);
 	mavlink_send_uart(chan, &msg);
 }
 

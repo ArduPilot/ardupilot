@@ -29,6 +29,17 @@ static inline uint16_t mavlink_msg_debug_pack(uint8_t system_id, uint8_t compone
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_debug_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t ind, float value)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_DEBUG;
+
+	i += put_uint8_t_by_index(ind, i, msg->payload); //index of debug variable
+	i += put_float_by_index(value, i, msg->payload); //DEBUG value
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_debug_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_debug_t* debug)
 {
 	return mavlink_msg_debug_pack(system_id, component_id, msg, debug->ind, debug->value);
@@ -39,7 +50,7 @@ static inline uint16_t mavlink_msg_debug_encode(uint8_t system_id, uint8_t compo
 static inline void mavlink_msg_debug_send(mavlink_channel_t chan, uint8_t ind, float value)
 {
 	mavlink_message_t msg;
-	mavlink_msg_debug_pack(mavlink_system.sysid, mavlink_system.compid, &msg, ind, value);
+	mavlink_msg_debug_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, ind, value);
 	mavlink_send_uart(chan, &msg);
 }
 

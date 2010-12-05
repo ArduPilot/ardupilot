@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_control_status_pack(uint8_t system_id, uint8_
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_control_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t position_fix, uint8_t vision_fix, uint8_t gps_fix, uint8_t control_att, uint8_t control_pos_xy, uint8_t control_pos_z, uint8_t control_pos_yaw)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_CONTROL_STATUS;
+
+	i += put_uint8_t_by_index(position_fix, i, msg->payload); //Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix 
+	i += put_uint8_t_by_index(vision_fix, i, msg->payload); //Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix 
+	i += put_uint8_t_by_index(gps_fix, i, msg->payload); //GPS position fix: 0: no reception, 1: Minimum 1 satellite, but no position fix, 2: 2D position fix, 3: 3D position fix 
+	i += put_uint8_t_by_index(control_att, i, msg->payload); //0: Attitude control disabled, 1: enabled
+	i += put_uint8_t_by_index(control_pos_xy, i, msg->payload); //0: X, Y position control disabled, 1: enabled
+	i += put_uint8_t_by_index(control_pos_z, i, msg->payload); //0: Z position control disabled, 1: enabled
+	i += put_uint8_t_by_index(control_pos_yaw, i, msg->payload); //0: Yaw angle control disabled, 1: enabled
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_control_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_control_status_t* control_status)
 {
 	return mavlink_msg_control_status_pack(system_id, component_id, msg, control_status->position_fix, control_status->vision_fix, control_status->gps_fix, control_status->control_att, control_status->control_pos_xy, control_status->control_pos_z, control_status->control_pos_yaw);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_control_status_encode(uint8_t system_id, uint
 static inline void mavlink_msg_control_status_send(mavlink_channel_t chan, uint8_t position_fix, uint8_t vision_fix, uint8_t gps_fix, uint8_t control_att, uint8_t control_pos_xy, uint8_t control_pos_z, uint8_t control_pos_yaw)
 {
 	mavlink_message_t msg;
-	mavlink_msg_control_status_pack(mavlink_system.sysid, mavlink_system.compid, &msg, position_fix, vision_fix, gps_fix, control_att, control_pos_xy, control_pos_z, control_pos_yaw);
+	mavlink_msg_control_status_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, position_fix, vision_fix, gps_fix, control_att, control_pos_xy, control_pos_z, control_pos_yaw);
 	mavlink_send_uart(chan, &msg);
 }
 

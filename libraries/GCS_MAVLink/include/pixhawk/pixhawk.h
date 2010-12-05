@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Sunday, October 24 2010, 08:46 UTC
+ *	 Generated on Thursday, December 2 2010, 10:43 UTC
  */
 #ifndef PIXHAWK_H
 #define PIXHAWK_H
@@ -17,11 +17,19 @@ extern "C" {
 
 
 #include "../common/common.h"
-#include "./mavlink_msg_set_altitude.h"
-#include "./mavlink_msg_request_data_stream.h"
-#include "./mavlink_msg_request_dynamic_gyro_calibration.h"
-#include "./mavlink_msg_request_static_calibration.h"
-#include "./mavlink_msg_manual_control.h"
+// ENUM DEFINITIONS
+
+/** @brief Slugs parameter interface subsets */
+enum SLUGS_PID_INDX_IDS
+{
+	PID_YAW_DAMPER=2,
+	PID_PITCH=3, /* With comment: PID Pitch parameter*/
+	PID_ALT_HOLD=50
+};
+
+
+// MESSAGE DEFINITIONS
+
 #include "./mavlink_msg_attitude_control.h"
 #include "./mavlink_msg_debug_vect.h"
 #include "./mavlink_msg_set_cam_shutter.h"
@@ -42,6 +50,8 @@ extern "C" {
 #include "./mavlink_msg_watchdog_process_status.h"
 #include "./mavlink_msg_watchdog_command.h"
 #include "./mavlink_msg_pattern_detected.h"
+#include "./mavlink_msg_point_of_interest.h"
+#include "./mavlink_msg_point_of_interest_connection.h"
 #ifdef __cplusplus
 }
 #endif

@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_marker_pack(uint8_t system_id, uint8_t compon
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_marker_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t id, float x, float y, float z, float roll, float pitch, float yaw)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_MARKER;
+
+	i += put_uint16_t_by_index(id, i, msg->payload); //ID
+	i += put_float_by_index(x, i, msg->payload); //x position
+	i += put_float_by_index(y, i, msg->payload); //y position
+	i += put_float_by_index(z, i, msg->payload); //z position
+	i += put_float_by_index(roll, i, msg->payload); //roll orientation
+	i += put_float_by_index(pitch, i, msg->payload); //pitch orientation
+	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_marker_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_marker_t* marker)
 {
 	return mavlink_msg_marker_pack(system_id, component_id, msg, marker->id, marker->x, marker->y, marker->z, marker->roll, marker->pitch, marker->yaw);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_marker_encode(uint8_t system_id, uint8_t comp
 static inline void mavlink_msg_marker_send(mavlink_channel_t chan, uint16_t id, float x, float y, float z, float roll, float pitch, float yaw)
 {
 	mavlink_message_t msg;
-	mavlink_msg_marker_pack(mavlink_system.sysid, mavlink_system.compid, &msg, id, x, y, z, roll, pitch, yaw);
+	mavlink_msg_marker_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, id, x, y, z, roll, pitch, yaw);
 	mavlink_send_uart(chan, &msg);
 }
 

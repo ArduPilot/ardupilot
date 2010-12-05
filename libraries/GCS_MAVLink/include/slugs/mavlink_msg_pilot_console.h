@@ -41,6 +41,21 @@ static inline uint16_t mavlink_msg_pilot_console_pack(uint8_t system_id, uint8_t
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_pilot_console_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint16_t dt, uint16_t dla, uint16_t dra, uint16_t dr, uint16_t de)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_PILOT_CONSOLE;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the diagnostic
+	i += put_uint16_t_by_index(dt, i, msg->payload); //Pilot's console throttle command 
+	i += put_uint16_t_by_index(dla, i, msg->payload); //Pilot's console left aileron command 
+	i += put_uint16_t_by_index(dra, i, msg->payload); //Pilot's console right aileron command 
+	i += put_uint16_t_by_index(dr, i, msg->payload); //Pilot's console rudder command 
+	i += put_uint16_t_by_index(de, i, msg->payload); //Pilot's console elevator command 
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_pilot_console_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_pilot_console_t* pilot_console)
 {
 	return mavlink_msg_pilot_console_pack(system_id, component_id, msg, pilot_console->target, pilot_console->dt, pilot_console->dla, pilot_console->dra, pilot_console->dr, pilot_console->de);
@@ -51,7 +66,7 @@ static inline uint16_t mavlink_msg_pilot_console_encode(uint8_t system_id, uint8
 static inline void mavlink_msg_pilot_console_send(mavlink_channel_t chan, uint8_t target, uint16_t dt, uint16_t dla, uint16_t dra, uint16_t dr, uint16_t de)
 {
 	mavlink_message_t msg;
-	mavlink_msg_pilot_console_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, dt, dla, dra, dr, de);
+	mavlink_msg_pilot_console_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, dt, dla, dra, dr, de);
 	mavlink_send_uart(chan, &msg);
 }
 

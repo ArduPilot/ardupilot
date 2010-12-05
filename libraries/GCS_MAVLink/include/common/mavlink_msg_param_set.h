@@ -36,6 +36,19 @@ static inline uint16_t mavlink_msg_param_set_pack(uint8_t system_id, uint8_t com
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_param_set_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, const int8_t* param_id, float param_value)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_PARAM_SET;
+
+	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
+	i += put_array_by_index(param_id, 15, i, msg->payload); //Onboard parameter id
+	i += put_float_by_index(param_value, i, msg->payload); //Onboard parameter value
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_param_set_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_param_set_t* param_set)
 {
 	return mavlink_msg_param_set_pack(system_id, component_id, msg, param_set->target_system, param_set->target_component, param_set->param_id, param_set->param_value);
@@ -46,7 +59,7 @@ static inline uint16_t mavlink_msg_param_set_encode(uint8_t system_id, uint8_t c
 static inline void mavlink_msg_param_set_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, const int8_t* param_id, float param_value)
 {
 	mavlink_message_t msg;
-	mavlink_msg_param_set_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target_system, target_component, param_id, param_value);
+	mavlink_msg_param_set_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, param_id, param_value);
 	mavlink_send_uart(chan, &msg);
 }
 

@@ -56,6 +56,26 @@ static inline uint16_t mavlink_msg_pwm_commands_pack(uint8_t system_id, uint8_t 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_pwm_commands_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint16_t dt_c, uint16_t dla_c, uint16_t dra_c, uint16_t dr_c, uint16_t dle_c, uint16_t dre_c, uint16_t dlf_c, uint16_t drf_c, uint16_t aux1, uint16_t aux2)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_PWM_COMMANDS;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the diagnostic
+	i += put_uint16_t_by_index(dt_c, i, msg->payload); //AutoPilot's throttle command 
+	i += put_uint16_t_by_index(dla_c, i, msg->payload); //AutoPilot's left aileron command 
+	i += put_uint16_t_by_index(dra_c, i, msg->payload); //AutoPilot's right aileron command 
+	i += put_uint16_t_by_index(dr_c, i, msg->payload); //AutoPilot's rudder command 
+	i += put_uint16_t_by_index(dle_c, i, msg->payload); //AutoPilot's left elevator command 
+	i += put_uint16_t_by_index(dre_c, i, msg->payload); //AutoPilot's right elevator command 
+	i += put_uint16_t_by_index(dlf_c, i, msg->payload); //AutoPilot's left  flap command 
+	i += put_uint16_t_by_index(drf_c, i, msg->payload); //AutoPilot's right flap command 
+	i += put_uint16_t_by_index(aux1, i, msg->payload); //AutoPilot's aux1 command 
+	i += put_uint16_t_by_index(aux2, i, msg->payload); //AutoPilot's aux2 command 
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_pwm_commands_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_pwm_commands_t* pwm_commands)
 {
 	return mavlink_msg_pwm_commands_pack(system_id, component_id, msg, pwm_commands->target, pwm_commands->dt_c, pwm_commands->dla_c, pwm_commands->dra_c, pwm_commands->dr_c, pwm_commands->dle_c, pwm_commands->dre_c, pwm_commands->dlf_c, pwm_commands->drf_c, pwm_commands->aux1, pwm_commands->aux2);
@@ -66,7 +86,7 @@ static inline uint16_t mavlink_msg_pwm_commands_encode(uint8_t system_id, uint8_
 static inline void mavlink_msg_pwm_commands_send(mavlink_channel_t chan, uint8_t target, uint16_t dt_c, uint16_t dla_c, uint16_t dra_c, uint16_t dr_c, uint16_t dle_c, uint16_t dre_c, uint16_t dlf_c, uint16_t drf_c, uint16_t aux1, uint16_t aux2)
 {
 	mavlink_message_t msg;
-	mavlink_msg_pwm_commands_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, dt_c, dla_c, dra_c, dr_c, dle_c, dre_c, dlf_c, drf_c, aux1, aux2);
+	mavlink_msg_pwm_commands_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, dt_c, dla_c, dra_c, dr_c, dle_c, dre_c, dlf_c, drf_c, aux1, aux2);
 	mavlink_send_uart(chan, &msg);
 }
 

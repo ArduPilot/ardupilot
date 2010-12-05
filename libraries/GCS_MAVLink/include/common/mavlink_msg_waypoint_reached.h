@@ -26,6 +26,16 @@ static inline uint16_t mavlink_msg_waypoint_reached_pack(uint8_t system_id, uint
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_waypoint_reached_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t seq)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_REACHED;
+
+	i += put_uint16_t_by_index(seq, i, msg->payload); //Sequence
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_waypoint_reached_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_waypoint_reached_t* waypoint_reached)
 {
 	return mavlink_msg_waypoint_reached_pack(system_id, component_id, msg, waypoint_reached->seq);
@@ -36,7 +46,7 @@ static inline uint16_t mavlink_msg_waypoint_reached_encode(uint8_t system_id, ui
 static inline void mavlink_msg_waypoint_reached_send(mavlink_channel_t chan, uint16_t seq)
 {
 	mavlink_message_t msg;
-	mavlink_msg_waypoint_reached_pack(mavlink_system.sysid, mavlink_system.compid, &msg, seq);
+	mavlink_msg_waypoint_reached_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, seq);
 	mavlink_send_uart(chan, &msg);
 }
 

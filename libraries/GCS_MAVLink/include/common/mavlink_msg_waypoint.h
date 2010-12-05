@@ -68,6 +68,30 @@ static inline uint16_t mavlink_msg_waypoint_pack(uint8_t system_id, uint8_t comp
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_waypoint_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, uint16_t seq, uint8_t frame, uint8_t action, float orbit, uint8_t orbit_direction, float param1, float param2, uint8_t current, float x, float y, float z, float yaw, uint8_t autocontinue)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_WAYPOINT;
+
+	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
+	i += put_uint16_t_by_index(seq, i, msg->payload); //Sequence
+	i += put_uint8_t_by_index(frame, i, msg->payload); //The coordinate system of the waypoint. see MAV_FRAME in mavlink_types.h
+	i += put_uint8_t_by_index(action, i, msg->payload); //The scheduled action for the waypoint. see MAV_ACTION in mavlink_types.h
+	i += put_float_by_index(orbit, i, msg->payload); //Orbit to circle around the waypoint, in meters. Set to 0 to fly straight through the waypoint
+	i += put_uint8_t_by_index(orbit_direction, i, msg->payload); //Direction of the orbit circling: 0: clockwise, 1: counter-clockwise
+	i += put_float_by_index(param1, i, msg->payload); //For waypoints of type 0 and 1: Radius in which the waypoint is accepted as reached, in meters
+	i += put_float_by_index(param2, i, msg->payload); //For waypoints of type 0 and 1: Time that the MAV should stay inside the orbit before advancing, in milliseconds
+	i += put_uint8_t_by_index(current, i, msg->payload); //false:0, true:1
+	i += put_float_by_index(x, i, msg->payload); //local: x position, global: longitude
+	i += put_float_by_index(y, i, msg->payload); //y position: global: latitude
+	i += put_float_by_index(z, i, msg->payload); //z position: global: altitude
+	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation in radians, 0 = NORTH
+	i += put_uint8_t_by_index(autocontinue, i, msg->payload); //autocontinue to next wp
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_waypoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_waypoint_t* waypoint)
 {
 	return mavlink_msg_waypoint_pack(system_id, component_id, msg, waypoint->target_system, waypoint->target_component, waypoint->seq, waypoint->frame, waypoint->action, waypoint->orbit, waypoint->orbit_direction, waypoint->param1, waypoint->param2, waypoint->current, waypoint->x, waypoint->y, waypoint->z, waypoint->yaw, waypoint->autocontinue);
@@ -78,7 +102,7 @@ static inline uint16_t mavlink_msg_waypoint_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_waypoint_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t seq, uint8_t frame, uint8_t action, float orbit, uint8_t orbit_direction, float param1, float param2, uint8_t current, float x, float y, float z, float yaw, uint8_t autocontinue)
 {
 	mavlink_message_t msg;
-	mavlink_msg_waypoint_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target_system, target_component, seq, frame, action, orbit, orbit_direction, param1, param2, current, x, y, z, yaw, autocontinue);
+	mavlink_msg_waypoint_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, seq, frame, action, orbit, orbit_direction, param1, param2, current, x, y, z, yaw, autocontinue);
 	mavlink_send_uart(chan, &msg);
 }
 

@@ -41,6 +41,21 @@ static inline uint16_t mavlink_msg_set_cam_shutter_pack(uint8_t system_id, uint8
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_set_cam_shutter_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t cam_no, uint8_t cam_mode, uint8_t trigger_pin, uint16_t interval, uint16_t exposure, float gain)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_SET_CAM_SHUTTER;
+
+	i += put_uint8_t_by_index(cam_no, i, msg->payload); //Camera id
+	i += put_uint8_t_by_index(cam_mode, i, msg->payload); //Camera mode: 0 = auto, 1 = manual
+	i += put_uint8_t_by_index(trigger_pin, i, msg->payload); //Trigger pin, 0-3 for PtGrey FireFly
+	i += put_uint16_t_by_index(interval, i, msg->payload); //Shutter interval, in microseconds
+	i += put_uint16_t_by_index(exposure, i, msg->payload); //Exposure time, in microseconds
+	i += put_float_by_index(gain, i, msg->payload); //Camera gain
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_set_cam_shutter_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_cam_shutter_t* set_cam_shutter)
 {
 	return mavlink_msg_set_cam_shutter_pack(system_id, component_id, msg, set_cam_shutter->cam_no, set_cam_shutter->cam_mode, set_cam_shutter->trigger_pin, set_cam_shutter->interval, set_cam_shutter->exposure, set_cam_shutter->gain);
@@ -51,7 +66,7 @@ static inline uint16_t mavlink_msg_set_cam_shutter_encode(uint8_t system_id, uin
 static inline void mavlink_msg_set_cam_shutter_send(mavlink_channel_t chan, uint8_t cam_no, uint8_t cam_mode, uint8_t trigger_pin, uint16_t interval, uint16_t exposure, float gain)
 {
 	mavlink_message_t msg;
-	mavlink_msg_set_cam_shutter_pack(mavlink_system.sysid, mavlink_system.compid, &msg, cam_no, cam_mode, trigger_pin, interval, exposure, gain);
+	mavlink_msg_set_cam_shutter_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, cam_no, cam_mode, trigger_pin, interval, exposure, gain);
 	mavlink_send_uart(chan, &msg);
 }
 

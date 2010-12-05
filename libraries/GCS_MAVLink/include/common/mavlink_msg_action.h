@@ -32,6 +32,18 @@ static inline uint16_t mavlink_msg_action_pack(uint8_t system_id, uint8_t compon
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_action_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint8_t target_component, uint8_t action)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_ACTION;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system executing the action
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //The component executing the action
+	i += put_uint8_t_by_index(action, i, msg->payload); //The action id
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_action_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_action_t* action)
 {
 	return mavlink_msg_action_pack(system_id, component_id, msg, action->target, action->target_component, action->action);
@@ -42,7 +54,7 @@ static inline uint16_t mavlink_msg_action_encode(uint8_t system_id, uint8_t comp
 static inline void mavlink_msg_action_send(mavlink_channel_t chan, uint8_t target, uint8_t target_component, uint8_t action)
 {
 	mavlink_message_t msg;
-	mavlink_msg_action_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, target_component, action);
+	mavlink_msg_action_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, target_component, action);
 	mavlink_send_uart(chan, &msg);
 }
 

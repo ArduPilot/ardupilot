@@ -38,6 +38,20 @@ static inline uint16_t mavlink_msg_request_dynamic_gyro_calibration_pack(uint8_t
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_request_dynamic_gyro_calibration_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, float mode, uint8_t axis, uint16_t time)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_REQUEST_DYNAMIC_GYRO_CALIBRATION;
+
+	i += put_uint8_t_by_index(target_system, i, msg->payload); //The system which should auto-calibrate
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //The system component which should auto-calibrate
+	i += put_float_by_index(mode, i, msg->payload); //The current ground-truth rpm
+	i += put_uint8_t_by_index(axis, i, msg->payload); //The axis to calibrate: 0 roll, 1 pitch, 2 yaw
+	i += put_uint16_t_by_index(time, i, msg->payload); //The time to average over in ms
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_request_dynamic_gyro_calibration_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_request_dynamic_gyro_calibration_t* request_dynamic_gyro_calibration)
 {
 	return mavlink_msg_request_dynamic_gyro_calibration_pack(system_id, component_id, msg, request_dynamic_gyro_calibration->target_system, request_dynamic_gyro_calibration->target_component, request_dynamic_gyro_calibration->mode, request_dynamic_gyro_calibration->axis, request_dynamic_gyro_calibration->time);
@@ -48,7 +62,7 @@ static inline uint16_t mavlink_msg_request_dynamic_gyro_calibration_encode(uint8
 static inline void mavlink_msg_request_dynamic_gyro_calibration_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, float mode, uint8_t axis, uint16_t time)
 {
 	mavlink_message_t msg;
-	mavlink_msg_request_dynamic_gyro_calibration_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target_system, target_component, mode, axis, time);
+	mavlink_msg_request_dynamic_gyro_calibration_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, mode, axis, time);
 	mavlink_send_uart(chan, &msg);
 }
 

@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_sensor_bias_pack(uint8_t system_id, uint8_t c
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_sensor_bias_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, float axBias, float ayBias, float azBias, float gxBias, float gyBias, float gzBias)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_SENSOR_BIAS;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the biases
+	i += put_float_by_index(axBias, i, msg->payload); //Accelerometer X bias (m/s)
+	i += put_float_by_index(ayBias, i, msg->payload); //Accelerometer Y bias (m/s)
+	i += put_float_by_index(azBias, i, msg->payload); //Accelerometer Z bias (m/s)
+	i += put_float_by_index(gxBias, i, msg->payload); //Gyro X bias (rad/s)
+	i += put_float_by_index(gyBias, i, msg->payload); //Gyro Y bias (rad/s)
+	i += put_float_by_index(gzBias, i, msg->payload); //Gyro Z bias (rad/s)
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_sensor_bias_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_sensor_bias_t* sensor_bias)
 {
 	return mavlink_msg_sensor_bias_pack(system_id, component_id, msg, sensor_bias->target, sensor_bias->axBias, sensor_bias->ayBias, sensor_bias->azBias, sensor_bias->gxBias, sensor_bias->gyBias, sensor_bias->gzBias);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_sensor_bias_encode(uint8_t system_id, uint8_t
 static inline void mavlink_msg_sensor_bias_send(mavlink_channel_t chan, uint8_t target, float axBias, float ayBias, float azBias, float gxBias, float gyBias, float gzBias)
 {
 	mavlink_message_t msg;
-	mavlink_msg_sensor_bias_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, axBias, ayBias, azBias, gxBias, gyBias, gzBias);
+	mavlink_msg_sensor_bias_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, axBias, ayBias, azBias, gxBias, gyBias, gzBias);
 	mavlink_send_uart(chan, &msg);
 }
 

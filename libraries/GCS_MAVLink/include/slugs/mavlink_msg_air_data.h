@@ -35,6 +35,19 @@ static inline uint16_t mavlink_msg_air_data_pack(uint8_t system_id, uint8_t comp
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_air_data_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, float dynamicPressure, float staticPressure, uint16_t temperature)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_AIR_DATA;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the air data
+	i += put_float_by_index(dynamicPressure, i, msg->payload); //Dynamic pressure (Pa)
+	i += put_float_by_index(staticPressure, i, msg->payload); //Static pressure (Pa)
+	i += put_uint16_t_by_index(temperature, i, msg->payload); //Board temperature
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_air_data_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_air_data_t* air_data)
 {
 	return mavlink_msg_air_data_pack(system_id, component_id, msg, air_data->target, air_data->dynamicPressure, air_data->staticPressure, air_data->temperature);
@@ -45,7 +58,7 @@ static inline uint16_t mavlink_msg_air_data_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_air_data_send(mavlink_channel_t chan, uint8_t target, float dynamicPressure, float staticPressure, uint16_t temperature)
 {
 	mavlink_message_t msg;
-	mavlink_msg_air_data_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, dynamicPressure, staticPressure, temperature);
+	mavlink_msg_air_data_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, dynamicPressure, staticPressure, temperature);
 	mavlink_send_uart(chan, &msg);
 }
 

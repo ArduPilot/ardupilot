@@ -1,46 +1,17 @@
 <?xml version="1.0"?>
 <mavlink>
 <include>common.xml</include>
+
+<enums>
+   <enum name="SLUGS_PID_INDX_IDS" >
+      <description>Slugs parameter interface subsets</description>
+      <entry name = "PID_YAW_DAMPER" value="2" />
+      <entry name = "PID_PITCH">With comment: PID Pitch parameter</entry>
+      <entry name = "PID_ALT_HOLD"  value="50" />
+   </enum>
+</enums>
+
 <messages>
-   <message name="SET_ALTITUDE" id="80">
-     <field name="target" type="uint8_t">The system setting the altitude</field>
-     <field name="mode" type="uint32_t">The new altitude in meters</field>
-   </message>
-
-  <message name="REQUEST_DATA_STREAM" id="81">
-     <field name="target_system" type="uint8_t">The target requested to send the message stream.</field>
-     <field name="target_component" type="uint8_t">The target requested to send the message stream.</field>
-     <field name="req_stream_id" type="uint8_t">The ID of the requested message type</field>
-     <field name="req_message_rate" type="uint16_t">The requested interval between two messages of this type</field>
-     <field name="start_stop" type="uint8_t">1 to start sending, 0 to stop sending.</field>
-   </message>
-
-   <message name="REQUEST_DYNAMIC_GYRO_CALIBRATION" id="82">
-     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
-<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
-     <field name="mode" type="float">The current ground-truth rpm</field>
-     <field name="axis" type="uint8_t">The axis to calibrate: 0 roll, 1 pitch, 2 yaw</field>
-      <field name="time" type="uint16_t">The time to average over in ms</field>
-   </message>
-
-   <message name="REQUEST_STATIC_CALIBRATION" id="83">
-     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
-<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
-      <field name="time" type="uint16_t">The time to average over in ms</field>
-   </message>
-
-   <message name="MANUAL_CONTROL" id="84">
-     <field name="target" type="uint8_t">The system to be controlled</field>
-     <field name="roll" type="float">roll</field>
-     <field name="pitch" type="float">pitch</field>
-     <field name="yaw" type="float">yaw</field>
-     <field name="thrust" type="float">thrust</field>
-     <field name="roll_manual" type="uint8_t">roll control enabled auto:0, manual:1</field>
-     <field name="pitch_manual" type="uint8_t">pitch auto:0, manual:1</field>
-     <field name="yaw_manual" type="uint8_t">yaw auto:0, manual:1</field>
-     <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
-   </message>
-
   <message name="ATTITUDE_CONTROL" id="85">
      <field name="target" type="uint8_t">The system to be controlled</field>
      <field name="roll" type="float">roll</field>
@@ -222,6 +193,37 @@
     <field name="confidence" type="float">Confidence of detection</field>
     <field name="file" type="array[100]">Pattern file name</field>
     <field name="detected" type="uint8_t">Accepted as true detection, 0 no, 1 yes</field>
+   </message>
+
+   <message name="POINT_OF_INTEREST" id="161">
+    <description>Notifies the operator about a point of interest (POI). This can be anything detected by the
+    system. This generic message is intented to help interfacing to generic visualizations and to display
+    the POI on a map.</description>
+    <field name="type" type="uint8_t">0: Notice, 1: Warning, 2: Critical, 3: Emergency, 4: Debug</field>
+    <field name="color" type="uint8_t">0: blue, 1: yellow, 2: red, 3: orange, 4: green, 5: magenta</field>
+    <field name="coordinate_system" type="uint8_t">0: global, 1:local</field>
+    <field name="timeout" type="uint16_t">0: no timeout, >1: timeout in seconds</field>
+    <field name="x" type="float">X Position</field>
+    <field name="y" type="float">Y Position</field>
+    <field name="z" type="float">Z Position</field>
+    <field name="name" type="array[25]">POI name</field>
+   </message>
+
+   <message name="POINT_OF_INTEREST_CONNECTION" id="162">
+    <description>Notifies the operator about the connection of two point of interests (POI). This can be anything detected by the
+    system. This generic message is intented to help interfacing to generic visualizations and to display
+    the POI on a map.</description>
+    <field name="type" type="uint8_t">0: Notice, 1: Warning, 2: Critical, 3: Emergency, 4: Debug</field>
+    <field name="color" type="uint8_t">0: blue, 1: yellow, 2: red, 3: orange, 4: green, 5: magenta</field>
+    <field name="coordinate_system" type="uint8_t">0: global, 1:local</field>
+    <field name="timeout" type="uint16_t">0: no timeout, >1: timeout in seconds</field>
+    <field name="xp1" type="float">X1 Position</field>
+    <field name="yp1" type="float">Y1 Position</field>
+    <field name="zp1" type="float">Z1 Position</field>
+    <field name="xp2" type="float">X2 Position</field>
+    <field name="yp2" type="float">Y2 Position</field>
+    <field name="zp2" type="float">Z2 Position</field>
+    <field name="name" type="array[25]">POI connection name</field>
    </message>
 
 </messages>

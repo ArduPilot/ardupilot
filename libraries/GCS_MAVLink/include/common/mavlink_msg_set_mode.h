@@ -29,6 +29,17 @@ static inline uint16_t mavlink_msg_set_mode_pack(uint8_t system_id, uint8_t comp
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_set_mode_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint8_t mode)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_SET_MODE;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); //The system setting the mode
+	i += put_uint8_t_by_index(mode, i, msg->payload); //The new mode
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_set_mode_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_set_mode_t* set_mode)
 {
 	return mavlink_msg_set_mode_pack(system_id, component_id, msg, set_mode->target, set_mode->mode);
@@ -39,7 +50,7 @@ static inline uint16_t mavlink_msg_set_mode_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_set_mode_send(mavlink_channel_t chan, uint8_t target, uint8_t mode)
 {
 	mavlink_message_t msg;
-	mavlink_msg_set_mode_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, mode);
+	mavlink_msg_set_mode_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, mode);
 	mavlink_send_uart(chan, &msg);
 }
 

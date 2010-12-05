@@ -32,6 +32,18 @@ static inline uint16_t mavlink_msg_waypoint_count_pack(uint8_t system_id, uint8_
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_waypoint_count_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, uint16_t count)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_COUNT;
+
+	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
+	i += put_uint16_t_by_index(count, i, msg->payload); //Number of Waypoints in the Sequence
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_waypoint_count_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_waypoint_count_t* waypoint_count)
 {
 	return mavlink_msg_waypoint_count_pack(system_id, component_id, msg, waypoint_count->target_system, waypoint_count->target_component, waypoint_count->count);
@@ -42,7 +54,7 @@ static inline uint16_t mavlink_msg_waypoint_count_encode(uint8_t system_id, uint
 static inline void mavlink_msg_waypoint_count_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t count)
 {
 	mavlink_message_t msg;
-	mavlink_msg_waypoint_count_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target_system, target_component, count);
+	mavlink_msg_waypoint_count_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, count);
 	mavlink_send_uart(chan, &msg);
 }
 

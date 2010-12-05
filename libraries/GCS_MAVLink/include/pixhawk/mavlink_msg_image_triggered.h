@@ -35,6 +35,19 @@ static inline uint16_t mavlink_msg_image_triggered_pack(uint8_t system_id, uint8
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_image_triggered_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t timestamp, uint32_t seq, float roll, float pitch)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_IMAGE_TRIGGERED;
+
+	i += put_uint64_t_by_index(timestamp, i, msg->payload); //Timestamp
+	i += put_uint32_t_by_index(seq, i, msg->payload); //IMU seq
+	i += put_float_by_index(roll, i, msg->payload); //Roll angle in rad
+	i += put_float_by_index(pitch, i, msg->payload); //Pitch angle in rad
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_image_triggered_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_image_triggered_t* image_triggered)
 {
 	return mavlink_msg_image_triggered_pack(system_id, component_id, msg, image_triggered->timestamp, image_triggered->seq, image_triggered->roll, image_triggered->pitch);
@@ -45,7 +58,7 @@ static inline uint16_t mavlink_msg_image_triggered_encode(uint8_t system_id, uin
 static inline void mavlink_msg_image_triggered_send(mavlink_channel_t chan, uint64_t timestamp, uint32_t seq, float roll, float pitch)
 {
 	mavlink_message_t msg;
-	mavlink_msg_image_triggered_pack(mavlink_system.sysid, mavlink_system.compid, &msg, timestamp, seq, roll, pitch);
+	mavlink_msg_image_triggered_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, timestamp, seq, roll, pitch);
 	mavlink_send_uart(chan, &msg);
 }
 

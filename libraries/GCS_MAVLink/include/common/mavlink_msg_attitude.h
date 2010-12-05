@@ -44,6 +44,22 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+static inline uint16_t mavlink_msg_attitude_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_ATTITUDE;
+
+	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds)
+	i += put_float_by_index(roll, i, msg->payload); //Roll angle (rad)
+	i += put_float_by_index(pitch, i, msg->payload); //Pitch angle (rad)
+	i += put_float_by_index(yaw, i, msg->payload); //Yaw angle (rad)
+	i += put_float_by_index(rollspeed, i, msg->payload); //Roll angular speed (rad/s)
+	i += put_float_by_index(pitchspeed, i, msg->payload); //Pitch angular speed (rad/s)
+	i += put_float_by_index(yawspeed, i, msg->payload); //Yaw angular speed (rad/s)
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
 static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_attitude_t* attitude)
 {
 	return mavlink_msg_attitude_pack(system_id, component_id, msg, attitude->usec, attitude->roll, attitude->pitch, attitude->yaw, attitude->rollspeed, attitude->pitchspeed, attitude->yawspeed);
@@ -54,7 +70,7 @@ static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t co
 static inline void mavlink_msg_attitude_send(mavlink_channel_t chan, uint64_t usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed)
 {
 	mavlink_message_t msg;
-	mavlink_msg_attitude_pack(mavlink_system.sysid, mavlink_system.compid, &msg, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed);
+	mavlink_msg_attitude_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed);
 	mavlink_send_uart(chan, &msg);
 }
 
