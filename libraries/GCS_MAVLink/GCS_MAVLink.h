@@ -4,7 +4,7 @@
 /// @brief	One size fits all header for MAVLink integration.
 
 #ifndef GCS_MAVLink_h
-#define GCS_MAVlink_h
+#define GCS_MAVLink_h
 
 #include <Stream.h>
 #include "include/mavlink_types.h"
