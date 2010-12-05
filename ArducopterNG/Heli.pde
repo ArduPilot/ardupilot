@@ -232,7 +232,7 @@ void heli_read_radio()
     rollPitchCollPercent = ccpmDeallocation * ccpmPercents;
     
     // get the yaw (not coded)
-    yawPercent = yawSlope * APM_RC.InputCh(CHANNEL_YAW) + yawIntercept;
+    yawPercent = (yawSlope * APM_RC.InputCh(CHANNEL_YAW) + yawIntercept) - trim_yaw;
     
     // we add 1500 to make it fit in with rest of arduCopter code..
     ch_roll = rollPitchCollPercent.x;
@@ -249,7 +249,7 @@ void heli_read_radio()
     command_rx_roll = ch_roll / HELI_STICK_TO_ANGLE_FACTOR;        // Convert stick position to absolute angles
     command_rx_pitch = ch_pitch / HELI_STICK_TO_ANGLE_FACTOR;      // Convert stick position to absolute angles
     command_rx_collective = ch_collective;
-    command_rx_yaw = (ch_yaw-trim_yaw) / HELI_YAW_STICK_TO_ANGLE_FACTOR;      // Convert stick position to turn rate
+    command_rx_yaw = ch_yaw / HELI_YAW_STICK_TO_ANGLE_FACTOR;      // Convert stick position to turn rate
     
     // hardcode flight mode
     flightMode = STABLE_MODE;
