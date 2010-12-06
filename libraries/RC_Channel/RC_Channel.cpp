@@ -157,7 +157,7 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range()
 {
-	return _low + _high * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min));
+	return _low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min)));
 }
 
 int16_t
