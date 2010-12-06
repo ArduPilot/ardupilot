@@ -45,7 +45,9 @@ public:
 		_storage(storage),
 		_address(address),
 		_gain_array(&_local_gains[0])
-	{}
+	{
+		load_gains();
+	}
 
 	/// Constructor
 	///
@@ -58,7 +60,8 @@ public:
 	PID(float *gain_array) :
 		_storage(STORE_OFF),
 		_gain_array(gain_array)
-	{}
+	{
+	}
 
 	/// Iterate the PID, return the new control value
 	///
