@@ -57,18 +57,18 @@ TODO:
 /* Will be moved in future to AN extension ports */
 /* due need to have PWM pins free for sonars and servos */
 
-/*
+
 #define FR_LED 3  // Mega PE4 pin, OUT7
 #define RE_LED 2  // Mega PE5 pin, OUT6
 #define RI_LED 7  // Mega PH4 pin, OUT5
 #define LE_LED 8  // Mega PH5 pin, OUT4
-*/
 
+/*
 #define FR_LED AN12  // Mega PE4 pin, OUT7
 #define RE_LED AN14  // Mega PE5 pin, OUT6
 #define RI_LED AN10  // Mega PH4 pin, OUT5
 #define LE_LED AN8  // Mega PH5 pin, OUT4
-
+*/
 
 
 /*************************************************************/
