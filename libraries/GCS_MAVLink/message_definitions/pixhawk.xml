@@ -24,14 +24,6 @@
      <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
    </message>
 
-   <message name="DEBUG_VECT" id="90">
-    <field name="name" type="array[10]">Name</field>
-     <field name="usec" type="uint64_t">Timestamp</field>
-     <field name="x" type="float">x</field>
-     <field name="y" type="float">y</field>
-     <field name="z" type="float">z</field>
-   </message>
-
  <message name="SET_CAM_SHUTTER" id="100">
      <field name="cam_no" type="uint8_t">Camera id</field>
      <field name="cam_mode" type="uint8_t">Camera mode: 0 = auto, 1 = manual</field>
