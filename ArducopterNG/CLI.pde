@@ -52,6 +52,7 @@ void RunCLI () {
   SerPri("Firmware: ");
   SerPrln(VER);
   SerPrln();
+  SerPrln("Make sure that you have Carriage Return active");
 
   if(ShowMainMenu) Show_MainMenu();
 
@@ -102,8 +103,8 @@ void Show_MainMenu() {
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
   SerPrln(" c - Show compass offsets");
-  SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs");
-  SerPrln(" i - Initialize and calibrate Accel offsets (under work)");
+  SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
+  SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
   SerPrln(" ");
@@ -131,6 +132,7 @@ void CALIB_CompassOffset() {
   APM_Compass.SetDeclination(ToRad(DECLINATION));  // set local difference between magnetic north and true north
   int counter = 0; 
 
+  SerFlu();
   while(1) {
     static float min[3], max[3], offset[3];
     if((millis()- timer) > 100)  {
@@ -190,12 +192,12 @@ void CALIB_CompassOffset() {
       mag_offset_y = offset[1];
       mag_offset_z = offset[2];
 
+      SerPriln("Saving Offsets to EEPROM");
       writeEEPROM(mag_offset_x, mag_offset_x_ADR);
       writeEEPROM(mag_offset_y, mag_offset_y_ADR);
       writeEEPROM(mag_offset_z, mag_offset_z_ADR);
-
-      SerPrln("Write down following OFFSET, enter it to your ArduCopterNG.pde (around line 153)");
-      SerPrln("and upload your program code again to your ArduCopter");
+      delay(500);
+      SerPriln("Saved...");
       SerPrln();
       break;
     }
@@ -248,17 +250,6 @@ void CALIB_AccOffset() {
   xz = xz - 407;               // Z-Axis correction
   //  xx += 42;
 
-  /*
-  SerPriln("Averages as follows");
-   SerPri("  ");
-   tab();
-   SerPri(xx);
-   tab();
-   SerPri(xy);
-   tab();
-   SerPri(xz);
-   SerPriln(); */
-
   acc_offset_y = xy;
   acc_offset_x = xx;
   acc_offset_z = xz;
@@ -287,7 +278,7 @@ void CALIB_AccOffset() {
   SerPrln(adc.Ch(6) - acc_offset_z);
   SerPrln();
   SerPrln("Final results should be close to 0, 0, 408 if they are far (-+10) from ");
-  SerPrln("those values, do initialization again or use Configurator for finetuning");
+  SerPrln("those values, redo initialization or use Configurator for finetuning");
   SerPrln();
   SerPrln("Saving values to EEPROM");
   writeEEPROM(acc_offset_x, acc_offset_x_ADR);
@@ -332,9 +323,6 @@ void CALIB_Throttle() {
   delay(200);
   SerPrln("Saved..");
   SerPrln();
-
-
-
 }
 
 
@@ -384,6 +372,14 @@ void CALIB_Esc() {
 
 void Show_Settings() {
   // Reading current EEPROM values
+  
+  SerPrln("ArduCopter - Current settings");
+  SerPrln("-----------------------------");
+  SerPri("Firmware: ");
+  SerPri(VER);
+  SerPrln();
+  SerPrln();
+  
   readUserConfig();
   delay(50);
 
@@ -405,6 +401,15 @@ void Show_Settings() {
 
   SerPri("Min Throttle: ");
   SerPriln(MIN_THROTTLE);
+
+  SerPri("Magnetometer 1-ena/0-dis: ");
+  SerPriln(MAGNETOMETER, DEC);
+
+  SerPri("Camera mode: ");
+  SerPriln(cam_mode, DEC);
+
+  SerPrln();
+  SerPrln();
 
 }
 

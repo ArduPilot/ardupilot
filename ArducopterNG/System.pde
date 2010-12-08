@@ -151,7 +151,7 @@ void APM_Init() {
   if (MAGNETOMETER == 1) {
     APM_Compass.Init(FALSE);  // I2C initialization
     APM_Compass.SetOrientation(MAGORIENTATION);
-    APM_Compass.SetOffsets(MAGOFFSET);
+    APM_Compass.SetOffsets(mag_offset_x, mag_offset_y, mag_offset_z);
     APM_Compass.SetDeclination(ToRad(DECLINATION));
   }
 #endif
