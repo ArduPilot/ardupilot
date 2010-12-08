@@ -105,19 +105,11 @@ void APM_Init() {
   SW_DIP4 = APMPinRead(PINL, 7);
 
   // Is CLI mode active or not, if it is fire it up and never return.
-  if(digitalRead(SW2)) {
+  if(!digitalRead(SW2)) {
     RunCLI();
     // Btw.. We never return from this....
   }
 
-
-  /* Works, tested 18-10-10 JP
-   if(SW_DIP1) {
-   SerPrln("+ mode");
-   } else {
-   SerPrln("x mode");
-   } 
-   */
 
   flightOrientation = SW_DIP1;    // DIP1 off = we are in + mode, DIP1 on = we are in x mode
   readUserConfig();               // Load user configurable items from EEPROM
@@ -157,10 +149,6 @@ void APM_Init() {
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
 
-    //Serial.begin(115200);  // Old mode serial begin, remove soon, by jp/17-10-10
-  //Serial.println("ArduCopter Quadcopter v1.0");
-
-
   // Proper Serial port/baud are defined on main .pde and then Arducopter.h with
   // Choises of Xbee or normal serial port
   SerBeg(SerBau);
@@ -173,7 +161,6 @@ void APM_Init() {
     Log_Read(1,1000);
     delay(30000);
   }
-
 
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
