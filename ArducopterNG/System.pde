@@ -97,6 +97,12 @@ void APM_Init() {
 #endif
 #endif
 
+  // Read DIP Switches and other important values. DIP switches needs special functions to 
+  // read due they are not defined as normal pins like other GPIO's are. 
+  SW_DIP1 = APMPinRead(PINE, 7);
+  SW_DIP2 = APMPinRead(PINE, 6);
+  SW_DIP3 = APMPinRead(PINL, 6);
+  SW_DIP4 = APMPinRead(PINL, 7);
 
   // Is CLI mode active or not, if it is fire it up and never return.
   if(digitalRead(SW2)) {
@@ -104,13 +110,6 @@ void APM_Init() {
     // Btw.. We never return from this....
   }
 
-
-  // Read DIP Switches and other important values. DIP switches needs special functions to 
-  // read due they are not defined as normal pins like other GPIO's are. 
-  SW_DIP1 = APMPinRead(PINE, 7);
-  SW_DIP2 = APMPinRead(PINE, 6);
-  SW_DIP3 = APMPinRead(PINL, 6);
-  SW_DIP4 = APMPinRead(PINL, 7);
 
   /* Works, tested 18-10-10 JP
    if(SW_DIP1) {

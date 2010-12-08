@@ -407,7 +407,14 @@ void Show_Settings() {
 
   SerPri("Camera mode: ");
   SerPriln(cam_mode, DEC);
-
+  
+  SerPri("Flight orientation: ");
+  if(SW_DIP1) {
+    SerPriln("x mode");
+  } else {
+    SerPriln("+ mode");
+  }
+  
   SerPrln();
   SerPrln();
 
