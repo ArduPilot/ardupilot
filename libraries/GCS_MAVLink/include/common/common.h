@@ -63,7 +63,7 @@ extern "C" {
 #include "./mavlink_msg_request_dynamic_gyro_calibration.h"
 #include "./mavlink_msg_request_static_calibration.h"
 #include "./mavlink_msg_manual_control.h"
-#include "../pixhawk/mavlink_msg_debug_vect.h"
+#include "./mavlink_msg_debug_vect.h"
 #include "./mavlink_msg_gps_local_origin_set.h"
 #include "./mavlink_msg_statustext.h"
 #include "./mavlink_msg_debug.h"
