@@ -116,6 +116,7 @@ TODO:
 #define SerRea  Serial3.read
 #define SerFlu  Serial3.flush
 #define SerBeg  Serial3.begin
+#define SerP    Serial3.printf_P
 #define SerPor  "FTDI"
 #endif
 
@@ -129,6 +130,7 @@ TODO:
 #define SerRea  Serial.read
 #define SerFlu  Serial.flush
 #define SerBeg  Serial.begin
+#define SerP    Serial.printf_P
 #define SerPor  "Telemetry"
 #endif
 
@@ -537,6 +539,7 @@ float mag_declination        = 0.0;
 float mag_offset_x           = 0;    // is int enough for offsets.. checkit, 31-10-10, jp
 float mag_offset_y           = 0;
 float mag_offset_z           = 0;
+int MIN_THROTTLE;
 //float eeprom_counter;                // reserved for eeprom write counter, 31-10-10, jp
 //float eeprom_checker;                // reserved for eeprom checksums, 01-11-10, jp
 
@@ -606,6 +609,7 @@ void defaultUserConfig() {
   mag_offset_x               = 0;
   mag_offset_y               = 0;
   mag_offset_z               = 0;
+  MIN_THROTTLE               = 1040; // used to be #define but now in EEPROM
 }
 
 // EEPROM storage addresses
@@ -672,6 +676,7 @@ void defaultUserConfig() {
 #define mag_offset_x_ADR       240
 #define mag_offset_y_ADR       244
 #define mag_offset_z_ADR       248
+#define MIN_THROTTLE_ADR      250
 
 
 //#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp

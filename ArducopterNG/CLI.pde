@@ -32,6 +32,7 @@
  
  * ************************************************************** */
 
+
 boolean ShowMainMenu;
 
 
@@ -56,7 +57,10 @@ void RunCLI () {
 
   // Our main loop that never ends. Only way to get away from here is to reboot APM
   for (;;) { 
-    if(ShowMainMenu) Show_MainMenu();    
+
+    if(ShowMainMenu) Show_MainMenu();   
+
+    delay(50); 
     if (SerAva()) {
       ShowMainMenu = TRUE;
       queryType = SerRea();
@@ -66,39 +70,44 @@ void RunCLI () {
         break;
       case 'i':
         CALIB_AccOffset();
+        break;
+      case 't':
+        CALIB_Throttle();  
+        break;
+      case 'e':
+        CALIB_Esc();
         break; 
+      case 's':
+        Show_Settings();
+        break;
       }
+      SerFlu();
     }
-    
+
     // Changing LED statuses to inform that we are in CLI mode
     // Blinking Red, Yellow, Green when in CLI mode
     if(millis() - cli_timer > 1000) {
       cli_timer = millis();
-/*
-      if(cli_status == HIGH) { 
-        LEDAllOFF();
-        cli_status = LOW;
-      } 
-      else {
-        LEDAllON();
-        cli_status = HIGH; 
-      }
-      */
       CLILedStep();
     }
-
-
   } // Mainloop ends
-
 }
+
+
+
 
 void Show_MainMenu() {
   ShowMainMenu = FALSE; 
+  SerPrln();
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
-  SerPrln(" c - Show compass offsets (no return, reboot)");
+  SerPrln(" c - Show compass offsets");
+  SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs");
   SerPrln(" i - Initialize and calibrate Accel offsets (under work)");
+  SerPrln(" t - Calibrate MIN Throttle value");
+  SerPrln(" s - Show settings");
   SerPrln(" ");
+  SerFlu();
 }
 
 
@@ -122,7 +131,7 @@ void CALIB_CompassOffset() {
   APM_Compass.SetDeclination(ToRad(DECLINATION));  // set local difference between magnetic north and true north
   int counter = 0; 
 
-  for(;;) {
+  while(1) {
     static float min[3], max[3], offset[3];
     if((millis()- timer) > 100)  {
       timer = millis();
@@ -165,16 +174,32 @@ void CALIB_CompassOffset() {
       SerPri(")");
       SerPrln();
 
-      if(counter == 50) {
+      if(counter == 200) {
         counter = 0;
         SerPrln();
         SerPrln("Roll and Rotate your quad untill offsets are not changing!");
-        SerPrln("to exit from this loop, reboot your APM");        
+        //        SerPrln("to exit from this loop, reboot your APM");        
         SerPrln();        
         delay(500);
       }
       counter++;
     }
+    if(SerAva() > 0){
+
+      mag_offset_x = offset[0];
+      mag_offset_y = offset[1];
+      mag_offset_z = offset[2];
+
+      writeEEPROM(mag_offset_x, mag_offset_x_ADR);
+      writeEEPROM(mag_offset_y, mag_offset_y_ADR);
+      writeEEPROM(mag_offset_z, mag_offset_z_ADR);
+
+      SerPrln("Write down following OFFSET, enter it to your ArduCopterNG.pde (around line 153)");
+      SerPrln("and upload your program code again to your ArduCopter");
+      SerPrln();
+      break;
+    }
+
   }
 #else
   SerPrln("Magneto module is not activated on Arducopter.pde");
@@ -191,64 +216,215 @@ void CALIB_CompassOffset() {
 // Accell calibration
 void CALIB_AccOffset() {
 
-  uint8_t loopy;
-  uint16_t xx = 0, xy = 0, xz = 0; 
+  int loopy;
+  long xx = 0, xy = 0, xz = 0; 
 
+  SerPrln("Initializing Accelerometers..");
   adc.Init();            // APM ADC library initialization
   //  delay(250);                // Giving small moment before starting
 
   calibrateSensors();         // Calibrate neutral values of gyros  (in Sensors.pde)
 
   SerPrln();
-  SerPrln("Sampling 10 samples from Accelerometers, don't move your ArduCopter!");
+  SerPrln("Sampling 50 samples from Accelerometers, don't move your ArduCopter!");
   SerPrln("Sample:\tAcc-X\tAxx-Y\tAcc-Z");
 
-  for(loopy = 1; loopy <= 5; loopy++) {
+  for(loopy = 1; loopy <= 50; loopy++) {
     SerPri("  ");
     SerPri(loopy);
     SerPri(":");
     tab();
-    /*    SerPri(xx += read_adc(4));
-     tab();
-     SerPri(xy += -read_adc(3));
-     tab();
-     SerPrln(xz += read_adc(5));
-     */
     SerPri(xx += adc.Ch(4));
     tab();
     SerPri(xy += adc.Ch(5));
     tab();
-    SerPrln(xz += adc.Ch(3));
-
-
-
+    SerPrln(xz += adc.Ch(6));
+    delay(20);
   }
 
   xx = xx / (loopy - 1);
   xy = xy / (loopy - 1);
   xz = xz / (loopy - 1);
-  xz += 500;               // Z-Axis correction
-  
+  xz = xz - 407;               // Z-Axis correction
+  //  xx += 42;
+
+  /*
   SerPriln("Averages as follows");
+   SerPri("  ");
+   tab();
+   SerPri(xx);
+   tab();
+   SerPri(xy);
+   tab();
+   SerPri(xz);
+   SerPriln(); */
+
+  acc_offset_y = xy;
+  acc_offset_x = xx;
+  acc_offset_z = xz;
+
+  AN_OFFSET[3] = acc_offset_x;
+  AN_OFFSET[4] = acc_offset_y;
+  AN_OFFSET[5] = acc_offset_z;
+
+  SerPrln();
+  SerPrln("Offsets as follows: ");  
   SerPri("  ");
   tab();
-  SerPri(xx);
-  
+  SerPri(acc_offset_x);
   tab();
-  SerPri(xy);
+  SerPri(acc_offset_y);
   tab();
-  SerPri(xz);
+  SerPrln(acc_offset_z);
+
+  SerPrln("Final results as follows: ");  
+  SerPri("  ");
+  tab();
+  SerPri(adc.Ch(4) - acc_offset_x);
+  tab();
+  SerPri(adc.Ch(5) - acc_offset_y);
+  tab();
+  SerPrln(adc.Ch(6) - acc_offset_z);
+  SerPrln();
+  SerPrln("Final results should be close to 0, 0, 408 if they are far (-+10) from ");
+  SerPrln("those values, do initialization again or use Configurator for finetuning");
+  SerPrln();
+  SerPrln("Saving values to EEPROM");
+  writeEEPROM(acc_offset_x, acc_offset_x_ADR);
+  writeEEPROM(acc_offset_y, acc_offset_y_ADR);
+  writeEEPROM(acc_offset_z, acc_offset_z_ADR);
+  delay(200);
+  SerPrln("Saved..");
+  SerPrln();
+}
+
+
+
+void CALIB_Throttle() {
+  int tmpThrottle = 1100;
+
+  SerPrln("Move your throttle to MIN, reading starts in 3 seconds");
+  delay(1000);
+  SerPrln("2. ");
+  delay(1000);
+  SerPrln("1. ");
+  delay(1000);
+  SerPrln("Reading Throttle value, hit enter to exit");
+
+  SerFlu();
+  while(1) {
+    ch_throttle = APM_RC.InputCh(CH_THROTTLE);
+    SerPri("Throttle channel: ");
+    SerPrln(ch_throttle);
+    if(tmpThrottle > ch_throttle) tmpThrottle = ch_throttle;
+    delay(50);
+    if(SerAva() > 0){
+      break; 
+    }
+  }
+
   SerPriln();
+  SerPri("Lowest throttle value: ");
+  SerPrln(tmpThrottle);
+  SerPrln();
+  SerPrln("Saving MIN_THROTTLE to EEPROM");
+  writeEEPROM(tmpThrottle, MIN_THROTTLE_ADR);
+  delay(200);
+  SerPrln("Saved..");
+  SerPrln();
 
-    acc_offset_y = xy;
-    acc_offset_x = xx;
-    acc_offset_z = xz;
-
-    AN_OFFSET[3] = acc_offset_x;
-    AN_OFFSET[4] = acc_offset_y;
-    AN_OFFSET[5] = acc_offset_z;
 
 
+}
+
+
+void CALIB_Esc() {
+
+  SerPrln("Disconnect your battery if you have it connected, keep your USB cable/Xbee connected!");
+  SerPrln("After battery is disconnected hit enter key and wait more instructions:");
+  SerPrln("As safety measure, unmount all your propellers before continuing!!");
+
+  WaitSerialEnter();      
+
+  SerPrln("Move your Throttle to maximum and connect your battery. ");
+  SerPrln("after you hear beep beep tone, move your throttle to minimum and");
+  SerPrln("hit enter after you are ready to disarm motors.");
+  SerPrln("Arming now all motors");
+  delay(500);
+  SerPrln("Motors: ARMED");
+  delay(200);
+  SerPrln("Connect your battery and let ESCs to reboot!");
+  while(1) {
+    ch_throttle = APM_RC.InputCh(CH_THROTTLE);  
+    APM_RC.OutputCh(0, ch_throttle);
+    APM_RC.OutputCh(1, ch_throttle);
+    APM_RC.OutputCh(2, ch_throttle);
+    APM_RC.OutputCh(3, ch_throttle);
+
+    // InstantPWM => Force inmediate output on PWM signals
+    APM_RC.Force_Out0_Out1();
+    APM_RC.Force_Out2_Out3();
+    delay(20);
+    if(SerAva() > 0){
+      break; 
+    }
+  }
+
+  APM_RC.OutputCh(0, 900);
+  APM_RC.OutputCh(1, 900);
+  APM_RC.OutputCh(2, 900);
+  APM_RC.OutputCh(3, 90);
+  APM_RC.Force_Out0_Out1();
+  APM_RC.Force_Out2_Out3();
+
+  SerPrln("Motors: DISARMED");
+  SerPrln();
+}
+
+
+void Show_Settings() {
+  // Reading current EEPROM values
+  readUserConfig();
+  delay(50);
+
+  SerPri("Magnetom. offsets (x,y,z): ");
+  SerPri(mag_offset_x);
+  cspc();
+  SerPri(mag_offset_y);
+  cspc();
+  SerPri(mag_offset_z);
+  SerPrln();
+
+  SerPri("Accel offsets (x,y,z): ");
+  SerPri(acc_offset_x);
+  cspc();
+  SerPri(acc_offset_y);
+  cspc();
+  SerPri(acc_offset_z);
+  SerPrln();
+
+  SerPri("Min Throttle: ");
+  SerPriln(MIN_THROTTLE);
+
+}
+
+
+void cspc() {
+  SerPri(", ");
+}
+
+void WaitSerialEnter() {
+  // Flush serials
+  SerFlu();
+  delay(50);
+  while(1) {
+    if(SerAva() > 0){
+      break; 
+    }
+    delay(20);
+  }
+  delay(250);
+  SerFlu();  
 }
 
 

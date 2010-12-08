@@ -122,6 +122,7 @@ void readUserConfig() {
   mag_offset_x = readEEPROM(mag_offset_x_ADR);
   mag_offset_y = readEEPROM(mag_offset_y_ADR);
   mag_offset_z = readEEPROM(mag_offset_z_ADR);
+  MIN_THROTTLE = readEEPROM(MIN_THROTTLE_ADR);
   
 }
 
@@ -193,6 +194,7 @@ void writeUserConfig() {
   writeEEPROM(mag_offset_x, mag_offset_x_ADR);
   writeEEPROM(mag_offset_y, mag_offset_y_ADR);
   writeEEPROM(mag_offset_z, mag_offset_z_ADR);
+  writeEEPROM(MIN_THROTTLE, MIN_THROTTLE_ADR);
   
   
 }

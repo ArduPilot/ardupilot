@@ -107,7 +107,9 @@ TODO:
 #define AUX_MID 1500
 
 #define CHANN_CENTER 1500       // Channel center, legacy
-#define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
+
+                                // legacy, moved to EEPROM
+//#define MIN_THROTTLE 1040       // Throttle pulse width at minimun...
 
 /* ******************************************************** */
 // Camera related settings
