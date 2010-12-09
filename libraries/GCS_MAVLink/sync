@@ -4,4 +4,4 @@ git clone git://github.com/pixhawk/mavlink.git -b dev _tmp
 rm -rf _tmp/.git
 rsync -av _tmp/* .
 rm -rf _tmp
-svn add *
+svn add --force *
