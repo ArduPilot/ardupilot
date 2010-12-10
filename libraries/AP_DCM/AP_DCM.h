@@ -1,6 +1,12 @@
 #ifndef AP_DCM_h
 #define AP_DCM_h
 
+// teporarily include all other classes here
+// since this naming is a bit off from the
+// convention and the AP_DCM should be the top
+// header file
+#include "AP_DCM_HIL.h"
+
 #include <FastSerial.h>
 #include <AP_Math.h>
 #include <inttypes.h>
