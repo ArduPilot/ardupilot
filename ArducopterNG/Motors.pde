@@ -38,8 +38,20 @@
 // Send output commands to ESC´s
 void motor_output()
 {
-  if (ch_throttle < (MIN_THROTTLE + 100))  // If throttle is low we disable yaw (neccesary to arm/disarm motors safely)
-    control_yaw = 0;
+  int throttle;
+  byte throttle_mode=0;
+ 
+  throttle = ch_throttle;
+  #ifdef UseBMP
+  if (AP_mode == AP_AUTOMATIC_MODE)
+    {
+    throttle = ch_throttle_altitude_hold;
+    throttle_mode=1;
+    }
+  #endif
+  
+  if ((throttle_mode==0)&&(ch_throttle < (MIN_THROTTLE + 100)))  // If throttle is low we disable yaw (neccesary to arm/disarm motors safely)
+    control_yaw = 0; 
 
   // Quadcopter mix
   if (motorArmed == 1) {   
@@ -48,10 +60,10 @@ void motor_output()
 #endif
 
     // Quadcopter output mix
-    rightMotor = constrain(ch_throttle - control_roll + control_yaw, minThrottle, 2000);
-    leftMotor = constrain(ch_throttle + control_roll + control_yaw, minThrottle, 2000);
-    frontMotor = constrain(ch_throttle + control_pitch - control_yaw, minThrottle, 2000);
-    backMotor = constrain(ch_throttle - control_pitch - control_yaw, minThrottle, 2000);
+    rightMotor = constrain(throttle - control_roll + control_yaw, minThrottle, 2000);
+    leftMotor = constrain(throttle + control_roll + control_yaw, minThrottle, 2000);
+    frontMotor = constrain(throttle + control_pitch - control_yaw, minThrottle, 2000);
+    backMotor = constrain(throttle - control_pitch - control_yaw, minThrottle, 2000);
     
   } else {    // MOTORS DISARMED
 

@@ -388,9 +388,14 @@ void loop()
           {
           ch_throttle_altitude_hold = Altitude_control_baro(press_alt,target_baro_altitude);   // Altitude control
           Baro_new_data=0;
-          Serial.println(ch_throttle_altitude_hold);
+          if (abs(ch_throttle-Initial_Throttle)>100)  // Change in stick position => altitude ascend/descend rate control
+            target_baro_altitude += (ch_throttle-Initial_Throttle)/25;
+          //Serial.print(Initial_Throttle);
+          //Serial.print(" ");
+          //Serial.print(ch_throttle);
+          //Serial.print(" ");
+          //Serial.println(target_baro_altitude);
           }
-        ch_throttle = ch_throttle_altitude_hold;
         #endif
       }
       else   // First time we enter in GPS position hold we capture the target position as the actual position
