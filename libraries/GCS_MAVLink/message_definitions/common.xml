@@ -409,6 +409,11 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
     <field name="y" type="float">Local Y coordinate in meters</field>
     <field name="z" type="float">Local Z coordinate in meters</field>
   </message>
+
+  <message name="AIRSPEED" id="72">
+    <description>The calculated airspeed </description>
+    <field name="airspeed" type="float">meters/second</field>
+  </message>
    
    <!-- MESSAGE IDs 80 - 250: Space for custom messages in individual projectname_messages.xml files -->
 
