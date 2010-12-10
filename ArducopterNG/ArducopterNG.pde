@@ -144,9 +144,9 @@
 // Magneto orientation and corrections.
 // If you don't have magneto activated, It is safe to ignore these
 //#ifdef IsMAG
-//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
+#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
 //#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
-#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
+//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
 // you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
@@ -158,7 +158,7 @@
 // Declination is a correction factor between North Pole and real magnetic North. This is different on every location
 // IF you want to use really accurate headholding and future navigation features, you should update this
 // You can check Declination to your location from http://www.magnetic-declination.com/
-#define DECLINATION 0.00
+#define DECLINATION 0.0
 
 //#define DECLINATION 0.61
 
