@@ -150,9 +150,10 @@
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
 // you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
-#define MAGOFFSET 0,0,0
-
+//#define MAGOFFSET 0,0,0
 //#define MAGOFFSET -27.50,23.00,81.00
+
+// Obsolete, Magnetometer offset are moved to CLI
 
 // Declination is a correction factor between North Pole and real magnetic North. This is different on every location
 // IF you want to use really accurate headholding and future navigation features, you should update this
@@ -216,7 +217,7 @@
 #endif
 
 /* Software version */
-#define VER 1.53    // Current software version (only numeric values)
+#define VER 1.54    // Current software version (only numeric values)
 
 // Sensors - declare one global instance
 AP_ADC_ADS7844		adc;

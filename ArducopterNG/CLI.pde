@@ -81,6 +81,9 @@ void RunCLI () {
       case 's':
         Show_Settings();
         break;
+      case 'm':
+        RUN_Motors();
+        break;
       }
       SerFlu();
     }
@@ -102,9 +105,10 @@ void Show_MainMenu() {
   SerPrln();
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
-  SerPrln(" c - Show compass offsets");
+  SerPrln(" c - Show/Save compass offsets");
   SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
   SerPrln(" i - Initialize and calibrate Accel offsets");
+  SerPrln(" m - Motor tester with AIL/ELE stick");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
   SerPrln(" ");
@@ -370,16 +374,85 @@ void CALIB_Esc() {
 }
 
 
+void RUN_Motors() {
+
+  long run_timer;
+  byte motor;
+
+  SerPrln("Move your ROLL/PITCH Stick to up/down, left/right to start");
+  SerPrln("corresponding motor. Motor will pulse slowly! (20% Throttle)");
+  SerPrln("SAFETY!! Remove all propellers before doing stick movements");
+  SerPrln();
+  SerPrln("Exit from test by hiting Enter");
+  SerPrln();
+
+  SerFlu();
+  while(1) {
+
+    ch_roll = APM_RC.InputCh(CH_ROLL);
+    ch_pitch = APM_RC.InputCh(CH_PITCH);
+
+    if(ch_roll < 1400) {
+       SerPriln("Left Motor");
+       OutMotor(1);
+       delay(500);
+    }
+    if(ch_roll > 1600) {
+       SerPriln("Right Motor");
+       OutMotor(0);
+        delay(500);
+
+    }
+    if(ch_pitch < 1400) {
+       SerPriln("Front Motor");
+       OutMotor(2);
+        delay(500);
+
+    }
+    if(ch_pitch > 1600) {
+       SerPriln("Rear Motor");
+       OutMotor(3);
+        delay(500);
+
+    }
+
+  // Shuting down all motors
+  APM_RC.OutputCh(0, 900);
+  APM_RC.OutputCh(1, 900);
+  APM_RC.OutputCh(2, 900);
+  APM_RC.OutputCh(3, 900);
+  APM_RC.Force_Out0_Out1();
+  APM_RC.Force_Out2_Out3();
+      
+    delay(100);
+//    delay(20);
+    if(SerAva() > 0){
+      SerFlu();
+      SerPriln("Exiting motor/esc tester...");
+      break; 
+    }  
+  } 
+
+}
+
+// Just a small ESC/Motor commander 
+void OutMotor(byte motor_id) {
+  APM_RC.OutputCh(motor_id, 1200);
+  APM_RC.Force_Out0_Out1();
+  APM_RC.Force_Out2_Out3();
+}
+
+
 void Show_Settings() {
   // Reading current EEPROM values
-  
-  SerPrln("ArduCopter - Current settings");
+
+    SerPrln("ArduCopter - Current settings");
   SerPrln("-----------------------------");
   SerPri("Firmware: ");
   SerPri(VER);
   SerPrln();
   SerPrln();
-  
+
   readUserConfig();
   delay(50);
 
@@ -407,14 +480,15 @@ void Show_Settings() {
 
   SerPri("Camera mode: ");
   SerPriln(cam_mode, DEC);
-  
+
   SerPri("Flight orientation: ");
   if(SW_DIP1) {
     SerPriln("x mode");
-  } else {
+  } 
+  else {
     SerPriln("+ mode");
   }
-  
+
   SerPrln();
   SerPrln();
 
@@ -438,6 +512,7 @@ void WaitSerialEnter() {
   delay(250);
   SerFlu();  
 }
+
 
 
 
