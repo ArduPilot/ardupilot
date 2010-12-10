@@ -563,9 +563,9 @@ void defaultUserConfig() {
   KI_GPS_PITCH               = 0.005;
   KD_GPS_PITCH               = 0.01;
   GPS_MAX_ANGLE              = 22;
-  KP_ALTITUDE                = 0.8;
-  KI_ALTITUDE                = 0.5;
-  KD_ALTITUDE                = 0.6;
+  KP_ALTITUDE                = 0.08;
+  KI_ALTITUDE                = 0.05;
+  KD_ALTITUDE                = 0.06;
   acc_offset_x               = 2048;
   acc_offset_y               = 2048;
   acc_offset_z               = 2048;
