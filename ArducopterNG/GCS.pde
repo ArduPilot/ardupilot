@@ -88,8 +88,8 @@ void readSerialCommand() {
       break;
     case 'E': // Receive altitude PID
       KP_ALTITUDE = readFloatSerial();
-      KD_ALTITUDE = readFloatSerial();
       KI_ALTITUDE = readFloatSerial();
+      KD_ALTITUDE = readFloatSerial();
       break;
     case 'G': // Receive drift correction PID
       Kp_ROLLPITCH = readFloatSerial();
