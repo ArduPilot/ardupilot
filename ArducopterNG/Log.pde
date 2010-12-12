@@ -375,17 +375,16 @@ void Log_Read_Attitude()
 
 // Read a Sensor packet
 void Log_Read_Sensor()
-{
-    int i, sensorValue;
-    
+{   
     SerPri("SENSOR:");
-    for(int i=0; i<7; i++ )
-    {
-        if( i!=0 )
-            SerPri(",");
-        sensorValue = DataFlash.ReadInt();
-        SerPri(sensorValue);
-    }
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());  SerPri(",");
+    SerPri(DataFlash.ReadInt());
+    SerPriln();
 }
 
 // Read a Sensor raw data packet
