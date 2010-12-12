@@ -69,6 +69,9 @@ void RunCLI () {
       case 'c':
         CALIB_CompassOffset();
         break;
+      case 'd':
+        Log_Read(1,4000);
+        break;        
       case 'i':
         CALIB_AccOffset();
         break;
@@ -84,6 +87,9 @@ void RunCLI () {
       case 'm':
         RUN_Motors();
         break;
+      case 'z':
+        Log_Erase();
+        break;        
       }
       SerFlu();
     }
@@ -106,11 +112,13 @@ void Show_MainMenu() {
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
   SerPrln(" c - Show/Save compass offsets");
+  SerPrln(" d - dump logs to serial");  
   SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
   SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" m - Motor tester with AIL/ELE stick");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
+  SerPrln(" z - clear all logs");  
   SerPrln(" ");
   SerFlu();
 }
@@ -196,12 +204,12 @@ void CALIB_CompassOffset() {
       mag_offset_y = offset[1];
       mag_offset_z = offset[2];
 
-      SerPriln("Saving Offsets to EEPROM");
+      SerPrln("Saving Offsets to EEPROM");
       writeEEPROM(mag_offset_x, mag_offset_x_ADR);
       writeEEPROM(mag_offset_y, mag_offset_y_ADR);
       writeEEPROM(mag_offset_z, mag_offset_z_ADR);
       delay(500);
-      SerPriln("Saved...");
+      SerPrln("Saved...");
       SerPrln();
       break;
     }
@@ -318,7 +326,7 @@ void CALIB_Throttle() {
     }
   }
 
-  SerPriln();
+  SerPrln();
   SerPri("Lowest throttle value: ");
   SerPrln(tmpThrottle);
   SerPrln();
@@ -393,24 +401,24 @@ void RUN_Motors() {
     ch_pitch = APM_RC.InputCh(CH_PITCH);
 
     if(ch_roll < 1400) {
-       SerPriln("Left Motor");
+       SerPrln("Left Motor");
        OutMotor(1);
        delay(500);
     }
     if(ch_roll > 1600) {
-       SerPriln("Right Motor");
+       SerPrln("Right Motor");
        OutMotor(0);
         delay(500);
 
     }
     if(ch_pitch < 1400) {
-       SerPriln("Front Motor");
+       SerPrln("Front Motor");
        OutMotor(2);
         delay(500);
 
     }
     if(ch_pitch > 1600) {
-       SerPriln("Rear Motor");
+       SerPrln("Rear Motor");
        OutMotor(3);
         delay(500);
 
@@ -428,7 +436,7 @@ void RUN_Motors() {
 //    delay(20);
     if(SerAva() > 0){
       SerFlu();
-      SerPriln("Exiting motor/esc tester...");
+      SerPrln("Exiting motor/esc tester...");
       break; 
     }  
   } 
@@ -473,20 +481,20 @@ void Show_Settings() {
   SerPrln();
 
   SerPri("Min Throttle: ");
-  SerPriln(MIN_THROTTLE);
+  SerPrln(MIN_THROTTLE);
 
   SerPri("Magnetometer 1-ena/0-dis: ");
-  SerPriln(MAGNETOMETER, DEC);
+  SerPrln(MAGNETOMETER, DEC);
 
   SerPri("Camera mode: ");
-  SerPriln(cam_mode, DEC);
+  SerPrln(cam_mode, DEC);
 
   SerPri("Flight orientation: ");
   if(SW_DIP1) {
-    SerPriln("x mode");
+    SerPrln("x mode");
   } 
   else {
-    SerPriln("+ mode");
+    SerPrln("+ mode");
   }
 
   SerPrln();
