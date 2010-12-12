@@ -366,17 +366,17 @@ void sendSerialTelemetry() {
     SerPri(read_adc(5));
 
        comma();
-     SerPri(APM_Compass.Heading, 4);
+     SerPri(AP_Compass.heading, 4);
      comma();
-     SerPri(APM_Compass.Heading_X, 4);
+     SerPri(AP_Compass.heading_x, 4);
      comma();
-     SerPri(APM_Compass.Heading_Y, 4);
+     SerPri(AP_Compass.heading_y, 4);
      comma();
-     SerPri(APM_Compass.Mag_X);
+     SerPri(AP_Compass.mag_x);
      comma();    
-     SerPri(APM_Compass.Mag_Y);
+     SerPri(AP_Compass.mag_y);
      comma();
-     SerPri(APM_Compass.Mag_Z);
+     SerPri(AP_Compass.mag_z);
      comma();
      
     SerPriln();

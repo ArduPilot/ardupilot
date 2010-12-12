@@ -87,7 +87,7 @@ void Drift_correction(void)
   //*****YAW***************
   // We make the gyro YAW drift correction based on compass magnetic heading 
   if (MAGNETOMETER == 1) {
-    errorCourse= (DCM_Matrix[0][0]*APM_Compass.Heading_Y) - (DCM_Matrix[1][0]*APM_Compass.Heading_X);  //Calculating YAW error
+    errorCourse= (DCM_Matrix[0][0]*AP_Compass.heading_y) - (DCM_Matrix[1][0]*AP_Compass.heading_x);  //Calculating YAW error
     Vector_Scale(errorYaw,&DCM_Matrix[2][0],errorCourse); //Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
   
     Vector_Scale(&Scaled_Omega_P[0],&errorYaw[0],Kp_YAW);

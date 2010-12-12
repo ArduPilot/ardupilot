@@ -140,10 +140,10 @@ void APM_Init() {
 
 #ifdef IsMAG
   if (MAGNETOMETER == 1) {
-    APM_Compass.Init(FALSE);  // I2C initialization
-    APM_Compass.SetOrientation(MAGORIENTATION);
-    APM_Compass.SetOffsets(mag_offset_x, mag_offset_y, mag_offset_z);
-    APM_Compass.SetDeclination(ToRad(DECLINATION));
+    AP_Compass.init(FALSE);  // I2C initialization
+    AP_Compass.set_orientation(MAGORIENTATION);
+    AP_Compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
+    AP_Compass.set_declination(ToRad(DECLINATION));
   }
 #endif
 

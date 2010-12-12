@@ -31,7 +31,7 @@
 /*   AP_ADC : External ADC library                                       */
 /*   DataFlash : DataFlash log library                                    */
 /*   APM_BMP085 : BMP085 barometer library                                */
-/*   APM_Compass : HMC5843 compass library [optional]                     */
+/*   AP_Compass : HMC5843 compass library [optional]                     */
 /*   GPS_MTK or GPS_UBLOX or GPS_NMEA : GPS library    [optional]         */
 /* ********************************************************************** */
 
@@ -144,9 +144,9 @@
 // Magneto orientation and corrections.
 // If you don't have magneto activated, It is safe to ignore these
 //#ifdef IsMAG
-#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
-//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
-//#define MAGORIENTATION  APM_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
+#define MAGORIENTATION  AP_COMPASS_COMPONENTS_UP_PINS_FORWARD       // This is default solution for ArduCopter
+//#define MAGORIENTATION  AP_COMPASS_COMPONENTS_UP_PINS_BACK        // Alternative orientation for ArduCopter
+//#define MAGORIENTATION  AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD    // If you have soldered Magneto to IMU shield in WIki pictures shows
 
 // To get Magneto offsets, switch to CLI mode and run offset calibration. During calibration
 // you need to roll/bank/tilt/yaw/shake etc your ArduCopter. Don't kick like Jani always does :)
@@ -197,7 +197,7 @@
 #include <AP_ADC.h>		// ArduPilot Mega Analog to Digital Converter Library 
 #include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library 
 #include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
-#include <APM_Compass.h>	// ArduPilot Mega Magnetometer Library
+#include <AP_Compass.h>	        // ArduPilot Mega Magnetometer Library
 #include <Wire.h>               // I2C Communication library
 #include <EEPROM.h>             // EEPROM 
 //#include <AP_GPS.h>
@@ -222,7 +222,7 @@
 // Sensors - declare one global instance
 AP_ADC_ADS7844		adc;
 APM_BMP085_Class	APM_BMP085;
-APM_Compass_Class	APM_Compass;
+AP_Compass_HMC5843	AP_Compass;
 
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
@@ -441,8 +441,8 @@ void loop()
       slowLoop++;
 #ifdef IsMAG
       if (MAGNETOMETER == 1) {
-        APM_Compass.Read();     // Read magnetometer
-        APM_Compass.Calculate(roll,pitch);  // Calculate heading
+        AP_Compass.read();     // Read magnetometer
+        AP_Compass.calculate(roll,pitch);  // Calculate heading
       }
 #endif
       break;

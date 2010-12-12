@@ -138,10 +138,10 @@ void CALIB_CompassOffset() {
   delay(1000);
   SerPrln("starting now....");
 
-  APM_Compass.Init();   // Initialization
-  APM_Compass.SetOrientation(MAGORIENTATION);         // set compass's orientation on aircraft
-  APM_Compass.SetOffsets(0,0,0);                      // set offsets to account for surrounding interference
-  APM_Compass.SetDeclination(ToRad(DECLINATION));  // set local difference between magnetic north and true north
+  AP_Compass.init();   // Initialization
+  AP_Compass.set_orientation(MAGORIENTATION);         // set compass's orientation on aircraft
+  AP_Compass.set_offsets(0,0,0);                      // set offsets to account for surrounding interference
+  AP_Compass.set_declination(ToRad(DECLINATION));  // set local difference between magnetic north and true north
   int counter = 0; 
 
   SerFlu();
@@ -149,18 +149,18 @@ void CALIB_CompassOffset() {
     static float min[3], max[3], offset[3];
     if((millis()- timer) > 100)  {
       timer = millis();
-      APM_Compass.Read();
-      APM_Compass.Calculate(0,0);  // roll = 0, pitch = 0 for this example
+      AP_Compass.read();
+      AP_Compass.calculate(0,0);  // roll = 0, pitch = 0 for this example
 
       // capture min
-      if( APM_Compass.Mag_X < min[0] ) min[0] = APM_Compass.Mag_X;
-      if( APM_Compass.Mag_Y < min[1] ) min[1] = APM_Compass.Mag_Y;
-      if( APM_Compass.Mag_Z < min[2] ) min[2] = APM_Compass.Mag_Z;
+      if( AP_Compass.mag_x < min[0] ) min[0] = AP_Compass.mag_x;
+      if( AP_Compass.mag_y < min[1] ) min[1] = AP_Compass.mag_y;
+      if( AP_Compass.mag_z < min[2] ) min[2] = AP_Compass.mag_z;
 
       // capture max
-      if( APM_Compass.Mag_X > max[0] ) max[0] = APM_Compass.Mag_X;
-      if( APM_Compass.Mag_Y > max[1] ) max[1] = APM_Compass.Mag_Y;
-      if( APM_Compass.Mag_Z > max[2] ) max[2] = APM_Compass.Mag_Z;
+      if( AP_Compass.mag_x > max[0] ) max[0] = AP_Compass.mag_x;
+      if( AP_Compass.mag_y > max[1] ) max[1] = AP_Compass.mag_y;
+      if( AP_Compass.mag_z > max[2] ) max[2] = AP_Compass.mag_z;
 
       // calculate offsets
       offset[0] = -(max[0]+min[0])/2;
@@ -169,13 +169,13 @@ void CALIB_CompassOffset() {
 
       // display all to user
       SerPri("Heading:");
-      SerPri(ToDeg(APM_Compass.Heading));
+      SerPri(ToDeg(AP_Compass.heading));
       SerPri("  \t(");
-      SerPri(APM_Compass.Mag_X);
+      SerPri(AP_Compass.mag_x);
       SerPri(",");
-      SerPri(APM_Compass.Mag_Y);
+      SerPri(AP_Compass.mag_y);
       SerPri(",");    
-      SerPri(APM_Compass.Mag_Z);
+      SerPri(AP_Compass.mag_z);
       SerPri(")");
 
       // display offsets
