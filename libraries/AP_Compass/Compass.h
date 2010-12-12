@@ -2,7 +2,7 @@
 #define Compass_h
 
 #include <inttypes.h>
-#include <AP_Math.h>
+#include "../AP_Math/AP_Math.h"
 
 class Compass
 {
