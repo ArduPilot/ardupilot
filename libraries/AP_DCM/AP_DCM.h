@@ -47,6 +47,7 @@ public:
 	Vector3f	get_gyro(void);
 	Vector3f	get_accel(void);
 	Matrix3f	get_dcm_matrix(void);
+	Matrix3f	get_dcm_transposed(void);
 	
 	void		set_centripetal(bool b);
 	void		set_compass(Compass *compass);

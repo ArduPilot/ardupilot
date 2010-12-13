@@ -72,6 +72,13 @@ AP_DCM::get_dcm_matrix(void)
 	return _dcm_matrix;
 }
 
+/**************************************************/
+Matrix3f
+AP_DCM::get_dcm_transposed(void)
+{	
+	return _dcm_matrix.transpose();
+}
+
 
     //For Debugging
 /*
@@ -284,7 +291,7 @@ AP_DCM::drift_correction(void)
 				cos_psi_err = cos(ToRad(_gps->ground_course/100.0) - yaw);
 				sin_psi_err = sin(ToRad(_gps->ground_course/100.0) - yaw);
 				// Rxx = cos psi err, Rxy = - sin psi err, Rxz = 0
-				// Ryx = sin psi err, R	yy = cos psi err,   Ryz = 0
+				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
 				// Rzx = Rzy = 0, Rzz = 1
 				rot_mat.a.x = cos_psi_err;
 				rot_mat.a.y = - sin_psi_err;
