@@ -96,10 +96,10 @@ public:
 
 	/// @name	parameter accessors
 	//@{
-	float	kP()			{ return _gain_array[0]; }
-	float	kI()			{ return _gain_array[1]; }
-	float	kD()			{ return _gain_array[2]; }
-	float	imax()			{ return _gain_array[3]; }
+	float	kP()					{ return _gain_array[0]; }
+	float	kI()					{ return _gain_array[1]; }
+	float	kD()					{ return _gain_array[2]; }
+	float	imax()					{ return _gain_array[3]; }
 
 	void	kP(const float v)		{ _gain_array[0] = v; }
 	void	kI(const float v)		{ _gain_array[1] = v; }
@@ -110,6 +110,8 @@ public:
 	void operator ()(const float p, const float i, const float d, const float max)
 	{ kP(p); kI(i); kD(d); imax(max); }
 	//@}
+	
+	float	get_integrator() 		{ return _integrator; }
 
 private:
 	uint16_t	_address;			///< EEPROM address for save/restore of P/I/D
