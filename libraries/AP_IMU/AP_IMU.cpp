@@ -171,6 +171,14 @@ AP_IMU::init_accel(void) // 3, 4, 5
 	save_accel_eeprom();
 }
 
+void
+AP_IMU::zero_accel(void) // 3, 4, 5
+{
+	_adc_offset[3] = 0;
+	_adc_offset[4] = 0;
+	_adc_offset[5] = 0;
+	save_accel_eeprom();
+}
 /**************************************************/
 // Returns the temperature compensated raw gyro value
 //---------------------------------------------------

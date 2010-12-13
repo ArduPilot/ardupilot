@@ -23,6 +23,7 @@ public:
 	void		init(void);					// inits both
 	void		init_accel(void);			// just Accels
 	void		init_gyro(void);			// just gyros
+	void 		zero_accel(void);
 	
 	void		load_gyro_eeprom(void);
 	void		save_gyro_eeprom(void);
