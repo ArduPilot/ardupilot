@@ -79,13 +79,14 @@ class RC_Channel{
 	
 	// includes offset from PWM
 	//int16_t 	get_radio_out(void);
-	
-  private:
-	bool		_filter;
+
 	int16_t		pwm_to_angle();
 	int16_t		angle_to_pwm();
 	int16_t		pwm_to_range();
 	int16_t		range_to_pwm();
+	
+  private:
+	bool		_filter;
 
 	int16_t		_address;			///< EEPROM address for save/restore of P/I/D
 	bool 		_type;				
