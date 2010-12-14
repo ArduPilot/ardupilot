@@ -52,33 +52,6 @@ AP_DCM::update_DCM(float _G_Dt)
 }
 
 /**************************************************/
-Vector3f
-AP_DCM::get_gyro(void)
-{
-	return _omega_integ_corr;
-}	// We return the raw gyro vector corrected for bias
-
-/**************************************************/
-Vector3f
-AP_DCM::get_accel(void)
-{
-	return _accel_vector;
-}
-
-/**************************************************/
-Matrix3f
-AP_DCM::get_dcm_matrix(void)
-{
-	return _dcm_matrix;
-}
-
-/**************************************************/
-Matrix3f
-AP_DCM::get_dcm_transposed(void)
-{	
-	return _dcm_matrix.transpose();
-}
-
 
     //For Debugging
 /*

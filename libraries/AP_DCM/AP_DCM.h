@@ -44,10 +44,10 @@ public:
 	{}
 
 	// Accessors
-	Vector3f	get_gyro(void);
-	Vector3f	get_accel(void);
-	Matrix3f	get_dcm_matrix(void);
-	Matrix3f	get_dcm_transposed(void);
+	Vector3f	get_gyro(void) {return _omega_integ_corr; }		// We return the raw gyro vector corrected for bias
+	Vector3f	get_accel(void) { return _accel_vector; }
+	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
+	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
 	
 	void		set_centripetal(bool b);
 	void		set_compass(Compass *compass);
