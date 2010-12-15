@@ -66,6 +66,9 @@ void RunCLI () {
       ShowMainMenu = TRUE;
       queryType = SerRea();
       switch (queryType) {
+      case 'a':
+        Flip_MAG();
+        break;
       case 'c':
         CALIB_CompassOffset();
         break;
@@ -83,6 +86,9 @@ void RunCLI () {
         break; 
       case 's':
         Show_Settings();
+        break;
+      case 'r':
+        Reset_Settings();
         break;
       case 'm':
         RUN_Motors();
@@ -111,11 +117,13 @@ void Show_MainMenu() {
   SerPrln();
   SerPrln("CLI Menu - Type your command on command prompt");
   SerPrln("----------------------------------------------");
+  SerPrln(" a - Activate/Deactivate compass (check #IsMag define too)");
   SerPrln(" c - Show/Save compass offsets");
   SerPrln(" d - dump logs to serial");  
   SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
   SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" m - Motor tester with AIL/ELE stick");
+  SerPrln(" r - Reset to factory settings");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
   SerPrln(" z - clear all logs");  
@@ -302,9 +310,27 @@ void CALIB_AccOffset() {
 }
 
 
+void Flip_MAG() {
+ SerPrln("Activate/Deactivate Magentometer!");
+ SerPri("Magnetometer is now: ");
+ delay(500);
+ if(MAGNETOMETER == 0) {
+  MAGNETOMETER = 1;
+  writeEEPROM(MAGNETOMETER, MAGNETOMETER_ADR);
+  SerPrln("Activated");
+ } else { 
+  MAGNETOMETER = 0;
+  writeEEPROM(MAGNETOMETER, MAGNETOMETER_ADR);
+  SerPrln("Deactivated");
+ }
+ delay(1000);
+ SerPrln("State... saved");
+  
+}
+
 
 void CALIB_Throttle() {
-  int tmpThrottle = 1100;
+  int tmpThrottle = 1200;
 
   SerPrln("Move your throttle to MIN, reading starts in 3 seconds");
   delay(1000);
@@ -373,7 +399,7 @@ void CALIB_Esc() {
   APM_RC.OutputCh(0, 900);
   APM_RC.OutputCh(1, 900);
   APM_RC.OutputCh(2, 900);
-  APM_RC.OutputCh(3, 90);
+  APM_RC.OutputCh(3, 900);
   APM_RC.Force_Out0_Out1();
   APM_RC.Force_Out2_Out3();
 
@@ -401,39 +427,39 @@ void RUN_Motors() {
     ch_pitch = APM_RC.InputCh(CH_PITCH);
 
     if(ch_roll < 1400) {
-       SerPrln("Left Motor");
-       OutMotor(1);
-       delay(500);
+      SerPrln("Left Motor");
+      OutMotor(1);
+      delay(500);
     }
     if(ch_roll > 1600) {
-       SerPrln("Right Motor");
-       OutMotor(0);
-        delay(500);
+      SerPrln("Right Motor");
+      OutMotor(0);
+      delay(500);
 
     }
     if(ch_pitch < 1400) {
-       SerPrln("Front Motor");
-       OutMotor(2);
-        delay(500);
+      SerPrln("Front Motor");
+      OutMotor(2);
+      delay(500);
 
     }
     if(ch_pitch > 1600) {
-       SerPrln("Rear Motor");
-       OutMotor(3);
-        delay(500);
+      SerPrln("Rear Motor");
+      OutMotor(3);
+      delay(500);
 
     }
 
-  // Shuting down all motors
-  APM_RC.OutputCh(0, 900);
-  APM_RC.OutputCh(1, 900);
-  APM_RC.OutputCh(2, 900);
-  APM_RC.OutputCh(3, 900);
-  APM_RC.Force_Out0_Out1();
-  APM_RC.Force_Out2_Out3();
-      
+    // Shuting down all motors
+    APM_RC.OutputCh(0, 900);
+    APM_RC.OutputCh(1, 900);
+    APM_RC.OutputCh(2, 900);
+    APM_RC.OutputCh(3, 900);
+    APM_RC.Force_Out0_Out1();
+    APM_RC.Force_Out2_Out3();
+
     delay(100);
-//    delay(20);
+    //    delay(20);
     if(SerAva() > 0){
       SerFlu();
       SerPrln("Exiting motor/esc tester...");
@@ -448,6 +474,35 @@ void OutMotor(byte motor_id) {
   APM_RC.OutputCh(motor_id, 1200);
   APM_RC.Force_Out0_Out1();
   APM_RC.Force_Out2_Out3();
+}
+
+
+byte Reset_Settings() {
+  int c;
+  
+  SerPrln("Reseting EEPROM to default!"); 
+  delay(500);
+  SerFlu();
+  delay(500);
+  SerPrln("Hit 'Y' to reset factory settings, any other and you will return to main menu!");
+  do {
+    c = SerRea();
+  } 
+  while (-1 == c);
+
+  if (('y' != c) && ('Y' != c)) {
+    SerPrln("EEPROM has not reseted!");
+    SerPrln("Returning to main menu.");
+    return(-1);
+  }
+
+  SerPrln("Reseting to factory settings!");
+  defaultUserConfig();
+  delay(200);
+  SerPrln("Saving to EEPROM");
+  writeUserConfig();
+  SerPrln("Done..");
+
 }
 
 
@@ -520,6 +575,8 @@ void WaitSerialEnter() {
   delay(250);
   SerFlu();  
 }
+
+
 
 
 
