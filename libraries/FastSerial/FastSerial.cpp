@@ -47,34 +47,6 @@ FastSerial::Buffer	__FastSerial__txBuffer[FS_MAX_PORTS];
 #define TX_BUFFER_SIZE  64
 #define BUFFER_MAX      512
 
-// Interrupt handlers //////////////////////////////////////////////////////////
-
-#if 0
-#define HANDLERS(_PORT, _RXVECTOR, _TXVECTOR, _UDR)     \
-SIGNAL(_RXVECTOR)                                       \
-{                                                       \
-        unsigned char c = _UDR;                         \
-        ports[_PORT]->receive(c);                       \
-}                                                       \
-                                                        \
-SIGNAL(_TXVECTOR)                                       \
-{                                                       \
-        ports[_PORT]->transmit();                       \
-}                                                       \
-struct hack
-
-#if defined(__AVR_ATmega8__)
-HANDLERS(0, SIG_UART_RECV, SIG_UART_DATA, UDR);
-#else
-HANDLERS(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0);
-#if defined(__AVR_ATmega1280__)
-HANDLERS(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1);
-HANDLERS(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2);
-HANDLERS(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3);
-#endif
-#endif
-#endif
-
 // Constructor /////////////////////////////////////////////////////////////////
 
 FastSerial::FastSerial(const uint8_t portNumber,
@@ -82,7 +54,6 @@ FastSerial::FastSerial(const uint8_t portNumber,
                        volatile uint8_t *ubrrl,
                        volatile uint8_t *ucsra,
                        volatile uint8_t *ucsrb,
-                       volatile uint8_t *udr,
                        const uint8_t u2x,
                        const uint8_t portEnableBits,
                        const uint8_t portTxBits)
@@ -91,7 +62,6 @@ FastSerial::FastSerial(const uint8_t portNumber,
         _ubrrl = ubrrl;
         _ucsra = ucsra;
         _ucsrb = ucsrb;
-        _udr   = udr;
         _u2x   = u2x;
         _portEnableBits = portEnableBits;
         _portTxBits     = portTxBits;

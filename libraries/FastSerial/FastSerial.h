@@ -35,7 +35,8 @@
 // Note that this library does not pre-declare drivers for serial
 // ports; the user must explicitly create drivers for the ports they
 // wish to use.  This is less friendly than the stock Arduino driver,
-// but it saves ~200 bytes for every unused port.
+// but it saves 24 bytes of RAM for every unused port and frees up
+// the vector for another driver (e.g. MSPIM on USARTs).
 //
 
 #ifndef FastSerial_h
@@ -49,6 +50,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <avr/io.h>
 #include <avr/interrupt.h>
 
 #include "BetterStream.h"
@@ -67,6 +69,8 @@
 // FastSerialPort1(<port name>)         creates <port name> referencing serial port 1
 // FastSerialPort2(<port name>)         creates <port name> referencing serial port 2
 // FastSerialPort3(<port name>)         creates <port name> referencing serial port 3
+//
+// Note that macros are only defined for ports that exist on the target device.
 //
 
 //
@@ -89,7 +93,6 @@ public:
                    volatile uint8_t *ubrrl,
                    volatile uint8_t *ucsra,
                    volatile uint8_t *ucsrb,
-                   volatile uint8_t *udr,
                    const uint8_t u2x,
                    const uint8_t portEnableBits,
                    const uint8_t portTxBits);
@@ -118,7 +121,6 @@ private:
         volatile uint8_t *_ubrrl;
         volatile uint8_t *_ucsra;
         volatile uint8_t *_ucsrb;
-        volatile uint8_t *_udr;
 
         // register magic numbers
         uint8_t         _portEnableBits;        // rx, tx and rx interrupt enables
@@ -130,8 +132,8 @@ private:
         Buffer          *_txBuffer;
         bool            _open;
 
-        bool            _allocBuffer(Buffer *buffer, unsigned int size);
-        void            _freeBuffer(Buffer *buffer);
+        static bool     _allocBuffer(Buffer *buffer, unsigned int size);
+        static void     _freeBuffer(Buffer *buffer);
 };
 
 // Used by the per-port interrupt vectors
@@ -172,79 +174,72 @@ ISR(_TXVECTOR, ISR_BLOCK)                                               \
 }                                                                       \
 struct hack
 
-// Macros defining serial ports
-#if defined(__AVR_ATmega1280__)
-#define FastSerialPort0(_portName)                                      \
-	FastSerial _portName(0,                                         \
-                             &UBRR0H,                                   \
-                             &UBRR0L,                                   \
-                             &UCSR0A,                                   \
-                             &UCSR0B,                                   \
-                             &UDR0,                                     \
-                             U2X0,                                      \
-                             (_BV(RXEN0) |  _BV(TXEN0) | _BV(RXCIE0)),  \
-                             (_BV(UDRIE0)));                            \
-	FastSerialHandler(0, SIG_USART0_RECV, SIG_USART0_DATA, UDR0, UCSR0B, _BV(UDRIE0))
-#define FastSerialPort1(_portName)                                      \
-	FastSerial _portName(1,                                         \
-                             &UBRR1H,                                   \
-                             &UBRR1L,                                   \
-                             &UCSR1A,                                   \
-                             &UCSR1B,                                   \
-                             &UDR1,                                     \
-                             U2X1,                                      \
-                             (_BV(RXEN1) |  _BV(TXEN1) | _BV(RXCIE1)),  \
-                             (_BV(UDRIE1)));                            \
-	FastSerialHandler(1, SIG_USART1_RECV, SIG_USART1_DATA, UDR1, UCSR1B, _BV(UDRIE1))
-#define FastSerialPort2(_portName)                                      \
-	FastSerial _portName(2,                                         \
-                             &UBRR2H,                                   \
-                             &UBRR2L,                                   \
-                             &UCSR2A,                                   \
-                             &UCSR2B,                                   \
-                             &UDR2,                                     \
-                             U2X2,                                      \
-                             (_BV(RXEN2) |  _BV(TXEN2) | _BV(RXCIE2)),  \
-                             (_BV(UDRIE2)));                            \
-	FastSerialHandler(2, SIG_USART2_RECV, SIG_USART2_DATA, UDR2, UCSR2B, _BV(UDRIE2))
-#define FastSerialPort3(_portName)                                      \
-	FastSerial _portName(3,                                         \
-                             &UBRR3H,                                   \
-                             &UBRR3L,                                   \
-                             &UCSR3A,                                   \
-                             &UCSR3B,                                   \
-                             &UDR3,                                     \
-                             U2X3,                                      \
-                             (_BV(RXEN3) |  _BV(TXEN3) | _BV(RXCIE3)),  \
-                             (_BV(UDRIE3)));                            \
-	FastSerialHandler(3, SIG_USART3_RECV, SIG_USART3_DATA, UDR3, UCSR3B, _BV(UDRIE3))
-#else
-#if defined(__AVR_ATmega8__)
-#define FastSerialPort0(_portName)                                      \
-	FastSerial _portName(0,                                         \
-                             &UBRR0H,                                   \
-                             &UBRR0L,                                   \
-                             &UCSR0A,                                   \
-                             &UCSR0B,                                   \
-                             &UDR0,                                     \
-                             U2X0,                                      \
-                             (_BV(RXEN0) |  _BV(TXEN0) | _BV(RXCIE0)),  \
-                             (_BV(UDRIE0)));                            \
-	FastSerialHandler(0, SIG_UART_RECV, SIG_UART_DATA, UDR0, UCSR0B, _BV(UDRIE0))
-#else
-// note no SIG_USART_* defines for the 168, 328, etc.
-#define FastSerialPort0(_portName)                                      \
-	FastSerial _portName(0,                                         \
-                             &UBRR0H,                                   \
-                             &UBRR0L,                                   \
-                             &UCSR0A,                                   \
-                             &UCSR0B,                                   \
-                             &UDR0,                                     \
-                             U2X0,                                      \
-                             (_BV(RXEN0) |  _BV(TXEN0) | _BV(RXCIE0)),  \
-                             (_BV(UDRIE0)));                            \
-	FastSerialHandler(0, USART_RX_vect, USART_UDRE_vect, UDR0, UCSR0B, _BV(UDRIE0))
+//
+// Portability; convert various older sets of defines for U(S)ART0 up
+// to match the definitions for the 1280 and later devices.
+//
+#if !defined(USART0_RX_vect)
+# if defined(USART_RX_vect)
+#  define USART0_RX_vect        USART_RX_vect
+#  define USART0_UDRE_vect      USART_UDRE_vect
+# elif defined(UART0_RX_vect)
+#  define USART0_RX_vect        UART0_RX_vect
+#  define USART0_UDRE_vect      UART0_UDRE_vect
+# endif
 #endif
+
+#if !defined(USART1_RX_vect)
+# if defined(UART1_RX_vect)
+#  define USART1_RX_vect        UART1_RX_vect
+#  define USART1_UDRE_vect      UART1_UDRE_vect
+# endif
 #endif
+
+#if !defined(UDR0)
+# if defined(UDR)
+#  define UDR0                  UDR
+#  define UBRR0H                UBRRH
+#  define UBRR0L                UBRRL
+#  define UCSR0A                UCSRA
+#  define UCSR0B                UCSRB
+#  define U2X0                  U2X
+#  define RXEN0                 RXEN
+#  define TXEN0                 TXEN
+#  define RXCIE0                RXCIE
+#  define UDRIE0                UDRIE
+# endif
+#endif
+
+//
+// Macro defining a FastSerial port instance.
+//
+#define FastSerialPort(_name, _num)                                     \
+	FastSerial _name(_num,                                          \
+                         &UBRR##_num##H,                                \
+                         &UBRR##_num##L,                                \
+                         &UCSR##_num##A,                                \
+                         &UCSR##_num##B,                                \
+                         U2X##_num,                                     \
+                         (_BV(RXEN##_num) |  _BV(TXEN##_num) | _BV(RXCIE##_num)), \
+                         (_BV(UDRIE##_num)));                           \
+	FastSerialHandler(_num,                                         \
+                          USART##_num##_RX_vect,                        \
+                          USART##_num##_UDRE_vect,                      \
+                          UDR##_num,                                    \
+                          UCSR##_num##B,                                \
+                          _BV(UDRIE##_num))
+
+//
+// Compatibility macros for previous FastSerial versions.
+//
+// Note that these are not conditionally defined, as the errors
+// generated when using these macros for a board that does not support
+// the port are better than the errors generated for a macro that's not
+// defined at all.
+//
+#define FastSerialPort0(_portName)     FastSerialPort(_portName, 0)
+#define FastSerialPort1(_portName)     FastSerialPort(_portName, 1)
+#define FastSerialPort2(_portName)     FastSerialPort(_portName, 2)
+#define FastSerialPort3(_portName)     FastSerialPort(_portName, 3)
 
 #endif // FastSerial_h
