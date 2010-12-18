@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{AF26391C-7E45-4401-8984-96139A67FF31}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ArducopterConfigurator</RootNamespace>
+    <AssemblyName>ArducopterConfigurator</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CommsSession.cs">
+    </Compile>
+    <Compile Include="PresentationModels\AcroModeConfigVm.cs" />
+    <Compile Include="PresentationModels\AltitudeHoldConfigVm.cs" />
+    <Compile Include="PresentationModels\ConfigWithPidsBase.cs" />
+    <Compile Include="PresentationModels\DelegateCommand.cs" />
+    <Compile Include="PresentationModels\MonitorVm.cs" />
+    <Compile Include="PresentationModels\MainVm.cs" />
+    <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
+    <Compile Include="mainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="mainForm.Designer.cs">
+      <DependentUpon>mainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NotifyProperyChangedBase.cs" />
+    <Compile Include="PresentationModels\CalibrationOffsetsDataVm.cs" />
+    <Compile Include="PresentationModels\MotorCommandsVm.cs" />
+    <Compile Include="PresentationModels\PositionHoldConfigVm.cs" />
+    <Compile Include="PresentationModels\StableModeConfigVm.cs" />
+    <Compile Include="PresentationModels\TransmitterChannelsVm.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="mainForm.resx">
+      <DependentUpon>mainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SensorDisplay.resx">
+      <DependentUpon>SensorDisplay.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AcroConfigView.resx">
+      <DependentUpon>AcroConfigView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AltitudeHoldConfigView.resx">
+      <DependentUpon>AltitudeHoldConfigView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\CalibrationView.resx">
+      <DependentUpon>CalibrationView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PositionHoldConfigView.resx">
+      <DependentUpon>PositionHoldConfigView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\StableConfigView.resx">
+      <DependentUpon>StableConfigView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\FlightDataView.resx">
+      <DependentUpon>FlightDataView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\MotorCommandsView.resx">
+      <DependentUpon>MotorCommandsView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SerialMonitorView.resx">
+      <DependentUpon>SerialMonitorView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\TransmitterChannelsView.resx">
+      <DependentUpon>TransmitterChannelsView.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\DataSources\ArducopterConfigurator.PresentationModels.AcroModeConfigVm.datasource" />
+    <None Include="Properties\DataSources\ArducopterConfigurator.PresentationModels.FlightDataVm.datasource" />
+    <None Include="Properties\DataSources\ArducopterConfigurator.PresentationModels.MainVm.datasource" />
+    <None Include="Properties\DataSources\ArducopterConfigurator.PresentationModels.StableModeConfigVm.datasource" />
+    <None Include="Properties\DataSources\SerialMonitorVm.datasource" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="SensorDisplay.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VerticalProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Views\AcroConfigView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\AcroConfigView.Designer.cs">
+      <DependentUpon>AcroConfigView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AltitudeHoldConfigView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\AltitudeHoldConfigView.Designer.cs">
+      <DependentUpon>AltitudeHoldConfigView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\CalibrationView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\CalibrationView.Designer.cs">
+      <DependentUpon>CalibrationView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Core\IPresentationModel.cs" />
+    <Compile Include="Core\IView.cs" />
+    <Compile Include="Views\PositionHoldConfigView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PositionHoldConfigView.Designer.cs">
+      <DependentUpon>PositionHoldConfigView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\StableConfigView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\StableConfigView.Designer.cs">
+      <DependentUpon>StableConfigView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FlightDataView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\FlightDataView.Designer.cs">
+      <DependentUpon>FlightDataView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\MotorCommandsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\MotorCommandsView.Designer.cs">
+      <DependentUpon>MotorCommandsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SerialMonitorView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\SerialMonitorView.Designer.cs">
+      <DependentUpon>SerialMonitorView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PresentationModels\SerialMonitorVm.cs" />
+    <Compile Include="Views\TransmitterChannelsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\TransmitterChannelsView.Designer.cs">
+      <DependentUpon>TransmitterChannelsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ViewCommon.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
