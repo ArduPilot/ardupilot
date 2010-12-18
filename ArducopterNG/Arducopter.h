@@ -676,7 +676,7 @@ void defaultUserConfig() {
 #define mag_offset_x_ADR       240
 #define mag_offset_y_ADR       244
 #define mag_offset_z_ADR       248
-#define MIN_THROTTLE_ADR      250
+#define MIN_THROTTLE_ADR       252
 
 
 //#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp
