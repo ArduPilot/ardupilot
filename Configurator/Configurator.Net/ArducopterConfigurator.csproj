@@ -48,10 +48,10 @@
     <Compile Include="PresentationModels\MonitorVm.cs" />
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
-    <Compile Include="mainForm.cs">
+    <Compile Include="Views\mainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="mainForm.Designer.cs">
+    <Compile Include="Views\mainForm.Designer.cs">
       <DependentUpon>mainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="NotifyProperyChangedBase.cs" />
@@ -62,7 +62,7 @@
     <Compile Include="PresentationModels\TransmitterChannelsVm.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="mainForm.resx">
+    <EmbeddedResource Include="Views\mainForm.resx">
       <DependentUpon>mainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -186,6 +186,13 @@
     <Compile Include="Views\ViewCommon.cs">
       <SubType>UserControl</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Views\icons\refresh.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\icons\connect.ico" />
+    <Content Include="Views\icons\disconnect.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

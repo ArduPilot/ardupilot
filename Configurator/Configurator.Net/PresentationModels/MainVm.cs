@@ -63,6 +63,9 @@ namespace ArducopterConfigurator.PresentationModels
            // If we are waiting for the version string
            if (ConnectionState==SessionStates.Connecting)
            {
+               if (strRx.Length > 6)
+                   return; // too long for a version string - reject
+
                // then assume that this is the version string received
                ApmVersion = strRx;
                ConnectionState = SessionStates.Connected;
@@ -148,6 +151,7 @@ namespace ArducopterConfigurator.PresentationModels
                 _connectionAttemptsTimer.Stop();
                 return;
             }
+            _session.Send("X");
 
             // once we connected, then get the version string
             _session.Send("!");

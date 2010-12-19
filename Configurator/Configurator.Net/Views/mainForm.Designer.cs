@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             this.tabCtrlMonitorVms = new System.Windows.Forms.TabControl();
             this.mainVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.comboBox1 = new System.Windows.Forms.ComboBox();
@@ -37,6 +38,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.lblConnectionStatus = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
+            this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).BeginInit();
             this.SuspendLayout();
@@ -80,11 +82,12 @@
             this.btnConnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btnConnect.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.btnConnect.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "ConnectCommand", true));
-            this.btnConnect.Location = new System.Drawing.Point(139, 412);
+            this.btnConnect.Image = ((System.Drawing.Image)(resources.GetObject("btnConnect.Image")));
+            this.btnConnect.Location = new System.Drawing.Point(126, 411);
             this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(70, 23);
+            this.btnConnect.Size = new System.Drawing.Size(26, 26);
             this.btnConnect.TabIndex = 6;
-            this.btnConnect.Text = "Connect";
+            this.toolTip.SetToolTip(this.btnConnect, "Connect");
             this.btnConnect.UseVisualStyleBackColor = true;
             // 
             // button1
@@ -92,11 +95,12 @@
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.button1.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "DisconnectCommand", true));
-            this.button1.Location = new System.Drawing.Point(215, 412);
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(157, 411);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(70, 23);
+            this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 7;
-            this.button1.Text = "DisConnect";
+            this.toolTip.SetToolTip(this.button1, "Disconnect");
             this.button1.UseVisualStyleBackColor = true;
             // 
             // lblConnectionStatus
@@ -104,20 +108,21 @@
             this.lblConnectionStatus.AutoSize = true;
             this.lblConnectionStatus.Location = new System.Drawing.Point(307, 417);
             this.lblConnectionStatus.Name = "lblConnectionStatus";
-            this.lblConnectionStatus.Size = new System.Drawing.Size(35, 13);
+            this.lblConnectionStatus.Size = new System.Drawing.Size(112, 13);
             this.lblConnectionStatus.TabIndex = 8;
-            this.lblConnectionStatus.Text = "label1";
+            this.lblConnectionStatus.Text = "connection string here";
             // 
             // button2
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.button2.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "RefreshPortListCommand", true));
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
             this.button2.Location = new System.Drawing.Point(97, 410);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(23, 23);
+            this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 9;
-            this.button2.Text = "R";
+            this.toolTip.SetToolTip(this.button2, "Refresh port list");
             this.button2.UseVisualStyleBackColor = true;
             // 
             // mainForm
@@ -152,6 +157,7 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label lblConnectionStatus;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.ToolTip toolTip;
     }
 }
 
