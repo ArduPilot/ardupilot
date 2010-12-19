@@ -22,7 +22,6 @@ AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_MTK::init(void)
 {	
-	delay(1000);
 	_port->flush();
 	// initialize serial port for binary protocol use
 	// XXX should assume binary, let GPS_AUTO handle dynamic config?
