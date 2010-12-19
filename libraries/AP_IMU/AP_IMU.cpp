@@ -224,10 +224,12 @@ AP_IMU::get_accel(void)
 	for (int i = 3; i < 6; i++) {
 		_adc_in[i] = _adc->Ch(_sensors[i]);
 		_adc_in[i] -= 2025;								// Subtract typical accel bias
+
 		if (_sensor_signs[i] < 0)
-			_adc_in[i] = (_adc_offset[i] - _adc_in[i]);
+			_adc_in[i] = _adc_offset[i] - _adc_in[i];
 		else
-			_adc_in[i] = (_adc_in[i] - _adc_offset[i]);		
+			_adc_in[i] = _adc_in[i] - _adc_offset[i];
+			
 		if (fabs(_adc_in[i]) > ADC_CONSTRAINT) {
 			adc_constraints++; 												// We keep track of the number of times		
 			_adc_in[i] = constrain(_adc_in[i], -ADC_CONSTRAINT, ADC_CONSTRAINT);	// Throw out nonsensical values

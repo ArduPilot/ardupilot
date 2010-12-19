@@ -31,6 +31,11 @@ public:
 	void		save_accel_eeprom(void);
 	void 		print_accel_offsets(void);
 	void 		print_gyro_offsets(void);
+	
+	void		ax(const int v)		{ _adc_offset[3] = v; }
+	void		ay(const int v)		{ _adc_offset[4] = v; }
+	void		az(const int v)		{ _adc_offset[5] = v; }
+
 
 	// raw ADC values - called by DCM
 	Vector3f	get_gyro(void);									// Radians/second
