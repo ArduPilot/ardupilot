@@ -44,7 +44,10 @@ public:
 	///
 	/// Must be implemented by the GPS driver.
 	///
-	virtual void	update(void) = 0;
+	void	update(void);
+
+	/// Implement specific routines for gps to receive a message. 
+	virtual void	read(void) = 0;
 
 	/// Query GPS status
 	///

@@ -18,7 +18,7 @@ class AP_GPS_HIL : public GPS {
 public:
 	AP_GPS_HIL(Stream *s);
 	void init(void);
-	void update(void);
+	void read(void);
     int status(void);
     /**
      * Hardware in the loop set function

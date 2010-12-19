@@ -31,7 +31,7 @@ public:
 	/// Detect and initialise the attached GPS unit.  Returns a
 	/// pointer to the allocated & initialised GPS driver.
 	///
-	void		update(void);
+	void		read(void);
 
 private:
 	/// Serial port connected to the GPS.

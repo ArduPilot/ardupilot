@@ -18,7 +18,7 @@
 		
 	Methods:
 		init() : GPS Initialization
-		update() : Call this funcion as often as you want to ensure you read the incomming gps data
+		read() : Call this funcion as often as you want to ensure you read the incomming gps data
 		
 	Properties:
 		latitude : latitude * 10000000 (long value)
@@ -63,7 +63,7 @@ AP_GPS_NMEA::init(void)
 // We can call this function on the main loop (50Hz loop)
 // If we get a complete packet this function call parse_nmea_gps() to parse and update the GPS info.
 void
-AP_GPS_NMEA::update(void)
+AP_GPS_NMEA::read(void)
 {
 	char c;
 	int numc;

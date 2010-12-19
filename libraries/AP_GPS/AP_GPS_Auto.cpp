@@ -21,7 +21,7 @@ AP_GPS_Auto::init(void)
 // We detect the real GPS, then update the pointer we have been called through
 // and return.
 void
-AP_GPS_Auto::update(void)
+AP_GPS_Auto::read(void)
 {
 	GPS		*gps;
 	int		i;

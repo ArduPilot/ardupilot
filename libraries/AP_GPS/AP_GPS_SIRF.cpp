@@ -50,7 +50,7 @@ void AP_GPS_SIRF::init(void)
 // re-processing it from the top, this is unavoidable. The parser
 // attempts to avoid this when possible.
 //
-void AP_GPS_SIRF::update(void)
+void AP_GPS_SIRF::read(void)
 {
 	byte data;
 	int numc;

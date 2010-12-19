@@ -24,7 +24,7 @@ void AP_GPS_HIL::init(void)
 {	
 }
 
-void AP_GPS_HIL::update(void)
+void AP_GPS_HIL::read(void)
 {
 }
 

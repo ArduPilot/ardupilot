@@ -37,7 +37,7 @@ void AP_GPS_UBLOX::init(void)
 // re-processing it from the top, this is unavoidable. The parser
 // attempts to avoid this when possible.
 //
-void AP_GPS_UBLOX::update(void)
+void AP_GPS_UBLOX::read(void)
 {
 	byte data;
 	int numc;

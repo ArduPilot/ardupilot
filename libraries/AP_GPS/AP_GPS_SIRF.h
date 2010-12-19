@@ -20,7 +20,7 @@ public:
 	AP_GPS_SIRF(Stream *s);
 
 	virtual void   	init();
-	virtual void	update();
+	virtual void	read();
 
 private:
 #pragma pack(1)

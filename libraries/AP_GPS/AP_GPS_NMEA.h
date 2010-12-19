@@ -37,7 +37,7 @@ class AP_GPS_NMEA : public GPS
     // Methods
 	AP_GPS_NMEA(Stream *s);
 	void init();
-	void update();
+	void read();
 
 	// Properties
 	uint8_t quality;    // GPS Signal quality

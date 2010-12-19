@@ -20,3 +20,18 @@ GPS::_setTime(void)
 {
 	_lastTime = millis();
 }
+
+void
+GPS::update(void)
+{
+	if (!status())
+	{
+		Serial.println("Reinitializing GPS");
+		init();
+		_setTime();
+	}
+	else
+	{
+		read();
+	}
+}

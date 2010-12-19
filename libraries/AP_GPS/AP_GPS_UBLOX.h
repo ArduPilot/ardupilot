@@ -21,7 +21,7 @@ public:
     // Methods
 	AP_GPS_UBLOX(Stream *s = NULL);
 	void		init(void);
-	void		update();
+	void		read();
 
 private:
 	// u-blox UBX protocol essentials
