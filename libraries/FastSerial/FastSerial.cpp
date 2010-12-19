@@ -33,8 +33,12 @@
 #include "FastSerial.h"
 #include "WProgram.h"
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if   defined(UDR3)
 # define FS_MAX_PORTS   4
+#elif defined(UDR2)
+# define FS_MAX_PORTS   3
+#elif defined(UDR1)
+# define FS_MAX_PORTS   2
 #else
 # define FS_MAX_PORTS   1
 #endif
