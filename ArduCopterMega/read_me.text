@@ -1,0 +1,48 @@
+Make sure you update the libraries from the arducopter trunk and the latest code from the ardupilotmega branch.
+I have a lot of setup commands now. I may reduce and consolidate these soon.
+
+Radio:
+ch1 = roll
+ch2 = pitch
+ch3 = throttle
+ch4 = yaw
+ch5 = mode switch - use your 3 position switch
+ch6 = used for tuning - not currently active
+ch7 = use to set throttle hold value while hovering (quick toggle), hold > 5 seconds on ground to reset the accelerometer offsets.
+ch8 = not used
+
+setup:
+erase  = run this first, just in case
+reset  = run this second
+radio  = run this third
+esc = just ignore this for now
+level  = optional - sets accelerometer offsets
+flat   = optional - sets accelerometer offsets to 0
+modes  = interactive setup for flight modes
+pid    = optional - writes default PID values to eeprom
+frame  = optional - default is "+"
+enable_mag = enables the compass
+disable_mag = disables the compass
+compass      = interactive setup for compass offsets
+declination  = usage: "declination 14.25"
+show = shows all values
+
+Flight modes to try:
+stabilize  - I'm having a little trouble inputting Yaw commands, would love some feedback on how to best handle it.
+alt_hold - You need to set your throttle_cruise value by toggling ch_7 for  a second. Mine is 330
+- altitude is controlled by the throttle lever.
+position_hold - When selected, it will hold the current altitude, position and yaw. Yaw is user controllable. roll and pitch can be overridden with the radio.
+RTL - will try and fly back to home at the current altitude.
+Auto - not tested yet, i'm finishing a waypoint writing sketch and will be ready to test soon
+- what's new
+- CMD_ANGLE - will set the desired yaw with control of angle/second and direction.
+- CMD_ALTITUDE - will send the copter up from current position to desired altitude
+- CMD_R_WAYPOINT - is just like a waypoint but relative to home
+- CMD_TRACK_WAYPOINT - coming soon, will point the copter at the waypoint no matter the position
+Special note:
+Any mode other than stabilize will cause the props to spin once the control switch is engaged.
+The props will NOT spin in stabilize when throttle is in the off position, even when armed.
+Arming is Yaw right for 1 sec, disarm is yaw left for 1 sec. Just give it some juice to confirm arming.
+Good luck,
+Jason
+
