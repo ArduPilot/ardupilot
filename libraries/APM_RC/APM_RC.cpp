@@ -23,7 +23,7 @@
 #include <avr/interrupt.h>
 #include "WProgram.h"
 
-#if !defined(__AVR_ATmega1280__)
+#if !defined(__AVR_ATmega1280__) && !defined(__AVR_ATmega2560__)
 # error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #else
 

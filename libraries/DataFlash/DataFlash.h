@@ -5,7 +5,7 @@
 #define DataFlash_h
 
 // arduino mega SPI pins
-#if defined(__AVR_ATmega1280__)
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	#define DF_DATAOUT 51        // MOSI
 	#define DF_DATAIN  50        // MISO 
 	#define DF_SPICLOCK  52      // SCK

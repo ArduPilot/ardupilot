@@ -1,7 +1,7 @@
 /*
 	DataFlash.cpp - DataFlash log library for AT45DB161
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
-	This code works with boards based on ATMega168/328 and ATMega1280 using SPI port
+	This code works with boards based on ATMega168/328 and ATMega1280/2560 using SPI port
 
 	This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ void DataFlash_Class::Init(void)
   pinMode(DF_DATAIN, INPUT);
   pinMode(DF_SPICLOCK,OUTPUT);
   pinMode(DF_SLAVESELECT,OUTPUT);
-  #if defined(__AVR_ATmega1280__)
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	pinMode(DF_RESET,OUTPUT);
 	// Reset the chip
 	digitalWrite(DF_RESET,LOW);

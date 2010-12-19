@@ -1,7 +1,7 @@
 /*
 	GPS_MTK.cpp - Ublox GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
-	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
+	This code works with boards based on ATMega168/328 and ATMega1280/2560 (Serial port 1)
 
 	This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -50,8 +50,8 @@ void GPS_MTK_Class::Init(void)
 	PrintErrors=0;
 	GPS_timer=millis();   //Restarting timer...
 	// Initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);         // Serial port 1 on ATMega1280
+	#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+		Serial1.begin(38400);         // Serial port 1 on ATMega1280/2560
 	#else
 		Serial.begin(38400);
 	#endif
@@ -68,7 +68,7 @@ void GPS_MTK_Class::Read(void)
   byte data;
   int numc;
   
-  #if defined(__AVR_ATmega1280__)    // If AtMega1280 then Serial port 1...
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)    // If AtMega1280/2560 then Serial port 1...
 	numc = Serial1.available();
   #else
 	numc = Serial.available();
@@ -76,7 +76,7 @@ void GPS_MTK_Class::Read(void)
   if (numc > 0)
     for (int i=0;i<numc;i++)  // Process bytes received
       {
-	  #if defined(__AVR_ATmega1280__)
+	  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
         data = Serial1.read();
       #else
 		data = Serial.read();

@@ -1,7 +1,7 @@
 /*
 	GPS_NMEA.cpp - Generic NMEA GPS library for Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
-	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
+	This code works with boards based on ATMega168/328 and ATMega1280/2560 (Serial port 1)
 
 	This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -59,8 +59,8 @@ void GPS_NMEA_Class::Init(void)
 	Quality=0;
 	PrintErrors=0;	
 	// Initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);         // Serial port 1 on ATMega1280
+	#if defined(__AVR_ATmega1280__)|| defined(__AVR_ATmega2560__)
+		Serial1.begin(38400);         // Serial port 1 on ATMega1280/2560
 	#else
 		Serial.begin(38400);
 	#endif
@@ -76,14 +76,14 @@ void GPS_NMEA_Class::Read(void)
   int i;
  
   
-  #if defined(__AVR_ATmega1280__)    // If AtMega1280 then Serial port 1...
+  #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)    // If AtMega1280/2560 then Serial port 1...
 	numc = Serial1.available();    
   #else
 	numc = Serial.available();
   #endif
   if (numc > 0)
     for (i=0;i<numc;i++){
-      #if defined(__AVR_ATmega1280__)    // If AtMega1280 then Serial port 1...
+      #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)    // If AtMega1280/2560 then Serial port 1...
 	  c = Serial1.read();   
       #else
 	  c = Serial.read();

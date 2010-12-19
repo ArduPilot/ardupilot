@@ -25,8 +25,8 @@ void GPS_IMU_Class::Init(void)
 	
 	IMU_timer = millis();	 //Restarting timer...
 	// Initialize serial port
-	#if defined(__AVR_ATmega1280__)
-		Serial1.begin(38400);				 // Serial port 1 on ATMega1280
+	#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+		Serial1.begin(38400);				 // Serial port 1 on ATMega1280/2560
 	#else
 		Serial.begin(38400);
 	#endif
@@ -42,7 +42,7 @@ void GPS_IMU_Class::Read(void)
 	int numc = 0;
 	static byte message_num = 0;
 	
-	#if defined(__AVR_ATmega1280__)		// If AtMega1280 then Serial port 1...
+	#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)		// If AtMega1280/2560 then Serial port 1...
 		numc = Serial.available();
 	#else
 		numc = Serial.available();
@@ -51,7 +51,7 @@ void GPS_IMU_Class::Read(void)
 	if (numc > 0){
 		for (int i=0;i<numc;i++){	// Process bytes received		
 	
-			#if defined(__AVR_ATmega1280__)
+			#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 				data = Serial.read();
 			#else
 				data = Serial.read();
