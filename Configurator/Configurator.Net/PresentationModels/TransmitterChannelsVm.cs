@@ -5,7 +5,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class TransmitterChannelsVm : MonitorVm
     {
-        public TransmitterChannelsVm(CommsSession sp) : base(sp)
+        public TransmitterChannelsVm(IComms sp) : base(sp)
         {
             PropsInUpdateOrder = new[] 
             { 

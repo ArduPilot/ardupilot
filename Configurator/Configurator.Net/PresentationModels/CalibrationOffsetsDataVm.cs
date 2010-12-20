@@ -6,7 +6,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class CalibrationOffsetsDataVm : MonitorVm
     {
-        public CalibrationOffsetsDataVm(CommsSession sp) : base(sp)
+        public CalibrationOffsetsDataVm(IComms sp) : base(sp)
         {
             PropsInUpdateOrder = new[] 
             { 

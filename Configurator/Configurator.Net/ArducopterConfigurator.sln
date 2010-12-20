@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArducopterConfigurator", "ArducopterConfigurator.csproj", "{AF26391C-7E45-4401-8984-96139A67FF31}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArducopterConfiguratorTest", "Test\ArducopterConfiguratorTest.csproj", "{36B62E9F-668C-45BF-AD72-CFF0C0A65898}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{AF26391C-7E45-4401-8984-96139A67FF31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF26391C-7E45-4401-8984-96139A67FF31}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF26391C-7E45-4401-8984-96139A67FF31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36B62E9F-668C-45BF-AD72-CFF0C0A65898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36B62E9F-668C-45BF-AD72-CFF0C0A65898}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36B62E9F-668C-45BF-AD72-CFF0C0A65898}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36B62E9F-668C-45BF-AD72-CFF0C0A65898}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

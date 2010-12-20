@@ -9,17 +9,17 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class MainVm : NotifyProperyChangedBase, IPresentationModel
     {
-        private readonly CommsSession _session;
+        private readonly IComms _session;
         private bool _isConnected;
         private MonitorVm _selectedVm;
         private string _selectedPort;
         private string _apmVersion;
-        private System.Windows.Forms.Timer _connectionAttemptsTimer;
+        private Timer _connectionAttemptsTimer;
 
         private SessionStates _connectionState;
 
 
-        public MainVm(CommsSession session)
+        public MainVm(IComms session)
         {
             _session = session;
             _session.LineOfDataReceived += _session_LineOfDataReceived;
@@ -157,16 +157,12 @@ namespace ArducopterConfigurator.PresentationModels
             _session.Send("!");
         }
 
-
         public void Disconnect()
         {
             _session.Send("X");
             _session.DisConnect();
             ConnectionState = SessionStates.Disconnected;
         }
-
-        
-     
 
         public string ApmVersion
         {

@@ -2,7 +2,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class PositionHoldConfigVm : ConfigWithPidsBase
     {
-        public PositionHoldConfigVm(CommsSession sp)
+        public PositionHoldConfigVm(IComms sp)
             : base(sp)
         {
             PropsInUpdateOrder = new[] 

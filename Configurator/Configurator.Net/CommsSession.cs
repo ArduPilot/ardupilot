@@ -8,13 +8,22 @@ using ArducopterConfigurator.PresentationModels;
 
 namespace ArducopterConfigurator
 {
+    public interface IComms
+    {
+        event Action<string> LineOfDataReceived;
+        string CommPort { get; set; }
+        void Send(string send);
+        bool Connect();
+        bool DisConnect();
+    }
+
     /// <summary>
     /// Represents a session of communication with the Arducopter
     /// </summary>
     /// <remarks>
     /// Looks after connection state etc
     /// </remarks>
-    public class CommsSession
+    public class CommsSession : IComms
     {
         private readonly SerialPort _sp;
         private BackgroundWorker _bgWorker;
@@ -103,4 +112,6 @@ namespace ArducopterConfigurator
                 _sp.Write(send);
         }
     }
+
+    
 }

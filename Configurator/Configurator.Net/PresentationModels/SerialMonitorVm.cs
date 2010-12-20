@@ -7,7 +7,7 @@ namespace ArducopterConfigurator.PresentationModels
     {
         private string _text;
 
-        public SerialMonitorVm(CommsSession _sp) : base(_sp)
+        public SerialMonitorVm(IComms _sp) : base(_sp)
         {
             _sp.LineOfDataReceived += new Action<string>(_sp_DataReceived);
           

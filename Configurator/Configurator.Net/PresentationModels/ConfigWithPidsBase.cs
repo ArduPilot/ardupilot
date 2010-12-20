@@ -19,7 +19,7 @@ namespace ArducopterConfigurator.PresentationModels
         public float YawD { get;  set; }
 
 
-        public ConfigWithPidsBase(CommsSession sp) : base(sp)
+        public ConfigWithPidsBase(IComms sp) : base(sp)
         {
         }
 

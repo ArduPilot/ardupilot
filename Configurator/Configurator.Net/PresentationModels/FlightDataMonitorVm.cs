@@ -7,7 +7,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class FlightDataVm : MonitorVm
     {
-        public FlightDataVm(CommsSession _sp) : base(_sp)
+        public FlightDataVm(IComms _sp) : base(_sp)
         {
           
         }

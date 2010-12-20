@@ -2,7 +2,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class AltitudeHoldConfigVm : MonitorVm
     {
-        public AltitudeHoldConfigVm(CommsSession sp)
+        public AltitudeHoldConfigVm(IComms sp)
             : base(sp)
         {
             PropsInUpdateOrder = new[] {  "P",  "I",  "D", };
@@ -14,9 +14,9 @@ namespace ArducopterConfigurator.PresentationModels
         public ICommand RefreshCommand { get; private set; }
         public ICommand UpdateCommand { get; private set; }
 
-        public float P { get; protected set; }
-        public float I { get; protected set; }
-        public float D { get; protected set; }
+        public float P { get;  set; }
+        public float I { get;  set; }
+        public float D { get;  set; }
 
 
         private void RefreshValues()

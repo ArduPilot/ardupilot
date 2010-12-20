@@ -2,7 +2,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class StableModeConfigVm : ConfigWithPidsBase
     {
-        public StableModeConfigVm(CommsSession sp)
+        public StableModeConfigVm(IComms sp)
             : base(sp)
         {
             PropsInUpdateOrder = new[]
@@ -28,9 +28,9 @@ namespace ArducopterConfigurator.PresentationModels
  
         public ICommand UpdateCommand { get; private set; }
 
-        public float KPrate { get; private set; }
+        public float KPrate { get;  set; }
 
-        public bool MagnetometerEnable { get; private set; }
+        public bool MagnetometerEnable { get;  set; }
 
         private void RefreshValues()
         {

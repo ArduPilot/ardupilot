@@ -4,7 +4,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class AcroModeConfigVm : ConfigWithPidsBase
     {
-        public AcroModeConfigVm(CommsSession sp) : base(sp)
+        public AcroModeConfigVm(IComms sp) : base(sp)
         {
             PropsInUpdateOrder = new[] 
                        { 

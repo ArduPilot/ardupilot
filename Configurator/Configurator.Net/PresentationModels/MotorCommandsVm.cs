@@ -2,7 +2,7 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class MotorCommandsVm : MonitorVm
     {
-        public MotorCommandsVm(CommsSession _sp)
+        public MotorCommandsVm(IComms _sp)
             : base(_sp)
         {
         }

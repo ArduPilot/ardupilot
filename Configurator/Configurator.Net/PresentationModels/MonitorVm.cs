@@ -12,11 +12,11 @@ namespace ArducopterConfigurator
     /// </remarks>
     public abstract class MonitorVm : NotifyProperyChangedBase, IPresentationModel
     {
-        private CommsSession _sp;
+        private IComms _sp;
         protected bool isActive;
         protected string[] PropsInUpdateOrder;
 
-        protected MonitorVm(CommsSession sp)
+        protected MonitorVm(IComms sp)
         {
             _sp = sp;
             _sp.LineOfDataReceived += sp_LineOfDataReceived;

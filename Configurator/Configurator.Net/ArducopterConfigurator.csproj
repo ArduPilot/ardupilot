@@ -44,7 +44,7 @@
     <Compile Include="PresentationModels\AcroModeConfigVm.cs" />
     <Compile Include="PresentationModels\AltitudeHoldConfigVm.cs" />
     <Compile Include="PresentationModels\ConfigWithPidsBase.cs" />
-    <Compile Include="PresentationModels\DelegateCommand.cs" />
+    <Compile Include="Core\DelegateCommand.cs" />
     <Compile Include="PresentationModels\MonitorVm.cs" />
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
