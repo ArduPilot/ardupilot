@@ -42,6 +42,7 @@ public:
 	Vector3<T>	a, b, c;
 
 	// trivial ctor
+	// note that the Vector3 ctor will zero the vector elements
 	Matrix3<T>() {}
 
 	// setting ctor

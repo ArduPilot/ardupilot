@@ -30,9 +30,8 @@ struct Vector2
 {
 	T x, y;
 
-
 	// trivial ctor
-	Vector2<T>(): x(0),y(0) {}
+	Vector2<T>() {memset(this, 0, sizeof(*this));}
 
 	// setting ctor
 	Vector2<T>(const T x0, const T y0): x(x0), y(y0) {}
@@ -140,11 +139,11 @@ struct Vector2
 	{   return v * (*this * v)/(v*v);	}
 
 	// computes the angle between 2 arbitrary vectors
-	static inline T angle(const Vector2<T> &v1, const Vector2<T> &v2)
+	T angle(const Vector2<T> &v1, const Vector2<T> &v2)
 	{   return (T)acosf((v1*v2) / (v1.length()*v2.length()));  }
 
 	// computes the angle between 2 normalized arbitrary vectors
-	static inline T angle_normalized(const Vector2<T> &v1, const Vector2<T> &v2)
+	T angle_normalized(const Vector2<T> &v1, const Vector2<T> &v2)
 	{   return (T)acosf(v1*v2);  }
 
 };
