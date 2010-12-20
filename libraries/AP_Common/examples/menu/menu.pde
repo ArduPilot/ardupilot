@@ -2,11 +2,9 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 
-#include <avr/pgmspace.h>
-
 FastSerialPort0(Serial);
 
-int
+int8_t
 menu_test(uint8_t argc, const Menu::arg *argv)
 {
 	int	i;
@@ -18,15 +16,15 @@ menu_test(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-int
+int8_t
 menu_auto(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.println("auto text");
 }
 
 const struct Menu::command top_menu_commands[] PROGMEM = {
-        {"*",                           menu_auto},
-	{"test",			menu_test},
+        {"*",               menu_auto},
+		{"test",			menu_test},
 };
 
 MENU(top, "menu", top_menu_commands);
