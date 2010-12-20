@@ -52,5 +52,6 @@ void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _al
     new_data = true;
     fix = true;
     valid_read = true;
+	_setTime();
 }
 
