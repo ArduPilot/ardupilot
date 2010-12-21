@@ -386,7 +386,7 @@ void setup()
   SerBeg(SerBau);                      // Initialize SerialXX.port, IsXBEE define declares which port
 #ifndef CONFIGURATOR  
   SerPri("ArduCopter Quadcopter v");
-  SerPriln(VER)
+  SerPriln(VER);
   SerPri("Serial ready on port: ");    // Printout greeting to selecter serial port
   SerPriln(SerPor);                    // Printout serial port name
 #endif
