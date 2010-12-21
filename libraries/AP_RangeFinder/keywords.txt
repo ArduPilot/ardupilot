@@ -4,7 +4,12 @@ AP_RangeFinder_SharpGP2Y	KEYWORD1
 AP_RangeFinder_MaxsonarXL	KEYWORD1
 init	KEYWORD2
 read	KEYWORD2
+filter	KEYWORD2
+set_orientation	KEYWORD2
 raw_value	KEYWORD2
 distance	KEYWORD2
 max_distance	KEYWORD2
 min_distance	KEYWORD2
+orientation_x	KEYWORD2
+orientation_y	KEYWORD2
+orientation_z	KEYWORD2

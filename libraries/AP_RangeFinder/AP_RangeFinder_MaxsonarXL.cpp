@@ -28,12 +28,17 @@
 
 // AVR LibC Includes
 #include "WConstants.h"
-
 #include "AP_RangeFinder_MaxsonarXL.h"
 
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_RangeFinder_MaxsonarXL::init(int analogPort)
 {
+    // local variables
+    int i;
+	
+	// set the given analog port to an input
+	pinMode(analogPort, INPUT);
+	
     // initialise everything
     _analogPort = analogPort;
 	max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
@@ -41,6 +46,10 @@ void AP_RangeFinder_MaxsonarXL::init(int analogPort)
 	
 	// make first call to read to get initial distance
 	read();
+	
+	// initialise history
+	for( i=0; i<AP_RANGEFINDER_NUM_AVERAGES; i++ )
+	    _history[i] = distance;	
 }
 
 // Read Sensor data
@@ -52,17 +61,6 @@ int AP_RangeFinder_MaxsonarXL::read()
 	// for this sensor, the sensor value is the distance in cm! nice and easy!
 	distance = constrain(raw_value,min_distance,max_distance);
 	
-	// implement filter
-    //switch( _filterType ) {
-	//    case AP_RANGEFINDER_FILTER_LIMITED_CHANGE:
-	//	    distance = constrain(
-	//	    break;
-	//	case AP_RANGEFINDER_FILTER_NONE:
-	//    default:
-	//	    distance = tempDistance;
-	//	    break;
-	//}
-	
 	// return distance
-	return distance;
+	return filter(distance);
 }

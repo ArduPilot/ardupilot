@@ -3,13 +3,13 @@
   Code by DIYDrones.com
 */
 
-#include <AP_RangeFinder.h>        // Sonar library
+#include <AP_RangeFinder.h>        // Range finder library
 
-#define RF_PIN 5 // the far back-right pin on the oilpan (near the CLI switch)
+#define RF_PIN A5 // the far back-right pin on the oilpan (near the CLI switch)
 
 // create the range finder object
-//AP_RangeFinder_SharpGP2Y aRF;
-AP_RangeFinder_MaxsonarXL aRF;
+AP_RangeFinder_SharpGP2Y aRF;
+//AP_RangeFinder_MaxsonarXL aRF;
 
 void setup()
 {
@@ -20,11 +20,12 @@ void setup()
 
 void loop()
 {   
+    int i = 0;
     Serial.print("dist:");
     Serial.print(aRF.read());
     Serial.print("\traw:");
-    Serial.print(aRF.raw_value);    
+    Serial.print(aRF.raw_value); 
     Serial.println();
-    delay(100); 
+    delay(50); 
 }
 
