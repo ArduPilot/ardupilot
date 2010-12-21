@@ -34,6 +34,13 @@ RC_Channel::set_angle(int angle)
 }
 
 void
+RC_Channel::set_reverse(bool reverse)
+{
+	if (reverse) _reverse = -1;
+	else _reverse = 1;
+}
+
+void
 RC_Channel::set_filter(bool filter)
 {
 	_filter = filter;
@@ -138,9 +145,27 @@ int16_t
 RC_Channel::pwm_to_angle()
 {
 	if(radio_in < radio_trim)
-		return _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
+		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
 	else
-		return _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
+		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
+}
+
+float 
+RC_Channel::norm_input()
+{
+	if(radio_in < radio_trim)
+		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
+	else
+		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
+}
+
+float 
+RC_Channel::norm_output()
+{
+	if(radio_out < radio_trim)
+		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
+	else
+		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
 }
 
 int16_t
@@ -157,7 +182,7 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range()
 {
-	return _low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min)));
+	return _reverse * (_low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min))));
 }
 
 int16_t

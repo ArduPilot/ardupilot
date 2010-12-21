@@ -44,6 +44,7 @@ class RC_Channel{
 	// setup the control preferences
 	void 		set_range(int low, int high);
 	void 		set_angle(int angle);
+	void 		set_reverse(bool reverse);
 
 	// read input from APM_RC - create a control_in value
 	void 		set_pwm(int pwm);
@@ -81,12 +82,15 @@ class RC_Channel{
 	//int16_t 	get_radio_out(void);
 
 	int16_t		pwm_to_angle();
+	float		norm_input();
+	float		norm_output();
 	int16_t		angle_to_pwm();
 	int16_t		pwm_to_range();
 	int16_t		range_to_pwm();
 	
   private:
 	bool		_filter;
+	int8_t 		_reverse;
 
 	int16_t		_address;			///< EEPROM address for save/restore of P/I/D
 	bool 		_type;				
