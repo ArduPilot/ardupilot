@@ -24,7 +24,7 @@ namespace ArducopterConfigurator.PresentationModels
             UpdateCommand = new DelegateCommand(_ => UpdateValues());
         }
 
-        public float TransmitterFactor { get; private set; }
+        public float TransmitterFactor { get; set; }
 
         public ICommand RefreshCommand { get; private set; }
  

@@ -40,10 +40,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AcroModeConfigVmTest.cs" />
     <Compile Include="AltitudeHoldVmTest.cs" />
     <Compile Include="MainVmTests.cs" />
     <Compile Include="MotorCommandsVmTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StableModeConfigVmTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ArducopterConfigurator.csproj">
