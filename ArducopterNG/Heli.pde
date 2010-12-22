@@ -164,7 +164,8 @@ void heli_setup()
   roll_control_switch = !SW_DIP1;
   pitch_control_switch = !SW_DIP2;
   yaw_control_switch = !SW_DIP3; 
-  collective_control_switch = !SW_DIP4;
+  collective_control_switch = 0; //!SW_DIP4;
+  position_control_switch = !SW_DIP4;  // switch 4 controls whether we will do GPS hold or not
 }
 
 /*****************************************************************************************************/
@@ -208,17 +209,13 @@ void heli_read_radio_trims()
         trim_pitch = 0.0;
     if( trim_yaw > 50.0 || trim_yaw < -50.0 )
         trim_yaw = 0.0;
-        
-    //Serial.print("trim_yaw = " );
-    //Serial.print(trim_yaw);
-    //Serial.println();
+
 }
 
 /**********************************************************************/
 // Radio decoding
 void heli_read_radio()
 {
-    static int count = 0;
     // left channel
     ccpmPercents.x  = frontLeftCCPMslope * APM_RC.InputCh(CHANNEL_FRONT_LEFT) + frontLeftCCPMintercept;
     
@@ -240,7 +237,7 @@ void heli_read_radio()
     ch_collective = rollPitchCollPercent.z;
     
     // allow a bit of a dead zone for the yaw
-    if( abs(yawPercent) < 2 )
+    if( fabs(yawPercent) < 2 )
         ch_yaw = 0;
     else
         ch_yaw = yawPercent;
@@ -253,6 +250,34 @@ void heli_read_radio()
     
     // hardcode flight mode
     flightMode = STABLE_MODE;
+    
+    // if position_control could be active
+    if( position_control_switch == 1 && position_control_safety == 0 ) {
+      
+        //if roll or pitch ever > 40% or < -40% turn off autopilot
+        if( AP_mode == AP_AUTOMATIC_MODE && (fabs(ch_roll) >= 40 || fabs(ch_pitch) >= 40 )) {
+            position_control_safety = 1;
+            target_position = 0; // force it to reset to current position
+            Serial.println("autopilot OFF!  safety!");
+        }
+            
+        // switch on auto pilot if elevator goes over 50%
+        if( AP_mode == AP_NORMAL_MODE && ch_collective >= 50 ) {
+            AP_mode = AP_AUTOMATIC_MODE;   
+            Serial.println("autopilot on!");
+        }
+        
+        // switch off auto pilot if elevator goes below 20%
+        if( AP_mode == AP_AUTOMATIC_MODE && ch_collective <= 20 ) {
+            AP_mode = AP_NORMAL_MODE;
+            target_position = 0; // force it to reset to current position
+            Serial.println("autopilot off!");
+        }        
+    }else{
+        AP_mode = AP_NORMAL_MODE;
+    }
+    // turn off AP_AUTOMATIC_MODE if roll or pitch is > 40% or < -40%
+    
 }
 
 /**********************************************************************/

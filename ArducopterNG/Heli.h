@@ -156,6 +156,9 @@ int roll_control_switch = 1;
 int pitch_control_switch = 1;
 int yaw_control_switch = 1;
 int collective_control_switch = 0;
+int position_control_switch = 0;
+int position_control_engaged = 0;  // we don't have enough buttons so we will turn this on and off with roll + pitch positions
+int position_control_safety = 0;   // if 0 then safety is off.  if 1 then safety is on and position control will not operate
 
 /// for sending values out to servos
 Vector3f ccpmPercents_out;            // Array of ccpm input values, converted to percents
