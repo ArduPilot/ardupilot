@@ -1,5 +1,13 @@
 namespace ArducopterConfigurator.PresentationModels
 {
+    /// <summary>
+    /// Vm for Altitude hold settings
+    /// </summary>
+    /// <remarks>
+    /// Todo: this one is weird because the APM sends and receives the values
+    /// in a different order
+    /// There is a unit test to cover it but it will need fixing.
+    /// </remarks>
     public class AltitudeHoldConfigVm : MonitorVm
     {
         public AltitudeHoldConfigVm(IComms sp)

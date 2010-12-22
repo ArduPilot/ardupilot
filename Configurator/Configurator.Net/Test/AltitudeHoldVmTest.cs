@@ -1,44 +1,52 @@
-using ArducopterConfigurator;
+using ArducopterConfigurator.PresentationModels;
 using NUnit.Framework;
 
 namespace ArducopterConfiguratorTest
 {
-    public abstract class VmTestBase<T> where T : MonitorVm
+    [TestFixture]
+    public class AltitudeHoldVmTest : VmTestBase<AltitudeHoldConfigVm>
     {
-        protected T _vm;
-        protected FakeComms _fakeComms;
-        protected string sampleLineOfData;
-        protected string getCommand;
-        protected string setCommand;
+
+        [SetUp]
+        public void Setup()
+        {
+            sampleLineOfData = "0.800,0.200,0.300";
+            getCommand = "F";
+            setCommand = "E";
+
+            _fakeComms = new FakeComms();
+            _vm = new AltitudeHoldConfigVm(_fakeComms);
+        }
+
 
         [Test]
-        public void ActivateSendsCorrectCommand()
+        // For whatever reason, for Altitude the properties are sent in P, D ,I
+        // order, but received in P,I,D order
+        public void UpdateStringSentIsCorrect()
         {
-            _vm.Activate();
+            _vm.P = 1.0F;
+            _vm.I = 2.0F;
+            _vm.D = 3.0F;
+
+            _vm.UpdateCommand.Execute(null);
+
             Assert.AreEqual(1, _fakeComms.SentItems.Count);
-            Assert.AreEqual(getCommand, _fakeComms.SentItems[0]);
+            Assert.AreEqual("E1;3;2", _fakeComms.SentItems[0]);
         }
 
         [Test]
-        public void ReceivedDataIgnoredWhenNotActive()
+        // For whatever reason, for Altitude the properties are sent in P, D ,I
+        // order, but received in P,I,D order
+        public void UpdateStringReceivedPopulatesValuesCorrectly()
         {
-            bool inpcFired = false;
-            _vm.PropertyChanged += delegate { inpcFired = true; };
-
-            _fakeComms.FireLineRecieve(sampleLineOfData);
-            Assert.False(inpcFired);
-        }
-
-        [Test]
-        public void UpdateStringReceivedPopulatesValues()
-        {
-            bool inpcFired = false;
-            _vm.PropertyChanged += delegate { inpcFired = true; };
-
             _vm.Activate();
             _fakeComms.FireLineRecieve(sampleLineOfData);
 
-            Assert.True(inpcFired);
+            Assert.AreEqual(0.8f, _vm.P);
+            Assert.AreEqual(0.2f, _vm.I);
+            Assert.AreEqual(0.3f, _vm.D);
         }
+
+
     }
 }

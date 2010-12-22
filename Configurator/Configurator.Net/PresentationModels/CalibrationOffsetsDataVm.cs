@@ -28,13 +28,13 @@ namespace ArducopterConfigurator.PresentationModels
 
       
 
-        public int GyroRollOffset { get; set; }
-        public int GyroPitchOffset { get; set; }
-        public int GyroYawOffset { get; set; }
+        public float GyroRollOffset { get; set; }
+        public float GyroPitchOffset { get; set; }
+        public float GyroYawOffset { get; set; }
 
-        public int AccelRollOffset { get; set; }
-        public int AccelPitchOffset { get; set; }
-        public int AccelZOffset { get; set; }
+        public float AccelRollOffset { get; set; }
+        public float AccelPitchOffset { get; set; }
+        public float AccelZOffset { get; set; }
 
         protected override void OnActivated()
         {

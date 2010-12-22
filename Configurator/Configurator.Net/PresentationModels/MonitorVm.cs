@@ -127,7 +127,7 @@ namespace ArducopterConfigurator
                     int val;
                     if (!int.TryParse(s, out val))
                     {
-                        Debug.WriteLine("Error parsing float: " + s);
+                        Debug.WriteLine("Error parsing int: " + s);
                         break;
                     }
                     value = val;
