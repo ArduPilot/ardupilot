@@ -45,22 +45,30 @@ namespace ArducopterConfiguratorTest
             Assert.AreEqual("A5;6;7;1;2;3;8;9;10;4;1", _fakeComms.SentItems[0]);
         }
 
+        
+
         [Test]
         public void UpdateStringReceivedPopulatesValuesCorrectly()
         {
-            _fakeComms.FireLineRecieve("B5;6;7;1;2;3;8;9;10;4;1");
+            _vm.Activate();
+            _fakeComms.FireLineRecieve(sampleLineOfData);
 
-            Assert.AreEqual(1.0f, _vm.PitchP);
-            Assert.AreEqual(2f, _vm.PitchI);
-            Assert.AreEqual(3f, _vm.PitchD);
-            Assert.AreEqual(5f, _vm.RollP);
-            Assert.AreEqual(6f, _vm.RollI);
-            Assert.AreEqual(7f, _vm.RollD);
-            Assert.AreEqual(8f, _vm.YawP);
-            Assert.AreEqual(9f, _vm.YawI);
-            Assert.AreEqual(10f, _vm.YawD);
-            Assert.AreEqual(1f, _vm.MagnetometerEnable);
-            Assert.AreEqual(4f, _vm.KPrate);
+            Assert.AreEqual(1.95f, _vm.RollP);
+            Assert.AreEqual(0.1f, _vm.RollI);
+            Assert.AreEqual(0.2f, _vm.RollD);
+
+            Assert.AreEqual(1.95f, _vm.PitchP);
+            Assert.AreEqual(0.3f, _vm.PitchI);
+            Assert.AreEqual(0.4f, _vm.PitchD);
+          
+            Assert.AreEqual(3.2f, _vm.YawP);
+            Assert.AreEqual(0.5f, _vm.YawI);
+            Assert.AreEqual(0.6f, _vm.YawD);
+            
+            Assert.AreEqual(0.32f, _vm.KPrate);
+
+            Assert.AreEqual(true, _vm.MagnetometerEnable);
+
         }
     }
 }

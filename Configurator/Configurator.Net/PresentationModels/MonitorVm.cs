@@ -149,7 +149,11 @@ namespace ArducopterConfigurator
             for (int i = 0; i < PropsInUpdateOrder.Length; i++)
              {
                  var prop = this.GetType().GetProperty(PropsInUpdateOrder[i]);
-                 strings[i] = prop.GetValue(this, null).ToString();
+
+                 if (prop.PropertyType == typeof(bool))
+                    strings[i] = ((bool) prop.GetValue(this, null)) ? "1" : "0";
+                 else
+                    strings[i] = prop.GetValue(this, null).ToString();
                 
              }
 
