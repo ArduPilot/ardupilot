@@ -12,7 +12,7 @@ class AP_GPS_IMU : public GPS
     // Methods
 	AP_GPS_IMU(Stream *s);
 	void init();
-	void update();
+	void read();
 	
 	// Properties
 	long 	roll_sensor;		// how much we're turning in deg * 100

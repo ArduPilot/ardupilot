@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	GPS_MTK.cpp - Ublox GPS library for Arduino
-	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+	Code by Jordi MuÃ’oz and Jose Julio. DIYDrones.com
 	This code works with boards based on ATMega168/328 and ATMega1280 (Serial port 1)
 
 	This library is free software; you can redistribute it and/or
@@ -46,7 +46,7 @@ void AP_GPS_IMU::init(void)
 // optimization : This code doesn't wait for data. It only proccess the data available.
 // We can call this function on the main loop (50Hz loop)
 // If we get a complete packet this function calls parse_IMU_gps() to parse and update the GPS info.
-void AP_GPS_IMU::update(void)
+void AP_GPS_IMU::read(void)
 {
 	byte data;
 	int numc = 0;
