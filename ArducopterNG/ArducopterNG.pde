@@ -58,6 +58,7 @@
 #define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
 //#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
+#define IsRANGEFINDER // Do we have Range Finders connected
 
 //#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
 #define UseBMP       // Use pressure sensor
@@ -200,6 +201,7 @@
 #include <AP_Compass.h>	        // ArduPilot Mega Magnetometer Library
 #include <Wire.h>               // I2C Communication library
 #include <EEPROM.h>             // EEPROM 
+#include <AP_RangeFinder.h>     // RangeFinders (Sonars, IR Sensors)
 //#include <AP_GPS.h>
 #include "Arducopter.h"
 #include "ArduUser.h"
@@ -223,6 +225,12 @@
 AP_ADC_ADS7844		adc;
 APM_BMP085_Class	APM_BMP085;
 AP_Compass_HMC5843	AP_Compass;
+#ifdef IsRANGEFINDER
+AP_RangeFinder_SharpGP2Y  AP_RangeFinder_frontRight;
+AP_RangeFinder_SharpGP2Y  AP_RangeFinder_backRight;
+AP_RangeFinder_SharpGP2Y  AP_RangeFinder_backLeft;
+AP_RangeFinder_SharpGP2Y  AP_RangeFinder_frontLeft;
+#endif
 
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
@@ -339,7 +347,7 @@ void loop()
 #endif
       }else{                        // Automatic mode : GPS position hold mode
 #if AIRFRAME == QUAD      
-        Attitude_control_v3(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_yaw);
+        Attitude_control_v3(command_rx_roll+command_gps_roll+command_RF_roll,command_rx_pitch+command_gps_pitch+command_RF_pitch,command_rx_yaw);
 #endif        
 #if AIRFRAME == HELI
         heli_attitude_control(command_rx_roll+command_gps_roll,command_rx_pitch+command_gps_pitch,command_rx_collective,command_rx_yaw);
@@ -363,7 +371,7 @@ void loop()
   if(!SW_DIP2) camera_output();
 #endif
 
-    // Autopilot mode functions
+    // Autopilot mode functions - GPS Hold, Altitude Hold + object avoidance
     if (AP_mode == AP_AUTOMATIC_MODE)
     {
       digitalWrite(LED_Yellow,HIGH);      // Yellow LED ON : GPS Position Hold MODE
@@ -376,6 +384,7 @@ void loop()
             {
             read_GPS_data();    // In Navigation.pde
             Position_control(target_lattitude,target_longitude);     // Call GPS position hold routine
+            //Position_control_v2(target_lattitude,target_longitude);     // V2 of GPS Position holdCall GPS position hold routine
             }
           else
             {
@@ -415,12 +424,18 @@ void loop()
         ch_throttle_altitude_hold = ch_throttle;
         Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
       }
-    }
-    else
+      // obstacle avoidance - comes on with autopilot
+      #ifdef IsRANGEFINDER // Do we have Range Finders connected?
+      if( RF_new_data )
       {
+          Obstacle_avoidance(RF_SAFETY_ZONE);
+          RF_new_data = 0;
+      }
+      #endif
+    }else{
       digitalWrite(LED_Yellow,LOW);
       target_position=0;
-      }
+    }
   }
 
   // Medium loop (about 60Hz) 
@@ -446,13 +461,17 @@ void loop()
       }
 #endif
       break;
-    case 1:  // Barometer reading (2x10Hz = 20Hz)
+    case 1:  // Barometer + RangeFinder reading (2x10Hz = 20Hz)
       medium_loopCounter++;
 #ifdef UseBMP
       if (APM_BMP085.Read()){
         read_baro();
         Baro_new_data = 1;
       }
+#endif
+#ifdef IsRANGEFINDER
+      read_RF_Sensors();
+      RF_new_data = 1;      
 #endif
       break;
     case 2:  // Send serial telemetry (10Hz)
@@ -467,7 +486,7 @@ void loop()
       readSerialCommand();
 #endif
       break;
-    case 4:  // second Barometer reading (2x10Hz = 20Hz)
+    case 4:  // second Barometer + RangeFinder reading (2x10Hz = 20Hz)
       medium_loopCounter++;
 #ifdef UseBMP
       if (APM_BMP085.Read()){
@@ -476,6 +495,10 @@ void loop()
         //Serial.print("B ");
         //Serial.println(press_alt);
       }
+#endif
+#ifdef IsRANGEFINDER
+      read_RF_Sensors();
+      RF_new_data = 1;
 #endif
       break;
     case 5:  //  Battery monitor (10Hz)

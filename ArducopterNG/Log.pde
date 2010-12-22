@@ -51,6 +51,7 @@ TODO:
 #define LOG_RADIO_MSG                   0x08
 #define LOG_SENSOR_MSG                  0x09
 #define LOG_PID_MSG                     0x0A
+#define LOG_RANGEFINDER_MSG             0x0B
 
 #define LOG_MAX_ERRORS                  50   // when reading logs, give up after 50 sequential failures to find HEADBYTE1
 
@@ -303,6 +304,23 @@ void Log_Write_Raw()
 }
 #endif
 
+#ifdef LOG_RANGEFINDER
+// Write a Sensor Raw data packet
+void Log_Write_RangeFinder(int rf1, int rf2, int rf3,int rf4, int rf5, int rf6)
+{
+  DataFlash.WriteByte(HEAD_BYTE1);
+  DataFlash.WriteByte(HEAD_BYTE2);
+  DataFlash.WriteByte(LOG_RANGEFINDER_MSG);
+  DataFlash.WriteInt(rf1);
+  DataFlash.WriteInt(rf2);
+  DataFlash.WriteInt(rf3);
+  DataFlash.WriteInt(rf4);
+  DataFlash.WriteInt(rf5);
+  DataFlash.WriteInt(rf6);
+  DataFlash.WriteByte(END_BYTE);
+}
+#endif
+
 
 // Read an control tuning packet
 void Log_Read_Control_Tuning()
@@ -518,6 +536,25 @@ void Log_Read_Raw()
 	SerPriln(" ");
 }
 
+// Read a raw accel/gyro packet
+void Log_Read_RangeFinder()
+{
+	SerPri("RF:");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");
+        SerPri(DataFlash.ReadInt());
+        SerPri(",");        
+	SerPriln(" ");
+}
+
 // Read the DataFlash log memory : Packet Parser
 void Log_Read(int start_page, int end_page)
 {
@@ -584,6 +621,11 @@ void Log_Read(int start_page, int end_page)
                                 }else if(data==LOG_PID_MSG){
 					Log_Read_PID();
 					log_step++;
+
+                                }else if(data==LOG_RANGEFINDER_MSG) {
+                                        Log_Read_RangeFinder();
+                                        log_step++;
+                                        
 				}else{
 					SerPri("Error Reading Packet: ");
 					SerPri(packet_count); 

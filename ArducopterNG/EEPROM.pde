@@ -123,7 +123,14 @@ void readUserConfig() {
   mag_offset_y = readEEPROM(mag_offset_y_ADR);
   mag_offset_z = readEEPROM(mag_offset_z_ADR);
   MIN_THROTTLE = readEEPROM(MIN_THROTTLE_ADR);
-  
+  KP_RF_ROLL = readEEPROM(KP_RF_ROLL_ADR);
+  KD_RF_ROLL = readEEPROM(KD_RF_ROLL_ADR);
+  KI_RF_ROLL = readEEPROM(KI_RF_ROLL_ADR);
+  KP_RF_PITCH = readEEPROM(KP_RF_PITCH_ADR);
+  KD_RF_PITCH = readEEPROM(KD_RF_PITCH_ADR);
+  KI_RF_PITCH = readEEPROM(KI_RF_PITCH_ADR);
+  RF_MAX_ANGLE = readEEPROM(RF_MAX_ANGLE_ADR);
+  RF_SAFETY_ZONE = readEEPROM(RF_SAFETY_ZONE_ADR);
 }
 
 void writeUserConfig() {
@@ -195,6 +202,12 @@ void writeUserConfig() {
   writeEEPROM(mag_offset_y, mag_offset_y_ADR);
   writeEEPROM(mag_offset_z, mag_offset_z_ADR);
   writeEEPROM(MIN_THROTTLE, MIN_THROTTLE_ADR);
-  
-  
+  writeEEPROM(KP_RF_ROLL,KP_RF_ROLL_ADR);
+  writeEEPROM(KD_RF_ROLL,KD_RF_ROLL_ADR);
+  writeEEPROM(KI_RF_ROLL,KI_RF_ROLL_ADR);
+  writeEEPROM(KP_RF_PITCH,KP_RF_PITCH_ADR);
+  writeEEPROM(KD_RF_PITCH,KD_RF_PITCH_ADR);
+  writeEEPROM(KI_RF_PITCH,KI_RF_PITCH_ADR);
+  writeEEPROM(RF_MAX_ANGLE,RF_MAX_ANGLE_ADR);
+  writeEEPROM(RF_SAFETY_ZONE,RF_SAFETY_ZONE_ADR);
 }

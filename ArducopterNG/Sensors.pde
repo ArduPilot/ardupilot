@@ -100,3 +100,18 @@ void read_baro(void)
 }
 #endif
 
+#ifdef IsRANGEFINDER
+/* This function read IR data, convert to cm units and filter the data */
+void read_RF_Sensors()
+{
+    AP_RangeFinder_frontRight.read();
+    AP_RangeFinder_backRight.read();
+    AP_RangeFinder_backLeft.read();
+    AP_RangeFinder_frontLeft.read();  
+
+#ifdef LOG_RANGEFINDER    
+    Log_Write_RangeFinder(AP_RangeFinder_frontRight.distance, AP_RangeFinder_backRight.distance, AP_RangeFinder_backLeft.distance,AP_RangeFinder_frontLeft.distance,0,0);
+#endif // LOG_RANGEFINDER
+}
+#endif
+

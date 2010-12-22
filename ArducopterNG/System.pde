@@ -183,6 +183,13 @@ void APM_Init() {
   APM_BMP085.Init(FALSE);
 #endif
 
+#ifdef IsRANGEFINDER
+  AP_RangeFinder_frontRight.init(AN2);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
+  AP_RangeFinder_backRight.init(AN3);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
+  AP_RangeFinder_backLeft.init(AN4);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
+  AP_RangeFinder_frontLeft.init(AN5);  AP_RangeFinder_frontLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_LEFT);
+#endif
+
   delay(1000);
 
   DataFlash.StartWrite(1);   // Start a write session on page 1

@@ -282,6 +282,22 @@ float gps_pitch_D;
 float gps_pitch_I=0;
 float command_gps_roll;
 float command_gps_pitch;
+float gps_err_lat;
+float gps_err_lat_old;
+float gps_lat_D;
+float gps_lat_I=0;
+float gps_err_lon;
+float gps_err_lon_old;
+float gps_lon_D;
+float gps_lon_I=0;
+
+// object avoidance
+float RF_roll_I=0;
+float RF_pitch_I=0;
+float command_RF_roll = 0;
+float command_RF_pitch = 0;
+float command_RF_throttle = 0;
+byte RF_new_data = 0;
 
 //Altitude control
 int Initial_Throttle;
@@ -543,6 +559,16 @@ int MIN_THROTTLE;
 //float eeprom_counter;                // reserved for eeprom write counter, 31-10-10, jp
 //float eeprom_checker;                // reserved for eeprom checksums, 01-11-10, jp
 
+// obstacle avoidance
+float KP_RF_ROLL;
+float KD_RF_ROLL;
+float KI_RF_ROLL;
+float KP_RF_PITCH;
+float KD_RF_PITCH;
+float KI_RF_PITCH;
+float RF_MAX_ANGLE;    // Maximun command roll and pitch angle from obstacle avoiding control
+float RF_SAFETY_ZONE;  // object avoidance will move away from objects within this distance (in cm)
+
 // This function call contains the default values that are set to the ArduCopter
 // when a "Default EEPROM Value" command is sent through serial interface
 void defaultUserConfig() {
@@ -610,6 +636,14 @@ void defaultUserConfig() {
   mag_offset_y               = 0;
   mag_offset_z               = 0;
   MIN_THROTTLE               = 1040; // used to be #define but now in EEPROM
+  KP_RF_ROLL                 = 0.10;
+  KI_RF_ROLL                 = 0.00;
+  KD_RF_ROLL                 = 0.03;
+  KP_RF_PITCH                = 0.10;
+  KI_RF_PITCH                = 0.00;  
+  KD_RF_PITCH                = 0.03;
+  RF_MAX_ANGLE               = 10.0;
+  RF_SAFETY_ZONE             = 120.0;  // object avoidance will avoid objects within this range (in cm)
 }
 
 // EEPROM storage addresses
@@ -677,7 +711,14 @@ void defaultUserConfig() {
 #define mag_offset_y_ADR       244
 #define mag_offset_z_ADR       248
 #define MIN_THROTTLE_ADR       252
-
+#define KP_RF_ROLL_ADR         256
+#define KD_RF_ROLL_ADR         260
+#define KI_RF_ROLL_ADR         264
+#define KP_RF_PITCH_ADR        268
+#define KD_RF_PITCH_ADR        272
+#define KI_RF_PITCH_ADR        276
+#define RF_MAX_ANGLE_ADR       280
+#define RF_SAFETY_ZONE_ADR     284
 
 //#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp
 //#define eeprom_checker_ADR     240  // this too... , 31-10-10, jp

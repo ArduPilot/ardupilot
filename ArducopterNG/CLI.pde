@@ -84,6 +84,9 @@ void RunCLI () {
       case 'e':
         CALIB_Esc();
         break; 
+      case 'o':
+        Set_Obstacle_Avoidance_PIDs();
+        break;
       case 's':
         Show_Settings();
         break;
@@ -123,6 +126,7 @@ void Show_MainMenu() {
   SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
   SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" m - Motor tester with AIL/ELE stick");
+  SerPrln(" o - Show/Save obstacle avoidance PIDs");
   SerPrln(" r - Reset to factory settings");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
@@ -551,12 +555,129 @@ void Show_Settings() {
   else {
     SerPrln("+ mode");
   }
+  
+  Show_Obstacle_Avoidance_PIDs() ;
 
   SerPrln();
-  SerPrln();
-
 }
 
+// Display obstacle avoidance pids
+void Show_Obstacle_Avoidance_PIDs() {
+  SerPri("\tSafetyZone: ");
+  SerPrln(RF_SAFETY_ZONE);
+  SerPri("\tRoll PID: ");
+  SerPri(KP_RF_ROLL); cspc();
+  SerPri(KI_RF_ROLL); cspc();
+  SerPrln(KD_RF_ROLL);
+  SerPri("\tPitch PID: ");
+  SerPri(KP_RF_PITCH); cspc();
+  SerPri(KI_RF_PITCH); cspc();
+  SerPri(KD_RF_PITCH); 
+  SerPrln();
+  SerPri("\tMaxAngle: "); 
+  SerPri(RF_MAX_ANGLE);   
+  SerPrln();  
+}
+
+// save RF pids to eeprom
+void Save_Obstacle_Avoidance_PIDs_toEEPROM() {
+  writeEEPROM(KP_RF_ROLL,KP_RF_ROLL_ADR);
+  writeEEPROM(KD_RF_ROLL,KD_RF_ROLL_ADR);
+  writeEEPROM(KI_RF_ROLL,KI_RF_ROLL_ADR);
+  writeEEPROM(KP_RF_PITCH,KP_RF_PITCH_ADR);
+  writeEEPROM(KD_RF_PITCH,KD_RF_PITCH_ADR);
+  writeEEPROM(KI_RF_PITCH,KI_RF_PITCH_ADR);
+  writeEEPROM(RF_MAX_ANGLE,RF_MAX_ANGLE_ADR);
+  writeEEPROM(RF_SAFETY_ZONE,RF_SAFETY_ZONE_ADR);
+}
+
+// 
+void Set_Obstacle_Avoidance_PIDs() {
+  float tempVal1, tempVal2, tempVal3;
+  int saveToEeprom = 0;
+  // Display current PID values
+  SerPrln("Obstacle Avoidance:");
+  Show_Obstacle_Avoidance_PIDs();
+  SerPrln();
+  
+  // SAFETY ZONE
+  SerFlu();
+  SerPri("Enter Safety Zone (in cm) or 0 to skip: ");
+  while( !SerAva() );  // wait until user presses a key
+  tempVal1 = readFloatSerial();
+  if( tempVal1 >= 20 && tempVal1 <= 150 ) {
+      RF_SAFETY_ZONE = tempVal1;
+      SerPri("SafetyZone: ");
+      SerPrln(RF_SAFETY_ZONE);      
+  }
+  SerPrln();      
+      
+  // ROLL PIDs
+  SerFlu();
+  SerPri("Enter Roll P;I;D; values or 0 to skip: ");
+  while( !SerAva() );  // wait until user presses a key
+  tempVal1 = readFloatSerial();
+  tempVal2 = readFloatSerial();
+  tempVal3 = readFloatSerial();
+  if( tempVal1 != 0 || tempVal2 != 0 || tempVal3 != 0 ) {
+      KP_RF_ROLL = tempVal1;
+      KI_RF_ROLL = tempVal2;
+      KD_RF_ROLL = tempVal3;
+      SerPrln();
+      SerPri("P:");
+      SerPri(KP_RF_ROLL);
+      SerPri("\tI:");
+      SerPri(KI_RF_ROLL);
+      SerPri("\tD:");
+      SerPri(KD_RF_ROLL);
+      saveToEeprom = 1;
+  }
+  SerPrln();  
+  
+  // PITCH PIDs
+  SerFlu();
+  SerPri("Enter Pitch P;I;D; values or 0 to skip: ");
+  while( !SerAva() );  // wait until user presses a key
+  tempVal1 = readFloatSerial();
+  tempVal2 = readFloatSerial();
+  tempVal3 = readFloatSerial();
+  if( tempVal1 != 0 || tempVal2 != 0 || tempVal3 != 0 ) {
+      KP_RF_PITCH = tempVal1;
+      KI_RF_PITCH = tempVal2;
+      KD_RF_PITCH = tempVal3;
+      SerPrln();
+      SerPri("P:");
+      SerPri(KP_RF_PITCH);
+      SerPri("\tI:");
+      SerPri(KI_RF_PITCH);
+      SerPri("\tD:");
+      SerPri(KD_RF_PITCH);      
+      saveToEeprom = 1;
+  }
+  SerPrln();  
+  
+  // Max Angle
+  SerFlu();
+  SerPri("Enter Max Angle or 0 to skip: ");
+  while( !SerAva() );  // wait until user presses a key
+  tempVal1 = readFloatSerial();
+  SerPrln(tempVal1);
+  if( tempVal1 > 0 ) {
+      RF_MAX_ANGLE = tempVal1;
+      SerPrln();
+      SerPri("MaxAngle: "); 
+      SerPri(RF_MAX_ANGLE);     
+      saveToEeprom = 1;
+  }
+  SerPrln();   
+  
+  // save to eeprom
+  if( saveToEeprom == 1 ) {
+      Save_Obstacle_Avoidance_PIDs_toEEPROM();
+      SerPrln("Saved to EEPROM");
+      SerPrln();
+  }
+}
 
 void cspc() {
   SerPri(", ");
