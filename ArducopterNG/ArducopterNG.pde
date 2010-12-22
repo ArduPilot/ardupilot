@@ -58,7 +58,7 @@
 #define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
 //#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
-#define IsRANGEFINDER // Do we have Range Finders connected
+//#define IsRANGEFINDER // Do we have Range Finders connected
 
 //#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
 #define UseBMP       // Use pressure sensor
