@@ -364,10 +364,49 @@ float 			load;						// % MCU cycles used
 
 byte			FastLoopGate = 9;
 
+
+
+// AC generic variables for future use
+byte gled_status = HIGH;
+long gled_timer;
+int gled_speed = 200;
+
+long cli_timer;
+byte cli_status = LOW;
+byte cli_step;
+
+byte fled_status;
+byte res1;
+byte res2;
+byte res3;
+byte res4;
+byte res5;
+byte cam_mode;
+byte cam1;
+byte cam2;
+byte cam3;
+
+int ires1;
+int ires2;
+int ires3;
+int ires4;
+
+boolean SW_DIP1;  // closest to SW2 slider switch
+boolean SW_DIP2;
+boolean SW_DIP3;
+boolean SW_DIP4;  // closest to header pins
+
+
+
 // Basic Initialization
 //---------------------
 void setup() {
 	init_ardupilot();
+
+        #if ENABLE_EXTRAINIT
+             init_extras();
+        #endif
+
 }
 
 void loop()
@@ -544,6 +583,18 @@ void medium_loop()
 	#if ENABLE_HIL
 		output_HIL();
 	#endif
+
+        #if ENABLE_CAM
+                camera_stabilization();
+        #endif
+
+        #if ENABLE_AM
+                flight_lights();
+        #endif
+        
+        #if ENABLE_xx
+                do_something_usefull();
+        #endif              
 	
 	
 	if (millis() - perf_mon_timer > 20000) {

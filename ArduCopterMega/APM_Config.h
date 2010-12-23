@@ -11,3 +11,11 @@
 //#define DECLINATION		14.2
 
 
+// For future development, don't enable unless you know them
+// These are all experimental and underwork, jp 23-12-10
+//#define ENABLE_EXTRAS     ENABLED
+//#define ENABLE_EXTRAINIT  ENABLED
+//#define ENABLE_CAM        ENABLED
+//#define ENABLE_AM         ENABLED
+//#define ENABLE_xx         ENABLED
+
