@@ -1,4 +1,5 @@
-﻿namespace ArducopterConfigurator
+﻿using System;
+namespace ArducopterConfigurator
 {
     partial class mainForm
     {
@@ -32,7 +33,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             this.tabCtrlMonitorVms = new System.Windows.Forms.TabControl();
             this.mainVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.cmboComPorts = new System.Windows.Forms.ComboBox();
             this.availablePortsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.btnConnect = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
@@ -61,21 +62,16 @@
             // 
             this.mainVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.MainVm);
             // 
-            // comboBox1
+            // cmboComPorts
             // 
-            this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.comboBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "SelectedPort", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.comboBox1.DataSource = this.availablePortsBindingSource;
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(12, 412);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(79, 21);
-            this.comboBox1.TabIndex = 5;
-            // 
-            // availablePortsBindingSource
-            // 
-            this.availablePortsBindingSource.DataMember = "AvailablePorts";
-            this.availablePortsBindingSource.DataSource = this.mainVmBindingSource;
+            this.cmboComPorts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.cmboComPorts.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "SelectedPort", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.cmboComPorts.DataSource = this.availablePortsBindingSource;
+            this.cmboComPorts.FormattingEnabled = true;
+            this.cmboComPorts.Location = new System.Drawing.Point(12, 412);
+            this.cmboComPorts.Name = "cmboComPorts";
+            this.cmboComPorts.Size = new System.Drawing.Size(79, 21);
+            this.cmboComPorts.TabIndex = 5;
             // 
             // btnConnect
             // 
@@ -134,7 +130,7 @@
             this.Controls.Add(this.lblConnectionStatus);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.btnConnect);
-            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.cmboComPorts);
             this.Controls.Add(this.tabCtrlMonitorVms);
             this.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "Name", true));
             this.Name = "mainForm";
@@ -151,7 +147,7 @@
 
         private System.Windows.Forms.TabControl tabCtrlMonitorVms;
         private System.Windows.Forms.BindingSource mainVmBindingSource;
-        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.ComboBox cmboComPorts;
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.BindingSource availablePortsBindingSource;
         private System.Windows.Forms.Button button1;

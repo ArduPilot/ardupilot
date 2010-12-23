@@ -1,15 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO.Ports;
-using System.Threading;
 using Timer=System.Windows.Forms.Timer;
 
 namespace ArducopterConfigurator.PresentationModels
 {
     public class MainVm : NotifyProperyChangedBase, IPresentationModel
     {
-        private readonly IComms _session;
+        private readonly IComms _comms;
         private bool _isConnected;
         private MonitorVm _selectedVm;
         private string _selectedPort;
@@ -21,8 +18,8 @@ namespace ArducopterConfigurator.PresentationModels
 
         public MainVm(IComms session)
         {
-            _session = session;
-            _session.LineOfDataReceived += _session_LineOfDataReceived;
+            _comms = session;
+            _comms.LineOfDataReceived += _session_LineOfDataReceived;
 
             MonitorVms = new BindingList<MonitorVm>
                              {
@@ -53,9 +50,8 @@ namespace ArducopterConfigurator.PresentationModels
         private void RefreshPorts()
         {
             AvailablePorts.Clear();
-            foreach (var c in SerialPort.GetPortNames())
+            foreach (var c in _comms.ListCommPorts())
                 AvailablePorts.Add(c);
-
         }
 
         void _session_LineOfDataReceived(string strRx)
@@ -131,10 +127,10 @@ namespace ArducopterConfigurator.PresentationModels
       
         public void Connect()
         {
-            _session.CommPort = SelectedPort;
+            _comms.CommPort = SelectedPort;
             
             // Todo: check the status of this call success/failure
-            _session.Connect();
+            _comms.Connect();
 
             ConnectionState = SessionStates.Connecting;
 
@@ -151,16 +147,16 @@ namespace ArducopterConfigurator.PresentationModels
                 _connectionAttemptsTimer.Stop();
                 return;
             }
-            _session.Send("X");
+            _comms.Send("X");
 
             // once we connected, then get the version string
-            _session.Send("!");
+            _comms.Send("!");
         }
 
         public void Disconnect()
         {
-            _session.Send("X");
-            _session.DisConnect();
+            _comms.Send("X");
+            _comms.DisConnect();
             ConnectionState = SessionStates.Disconnected;
         }
 

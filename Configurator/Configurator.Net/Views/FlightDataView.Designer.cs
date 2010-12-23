@@ -34,11 +34,10 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
-            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.FlightDataVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.label5 = new System.Windows.Forms.Label();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.textBox3 = new System.Windows.Forms.TextBox();
-            this.progressBar2 = new System.Windows.Forms.ProgressBar();
             this.label6 = new System.Windows.Forms.Label();
             this.textBox4 = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
@@ -48,15 +47,16 @@
             this.textBox6 = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
             this.textBox7 = new System.Windows.Forms.TextBox();
-            this.progressBar3 = new System.Windows.Forms.ProgressBar();
-            this.FlightDataVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.verticalProgressBar8 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar6 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar5 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar4 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar3 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar2 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar1 = new ArducopterConfigurator.VerticalProgressBar();
+            this.sensorRollGyro = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.sensorRollAcc = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.progressBar3 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar8 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar6 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.sensorPitchGyro = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar4 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar3 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar2 = new ArducopterConfigurator.LinearSensorIndicatorControl();
+            this.verticalProgressBar1 = new ArducopterConfigurator.LinearSensorIndicatorControl();
             this.textBox8 = new System.Windows.Forms.TextBox();
             this.textBox9 = new System.Windows.Forms.TextBox();
             this.textBox10 = new System.Windows.Forms.TextBox();
@@ -108,14 +108,9 @@
             this.textBox1.Size = new System.Drawing.Size(47, 20);
             this.textBox1.TabIndex = 8;
             // 
-            // progressBar1
+            // FlightDataVmBindingSource
             // 
-            this.progressBar1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.progressBar1.Location = new System.Drawing.Point(12, 25);
-            this.progressBar1.Maximum = 1000;
-            this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(100, 23);
-            this.progressBar1.TabIndex = 9;
+            this.FlightDataVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightDataVm);
             // 
             // label5
             // 
@@ -143,15 +138,6 @@
             this.textBox3.ReadOnly = true;
             this.textBox3.Size = new System.Drawing.Size(47, 20);
             this.textBox3.TabIndex = 13;
-            // 
-            // progressBar2
-            // 
-            this.progressBar2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.progressBar2.Location = new System.Drawing.Point(12, 68);
-            this.progressBar2.Maximum = 1000;
-            this.progressBar2.Name = "progressBar2";
-            this.progressBar2.Size = new System.Drawing.Size(100, 23);
-            this.progressBar2.TabIndex = 14;
             // 
             // label6
             // 
@@ -234,6 +220,24 @@
             this.textBox7.Size = new System.Drawing.Size(47, 20);
             this.textBox7.TabIndex = 23;
             // 
+            // sensorRollGyro
+            // 
+            this.sensorRollGyro.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.sensorRollGyro.Location = new System.Drawing.Point(12, 25);
+            this.sensorRollGyro.Maximum = 1000;
+            this.sensorRollGyro.Name = "sensorRollGyro";
+            this.sensorRollGyro.Size = new System.Drawing.Size(100, 23);
+            this.sensorRollGyro.TabIndex = 9;
+            // 
+            // sensorRollAcc
+            // 
+            this.sensorRollAcc.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.sensorRollAcc.Location = new System.Drawing.Point(12, 68);
+            this.sensorRollAcc.Maximum = 1000;
+            this.sensorRollAcc.Name = "sensorRollAcc";
+            this.sensorRollAcc.Size = new System.Drawing.Size(100, 23);
+            this.sensorRollAcc.TabIndex = 14;
+            // 
             // progressBar3
             // 
             this.progressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroYaw", true));
@@ -243,13 +247,10 @@
             this.progressBar3.Size = new System.Drawing.Size(100, 23);
             this.progressBar3.TabIndex = 28;
             // 
-            // FlightDataVmBindingSource
-            // 
-            this.FlightDataVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightDataVm);
-            // 
             // verticalProgressBar8
             // 
             this.verticalProgressBar8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelZ", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.verticalProgressBar8.IsVertical = true;
             this.verticalProgressBar8.Location = new System.Drawing.Point(354, 21);
             this.verticalProgressBar8.Maximum = 1000;
             this.verticalProgressBar8.Name = "verticalProgressBar8";
@@ -262,6 +263,7 @@
             // verticalProgressBar6
             // 
             this.verticalProgressBar6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelPitch", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.verticalProgressBar6.IsVertical = true;
             this.verticalProgressBar6.Location = new System.Drawing.Point(258, 21);
             this.verticalProgressBar6.Maximum = 1000;
             this.verticalProgressBar6.Name = "verticalProgressBar6";
@@ -271,21 +273,23 @@
             this.verticalProgressBar6.TabIndex = 19;
             this.verticalProgressBar6.Value = 500;
             // 
-            // verticalProgressBar5
+            // sensorPitchGyro
             // 
-            this.verticalProgressBar5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroPitch", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.verticalProgressBar5.Location = new System.Drawing.Point(198, 21);
-            this.verticalProgressBar5.Maximum = 1000;
-            this.verticalProgressBar5.Name = "verticalProgressBar5";
-            this.verticalProgressBar5.Size = new System.Drawing.Size(24, 82);
-            this.verticalProgressBar5.Step = 1;
-            this.verticalProgressBar5.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar5.TabIndex = 16;
-            this.verticalProgressBar5.Value = 500;
+            this.sensorPitchGyro.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroPitch", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.sensorPitchGyro.IsVertical = true;
+            this.sensorPitchGyro.Location = new System.Drawing.Point(198, 21);
+            this.sensorPitchGyro.Maximum = 1000;
+            this.sensorPitchGyro.Name = "sensorPitchGyro";
+            this.sensorPitchGyro.Size = new System.Drawing.Size(24, 82);
+            this.sensorPitchGyro.Step = 1;
+            this.sensorPitchGyro.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.sensorPitchGyro.TabIndex = 16;
+            this.sensorPitchGyro.Value = 500;
             // 
             // verticalProgressBar4
             // 
             this.verticalProgressBar4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRight", true));
+            this.verticalProgressBar4.IsVertical = true;
             this.verticalProgressBar4.Location = new System.Drawing.Point(176, 157);
             this.verticalProgressBar4.Maximum = 2000;
             this.verticalProgressBar4.Minimum = 1000;
@@ -299,6 +303,7 @@
             // verticalProgressBar3
             // 
             this.verticalProgressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
+            this.verticalProgressBar3.IsVertical = true;
             this.verticalProgressBar3.Location = new System.Drawing.Point(124, 157);
             this.verticalProgressBar3.Maximum = 2000;
             this.verticalProgressBar3.Minimum = 1000;
@@ -312,6 +317,7 @@
             // verticalProgressBar2
             // 
             this.verticalProgressBar2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorFront", true));
+            this.verticalProgressBar2.IsVertical = true;
             this.verticalProgressBar2.Location = new System.Drawing.Point(68, 157);
             this.verticalProgressBar2.Maximum = 2000;
             this.verticalProgressBar2.Minimum = 1000;
@@ -325,6 +331,7 @@
             // verticalProgressBar1
             // 
             this.verticalProgressBar1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorLeft", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.verticalProgressBar1.IsVertical = true;
             this.verticalProgressBar1.Location = new System.Drawing.Point(12, 157);
             this.verticalProgressBar1.Maximum = 2000;
             this.verticalProgressBar1.Minimum = 1000;
@@ -380,13 +387,13 @@
             this.Controls.Add(this.verticalProgressBar6);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.textBox4);
-            this.Controls.Add(this.verticalProgressBar5);
+            this.Controls.Add(this.sensorPitchGyro);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.progressBar2);
+            this.Controls.Add(this.sensorRollAcc);
             this.Controls.Add(this.textBox3);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.progressBar1);
+            this.Controls.Add(this.sensorRollGyro);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.verticalProgressBar4);
@@ -408,33 +415,37 @@
         #endregion
 
         private System.Windows.Forms.BindingSource FlightDataVmBindingSource;
-        private VerticalProgressBar verticalProgressBar1;
+
+        private LinearSensorIndicatorControl sensorRollGyro;
+        private LinearSensorIndicatorControl verticalProgressBar1;
+        private LinearSensorIndicatorControl verticalProgressBar2;
+        private LinearSensorIndicatorControl verticalProgressBar3;
+        private LinearSensorIndicatorControl verticalProgressBar4;
+        private LinearSensorIndicatorControl sensorPitchGyro;
+        private LinearSensorIndicatorControl verticalProgressBar6;
+        private LinearSensorIndicatorControl verticalProgressBar8;
+        private LinearSensorIndicatorControl sensorRollAcc;
+        private LinearSensorIndicatorControl progressBar3;
+
+
+
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private VerticalProgressBar verticalProgressBar2;
         private System.Windows.Forms.Label label3;
-        private VerticalProgressBar verticalProgressBar3;
         private System.Windows.Forms.Label label4;
-        private VerticalProgressBar verticalProgressBar4;
         private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TextBox textBox3;
-        private System.Windows.Forms.ProgressBar progressBar2;
         private System.Windows.Forms.Label label6;
-        private VerticalProgressBar verticalProgressBar5;
         private System.Windows.Forms.TextBox textBox4;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox textBox5;
-        private VerticalProgressBar verticalProgressBar6;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.TextBox textBox6;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.TextBox textBox7;
-        private VerticalProgressBar verticalProgressBar8;
-        private System.Windows.Forms.ProgressBar progressBar3;
         private System.Windows.Forms.TextBox textBox8;
         private System.Windows.Forms.TextBox textBox9;
         private System.Windows.Forms.TextBox textBox10;

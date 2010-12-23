@@ -14,8 +14,8 @@ namespace ArducopterConfiguratorTest
             getCommand = "D";
             setCommand = "C";
 
-            _fakeComms = new FakeComms();
-            _vm = new PositionHoldConfigVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new PositionHoldConfigVm(_mockComms);
         }
 
     }

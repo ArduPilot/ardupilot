@@ -13,8 +13,8 @@ namespace ArducopterConfiguratorTest
             getCommand = "P";
             setCommand = "O";
 
-            _fakeComms = new FakeComms();
-            _vm = new AcroModeConfigVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new AcroModeConfigVm(_mockComms);
         }
 
         [Test]
@@ -33,8 +33,8 @@ namespace ArducopterConfiguratorTest
 
             _vm.UpdateCommand.Execute(null);
 
-            Assert.AreEqual(1, _fakeComms.SentItems.Count);
-            Assert.AreEqual("O5;6;7;1;2;3;8;9;10;4", _fakeComms.SentItems[0]);
+            Assert.AreEqual(1, _mockComms.SentItems.Count);
+            Assert.AreEqual("O5;6;7;1;2;3;8;9;10;4", _mockComms.SentItems[0]);
         }
     }
 

@@ -6,14 +6,14 @@ namespace ArducopterConfiguratorTest
     [TestFixture]
     public class MotorCommandsVmTest
     {
-        private FakeComms _fakeComms;
+        private MockComms _mockComms;
         private MotorCommandsVm _vm;
 
         [SetUp]
         public void Setup()
         {
-            _fakeComms = new FakeComms();
-            _vm = new MotorCommandsVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new MotorCommandsVm(_mockComms);
         }
 
        

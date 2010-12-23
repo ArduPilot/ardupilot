@@ -62,6 +62,7 @@ namespace ArducopterConfigurator
         /// </summary>
         protected void SendString(string strToSend)
         {
+            if (_sp.IsConnected)
             _sp.Send(strToSend);
         }
 

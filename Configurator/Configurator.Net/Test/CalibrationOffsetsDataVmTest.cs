@@ -14,8 +14,8 @@ namespace ArducopterConfiguratorTest
             getCommand = "J";
             setCommand = "I";
 
-            _fakeComms = new FakeComms();
-            _vm = new CalibrationOffsetsDataVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new CalibrationOffsetsDataVm(_mockComms);
         }
 
     }

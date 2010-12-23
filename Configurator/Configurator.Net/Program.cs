@@ -16,9 +16,11 @@ namespace ArducopterConfigurator
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            var session = new CommsSession();
+            //var session = new CommsSession();
+            var session = new FakeCommsSession();
+			
             var mainVm = new MainVm(session);
-
+		
 
             Application.Run(new mainForm(mainVm));
         }

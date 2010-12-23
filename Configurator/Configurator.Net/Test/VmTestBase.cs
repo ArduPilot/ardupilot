@@ -6,7 +6,7 @@ namespace ArducopterConfiguratorTest
     public abstract class VmTestBase<T> where T : MonitorVm
     {
         protected T _vm;
-        protected FakeComms _fakeComms;
+        protected MockComms _mockComms;
         protected string sampleLineOfData; // should be taken from a real APM if possible
         protected string getCommand;
         protected string setCommand;
@@ -15,8 +15,8 @@ namespace ArducopterConfiguratorTest
         public void ActivateSendsCorrectCommand()
         {
             _vm.Activate();
-            Assert.AreEqual(1, _fakeComms.SentItems.Count);
-            Assert.AreEqual(getCommand, _fakeComms.SentItems[0]);
+            Assert.AreEqual(1, _mockComms.SentItems.Count);
+            Assert.AreEqual(getCommand, _mockComms.SentItems[0]);
         }
 
         [Test]
@@ -25,7 +25,7 @@ namespace ArducopterConfiguratorTest
             bool inpcFired = false;
             _vm.PropertyChanged += delegate { inpcFired = true; };
 
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
             Assert.False(inpcFired);
         }
 
@@ -33,9 +33,9 @@ namespace ArducopterConfiguratorTest
         public void ReceivedDataIgnoredAfterDeActive()
         {
             _vm.Activate();
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
             _vm.DeActivate();
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
             bool inpcFired = false;
             _vm.PropertyChanged += delegate { inpcFired = true; };
 
@@ -49,7 +49,7 @@ namespace ArducopterConfiguratorTest
             _vm.PropertyChanged += delegate { inpcFired = true; };
 
             _vm.Activate();
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
 
             Assert.True(inpcFired);
         }

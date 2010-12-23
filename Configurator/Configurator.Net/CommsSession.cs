@@ -12,6 +12,8 @@ namespace ArducopterConfigurator
     {
         event Action<string> LineOfDataReceived;
         string CommPort { get; set; }
+        bool IsConnected { get; }
+        IEnumerable<string> ListCommPorts();
         void Send(string send);
         bool Connect();
         bool DisConnect();
@@ -101,9 +103,15 @@ namespace ArducopterConfigurator
 
         private string Error { get; set;}
 
-        public SerialPort SerialPort
+
+        public bool IsConnected
         {
-            get { return _sp; }
+            get { return _sp.IsOpen; }
+        }
+
+        public IEnumerable<string> ListCommPorts()
+        {
+            return SerialPort.GetPortNames();
         }
 
         public void Send(string send)

@@ -7,11 +7,21 @@ using NUnit.Framework;
 
 namespace ArducopterConfiguratorTest
 {
-    public class FakeComms : IComms
+    public class MockComms : IComms
     {
         public event Action<string> LineOfDataReceived;
         public string CommPort { get; set; }
         public List<string> SentItems = new List<string>();
+
+        public bool IsConnected
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IEnumerable<string> ListCommPorts()
+        {
+            throw new NotImplementedException();
+        }
 
         public void Send(string send)
         {
@@ -38,14 +48,14 @@ namespace ArducopterConfiguratorTest
     [TestFixture]
     public class MainVmTests
     {
-        private FakeComms _fakeComms;
+        private MockComms _mockComms;
         private MainVm _vm;
 
         [SetUp]
         public void Setup()
         {
-            _fakeComms = new FakeComms();
-            _vm = new MainVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new MainVm(_mockComms);
         }
 
         [Test]

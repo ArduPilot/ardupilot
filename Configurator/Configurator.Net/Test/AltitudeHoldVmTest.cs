@@ -14,8 +14,8 @@ namespace ArducopterConfiguratorTest
             getCommand = "F";
             setCommand = "E";
 
-            _fakeComms = new FakeComms();
-            _vm = new AltitudeHoldConfigVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new AltitudeHoldConfigVm(_mockComms);
         }
 
 
@@ -30,8 +30,8 @@ namespace ArducopterConfiguratorTest
 
             _vm.UpdateCommand.Execute(null);
 
-            Assert.AreEqual(1, _fakeComms.SentItems.Count);
-            Assert.AreEqual("E1;3;2", _fakeComms.SentItems[0]);
+            Assert.AreEqual(1, _mockComms.SentItems.Count);
+            Assert.AreEqual("E1;3;2", _mockComms.SentItems[0]);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace ArducopterConfiguratorTest
         public void UpdateStringReceivedPopulatesValuesCorrectly()
         {
             _vm.Activate();
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
 
             Assert.AreEqual(0.8f, _vm.P);
             Assert.AreEqual(0.2f, _vm.I);

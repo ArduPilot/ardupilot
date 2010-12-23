@@ -14,8 +14,8 @@ namespace ArducopterConfiguratorTest
             getCommand = "B";
             setCommand = "A";
 
-            _fakeComms = new FakeComms();
-            _vm = new StableModeConfigVm(_fakeComms);
+            _mockComms = new MockComms();
+            _vm = new StableModeConfigVm(_mockComms);
         }
 
         [Test]
@@ -36,13 +36,13 @@ namespace ArducopterConfiguratorTest
             _vm.UpdateCommand.Execute(null);
 
 
-            Assert.AreEqual(1, _fakeComms.SentItems.Count);
+            Assert.AreEqual(1, _mockComms.SentItems.Count);
 
             //A[KP Quad Roll];[KI Quad Roll];[KP RATE ROLL];
             // [KP Quad Pitch];[KI Quad Pitch];[KP RATE PITCH];
             // [KP Quad Yaw];[KI Quad Yaw];[KP Rate Yaw];
             // [KP Rate];[Magneto]
-            Assert.AreEqual("A5;6;7;1;2;3;8;9;10;4;1", _fakeComms.SentItems[0]);
+            Assert.AreEqual("A5;6;7;1;2;3;8;9;10;4;1", _mockComms.SentItems[0]);
         }
 
         
@@ -51,7 +51,7 @@ namespace ArducopterConfiguratorTest
         public void UpdateStringReceivedPopulatesValuesCorrectly()
         {
             _vm.Activate();
-            _fakeComms.FireLineRecieve(sampleLineOfData);
+            _mockComms.FireLineRecieve(sampleLineOfData);
 
             Assert.AreEqual(1.95f, _vm.RollP);
             Assert.AreEqual(0.1f, _vm.RollI);
