@@ -1,41 +1,7 @@
 <?xml version="1.0"?>
 <mavlink>
-<include>common.xml</include>
-
-<!-- <enums> 
-  <enum name="SLUGS_ACTION" > 
-    <description> Slugs Actions </description> 
-    <entry name = "SLUGS_ACTION_NONE"> 
-    <entry name = "SLUGS_ACTION_SUCCESS"> 
-    <entry name = "SLUGS_ACTION_FAIL"> 
-    <entry name = "SLUGS_ACTION_EEPROM"> 
-    <entry name = "SLUGS_ACTION_MODE_CHANGE"> 
-    <entry name = "SLUGS_ACTION_MODE_REPORT"> 
-    <entry name = "SLUGS_ACTION_PT_CHANGE"> 
-    <entry name = "SLUGS_ACTION_PT_REPORT"> 
-    <entry name = "SLUGS_ACTION_PID_CHANGE"> 
-    <entry name = "SLUGS_ACTION_PID_REPORT"> 
-    <entry name = "SLUGS_ACTION_WP_CHANGE"> 
-    <entry name = "SLUGS_ACTION_WP_REPORT"> 
-    <entry name = "SLUGS_ACTION_MLC_CHANGE"> 
-    <entry name = "SLUGS_ACTION_MLC_REPORT"> 
-  </enum> 
-
-  <enum name="WP_PROTOCOL_STATE" > 
-    <description> Waypoint Protocol States </description> 
-    <entry name = "WP_PROT_IDLE"> 
-    <entry name = "WP_PROT_LIST_REQUESTED"> 
-    <entry name = "WP_PROT_NUM_SENT">
-    <entry name = "WP_PROT_TX_WP"> 
-    <entry name = "WP_PROT_RX_WP"> 
-    <entry name = "WP_PROT_SENDING_WP_IDLE"> 
-    <entry name = "WP_PROT_GETTING_WP_IDLE"> 
-  </enum>
-  
-</enums> -->
-
+<include>common_slugs.xml</include>
 <messages>
-  
    <message name="CPU_LOAD" id="170">
      Sensor and DSC control loads.
      <field name="sensLoad" type="uint8_t">Sensor DSC Load</field>

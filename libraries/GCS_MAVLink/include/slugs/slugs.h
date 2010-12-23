@@ -28,6 +28,14 @@ extern "C" {
 #include "./mavlink_msg_diagnostic.h"
 #include "./mavlink_msg_pilot_console.h"
 #include "./mavlink_msg_pwm_commands.h"
+#include "./mavlink_msg_slugs_navigation.h"
+#include "./mavlink_msg_data_log.h"
+#include "./mavlink_msg_filtered_data.h"
+#include "./mavlink_msg_gps_date_time.h"
+#include "./mavlink_msg_mid_lvl_cmds.h"
+#include "./mavlink_msg_ctrl_srfc_pt.h"
+#include "./mavlink_msg_pid.h"
+#include "./mavlink_msg_slugs_action.h"
 #ifdef __cplusplus
 }
 #endif

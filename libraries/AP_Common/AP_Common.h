@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include "include/menu.h"		/// simple menu subsystem
+#include "c++.h" // c++ additions
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Warning control

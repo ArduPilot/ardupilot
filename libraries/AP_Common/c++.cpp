@@ -8,6 +8,8 @@
 //
 
 #include <stdlib.h>
+#include "c++.h"
+#include "WProgram.h"
 
 void * operator new(size_t size) 
 {
@@ -16,8 +18,17 @@ void * operator new(size_t size)
 
 void operator delete(void *p) 
 {
-	if (p)
-		free(p);
+	if (p) free(p);
+}
+
+void * operator new[](size_t size)
+{
+    return malloc(size);
+}
+
+void operator delete[](void * ptr)
+{
+    if (ptr) free(ptr);
 }
 
 __extension__ typedef int __guard __attribute__((mode (__DI__)));
@@ -33,3 +44,29 @@ void __cxa_guard_release (__guard *g)
 };
 
 void __cxa_guard_abort (__guard *) {}; 
+
+// free memory
+extern unsigned int __bss_end;
+extern void *__brkval;
+
+void displayMemory()
+{
+    static int minMemFree=0;
+    if (minMemFree<=0 || freeMemory()<minMemFree) {
+        minMemFree = freeMemory();
+        Serial.print("bytes free: ");
+        Serial.println(minMemFree);
+    }
+}
+
+int freeMemory()
+{
+    int free_memory;
+
+    if ((int)__brkval == 0)
+        free_memory = ((int)&free_memory) - ((int)&__bss_end);
+    else
+        free_memory = ((int)&free_memory) - ((int)__brkval);
+
+    return free_memory;
+}
