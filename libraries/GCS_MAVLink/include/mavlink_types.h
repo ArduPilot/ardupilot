@@ -40,6 +40,8 @@ enum MAV_ACTION {
 			MAV_ACTION_LAND = 26,
 			MAV_ACTION_LOITER = 27,
 			MAV_ACTION_SET_ORIGIN = 28,
+			MAV_ACITON_RELAY_ON = 29,
+			MAV_ACTION_RELAY_OFF = 30,
 			MAV_ACTION_NB        ///< Number of MAV actions
 };
 
@@ -165,6 +167,8 @@ typedef struct __mavlink_message {
 typedef enum {
 	MAVLINK_COMM_0,
 	MAVLINK_COMM_1,
+	MAVLINK_COMM_2,
+	MAVLINK_COMM_3,
 	MAVLINK_COMM_NB,
 	MAVLINK_COMM_NB_HIGH = 16
 } mavlink_channel_t;
