@@ -2,6 +2,7 @@ RangeFinder	KEYWORD1
 AP_RangeFinder	KEYWORD1
 AP_RangeFinder_SharpGP2Y	KEYWORD1
 AP_RangeFinder_MaxsonarXL	KEYWORD1
+AP_RangeFinder_MaxsonarLV	KEYWORD1
 init	KEYWORD2
 read	KEYWORD2
 filter	KEYWORD2

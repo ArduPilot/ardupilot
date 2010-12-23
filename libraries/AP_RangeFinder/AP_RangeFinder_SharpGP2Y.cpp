@@ -16,7 +16,7 @@
 	
 	Variables:
 		int raw_value : raw value from the sensor
-		int distance : distance in meters
+		int distance : distance in cm
 		int max_distance : maximum measurable distance (in cm)
 		int min_distance : minimum measurable distance (in cm)
 	

@@ -8,8 +8,9 @@
 #define RF_PIN A5 // the far back-right pin on the oilpan (near the CLI switch)
 
 // create the range finder object
-AP_RangeFinder_SharpGP2Y aRF;
+//AP_RangeFinder_SharpGP2Y aRF;
 //AP_RangeFinder_MaxsonarXL aRF;
+AP_RangeFinder_MaxsonarLV aRF;
 
 void setup()
 {

@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 3; indent-tabs-mode: t -*-
 /*
-	AP_RangeFinder_MaxsonarXL.cpp - Arduino Library for Sharpe GP2Y0A02YK0F 
-	infrared proximity sensor
+	AP_RangeFinder_MaxsonarLV.cpp - Arduino Library for Maxbotix's LV-MaxSonar 
+	Sonic proximity sensor
 	Code by Jose Julio and Randy Mackay. DIYDrones.com
 
 	This library is free software; you can redistribute it and/or
@@ -9,8 +9,8 @@
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
 
-	Sparkfun URL: http://www.sparkfun.com/products/9491
-	datasheet: http://www.sparkfun.com/datasheets/Sensors/Proximity/XL-EZ0-Datasheet.pdf
+	Sparkfun URL: http://www.sparkfun.com/products/8502
+	datasheet: http://www.maxbotix.com/uploads/LV-MaxSonar-EZ0-Datasheet.pdf
 	
 	Sensor should be connected to one of the analog ports
 	
@@ -28,10 +28,10 @@
 
 // AVR LibC Includes
 #include "WConstants.h"
-#include "AP_RangeFinder_MaxsonarXL.h"
+#include "AP_RangeFinder_MaxsonarLV.h"
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_RangeFinder_MaxsonarXL::init(int analogPort)
+void AP_RangeFinder_MaxsonarLV::init(int analogPort)
 {
     // local variables
     int i;
@@ -41,8 +41,8 @@ void AP_RangeFinder_MaxsonarXL::init(int analogPort)
 	
     // initialise everything
     _analogPort = analogPort;
-	max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
-	min_distance = AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE;
+	max_distance = AP_RANGEFINDER_MAXSONARLV_MAX_DISTANCE;
+	min_distance = AP_RANGEFINDER_MAXSONARLV_MIN_DISTANCE;
 	
 	// make first call to read to get initial distance
 	read();
@@ -53,13 +53,14 @@ void AP_RangeFinder_MaxsonarXL::init(int analogPort)
 }
 
 // Read Sensor data
-int AP_RangeFinder_MaxsonarXL::read()
+int AP_RangeFinder_MaxsonarLV::read()
 {
     // read raw sensor value and convert to distance
     raw_value = analogRead(_analogPort);
 	
-	// for this sensor, the sensor value is the distance in cm! nice and easy!
-	distance = constrain(raw_value,min_distance,max_distance);
+	// for this sensor, the sensor value is in inches, need to convert to cm
+	distance = raw_value * 2.54;
+	distance = constrain(distance,min_distance,max_distance);  // converts from inches to cm
 	
 	// return distance
 	return filter(distance);
