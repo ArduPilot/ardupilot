@@ -3,13 +3,20 @@
 // Auto-detecting pseudo-GPS driver
 //
 
-#include "AP_GPS.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "AP_GPS.h"		// includes AP_GPS_Auto.h
 #include <wiring.h>
 
 static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
+AP_GPS_Auto::AP_GPS_Auto(FastSerial *port, GPS **gps)  : 
+	GPS(port),
+	_FSport(port),	// do we need this, or can we cast _port up?
+	_gps(gps)
+{
+}
+
+
+// Do nothing at init time - it may be too early to try detecting the GPS
 void
 AP_GPS_Auto::init(void)
 {
@@ -20,7 +27,7 @@ AP_GPS_Auto::init(void)
 //
 // We detect the real GPS, then update the pointer we have been called through
 // and return.
-void
+bool
 AP_GPS_Auto::read(void)
 {
 	GPS		*gps;
@@ -30,8 +37,8 @@ AP_GPS_Auto::read(void)
 	for (;;) {
 		// loop through possible baudrates
 		for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
-			printf("GPS autodetect at %d:%u\n", i, baudrates[i]);
-			_port->begin(baudrates[i]);
+			Serial.printf("GPS autodetect at %d:%u\n", i, baudrates[i]);
+			_FSport->begin(baudrates[i]);
 			if (NULL != (gps = _detect())) {
 				// make the detected GPS the default
 				*_gps = gps;
@@ -41,9 +48,9 @@ AP_GPS_Auto::read(void)
 				gps->init();
 				gps->update();
 
-				// drop back to our caller - subsequent calls through
-				// the global will not come here
-				return;
+				// Drop back to our caller - subsequent calls through
+				// _gps will not come here.
+				return false;
 			}
 		}
 	}
@@ -72,6 +79,7 @@ AP_GPS_Auto::_detect(void)
 		// XXX We can detect babble by counting incoming characters, but
 		//     what would we do about it?
 		//
+		Serial.println("draining and waiting");
 		_port->flush();
 		then = millis();
 		do {
@@ -84,11 +92,12 @@ AP_GPS_Auto::_detect(void)
 		//
 		// Collect four characters to fingerprint a device
 		//
+		Serial.println("collecting fingerprint");
 		fingerprint[0] = _getc();
 		fingerprint[1] = _getc();
 		fingerprint[2] = _getc();
 		fingerprint[3] = _getc();
-		printf("fingerprints 0x%02x 0x%02x 0x%02x 0x%02x\n",
+		Serial.printf("fingerprints 0x%02x 0x%02x 0x%02x 0x%02x\n",
 			   fingerprint[0],
 			   fingerprint[1],
 			   fingerprint[2],
@@ -104,23 +113,34 @@ AP_GPS_Auto::_detect(void)
 
 			// message 5 is MTK pretending to talk UBX
 			if (0x05 == fingerprint[3]) {
-				printf("detected MTK in binary mode\n");
+				Serial.printf("detected MTK in binary mode\n");
 				gps = new AP_GPS_MTK(_port);
 				break;
 			}
 
 			// any other message is u-blox
-			printf("detected u-blox in binary mode\n");
+			Serial.printf("detected u-blox in binary mode\n");
 			gps = new AP_GPS_UBLOX(_port);
 			break;
 		} 
+
+		//
+		// MTK v1.6
+		//
+		if ((0xd0 == fingerprint[0]) &&
+			(0xdd == fingerprint[1]) && 
+			(0x20 == fingerprint[2])) {
+			Serial.printf("detected MTK v1.6\n");
+			gps = new AP_GPS_MTK16(_port);
+			break;
+		}
 
 		//
 		// SIRF in binary mode
 		//
 		if ((0xa0 == fingerprint[0]) &&
 			(0xa2 == fingerprint[1])) {
-			printf("detected SIRF in binary mode\n");
+			Serial.printf("detected SIRF in binary mode\n");
 			gps = new AP_GPS_SIRF(_port);
 			break;
 		}
@@ -130,7 +150,7 @@ AP_GPS_Auto::_detect(void)
 		// and retry to avoid a false-positive on the NMEA detector.
 		//
 		if (0 == tries) {
-			printf("sending setup strings and trying again\n");
+			Serial.printf("sending setup strings and trying again\n");
 			_port->println(MTK_SET_BINARY);
 			_port->println(UBLOX_SET_BINARY);
 			_port->println(SIRF_SET_BINARY);
@@ -145,7 +165,7 @@ AP_GPS_Auto::_detect(void)
 
 			// XXX this may be a bit presumptive, might want to give the GPS a couple of
 			//     iterations around the loop to react to init strings?
-			printf("detected NMEA\n");
+			Serial.printf("detected NMEA\n");
 			gps = new AP_GPS_NMEA(_port);
 			break;
 		}

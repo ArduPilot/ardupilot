@@ -11,19 +11,20 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include "AP_GPS_MTK.h"
+#include "AP_GPS_MTK16.h"
 #include <stdint.h>
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
+AP_GPS_MTK16::AP_GPS_MTK16(Stream *s) : GPS(s)
 {
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 void 
-AP_GPS_MTK::init(void)
+AP_GPS_MTK16::init(void)
 {	
 	_port->flush();
+
 	// initialize serial port for binary protocol use
 	// XXX should assume binary, let GPS_AUTO handle dynamic config?
 	_port->print(MTK_SET_BINARY);
@@ -44,14 +45,14 @@ AP_GPS_MTK::init(void)
 // unrecognised messages.
 //
 bool
-AP_GPS_MTK::read(void)
+AP_GPS_MTK16::read(void)
 {
-	uint8_t	data;
-	int		numc;
+	uint8_t data;
+	int 	numc;
 	bool	parsed = false;
 
 	numc = _port->available();
-	for (int i = 0; i < numc; i++){	// Process bytes received
+	for (int i = 0; i < numc; i++) {	// Process bytes received
 
 		// read the next byte
 		data = _port->read();
@@ -80,28 +81,19 @@ restart:
 			_step = 0;
 			goto restart;
 		case 2:
-			if (MESSAGE_CLASS == data) {
+			if (sizeof(_buffer) == data) {
 				_step++;
-				_ck_b = _ck_a = data;					// reset the checksum accumulators
-			} else {
-				_step = 0;							// reset and wait for a message of the right class
-				goto restart;
-			}
-			break;
-		case 3:
-			if (MESSAGE_ID == data) {
-				_step++;
-				_ck_b += (_ck_a += data);
+				_ck_b = _ck_a = data;				// reset the checksum accumulators
 				_payload_counter = 0;
 			} else {
-				_step = 0;
+				_step = 0;							// reset and wait for a message of the right class
 				goto restart;
 			}
 			break;
 
 			// Receive message data
 			//
-		case 4:
+		case 3:
 			_buffer.bytes[_payload_counter++] = data;
 			_ck_b += (_ck_a += data);
 			if (_payload_counter == sizeof(_buffer))
@@ -110,33 +102,32 @@ restart:
 
 			// Checksum and message processing
 			//
-		case 5:
+		case 4:
 			_step++;
 			if (_ck_a != data) {
-				_error("GPS_MTK: checksum error\n");
 				_step = 0;
 			}
 			break;
-		case 6:
+		case 5:
 			_step = 0;
 			if (_ck_b != data) {
-				_error("GPS_MTK: checksum error\n");
 				break;
 			}
 
-			fix				= (_buffer.msg.fix_type == FIX_3D);
-			latitude		= _swapl(&_buffer.msg.latitude)  * 10;
-			longitude		= _swapl(&_buffer.msg.longitude) * 10;
-			altitude		= _swapl(&_buffer.msg.altitude);
-			ground_speed	= _swapl(&_buffer.msg.ground_speed);
-			ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
+			fix				= _buffer.msg.fix_type == FIX_3D;
+			latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
+			longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
+			altitude		= _buffer.msg.altitude;
+			ground_speed	= _buffer.msg.ground_speed;
+			ground_course	= _buffer.msg.ground_course;
 			num_sats		= _buffer.msg.satellites;
+			hdop			= _buffer.msg.hdop;
 			
 			// XXX docs say this is UTC, but our clients expect msToW
 			time			= _swapl(&_buffer.msg.utc_time);
 
 			parsed = true;
 		}
-	}
+	} 
 	return parsed;
 }

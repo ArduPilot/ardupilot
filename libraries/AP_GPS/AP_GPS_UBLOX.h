@@ -19,9 +19,9 @@ class AP_GPS_UBLOX : public GPS
 {
 public:
     // Methods
-	AP_GPS_UBLOX(Stream *s = NULL);
-	void		init(void);
-	void		read();
+	AP_GPS_UBLOX(Stream *s);
+	virtual void	init();
+	virtual bool	read();
 
 private:
 	// u-blox UBX protocol essentials
@@ -118,7 +118,7 @@ private:
 	} _buffer;
 
 	// Buffer parse & GPS state update
-	void		_parse_gps();
+	bool		_parse_gps();
 };
 
 #endif

@@ -17,9 +17,9 @@
 class AP_GPS_HIL : public GPS {
 public:
 	AP_GPS_HIL(Stream *s);
-	void init(void);
-	void read(void);
-    int status(void);
+	virtual void init(void);
+	virtual bool read(void);
+
     /**
      * Hardware in the loop set function
      * @param latitude  - latitude in deggrees
@@ -32,6 +32,9 @@ public:
      */
     void setHIL(long time, float latitude, float longitude, float altitude,
             float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
+
+private:
+	bool	_updated;
 };
 
 #endif	// AP_GPS_HIL_H

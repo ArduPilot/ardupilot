@@ -21,7 +21,7 @@ class AP_GPS_406 : public AP_GPS_SIRF
 public:
     // Methods
 	AP_GPS_406(Stream *port);
-	void		init(void);
+	virtual void	init(void);
 
 private:
 	void		_change_to_sirf_protocol(void);

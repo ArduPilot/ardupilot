@@ -21,21 +21,19 @@ public:
 	/// @param	ptr		Pointer to a GPS * that will be fixed up by ::init
 	///					when the GPS type has been detected.
 	///
-	AP_GPS_Auto(FastSerial *port, GPS **gps) : 
-		_port(port),
-		_gps(gps)
-	{};
+	AP_GPS_Auto(FastSerial *port, GPS **gps);
 
-	void		init(void);
+	/// Dummy init routine, does nothing
+	virtual void		init(void);
 
-	/// Detect and initialise the attached GPS unit.  Returns a
-	/// pointer to the allocated & initialised GPS driver.
+	/// Detect and initialise the attached GPS unit.  Updates the
+	/// pointer passed into the constructor when a GPS is detected.
 	///
-	void		read(void);
+	virtual bool 	read(void);
 
 private:
 	/// Serial port connected to the GPS.
-	FastSerial	*_port;
+	FastSerial	*_FSport;
 
 	/// global GPS driver pointer, updated by auto-detection
 	///

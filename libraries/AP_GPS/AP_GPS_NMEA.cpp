@@ -39,7 +39,6 @@
 	 NOTE : This code has been tested on a Locosys 20031 GPS receiver (MTK chipset)
 */
 #include "AP_GPS_NMEA.h"
-#include "WProgram.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) : GPS(s)
@@ -62,12 +61,13 @@ AP_GPS_NMEA::init(void)
 // This code don´t wait for data, only proccess the data available on serial port
 // We can call this function on the main loop (50Hz loop)
 // If we get a complete packet this function call parse_nmea_gps() to parse and update the GPS info.
-void
+bool
 AP_GPS_NMEA::read(void)
 {
 	char c;
 	int numc;
 	int i;
+	bool parsed = false;
 
 	numc = _port->available();
 	
@@ -83,7 +83,7 @@ AP_GPS_NMEA::read(void)
 				}
 			if (c == '\r'){										 // NMEA End
 				buffer[bufferidx++] = 0;
-				parse_nmea_gps();
+				parsed = parse_nmea_gps();
 			} else {
 				if (bufferidx < (GPS_BUFFERSIZE - 1)){
 					if (c == '*')
@@ -104,7 +104,7 @@ AP_GPS_NMEA::read(void)
  * 
  * * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * **/
 // Private Methods //////////////////////////////////////////////////////////////
-void
+bool
 AP_GPS_NMEA::parse_nmea_gps(void)
 {
 	uint8_t NMEA_check;
@@ -117,9 +117,6 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
 			if (GPS_checksum == NMEA_check){			// Checksum validation
 				//Serial.println("buffer");
-				_setTime();
-				valid_read = true;
-				new_data = true;	// New GPS Data
 				parseptr = strchr(buffer, ',')+1;
 				//parseptr = strchr(parseptr, ',')+1;
 				time = parsenumber(parseptr, 2);					// GPS UTC time hhmmss.ss
@@ -144,21 +141,22 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				parseptr = strchr(parseptr, ',')+1;
 				num_sats = parsedecimal(parseptr, 2);
 				parseptr = strchr(parseptr, ',')+1; 
-				HDOP = parsenumber(parseptr, 1);					// HDOP * 10
+				hdop = parsenumber(parseptr, 1);					// HDOP * 10
 				parseptr = strchr(parseptr, ',')+1;
 				altitude = parsenumber(parseptr, 1) * 100;	// altitude in decimeters * 100 = milimeters
 				if (fix < 1)
 					quality = 0;			// No FIX
 				else if(num_sats < 5)
 					quality = 1;			// Bad (Num sats < 5)
-				else if(HDOP > 30)
+				else if(hdop > 30)
 					quality = 2;			// Poor (HDOP > 30)
-				else if(HDOP > 25)
+				else if(hdop > 25)
 					quality = 3;			// Medium (HDOP > 25)
 				else
 					quality = 4;			// Good (HDOP < 25)
 			} else {
 				_error("GPSERR: Checksum error!!\n");
+				return false;
 			}
 		}
 	} else if (strncmp(buffer,"$GPVTG",6)==0){				// Check if sentence begins with $GPVTG
@@ -166,9 +164,6 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
 			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
 			if (GPS_checksum == NMEA_check){			// Checksum validation
-				_setTime();
-				valid_read = true;
-				new_data = true;	// New GPS Data
 				parseptr = strchr(buffer, ',')+1;
 				ground_course = parsenumber(parseptr, 1) * 10;			// Ground course in degrees * 100
 				parseptr = strchr(parseptr, ',')+1;
@@ -181,12 +176,15 @@ AP_GPS_NMEA::parse_nmea_gps(void)
 				//GPS_line = true;
 			} else {
 				_error("GPSERR: Checksum error!!\n");
+				return false;
 			}
 		}
 	} else {
 		bufferidx = 0;
 		_error("GPSERR: Bad sentence!!\n");
+		return false;
 	}
+	return true;
 }
 
 
