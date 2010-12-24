@@ -72,8 +72,8 @@ void loop()
 	Serial.printf_P(PSTR("\neepromRegistry(id)->getEntry(): %f\n"), eepromRegistry(id)->getEntry());
 	delay(2000);
 
-	eepromRegistry(id)->setEntry(456);
-	Serial.printf_P(PSTR("\neepromRegistry(id)->setEntry(456): %d\n"), var2.get());
+	eepromRegistry(id)->setEntry(4.56);
+	Serial.printf_P(PSTR("\neepromRegistry(id)->setEntry(4.56): %f\n"), var2.get());
 	delay(2000);
 
 	Serial.printf_P(PSTR("\nprint the parameters name by id: %s\n"), eepromRegistry(id)->getName());

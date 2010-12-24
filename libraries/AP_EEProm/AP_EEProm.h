@@ -65,8 +65,8 @@ public:
 		eepromRegistry.add(this,_id,_address,sizeof(_data));
 	}
 	void set(type val) {
-		if (_sync) save();
 		_data = val; 
+		if (_sync) save();
 	}
 	type get() {
 		if (_sync) load();
