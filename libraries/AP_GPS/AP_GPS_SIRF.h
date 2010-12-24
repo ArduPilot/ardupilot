@@ -20,7 +20,7 @@ public:
 	AP_GPS_SIRF(Stream *s);
 
 	virtual void   	init();
-	virtual void	read();
+	virtual bool	read();
 
 private:
 #pragma pack(1)
@@ -89,7 +89,7 @@ private:
 		uint8_t			bytes[];
 	} _buffer;
 
-	void			_parse_gps(void);
+	bool			_parse_gps(void);
 	void			_accumulate(uint8_t val);
 };
 

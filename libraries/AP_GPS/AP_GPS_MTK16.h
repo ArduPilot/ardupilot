@@ -8,19 +8,17 @@
 //	License as published by the Free Software Foundation; either
 //	version 2.1 of the License, or (at your option) any later version.
 //
-//	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
+//	GPS configuration : Custom protocol per "Customize Function Specification, 3D Robotics, v1.6"
 //
-// Note - see AP_GPS_MTK16.h for firmware 1.6 and later.
-//
-#ifndef AP_GPS_MTK_h
-#define AP_GPS_MTK_h
+#ifndef AP_GPS_MTK16_h
+#define AP_GPS_MTK16_h
 
 #include <GPS.h>
 #include "AP_GPS_MTK_Common.h"
 
-class AP_GPS_MTK : public GPS {
+class AP_GPS_MTK16 : public GPS {
 public:
-	AP_GPS_MTK(Stream *s);
+	AP_GPS_MTK16(Stream *s);
 	virtual void	init(void);
 	virtual bool	read(void);
 
@@ -34,7 +32,9 @@ private:
 		int32_t		ground_course;
 		uint8_t		satellites;
 		uint8_t		fix_type;
+		uint32_t	utc_date;
 		uint32_t	utc_time;
+		uint16_t	hdop;
 	};
 #pragma pack(pop)
 	enum diyd_mtk_fix_type {
@@ -44,10 +44,8 @@ private:
 	};
 
 	enum diyd_mtk_protocol_bytes {
-		PREAMBLE1 = 0xb5,
-		PREAMBLE2 = 0x62,
-		MESSAGE_CLASS = 1,
-		MESSAGE_ID = 5
+		PREAMBLE1 = 0xd0,
+		PREAMBLE2 = 0xdd,
 	};
 
 	// Packet checksum accumulators
@@ -63,9 +61,6 @@ private:
 		diyd_mtk_msg	msg;
 		uint8_t			bytes[];
 	} _buffer;
-
-	// Buffer parse & GPS state update
-	void		_parse_gps();
 };
 
-#endif	// AP_GPS_MTK_H
+#endif	// AP_GPS_MTK16_H

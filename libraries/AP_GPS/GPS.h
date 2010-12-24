@@ -20,11 +20,37 @@ public:
 	/// @note The stream is expected to be set up and configured for the
 	///       correct bitrate before ::init is called.
 	///
-	/// @param	s	Stream connected to the GPS module.  If NULL, assumed
-	///				to be set up at ::init time.  Support for setting 
-	///				the port in the ctor for backwards compatibility.
+	/// @param	s	Stream connected to the GPS module.  
 	///
-	GPS(Stream *s = NULL) : _port(s) {};
+	GPS(Stream *s) : _port(s) {};
+
+	/// Update GPS state based on possible bytes received from the module.
+	///
+	/// This routine must be called periodically to process incoming data.
+	///
+	/// GPS drivers should not override this function; they should implement
+	/// ::read instead.
+	///
+	void			update(void);
+
+	/// GPS status codes
+	///
+	/// \note Non-intuitive ordering for legacy reasons
+	///
+	enum GPS_Status {
+		NO_GPS = 0,		///< No GPS connected/detected 
+		NO_FIX = 1,		///< Receiving valid GPS messages but no lock 
+		GPS_OK = 2		///< Receiving valid messages and locked
+	};
+
+	/// Query GPS status
+	///
+	/// The 'valid message' status indicates that a recognised message was
+	/// received from the GPS within the last 500ms.
+	///
+	/// @returns			Current GPS status
+	///
+	GPS_Status		status(void) { return _status; }
 
 	/// Startup initialisation.
 	///
@@ -33,34 +59,7 @@ public:
 	///
 	/// Must be implemented by the GPS driver.
 	///
-	/// @param	s	Stream connected to the GPS module.  If NULL, assumed to
-	///				have been set up at constructor time.
-	///
 	virtual void	init(void) = 0;
-
-	/// Update GPS state based on possible bytes received from the module.
-	///
-	/// This routine must be called periodically to process incoming data.
-	///
-	/// Must be implemented by the GPS driver.
-	///
-	void	update(void);
-
-	/// Implement specific routines for gps to receive a message. 
-	virtual void	read(void) = 0;
-
-	/// Query GPS status
-	///
-	/// The 'valid message' status indicates that a recognised message was
-	/// received from the GPS within the last 500ms.
-	///
-	/// @todo should probably return an enumeration here.
-	///
-	/// @return	0			No GPS connected/detected
-	/// @return 1			Receiving valid GPS messages but no lock
-	/// @return 2			Receiving valid messages and locked
-	///
-	int				status(void);
 
 	// Properties
 	long	time;			///< GPS time in milliseconds from the start of the week
@@ -70,6 +69,7 @@ public:
 	long	ground_speed;	///< ground speed in cm/sec
 	long	ground_course;	///< ground course in 100ths of a degree
 	long	speed_3d;		///< 3D speed in cm/sec (not always available)
+	int		hdop;			///< horizontal dilution of precision in cm
 	uint8_t num_sats;		///< Number of visible satelites
 
 	/// Set to true when new data arrives.  A client may set this
@@ -85,12 +85,15 @@ public:
 	bool	print_errors; 	///< deprecated
 
 protected:
-	Stream	*_port;				///< stream port the GPS is attached to
-	unsigned long _lastTime;	///< Timer for lost connection
+	Stream	*_port;			///< port the GPS is attached to
 
-	/// reset the last-message-received timer used by ::status
+	/// read from the GPS stream and update properties
 	///
-	void	_setTime(void);
+	/// Must be implemented by the GPS driver.
+	///
+	/// @returns			true if a valid message was received from the GPS
+	///
+	virtual bool	read(void) = 0;
 
 	/// perform an endian swap on a long
 	///
@@ -98,14 +101,14 @@ protected:
 	///						long in the wrong byte order
 	/// @returns			endian-swapped value
 	///
-	long	_swapl(const void *bytes);
+	long			_swapl(const void *bytes);
 
 	/// perform an endian swap on an int
 	///
 	/// @param	bytes		pointer to a buffer containing bytes representing an
 	///						int in the wrong byte order
 	///	@returns			endian-swapped value
-	int		_swapi(const void *bytes);
+	int				_swapi(const void *bytes);
 
 	/// emit an error message
 	///
@@ -117,8 +120,21 @@ protected:
 	/// @note deprecated as-is due to the difficulty of hooking up to a working
 	///       printf vs. the potential benefits
 	///
-	void	_error(const char *msg, ...) {};
-	
+	void			_error(const char *msg);
+
+private:
+
+	/// Time in milliseconds after which we will assume the GPS is no longer
+	/// sending us updates and attempt a re-init.
+	///
+	static const unsigned long	_idleTimeout = 500;
+
+	/// Last time that the GPS driver got a good packet from the GPS
+	///
+	unsigned long 				_idleTimer;
+
+	/// Our current status
+	GPS_Status					_status;
 };
 
 inline long

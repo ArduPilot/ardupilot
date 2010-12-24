@@ -10,7 +10,7 @@
 //
 
 #include "AP_GPS_UBLOX.h"
-#include "WProgram.h"
+#include <stdint.h>
 
 // Constructors ////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,8 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(Stream *s) : GPS(s)
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void AP_GPS_UBLOX::init(void)
+void
+AP_GPS_UBLOX::init(void)
 {
 	// XXX it might make sense to send some CFG_MSG,CFG_NMEA messages to get the 
 	// right reporting configuration.
@@ -37,10 +38,12 @@ void AP_GPS_UBLOX::init(void)
 // re-processing it from the top, this is unavoidable. The parser
 // attempts to avoid this when possible.
 //
-void AP_GPS_UBLOX::read(void)
+bool
+AP_GPS_UBLOX::read(void)
 {
-	byte data;
-	int numc;
+	uint8_t		data;
+	int 		numc;
+	bool		parsed = false;
 
 	numc = _port->available();
 	for (int i = 0; i < numc; i++){	// Process bytes received
@@ -84,9 +87,8 @@ void AP_GPS_UBLOX::read(void)
 			_step++;
 			if (CLASS_NAV == data) {
 				_gather = true;					// class is interesting, maybe gather
-				_ck_b = _ck_a = data;				// reset the checksum accumulators
+				_ck_b = _ck_a = data;			// reset the checksum accumulators
 			} else {
-				_error("ignoring class 0x%x\n", (int)data);
 				_gather = false;				// class is not interesting, discard
 			}
 			break;
@@ -109,31 +111,28 @@ void AP_GPS_UBLOX::read(void)
 					_expect = sizeof(ubx_nav_velned);
 					break;
 				default:
-					_error("ignoring message 0x%x\n", (int)data);
 					_gather = false;			// message is not interesting
 				}
 			}
 			break;
 		case 4:
 			_step++;
-			_ck_b += (_ck_a += data);				// checksum byte
+			_ck_b += (_ck_a += data);			// checksum byte
 			_payload_length = data;				// payload length low byte
 			break;
 		case 5:
 			_step++;
-			_ck_b += (_ck_a += data);				// checksum byte
+			_ck_b += (_ck_a += data);			// checksum byte
 			_payload_length += (uint16_t)data;	// payload length high byte
 			_payload_counter = 0;				// prepare to receive payload
-			if (_payload_length != _expect) {
-				_error("payload %d expected %d\n", _payload_length, _expect);
+			if (_payload_length != _expect)
 				_gather = false;
-			}
 			break;
 
 			// Receive message data
 			//
 		case 6:
-			_ck_b += (_ck_a += data);				// checksum byte
+			_ck_b += (_ck_a += data);			// checksum byte
 			if (_gather)						// gather data if requested
 				_buffer.bytes[_payload_counter] = data;
 			if (++_payload_counter == _payload_length)
@@ -144,26 +143,25 @@ void AP_GPS_UBLOX::read(void)
 			//
 		case 7:
 			_step++;
-			if (_ck_a != data) {
-				_error("GPS_UBLOX: checksum error\n");
-				_step = 0;
-			}
+			if (_ck_a != data)
+				_step = 0;						// bad checksum
 			break;
 		case 8:
 			_step = 0;
-			if (_ck_b != data) {
-				_error("GPS_UBLOX: checksum error\n");
-				break;
+			if (_ck_b != data)
+				break;							// bad checksum
+
+			if (_gather) {
+				parsed = _parse_gps();			// Parse the new GPS packet
 			}
-			if (_gather)
-				_parse_gps();					 // Parse the new GPS packet
 		}
 	} 
+	return parsed;
 }
 
 // Private Methods /////////////////////////////////////////////////////////////
 
-void
+bool
 AP_GPS_UBLOX::_parse_gps(void)
 {
 	switch (_msg_id) {
@@ -185,8 +183,8 @@ AP_GPS_UBLOX::_parse_gps(void)
 		ground_speed = _buffer.velned.speed_2d;				// cm/s
 		ground_course = _buffer.velned.heading_2d / 1000;	// Heading 2D deg * 100000 rescaled to deg * 100
 		break;
+	default:
+		return false;
 	}
-	_setTime();
-	valid_read = 1;
-	new_data = 1;
+	return true;
 }

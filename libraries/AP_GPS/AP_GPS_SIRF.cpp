@@ -10,7 +10,7 @@
 //
 
 #include "AP_GPS_SIRF.h"
-#include "WProgram.h"
+#include <stdint.h>
 
 // Initialisation messages
 //
@@ -29,7 +29,8 @@ AP_GPS_SIRF::AP_GPS_SIRF(Stream *s) : GPS(s)
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_GPS_SIRF::init(void)
+void 
+AP_GPS_SIRF::init(void)
 {	
 	_port->flush();
 
@@ -50,10 +51,12 @@ void AP_GPS_SIRF::init(void)
 // re-processing it from the top, this is unavoidable. The parser
 // attempts to avoid this when possible.
 //
-void AP_GPS_SIRF::read(void)
+bool
+AP_GPS_SIRF::read(void)
 {
-	byte data;
-	int numc;
+	uint8_t		data;
+	int 		numc;
+	bool		parsed = false;
 
 	numc = _port->available();
 	while(numc--) {
@@ -157,13 +160,14 @@ void AP_GPS_SIRF::read(void)
 				break;
 			}
 			if (_gather) {
-				_parse_gps();					 // Parse the new GPS packet
+				parsed = _parse_gps();					 // Parse the new GPS packet
 			}
 		}
 	} 
+	return(parsed);
 }
 
-void
+bool
 AP_GPS_SIRF::_parse_gps(void)
 {
 	switch(_msg_id) {
@@ -179,11 +183,10 @@ AP_GPS_SIRF::_parse_gps(void)
 		if (ground_speed > 50)
 			ground_course	= _swapi(&_buffer.nav.ground_course);
 		num_sats		= _buffer.nav.satellites;
-		_setTime();
-		valid_read = 1;
-		break;
+
+		return true;
 	}
-	new_data = true;
+	return false;
 }
 
 void

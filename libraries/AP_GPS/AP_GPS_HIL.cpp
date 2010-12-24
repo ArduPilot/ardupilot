@@ -24,18 +24,13 @@ void AP_GPS_HIL::init(void)
 {	
 }
 
-void AP_GPS_HIL::read(void)
+bool AP_GPS_HIL::read(void)
 {
-}
+	bool	result = _updated;
 
-int AP_GPS_HIL::status(void)
-{
-    if (valid_read)
-    {
-        if (fix) return 2;
-        else return 1;
-    }
-    else return 0;
+	// return true once for each update pushed in
+	_updated = false;
+	return result;
 }
 
 void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _altitude,
@@ -49,9 +44,7 @@ void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _al
     ground_course 	= _ground_course*1.0e2;
     speed_3d 		= _speed_3d*1.0e2;
     num_sats 		= _num_sats;
-    new_data 		= true;
     fix 			= true;
-    valid_read 		= true;
-	_setTime();
+	_updated		= true;
 }
 

@@ -3,35 +3,35 @@
 #include "GPS.h"
 #include "WProgram.h"
 
-int
-GPS::status(void)
-{
-	if (millis() - _lastTime >= 500){
-		return 0;
-	} else if (fix == 0) {
-		return 1;
-	} else {
-		return 2;
-	}
-}
-
-void
-GPS::_setTime(void)
-{
-	_lastTime = millis();
-}
-
 void
 GPS::update(void)
 {
-	if (!status())
-	{
-		Serial.println("Reinitializing GPS");
-		init();
-		_setTime();
+	bool	result;
+
+	// call the GPS driver to process incoming data
+	result = read();
+
+	// if we did not get a message, and the idle timer has expired, re-init
+	if (!result) {
+		if ((millis() - _idleTimer) > _idleTimeout) {
+			_status = NO_GPS;
+			init();
+		}
+	} else {
+		// we got a message, update our status correspondingly
+		_status = fix ? GPS_OK : NO_FIX;
+
+		valid_read = true;
+		new_data = true;
 	}
-	else
-	{
-		read();
-	}
+
+	// reset the idle timer
+	_idleTimer = millis();
+}
+
+// XXX this is probably the wrong way to do it, too
+void
+GPS::_error(const char *msg)
+{
+	Serial.println(msg);
 }
