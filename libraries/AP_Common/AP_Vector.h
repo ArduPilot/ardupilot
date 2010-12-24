@@ -19,6 +19,10 @@
 #ifndef AP_Vector_H
 #define AP_Vector_H
 
+#include <stdlib.h>
+#include <inttypes.h>
+#include <WProgram.h>
+
 #ifdef ASSERT
 const static char vectorSource[] ="AP_Vector.hpp";
 #endif
