@@ -38,15 +38,15 @@ void loop()
 	Serial.printf_P(PSTR("\nvar.getId(): %d\n"), id);
 	delay(2000);
 
-	Serial.printf_P(PSTR("\neepromRegistry(id)->getEntry(): %f\n"), eepromRegistry(id)->getEntry());
+	Serial.printf_P(PSTR("\neepromRegistry(id)->getEntry(): %f\n"), eepromRegistry[id]->getEntry());
 	delay(2000);
 
-	eepromRegistry(id)->setEntry(456);
+	eepromRegistry[id]->setEntry(456);
 	Serial.printf_P(PSTR("\neepromRegistry(id)->setEntry(456): %d\n"), var.get());
 	delay(2000);
 
-	Serial.printf_P(PSTR("\nprint the parameters name by id: %s\n"), eepromRegistry(id)->getName());
-	Serial.printf_P(PSTR("\nprint the parameters address by id: %d\n"), int(eepromRegistry(id)->getAddress()));
+	Serial.printf_P(PSTR("\nprint the parameters name by id: %s\n"), eepromRegistry[id]->getName());
+	Serial.printf_P(PSTR("\nprint the parameters address by id: %d\n"), int(eepromRegistry[id]->getAddress()));
 
 
 	Serial.print("\n\nSynced variable demo\n");
@@ -69,15 +69,15 @@ void loop()
 	Serial.printf_P(PSTR("\nvar2.getId(): %d\n"), id);
 	delay(2000);
 
-	Serial.printf_P(PSTR("\neepromRegistry(id)->getEntry(): %f\n"), eepromRegistry(id)->getEntry());
+	Serial.printf_P(PSTR("\neepromRegistry(id)->getEntry(): %f\n"), eepromRegistry[id]->getEntry());
 	delay(2000);
 
-	eepromRegistry(id)->setEntry(4.56);
+	eepromRegistry[id]->setEntry(4.56);
 	Serial.printf_P(PSTR("\neepromRegistry(id)->setEntry(4.56): %f\n"), var2.get());
 	delay(2000);
 
-	Serial.printf_P(PSTR("\nprint the parameters name by id: %s\n"), eepromRegistry(id)->getName());
-	Serial.printf_P(PSTR("\nprint the parameters address by id: %d\n"), int(eepromRegistry(id)->getAddress()));
+	Serial.printf_P(PSTR("\nprint the parameters name by id: %s\n"), eepromRegistry[id]->getName());
+	Serial.printf_P(PSTR("\nprint the parameters address by id: %d\n"), int(eepromRegistry[id]->getAddress()));
 
 	delay(5000);
 }

@@ -85,7 +85,7 @@ protected:
 /**
  *  The main EEProm Registry class.
  */
-class AP_EEPromRegistry : public AP_Vector<AP_EEPromEntry *>
+class AP_EEPromRegistry : public Vector<AP_EEPromEntry *>
 {
 public:
 
