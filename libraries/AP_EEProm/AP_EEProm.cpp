@@ -1,5 +1,5 @@
 /*
- * AP_EEProm.h
+ * AP_EEProm.cpp
  * Copyright (C) James Goppert 2010 <james.goppert@gmail.com>
  *
  * This file is free software: you can redistribute it and/or modify it
