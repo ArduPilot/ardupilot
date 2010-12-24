@@ -1,5 +1,5 @@
 /*
- * AP_Vector.h
+ * Vector.h
  * Copyright (C) James Goppert 2010 <james.goppert@gmail.com>
  *
  * This file is free software: you can redistribute it and/or modify it
@@ -16,20 +16,20 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AP_Vector_H
-#define AP_Vector_H
+#ifndef Vector_H
+#define Vector_H
 
 #include <stdlib.h>
 #include <inttypes.h>
 #include <WProgram.h>
 
 #ifdef ASSERT
-const static char vectorSource[] ="AP_Vector.hpp";
+const static char vectorSource[] ="Vector.hpp";
 #endif
 
 // vector
 template <class dataType,class sumType=dataType>
-class AP_Vector
+class Vector
 {
 private:
     size_t size;
@@ -38,38 +38,38 @@ private:
     dataType* data;
 public:
     // default constructor
-    AP_Vector(const size_t & size=0, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
+    Vector(const size_t & size=0, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
         setSize(size);
     }
     // 3 vector constructor
-    AP_Vector(const dataType & a, const dataType & b, const dataType & c) : size(3), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
+    Vector(const dataType & a, const dataType & b, const dataType & c) : size(3), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
         setSize(size);
-        (*this)(0)=a;
-        (*this)(1)=b;
-        (*this)(2)=c;
+        (*this)[0]=a;
+        (*this)[1]=b;
+        (*this)[2]=c;
     }
 
     // construct from array
-    AP_Vector(const dataType* array, const size_t & size, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
+    Vector(const dataType* array, const size_t & size, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
         setSize(size);
         for (size_t i=0; i<getSize(); i++)
-            (*this)(i)=array[i];
+            (*this)[i]=array[i];
     }
     // copy constructor
-    AP_Vector(const AP_Vector &v) : size(0), extraAllocationSize(0), sizeAllocated(0), data(NULL) {
+    Vector(const Vector &v) : size(0), extraAllocationSize(0), sizeAllocated(0), data(NULL) {
         setSize(v.getSize());
         for (size_t i=0; i<getSize(); i++)
-            (*this)(i)=v(i);
+            (*this)[i]=v[i];
     }
     // convert to float vector
-    AP_Vector<float> toFloat() const {
-        AP_Vector<float> v(getSize());
+    Vector<float> toFloat() const {
+        Vector<float> v(getSize());
         for (size_t i=0; i<getSize(); i++)
-            v(i)=(*this)(i);
+            v[i]=(*this)[i];
         return v;
     }
     // destructor
-    virtual ~AP_Vector() {
+    virtual ~Vector() {
         empty();
     }
     void empty() {
@@ -116,7 +116,7 @@ public:
             memmove(data+index+1,data+index,sizeof(dataType)/sizeof(char)*(getSize()-1-index));
             //Serial.println("memmove called and completed");
         }
-        (*this)(index)=value;
+        (*this)[index]=value;
         //Serial.println("insert done");
     }
     // remove
@@ -135,149 +135,149 @@ public:
     }
     // pop_front
     dataType & pop_front() {
-        dataType tmp = (*this)(0);
+        dataType tmp = (*this)[0];
         remove(0);
         return tmp;
     }
     // push_back a vector
-    void push_back(const AP_Vector & vector) {
+    void push_back(const Vector & vector) {
         for (size_t i=0; i<vector.getSize(); i++)
-            push_back(vector(i));
+            push_back(vector[i]);
     }
     // const array access operator
-    const dataType & operator()(const size_t & index) const {
+    const dataType & operator[](const size_t & index) const {
 #ifdef ASSERT
         assert(index<getSize(),vectorSource,__LINE__);
 #endif
         return data[index];
     }
     // array access operator
-    dataType & operator()(const size_t & index) {
+    dataType & operator[](const size_t & index) {
 #ifdef ASSERT
         assert(index<getSize(),vectorSource,__LINE__);
 #endif
         return data[index];
     }
     // assignment operator
-    AP_Vector & operator=(const AP_Vector & v) {
+    Vector & operator=(const Vector & v) {
         setSize(v.getSize());
         for (size_t i=0; i<getSize(); i++)
-            (*this)(i)=v(i);
+            (*this)[i]=v[i];
         return *this;
     }
     // equal
-    const bool operator==(const AP_Vector& v) const {
+    const bool operator==(const Vector& v) const {
 #ifdef ASSERT
         assert(getSize()==v.getSize(),vectorSource,__LINE__);
 #endif
         for (size_t i=0; i<getSize(); i++) {
-            if ((*this)(i)!=v(i)) return false;
+            if ((*this)[i]!=v[i]) return false;
         }
         return true;
     }
     // not equal
-    const bool operator!=(const AP_Vector& v) const {
+    const bool operator!=(const Vector& v) const {
         return !((*this)==v);
     }
     // addition
-    const AP_Vector operator+(const AP_Vector& v) const {
+    const Vector operator+(const Vector& v) const {
 #ifdef ASSERT
         assert(v.getSize() == getSize(),vectorSource,__LINE__);
 #endif
-        AP_Vector result(getSize());
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
-            result(i)=(*this)(i)+v(i);
+            result(i)=(*this)[i]+v[i];
         return result;
     }
     // addition
-    const AP_Vector operator+(const dataType& s) const {
-        AP_Vector result(getSize());
+    const Vector operator+(const dataType& s) const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
-            result(i)=(*this)(i)+s;
+            result[i]=(*this)[i]+s;
         return result;
     }
     // subtraction
-    const AP_Vector operator-(const AP_Vector& v) const {
+    const Vector operator-(const Vector& v) const {
 #ifdef ASSERT
         assert(v.getSize() == getSize(),vectorSource,__LINE__);
 #endif
-        AP_Vector result(getSize());
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
-            result(i)=(*this)(i)-v(i);
+            result[i]=(*this)[i]-v[i];
         return result;
     }
     // negation
-    const AP_Vector operator-() const {
-        AP_Vector result(getSize());
+    const Vector operator-() const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
-            result(i)=-(*this)(i);
+            result[i]=-(*this)[i];
         return result;
     }
     // +=
-    AP_Vector& operator+=(const AP_Vector& v) {
+    Vector& operator+=(const Vector& v) {
 #ifdef ASSERT
         assert(v.getSize() == getSize(),vectorSource,__LINE__);
 #endif
-        AP_Vector result(getSize());
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             (*this)(i)+=v(i);
         return *this;
     }
     // -=
-    AP_Vector& operator-=( const AP_Vector& v) {
+    Vector& operator-=( const Vector& v) {
 #ifdef ASSERT
         assert(v.getSize() == getSize(),vectorSource,__LINE__);
 #endif
-        AP_Vector result(getSize());
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             (*this)(i)-=v(i);
         return *this;
     }
     // elementwise  mult.
-    const AP_Vector operator*(const AP_Vector & v) const {
-        AP_Vector result(getSize());
+    const Vector operator*(const Vector & v) const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             result(i)=(*this)(i)*v(i);
         return result;
     }
 
     // mult. by a scalar
-    const AP_Vector operator*(const dataType & s) const {
-        AP_Vector result(getSize());
+    const Vector operator*(const dataType & s) const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             result(i)=(*this)(i)*s;
         return result;
     }
     // div. by a scalar
-    const AP_Vector operator/(const dataType & s) const {
-        AP_Vector result(getSize());
+    const Vector operator/(const dataType & s) const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             result(i)=(*this)(i)/s;
         return result;
     }
     // elementwise div.
-    const AP_Vector operator/(const AP_Vector & v) const {
-        AP_Vector result(getSize());
+    const Vector operator/(const Vector & v) const {
+        Vector result(getSize());
         for (size_t i=0; i<getSize(); i++)
             result(i)=(*this)(i)/v(i);
         return result;
     }
 
     // div. by a scalar
-    AP_Vector & operator/=(const dataType & s) {
+    Vector & operator/=(const dataType & s) {
         for (size_t i=0; i<getSize(); i++)
             (*this)(i)/=s;
         return *this;
     }
     // mult. by a scalar
-    AP_Vector & operator*=(const dataType & s) {
+    Vector & operator*=(const dataType & s) {
         for (size_t i=0; i<getSize(); i++)
             (*this)(i)*=s;
         return *this;
     }
     // cross/vector product
-    const AP_Vector cross(const AP_Vector& v) const {
-        AP_Vector result(3), u=*this;
+    const Vector cross(const Vector& v) const {
+        Vector result(3), u=*this;
 #ifdef ASSERT
         assert(u.getSize()==3 && v.getSize()==3,vectorSource,__LINE__);
 #endif
@@ -287,7 +287,7 @@ public:
         return result;
     }
     // dot/scalar product
-    const dataType dot(const AP_Vector& v) const {
+    const dataType dot(const Vector& v) const {
 #ifdef ASSERT
         assert(getSize()==v.getSize(),vectorSource,__LINE__);
 #endif
@@ -300,7 +300,7 @@ public:
         return sqrt(dot(*this));
     }
     // unit vector
-    const AP_Vector unit() const {
+    const Vector unit() const {
         return (*this)*(1/norm());
     }
     // sum
@@ -323,8 +323,8 @@ public:
         }
     }
     // range
-    const AP_Vector range(const size_t & start, const size_t & stop) const {
-        AP_Vector v(stop-start+1);
+    const Vector range(const size_t & start, const size_t & stop) const {
+        Vector v(stop-start+1);
         for (size_t i=start; i<=stop; i++) v(i-start) = (*this)(i);
         return v;
     }
@@ -345,8 +345,8 @@ public:
     }
     // self test
     static bool selfTest(Stream & serial=Serial) {
-        serial.println("AP_Vector self test.");
-        AP_Vector u(3),v(3),w(3);
+        serial.println("Vector self test.");
+        Vector u(3),v(3),w(3);
         u(0) = 1;
         u(1) = 2;
         u(2) = 3;
