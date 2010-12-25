@@ -8,7 +8,7 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
-#include <RC_ChannelB.h> 	// ArduPilot Mega RC Library
+#include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
 #include <AP_EEProm.h>
 
 AP_EEPromVar<float> scale(45.0,"RC1_SCALE");
@@ -25,9 +25,9 @@ AP_Var<bool> reverse(false,"RC1_REVERSE");
 
 FastSerialPort0(Serial);
 
-RC_ChannelB rc[] = 
+AP_RcChannel rc[] = 
 {
-	RC_ChannelB(scale.get(),pwmMin.get(),pwmNeutral.get(),pwmMax.get(),
+	AP_RcChannel(scale.get(),pwmMin.get(),pwmNeutral.get(),pwmMax.get(),
 			pwmDeadZone.get(),filter.get(),reverse.get())	
 
 };

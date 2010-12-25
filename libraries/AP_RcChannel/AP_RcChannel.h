@@ -1,24 +1,24 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-/// @file	RC_ChannelB.h
-/// @brief	RC_ChannelB manager
+/// @file	AP_RcChannel.h
+/// @brief	AP_RcChannel manager
 
-#ifndef RC_ChannelB_h
-#define RC_ChannelB_h
+#ifndef AP_RcChannel_h
+#define AP_RcChannel_h
 
 #include <stdint.h>
 #include <FastSerial.h>
 
-/// @class	RC_ChannelB
+/// @class	AP_RcChannel
 /// @brief	Object managing one RC channel
 //
-class RC_ChannelB{
+class AP_RcChannel{
  
 public:	
 
 	/// Constructor
 	///
-	RC_ChannelB(const float & scale, const uint16_t & pwmMin, const uint16_t & pwmNeutral,
+	AP_RcChannel(const float & scale, const uint16_t & pwmMin, const uint16_t & pwmNeutral,
 			const uint16_t & pwmMax, const uint16_t & pwmDeadZone,
 			const bool & filter, const bool & reverse) :
 		_scale(scale),
