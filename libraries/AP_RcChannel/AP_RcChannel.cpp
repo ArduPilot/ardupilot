@@ -1,5 +1,5 @@
 /*
-	RC_ChannelB.cpp - Radio library for Arduino
+	AP_RcChannel.cpp - Radio library for Arduino
 	Code by Jason Short, James Goppert. DIYDrones.com
 	
 	This library is free software; you can redistribute it and / or
@@ -11,10 +11,10 @@
 
 #include <math.h>
 #include <avr/eeprom.h>
-#include "RC_ChannelB.h"
+#include "AP_RcChannel.h"
 #include <AP_Common.h>
 
-void RC_ChannelB::readRadio(uint16_t pwmRadio) {
+void AP_RcChannel::readRadio(uint16_t pwmRadio) {
 	// apply reverse
 	if(_reverse) _pwmRadio = (_pwmNeutral - pwmRadio) + _pwmNeutral;
 	else _pwmRadio = pwmRadio;
@@ -23,7 +23,7 @@ void RC_ChannelB::readRadio(uint16_t pwmRadio) {
 }
 
 void
-RC_ChannelB::setPwm(uint16_t pwm)
+AP_RcChannel::setPwm(uint16_t pwm)
 {
 	//Serial.printf("reverse: %s\n", (_reverse)?"true":"false");
 
@@ -51,13 +51,13 @@ RC_ChannelB::setPwm(uint16_t pwm)
 }
 
 void
-RC_ChannelB::setPosition(float position)
+AP_RcChannel::setPosition(float position)
 {
 	setPwm(_positionToPwm(position));
 }
 
 void
-RC_ChannelB::mixRadio(uint16_t infStart)
+AP_RcChannel::mixRadio(uint16_t infStart)
 {
 	float inf = abs( int16_t(_pwmRadio - _pwmNeutral) );
 	inf = min(inf, infStart);
@@ -66,7 +66,7 @@ RC_ChannelB::mixRadio(uint16_t infStart)
 }
 
 uint16_t
-RC_ChannelB::_positionToPwm(const float & position)
+AP_RcChannel::_positionToPwm(const float & position)
 {
 	uint16_t pwm;
 	//Serial.printf("position: %f\n", position);
@@ -79,7 +79,7 @@ RC_ChannelB::_positionToPwm(const float & position)
 }
 
 float
-RC_ChannelB::_pwmToPosition(const uint16_t & pwm)
+AP_RcChannel::_pwmToPosition(const uint16_t & pwm)
 {
 	float position;
 	if(pwm < _pwmNeutral)
