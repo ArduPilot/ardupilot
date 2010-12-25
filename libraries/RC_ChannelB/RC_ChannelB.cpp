@@ -25,8 +25,12 @@ void RC_ChannelB::readRadio(uint16_t pwmRadio) {
 void
 RC_ChannelB::setPwm(uint16_t pwm)
 {
+	//Serial.printf("reverse: %s\n", (_reverse)?"true":"false");
+
 	// apply reverse
-	if(_reverse) pwm = (_pwmNeutral-pwm) + _pwmNeutral;
+	if(_reverse) pwm = int16_t(_pwmNeutral-pwm) + _pwmNeutral;
+
+	//Serial.printf("pwm after reverse: %d\n", pwm);
 
 	// apply filter
 	if(_filter){
@@ -38,8 +42,12 @@ RC_ChannelB::setPwm(uint16_t pwm)
 		_pwm = pwm;
 	}
 
+	//Serial.printf("pwm after filter: %d\n", _pwm);
+
 	// apply deadzone
 	_pwm = (abs(_pwm - _pwmNeutral) < _pwmDeadZone) ? _pwmNeutral : _pwm;
+
+	//Serial.printf("pwm after deadzone: %d\n", _pwm);
 }
 
 void
@@ -51,28 +59,35 @@ RC_ChannelB::setPosition(float position)
 void
 RC_ChannelB::mixRadio(uint16_t infStart)
 {
-	float inf = abs(_pwmRadio - _pwmNeutral);
+	float inf = abs( int16_t(_pwmRadio - _pwmNeutral) );
 	inf = min(inf, infStart);
 	inf = ((infStart - inf) /infStart);
 	setPwm(_pwm*inf + _pwmRadio); 
 }
 
 uint16_t
-RC_ChannelB::_positionToPwm(float position)
+RC_ChannelB::_positionToPwm(const float & position)
 {
+	uint16_t pwm;
+	//Serial.printf("position: %f\n", position);
 	if(position < 0)
-		return (position / _scale) * (_pwmMin - _pwmNeutral);
+		pwm = position * int16_t(_pwmNeutral - _pwmMin) / _scale + _pwmNeutral;
 	else
-		return (position / _scale) * (_pwmMax - _pwmNeutral);
+		pwm = position * int16_t(_pwmMax - _pwmNeutral) / _scale + _pwmNeutral;
+	constrain(pwm,_pwmMin,_pwmMax);
+	return pwm;
 }
 
 float
-RC_ChannelB::_pwmToPosition(uint16_t pwm)
+RC_ChannelB::_pwmToPosition(const uint16_t & pwm)
 {
-	if(_pwm < _pwmNeutral)
-		return _scale * (_pwm - _pwmNeutral)/(_pwmNeutral - _pwmMin);
+	float position;
+	if(pwm < _pwmNeutral)
+		position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmNeutral - _pwmMin);
 	else
-		return _scale * (_pwm - _pwmNeutral)/(_pwmMax - _pwmNeutral);
+		position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmMax - _pwmNeutral);
+	constrain(position,-_scale,_scale);
+	return position;
 }
 
 // ------------------------------------------

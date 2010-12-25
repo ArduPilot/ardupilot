@@ -95,7 +95,7 @@ public:
 	/**
 	 * The default constrcutor
 	 */
-	AP_Var(type data, const char * name = "", bool sync=false) : 
+	AP_Var(const type & data, const char * name = "", const bool & sync=false) : 
 		_data(data), _name(name), _sync(sync)
 	{
 	}
@@ -103,7 +103,7 @@ public:
 	/**
 	 * Set the variable value
 	 */
-	void set(type val) {
+	void set(const type & val) {
 		_data = val; 
 		if (_sync) save();
 	}
@@ -111,7 +111,7 @@ public:
 	/**
 	 * Get the variable value.
 	 */
-	type get() {
+	const type & get() {
 		if (_sync) load();
 		return _data;
 	}
@@ -119,15 +119,15 @@ public:
 	/**
 	 *  Set the variable value as a float
 	 */
-	void setAsFloat(float val) {
-		set((type)val);
+	void setAsFloat(const float & val) {
+		set(val);
 	}
 
 	/**
 	 * Get the variable as a float
 	 */
-	float getAsFloat() {
-		return (float)get();
+	const float & getAsFloat() {
+		return get();
 	}
 
 
@@ -154,7 +154,7 @@ public:
 	 * If sync is true the a load will always occure before a get and a save will always
 	 * occure before a set.
 	 */
-	bool getSync() { return _sync; }
+	const bool & getSync() { return _sync; }
 	void setSync(bool sync) { _sync = sync; }
 
 protected:
