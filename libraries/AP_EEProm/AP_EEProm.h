@@ -101,7 +101,7 @@ public:
 	/**
 	 * The default constrcutor
 	 */
-	AP_EEPromVar(type data, const char * name = "", bool sync=false) : 
+	AP_EEPromVar(type data = 0, const char * name = "", bool sync=false) : 
 		AP_Var<type>(data,name,sync)
 	{
 		eepromRegistry.add(this,_id,_address,sizeof(type));
