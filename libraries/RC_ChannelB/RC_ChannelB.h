@@ -7,95 +7,128 @@
 #define RC_ChannelB_h
 
 #include <stdint.h>
+#include <AP_EEProm.h>
 
 /// @class	RC_ChannelB
 /// @brief	Object managing one RC channel
 class RC_ChannelB{
-  public:	
+ 
+public:	
+
+	enum storage_t
+	{
+		STORE_EXTERNAL,
+		STORE_EEPROM
+	};
+
 	/// Constructor
-	///
-	/// A RC_ChannelB constructed in this fashion does not support save/restore.
 	///
 	RC_ChannelB() :
-		_address(0)
-	{}
+		_scale(0),
+		_pwmMin(1000),
+		_pwmMax(2000),
+		_pwmNeutral(1500),
+		_pwmDeadZone(100),
+		_pwm(0),
+		_pwmRadio(0),
+		_filter(true),
+		_reverse(false),
+		_address(0),
+		_storageType(STORE_EXTERNAL)
+	{
+	}
 
 	/// Constructor
 	///
-	/// @param address	EEPROM base address at which RC_ChannelB parameters
-	///					are stored.  Zero if the RC_ChannelB does not support
-	///					save/restore.
+	RC_ChannelB() :
+		_scale(0),
+		_pwmMin(1000),
+		_pwmNeutral(1500),
+		_pwmMax(2000),
+		_pwmDeadZone(100),
+		_pwm(0),
+		_pwmRadio(0),
+		_filter(true),
+		_reverse(false),
+		_address(address),
+		_storageType(STORE_EEPROM)
+	{
+	}
+
+	/// Constructor
 	///
 	RC_ChannelB(uint16_t address) :
+		_scale(0),
+		_pwmMin(1000),
+		_pwmNeutral(1500),
+		_pwmMax(2000),
+		_pwmDeadZone(100),
+		_pwm(0),
+		_pwmRadio(0),
+		_filter(true),
+		_reverse(false),
 		_address(address),
-		_high(1),
-		_filter(true)
-	{}
+		_storageType(STORE_EEPROM)
+	{
+	}
 
-	// setup min and max radio values in CLI
-	void 		update_min_max();
-	
-	// startup
-	void 		load_eeprom(void);
-	void 		save_eeprom(void);		
-	void 		save_trim(void);		
-	void		set_filter(bool filter);
+	// set configuration
+	void setScale(float scale) { _scale = scale; }
+	void setReverse(bool reverse) { _reverse = reverse; }
+	void setFilter(bool filter) { _filter = filter; }
+	void setPwmMin(uint16_t pwmMin) { _pwmMin = pwmMin; }
+	void setPwmMax(uint16_t pwmMax) { _pwmMax = pwmMax; }
+	void setPwmNeutral(uint16_t pwmNeutral) { _pwmNeutral = pwmNeutral; }
+	void setPwmNeutral() { _pwmNeutral = getPwm(); }
+	void setPwmDeadZone(uint16_t pwmDeadZone) { _pwmDeadZone = pwmDeadZone; }
 
-	// setup the control preferences
-	void 		set_range(int low, int high);
-	void 		set_angle(int angle);
-	void 		set_reverse(bool reverse);
+	// save/load
+	void saveEEProm();
+	void loadEEProm();
 
-	// read input from APM_RC - create a control_in value
-	void 		set_pwm(int pwm);
-	
-	// pwm is stored here
-	int16_t		radio_in;
+	// get configuration
+	float getScale() { return _scale; }
+	bool getReverse() { return _reverse; }
+	bool getFilter() { return _filter; }
+	uint16_t getPwmMin() { return _pwmMin; }
+	uint16_t getPwmMax() { return _pwmMax; }
+	uint16_t getPwmNeutral() { return _pwmNeutral; }
+	uint16_t getPwmDeadZone() { return _pwmDeadZone; }
 
-	// call after first set_pwm
-	void 		trim();
+	// set servo state
+	void readRadio(uint16_t pwmRadio);
+	void setPwm(uint16_t pwm);
+	void setPosition(float position);
+	void mixRadio(uint16_t infStart);
+
+	// get servo state
+	uint16_t getPwm() { return _pwm; }
+	uint16_t getPwmRadio() { return _pwmRadio; }
+	float getPosition() { return _pwmToPosition(_pwm); }
+	float getNormalized() { return getPosition()/_scale; }
 	
 	// did our read come in 50µs below the min?
-	bool		get_failsafe(void);
-	
-	// value generated from PWM
-	int16_t 	control_in;
-	int16_t 	dead_zone; // used to keep noise down and create a dead zone.
-	
-	int			control_mix(float value);
-	
-	// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
-	int16_t 	servo_out;
+	bool failSafe() { _pwm < (_pwmMin - 50); }
 
-	// generate PWM from servo_out value
-	void 		calc_pwm(void);
+private:
 
-	// PWM is without the offset from radio_min
-	int16_t 	pwm_out;
-	int16_t 	radio_out;
-
-	int16_t 	radio_min;
-	int16_t 	radio_trim;
-	int16_t 	radio_max;
+	float _scale;
+	AP_EEProm<uint16_t> _pwmMin;
+	uint16_t _pwmNeutral;
+	uint16_t _pwmMax;
+	uint16_t _pwmDeadZone;
+	uint16_t _pwm; // this is the internal state, positino is just created when needed
+	uint16_t _pwmRadio; // radio pwm input
 	
-	// includes offset from PWM
-	//int16_t 	get_radio_out(void);
+	// configuration
+	bool _filter;
+	int8_t _reverse;
+	storage_t _storageType;
+	uint16_t _address;
 
-	int16_t		pwm_to_angle();
-	float		norm_input();
-	float		norm_output();
-	int16_t		angle_to_pwm();
-	int16_t		pwm_to_range();
-	int16_t		range_to_pwm();
-	
-  private:
-	bool		_filter;
-	int8_t 		_reverse;
-
-	int16_t		_address;			///< EEPROM address for save/restore of P/I/D
-	bool 		_type;				
-	int16_t 	_high;
-	int16_t 	_low;
+	// private methods
+	uint16_t _positionToPwm(float position);
+	float _pwmToPosition(uint16_t pwm);
 };
 
 #endif	

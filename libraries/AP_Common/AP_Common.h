@@ -83,6 +83,86 @@ struct Location {
 	int32_t		lng;				///< param 4 - Longitude * 10**7
 };
 
+/**
+ * The parameter template class. This class
+ * implements get/set/save/load etc for the 
+ * abstract template type.
+ */
+template  <class type>
+class AP_Var
+{
+public:
+	/**
+	 * The default constrcutor
+	 */
+	AP_Var(type data, const char * name = "", bool sync=false) : 
+		_data(data), _name(name), _sync(sync)
+	{
+	}
+
+	/**
+	 * Set the variable value
+	 */
+	void set(type val) {
+		_data = val; 
+		if (_sync) save();
+	}
+
+	/**
+	 * Get the variable value.
+	 */
+	type get() {
+		if (_sync) load();
+		return _data;
+	}
+
+	/**
+	 *  Set the variable value as a float
+	 */
+	void setAsFloat(float val) {
+		set((type)val);
+	}
+
+	/**
+	 * Get the variable as a float
+	 */
+	float getAsFloat() {
+		return (float)get();
+	}
+
+
+	/**
+	 * Save a variable to eeprom
+	 */
+	virtual void save()
+	{
+	}
+
+	/**
+	 * Load a variable from eeprom
+	 */
+	virtual void load()
+	{
+	}
+
+	/**
+	 * Get the name. This is useful for ground stations.
+	 */
+	const char * getName() { return _name; }
+
+	/**
+	 * If sync is true the a load will always occure before a get and a save will always
+	 * occure before a set.
+	 */
+	bool getSync() { return _sync; }
+	void setSync(bool sync) { _sync = sync; }
+
+protected:
+	type _data; /** The data that is stored on the heap */
+	const char * _name; /** The variable name, useful for gcs and terminal output */
+	bool _sync; /** Whether or not to call save/load on get/set */
+};
+
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
