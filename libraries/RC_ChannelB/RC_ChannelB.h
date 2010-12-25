@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /// @file	RC_ChannelB.h
-/// @brief	RC_ChannelB manager, with EEPROM-backed storage of constants.
+/// @brief	RC_ChannelB manager
 
 #ifndef RC_ChannelB_h
 #define RC_ChannelB_h
@@ -57,15 +57,15 @@ private:
 	const uint16_t & _pwmMax;
 	const uint16_t & _pwmDeadZone;
 	const bool & _filter;
-	const int8_t & _reverse;
+	const bool & _reverse;
 
 	// internal states
 	uint16_t _pwm; // this is the internal state, positino is just created when needed
 	uint16_t _pwmRadio; // radio pwm input
 
 	// private methods
-	uint16_t _positionToPwm(float position);
-	float _pwmToPosition(uint16_t pwm);
+	uint16_t _positionToPwm(const float & position);
+	float _pwmToPosition(const uint16_t & pwm);
 };
 
 #endif	
