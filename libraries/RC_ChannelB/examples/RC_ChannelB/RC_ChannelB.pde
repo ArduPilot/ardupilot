@@ -1,6 +1,6 @@
 /*
 	Example of RC_Channel library.
-	Code by James Goppert. 2010 
+	Code by James Goppert/ Jason Short. 2010 
 	DIYDrones.com
 
 */
