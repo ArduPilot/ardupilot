@@ -1,6 +1,6 @@
 /*
 	RC_ChannelB.cpp - Radio library for Arduino
-	Code by Jason Short. DIYDrones.com
+	Code by Jason Short, James Goppert. DIYDrones.com
 	
 	This library is free software; you can redistribute it and / or
 		modify it under the terms of the GNU Lesser General Public
@@ -14,180 +14,97 @@
 #include "WProgram.h"
 #include "RC_ChannelB.h"
 
-#define ANGLE 0
-#define RANGE 1
-
-// setup the control preferences
-void 	
-RC_ChannelB::set_range(int low, int high)
+void
+RC_ChannelB::readRadio(uint16_t pwmRadio)
 {
-	_type 	= RANGE;
-	_high 	= high;
-	_low 	= low;
+	// apply reverse
+	if(_reverse) _pwmRadio = (_pwmNeutral - pwmRadio) + _pwmNeutral;
+	else _pwmRadio = pwmRadio;
+
+	setPwm(pwmRadio);
 }
 
 void
-RC_ChannelB::set_angle(int angle)
+RC_ChannelB::setPwm(uint16_t pwm)
 {
-	_type 	= ANGLE;
-	_high 	= angle;
-}
+	// apply reverse
+	if(_reverse) pwm = (_pwmNeutral-pwm) + _pwmNeutral;
 
-void
-RC_ChannelB::set_reverse(bool reverse)
-{
-	if (reverse) _reverse = -1;
-	else _reverse = 1;
-}
-
-void
-RC_ChannelB::set_filter(bool filter)
-{
-	_filter = filter;
-}
-
-// call after first read
-void
-RC_ChannelB::trim()
-{
-	radio_trim = radio_in;
-	
-}
-
-// read input from APM_RC - create a control_in value
-void
-RC_ChannelB::set_pwm(int pwm)
-{
-	//Serial.print(pwm,DEC);
-
+	// apply filter
 	if(_filter){
-		if(radio_in == 0)
-			radio_in = pwm;
+		if(_pwm == 0)
+			_pwm = pwm;
 		else
-			radio_in = ((pwm + radio_in) >> 1);		// Small filtering
+			_pwm = ((pwm + _pwm) >> 1);		// Small filtering
 	}else{
-		radio_in = pwm;
+		_pwm = pwm;
 	}
-	
-	if(_type == RANGE){
-		//Serial.print("range ");
-		control_in = pwm_to_range();
-		control_in = (control_in < dead_zone) ? 0 : control_in;
-	}else{
-		control_in = pwm_to_angle();
-		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
+
+	// apply deadzone
+	_pwm = (abs(_pwm - _pwmNeutral) < _pwmDeadZone) ? _pwmNeutral : _pwm;
+}
+
+void
+RC_ChannelB::setPosition(float position)
+{
+	setPwm(_positionToPwm(position));
+}
+
+void
+RC_ChannelB::mixRadio(uint16_t infStart)
+{
+	float inf = abs(_pwmRadio - _pwmNeutral);
+	inf = min(inf, infStart);
+	inf = ((infStart - inf) /infStart);
+	setPwm(_pwm*inf + _pwmRadio); 
+}
+
+uint16_t
+RC_ChannelB::_positionToPwm(float position)
+{
+	if(position < 0)
+		return (position / _scale) * (_pwmMin - _pwmNeutral);
+	else
+		return (position / _scale) * (_pwmMax - _pwmNeutral);
+}
+
+float
+RC_ChannelB::_pwmToPosition(uint16_t pwm)
+{
+	if(_pwm < _pwmNeutral)
+		return _scale * (_pwm - _pwmNeutral)/(_pwmNeutral - _pwmMin);
+	else
+		return _scale * (_pwm - _pwmNeutral)/(_pwmMax - _pwmNeutral);
+}
+
+void
+RC_ChannelB::loadEEProm()
+{
+	if (_storageType == STORE_EEPROM)
+	{
+		eeprom_read_block((void*)&_scale,(const void*)(_address),sizeof(_scale));
+		eeprom_read_block((void*)&_pwmMin,(const void*)(_address + 4),sizeof(_pwmMin));
+		eeprom_read_block((void*)&_pwmMax,(const void*)(_address + 6),sizeof(_pwmMax));
+		eeprom_read_block((void*)&_pwmNeutral,(const void*)(_address + 8),sizeof(_pwmNeutral));
+		eeprom_read_block((void*)&_pwmDeadZone,(const void*)(_address + 10),sizeof(_pwmDeadZone));
+		eeprom_read_block((void*)&_filter,(const void*)(_address+12),sizeof(_filter));
+		eeprom_read_block((void*)&_pwmDeadZone,(const void*)(_address+13),sizeof(_pwmDeadZone));
 	}
 }
 
-int
-RC_ChannelB::control_mix(float value)
-{
-	return (1 - abs(control_in / _high)) * value + control_in;
-}
-
-// are we below a threshold?
-bool
-RC_ChannelB::get_failsafe(void)
-{
-	return (radio_in < (radio_min - 50));
-}
-
-// returns just the PWM without the offset from radio_min
 void
-RC_ChannelB::calc_pwm(void)
+RC_ChannelB::saveEEProm()
 {
-
-	if(_type == RANGE){
-		pwm_out = range_to_pwm();
-	}else{
-		pwm_out = angle_to_pwm();
+	if (_storageType == STORE_EEPROM)
+	{
+		eeprom_write_block((const void*)&_scale,(void*)(_address),sizeof(_scale));
+		eeprom_write_block((const void*)&_pwmMin,(void*)(_address + 4),sizeof(_pwmMin));
+		eeprom_write_block((const void*)&_pwmMax,(void*)(_address + 6),sizeof(_pwmMax));
+		eeprom_write_block((const void*)&_pwmNeutral,(void*)(_address + 8),sizeof(_pwmNeutral));
+		eeprom_write_block((const void*)&_pwmDeadZone,(void*)(_address + 10),sizeof(_pwmDeadZone));
+		eeprom_write_block((const void*)&_filter,(void*)(_address+12),sizeof(_filter));
+		eeprom_write_block((const void*)&_pwmDeadZone,(void*)(_address+13),sizeof(_pwmDeadZone));
 	}
-	radio_out = pwm_out + radio_min;
 }
 
 // ------------------------------------------
-
-void
-RC_ChannelB::load_eeprom(void)
-{
-	radio_min 	= eeprom_read_word((uint16_t *)	_address);
-	radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
-	radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
-}
-
-void
-RC_ChannelB::save_eeprom(void)
-{
-	eeprom_write_word((uint16_t *)	_address, 			radio_min);
-	eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
-}
-
-// ------------------------------------------
-void
-RC_ChannelB::save_trim(void)
-{
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
-}
-
-// ------------------------------------------
-
-void
-RC_ChannelB::update_min_max()
-{
-	radio_min = min(radio_min, radio_in);
-	radio_max = max(radio_max, radio_in);
-}
-
-// ------------------------------------------
-
-int16_t 
-RC_ChannelB::pwm_to_angle()
-{
-	if(radio_in < radio_trim)
-		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
-	else
-		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
-}
-
-float 
-RC_ChannelB::norm_input()
-{
-	if(radio_in < radio_trim)
-		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
-	else
-		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
-}
-
-float 
-RC_ChannelB::norm_output()
-{
-	if(radio_out < radio_trim)
-		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
-	else
-		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
-}
-
-int16_t
-RC_ChannelB::angle_to_pwm()
-{
-	if(servo_out < 0)
-		return (((float)servo_out / (float)_high) * (float)(radio_max - radio_trim));
-	else
-		return (((float)servo_out / (float)_high) * (float)(radio_trim - radio_min));
-}
-
-// ------------------------------------------
-
-int16_t
-RC_ChannelB::pwm_to_range()
-{
-	return _reverse * (_low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min))));
-}
-
-int16_t
-RC_ChannelB::range_to_pwm()
-{
-	return (((float)servo_out / (float)(_high - _low)) * (float)(radio_max - radio_min));
-}
-

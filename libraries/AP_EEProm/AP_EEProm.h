@@ -19,6 +19,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_Common.h>
 #include <AP_Vector.h>
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
@@ -29,18 +30,6 @@
 class AP_EEPromEntry
 {
 public:
-	/**
-	 * Default constructor
-	 */
-	AP_EEPromEntry(const char * name = "") : _id(0), _address(0), _name(name), _sync(false)
-	{
-	}
-
-	/**
-	 * Note: The set/get entry functions are virtual and therefore require more machine code, so use set/get in 
-	 * AP_EEPromVar unless you are accessing via the registry.
-	 */
-	
 	/**
 	 * Pure virtual function for setting the data value as a float. The function must handle the cast to 
 	 * the stored variable types.
@@ -54,32 +43,19 @@ public:
 	virtual float getEntry() = 0;
 
 	/**
+	 * Pure virtual function for getting entry name.
+	 */
+	virtual const char * getEntryName() = 0;
+
+	/**
 	 * Get the id of the variable.
 	 */
-	uint16_t getId() { return _id; }
+	virtual uint16_t getEntryId() = 0;
 
 	/**
 	 * Get the address of the variable.
 	 */
-	uint16_t getAddress() { return _address; }
-
-	/**
-	 * Get the name. This is useful for ground stations.
-	 */
-	const char * getName() { return _name; }
-
-	/**
-	 * If sync is true the a load will always occure before a get and a save will always
-	 * occure before a set.
-	 */
-	bool setSync(bool sync) { _sync = sync; }
-
-protected:
-
-	uint16_t _id; /** Variable identifier */ 
-	uint16_t _address;  /** EEProm address of variable */
-	const char * _name; /** The name of the variable, a string */
-	bool _sync; /** true: save/load before get/set, false: don't call save/load automatically*/
+	virtual uint16_t getEntryAddress() = 0;
 };
 
 /**
@@ -119,73 +95,35 @@ extern AP_EEPromRegistry eepromRegistry;
  * abstract template type.
  */
 template  <class type>
-class AP_EEPromVar : public AP_EEPromEntry
+class AP_EEPromVar : public AP_EEPromEntry, public AP_Var<type>
 {
 public:
 	/**
 	 * The default constrcutor
 	 */
-	AP_EEPromVar(const char * name = "") : AP_EEPromEntry(name)
+	AP_EEPromVar(type data, const char * name = "", bool sync=false) : 
+		AP_Var<type>(data,name,sync)
 	{
-		eepromRegistry.add(this,_id,_address,sizeof(_data));
+		eepromRegistry.add(this,_id,_address,sizeof(type));
 	}
 
-	/**
-	 * Non-virtual set used for efficient variable setting without
-	 * using eepromRegistry
-	 */
-	void set(type val) {
-		_data = val; 
-		if (_sync) save();
-	}
+	virtual void setEntry(float val) { this->setAsFloat(val); }
+	virtual float getEntry() { return this->getAsFloat(); }
+	virtual const char * getEntryName() { return this->getName(); }
 
 	/**
-	 * Non-virtual get used for efficient getting of a variable
-	 * without using eepromRegistry
+	 * Get the id of the variable.
 	 */
-	type get() {
-		if (_sync) load();
-		return _data;
-	}
+	virtual uint16_t getEntryId() { return _id; }
 
 	/**
-	 * Save a variable to eeprom
+	 * Get the address of the variable.
 	 */
-	void save()
-	{
-		eeprom_write_block((const void*)&_data,(void*)(_address),sizeof(_data));
-	}
-
-	/**
-	 * Load a variable from eeprom
-	 */
-	void load()
-	{
-		eeprom_read_block((void*)&_data,(const void*)(_address),sizeof(_data));
-	}
-
-	/**
-	 * Virtual call that allows an type of variable to be set by a float.
-	 * This requires casting and will require some thought if initializing a 
-	 * boolean etc. Initializing a boolean to false, pass (0.0), true, pass (1.0) etc..
-	 */
-	virtual void setEntry(float val)
-	{
-		_data = (type)val;
-		if (_sync) save();
-	}
-
-	/**
-	 * Virtual call that retrieves any variable types as a float.
-	 */
-	virtual float getEntry()
-	{
-		if (_sync) load();
-		return (float)_data;
-	}
+	virtual uint16_t getEntryAddress() { return _address; }
 
 private:
-	type _data; /** The data that is stored on the heap */
+	uint16_t _id; /** Variable identifier */ 
+	uint16_t _address;  /** EEProm address of variable */
 };
 
 #endif
