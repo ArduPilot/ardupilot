@@ -11,12 +11,10 @@
 
 #include <math.h>
 #include <avr/eeprom.h>
-#include "WProgram.h"
 #include "RC_ChannelB.h"
+#include <AP_Common.h>
 
-void
-RC_ChannelB::readRadio(uint16_t pwmRadio)
-{
+void RC_ChannelB::readRadio(uint16_t pwmRadio) {
 	// apply reverse
 	if(_reverse) _pwmRadio = (_pwmNeutral - pwmRadio) + _pwmNeutral;
 	else _pwmRadio = pwmRadio;
@@ -75,36 +73,6 @@ RC_ChannelB::_pwmToPosition(uint16_t pwm)
 		return _scale * (_pwm - _pwmNeutral)/(_pwmNeutral - _pwmMin);
 	else
 		return _scale * (_pwm - _pwmNeutral)/(_pwmMax - _pwmNeutral);
-}
-
-void
-RC_ChannelB::loadEEProm()
-{
-	if (_storageType == STORE_EEPROM)
-	{
-		eeprom_read_block((void*)&_scale,(const void*)(_address),sizeof(_scale));
-		eeprom_read_block((void*)&_pwmMin,(const void*)(_address + 4),sizeof(_pwmMin));
-		eeprom_read_block((void*)&_pwmMax,(const void*)(_address + 6),sizeof(_pwmMax));
-		eeprom_read_block((void*)&_pwmNeutral,(const void*)(_address + 8),sizeof(_pwmNeutral));
-		eeprom_read_block((void*)&_pwmDeadZone,(const void*)(_address + 10),sizeof(_pwmDeadZone));
-		eeprom_read_block((void*)&_filter,(const void*)(_address+12),sizeof(_filter));
-		eeprom_read_block((void*)&_pwmDeadZone,(const void*)(_address+13),sizeof(_pwmDeadZone));
-	}
-}
-
-void
-RC_ChannelB::saveEEProm()
-{
-	if (_storageType == STORE_EEPROM)
-	{
-		eeprom_write_block((const void*)&_scale,(void*)(_address),sizeof(_scale));
-		eeprom_write_block((const void*)&_pwmMin,(void*)(_address + 4),sizeof(_pwmMin));
-		eeprom_write_block((const void*)&_pwmMax,(void*)(_address + 6),sizeof(_pwmMax));
-		eeprom_write_block((const void*)&_pwmNeutral,(void*)(_address + 8),sizeof(_pwmNeutral));
-		eeprom_write_block((const void*)&_pwmDeadZone,(void*)(_address + 10),sizeof(_pwmDeadZone));
-		eeprom_write_block((const void*)&_filter,(void*)(_address+12),sizeof(_filter));
-		eeprom_write_block((const void*)&_pwmDeadZone,(void*)(_address+13),sizeof(_pwmDeadZone));
-	}
 }
 
 // ------------------------------------------

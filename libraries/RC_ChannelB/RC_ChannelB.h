@@ -7,93 +7,31 @@
 #define RC_ChannelB_h
 
 #include <stdint.h>
-#include <AP_EEProm.h>
+#include <FastSerial.h>
 
 /// @class	RC_ChannelB
 /// @brief	Object managing one RC channel
+//
 class RC_ChannelB{
  
 public:	
 
-	enum storage_t
-	{
-		STORE_EXTERNAL,
-		STORE_EEPROM
-	};
-
 	/// Constructor
 	///
-	RC_ChannelB() :
-		_scale(0),
-		_pwmMin(1000),
-		_pwmMax(2000),
-		_pwmNeutral(1500),
-		_pwmDeadZone(100),
+	RC_ChannelB(const float & scale, const uint16_t & pwmMin, const uint16_t & pwmNeutral,
+			const uint16_t & pwmMax, const uint16_t & pwmDeadZone,
+			const bool & filter, const bool & reverse) :
+		_scale(scale),
+		_pwmMin(pwmMin),
+		_pwmMax(pwmMax),
+		_pwmNeutral(pwmNeutral),
+		_pwmDeadZone(pwmDeadZone),
 		_pwm(0),
 		_pwmRadio(0),
-		_filter(true),
-		_reverse(false),
-		_address(0),
-		_storageType(STORE_EXTERNAL)
+		_filter(filter),
+		_reverse(reverse)
 	{
 	}
-
-	/// Constructor
-	///
-	RC_ChannelB() :
-		_scale(0),
-		_pwmMin(1000),
-		_pwmNeutral(1500),
-		_pwmMax(2000),
-		_pwmDeadZone(100),
-		_pwm(0),
-		_pwmRadio(0),
-		_filter(true),
-		_reverse(false),
-		_address(address),
-		_storageType(STORE_EEPROM)
-	{
-	}
-
-	/// Constructor
-	///
-	RC_ChannelB(uint16_t address) :
-		_scale(0),
-		_pwmMin(1000),
-		_pwmNeutral(1500),
-		_pwmMax(2000),
-		_pwmDeadZone(100),
-		_pwm(0),
-		_pwmRadio(0),
-		_filter(true),
-		_reverse(false),
-		_address(address),
-		_storageType(STORE_EEPROM)
-	{
-	}
-
-	// set configuration
-	void setScale(float scale) { _scale = scale; }
-	void setReverse(bool reverse) { _reverse = reverse; }
-	void setFilter(bool filter) { _filter = filter; }
-	void setPwmMin(uint16_t pwmMin) { _pwmMin = pwmMin; }
-	void setPwmMax(uint16_t pwmMax) { _pwmMax = pwmMax; }
-	void setPwmNeutral(uint16_t pwmNeutral) { _pwmNeutral = pwmNeutral; }
-	void setPwmNeutral() { _pwmNeutral = getPwm(); }
-	void setPwmDeadZone(uint16_t pwmDeadZone) { _pwmDeadZone = pwmDeadZone; }
-
-	// save/load
-	void saveEEProm();
-	void loadEEProm();
-
-	// get configuration
-	float getScale() { return _scale; }
-	bool getReverse() { return _reverse; }
-	bool getFilter() { return _filter; }
-	uint16_t getPwmMin() { return _pwmMin; }
-	uint16_t getPwmMax() { return _pwmMax; }
-	uint16_t getPwmNeutral() { return _pwmNeutral; }
-	uint16_t getPwmDeadZone() { return _pwmDeadZone; }
 
 	// set servo state
 	void readRadio(uint16_t pwmRadio);
@@ -112,19 +50,18 @@ public:
 
 private:
 
-	float _scale;
-	AP_EEProm<uint16_t> _pwmMin;
-	uint16_t _pwmNeutral;
-	uint16_t _pwmMax;
-	uint16_t _pwmDeadZone;
+	// configuration
+	const float & _scale;
+	const uint16_t & _pwmMin;
+	const uint16_t & _pwmNeutral;
+	const uint16_t & _pwmMax;
+	const uint16_t & _pwmDeadZone;
+	const bool & _filter;
+	const int8_t & _reverse;
+
+	// internal states
 	uint16_t _pwm; // this is the internal state, positino is just created when needed
 	uint16_t _pwmRadio; // radio pwm input
-	
-	// configuration
-	bool _filter;
-	int8_t _reverse;
-	storage_t _storageType;
-	uint16_t _address;
 
 	// private methods
 	uint16_t _positionToPwm(float position);
