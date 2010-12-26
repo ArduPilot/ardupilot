@@ -8,29 +8,32 @@ throttle control
 void output_manual_throttle()
 {
 	rc_3.servo_out = rc_3.control_in;
-	//rc_3.servo_out = (float)rc_3.servo_out * throttle_boost();
+	rc_3.servo_out = (float)rc_3.servo_out * angle_boost();
 }
 
 // Autopilot
 // ---------
 void output_auto_throttle()
 {
-	rc_3.servo_out 	= (float)nav_throttle * throttle_boost();
+	rc_3.servo_out 	= (float)nav_throttle * angle_boost();
+	rc_3.servo_out = max(rc_3.servo_out, 1);
 }
+// Jason
 
 void calc_nav_throttle()
 {
-	long err = constrain (altitude_error, -300, 300); //+-5 meters
+	long err = constrain (altitude_error, -300, 300); //+-3 meters
 	long temp = pid_throttle.get_pid(err, deltaMiliSeconds, 1.0);
-	nav_throttle = (float)(throttle_cruise + temp) * throttle_boost();
+	nav_throttle = (float)(throttle_cruise + temp) * angle_boost();
 }
 
-float throttle_boost()
+float angle_boost()
 {
 	//static byte flipper;
 	float temp = 1 / (cos(dcm.roll) * cos(dcm.pitch));
-	if(temp > 1.25) 
-		temp = 1.25;
+	temp *= .5;
+	if(temp > 1.2) 
+		temp = 1.2;
 	return temp;
 }
 
@@ -42,15 +45,34 @@ float throttle_boost()
 yaw control
 ****************************************************************/
 
-void input_yaw_hold()
+void input_yaw_hold_2()
 {
 	if(rc_3.control_in == 0){
+		// Reset the yaw hold
 		nav_yaw = yaw_sensor;
 	
 	}else if(rc_4.control_in == 0){
 		// do nothing
+		
 	}else{
+		// create up to 60° of yaw error
 		nav_yaw = yaw_sensor + rc_4.control_in;
+		nav_yaw = wrap_360(nav_yaw);
+	}
+}
+
+void input_yaw_hold()
+{
+	if(rc_3.control_in == 0){
+		// Reset the yaw hold
+		nav_yaw = yaw_sensor;
+	
+	}else if(rc_4.control_in == 0){
+		// do nothing
+		
+	}else{
+		// create up to 60° of yaw error
+		nav_yaw += ((long)rc_4.control_in * (long)deltaMiliSeconds) / 500; // we'll get 60° * 2 or 120° per second
 		nav_yaw = wrap_360(nav_yaw);
 	}
 }
