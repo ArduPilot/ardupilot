@@ -30,7 +30,7 @@ float angle_boost()
 {
 	//static byte flipper;
 	float temp = 1 / (cos(dcm.roll) * cos(dcm.pitch));
-	temp *= .5;
+	//temp *= .5;
 	if(temp > 1.2) 
 		temp = 1.2;
 	return temp;
