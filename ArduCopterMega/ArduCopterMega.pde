@@ -21,6 +21,7 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_EEPROMB.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
 #include <RC_Channel.h> 	// ArduPilot Mega RC Library
 #include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library 
