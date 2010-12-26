@@ -7,6 +7,7 @@
 #define PID_h
 
 #include <stdint.h>
+#include <AP_EEPROMB.h>
 
 /// @class	PID
 /// @brief	Object managing one PID control
@@ -57,6 +58,7 @@ public:
 	///						array is used as kP, kI, kD and imax
 	///						respectively.
 	///
+	
 	PID(float *gain_array) :
 		_storage(STORE_OFF),
 		_gain_array(gain_array)
@@ -75,7 +77,7 @@ public:
 	/// @param scaler	An arbitrary scale factor
 	///
 	/// @returns		The updated control output.
-	///
+	///				
 	long 	get_pid(int32_t error, uint16_t dt, float scaler = 1.0);
 
 	/// Reset the PID integrator
@@ -105,15 +107,18 @@ public:
 	void	kI(const float v)		{ _gain_array[1] = v; }
 	void	kD(const float v)		{ _gain_array[2] = v; }
 	void	imax(const float v);
-
+	
+	void	address(const uint16_t v)	{ _address = v; }
+	
 	// one-shot operator for setting all of the gain properties at once
-	void operator ()(const float p, const float i, const float d, const float max)
-	{ kP(p); kI(i); kD(d); imax(max); }
+	//void operator ()(const float p, const float i, const float d, const float max)
+	//{ kP(p); kI(i); kD(d); imax(max); }
 	//@}
 	
 	float	get_integrator() 		{ return _integrator; }
 
 private:
+	AP_EEPROMB	_ee;
 	uint16_t	_address;			///< EEPROM address for save/restore of P/I/D
 	float		*_gain_array; 		///< pointer to the gains for this pid
 

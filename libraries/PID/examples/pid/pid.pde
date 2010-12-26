@@ -6,9 +6,10 @@
 #include <PID.h> // ArduPilot Mega RC Library
 #include <APM_RC.h> // ArduPilot RC Library
 
-PID pid;
 long radio_in;
 long radio_trim;
+
+PID pid(0x16);
 
 void setup()
 {
