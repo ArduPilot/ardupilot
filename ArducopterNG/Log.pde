@@ -304,7 +304,7 @@ void Log_Write_Raw()
 }
 #endif
 
-#ifdef LOG_RANGEFINDER
+#if LOG_RANGEFINDER
 // Write a Sensor Raw data packet
 void Log_Write_RangeFinder(int rf1, int rf2, int rf3,int rf4, int rf5, int rf6)
 {
@@ -536,7 +536,7 @@ void Log_Read_Raw()
 	SerPriln(" ");
 }
 
-// Read a raw accel/gyro packet
+// Read a RangeFinder packet
 void Log_Read_RangeFinder()
 {
 	SerPri("RF:");
@@ -550,8 +550,7 @@ void Log_Read_RangeFinder()
         SerPri(",");
         SerPri(DataFlash.ReadInt());
         SerPri(",");
-        SerPri(DataFlash.ReadInt());
-        SerPri(",");        
+        SerPri(DataFlash.ReadInt());   
 	SerPriln(" ");
 }
 

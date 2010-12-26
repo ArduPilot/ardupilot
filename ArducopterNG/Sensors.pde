@@ -101,17 +101,27 @@ void read_baro(void)
 #endif
 
 #ifdef IsRANGEFINDER
-/* This function read IR data, convert to cm units and filter the data */
+/* This function reads in the values from the attached range finders (currently only downward pointing sonar) */
 void read_RF_Sensors()
 {
-    AP_RangeFinder_frontRight.read();
-    AP_RangeFinder_backRight.read();
-    AP_RangeFinder_backLeft.read();
-    AP_RangeFinder_frontLeft.read();  
+//    AP_RangeFinder_frontRight.read();
+//    AP_RangeFinder_backRight.read();
+//    AP_RangeFinder_backLeft.read();
+//    AP_RangeFinder_frontLeft.read();
 
-#ifdef LOG_RANGEFINDER    
-    Log_Write_RangeFinder(AP_RangeFinder_frontRight.distance, AP_RangeFinder_backRight.distance, AP_RangeFinder_backLeft.distance,AP_RangeFinder_frontLeft.distance,0,0);
-#endif // LOG_RANGEFINDER
+  // calculate altitude from down sensor
+  AP_RangeFinder_down.read();
+  if( AP_RangeFinder_down.distance < AP_RangeFinder_down.min_distance || AP_RangeFinder_down.distance >= AP_RangeFinder_down.max_distance * 0.8 ) {
+      sonar_altitude_valid = 0;
+      press_alt = 0;
+  }else{
+      sonar_altitude_valid = 1;
+      press_alt = DCM_Matrix[2][2] * AP_RangeFinder_down.distance;
+  }
+
+#if LOG_RANGEFINDER    
+    //Log_Write_RangeFinder(AP_RangeFinder_frontRight.distance, AP_RangeFinder_backRight.distance, AP_RangeFinder_backLeft.distance,AP_RangeFinder_frontLeft.distance,AP_RangeFinder_down.distance,0);
+#endif
 }
 #endif
 

@@ -294,6 +294,7 @@ float gps_lon_I=0;
 // object avoidance
 float RF_roll_I=0;
 float RF_pitch_I=0;
+float RF_throttle_I=0;
 float command_RF_roll = 0;
 float command_RF_pitch = 0;
 float command_RF_throttle = 0;
@@ -308,6 +309,7 @@ float command_altitude;
 float altitude_I;
 float altitude_D;
 int ch_throttle_altitude_hold;
+int sonar_altitude_valid = 0;
 
 //Pressure Sensor variables
 long target_baro_altitude;         // Altitude in cm
@@ -419,6 +421,7 @@ unsigned long elapsedTime			= 0;		// for doing custom events
 #define LOG_MODE 1		// Logs mode changes
 #define LOG_RAW 0		// Logs raw accel/gyro data
 #define LOG_SEN 1               // Logs sensor data
+#define LOG_RANGEFINDER 0       // Logs data from range finders
 
 //  GCS Message ID's
 #define MSG_ACKNOWLEDGE 0x00
@@ -569,6 +572,11 @@ float KI_RF_PITCH;
 float RF_MAX_ANGLE;    // Maximun command roll and pitch angle from obstacle avoiding control
 float RF_SAFETY_ZONE;  // object avoidance will move away from objects within this distance (in cm)
 
+// sonar for altitude hold
+float KP_SONAR_ALTITUDE;
+float KI_SONAR_ALTITUDE;
+float KD_SONAR_ALTITUDE;
+
 // This function call contains the default values that are set to the ArduCopter
 // when a "Default EEPROM Value" command is sent through serial interface
 void defaultUserConfig() {
@@ -644,6 +652,9 @@ void defaultUserConfig() {
   KD_RF_PITCH                = 0.03;
   RF_MAX_ANGLE               = 10.0;
   RF_SAFETY_ZONE             = 120.0;  // object avoidance will avoid objects within this range (in cm)
+  KP_SONAR_ALTITUDE          = 0.8;
+  KI_SONAR_ALTITUDE          = 0.3;
+  KD_SONAR_ALTITUDE          = 0.7;
 }
 
 // EEPROM storage addresses
@@ -712,13 +723,16 @@ void defaultUserConfig() {
 #define mag_offset_z_ADR       248
 #define MIN_THROTTLE_ADR       252
 #define KP_RF_ROLL_ADR         256
-#define KD_RF_ROLL_ADR         260
-#define KI_RF_ROLL_ADR         264
+#define KI_RF_ROLL_ADR         260
+#define KD_RF_ROLL_ADR         264
 #define KP_RF_PITCH_ADR        268
-#define KD_RF_PITCH_ADR        272
-#define KI_RF_PITCH_ADR        276
+#define KI_RF_PITCH_ADR        272
+#define KD_RF_PITCH_ADR        276
 #define RF_MAX_ANGLE_ADR       280
 #define RF_SAFETY_ZONE_ADR     284
+#define KP_SONAR_ALTITUDE_ADR  288
+#define KI_SONAR_ALTITUDE_ADR  292
+#define KD_SONAR_ALTITUDE_ADR  296
 
 //#define eeprom_counter_ADR     238  // hmm should i move these?!? , 31-10-10, jp
 //#define eeprom_checker_ADR     240  // this too... , 31-10-10, jp

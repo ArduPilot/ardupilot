@@ -42,12 +42,12 @@ void motor_output()
   byte throttle_mode=0;
  
   throttle = ch_throttle;
-  #ifdef UseBMP
+  #if defined(UseBMP) || defined(IsRANGEFINDER)
   if (AP_mode == AP_AUTOMATIC_MODE)
-    {
+  {
     throttle = ch_throttle_altitude_hold;
     throttle_mode=1;
-    }
+  }
   #endif
   
   if ((throttle_mode==0)&&(ch_throttle < (MIN_THROTTLE + 100)))  // If throttle is low we disable yaw (neccesary to arm/disarm motors safely)

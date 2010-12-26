@@ -85,7 +85,7 @@ void RunCLI () {
         CALIB_Esc();
         break; 
       case 'o':
-        Set_Obstacle_Avoidance_PIDs();
+        Set_SonarAndObstacleAvoidance_PIDs();
         break;
       case 's':
         Show_Settings();
@@ -126,7 +126,7 @@ void Show_MainMenu() {
   SerPrln(" e - ESC Throttle calibration (Works with official ArduCopter ESCs)");
   SerPrln(" i - Initialize and calibrate Accel offsets");
   SerPrln(" m - Motor tester with AIL/ELE stick");
-  SerPrln(" o - Show/Save obstacle avoidance PIDs");
+  SerPrln(" o - Show/Save sonar & obstacle avoidance PIDs");
   SerPrln(" r - Reset to factory settings");
   SerPrln(" t - Calibrate MIN Throttle value");
   SerPrln(" s - Show settings");
@@ -556,14 +556,18 @@ void Show_Settings() {
     SerPrln("+ mode");
   }
   
-  Show_Obstacle_Avoidance_PIDs() ;
+  Show_SonarAndObstacleAvoidance_PIDs();
 
   SerPrln();
 }
 
 // Display obstacle avoidance pids
-void Show_Obstacle_Avoidance_PIDs() {
-  SerPri("\tSafetyZone: ");
+void Show_SonarAndObstacleAvoidance_PIDs() {
+  SerPri("\tSonar PID: ");
+  SerPri(KP_SONAR_ALTITUDE); cspc();
+  SerPri(KI_SONAR_ALTITUDE); cspc();
+  SerPrln(KD_SONAR_ALTITUDE);
+  SerPri("\tObstacle SafetyZone: ");
   SerPrln(RF_SAFETY_ZONE);
   SerPri("\tRoll PID: ");
   SerPri(KP_RF_ROLL); cspc();
@@ -580,35 +584,61 @@ void Show_Obstacle_Avoidance_PIDs() {
 }
 
 // save RF pids to eeprom
-void Save_Obstacle_Avoidance_PIDs_toEEPROM() {
+void Save_SonarAndObstacleAvoidancePIDs_toEEPROM() {  
   writeEEPROM(KP_RF_ROLL,KP_RF_ROLL_ADR);
+  writeEEPROM(KI_RF_ROLL,KI_RF_ROLL_ADR);  
   writeEEPROM(KD_RF_ROLL,KD_RF_ROLL_ADR);
-  writeEEPROM(KI_RF_ROLL,KI_RF_ROLL_ADR);
   writeEEPROM(KP_RF_PITCH,KP_RF_PITCH_ADR);
+  writeEEPROM(KI_RF_PITCH,KI_RF_PITCH_ADR);  
   writeEEPROM(KD_RF_PITCH,KD_RF_PITCH_ADR);
-  writeEEPROM(KI_RF_PITCH,KI_RF_PITCH_ADR);
   writeEEPROM(RF_MAX_ANGLE,RF_MAX_ANGLE_ADR);
   writeEEPROM(RF_SAFETY_ZONE,RF_SAFETY_ZONE_ADR);
+  writeEEPROM(KP_SONAR_ALTITUDE,KP_SONAR_ALTITUDE_ADR);
+  writeEEPROM(KI_SONAR_ALTITUDE,KI_SONAR_ALTITUDE_ADR);
+  writeEEPROM(KD_SONAR_ALTITUDE,KD_SONAR_ALTITUDE_ADR);    
 }
 
 // 
-void Set_Obstacle_Avoidance_PIDs() {
+void Set_SonarAndObstacleAvoidance_PIDs() {
   float tempVal1, tempVal2, tempVal3;
   int saveToEeprom = 0;
   // Display current PID values
-  SerPrln("Obstacle Avoidance:");
-  Show_Obstacle_Avoidance_PIDs();
+  SerPrln("Sonar and Obstacle Avoidance:");
+  Show_SonarAndObstacleAvoidance_PIDs();
   SerPrln();
+  
+  // SONAR PIDs
+  SerFlu();
+  SerPri("Enter Sonar P;I;D; values or 0 to skip: ");
+  while( !SerAva() );  // wait until user presses a key
+  tempVal1 = readFloatSerial();
+  tempVal2 = readFloatSerial();
+  tempVal3 = readFloatSerial();
+  if( tempVal1 != 0 || tempVal2 != 0 || tempVal3 != 0 ) {
+      KP_SONAR_ALTITUDE = tempVal1;
+      KI_SONAR_ALTITUDE = tempVal2;
+      KD_SONAR_ALTITUDE = tempVal3;
+      SerPrln();
+      SerPri("P:");
+      SerPri(KP_SONAR_ALTITUDE);
+      SerPri("\tI:");
+      SerPri(KI_SONAR_ALTITUDE);
+      SerPri("\tD:");
+      SerPri(KD_SONAR_ALTITUDE);
+      saveToEeprom = 1;
+  }
+  SerPrln();    
   
   // SAFETY ZONE
   SerFlu();
   SerPri("Enter Safety Zone (in cm) or 0 to skip: ");
   while( !SerAva() );  // wait until user presses a key
   tempVal1 = readFloatSerial();
-  if( tempVal1 >= 20 && tempVal1 <= 150 ) {
+  if( tempVal1 >= 20 && tempVal1 <= 700 ) {
       RF_SAFETY_ZONE = tempVal1;
       SerPri("SafetyZone: ");
-      SerPrln(RF_SAFETY_ZONE);      
+      SerPri(RF_SAFETY_ZONE);
+      saveToEeprom = 1;   
   }
   SerPrln();      
       
@@ -662,7 +692,7 @@ void Set_Obstacle_Avoidance_PIDs() {
   while( !SerAva() );  // wait until user presses a key
   tempVal1 = readFloatSerial();
   SerPrln(tempVal1);
-  if( tempVal1 > 0 ) {
+  if( tempVal1 > 0 && tempVal1 < 90 ) {
       RF_MAX_ANGLE = tempVal1;
       SerPrln();
       SerPri("MaxAngle: "); 
@@ -673,8 +703,14 @@ void Set_Obstacle_Avoidance_PIDs() {
   
   // save to eeprom
   if( saveToEeprom == 1 ) {
-      Save_Obstacle_Avoidance_PIDs_toEEPROM();
+      SerPrln("Obstacle Avoidance:");
+      Show_SonarAndObstacleAvoidance_PIDs();
+      SerPrln();
+      Save_SonarAndObstacleAvoidancePIDs_toEEPROM();
       SerPrln("Saved to EEPROM");
+      SerPrln();
+  }else{
+      SerPrln("No changes. Nothing saved to EEPROM");
       SerPrln();
   }
 }
