@@ -86,6 +86,7 @@ byte 	control_mode		= STABILIZE;
 boolean failsafe			= false;		// did our throttle dip below the failsafe value?
 boolean ch3_failsafe		= false;
 byte 	oldSwitchPosition;					// for remembering the control mode switch
+byte	fbw_timer;							// for limiting the execution of FBW input
 
 const char *comma = ",";
 
@@ -94,6 +95,7 @@ const char* flight_mode_strings[] = {
 	"ACRO",
 	"STABILIZE",
 	"ALT_HOLD",
+	"FBW",
 	"AUTO",
 	"POSITION_HOLD",
 	"RTL",
@@ -736,9 +738,6 @@ void update_current_flight_mode(void)
 				// perform stabilzation
 				output_stabilize();
 
-				// hold yaw
-				//output_yaw_hold();
-				
 				// apply throttle control
 				output_auto_throttle();
 				break;
@@ -754,17 +753,59 @@ void update_current_flight_mode(void)
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
+
+				// get desired yaw control from radio
+				input_yaw_hold();
+
+				// Output Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
+
+				// apply throttle control
+				output_manual_throttle();
+
+				// perform stabilzation
+				output_stabilize();
+				break;
+				
+			case FBW:
+				// we are currently using manual throttle for testing.
+				fbw_timer++;
+				//call at 5 hz
+				if(fbw_timer > 20){
+					fbw_timer = 0;
+					current_loc.lat = 0;
+					current_loc.lng = 0;
+					
+					next_WP.lat = rc_1.control_in /5; // 10 meteres
+					next_WP.lng = -rc_2.control_in /5; // 10 meteres
+					
+					// waypoint distance from plane
+					// ----------------------------
+					wp_distance = GPS_wp_distance = getDistance(&current_loc, &next_WP);
+					
+					// target_bearing is where we should be heading 
+					// --------------------------------------------
+					nav_bearing = target_bearing = get_bearing(&current_loc, &next_WP);
+					
+					// not really needed
+					//update_navigation();
+				}
+
+				// Intput Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
+				calc_nav_pid();
+				calc_nav_roll();
+				calc_nav_pitch();
 								
 				// get desired yaw control from radio
 				input_yaw_hold();
 				
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
+
 				// apply throttle control
 				output_manual_throttle();
 
-				// hold yaw
-				//output_yaw_hold();
 
 				// perform stabilzation
 				output_stabilize();
@@ -793,9 +834,6 @@ void update_current_flight_mode(void)
 				// apply throttle control
 				output_auto_throttle();
 
-				// hold yaw
-				//output_yaw_hold();				
-
 				// perform stabilzation
 				output_stabilize();
 				break;
@@ -815,9 +853,6 @@ void update_current_flight_mode(void)
 				// ------------------------------------
 				// apply throttle control
 				output_auto_throttle();
-
-				// hold yaw
-				//output_yaw_hold();				
 
 				// perform stabilzation
 				output_stabilize();
@@ -842,9 +877,6 @@ void update_current_flight_mode(void)
 				// ------------------------------------
 				// apply throttle control
 				output_auto_throttle();
-
-				// hold yaw
-				//output_yaw_hold();				
 
 				// perform stabilzation
 				output_stabilize();
