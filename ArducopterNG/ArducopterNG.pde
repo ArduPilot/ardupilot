@@ -58,11 +58,11 @@
 #define IsMAG       // Do we have a Magnetometer connected, if have remember to activate it from Configurator
 //#define IsAM        // Do we have motormount LED's. AM = Atraction Mode
 //#define IsCAM       // Do we have camera stabilization in use, If you activate, check OUTPUT pins from ArduUser.h
-//#define IsRANGEFINDER // Do we have Range Finders connected
 
 //#define UseAirspeed  // Quads don't use AirSpeed... Legacy, jp 19-10-10
 #define UseBMP       // Use pressure sensor
 //#define BATTERY_EVENT 1   // (boolean) 0 = don't read battery, 1 = read battery voltage (only if you have it _wired_ up!)
+//#define IsRANGEFINDER // are we using a Sonar for altitude hold?  use this or "UseBMP" not both!
 
 #define CONFIGURATOR
 
@@ -225,12 +225,7 @@
 AP_ADC_ADS7844		adc;
 APM_BMP085_Class	APM_BMP085;
 AP_Compass_HMC5843	AP_Compass;
-#ifdef IsRANGEFINDER
-AP_RangeFinder_SharpGP2Y  AP_RangeFinder_frontRight;
-AP_RangeFinder_SharpGP2Y  AP_RangeFinder_backRight;
-AP_RangeFinder_SharpGP2Y  AP_RangeFinder_backLeft;
-AP_RangeFinder_SharpGP2Y  AP_RangeFinder_frontLeft;
-#endif
+AP_RangeFinder_MaxsonarXL  AP_RangeFinder_down;  // Other possible sonar is AP_RangeFinder_MaxsonarLV
 
 /* ************************************************************ */
 /* ************* MAIN PROGRAM - DECLARATIONS ****************** */
@@ -303,17 +298,13 @@ void setup() {
 // Main loop 
 void loop()
 {
-  //int aux;
-  //int i;
-  //float aux_float;
-
+  
   currentTimeMicros = micros();
   currentTime = currentTimeMicros / 1000;
 
   // Main loop at 200Hz (IMU + control)
   if ((currentTime-mainLoop) > 5)    // about 200Hz (every 5ms)
   {
-    //G_Dt = (currentTime-mainLoop)*0.001;   // Microseconds!!!
     G_Dt = (currentTimeMicros-previousTimeMicros) * 0.000001;   // Microseconds!!!
     mainLoop = currentTime;
     previousTimeMicros = currentTimeMicros;
@@ -393,23 +384,7 @@ void loop()
             }
         }
         #endif
-        #ifdef UseBMP
-        if (Baro_new_data)   // New altitude data?
-          {
-          ch_throttle_altitude_hold = Altitude_control_baro(press_alt,target_baro_altitude);   // Altitude control
-          Baro_new_data=0;
-          if (abs(ch_throttle-Initial_Throttle)>100)  // Change in stick position => altitude ascend/descend rate control
-            target_baro_altitude += (ch_throttle-Initial_Throttle)/25;
-          //Serial.print(Initial_Throttle);
-          //Serial.print(" ");
-          //Serial.print(ch_throttle);
-          //Serial.print(" ");
-          //Serial.println(target_baro_altitude);
-          }
-        #endif
-      }
-      else   // First time we enter in GPS position hold we capture the target position as the actual position
-      {
+      } else {  // First time we enter in GPS position hold we capture the target position as the actual position
         #ifdef IsGPS
         if (GPS.Fix){   // We need a GPS Fix to capture the actual position...
           target_lattitude = GPS.Lattitude;
@@ -419,22 +394,60 @@ void loop()
         #endif
         command_gps_roll=0;
         command_gps_pitch=0;
-        target_baro_altitude = press_alt;
-        Initial_Throttle = ch_throttle;
-        ch_throttle_altitude_hold = ch_throttle;
         Reset_I_terms_navigation();  // Reset I terms (in Navigation.pde)
       }
-      // obstacle avoidance - comes on with autopilot
+      
+      // Barometer Altitude control
+      #ifdef UseBMP
+      if( Baro_new_data )   // New altitude data?
+      {
+        // if it's the first time we're entering baro hold, grab some initial values
+        if( target_baro_altitude == 0 ) {
+            target_baro_altitude = press_alt;
+            Initial_Throttle = ch_throttle;
+            ch_throttle_altitude_hold = ch_throttle;
+            altitude_I = 0;
+        }
+        ch_throttle_altitude_hold = Altitude_control_baro(press_alt,target_baro_altitude);   // calculate throttle to maintain altitude
+        Baro_new_data=0;  // record that we have consumed the new data
+        
+        // modify the target altitude if user moves stick more than 100 up or down
+        if (abs(ch_throttle-Initial_Throttle)>100)
+          target_baro_altitude += (ch_throttle-Initial_Throttle)/25;  // Change in stick position => altitude ascend/descend rate control
+      }
+      #endif
+      
+      // Sonar Altitude control + object avoidance
       #ifdef IsRANGEFINDER // Do we have Range Finders connected?
       if( RF_new_data )
-      {
-          Obstacle_avoidance(RF_SAFETY_ZONE);
-          RF_new_data = 0;
+      {       
+        if( sonar_altitude_valid ) {
+          // if it's the first time we're entering sonar altitude hold, grab some initial values
+          if( target_sonar_altitude == 0 ) {
+              target_sonar_altitude = press_alt;
+              Initial_Throttle = ch_throttle;
+              ch_throttle_altitude_hold = ch_throttle;
+          }
+          ch_throttle_altitude_hold = Altitude_control_Sonar(press_alt,target_sonar_altitude);  // calculate throttle to maintain altitude
+
+          // modify the target altitude if user moves stick more than 100 up or down
+          if (abs(ch_throttle-Initial_Throttle)>100) { // Change in stick position => altitude ascend/descend rate control
+            target_sonar_altitude += (ch_throttle-Initial_Throttle)/25;
+            target_sonar_altitude = constrain(target_sonar_altitude,AP_RangeFinder_down.min_distance*2,AP_RangeFinder_down.max_distance*0.8);
+          }
+        }else{
+            // if sonar_altitude becomes invalid we return control to user
+            ch_throttle_altitude_hold = ch_throttle;
+        }
+        Obstacle_avoidance(RF_SAFETY_ZONE);  // main obstacle avoidance function
+        RF_new_data = 0;  // record that we have consumed the rangefinder data
       }
       #endif
     }else{
       digitalWrite(LED_Yellow,LOW);
       target_position=0;
+      target_baro_altitude=0;
+      target_sonar_altitude=0;
     }
   }
 
@@ -492,8 +505,6 @@ void loop()
       if (APM_BMP085.Read()){
         read_baro();
         Baro_new_data = 1;
-        //Serial.print("B ");
-        //Serial.println(press_alt);
       }
 #endif
 #ifdef IsRANGEFINDER

@@ -171,12 +171,11 @@ void APM_Init() {
 #ifndef CONFIGURATOR
   for(i=0;i<6;i++)
   {
-    Serial.print("AN[]:");
-    Serial.println(AN_OFFSET[i]);
+    SerPri("AN[]:");
+    SerPrln(AN_OFFSET[i]);
   }
-  Serial.print("Yaw neutral value:");
-  //  Serial.println(Neutro_yaw);
-  Serial.print(yaw_mid);
+  SerPri("Yaw neutral value:");
+  SerPri(yaw_mid);
 #endif
 
 #ifdef UseBMP
@@ -184,17 +183,16 @@ void APM_Init() {
 #endif
 
 #ifdef IsRANGEFINDER
-  AP_RangeFinder_frontRight.init(AN2);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
-  AP_RangeFinder_backRight.init(AN3);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
-  AP_RangeFinder_backLeft.init(AN4);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
-  AP_RangeFinder_frontLeft.init(AN5);  AP_RangeFinder_frontLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_LEFT);
+  AP_RangeFinder_down.init(AN1);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
+  //AP_RangeFinder_frontRight.init(AN5);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
+  //AP_RangeFinder_backRight.init(AN4);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
+  //AP_RangeFinder_backLeft.init(AN3);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
+  //AP_RangeFinder_frontLeft.init(AN2);  AP_RangeFinder_frontLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_LEFT);
 #endif
 
   delay(1000);
 
   DataFlash.StartWrite(1);   // Start a write session on page 1
-  //timer = millis();
-  //tlmTimer = millis();
 
   // initialise helicopter
 #if AIRFRAME == HELI
