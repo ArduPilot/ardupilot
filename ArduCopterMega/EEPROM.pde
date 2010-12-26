@@ -179,7 +179,7 @@ void save_EEPROM_throttle_cruise(void)
 
 void read_EEPROM_throttle_cruise(void)
 {
-	throttle_cruise 	= eeprom_read_word((uint16_t *)	EE_FRAME);
+	throttle_cruise 	= eeprom_read_word((uint16_t *)	EE_THROTTLE_CRUISE);
 }
 
 /********************************************************************************/
@@ -277,7 +277,7 @@ void save_EEPROM_radio(void)
 }
 
 /********************************************************************************/
-
+// configs are the basics
 void read_EEPROM_configs(void)
 {
 	throttle_min 				= eeprom_read_word((uint16_t *) 	EE_THROTTLE_MIN);
