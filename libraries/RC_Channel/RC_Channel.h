@@ -7,6 +7,7 @@
 #define RC_Channel_h
 
 #include <stdint.h>
+#include <AP_EEPROMB.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
@@ -29,11 +30,13 @@ class RC_Channel{
 	RC_Channel(uint16_t address) :
 		_address(address),
 		_high(1),
-		_filter(true)
+		_filter(true),
+		_reverse(1)
 	{}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
+	void 		zero_min_max();
 	
 	// startup
 	void 		load_eeprom(void);
@@ -87,6 +90,8 @@ class RC_Channel{
 	int16_t		angle_to_pwm();
 	int16_t		pwm_to_range();
 	int16_t		range_to_pwm();
+
+	float		scale_output;
 	
   private:
 	bool		_filter;
@@ -96,6 +101,7 @@ class RC_Channel{
 	bool 		_type;				
 	int16_t 	_high;
 	int16_t 	_low;
+	AP_EEPROMB	_ee;
 };
 
 #endif	

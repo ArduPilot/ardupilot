@@ -73,9 +73,16 @@ RC_Channel::set_pwm(int pwm)
 		//Serial.print("range ");
 		control_in = pwm_to_range();
 		control_in = (control_in < dead_zone) ? 0 : control_in;
+		if(scale_output){
+			control_in *= scale_output;
+		}
+		
 	}else{
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
+		if(scale_output){
+			control_in *= scale_output;
+		}
 	}
 }
 
@@ -102,7 +109,11 @@ RC_Channel::calc_pwm(void)
 	}else{
 		pwm_out = angle_to_pwm();
 	}
+	//if(scale_output){
+	//	pwm_out *= scale_output;
+	//}
 	radio_out = pwm_out + radio_min;
+	radio_out = constrain(radio_out,radio_min, radio_max);
 }
 
 // ------------------------------------------
@@ -110,27 +121,41 @@ RC_Channel::calc_pwm(void)
 void
 RC_Channel::load_eeprom(void)
 {
-	radio_min 	= eeprom_read_word((uint16_t *)	_address);
-	radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
-	radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
+	//radio_min 	= eeprom_read_word((uint16_t *)	_address);
+	//radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
+	//radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
+	radio_min 	= _ee.read_int(_address);
+	radio_max	= _ee.read_int(_address + 2);
+	radio_trim 	= _ee.read_int(_address + 4);
 }
 
 void
 RC_Channel::save_eeprom(void)
 {
-	eeprom_write_word((uint16_t *)	_address, 			radio_min);
-	eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	//eeprom_write_word((uint16_t *)	_address, 			radio_min);
+	//eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
+	//eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	
+	_ee.write_int(_address, 		radio_min);
+	_ee.write_int((_address + 2), 	radio_max);
+	_ee.write_int((_address + 4), 	radio_trim);
 }
 
 // ------------------------------------------
 void
 RC_Channel::save_trim(void)
 {
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	//eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	_ee.write_int((_address + 4), 	radio_trim);
 }
 
 // ------------------------------------------
+
+void
+RC_Channel::zero_min_max()
+{
+	radio_min = radio_min = radio_in;
+}
 
 void
 RC_Channel::update_min_max()
@@ -141,13 +166,16 @@ RC_Channel::update_min_max()
 
 // ------------------------------------------
 
-int16_t 
+int16_t
 RC_Channel::pwm_to_angle()
 {
 	if(radio_in < radio_trim)
-		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
+		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_trim - radio_min);
 	else
-		return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
+		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_max  - radio_trim);
+		
+		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
+		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
 }
 
 float 
@@ -172,9 +200,12 @@ int16_t
 RC_Channel::angle_to_pwm()
 {
 	if(servo_out < 0)
-		return (((float)servo_out / (float)_high) * (float)(radio_max - radio_trim));
+		return ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high;
 	else
-		return (((float)servo_out / (float)_high) * (float)(radio_trim - radio_min));
+		return ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
+
+		//return (((float)servo_out / (float)_high) * (float)(radio_max - radio_trim));
+		//return (((float)servo_out / (float)_high) * (float)(radio_trim - radio_min));
 }
 
 // ------------------------------------------
@@ -182,12 +213,16 @@ RC_Channel::angle_to_pwm()
 int16_t
 RC_Channel::pwm_to_range()
 {
-	return _reverse * (_low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min))));
+	//return (_low + ((_high - _low) * ((float)(radio_in - radio_min) / (float)(radio_max - radio_min))));
+	return (_low + ((long)(_high - _low) * (long)(radio_in - radio_min)) / (long)(radio_max - radio_min));
 }
 
 int16_t
 RC_Channel::range_to_pwm()
 {
-	return (((float)servo_out / (float)(_high - _low)) * (float)(radio_max - radio_min));
+	//return (((float)(servo_out - _low) / (float)(_high - _low)) * (float)(radio_max - radio_min));
+	return ((long)(servo_out - _low) * (long)(radio_max - radio_min)) / (long)(_high - _low);
 }
+
+
 
