@@ -74,12 +74,13 @@
 #define ACRO 0				// rate control
 #define STABILIZE 1			// hold level position
 #define ALT_HOLD 2				// AUTO control
-#define AUTO 3				// AUTO control
-#define POSITION_HOLD 4		// Hold a single location
-#define RTL 5				// AUTO control
-#define TAKEOFF 6			// controlled decent rate
-#define LAND 7				// controlled decent rate
-#define NUM_MODES 8
+#define FBW 3				// AUTO control
+#define AUTO 4				// AUTO control
+#define POSITION_HOLD 5		// Hold a single location
+#define RTL 6				// AUTO control
+#define TAKEOFF 7			// controlled decent rate
+#define LAND 8				// controlled decent rate
+#define NUM_MODES 9
 
 // Command IDs - Must
 #define CMD_BLANK 0x00 // there is no command stored in the mem location requested
