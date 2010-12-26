@@ -7,7 +7,6 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
-#include <APM_RC.h> 		// ArduPilot Mega RC Library
 #include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
 #include <AP_EEProm.h>
 
@@ -27,7 +26,7 @@ FastSerialPort0(Serial);
 
 AP_RcChannel rc[] = 
 {
-	AP_RcChannel(scale.get(),pwmMin.get(),pwmNeutral.get(),pwmMax.get(),
+	AP_RcChannel(APM_RC,CH_1,scale.get(),pwmMin.get(),pwmNeutral.get(),pwmMax.get(),
 			pwmDeadZone.get(),filter.get(),reverse.get())	
 
 };
@@ -46,8 +45,8 @@ void setup()
 	delay(2000);
 
 	// find neutral radio position
-	rc[CH_1].readRadio(APM_RC.InputCh(CH_1));
-	Serial.printf("\nrc[CH_1].readRadio(APM_RC.InputCh(CH_1))\n");
+	rc[CH_1].readRadio();
+	Serial.printf("\nrc[CH_1].readRadio()\n");
 	Serial.printf("\npwmNeutral.set(rc[CH_1].getPwm())\n");
 	pwmNeutral.set(rc[CH_1].getPwm());
 	delay(2000);

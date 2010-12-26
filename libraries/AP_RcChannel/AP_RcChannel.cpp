@@ -14,11 +14,9 @@
 #include "AP_RcChannel.h"
 #include <AP_Common.h>
 
-void AP_RcChannel::readRadio(uint16_t pwmRadio) {
+void AP_RcChannel::readRadio() {
 	// apply reverse
-	if(_reverse) _pwmRadio = (_pwmNeutral - pwmRadio) + _pwmNeutral;
-	else _pwmRadio = pwmRadio;
-
+	uint16_t pwmRadio = APM_RC.InputCh(_ch);
 	setPwm(pwmRadio);
 }
 
@@ -48,6 +46,7 @@ AP_RcChannel::setPwm(uint16_t pwm)
 	_pwm = (abs(_pwm - _pwmNeutral) < _pwmDeadZone) ? _pwmNeutral : _pwm;
 
 	//Serial.printf("pwm after deadzone: %d\n", _pwm);
+	APM_RC.OutputCh(_ch,_pwm);
 }
 
 void
@@ -59,10 +58,11 @@ AP_RcChannel::setPosition(float position)
 void
 AP_RcChannel::mixRadio(uint16_t infStart)
 {
-	float inf = abs( int16_t(_pwmRadio - _pwmNeutral) );
+	uint16_t pwmRadio = APM_RC.InputCh(_ch);
+	float inf = abs( int16_t(pwmRadio - _pwmNeutral) );
 	inf = min(inf, infStart);
 	inf = ((infStart - inf) /infStart);
-	setPwm(_pwm*inf + _pwmRadio); 
+	setPwm(_pwm*inf + pwmRadio); 
 }
 
 uint16_t
