@@ -13,13 +13,9 @@ void init_pids()
 void output_stabilize()
 {
 	float roll_error, pitch_error;
-	int max_out;
 	Vector3f omega = dcm.get_gyro();
 	
-	/*testing code:*/
 	//pitch_sensor = roll_sensor = 0; // testing only
-	//stabilize_rate_roll_pitch = (float)rc_6.control_in / 1000;
-	//init_pids();
 	
 	// control +- 45° is mixed with the navigation request by the Autopilot
 	// output is in degrees = target pitch and roll of copter
@@ -55,7 +51,8 @@ void output_stabilize()
 	// Limit dampening to be equal to propotional term for symmetry
 	rc_1.servo_out	-= constrain(roll_dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// +- 15°
 	rc_2.servo_out	-= constrain(pitch_dampener, -max_stabilize_dampener, max_stabilize_dampener);	// +- 15°
-	rc_4.servo_out	-= constrain(yaw_dampener,   -max_yaw_dampener, 	  max_yaw_dampener);	// +- 15°
+	rc_4.servo_out	-= constrain(yaw_dampener,   -max_yaw_dampener, 	  max_yaw_dampener);
+	
 
 	//Serial.printf(" yaw out: %d, d: %d", (int)rc_4.angle_to_pwm(), yaw_dampener);
 
@@ -84,9 +81,9 @@ void output_rate_control()
 	//Serial.print((Omega[0] * 5729.57795 * stabilize_rate_roll_pitch), 3);
 
 	// Limit output
-	rc_1.servo_out  = constrain(rc_1.servo_out,  -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
+	rc_1.servo_out  = constrain(rc_1.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
 	rc_2.servo_out 	= constrain(rc_2.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
-	rc_4.servo_out  = constrain(rc_4.servo_out,   -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);	
+	rc_4.servo_out  = constrain(rc_4.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);	
 }
 
 
@@ -105,7 +102,7 @@ void reset_I(void)
 void set_servos_4(void)
 {
 	static byte num;
-	//motor_armed = false;
+
 	// Quadcopter mix
 	if (motor_armed == true) {
 		int out_min = rc_3.radio_min;
@@ -118,7 +115,7 @@ void set_servos_4(void)
 			
 		//Serial.printf("out: %d %d %d %d\t\t", rc_1.servo_out, rc_2.servo_out, rc_3.servo_out, rc_4.servo_out);
 		
-		// creates the radio_out anf pwm_out values
+		// creates the radio_out and pwm_out values
 		rc_1.calc_pwm();
 		rc_2.calc_pwm();
 		rc_3.calc_pwm();
@@ -140,6 +137,7 @@ void set_servos_4(void)
 			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out;
 			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
 		}
+		
 		//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 
 		motor_out[RIGHT]	+=  rc_4.pwm_out;
@@ -160,15 +158,23 @@ void set_servos_4(void)
 		int f_out = ((long)(motor_out[FRONT] - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
 		int b_out = ((long)(motor_out[BACK]  - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
 		//*/
-		
-		//~#*set_servos_4: 398,  -39 38 38 -36
-		/*
+				
+		/* debugging and dynamic kP
 		num++;
 		if (num > 50){
 			num = 0;
-			Serial.printf("control_in: %d ", rc_3.control_in);
-			Serial.printf(" servo: %d %d %d %d\t", rc_1.servo_out, rc_2.servo_out, rc_3.servo_out, rc_4.servo_out);
-			Serial.printf(" pwm: %d %d %d %d\n", r_out, l_out, f_out, b_out);
+			//Serial.printf("control_in: %d ", rc_3.control_in);
+			//Serial.printf(" servo: %d %d %d %d\t", rc_1.servo_out, rc_2.servo_out, rc_3.servo_out, rc_4.servo_out);
+			//Serial.printf(" cwm: %d %d %d %d, %d\t", rc_1.pwm_out, rc_2.pwm_out, rc_3.pwm_out, rc_4.pwm_out, rc_3.radio_out);
+			//Serial.printf(" pwm: %d %d %d %d\n", r_out, l_out, f_out, b_out);
+			//Serial.printf(" pwm: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
+			
+			pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
+			stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.24;
+			init_pids();
+			
+			Serial.print("kP: ");
+			Serial.println(pid_stabilize_roll.kP(),3);
 		}
 		//*/
 		
@@ -222,9 +228,3 @@ void set_servos_4(void)
 		rc_4.control_in = ToDeg(yaw);
 	}
  }
-
-
-void demo_servos(byte i) {
-	// nothing to do
-}
-

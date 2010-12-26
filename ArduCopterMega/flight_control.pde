@@ -18,7 +18,6 @@ void output_auto_throttle()
 	rc_3.servo_out 	= (float)nav_throttle * angle_boost();
 	rc_3.servo_out = max(rc_3.servo_out, 1);
 }
-// Jason
 
 void calc_nav_throttle()
 {

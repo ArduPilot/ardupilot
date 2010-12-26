@@ -6,12 +6,13 @@ void init_radio()
 	rc_2.dead_zone = 50;
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
-	rc_3.radio_max += 300; // hack for better throttle control
+	//rc_3.radio_max += 300; // hack for better throttle control
+	rc_3.scale_output = .8;
 	rc_4.set_angle(6000); 
 	rc_4.dead_zone = 500;
 	rc_5.set_range(0,1000);
 	rc_5.set_filter(false);
-	rc_6.set_range(50,200);
+	rc_6.set_range(200,800);
 	rc_7.set_range(0,1000);
 	rc_8.set_range(0,1000);
 	
@@ -33,7 +34,7 @@ void init_radio()
 }
 
 void read_radio()
-{	
+{
 	rc_1.set_pwm(APM_RC.InputCh(CH_1));
 	rc_2.set_pwm(APM_RC.InputCh(CH_2));
 	rc_3.set_pwm(APM_RC.InputCh(CH_3));
@@ -47,7 +48,9 @@ void read_radio()
 
 void trim_radio()
 {
-	read_radio();
+	for (byte i = 0; i < 50; i++){
+		read_radio();
+	}
 	rc_1.trim();	// roll
 	rc_2.trim();	// pitch
 	rc_4.trim();	// yaw
