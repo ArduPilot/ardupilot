@@ -8,6 +8,8 @@ svn remove --force $junkFiles
 svn commit
 
 doxygen Doxyfile
+doxygen -w html html/header.html html/footer.html html/stylesheet.css
+
 find html -regex ".*\.\(map\|md5\)" -exec rm {} \;
 svn add --force html/*
 
