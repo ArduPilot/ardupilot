@@ -12,13 +12,11 @@
 
 /// @class	AP_RcChannel
 /// @brief	Object managing one RC channel
-//
 class AP_RcChannel{
  
 public:	
 
 	/// Constructor
-	///
 	AP_RcChannel(const APM_RC_Class & rc, const uint16_t & ch,
 			const float & scale, const uint16_t & pwmMin, const uint16_t & pwmNeutral,
 			const uint16_t & pwmMax, const uint16_t & pwmDeadZone,
