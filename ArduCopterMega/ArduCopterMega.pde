@@ -124,6 +124,10 @@ RC_Channel rc_5(EE_RADIO_5);
 RC_Channel rc_6(EE_RADIO_6);
 RC_Channel rc_7(EE_RADIO_7);
 RC_Channel rc_8(EE_RADIO_8);
+
+RC_Channel rc_camera_pitch(EE_RADIO_9);
+RC_Channel rc_camera_yaw(EE_RADIO_10);
+
 int motor_out[4];
 byte flight_mode_channel;
 byte frame_type = PLUS_FRAME;
@@ -587,17 +591,17 @@ void medium_loop()
 		output_HIL();
 	#endif
 
-        #if ENABLE_CAM
-                camera_stabilization();
-        #endif
-
-        #if ENABLE_AM
-                flight_lights();
-        #endif
-        
-        #if ENABLE_xx
-                do_something_usefull();
-        #endif              
+	#if ENABLE_CAM
+		camera_stabilization();
+	#endif
+	
+	#if ENABLE_AM
+		flight_lights();
+	#endif
+	
+	#if ENABLE_xx
+		do_something_usefull();
+	#endif              
 	
 	
 	if (millis() - perf_mon_timer > 20000) {

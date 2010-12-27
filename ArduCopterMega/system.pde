@@ -96,7 +96,9 @@ void init_ardupilot()
 	read_EEPROM_startup(); // Read critical config information to start
  	init_pids();
 
-	init_radio();	
+	init_rc_in();		// sets up rc channels from radio
+	init_rc_out();		// sets up the timer libs
+	init_camera();
 	adc.Init();	 		// APM ADC library initialization
 	APM_BMP085.Init();	// APM Abs Pressure sensor initialization
 	DataFlash.Init(); 	// DataFlash log initialization
@@ -233,7 +235,8 @@ void startup_ground(void)
 
 	// read the radio to set trims
 	// ---------------------------
-	trim_radio();
+	// I am disabling this. It's not appropriate for Copters, only planes
+	//trim_radio();
 
 	// Warm up and read Gyro offsets
 	// -----------------------------
