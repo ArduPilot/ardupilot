@@ -319,7 +319,7 @@
 // YAW Control
 //
 #ifndef  YAW_P
-# define YAW_P					0.3
+# define YAW_P					0.8
 #endif
 #ifndef  YAW_I
 # define YAW_I					0.0

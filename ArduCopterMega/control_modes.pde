@@ -76,11 +76,12 @@ void read_trim_switch()
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
 
-				/*
+				///*
 				if(rc_3.control_in == 0){
 					imu.init_accel();
 					imu.print_accel_offsets();
-				}*/
+				}
+				/*
 				if(rc_3.control_in == 0){
 					imu.zero_accel();
 				}else{
@@ -88,8 +89,9 @@ void read_trim_switch()
 					// set new accel offset values
 					imu.ax(((long)rc_1.control_in * -15) / 100);
 					imu.ay(((long)rc_2.control_in * -15) / 100);
+					
 					imu.print_accel_offsets();
-				}
+				}*/
 
 			} else {
 				// set the throttle nominal

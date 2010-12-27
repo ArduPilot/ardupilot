@@ -242,6 +242,8 @@
 #define EE_RADIO_6 0x1E	// all gains stored from here
 #define EE_RADIO_7 0x24	// all gains stored from here
 #define EE_RADIO_8 0x2A	// all gains stored from here
+#define EE_RADIO_9 0xD2		// camera pitch
+#define EE_RADIO_10 0xD8	// camera roll
 
 // user gains
 #define EE_XTRACK_GAIN 0x30

@@ -7,6 +7,7 @@ static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -44,6 +45,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 	{"imu",			test_imu},
 	{"gyro",		test_gyro},
+	{"dcm",			test_dcm},
 	{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"relay",		test_relay},
@@ -109,7 +111,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 
 	// read the radio to set trims
 	// ---------------------------
-	trim_radio();
+	//trim_radio();
 
 	while(1){
 		delay(20);
@@ -146,27 +148,16 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
-
-	//imu.init_gyro();
 	
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
+	// setup the radio
+	// ---------------
+	init_rc_in();
+	
 	control_mode = STABILIZE;
 	Serial.printf_P(PSTR("pid_stabilize_roll.kP: "));
 	Serial.println(pid_stabilize_roll.kP(),3);
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
-	/*
-	Serial.printf_P(PSTR("pid_yaw.kP: "));
-	Serial.println(pid_yaw.kP(),3);
-	Serial.printf_P(PSTR("max_yaw_dampener:%d\n\n "), max_yaw_dampener);
-	Serial.printf_P(PSTR("stabilize_rate_yaw "));
-	Serial.print(stabilize_rate_yaw, 3);
-	Serial.printf_P(PSTR("stabilze_yaw_dampener "));
-	Serial.print(stabilze_yaw_dampener, 3);
-	Serial.printf_P(PSTR("\n\n "));
-	*/
-	
+
 	motor_armed = true;
 
 	while(1){
@@ -318,6 +309,71 @@ test_gyro(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+
+
+static int8_t
+test_dcm(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+	Serial.printf_P(PSTR("Gyro | Accel\n"));
+	Vector3f 	_cam_vector;
+	Vector3f 	_out_vector;
+	
+	G_Dt = .02;
+
+	while(1){
+		for(byte i = 0; i <= 50; i++){
+			delay(20);
+			// IMU
+			// ---
+			read_AHRS();
+		}
+		
+		Matrix3f temp = dcm.get_dcm_matrix();
+		Matrix3f temp_t = dcm.get_dcm_transposed();
+		
+		Serial.printf_P(PSTR("dcm\n"
+							 "%d \t %d \t %d \n"
+							 "%d \t %d \t %d \n"
+							 "%d \t %d \t %d \n\n"),
+							(int)(temp.a.x * 100), (int)(temp.a.y * 100), (int)(temp.a.z * 100),
+							(int)(temp.b.x * 100), (int)(temp.b.y * 100), (int)(temp.b.z * 100),
+							(int)(temp.c.x * 100), (int)(temp.c.y * 100), (int)(temp.c.z * 100));
+
+		Serial.printf_P(PSTR("dcm T\n"
+							 "%d \t %d \t %d \n"
+							 "%d \t %d \t %d \n"
+							 "%d \t %d \t %d \n\n"),
+							(int)(temp_t.a.x * 100), (int)(temp_t.a.y * 100), (int)(temp_t.a.z * 100),
+							(int)(temp_t.b.x * 100), (int)(temp_t.b.y * 100), (int)(temp_t.b.z * 100),
+							(int)(temp_t.c.x * 100), (int)(temp_t.c.y * 100), (int)(temp_t.c.z * 100));
+
+		int _pitch 		= degrees(-asin(temp.c.x));
+		int _roll 		= degrees(atan2(temp.c.y, temp.c.z));
+		int _yaw 		= degrees(atan2(temp.b.x, temp.a.x));
+		Serial.printf_P(PSTR(	"angles\n"
+								"%d \t %d \t %d\n\n"),
+								_pitch, _roll, _yaw);
+
+		int _pitch_t 		= degrees(-asin(temp_t.c.x));
+		int _roll_t 		= degrees(atan2(temp_t.c.y, temp_t.c.z));
+		int _yaw_t 			= degrees(atan2(temp_t.b.x, temp_t.a.x));
+		Serial.printf_P(PSTR(	"angles_t\n"
+								"%d \t %d \t %d\n\n"),
+								_pitch_t, _roll_t, _yaw_t);
+		
+		//_out_vector = _cam_vector * temp;
+		//Serial.printf_P(PSTR(	"cam\n"
+		//						"%d \t %d \t %d\n\n"),
+		//						(int)temp.a.x * 100, (int)temp.a.y * 100, (int)temp.a.x * 100);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+
 
 /*
 static int8_t
