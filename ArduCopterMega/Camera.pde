@@ -33,8 +33,9 @@ camera_stabilization()
 
 		APM_RC.OutputCh(CH_5,rc_camera_pitch.radio_out);
 
-
-		//rc_camera_yaw 	= rc_2.control_mix(nav_pitch);
+		//If you want to do control mixing use this function.
+		// set servo_out to the control input from radio
+		//rc_camera_yaw 	= rc_2.control_mix(pitch_sensor);
 		//rc_camera_yaw.calc_pwm();		
 }
 
