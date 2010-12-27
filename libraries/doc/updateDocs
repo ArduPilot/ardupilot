@@ -20,7 +20,7 @@ do
 	svn propset svn:mime-type image/$imageExt $imageFiles
 done
 
-for textExt in "html css"
+for textExt in "html,css"
 do
 	textFiles=$(find html -name *.$textExt)
 	echo text files: $textFiles
