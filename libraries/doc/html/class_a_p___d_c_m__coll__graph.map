@@ -1,9 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_matrix3.html" title="Matrix3\&lt; float \&gt;" alt="" coords="167,191,292,220"/>
-<area shape="rect" id="node4" href="$class_vector3.html" title="Vector3\&lt; float \&gt;" alt="" coords="128,5,256,35"/>
-<area shape="rect" id="node6" href="$class_a_p___i_m_u.html" title="AP_IMU" alt="" coords="316,191,385,220"/>
-<area shape="rect" id="node8" href="$class_a_p___a_d_c.html" title="AP_ADC" alt="" coords="313,5,388,35"/>
-<area shape="rect" id="node11" href="$class_g_p_s.html" title="Abstract base class for GPS receiver drivers." alt="" coords="409,191,457,220"/>
-<area shape="rect" id="node13" href="$class_stream.html" title="Stream" alt="" coords="412,5,481,35"/>
-<area shape="rect" id="node16" href="$class_compass.html" title="Compass" alt="" coords="481,191,564,220"/>
-</map>
