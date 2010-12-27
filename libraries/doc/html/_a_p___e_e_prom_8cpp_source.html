@@ -48,7 +48,7 @@
 <a name="l00018"></a>00018 
 <a name="l00019"></a>00019 <span class="preprocessor">#include &lt;<a class="code" href="_a_p___e_e_prom_8h.html">AP_EEProm.h</a>&gt;</span>
 <a name="l00020"></a>00020 
-<a name="l00021"></a><a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec">00021</a> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec">AP_EEPromRegistry::add</a>(<a class="code" href="class_a_p___e_e_prom_entry.html">AP_EEPromEntry</a> * entry, uint16_t &amp; <span class="keywordtype">id</span>, uint16_t &amp; address, <span class="keywordtype">size_t</span> size)
+<a name="l00021"></a><a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec">00021</a> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec" title="Add an entry to the registry.">AP_EEPromRegistry::add</a>(<a class="code" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntry</a> * entry, uint16_t &amp; <span class="keywordtype">id</span>, uint16_t &amp; address, <span class="keywordtype">size_t</span> size)
 <a name="l00022"></a>00022 {
 <a name="l00023"></a>00023         <span class="keywordflow">if</span> (_newAddress + size &gt; _maxSize) <span class="keywordflow">return</span>;
 <a name="l00024"></a>00024         address = _newAddress;
@@ -57,10 +57,10 @@
 <a name="l00027"></a>00027         <a class="code" href="class_vector.html#ad58756ac50551a81d7c2b0d8ae075f76">push_back</a>(entry);
 <a name="l00028"></a>00028 }
 <a name="l00029"></a>00029 
-<a name="l00033"></a>00033 <span class="keyword">extern</span> <a class="code" href="class_a_p___e_e_prom_registry.html">AP_EEPromRegistry</a> <a class="code" href="_a_p___e_e_prom_8cpp.html#ab9f343c688a095f2819577da1f5c8269">eepromRegistry</a>(1024);
+<a name="l00030"></a>00030 <span class="keyword">extern</span> <a class="code" href="class_a_p___e_e_prom_registry.html" title="The main EEProm Registry class.">AP_EEPromRegistry</a> <a class="code" href="_a_p___e_e_prom_8cpp.html#ab9f343c688a095f2819577da1f5c8269">eepromRegistry</a>(1024);
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 19:58:33 for ArduPilot Libraries by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 21:58:34 for ArduPilot Libraries by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
