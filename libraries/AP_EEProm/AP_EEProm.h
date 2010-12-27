@@ -24,83 +24,61 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
-/**
- * The interface for data entries in the eeprom registry
- */
+/// The interface for data entries in the eeprom registry
 class AP_EEPromEntry
 {
 public:
-	/**
-	 * Pure virtual function for setting the data value as a float. The function must handle the cast to 
-	 * the stored variable types.
-	 */
+	/// Pure virtual function for setting the data value 
+	/// as a float. The function must handle the cast to 
+	/// the stored variable types.
 	virtual void setEntry(float val) = 0;
 
-	/**
-	 * Pure virtual function for getting data as a float. The function must handle the cast from the
-	 * stored variable types.
-	 */
+	/// Pure virtual function for getting data as a float. 
+	/// The function must handle the cast from the
+	/// stored variable types.
 	virtual float getEntry() = 0;
 
-	/**
-	 * Pure virtual function for getting entry name.
-	 */
+	/// Pure virtual function for getting entry name.
 	virtual const char * getEntryName() = 0;
 
-	/**
-	 * Get the id of the variable.
-	 */
+	/// Get the id of the variable.
 	virtual uint16_t getEntryId() = 0;
 
-	/**
-	 * Get the address of the variable.
-	 */
+	/// Get the address of the variable.
 	virtual uint16_t getEntryAddress() = 0;
 };
 
-/**
- *  The main EEProm Registry class.
- */
+///The main EEProm Registry class.
 class AP_EEPromRegistry : public Vector<AP_EEPromEntry *>
 {
 public:
 
-	/**
-	 * Default constructor
-	 */
+	/// Default constructor
 	AP_EEPromRegistry(uint16_t maxSize) :
 		_newAddress(0), _newId(0), _maxSize(maxSize)
 	{
 	}
 
-	/**
-	 * Add an entry to the registry
-	 */
+	/// Add an entry to the registry
 	void add(AP_EEPromEntry * entry, uint16_t & id, uint16_t & address, size_t size);
 
 private:
-	uint16_t _newAddress; /** the address for the next new variable*/
-	uint16_t _newId; /** the id of the next new variable*/
-	uint16_t _maxSize; /** the maximum size of the eeprom memory*/
+	uint16_t _newAddress; /// the address for the next new variable
+	uint16_t _newId; /// the id of the next new variable
+	uint16_t _maxSize; /// the maximum size of the eeprom memory
 };
 
-/**
- * Global eepromRegistry declaration.
- */
+/// Global eepromRegistry declaration.
 extern AP_EEPromRegistry eepromRegistry;
 
-/**
- * The EEProm Variable template class. This class
- * implements get/set/save/load etc for the 
- * abstract template type.
- */
+/// The EEProm Variable template class.
+/// This class implements get/set/save/load etc for the 
+/// abstract template type.
 template  <class type>
 class AP_EEPromVar : public AP_EEPromEntry, public AP_Var<type>
 {
 public:
-	/**
-	 * The default constrcutor
-	 */
+	/// The default constrcutor
 	AP_EEPromVar(type data = 0, const char * name = "", bool sync=false) : 
 		AP_Var<type>(data,name,sync)
 	{
@@ -111,19 +89,15 @@ public:
 	virtual float getEntry() { return this->getAsFloat(); }
 	virtual const char * getEntryName() { return this->getName(); }
 
-	/**
-	 * Get the id of the variable.
-	 */
+	/// Get the id of the variable.
 	virtual uint16_t getEntryId() { return _id; }
 
-	/**
-	 * Get the address of the variable.
-	 */
+	/// Get the address of the variable.
 	virtual uint16_t getEntryAddress() { return _address; }
 
 private:
-	uint16_t _id; /** Variable identifier */ 
-	uint16_t _address;  /** EEProm address of variable */
+	uint16_t _id; /// Variable identifier
+	uint16_t _address;  /// EEProm address of variable
 };
 
 #endif

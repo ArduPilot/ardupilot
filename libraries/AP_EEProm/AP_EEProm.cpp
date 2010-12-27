@@ -27,7 +27,4 @@ void AP_EEPromRegistry::add(AP_EEPromEntry * entry, uint16_t & id, uint16_t & ad
 	push_back(entry);
 }
 
-/**
- * The global declaration for the eepromRegistry
- */
 extern AP_EEPromRegistry eepromRegistry(1024);
