@@ -1,0 +1,30 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$_a_p___d_c_m___h_i_l_8h.html" title="AP_DCM_HIL.h" alt="" coords="515,83,629,112"/>
+<area shape="rect" id="node5" href="$_fast_serial_8h.html" title="FastSerial.h" alt="" coords="996,315,1092,344"/>
+<area shape="rect" id="node21" href="$_a_p___math_8h.html" title="AP_Math.h" alt="" coords="343,469,433,499"/>
+<area shape="rect" id="node36" href="$_w_program_8h.html" title="WProgram.h" alt="" coords="355,315,453,344"/>
+<area shape="rect" id="node38" href="$_a_p___compass_8h.html" title="Catch&#45;all header that defines all supported compass classes." alt="" coords="232,160,349,189"/>
+<area shape="rect" id="node54" href="$_a_p___a_d_c_8h.html" title="AP_ADC.h" alt="" coords="811,315,896,344"/>
+<area shape="rect" id="node63" href="$_a_p___g_p_s_8h.html" title="Catch&#45;all header that defines all supported GPS classes." alt="" coords="1473,160,1559,189"/>
+<area shape="rect" id="node99" href="$_a_p___i_m_u_8h.html" title="AP_IMU.h" alt="" coords="601,237,684,267"/>
+<area shape="rect" id="node15" href="$_better_stream_8h.html" title="BetterStream.h" alt="" coords="1380,392,1503,421"/>
+<area shape="rect" id="node23" href="$vector2_8h.html" title="vector2.h" alt="" coords="268,624,351,653"/>
+<area shape="rect" id="node27" href="$vector3_8h.html" title="vector3.h" alt="" coords="375,624,457,653"/>
+<area shape="rect" id="node32" href="$matrix3_8h.html" title="matrix3.h" alt="" coords="347,547,429,576"/>
+<area shape="rect" id="node40" href="$_a_p___compass___h_m_c5843_8h.html" title="AP_Compass_HMC5843.h" alt="" coords="93,315,280,344"/>
+<area shape="rect" id="node49" href="$_a_p___compass___h_i_l_8h.html" title="AP_Compass_HIL.h" alt="" coords="212,237,356,267"/>
+<area shape="rect" id="node42" href="$_compass_8h.html" title="Compass.h" alt="" coords="271,392,364,421"/>
+<area shape="rect" id="node56" href="$_a_p___a_d_c___a_d_s7844_8h.html" title="AP_ADC_ADS7844.h" alt="" coords="783,392,935,421"/>
+<area shape="rect" id="node59" href="$_a_p___a_d_c___h_i_l_8h.html" title="AP_ADC_HIL.h" alt="" coords="647,392,759,421"/>
+<area shape="rect" id="node65" href="$_a_p___g_p_s___n_m_e_a_8h.html" title="AP_GPS_NMEA.h" alt="" coords="1792,315,1923,344"/>
+<area shape="rect" id="node71" href="$_a_p___g_p_s___s_i_r_f_8h.html" title="AP_GPS_SIRF.h" alt="" coords="1600,315,1717,344"/>
+<area shape="rect" id="node74" href="$_a_p___g_p_s__406_8h.html" title="AP_GPS_406.h" alt="" coords="1607,237,1721,267"/>
+<area shape="rect" id="node77" href="$_a_p___g_p_s___u_b_l_o_x_8h.html" title="AP_GPS_UBLOX.h" alt="" coords="1947,315,2080,344"/>
+<area shape="rect" id="node80" href="$_a_p___g_p_s___m_t_k_8h.html" title="AP_GPS_MTK.h" alt="" coords="1308,237,1425,267"/>
+<area shape="rect" id="node85" href="$_a_p___g_p_s___m_t_k16_8h.html" title="AP_GPS_MTK16.h" alt="" coords="1449,237,1583,267"/>
+<area shape="rect" id="node89" href="$_a_p___g_p_s___none_8h.html" title="AP_GPS_None.h" alt="" coords="1159,237,1284,267"/>
+<area shape="rect" id="node92" href="$_a_p___g_p_s___auto_8h.html" title="AP_GPS_Auto.h" alt="" coords="1012,237,1135,267"/>
+<area shape="rect" id="node96" href="$_a_p___g_p_s___h_i_l_8h.html" title="AP_GPS_HIL.h" alt="" coords="1796,237,1908,267"/>
+<area shape="rect" id="node67" href="$_g_p_s_8h.html" title="Interface definition for the various GPS drivers." alt="" coords="1532,392,1593,421"/>
+<area shape="rect" id="node83" href="$_a_p___g_p_s___m_t_k___common_8h.html" title="AP_GPS_MTK_Common.h" alt="" coords="1341,315,1525,344"/>
+</map>

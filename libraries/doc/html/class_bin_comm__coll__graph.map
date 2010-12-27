@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node2" title="OTA message header." alt="" coords="5,5,203,35"/>
+<area shape="rect" id="node4" href="$struct_bin_comm_1_1_message_handler.html" title="BinComm::MessageHandler" alt="" coords="227,5,427,35"/>
+<area shape="rect" id="node6" href="$class_stream.html" title="Stream" alt="" coords="451,5,520,35"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="G" name="G">
+<area shape="rect" id="node1" href="$class_compass.html" title="Compass" alt="" coords="5,32,88,61"/>
+<area shape="rect" id="node3" href="$class_a_p___compass___h_i_l.html" title="AP_Compass_HIL" alt="" coords="157,5,291,35"/>
+<area shape="rect" id="node5" href="$class_a_p___compass___h_m_c5843.html" title="AP_Compass_HMC5843" alt="" coords="137,59,311,88"/>
+</map>

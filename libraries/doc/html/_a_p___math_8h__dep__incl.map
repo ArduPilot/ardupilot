@@ -1,0 +1,14 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$_compass_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_Compass/Compass.h" alt="" coords="517,83,931,112"/>
+<area shape="rect" id="node9" href="$_a_p___d_c_m___h_i_l_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM_HIL.h" alt="" coords="557,392,960,421"/>
+<area shape="rect" id="node11" href="$_a_p___d_c_m_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM.h" alt="" coords="13,469,389,499"/>
+<area shape="rect" id="node28" href="$_a_p___i_m_u_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_IMU/AP_IMU.h" alt="" coords="53,315,419,344"/>
+<area shape="rect" id="node5" href="$_a_p___compass___h_m_c5843_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_Compass/AP_Compass_HMC5843.h" alt="" coords="471,160,977,189"/>
+<area shape="rect" id="node18" href="$_a_p___compass___h_i_l_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_Compass/AP_Compass_HIL.h" alt="" coords="783,237,1247,267"/>
+<area shape="rect" id="node7" href="$_a_p___compass_8h.html" title="Catch&#45;all header that defines all supported compass classes." alt="" coords="443,315,880,344"/>
+<area shape="rect" id="node23" href="$_a_p___compass___h_m_c5843_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_Compass/AP_Compass_HMC5843.cpp" alt="" coords="188,237,708,267"/>
+<area shape="rect" id="node15" href="$_a_p___d_c_m___h_i_l_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM_HIL.cpp" alt="" coords="549,469,968,499"/>
+<area shape="rect" id="node13" href="$_a_p___d_c_m_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM.cpp" alt="" coords="5,547,397,576"/>
+<area shape="rect" id="node21" href="$_a_p___compass___h_i_l_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_Compass/AP_Compass_HIL.cpp" alt="" coords="904,315,1381,344"/>
+<area shape="rect" id="node32" href="$_a_p___i_m_u_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_IMU/AP_IMU.cpp" alt="" coords="104,392,483,421"/>
+</map>
