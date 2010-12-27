@@ -1,9 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$_a_p___common_8h.html" title="Common definitions and utility routines for the ArduPilot libraries." alt="" coords="680,83,1115,112"/>
-<area shape="rect" id="node15" href="$c_09_09_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_Common/c++.cpp" alt="" coords="1139,83,1533,112"/>
-<area shape="rect" id="node5" href="$_a_p___common_8cpp.html" title="Common utility routines for the ArduPilot libraries." alt="" coords="5,160,456,189"/>
-<area shape="rect" id="node7" href="$menu_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_Common/menu.cpp" alt="" coords="480,160,883,189"/>
-<area shape="rect" id="node9" href="$_a_p___e_e_prom_8h.html" title="/home/jgoppert/Projects/ap/libraries/AP_EEProm/AP_EEProm.h" alt="" coords="907,160,1323,189"/>
-<area shape="rect" id="node13" href="$_a_p___rc_channel_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_RcChannel/AP_RcChannel.cpp" alt="" coords="1347,160,1813,189"/>
-<area shape="rect" id="node11" href="$_a_p___e_e_prom_8cpp.html" title="/home/jgoppert/Projects/ap/libraries/AP_EEProm/AP_EEProm.cpp" alt="" coords="899,237,1331,267"/>
-</map>

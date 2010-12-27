@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$_fast_serial_8h.html" title="../FastSerial/FastSerial.h" alt="" coords="157,160,331,189"/>
-<area shape="rect" id="node19" href="$_a_p___g_p_s__406_8h.html" title="AP_GPS_406.h" alt="" coords="337,83,452,112"/>
-<area shape="rect" id="node27" href="$_w_program_8h.html" title="WProgram.h" alt="" coords="476,83,575,112"/>
-<area shape="rect" id="node13" href="$_better_stream_8h.html" title="BetterStream.h" alt="" coords="464,237,587,267"/>
-<area shape="rect" id="node21" href="$_a_p___g_p_s___s_i_r_f_8h.html" title="AP_GPS_SIRF.h" alt="" coords="355,160,472,189"/>
-<area shape="rect" id="node23" href="$_g_p_s_8h.html" title="Interface definition for the various GPS drivers." alt="" coords="379,237,440,267"/>
-</map>

@@ -1,8 +1,15 @@
 #!/bin/bash
+rm -rf html
+svn cleanup
+svn update html
 
-svn remove html --force
+junkFiles=$(find html -regex ".*\.\(map\|md5\)")
+svn remove --force $junkFiles
+svn commit
+
 doxygen Doxyfile
-svn add html --force
+find html -regex ".*\.\(map\|md5\)" -exec rm {} \;
+svn add --force html/*
 
 for imageExt in "png"
 do
