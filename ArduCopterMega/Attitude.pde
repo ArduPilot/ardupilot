@@ -159,6 +159,7 @@ void set_servos_4(void)
 		int b_out = ((long)(motor_out[BACK]  - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
 		//*/
 				
+		//
 		/* debugging and dynamic kP
 		num++;
 		if (num > 50){
@@ -166,16 +167,18 @@ void set_servos_4(void)
 			//Serial.printf("control_in: %d ", rc_3.control_in);
 			//Serial.printf(" servo: %d %d %d %d\t", rc_1.servo_out, rc_2.servo_out, rc_3.servo_out, rc_4.servo_out);
 			//Serial.printf(" cwm: %d %d %d %d, %d\t", rc_1.pwm_out, rc_2.pwm_out, rc_3.pwm_out, rc_4.pwm_out, rc_3.radio_out);
-			//Serial.printf(" pwm: %d %d %d %d\n", r_out, l_out, f_out, b_out);
-			//Serial.printf(" pwm: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
+			//Serial.printf(" out: %d %d %d %d\n", r_out, l_out, f_out, b_out);
+			//Serial.printf(" pwm: %d, %d %d %d %d\n",rc_3.pwm_out, motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 			
 			pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
-			stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.24;
+			stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.25;
 			init_pids();
 			
-			Serial.print("kP: ");
-			Serial.println(pid_stabilize_roll.kP(),3);
+			//Serial.print("kP: ");
+			//Serial.println(pid_stabilize_roll.kP(),3);
 		}
+		// out: 41 38 39 39
+ 		// pwm: 358, 1412 1380 1395 1389
 		//*/
 		
 		//Serial.printf("set: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);		
