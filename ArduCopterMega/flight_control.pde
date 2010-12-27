@@ -21,7 +21,7 @@ void output_auto_throttle()
 
 void calc_nav_throttle()
 {
-	long err = constrain (altitude_error, -300, 300); //+-3 meters
+	long err = constrain (altitude_error, -150, 150); //+-1.5 meters
 	long temp = pid_throttle.get_pid(err, deltaMiliSeconds, 1.0);
 	nav_throttle = (float)(throttle_cruise + temp) * angle_boost();
 }

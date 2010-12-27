@@ -81,11 +81,16 @@ void read_trim_switch()
 					imu.init_accel();
 					imu.print_accel_offsets();
 				}*/
-				Serial.printf("r: %d, p: %d\n", rc_1.control_in, rc_2.control_in);
-				// set new accel offset values
-				imu.ax(((long)rc_1.control_in * -15) / 100);
-				imu.ay(((long)rc_2.control_in * -15) / 100);
-				imu.print_accel_offsets();
+				if(rc_3.control_in == 0){
+					imu.zero_accel();
+				}else{
+					Serial.printf("r: %d, p: %d\n", rc_1.control_in, rc_2.control_in);
+					// set new accel offset values
+					imu.ax(((long)rc_1.control_in * -15) / 100);
+					imu.ay(((long)rc_2.control_in * -15) / 100);
+					imu.print_accel_offsets();
+				}
+
 			} else {
 				// set the throttle nominal
 				if(rc_3.control_in > 50){

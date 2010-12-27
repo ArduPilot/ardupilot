@@ -283,7 +283,7 @@
 // STABILZE Angle Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		0.44
+# define STABILIZE_ROLL_P 		0.7
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.00
@@ -296,7 +296,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		0.44
+# define STABILIZE_PITCH_P		0.7
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.0
@@ -311,7 +311,7 @@
 // STABILZE RATE Control
 //
 #ifndef STABILIZE_RATE_RP
-# define STABILIZE_RATE_RP		0.1
+# define STABILIZE_RATE_RP		0.175
 #endif
 
 
@@ -334,7 +334,7 @@
 // STABILZE YAW Control
 //
 #ifndef STABILIZE_RATE_YAW
-# define STABILIZE_RATE_YAW		0.008
+# define STABILIZE_RATE_YAW		0.000
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -356,7 +356,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				12
+# define PITCH_MAX				8
 #endif
 
 
@@ -381,16 +381,16 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.5
+# define THROTTLE_P		1.0
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.01
 #endif
 #ifndef THROTTLE_D
-# define THROTTLE_D		0.3
+# define THROTTLE_D		0.4
 #endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX	50
+# define THROTTLE_IMAX	20
 #endif
 
 

@@ -773,11 +773,14 @@ void update_current_flight_mode(void)
 				//call at 5 hz
 				if(fbw_timer > 20){
 					fbw_timer = 0;
-					current_loc.lat = 0;
-					current_loc.lng = 0;
+
+					if(home_is_set == false){
+						current_loc.lat = home.lat = 0;
+						current_loc.lng = home.lng = 0;
+					}
 					
-					next_WP.lat = rc_1.control_in /5; // 10 meteres
-					next_WP.lng = -rc_2.control_in /5; // 10 meteres
+					next_WP.lat = home.lat + rc_1.control_in /5; // 10 meteres
+					next_WP.lng = home.lng -rc_2.control_in /5; // 10 meteres
 					
 					// waypoint distance from plane
 					// ----------------------------
