@@ -42,7 +42,7 @@ Collaboration diagram for AP_EEPromVar&lt; type &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="class_a_p___e_e_prom_var__coll__graph.png" border="0" usemap="#_a_p___e_e_prom_var_3_01type_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="_a_p___e_e_prom_var_3_01type_01_4_coll__map" id="_a_p___e_e_prom_var_3_01type_01_4_coll__map">
-<area shape="rect" id="node2" href="class_a_p___e_e_prom_entry.html" title="AP_EEPromEntry" alt="" coords="5,5,133,35"/><area shape="rect" id="node4" href="class_a_p___var.html" title="AP_Var\&lt; type \&gt;" alt="" coords="157,5,283,35"/></map>
+<area shape="rect" id="node2" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry." alt="" coords="5,5,133,35"/><area shape="rect" id="node4" href="class_a_p___var.html" title="AP_Var\&lt; type \&gt;" alt="" coords="157,5,283,35"/></map>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 
 <p><a href="class_a_p___e_e_prom_var-members.html">List of all members.</a></p>
@@ -50,11 +50,14 @@ Collaboration diagram for AP_EEPromVar&lt; type &gt;:</div>
 <tr><td colspan="2"><h2><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a9717bcdb3d54a67a4f1a252a7940ac07">AP_EEPromVar</a> (type data=0, const char *name=&quot;&quot;, bool sync=false)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The default constrcutor.  <a href="#a9717bcdb3d54a67a4f1a252a7940ac07"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a8e5973cdc766f532b632926f8df6ebea">setEntry</a> (float val)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual float&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a338b7fbb43e52050585490b82a4525e1">getEntry</a> ()</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">getEntryName</a> ()</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual uint16_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a9469b5951e2f1bb3759671100e9be625">getEntryId</a> ()</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the id of the variable.  <a href="#a9469b5951e2f1bb3759671100e9be625"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual uint16_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#ac450ac8c8ce9fbd0b58224d02c2e65a6">getEntryAddress</a> ()</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the address of the variable.  <a href="#ac450ac8c8ce9fbd0b58224d02c2e65a6"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <h3>template&lt;class type&gt;<br/>
@@ -62,7 +65,7 @@ Public Member Functions</h2></td></tr>
 
 <p>The EEProm Variable template class. This class implements get/set/save/load etc for the abstract template type. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00098">98</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00078">78</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a9717bcdb3d54a67a4f1a252a7940ac07"></a><!-- doxytag: member="AP_EEPromVar::AP_EEPromVar" ref="a9717bcdb3d54a67a4f1a252a7940ac07" args="(type data=0, const char *name=&quot;&quot;, bool sync=false)" -->
 <div class="memitem">
@@ -96,9 +99,10 @@ template&lt;class type &gt; </div>
       </table>
 </div>
 <div class="memdoc">
-<p>The default constrcutor </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00104">104</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>The default constrcutor. </p>
+
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00082">82</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -120,7 +124,7 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00111">111</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00089">89</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -140,9 +144,10 @@ template&lt;class type &gt; </div>
       </table>
 </div>
 <div class="memdoc">
+
 <p>Get the address of the variable. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00122">122</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00096">96</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -162,9 +167,10 @@ template&lt;class type &gt; </div>
       </table>
 </div>
 <div class="memdoc">
+
 <p>Get the id of the variable. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00117">117</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00093">93</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -185,7 +191,7 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00112">112</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00090">90</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -207,7 +213,7 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00110">110</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00088">88</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -215,7 +221,7 @@ template&lt;class type &gt; </div>
 <li>/home/jgoppert/Projects/ap/libraries/AP_EEProm/<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a></li>
 </ul>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 19:58:34 for ArduPilot Libraries by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 21:58:35 for ArduPilot Libraries by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

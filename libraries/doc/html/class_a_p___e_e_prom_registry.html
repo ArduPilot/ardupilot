@@ -34,6 +34,9 @@
 </div>
 <div class="contents">
 <!-- doxytag: class="AP_EEPromRegistry" --><!-- doxytag: inherits="Vector&lt; AP_EEPromEntry * &gt;" -->
+<p>The main EEProm Registry class.  
+<a href="#_details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>&gt;</code></p>
 
 <p>Inherits <a class="el" href="class_vector.html">Vector&lt; AP_EEPromEntry * &gt;</a>.</p>
@@ -42,7 +45,7 @@ Collaboration diagram for AP_EEPromRegistry:</div>
 <div class="dyncontent">
 <div class="center"><img src="class_a_p___e_e_prom_registry__coll__graph.png" border="0" usemap="#_a_p___e_e_prom_registry_coll__map" alt="Collaboration graph"/></div>
 <map name="_a_p___e_e_prom_registry_coll__map" id="_a_p___e_e_prom_registry_coll__map">
-<area shape="rect" id="node2" href="class_vector.html" title="Vector\&lt; AP_EEPromEntry * \&gt;" alt="" coords="5,101,216,131"/><area shape="rect" id="node4" href="class_a_p___e_e_prom_entry.html" title="AP_EEPromEntry" alt="" coords="47,5,175,35"/></map>
+<area shape="rect" id="node2" href="class_vector.html" title="Vector\&lt; AP_EEPromEntry * \&gt;" alt="" coords="5,101,216,131"/><area shape="rect" id="node4" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry." alt="" coords="47,5,175,35"/></map>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 
 <p><a href="class_a_p___e_e_prom_registry-members.html">List of all members.</a></p>
@@ -50,12 +53,14 @@ Collaboration diagram for AP_EEPromRegistry:</div>
 <tr><td colspan="2"><h2><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd">AP_EEPromRegistry</a> (uint16_t maxSize)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Default constructor.  <a href="#af14f86b2ebd197b4d8631bf13b1405dd"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec">add</a> (<a class="el" href="class_a_p___e_e_prom_entry.html">AP_EEPromEntry</a> *entry, uint16_t &amp;id, uint16_t &amp;address, size_t size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add an entry to the registry.  <a href="#a7e0faa494537b90fdb67280bf1963cec"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>The main EEProm Registry class. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00064">64</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00052">52</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="af14f86b2ebd197b4d8631bf13b1405dd"></a><!-- doxytag: member="AP_EEPromRegistry::AP_EEPromRegistry" ref="af14f86b2ebd197b4d8631bf13b1405dd" args="(uint16_t maxSize)" -->
 <div class="memitem">
@@ -72,9 +77,10 @@ Public Member Functions</h2></td></tr>
       </table>
 </div>
 <div class="memdoc">
-<p>Default constructor </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00071">71</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Default constructor. </p>
+
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00057">57</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -115,7 +121,8 @@ Public Member Functions</h2></td></tr>
       </table>
 </div>
 <div class="memdoc">
-<p>Add an entry to the registry </p>
+
+<p>Add an entry to the registry. </p>
 
 <p>Definition at line <a class="el" href="_a_p___e_e_prom_8cpp_source.html#l00021">21</a> of file <a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a>.</p>
 
@@ -126,7 +133,7 @@ Public Member Functions</h2></td></tr>
 <li>/home/jgoppert/Projects/ap/libraries/AP_EEProm/<a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a></li>
 </ul>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 19:58:34 for ArduPilot Libraries by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Sun Dec 26 2010 21:58:35 for ArduPilot Libraries by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
