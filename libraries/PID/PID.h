@@ -133,7 +133,7 @@ private:
 	/// 20 Hz becasue anything over that is probably noise, see
 	/// http://en.wikipedia.org/wiki/Low-pass_filter.
 	///
-	static const uint8_t _RC = 20; 
+	static const uint8_t _fCut = 20; 
 };
 
 #endif
