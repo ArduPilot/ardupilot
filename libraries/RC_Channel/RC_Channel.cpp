@@ -51,7 +51,6 @@ void
 RC_Channel::trim()
 {
 	radio_trim = radio_in;
-	
 }
 
 // read input from APM_RC - create a control_in value
@@ -105,14 +104,12 @@ RC_Channel::calc_pwm(void)
 {
 
 	if(_type == RANGE){
-		pwm_out = range_to_pwm();
+		pwm_out 	= range_to_pwm();
+		radio_out 	= pwm_out + radio_min;
 	}else{
-		pwm_out = angle_to_pwm();
+		pwm_out 	= angle_to_pwm();
+		radio_out 	= pwm_out + radio_trim;
 	}
-	//if(scale_output){
-	//	pwm_out *= scale_output;
-	//}
-	radio_out = pwm_out + radio_min;
 	radio_out = constrain(radio_out,radio_min, radio_max);
 }
 
@@ -178,23 +175,6 @@ RC_Channel::pwm_to_angle()
 		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
 }
 
-float 
-RC_Channel::norm_input()
-{
-	if(radio_in < radio_trim)
-		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
-	else
-		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
-}
-
-float 
-RC_Channel::norm_output()
-{
-	if(radio_out < radio_trim)
-		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
-	else
-		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
-}
 
 int16_t
 RC_Channel::angle_to_pwm()
@@ -224,5 +204,22 @@ RC_Channel::range_to_pwm()
 	return ((long)(servo_out - _low) * (long)(radio_max - radio_min)) / (long)(_high - _low);
 }
 
+// ------------------------------------------
 
+float 
+RC_Channel::norm_input()
+{
+	if(radio_in < radio_trim)
+		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
+	else
+		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
+}
 
+float 
+RC_Channel::norm_output()
+{
+	if(radio_out < radio_trim)
+		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
+	else
+		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
+}
