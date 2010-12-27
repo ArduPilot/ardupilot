@@ -1,0 +1,37 @@
+<map id="G" name="G">
+<area shape="rect" id="node2" href="$struct_bin_comm_1_1msg__location.html" title="Structure describing the payload section of the MSG_LOCATION message." alt="" coords="61,36,240,65"/>
+<area shape="rect" id="node4" href="$struct_bin_comm_1_1msg__dataflash__request.html" title="Structure describing the payload section of the MSG_DATAFLASH_REQUEST message." alt="" coords="29,89,272,119"/>
+<area shape="rect" id="node6" href="$struct_bin_comm_1_1msg__value.html" title="Structure describing the payload section of the MSG_VALUE message." alt="" coords="69,143,232,172"/>
+<area shape="rect" id="node8" href="$struct_bin_comm_1_1msg__acknowledge.html" title="Structure describing the payload section of the MSG_ACKNOWLEDGE message." alt="" coords="45,196,256,225"/>
+<area shape="rect" id="node10" href="$struct_bin_comm_1_1msg__attitude__set.html" title="Structure describing the payload section of the MSG_ATTITUDE_SET message." alt="" coords="48,249,253,279"/>
+<area shape="rect" id="node12" href="$struct_bin_comm_1_1msg__command__mode__change.html" title="Structure describing the payload section of the MSG_COMMAND_MODE_CHANGE message." alt="" coords="5,303,296,332"/>
+<area shape="rect" id="node14" href="$struct_bin_comm_1_1msg__command__list.html" title="Structure describing the payload section of the MSG_COMMAND_LIST message." alt="" coords="41,356,260,385"/>
+<area shape="rect" id="node16" href="$struct_bin_comm_1_1msg__command__upload.html" title="Structure describing the payload section of the MSG_COMMAND_UPLOAD message." alt="" coords="29,409,272,439"/>
+<area shape="rect" id="node18" href="$struct_bin_comm_1_1msg__version.html" title="Structure describing the payload section of the MSG_VERSION message." alt="" coords="64,463,237,492"/>
+<area shape="rect" id="node20" href="$struct_bin_comm_1_1msg__status__text.html" title="Structure describing the payload section of the MSG_STATUS_TEXT message." alt="" coords="51,516,251,545"/>
+<area shape="rect" id="node22" href="$struct_bin_comm_1_1msg__trim__min.html" title="Structure describing the payload section of the MSG_TRIM_MIN message." alt="" coords="59,569,243,599"/>
+<area shape="rect" id="node24" href="$struct_bin_comm_1_1msg__command__request.html" title="Structure describing the payload section of the MSG_COMMAND_REQUEST message." alt="" coords="27,623,275,652"/>
+<area shape="rect" id="node26" href="$struct_bin_comm_1_1msg__attitude.html" title="Structure describing the payload section of the MSG_ATTITUDE message." alt="" coords="61,676,240,705"/>
+<area shape="rect" id="node28" href="$struct_bin_comm_1_1msg__position__set.html" title="Structure describing the payload section of the MSG_POSITION_SET message." alt="" coords="48,729,253,759"/>
+<area shape="rect" id="node30" href="$struct_bin_comm_1_1msg__value__set.html" title="Structure describing the payload section of the MSG_VALUE_SET message." alt="" coords="56,783,245,812"/>
+<area shape="rect" id="node32" href="$struct_bin_comm_1_1msg__value__request.html" title="Structure describing the payload section of the MSG_VALUE_REQUEST message." alt="" coords="41,836,260,865"/>
+<area shape="rect" id="node34" href="$struct_bin_comm_1_1msg__trim__startup.html" title="Structure describing the payload section of the MSG_TRIM_STARTUP message." alt="" coords="48,889,253,919"/>
+<area shape="rect" id="node36" href="$struct_bin_comm_1_1msg__pid.html" title="Structure describing the payload section of the MSG_PID message." alt="" coords="77,943,224,972"/>
+<area shape="rect" id="node38" href="$struct_bin_comm_1_1msg__version__request.html" title="Structure describing the payload section of the MSG_VERSION_REQUEST message." alt="" coords="36,996,265,1025"/>
+<area shape="rect" id="node40" href="$struct_bin_comm_1_1msg__pressure.html" title="Structure describing the payload section of the MSG_PRESSURE message." alt="" coords="59,1049,243,1079"/>
+<area shape="rect" id="node42" href="$struct_bin_comm_1_1msg__eeprom__set.html" title="Structure describing the payload section of the MSG_EEPROM_SET message." alt="" coords="48,1103,253,1132"/>
+<area shape="rect" id="node44" href="$struct_bin_comm_1_1msg__eeprom__request.html" title="Structure describing the payload section of the MSG_EEPROM_REQUEST message." alt="" coords="33,1156,268,1185"/>
+<area shape="rect" id="node46" href="$struct_bin_comm_1_1msg__pin__request.html" title="Structure describing the payload section of the MSG_PIN_REQUEST message." alt="" coords="49,1209,252,1239"/>
+<area shape="rect" id="node48" href="$struct_bin_comm_1_1msg__radio__out.html" title="Structure describing the payload section of the MSG_RADIO_OUT message." alt="" coords="57,1263,244,1292"/>
+<area shape="rect" id="node50" href="$struct_bin_comm_1_1msg__pid__set.html" title="Structure describing the payload section of the MSG_PID_SET message." alt="" coords="64,1316,237,1345"/>
+<area shape="rect" id="node52" href="$struct_bin_comm_1_1msg__pid__request.html" title="Structure describing the payload section of the MSG_PID_REQUEST message." alt="" coords="49,1369,252,1399"/>
+<area shape="rect" id="node54" href="$struct_bin_comm_1_1msg__heartbeat.html" title="Structure describing the payload section of the MSG_HEARTBEAT message." alt="" coords="56,1423,245,1452"/>
+<area shape="rect" id="node56" href="$struct_bin_comm_1_1msg__position__correct.html" title="Structure describing the payload section of the MSG_POSITION_CORRECT message." alt="" coords="36,1476,265,1505"/>
+<area shape="rect" id="node58" href="$struct_bin_comm_1_1msg__attitude__correct.html" title="Structure describing the payload section of the MSG_ATTITUDE_CORRECT message." alt="" coords="36,1529,265,1559"/>
+<area shape="rect" id="node60" href="$struct_bin_comm_1_1msg__dataflash__set.html" title="Structure describing the payload section of the MSG_DATAFLASH_SET message." alt="" coords="44,1583,257,1612"/>
+<area shape="rect" id="node62" href="$struct_bin_comm_1_1msg__sensor.html" title="Structure describing the payload section of the MSG_SENSOR message." alt="" coords="65,1636,236,1665"/>
+<area shape="rect" id="node64" href="$struct_bin_comm_1_1msg__trim__max.html" title="Structure describing the payload section of the MSG_TRIM_MAX message." alt="" coords="56,1689,245,1719"/>
+<area shape="rect" id="node66" href="$struct_bin_comm_1_1msg__pin__set.html" title="Structure describing the payload section of the MSG_PIN_SET message." alt="" coords="64,1743,237,1772"/>
+<area shape="rect" id="node68" href="$struct_bin_comm_1_1msg__servo__out.html" title="Structure describing the payload section of the MSG_SERVO_OUT message." alt="" coords="56,1796,245,1825"/>
+<area shape="rect" id="node70" href="$struct_bin_comm_1_1msg__perf__report.html" title="Structure describing the payload section of the MSG_PERF_REPORT message." alt="" coords="52,1849,249,1879"/>
+</map>

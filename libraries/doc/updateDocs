@@ -1,0 +1,21 @@
+#!/bin/bash
+
+svn remove html --force
+doxygen Doxyfile
+svn add html --force
+
+for imageExt in "png"
+do
+	imageFiles=$(find html -name *.$imageExt)
+	echo image files: $imageFiles
+	svn propset svn:mime-type image/$imageExt $imageFiles
+done
+
+for textExt in "html"
+do
+	textFiles=$(find html -name *.$textExt)
+	echo text files: $textFiles
+	svn propset svn:mime-type text/$textExt $textFiles
+done
+
+svn commit

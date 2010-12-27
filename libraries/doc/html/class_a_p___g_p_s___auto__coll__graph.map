@@ -1,0 +1,7 @@
+<map id="G" name="G">
+<area shape="rect" id="node2" href="$class_g_p_s.html" title="Abstract base class for GPS receiver drivers." alt="" coords="5,197,53,227"/>
+<area shape="rect" id="node4" href="$class_stream.html" title="Stream" alt="" coords="28,5,97,35"/>
+<area shape="rect" id="node9" href="$class_better_stream.html" title="BetterStream" alt="" coords="84,85,193,115"/>
+<area shape="rect" id="node7" href="$class_fast_serial.html" title="FastSerial" alt="" coords="97,197,180,227"/>
+<area shape="rect" id="node12" href="$struct_fast_serial_1_1_buffer.html" title="FastSerial::Buffer" alt="" coords="217,85,348,115"/>
+</map>
