@@ -21,7 +21,7 @@ class AP_DCM
 {
 public:
 	// Constructors
-	AP_DCM(AP_IMU *imu, GPS *gps) :
+	AP_DCM(IMU *imu, GPS *gps) :
 		_imu(imu),
 		_gps(gps),
 		_compass(0),
@@ -31,8 +31,8 @@ public:
 		_course_over_ground_x(0),
 		_course_over_ground_y(1)
 	{}
-	
-	AP_DCM(AP_IMU *imu, GPS *gps, Compass *withCompass) :
+
+	AP_DCM(IMU *imu, GPS *gps, Compass *withCompass) :
 		_imu(imu),
 		_gps(gps),
 		_compass(withCompass),
@@ -48,7 +48,7 @@ public:
 	Vector3f	get_accel(void) { return _accel_vector; }
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
-	
+
 	void		set_centripetal(bool b);
 	void		set_compass(Compass *compass);
 
@@ -83,7 +83,7 @@ private:
 	// members
 	Compass 	* _compass;
 	GPS 				* _gps;
-	AP_IMU 				* _imu;
+	IMU 				* _imu;
 
 	Matrix3f	_dcm_matrix;
 
@@ -91,7 +91,7 @@ private:
 	Vector3f 	_gyro_vector;				// Store the gyros turn rate in a vector
 	Vector3f	_omega_P;					// Omega Proportional correction
 	Vector3f 	_omega_I;					// Omega Integrator correction
-	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction		
+	Vector3f 	_omega_integ_corr;			// Partially corrected Gyro_Vector data - used for centrepetal correction
 	Vector3f 	_omega;						// Corrected Gyro_Vector data
 	Vector3f 	_error_roll_pitch;
 	Vector3f 	_error_yaw;
