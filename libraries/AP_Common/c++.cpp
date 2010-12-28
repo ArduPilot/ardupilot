@@ -21,9 +21,14 @@ void operator delete(void *p)
 	if (p) free(p);
 }
 
+extern "C" void __cxa_pure_virtual() 
+{
+	while (1); 
+}
+
 void * operator new[](size_t size)
 {
-    return malloc(size);
+    return(calloc(size, 1));
 }
 
 void operator delete[](void * ptr)
