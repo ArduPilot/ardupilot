@@ -118,32 +118,32 @@ RC_Channel::calc_pwm(void)
 void
 RC_Channel::load_eeprom(void)
 {
-	//radio_min 	= eeprom_read_word((uint16_t *)	_address);
-	//radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
-	//radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
-	radio_min 	= _ee.read_int(_address);
-	radio_max	= _ee.read_int(_address + 2);
-	radio_trim 	= _ee.read_int(_address + 4);
+	radio_min 	= eeprom_read_word((uint16_t *)	_address);
+	radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
+	radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
+	//radio_min 	= _ee.read_int(_address);
+	//radio_max	= _ee.read_int(_address + 2);
+	//radio_trim 	= _ee.read_int(_address + 4);
 }
 
 void
 RC_Channel::save_eeprom(void)
 {
-	//eeprom_write_word((uint16_t *)	_address, 			radio_min);
-	//eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
-	//eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	eeprom_write_word((uint16_t *)	_address, 			radio_min);
+	eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
+	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
 	
-	_ee.write_int(_address, 		radio_min);
-	_ee.write_int((_address + 2), 	radio_max);
-	_ee.write_int((_address + 4), 	radio_trim);
+	//_ee.write_int(_address, 		radio_min);
+	//_ee.write_int((_address + 2), 	radio_max);
+	//_ee.write_int((_address + 4), 	radio_trim);
 }
 
 // ------------------------------------------
 void
 RC_Channel::save_trim(void)
 {
-	//eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
-	_ee.write_int((_address + 4), 	radio_trim);
+	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
+	//_ee.write_int((_address + 4), 	radio_trim);
 }
 
 // ------------------------------------------
