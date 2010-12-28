@@ -15,11 +15,11 @@ class Compass
 	float heading_y;
 	unsigned long last_update;	
 	
-	virtual bool init(int initialise_wire_lib = 1);
-	virtual void read();
-	virtual void calculate(float roll, float pitch);
-	virtual void set_orientation(const Matrix3f &rotation_matrix);
-	virtual void set_offsets(int x, int y, int z);
-	virtual void set_declination(float radians);
+	virtual bool init(int initialise_wire_lib = 1) = 0;
+	virtual void read() = 0;
+	virtual void calculate(float roll, float pitch) = 0;
+	virtual void set_orientation(const Matrix3f &rotation_matrix) = 0;
+	virtual void set_offsets(int x, int y, int z) = 0;
+	virtual void set_declination(float radians) = 0;
 };
 #endif
