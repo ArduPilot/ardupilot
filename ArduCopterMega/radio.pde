@@ -60,6 +60,13 @@ void trim_radio()
 	rc_4.trim();	// yaw
 }
 
+void trim_yaw()
+{
+	for (byte i = 0; i < 50; i++){
+		read_radio();
+	}
+	rc_4.trim();	// yaw
+}
 
 #define ARM_DELAY 10
 #define DISARM_DELAY 10

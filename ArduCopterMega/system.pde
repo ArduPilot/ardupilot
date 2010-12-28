@@ -235,8 +235,7 @@ void startup_ground(void)
 
 	// read the radio to set trims
 	// ---------------------------
-	// I am disabling this. It's not appropriate for Copters, only planes
-	//trim_radio();
+	trim_yaw();
 
 	// Warm up and read Gyro offsets
 	// -----------------------------
