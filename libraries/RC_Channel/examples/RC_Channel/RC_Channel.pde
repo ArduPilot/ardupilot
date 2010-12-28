@@ -75,19 +75,23 @@ void setup()
 	
 	// set type of output, symmetrical angles or a number range;
 	rc_1.set_angle(4500);
+	rc_1.dead_zone = 50;
 	rc_2.set_angle(4500);
+	rc_2.dead_zone = 50;
 	rc_3.set_range(0,1000);
-	rc_4.set_angle(3000);
+	rc_3.dead_zone = 20;
+	rc_3.scale_output = .8;
+	rc_4.set_angle(6000); 
+	rc_4.dead_zone = 500;
 	rc_5.set_range(0,1000);
-	rc_6.set_range(0,1000);
+	rc_5.set_filter(false);
+	rc_6.set_range(200,800);
 	rc_7.set_range(0,1000);
 	rc_8.set_range(0,1000);
 	
-	// set midpoint value
-	rc_1.set_pwm(APM_RC.InputCh(CH_1));
-	rc_2.set_pwm(APM_RC.InputCh(CH_2));
-	rc_4.set_pwm(APM_RC.InputCh(CH_4));
-
+	for (byte i = 0; i < 30; i++){
+		read_radio();
+	}	
 	rc_1.trim();
 	rc_2.trim();
 	rc_4.trim();
@@ -98,6 +102,13 @@ void setup()
 void loop()	
 {
 	delay(20);
+	read_radio();
+	print_pwm();
+}
+
+
+void read_radio()
+{
 	rc_1.set_pwm(APM_RC.InputCh(CH_1));
 	rc_2.set_pwm(APM_RC.InputCh(CH_2));
 	rc_3.set_pwm(APM_RC.InputCh(CH_3));
@@ -106,8 +117,7 @@ void loop()
 	rc_6.set_pwm(APM_RC.InputCh(CH_6));
 	rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	rc_8.set_pwm(APM_RC.InputCh(CH_8));
-	
-	print_pwm();
+	//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"), rc_1.control_in, rc_2.control_in, rc_3.control_in, rc_4.control_in);
 }
 
 void print_pwm()
