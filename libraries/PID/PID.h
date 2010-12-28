@@ -7,7 +7,6 @@
 #define PID_h
 
 #include <stdint.h>
-#include <AP_EEPROMB.h>
 
 /// @class	PID
 /// @brief	Object managing one PID control
@@ -118,7 +117,6 @@ public:
 	float	get_integrator() 		{ return _integrator; }
 
 private:
-	AP_EEPROMB	_ee;
 	uint16_t	_address;			///< EEPROM address for save/restore of P/I/D
 	float		*_gain_array; 		///< pointer to the gains for this pid
 
