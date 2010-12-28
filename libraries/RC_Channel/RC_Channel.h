@@ -7,7 +7,6 @@
 #define RC_Channel_h
 
 #include <stdint.h>
-#include <AP_EEPROMB.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
@@ -101,7 +100,6 @@ class RC_Channel{
 	bool 		_type;				
 	int16_t 	_high;
 	int16_t 	_low;
-	AP_EEPROMB	_ee;
 };
 
 #endif	
