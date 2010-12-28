@@ -11,9 +11,12 @@
 #include <AP_EEProm.h>
 #include <APM_RC.h>
 
+FastSerialPort0(Serial); // make sure this procees variable declarations
+
 // test settings
 uint8_t nChannels = 8;
-bool loadFromEEProm = false;
+bool loadEEProm = false;
+bool saveEEProm = false;
 
 // channel configuration
 Vector< AP_EEPromVar<float> * > scale;
@@ -23,15 +26,7 @@ Vector< AP_EEPromVar<uint16_t> * > pwmMax;
 Vector< AP_EEPromVar<uint16_t> * > pwmDeadZone;
 Vector< AP_Var<bool> * > filter;
 Vector< AP_Var<bool> * > reverse;
-Vector< AP_RcChannel * > rc ;
-
-// test position
-float testPosition = 0;
-uint16_t testPwm = 1500;
-int8_t testSign = 1;
-
-// serial
-FastSerialPort0(Serial);
+Vector< AP_RcChannel * > rc;
 
 void setup()
 {
@@ -42,18 +37,34 @@ void setup()
 	// add channels
 	for (int i=0;i<nChannels;i++)
 	{
-		char num[2];
-		itoa(i,num,10);
+		char num[5];
+		itoa(i+1,num,10);
+
+		Serial.printf("\nInitializing channel %d", i+1);
 
 		// initialize eeprom settings
 		scale.push_back(new AP_EEPromVar<float>(1.0,strcat("SCALE",num)));
 		pwmMin.push_back(new AP_EEPromVar<uint16_t>(1200,strcat("PWM_MIN",num)));
 		pwmNeutral.push_back(new AP_EEPromVar<uint16_t>(1500,strcat("PWM_NEUTRAL",num)));
 		pwmMax.push_back(new AP_EEPromVar<uint16_t>(1800,strcat("PWM_MAX",num)));
-		pwmMax.push_back(new AP_EEPromVar<uint16_t>(10,strcat("PWM_DEADZONE",num)));
+		pwmDeadZone.push_back(new AP_EEPromVar<uint16_t>(10,strcat("PWM_DEADZONE",num)));
+		filter.push_back(new AP_EEPromVar<bool>(false,strcat("FILTER",num)));
+		reverse.push_back(new AP_EEPromVar<bool>(false,strcat("REVERSE",num)));
+
+		// save
+		if (saveEEProm)
+		{
+			scale[i]->save();
+			pwmMin[i]->save();
+			pwmNeutral[i]->save();
+			pwmMax[i]->save();
+			pwmDeadZone[i]->save();
+			filter[i]->save();
+			reverse[i]->save();
+		}
 
 		// load
-		if (loadFromEEProm)
+		if (loadEEProm)
 		{
 			scale[i]->load();
 			pwmMin[i]->load();
@@ -64,37 +75,30 @@ void setup()
 			reverse[i]->load();
 		}
 
-		// add rc channel
-		rc.push_back(new AP_RcChannel(APM_RC,i,scale[i]->get(),
-			pwmMin[i]->get(),pwmNeutral[i]->get(),pwmMax[i]->get(),
-			pwmDeadZone[i]->get(),filter[i]->get(),reverse[i]->get()));	
-
 		// find neutral position
-		rc[i]->readRadio();
-		pwmNeutral[i]->set(rc[i]->getPwm());
+		AP_RcChannel * ch = new AP_RcChannel(APM_RC,i,scale[i]->get(),
+			pwmMin[i]->get(),pwmNeutral[i]->get(),pwmMax[i]->get(),
+			pwmDeadZone[i]->get(),filter[i]->get(),reverse[i]->get());
+
+		ch->readRadio();
+		pwmNeutral[i]->set(ch->getPwm());
+
+		// add rc channel
+		rc.push_back(ch);	
 	}
 }
 
 void loop()	
 {
-	// set channel positions
-	for (int i=0;i<7;i++)
-	{
-		rc[i]->setPosition(testPosition);
-		Serial.printf("\npwm:\t%d\t\tposition:\t%f\n", rc[i]->getPwm(),rc[i]->getPosition());
-	}
-
-	// update test value
-	testPosition += testSign*.05;
-	if (testPosition > 1)
-	{
-		testPosition = -1;
-		testSign = -1;
-	}
-	else if (testPosition < 1)
-	{
-		testPosition = 1;
-		testSign = 1;
-	}
-	delay(500);
+	// read radio
+	for (int i=0;i<nChannels;i++) rc[i]->readRadio();
+	
+	// read test positions 
+	Serial.printf("\npwm      :\t");
+	for (int i=0;i<nChannels;i++) Serial.printf("%7d\t",rc[i]->getPwm());
+	Serial.println();
+	Serial.printf("position :\t");
+	for (int i=0;i<nChannels;i++) Serial.printf("%7.2f\t",rc[i]->getPosition());
+	Serial.println();
+	delay(100);
 }
