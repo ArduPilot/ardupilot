@@ -11,6 +11,8 @@
 #include <AP_EEProm.h>
 #include <APM_RC.h>
 
+FastSerialPort0(Serial); // make sure this proceed variable declarations 
+
 AP_EEPromVar<float> scale(45.0,"RC1_SCALE");
 AP_EEPromVar<uint16_t> pwmMin(1000,"RC1_PWMMIN");
 AP_EEPromVar<uint16_t> pwmNeutral(1500,"RC1_PWMNEUTRAL");
@@ -25,8 +27,6 @@ AP_Var<bool> reverse(false,"RC1_REVERSE");
 
 float testPosition = 0;
 uint16_t testPwm = 1500;
-
-FastSerialPort0(Serial);
 
 AP_RcChannel rc[] = 
 {
