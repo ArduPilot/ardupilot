@@ -23,6 +23,9 @@ AP_EEPromVar<uint16_t> pwmDeadZone(100,"RC1_PWMDEADZONE");
 AP_Var<bool> filter(false,"RC1_FILTER");
 AP_Var<bool> reverse(false,"RC1_REVERSE");
 
+float testPosition = 0;
+uint16_t testPwm = 1500;
+
 FastSerialPort0(Serial);
 
 AP_RcChannel rc[] = 
@@ -60,16 +63,22 @@ void loop()
 	delay(2000);
 
 	// set by pwm 
-	rc[CH_1].setPwm(1500);
+	rc[CH_1].setPwm(testPwm);
 	Serial.printf("\nrc[CH_1].setPwm(1500)\n");
 	Serial.printf("pwm: %d position: %f\n",rc[CH_1].getPwm(),
 			rc[CH_1].getPosition());
 	delay(2000);
 
 	// set by position
-	rc[CH_1].setPosition(-50);
+	rc[CH_1].setPosition(testPosition);
 	Serial.printf("\nrc[CH_1].setPosition(-50))\n");
 	Serial.printf("pwm: %d position: %f\n",rc[CH_1].getPwm(),
 			rc[CH_1].getPosition());
 	delay(2000);
+
+	// update test value
+	testPosition += 10;
+	if (testPosition > 100) testPosition = -100;
+	testPwm += 100;
+	if (testPwm > 1800) testPosition = 1200;
 }
