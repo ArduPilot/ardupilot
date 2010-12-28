@@ -15,9 +15,7 @@
 AP_Compass_HIL::AP_Compass_HIL() : orientation(0), declination(0.0)
 {
   // mag x y z offset initialisation
-  offset[0] = 0;
-  offset[1] = 0;
-  offset[2] = 0;
+  memset(offset, 0, sizeof(offset));
   
   // initialise orientation matrix
   orientation_matrix = ROTATION_NONE;
