@@ -267,7 +267,7 @@ AP_DCM::drift_correction(void)
 				// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0
 				// Rzx = Rzy = 0, Rzz = 1
 				rot_mat.a.x = cos_psi_err;
-				rot_mat.a.y = - sin_psi_err;
+				rot_mat.a.y = -sin_psi_err;
 				rot_mat.b.x = sin_psi_err;
 				rot_mat.b.y = cos_psi_err;
 				rot_mat.a.z = 0;
