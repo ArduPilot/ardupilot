@@ -60,17 +60,22 @@
 // only define interrupt handlers for serial ports that are actually
 // used, we have to force our users to define them using a macro.
 //
-// Due to the way interrupt vectors are specified, we have to have
-// a separate macro for every port.  Ugh.
+// FastSerialPort(<port name>, <port number>)
 //
-// The macros are:
+// <port name> is the name of the object that will be created by the
+// macro.  <port number> is the 0-based number of the port that will
+// be managed by the object.
+//
+// Previously ports were defined with a different macro for each port,
+// and these macros are retained for compatibility:
 //
 // FastSerialPort0(<port name>)         creates <port name> referencing serial port 0
 // FastSerialPort1(<port name>)         creates <port name> referencing serial port 1
 // FastSerialPort2(<port name>)         creates <port name> referencing serial port 2
 // FastSerialPort3(<port name>)         creates <port name> referencing serial port 3
 //
-// Note that macros are only defined for ports that exist on the target device.
+// Note that compatibility macros are only defined for ports that
+// exist on the target device.
 //
 
 //
