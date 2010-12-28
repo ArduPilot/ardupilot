@@ -18,7 +18,7 @@
 
 #include <AP_EEProm.h>
 
-void AP_EEPromRegistry::add(AP_EEPromEntry * entry, uint16_t & id, uint16_t & address, size_t size)
+void AP_EEPromRegistry::add(AP_EEPromEntryI * entry, uint16_t & id, uint16_t & address, size_t size)
 {
 	if (_newAddress + size > _maxSize) return;
 	address = _newAddress;
