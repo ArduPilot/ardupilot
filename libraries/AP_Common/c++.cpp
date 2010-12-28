@@ -11,20 +11,24 @@
 #include "c++.h"
 #include "WProgram.h"
 
-void * operator new(size_t size) 
+void * operator new(size_t size)
 {
 	return(calloc(size, 1));
 }
 
-void operator delete(void *p) 
+void operator delete(void *p)
 {
 	if (p) free(p);
 }
 
-extern "C" void __cxa_pure_virtual() 
+#if 0
+// We should never need this, as classes should never be defined
+// with pure virtual member functions
+extern "C" void __cxa_pure_virtual()
 {
-	while (1); 
+	while (1);
 }
+#endif
 
 void * operator new[](size_t size)
 {
@@ -38,17 +42,17 @@ void operator delete[](void * ptr)
 
 __extension__ typedef int __guard __attribute__((mode (__DI__)));
 
-int __cxa_guard_acquire(__guard *g) 
+int __cxa_guard_acquire(__guard *g)
 {
 	return !*(char *)(g);
 };
 
-void __cxa_guard_release (__guard *g) 
+void __cxa_guard_release (__guard *g)
 {
 	*(char *)g = 1;
 };
 
-void __cxa_guard_abort (__guard *) {}; 
+void __cxa_guard_abort (__guard *) {};
 
 // free memory
 extern unsigned int __bss_end;
