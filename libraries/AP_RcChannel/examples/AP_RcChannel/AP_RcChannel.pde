@@ -9,6 +9,7 @@
 #include <AP_Common.h>
 #include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
 #include <AP_EEProm.h>
+#include <APM_RC.h>
 
 AP_EEPromVar<float> scale(45.0,"RC1_SCALE");
 AP_EEPromVar<uint16_t> pwmMin(1000,"RC1_PWMMIN");

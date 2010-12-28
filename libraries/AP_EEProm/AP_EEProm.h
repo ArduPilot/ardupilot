@@ -25,7 +25,7 @@
 #include <avr/pgmspace.h>
 
 /// The interface for data entries in the eeprom registry
-class AP_EEPromEntry
+class AP_EEPromEntryI
 {
 public:
 	/// Pure virtual function for setting the data value 
@@ -49,7 +49,7 @@ public:
 };
 
 ///The main EEProm Registry class.
-class AP_EEPromRegistry : public Vector<AP_EEPromEntry *>
+class AP_EEPromRegistry : public Vector<AP_EEPromEntryI *>
 {
 public:
 
@@ -60,7 +60,7 @@ public:
 	}
 
 	/// Add an entry to the registry
-	void add(AP_EEPromEntry * entry, uint16_t & id, uint16_t & address, size_t size);
+	void add(AP_EEPromEntryI * entry, uint16_t & id, uint16_t & address, size_t size);
 
 private:
 	uint16_t _newAddress; /// the address for the next new variable
@@ -75,7 +75,7 @@ extern AP_EEPromRegistry eepromRegistry;
 /// This class implements get/set/save/load etc for the 
 /// abstract template type.
 template  <class type>
-class AP_EEPromVar : public AP_EEPromEntry, public AP_Var<type>
+class AP_EEPromVar : public AP_EEPromEntryI, public AP_Var<type>
 {
 public:
 	/// The default constrcutor
@@ -85,8 +85,8 @@ public:
 		eepromRegistry.add(this,_id,_address,sizeof(type));
 	}
 
-	virtual void setEntry(float val) { this->setAsFloat(val); }
-	virtual float getEntry() { return this->getAsFloat(); }
+	virtual void setEntry(float val) { this->setF(val); }
+	virtual float getEntry() { return this->getF(); }
 	virtual const char * getEntryName() { return this->getName(); }
 
 	/// Get the id of the variable.

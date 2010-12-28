@@ -83,84 +83,93 @@ struct Location {
 	int32_t		lng;				///< param 4 - Longitude * 10**7
 };
 
-/**
- * The parameter template class. This class
- * implements get/set/save/load etc for the 
- * abstract template type.
- */
-template  <class type>
-class AP_Var
+/// The AP variable interface. This allows different types
+/// of variables to be passed to blocks for floating point
+/// math, memory management, etc. 
+class AP_VarI
 {
 public:
-	/**
-	 * The default constrcutor
-	 */
+
+	/// Set the variable value as a float
+	virtual void setF(const float & val) = 0;
+
+	/// Get the variable as a float
+	virtual const float & getF() = 0;
+
+	/// Save a variable to eeprom
+	virtual void save() = 0;
+
+	/// Load a variable from eeprom
+	virtual void load() = 0;
+
+	/// Get the name. This is useful for ground stations.
+	virtual const char * getName() = 0;
+
+	/// If sync is true the a load will always occure before a get and a save will always
+	/// occure before a set.
+	virtual const bool & getSync() = 0;
+
+	/// Set the sync property
+	virtual void setSync(bool sync) = 0;
+};
+
+/// The variable template class. This class
+/// implements get/set/save/load etc for the 
+/// abstract template type.
+template  <class type>
+class AP_Var : public AP_VarI
+{
+public:
+	/// The default constrcutor
 	AP_Var(const type & data, const char * name = "", const bool & sync=false) : 
 		_data(data), _name(name), _sync(sync)
 	{
 	}
 
-	/**
-	 * Set the variable value
-	 */
-	void set(const type & val) {
+	/// Set the variable value
+	virtual void set(const type & val) {
 		_data = val; 
 		if (_sync) save();
 	}
 
-	/**
-	 * Get the variable value.
-	 */
-	const type & get() {
+	/// Get the variable value.
+	virtual const type & get() {
 		if (_sync) load();
 		return _data;
 	}
 
-	/**
-	 *  Set the variable value as a float
-	 */
-	void setAsFloat(const float & val) {
+	/// Set the variable value as a float
+	virtual void setF(const float & val) {
 		set(val);
 	}
 
-	/**
-	 * Get the variable as a float
-	 */
-	const float & getAsFloat() {
+	/// Get the variable as a float
+	virtual const float & getF() {
 		return get();
 	}
 
-
-	/**
-	 * Save a variable to eeprom
-	 */
+	/// Save a variable to eeprom
 	virtual void save()
 	{
 	}
 
-	/**
-	 * Load a variable from eeprom
-	 */
+	/// Load a variable from eeprom
 	virtual void load()
 	{
 	}
 
-	/**
-	 * Get the name. This is useful for ground stations.
-	 */
-	const char * getName() { return _name; }
+	/// Get the name. This is useful for ground stations.
+	virtual const char * getName() { return _name; }
 
-	/**
-	 * If sync is true the a load will always occure before a get and a save will always
-	 * occure before a set.
-	 */
-	const bool & getSync() { return _sync; }
-	void setSync(bool sync) { _sync = sync; }
+	/// If sync is true the a load will always occure before a get and a save will always
+	/// occure before a set.
+	virtual const bool & getSync() { return _sync; }
+	virtual void setSync(bool sync) { _sync = sync; }
 
 protected:
-	type _data; /** The data that is stored on the heap */
-	const char * _name; /** The variable name, useful for gcs and terminal output */
-	bool _sync; /** Whether or not to call save/load on get/set */
+	type _data; /// The data that is stored on the heap */
+	const char * _name; /// The variable name, useful for gcs and terminal output
+	bool _sync; /// Whether or not to call save/load on get/set
 };
 
 //@}
