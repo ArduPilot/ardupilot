@@ -19,18 +19,6 @@ camera_stabilization()
 		//rc_camera_pitch.servo_out;
 		rc_camera_pitch.calc_pwm();
 		
-		Serial.print(rc_camera_pitch.radio_min,DEC);
-		Serial.print(" ");
-		Serial.print(rc_camera_pitch.radio_trim,DEC);
-		Serial.print(" ");
-		Serial.print(rc_camera_pitch.radio_max,DEC);
-		Serial.print(" ");
-		Serial.print(rc_camera_pitch.servo_out,DEC);
-		Serial.print(" ");
-		Serial.print(rc_camera_pitch.angle_to_pwm(),DEC);
-		Serial.print(" ");
-		Serial.println(rc_camera_pitch.radio_out,DEC);
-
 		APM_RC.OutputCh(CH_5,rc_camera_pitch.radio_out);
 
 		//If you want to do control mixing use this function.
