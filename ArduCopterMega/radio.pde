@@ -1,12 +1,12 @@
 void init_rc_in()
 {
+	read_EEPROM_radio();		// read Radio limits
 	rc_1.set_angle(4500);
 	rc_1.dead_zone = 50;
 	rc_2.set_angle(4500);
 	rc_2.dead_zone = 50;
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
-	//rc_3.radio_max += 300; // hack for better throttle control
 	rc_3.scale_output = .8;
 	rc_4.set_angle(6000); 
 	rc_4.dead_zone = 500;
@@ -15,7 +15,6 @@ void init_rc_in()
 	rc_6.set_range(200,800);
 	rc_7.set_range(0,1000);
 	rc_8.set_range(0,1000);
-
 }
 
 void init_rc_out()
@@ -52,7 +51,7 @@ void read_radio()
 
 void trim_radio()
 {
-	for (byte i = 0; i < 50; i++){
+	for (byte i = 0; i < 30; i++){
 		read_radio();
 	}
 	rc_1.trim();	// roll
@@ -62,7 +61,7 @@ void trim_radio()
 
 void trim_yaw()
 {
-	for (byte i = 0; i < 50; i++){
+	for (byte i = 0; i < 30; i++){
 		read_radio();
 	}
 	rc_4.trim();	// yaw
@@ -162,19 +161,18 @@ void set_servos_4(void)
 		//*/
 				
 		//
+		
 		/* debugging and dynamic kP
 		num++;
 		if (num > 50){
 			num = 0;
-			//Serial.printf("control_in: %d ", rc_3.control_in);
-			//Serial.printf(" servo: %d %d %d %d\t", rc_1.servo_out, rc_2.servo_out, rc_3.servo_out, rc_4.servo_out);
-			//Serial.printf(" cwm: %d %d %d %d, %d\t", rc_1.pwm_out, rc_2.pwm_out, rc_3.pwm_out, rc_4.pwm_out, rc_3.radio_out);
-			//Serial.printf(" out: %d %d %d %d\n", r_out, l_out, f_out, b_out);
-			//Serial.printf(" pwm: %d, %d %d %d %d\n",rc_3.pwm_out, motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 			
 			pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
 			stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.25;
 			init_pids();
+			
+			//Serial.print("nav_yaw: ");
+			//Serial.println(nav_yaw,DEC);
 			
 			//Serial.print("kP: ");
 			//Serial.println(pid_stabilize_roll.kP(),3);

@@ -8,7 +8,6 @@
 void read_EEPROM_startup(void)
 {
 	read_EEPROM_PID();
-	read_EEPROM_radio();		// read Radio limits
 	read_EEPROM_frame();
 	read_EEPROM_configs();
 	read_EEPROM_flight_modes();
@@ -16,6 +15,7 @@ void read_EEPROM_startup(void)
 	imu.load_gyro_eeprom();
 	imu.load_accel_eeprom();
 	read_EEPROM_alt_RTL();
+
 	// magnatometer
 	read_EEPROM_mag();
 	read_EEPROM_mag_declination();
