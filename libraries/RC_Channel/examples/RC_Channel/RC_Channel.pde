@@ -43,7 +43,9 @@ void setup()
 	Serial.println("ArduPilot RC Channel test");
 	APM_RC.Init();		// APM Radio initialization
 
-	delay(1000);
+	
+	delay(500);
+	
 	// setup radio
 	
 	// read eepom or set manually
@@ -59,9 +61,9 @@ void setup()
 
 	rc_4.radio_min = 1100;
 	rc_4.radio_max = 1900;
-	*/
 
-
+	// or 
+	
 	rc_1.load_eeprom();
 	rc_2.load_eeprom();
 	rc_3.load_eeprom();
@@ -70,17 +72,22 @@ void setup()
 	rc_6.load_eeprom();
 	rc_7.load_eeprom();
 	rc_8.load_eeprom();
-	
+
+	*/
+
+	// interactive setup
+	setup_radio();
+
 	print_radio_values();
 	
 	// set type of output, symmetrical angles or a number range;
 	rc_1.set_angle(4500);
-	rc_1.dead_zone = 50;
+	rc_1.dead_zone = 80;
 	rc_2.set_angle(4500);
-	rc_2.dead_zone = 50;
+	rc_2.dead_zone = 80;
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
-	rc_3.scale_output = .8;
+	rc_3.scale_output = .8; // gives more dynamic range to quads
 	rc_4.set_angle(6000); 
 	rc_4.dead_zone = 500;
 	rc_5.set_range(0,1000);
@@ -95,8 +102,6 @@ void setup()
 	rc_1.trim();
 	rc_2.trim();
 	rc_4.trim();
-	
-	
 }
 
 void loop()	
@@ -182,4 +187,71 @@ print_radio_values()
 	Serial.print(rc_8.radio_min, DEC);
 	Serial.print(" | ");
 	Serial.println(rc_8.radio_max, DEC);
+}
+
+
+void
+setup_radio()
+{
+	Serial.println("\n\nRadio Setup:");
+	uint8_t i;
+	
+	for(i = 0; i < 100;i++){
+		delay(20);
+		read_radio();
+	}
+		
+	rc_1.radio_min = rc_1.radio_in;
+	rc_2.radio_min = rc_2.radio_in;
+	rc_3.radio_min = rc_3.radio_in;
+	rc_4.radio_min = rc_4.radio_in;
+	rc_5.radio_min = rc_5.radio_in;
+	rc_6.radio_min = rc_6.radio_in;
+	rc_7.radio_min = rc_7.radio_in;
+	rc_8.radio_min = rc_8.radio_in;
+
+	rc_1.radio_max = rc_1.radio_in;
+	rc_2.radio_max = rc_2.radio_in;
+	rc_3.radio_max = rc_3.radio_in;
+	rc_4.radio_max = rc_4.radio_in;
+	rc_5.radio_max = rc_5.radio_in;
+	rc_6.radio_max = rc_6.radio_in;
+	rc_7.radio_max = rc_7.radio_in;
+	rc_8.radio_max = rc_8.radio_in;
+
+	rc_1.radio_trim = rc_1.radio_in;
+	rc_2.radio_trim = rc_2.radio_in;
+	rc_4.radio_trim = rc_4.radio_in;
+	// 3 is not trimed
+	rc_5.radio_trim = 1500;
+	rc_6.radio_trim = 1500;
+	rc_7.radio_trim = 1500;
+	rc_8.radio_trim = 1500;
+			
+	Serial.println("\nMove all controls to each extreme. Hit Enter to save:");
+	while(1){
+		
+		delay(20);
+		// Filters radio input - adjust filters in the radio.pde file
+		// ----------------------------------------------------------
+		read_radio();
+
+		rc_1.update_min_max();
+		rc_2.update_min_max();
+		rc_3.update_min_max();
+		rc_4.update_min_max();
+		rc_5.update_min_max();
+		rc_6.update_min_max();
+		rc_7.update_min_max();
+		rc_8.update_min_max();
+		
+		if(Serial.available() > 0){
+			//rc_3.radio_max += 250;
+			Serial.flush();
+			
+			Serial.println("Radio calibrated, Showing control values:");
+			break;
+		}
+	}
+	return;
 }
