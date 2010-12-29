@@ -206,10 +206,13 @@ void process_may()
 			break;
 
 		case CMD_ANGLE:
+			// p1:		bearing
+			// alt:		speed
+			// lat:		direction (-1,1), 
+			// lng:		rel (1) abs (0)
+			
 			// target angle in degrees
-			command_yaw_start	= nav_yaw; // current position
-			command_yaw_end 	= next_command.p1 * 100;
-
+			command_yaw_start		= nav_yaw; // current position
 			command_yaw_start_time 	= millis();
 
 			// which direction to turn
@@ -222,8 +225,12 @@ void process_may()
 				command_yaw_dir  = (command_yaw_end > 0) ? 1 : -1;
 				command_yaw_end += nav_yaw;
 				command_yaw_end = wrap_360(command_yaw_end);
+			} else {
+				// absolute
+				command_yaw_end 	= next_command.p1 * 100;
 			}
 			
+
 			// if unspecified go 10° a second
 			if(command_yaw_speed == 0)
 				command_yaw_speed = 10;
@@ -251,6 +258,8 @@ void process_may()
 			// rate to turn deg per second - default is ten
 			command_yaw_speed 	= next_command.alt;
 			command_yaw_time 	= command_yaw_delta / command_yaw_speed;
+			//9000 turn in 10 seconds
+			//command_yaw_time = 9000/ 10 = 900° per second
 			
 			break;
 			
@@ -431,17 +440,18 @@ void verify_must()
 			break;
 			
 		case CMD_LOITER:	// Just plain LOITER
-			break;			
+			break;
 
 		case CMD_ANGLE:
 			if((millis() - command_yaw_start_time) > command_yaw_time){
 				command_must_index 	= 0;
 				nav_yaw = command_yaw_end;
+			}else{
+				// else we need to be at a certain place
+				// power is a ratio of the time : .5 = half done
+				power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
+				nav_yaw = command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
 			}
-			
-			// else we need to be at a certain place
-			power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
-			nav_yaw = command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
 			break;
 
 		default:
