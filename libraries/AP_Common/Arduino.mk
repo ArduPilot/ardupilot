@@ -71,7 +71,6 @@ BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
 #
 # Prefer the compiler bundled with Arduino on e.g. Mac OS.
 #
-TOOLPATH		=	$(ARDUINOS)/hardware/tools/avr/bin
 
 #
 # Find Arduino, if not explicitly specified
@@ -88,14 +87,14 @@ ifeq ($(ARDUINO),)
     ifeq ($(ARDUINOS),)
       $(error ERROR: Spotlight cannot find Arduino on your system.)
     endif
-    # other places we might find toolchain
-    TOOLPATH		+= 	/usr/local/CrossPack-AVR/bin /opt/local/bin
+    # use the compiler that comes with Arduino
+    TOOLPATH		:=	$(ARDUINOS)/hardware/tools/avr/bin
   endif
 
   ifeq ($(SYSTYPE),Linux)
     ARDUINO_SEARCHPATH	=	/usr/share/arduino /usr/local/share/arduino
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
-    TOOLPATH		:=	$(subst ;, ,$(PATH))
+    TOOLPATH		:=	$(subst :, ,$(PATH))
   endif
 
   #
@@ -121,14 +120,13 @@ endif
 #
 # XXX should we be using tools from the Arduino distribution?
 #
-FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))) >/dev/tty)
+FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 CXX			=	$(call FIND_TOOL,avr-g++)
 CC			=	$(call FIND_TOOL,avr-gcc)
 AS			=	$(call FIND_TOOL,avr-gcc)
 AR			=	$(call FIND_TOOL,avr-ar)
 LD			=	$(call FIND_TOOL,avr-gcc)
 OBJCOPY			=	$(call FIND_TOOL,avr-objcopy)
-
 ifeq ($(CXX),)
 $(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
 endif
