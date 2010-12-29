@@ -21,11 +21,10 @@
 
 #include "AP_Vector.h"
 
-/**
- * Start of apo namespace
- * The above functions must be in the global
- * namespace for c++ to function properly
- */
+///
+// Start of apo namespace
+// The above functions must be in the global
+// namespace for c++ to function properly
 namespace apo
 {
 

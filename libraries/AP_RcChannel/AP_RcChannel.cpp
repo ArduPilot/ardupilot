@@ -16,22 +16,22 @@
 
 void AP_RcChannel::readRadio() {
 	// apply reverse
-	uint16_t pwmRadio = APM_RC.InputCh(_ch);
+	uint16_t pwmRadio = APM_RC.InputCh(getCh());
 	setPwm(pwmRadio);
 }
 
 void
 AP_RcChannel::setPwm(uint16_t pwm)
 {
-	//Serial.printf("reverse: %s\n", (_reverse)?"true":"false");
+	//Serial.printf("reverse: %s\n", (getReverse())?"true":"false");
 
 	// apply reverse
-	if(_reverse) pwm = int16_t(_pwmNeutral-pwm) + _pwmNeutral;
+	if(getReverse()) pwm = int16_t(getPwmNeutral()-pwm) + getPwmNeutral();
 
 	//Serial.printf("pwm after reverse: %d\n", pwm);
 
 	// apply filter
-	if(_filter){
+	if(getFilter()){
 		if(_pwm == 0)
 			_pwm = pwm;
 		else
@@ -43,10 +43,10 @@ AP_RcChannel::setPwm(uint16_t pwm)
 	//Serial.printf("pwm after filter: %d\n", _pwm);
 
 	// apply deadzone
-	_pwm = (abs(_pwm - _pwmNeutral) < _pwmDeadZone) ? _pwmNeutral : _pwm;
+	_pwm = (abs(_pwm - getPwmNeutral()) < getPwmDeadZone()) ? getPwmNeutral() : _pwm;
 
 	//Serial.printf("pwm after deadzone: %d\n", _pwm);
-	APM_RC.OutputCh(_ch,_pwm);
+	APM_RC.OutputCh(getCh(),_pwm);
 }
 
 void
@@ -58,8 +58,8 @@ AP_RcChannel::setPosition(float position)
 void
 AP_RcChannel::mixRadio(uint16_t infStart)
 {
-	uint16_t pwmRadio = APM_RC.InputCh(_ch);
-	float inf = abs( int16_t(pwmRadio - _pwmNeutral) );
+	uint16_t pwmRadio = APM_RC.InputCh(getCh());
+	float inf = abs( int16_t(pwmRadio - getPwmNeutral()) );
 	inf = min(inf, infStart);
 	inf = ((infStart - inf) /infStart);
 	setPwm(_pwm*inf + pwmRadio); 
@@ -69,12 +69,15 @@ uint16_t
 AP_RcChannel::_positionToPwm(const float & position)
 {
 	uint16_t pwm;
+	float p = position - getCenter();
 	//Serial.printf("position: %f\n", position);
-	if(position < 0)
-		pwm = position * int16_t(_pwmNeutral - _pwmMin) / _scale + _pwmNeutral;
+	if(p < 0)
+		pwm = p * int16_t(getPwmNeutral() - getPwmMin()) / 
+			getScale() + getPwmNeutral();
 	else
-		pwm = position * int16_t(_pwmMax - _pwmNeutral) / _scale + _pwmNeutral;
-	constrain(pwm,_pwmMin,_pwmMax);
+		pwm = p * int16_t(getPwmMax() - getPwmNeutral()) / 
+			getScale() + getPwmNeutral();
+	constrain(pwm,getPwmMin(),getPwmMax());
 	return pwm;
 }
 
@@ -82,11 +85,14 @@ float
 AP_RcChannel::_pwmToPosition(const uint16_t & pwm)
 {
 	float position;
-	if(pwm < _pwmNeutral)
-		position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmNeutral - _pwmMin);
+	if(pwm < getPwmNeutral())
+		position = getScale() * int16_t(pwm - getPwmNeutral())/ 
+			int16_t(getPwmNeutral() - getPwmMin()) + getCenter();
 	else
-		position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmMax - _pwmNeutral);
-	constrain(position,-_scale,_scale);
+		position = getScale() * int16_t(pwm -getPwmNeutral())/ 
+			int16_t(getPwmMax() - getPwmNeutral()) + getCenter();
+	constrain(position,-getScale()+getCenter(),
+			getScale()+getCenter());
 	return position;
 }
 

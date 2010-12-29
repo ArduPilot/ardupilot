@@ -100,4 +100,14 @@ private:
 	uint16_t _address;  /// EEProm address of variable
 };
 
+typedef AP_EEPromVar<float> AP_EEPROM_Float;
+typedef AP_EEPromVar<int8_t> AP_EEPROM_Int8;
+typedef AP_EEPromVar<uint8_t> AP_EEPROM_Uint8;
+typedef AP_EEPromVar<int16_t> AP_EEPROM_Int16;
+typedef AP_EEPromVar<uint16_t> AP_EEPROM_Uint16;
+typedef AP_EEPromVar<int32_t> AP_EEPROM_Int32;
+typedef AP_EEPromVar<uint32_t> AP_EEPROM_Unt32;
+typedef AP_EEPromVar<bool> AP_EEPROM_Bool;
+
+
 #endif

@@ -9,6 +9,9 @@
 #include <stdint.h>
 #include <FastSerial.h>
 #include <APM_RC.h>
+#include <AP_Var.h>
+#include <AP_Common.h>
+#include <AP_EEProm.h>
 
 /// @class	AP_RcChannel
 /// @brief	Object managing one RC channel
@@ -17,49 +20,83 @@ class AP_RcChannel{
 public:	
 
 	/// Constructor
-	AP_RcChannel(const APM_RC_Class & rc, const uint16_t & ch,
-			const float & scale, const uint16_t & pwmMin, const uint16_t & pwmNeutral,
-			const uint16_t & pwmMax, const uint16_t & pwmDeadZone,
-			const bool & filter, const bool & reverse) :
+	AP_RcChannel(const char * name, const APM_RC_Class & rc, const uint8_t & ch,
+			const float & scale=45.0, const float & center=0.0, 
+			const uint16_t & pwmMin=1200, 
+			const uint16_t & pwmNeutral=1500, const uint16_t & pwmMax=1800,
+			const uint16_t & pwmDeadZone=100,
+			const bool & filter=false, const bool & reverse=false) :
+		_name(name),
 		_rc(rc),
-		_ch(ch),
-		_scale(scale),
-		_pwmMin(pwmMin),
-		_pwmMax(pwmMax),
-		_pwmNeutral(pwmNeutral),
-		_pwmDeadZone(pwmDeadZone),
+		_ch(new AP_EEPROM_Uint8(ch,createName("CH"))),
+		_scale(new AP_EEPROM_Float(scale,createName("SCALE"))),
+		_center(new AP_EEPROM_Float(center,createName("CNTR"))),
+		_pwmMin(new AP_EEPROM_Uint16(pwmMin,createName("PMIN"))), 
+		_pwmMax(new AP_EEPROM_Uint16(pwmMax,createName("PMAX"))),
+		_pwmNeutral(new AP_EEPROM_Uint16(pwmNeutral,createName("PNTRL"))),
+		_pwmDeadZone(new AP_EEPROM_Uint16(pwmDeadZone,createName("PDEAD"))),
 		_pwm(0),
-		_filter(filter),
-		_reverse(reverse)
+		_filter(new AP_EEPROM_Bool(filter,createName("FLTR"))),
+		_reverse(new AP_EEPROM_Bool(reverse,createName("RVRS")))
 	{
 	}
 
-	// set servo state
+	// set
 	void readRadio();
 	void setPwm(uint16_t pwm);
 	void setPosition(float position);
 	void mixRadio(uint16_t infStart);
+	void setCh(const uint8_t & ch) { _ch->set(ch); }
+	void setScale(const float & scale) { _scale->set(scale); }
+	void setCenter(const float & center) { _center->set(center); }
+	void setPwmMin(const uint16_t & pwmMin) { _pwmMin->set(pwmMin); }
+	void setPwmNeutral(const uint16_t & pwmNeutral) { _pwmNeutral->set(pwmNeutral); }
+	void setPwmMax(const uint16_t & pwmMax) { _pwmMax->set(pwmMax); }
+	void setPwmDeadZone(const uint16_t & pwmDeadZone) { _pwmDeadZone->set(pwmDeadZone); }
+	void setFilter(const bool & filter) { _filter->set(filter); }
 
-	// get servo state
+	// get
 	uint16_t getPwm() { return _pwm; }
 	float getPosition() { return _pwmToPosition(_pwm); }
-	float getNormalized() { return getPosition()/_scale; }
-	
+	float getNormalized() { return getPosition()/_scale->get(); }
+	const char * getName() { return _name; }
+	const uint8_t & getCh() { return _ch->get(); }
+	const float & getScale() { return _scale->get(); }
+	const float & getCenter() { return _center->get(); }
+	const uint16_t & getPwmMin() { return _pwmMin->get(); }
+	const uint16_t & getPwmNeutral() { return _pwmNeutral->get(); }
+	const uint16_t & getPwmMax() { return _pwmMax->get(); }
+	const uint16_t & getPwmDeadZone() { return _pwmDeadZone->get(); }
+	const bool & getFilter() { return _filter->get(); }
+	const bool & getReverse() { return _reverse->get(); }
+
 	// did our read come in 50µs below the min?
-	bool failSafe() { _pwm < (_pwmMin - 50); }
+	bool failSafe() { _pwm < (_pwmMin->get() - 50); }
 
 private:
 
+	// createName
+	const char * createName(char * str)
+	{
+		char * newName;
+		strcpy(newName,_name);
+		strcat(newName,"_");
+		strcat(newName,str);
+		return (const char * )newName;		
+	}
+
 	// configuration
+	const char * _name;
 	const APM_RC_Class & _rc;
-	const uint16_t _ch;
-	const float & _scale;
-	const uint16_t & _pwmMin;
-	const uint16_t & _pwmNeutral;
-	const uint16_t & _pwmMax;
-	const uint16_t & _pwmDeadZone;
-	const bool & _filter;
-	const bool & _reverse;
+	AP_Uint8 * _ch;
+	AP_Float * _scale;
+	AP_Float * _center;
+	AP_Uint16 * _pwmMin;
+	AP_Uint16 * _pwmNeutral;
+	AP_Uint16 * _pwmMax;
+	AP_Uint16 * _pwmDeadZone;
+	AP_Bool * _filter;
+	AP_Bool * _reverse;
 
 	// internal states
 	uint16_t _pwm; // this is the internal state, position is just created when needed
