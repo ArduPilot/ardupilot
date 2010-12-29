@@ -31,7 +31,7 @@ struct Vector2
 	T x, y;
 
 	// trivial ctor
-	Vector2<T>() {memset(this, 0, sizeof(*this));}
+	Vector2<T>() { x = y = 0; }
 
 	// setting ctor
 	Vector2<T>(const T x0, const T y0): x(x0), y(y0) {}
