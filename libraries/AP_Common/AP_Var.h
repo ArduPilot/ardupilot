@@ -5,9 +5,12 @@
 // Free Software Foundation; either version 2.1 of the License, or (at
 // your option) any later version.
 //
-/// The AP variable interface. This allows different types
+/// The AP variable interface. This allows different types
 /// of variables to be passed to blocks for floating point
 /// math, memory management, etc.
+#ifndef AP_Var_H
+#define AP_Var_H
+
 class AP_VarI
 {
 public:
@@ -15,8 +18,14 @@ public:
 	/// Set the variable value as a float
 	virtual void setF(const float & val) = 0;
 
-	/// Get the variable as a float
+	/// Get the variable value as a float
 	virtual const float & getF() = 0;
+
+	/// Set the variable value as an Int16
+	virtual void setI(const int16_t & val) = 0;
+
+	/// Get the variable value as an Int16
+	virtual const int16_t & getI() = 0;
 
 	/// Save a variable to eeprom
 	virtual void save() = 0;
@@ -48,14 +57,20 @@ public:
 	{
 	}
 
+	/// float copy constructor
+	AP_Var(AP_VarI & v)
+	{
+		setF(v.getF());	
+	}
+
 	/// Set the variable value
-	virtual void set(const type & val) {
+	void set(const type & val) {
 		_data = val;
 		if (_sync) save();
 	}
 
 	/// Get the variable value.
-	virtual const type & get() {
+	const type & get() {
 		if (_sync) load();
 		return _data;
 	}
@@ -67,6 +82,26 @@ public:
 
 	/// Get the variable as a float
 	virtual const float & getF() {
+		return get();
+	}
+
+	/// Set the variable value as an Int16
+	virtual void setI(const int16_t & val) {
+		set(val);
+	}
+
+	/// Get the variable value as an Int16
+	virtual const int16_t & getI() {
+		return get();
+	}
+
+	/// Set the variable value as an Int16
+	virtual void setB(const bool & val) {
+		set(val);
+	}
+
+	/// Get the variable value as an Int16
+	virtual const bool & getB() {
 		return get();
 	}
 
@@ -93,3 +128,14 @@ protected:
 	const char * _name; /// The variable name, useful for gcs and terminal output
 	bool _sync; /// Whether or not to call save/load on get/set
 };
+
+typedef AP_Var<float> AP_Float;
+typedef AP_Var<int8_t> AP_Int8;
+typedef AP_Var<uint8_t> AP_Uint8;
+typedef AP_Var<int16_t> AP_Int16;
+typedef AP_Var<uint16_t> AP_Uint16;
+typedef AP_Var<int32_t> AP_Int32;
+typedef AP_Var<uint32_t> AP_Unt32;
+typedef AP_Var<bool> AP_Bool;
+
+#endif // AP_Var_H
