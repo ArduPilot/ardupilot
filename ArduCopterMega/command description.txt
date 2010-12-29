@@ -31,6 +31,7 @@ Command ID	Name						Parameter 1			Altitude			Latitude			Longitude
 0x16		CMD_TAKEOFF					angle				altitude			-					-
 0x17		CMD_ALTITUDE				-					altitude			-					-
 0x18		CMD_R_WAYPOINT				-					altitude			rlat				rlon
+0x19		CMD_TARGET					-					altitude			lat					lon
 
 
 ***********************************

@@ -123,9 +123,10 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		rc_3.calc_pwm();
 		rc_4.calc_pwm();
 		
-		//Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"), (rc_1.control_in), (rc_2.control_in), (rc_3.control_in), (rc_4.control_in), rc_5.control_in, rc_6.control_in, rc_7.control_in);
+		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"), (rc_1.control_in), (rc_2.control_in), (rc_3.control_in), (rc_4.control_in), rc_5.control_in, rc_6.control_in, rc_7.control_in);
 		//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (rc_1.servo_out / 100), (rc_2.servo_out / 100), rc_3.servo_out, (rc_4.servo_out / 100));
-		Serial.printf_P(PSTR(	"min: %d"
+		
+		/*Serial.printf_P(PSTR(	"min: %d"
 								"\t in: %d"
 								"\t pwm_in: %d"
 								"\t sout: %d"
@@ -136,7 +137,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 								rc_3.servo_out,
 								rc_3.pwm_out
 								);
-
+		*/
 		if(Serial.available() > 0){
 			return (0);
 		}
