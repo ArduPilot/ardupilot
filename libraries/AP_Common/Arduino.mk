@@ -95,6 +95,7 @@ ifeq ($(ARDUINO),)
   ifeq ($(SYSTYPE),Linux)
     ARDUINO_SEARCHPATH	=	/usr/share/arduino /usr/local/share/arduino
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
+    TOOLPATH		:=	$(subst ;, ,$(PATH))
   endif
 
   #
@@ -127,6 +128,10 @@ AS			=	$(call FIND_TOOL,avr-gcc)
 AR			=	$(call FIND_TOOL,avr-ar)
 LD			=	$(call FIND_TOOL,avr-gcc)
 OBJCOPY			=	$(call FIND_TOOL,avr-objcopy)
+
+ifeq ($(CXX),)
+$(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
+endif
 
 #
 # Tool options
