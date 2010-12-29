@@ -15,15 +15,6 @@ class GPS
 {
 public:
 
-	/// Constructor
-	///
-	/// @note The stream is expected to be set up and configured for the
-	///       correct bitrate before ::init is called.
-	///
-	/// @param	s	Stream connected to the GPS module.  
-	///
-	GPS(Stream *s) : _port(s) {};
-
 	/// Update GPS state based on possible bytes received from the module.
 	///
 	/// This routine must be called periodically to process incoming data.
@@ -86,6 +77,15 @@ public:
 
 protected:
 	Stream	*_port;			///< port the GPS is attached to
+
+	/// Constructor
+	///
+	/// @note The stream is expected to be set up and configured for the
+	///       correct bitrate before ::init is called.
+	///
+	/// @param	s	Stream connected to the GPS module.  
+	///
+	GPS(Stream *s) : _port(s) {};
 
 	/// read from the GPS stream and update properties
 	///
