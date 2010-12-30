@@ -23,6 +23,7 @@
 #include <AP_Vector.h>
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+#include <BetterStream.h>
 
 /// The interface for data entries in the eeprom registry
 class AP_EEPromEntryI
@@ -40,6 +41,9 @@ public:
 
 	/// Pure virtual function for getting entry name.
 	virtual const char * getEntryName() = 0;
+
+	/// Pure virtual function for getting entry parent name.
+	virtual const char * getEntryParentName() = 0;
 
 	/// Get the id of the variable.
 	virtual uint16_t getEntryId() = 0;
@@ -62,6 +66,9 @@ public:
 	/// Add an entry to the registry
 	void add(AP_EEPromEntryI * entry, uint16_t & id, uint16_t & address, size_t size);
 
+	/// Print on desired serial port
+	void print(BetterStream & stream);
+
 private:
 	uint16_t _newAddress; /// the address for the next new variable
 	uint16_t _newId; /// the id of the next new variable
@@ -79,8 +86,8 @@ class AP_EEPromVar : public AP_EEPromEntryI, public AP_Var<type>
 {
 public:
 	/// The default constrcutor
-	AP_EEPromVar(type data = 0, const char * name = "", bool sync=false) : 
-		AP_Var<type>(data,name,sync)
+	AP_EEPromVar(type data = 0, const char * name = "", const char * parentName = "", bool sync=false) : 
+		AP_Var<type>(data,name,parentName,sync)
 	{
 		eepromRegistry.add(this,_id,_address,sizeof(type));
 	}
@@ -88,6 +95,7 @@ public:
 	virtual void setEntry(float val) { this->setF(val); }
 	virtual float getEntry() { return this->getF(); }
 	virtual const char * getEntryName() { return this->getName(); }
+	virtual const char * getEntryParentName() { return this->getParentName(); }
 
 	/// Get the id of the variable.
 	virtual uint16_t getEntryId() { return _id; }

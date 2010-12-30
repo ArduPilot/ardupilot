@@ -13,6 +13,9 @@
 
 void * operator new(size_t size)
 {
+#ifdef AP_DISPLAYMEM
+	displayMemory();
+#endif
 	return(calloc(size, 1));
 }
 
@@ -32,6 +35,9 @@ extern "C" void __cxa_pure_virtual()
 
 void * operator new[](size_t size)
 {
+#ifdef AP_DISPLAYMEM
+	displayMemory();
+#endif
     return(calloc(size, 1));
 }
 
