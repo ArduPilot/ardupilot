@@ -5,7 +5,6 @@
 
 */
 
-#define AP_DISPLAYMEM
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
@@ -31,28 +30,45 @@ AP_RcChannel rcCh[] =
 };
 
 // test position
-float testPosition = 0;
+float testPosition = 2;
 int8_t testSign = 1;
 
 void setup()
 {
 	Serial.begin(115200);
+	delay(2000);
+
 	Serial.println("ArduPilot RC Channel test");
 
 	APM_RC.Init();		// APM Radio initialization
 
-	eepromRegistry.print(Serial); // show eeprom map
+	delay(2000);
 }
 
 void loop()	
 {
+	// update test value
+	testPosition += testSign*.1;
+	if (testPosition > 1)
+	{
+		eepromRegistry.print(Serial); // show eeprom map
+		testPosition = 1;
+		testSign = -1;
+	}
+	else if (testPosition < -1)
+	{
+		testPosition = -1;
+		testSign = 1;
+	}
+
 	// set channel positions
 	for (int i=0;i<nChannels;i++) rcCh[i].setNormalized(testPosition);
 
 	// print test position
-	Serial.printf("\ntestPosition (%f)\n\t\t",testPosition);
+	Serial.printf("\nnormalized position (%f)\n",testPosition);
 
-	// print channgel names
+	// print channel names
+	Serial.print("\t\t");
 	for (int i=0;i<nChannels;i++) Serial.printf("%7s\t",rcCh[i].getName());
 	Serial.println();
 
@@ -66,18 +82,5 @@ void loop()
 	for (int i=0;i<nChannels;i++) Serial.printf("%7.2f\t",rcCh[i].getPosition());
 	Serial.println();
 
-	// update test value
-	testPosition += testSign*.05;
-	if (testPosition > 1)
-	{
-		testPosition = 1;
-		testSign = -1;
-	}
-	else if (testPosition < -1)
-	{
-		testPosition = -1;
-		testSign = 1;
-	}
-
-	delay(100);
+	delay(500);
 }
