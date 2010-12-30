@@ -39,27 +39,29 @@ void setup()
 	Serial.begin(115200);
 	Serial.println("ArduPilot RC Channel test");
 
-	eepromRegistry.print(Serial); // show eeprom map
 	APM_RC.Init();		// APM Radio initialization
 
-	for (int i=0;i<nChannels;i++)
-	{
-		Serial.printf("ch:\t%d\tscale:\t%f\tcenter:\t%f\tpwmMin:\t%d\tpwmNeutral:\t%d\tpwmMax:\t%d\t",
-			rcCh[i].getCh(),rcCh[i].getScale(),rcCh[i].getCenter(),
-			rcCh[i].getPwmMin(),rcCh[i].getPwmNeutral(),rcCh[i].getPwmMax());
-	}
+	eepromRegistry.print(Serial); // show eeprom map
 }
 
 void loop()	
 {
 	// set channel positions
 	for (int i=0;i<nChannels;i++) rcCh[i].setNormalized(testPosition);
+
+	// print test position
 	Serial.printf("\ntestPosition (%f)\n\t\t",testPosition);
+
+	// print channgel names
 	for (int i=0;i<nChannels;i++) Serial.printf("%7s\t",rcCh[i].getName());
 	Serial.println();
+
+	// print pwm
 	Serial.printf("pwm      :\t");
 	for (int i=0;i<nChannels;i++) Serial.printf("%7d\t",rcCh[i].getPwm());
 	Serial.println();
+
+	// print position
 	Serial.printf("position :\t");
 	for (int i=0;i<nChannels;i++) Serial.printf("%7.2f\t",rcCh[i].getPosition());
 	Serial.println();
@@ -77,5 +79,5 @@ void loop()
 		testSign = 1;
 	}
 
-	delay(500);
+	delay(100);
 }

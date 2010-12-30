@@ -19,13 +19,19 @@ public:
 	virtual void setF(const float & val) = 0;
 
 	/// Get the variable value as a float
-	virtual const float & getF() = 0;
+	virtual const float getF() = 0;
 
-	/// Set the variable value as an Int16
+	/// Set the variable value as an int16
 	virtual void setI(const int16_t & val) = 0;
 
-	/// Get the variable value as an Int16
-	virtual const int16_t & getI() = 0;
+	/// Get the variable value as an int16
+	virtual const int16_t getI() = 0;
+
+	/// Set the variable value as a bool
+	virtual void setB(const bool & val) = 0;
+
+	/// Get the variable value as an bool
+	virtual const bool getB() = 0;
 
 	/// Save a variable to eeprom
 	virtual void save() = 0;
@@ -41,7 +47,7 @@ public:
 	virtual const bool & getSync() = 0;
 
 	/// Set the sync property
-	virtual void setSync(bool sync) = 0;
+	virtual void setSync(const bool & sync) = 0;
 };
 
 /// The variable template class. This class
@@ -81,7 +87,7 @@ public:
 	}
 
 	/// Get the variable as a float
-	virtual const float & getF() {
+	virtual const float getF() {
 		return get();
 	}
 
@@ -91,7 +97,7 @@ public:
 	}
 
 	/// Get the variable value as an Int16
-	virtual const int16_t & getI() {
+	virtual const int16_t getI() {
 		return get();
 	}
 
@@ -101,7 +107,7 @@ public:
 	}
 
 	/// Get the variable value as an Int16
-	virtual const bool & getB() {
+	virtual const bool getB() {
 		return get();
 	}
 
@@ -124,7 +130,7 @@ public:
 	/// If sync is true the a load will always occure before a get and a save will always
 	/// occure before a set.
 	virtual const bool & getSync() { return _sync; }
-	virtual void setSync(bool sync) { _sync = sync; }
+	virtual void setSync(const bool & sync) { _sync = sync; }
 
 protected:
 	type _data; /// The data that is stored on the heap */
