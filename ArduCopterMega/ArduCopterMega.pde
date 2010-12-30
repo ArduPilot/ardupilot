@@ -75,8 +75,10 @@ AP_GPS_NONE		GPS(NULL);
 # error Must define GPS_PROTOCOL in your configuration file.
 #endif
 
-AP_IMU 		imu(&adc, EE_IMU_OFFSET);
-AP_DCM 		dcm(&imu, &GPS);
+AP_IMU_Oilpan 		imu(&adc, EE_IMU_OFFSET);
+AP_DCM 				dcm(&imu, &GPS);
+
+//AP_DCM 	dcm(&imu, &gps, &compass);
 
 
 // GENERAL VARIABLE DECLARATIONS

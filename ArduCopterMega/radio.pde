@@ -2,9 +2,9 @@ void init_rc_in()
 {
 	read_EEPROM_radio();		// read Radio limits
 	rc_1.set_angle(4500);
-	rc_1.dead_zone = 50;
+	rc_1.dead_zone = 60;
 	rc_2.set_angle(4500);
-	rc_2.dead_zone = 50;
+	rc_2.dead_zone = 60;
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
 	rc_3.scale_output = .8;
@@ -12,7 +12,14 @@ void init_rc_in()
 	rc_4.dead_zone = 500;
 	rc_5.set_range(0,1000);
 	rc_5.set_filter(false);
+
+	// for kP values
 	rc_6.set_range(200,800);
+
+	// for camera angles
+	//rc_6.set_angle(4500);
+	//rc_6.dead_zone = 60;
+
 	rc_7.set_range(0,1000);
 	rc_8.set_range(0,1000);
 }
