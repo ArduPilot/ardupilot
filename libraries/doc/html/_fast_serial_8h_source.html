@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/FastSerial/FastSerial.h Source File</title>
+<title>ArduPilot Libraries: FastSerial.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/FastSerial/FastSerial.h</h1>  </div>
+<h1>FastSerial.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_fast_serial_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">// -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-</span>
@@ -92,189 +93,194 @@
 <a name="l00060"></a>00060 <span class="comment">// only define interrupt handlers for serial ports that are actually</span>
 <a name="l00061"></a>00061 <span class="comment">// used, we have to force our users to define them using a macro.</span>
 <a name="l00062"></a>00062 <span class="comment">//</span>
-<a name="l00063"></a>00063 <span class="comment">// Due to the way interrupt vectors are specified, we have to have</span>
-<a name="l00064"></a>00064 <span class="comment">// a separate macro for every port.  Ugh.</span>
-<a name="l00065"></a>00065 <span class="comment">//</span>
-<a name="l00066"></a>00066 <span class="comment">// The macros are:</span>
-<a name="l00067"></a>00067 <span class="comment">//</span>
-<a name="l00068"></a>00068 <span class="comment">// FastSerialPort0(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 0</span>
-<a name="l00069"></a>00069 <span class="comment">// FastSerialPort1(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 1</span>
-<a name="l00070"></a>00070 <span class="comment">// FastSerialPort2(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 2</span>
-<a name="l00071"></a>00071 <span class="comment">// FastSerialPort3(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 3</span>
-<a name="l00072"></a>00072 <span class="comment">//</span>
-<a name="l00073"></a>00073 <span class="comment">// Note that macros are only defined for ports that exist on the target device.</span>
-<a name="l00074"></a>00074 <span class="comment">//</span>
-<a name="l00075"></a>00075 
+<a name="l00063"></a>00063 <span class="comment">// FastSerialPort(&lt;port name&gt;, &lt;port number&gt;)</span>
+<a name="l00064"></a>00064 <span class="comment">//</span>
+<a name="l00065"></a>00065 <span class="comment">// &lt;port name&gt; is the name of the object that will be created by the</span>
+<a name="l00066"></a>00066 <span class="comment">// macro.  &lt;port number&gt; is the 0-based number of the port that will</span>
+<a name="l00067"></a>00067 <span class="comment">// be managed by the object.</span>
+<a name="l00068"></a>00068 <span class="comment">//</span>
+<a name="l00069"></a>00069 <span class="comment">// Previously ports were defined with a different macro for each port,</span>
+<a name="l00070"></a>00070 <span class="comment">// and these macros are retained for compatibility:</span>
+<a name="l00071"></a>00071 <span class="comment">//</span>
+<a name="l00072"></a>00072 <span class="comment">// FastSerialPort0(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 0</span>
+<a name="l00073"></a>00073 <span class="comment">// FastSerialPort1(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 1</span>
+<a name="l00074"></a>00074 <span class="comment">// FastSerialPort2(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 2</span>
+<a name="l00075"></a>00075 <span class="comment">// FastSerialPort3(&lt;port name&gt;)         creates &lt;port name&gt; referencing serial port 3</span>
 <a name="l00076"></a>00076 <span class="comment">//</span>
-<a name="l00077"></a>00077 <span class="comment">// Forward declarations for clients that want to assume that the</span>
-<a name="l00078"></a>00078 <span class="comment">// default Serial* objects exist.</span>
+<a name="l00077"></a>00077 <span class="comment">// Note that compatibility macros are only defined for ports that</span>
+<a name="l00078"></a>00078 <span class="comment">// exist on the target device.</span>
 <a name="l00079"></a>00079 <span class="comment">//</span>
-<a name="l00080"></a>00080 <span class="comment">// Note that the application is responsible for ensuring that these</span>
-<a name="l00081"></a>00081 <span class="comment">// actually get defined, otherwise Arduino will suck in the</span>
-<a name="l00082"></a>00082 <span class="comment">// HardwareSerial library and linking will fail.</span>
-<a name="l00083"></a>00083 <span class="comment">//</span>
-<a name="l00084"></a>00084 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#a8e6f49b84135f0158fe250cb7338ddad">Serial</a>;
-<a name="l00085"></a>00085 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#ad8026a4f12a38f848340968d0db7b4fd">Serial1</a>;
-<a name="l00086"></a>00086 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#aab2db3cc91ed9cc8e13464e176fd05c4">Serial2</a>;
-<a name="l00087"></a>00087 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#a86283126649840a9437389a9bd8e5448">Serial3</a>;
-<a name="l00088"></a>00088 
-<a name="l00089"></a><a class="code" href="class_fast_serial.html">00089</a> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> : <span class="keyword">public</span> <a class="code" href="class_better_stream.html">BetterStream</a> {
-<a name="l00090"></a>00090 <span class="keyword">public</span>:
-<a name="l00091"></a>00091         <a class="code" href="class_fast_serial.html#a9f20535e34fab50c1f771b9a41790219">FastSerial</a>(<span class="keyword">const</span> uint8_t portNumber,
-<a name="l00092"></a>00092                    <span class="keyword">volatile</span> uint8_t *ubrrh,
-<a name="l00093"></a>00093                    <span class="keyword">volatile</span> uint8_t *ubrrl,
-<a name="l00094"></a>00094                    <span class="keyword">volatile</span> uint8_t *ucsra,
-<a name="l00095"></a>00095                    <span class="keyword">volatile</span> uint8_t *ucsrb,
-<a name="l00096"></a>00096                    <span class="keyword">const</span> uint8_t u2x,
-<a name="l00097"></a>00097                    <span class="keyword">const</span> uint8_t portEnableBits,
-<a name="l00098"></a>00098                    <span class="keyword">const</span> uint8_t portTxBits);
-<a name="l00099"></a>00099 
-<a name="l00100"></a>00100         <span class="comment">// Serial API</span>
-<a name="l00101"></a>00101         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a1ae3f5f5649d7a72daf2806a6ec1cf45">begin</a>(<span class="keywordtype">long</span> baud);
-<a name="l00102"></a>00102         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a1ae3f5f5649d7a72daf2806a6ec1cf45">begin</a>(<span class="keywordtype">long</span> baud, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> rxSpace, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> txSpace);
-<a name="l00103"></a>00103         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a18dc7ab6584b8e01bed86d74d664e6fa">end</a>(<span class="keywordtype">void</span>);
-<a name="l00104"></a>00104         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a3908f5db6a1e946207a4b92b7c0b9ee5">available</a>(<span class="keywordtype">void</span>);
-<a name="l00105"></a>00105         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a6b63b52d3dedb762340675f0dbb29622">read</a>(<span class="keywordtype">void</span>);
-<a name="l00106"></a>00106         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a1bb9d282cdf6abb37c95f3acc314d7a2">peek</a>(<span class="keywordtype">void</span>);
-<a name="l00107"></a>00107         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a80a0f8852702174fc9f771da3713c933">flush</a>(<span class="keywordtype">void</span>);
-<a name="l00108"></a>00108         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a8e41c9efa4f854ac6ffa0e178c1314e9">write</a>(uint8_t c);
-<a name="l00109"></a>00109         <span class="keyword">using</span> BetterStream::write;
-<a name="l00110"></a>00110 
-<a name="l00111"></a>00111         <span class="comment">// public so the interrupt handlers can see it</span>
-<a name="l00112"></a><a class="code" href="struct_fast_serial_1_1_buffer.html">00112</a>         <span class="keyword">struct </span><a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> {
-<a name="l00113"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#aec076766d7dbdfba4c1116e8329d1c5f">00113</a>                 <span class="keyword">volatile</span> uint16_t <a class="code" href="struct_fast_serial_1_1_buffer.html#a21455465b69c8fd0225236bd8b949158">head</a>, <a class="code" href="struct_fast_serial_1_1_buffer.html#aec076766d7dbdfba4c1116e8329d1c5f">tail</a>;
-<a name="l00114"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#a8797629ef75561f8382aa84d4f62c451">00114</a>                 uint16_t        <a class="code" href="struct_fast_serial_1_1_buffer.html#a8797629ef75561f8382aa84d4f62c451">mask</a>;
-<a name="l00115"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#a5eb7885018db67980c5b8bd1279d2b3d">00115</a>                 uint8_t         *<a class="code" href="struct_fast_serial_1_1_buffer.html#a5eb7885018db67980c5b8bd1279d2b3d">bytes</a>;
-<a name="l00116"></a>00116         };
-<a name="l00117"></a>00117 
-<a name="l00118"></a>00118 <span class="keyword">private</span>:
-<a name="l00119"></a>00119         <span class="comment">// register accessors</span>
-<a name="l00120"></a>00120         <span class="keyword">volatile</span> uint8_t *_ubrrh;
-<a name="l00121"></a>00121         <span class="keyword">volatile</span> uint8_t *_ubrrl;
-<a name="l00122"></a>00122         <span class="keyword">volatile</span> uint8_t *_ucsra;
-<a name="l00123"></a>00123         <span class="keyword">volatile</span> uint8_t *_ucsrb;
-<a name="l00124"></a>00124 
-<a name="l00125"></a>00125         <span class="comment">// register magic numbers</span>
-<a name="l00126"></a>00126         uint8_t         _portEnableBits;        <span class="comment">// rx, tx and rx interrupt enables</span>
-<a name="l00127"></a>00127         uint8_t         _portTxBits;            <span class="comment">// tx data and completion interrupt enables</span>
-<a name="l00128"></a>00128         uint8_t         _u2x;
+<a name="l00080"></a>00080 
+<a name="l00081"></a>00081 <span class="comment">//</span>
+<a name="l00082"></a>00082 <span class="comment">// Forward declarations for clients that want to assume that the</span>
+<a name="l00083"></a>00083 <span class="comment">// default Serial* objects exist.</span>
+<a name="l00084"></a>00084 <span class="comment">//</span>
+<a name="l00085"></a>00085 <span class="comment">// Note that the application is responsible for ensuring that these</span>
+<a name="l00086"></a>00086 <span class="comment">// actually get defined, otherwise Arduino will suck in the</span>
+<a name="l00087"></a>00087 <span class="comment">// HardwareSerial library and linking will fail.</span>
+<a name="l00088"></a>00088 <span class="comment">//</span>
+<a name="l00089"></a>00089 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#a8e6f49b84135f0158fe250cb7338ddad">Serial</a>;
+<a name="l00090"></a>00090 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#ad8026a4f12a38f848340968d0db7b4fd">Serial1</a>;
+<a name="l00091"></a>00091 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#aab2db3cc91ed9cc8e13464e176fd05c4">Serial2</a>;
+<a name="l00092"></a>00092 <span class="keyword">extern</span> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> <a class="code" href="_fast_serial_8h.html#a86283126649840a9437389a9bd8e5448">Serial3</a>;
+<a name="l00093"></a>00093 
+<a name="l00094"></a><a class="code" href="class_fast_serial.html">00094</a> <span class="keyword">class </span><a class="code" href="class_fast_serial.html">FastSerial</a> : <span class="keyword">public</span> <a class="code" href="class_better_stream.html">BetterStream</a> {
+<a name="l00095"></a>00095 <span class="keyword">public</span>:
+<a name="l00096"></a>00096         <a class="code" href="class_fast_serial.html#a9f20535e34fab50c1f771b9a41790219">FastSerial</a>(<span class="keyword">const</span> uint8_t portNumber,
+<a name="l00097"></a>00097                    <span class="keyword">volatile</span> uint8_t *ubrrh,
+<a name="l00098"></a>00098                    <span class="keyword">volatile</span> uint8_t *ubrrl,
+<a name="l00099"></a>00099                    <span class="keyword">volatile</span> uint8_t *ucsra,
+<a name="l00100"></a>00100                    <span class="keyword">volatile</span> uint8_t *ucsrb,
+<a name="l00101"></a>00101                    <span class="keyword">const</span> uint8_t u2x,
+<a name="l00102"></a>00102                    <span class="keyword">const</span> uint8_t portEnableBits,
+<a name="l00103"></a>00103                    <span class="keyword">const</span> uint8_t portTxBits);
+<a name="l00104"></a>00104 
+<a name="l00105"></a>00105         <span class="comment">// Serial API</span>
+<a name="l00106"></a>00106         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a1ae3f5f5649d7a72daf2806a6ec1cf45">begin</a>(<span class="keywordtype">long</span> baud);
+<a name="l00107"></a>00107         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a1ae3f5f5649d7a72daf2806a6ec1cf45">begin</a>(<span class="keywordtype">long</span> baud, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> rxSpace, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> txSpace);
+<a name="l00108"></a>00108         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a18dc7ab6584b8e01bed86d74d664e6fa">end</a>(<span class="keywordtype">void</span>);
+<a name="l00109"></a>00109         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a3908f5db6a1e946207a4b92b7c0b9ee5">available</a>(<span class="keywordtype">void</span>);
+<a name="l00110"></a>00110         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a6b63b52d3dedb762340675f0dbb29622">read</a>(<span class="keywordtype">void</span>);
+<a name="l00111"></a>00111         <span class="keyword">virtual</span> <span class="keywordtype">int</span>     <a class="code" href="class_fast_serial.html#a1bb9d282cdf6abb37c95f3acc314d7a2">peek</a>(<span class="keywordtype">void</span>);
+<a name="l00112"></a>00112         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a80a0f8852702174fc9f771da3713c933">flush</a>(<span class="keywordtype">void</span>);
+<a name="l00113"></a>00113         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_fast_serial.html#a8e41c9efa4f854ac6ffa0e178c1314e9">write</a>(uint8_t c);
+<a name="l00114"></a>00114         <span class="keyword">using</span> BetterStream::write;
+<a name="l00115"></a>00115 
+<a name="l00116"></a>00116         <span class="comment">// public so the interrupt handlers can see it</span>
+<a name="l00117"></a><a class="code" href="struct_fast_serial_1_1_buffer.html">00117</a>         <span class="keyword">struct </span><a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> {
+<a name="l00118"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#aec076766d7dbdfba4c1116e8329d1c5f">00118</a>                 <span class="keyword">volatile</span> uint16_t <a class="code" href="struct_fast_serial_1_1_buffer.html#a21455465b69c8fd0225236bd8b949158">head</a>, <a class="code" href="struct_fast_serial_1_1_buffer.html#aec076766d7dbdfba4c1116e8329d1c5f">tail</a>;
+<a name="l00119"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#a8797629ef75561f8382aa84d4f62c451">00119</a>                 uint16_t        <a class="code" href="struct_fast_serial_1_1_buffer.html#a8797629ef75561f8382aa84d4f62c451">mask</a>;
+<a name="l00120"></a><a class="code" href="struct_fast_serial_1_1_buffer.html#a5eb7885018db67980c5b8bd1279d2b3d">00120</a>                 uint8_t         *<a class="code" href="struct_fast_serial_1_1_buffer.html#a5eb7885018db67980c5b8bd1279d2b3d">bytes</a>;
+<a name="l00121"></a>00121         };
+<a name="l00122"></a>00122 
+<a name="l00123"></a>00123 <span class="keyword">private</span>:
+<a name="l00124"></a>00124         <span class="comment">// register accessors</span>
+<a name="l00125"></a>00125         <span class="keyword">volatile</span> uint8_t *_ubrrh;
+<a name="l00126"></a>00126         <span class="keyword">volatile</span> uint8_t *_ubrrl;
+<a name="l00127"></a>00127         <span class="keyword">volatile</span> uint8_t *_ucsra;
+<a name="l00128"></a>00128         <span class="keyword">volatile</span> uint8_t *_ucsrb;
 <a name="l00129"></a>00129 
-<a name="l00130"></a>00130         <span class="comment">// ring buffers</span>
-<a name="l00131"></a>00131         <a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a>          *_rxBuffer;
-<a name="l00132"></a>00132         <a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a>          *_txBuffer;
-<a name="l00133"></a>00133         <span class="keywordtype">bool</span>            _open;
+<a name="l00130"></a>00130         <span class="comment">// register magic numbers</span>
+<a name="l00131"></a>00131         uint8_t         _portEnableBits;        <span class="comment">// rx, tx and rx interrupt enables</span>
+<a name="l00132"></a>00132         uint8_t         _portTxBits;            <span class="comment">// tx data and completion interrupt enables</span>
+<a name="l00133"></a>00133         uint8_t         _u2x;
 <a name="l00134"></a>00134 
-<a name="l00135"></a>00135         <span class="keyword">static</span> <span class="keywordtype">bool</span>     _allocBuffer(<a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> *buffer, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> size);
-<a name="l00136"></a>00136         <span class="keyword">static</span> <span class="keywordtype">void</span>     _freeBuffer(<a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> *buffer);
-<a name="l00137"></a>00137 };
-<a name="l00138"></a>00138 
-<a name="l00139"></a>00139 <span class="comment">// Used by the per-port interrupt vectors</span>
-<a name="l00140"></a>00140 <span class="keyword">extern</span> <a class="code" href="struct_fast_serial_1_1_buffer.html">FastSerial::Buffer</a>       <a class="code" href="_fast_serial_8cpp.html#ae8641bf6f22cf7893cb462460417caf9">__FastSerial__rxBuffer</a>[];
-<a name="l00141"></a>00141 <span class="keyword">extern</span> <a class="code" href="struct_fast_serial_1_1_buffer.html">FastSerial::Buffer</a>       <a class="code" href="_fast_serial_8cpp.html#ada936bc2cdf111796f90cdb7dcdc54dd">__FastSerial__txBuffer</a>[];
-<a name="l00142"></a>00142 
-<a name="l00143"></a>00143 <span class="comment">// Generic Rx/Tx vectors for a serial port - needs to know magic numbers</span>
-<a name="l00144"></a><a class="code" href="_fast_serial_8h.html#ab0863c843132b67a13d6a953a2dceae8">00144</a> <span class="preprocessor">#define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR, _UCSRB, _TXBITS) \</span>
-<a name="l00145"></a>00145 <span class="preprocessor">ISR(_RXVECTOR, ISR_BLOCK)                                               \</span>
-<a name="l00146"></a>00146 <span class="preprocessor">{                                                                       \</span>
-<a name="l00147"></a>00147 <span class="preprocessor">        uint8_t c;                                                      \</span>
-<a name="l00148"></a>00148 <span class="preprocessor">        int16_t i;                                                      \</span>
-<a name="l00149"></a>00149 <span class="preprocessor">                                                                        \</span>
-<a name="l00150"></a>00150 <span class="preprocessor">        </span><span class="comment">/* read the byte as quickly as possible */</span>                      \
-<a name="l00151"></a>00151         c = _UDR;                                                       \
-<a name="l00152"></a>00152         <span class="comment">/* work out where the head will go next */</span>                      \
-<a name="l00153"></a>00153         i = (__FastSerial__rxBuffer[_PORT].head + 1) &amp; __FastSerial__rxBuffer[_PORT].mask; \
-<a name="l00154"></a>00154         <span class="comment">/* decide whether we have space for another byte */</span>             \
-<a name="l00155"></a>00155         if (i != __FastSerial__rxBuffer[_PORT].tail) {                  \
-<a name="l00156"></a>00156                 <span class="comment">/* we do, move the head */</span>                              \
-<a name="l00157"></a>00157                 __FastSerial__rxBuffer[_PORT].bytes[__FastSerial__rxBuffer[_PORT].head] = c; \
-<a name="l00158"></a>00158                 __FastSerial__rxBuffer[_PORT].head = i;                 \
-<a name="l00159"></a>00159         }                                                               \
-<a name="l00160"></a>00160 }                                                                       \
-<a name="l00161"></a>00161 ISR(_TXVECTOR, ISR_BLOCK)                                               \
-<a name="l00162"></a>00162 {                                                                       \
-<a name="l00163"></a>00163         <span class="comment">/* if there is another character to send */</span>                     \
-<a name="l00164"></a>00164         if (__FastSerial__txBuffer[_PORT].tail != __FastSerial__txBuffer[_PORT].head) { \
-<a name="l00165"></a>00165                 _UDR = __FastSerial__txBuffer[_PORT].bytes[__FastSerial__txBuffer[_PORT].tail]; \
-<a name="l00166"></a>00166                 <span class="comment">/* increment the tail */</span>                                \
-<a name="l00167"></a>00167                 __FastSerial__txBuffer[_PORT].tail =                    \
-<a name="l00168"></a>00168                         (__FastSerial__txBuffer[_PORT].tail + 1) &amp; __FastSerial__txBuffer[_PORT].mask; \
-<a name="l00169"></a>00169         } else {                                                        \
-<a name="l00170"></a>00170                 <span class="comment">/* there are no more bytes to send, disable the interrupt */</span> \
-<a name="l00171"></a>00171                 if (__FastSerial__txBuffer[_PORT].head == __FastSerial__txBuffer[_PORT].tail) \
-<a name="l00172"></a>00172                         _UCSRB &amp;= ~_TXBITS;                             \
-<a name="l00173"></a>00173         }                                                               \
-<a name="l00174"></a>00174 }                                                                       \
-<a name="l00175"></a>00175 struct hack
-<a name="l00176"></a>00176 
-<a name="l00177"></a>00177 <span class="comment">//</span>
-<a name="l00178"></a>00178 <span class="comment">// Portability; convert various older sets of defines for U(S)ART0 up</span>
-<a name="l00179"></a>00179 <span class="comment">// to match the definitions for the 1280 and later devices.</span>
-<a name="l00180"></a>00180 <span class="comment">//</span>
-<a name="l00181"></a>00181 <span class="preprocessor">#if !defined(USART0_RX_vect)</span>
-<a name="l00182"></a>00182 <span class="preprocessor"></span><span class="preprocessor"># if defined(USART_RX_vect)</span>
-<a name="l00183"></a>00183 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_RX_vect        USART_RX_vect</span>
-<a name="l00184"></a>00184 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_UDRE_vect      USART_UDRE_vect</span>
-<a name="l00185"></a>00185 <span class="preprocessor"></span><span class="preprocessor"># elif defined(UART0_RX_vect)</span>
-<a name="l00186"></a>00186 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_RX_vect        UART0_RX_vect</span>
-<a name="l00187"></a>00187 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_UDRE_vect      UART0_UDRE_vect</span>
-<a name="l00188"></a>00188 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
-<a name="l00189"></a>00189 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
-<a name="l00190"></a>00190 <span class="preprocessor"></span>
-<a name="l00191"></a>00191 <span class="preprocessor">#if !defined(USART1_RX_vect)</span>
-<a name="l00192"></a>00192 <span class="preprocessor"></span><span class="preprocessor"># if defined(UART1_RX_vect)</span>
-<a name="l00193"></a>00193 <span class="preprocessor"></span><span class="preprocessor">#  define USART1_RX_vect        UART1_RX_vect</span>
-<a name="l00194"></a>00194 <span class="preprocessor"></span><span class="preprocessor">#  define USART1_UDRE_vect      UART1_UDRE_vect</span>
-<a name="l00195"></a>00195 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
-<a name="l00196"></a>00196 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
-<a name="l00197"></a>00197 <span class="preprocessor"></span>
-<a name="l00198"></a>00198 <span class="preprocessor">#if !defined(UDR0)</span>
-<a name="l00199"></a>00199 <span class="preprocessor"></span><span class="preprocessor"># if defined(UDR)</span>
-<a name="l00200"></a>00200 <span class="preprocessor"></span><span class="preprocessor">#  define UDR0                  UDR</span>
-<a name="l00201"></a>00201 <span class="preprocessor"></span><span class="preprocessor">#  define UBRR0H                UBRRH</span>
-<a name="l00202"></a>00202 <span class="preprocessor"></span><span class="preprocessor">#  define UBRR0L                UBRRL</span>
-<a name="l00203"></a>00203 <span class="preprocessor"></span><span class="preprocessor">#  define UCSR0A                UCSRA</span>
-<a name="l00204"></a>00204 <span class="preprocessor"></span><span class="preprocessor">#  define UCSR0B                UCSRB</span>
-<a name="l00205"></a>00205 <span class="preprocessor"></span><span class="preprocessor">#  define U2X0                  U2X</span>
-<a name="l00206"></a>00206 <span class="preprocessor"></span><span class="preprocessor">#  define RXEN0                 RXEN</span>
-<a name="l00207"></a>00207 <span class="preprocessor"></span><span class="preprocessor">#  define TXEN0                 TXEN</span>
-<a name="l00208"></a>00208 <span class="preprocessor"></span><span class="preprocessor">#  define RXCIE0                RXCIE</span>
-<a name="l00209"></a>00209 <span class="preprocessor"></span><span class="preprocessor">#  define UDRIE0                UDRIE</span>
-<a name="l00210"></a>00210 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
-<a name="l00211"></a>00211 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
-<a name="l00212"></a>00212 <span class="preprocessor"></span>
-<a name="l00213"></a>00213 <span class="comment">//</span>
-<a name="l00214"></a>00214 <span class="comment">// Macro defining a FastSerial port instance.</span>
-<a name="l00215"></a>00215 <span class="comment">//</span>
-<a name="l00216"></a><a class="code" href="_fast_serial_8h.html#ae9b997f0fe57adea67535f5bc3f4d212">00216</a> <span class="preprocessor">#define FastSerialPort(_name, _num)                                     \</span>
-<a name="l00217"></a>00217 <span class="preprocessor">        FastSerial _name(_num,                                          \</span>
-<a name="l00218"></a>00218 <span class="preprocessor">                         &amp;UBRR##_num##H,                                \</span>
-<a name="l00219"></a>00219 <span class="preprocessor">                         &amp;UBRR##_num##L,                                \</span>
-<a name="l00220"></a>00220 <span class="preprocessor">                         &amp;UCSR##_num##A,                                \</span>
-<a name="l00221"></a>00221 <span class="preprocessor">                         &amp;UCSR##_num##B,                                \</span>
-<a name="l00222"></a>00222 <span class="preprocessor">                         U2X##_num,                                     \</span>
-<a name="l00223"></a>00223 <span class="preprocessor">                         (_BV(RXEN##_num) |  _BV(TXEN##_num) | _BV(RXCIE##_num)), \</span>
-<a name="l00224"></a>00224 <span class="preprocessor">                         (_BV(UDRIE##_num)));                           \</span>
-<a name="l00225"></a>00225 <span class="preprocessor">        FastSerialHandler(_num,                                         \</span>
-<a name="l00226"></a>00226 <span class="preprocessor">                          USART##_num##_RX_vect,                        \</span>
-<a name="l00227"></a>00227 <span class="preprocessor">                          USART##_num##_UDRE_vect,                      \</span>
-<a name="l00228"></a>00228 <span class="preprocessor">                          UDR##_num,                                    \</span>
-<a name="l00229"></a>00229 <span class="preprocessor">                          UCSR##_num##B,                                \</span>
-<a name="l00230"></a>00230 <span class="preprocessor">                          _BV(UDRIE##_num))</span>
-<a name="l00231"></a>00231 <span class="preprocessor"></span>
-<a name="l00232"></a>00232 <span class="comment">//</span>
-<a name="l00233"></a>00233 <span class="comment">// Compatibility macros for previous FastSerial versions.</span>
-<a name="l00234"></a>00234 <span class="comment">//</span>
-<a name="l00235"></a>00235 <span class="comment">// Note that these are not conditionally defined, as the errors</span>
-<a name="l00236"></a>00236 <span class="comment">// generated when using these macros for a board that does not support</span>
-<a name="l00237"></a>00237 <span class="comment">// the port are better than the errors generated for a macro that&#39;s not</span>
-<a name="l00238"></a>00238 <span class="comment">// defined at all.</span>
+<a name="l00135"></a>00135         <span class="comment">// ring buffers</span>
+<a name="l00136"></a>00136         <a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a>          *_rxBuffer;
+<a name="l00137"></a>00137         <a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a>          *_txBuffer;
+<a name="l00138"></a>00138         <span class="keywordtype">bool</span>            _open;
+<a name="l00139"></a>00139 
+<a name="l00140"></a>00140         <span class="keyword">static</span> <span class="keywordtype">bool</span>     _allocBuffer(<a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> *buffer, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> size);
+<a name="l00141"></a>00141         <span class="keyword">static</span> <span class="keywordtype">void</span>     _freeBuffer(<a class="code" href="struct_fast_serial_1_1_buffer.html">Buffer</a> *buffer);
+<a name="l00142"></a>00142 };
+<a name="l00143"></a>00143 
+<a name="l00144"></a>00144 <span class="comment">// Used by the per-port interrupt vectors</span>
+<a name="l00145"></a>00145 <span class="keyword">extern</span> <a class="code" href="struct_fast_serial_1_1_buffer.html">FastSerial::Buffer</a>       <a class="code" href="_fast_serial_8cpp.html#ae8641bf6f22cf7893cb462460417caf9">__FastSerial__rxBuffer</a>[];
+<a name="l00146"></a>00146 <span class="keyword">extern</span> <a class="code" href="struct_fast_serial_1_1_buffer.html">FastSerial::Buffer</a>       <a class="code" href="_fast_serial_8cpp.html#ada936bc2cdf111796f90cdb7dcdc54dd">__FastSerial__txBuffer</a>[];
+<a name="l00147"></a>00147 
+<a name="l00148"></a>00148 <span class="comment">// Generic Rx/Tx vectors for a serial port - needs to know magic numbers</span>
+<a name="l00149"></a><a class="code" href="_fast_serial_8h.html#ab0863c843132b67a13d6a953a2dceae8">00149</a> <span class="preprocessor">#define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR, _UCSRB, _TXBITS) \</span>
+<a name="l00150"></a>00150 <span class="preprocessor">ISR(_RXVECTOR, ISR_BLOCK)                                               \</span>
+<a name="l00151"></a>00151 <span class="preprocessor">{                                                                       \</span>
+<a name="l00152"></a>00152 <span class="preprocessor">        uint8_t c;                                                      \</span>
+<a name="l00153"></a>00153 <span class="preprocessor">        int16_t i;                                                      \</span>
+<a name="l00154"></a>00154 <span class="preprocessor">                                                                        \</span>
+<a name="l00155"></a>00155 <span class="preprocessor">        </span><span class="comment">/* read the byte as quickly as possible */</span>                      \
+<a name="l00156"></a>00156         c = _UDR;                                                       \
+<a name="l00157"></a>00157         <span class="comment">/* work out where the head will go next */</span>                      \
+<a name="l00158"></a>00158         i = (__FastSerial__rxBuffer[_PORT].head + 1) &amp; __FastSerial__rxBuffer[_PORT].mask; \
+<a name="l00159"></a>00159         <span class="comment">/* decide whether we have space for another byte */</span>             \
+<a name="l00160"></a>00160         if (i != __FastSerial__rxBuffer[_PORT].tail) {                  \
+<a name="l00161"></a>00161                 <span class="comment">/* we do, move the head */</span>                              \
+<a name="l00162"></a>00162                 __FastSerial__rxBuffer[_PORT].bytes[__FastSerial__rxBuffer[_PORT].head] = c; \
+<a name="l00163"></a>00163                 __FastSerial__rxBuffer[_PORT].head = i;                 \
+<a name="l00164"></a>00164         }                                                               \
+<a name="l00165"></a>00165 }                                                                       \
+<a name="l00166"></a>00166 ISR(_TXVECTOR, ISR_BLOCK)                                               \
+<a name="l00167"></a>00167 {                                                                       \
+<a name="l00168"></a>00168         <span class="comment">/* if there is another character to send */</span>                     \
+<a name="l00169"></a>00169         if (__FastSerial__txBuffer[_PORT].tail != __FastSerial__txBuffer[_PORT].head) { \
+<a name="l00170"></a>00170                 _UDR = __FastSerial__txBuffer[_PORT].bytes[__FastSerial__txBuffer[_PORT].tail]; \
+<a name="l00171"></a>00171                 <span class="comment">/* increment the tail */</span>                                \
+<a name="l00172"></a>00172                 __FastSerial__txBuffer[_PORT].tail =                    \
+<a name="l00173"></a>00173                         (__FastSerial__txBuffer[_PORT].tail + 1) &amp; __FastSerial__txBuffer[_PORT].mask; \
+<a name="l00174"></a>00174         } else {                                                        \
+<a name="l00175"></a>00175                 <span class="comment">/* there are no more bytes to send, disable the interrupt */</span> \
+<a name="l00176"></a>00176                 if (__FastSerial__txBuffer[_PORT].head == __FastSerial__txBuffer[_PORT].tail) \
+<a name="l00177"></a>00177                         _UCSRB &amp;= ~_TXBITS;                             \
+<a name="l00178"></a>00178         }                                                               \
+<a name="l00179"></a>00179 }                                                                       \
+<a name="l00180"></a>00180 struct hack
+<a name="l00181"></a>00181 
+<a name="l00182"></a>00182 <span class="comment">//</span>
+<a name="l00183"></a>00183 <span class="comment">// Portability; convert various older sets of defines for U(S)ART0 up</span>
+<a name="l00184"></a>00184 <span class="comment">// to match the definitions for the 1280 and later devices.</span>
+<a name="l00185"></a>00185 <span class="comment">//</span>
+<a name="l00186"></a>00186 <span class="preprocessor">#if !defined(USART0_RX_vect)</span>
+<a name="l00187"></a>00187 <span class="preprocessor"></span><span class="preprocessor"># if defined(USART_RX_vect)</span>
+<a name="l00188"></a>00188 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_RX_vect        USART_RX_vect</span>
+<a name="l00189"></a>00189 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_UDRE_vect      USART_UDRE_vect</span>
+<a name="l00190"></a>00190 <span class="preprocessor"></span><span class="preprocessor"># elif defined(UART0_RX_vect)</span>
+<a name="l00191"></a>00191 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_RX_vect        UART0_RX_vect</span>
+<a name="l00192"></a>00192 <span class="preprocessor"></span><span class="preprocessor">#  define USART0_UDRE_vect      UART0_UDRE_vect</span>
+<a name="l00193"></a>00193 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
+<a name="l00194"></a>00194 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00195"></a>00195 <span class="preprocessor"></span>
+<a name="l00196"></a>00196 <span class="preprocessor">#if !defined(USART1_RX_vect)</span>
+<a name="l00197"></a>00197 <span class="preprocessor"></span><span class="preprocessor"># if defined(UART1_RX_vect)</span>
+<a name="l00198"></a>00198 <span class="preprocessor"></span><span class="preprocessor">#  define USART1_RX_vect        UART1_RX_vect</span>
+<a name="l00199"></a>00199 <span class="preprocessor"></span><span class="preprocessor">#  define USART1_UDRE_vect      UART1_UDRE_vect</span>
+<a name="l00200"></a>00200 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
+<a name="l00201"></a>00201 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00202"></a>00202 <span class="preprocessor"></span>
+<a name="l00203"></a>00203 <span class="preprocessor">#if !defined(UDR0)</span>
+<a name="l00204"></a>00204 <span class="preprocessor"></span><span class="preprocessor"># if defined(UDR)</span>
+<a name="l00205"></a>00205 <span class="preprocessor"></span><span class="preprocessor">#  define UDR0                  UDR</span>
+<a name="l00206"></a>00206 <span class="preprocessor"></span><span class="preprocessor">#  define UBRR0H                UBRRH</span>
+<a name="l00207"></a>00207 <span class="preprocessor"></span><span class="preprocessor">#  define UBRR0L                UBRRL</span>
+<a name="l00208"></a>00208 <span class="preprocessor"></span><span class="preprocessor">#  define UCSR0A                UCSRA</span>
+<a name="l00209"></a>00209 <span class="preprocessor"></span><span class="preprocessor">#  define UCSR0B                UCSRB</span>
+<a name="l00210"></a>00210 <span class="preprocessor"></span><span class="preprocessor">#  define U2X0                  U2X</span>
+<a name="l00211"></a>00211 <span class="preprocessor"></span><span class="preprocessor">#  define RXEN0                 RXEN</span>
+<a name="l00212"></a>00212 <span class="preprocessor"></span><span class="preprocessor">#  define TXEN0                 TXEN</span>
+<a name="l00213"></a>00213 <span class="preprocessor"></span><span class="preprocessor">#  define RXCIE0                RXCIE</span>
+<a name="l00214"></a>00214 <span class="preprocessor"></span><span class="preprocessor">#  define UDRIE0                UDRIE</span>
+<a name="l00215"></a>00215 <span class="preprocessor"></span><span class="preprocessor"># endif</span>
+<a name="l00216"></a>00216 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00217"></a>00217 <span class="preprocessor"></span>
+<a name="l00218"></a>00218 <span class="comment">//</span>
+<a name="l00219"></a>00219 <span class="comment">// Macro defining a FastSerial port instance.</span>
+<a name="l00220"></a>00220 <span class="comment">//</span>
+<a name="l00221"></a><a class="code" href="_fast_serial_8h.html#ae9b997f0fe57adea67535f5bc3f4d212">00221</a> <span class="preprocessor">#define FastSerialPort(_name, _num)                                     \</span>
+<a name="l00222"></a>00222 <span class="preprocessor">        FastSerial _name(_num,                                          \</span>
+<a name="l00223"></a>00223 <span class="preprocessor">                         &amp;UBRR##_num##H,                                \</span>
+<a name="l00224"></a>00224 <span class="preprocessor">                         &amp;UBRR##_num##L,                                \</span>
+<a name="l00225"></a>00225 <span class="preprocessor">                         &amp;UCSR##_num##A,                                \</span>
+<a name="l00226"></a>00226 <span class="preprocessor">                         &amp;UCSR##_num##B,                                \</span>
+<a name="l00227"></a>00227 <span class="preprocessor">                         U2X##_num,                                     \</span>
+<a name="l00228"></a>00228 <span class="preprocessor">                         (_BV(RXEN##_num) |  _BV(TXEN##_num) | _BV(RXCIE##_num)), \</span>
+<a name="l00229"></a>00229 <span class="preprocessor">                         (_BV(UDRIE##_num)));                           \</span>
+<a name="l00230"></a>00230 <span class="preprocessor">        FastSerialHandler(_num,                                         \</span>
+<a name="l00231"></a>00231 <span class="preprocessor">                          USART##_num##_RX_vect,                        \</span>
+<a name="l00232"></a>00232 <span class="preprocessor">                          USART##_num##_UDRE_vect,                      \</span>
+<a name="l00233"></a>00233 <span class="preprocessor">                          UDR##_num,                                    \</span>
+<a name="l00234"></a>00234 <span class="preprocessor">                          UCSR##_num##B,                                \</span>
+<a name="l00235"></a>00235 <span class="preprocessor">                          _BV(UDRIE##_num))</span>
+<a name="l00236"></a>00236 <span class="preprocessor"></span>
+<a name="l00237"></a>00237 <span class="comment">//</span>
+<a name="l00238"></a>00238 <span class="comment">// Compatibility macros for previous FastSerial versions.</span>
 <a name="l00239"></a>00239 <span class="comment">//</span>
-<a name="l00240"></a><a class="code" href="_fast_serial_8h.html#aa5f40a33be03eb43f0e1f1a31df74989">00240</a> <span class="preprocessor">#define FastSerialPort0(_portName)     FastSerialPort(_portName, 0)</span>
-<a name="l00241"></a><a class="code" href="_fast_serial_8h.html#a949c2517a50e34ee121c1fea9cb15b64">00241</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort1(_portName)     FastSerialPort(_portName, 1)</span>
-<a name="l00242"></a><a class="code" href="_fast_serial_8h.html#ae93a07eece1f83c892496f5c6ef3e60e">00242</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort2(_portName)     FastSerialPort(_portName, 2)</span>
-<a name="l00243"></a><a class="code" href="_fast_serial_8h.html#a9da84dd26ddee4197fcd3536d416b964">00243</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort3(_portName)     FastSerialPort(_portName, 3)</span>
-<a name="l00244"></a>00244 <span class="preprocessor"></span>
-<a name="l00245"></a>00245 <span class="preprocessor">#endif // FastSerial_h</span>
+<a name="l00240"></a>00240 <span class="comment">// Note that these are not conditionally defined, as the errors</span>
+<a name="l00241"></a>00241 <span class="comment">// generated when using these macros for a board that does not support</span>
+<a name="l00242"></a>00242 <span class="comment">// the port are better than the errors generated for a macro that&#39;s not</span>
+<a name="l00243"></a>00243 <span class="comment">// defined at all.</span>
+<a name="l00244"></a>00244 <span class="comment">//</span>
+<a name="l00245"></a><a class="code" href="_fast_serial_8h.html#aa5f40a33be03eb43f0e1f1a31df74989">00245</a> <span class="preprocessor">#define FastSerialPort0(_portName)     FastSerialPort(_portName, 0)</span>
+<a name="l00246"></a><a class="code" href="_fast_serial_8h.html#a949c2517a50e34ee121c1fea9cb15b64">00246</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort1(_portName)     FastSerialPort(_portName, 1)</span>
+<a name="l00247"></a><a class="code" href="_fast_serial_8h.html#ae93a07eece1f83c892496f5c6ef3e60e">00247</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort2(_portName)     FastSerialPort(_portName, 2)</span>
+<a name="l00248"></a><a class="code" href="_fast_serial_8h.html#a9da84dd26ddee4197fcd3536d416b964">00248</a> <span class="preprocessor"></span><span class="preprocessor">#define FastSerialPort3(_portName)     FastSerialPort(_portName, 3)</span>
+<a name="l00249"></a>00249 <span class="preprocessor"></span>
+<a name="l00250"></a>00250 <span class="preprocessor">#endif // FastSerial_h</span>
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

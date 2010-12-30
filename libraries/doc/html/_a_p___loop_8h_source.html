@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_Common/AP_Loop.h Source File</title>
+<title>ArduPilot Libraries: AP_Loop.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_Common/AP_Loop.h</h1>  </div>
+<h1>AP_Loop.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_a_p___loop_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/*</span>
@@ -53,48 +54,51 @@
 <a name="l00021"></a>00021 <span class="preprocessor"></span>
 <a name="l00022"></a>00022 <span class="preprocessor">#include &quot;<a class="code" href="_a_p___vector_8h.html">AP_Vector.h</a>&quot;</span>
 <a name="l00023"></a>00023 
-<a name="l00029"></a>00029 <span class="keyword">namespace </span>apo
-<a name="l00030"></a>00030 {
-<a name="l00031"></a>00031 
-<a name="l00032"></a><a class="code" href="classapo_1_1_loop.html">00032</a> <span class="keyword">class </span><a class="code" href="classapo_1_1_loop.html">Loop</a>
-<a name="l00033"></a>00033 {
-<a name="l00034"></a>00034 <span class="keyword">public</span>:
-<a name="l00035"></a><a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">00035</a>     <a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">Loop</a>() : _fptr(), _data(), _period(), _subLoops(), _timeStamp(), _load(), _dt() {};
-<a name="l00036"></a>00036     <a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">Loop</a>(<span class="keywordtype">float</span> <a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">frequency</a>, <span class="keywordtype">void</span> (*fptr)(<span class="keywordtype">void</span> *) = NULL, <span class="keywordtype">void</span> * data = NULL);
-<a name="l00037"></a>00037     <span class="keywordtype">void</span> <a class="code" href="classapo_1_1_loop.html#a9e46986a766ed78a9fff0667d9dcf813">update</a>();
-<a name="l00038"></a><a class="code" href="classapo_1_1_loop.html#a35a3d49da20cbad8a4dc863228632a57">00038</a>     <a class="code" href="class_vector.html">Vector&lt;Loop *&gt;</a> &amp; <a class="code" href="classapo_1_1_loop.html#a35a3d49da20cbad8a4dc863228632a57">subLoops</a>() {
-<a name="l00039"></a>00039         <span class="keywordflow">return</span> _subLoops;
-<a name="l00040"></a>00040     }
-<a name="l00041"></a><a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">00041</a>     uint32_t <a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">frequency</a>() {
-<a name="l00042"></a>00042         <span class="keywordflow">return</span> 1.0e6/_period;
-<a name="l00043"></a>00043     }
-<a name="l00044"></a><a class="code" href="classapo_1_1_loop.html#aec93940b1c7ca50ebda47b7326c339ba">00044</a>     <span class="keywordtype">void</span> <a class="code" href="classapo_1_1_loop.html#aec93940b1c7ca50ebda47b7326c339ba">frequency</a>(<span class="keywordtype">float</span> frequency) {
-<a name="l00045"></a>00045         _period = 1e6/frequency;
-<a name="l00046"></a>00046     }
-<a name="l00047"></a><a class="code" href="classapo_1_1_loop.html#af6f23eac39d89deb194d3e3f5cdd8df1">00047</a>     uint32_t <a class="code" href="classapo_1_1_loop.html#af6f23eac39d89deb194d3e3f5cdd8df1">timeStamp</a>() {
-<a name="l00048"></a>00048         <span class="keywordflow">return</span> _timeStamp;
-<a name="l00049"></a>00049     }
-<a name="l00050"></a><a class="code" href="classapo_1_1_loop.html#a0dd58e809ffa1104cdd9e008918886aa">00050</a>     <span class="keywordtype">float</span> <a class="code" href="classapo_1_1_loop.html#a0dd58e809ffa1104cdd9e008918886aa">dt</a>() {
-<a name="l00051"></a>00051         <span class="keywordflow">return</span> _dt;
-<a name="l00052"></a>00052     }
-<a name="l00053"></a><a class="code" href="classapo_1_1_loop.html#af3017e1bf118c134e550cdda81c54d43">00053</a>     uint8_t <a class="code" href="classapo_1_1_loop.html#af3017e1bf118c134e550cdda81c54d43">load</a>() {
-<a name="l00054"></a>00054         <span class="keywordflow">return</span> _load;
-<a name="l00055"></a>00055     }
-<a name="l00056"></a>00056 <span class="keyword">private</span>:
-<a name="l00057"></a>00057     void (*_fptr)(<span class="keywordtype">void</span> *);
-<a name="l00058"></a>00058     <span class="keywordtype">void</span> * _data;
-<a name="l00059"></a>00059     uint32_t _period;
-<a name="l00060"></a>00060     <a class="code" href="class_vector.html">Vector&lt;Loop *&gt;</a> _subLoops;
-<a name="l00061"></a>00061     uint32_t _timeStamp;
-<a name="l00062"></a>00062     uint8_t _load;
-<a name="l00063"></a>00063     <span class="keywordtype">float</span> _dt;
-<a name="l00064"></a>00064 };
-<a name="l00065"></a>00065 
-<a name="l00066"></a>00066 } <span class="comment">// apo</span>
-<a name="l00067"></a>00067 
-<a name="l00068"></a>00068 <span class="preprocessor">#endif</span>
-<a name="l00069"></a>00069 <span class="preprocessor"></span>
-<a name="l00070"></a>00070 <span class="comment">// vim:ts=4:sw=4:expandtab</span>
+<a name="l00025"></a>00025 <span class="comment">// Start of apo namespace</span>
+<a name="l00026"></a>00026 <span class="comment">// The above functions must be in the global</span>
+<a name="l00027"></a>00027 <span class="comment">// namespace for c++ to function properly</span>
+<a name="l00028"></a>00028 <span class="keyword">namespace </span>apo
+<a name="l00029"></a>00029 {
+<a name="l00030"></a>00030 
+<a name="l00031"></a><a class="code" href="classapo_1_1_loop.html">00031</a> <span class="keyword">class </span><a class="code" href="classapo_1_1_loop.html">Loop</a>
+<a name="l00032"></a>00032 {
+<a name="l00033"></a>00033 <span class="keyword">public</span>:
+<a name="l00034"></a><a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">00034</a>     <a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">Loop</a>() : _fptr(), _data(), _period(), _subLoops(), _timeStamp(), _load(), _dt() {};
+<a name="l00035"></a>00035     <a class="code" href="classapo_1_1_loop.html#a4a6ea4aeec32061bf86df9c9c32c5b24">Loop</a>(<span class="keywordtype">float</span> <a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">frequency</a>, <span class="keywordtype">void</span> (*fptr)(<span class="keywordtype">void</span> *) = NULL, <span class="keywordtype">void</span> * data = NULL);
+<a name="l00036"></a>00036     <span class="keywordtype">void</span> <a class="code" href="classapo_1_1_loop.html#a9e46986a766ed78a9fff0667d9dcf813">update</a>();
+<a name="l00037"></a><a class="code" href="classapo_1_1_loop.html#a35a3d49da20cbad8a4dc863228632a57">00037</a>     <a class="code" href="class_vector.html">Vector&lt;Loop *&gt;</a> &amp; <a class="code" href="classapo_1_1_loop.html#a35a3d49da20cbad8a4dc863228632a57">subLoops</a>() {
+<a name="l00038"></a>00038         <span class="keywordflow">return</span> _subLoops;
+<a name="l00039"></a>00039     }
+<a name="l00040"></a><a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">00040</a>     uint32_t <a class="code" href="classapo_1_1_loop.html#a6b88aae6e3f55895037ce5538f36076d">frequency</a>() {
+<a name="l00041"></a>00041         <span class="keywordflow">return</span> 1.0e6/_period;
+<a name="l00042"></a>00042     }
+<a name="l00043"></a><a class="code" href="classapo_1_1_loop.html#aec93940b1c7ca50ebda47b7326c339ba">00043</a>     <span class="keywordtype">void</span> <a class="code" href="classapo_1_1_loop.html#aec93940b1c7ca50ebda47b7326c339ba">frequency</a>(<span class="keywordtype">float</span> frequency) {
+<a name="l00044"></a>00044         _period = 1e6/frequency;
+<a name="l00045"></a>00045     }
+<a name="l00046"></a><a class="code" href="classapo_1_1_loop.html#af6f23eac39d89deb194d3e3f5cdd8df1">00046</a>     uint32_t <a class="code" href="classapo_1_1_loop.html#af6f23eac39d89deb194d3e3f5cdd8df1">timeStamp</a>() {
+<a name="l00047"></a>00047         <span class="keywordflow">return</span> _timeStamp;
+<a name="l00048"></a>00048     }
+<a name="l00049"></a><a class="code" href="classapo_1_1_loop.html#a0dd58e809ffa1104cdd9e008918886aa">00049</a>     <span class="keywordtype">float</span> <a class="code" href="classapo_1_1_loop.html#a0dd58e809ffa1104cdd9e008918886aa">dt</a>() {
+<a name="l00050"></a>00050         <span class="keywordflow">return</span> _dt;
+<a name="l00051"></a>00051     }
+<a name="l00052"></a><a class="code" href="classapo_1_1_loop.html#af3017e1bf118c134e550cdda81c54d43">00052</a>     uint8_t <a class="code" href="classapo_1_1_loop.html#af3017e1bf118c134e550cdda81c54d43">load</a>() {
+<a name="l00053"></a>00053         <span class="keywordflow">return</span> _load;
+<a name="l00054"></a>00054     }
+<a name="l00055"></a>00055 <span class="keyword">private</span>:
+<a name="l00056"></a>00056     void (*_fptr)(<span class="keywordtype">void</span> *);
+<a name="l00057"></a>00057     <span class="keywordtype">void</span> * _data;
+<a name="l00058"></a>00058     uint32_t _period;
+<a name="l00059"></a>00059     <a class="code" href="class_vector.html">Vector&lt;Loop *&gt;</a> _subLoops;
+<a name="l00060"></a>00060     uint32_t _timeStamp;
+<a name="l00061"></a>00061     uint8_t _load;
+<a name="l00062"></a>00062     <span class="keywordtype">float</span> _dt;
+<a name="l00063"></a>00063 };
+<a name="l00064"></a>00064 
+<a name="l00065"></a>00065 } <span class="comment">// apo</span>
+<a name="l00066"></a>00066 
+<a name="l00067"></a>00067 <span class="preprocessor">#endif</span>
+<a name="l00068"></a>00068 <span class="preprocessor"></span>
+<a name="l00069"></a>00069 <span class="comment">// vim:ts=4:sw=4:expandtab</span>
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -74,19 +75,14 @@ Here is a list of all class members with links to the classes they belong to:
 
 <h3><a class="anchor" id="index_s"></a>- s -</h3><ul>
 <li>save()
-: <a class="el" href="class_a_p___var.html#afa88a5ff01e70d17529c683016d62456">AP_Var&lt; type &gt;</a>
-</li>
-<li>save_accel_eeprom()
-: <a class="el" href="class_a_p___i_m_u.html#a9009257aec9cdd8e0f2366b0ad74ecfd">AP_IMU</a>
+: <a class="el" href="class_a_p___var_i.html#ae2354a7d4d8ce5d6c20bfd4ae301be89">AP_VarI</a>
+, <a class="el" href="class_a_p___var.html#afa88a5ff01e70d17529c683016d62456">AP_Var&lt; type &gt;</a>
 </li>
 <li>save_eeprom()
 : <a class="el" href="class_r_c___channel.html#aae26f7c9f60cc08537fffe967510f481">RC_Channel</a>
 </li>
 <li>save_gains()
 : <a class="el" href="class_p_i_d.html#a7fd5ea68386a5fdff983144decf552e6">PID</a>
-</li>
-<li>save_gyro_eeprom()
-: <a class="el" href="class_a_p___i_m_u.html#a8ac2bdf10de028677126ddb8e19d1461">AP_IMU</a>
 </li>
 <li>save_trim()
 : <a class="el" href="class_r_c___channel.html#afed2cdb2de5fd66cb6eae528e5b6344a">RC_Channel</a>
@@ -208,6 +204,9 @@ Here is a list of all class members with links to the classes they belong to:
 <li>set()
 : <a class="el" href="class_a_p___var.html#ac6d45de415b68d734876f3e4dd1e19f4">AP_Var&lt; type &gt;</a>
 </li>
+<li>set_accel()
+: <a class="el" href="class_a_p___i_m_u___shim.html#a95349a4a1c392d021263839339e2a0a5">AP_IMU_Shim</a>
+</li>
 <li>set_angle()
 : <a class="el" href="class_r_c___channel.html#ae528ed2a3460fddde82f114cb0694201">RC_Channel</a>
 </li>
@@ -225,10 +224,13 @@ Here is a list of all class members with links to the classes they belong to:
 <li>set_declination()
 : <a class="el" href="class_a_p___compass___h_i_l.html#a4b4d22637d14bd5585aa8d2d5e32ea43">AP_Compass_HIL</a>
 , <a class="el" href="class_a_p___compass___h_m_c5843.html#a2ba3fc3b5bd78a28f717c2740948d61e">AP_Compass_HMC5843</a>
-, <a class="el" href="class_compass.html#a3b7ea064e17a870a419c8f45a7c1fb5d">Compass</a>
+, <a class="el" href="class_compass.html#a7fb27fec44c834a4073dc84da445827d">Compass</a>
 </li>
 <li>set_filter()
 : <a class="el" href="class_r_c___channel.html#a045bff22457093d0c0fa78e19e618f9f">RC_Channel</a>
+</li>
+<li>set_gyro()
+: <a class="el" href="class_a_p___i_m_u___shim.html#a890ea13076d7bfbf0bc72f86260a9141">AP_IMU_Shim</a>
 </li>
 <li>set_hold_course()
 : <a class="el" href="class_navigation.html#a260152de551277ff2a980e63bbb14fbc">Navigation</a>
@@ -246,14 +248,14 @@ Here is a list of all class members with links to the classes they belong to:
 : <a class="el" href="class_navigation.html#a222cd205c6709681875cbb4efa2657f0">Navigation</a>
 </li>
 <li>set_offsets()
-: <a class="el" href="class_a_p___compass___h_i_l.html#a1fb0fcecfa08549ea1ca9d0cf9f7eb14">AP_Compass_HIL</a>
+: <a class="el" href="class_compass.html#ad806fb3a6cfe66ab41098705252f8989">Compass</a>
+, <a class="el" href="class_a_p___compass___h_i_l.html#a1fb0fcecfa08549ea1ca9d0cf9f7eb14">AP_Compass_HIL</a>
 , <a class="el" href="class_a_p___compass___h_m_c5843.html#a90481085e451fe3f64d46ebb401b5aaf">AP_Compass_HMC5843</a>
-, <a class="el" href="class_compass.html#af4ae15041479ecb2631ba6c39e84c561">Compass</a>
 </li>
 <li>set_orientation()
 : <a class="el" href="class_a_p___compass___h_i_l.html#aae23c67a982d566e2f538509799ee277">AP_Compass_HIL</a>
 , <a class="el" href="class_a_p___compass___h_m_c5843.html#a5dafbafd496867d435168c8decc742fa">AP_Compass_HMC5843</a>
-, <a class="el" href="class_compass.html#a57b71b1f29b91e73f84bcc6860f3cf51">Compass</a>
+, <a class="el" href="class_compass.html#a9c7556a20a579b2f47a67d1b3d67331c">Compass</a>
 , <a class="el" href="class_range_finder.html#a7d6aef1559f205bac93327078c58840a">RangeFinder</a>
 </li>
 <li>set_pwm()
@@ -280,34 +282,57 @@ Here is a list of all class members with links to the classes they belong to:
 <li>set_wp_size()
 : <a class="el" href="class_waypoints.html#a3087951b9c0727ba23d553e6c56333b8">Waypoints</a>
 </li>
-<li>setAsFloat()
-: <a class="el" href="class_a_p___var.html#a7020d3d4f67e959ebf73268c3da5002a">AP_Var&lt; type &gt;</a>
+<li>setB()
+: <a class="el" href="class_a_p___var_i.html#a6ffa81fd83ca84a595f61bf39cc34216">AP_VarI</a>
+, <a class="el" href="class_a_p___var.html#aea7699e11298a8f24b2583aa59de5825">AP_Var&lt; type &gt;</a>
+</li>
+<li>setCenter()
+: <a class="el" href="class_a_p___rc_channel.html#a266e93a3d2e6206f1d1d9a32019d4d73">AP_RcChannel</a>
+</li>
+<li>setCh()
+: <a class="el" href="class_a_p___rc_channel.html#af828a01e11f983b06e0d3dd711f6f1d5">AP_RcChannel</a>
 </li>
 <li>SetDeclination()
 : <a class="el" href="class_a_p_m___compass___class.html#a3cd12c69973c69ac290650673edf2f2f">APM_Compass_Class</a>
 , <a class="el" href="class_a_p_m___compass___h_i_l___class.html#a6d2401f53f97379fd1b5bcfd3e2af1e8">APM_Compass_HIL_Class</a>
 </li>
 <li>setEntry()
-: <a class="el" href="class_a_p___e_e_prom_var.html#a8e5973cdc766f532b632926f8df6ebea">AP_EEPromVar&lt; type &gt;</a>
-, <a class="el" href="class_a_p___e_e_prom_entry.html#a6c51b273b301f47d948ad1855757d3e0">AP_EEPromEntry</a>
+: <a class="el" href="class_a_p___e_e_prom_entry_i.html#a2332d2003572df70c939d6a38e5a2b59">AP_EEPromEntryI</a>
+, <a class="el" href="class_a_p___e_e_prom_var.html#a0aec2967e8ff2eac215e332604bcc55e">AP_EEPromVar&lt; type &gt;</a>
+</li>
+<li>setF()
+: <a class="el" href="class_a_p___var_i.html#adfd663865a753f615f8b249b1426b54f">AP_VarI</a>
+, <a class="el" href="class_a_p___var.html#ae67a45d5b0ab1b2156e67635d39574ed">AP_Var&lt; type &gt;</a>
+</li>
+<li>setFilter()
+: <a class="el" href="class_a_p___rc_channel.html#ace7e0286e606c6c70009c88cb31ce4b6">AP_RcChannel</a>
 </li>
 <li>setHIL()
 : <a class="el" href="class_a_p___a_d_c___h_i_l.html#afa27c576c7cc52fbac840c96b09bb238">AP_ADC_HIL</a>
 , <a class="el" href="class_a_p___compass___h_i_l.html#a3a78f477d793be7840a2170de8f202d8">AP_Compass_HIL</a>
 , <a class="el" href="class_a_p___g_p_s___h_i_l.html#a11627ea1018d6ba502dcf2bf6a632436">AP_GPS_HIL</a>
-, <a class="el" href="class_a_p_m___b_m_p085___h_i_l___class.html#ab7347e78346237218e6c66f8f784cda9">APM_BMP085_HIL_Class</a>
 , <a class="el" href="class_a_p_m___compass___h_i_l___class.html#a09cce864c13d6e4339355be7407b2ded">APM_Compass_HIL_Class</a>
 </li>
 <li>setHil()
 : <a class="el" href="class_a_p___d_c_m___h_i_l.html#a37a3ab07ddbb929f0b9feaa929a1c8ad">AP_DCM_HIL</a>
 </li>
+<li>setHIL()
+: <a class="el" href="class_a_p_m___b_m_p085___h_i_l___class.html#ab7347e78346237218e6c66f8f784cda9">APM_BMP085_HIL_Class</a>
+</li>
+<li>setI()
+: <a class="el" href="class_a_p___var_i.html#ab7c748c56e6e935f03579f4b116f50f9">AP_VarI</a>
+, <a class="el" href="class_a_p___var.html#adca33b6152a1de871cb76e299a4f3844">AP_Var&lt; type &gt;</a>
+</li>
+<li>setNormalized()
+: <a class="el" href="class_a_p___rc_channel.html#a57154d7bad971e0c92e88e5a001decfd">AP_RcChannel</a>
+</li>
 <li>SetOffsets()
-: <a class="el" href="class_a_p_m___compass___h_i_l___class.html#a9e5b10ebcd78d348ad1bcffd259dbad5">APM_Compass_HIL_Class</a>
-, <a class="el" href="class_a_p_m___compass___class.html#ae8d5a085523f5bcd8beb63143205316f">APM_Compass_Class</a>
+: <a class="el" href="class_a_p_m___compass___class.html#ae8d5a085523f5bcd8beb63143205316f">APM_Compass_Class</a>
+, <a class="el" href="class_a_p_m___compass___h_i_l___class.html#a9e5b10ebcd78d348ad1bcffd259dbad5">APM_Compass_HIL_Class</a>
 </li>
 <li>SetOrientation()
-: <a class="el" href="class_a_p_m___compass___class.html#a3487897e6b4f2c1a1846a9c3de31fc2a">APM_Compass_Class</a>
-, <a class="el" href="class_a_p_m___compass___h_i_l___class.html#abfbf0a66635e77c1b0a49ea82a671f5f">APM_Compass_HIL_Class</a>
+: <a class="el" href="class_a_p_m___compass___h_i_l___class.html#abfbf0a66635e77c1b0a49ea82a671f5f">APM_Compass_HIL_Class</a>
+, <a class="el" href="class_a_p_m___compass___class.html#a3487897e6b4f2c1a1846a9c3de31fc2a">APM_Compass_Class</a>
 </li>
 <li>setPosition()
 : <a class="el" href="class_a_p___rc_channel.html#afeef294037ec90769e82e46d232cefb4">AP_RcChannel</a>
@@ -315,11 +340,27 @@ Here is a list of all class members with links to the classes they belong to:
 <li>setPwm()
 : <a class="el" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">AP_RcChannel</a>
 </li>
+<li>setPwmDeadZone()
+: <a class="el" href="class_a_p___rc_channel.html#afda0852c03161d2cd09536ee4c690b71">AP_RcChannel</a>
+</li>
+<li>setPwmMax()
+: <a class="el" href="class_a_p___rc_channel.html#a0a6ff8625f66658ebc4cb8265132ef77">AP_RcChannel</a>
+</li>
+<li>setPwmMin()
+: <a class="el" href="class_a_p___rc_channel.html#a2421d36f869ce10a1651cb71409f1ed0">AP_RcChannel</a>
+</li>
+<li>setPwmNeutral()
+: <a class="el" href="class_a_p___rc_channel.html#af8b4b03211fe3877ad951214f5fc022b">AP_RcChannel</a>
+</li>
+<li>setScale()
+: <a class="el" href="class_a_p___rc_channel.html#aa6b7c0e14da6689682c2a17ae9603e61">AP_RcChannel</a>
+</li>
 <li>setSize()
 : <a class="el" href="class_vector.html#ac1bf7c63bcdc8714cb0f6c48e4e8d532">Vector&lt; dataType, sumType &gt;</a>
 </li>
 <li>setSync()
-: <a class="el" href="class_a_p___var.html#a76c043beeb6b2d7e82155657f4ac99e1">AP_Var&lt; type &gt;</a>
+: <a class="el" href="class_a_p___var.html#a7ceaa4b6b2ccdc08d65b114bb00c2db5">AP_Var&lt; type &gt;</a>
+, <a class="el" href="class_a_p___var_i.html#a36f98257958da71376d7d7f032fe5da9">AP_VarI</a>
 </li>
 <li>severities
 : <a class="el" href="class_bin_comm.html#a8c143f3c0b16bd5b8079584e64d31355">BinComm</a>
@@ -343,18 +384,19 @@ Here is a list of all class members with links to the classes they belong to:
 <li>solution
 : <a class="el" href="class_a_p___g_p_s___u_b_l_o_x.html#a646e239ba336b76ce553d3ef20fce0ed">AP_GPS_UBLOX</a>
 </li>
-<li>Speed_3d
-: <a class="el" href="class_g_p_s___i_m_u___class.html#a1a80f053ee598a6e2e4ab0f5254601ea">GPS_IMU_Class</a>
-, <a class="el" href="class_g_p_s___n_m_e_a___class.html#ac4e7ca3ebea6ec341c6f6a9ef6c90b4d">GPS_NMEA_Class</a>
-</li>
 <li>speed_3d
 : <a class="el" href="class_g_p_s.html#a39fa3ac4a5d784f63c934cdc37eac8b6">GPS</a>
 </li>
 <li>Speed_3d
-: <a class="el" href="class_g_p_s___u_b_l_o_x___class.html#a4fa6963de3644a58c5a52d44e68118c5">GPS_UBLOX_Class</a>
+: <a class="el" href="class_g_p_s___i_m_u___class.html#a1a80f053ee598a6e2e4ab0f5254601ea">GPS_IMU_Class</a>
+, <a class="el" href="class_g_p_s___u_b_l_o_x___class.html#a4fa6963de3644a58c5a52d44e68118c5">GPS_UBLOX_Class</a>
+, <a class="el" href="class_g_p_s___n_m_e_a___class.html#ac4e7ca3ebea6ec341c6f6a9ef6c90b4d">GPS_NMEA_Class</a>
 </li>
 <li>start()
 : <a class="el" href="class_a_p_m___perf_mon.html#a0eaf0bb85252710f3eabbe977a48e3ac">APM_PerfMon</a>
+</li>
+<li>Start_style
+: <a class="el" href="class_i_m_u.html#aa0586fbba61e2a982c8607171a03f5c7">IMU</a>
 </li>
 <li>StartRead()
 : <a class="el" href="class_data_flash___class.html#af5e4a1c7035f798620666eb58ea29e96">DataFlash_Class</a>
@@ -411,10 +453,10 @@ Here is a list of all class members with links to the classes they belong to:
 , <a class="el" href="struct_bin_comm_1_1msg__version.html#a2753280db17b45d5832e57c694305fa4">BinComm::msg_version</a>
 </li>
 <li>systemType
-: <a class="el" href="struct_bin_comm_1_1msg__version.html#a1f2c165df668985aa723745a7d16e0c7">BinComm::msg_version</a>
-, <a class="el" href="structmsg__version.html#ae60c339939948f5f18008045f624b841">msg_version</a>
+: <a class="el" href="struct_bin_comm_1_1msg__version__request.html#a80b1a84175f1deafbe97071b64368831">BinComm::msg_version_request</a>
+, <a class="el" href="struct_bin_comm_1_1msg__version.html#a1f2c165df668985aa723745a7d16e0c7">BinComm::msg_version</a>
 , <a class="el" href="structmsg__version__request.html#a19e0dad8e1951461915a7753e57343da">msg_version_request</a>
-, <a class="el" href="struct_bin_comm_1_1msg__version__request.html#a80b1a84175f1deafbe97071b64368831">BinComm::msg_version_request</a>
+, <a class="el" href="structmsg__version.html#ae60c339939948f5f18008045f624b841">msg_version</a>
 </li>
 </ul>
 </div>

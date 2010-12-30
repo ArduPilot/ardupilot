@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_GPS/GPS.h Source File</title>
+<title>ArduPilot Libraries: GPS.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_GPS/GPS.h</h1>  </div>
+<h1>GPS.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_g_p_s_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-</span>
@@ -43,42 +44,42 @@
 <a name="l00015"></a>00015 {
 <a name="l00016"></a>00016 <span class="keyword">public</span>:
 <a name="l00017"></a>00017 
-<a name="l00025"></a><a class="code" href="class_g_p_s.html#a8ba9e9e496efbaf3524b0bf47302aee3">00025</a>         <a class="code" href="class_g_p_s.html#a8ba9e9e496efbaf3524b0bf47302aee3">GPS</a>(<a class="code" href="class_stream.html">Stream</a> *s) : <a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee" title="port the GPS is attached to">_port</a>(s) {};
+<a name="l00025"></a>00025         <span class="keywordtype">void</span>                    <a class="code" href="class_g_p_s.html#a05a534e0c72a450d6c9ae6207513e59a">update</a>(<span class="keywordtype">void</span>);
 <a name="l00026"></a>00026 
-<a name="l00034"></a>00034         <span class="keywordtype">void</span>                    <a class="code" href="class_g_p_s.html#a05a534e0c72a450d6c9ae6207513e59a">update</a>(<span class="keywordtype">void</span>);
-<a name="l00035"></a>00035 
-<a name="l00040"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">00040</a>         <span class="keyword">enum</span> <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">GPS_Status</a> {
-<a name="l00041"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0ac0fa717d7b54a06e36c2b30644001dae">00041</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0ac0fa717d7b54a06e36c2b30644001dae" title="No GPS connected/detected.">NO_GPS</a> = 0,             
-<a name="l00042"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0a81bda4cd96be8b2577fc963c6ba23fa8">00042</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0a81bda4cd96be8b2577fc963c6ba23fa8" title="Receiving valid GPS messages but no lock.">NO_FIX</a> = 1,             
-<a name="l00043"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0abd7c07383a51c659af88b8b7bd0df240">00043</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0abd7c07383a51c659af88b8b7bd0df240" title="Receiving valid messages and locked.">GPS_OK</a> = 2              
-<a name="l00044"></a>00044         };
+<a name="l00031"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">00031</a>         <span class="keyword">enum</span> <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">GPS_Status</a> {
+<a name="l00032"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0ac0fa717d7b54a06e36c2b30644001dae">00032</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0ac0fa717d7b54a06e36c2b30644001dae" title="No GPS connected/detected.">NO_GPS</a> = 0,             
+<a name="l00033"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0a81bda4cd96be8b2577fc963c6ba23fa8">00033</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0a81bda4cd96be8b2577fc963c6ba23fa8" title="Receiving valid GPS messages but no lock.">NO_FIX</a> = 1,             
+<a name="l00034"></a><a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0abd7c07383a51c659af88b8b7bd0df240">00034</a>                 <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0abd7c07383a51c659af88b8b7bd0df240" title="Receiving valid messages and locked.">GPS_OK</a> = 2              
+<a name="l00035"></a>00035         };
+<a name="l00036"></a>00036 
+<a name="l00044"></a><a class="code" href="class_g_p_s.html#a0678132b5dba41a2e53c3398cd0492c3">00044</a>         <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">GPS_Status</a>              <a class="code" href="class_g_p_s.html#a0678132b5dba41a2e53c3398cd0492c3">status</a>(<span class="keywordtype">void</span>) { <span class="keywordflow">return</span> _status; }
 <a name="l00045"></a>00045 
-<a name="l00053"></a><a class="code" href="class_g_p_s.html#a0678132b5dba41a2e53c3398cd0492c3">00053</a>         <a class="code" href="class_g_p_s.html#aa3c9862ff33053e317f423a398bd92c0">GPS_Status</a>              <a class="code" href="class_g_p_s.html#a0678132b5dba41a2e53c3398cd0492c3">status</a>(<span class="keywordtype">void</span>) { <span class="keywordflow">return</span> _status; }
+<a name="l00053"></a>00053         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_g_p_s.html#a2aecc2de1271d131b132ad2e259101ad">init</a>(<span class="keywordtype">void</span>) = 0;
 <a name="l00054"></a>00054 
-<a name="l00062"></a>00062         <span class="keyword">virtual</span> <span class="keywordtype">void</span>    <a class="code" href="class_g_p_s.html#a2aecc2de1271d131b132ad2e259101ad">init</a>(<span class="keywordtype">void</span>) = 0;
-<a name="l00063"></a>00063 
-<a name="l00064"></a>00064         <span class="comment">// Properties</span>
-<a name="l00065"></a><a class="code" href="class_g_p_s.html#a5400664cf0d912138e91260cbd2b3fa0">00065</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a5400664cf0d912138e91260cbd2b3fa0" title="GPS time in milliseconds from the start of the week.">time</a>;                   
-<a name="l00066"></a><a class="code" href="class_g_p_s.html#aa5df9c7bd452a9689054e55ec90dfef1">00066</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aa5df9c7bd452a9689054e55ec90dfef1" title="latitude in degrees * 10,000,000">latitude</a>;               
-<a name="l00067"></a><a class="code" href="class_g_p_s.html#ae64cbfd073326bd5ec8a6d0a1bae2746">00067</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#ae64cbfd073326bd5ec8a6d0a1bae2746" title="longitude in degrees * 10,000,000">longitude</a>;              
-<a name="l00068"></a><a class="code" href="class_g_p_s.html#aaf73c8b7f3a10e7c37432448ad6582b2">00068</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aaf73c8b7f3a10e7c37432448ad6582b2" title="altitude in cm">altitude</a>;               
-<a name="l00069"></a><a class="code" href="class_g_p_s.html#aba8ad9c8dd3aac81d0e3e2b25ef304c0">00069</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aba8ad9c8dd3aac81d0e3e2b25ef304c0" title="ground speed in cm/sec">ground_speed</a>;   
-<a name="l00070"></a><a class="code" href="class_g_p_s.html#a223b8bf1d912252c15aff621c37d00e3">00070</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a223b8bf1d912252c15aff621c37d00e3" title="ground course in 100ths of a degree">ground_course</a>;  
-<a name="l00071"></a><a class="code" href="class_g_p_s.html#a39fa3ac4a5d784f63c934cdc37eac8b6">00071</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a39fa3ac4a5d784f63c934cdc37eac8b6" title="3D speed in cm/sec (not always available)">speed_3d</a>;               
-<a name="l00072"></a><a class="code" href="class_g_p_s.html#a354808671a37cd3d8681e51a7d809bcb">00072</a>         <span class="keywordtype">int</span>             <a class="code" href="class_g_p_s.html#a354808671a37cd3d8681e51a7d809bcb" title="horizontal dilution of precision in cm">hdop</a>;                   
-<a name="l00073"></a><a class="code" href="class_g_p_s.html#ada1d7424a7a9afa17cfffcd73f741971">00073</a>         uint8_t <a class="code" href="class_g_p_s.html#ada1d7424a7a9afa17cfffcd73f741971" title="Number of visible satelites.">num_sats</a>;               
+<a name="l00055"></a>00055         <span class="comment">// Properties</span>
+<a name="l00056"></a><a class="code" href="class_g_p_s.html#a5400664cf0d912138e91260cbd2b3fa0">00056</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a5400664cf0d912138e91260cbd2b3fa0" title="GPS time in milliseconds from the start of the week.">time</a>;                   
+<a name="l00057"></a><a class="code" href="class_g_p_s.html#aa5df9c7bd452a9689054e55ec90dfef1">00057</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aa5df9c7bd452a9689054e55ec90dfef1" title="latitude in degrees * 10,000,000">latitude</a>;               
+<a name="l00058"></a><a class="code" href="class_g_p_s.html#ae64cbfd073326bd5ec8a6d0a1bae2746">00058</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#ae64cbfd073326bd5ec8a6d0a1bae2746" title="longitude in degrees * 10,000,000">longitude</a>;              
+<a name="l00059"></a><a class="code" href="class_g_p_s.html#aaf73c8b7f3a10e7c37432448ad6582b2">00059</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aaf73c8b7f3a10e7c37432448ad6582b2" title="altitude in cm">altitude</a>;               
+<a name="l00060"></a><a class="code" href="class_g_p_s.html#aba8ad9c8dd3aac81d0e3e2b25ef304c0">00060</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#aba8ad9c8dd3aac81d0e3e2b25ef304c0" title="ground speed in cm/sec">ground_speed</a>;   
+<a name="l00061"></a><a class="code" href="class_g_p_s.html#a223b8bf1d912252c15aff621c37d00e3">00061</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a223b8bf1d912252c15aff621c37d00e3" title="ground course in 100ths of a degree">ground_course</a>;  
+<a name="l00062"></a><a class="code" href="class_g_p_s.html#a39fa3ac4a5d784f63c934cdc37eac8b6">00062</a>         <span class="keywordtype">long</span>    <a class="code" href="class_g_p_s.html#a39fa3ac4a5d784f63c934cdc37eac8b6" title="3D speed in cm/sec (not always available)">speed_3d</a>;               
+<a name="l00063"></a><a class="code" href="class_g_p_s.html#a354808671a37cd3d8681e51a7d809bcb">00063</a>         <span class="keywordtype">int</span>             <a class="code" href="class_g_p_s.html#a354808671a37cd3d8681e51a7d809bcb" title="horizontal dilution of precision in cm">hdop</a>;                   
+<a name="l00064"></a><a class="code" href="class_g_p_s.html#ada1d7424a7a9afa17cfffcd73f741971">00064</a>         uint8_t <a class="code" href="class_g_p_s.html#ada1d7424a7a9afa17cfffcd73f741971" title="Number of visible satelites.">num_sats</a>;               
+<a name="l00065"></a>00065 
+<a name="l00069"></a><a class="code" href="class_g_p_s.html#a31aed57ed5fbfbfb0bb1e4105e337b9a">00069</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a31aed57ed5fbfbfb0bb1e4105e337b9a">new_data</a>;
+<a name="l00070"></a>00070 
+<a name="l00071"></a>00071         <span class="comment">// Deprecated properties</span>
+<a name="l00072"></a><a class="code" href="class_g_p_s.html#a0b2a93a9f1d0e234d791177ea5f42078">00072</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a0b2a93a9f1d0e234d791177ea5f42078" title="true if we have a position fix (use status instead)">fix</a>;                    
+<a name="l00073"></a><a class="code" href="class_g_p_s.html#a0f035818b7805f69f62cb1b734d7bf21">00073</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a0f035818b7805f69f62cb1b734d7bf21" title="true if we have seen data from the GPS (use status instead)">valid_read</a>;             
 <a name="l00074"></a>00074 
-<a name="l00078"></a><a class="code" href="class_g_p_s.html#a31aed57ed5fbfbfb0bb1e4105e337b9a">00078</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a31aed57ed5fbfbfb0bb1e4105e337b9a">new_data</a>;
-<a name="l00079"></a>00079 
-<a name="l00080"></a>00080         <span class="comment">// Deprecated properties</span>
-<a name="l00081"></a><a class="code" href="class_g_p_s.html#a0b2a93a9f1d0e234d791177ea5f42078">00081</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a0b2a93a9f1d0e234d791177ea5f42078" title="true if we have a position fix (use status instead)">fix</a>;                    
-<a name="l00082"></a><a class="code" href="class_g_p_s.html#a0f035818b7805f69f62cb1b734d7bf21">00082</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a0f035818b7805f69f62cb1b734d7bf21" title="true if we have seen data from the GPS (use status instead)">valid_read</a>;             
-<a name="l00083"></a>00083 
-<a name="l00084"></a>00084         <span class="comment">// Debug support</span>
-<a name="l00085"></a><a class="code" href="class_g_p_s.html#ab75d2968105736833a2e852a797c52a6">00085</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#ab75d2968105736833a2e852a797c52a6" title="deprecated">print_errors</a>;   
-<a name="l00086"></a>00086 
-<a name="l00087"></a>00087 <span class="keyword">protected</span>:
-<a name="l00088"></a><a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee">00088</a>         <a class="code" href="class_stream.html">Stream</a>  *<a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee" title="port the GPS is attached to">_port</a>;                 
+<a name="l00075"></a>00075         <span class="comment">// Debug support</span>
+<a name="l00076"></a><a class="code" href="class_g_p_s.html#ab75d2968105736833a2e852a797c52a6">00076</a>         <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#ab75d2968105736833a2e852a797c52a6" title="deprecated">print_errors</a>;   
+<a name="l00077"></a>00077 
+<a name="l00078"></a>00078 <span class="keyword">protected</span>:
+<a name="l00079"></a><a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee">00079</a>         <a class="code" href="class_stream.html">Stream</a>  *<a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee" title="port the GPS is attached to">_port</a>;                 
+<a name="l00080"></a>00080 
+<a name="l00088"></a><a class="code" href="class_g_p_s.html#a8ba9e9e496efbaf3524b0bf47302aee3">00088</a>         <a class="code" href="class_g_p_s.html#a8ba9e9e496efbaf3524b0bf47302aee3">GPS</a>(<a class="code" href="class_stream.html">Stream</a> *s) : <a class="code" href="class_g_p_s.html#ab534b33b2596f63c716744b6e258c6ee" title="port the GPS is attached to">_port</a>(s) {};
 <a name="l00089"></a>00089 
 <a name="l00096"></a>00096         <span class="keyword">virtual</span> <span class="keywordtype">bool</span>    <a class="code" href="class_g_p_s.html#a4b99d4f414678d48ecb19a655354cbe5">read</a>(<span class="keywordtype">void</span>) = 0;
 <a name="l00097"></a>00097 
