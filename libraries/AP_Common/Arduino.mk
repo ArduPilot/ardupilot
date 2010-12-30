@@ -167,6 +167,9 @@ SKETCHPDESRCS		:=	$(wildcard $(SRCROOT)/*.pde)
 SKETCHSRCS		:=	$(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
 SKETCHPDE		:=	$(wildcard $(SRCROOT)/$(SKETCH).pde)
 SKETCHCPP		:=	$(BUILDROOT)/$(SKETCH).cpp
+ifeq ($(SKETCHPDE),)
+$(error ERROR: sketch $(SKETCH) is missing $(SKETCH).pde)
+endif
 
 # Sketch object files
 SKETCHOBJS		:=	$(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS)) $(SKETCHCPP)
@@ -441,10 +444,10 @@ define SKETCH_SPLITTER
   (FNR == 1) && printing { 					\
     printf "#line %d \"%s\"\n", FNR, FILENAME;			\
   }								\
-  /^[[:space:]]*\/\*/,/\*\// { 					\
+  /^[ \t\n\r]*\/\*/,/\*\// { 					\
     toggles = 0;						\
   }								\
-  /^[[:space:]]*$$/ || /^[[:space:]]*\/\/.*/ || /^\#.*$$/ { 	\
+  /^[ \t\n\r]*$$/ || /^[ \t\n\r]*\/\/.*/ || /^\#.*$$/ { 	\
     toggles = 0;						\
   }								\
   scanning && toggles { 					\
@@ -472,14 +475,23 @@ endef
 # and backslashes are doubled in the partial patterns to satisfy
 # escaping rules.
 #
+# The space/alnum variables are used to work around the lack of the 
+# [:space:] and [:alnum:] classes in mawk, commonly found on Linux
+# systems.  We cheat and sneak _ into the class as well.
+#
 define SKETCH_PROTOTYPER
   BEGIN {								\
     RS="{";								\
-    type       = "((\\n)|(^))[[:space:]]*[[:alnum:]_]+[[:space:]]+";	\
-    qualifiers = "([[:alnum:]_\\*&]+[[:space:]]*)*";			\
-    name       = "[[:alnum:]_]+[[:space:]]*";				\
-    args       = "\\([[:space:][:alnum:]_,&\\*\\[\\]]*\\)";		\
-    bodycuddle = "[[:space:]]*$$";					\
+    space      = "[ \\t\\n\\r]";					\
+    spaces     = space "+";						\
+    spaceok    = space "*";						\
+    alnum      = "[0-9a-zA-Z_]";					\
+    alnums     = alnum "+";						\
+    type       = "((\\n)|(^))" spaceok alnums spaces;			\
+    qualifiers = "([0-9a-zA-Z_\\*&]+" spaceok ")*";			\
+    name       = alnums spaceok;					\
+    args       = "\\([ \\t\\n\\r0-9a-zA-Z_,&\\*\\[\\]]*\\)";		\
+    bodycuddle = "[ \\t\\n\\r]*$$";					\
     pattern    = type qualifiers name args bodycuddle;			\
   }									\
   match($$0, pattern) {							\
