@@ -41,6 +41,7 @@ AP_DCM::set_compass(Compass *compass)
 void
 AP_DCM::update_DCM(float _G_Dt)
 {
+	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
 	
