@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_Common/AP_Common.h Source File</title>
+<title>ArduPilot Libraries: AP_Common.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_Common/AP_Common.h</h1>  </div>
+<h1>AP_Common.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_a_p___common_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-</span>
@@ -47,116 +48,76 @@
 <a name="l00020"></a>00020 <span class="preprocessor">#include &quot;<a class="code" href="c_09_09_8h.html">c++.h</a>&quot;</span> <span class="comment">// c++ additions</span>
 <a name="l00021"></a>00021 <span class="preprocessor">#include &quot;<a class="code" href="_a_p___vector_8h.html">AP_Vector.h</a>&quot;</span>
 <a name="l00022"></a>00022 <span class="preprocessor">#include &quot;<a class="code" href="_a_p___loop_8h.html">AP_Loop.h</a>&quot;</span>
-<a name="l00023"></a>00023 
-<a name="l00026"></a>00026 
-<a name="l00027"></a>00027 <span class="comment">//</span>
-<a name="l00028"></a>00028 <span class="comment">// Turn on/off warnings of interest.</span>
-<a name="l00029"></a>00029 <span class="comment">//</span>
-<a name="l00030"></a>00030 <span class="comment">// These warnings are normally suppressed by the Arduino IDE,</span>
-<a name="l00031"></a>00031 <span class="comment">// but with some minor hacks it&#39;s possible to have warnings</span>
-<a name="l00032"></a>00032 <span class="comment">// emitted.  This helps greatly when diagnosing subtle issues.</span>
-<a name="l00033"></a>00033 <span class="comment">//</span>
-<a name="l00034"></a>00034 <span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wall&quot;</span>
-<a name="l00035"></a>00035 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wextra&quot;</span>
-<a name="l00036"></a>00036 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wlogical-op&quot;</span>
-<a name="l00037"></a>00037 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic ignored &quot;-Wredundant-decls&quot;</span>
-<a name="l00038"></a>00038 <span class="preprocessor"></span>
-<a name="l00039"></a>00039 <span class="comment">// Make some dire warnings into errors</span>
-<a name="l00040"></a>00040 <span class="comment">//</span>
-<a name="l00041"></a>00041 <span class="comment">// Some warnings indicate questionable code; rather than let</span>
-<a name="l00042"></a>00042 <span class="comment">// these slide, we force them to become errors so that the</span>
-<a name="l00043"></a>00043 <span class="comment">// developer has to find a safer alternative.</span>
-<a name="l00044"></a>00044 <span class="comment">//</span>
-<a name="l00045"></a>00045 <span class="preprocessor">#pragma GCC diagnostic error &quot;-Wfloat-equal&quot;</span>
-<a name="l00046"></a>00046 <span class="preprocessor"></span>
-<a name="l00047"></a>00047 <span class="comment">// The following is strictly for type-checking arguments to printf_P calls</span>
-<a name="l00048"></a>00048 <span class="comment">// in conjunction with a suitably modified Arduino IDE; never define for</span>
-<a name="l00049"></a>00049 <span class="comment">// production as it generates bad code.</span>
-<a name="l00050"></a>00050 <span class="comment">//</span>
-<a name="l00051"></a>00051 <span class="preprocessor">#if PRINTF_FORMAT_WARNING_DEBUG</span>
-<a name="l00052"></a>00052 <span class="preprocessor"></span><span class="preprocessor"># undef PSTR</span>
-<a name="l00053"></a>00053 <span class="preprocessor"></span><span class="preprocessor"># define PSTR(_x)               _x              // help the compiler with printf_P</span>
-<a name="l00054"></a>00054 <span class="preprocessor"></span><span class="preprocessor"># define float double                   // silence spurious format warnings for %f</span>
-<a name="l00055"></a>00055 <span class="preprocessor"></span><span class="preprocessor">#else</span>
-<a name="l00056"></a>00056 <span class="preprocessor"></span><span class="comment">// This is a workaround for GCC bug c++/34734.</span>
-<a name="l00057"></a>00057 <span class="comment">//</span>
-<a name="l00058"></a>00058 <span class="comment">// The C++ compiler normally emits many spurious warnings for the use</span>
-<a name="l00059"></a>00059 <span class="comment">// of PSTR (even though it generates correct code).  This workaround</span>
-<a name="l00060"></a>00060 <span class="comment">// has an equivalent effect but avoids the warnings, which otherwise</span>
-<a name="l00061"></a>00061 <span class="comment">// make finding real issues difficult.</span>
-<a name="l00062"></a>00062 <span class="comment">//</span>
-<a name="l00063"></a>00063 <span class="preprocessor"># undef PROGMEM </span>
-<a name="l00064"></a><a class="code" href="_a_p___common_8h.html#a75acaba9e781937468d0911423bc0c35">00064</a> <span class="preprocessor"></span><span class="preprocessor"># define PROGMEM __attribute__(( section(&quot;.progmem.data&quot;) )) </span>
-<a name="l00065"></a>00065 <span class="preprocessor"></span><span class="preprocessor"># undef PSTR </span>
-<a name="l00066"></a><a class="code" href="_a_p___common_8h.html#a05ca900ebf7cd121be73c654d9ccb3eb">00066</a> <span class="preprocessor"></span><span class="preprocessor"># define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &amp;__c[0];})) </span>
-<a name="l00067"></a>00067 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
-<a name="l00068"></a>00068 <span class="preprocessor"></span>
+<a name="l00023"></a>00023 <span class="preprocessor">#include &quot;<a class="code" href="_a_p___var_8h.html">AP_Var.h</a>&quot;</span>
+<a name="l00024"></a>00024 
+<a name="l00027"></a>00027 
+<a name="l00028"></a>00028 <span class="comment">//</span>
+<a name="l00029"></a>00029 <span class="comment">// Turn on/off warnings of interest.</span>
+<a name="l00030"></a>00030 <span class="comment">//</span>
+<a name="l00031"></a>00031 <span class="comment">// These warnings are normally suppressed by the Arduino IDE,</span>
+<a name="l00032"></a>00032 <span class="comment">// but with some minor hacks it&#39;s possible to have warnings</span>
+<a name="l00033"></a>00033 <span class="comment">// emitted.  This helps greatly when diagnosing subtle issues.</span>
+<a name="l00034"></a>00034 <span class="comment">//</span>
+<a name="l00035"></a>00035 <span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wall&quot;</span>
+<a name="l00036"></a>00036 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wextra&quot;</span>
+<a name="l00037"></a>00037 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic warning &quot;-Wlogical-op&quot;</span>
+<a name="l00038"></a>00038 <span class="preprocessor"></span><span class="preprocessor">#pragma GCC diagnostic ignored &quot;-Wredundant-decls&quot;</span>
+<a name="l00039"></a>00039 <span class="preprocessor"></span>
+<a name="l00040"></a>00040 <span class="comment">// Make some dire warnings into errors</span>
+<a name="l00041"></a>00041 <span class="comment">//</span>
+<a name="l00042"></a>00042 <span class="comment">// Some warnings indicate questionable code; rather than let</span>
+<a name="l00043"></a>00043 <span class="comment">// these slide, we force them to become errors so that the</span>
+<a name="l00044"></a>00044 <span class="comment">// developer has to find a safer alternative.</span>
+<a name="l00045"></a>00045 <span class="comment">//</span>
+<a name="l00046"></a>00046 <span class="preprocessor">#pragma GCC diagnostic error &quot;-Wfloat-equal&quot;</span>
+<a name="l00047"></a>00047 <span class="preprocessor"></span>
+<a name="l00048"></a>00048 <span class="comment">// The following is strictly for type-checking arguments to printf_P calls</span>
+<a name="l00049"></a>00049 <span class="comment">// in conjunction with a suitably modified Arduino IDE; never define for</span>
+<a name="l00050"></a>00050 <span class="comment">// production as it generates bad code.</span>
+<a name="l00051"></a>00051 <span class="comment">//</span>
+<a name="l00052"></a>00052 <span class="preprocessor">#if PRINTF_FORMAT_WARNING_DEBUG</span>
+<a name="l00053"></a>00053 <span class="preprocessor"></span><span class="preprocessor"># undef PSTR</span>
+<a name="l00054"></a>00054 <span class="preprocessor"></span><span class="preprocessor"># define PSTR(_x)               _x              // help the compiler with printf_P</span>
+<a name="l00055"></a>00055 <span class="preprocessor"></span><span class="preprocessor"># define float double                   // silence spurious format warnings for %f</span>
+<a name="l00056"></a>00056 <span class="preprocessor"></span><span class="preprocessor">#else</span>
+<a name="l00057"></a>00057 <span class="preprocessor"></span><span class="comment">// This is a workaround for GCC bug c++/34734.</span>
+<a name="l00058"></a>00058 <span class="comment">//</span>
+<a name="l00059"></a>00059 <span class="comment">// The C++ compiler normally emits many spurious warnings for the use</span>
+<a name="l00060"></a>00060 <span class="comment">// of PSTR (even though it generates correct code).  This workaround</span>
+<a name="l00061"></a>00061 <span class="comment">// has an equivalent effect but avoids the warnings, which otherwise</span>
+<a name="l00062"></a>00062 <span class="comment">// make finding real issues difficult.</span>
+<a name="l00063"></a>00063 <span class="comment">//</span>
+<a name="l00064"></a>00064 <span class="preprocessor"># undef PROGMEM</span>
+<a name="l00065"></a><a class="code" href="_a_p___common_8h.html#a75acaba9e781937468d0911423bc0c35">00065</a> <span class="preprocessor"></span><span class="preprocessor"># define PROGMEM __attribute__(( section(&quot;.progmem.data&quot;) ))</span>
+<a name="l00066"></a>00066 <span class="preprocessor"></span><span class="preprocessor"># undef PSTR</span>
+<a name="l00067"></a><a class="code" href="_a_p___common_8h.html#a05ca900ebf7cd121be73c654d9ccb3eb">00067</a> <span class="preprocessor"></span><span class="preprocessor"># define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &amp;__c[0];}))</span>
+<a name="l00068"></a>00068 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00069"></a>00069 <span class="preprocessor"></span>
 <a name="l00070"></a>00070 
-<a name="l00076"></a>00076 
+<a name="l00074"></a>00074 <span class="preprocessor">#define ToRad(x) (x*0.01745329252)      // *pi/180</span>
+<a name="l00075"></a>00075 <span class="preprocessor"></span><span class="preprocessor">#define ToDeg(x) (x*57.2957795131)      // *180/pi</span>
+<a name="l00076"></a>00076 <span class="preprocessor"></span><span class="comment">// @}</span>
 <a name="l00077"></a>00077 
-<a name="l00078"></a><a class="code" href="struct_location.html">00078</a> <span class="keyword">struct </span><a class="code" href="struct_location.html">Location</a> {
-<a name="l00079"></a><a class="code" href="struct_location.html#a593656d91e577815782c34c538d9d3e8">00079</a>         uint8_t         <a class="code" href="struct_location.html#a593656d91e577815782c34c538d9d3e8" title="command id">id</a>;                                     
-<a name="l00080"></a><a class="code" href="struct_location.html#a37174be5ef591767697043ca8b95155c">00080</a>         uint8_t         <a class="code" href="struct_location.html#a37174be5ef591767697043ca8b95155c" title="param 1">p1</a>;                                     
-<a name="l00081"></a><a class="code" href="struct_location.html#a89e532f5bcc13db2f51ff9eed667c2b6">00081</a>         int32_t         <a class="code" href="struct_location.html#a89e532f5bcc13db2f51ff9eed667c2b6" title="param 2 - Altitude in centimeters (meters * 100)">alt</a>;                            
-<a name="l00082"></a><a class="code" href="struct_location.html#ae51548c2cf32311043ca19b94b9a9223">00082</a>         int32_t         <a class="code" href="struct_location.html#ae51548c2cf32311043ca19b94b9a9223" title="param 3 - Lattitude * 10**7">lat</a>;                            
-<a name="l00083"></a><a class="code" href="struct_location.html#a5831f0aca9e51a15adb96fad465f72f8">00083</a>         int32_t         <a class="code" href="struct_location.html#a5831f0aca9e51a15adb96fad465f72f8" title="param 4 - Longitude * 10**7">lng</a>;                            
-<a name="l00084"></a>00084 };
+<a name="l00078"></a>00078 
+<a name="l00084"></a>00084 
 <a name="l00085"></a>00085 
-<a name="l00091"></a>00091 <span class="keyword">template</span>  &lt;<span class="keyword">class</span> type&gt;
-<a name="l00092"></a><a class="code" href="class_a_p___var.html">00092</a> <span class="keyword">class </span><a class="code" href="class_a_p___var.html">AP_Var</a>
-<a name="l00093"></a>00093 {
-<a name="l00094"></a>00094 <span class="keyword">public</span>:
-<a name="l00098"></a><a class="code" href="class_a_p___var.html#a76488dc07d01ace3bf34ec4e00c3a061">00098</a>         <a class="code" href="class_a_p___var.html#a76488dc07d01ace3bf34ec4e00c3a061">AP_Var</a>(<span class="keyword">const</span> type &amp; data, <span class="keyword">const</span> <span class="keywordtype">char</span> * name = <span class="stringliteral">&quot;&quot;</span>, <span class="keyword">const</span> <span class="keywordtype">bool</span> &amp; sync=<span class="keyword">false</span>) : 
-<a name="l00099"></a>00099                 <a class="code" href="class_a_p___var.html#a03988b519ae71a3d59a74dede0b015f3">_data</a>(data), <a class="code" href="class_a_p___var.html#a0df623830e9c63d95c840f9b8c1d65d6">_name</a>(name), <a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a>(sync)
-<a name="l00100"></a>00100         {
-<a name="l00101"></a>00101         }
+<a name="l00086"></a><a class="code" href="struct_location.html">00086</a> <span class="keyword">struct </span><a class="code" href="struct_location.html">Location</a> {
+<a name="l00087"></a><a class="code" href="struct_location.html#a593656d91e577815782c34c538d9d3e8">00087</a>         uint8_t         <a class="code" href="struct_location.html#a593656d91e577815782c34c538d9d3e8" title="command id">id</a>;                                     
+<a name="l00088"></a><a class="code" href="struct_location.html#a37174be5ef591767697043ca8b95155c">00088</a>         uint8_t         <a class="code" href="struct_location.html#a37174be5ef591767697043ca8b95155c" title="param 1">p1</a>;                                     
+<a name="l00089"></a><a class="code" href="struct_location.html#a89e532f5bcc13db2f51ff9eed667c2b6">00089</a>         int32_t         <a class="code" href="struct_location.html#a89e532f5bcc13db2f51ff9eed667c2b6" title="param 2 - Altitude in centimeters (meters * 100)">alt</a>;                            
+<a name="l00090"></a><a class="code" href="struct_location.html#ae51548c2cf32311043ca19b94b9a9223">00090</a>         int32_t         <a class="code" href="struct_location.html#ae51548c2cf32311043ca19b94b9a9223" title="param 3 - Lattitude * 10**7">lat</a>;                            
+<a name="l00091"></a><a class="code" href="struct_location.html#a5831f0aca9e51a15adb96fad465f72f8">00091</a>         int32_t         <a class="code" href="struct_location.html#a5831f0aca9e51a15adb96fad465f72f8" title="param 4 - Longitude * 10**7">lng</a>;                            
+<a name="l00092"></a>00092 };
+<a name="l00093"></a>00093 
+<a name="l00095"></a>00095 
+<a name="l00101"></a>00101 
 <a name="l00102"></a>00102 
-<a name="l00106"></a><a class="code" href="class_a_p___var.html#ac6d45de415b68d734876f3e4dd1e19f4">00106</a>         <span class="keywordtype">void</span> <span class="keyword">set</span>(<span class="keyword">const</span> type &amp; val) {
-<a name="l00107"></a>00107                 <a class="code" href="class_a_p___var.html#a03988b519ae71a3d59a74dede0b015f3">_data</a> = val; 
-<a name="l00108"></a>00108                 <span class="keywordflow">if</span> (<a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a>) <a class="code" href="class_a_p___var.html#afa88a5ff01e70d17529c683016d62456">save</a>();
-<a name="l00109"></a>00109         }
+<a name="l00105"></a><a class="code" href="_a_p___common_8h.html#a3c9d151923236c7e8ccccf86f131e550">00105</a> <span class="preprocessor">#define ToDeg(x) (x*57.2957795131)      // *180/pi</span>
+<a name="l00106"></a><a class="code" href="_a_p___common_8h.html#a728f9499baea61e7df3ae70a374f2512">00106</a> <span class="preprocessor"></span><span class="preprocessor">#define ToRad(x) (x*0.01745329252)      // *pi/180</span>
+<a name="l00107"></a>00107 <span class="preprocessor"></span>
+<a name="l00109"></a>00109 
 <a name="l00110"></a>00110 
-<a name="l00114"></a><a class="code" href="class_a_p___var.html#a22c498cc35d5d69d1e4840bd4d9bacab">00114</a>         <span class="keyword">const</span> type &amp; <span class="keyword">get</span>() {
-<a name="l00115"></a>00115                 <span class="keywordflow">if</span> (<a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a>) <a class="code" href="class_a_p___var.html#aa885a4c96d6e7b099bde8bde5669e407">load</a>();
-<a name="l00116"></a>00116                 <span class="keywordflow">return</span> <a class="code" href="class_a_p___var.html#a03988b519ae71a3d59a74dede0b015f3">_data</a>;
-<a name="l00117"></a>00117         }
-<a name="l00118"></a>00118 
-<a name="l00122"></a><a class="code" href="class_a_p___var.html#a7020d3d4f67e959ebf73268c3da5002a">00122</a>         <span class="keywordtype">void</span> <a class="code" href="class_a_p___var.html#a7020d3d4f67e959ebf73268c3da5002a">setAsFloat</a>(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp; val) {
-<a name="l00123"></a>00123                 <span class="keyword">set</span>(val);
-<a name="l00124"></a>00124         }
-<a name="l00125"></a>00125 
-<a name="l00129"></a><a class="code" href="class_a_p___var.html#a1677d6dcfb4ea5d6780633b60c94419d">00129</a>         <span class="keyword">const</span> <span class="keywordtype">float</span> &amp; <a class="code" href="class_a_p___var.html#a1677d6dcfb4ea5d6780633b60c94419d">getAsFloat</a>() {
-<a name="l00130"></a>00130                 <span class="keywordflow">return</span> <span class="keyword">get</span>();
-<a name="l00131"></a>00131         }
-<a name="l00132"></a>00132 
-<a name="l00133"></a>00133 
-<a name="l00137"></a><a class="code" href="class_a_p___var.html#afa88a5ff01e70d17529c683016d62456">00137</a>         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___var.html#afa88a5ff01e70d17529c683016d62456">save</a>()
-<a name="l00138"></a>00138         {
-<a name="l00139"></a>00139         }
-<a name="l00140"></a>00140 
-<a name="l00144"></a><a class="code" href="class_a_p___var.html#aa885a4c96d6e7b099bde8bde5669e407">00144</a>         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___var.html#aa885a4c96d6e7b099bde8bde5669e407">load</a>()
-<a name="l00145"></a>00145         {
-<a name="l00146"></a>00146         }
-<a name="l00147"></a>00147 
-<a name="l00151"></a><a class="code" href="class_a_p___var.html#aedd42dd2270968c5f834d851d7eee0dd">00151</a>         <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___var.html#aedd42dd2270968c5f834d851d7eee0dd">getName</a>() { <span class="keywordflow">return</span> <a class="code" href="class_a_p___var.html#a0df623830e9c63d95c840f9b8c1d65d6">_name</a>; }
-<a name="l00152"></a>00152 
-<a name="l00157"></a><a class="code" href="class_a_p___var.html#aa59a0e6a2da3cdbbf97cde09bb437af4">00157</a>         <span class="keyword">const</span> <span class="keywordtype">bool</span> &amp; <a class="code" href="class_a_p___var.html#aa59a0e6a2da3cdbbf97cde09bb437af4">getSync</a>() { <span class="keywordflow">return</span> <a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a>; }
-<a name="l00158"></a><a class="code" href="class_a_p___var.html#a76c043beeb6b2d7e82155657f4ac99e1">00158</a>         <span class="keywordtype">void</span> <a class="code" href="class_a_p___var.html#a76c043beeb6b2d7e82155657f4ac99e1">setSync</a>(<span class="keywordtype">bool</span> sync) { <a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a> = sync; }
-<a name="l00159"></a>00159 
-<a name="l00160"></a>00160 <span class="keyword">protected</span>:
-<a name="l00161"></a><a class="code" href="class_a_p___var.html#a03988b519ae71a3d59a74dede0b015f3">00161</a>         type <a class="code" href="class_a_p___var.html#a03988b519ae71a3d59a74dede0b015f3">_data</a>; 
-<a name="l00162"></a><a class="code" href="class_a_p___var.html#a0df623830e9c63d95c840f9b8c1d65d6">00162</a>         <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___var.html#a0df623830e9c63d95c840f9b8c1d65d6">_name</a>; 
-<a name="l00163"></a><a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">00163</a>         <span class="keywordtype">bool</span> <a class="code" href="class_a_p___var.html#a45e789309835299b71050fda446b019a">_sync</a>; 
-<a name="l00164"></a>00164 };
-<a name="l00165"></a>00165 
-<a name="l00167"></a>00167 
-<a name="l00173"></a>00173 
-<a name="l00174"></a>00174 
-<a name="l00177"></a><a class="code" href="_a_p___common_8h.html#a3c9d151923236c7e8ccccf86f131e550">00177</a> <span class="preprocessor">#define ToDeg(x) (x*57.2957795131)      // *180/pi</span>
-<a name="l00178"></a>00178 <span class="preprocessor"></span>
-<a name="l00180"></a>00180 
-<a name="l00181"></a>00181 
-<a name="l00182"></a>00182 <span class="preprocessor">#endif // _AP_COMMON_H</span>
+<a name="l00111"></a>00111 <span class="preprocessor">#endif // _AP_COMMON_H</span>
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

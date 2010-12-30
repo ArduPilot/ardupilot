@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -35,19 +36,19 @@
 <h1>AP_EEPromRegistry Class Reference</h1>  </div>
 </div>
 <div class="contents">
-<!-- doxytag: class="AP_EEPromRegistry" --><!-- doxytag: inherits="Vector&lt; AP_EEPromEntry * &gt;" -->
+<!-- doxytag: class="AP_EEPromRegistry" --><!-- doxytag: inherits="Vector&lt; AP_EEPromEntryI * &gt;" -->
 <p>The main EEProm Registry class.  
 <a href="#_details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>&gt;</code></p>
 
-<p>Inherits <a class="el" href="class_vector.html">Vector&lt; AP_EEPromEntry * &gt;</a>.</p>
+<p>Inherits <a class="el" href="class_vector.html">Vector&lt; AP_EEPromEntryI * &gt;</a>.</p>
 <div class="dynheader">
 Collaboration diagram for AP_EEPromRegistry:</div>
 <div class="dyncontent">
 <div class="center"><img src="class_a_p___e_e_prom_registry__coll__graph.png" border="0" usemap="#_a_p___e_e_prom_registry_coll__map" alt="Collaboration graph"/></div>
 <map name="_a_p___e_e_prom_registry_coll__map" id="_a_p___e_e_prom_registry_coll__map">
-<area shape="rect" id="node2" href="class_vector.html" title="Vector\&lt; AP_EEPromEntry * \&gt;" alt="" coords="5,101,216,131"/><area shape="rect" id="node4" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry." alt="" coords="47,5,175,35"/></map>
+<area shape="rect" id="node2" href="class_vector.html" title="Vector\&lt; AP_EEPromEntryI * \&gt;" alt="" coords="5,101,219,131"/><area shape="rect" id="node4" href="class_a_p___e_e_prom_entry_i.html" title="The interface for data entries in the eeprom registry." alt="" coords="47,5,177,35"/></map>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 
 <p><a href="class_a_p___e_e_prom_registry-members.html">List of all members.</a></p>
@@ -56,13 +57,15 @@ Collaboration diagram for AP_EEPromRegistry:</div>
 Public Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd">AP_EEPromRegistry</a> (uint16_t maxSize)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Default constructor.  <a href="#af14f86b2ebd197b4d8631bf13b1405dd"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec">add</a> (<a class="el" href="class_a_p___e_e_prom_entry.html">AP_EEPromEntry</a> *entry, uint16_t &amp;id, uint16_t &amp;address, size_t size)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add an entry to the registry.  <a href="#a7e0faa494537b90fdb67280bf1963cec"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#a3085f6bb3cd5c2ec3d40fecb13632845">add</a> (<a class="el" href="class_a_p___e_e_prom_entry_i.html">AP_EEPromEntryI</a> *entry, uint16_t &amp;id, uint16_t &amp;address, size_t size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add an entry to the registry.  <a href="#a3085f6bb3cd5c2ec3d40fecb13632845"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_registry.html#a022d84aae5c08e2a99f5a87c13bc6702">print</a> (<a class="el" href="class_better_stream.html">BetterStream</a> &amp;stream)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Print on desired serial port.  <a href="#a022d84aae5c08e2a99f5a87c13bc6702"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>The main EEProm Registry class. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00052">52</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00056">56</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="af14f86b2ebd197b4d8631bf13b1405dd"></a><!-- doxytag: member="AP_EEPromRegistry::AP_EEPromRegistry" ref="af14f86b2ebd197b4d8631bf13b1405dd" args="(uint16_t maxSize)" -->
 <div class="memitem">
@@ -82,19 +85,19 @@ Public Member Functions</h2></td></tr>
 
 <p>Default constructor. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00057">57</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00061">61</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
 <hr/><h2>Member Function Documentation</h2>
-<a class="anchor" id="a7e0faa494537b90fdb67280bf1963cec"></a><!-- doxytag: member="AP_EEPromRegistry::add" ref="a7e0faa494537b90fdb67280bf1963cec" args="(AP_EEPromEntry *entry, uint16_t &amp;id, uint16_t &amp;address, size_t size)" -->
+<a class="anchor" id="a3085f6bb3cd5c2ec3d40fecb13632845"></a><!-- doxytag: member="AP_EEPromRegistry::add" ref="a3085f6bb3cd5c2ec3d40fecb13632845" args="(AP_EEPromEntryI *entry, uint16_t &amp;id, uint16_t &amp;address, size_t size)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
           <td class="memname">void AP_EEPromRegistry::add </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="class_a_p___e_e_prom_entry.html">AP_EEPromEntry</a> *&nbsp;</td>
+          <td class="paramtype"><a class="el" href="class_a_p___e_e_prom_entry_i.html">AP_EEPromEntryI</a> *&nbsp;</td>
           <td class="paramname"> <em>entry</em>, </td>
         </tr>
         <tr>
@@ -126,13 +129,35 @@ Public Member Functions</h2></td></tr>
 
 <p>Add an entry to the registry. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8cpp_source.html#l00021">21</a> of file <a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8cpp_source.html#l00035">35</a> of file <a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a022d84aae5c08e2a99f5a87c13bc6702"></a><!-- doxytag: member="AP_EEPromRegistry::print" ref="a022d84aae5c08e2a99f5a87c13bc6702" args="(BetterStream &amp;stream)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void AP_EEPromRegistry::print </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_better_stream.html">BetterStream</a> &amp;&nbsp;</td>
+          <td class="paramname"> <em>stream</em></td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Print on desired serial port. </p>
+
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8cpp_source.html#l00020">20</a> of file <a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/home/jgoppert/Projects/ap/libraries/AP_EEProm/<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a></li>
-<li>/home/jgoppert/Projects/ap/libraries/AP_EEProm/<a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a></li>
+<li><a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a></li>
+<li><a class="el" href="_a_p___e_e_prom_8cpp_source.html">AP_EEProm.cpp</a></li>
 </ul>
 </div>
 <hr class="footer"/><address class="footer"><small>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM.cpp Source File</title>
+<title>ArduPilot Libraries: AP_DCM.cpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_DCM/AP_DCM.cpp</h1>  </div>
+<h1>AP_DCM.cpp</h1>  </div>
 </div>
 <div class="contents">
 <a href="_a_p___d_c_m_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/*</span>
@@ -73,8 +74,8 @@
 <a name="l00041"></a>00041 <span class="keywordtype">void</span>
 <a name="l00042"></a><a class="code" href="class_a_p___d_c_m.html#a9188cdc31e905c85a5f14dcdb063720b">00042</a> <a class="code" href="class_a_p___d_c_m.html#a9188cdc31e905c85a5f14dcdb063720b">AP_DCM::update_DCM</a>(<span class="keywordtype">float</span> _G_Dt)
 <a name="l00043"></a>00043 {
-<a name="l00044"></a>00044         _gyro_vector    = _imu-&gt;<a class="code" href="class_a_p___i_m_u.html#ae3d7b3a78a8720c9a7ca2c85402c7638">get_gyro</a>();                     <span class="comment">// Get current values for IMU sensors</span>
-<a name="l00045"></a>00045         _accel_vector   = _imu-&gt;<a class="code" href="class_a_p___i_m_u.html#a6e9be9f56658410ac972d66b8985de6b">get_accel</a>();                    <span class="comment">// Get current values for IMU sensors</span>
+<a name="l00044"></a>00044         _gyro_vector    = _imu-&gt;<a class="code" href="class_i_m_u.html#aae81f4e2b32ec27d7c3fb1f6b74a177a">get_gyro</a>();                     <span class="comment">// Get current values for IMU sensors</span>
+<a name="l00045"></a>00045         _accel_vector   = _imu-&gt;<a class="code" href="class_i_m_u.html#a8736c63185c19a8fadc86623fd4cd0c7">get_accel</a>();                    <span class="comment">// Get current values for IMU sensors</span>
 <a name="l00046"></a>00046         
 <a name="l00047"></a>00047         matrix_update(_G_Dt);   <span class="comment">// Integrate the DCM matrix</span>
 <a name="l00048"></a>00048         normalize();                    <span class="comment">// Normalize the DCM matrix</span>
@@ -299,7 +300,7 @@
 <a name="l00267"></a>00267                                 <span class="comment">// Ryx = sin psi err, Ryy = cos psi err,   Ryz = 0</span>
 <a name="l00268"></a>00268                                 <span class="comment">// Rzx = Rzy = 0, Rzz = 1</span>
 <a name="l00269"></a>00269                                 rot_mat.<a class="code" href="class_matrix3.html#acd7bf3421047fa155168a9c8e5164a2b">a</a>.<a class="code" href="class_vector3.html#a1a0f7e168c71ca798099f0ba8a444244">x</a> = cos_psi_err;
-<a name="l00270"></a>00270                                 rot_mat.<a class="code" href="class_matrix3.html#acd7bf3421047fa155168a9c8e5164a2b">a</a>.<a class="code" href="class_vector3.html#a561df88b28e106e337a25bb86554a569">y</a> = - sin_psi_err;
+<a name="l00270"></a>00270                                 rot_mat.<a class="code" href="class_matrix3.html#acd7bf3421047fa155168a9c8e5164a2b">a</a>.<a class="code" href="class_vector3.html#a561df88b28e106e337a25bb86554a569">y</a> = -sin_psi_err;
 <a name="l00271"></a>00271                                 rot_mat.<a class="code" href="class_matrix3.html#ae16bed039ad87c3337f15837c33fe2fb">b</a>.<a class="code" href="class_vector3.html#a1a0f7e168c71ca798099f0ba8a444244">x</a> = sin_psi_err;
 <a name="l00272"></a>00272                                 rot_mat.<a class="code" href="class_matrix3.html#ae16bed039ad87c3337f15837c33fe2fb">b</a>.<a class="code" href="class_vector3.html#a561df88b28e106e337a25bb86554a569">y</a> = cos_psi_err;
 <a name="l00273"></a>00273                                 rot_mat.<a class="code" href="class_matrix3.html#acd7bf3421047fa155168a9c8e5164a2b">a</a>.<a class="code" href="class_vector3.html#ab3e7f5401dd6e951978bfa746809f74f">z</a> = 0;

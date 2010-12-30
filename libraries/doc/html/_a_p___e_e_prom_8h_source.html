@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_EEProm/AP_EEProm.h Source File</title>
+<title>ArduPilot Libraries: AP_EEProm.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_EEProm/AP_EEProm.h</h1>  </div>
+<h1>AP_EEProm.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_a_p___e_e_prom_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="preprocessor">#ifndef AP_EEProm_H</span>
@@ -55,64 +56,80 @@
 <a name="l00023"></a>00023 <span class="preprocessor">#include &lt;<a class="code" href="_a_p___vector_8h.html">AP_Vector.h</a>&gt;</span>
 <a name="l00024"></a>00024 <span class="preprocessor">#include &lt;avr/eeprom.h&gt;</span>
 <a name="l00025"></a>00025 <span class="preprocessor">#include &lt;avr/pgmspace.h&gt;</span>
-<a name="l00026"></a>00026 
-<a name="l00028"></a><a class="code" href="class_a_p___e_e_prom_entry.html">00028</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntry</a>
-<a name="l00029"></a>00029 {
-<a name="l00030"></a>00030 <span class="keyword">public</span>:
-<a name="l00034"></a>00034         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_entry.html#a6c51b273b301f47d948ad1855757d3e0">setEntry</a>(<span class="keywordtype">float</span> val) = 0;
-<a name="l00035"></a>00035 
-<a name="l00039"></a>00039         <span class="keyword">virtual</span> <span class="keywordtype">float</span> <a class="code" href="class_a_p___e_e_prom_entry.html#a722469814ddd7cc9cc3a2d4d46993445">getEntry</a>() = 0;
-<a name="l00040"></a>00040 
-<a name="l00042"></a>00042         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_entry.html#a53c9ed1657ac5267c6ddff1dcb8a39ce" title="Pure virtual function for getting entry name.">getEntryName</a>() = 0;
-<a name="l00043"></a>00043 
-<a name="l00045"></a>00045         <span class="keyword">virtual</span> uint16_t <a class="code" href="class_a_p___e_e_prom_entry.html#a1c57da1a313c9006761547e222aad107" title="Get the id of the variable.">getEntryId</a>() = 0;
-<a name="l00046"></a>00046 
-<a name="l00048"></a>00048         <span class="keyword">virtual</span> uint16_t <a class="code" href="class_a_p___e_e_prom_entry.html#a96ac5c98cbdf576746000a003f6a9a7b" title="Get the address of the variable.">getEntryAddress</a>() = 0;
-<a name="l00049"></a>00049 };
+<a name="l00026"></a>00026 <span class="preprocessor">#include &lt;<a class="code" href="_better_stream_8h.html">BetterStream.h</a>&gt;</span>
+<a name="l00027"></a>00027 
+<a name="l00029"></a><a class="code" href="class_a_p___e_e_prom_entry_i.html">00029</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_entry_i.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntryI</a>
+<a name="l00030"></a>00030 {
+<a name="l00031"></a>00031 <span class="keyword">public</span>:
+<a name="l00035"></a>00035         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_entry_i.html#a2332d2003572df70c939d6a38e5a2b59">setEntry</a>(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp; val) = 0;
+<a name="l00036"></a>00036 
+<a name="l00040"></a>00040         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">float</span> <a class="code" href="class_a_p___e_e_prom_entry_i.html#ab4c26ba698e724285eda2c579869e704">getEntry</a>() = 0;
+<a name="l00041"></a>00041 
+<a name="l00043"></a>00043         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_entry_i.html#a28cdd9d0b0301c4e5130f4578367add8" title="Pure virtual function for getting entry name.">getEntryName</a>() = 0;
+<a name="l00044"></a>00044 
+<a name="l00046"></a>00046         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_entry_i.html#a94b21fed51d071e079f89eca9dde6093" title="Pure virtual function for getting entry parent name.">getEntryParentName</a>() = 0;
+<a name="l00047"></a>00047 
+<a name="l00049"></a>00049         <span class="keyword">virtual</span> <span class="keyword">const</span> uint16_t &amp; <a class="code" href="class_a_p___e_e_prom_entry_i.html#a46f615ceaa6c4f2ed6bc30239213d350" title="Get the id of the variable.">getEntryId</a>() = 0;
 <a name="l00050"></a>00050 
-<a name="l00052"></a><a class="code" href="class_a_p___e_e_prom_registry.html">00052</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_registry.html" title="The main EEProm Registry class.">AP_EEPromRegistry</a> : <span class="keyword">public</span> <a class="code" href="class_vector.html">Vector</a>&lt;AP_EEPromEntry *&gt;
-<a name="l00053"></a>00053 {
-<a name="l00054"></a>00054 <span class="keyword">public</span>:
-<a name="l00055"></a>00055 
-<a name="l00057"></a><a class="code" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd">00057</a>         <a class="code" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd" title="Default constructor.">AP_EEPromRegistry</a>(uint16_t maxSize) :
-<a name="l00058"></a>00058                 _newAddress(0), _newId(0), _maxSize(maxSize)
-<a name="l00059"></a>00059         {
-<a name="l00060"></a>00060         }
-<a name="l00061"></a>00061 
-<a name="l00063"></a>00063         <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec" title="Add an entry to the registry.">add</a>(<a class="code" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntry</a> * entry, uint16_t &amp; <span class="keywordtype">id</span>, uint16_t &amp; address, <span class="keywordtype">size_t</span> size);
-<a name="l00064"></a>00064 
-<a name="l00065"></a>00065 <span class="keyword">private</span>:
-<a name="l00066"></a>00066         uint16_t _newAddress; 
-<a name="l00067"></a>00067         uint16_t _newId; 
-<a name="l00068"></a>00068         uint16_t _maxSize; 
-<a name="l00069"></a>00069 };
-<a name="l00070"></a>00070 
-<a name="l00072"></a>00072 <span class="keyword">extern</span> <a class="code" href="class_a_p___e_e_prom_registry.html" title="The main EEProm Registry class.">AP_EEPromRegistry</a> <a class="code" href="_a_p___e_e_prom_8cpp.html#ab9f343c688a095f2819577da1f5c8269">eepromRegistry</a>;
-<a name="l00073"></a>00073 
-<a name="l00077"></a>00077 <span class="keyword">template</span>  &lt;<span class="keyword">class</span> type&gt;
-<a name="l00078"></a><a class="code" href="class_a_p___e_e_prom_var.html">00078</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a> : <span class="keyword">public</span> <a class="code" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntry</a>, <span class="keyword">public</span> <a class="code" href="class_a_p___var.html">AP_Var</a>&lt;type&gt;
-<a name="l00079"></a>00079 {
-<a name="l00080"></a>00080 <span class="keyword">public</span>:
-<a name="l00082"></a><a class="code" href="class_a_p___e_e_prom_var.html#a9717bcdb3d54a67a4f1a252a7940ac07">00082</a>         <a class="code" href="class_a_p___e_e_prom_var.html#a9717bcdb3d54a67a4f1a252a7940ac07" title="The default constrcutor.">AP_EEPromVar</a>(type data = 0, <span class="keyword">const</span> <span class="keywordtype">char</span> * name = <span class="stringliteral">&quot;&quot;</span>, <span class="keywordtype">bool</span> sync=<span class="keyword">false</span>) : 
-<a name="l00083"></a>00083                 <a class="code" href="class_a_p___var.html">AP_Var</a>&lt;type&gt;(data,name,sync)
-<a name="l00084"></a>00084         {
-<a name="l00085"></a>00085                 eepromRegistry.<a class="code" href="class_a_p___e_e_prom_registry.html#a7e0faa494537b90fdb67280bf1963cec" title="Add an entry to the registry.">add</a>(<span class="keyword">this</span>,_id,_address,<span class="keyword">sizeof</span>(type));
-<a name="l00086"></a>00086         }
-<a name="l00087"></a>00087 
-<a name="l00088"></a><a class="code" href="class_a_p___e_e_prom_var.html#a8e5973cdc766f532b632926f8df6ebea">00088</a>         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_var.html#a8e5973cdc766f532b632926f8df6ebea">setEntry</a>(<span class="keywordtype">float</span> val) { this-&gt;<a class="code" href="class_a_p___var.html#a7020d3d4f67e959ebf73268c3da5002a">setAsFloat</a>(val); }
-<a name="l00089"></a><a class="code" href="class_a_p___e_e_prom_var.html#a338b7fbb43e52050585490b82a4525e1">00089</a>         <span class="keyword">virtual</span> <span class="keywordtype">float</span> <a class="code" href="class_a_p___e_e_prom_var.html#a338b7fbb43e52050585490b82a4525e1">getEntry</a>() { <span class="keywordflow">return</span> this-&gt;<a class="code" href="class_a_p___var.html#a1677d6dcfb4ea5d6780633b60c94419d">getAsFloat</a>(); }
-<a name="l00090"></a><a class="code" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">00090</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">getEntryName</a>() { <span class="keywordflow">return</span> this-&gt;<a class="code" href="class_a_p___var.html#aedd42dd2270968c5f834d851d7eee0dd">getName</a>(); }
-<a name="l00091"></a>00091 
-<a name="l00093"></a><a class="code" href="class_a_p___e_e_prom_var.html#a9469b5951e2f1bb3759671100e9be625">00093</a>         <span class="keyword">virtual</span> uint16_t <a class="code" href="class_a_p___e_e_prom_var.html#a9469b5951e2f1bb3759671100e9be625" title="Get the id of the variable.">getEntryId</a>() { <span class="keywordflow">return</span> _id; }
+<a name="l00052"></a>00052         <span class="keyword">virtual</span> <span class="keyword">const</span> uint16_t &amp; <a class="code" href="class_a_p___e_e_prom_entry_i.html#a517ccf3764b745512ae4ea5906102159" title="Get the address of the variable.">getEntryAddress</a>() = 0;
+<a name="l00053"></a>00053 };
+<a name="l00054"></a>00054 
+<a name="l00056"></a><a class="code" href="class_a_p___e_e_prom_registry.html">00056</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_registry.html" title="The main EEProm Registry class.">AP_EEPromRegistry</a> : <span class="keyword">public</span> <a class="code" href="class_vector.html">Vector</a>&lt;AP_EEPromEntryI *&gt;
+<a name="l00057"></a>00057 {
+<a name="l00058"></a>00058 <span class="keyword">public</span>:
+<a name="l00059"></a>00059 
+<a name="l00061"></a><a class="code" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd">00061</a>         <a class="code" href="class_a_p___e_e_prom_registry.html#af14f86b2ebd197b4d8631bf13b1405dd" title="Default constructor.">AP_EEPromRegistry</a>(uint16_t maxSize) :
+<a name="l00062"></a>00062                 _newAddress(0), _newId(0), _maxSize(maxSize)
+<a name="l00063"></a>00063         {
+<a name="l00064"></a>00064         }
+<a name="l00065"></a>00065 
+<a name="l00067"></a>00067         <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_registry.html#a3085f6bb3cd5c2ec3d40fecb13632845" title="Add an entry to the registry.">add</a>(<a class="code" href="class_a_p___e_e_prom_entry_i.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntryI</a> * entry, uint16_t &amp; <span class="keywordtype">id</span>, uint16_t &amp; address, <span class="keywordtype">size_t</span> size);
+<a name="l00068"></a>00068 
+<a name="l00070"></a>00070         <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_registry.html#a022d84aae5c08e2a99f5a87c13bc6702" title="Print on desired serial port.">print</a>(<a class="code" href="class_better_stream.html">BetterStream</a> &amp; stream);
+<a name="l00071"></a>00071 
+<a name="l00072"></a>00072 <span class="keyword">private</span>:
+<a name="l00073"></a>00073         uint16_t _newAddress; 
+<a name="l00074"></a>00074         uint16_t _newId; 
+<a name="l00075"></a>00075         uint16_t _maxSize; 
+<a name="l00076"></a>00076 };
+<a name="l00077"></a>00077 
+<a name="l00079"></a>00079 <span class="keyword">extern</span> <a class="code" href="class_a_p___e_e_prom_registry.html" title="The main EEProm Registry class.">AP_EEPromRegistry</a> <a class="code" href="_a_p___e_e_prom_8cpp.html#ab9f343c688a095f2819577da1f5c8269">eepromRegistry</a>;
+<a name="l00080"></a>00080 
+<a name="l00084"></a>00084 <span class="keyword">template</span>  &lt;<span class="keyword">class</span> type&gt;
+<a name="l00085"></a><a class="code" href="class_a_p___e_e_prom_var.html">00085</a> <span class="keyword">class </span><a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a> : <span class="keyword">public</span> <a class="code" href="class_a_p___e_e_prom_entry_i.html" title="The interface for data entries in the eeprom registry.">AP_EEPromEntryI</a>, <span class="keyword">public</span> <a class="code" href="class_a_p___var.html">AP_Var</a>&lt;type&gt;
+<a name="l00086"></a>00086 {
+<a name="l00087"></a>00087 <span class="keyword">public</span>:
+<a name="l00089"></a><a class="code" href="class_a_p___e_e_prom_var.html#a91a9017701b772d8aa42bdca3a7ead9f">00089</a>         <a class="code" href="class_a_p___e_e_prom_var.html#a91a9017701b772d8aa42bdca3a7ead9f" title="The default constrcutor.">AP_EEPromVar</a>(type data = 0, <span class="keyword">const</span> <span class="keywordtype">char</span> * name = <span class="stringliteral">&quot;&quot;</span>, <span class="keyword">const</span> <span class="keywordtype">char</span> * parentName = <span class="stringliteral">&quot;&quot;</span>, <span class="keywordtype">bool</span> sync=<span class="keyword">false</span>) : 
+<a name="l00090"></a>00090                 <a class="code" href="class_a_p___var.html">AP_Var</a>&lt;type&gt;(data,name,parentName,sync)
+<a name="l00091"></a>00091         {
+<a name="l00092"></a>00092                 eepromRegistry.<a class="code" href="class_a_p___e_e_prom_registry.html#a3085f6bb3cd5c2ec3d40fecb13632845" title="Add an entry to the registry.">add</a>(<span class="keyword">this</span>,_id,_address,<span class="keyword">sizeof</span>(type));
+<a name="l00093"></a>00093         }
 <a name="l00094"></a>00094 
-<a name="l00096"></a><a class="code" href="class_a_p___e_e_prom_var.html#ac450ac8c8ce9fbd0b58224d02c2e65a6">00096</a>         <span class="keyword">virtual</span> uint16_t <a class="code" href="class_a_p___e_e_prom_var.html#ac450ac8c8ce9fbd0b58224d02c2e65a6" title="Get the address of the variable.">getEntryAddress</a>() { <span class="keywordflow">return</span> _address; }
-<a name="l00097"></a>00097 
-<a name="l00098"></a>00098 <span class="keyword">private</span>:
-<a name="l00099"></a>00099         uint16_t _id; 
-<a name="l00100"></a>00100         uint16_t _address;  
-<a name="l00101"></a>00101 };
+<a name="l00095"></a><a class="code" href="class_a_p___e_e_prom_var.html#a0aec2967e8ff2eac215e332604bcc55e">00095</a>         <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="class_a_p___e_e_prom_var.html#a0aec2967e8ff2eac215e332604bcc55e">setEntry</a>(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp; val) { this-&gt;<a class="code" href="class_a_p___var.html#ae67a45d5b0ab1b2156e67635d39574ed" title="Set the variable value as a float.">setF</a>(val); }
+<a name="l00096"></a><a class="code" href="class_a_p___e_e_prom_var.html#ac9cbbb48da0c6aa8fa9afb617c36d246">00096</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">float</span> <a class="code" href="class_a_p___e_e_prom_var.html#ac9cbbb48da0c6aa8fa9afb617c36d246">getEntry</a>() { <span class="keywordflow">return</span> this-&gt;<a class="code" href="class_a_p___var.html#adcc758d2c9fde9cadf7503ce39d9ed8e" title="Get the variable as a float.">getF</a>(); }
+<a name="l00097"></a><a class="code" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">00097</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">getEntryName</a>() { <span class="keywordflow">return</span> this-&gt;<a class="code" href="class_a_p___var.html#a90ee0ac1b5c782c90573bb6ab80e6e99" title="Get the name. This is useful for ground stations.">getName</a>(); }
+<a name="l00098"></a><a class="code" href="class_a_p___e_e_prom_var.html#a74bc14d56744cecea370ad241daeeb12">00098</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keywordtype">char</span> * <a class="code" href="class_a_p___e_e_prom_var.html#a74bc14d56744cecea370ad241daeeb12">getEntryParentName</a>() { <span class="keywordflow">return</span> this-&gt;<a class="code" href="class_a_p___var.html#a1a0a5e721b352ffd92bf59edadfed130" title="Get the parent name. This is also useful for ground stations.">getParentName</a>(); }
+<a name="l00099"></a>00099 
+<a name="l00101"></a><a class="code" href="class_a_p___e_e_prom_var.html#a1fe97ba68a3b80fc40891353e6ed85bf">00101</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> uint16_t &amp; <a class="code" href="class_a_p___e_e_prom_var.html#a1fe97ba68a3b80fc40891353e6ed85bf" title="Get the id of the variable.">getEntryId</a>() { <span class="keywordflow">return</span> _id; }
 <a name="l00102"></a>00102 
-<a name="l00103"></a>00103 <span class="preprocessor">#endif</span>
+<a name="l00104"></a><a class="code" href="class_a_p___e_e_prom_var.html#a9362edcb0c46cdaa04bf06f04ab274b5">00104</a>         <span class="keyword">virtual</span> <span class="keyword">const</span> uint16_t &amp; <a class="code" href="class_a_p___e_e_prom_var.html#a9362edcb0c46cdaa04bf06f04ab274b5" title="Get the address of the variable.">getEntryAddress</a>() { <span class="keywordflow">return</span> _address; }
+<a name="l00105"></a>00105 
+<a name="l00106"></a>00106 <span class="keyword">private</span>:
+<a name="l00107"></a>00107         uint16_t _id; 
+<a name="l00108"></a>00108         uint16_t _address;  
+<a name="l00109"></a>00109 };
+<a name="l00110"></a>00110 
+<a name="l00111"></a><a class="code" href="_a_p___e_e_prom_8h.html#a0d0d0cad20c7b73603be5f142fb38080">00111</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;float&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Float</a>;
+<a name="l00112"></a><a class="code" href="_a_p___e_e_prom_8h.html#a154b1f7e5b76606083ef0d01cd9fe55b">00112</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;int8_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Int8</a>;
+<a name="l00113"></a><a class="code" href="_a_p___e_e_prom_8h.html#a18b11beb7551ba693aa020423edb3923">00113</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;uint8_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint8</a>;
+<a name="l00114"></a><a class="code" href="_a_p___e_e_prom_8h.html#ae8098e90c74a8434a2969f42099b2e73">00114</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;int16_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Int16</a>;
+<a name="l00115"></a><a class="code" href="_a_p___e_e_prom_8h.html#aa23279a53fa9e42e6beb24da77258e8f">00115</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;uint16_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint16</a>;
+<a name="l00116"></a><a class="code" href="_a_p___e_e_prom_8h.html#a3b5a6138f526b51cb099decc2f43d46a">00116</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;int32_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Int32</a>;
+<a name="l00117"></a><a class="code" href="_a_p___e_e_prom_8h.html#affc9d2cc12c9bb7ff00de0e5c2526c6e">00117</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;uint32_t&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Unt32</a>;
+<a name="l00118"></a><a class="code" href="_a_p___e_e_prom_8h.html#a5ae48094725dd607362f165e72aef23e">00118</a> <span class="keyword">typedef</span> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPromVar&lt;bool&gt;</a> <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Bool</a>;
+<a name="l00119"></a>00119 
+<a name="l00120"></a>00120 
+<a name="l00121"></a>00121 <span class="preprocessor">#endif</span>
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/RC_Channel/RC_Channel.h Source File</title>
+<title>ArduPilot Libraries: RC_Channel.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/RC_Channel/RC_Channel.h</h1>  </div>
+<h1>RC_Channel.h</h1>  </div>
 </div>
 <div class="contents">
 <a href="_r_c___channel_8h.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-</span>
@@ -37,96 +38,94 @@
 <a name="l00007"></a>00007 <span class="preprocessor"></span><span class="preprocessor">#define RC_Channel_h</span>
 <a name="l00008"></a>00008 <span class="preprocessor"></span>
 <a name="l00009"></a>00009 <span class="preprocessor">#include &lt;stdint.h&gt;</span>
-<a name="l00010"></a>00010 <span class="preprocessor">#include &lt;<a class="code" href="_a_p___e_e_p_r_o_m_b_8h.html" title="AP_EEPROMB manager.">AP_EEPROMB.h</a>&gt;</span>
-<a name="l00011"></a>00011 
-<a name="l00014"></a><a class="code" href="class_r_c___channel.html">00014</a> <span class="keyword">class </span><a class="code" href="class_r_c___channel.html" title="Object managing one RC channel.">RC_Channel</a>{
-<a name="l00015"></a>00015   <span class="keyword">public</span>:       
-<a name="l00020"></a><a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">00020</a>         <a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">RC_Channel</a>() :
-<a name="l00021"></a>00021                 _address(0)
-<a name="l00022"></a>00022         {}
-<a name="l00023"></a>00023 
-<a name="l00030"></a><a class="code" href="class_r_c___channel.html#adee6bd12d6ccc9756e3480db39dec737">00030</a>         <a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">RC_Channel</a>(uint16_t address) :
-<a name="l00031"></a>00031                 _address(address),
-<a name="l00032"></a>00032                 _high(1),
-<a name="l00033"></a>00033                 _filter(true),
-<a name="l00034"></a>00034                 _reverse(1)
-<a name="l00035"></a>00035         {}
-<a name="l00036"></a>00036 
-<a name="l00037"></a>00037         <span class="comment">// setup min and max radio values in CLI</span>
-<a name="l00038"></a>00038         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a148e078784162a8823f190be7bd9bada">update_min_max</a>();
-<a name="l00039"></a>00039         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#ad9ea651815e47c12203d4f9cfe32abfd">zero_min_max</a>();
-<a name="l00040"></a>00040         
-<a name="l00041"></a>00041         <span class="comment">// startup</span>
-<a name="l00042"></a>00042         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a56117fe9f697096605f84a6045aaa935">load_eeprom</a>(<span class="keywordtype">void</span>);
-<a name="l00043"></a>00043         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#aae26f7c9f60cc08537fffe967510f481">save_eeprom</a>(<span class="keywordtype">void</span>);              
-<a name="l00044"></a>00044         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#afed2cdb2de5fd66cb6eae528e5b6344a">save_trim</a>(<span class="keywordtype">void</span>);                
-<a name="l00045"></a>00045         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a045bff22457093d0c0fa78e19e618f9f">set_filter</a>(<span class="keywordtype">bool</span> filter);
-<a name="l00046"></a>00046 
-<a name="l00047"></a>00047         <span class="comment">// setup the control preferences</span>
-<a name="l00048"></a>00048         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#adffafafffc9027e7293103766229b7e1">set_range</a>(<span class="keywordtype">int</span> low, <span class="keywordtype">int</span> high);
-<a name="l00049"></a>00049         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#ae528ed2a3460fddde82f114cb0694201">set_angle</a>(<span class="keywordtype">int</span> angle);
-<a name="l00050"></a>00050         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a5b3740e7040f4b75d9cd591ebadca4c3">set_reverse</a>(<span class="keywordtype">bool</span> reverse);
-<a name="l00051"></a>00051 
-<a name="l00052"></a>00052         <span class="comment">// read input from APM_RC - create a control_in value</span>
-<a name="l00053"></a>00053         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#aaa0d7cb0b9f9eb833cc46ac5f9192b86">set_pwm</a>(<span class="keywordtype">int</span> pwm);
-<a name="l00054"></a>00054         
-<a name="l00055"></a>00055         <span class="comment">// pwm is stored here</span>
-<a name="l00056"></a><a class="code" href="class_r_c___channel.html#af548fff701d4175c5bdf311526687c05">00056</a>         int16_t         <a class="code" href="class_r_c___channel.html#af548fff701d4175c5bdf311526687c05">radio_in</a>;
-<a name="l00057"></a>00057 
-<a name="l00058"></a>00058         <span class="comment">// call after first set_pwm</span>
-<a name="l00059"></a>00059         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a8cf9c281ef6da9b275f5d682bb18904c">trim</a>();
-<a name="l00060"></a>00060         
-<a name="l00061"></a>00061         <span class="comment">// did our read come in 50µs below the min?</span>
-<a name="l00062"></a>00062         <span class="keywordtype">bool</span>            <a class="code" href="class_r_c___channel.html#a8e699f35b6c0e2524487c93cdef56ba9">get_failsafe</a>(<span class="keywordtype">void</span>);
-<a name="l00063"></a>00063         
-<a name="l00064"></a>00064         <span class="comment">// value generated from PWM</span>
-<a name="l00065"></a><a class="code" href="class_r_c___channel.html#aecc4c9d01e139561076e897af1286c0b">00065</a>         int16_t         <a class="code" href="class_r_c___channel.html#aecc4c9d01e139561076e897af1286c0b">control_in</a>;
-<a name="l00066"></a><a class="code" href="class_r_c___channel.html#aad649dc43957d1c7d563fac50d5ed510">00066</a>         int16_t         <a class="code" href="class_r_c___channel.html#aad649dc43957d1c7d563fac50d5ed510">dead_zone</a>; <span class="comment">// used to keep noise down and create a dead zone.</span>
-<a name="l00067"></a>00067         
-<a name="l00068"></a>00068         <span class="keywordtype">int</span>                     <a class="code" href="class_r_c___channel.html#a8c8933633ace2ad8bfc3a91375f58169">control_mix</a>(<span class="keywordtype">float</span> value);
-<a name="l00069"></a>00069         
-<a name="l00070"></a>00070         <span class="comment">// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100</span>
-<a name="l00071"></a><a class="code" href="class_r_c___channel.html#a3dcd8fce401b9e5825d10705f1608579">00071</a>         int16_t         <a class="code" href="class_r_c___channel.html#a3dcd8fce401b9e5825d10705f1608579">servo_out</a>;
-<a name="l00072"></a>00072 
-<a name="l00073"></a>00073         <span class="comment">// generate PWM from servo_out value</span>
-<a name="l00074"></a>00074         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a5876259d8fb8c1c475322a236bae7819">calc_pwm</a>(<span class="keywordtype">void</span>);
-<a name="l00075"></a>00075 
-<a name="l00076"></a>00076         <span class="comment">// PWM is without the offset from radio_min</span>
-<a name="l00077"></a><a class="code" href="class_r_c___channel.html#ae8a2a575ae23099703ee2206a98017f4">00077</a>         int16_t         <a class="code" href="class_r_c___channel.html#ae8a2a575ae23099703ee2206a98017f4">pwm_out</a>;
-<a name="l00078"></a><a class="code" href="class_r_c___channel.html#a8238439b7d28dea76ce332d6c7a94d76">00078</a>         int16_t         <a class="code" href="class_r_c___channel.html#a8238439b7d28dea76ce332d6c7a94d76">radio_out</a>;
-<a name="l00079"></a>00079 
-<a name="l00080"></a><a class="code" href="class_r_c___channel.html#ae635deeb549adfd63a6180ce48c8e4d5">00080</a>         int16_t         <a class="code" href="class_r_c___channel.html#ae635deeb549adfd63a6180ce48c8e4d5">radio_min</a>;
-<a name="l00081"></a><a class="code" href="class_r_c___channel.html#adfe753a9a526dcc827a43f019ae66478">00081</a>         int16_t         <a class="code" href="class_r_c___channel.html#adfe753a9a526dcc827a43f019ae66478">radio_trim</a>;
-<a name="l00082"></a><a class="code" href="class_r_c___channel.html#a5dad2c6486bbe66cee2af96f72ce4810">00082</a>         int16_t         <a class="code" href="class_r_c___channel.html#a5dad2c6486bbe66cee2af96f72ce4810">radio_max</a>;
-<a name="l00083"></a>00083         
-<a name="l00084"></a>00084         <span class="comment">// includes offset from PWM</span>
-<a name="l00085"></a>00085         <span class="comment">//int16_t       get_radio_out(void);</span>
-<a name="l00086"></a>00086 
-<a name="l00087"></a>00087         int16_t         <a class="code" href="class_r_c___channel.html#a5a48b57daab9a0b5feac13af9c8b768d">pwm_to_angle</a>();
-<a name="l00088"></a>00088         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#a134602daa0073833f97d2934d9b97ef0">norm_input</a>();
-<a name="l00089"></a>00089         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#acbef0e8e40f867ca4d8d6c19598dcff5">norm_output</a>();
-<a name="l00090"></a>00090         int16_t         <a class="code" href="class_r_c___channel.html#abcf4a69f7323c85306e8a25b34e929b3">angle_to_pwm</a>();
-<a name="l00091"></a>00091         int16_t         <a class="code" href="class_r_c___channel.html#a10f764e7d9cb160b1da9ff286b8797fb">pwm_to_range</a>();
-<a name="l00092"></a>00092         int16_t         <a class="code" href="class_r_c___channel.html#ac50875b55ac524f9d0b2ee50174bd300">range_to_pwm</a>();
-<a name="l00093"></a>00093 
-<a name="l00094"></a><a class="code" href="class_r_c___channel.html#afb3bb484e1f586d86105eb1bf40f8593">00094</a>         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#afb3bb484e1f586d86105eb1bf40f8593">scale_output</a>;
-<a name="l00095"></a>00095         
-<a name="l00096"></a>00096   <span class="keyword">private</span>:
-<a name="l00097"></a>00097         <span class="keywordtype">bool</span>            _filter;
-<a name="l00098"></a>00098         int8_t          _reverse;
-<a name="l00099"></a>00099 
-<a name="l00100"></a>00100         int16_t         _address;                       
-<a name="l00101"></a>00101         <span class="keywordtype">bool</span>            _type;                          
-<a name="l00102"></a>00102         int16_t         _high;
-<a name="l00103"></a>00103         int16_t         _low;
-<a name="l00104"></a>00104         <a class="code" href="class_a_p___e_e_p_r_o_m_b.html" title="Object for reading and writing to the EEPROM.">AP_EEPROMB</a>      _ee;
-<a name="l00105"></a>00105 };
-<a name="l00106"></a>00106 
-<a name="l00107"></a>00107 <span class="preprocessor">#endif  </span>
-<a name="l00108"></a>00108 <span class="preprocessor"></span>
+<a name="l00010"></a>00010 
+<a name="l00013"></a><a class="code" href="class_r_c___channel.html">00013</a> <span class="keyword">class </span><a class="code" href="class_r_c___channel.html" title="Object managing one RC channel.">RC_Channel</a>{
+<a name="l00014"></a>00014   <span class="keyword">public</span>:       
+<a name="l00019"></a><a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">00019</a>         <a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">RC_Channel</a>() :
+<a name="l00020"></a>00020                 _address(0)
+<a name="l00021"></a>00021         {}
+<a name="l00022"></a>00022 
+<a name="l00029"></a><a class="code" href="class_r_c___channel.html#adee6bd12d6ccc9756e3480db39dec737">00029</a>         <a class="code" href="class_r_c___channel.html#aaff3c747c934e5729d55cf07b5c544e8">RC_Channel</a>(uint16_t address) :
+<a name="l00030"></a>00030                 _address(address),
+<a name="l00031"></a>00031                 _high(1),
+<a name="l00032"></a>00032                 _filter(true),
+<a name="l00033"></a>00033                 _reverse(1)
+<a name="l00034"></a>00034         {}
+<a name="l00035"></a>00035 
+<a name="l00036"></a>00036         <span class="comment">// setup min and max radio values in CLI</span>
+<a name="l00037"></a>00037         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a148e078784162a8823f190be7bd9bada">update_min_max</a>();
+<a name="l00038"></a>00038         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#ad9ea651815e47c12203d4f9cfe32abfd">zero_min_max</a>();
+<a name="l00039"></a>00039         
+<a name="l00040"></a>00040         <span class="comment">// startup</span>
+<a name="l00041"></a>00041         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a56117fe9f697096605f84a6045aaa935">load_eeprom</a>(<span class="keywordtype">void</span>);
+<a name="l00042"></a>00042         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#aae26f7c9f60cc08537fffe967510f481">save_eeprom</a>(<span class="keywordtype">void</span>);              
+<a name="l00043"></a>00043         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#afed2cdb2de5fd66cb6eae528e5b6344a">save_trim</a>(<span class="keywordtype">void</span>);                
+<a name="l00044"></a>00044         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a045bff22457093d0c0fa78e19e618f9f">set_filter</a>(<span class="keywordtype">bool</span> filter);
+<a name="l00045"></a>00045 
+<a name="l00046"></a>00046         <span class="comment">// setup the control preferences</span>
+<a name="l00047"></a>00047         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#adffafafffc9027e7293103766229b7e1">set_range</a>(<span class="keywordtype">int</span> low, <span class="keywordtype">int</span> high);
+<a name="l00048"></a>00048         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#ae528ed2a3460fddde82f114cb0694201">set_angle</a>(<span class="keywordtype">int</span> angle);
+<a name="l00049"></a>00049         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a5b3740e7040f4b75d9cd591ebadca4c3">set_reverse</a>(<span class="keywordtype">bool</span> reverse);
+<a name="l00050"></a>00050 
+<a name="l00051"></a>00051         <span class="comment">// read input from APM_RC - create a control_in value</span>
+<a name="l00052"></a>00052         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#aaa0d7cb0b9f9eb833cc46ac5f9192b86">set_pwm</a>(<span class="keywordtype">int</span> pwm);
+<a name="l00053"></a>00053         
+<a name="l00054"></a>00054         <span class="comment">// pwm is stored here</span>
+<a name="l00055"></a><a class="code" href="class_r_c___channel.html#af548fff701d4175c5bdf311526687c05">00055</a>         int16_t         <a class="code" href="class_r_c___channel.html#af548fff701d4175c5bdf311526687c05">radio_in</a>;
+<a name="l00056"></a>00056 
+<a name="l00057"></a>00057         <span class="comment">// call after first set_pwm</span>
+<a name="l00058"></a>00058         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a8cf9c281ef6da9b275f5d682bb18904c">trim</a>();
+<a name="l00059"></a>00059         
+<a name="l00060"></a>00060         <span class="comment">// did our read come in 50µs below the min?</span>
+<a name="l00061"></a>00061         <span class="keywordtype">bool</span>            <a class="code" href="class_r_c___channel.html#a8e699f35b6c0e2524487c93cdef56ba9">get_failsafe</a>(<span class="keywordtype">void</span>);
+<a name="l00062"></a>00062         
+<a name="l00063"></a>00063         <span class="comment">// value generated from PWM</span>
+<a name="l00064"></a><a class="code" href="class_r_c___channel.html#aecc4c9d01e139561076e897af1286c0b">00064</a>         int16_t         <a class="code" href="class_r_c___channel.html#aecc4c9d01e139561076e897af1286c0b">control_in</a>;
+<a name="l00065"></a><a class="code" href="class_r_c___channel.html#aad649dc43957d1c7d563fac50d5ed510">00065</a>         int16_t         <a class="code" href="class_r_c___channel.html#aad649dc43957d1c7d563fac50d5ed510">dead_zone</a>; <span class="comment">// used to keep noise down and create a dead zone.</span>
+<a name="l00066"></a>00066         
+<a name="l00067"></a>00067         <span class="keywordtype">int</span>                     <a class="code" href="class_r_c___channel.html#a8c8933633ace2ad8bfc3a91375f58169">control_mix</a>(<span class="keywordtype">float</span> value);
+<a name="l00068"></a>00068         
+<a name="l00069"></a>00069         <span class="comment">// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100</span>
+<a name="l00070"></a><a class="code" href="class_r_c___channel.html#a3dcd8fce401b9e5825d10705f1608579">00070</a>         int16_t         <a class="code" href="class_r_c___channel.html#a3dcd8fce401b9e5825d10705f1608579">servo_out</a>;
+<a name="l00071"></a>00071 
+<a name="l00072"></a>00072         <span class="comment">// generate PWM from servo_out value</span>
+<a name="l00073"></a>00073         <span class="keywordtype">void</span>            <a class="code" href="class_r_c___channel.html#a5876259d8fb8c1c475322a236bae7819">calc_pwm</a>(<span class="keywordtype">void</span>);
+<a name="l00074"></a>00074 
+<a name="l00075"></a>00075         <span class="comment">// PWM is without the offset from radio_min</span>
+<a name="l00076"></a><a class="code" href="class_r_c___channel.html#ae8a2a575ae23099703ee2206a98017f4">00076</a>         int16_t         <a class="code" href="class_r_c___channel.html#ae8a2a575ae23099703ee2206a98017f4">pwm_out</a>;
+<a name="l00077"></a><a class="code" href="class_r_c___channel.html#a8238439b7d28dea76ce332d6c7a94d76">00077</a>         int16_t         <a class="code" href="class_r_c___channel.html#a8238439b7d28dea76ce332d6c7a94d76">radio_out</a>;
+<a name="l00078"></a>00078 
+<a name="l00079"></a><a class="code" href="class_r_c___channel.html#ae635deeb549adfd63a6180ce48c8e4d5">00079</a>         int16_t         <a class="code" href="class_r_c___channel.html#ae635deeb549adfd63a6180ce48c8e4d5">radio_min</a>;
+<a name="l00080"></a><a class="code" href="class_r_c___channel.html#adfe753a9a526dcc827a43f019ae66478">00080</a>         int16_t         <a class="code" href="class_r_c___channel.html#adfe753a9a526dcc827a43f019ae66478">radio_trim</a>;
+<a name="l00081"></a><a class="code" href="class_r_c___channel.html#a5dad2c6486bbe66cee2af96f72ce4810">00081</a>         int16_t         <a class="code" href="class_r_c___channel.html#a5dad2c6486bbe66cee2af96f72ce4810">radio_max</a>;
+<a name="l00082"></a>00082         
+<a name="l00083"></a>00083         <span class="comment">// includes offset from PWM</span>
+<a name="l00084"></a>00084         <span class="comment">//int16_t       get_radio_out(void);</span>
+<a name="l00085"></a>00085 
+<a name="l00086"></a>00086         int16_t         <a class="code" href="class_r_c___channel.html#a5a48b57daab9a0b5feac13af9c8b768d">pwm_to_angle</a>();
+<a name="l00087"></a>00087         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#a134602daa0073833f97d2934d9b97ef0">norm_input</a>();
+<a name="l00088"></a>00088         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#acbef0e8e40f867ca4d8d6c19598dcff5">norm_output</a>();
+<a name="l00089"></a>00089         int16_t         <a class="code" href="class_r_c___channel.html#abcf4a69f7323c85306e8a25b34e929b3">angle_to_pwm</a>();
+<a name="l00090"></a>00090         int16_t         <a class="code" href="class_r_c___channel.html#a10f764e7d9cb160b1da9ff286b8797fb">pwm_to_range</a>();
+<a name="l00091"></a>00091         int16_t         <a class="code" href="class_r_c___channel.html#ac50875b55ac524f9d0b2ee50174bd300">range_to_pwm</a>();
+<a name="l00092"></a>00092 
+<a name="l00093"></a><a class="code" href="class_r_c___channel.html#afb3bb484e1f586d86105eb1bf40f8593">00093</a>         <span class="keywordtype">float</span>           <a class="code" href="class_r_c___channel.html#afb3bb484e1f586d86105eb1bf40f8593">scale_output</a>;
+<a name="l00094"></a>00094         
+<a name="l00095"></a>00095   <span class="keyword">private</span>:
+<a name="l00096"></a>00096         <span class="keywordtype">bool</span>            _filter;
+<a name="l00097"></a>00097         int8_t          _reverse;
+<a name="l00098"></a>00098 
+<a name="l00099"></a>00099         int16_t         _address;                       
+<a name="l00100"></a>00100         <span class="keywordtype">bool</span>            _type;                          
+<a name="l00101"></a>00101         int16_t         _high;
+<a name="l00102"></a>00102         int16_t         _low;
+<a name="l00103"></a>00103 };
+<a name="l00104"></a>00104 
+<a name="l00105"></a>00105 <span class="preprocessor">#endif  </span>
+<a name="l00106"></a>00106 <span class="preprocessor"></span>
+<a name="l00107"></a>00107 
+<a name="l00108"></a>00108 
 <a name="l00109"></a>00109 
-<a name="l00110"></a>00110 
-<a name="l00111"></a>00111 
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

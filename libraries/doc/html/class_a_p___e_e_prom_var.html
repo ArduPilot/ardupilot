@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -35,31 +36,32 @@
 <h1>AP_EEPromVar&lt; type &gt; Class Template Reference</h1>  </div>
 </div>
 <div class="contents">
-<!-- doxytag: class="AP_EEPromVar" --><!-- doxytag: inherits="AP_EEPromEntry,AP_Var" -->
+<!-- doxytag: class="AP_EEPromVar" --><!-- doxytag: inherits="AP_EEPromEntryI,AP_Var" -->
 <p><code>#include &lt;<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>&gt;</code></p>
 
-<p>Inherits <a class="el" href="class_a_p___e_e_prom_entry.html">AP_EEPromEntry</a>, and <a class="el" href="class_a_p___var.html">AP_Var&lt; type &gt;</a>.</p>
+<p>Inherits <a class="el" href="class_a_p___e_e_prom_entry_i.html">AP_EEPromEntryI</a>, and <a class="el" href="class_a_p___var.html">AP_Var&lt; type &gt;</a>.</p>
 <div class="dynheader">
 Collaboration diagram for AP_EEPromVar&lt; type &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="class_a_p___e_e_prom_var__coll__graph.png" border="0" usemap="#_a_p___e_e_prom_var_3_01type_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="_a_p___e_e_prom_var_3_01type_01_4_coll__map" id="_a_p___e_e_prom_var_3_01type_01_4_coll__map">
-<area shape="rect" id="node2" href="class_a_p___e_e_prom_entry.html" title="The interface for data entries in the eeprom registry." alt="" coords="5,5,133,35"/><area shape="rect" id="node4" href="class_a_p___var.html" title="AP_Var\&lt; type \&gt;" alt="" coords="157,5,283,35"/></map>
+<area shape="rect" id="node2" href="class_a_p___e_e_prom_entry_i.html" title="The interface for data entries in the eeprom registry." alt="" coords="5,83,136,112"/><area shape="rect" id="node4" href="class_a_p___var.html" title="AP_Var\&lt; type \&gt;" alt="" coords="160,83,285,112"/><area shape="rect" id="node6" href="class_a_p___var_i.html" title="AP_VarI" alt="" coords="188,5,257,35"/></map>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 
 <p><a href="class_a_p___e_e_prom_var-members.html">List of all members.</a></p>
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a9717bcdb3d54a67a4f1a252a7940ac07">AP_EEPromVar</a> (type data=0, const char *name=&quot;&quot;, bool sync=false)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The default constrcutor.  <a href="#a9717bcdb3d54a67a4f1a252a7940ac07"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a8e5973cdc766f532b632926f8df6ebea">setEntry</a> (float val)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual float&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a338b7fbb43e52050585490b82a4525e1">getEntry</a> ()</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a91a9017701b772d8aa42bdca3a7ead9f">AP_EEPromVar</a> (type data=0, const char *name=&quot;&quot;, const char *parentName=&quot;&quot;, bool sync=false)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The default constrcutor.  <a href="#a91a9017701b772d8aa42bdca3a7ead9f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a0aec2967e8ff2eac215e332604bcc55e">setEntry</a> (const float &amp;val)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual const float&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#ac9cbbb48da0c6aa8fa9afb617c36d246">getEntry</a> ()</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">virtual const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#aaed7e0df09242c4f1d04f00371ce4588">getEntryName</a> ()</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual uint16_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a9469b5951e2f1bb3759671100e9be625">getEntryId</a> ()</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the id of the variable.  <a href="#a9469b5951e2f1bb3759671100e9be625"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual uint16_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#ac450ac8c8ce9fbd0b58224d02c2e65a6">getEntryAddress</a> ()</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the address of the variable.  <a href="#ac450ac8c8ce9fbd0b58224d02c2e65a6"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a74bc14d56744cecea370ad241daeeb12">getEntryParentName</a> ()</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual const uint16_t &amp;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a1fe97ba68a3b80fc40891353e6ed85bf">getEntryId</a> ()</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the id of the variable.  <a href="#a1fe97ba68a3b80fc40891353e6ed85bf"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual const uint16_t &amp;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_a_p___e_e_prom_var.html#a9362edcb0c46cdaa04bf06f04ab274b5">getEntryAddress</a> ()</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Get the address of the variable.  <a href="#a9362edcb0c46cdaa04bf06f04ab274b5"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <h3>template&lt;class type&gt;<br/>
@@ -67,9 +69,9 @@ Public Member Functions</h2></td></tr>
 
 <p>The EEProm Variable template class. This class implements get/set/save/load etc for the abstract template type. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00078">78</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00085">85</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
-<a class="anchor" id="a9717bcdb3d54a67a4f1a252a7940ac07"></a><!-- doxytag: member="AP_EEPromVar::AP_EEPromVar" ref="a9717bcdb3d54a67a4f1a252a7940ac07" args="(type data=0, const char *name=&quot;&quot;, bool sync=false)" -->
+<a class="anchor" id="a91a9017701b772d8aa42bdca3a7ead9f"></a><!-- doxytag: member="AP_EEPromVar::AP_EEPromVar" ref="a91a9017701b772d8aa42bdca3a7ead9f" args="(type data=0, const char *name=&quot;&quot;, const char *parentName=&quot;&quot;, bool sync=false)" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
@@ -90,6 +92,12 @@ template&lt;class type &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const char *&nbsp;</td>
+          <td class="paramname"> <em>parentName</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">bool&nbsp;</td>
           <td class="paramname"> <em>sync</em> = <code>false</code></td><td>&nbsp;</td>
         </tr>
@@ -104,19 +112,19 @@ template&lt;class type &gt; </div>
 
 <p>The default constrcutor. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00082">82</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00089">89</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
 <hr/><h2>Member Function Documentation</h2>
-<a class="anchor" id="a338b7fbb43e52050585490b82a4525e1"></a><!-- doxytag: member="AP_EEPromVar::getEntry" ref="a338b7fbb43e52050585490b82a4525e1" args="()" -->
+<a class="anchor" id="ac9cbbb48da0c6aa8fa9afb617c36d246"></a><!-- doxytag: member="AP_EEPromVar::getEntry" ref="ac9cbbb48da0c6aa8fa9afb617c36d246" args="()" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">virtual float <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntry </td>
+          <td class="memname">virtual const float <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntry </td>
           <td>(</td>
           <td class="paramname"></td>
           <td>&nbsp;)&nbsp;</td>
@@ -126,18 +134,18 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00089">89</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00096">96</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="ac450ac8c8ce9fbd0b58224d02c2e65a6"></a><!-- doxytag: member="AP_EEPromVar::getEntryAddress" ref="ac450ac8c8ce9fbd0b58224d02c2e65a6" args="()" -->
+<a class="anchor" id="a9362edcb0c46cdaa04bf06f04ab274b5"></a><!-- doxytag: member="AP_EEPromVar::getEntryAddress" ref="a9362edcb0c46cdaa04bf06f04ab274b5" args="()" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">virtual uint16_t <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntryAddress </td>
+          <td class="memname">virtual const uint16_t&amp; <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntryAddress </td>
           <td>(</td>
           <td class="paramname"></td>
           <td>&nbsp;)&nbsp;</td>
@@ -149,18 +157,18 @@ template&lt;class type &gt; </div>
 
 <p>Get the address of the variable. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00096">96</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00104">104</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a9469b5951e2f1bb3759671100e9be625"></a><!-- doxytag: member="AP_EEPromVar::getEntryId" ref="a9469b5951e2f1bb3759671100e9be625" args="()" -->
+<a class="anchor" id="a1fe97ba68a3b80fc40891353e6ed85bf"></a><!-- doxytag: member="AP_EEPromVar::getEntryId" ref="a1fe97ba68a3b80fc40891353e6ed85bf" args="()" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">virtual uint16_t <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntryId </td>
+          <td class="memname">virtual const uint16_t&amp; <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntryId </td>
           <td>(</td>
           <td class="paramname"></td>
           <td>&nbsp;)&nbsp;</td>
@@ -172,7 +180,7 @@ template&lt;class type &gt; </div>
 
 <p>Get the id of the variable. </p>
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00093">93</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00101">101</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
@@ -193,11 +201,32 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00090">90</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00097">97</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a8e5973cdc766f532b632926f8df6ebea"></a><!-- doxytag: member="AP_EEPromVar::setEntry" ref="a8e5973cdc766f532b632926f8df6ebea" args="(float val)" -->
+<a class="anchor" id="a74bc14d56744cecea370ad241daeeb12"></a><!-- doxytag: member="AP_EEPromVar::getEntryParentName" ref="a74bc14d56744cecea370ad241daeeb12" args="()" -->
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class type &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual const char* <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::getEntryParentName </td>
+          <td>(</td>
+          <td class="paramname"></td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline, virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00098">98</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a0aec2967e8ff2eac215e332604bcc55e"></a><!-- doxytag: member="AP_EEPromVar::setEntry" ref="a0aec2967e8ff2eac215e332604bcc55e" args="(const float &amp;val)" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
@@ -206,7 +235,7 @@ template&lt;class type &gt; </div>
         <tr>
           <td class="memname">virtual void <a class="el" href="class_a_p___e_e_prom_var.html">AP_EEPromVar</a>&lt; type &gt;::setEntry </td>
           <td>(</td>
-          <td class="paramtype">float&nbsp;</td>
+          <td class="paramtype">const float &amp;&nbsp;</td>
           <td class="paramname"> <em>val</em></td>
           <td>&nbsp;)&nbsp;</td>
           <td><code> [inline, virtual]</code></td>
@@ -215,12 +244,12 @@ template&lt;class type &gt; </div>
 </div>
 <div class="memdoc">
 
-<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00088">88</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
+<p>Definition at line <a class="el" href="_a_p___e_e_prom_8h_source.html#l00095">95</a> of file <a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/jgoppert/Projects/ap/libraries/AP_EEProm/<a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a></li>
+<li><a class="el" href="_a_p___e_e_prom_8h_source.html">AP_EEProm.h</a></li>
 </ul>
 </div>
 <hr class="footer"/><address class="footer"><small>

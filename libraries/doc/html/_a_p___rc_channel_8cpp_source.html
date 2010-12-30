@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ArduPilot Libraries: /home/jgoppert/Projects/ap/libraries/AP_RcChannel/AP_RcChannel.cpp Source File</title>
+<title>ArduPilot Libraries: AP_RcChannel.cpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -27,7 +28,7 @@
   </div>
 <div class="header">
   <div class="headertitle">
-<h1>/home/jgoppert/Projects/ap/libraries/AP_RcChannel/AP_RcChannel.cpp</h1>  </div>
+<h1>AP_RcChannel.cpp</h1>  </div>
 </div>
 <div class="contents">
 <a href="_a_p___rc_channel_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">/*</span>
@@ -46,83 +47,112 @@
 <a name="l00014"></a>00014 <span class="preprocessor">#include &quot;<a class="code" href="_a_p___rc_channel_8h.html" title="AP_RcChannel manager.">AP_RcChannel.h</a>&quot;</span>
 <a name="l00015"></a>00015 <span class="preprocessor">#include &lt;<a class="code" href="_a_p___common_8h.html" title="Common definitions and utility routines for the ArduPilot libraries.">AP_Common.h</a>&gt;</span>
 <a name="l00016"></a>00016 
-<a name="l00017"></a><a class="code" href="class_a_p___rc_channel.html#a725490da9c871958d654bb5801e84df0">00017</a> <span class="keywordtype">void</span> <a class="code" href="class_a_p___rc_channel.html#a725490da9c871958d654bb5801e84df0">AP_RcChannel::readRadio</a>() {
-<a name="l00018"></a>00018         <span class="comment">// apply reverse</span>
-<a name="l00019"></a>00019         uint16_t pwmRadio = <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a32157ead4d981921ced73e9ca96b2228">InputCh</a>(_ch);
-<a name="l00020"></a>00020         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(pwmRadio);
-<a name="l00021"></a>00021 }
-<a name="l00022"></a>00022 
-<a name="l00023"></a>00023 <span class="keywordtype">void</span>
-<a name="l00024"></a><a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">00024</a> <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">AP_RcChannel::setPwm</a>(uint16_t pwm)
-<a name="l00025"></a>00025 {
-<a name="l00026"></a>00026         <span class="comment">//Serial.printf(&quot;reverse: %s\n&quot;, (_reverse)?&quot;true&quot;:&quot;false&quot;);</span>
-<a name="l00027"></a>00027 
-<a name="l00028"></a>00028         <span class="comment">// apply reverse</span>
-<a name="l00029"></a>00029         <span class="keywordflow">if</span>(_reverse) pwm = int16_t(_pwmNeutral-pwm) + _pwmNeutral;
-<a name="l00030"></a>00030 
-<a name="l00031"></a>00031         <span class="comment">//Serial.printf(&quot;pwm after reverse: %d\n&quot;, pwm);</span>
-<a name="l00032"></a>00032 
-<a name="l00033"></a>00033         <span class="comment">// apply filter</span>
-<a name="l00034"></a>00034         <span class="keywordflow">if</span>(_filter){
-<a name="l00035"></a>00035                 <span class="keywordflow">if</span>(_pwm == 0)
-<a name="l00036"></a>00036                         _pwm = pwm;
-<a name="l00037"></a>00037                 <span class="keywordflow">else</span>
-<a name="l00038"></a>00038                         _pwm = ((pwm + _pwm) &gt;&gt; 1);             <span class="comment">// Small filtering</span>
-<a name="l00039"></a>00039         }<span class="keywordflow">else</span>{
-<a name="l00040"></a>00040                 _pwm = pwm;
-<a name="l00041"></a>00041         }
-<a name="l00042"></a>00042 
-<a name="l00043"></a>00043         <span class="comment">//Serial.printf(&quot;pwm after filter: %d\n&quot;, _pwm);</span>
+<a name="l00017"></a><a class="code" href="class_a_p___rc_channel.html#a999c60959d8a0ce46a59827685acaf10">00017</a> <a class="code" href="class_a_p___rc_channel.html#a999c60959d8a0ce46a59827685acaf10" title="Constructor.">AP_RcChannel::AP_RcChannel</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> * name, <span class="keyword">const</span> <a class="code" href="class_a_p_m___r_c___class.html">APM_RC_Class</a> &amp; rc, <span class="keyword">const</span> uint8_t &amp; ch,
+<a name="l00018"></a>00018                         <span class="keyword">const</span> <span class="keywordtype">float</span> &amp; scale, <span class="keyword">const</span> <span class="keywordtype">float</span> &amp; center, 
+<a name="l00019"></a>00019                         <span class="keyword">const</span> uint16_t &amp; pwmMin, 
+<a name="l00020"></a>00020                         <span class="keyword">const</span> uint16_t &amp; pwmNeutral, <span class="keyword">const</span> uint16_t &amp; pwmMax,
+<a name="l00021"></a>00021                         <span class="keyword">const</span> uint16_t &amp; pwmDeadZone,
+<a name="l00022"></a>00022                         <span class="keyword">const</span> <span class="keywordtype">bool</span> &amp; filter, <span class="keyword">const</span> <span class="keywordtype">bool</span> &amp; reverse) :
+<a name="l00023"></a>00023                 _name(name),
+<a name="l00024"></a>00024                 _rc(rc),
+<a name="l00025"></a>00025                 _ch(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint8</a>(ch,<span class="stringliteral">&quot;CH&quot;</span>,name)),
+<a name="l00026"></a>00026                 _scale(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Float</a>(scale,<span class="stringliteral">&quot;SCALE&quot;</span>,name)),
+<a name="l00027"></a>00027                 _center(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Float</a>(center,<span class="stringliteral">&quot;CNTR&quot;</span>,name)),
+<a name="l00028"></a>00028                 _pwmMin(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint16</a>(pwmMin,<span class="stringliteral">&quot;PMIN&quot;</span>,name)), 
+<a name="l00029"></a>00029                 _pwmMax(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint16</a>(pwmMax,<span class="stringliteral">&quot;PMAX&quot;</span>,name)),
+<a name="l00030"></a>00030                 _pwmNeutral(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint16</a>(pwmNeutral,<span class="stringliteral">&quot;PNTRL&quot;</span>,name)),
+<a name="l00031"></a>00031                 _pwmDeadZone(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Uint16</a>(pwmDeadZone,<span class="stringliteral">&quot;PDEAD&quot;</span>,name)),
+<a name="l00032"></a>00032                 _pwm(0),
+<a name="l00033"></a>00033                 _filter(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Bool</a>(filter,<span class="stringliteral">&quot;FLTR&quot;</span>,name)),
+<a name="l00034"></a>00034                 _reverse(new <a class="code" href="class_a_p___e_e_prom_var.html">AP_EEPROM_Bool</a>(reverse,<span class="stringliteral">&quot;REV&quot;</span>,name))
+<a name="l00035"></a>00035         {
+<a name="l00036"></a>00036         }
+<a name="l00037"></a>00037 
+<a name="l00038"></a>00038 
+<a name="l00039"></a><a class="code" href="class_a_p___rc_channel.html#a725490da9c871958d654bb5801e84df0">00039</a> <span class="keywordtype">void</span> <a class="code" href="class_a_p___rc_channel.html#a725490da9c871958d654bb5801e84df0">AP_RcChannel::readRadio</a>() {
+<a name="l00040"></a>00040         <span class="comment">// apply reverse</span>
+<a name="l00041"></a>00041         uint16_t pwmRadio = <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a32157ead4d981921ced73e9ca96b2228">InputCh</a>(<a class="code" href="class_a_p___rc_channel.html#a59af563b2e668141412cc4119ebb22f8">getCh</a>());
+<a name="l00042"></a>00042         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(pwmRadio);
+<a name="l00043"></a>00043 }
 <a name="l00044"></a>00044 
-<a name="l00045"></a>00045         <span class="comment">// apply deadzone</span>
-<a name="l00046"></a>00046         _pwm = (abs(_pwm - _pwmNeutral) &lt; _pwmDeadZone) ? _pwmNeutral : _pwm;
-<a name="l00047"></a>00047 
-<a name="l00048"></a>00048         <span class="comment">//Serial.printf(&quot;pwm after deadzone: %d\n&quot;, _pwm);</span>
-<a name="l00049"></a>00049         <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a5ab1f315d99872c03f5cb496eca70f72">OutputCh</a>(_ch,_pwm);
-<a name="l00050"></a>00050 }
-<a name="l00051"></a>00051 
-<a name="l00052"></a>00052 <span class="keywordtype">void</span>
-<a name="l00053"></a><a class="code" href="class_a_p___rc_channel.html#afeef294037ec90769e82e46d232cefb4">00053</a> <a class="code" href="class_a_p___rc_channel.html#afeef294037ec90769e82e46d232cefb4">AP_RcChannel::setPosition</a>(<span class="keywordtype">float</span> position)
-<a name="l00054"></a>00054 {
-<a name="l00055"></a>00055         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(_positionToPwm(position));
-<a name="l00056"></a>00056 }
-<a name="l00057"></a>00057 
-<a name="l00058"></a>00058 <span class="keywordtype">void</span>
-<a name="l00059"></a><a class="code" href="class_a_p___rc_channel.html#aa6e2d26454f7ba34896de1fe5999d339">00059</a> <a class="code" href="class_a_p___rc_channel.html#aa6e2d26454f7ba34896de1fe5999d339">AP_RcChannel::mixRadio</a>(uint16_t infStart)
-<a name="l00060"></a>00060 {
-<a name="l00061"></a>00061         uint16_t pwmRadio = <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a32157ead4d981921ced73e9ca96b2228">InputCh</a>(_ch);
-<a name="l00062"></a>00062         <span class="keywordtype">float</span> inf = abs( int16_t(pwmRadio - _pwmNeutral) );
-<a name="l00063"></a>00063         inf = min(inf, infStart);
-<a name="l00064"></a>00064         inf = ((infStart - inf) /infStart);
-<a name="l00065"></a>00065         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(_pwm*inf + pwmRadio); 
-<a name="l00066"></a>00066 }
+<a name="l00045"></a>00045 <span class="keywordtype">void</span>
+<a name="l00046"></a><a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">00046</a> <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">AP_RcChannel::setPwm</a>(uint16_t pwm)
+<a name="l00047"></a>00047 {
+<a name="l00048"></a>00048         <span class="comment">//Serial.printf(&quot;pwm in setPwm: %d\n&quot;, pwm);</span>
+<a name="l00049"></a>00049         <span class="comment">//Serial.printf(&quot;reverse: %s\n&quot;, (getReverse())?&quot;true&quot;:&quot;false&quot;);</span>
+<a name="l00050"></a>00050         
+<a name="l00051"></a>00051         <span class="comment">// apply reverse</span>
+<a name="l00052"></a>00052         <span class="keywordflow">if</span>(<a class="code" href="class_a_p___rc_channel.html#a010225f4c316687dff652b23efa4c39d">getReverse</a>()) pwm = int16_t(<a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>()-pwm) + <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>();
+<a name="l00053"></a>00053 
+<a name="l00054"></a>00054         <span class="comment">//Serial.printf(&quot;pwm after reverse: %d\n&quot;, pwm);</span>
+<a name="l00055"></a>00055 
+<a name="l00056"></a>00056         <span class="comment">// apply filter</span>
+<a name="l00057"></a>00057         <span class="keywordflow">if</span>(<a class="code" href="class_a_p___rc_channel.html#a8d71664f22f624c8d8ef39c4ba6b7273">getFilter</a>()){
+<a name="l00058"></a>00058                 <span class="keywordflow">if</span>(_pwm == 0)
+<a name="l00059"></a>00059                         _pwm = pwm;
+<a name="l00060"></a>00060                 <span class="keywordflow">else</span>
+<a name="l00061"></a>00061                         _pwm = ((pwm + _pwm) &gt;&gt; 1);             <span class="comment">// Small filtering</span>
+<a name="l00062"></a>00062         }<span class="keywordflow">else</span>{
+<a name="l00063"></a>00063                 _pwm = pwm;
+<a name="l00064"></a>00064         }
+<a name="l00065"></a>00065 
+<a name="l00066"></a>00066         <span class="comment">//Serial.printf(&quot;pwm after filter: %d\n&quot;, _pwm);</span>
 <a name="l00067"></a>00067 
-<a name="l00068"></a>00068 uint16_t
-<a name="l00069"></a>00069 AP_RcChannel::_positionToPwm(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp; position)
-<a name="l00070"></a>00070 {
-<a name="l00071"></a>00071         uint16_t pwm;
-<a name="l00072"></a>00072         <span class="comment">//Serial.printf(&quot;position: %f\n&quot;, position);</span>
-<a name="l00073"></a>00073         <span class="keywordflow">if</span>(position &lt; 0)
-<a name="l00074"></a>00074                 pwm = position * int16_t(_pwmNeutral - _pwmMin) / _scale + _pwmNeutral;
-<a name="l00075"></a>00075         <span class="keywordflow">else</span>
-<a name="l00076"></a>00076                 pwm = position * int16_t(_pwmMax - _pwmNeutral) / _scale + _pwmNeutral;
-<a name="l00077"></a>00077         constrain(pwm,_pwmMin,_pwmMax);
-<a name="l00078"></a>00078         <span class="keywordflow">return</span> pwm;
+<a name="l00068"></a>00068         <span class="comment">// apply deadzone</span>
+<a name="l00069"></a>00069         _pwm = (abs(_pwm - <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>()) &lt; <a class="code" href="class_a_p___rc_channel.html#ab93b128746dca000fd8a274354759c79">getPwmDeadZone</a>()) ? <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>() : _pwm;
+<a name="l00070"></a>00070 
+<a name="l00071"></a>00071         <span class="comment">//Serial.printf(&quot;pwm after deadzone: %d\n&quot;, _pwm);</span>
+<a name="l00072"></a>00072         <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a5ab1f315d99872c03f5cb496eca70f72">OutputCh</a>(<a class="code" href="class_a_p___rc_channel.html#a59af563b2e668141412cc4119ebb22f8">getCh</a>(),_pwm);
+<a name="l00073"></a>00073 }
+<a name="l00074"></a>00074 
+<a name="l00075"></a>00075 <span class="keywordtype">void</span>
+<a name="l00076"></a><a class="code" href="class_a_p___rc_channel.html#afeef294037ec90769e82e46d232cefb4">00076</a> <a class="code" href="class_a_p___rc_channel.html#afeef294037ec90769e82e46d232cefb4">AP_RcChannel::setPosition</a>(<span class="keywordtype">float</span> position)
+<a name="l00077"></a>00077 {
+<a name="l00078"></a>00078         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(_positionToPwm(position));
 <a name="l00079"></a>00079 }
 <a name="l00080"></a>00080 
-<a name="l00081"></a>00081 <span class="keywordtype">float</span>
-<a name="l00082"></a>00082 AP_RcChannel::_pwmToPosition(<span class="keyword">const</span> uint16_t &amp; pwm)
+<a name="l00081"></a>00081 <span class="keywordtype">void</span>
+<a name="l00082"></a><a class="code" href="class_a_p___rc_channel.html#aa6e2d26454f7ba34896de1fe5999d339">00082</a> <a class="code" href="class_a_p___rc_channel.html#aa6e2d26454f7ba34896de1fe5999d339">AP_RcChannel::mixRadio</a>(uint16_t infStart)
 <a name="l00083"></a>00083 {
-<a name="l00084"></a>00084         <span class="keywordtype">float</span> position;
-<a name="l00085"></a>00085         <span class="keywordflow">if</span>(pwm &lt; _pwmNeutral)
-<a name="l00086"></a>00086                 position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmNeutral - _pwmMin);
-<a name="l00087"></a>00087         <span class="keywordflow">else</span>
-<a name="l00088"></a>00088                 position = _scale * int16_t(pwm - _pwmNeutral)/ int16_t(_pwmMax - _pwmNeutral);
-<a name="l00089"></a>00089         constrain(position,-_scale,_scale);
-<a name="l00090"></a>00090         <span class="keywordflow">return</span> position;
-<a name="l00091"></a>00091 }
-<a name="l00092"></a>00092 
-<a name="l00093"></a>00093 <span class="comment">// ------------------------------------------</span>
+<a name="l00084"></a>00084         uint16_t pwmRadio = <a class="code" href="_a_p_m___r_c_8h.html#aa3b2e28948f56cfd1b336bb6c7ce4a3c">APM_RC</a>.<a class="code" href="class_a_p_m___r_c___class.html#a32157ead4d981921ced73e9ca96b2228">InputCh</a>(<a class="code" href="class_a_p___rc_channel.html#a59af563b2e668141412cc4119ebb22f8">getCh</a>());
+<a name="l00085"></a>00085         <span class="keywordtype">float</span> inf = abs( int16_t(pwmRadio - <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>()) );
+<a name="l00086"></a>00086         inf = min(inf, infStart);
+<a name="l00087"></a>00087         inf = ((infStart - inf) /infStart);
+<a name="l00088"></a>00088         <a class="code" href="class_a_p___rc_channel.html#ae6caba4fc3de9e6e1eeaebcd42e5ff28">setPwm</a>(_pwm*inf + pwmRadio); 
+<a name="l00089"></a>00089 }
+<a name="l00090"></a>00090 
+<a name="l00091"></a>00091 uint16_t
+<a name="l00092"></a>00092 AP_RcChannel::_positionToPwm(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp; position)
+<a name="l00093"></a>00093 {
+<a name="l00094"></a>00094         uint16_t pwm;
+<a name="l00095"></a>00095         <span class="comment">//Serial.printf(&quot;position: %f\n&quot;, position);</span>
+<a name="l00096"></a>00096         <span class="keywordtype">float</span> p = position - <a class="code" href="class_a_p___rc_channel.html#a53d7cbd98ae3ade1d0b96a59d6faa02d">getCenter</a>();       
+<a name="l00097"></a>00097         <span class="keywordflow">if</span>(p &lt; 0)
+<a name="l00098"></a>00098                 pwm = p * int16_t(<a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>() - <a class="code" href="class_a_p___rc_channel.html#a81767bfd7e39d80e044654891b78fc26">getPwmMin</a>()) / 
+<a name="l00099"></a>00099                         <a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>() + <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>();
+<a name="l00100"></a>00100         <span class="keywordflow">else</span>
+<a name="l00101"></a>00101                 pwm = p * int16_t(<a class="code" href="class_a_p___rc_channel.html#a8b5baa0873d10155bce0dbf974608d65">getPwmMax</a>() - <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>()) / 
+<a name="l00102"></a>00102                         <a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>() + <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>();
+<a name="l00103"></a>00103         constrain(pwm,<a class="code" href="class_a_p___rc_channel.html#a81767bfd7e39d80e044654891b78fc26">getPwmMin</a>(),<a class="code" href="class_a_p___rc_channel.html#a8b5baa0873d10155bce0dbf974608d65">getPwmMax</a>());
+<a name="l00104"></a>00104         <span class="keywordflow">return</span> pwm;
+<a name="l00105"></a>00105 }
+<a name="l00106"></a>00106 
+<a name="l00107"></a>00107 <span class="keywordtype">float</span>
+<a name="l00108"></a>00108 AP_RcChannel::_pwmToPosition(<span class="keyword">const</span> uint16_t &amp; pwm)
+<a name="l00109"></a>00109 {
+<a name="l00110"></a>00110         <span class="keywordtype">float</span> position;
+<a name="l00111"></a>00111         <span class="keywordflow">if</span>(pwm &lt; <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>())
+<a name="l00112"></a>00112                 position = <a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>() * int16_t(pwm - <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>())/ 
+<a name="l00113"></a>00113                         int16_t(<a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>() - <a class="code" href="class_a_p___rc_channel.html#a81767bfd7e39d80e044654891b78fc26">getPwmMin</a>()) + <a class="code" href="class_a_p___rc_channel.html#a53d7cbd98ae3ade1d0b96a59d6faa02d">getCenter</a>();
+<a name="l00114"></a>00114         <span class="keywordflow">else</span>
+<a name="l00115"></a>00115                 position = <a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>() * int16_t(pwm -<a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>())/ 
+<a name="l00116"></a>00116                         int16_t(<a class="code" href="class_a_p___rc_channel.html#a8b5baa0873d10155bce0dbf974608d65">getPwmMax</a>() - <a class="code" href="class_a_p___rc_channel.html#a89185f2671074c1901f529e7dbfa5788">getPwmNeutral</a>()) + <a class="code" href="class_a_p___rc_channel.html#a53d7cbd98ae3ade1d0b96a59d6faa02d">getCenter</a>();
+<a name="l00117"></a>00117         constrain(position,-<a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>()+<a class="code" href="class_a_p___rc_channel.html#a53d7cbd98ae3ade1d0b96a59d6faa02d">getCenter</a>(),
+<a name="l00118"></a>00118                         <a class="code" href="class_a_p___rc_channel.html#a64db47948673ae8af867d687526a2d28">getScale</a>()+<a class="code" href="class_a_p___rc_channel.html#a53d7cbd98ae3ade1d0b96a59d6faa02d">getCenter</a>());
+<a name="l00119"></a>00119         <span class="keywordflow">return</span> position;
+<a name="l00120"></a>00120 }
+<a name="l00121"></a>00121 
+<a name="l00122"></a>00122 <span class="comment">// ------------------------------------------</span>
 </pre></div></div>
 </div>
 <hr class="footer"/><address class="footer"><small>

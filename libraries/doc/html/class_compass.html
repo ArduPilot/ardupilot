@@ -14,6 +14,7 @@
   <div class="tabs">
     <ul class="tablist">
       <li><a href="main.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -45,12 +46,12 @@
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a825f597357f66521819807d68ffc551e">init</a> (int initialise_wire_lib=1)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#ab17ec5cc0bb81f2c94046e4ef5150106">read</a> ()</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a7503a41b6978e1f1a9edcd2f11fddd01">calculate</a> (float roll, float pitch)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a57b71b1f29b91e73f84bcc6860f3cf51">set_orientation</a> (const <a class="el" href="class_matrix3.html">Matrix3f</a> &amp;rotation_matrix)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#af4ae15041479ecb2631ba6c39e84c561">set_offsets</a> (int x, int y, int z)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a3b7ea064e17a870a419c8f45a7c1fb5d">set_declination</a> (float radians)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a6de4eb3c975bd7757885a6661cf1a79e">init</a> (int initialise_wire_lib=1)=0</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a270aff91583d79826f27f09d64072be8">read</a> ()=0</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a922be89b146a3712699f8506a298d8f2">calculate</a> (float roll, float pitch)=0</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a9c7556a20a579b2f47a67d1b3d67331c">set_orientation</a> (const <a class="el" href="class_matrix3.html">Matrix3f</a> &amp;rotation_matrix)=0</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#ad806fb3a6cfe66ab41098705252f8989">set_offsets</a> (int x, int y, int z)=0</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a7fb27fec44c834a4073dc84da445827d">set_declination</a> (float radians)=0</td></tr>
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_compass.html#a8324bcab8618a2a2076a511dec2cc8a0">mag_x</a></td></tr>
@@ -65,7 +66,7 @@ Public Attributes</h2></td></tr>
 
 <p>Definition at line <a class="el" href="_compass_8h_source.html#l00007">7</a> of file <a class="el" href="_compass_8h_source.html">Compass.h</a>.</p>
 <hr/><h2>Member Function Documentation</h2>
-<a class="anchor" id="a7503a41b6978e1f1a9edcd2f11fddd01"></a><!-- doxytag: member="Compass::calculate" ref="a7503a41b6978e1f1a9edcd2f11fddd01" args="(float roll, float pitch)" -->
+<a class="anchor" id="a922be89b146a3712699f8506a298d8f2"></a><!-- doxytag: member="Compass::calculate" ref="a922be89b146a3712699f8506a298d8f2" args="(float roll, float pitch)=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -84,17 +85,17 @@ Public Attributes</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td></td><td><code> [virtual]</code></td>
+          <td></td><td></td><td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#a755d7409dedf3e903225b36fbf16e622">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#aaef4df8c859b284d17c8a374d13e4e51">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#a755d7409dedf3e903225b36fbf16e622">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#aaef4df8c859b284d17c8a374d13e4e51">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a825f597357f66521819807d68ffc551e"></a><!-- doxytag: member="Compass::init" ref="a825f597357f66521819807d68ffc551e" args="(int initialise_wire_lib=1)" -->
+<a class="anchor" id="a6de4eb3c975bd7757885a6661cf1a79e"></a><!-- doxytag: member="Compass::init" ref="a6de4eb3c975bd7757885a6661cf1a79e" args="(int initialise_wire_lib=1)=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -104,17 +105,17 @@ Public Attributes</h2></td></tr>
           <td class="paramtype">int&nbsp;</td>
           <td class="paramname"> <em>initialise_wire_lib</em> = <code>1</code></td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [virtual]</code></td>
+          <td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#aefa72efcf8536c3696a25de69f1731c7">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#af32c9430d20a2eb7d1df8413870c99b6">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#aefa72efcf8536c3696a25de69f1731c7">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#af32c9430d20a2eb7d1df8413870c99b6">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="ab17ec5cc0bb81f2c94046e4ef5150106"></a><!-- doxytag: member="Compass::read" ref="ab17ec5cc0bb81f2c94046e4ef5150106" args="()" -->
+<a class="anchor" id="a270aff91583d79826f27f09d64072be8"></a><!-- doxytag: member="Compass::read" ref="a270aff91583d79826f27f09d64072be8" args="()=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -123,17 +124,17 @@ Public Attributes</h2></td></tr>
           <td>(</td>
           <td class="paramname"></td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [virtual]</code></td>
+          <td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#ac8d183edcd14cf5ee56895c498ebf02a">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#ab60b932f53493c46e262c1f46a12bdf6">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#ac8d183edcd14cf5ee56895c498ebf02a">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#ab60b932f53493c46e262c1f46a12bdf6">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a3b7ea064e17a870a419c8f45a7c1fb5d"></a><!-- doxytag: member="Compass::set_declination" ref="a3b7ea064e17a870a419c8f45a7c1fb5d" args="(float radians)" -->
+<a class="anchor" id="a7fb27fec44c834a4073dc84da445827d"></a><!-- doxytag: member="Compass::set_declination" ref="a7fb27fec44c834a4073dc84da445827d" args="(float radians)=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -143,17 +144,17 @@ Public Attributes</h2></td></tr>
           <td class="paramtype">float&nbsp;</td>
           <td class="paramname"> <em>radians</em></td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [virtual]</code></td>
+          <td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#a4b4d22637d14bd5585aa8d2d5e32ea43">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a2ba3fc3b5bd78a28f717c2740948d61e">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#a4b4d22637d14bd5585aa8d2d5e32ea43">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a2ba3fc3b5bd78a28f717c2740948d61e">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="af4ae15041479ecb2631ba6c39e84c561"></a><!-- doxytag: member="Compass::set_offsets" ref="af4ae15041479ecb2631ba6c39e84c561" args="(int x, int y, int z)" -->
+<a class="anchor" id="ad806fb3a6cfe66ab41098705252f8989"></a><!-- doxytag: member="Compass::set_offsets" ref="ad806fb3a6cfe66ab41098705252f8989" args="(int x, int y, int z)=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -178,17 +179,17 @@ Public Attributes</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td></td><td><code> [virtual]</code></td>
+          <td></td><td></td><td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#a1fb0fcecfa08549ea1ca9d0cf9f7eb14">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a90481085e451fe3f64d46ebb401b5aaf">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#a1fb0fcecfa08549ea1ca9d0cf9f7eb14">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a90481085e451fe3f64d46ebb401b5aaf">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
-<a class="anchor" id="a57b71b1f29b91e73f84bcc6860f3cf51"></a><!-- doxytag: member="Compass::set_orientation" ref="a57b71b1f29b91e73f84bcc6860f3cf51" args="(const Matrix3f &amp;rotation_matrix)" -->
+<a class="anchor" id="a9c7556a20a579b2f47a67d1b3d67331c"></a><!-- doxytag: member="Compass::set_orientation" ref="a9c7556a20a579b2f47a67d1b3d67331c" args="(const Matrix3f &amp;rotation_matrix)=0" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -198,13 +199,13 @@ Public Attributes</h2></td></tr>
           <td class="paramtype">const <a class="el" href="class_matrix3.html">Matrix3f</a> &amp;&nbsp;</td>
           <td class="paramname"> <em>rotation_matrix</em></td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [virtual]</code></td>
+          <td><code> [pure virtual]</code></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="class_a_p___compass___h_i_l.html#aae23c67a982d566e2f538509799ee277">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a5dafbafd496867d435168c8decc742fa">AP_Compass_HMC5843</a>.</p>
+<p>Implemented in <a class="el" href="class_a_p___compass___h_i_l.html#aae23c67a982d566e2f538509799ee277">AP_Compass_HIL</a>, and <a class="el" href="class_a_p___compass___h_m_c5843.html#a5dafbafd496867d435168c8decc742fa">AP_Compass_HMC5843</a>.</p>
 
 </div>
 </div>
@@ -315,7 +316,7 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/jgoppert/Projects/ap/libraries/AP_Compass/<a class="el" href="_compass_8h_source.html">Compass.h</a></li>
+<li><a class="el" href="_compass_8h_source.html">Compass.h</a></li>
 </ul>
 </div>
 <hr class="footer"/><address class="footer"><small>
