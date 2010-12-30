@@ -17,6 +17,20 @@
  */
 
 #include <AP_EEProm.h>
+void AP_EEPromRegistry::print(BetterStream & stream)
+{
+	stream.printf("\nEEPROM Registry\n");
+	for (int i=0;i<getSize();i++)				
+	{
+		stream.printf("%s\t%s\tid:\t%d\taddr:\t%d\tval:\t%f\t\n",
+				(*this)[i]->getEntryParentName(),
+				(*this)[i]->getEntryName(),
+				(*this)[i]->getEntryId(),
+				(*this)[i]->getEntryAddress(),
+				(*this)[i]->getEntry());
+	}
+}
+
 
 void AP_EEPromRegistry::add(AP_EEPromEntryI * entry, uint16_t & id, uint16_t & address, size_t size)
 {

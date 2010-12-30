@@ -14,6 +14,28 @@
 #include "AP_RcChannel.h"
 #include <AP_Common.h>
 
+AP_RcChannel::AP_RcChannel(const char * name, const APM_RC_Class & rc, const uint8_t & ch,
+			const float & scale, const float & center, 
+			const uint16_t & pwmMin, 
+			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
+			const uint16_t & pwmDeadZone,
+			const bool & filter, const bool & reverse) :
+		_name(name),
+		_rc(rc),
+		_ch(new AP_EEPROM_Uint8(ch,"CH",name)),
+		_scale(new AP_EEPROM_Float(scale,"SCALE",name)),
+		_center(new AP_EEPROM_Float(center,"CNTR",name)),
+		_pwmMin(new AP_EEPROM_Uint16(pwmMin,"PMIN",name)), 
+		_pwmMax(new AP_EEPROM_Uint16(pwmMax,"PMAX",name)),
+		_pwmNeutral(new AP_EEPROM_Uint16(pwmNeutral,"PNTRL",name)),
+		_pwmDeadZone(new AP_EEPROM_Uint16(pwmDeadZone,"PDEAD",name)),
+		_pwm(0),
+		_filter(new AP_EEPROM_Bool(filter,"FLTR",name)),
+		_reverse(new AP_EEPROM_Bool(reverse,"REV",name))
+	{
+	}
+
+
 void AP_RcChannel::readRadio() {
 	// apply reverse
 	uint16_t pwmRadio = APM_RC.InputCh(getCh());
@@ -23,8 +45,9 @@ void AP_RcChannel::readRadio() {
 void
 AP_RcChannel::setPwm(uint16_t pwm)
 {
+	//Serial.printf("pwm in setPwm: %d\n", pwm);
 	//Serial.printf("reverse: %s\n", (getReverse())?"true":"false");
-
+	
 	// apply reverse
 	if(getReverse()) pwm = int16_t(getPwmNeutral()-pwm) + getPwmNeutral();
 
@@ -69,8 +92,8 @@ uint16_t
 AP_RcChannel::_positionToPwm(const float & position)
 {
 	uint16_t pwm;
-	float p = position - getCenter();
 	//Serial.printf("position: %f\n", position);
+	float p = position - getCenter();	
 	if(p < 0)
 		pwm = p * int16_t(getPwmNeutral() - getPwmMin()) / 
 			getScale() + getPwmNeutral();

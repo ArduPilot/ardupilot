@@ -24,27 +24,14 @@ public:
 			const float & scale=45.0, const float & center=0.0, 
 			const uint16_t & pwmMin=1200, 
 			const uint16_t & pwmNeutral=1500, const uint16_t & pwmMax=1800,
-			const uint16_t & pwmDeadZone=100,
-			const bool & filter=false, const bool & reverse=false) :
-		_name(name),
-		_rc(rc),
-		_ch(new AP_EEPROM_Uint8(ch,createName("CH"))),
-		_scale(new AP_EEPROM_Float(scale,createName("SCALE"))),
-		_center(new AP_EEPROM_Float(center,createName("CNTR"))),
-		_pwmMin(new AP_EEPROM_Uint16(pwmMin,createName("PMIN"))), 
-		_pwmMax(new AP_EEPROM_Uint16(pwmMax,createName("PMAX"))),
-		_pwmNeutral(new AP_EEPROM_Uint16(pwmNeutral,createName("PNTRL"))),
-		_pwmDeadZone(new AP_EEPROM_Uint16(pwmDeadZone,createName("PDEAD"))),
-		_pwm(0),
-		_filter(new AP_EEPROM_Bool(filter,createName("FLTR"))),
-		_reverse(new AP_EEPROM_Bool(reverse,createName("RVRS")))
-	{
-	}
+			const uint16_t & pwmDeadZone=10,
+			const bool & filter=false, const bool & reverse=false);
 
 	// set
 	void readRadio();
 	void setPwm(uint16_t pwm);
 	void setPosition(float position);
+	void setNormalized(float normPosition) { setPosition(normPosition*getScale()); }
 	void mixRadio(uint16_t infStart);
 	void setCh(const uint8_t & ch) { _ch->set(ch); }
 	void setScale(const float & scale) { _scale->set(scale); }
@@ -74,16 +61,6 @@ public:
 	bool failSafe() { _pwm < (_pwmMin->get() - 50); }
 
 private:
-
-	// createName
-	const char * createName(char * str)
-	{
-		char * newName;
-		strcpy(newName,_name);
-		strcat(newName,"_");
-		strcat(newName,str);
-		return (const char * )newName;		
-	}
 
 	// configuration
 	const char * _name;

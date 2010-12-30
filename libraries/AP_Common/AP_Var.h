@@ -52,8 +52,8 @@ class AP_Var : public AP_VarI
 {
 public:
 	/// The default constrcutor
-	AP_Var(const type & data, const char * name = "", const bool & sync=false) :
-		_data(data), _name(name), _sync(sync)
+	AP_Var(const type & data, const char * name = "", const char * parentName = "", const bool & sync=false) :
+		_data(data), _name(name), _parentName(parentName), _sync(sync)
 	{
 	}
 
@@ -118,6 +118,9 @@ public:
 	/// Get the name. This is useful for ground stations.
 	virtual const char * getName() { return _name; }
 
+	/// Get the parent name. This is also useful for ground stations.
+	virtual const char * getParentName() { return _parentName; }
+
 	/// If sync is true the a load will always occure before a get and a save will always
 	/// occure before a set.
 	virtual const bool & getSync() { return _sync; }
@@ -126,6 +129,7 @@ public:
 protected:
 	type _data; /// The data that is stored on the heap */
 	const char * _name; /// The variable name, useful for gcs and terminal output
+	const char * _parentName; /// The variable parent name, useful for gcs and terminal output
 	bool _sync; /// Whether or not to call save/load on get/set
 };
 
