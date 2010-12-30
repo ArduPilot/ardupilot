@@ -22,12 +22,12 @@ void AP_EEPromRegistry::print(BetterStream & stream)
 	stream.printf("\nEEPROM Registry\n");
 	for (int i=0;i<getSize();i++)				
 	{
-		stream.printf("%s\t%s\tid:\t%d\taddr:\t%d\tval:\t%f\t\n",
+		stream.printf("id:\t%u\t%s\t%s\tval:\t%10.4f\taddr:\t%u\t\n",
+				(*this)[i]->getEntryId(),
 				(*this)[i]->getEntryParentName(),
 				(*this)[i]->getEntryName(),
-				(*this)[i]->getEntryId(),
-				(*this)[i]->getEntryAddress(),
-				(*this)[i]->getEntry());
+				(*this)[i]->getEntry(),
+				(*this)[i]->getEntryAddress());
 	}
 }
 

@@ -32,12 +32,12 @@ public:
 	/// Pure virtual function for setting the data value 
 	/// as a float. The function must handle the cast to 
 	/// the stored variable types.
-	virtual void setEntry(float val) = 0;
+	virtual void setEntry(const float & val) = 0;
 
 	/// Pure virtual function for getting data as a float. 
 	/// The function must handle the cast from the
 	/// stored variable types.
-	virtual float getEntry() = 0;
+	virtual const float getEntry() = 0;
 
 	/// Pure virtual function for getting entry name.
 	virtual const char * getEntryName() = 0;
@@ -46,10 +46,10 @@ public:
 	virtual const char * getEntryParentName() = 0;
 
 	/// Get the id of the variable.
-	virtual uint16_t getEntryId() = 0;
+	virtual const uint16_t & getEntryId() = 0;
 
 	/// Get the address of the variable.
-	virtual uint16_t getEntryAddress() = 0;
+	virtual const uint16_t & getEntryAddress() = 0;
 };
 
 ///The main EEProm Registry class.
@@ -92,16 +92,16 @@ public:
 		eepromRegistry.add(this,_id,_address,sizeof(type));
 	}
 
-	virtual void setEntry(float val) { this->setF(val); }
-	virtual float getEntry() { return this->getF(); }
+	virtual void setEntry(const float & val) { this->setF(val); }
+	virtual const float getEntry() { return this->getF(); }
 	virtual const char * getEntryName() { return this->getName(); }
 	virtual const char * getEntryParentName() { return this->getParentName(); }
 
 	/// Get the id of the variable.
-	virtual uint16_t getEntryId() { return _id; }
+	virtual const uint16_t & getEntryId() { return _id; }
 
 	/// Get the address of the variable.
-	virtual uint16_t getEntryAddress() { return _address; }
+	virtual const uint16_t & getEntryAddress() { return _address; }
 
 private:
 	uint16_t _id; /// Variable identifier
