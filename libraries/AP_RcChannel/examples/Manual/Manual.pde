@@ -19,7 +19,7 @@ uint8_t nChannels = 8;
 // channel configuration
 AP_RcChannel rcCh[] = 
 {
-	AP_RcChannel("ROLL",APM_RC,0,100.0),
+	AP_RcChannel("ROLL",APM_RC,0,45),
 	AP_RcChannel("PITCH",APM_RC,1,45),
 	AP_RcChannel("THR",APM_RC,2,100),
 	AP_RcChannel("YAW",APM_RC,3,45),
