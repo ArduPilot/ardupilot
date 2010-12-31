@@ -8,8 +8,11 @@
 /// The AP variable interface. This allows different types
 /// of variables to be passed to blocks for floating point
 /// math, memory management, etc.
+
 #ifndef AP_Var_H
 #define AP_Var_H
+
+#include <inttypes.h>
 
 class AP_VarI
 {
@@ -147,5 +150,8 @@ typedef AP_Var<uint16_t> AP_Uint16;
 typedef AP_Var<int32_t> AP_Int32;
 typedef AP_Var<uint32_t> AP_Unt32;
 typedef AP_Var<bool> AP_Bool;
+
+extern AP_Int8 AP_unity;
+extern AP_Int8 AP_negativeUnity;
 
 #endif // AP_Var_H

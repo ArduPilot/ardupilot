@@ -24,14 +24,14 @@ void operator delete(void *p)
 	if (p) free(p);
 }
 
-#if 0
-// We should never need this, as classes should never be defined
-// with pure virtual member functions
 extern "C" void __cxa_pure_virtual()
 {
-	while (1);
+	while (1)
+	{
+		Serial.println("Error: pure virtual call");
+		delay(1000);
+	}
 }
-#endif
 
 void * operator new[](size_t size)
 {

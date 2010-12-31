@@ -7,7 +7,6 @@
 #define AP_RcChannel_h
 
 #include <stdint.h>
-#include <FastSerial.h>
 #include <APM_RC.h>
 #include <AP_Var.h>
 #include <AP_Common.h>
@@ -84,7 +83,3 @@ private:
 };
 
 #endif	
-
-
-
-

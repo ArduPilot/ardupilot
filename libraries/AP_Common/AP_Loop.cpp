@@ -18,9 +18,6 @@
 
 #include "AP_Loop.h"
 
-namespace apo
-{
-
 Loop::Loop(float frequency, void (*fptr)(void *), void * data) :
     _fptr(fptr),
     _data(data),
@@ -51,7 +48,5 @@ void Loop::update()
     // calculated load with a low pass filter
     _load = 0.9*_load + 10*(float(micros()-_timeStamp)/(_timeStamp-timeStamp0));
 }
-
-} // apo
 
 // vim:ts=4:sw=4:expandtab

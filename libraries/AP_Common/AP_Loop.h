@@ -21,13 +21,6 @@
 
 #include "AP_Vector.h"
 
-///
-// Start of apo namespace
-// The above functions must be in the global
-// namespace for c++ to function properly
-namespace apo
-{
-
 class Loop
 {
 public:
@@ -61,8 +54,6 @@ private:
     uint8_t _load;
     float _dt;
 };
-
-} // apo
 
 #endif
 
