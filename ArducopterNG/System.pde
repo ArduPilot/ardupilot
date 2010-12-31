@@ -183,7 +183,7 @@ void APM_Init() {
 #endif
 
 #ifdef IsRANGEFINDER
-  AP_RangeFinder_down.init(AN1);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
+  AP_RangeFinder_down.init(AN5);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
   //AP_RangeFinder_frontRight.init(AN5);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
   //AP_RangeFinder_backRight.init(AN4);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
   //AP_RangeFinder_backLeft.init(AN3);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
