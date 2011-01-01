@@ -11,5 +11,5 @@
 
 #include "AP_Var.h"
 
-extern AP_Int8 AP_unity(1);
-extern AP_Int8 AP_negativeUnity(-1);
+AP_Int8 AP_unity(1);
+AP_Int8 AP_negativeUnity(-1);
