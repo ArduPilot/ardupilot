@@ -52,10 +52,24 @@ SYSTYPE			:=	$(shell uname)
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
 
 #
-# We need to know the location of the sketchbook. For now, assume that it's
-# the parent of the source directory.
+# We need to know the location of the sketchbook.  If it hasn't been overridden,
+# try the parent of the current directory.  If there is no libraries directory
+# there, assume that we are in a library's examples directory and try backing up
+# further.
 #
-SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
+ifeq ($(SKETCHBOOK),)
+  SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../../.. && pwd)
+  endif
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    $(error ERROR: cannot determine sketchbook location - please specify on the commandline with SKETCHBOOK=<path>)
+  endif
+else
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
+  endif
+endif
 
 #
 # Work out the sketch name from the name of the source directory.
@@ -261,7 +275,7 @@ MCU			:=	$(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
 F_CPU			:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
 HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 ifeq ($(MCU),)
-$(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE)
+$(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
 endif
 
 # Hardware source files
