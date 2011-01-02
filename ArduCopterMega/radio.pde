@@ -7,14 +7,15 @@ void init_rc_in()
 	rc_2.dead_zone = 60;
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
-	rc_3.scale_output = .8;
+	rc_3.scale_output = .9;
 	rc_4.set_angle(6000); 
 	rc_4.dead_zone = 500;
 	rc_5.set_range(0,1000);
 	rc_5.set_filter(false);
 
 	// for kP values
-	rc_6.set_range(200,800);
+	//rc_6.set_range(200,800);
+	rc_6.set_range(0,4000);
 
 	// for camera angles
 	//rc_6.set_angle(4500);
@@ -133,26 +134,45 @@ void set_servos_4(void)
 		//Serial.printf("yaw: %d ", rc_4.radio_out);
 		
 		if(frame_type == PLUS_FRAME){
+			//Serial.println("+");
 			motor_out[RIGHT]	= rc_3.radio_out - rc_1.pwm_out;
 			motor_out[LEFT]		= rc_3.radio_out + rc_1.pwm_out;
 			motor_out[FRONT]	= rc_3.radio_out + rc_2.pwm_out;
 			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
-		}else{
+			
+		}else if(frame_type == X_FRAME){
 			int roll_out 	= rc_1.pwm_out / 2;
 			int pitch_out 	= rc_2.pwm_out / 2;
-			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
-			motor_out[LEFT]		= rc_3.radio_out + roll_out - pitch_out;
+
 			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out;
+			motor_out[LEFT]		= rc_3.radio_out + roll_out - pitch_out;
+
+			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
 			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
+		}else{
+			/*
+			replace this with Tri-frame control law
+			
+			int roll_out 	= rc_1.pwm_out / 2;
+			int pitch_out 	= rc_2.pwm_out / 2;
+
+			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out;
+			motor_out[LEFT]		= rc_3.radio_out + roll_out - pitch_out;
+
+			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
+			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
+			*/
 		}
 		
 		//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 
-		motor_out[RIGHT]	+=  rc_4.pwm_out;
-		motor_out[LEFT]		+=  rc_4.pwm_out;
-		motor_out[FRONT]	-=  rc_4.pwm_out;
-		motor_out[BACK] 	-=  rc_4.pwm_out;
-
+		if((frame_type == PLUS_FRAME) || (frame_type == X_FRAME)){
+			motor_out[RIGHT]	+=  rc_4.pwm_out;
+			motor_out[LEFT]		+=  rc_4.pwm_out;
+			motor_out[FRONT]	-=  rc_4.pwm_out;
+			motor_out[BACK] 	-=  rc_4.pwm_out;
+		}
+		
 		//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 
 		motor_out[RIGHT]	= constrain(motor_out[RIGHT], 	out_min, rc_3.radio_max);
@@ -174,9 +194,10 @@ void set_servos_4(void)
 		if (num > 50){
 			num = 0;
 			
-			pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
-			stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.25;
-			init_pids();
+			hold_yaw_dampener = (float)rc_6.control_in;
+			//pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
+			//stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.25;
+			//init_pids();
 			
 			//Serial.print("nav_yaw: ");
 			//Serial.println(nav_yaw,DEC);

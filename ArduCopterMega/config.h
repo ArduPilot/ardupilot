@@ -254,7 +254,7 @@
 #endif
 
 #ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .1
+# define ACRO_RATE_YAW_P         .07
 #endif
 #ifndef ACRO_RATE_YAW_I
 # define ACRO_RATE_YAW_I         0.0
@@ -263,19 +263,7 @@
 # define ACRO_RATE_YAW_D         0.0
 #endif
 #ifndef ACRO_RATE_YAW_IMAX
-# define ACRO_RATE_YAW_IMAX   20 
-#endif
-
-// STABILZE RATE Control
-//
-#ifndef ACRO_RATE_RP
-# define ACRO_RATE_RP		0.1
-#endif
-
-// STABILZE RATE Control
-//
-#ifndef ACRO_RATE_YAW
-# define ACRO_RATE_YAW		0.1
+# define ACRO_RATE_YAW_IMAX   0
 #endif
 
 
@@ -310,8 +298,8 @@
 
 // STABILZE RATE Control
 //
-#ifndef STABILIZE_RATE_RP
-# define STABILIZE_RATE_RP		0.175
+#ifndef STABILIZE_DAMPENER
+# define STABILIZE_DAMPENER		0.175
 #endif
 
 
@@ -319,7 +307,7 @@
 // YAW Control
 //
 #ifndef  YAW_P
-# define YAW_P					0.8
+# define YAW_P					0.5
 #endif
 #ifndef  YAW_I
 # define YAW_I					0.0
@@ -333,8 +321,8 @@
 
 // STABILZE YAW Control
 //
-#ifndef STABILIZE_RATE_YAW
-# define STABILIZE_RATE_YAW		0.000
+#ifndef HOLD_YAW_DAMPENER
+# define HOLD_YAW_DAMPENER		0.175
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

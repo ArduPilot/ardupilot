@@ -134,10 +134,12 @@ void process_must()
 	switch(command_must_ID){
 	
 		case CMD_TAKEOFF:	// TAKEOFF!
-			takeoff_altitude 	= (int)next_command.alt;		
+			takeoff_altitude 	= (int)next_command.alt;
 			next_WP.lat 		= current_loc.lat + 10;	// so we don't have bad calcs
 			next_WP.lng 		= current_loc.lng + 10;	// so we don't have bad calcs
+			next_WP.alt			= current_loc.alt + takeoff_altitude;
 			takeoff_complete 	= false;			// set flag to use gps ground course during TO.  IMU will be doing yaw drift correction 
+			//set_next_WP(&next_WP);
 			break;
 
 		case CMD_WAYPOINT:	// Navigate to Waypoint
@@ -395,7 +397,7 @@ void verify_must()
 			break;
 		
 		case CMD_TAKEOFF:	// Takeoff!
-			if (current_loc.alt > (home.alt + takeoff_altitude)){
+			if (current_loc.alt > (next_WP.alt -100)){
 				command_must_index 	= 0;
 				takeoff_complete 	= true;
 			}

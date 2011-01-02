@@ -70,12 +70,6 @@ void calc_bearing_error()
 	bearing_error 	= wrap_180(bearing_error);
 }
 
-void calc_yaw_error()
-{
-	yaw_error = nav_yaw - yaw_sensor;
-	yaw_error = wrap_180(yaw_error);
-}
-
 void calc_distance_error()
 {
 	wp_distance = GPS_wp_distance;

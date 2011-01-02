@@ -44,46 +44,25 @@ float angle_boost()
 yaw control
 ****************************************************************/
 
-void input_yaw_hold_2()
+void output_manual_yaw()
 {
 	if(rc_3.control_in == 0){
-		// Reset the yaw hold
-		nav_yaw = yaw_sensor;
-	
-	}else if(rc_4.control_in == 0){
-		// do nothing
-		
-	}else{
-		// create up to 60° of yaw error
-		nav_yaw = yaw_sensor + rc_4.control_in;
-		nav_yaw = wrap_360(nav_yaw);
+		clear_yaw_control();
+	} else {	
+		// Yaw control
+		if(rc_4.control_in == 0){
+			//clear_yaw_control();
+			output_yaw_with_hold(true); // hold yaw
+		}else{
+			output_yaw_with_hold(false); // rate control yaw
+		}
 	}
 }
 
-void input_yaw_hold()
+void auto_yaw()
 {
-	if(rc_3.control_in == 0){
-		// Reset the yaw hold
-		nav_yaw = yaw_sensor;
-	
-	}else if(rc_4.control_in == 0){
-		// do nothing
-		
-	}else{
-		// create up to 60° of yaw error
-		nav_yaw += ((long)rc_4.control_in * (long)deltaMiliSeconds) / 500; // we'll get 60° * 2 or 120° per second
-		nav_yaw = wrap_360(nav_yaw);
-	}
+	output_yaw_with_hold(true); // hold yaw
 }
-
-/*void output_yaw_stabilize()
-{
-	rc_4.servo_out	= rc_4.control_in;
-	rc_4.servo_out  = constrain(rc_4.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
-}*/
-
-
-
 
 /*************************************************************
 picth and roll control

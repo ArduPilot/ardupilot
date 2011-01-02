@@ -2,9 +2,9 @@
 // are defined below. Order matters to the compiler.
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_flaps(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
@@ -40,9 +40,9 @@ static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
-	{"flaps",		test_flaps},
 	{"stabilize",	test_stabilize},
 	{"gps",			test_gps},
+	{"adc", 		test_adc},
 	{"imu",			test_imu},
 	{"gyro",		test_gyro},
 	{"dcm",			test_dcm},
@@ -111,7 +111,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 
 	// read the radio to set trims
 	// ---------------------------
-	//trim_radio();
+	trim_radio();
 
 	while(1){
 		delay(20);
@@ -147,6 +147,8 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
+	static byte ts_num;
+	
 	print_hit_enter();
 	delay(1000);
 	
@@ -155,15 +157,15 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	init_rc_in();
 	
 	control_mode = STABILIZE;
-	Serial.printf_P(PSTR("pid_stabilize_roll.kP: "));
-	Serial.println(pid_stabilize_roll.kP(),3);
+	Serial.printf_P(PSTR("pid_stabilize_roll.kP: %4.4f\n"), pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
 	motor_armed = true;
-
+	trim_radio();
+	
 	while(1){
 		// 50 hz
-		if (millis() - fast_loopTimer > 49) {
+		if (millis() - fast_loopTimer > 19) {
 			deltaMiliSeconds 	= millis() - fast_loopTimer;
 			fast_loopTimer		= millis();
 			G_Dt 				= (float)deltaMiliSeconds / 1000.f;
@@ -186,16 +188,40 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			// IMU
 			// ---
 			read_AHRS();
-	
+			
+			// allow us to zero out sensors with control switches
+			if(rc_5.control_in < 600){
+				roll_sensor = pitch_sensor = 0;
+			}
+			
 			// custom code/exceptions for flight modes
 			// ---------------------------------------
 			update_current_flight_mode();
-
-			//Serial.println(" ");
 			
 			// write out the servo PWM values
 			// ------------------------------
 			set_servos_4();
+			
+			ts_num++;
+			if (ts_num > 10){
+				ts_num = 0;
+				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, rc2:%d, rc4 %d, ny:%ld, ys:%ld, ye:%ld,  R: %d,  L: %d  F: %d  B: %d\n"),
+					(int)(roll_sensor/100),
+					(int)(pitch_sensor/100),
+					rc_1.pwm_out,
+					rc_2.pwm_out,
+					rc_4.pwm_out,
+					nav_yaw,
+					dcm.yaw_sensor,
+					yaw_error,
+					motor_out[RIGHT],
+					motor_out[LEFT],
+					motor_out[FRONT],
+					motor_out[BACK]);
+			}
+
+			// R: 1417,  L: 1453  F: 1453  B: 1417
+			
 			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
 			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
 			
@@ -207,6 +233,26 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+static int8_t
+test_adc(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	adc.Init();
+	delay(1000);
+	Serial.printf_P(PSTR("ADC\n"));
+	delay(1000);
+	
+	while(1){
+		for(int i = 0; i < 9; i++){
+			Serial.printf_P(PSTR("i:%d\t"),adc.Ch(i));
+		}
+		Serial.println();
+		delay(20);
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
@@ -402,20 +448,38 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_omega(uint8_t argc, const Menu::arg *argv)
 {
+	static byte ts_num;
+	float old_yaw;
+
 	print_hit_enter();
 	delay(1000);
 	Serial.printf_P(PSTR("Omega"));
 	delay(1000);
+	
+	G_Dt = .02;
 
 	while(1){
+		delay(20);
+		// IMU
+		// ---
+		read_AHRS();
+		float my_oz = (dcm.yaw - old_yaw) * 50;
+		
+		old_yaw = dcm.yaw;
+		
 		Vector3f omega = dcm.get_gyro();
-		Serial.printf_P(PSTR("R: %d\tP: %d\tY: %d\n"), (int)(ToDeg(omega.x)), (int)(ToDeg(omega.y)), (int)(ToDeg(omega.z)));
-		delay(100);
+		ts_num++;
+		if (ts_num > 2){
+			ts_num = 0;
+			//Serial.printf_P(PSTR("R: %4.4f\tP: %4.4f\tY: %4.4f\tY: %4.4f\n"), omega.x, omega.y, omega.z, my_oz);
+			Serial.printf_P(PSTR(" Yaw: %ld\tY: %4.4f\tY: %4.4f\n"), dcm.yaw_sensor, omega.z, my_oz);
+		}
 
 		if(Serial.available() > 0){
 			return (0);
 		}
 	}
+	return (0);
 }
 
 static int8_t
@@ -464,27 +528,6 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-
-static int8_t
-test_flaps(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-	
-	while(1){
-		delay(300);
-		read_radio();
-		float temp  = (float)rc_6.control_in / 1000;
-	
-		Serial.print("flaps: ");
-		Serial.println(temp, 3);
-		
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-
 
 static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)

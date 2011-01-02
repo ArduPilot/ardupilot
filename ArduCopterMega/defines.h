@@ -68,6 +68,7 @@
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
+#define TRI_FRAME 2
 
 // Auto Pilot modes
 // ----------------
@@ -263,10 +264,9 @@
 #define EE_GAIN_9 0x80	// all gains stored from here
 #define EE_GAIN_10 0x88	// all gains stored from here
 
-#define EE_STAB_RATE_RP 0xA0
-#define EE_STAB_RATE_YAW 0xA2
-#define EE_ACRO_RATE_RP 0xA4
-#define EE_ACRO_RATE_YAW 0xA6
+#define EE_STAB_DAMPENER 0xA0
+#define EE_HOLD_YAW_DAMPENER 0xA2
+
 #define EE_MAG_DECLINATION 0xA8
 #define EE_MAG_X 0xAA
 #define EE_MAG_Y 0xAC
