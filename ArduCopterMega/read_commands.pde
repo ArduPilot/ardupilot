@@ -101,7 +101,7 @@ void parseCommand(char *buffer)
 				break;
 
 			case 'R':
-				stabilize_rate_roll_pitch = (float)value / 1000;
+				//stabilize_rate_roll_pitch = (float)value / 1000;
 				//save_EEPROM_PID();
 				break;
 		}

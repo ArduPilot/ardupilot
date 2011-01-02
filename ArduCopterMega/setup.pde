@@ -2,7 +2,7 @@
 
 // Functions called from the setup menu
 static int8_t	setup_radio				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_motors			(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_accel				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_accel_flat		(uint8_t argc, const Menu::arg *argv);
@@ -23,7 +23,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"reset", 			setup_factory},
 	{"erase", 			setup_erase},
 	{"radio",			setup_radio},
-	{"esc",				setup_esc},
+	{"motors",			setup_motors},
 	{"level",			setup_accel},
 	{"flat",			setup_accel_flat},
 	{"modes",			setup_flightmodes},
@@ -61,27 +61,33 @@ static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
 	uint8_t		i;
-
-	Serial.printf_P(PSTR("\nRadio:\n"));
-
+	print_blanks(10);
+	Serial.printf_P(PSTR("Radio\n"));
+	print_divider();
 	// radio
 	read_EEPROM_radio();	
 	print_radio_values();
 	
 	
 	// frame
+	print_blanks(3);
+	Serial.printf_P(PSTR("Frame\n"));
+	print_divider();
+
 	read_EEPROM_frame();
-	Serial.printf_P(PSTR("\nFrame type:"));
-	Serial.printf_P(PSTR("%d \n"), (int)frame_type);
 	
 	if(frame_type == X_FRAME)
-		Serial.printf_P(PSTR(" X\n"));
+		Serial.printf_P(PSTR("X "));
 	else if(frame_type == PLUS_FRAME)
-		Serial.printf_P(PSTR("Plus\n"));
+		Serial.printf_P(PSTR("Plus "));
+	Serial.printf_P(PSTR("(%d)\n"), (int)frame_type);
 		
 	
+	print_blanks(3);
+	Serial.printf_P(PSTR("Gains\n"));
+	print_divider();
+
 	read_EEPROM_PID();
-	Serial.printf_P(PSTR("\nGains:\n"));
 	// Acro
 	Serial.printf_P(PSTR("Acro:\nroll:\n"));
 	print_PID(&pid_acro_rate_roll);
@@ -89,21 +95,18 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	print_PID(&pid_acro_rate_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
 	print_PID(&pid_acro_rate_yaw);
-	Serial.printf_P(PSTR("rates:\n"));
-	Serial.println(acro_rate_roll_pitch,3);
-	Serial.printf_P(PSTR("rates_yaw:\n"));
-	Serial.println(acro_rate_yaw,3);
-	Serial.println(" ");
+
 	// Stabilize
-	Serial.printf_P(PSTR("Stabilize:\nroll:\n"));
+	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
 	print_PID(&pid_stabilize_roll);
 	Serial.printf_P(PSTR("pitch:\n"));
 	print_PID(&pid_stabilize_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
 	print_PID(&pid_yaw);
-	Serial.printf_P(PSTR("Rate stabilize:\n"));
-	Serial.println(stabilize_rate_roll_pitch,3);
-	Serial.println(" ");
+	
+	Serial.printf_P(PSTR("Stabilize dampener: %4.3f\n"), stabilize_dampener);	
+	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), hold_yaw_dampener);
+	
 	// Nav
 	Serial.printf_P(PSTR("Nav:\npitch:\n"));
 	print_PID(&pid_nav);
@@ -111,29 +114,33 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	print_PID(&pid_throttle);
 	Serial.println(" ");
 	
-	
+	print_blanks(3);
+	Serial.printf_P(PSTR("User Configs\n"));
+	print_divider();
 	// Crosstrack
 	read_EEPROM_nav();
-	Serial.printf_P(PSTR("XTRACK:"));
-	Serial.println(x_track_gain,DEC);
+	Serial.printf_P(PSTR("XTRACK: %4.2f\n"), x_track_gain);
 	Serial.printf_P(PSTR("XTRACK angle: %d\n"), x_track_angle);
-	Serial.printf_P(PSTR("PITCH_MAX: %d\n\n"), pitch_max);
-
+	Serial.printf_P(PSTR("PITCH_MAX: %d\n"), pitch_max);
 	// User Configs
 	read_EEPROM_configs();
-	Serial.printf_P(PSTR("\nUser config:\n"));	
 	Serial.printf_P(PSTR("throttle_min: %d\n"), 	throttle_min);
 	Serial.printf_P(PSTR("throttle_max: %d\n"), 	throttle_max);
 	Serial.printf_P(PSTR("throttle_cruise: %d\n"), 	throttle_cruise);
 	Serial.printf_P(PSTR("throttle_failsafe_enabled: %d\n"), throttle_failsafe_enabled);
 	Serial.printf_P(PSTR("throttle_failsafe_value: %d\n"), throttle_failsafe_value);
-	Serial.printf_P(PSTR("log_bitmask: %d\n\n"), log_bitmask);
+	Serial.printf_P(PSTR("log_bitmask: %d\n"), log_bitmask);
 
+	print_blanks(3);
+	Serial.printf_P(PSTR("IMU\n"));
+	print_divider();
 	imu.print_gyro_offsets();
 	imu.print_accel_offsets();
 	
-	// mag declination
-	Serial.printf_P(PSTR("\nCompass "));
+	print_blanks(3);
+	Serial.printf_P(PSTR("Compass\n"));
+	print_divider();
+
 	if(compass_enabled)
 		Serial.printf_P(PSTR("en"));
 	else
@@ -324,41 +331,94 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-setup_esc(uint8_t argc, const Menu::arg *argv)
+setup_motors(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.println("\n\nESC Setup - Motors armed");
+	init_rc_in();
+	// read the radio to set trims
+	// ---------------------------
+	trim_radio();
 
-	rc_3.load_eeprom();
-	rc_1.set_filter(false);
-	rc_2.set_filter(false);
-	rc_3.set_filter(false);
-	rc_4.set_filter(false);
-	motor_armed = true;
+	print_hit_enter();
+	delay(1000);
+
+	
+	int out_min = rc_3.radio_min + 70;
+	
+	if(frame_type == PLUS_FRAME){
+		Serial.printf_P(PSTR("PLUS"));
+	}else{
+		Serial.printf_P(PSTR("X"));
+	}
+	Serial.printf_P(PSTR(" Frame\n"));
 	
 	while(1){
-		
 		delay(20);
 		read_radio();
-		
-		APM_RC.OutputCh(CH_1, rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, rc_3.radio_in);
+		motor_out[LEFT]		= rc_3.radio_min;
+		motor_out[BACK] 	= rc_3.radio_min;
+		motor_out[FRONT]	= rc_3.radio_min;
+		motor_out[RIGHT]	= rc_3.radio_min;
+
 	
+		
+		if(frame_type == PLUS_FRAME){
+			if(rc_1.control_in > 0){
+				motor_out[RIGHT] 	= out_min;
+				Serial.println("0");
+				
+			}else if(rc_1.control_in < 0){
+				motor_out[LEFT]		= out_min;
+				Serial.println("1");
+			}
+			
+			if(rc_2.control_in > 0){
+				motor_out[BACK] 	= out_min;
+				Serial.println("3");
+				
+			}else if(rc_2.control_in < 0){
+				motor_out[FRONT]	= out_min;
+				Serial.println("2");
+			}
+
+		}else{
+			// lower right
+			if((rc_1.control_in > 0) 		&& (rc_2.control_in > 0)){
+				motor_out[BACK] 	= out_min;
+				Serial.println("3");
+			// lower left
+			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in > 0)){
+				motor_out[LEFT]		= out_min;
+				Serial.println("1");
+
+			// upper left
+			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in < 0)){
+				motor_out[FRONT]	= out_min;
+				Serial.println("2");
+
+			// upper right
+			}else if((rc_1.control_in > 0) 	&& (rc_2.control_in < 0)){
+				motor_out[RIGHT]	= out_min;
+				Serial.println("0");
+			}
+		}
+		
+		if(rc_3.control_in > 0){
+			APM_RC.OutputCh(CH_1, rc_3.radio_in);
+			APM_RC.OutputCh(CH_2, rc_3.radio_in);
+			APM_RC.OutputCh(CH_3, rc_3.radio_in);
+			APM_RC.OutputCh(CH_4, rc_3.radio_in);
+		}else{
+			APM_RC.OutputCh(CH_1, motor_out[RIGHT]);
+			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
+			APM_RC.OutputCh(CH_3, motor_out[FRONT]);
+			APM_RC.OutputCh(CH_4, motor_out[BACK]);
+		}
+		
 		if(Serial.available() > 0){
-			motor_armed = false;
-			rc_1.set_filter(true);
-			rc_2.set_filter(true);
-			rc_3.set_filter(true);
-			rc_4.set_filter(true);
-			read_radio();		
-			Serial.println("\n\nMotors disarmed)");
-			break;
+			return (0);
 		}
 	}
-	return(0);
 }
-
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
@@ -408,8 +468,6 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 	pid_acro_rate_yaw.kD(ACRO_RATE_YAW_D);
 	pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
 
-	acro_rate_roll_pitch	= ACRO_RATE_RP;
-	acro_rate_yaw			= ACRO_RATE_YAW;
 
 	// stabilize, angle error
 	pid_stabilize_roll.kP(STABILIZE_ROLL_P);
@@ -422,14 +480,20 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 	pid_stabilize_pitch.kD(STABILIZE_PITCH_D);
 	pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
 
-	// rate control for angle error
-	stabilize_rate_roll_pitch 	= STABILIZE_RATE_RP;
-	stabilize_rate_yaw			= STABILIZE_RATE_YAW;
-
+	// YAW hold
 	pid_yaw.kP(YAW_P);
 	pid_yaw.kI(YAW_I);
 	pid_yaw.kD(YAW_D);
 	pid_yaw.imax(YAW_IMAX * 100);
+
+
+	// custom dampeners
+	// roll pitch
+	stabilize_dampener 	= STABILIZE_DAMPENER;
+	
+	//yaw
+	hold_yaw_dampener	= HOLD_YAW_DAMPENER;
+
 
 	// navigation
 	pid_nav.kP(NAV_P);
@@ -539,19 +603,26 @@ static int8_t
 setup_frame(uint8_t argc, const Menu::arg *argv)
 {
 	if(argv[1].i < 1){
-		Serial.printf_P(PSTR("\nUsage:\nPlus frame =>frame 1\nX frame =>frame 2\n\n"));
+		Serial.printf_P(PSTR("\nUsage:\nPlus frame =>frame 1\nX frame =>frame 2\nTRI frame =>frame 3\n\n"));
 		return 0;
 	}
+	Serial.printf_P(PSTR("\nSaving "));
 
 	if(argv[1].i == 1){
-		Serial.printf_P(PSTR("\nSaving Plus frame\n\n"));
+		Serial.printf_P(PSTR("Plus "));
 		frame_type = PLUS_FRAME;
 
 	}else if(argv[1].i == 2){
 
-		Serial.printf_P(PSTR("\nSaving X frame\n\n"));
+		Serial.printf_P(PSTR("X "));
+		frame_type = X_FRAME;
+	
+	}else if(argv[1].i == 3){
+
+		Serial.printf_P(PSTR("Tri "));
 		frame_type = X_FRAME;
 	}
+	Serial.printf_P(PSTR("frame\n\n"));
 	save_EEPROM_frame();	
 	return 0;
 }
@@ -640,14 +711,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 
 void print_PID(PID * pid)
 {
-	Serial.printf_P(PSTR("P: "));
-	Serial.print((float)pid->kP(),3);
-	Serial.printf_P(PSTR(",I: "));
-	Serial.print((float)pid->kI(),3);
-	Serial.printf_P(PSTR(",D: "));
-	Serial.print((float)pid->kD(),3);
-	Serial.printf_P(PSTR(",IMAX: "));
-	Serial.println(pid->imax()/100,DEC); // imax is stored as *100 degrees internally
+	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%d\n"), pid->kP(), pid->kI(), pid->kD(), (int)(pid->imax()/100));
 }
 
 void 
@@ -683,6 +747,15 @@ print_blanks(int num)
 		num--;
 		Serial.println("");
 	}
+}
+
+void
+print_divider(void)
+{
+	for (int i = 0; i < 40; i++) {
+		Serial.print("-");
+	}
+	Serial.println("");
 }
 
 

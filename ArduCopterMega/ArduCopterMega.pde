@@ -141,18 +141,22 @@ byte frame_type = PLUS_FRAME;
 PID pid_acro_rate_roll		(EE_GAIN_1);
 PID pid_acro_rate_pitch		(EE_GAIN_2);
 PID pid_acro_rate_yaw		(EE_GAIN_3);
-float 	acro_rate_roll_pitch, acro_rate_yaw;
 
 //Stabilize
 PID pid_stabilize_roll		(EE_GAIN_4);
 PID pid_stabilize_pitch		(EE_GAIN_5);
 PID pid_yaw					(EE_GAIN_6);
-float 	stabilize_rate_roll_pitch;
-float 	stabilize_rate_yaw;
-float 	stabilze_dampener;
+
+// roll pitch
+float 	stabilize_dampener;
 int 	max_stabilize_dampener;
-float 	stabilze_yaw_dampener;
+
+// yaw
+float 	hold_yaw_dampener;
 int 	max_yaw_dampener;
+
+// used to transition yaw control from Rate control to Yaw hold
+boolean rate_yaw_flag;
 
 // Nav
 PID pid_nav					(EE_GAIN_7);
@@ -740,7 +744,9 @@ void update_current_flight_mode(void)
 				calc_nav_throttle();
 
 				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
+				// ------------------------------------				
+				auto_yaw();
+				
 				// perform stabilzation
 				output_stabilize();
 
@@ -760,12 +766,12 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 
-				// get desired yaw control from radio
-				input_yaw_hold();
-
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 
+				// Yaw control
+				output_manual_yaw();
+				
 				// apply throttle control
 				output_manual_throttle();
 
@@ -806,8 +812,9 @@ void update_current_flight_mode(void)
 				calc_nav_roll();
 				calc_nav_pitch();
 								
-				// get desired yaw control from radio
-				input_yaw_hold();
+				// Yaw control
+				// -----------
+				output_manual_yaw();
 				
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
@@ -830,8 +837,9 @@ void update_current_flight_mode(void)
 				// get desired height from the throttle
 				next_WP.alt 	= home.alt + (rc_3.control_in * 4) -100; // 0 - 1000 (40 meters)
 				
-				// get desired yaw control from radio
-				input_yaw_hold();
+				// Yaw control
+				// -----------
+				output_manual_yaw();
 				
 				// based on altitude error
 				// -----------------------
@@ -860,6 +868,8 @@ void update_current_flight_mode(void)
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
+				auto_yaw();
+				
 				// apply throttle control
 				output_auto_throttle();
 
@@ -874,8 +884,9 @@ void update_current_flight_mode(void)
 				calc_nav_roll();
 				calc_nav_pitch();
 								
-				// get desired yaw control from radio
-				input_yaw_hold();
+				// Yaw control
+				// -----------
+				output_manual_yaw();
 				
 				// based on altitude error
 				// -----------------------

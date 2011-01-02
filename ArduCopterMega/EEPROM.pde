@@ -133,10 +133,11 @@ void read_EEPROM_PID(void)
 	pid_nav.load_gains();
 	pid_throttle.load_gains();
 	
-	stabilize_rate_roll_pitch 	= read_EE_compressed_float(EE_STAB_RATE_RP, 4);
-	stabilize_rate_yaw			= read_EE_compressed_float(EE_STAB_RATE_YAW, 4);
-	acro_rate_roll_pitch 		= read_EE_compressed_float(EE_ACRO_RATE_RP, 4);
-	acro_rate_yaw 				= read_EE_compressed_float(EE_ACRO_RATE_YAW, 4);
+	// roll pitch
+	stabilize_dampener 			= read_EE_compressed_float(EE_STAB_DAMPENER, 4);
+
+	// yaw
+	hold_yaw_dampener			= read_EE_compressed_float(EE_HOLD_YAW_DAMPENER, 4);
 }
 
 void save_EEPROM_PID(void)
@@ -152,10 +153,11 @@ void save_EEPROM_PID(void)
 	pid_nav.save_gains();
 	pid_throttle.save_gains();
 
-	write_EE_compressed_float(stabilize_rate_roll_pitch, 	EE_STAB_RATE_RP, 4);
-	write_EE_compressed_float(stabilize_rate_yaw, 			EE_STAB_RATE_YAW, 4);
-	write_EE_compressed_float(acro_rate_roll_pitch, 		EE_ACRO_RATE_RP, 4);
-	write_EE_compressed_float(acro_rate_yaw, 				EE_ACRO_RATE_YAW, 4);
+	// roll pitch
+	write_EE_compressed_float(stabilize_dampener,	EE_STAB_DAMPENER, 4);
+
+	// yaw
+	write_EE_compressed_float(hold_yaw_dampener, 	EE_HOLD_YAW_DAMPENER, 4);
 }
 
 /********************************************************************************/
