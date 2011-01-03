@@ -11,21 +11,21 @@
 
 #ifndef AP_Var_H
 #define AP_Var_H
-
-#include <inttypes.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdint.h>
+
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
-#include <AP_MetaClass.h>
+#include "AP_MetaClass.h"
 
 /// Nestable scopes for variable names.
 ///
 ///	This provides a mechanism for scoping variable names, and
 ///	may later be extended for other purposes.
 ///
-/// When AP_VarBase is asked for the name of a variable, it will
+/// When AP_Var is asked for the name of a variable, it will
 /// prepend the names of all enclosing scopes.  This provides a way
 /// of grouping variables and saving memory when many share a large
 /// common prefix.
@@ -68,7 +68,7 @@ private:
 ///
 /// Provides naming and lookup services for variables.
 ///
-class AP_VarBase : public AP_MetaClass
+class AP_Var : public AP_MetaClass
 {
 public:
 	/// A unique identity for variables that can be saved to EEPROM
@@ -78,7 +78,7 @@ public:
 	///			store in EEPROM.
 	///
 	typedef uint16_t		AP_VarIdentity;
-	static const AP_VarIdentity	AP_VarUnsaved = 0;
+	static const AP_VarIdentity	AP_VarUnsaved = ~(AP_VarIdentity)0;
 
 	/// The largest variable that will be saved to EEPROM
 	///
@@ -89,18 +89,26 @@ public:
 	/// @param	name			An optional name by which the variable may be known.
 	/// @param	scope			An optional scope that the variable may be a contained within.
 	///
-	AP_VarBase(AP_VarIdentity identity = AP_VarUnsaved,
-	           const prog_char *name = NULL,
-	           AP_VarScope *scope = NULL) :
-	        	   _identity(identity),
-	        	   _name(name),
-	        	   _scope(scope)
+	AP_Var(AP_VarIdentity identity = AP_VarUnsaved,
+	       const prog_char *name = NULL,
+	       AP_VarScope *scope = NULL) :
+	    	   _identity(identity),
+	    	   _name(name),
+	    	   _scope(scope)
 	{
 		if (name) {
 			_link = _variables;
 			_variables = this;
 		}
 	}
+
+	/// Destructor
+	///
+	/// This is largely a safety net, as the linked-list removal can be inefficient
+	/// when variables are destroyed in an order other than the reverse of the order
+	/// in which they are created.
+	///
+	~AP_Var(void);
 
 	/// Copy the variable name, prefixed by any parent class names, to a buffer.
 	///
@@ -111,6 +119,7 @@ public:
 	/// @param	bufferSize		Total size of the destination buffer.
 	///
 	void						copy_name(char *buffer, size_t bufferSize) const {
+		buffer[0] = '\0';
 		if (_scope)
 			_scope->copy_name(buffer, bufferSize);
 		strlcat_P(buffer, _name, bufferSize);
@@ -127,7 +136,7 @@ public:
 	///
 	/// @param	index			enumerator for the variable to be returned
 	///
-	static AP_VarBase			*lookup(int index);
+	static AP_Var				*lookup(int index);
 
 	/// Save the current value of the variable to EEPROM.
 	///
@@ -139,7 +148,7 @@ public:
 			uint8_t	vbuf[AP_VarMaxSize];
 			size_t	size;
 
-			// serialise the variable into the buffer and work out how big it is
+			// serialize the variable into the buffer and work out how big it is
 			size = serialize(vbuf, sizeof(vbuf));
 
 			// if it fit in the buffer, save it to EEPROM
@@ -158,7 +167,7 @@ public:
 			uint8_t	vbuf[AP_VarMaxSize];
 			size_t	size;
 
-			// ask the unserialiser how big the variable is
+			// ask the unserializer how big the variable is
 			size = unserialize(NULL, 0);
 
 			// read the buffer from EEPROM
@@ -181,11 +190,11 @@ private:
 	const AP_VarIdentity	_identity;
 	const prog_char			*_name;
 	AP_VarScope				*_scope;
-	AP_VarBase				*_link;
+	AP_Var					*_link;
 
 	// static state used by ::lookup
-	static AP_VarBase	*_variables;
-	static AP_VarBase	*_lookupHint;		/// pointer to the last variable that was looked up by ::lookup
+	static AP_Var		*_variables;
+	static AP_Var		*_lookupHint;		/// pointer to the last variable that was looked up by ::lookup
 	static int			_lookupHintIndex;	/// index of the last variable that was looked up by ::lookup
 };
 
@@ -198,13 +207,13 @@ private:
 /// @tparam T			The scalar type of the variable
 ///
 template<typename T>
-class AP_Var : public AP_VarBase
+class AP_VarT : public AP_Var
 {
 public:
 	/// Constructor
 	///
 	/// @note		Constructors for AP_Var are specialised so that they can
-	///				pass the correct typeCode argument to the AP_VarBase ctor.
+	///				pass the correct typeCode argument to the AP_Var ctor.
 	///
 	/// @param	initialValue	Value the variable should have at startup.
 	/// @param	identity		A unique token used when saving the variable to EEPROM.
@@ -215,26 +224,26 @@ public:
 	/// @param	name			An optional name by which the variable may be known.
 	/// @param	varClass		An optional class that the variable may be a member of.
 	///
-	AP_Var<T>(T initialValue			= 0,
+	AP_VarT<T>(T initialValue			= 0,
 	          AP_VarIdentity identity	= AP_VarUnsaved,
 	          const prog_char *name		= NULL,
 	          AP_VarScope *scope		= NULL) :
-				  AP_VarBase(identity, name, scope),
+				  AP_Var(identity, name, scope),
 				  _value(initialValue)
 	{
 	}
 
-	// Serialise _value into the buffer, but only if it is big enough.
+	// serialize _value into the buffer, but only if it is big enough.
 	///
-	virtual size_t			serialise(void *buf, size_t size) {
+	virtual size_t			serialize(void *buf, size_t size) {
 		if (size >= sizeof(T))
 			*(T *)buf = _value;
 		return sizeof(T);
 	}
 
-	// Unserialise from the buffer, but only if it is big enough.
+	// Unserialize from the buffer, but only if it is big enough.
 	//
-	virtual size_t			unserialise(void *buf, size_t size) {
+	virtual size_t			unserialize(void *buf, size_t size) {
 		if (size >= sizeof(T))
 			_value = *(T*)buf;
 		return sizeof(T);
@@ -248,57 +257,11 @@ public:
 	///
 	void					set(T v) { _value = v; }
 
-	/// Conversion to T returns a reference to the value, may lead to simpler
-	/// code than the getter/setter in some cases.
+	/// Conversion to T returns a reference to the value.
+	///
+	/// This allows the class to be used in many situations where the value would be legal.
 	///
 	operator T&()						{ return _value; }
-
-	/// Conversion to a pointer to T returns a pointer to the value,
-	/// permits passing the value by reference.
-	///
-	operator T*() const					{ return &_value; }
-
-	// Assignment from any value that T is compatible with.
-	T operator = (const T v) const		{ return (_value = v); }
-
-	// Comparison with any value that T is compatible with (should be avoided for T == float)
-	bool operator == (const T &v) const	{ return _value == v; }
-	bool operator != (const T &v) const	{ return _value != v; }
-
-	// Negation
-	T operator - (void) const			{ return -_value; }
-
-	// Addition
-	T operator +  (const T &v) const	{ return  _value +  v;  }
-	T operator += (const T &v)			{ return (_value += v); }
-
-	// Subtraction
-	T operator -  (const T &v) const	{ return  _value -  v;  }
-	T operator -= (const T &v)			{ return (_value -= v); }
-
-	// Multiplication
-	T operator *  (const T &v) const	{ return  _value *  v;  }
-	T operator *= (const T &v)			{ return (_value *= v); }
-
-	// Division
-	T operator /  (const T &v) const	{ return  _value /  v;  }
-	T operator /= (const T &v)			{ return (_value /= v); }
-
-	// Modulus
-	T operator %  (const T &v) const	{ return  _value % v;	}
-	T operator %= (const T &v)			{ return (_value %= v); }
-
-	// Bitwise operations
-	T operator &   (const T &v) const	{ return  _value &   v;	 }
-	T operator &=  (const T &v)			{ return (_value &=  v); }
-	T operator |   (const T &v) const	{ return  _value |   v;	 }
-	T operator |=  (const T &v)			{ return (_value |=  v); }
-	T operator ^   (const T &v) const	{ return  _value ^   v;	 }
-	T operator ^=  (const T &v)			{ return (_value ^=  v); }
-	T operator <<  (const T &v) const	{ return  _value <<  v;	 }
-	T operator <<= (const T &v)			{ return (_value <<= v); }
-	T operator >>  (const T &v) const	{ return  _value >>  v;	 }
-	T operator >>= (const T &v)			{ return (_value >>= v); }
 
 private:
 	T				_value;
@@ -308,7 +271,7 @@ private:
 /// Convenience macro for defining instances of the AP_Var template
 ///
 #define AP_VARDEF(_t, _n)						\
-	typedef AP_Var<_t>			AP_##_n;
+	typedef AP_VarT<_t>			AP_##_n;
 
 AP_VARDEF(float,	Float);		// defines AP_Float, AP_NamedFloat and AP_SavedFloat
 AP_VARDEF(int8_t,	Int8);		// defines AP_UInt8, AP_NamedUInt8 and AP_SavedUInt8
