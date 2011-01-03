@@ -14,7 +14,10 @@
 #ifndef AP_METACLASS_H
 #define AP_METACLASS_H
 
+#include <stddef.h>			// for size_t
 #include <inttypes.h>
+
+#include <avr/io.h>			// for RAMEND
 
 /// Basic meta-class from which other AP_* classes can derive.
 ///
@@ -130,7 +133,6 @@ public:
 			return (T *)p;
 		return NULL;
 	}
-//#define meta_cast(_p, _typename) { _typename _obj; AP_MetaClass::meta_type_equivalent(_p, &_obj) ? (_typename *)_p : NULL; }
 
 	/// Serialise the class.
 	///
@@ -146,7 +148,7 @@ public:
 	///							have overflowed the buffer.  If the return value is zero,
 	///							the class does not support serialisation.
 	///
-	virtual size_t				serialize(void *buf, size_t bufSize) const { return 0; }
+	virtual size_t				serialize(void *buf, size_t bufSize);
 
 	/// Unserialise the class.
 	///
@@ -165,7 +167,7 @@ public:
 	///							value is zero the class does not support unserialisation or
 	///							the data in the buffer is invalid.
 	///
-	virtual size_t				unserialize(void *buf, size_t bufSize) { return false; }
+	virtual size_t				unserialize(void *buf, size_t bufSize);
 };
 
 #endif // AP_METACLASS_H
