@@ -179,6 +179,13 @@ int SENSOR_SIGN[]={
 /*For debugging purposes*/
 #define OUTPUTMODE 1  //If value = 1 will print the corrected data, 0 will print uncorrected data of the gyros (with drift), 2 Accel only data
 
+// Altitude control methods
+#define ALTITUDE_CONTROL_NONE 0
+#define ALTITUDE_CONTROL_BARO 1
+#define ALTITUDE_CONTROL_SONAR 2
+#define SONAR_STATUS_BAD 0
+#define SONAR_STATUS_OK 1
+
 int AN[6]; //array that store the 6 ADC channels
 int AN_OFFSET[6]; //Array that store the Offset of the gyros and accelerometers
 int gyro_temp;
@@ -300,22 +307,28 @@ float command_RF_pitch = 0;
 float command_RF_throttle = 0;
 byte RF_new_data = 0;
 
-//Altitude control
-int Initial_Throttle;
-int target_sonar_altitude;
+//Altitude control variables
+int altitude_control_method = ALTITUDE_CONTROL_NONE;  // switch to indicate whether we are using Sonar or Barometer
+int initial_throttle;  // the base throttle value used for the control PIDs.  captured when user switched into autopilot
 int err_altitude;
 int err_altitude_old;
-float command_altitude;
-float altitude_I;
-float altitude_D;
-int ch_throttle_altitude_hold;
-int sonar_altitude_valid = 0;
+int ch_throttle_altitude_hold;  // throttle value passed to motor_output function
 
-//Pressure Sensor variables
-long target_baro_altitude;         // Altitude in cm
-long 	press_alt			= 0;
-byte    Baro_new_data                   = 0;
+//Barometer Sensor variables
+long target_baro_altitude;    // target altitude in cm
+long press_baro_altitude  = 0;
+byte baro_new_data        = 0;
+float baro_altitude_I;
+float baro_altitude_D;
 
+// Sonar Sensor variables
+int target_sonar_altitude;   // target altitude in cm
+long press_sonar_altitude = 0;
+int sonar_status = SONAR_STATUS_BAD;  // indicates if sonar values can be trusted
+long sonar_threshold;  // threshold at which we should transfer control to barometer (normally 80% of sonar's max distance)
+byte sonar_new_data = 0;
+float sonar_altitude_I;
+float sonar_altitude_D;
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 
@@ -328,13 +341,6 @@ byte    Baro_new_data                   = 0;
 #define VOLT_DIV_RATIO 1.0	//  Voltage divider ratio set with thru-hole resistor (see manual)
 
 float 	battery_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage, initialized above threshold for filter
-
-
-// Sonar variables
-int Sonar_value=0;
-int Sonar_Counter=0;
-
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // AP_mode : 1=> Position hold  2=>Stabilization assist mode (normal mode)
 byte AP_mode = 2;  
@@ -590,12 +596,12 @@ void defaultUserConfig() {
   KI_QUAD_YAW                = 0.15;
   STABLE_MODE_KP_RATE_YAW    = 2.4;
   STABLE_MODE_KP_RATE        = 0.2;     // NOT USED NOW
-  KP_GPS_ROLL                = 0.013;
-  KI_GPS_ROLL                = 0.005;
-  KD_GPS_ROLL                = 0.012;
-  KP_GPS_PITCH               = 0.013;
-  KI_GPS_PITCH               = 0.005;
-  KD_GPS_PITCH               = 0.01;
+  KP_GPS_ROLL                = 0.012;   //0.013;
+  KI_GPS_ROLL                = 0.001;   //0.005;
+  KD_GPS_ROLL                = 0.015;   //0.012;
+  KP_GPS_PITCH               = 0.010;   //0.013;
+  KI_GPS_PITCH               = 0.001;   //0.005;
+  KD_GPS_PITCH               = 0.015;   //0.01;
   GPS_MAX_ANGLE              = 22;
   KP_ALTITUDE                = 0.08;
   KI_ALTITUDE                = 0.05;
