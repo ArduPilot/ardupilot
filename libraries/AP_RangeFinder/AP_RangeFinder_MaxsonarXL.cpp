@@ -30,37 +30,11 @@
 #include "WConstants.h"
 #include "AP_RangeFinder_MaxsonarXL.h"
 
-// Public Methods //////////////////////////////////////////////////////////////
-void AP_RangeFinder_MaxsonarXL::init(int analogPort)
+// Constructor //////////////////////////////////////////////////////////////
+AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL()
 {
-    // local variables
-    int i;
-	
-	// set the given analog port to an input
-	pinMode(analogPort, INPUT);
-	
-    // initialise everything
-    _analogPort = analogPort;
-	max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
+    max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
 	min_distance = AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE;
-	
-	// make first call to read to get initial distance
-	read();
-	
-	// initialise history
-	for( i=0; i<AP_RANGEFINDER_NUM_AVERAGES; i++ )
-	    _history[i] = distance;	
 }
 
-// Read Sensor data
-int AP_RangeFinder_MaxsonarXL::read()
-{
-    // read raw sensor value and convert to distance
-    raw_value = analogRead(_analogPort);
-	
-	// for this sensor, the sensor value is the distance in cm! nice and easy!
-	distance = constrain(raw_value,min_distance,max_distance);
-	
-	// return distance
-	return filter(distance);
-}
+// Public Methods //////////////////////////////////////////////////////////////

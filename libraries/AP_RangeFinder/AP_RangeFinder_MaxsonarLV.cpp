@@ -30,38 +30,13 @@
 #include "WConstants.h"
 #include "AP_RangeFinder_MaxsonarLV.h"
 
-// Public Methods //////////////////////////////////////////////////////////////
-void AP_RangeFinder_MaxsonarLV::init(int analogPort)
+// Constructor //////////////////////////////////////////////////////////////
+AP_RangeFinder_MaxsonarLV::AP_RangeFinder_MaxsonarLV()
 {
-    // local variables
-    int i;
-	
-	// set the given analog port to an input
-	pinMode(analogPort, INPUT);
-	
-    // initialise everything
-    _analogPort = analogPort;
-	max_distance = AP_RANGEFINDER_MAXSONARLV_MAX_DISTANCE;
+    max_distance = AP_RANGEFINDER_MAXSONARLV_MAX_DISTANCE;
 	min_distance = AP_RANGEFINDER_MAXSONARLV_MIN_DISTANCE;
-	
-	// make first call to read to get initial distance
-	read();
-	
-	// initialise history
-	for( i=0; i<AP_RANGEFINDER_NUM_AVERAGES; i++ )
-	    _history[i] = distance;	
 }
 
-// Read Sensor data
-int AP_RangeFinder_MaxsonarLV::read()
-{
-    // read raw sensor value and convert to distance
-    raw_value = analogRead(_analogPort);
-	
-	// for this sensor, the sensor value is in inches, need to convert to cm
-	distance = raw_value * 2.54;
-	distance = constrain(distance,min_distance,max_distance);  // converts from inches to cm
-	
-	// return distance
-	return filter(distance);
-}
+// Public Methods //////////////////////////////////////////////////////////////
+
+
