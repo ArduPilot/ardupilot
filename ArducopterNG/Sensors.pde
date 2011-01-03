@@ -93,35 +93,63 @@ void read_baro(void)
   //tempPresAlt = pow(tempPresAlt, 0.190284);
   //press_alt = (1.0 - tempPresAlt) * 145366.45;
   tempPresAlt = pow(tempPresAlt, 0.190295);
-  if (press_alt == 0)
-    press_alt = (1.0 - tempPresAlt) * 4433000;      // Altitude in cm
+  if (press_baro_altitude == 0)
+    press_baro_altitude = (1.0 - tempPresAlt) * 4433000;      // Altitude in cm
   else
-    press_alt = press_alt * 0.75 + ((1.0 - tempPresAlt) * 4433000)*0.25;  // Altitude in cm (filtered)
+    press_baro_altitude = press_baro_altitude * 0.75 + ((1.0 - tempPresAlt) * 4433000)*0.25;  // Altitude in cm (filtered)
 }
 #endif
+
+#ifdef IsSONAR
+/* This function reads in the values from the attached range finders (currently only downward pointing sonar) */
+void read_Sonar()
+{
+  // -ve = number of invalid readings, +ve = number of valid readings (in a row)
+  static int sonar_valid_count = 0;  
+  
+  // calculate altitude from down sensor
+  AP_RangeFinder_down.read();
+  if( AP_RangeFinder_down.distance >= AP_RangeFinder_down.max_distance * 0.8 ) {
+      // if we get too many invalid distances, mark sonar as invalid
+      if( sonar_status == SONAR_STATUS_OK )
+      {
+        sonar_valid_count--;
+        if( sonar_valid_count <= -5 )
+          sonar_status = SONAR_STATUS_BAD;
+      }
+  }else{
+      if( sonar_status == SONAR_STATUS_BAD )
+      {
+          sonar_valid_count++;
+          if( sonar_valid_count >= 5 )
+            sonar_status = SONAR_STATUS_OK;
+      }else {
+          press_sonar_altitude = DCM_Matrix[2][2] * AP_RangeFinder_down.distance;\
+          
+          // deal with the unusual case that we're up-side-down
+          if( press_sonar_altitude < 0 )
+              press_sonar_altitude = 0;
+      }    
+  }
+
+#if LOG_RANGEFINDER && !defined(IsRANGEFINDER)
+    Log_Write_RangeFinder(AP_RangeFinder_down.distance,0,0,0,0,0);
+#endif
+}
+#endif  // IsSONAR
 
 #ifdef IsRANGEFINDER
 /* This function reads in the values from the attached range finders (currently only downward pointing sonar) */
 void read_RF_Sensors()
 {
-//    AP_RangeFinder_frontRight.read();
-//    AP_RangeFinder_backRight.read();
-//    AP_RangeFinder_backLeft.read();
-//    AP_RangeFinder_frontLeft.read();
+  AP_RangeFinder_frontRight.read();
+  AP_RangeFinder_backRight.read();
+  AP_RangeFinder_backLeft.read();
+  AP_RangeFinder_frontLeft.read();
 
-  // calculate altitude from down sensor
-  AP_RangeFinder_down.read();
-  if( AP_RangeFinder_down.distance < AP_RangeFinder_down.min_distance || AP_RangeFinder_down.distance >= AP_RangeFinder_down.max_distance * 0.8 ) {
-      sonar_altitude_valid = 0;
-      press_alt = 0;
-  }else{
-      sonar_altitude_valid = 1;
-      press_alt = DCM_Matrix[2][2] * AP_RangeFinder_down.distance;
-  }
-
-#if LOG_RANGEFINDER    
-    //Log_Write_RangeFinder(AP_RangeFinder_frontRight.distance, AP_RangeFinder_backRight.distance, AP_RangeFinder_backLeft.distance,AP_RangeFinder_frontLeft.distance,AP_RangeFinder_down.distance,0);
+#if LOG_RANGEFINDER 
+    Log_Write_RangeFinder(AP_RangeFinder_down.distance, AP_RangeFinder_frontRight.distance, AP_RangeFinder_backRight.distance, AP_RangeFinder_backLeft.distance,AP_RangeFinder_frontLeft.distance,0);
 #endif
 }
-#endif
+#endif  // IsRANGEFINDER
 

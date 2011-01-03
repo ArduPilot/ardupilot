@@ -170,11 +170,11 @@ int Altitude_control_baro(int altitude, int target_altitude)
   
   err_altitude_old = err_altitude;
   err_altitude = target_altitude - altitude;  
-  altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz
-  altitude_I += (float)err_altitude*0.05;
-  altitude_I = constrain(altitude_I,-140,140);
-  command_altitude = KP_ALTITUDE*err_altitude + KD_ALTITUDE*altitude_D + KI_ALTITUDE*altitude_I;
-  command_altitude = Initial_Throttle + constrain(command_altitude,-ALTITUDE_CONTROL_BARO_OUTPUT_MIN,ALTITUDE_CONTROL_BARO_OUTPUT_MAX);
+  baro_altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz
+  baro_altitude_I += (float)err_altitude*0.05;
+  baro_altitude_I = constrain(baro_altitude_I,-140,140);
+  command_altitude = KP_ALTITUDE*err_altitude + KD_ALTITUDE*baro_altitude_D + KI_ALTITUDE*baro_altitude_I;
+  command_altitude = initial_throttle + constrain(command_altitude,-ALTITUDE_CONTROL_BARO_OUTPUT_MIN,ALTITUDE_CONTROL_BARO_OUTPUT_MAX);
   return command_altitude;
 }
 
@@ -189,20 +189,19 @@ int Altitude_control_Sonar(int Sonar_altitude, int target_sonar_altitude)
    
   err_altitude_old = err_altitude;
   err_altitude = target_sonar_altitude - Sonar_altitude;  
-  altitude_D = (float)(err_altitude-err_altitude_old)/GdT_SONAR_ALTITUDE;
-  altitude_I += (float)err_altitude*GdT_SONAR_ALTITUDE;
-  altitude_I = constrain(altitude_I,-1000,1000);
-  command_altitude = KP_SONAR_ALTITUDE*err_altitude + KD_SONAR_ALTITUDE*altitude_D + KI_SONAR_ALTITUDE*altitude_I;
-  Log_Write_PID(4,KP_SONAR_ALTITUDE*err_altitude,KI_SONAR_ALTITUDE*altitude_I,KD_SONAR_ALTITUDE*altitude_D,command_altitude);
-  return (Initial_Throttle + constrain(command_altitude,-ALTITUDE_CONTROL_SONAR_OUTPUT_MIN,ALTITUDE_CONTROL_SONAR_OUTPUT_MAX));
+  sonar_altitude_D = (float)(err_altitude-err_altitude_old)/GdT_SONAR_ALTITUDE;
+  sonar_altitude_I += (float)err_altitude*GdT_SONAR_ALTITUDE;
+  sonar_altitude_I = constrain(sonar_altitude_I,-1000,1000);
+  command_altitude = KP_SONAR_ALTITUDE*err_altitude + KD_SONAR_ALTITUDE*sonar_altitude_D + KI_SONAR_ALTITUDE*sonar_altitude_I;
+  Log_Write_PID(4,KP_SONAR_ALTITUDE*err_altitude,KI_SONAR_ALTITUDE*sonar_altitude_I,KD_SONAR_ALTITUDE*sonar_altitude_D,command_altitude);
+  return (initial_throttle + constrain(command_altitude,-ALTITUDE_CONTROL_SONAR_OUTPUT_MIN,ALTITUDE_CONTROL_SONAR_OUTPUT_MAX));
 }
 
 /* ************************************************************ */
 /* Obstacle avoidance routine */
-/* NOT YET FULLY IMPLEMENTED */
+#ifdef IsRANGEFINDER
 void Obstacle_avoidance(int safeDistance)
 {
-#ifdef IsRANGEFINDER
   int RF_err_roll = 0;
   int RF_err_pitch = 0;
   int RF_err_throttle = 0;
@@ -218,28 +217,28 @@ void Obstacle_avoidance(int safeDistance)
   int err_temp;
   
   // front right
-//  err_temp = max(safeDistance - AP_RangeFinder_frontRight.distance,0);
-//  RF_err_roll += err_temp * AP_RangeFinder_frontRight.orientation_x;
-//  RF_err_pitch += err_temp * AP_RangeFinder_frontRight.orientation_y;
-//  RF_err_throttle += err_temp * AP_RangeFinder_frontRight.orientation_z;  
+  err_temp = max(safeDistance - AP_RangeFinder_frontRight.distance,0);
+  RF_err_roll += err_temp * AP_RangeFinder_frontRight.orientation_x;
+  RF_err_pitch += err_temp * AP_RangeFinder_frontRight.orientation_y;
+  RF_err_throttle += err_temp * AP_RangeFinder_frontRight.orientation_z;  
 
   // back right
-//  err_temp = max(safeDistance - AP_RangeFinder_backRight.distance,0);
-//  RF_err_roll += err_temp * AP_RangeFinder_backRight.orientation_x;
-//  RF_err_pitch += err_temp * AP_RangeFinder_backRight.orientation_y;
-//  RF_err_throttle += err_temp * AP_RangeFinder_backRight.orientation_z;  
+  err_temp = max(safeDistance - AP_RangeFinder_backRight.distance,0);
+  RF_err_roll += err_temp * AP_RangeFinder_backRight.orientation_x;
+  RF_err_pitch += err_temp * AP_RangeFinder_backRight.orientation_y;
+  RF_err_throttle += err_temp * AP_RangeFinder_backRight.orientation_z;  
 
   // back left
-//  err_temp = max(safeDistance - AP_RangeFinder_backLeft.distance,0);
-//  RF_err_roll += err_temp * AP_RangeFinder_backLeft.orientation_x;
-//  RF_err_pitch += err_temp * AP_RangeFinder_backLeft.orientation_y;
-//  RF_err_throttle += err_temp * AP_RangeFinder_backLeft.orientation_z;  
+  err_temp = max(safeDistance - AP_RangeFinder_backLeft.distance,0);
+  RF_err_roll += err_temp * AP_RangeFinder_backLeft.orientation_x;
+  RF_err_pitch += err_temp * AP_RangeFinder_backLeft.orientation_y;
+  RF_err_throttle += err_temp * AP_RangeFinder_backLeft.orientation_z;  
   
   // front left
-//  err_temp = max(safeDistance - AP_RangeFinder_frontLeft.distance,0);
-//  RF_err_roll += err_temp * AP_RangeFinder_frontLeft.orientation_x;
-//  RF_err_pitch += err_temp * AP_RangeFinder_frontLeft.orientation_y;
-//  RF_err_throttle += err_temp * AP_RangeFinder_frontLeft.orientation_z;
+  err_temp = max(safeDistance - AP_RangeFinder_frontLeft.distance,0);
+  RF_err_roll += err_temp * AP_RangeFinder_frontLeft.orientation_x;
+  RF_err_pitch += err_temp * AP_RangeFinder_frontLeft.orientation_y;
+  RF_err_throttle += err_temp * AP_RangeFinder_frontLeft.orientation_z;
 
   // ROLL - P term
   RF_roll_P = RF_err_roll * KP_RF_ROLL;
@@ -271,11 +270,6 @@ void Obstacle_avoidance(int safeDistance)
   
   // THROTTLE - not yet implemented
   command_RF_throttle = 0;
-
-#else
-  command_RF_roll = 0;
-  command_RF_pitch = 0;
-  command_RF_throttle = 0;  
-#endif
 }
+#endif
 

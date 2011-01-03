@@ -182,12 +182,18 @@ void APM_Init() {
   APM_BMP085.Init(FALSE);
 #endif
 
-#ifdef IsRANGEFINDER
-  AP_RangeFinder_down.init(AN5);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
-  //AP_RangeFinder_frontRight.init(AN5);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
-  //AP_RangeFinder_backRight.init(AN4);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
-  //AP_RangeFinder_backLeft.init(AN3);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
-  //AP_RangeFinder_frontLeft.init(AN2);  AP_RangeFinder_frontLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_LEFT);
+  // Sonar for Altitude hold
+#ifdef IsSONAR
+  AP_RangeFinder_down.init(AP_RANGEFINDER_PITOT_TUBE, &adc);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
+  sonar_threshold = AP_RangeFinder_down.max_distance * 0.8;
+#endif
+
+  // RangeFinders for obstacle avoidance
+#ifdef IsRANGEFINDER  
+  AP_RangeFinder_frontRight.init(AN5);  AP_RangeFinder_frontRight.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_RIGHT);
+  AP_RangeFinder_backRight.init(AN4);  AP_RangeFinder_backRight.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_RIGHT);
+  AP_RangeFinder_backLeft.init(AN3);  AP_RangeFinder_backLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_BACK_LEFT);
+  AP_RangeFinder_frontLeft.init(AN2);  AP_RangeFinder_frontLeft.set_orientation(AP_RANGEFINDER_ORIENTATION_FRONT_LEFT);
 #endif
 
   delay(1000);
