@@ -15,17 +15,50 @@ const AP_Float	AP_GainUnity(1.0);
 const AP_Float	AP_GainNegativeUnity(-1.0);
 const AP_Float	AP_Zero(0);
 
+// Destructor
+//
+// Removes named variables from the list.
+//
+AP_Var::~AP_Var(void)
+{
+	AP_Var	*p;
+
+	// only do this for variables that have names
+	if (_name) {
+		// if we are at the head of the list - for variables
+		// recently constructed this is usually the case
+		if (_variables == this) {
+			// remove us from the head of the list
+			_variables = _link;
+		} else {
+			// traverse the list looking for the entry that points to us
+			p = _variables;
+			while (p) {
+				// is it pointing at us?
+				if (p->_link == this) {
+					// make it point at what we point at, and done
+					p->_link = _link;
+					break;
+				}
+				// try the next one
+				p = p->_link;
+			}
+		}
+	}
+}
+
+
 //
 // Lookup interface for variables.
 //
-AP_VarBase	*AP_VarBase::_variables = NULL;
-AP_VarBase	*AP_VarBase::_lookupHint = NULL;
-int			AP_VarBase::_lookupHintIndex = 0;
+AP_Var	*AP_Var::_variables = NULL;
+AP_Var	*AP_Var::_lookupHint = NULL;
+int		AP_Var::_lookupHintIndex = 0;
 
-AP_VarBase *
-AP_VarBase::lookup(int index)
+AP_Var *
+AP_Var::lookup(int index)
 {
-	AP_VarBase	*p;
+	AP_Var	*p;
 	int			i;
 
 	// establish initial search state
@@ -56,9 +89,9 @@ AP_VarBase::lookup(int index)
 // Save all variables that have an identity.
 //
 void
-AP_VarBase::save_all(void)
+AP_Var::save_all(void)
 {
-	AP_VarBase	*p = _variables;
+	AP_Var	*p = _variables;
 
 	while (p) {
 		p->save();
@@ -69,9 +102,9 @@ AP_VarBase::save_all(void)
 // Load all variables that have an identity.
 //
 void
-AP_VarBase::load_all(void)
+AP_Var::load_all(void)
 {
-	AP_VarBase	*p = _variables;
+	AP_Var	*p = _variables;
 
 	while (p) {
 		p->load();
