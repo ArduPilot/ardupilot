@@ -4,12 +4,57 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <string.h>
+
+// we need to do this, even though normally it's a bad idea
+#pragma GCC diagnostic ignored "-Wfloat-equal"
 
 FastSerialPort(Serial, 0);
 
-#define TEST(name)		Serial.println("test: " #name)
-#define	REQUIRE(expr)	if (!(expr)) Serial.println("FAIL: " #expr)
+//
+// Unit test framework
+//
+class Test
+{
+public:
+	Test(const char *name) : _name(name), _fail(false) {}
 
+	~Test()	{
+		Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
+		if (_fail) {
+			_failed++;
+		} else {
+			_passed++;
+		}
+	}
+
+	void	require(bool expr, const char *source) {
+		if (!expr) {
+			_fail = true;
+			Serial.printf("%s: fail: %s\n", _name, source);
+		}
+	}
+
+	static void	report() {
+		Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
+	}
+
+private:
+	const char	*_name;
+	bool		_fail;
+	static int	_passed;
+	static int	_failed;
+};
+
+int Test::_passed = 0;
+int Test::_failed = 0;
+
+#define TEST(name)		Test _test(#name)
+#define	REQUIRE(expr)	_test.require(expr, #expr)
+
+//
+// Unit tests
+//
 void
 setup(void)
 {
@@ -46,7 +91,7 @@ setup(void)
 		REQUIRE(NULL == AP_MetaClass::meta_validate_handle(h + 1));
 	}
 
-	// MetaClass: casting
+	// MetaClass: test meta_cast
 	{
 		TEST(meta_cast);
 
@@ -56,9 +101,108 @@ setup(void)
 		REQUIRE(NULL == AP_MetaClass::meta_cast<AP_Int8>(&f));
 	}
 
-	Serial.println("done.");
-}
+	// MetaClass: ... insert tests here ...
 
+	// AP_Var: cast to type
+	{
+		TEST(var_cast_to_type);
+
+		AP_Float	f(1.0);		REQUIRE(f == 1.0);
+		f *= 2.0;				REQUIRE(f == 2.0);
+		f /= 4;					REQUIRE(f == 0.5);
+		f += f;					REQUIRE(f == 1.0);
+	}
+
+	// AP_Var: naming
+	{
+		TEST(var_naming);
+
+		AP_Float	f(1.0, AP_Var::AP_VarUnsaved, PSTR("test"));
+		char		name_buffer[16];
+
+		f.copy_name(name_buffer, sizeof(name_buffer));
+		REQUIRE(!strcmp(name_buffer, "test"));
+	}
+
+	// AP_Var: scope names
+	{
+		TEST(var_scope);
+
+		AP_VarScope		scope(PSTR("scope_"));
+		AP_Float		f(1.0, AP_Var::AP_VarUnsaved, PSTR("test"), &scope);
+		char			name_buffer[16];
+
+		f.copy_name(name_buffer, sizeof(name_buffer));
+		REQUIRE(!strcmp(name_buffer, "scope_test"));
+	}
+
+	// AP_Var: serialize
+	{
+		TEST(var_serialize);
+
+		float		b = 0;
+		AP_Float	f(10);
+		size_t		s;
+
+		s = f.serialize(&b, sizeof(b));
+		REQUIRE(s == sizeof(b));
+		REQUIRE(b == 10);
+	}
+
+	// AP_Var: unserialize
+	{
+		TEST(var_unserialize);
+
+		float		b = 10;
+		AP_Float	f(0);
+		size_t		s;
+
+		s = f.unserialize(&b, sizeof(b));
+		REQUIRE(s == sizeof(b));
+		REQUIRE(f == 10);
+	}
+
+	// AP_Var: load and save
+	{
+		TEST(var_load_save);
+
+		AP_Float	f1(10, 4);
+		AP_Float	f2(0,  4);
+
+		f2.save();
+		f2.load();
+		REQUIRE(f2 == 0);
+
+		f1.save();
+		f2.load();
+		REQUIRE(f2 == 10);
+	}
+
+	// AP_Var: enumeration
+	// note that this test presumes the singly-linked list implementation of the list
+	{
+		TEST(var_enumeration);
+
+		// test basic enumeration
+		AP_Float f1(1.0, AP_Var::AP_VarUnsaved, PSTR("test1"));
+		REQUIRE(AP_Var::lookup(0) == &f1);
+		REQUIRE(AP_Var::lookup(1) == NULL);
+
+		// test that new entries arrive in order
+		{
+			AP_Float f2(2.0, AP_Var::AP_VarUnsaved, PSTR("test2"));
+			REQUIRE(AP_Var::lookup(0) == &f2);
+			REQUIRE(AP_Var::lookup(1) == &f1);
+			REQUIRE(AP_Var::lookup(2) == NULL);
+		}
+
+		// test that destruction removes from the list
+		REQUIRE(AP_Var::lookup(0) == &f1);
+		REQUIRE(AP_Var::lookup(1) == NULL);
+	}
+
+	Test::report();
+}
 
 void
 loop(void)
