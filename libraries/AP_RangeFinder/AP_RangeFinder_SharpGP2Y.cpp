@@ -30,38 +30,11 @@
 #include "WConstants.h"
 #include "AP_RangeFinder_SharpGP2Y.h"
 
-// Public Methods //////////////////////////////////////////////////////////////
-void AP_RangeFinder_SharpGP2Y::init(int analogPort)
+// Constructor //////////////////////////////////////////////////////////////
+AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y()
 {
-    // local variables
-    int i;
-	
-	// set the given analog port to an input
-	pinMode(analogPort, INPUT);
-	
-    // initialise everything
-    _analogPort = analogPort;
 	max_distance = AP_RANGEFINDER_SHARPEGP2Y_MAX_DISTANCE;
 	min_distance = AP_RANGEFINDER_SHARPEGP2Y_MIN_DISTANCE;
-	
-	// make first call to read to get initial distance
-	read();
-	
-	// initialise history
-	for( i=0; i<AP_RANGEFINDER_NUM_AVERAGES; i++ )
-	    _history[i] = distance;
 }
 
-// Read Sensor data
-int AP_RangeFinder_SharpGP2Y::read()
-{
-    // read raw sensor value and convert to distance
-    raw_value = analogRead(_analogPort);
-	if( raw_value == 0 )
-	    distance = max_distance;
-	else
-	    distance = constrain(14500/raw_value,min_distance,max_distance); 
-	
-	// return distance
-	return filter(distance);
-}
+// Public Methods //////////////////////////////////////////////////////////////
