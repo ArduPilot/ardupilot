@@ -166,7 +166,9 @@ void set_servos_4(void)
 			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
 			
 			// servo Yaw
-			motor_out[FRONT] 	= rc_4.radio_out;
+			//motor_out[FRONT] 	= rc_4.radio_out;
+			APM_RC.OutputCh(CH_7,rc_4.radio_out);
+
 			
 		}else{
 		
