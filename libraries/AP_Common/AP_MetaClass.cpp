@@ -13,8 +13,20 @@
 
 #include "AP_MetaClass.h"
 
+// Default ctor, currently does nothing
+AP_MetaClass::AP_MetaClass(void)
+{
+}
+
+// Default dtor, currently does nothing but must be defined in order to ensure that
+// subclasses not overloading the default virtual dtor still have something in their
+// vtable.
+AP_MetaClass::~AP_MetaClass()
+{
+}
+
 size_t
-AP_MetaClass::serialize(void *buf, size_t bufSize)
+AP_MetaClass::serialize(void *buf, size_t bufSize) const
 {
 	return 0;
 }
