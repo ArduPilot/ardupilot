@@ -26,6 +26,13 @@
 class AP_MetaClass
 {
 public:
+	/// Default constructor does nothing.
+	AP_MetaClass(void);
+
+	/// Default destructor is virtual, to ensure that all destructors
+	/// are called for derived classes.
+	virtual ~AP_MetaClass();
+
 	/// Type code, unique to all instances of a given subclass.
 	typedef uint16_t	AP_TypeID;
 
@@ -45,8 +52,10 @@ public:
 		return *(AP_TypeID *)this;
 	}
 
-	/// External handle, contains enough information to validate a pointer
+	/// External handle for an instance of an AP_MetaClass subclass, contains
+	/// enough information to construct and validate a pointer to the instance
 	/// when passed back from an untrusted source.
+	///
 	typedef uint32_t	AP_MetaHandle;
 
 	/// Return a value that can be used as an external pointer to an instance
@@ -86,12 +95,15 @@ public:
 		// Note that this implies that we cannot deal with objects in ROM or EEPROM,
 		// but the constructor wouldn't be able to populate a vtable pointer there anyway...
 		//
-		if ((uint16_t)candidate >= RAMEND)
+		if ((uint16_t)candidate >= (RAMEND - 2))	// -2 to account for the type_id
 			return NULL;
 
-		// Compare the type of the object that candidate points to (or garbage if it doesn't)
-		// with .
-		if (candidate->meta_type_id() == id)			// compare claimed type with object type
+		// Compare the typeid of the object that candidate points to with the typeid
+		// from the handle.  Note that it's safe to call meta_type_id() off the untrusted
+		// candidate pointer because meta_type_id is non-virtual (and will in fact be
+		// inlined here).
+		//
+		if (candidate->meta_type_id() == id)
 			return candidate;
 
 		return NULL;
@@ -114,8 +126,8 @@ public:
 
 	/// Cast an object to an expected class type.
 	///
-	/// This should be used with caution, as _typename's default constructor will be run,
-	/// possibly introducing undesired side-effects.
+	/// This should be used with caution, as _typename's default constructor and
+	/// destructor will be run, possibly introducing undesired side-effects.
 	///
 	/// @todo	Consider whether we should make it difficult to have a default constructor
 	///			with appreciable side-effects.
@@ -148,7 +160,7 @@ public:
 	///							have overflowed the buffer.  If the return value is zero,
 	///							the class does not support serialisation.
 	///
-	virtual size_t				serialize(void *buf, size_t bufSize);
+	virtual size_t				serialize(void *buf, size_t bufSize) const;
 
 	/// Unserialise the class.
 	///
