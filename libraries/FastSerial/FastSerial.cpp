@@ -4,7 +4,7 @@
 //
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
-// Receive and baudrate calculations derived from the Arduino 
+// Receive and baudrate calculations derived from the Arduino
 // HardwareSerial driver:
 //
 //      Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
@@ -99,10 +99,10 @@ void FastSerial::begin(long baud)
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 {
         uint16_t        ubrr;
-        bool            use_u2x = false;
+        bool            use_u2x = true;
         int             ureg, u2;
         long            breg, b2, dreg, d2;
-       
+
         // if we are currently open, close and restart
         if (_open)
                 end();
@@ -115,35 +115,20 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
         }
         _open = true;
 
-        // U2X mode is needed for bitrates higher than (F_CPU / 16)
-        if (baud > F_CPU / 16) {
-                use_u2x = true;
-                ubrr = F_CPU / (8 * baud) - 1;
-        } else {
-                // Determine whether u2x mode would give a closer
-                // approximation of the desired speed.
-    
-                // ubrr for non-2x mode, corresponding baudrate and delta
-                ureg = F_CPU / 16 / baud - 1;
-                breg = F_CPU / 16 / (ureg + 1);
-                dreg = abs(baud - breg);
-                
-                // ubrr for 2x mode, corresponding bitrate and delta
-                u2   = F_CPU / 8 / baud - 1;
-                b2   = F_CPU / 8 / (u2 + 1); 
-                d2   = abs(baud - b2);
+#if F_CPU == 16000000UL
+        // hardcoded exception for compatibility with the bootloader shipped
+        // with the Duemilanove and previous boards and the firmware on the 8U2
+        // on the Uno and Mega 2560.
+        if (baud == 57600)
+            use_u2x = false;
+#endif
 
-                // Pick the setting that gives the smallest rate
-                // error, preferring non-u2x mode if the delta is
-                // identical.
-                if (dreg <= d2) {
-                        ubrr = ureg;
-                } else {
-                        ubrr = u2;
-                        use_u2x = true;
-                }                
+        if (use_u2x) {
+            ubrr = (F_CPU / 4 / baud - 1) / 2;
+        } else {
+            ubrr = (F_CPU / 8 / baud - 1) / 2;
         }
-  
+
         *_ucsra = use_u2x ? _BV(_u2x) : 0;
         *_ubrrh = ubrr >> 8;
         *_ubrrl = ubrr;
