@@ -325,6 +325,7 @@ float baro_altitude_D;
 int target_sonar_altitude;   // target altitude in cm
 long press_sonar_altitude = 0;
 int sonar_status = SONAR_STATUS_BAD;  // indicates if sonar values can be trusted
+int sonar_valid_count = 0;  // from -5 ~ 5 -ve = number of invalid readings, +ve = number of valid readings (in a row)
 long sonar_threshold;  // threshold at which we should transfer control to barometer (normally 80% of sonar's max distance)
 byte sonar_new_data = 0;
 float sonar_altitude_I;

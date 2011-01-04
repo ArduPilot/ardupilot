@@ -103,34 +103,32 @@ void read_baro(void)
 #ifdef IsSONAR
 /* This function reads in the values from the attached range finders (currently only downward pointing sonar) */
 void read_Sonar()
-{
-  // -ve = number of invalid readings, +ve = number of valid readings (in a row)
-  static int sonar_valid_count = 0;  
-  
+{ 
   // calculate altitude from down sensor
   AP_RangeFinder_down.read();
-  if( AP_RangeFinder_down.distance >= AP_RangeFinder_down.max_distance * 0.8 ) {
-      // if we get too many invalid distances, mark sonar as invalid
-      if( sonar_status == SONAR_STATUS_OK )
-      {
-        sonar_valid_count--;
-        if( sonar_valid_count <= -5 )
-          sonar_status = SONAR_STATUS_BAD;
-      }
+  
+  // translate into an altitude
+  press_sonar_altitude = DCM_Matrix[2][2] * AP_RangeFinder_down.distance;
+  
+  // deal with the unusual case that we're up-side-down
+  if( press_sonar_altitude < 0 )
+    press_sonar_altitude = 0;  
+  
+  // set sonar status to OK and update sonar_valid_count which shows reliability of sonar (i.e. are we out of range?)
+  if( AP_RangeFinder_down.distance > sonar_threshold ) {
+      sonar_status = SONAR_STATUS_BAD;
+      if( sonar_valid_count > 0 )
+          sonar_valid_count = -1;
+      else
+          sonar_valid_count--;
   }else{
-      if( sonar_status == SONAR_STATUS_BAD )
-      {
+      sonar_status = SONAR_STATUS_OK;
+      if( sonar_valid_count < 0 )
+          sonar_valid_count = 1;
+      else
           sonar_valid_count++;
-          if( sonar_valid_count >= 5 )
-            sonar_status = SONAR_STATUS_OK;
-      }else {
-          press_sonar_altitude = DCM_Matrix[2][2] * AP_RangeFinder_down.distance;\
-          
-          // deal with the unusual case that we're up-side-down
-          if( press_sonar_altitude < 0 )
-              press_sonar_altitude = 0;
-      }    
   }
+  sonar_valid_count = constrain(sonar_valid_count,-10,10);
 
 #if LOG_RANGEFINDER && !defined(IsRANGEFINDER)
     Log_Write_RangeFinder(AP_RangeFinder_down.distance,0,0,0,0,0);

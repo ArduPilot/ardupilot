@@ -185,7 +185,9 @@ void APM_Init() {
   // Sonar for Altitude hold
 #ifdef IsSONAR
   AP_RangeFinder_down.init(AP_RANGEFINDER_PITOT_TUBE, &adc);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
+  //AP_RangeFinder_down.init(AN5);  AP_RangeFinder_down.set_orientation(AP_RANGEFINDER_ORIENTATION_DOWN);
   sonar_threshold = AP_RangeFinder_down.max_distance * 0.8;
+  sonar_status = SONAR_STATUS_OK;  // assume sonar is ok to start with
 #endif
 
   // RangeFinders for obstacle avoidance
