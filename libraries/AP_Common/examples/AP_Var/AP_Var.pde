@@ -117,23 +117,11 @@ setup(void)
 	{
 		TEST(var_naming);
 
-		AP_Float	f(1.0, AP_Var::AP_VarUnsaved, PSTR("test"));
+		AP_Float	f(1.0, AP_Var::AP_VarNoAddress, PSTR("test"));
 		char		name_buffer[16];
 
 		f.copy_name(name_buffer, sizeof(name_buffer));
 		REQUIRE(!strcmp(name_buffer, "test"));
-	}
-
-	// AP_Var: scope names
-	{
-		TEST(var_scope);
-
-		AP_VarScope		scope(PSTR("scope_"));
-		AP_Float		f(1.0, AP_Var::AP_VarUnsaved, PSTR("test"), &scope);
-		char			name_buffer[16];
-
-		f.copy_name(name_buffer, sizeof(name_buffer));
-		REQUIRE(!strcmp(name_buffer, "scope_test"));
 	}
 
 	// AP_Var: serialize
@@ -184,13 +172,13 @@ setup(void)
 		TEST(var_enumeration);
 
 		// test basic enumeration
-		AP_Float f1(1.0, AP_Var::AP_VarUnsaved, PSTR("test1"));
+		AP_Float f1(1.0, AP_Var::AP_VarNoAddress, PSTR("test1"));
 		REQUIRE(AP_Var::lookup(0) == &f1);
 		REQUIRE(AP_Var::lookup(1) == NULL);
 
 		// test that new entries arrive in order
 		{
-			AP_Float f2(2.0, AP_Var::AP_VarUnsaved, PSTR("test2"));
+			AP_Float f2(2.0, AP_Var::AP_VarNoAddress, PSTR("test2"));
 			REQUIRE(AP_Var::lookup(0) == &f2);
 			REQUIRE(AP_Var::lookup(1) == &f1);
 			REQUIRE(AP_Var::lookup(2) == NULL);
@@ -200,6 +188,39 @@ setup(void)
 		REQUIRE(AP_Var::lookup(0) == &f1);
 		REQUIRE(AP_Var::lookup(1) == NULL);
 	}
+
+	// AP_Var: scope names
+	{
+		TEST(var_scope_names);
+
+		AP_VarScope		scope(PSTR("scope_"));
+		AP_Float		f(1.0, AP_Var::AP_VarNoAddress, PSTR("test"), &scope);
+		char			name_buffer[16];
+
+		f.copy_name(name_buffer, sizeof(name_buffer));
+		REQUIRE(!strcmp(name_buffer, "scope_test"));
+	}
+
+	// AP_Var: scope address offsets
+	{
+		TEST(var_scope_addressing);
+
+		AP_Float	f1(10.0, 8);
+		AP_VarScope	scope(PSTR("scope"), 4);
+		AP_Float	f2(1.0, 4, PSTR("var"), &scope);
+
+		f1.save();
+		f1.load();
+		REQUIRE(f1 == 10);
+
+		f2.save();
+		f2.load();
+		REQUIRE(f2 == 1);
+
+		f1.load();
+		REQUIRE(f1 == 1);
+	}
+
 
 	Test::report();
 }
