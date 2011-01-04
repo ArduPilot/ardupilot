@@ -50,6 +50,7 @@ void navigate()
 	}
 }
 
+/*
 void verify_missed_wp()
 {
 	// check if we have missed the WP
@@ -63,6 +64,7 @@ void verify_missed_wp()
 	if (loiter_delta < -170) loiter_delta += 360;
 	loiter_sum 		+= abs(loiter_delta);
 }
+*/
 
 void calc_bearing_error()
 {

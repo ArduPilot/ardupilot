@@ -134,13 +134,14 @@ void set_servos_4(void)
 		//Serial.printf("yaw: %d ", rc_4.radio_out);
 		
 		if(frame_type == PLUS_FRAME){
-			//Serial.println("+");
+
 			motor_out[RIGHT]	= rc_3.radio_out - rc_1.pwm_out;
 			motor_out[LEFT]		= rc_3.radio_out + rc_1.pwm_out;
 			motor_out[FRONT]	= rc_3.radio_out + rc_2.pwm_out;
 			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
 			
 		}else if(frame_type == X_FRAME){
+		
 			int roll_out 	= rc_1.pwm_out / 2;
 			int pitch_out 	= rc_2.pwm_out / 2;
 
@@ -149,28 +150,39 @@ void set_servos_4(void)
 
 			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
 			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
-		}else{
-			/*
-			replace this with Tri-frame control law
 			
-			int roll_out 	= rc_1.pwm_out / 2;
+		}else if(frame_type == TRI_FRAME){
+
+			// Tri-copter power distribution
+			
+			int roll_out 	= (float)rc_1.pwm_out * .866;
 			int pitch_out 	= rc_2.pwm_out / 2;
-
-			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out;
-			motor_out[LEFT]		= rc_3.radio_out + roll_out - pitch_out;
-
+			
+			// front two motors
+			motor_out[LEFT]		= rc_3.radio_out + roll_out + pitch_out;
 			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
-			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
-			*/
+			
+			// rear motors
+			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
+			
+			// servo Yaw
+			motor_out[FRONT] 	= rc_4.radio_out;
+			
+		}else{
+		
+			Serial.print("frame error");
+			
 		}
 		
 		//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 
 		if((frame_type == PLUS_FRAME) || (frame_type == X_FRAME)){
+		
 			motor_out[RIGHT]	+=  rc_4.pwm_out;
 			motor_out[LEFT]		+=  rc_4.pwm_out;
 			motor_out[FRONT]	-=  rc_4.pwm_out;
 			motor_out[BACK] 	-=  rc_4.pwm_out;
+			
 		}
 		
 		//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
@@ -229,15 +241,19 @@ void set_servos_4(void)
 		
 		// Send commands to motors
 		if(rc_3.servo_out > 0){
+		
 			APM_RC.OutputCh(CH_1, motor_out[RIGHT]);
 			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
 			APM_RC.OutputCh(CH_3, motor_out[FRONT]);
 			APM_RC.OutputCh(CH_4, motor_out[BACK]);
+			
 		}else{
+		
 			APM_RC.OutputCh(CH_1, rc_3.radio_min);
 			APM_RC.OutputCh(CH_2, rc_3.radio_min);
 			APM_RC.OutputCh(CH_3, rc_3.radio_min);
 			APM_RC.OutputCh(CH_4, rc_3.radio_min);
+			
 		}
 	
 		// InstantPWM
