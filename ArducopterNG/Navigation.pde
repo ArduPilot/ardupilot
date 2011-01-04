@@ -170,11 +170,12 @@ int Altitude_control_baro(int altitude, int target_altitude)
   
   err_altitude_old = err_altitude;
   err_altitude = target_altitude - altitude;  
-  baro_altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz
   baro_altitude_I += (float)err_altitude*0.05;
   baro_altitude_I = constrain(baro_altitude_I,-140,140);
+  baro_altitude_D = (float)(err_altitude-err_altitude_old)/0.05;  // 20Hz  
   command_altitude = KP_ALTITUDE*err_altitude + KD_ALTITUDE*baro_altitude_D + KI_ALTITUDE*baro_altitude_I;
   command_altitude = initial_throttle + constrain(command_altitude,-ALTITUDE_CONTROL_BARO_OUTPUT_MIN,ALTITUDE_CONTROL_BARO_OUTPUT_MAX);
+  Log_Write_PID(5,KP_ALTITUDE*err_altitude,KI_ALTITUDE*baro_altitude_I,KD_ALTITUDE*baro_altitude_D,command_altitude);  
   return command_altitude;
 }
 
@@ -183,18 +184,21 @@ int Altitude_control_baro(int altitude, int target_altitude)
 #define GdT_SONAR_ALTITUDE 0.05
 #define ALTITUDE_CONTROL_SONAR_OUTPUT_MIN 60
 #define ALTITUDE_CONTROL_SONAR_OUTPUT_MAX 80
-int Altitude_control_Sonar(int Sonar_altitude, int target_sonar_altitude)
+int Altitude_control_Sonar(int altitude, int target_altitude)
 {
+  static int err_altitude = 0;
   int command_altitude;
+  int err_altitude_old;
    
   err_altitude_old = err_altitude;
-  err_altitude = target_sonar_altitude - Sonar_altitude;  
-  sonar_altitude_D = (float)(err_altitude-err_altitude_old)/GdT_SONAR_ALTITUDE;
+  err_altitude = target_altitude - altitude;  
   sonar_altitude_I += (float)err_altitude*GdT_SONAR_ALTITUDE;
   sonar_altitude_I = constrain(sonar_altitude_I,-1000,1000);
-  command_altitude = KP_SONAR_ALTITUDE*err_altitude + KD_SONAR_ALTITUDE*sonar_altitude_D + KI_SONAR_ALTITUDE*sonar_altitude_I;
+  sonar_altitude_D = (float)(err_altitude-err_altitude_old)/GdT_SONAR_ALTITUDE;  
+  command_altitude = KP_SONAR_ALTITUDE*err_altitude + KI_SONAR_ALTITUDE*sonar_altitude_I + KD_SONAR_ALTITUDE*sonar_altitude_D ;
+  command_altitude = initial_throttle + constrain(command_altitude,-ALTITUDE_CONTROL_SONAR_OUTPUT_MIN,ALTITUDE_CONTROL_SONAR_OUTPUT_MAX);
   Log_Write_PID(4,KP_SONAR_ALTITUDE*err_altitude,KI_SONAR_ALTITUDE*sonar_altitude_I,KD_SONAR_ALTITUDE*sonar_altitude_D,command_altitude);
-  return (initial_throttle + constrain(command_altitude,-ALTITUDE_CONTROL_SONAR_OUTPUT_MIN,ALTITUDE_CONTROL_SONAR_OUTPUT_MAX));
+  return command_altitude;
 }
 
 /* ************************************************************ */
