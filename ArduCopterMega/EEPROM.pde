@@ -138,6 +138,7 @@ void read_EEPROM_PID(void)
 
 	// yaw
 	hold_yaw_dampener			= read_EE_compressed_float(EE_HOLD_YAW_DAMPENER, 4);
+ 	init_pids();
 }
 
 void save_EEPROM_PID(void)

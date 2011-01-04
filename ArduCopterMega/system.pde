@@ -94,7 +94,6 @@ void init_ardupilot()
 
 
 	read_EEPROM_startup(); // Read critical config information to start
- 	init_pids();
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs

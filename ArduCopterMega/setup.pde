@@ -270,6 +270,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 			// stop here
 		}
 	}
+	
 	rc_1.radio_min = rc_1.radio_in;
 	rc_2.radio_min = rc_2.radio_in;
 	rc_3.radio_min = rc_3.radio_in;
@@ -346,9 +347,14 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 	
 	if(frame_type == PLUS_FRAME){
 		Serial.printf_P(PSTR("PLUS"));
-	}else{
+
+	}else if(frame_type == X_FRAME){
 		Serial.printf_P(PSTR("X"));
+	
+	}else if(frame_type == TRI_FRAME){
+		Serial.printf_P(PSTR("TRI"));
 	}
+	
 	Serial.printf_P(PSTR(" Frame\n"));
 	
 	while(1){
@@ -380,7 +386,8 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 				Serial.println("2");
 			}
 
-		}else{
+		}else if(frame_type == PLUS_FRAME){
+
 			// lower right
 			if((rc_1.control_in > 0) 		&& (rc_2.control_in > 0)){
 				motor_out[BACK] 	= out_min;
@@ -400,6 +407,29 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 				motor_out[RIGHT]	= out_min;
 				Serial.println("0");
 			}
+			
+		}else if(frame_type == TRI_FRAME){
+
+			if(rc_1.control_in > 0){
+				motor_out[RIGHT] 	= out_min;
+				
+			}else if(rc_1.control_in < 0){
+				motor_out[LEFT]		= out_min;
+			}
+			
+			if(rc_2.control_in > 0){
+				motor_out[BACK] 	= out_min;	
+			}
+
+			if(rc_4.control_in > 0){
+				rc_4.servo_out	= 2000;
+				
+			}else if(rc_4.control_in < 0){
+				rc_4.servo_out	= -2000;
+			}
+			
+			rc_4.calc_pwm();
+			motor_out[FRONT] 	= rc_4.radio_out;
 		}
 		
 		if(rc_3.control_in > 0){
@@ -419,6 +449,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
@@ -620,7 +651,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 	}else if(argv[1].i == 3){
 
 		Serial.printf_P(PSTR("Tri "));
-		frame_type = X_FRAME;
+		frame_type = TRI_FRAME;
 	}
 	Serial.printf_P(PSTR("frame\n\n"));
 	save_EEPROM_frame();	
