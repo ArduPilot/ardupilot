@@ -15,6 +15,22 @@ const AP_Float	AP_GainUnity(1.0);
 const AP_Float	AP_GainNegativeUnity(-1.0);
 const AP_Float	AP_Zero(0);
 
+// Constructor
+//
+AP_Var::AP_Var(AP_VarAddress address,
+               const prog_char *name,
+               const AP_VarScope *scope) :
+				   _address(address),
+				   _name(name),
+				   _scope(scope)
+{
+	// if the variable is interesting, link it into the list
+	if (_name || (_address != AP_VarNoAddress)) {
+		_link = _variables;
+		_variables = this;
+	}
+}
+
 // Destructor
 //
 // Removes named variables from the list.
@@ -23,8 +39,8 @@ AP_Var::~AP_Var(void)
 {
 	AP_Var	*p;
 
-	// only do this for variables that have names
-	if (_name) {
+	// only do this for variables that were considered interesting
+	if (_name || (_address != AP_VarNoAddress)) {
 		// if we are at the head of the list - for variables
 		// recently constructed this is usually the case
 		if (_variables == this) {
@@ -43,6 +59,88 @@ AP_Var::~AP_Var(void)
 				// try the next one
 				p = p->_link;
 			}
+		}
+	}
+}
+
+// Copy the variable name to the provided buffer.
+//
+void
+AP_Var::copy_name(char *buffer, size_t bufferSize) const
+{
+	buffer[0] = '\0';
+	if (_scope)
+		_scope->copy_name(buffer, bufferSize);
+	strlcat_P(buffer, _name, bufferSize);
+}
+
+// Compute any offsets that should be applied to a variable in this scope.
+//
+// Note that this depends on the default _address value for scopes being zero.
+//
+AP_Var::AP_VarAddress
+AP_VarScope::get_address(void) const
+{
+	AP_Var::AP_VarAddress	addr = _address;
+
+	if (_parent)
+		addr += _parent->get_address();
+
+	return addr;
+}
+
+// Compute the address in EEPROM where the variable is stored
+//
+AP_Var::AP_VarAddress
+AP_Var::_get_address(void) const
+{
+	AP_VarAddress	addr = _address;
+
+	// if we have an address at all
+	if ((addr != AP_VarNoAddress) && _scope)
+			addr += _scope->get_address();
+
+	return addr;
+}
+
+// Save the variable to EEPROM, if supported
+//
+void
+AP_Var::save(void) const
+{
+	AP_VarAddress addr = _get_address();
+
+	if (addr != AP_VarNoAddress) {
+		uint8_t	vbuf[AP_VarMaxSize];
+		size_t	size;
+
+		// serialize the variable into the buffer and work out how big it is
+		size = serialize(vbuf, sizeof(vbuf));
+
+		// if it fit in the buffer, save it to EEPROM
+		if (size <= sizeof(vbuf))
+			eeprom_write_block(vbuf, (void *)addr, size);
+	}
+}
+
+// Load the variable from EEPROM, if supported
+//
+void
+AP_Var::load(void)
+{
+	AP_VarAddress addr = _get_address();
+
+	if (addr != AP_VarNoAddress) {
+		uint8_t	vbuf[AP_VarMaxSize];
+		size_t	size;
+
+		// ask the unserializer how big the variable is
+		size = unserialize(NULL, 0);
+
+		// read the buffer from EEPROM
+		if (size <= sizeof(vbuf)) {
+			eeprom_read_block(vbuf, (void *)addr, size);
+			unserialize(vbuf, size);
 		}
 	}
 }

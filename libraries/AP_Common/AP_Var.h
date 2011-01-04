@@ -20,27 +20,152 @@
 
 #include "AP_MetaClass.h"
 
+class AP_VarScope;
+
+/// Base class for variables.
+///
+/// Provides naming and lookup services for variables.
+///
+class AP_Var : public AP_MetaClass
+{
+public:
+	/// Storage address for variables that can be saved to EEPROM
+	///
+	/// If the variable is contained within a scope, then the address
+	/// is relative to the scope.
+	///
+	/// @todo	This might be used as a token for mass serialisation,
+	///			but for now it's just the address of the variable's backing
+	///			store in EEPROM.
+	///
+	typedef uint16_t		AP_VarAddress;
+
+	/// An address value that indicates that a variable is not to be saved to EEPROM.
+	/// This value is normally the default.
+	///
+	static const AP_VarAddress	AP_VarNoAddress = !(AP_VarAddress)0;
+
+	/// The largest variable that will be saved to EEPROM.
+	/// This affects the amount of stack space that is required by the ::save, ::load,
+	/// ::save_all and ::load_all functions.
+	///
+	static const size_t	AP_VarMaxSize = 16;
+
+	/// Constructor
+	///
+	/// @param	name			An optional name by which the variable may be known.
+	///							This name may be looked up via the ::lookup function.
+	/// @param	scope			An optional scope that the variable may be a contained within.
+	///							The scope's name will be prepended to the variable name
+	///							by ::copy_name.
+	///
+	AP_Var(AP_VarAddress		address = AP_VarNoAddress,
+	       const prog_char		*name = NULL,
+	       const AP_VarScope	*scope = NULL);
+
+	/// Destructor
+	///
+	/// Note that the linked-list removal can be inefficient when named variables
+	/// are destroyed in an order other than the reverse of the order in which
+	/// they are created.
+	///
+	~AP_Var(void);
+
+	/// Copy the variable's name, prefixed by any parent class names, to a buffer.
+	///
+	/// If the variable has no name, the buffer will contain an empty string.
+	///
+	/// Note that if the combination of names is larger than the buffer, the
+	/// result in the buffer will be truncated.
+	///
+	/// @param	buffer			The destination buffer
+	/// @param	bufferSize		Total size of the destination buffer.
+	///
+	void			copy_name(char *buffer, size_t bufferSize) const;
+
+	/// Return a pointer to the n'th known variable.
+	///
+	/// This function is used to iterate the set of variables that are considered
+	/// interesting; i.e. those that may be saved to EEPROM, or that have a name.
+	///
+	/// Note that variable index numbers are not constant, they depend on the
+	/// the static construction order.
+	///
+	/// @param	index			enumerator for the variable to be returned
+	///
+	static AP_Var	*lookup(int index);
+
+	/// Save the current value of the variable to EEPROM.
+	///
+	/// This interface works for any subclass that implements
+	/// serialize.
+	///
+	void			save(void) const;
+
+	/// Load the variable from EEPROM.
+	///
+	/// This interface works for any subclass that implements
+	/// unserialize.
+	///
+	void			load(void);
+
+	/// Save all variables to EEPROM
+	///
+	static void		save_all(void);
+
+	/// Load all variables from EEPROM
+	///
+	static void		load_all(void);
+
+private:
+	const AP_VarAddress		_address;
+	const prog_char			*_name;
+	const AP_VarScope		* const _scope;
+	AP_Var					*_link;
+
+	/// Do the arithmetic required to compute the variable's address in EEPROM
+	///
+	/// @returns		The address at which the variable is stored in EEPROM,
+	///					or AP_VarNoAddress if it is not saved.
+	///
+	AP_VarAddress			_get_address(void) const;
+
+	// static state used by ::lookup
+	static AP_Var			*_variables;
+	static AP_Var			*_lookupHint;		/// pointer to the last variable that was looked up by ::lookup
+	static int				_lookupHintIndex;	/// index of the last variable that was looked up by ::lookup
+};
+
 /// Nestable scopes for variable names.
 ///
-///	This provides a mechanism for scoping variable names, and
-///	may later be extended for other purposes.
+///	This provides a mechanism for scoping variable names and their
+/// EEPROM addresses.
 ///
 /// When AP_Var is asked for the name of a variable, it will
 /// prepend the names of all enclosing scopes.  This provides a way
 /// of grouping variables and saving memory when many share a large
 /// common prefix.
 ///
+/// When AP_var computes the address of a variable, it will take
+/// into account the address offsets of each of the variable's
+/// enclosing scopes.
+///
 class AP_VarScope
 {
 public:
 	/// Constructor
 	///
-	/// @param	scopeName		The name of the scope.
+	/// @param	name			The name of the scope.
+	/// @param	address			An EEPROM address offset to be added to the address assigned to
+	///							any variables within the scope.
+	///	@param	parent			Optional parent scope to nest within.
 	///
 	AP_VarScope(const prog_char *name,
+	            AP_Var::AP_VarAddress address = 0,
 	            AP_VarScope *parent = NULL) :
 					_name(name),
-					_parent(parent)
+					_parent(parent),
+					_address(address)
 	{
 	}
 
@@ -52,150 +177,25 @@ public:
 	/// @param	buffer			The destination buffer
 	/// @param	bufferSize		Total size of the destination buffer.
 	///
-	void						copy_name(char *buffer, size_t bufferSize) const
+	void			copy_name(char *buffer, size_t bufferSize) const
 	{
 		if (_parent)
 			_parent->copy_name(buffer, bufferSize);
 		strlcat_P(buffer, _name, bufferSize);
 	}
 
-private:
-	const prog_char	*_name;		/// pointer to the scope name in program memory
-	AP_VarScope		*_parent;	/// pointer to a parent scope, if one exists
-};
-
-/// Base class for variables.
-///
-/// Provides naming and lookup services for variables.
-///
-class AP_Var : public AP_MetaClass
-{
-public:
-	/// A unique identity for variables that can be saved to EEPROM
+	/// Compute the address offset that this and any parent scope might apply
+	/// to variables inside the scope.
 	///
-	/// @todo	This might be used as a token for mass serialisation,
-	///			but for now it's just the address of the variable's backing
-	///			store in EEPROM.
+	/// This provides a way for variables to be grouped into collections whose
+	/// EEPROM addresses can be more easily managed.
 	///
-	typedef uint16_t		AP_VarIdentity;
-	static const AP_VarIdentity	AP_VarUnsaved = ~(AP_VarIdentity)0;
-
-	/// The largest variable that will be saved to EEPROM
-	///
-	static const size_t	AP_VarMaxSize = 16;
-
-	/// Constructor
-	///
-	/// @param	name			An optional name by which the variable may be known.
-	/// @param	scope			An optional scope that the variable may be a contained within.
-	///
-	AP_Var(AP_VarIdentity identity = AP_VarUnsaved,
-	       const prog_char *name = NULL,
-	       AP_VarScope *scope = NULL) :
-	    	   _identity(identity),
-	    	   _name(name),
-	    	   _scope(scope)
-	{
-		if (name) {
-			_link = _variables;
-			_variables = this;
-		}
-	}
-
-	/// Destructor
-	///
-	/// This is largely a safety net, as the linked-list removal can be inefficient
-	/// when variables are destroyed in an order other than the reverse of the order
-	/// in which they are created.
-	///
-	~AP_Var(void);
-
-	/// Copy the variable name, prefixed by any parent class names, to a buffer.
-	///
-	/// Note that if the combination of names is larger than the buffer, the
-	/// result in the buffer will be truncated.
-	///
-	/// @param	buffer			The destination buffer
-	/// @param	bufferSize		Total size of the destination buffer.
-	///
-	void						copy_name(char *buffer, size_t bufferSize) const {
-		buffer[0] = '\0';
-		if (_scope)
-			_scope->copy_name(buffer, bufferSize);
-		strlcat_P(buffer, _name, bufferSize);
-	}
-
-	/// Return a pointer to the n'th known variable
-	///
-	/// This interface is designed for the use of relatively low-rate clients;
-	/// GCS interfaces in particular.  It may implement an acceleration scheme
-	/// for optimising the lookup of parameters.
-	///
-	/// Note that variable index numbers are not constant, they depend on the
-	/// the static construction order.
-	///
-	/// @param	index			enumerator for the variable to be returned
-	///
-	static AP_Var				*lookup(int index);
-
-	/// Save the current value of the variable to EEPROM.
-	///
-	/// This interface works for any subclass that implements
-	/// serialize.
-	///
-	void			save(void)	{
-		if (_identity != AP_VarUnsaved) {
-			uint8_t	vbuf[AP_VarMaxSize];
-			size_t	size;
-
-			// serialize the variable into the buffer and work out how big it is
-			size = serialize(vbuf, sizeof(vbuf));
-
-			// if it fit in the buffer, save it to EEPROM
-			if (size <= sizeof(vbuf))
-				eeprom_write_block(vbuf, (void *)_identity, size);
-		}
-	}
-
-	/// Load the variable from EEPROM.
-	///
-	/// This interface works for any subclass that implements
-	/// unserialize.
-	///
-	void			load(void) {
-		if (_identity != AP_VarUnsaved) {
-			uint8_t	vbuf[AP_VarMaxSize];
-			size_t	size;
-
-			// ask the unserializer how big the variable is
-			size = unserialize(NULL, 0);
-
-			// read the buffer from EEPROM
-			if (size <= sizeof(vbuf)) {
-				eeprom_read_block(vbuf, (void *)_identity, size);
-				unserialize(vbuf, size);
-			}
-		}
-	}
-
-	/// Save all variables to EEPROM
-	///
-	static void		save_all(void);
-
-	/// Load all variables from EEPROM
-	///
-	static void		load_all(void);
+	AP_Var::AP_VarAddress	get_address(void) const;
 
 private:
-	const AP_VarIdentity	_identity;
-	const prog_char			*_name;
-	AP_VarScope				*_scope;
-	AP_Var					*_link;
-
-	// static state used by ::lookup
-	static AP_Var		*_variables;
-	static AP_Var		*_lookupHint;		/// pointer to the last variable that was looked up by ::lookup
-	static int			_lookupHintIndex;	/// index of the last variable that was looked up by ::lookup
+	const prog_char			*_name;		/// pointer to the scope name in program memory
+	AP_VarScope				*_parent;	/// pointer to a parent scope, if one exists
+	AP_Var::AP_VarAddress	_address;	/// container base address, offsets contents
 };
 
 
@@ -225,17 +225,17 @@ public:
 	/// @param	varClass		An optional class that the variable may be a member of.
 	///
 	AP_VarT<T>(T initialValue			= 0,
-	          AP_VarIdentity identity	= AP_VarUnsaved,
+	          AP_VarAddress address		= AP_VarNoAddress,
 	          const prog_char *name		= NULL,
 	          AP_VarScope *scope		= NULL) :
-				  AP_Var(identity, name, scope),
+				  AP_Var(address, name, scope),
 				  _value(initialValue)
 	{
 	}
 
 	// serialize _value into the buffer, but only if it is big enough.
 	///
-	virtual size_t			serialize(void *buf, size_t size) {
+	virtual size_t			serialize(void *buf, size_t size) const {
 		if (size >= sizeof(T))
 			*(T *)buf = _value;
 		return sizeof(T);
@@ -251,7 +251,7 @@ public:
 
 	/// Value getter
 	///
-	T						get(void) { return _value; }
+	T						get(void) const { return _value; }
 
 	/// Value setter
 	///
