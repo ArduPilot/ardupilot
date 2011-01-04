@@ -17,7 +17,7 @@
 #include "RangeFinder.h"
 
 // Constructor /////////////////////////////////////////////////////////////////
-RangeFinder::RangeFinder() : _num_averages(AP_RANGEFINDER_NUM_AVERAGES), _ap_adc(NULL)
+RangeFinder::RangeFinder() : _num_averages(AP_RANGEFINDER_NUM_AVERAGES), _ap_adc(NULL), _history_ptr(0)
 {
 }
 
