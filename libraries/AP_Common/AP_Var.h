@@ -234,7 +234,7 @@ public:
 	}
 
 	// serialize _value into the buffer, but only if it is big enough.
-	///
+	//
 	virtual size_t			serialize(void *buf, size_t size) const {
 		if (size >= sizeof(T))
 			*(T *)buf = _value;
@@ -261,9 +261,16 @@ public:
 	///
 	/// This allows the class to be used in many situations where the value would be legal.
 	///
-	operator T&()						{ return _value; }
+	operator T&()			{ return _value; }
 
-private:
+	/// Copy assignment from self does nothing.
+	///
+	AP_VarT<T>& operator=(AP_VarT<T>& v)	{ return v; }
+
+	/// Copy assignment from
+	AP_VarT<T>& operator=(T v)				{ _value = v; return *this; }
+
+protected:
 	T				_value;
 };
 
@@ -277,6 +284,52 @@ AP_VARDEF(float,	Float);		// defines AP_Float, AP_NamedFloat and AP_SavedFloat
 AP_VARDEF(int8_t,	Int8);		// defines AP_UInt8, AP_NamedUInt8 and AP_SavedUInt8
 AP_VARDEF(int16_t,	Int16);		// defines AP_UInt16, AP_NamedUInt16 and AP_SavedUInt16
 AP_VARDEF(int32_t,  Int32);		// defines AP_UInt32, AP_NamedUInt32 and AP_SavedUInt32
+
+/// Many float values can be saved as 16-bit fixed-point values, reducing EEPROM
+/// consumption.  AP_Float16 subclasses AP_Float and overloads serialize/unserialize
+/// to achieve this.
+///
+/// Note that any protocol transporting serialized data should be aware that the
+/// encoding used is effectively Q5.10 (one sign bit, 5 integer bits, 10 fractional bits).
+///
+class AP_Float16 : public AP_Float
+{
+public:
+	/// Constructor mimics AP_Float::AP_Float()
+	///
+	AP_Float16(float initialValue			= 0,
+	           AP_VarAddress address		= AP_VarNoAddress,
+	           const prog_char *name		= NULL,
+	           AP_VarScope *scope		= NULL) :
+	        	   AP_Float(initialValue, address, name, scope)
+	{
+	}
+
+	// Serialize _value as Q5.10.
+	//
+	virtual size_t			serialize(void *buf, size_t size) const {
+		uint16_t	*sval = (uint16_t *)buf;
+
+		if (size >= sizeof(*sval))
+			*sval = _value / 1024.0;	// scale by power of 2, may be more efficient
+		return sizeof(*sval);
+	}
+
+	// Unserialize _value from Q5.10.
+	//
+	virtual size_t			unserialize(void *buf, size_t size) {
+		uint16_t	*sval = (uint16_t *)buf;
+
+		if (size >= sizeof(*sval))
+			_value = *sval * 1024.0;	// scale by power of 2, may be more efficient
+		return sizeof(*sval);
+	}
+
+	// copy operators must be redefined in subclasses to get correct behaviour
+	AP_Float16& operator=(AP_Float16 &v)	{ return v; }
+	AP_Float16& operator=(float v)			{ _value = v; return *this; }
+
+};
 
 /// Some convenient constant AP_Vars.
 extern const AP_Float		AP_FloatUnity;
