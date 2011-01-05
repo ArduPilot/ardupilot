@@ -107,7 +107,8 @@ setup(void)
 	{
 		TEST(var_cast_to_type);
 
-		AP_Float	f(1.0);		REQUIRE(f == 1.0);
+		AP_Float	f(10.0);	REQUIRE(f == 10.0);
+		f = 1.0;				REQUIRE(f == 1.0);
 		f *= 2.0;				REQUIRE(f == 2.0);
 		f /= 4;					REQUIRE(f == 0.5);
 		f += f;					REQUIRE(f == 1.0);
@@ -219,6 +220,20 @@ setup(void)
 
 		f1.load();
 		REQUIRE(f1 == 1);
+	}
+
+	// AP_Var: derived types
+	{
+		TEST(var_derived);
+
+		AP_Float16	f1(10.0, 20);
+
+		REQUIRE(f1 == 10.0);
+		f1.save();
+		f1 = 0;
+		REQUIRE(f1 == 0);
+		f1.load();
+		REQUIRE(f1 = 10.0);
 	}
 
 
