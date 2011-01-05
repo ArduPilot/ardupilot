@@ -21,10 +21,12 @@ AP_Float	AP_FloatZero(0);
 //
 AP_Var::AP_Var(AP_VarAddress address,
                const prog_char *name,
-               const AP_VarScope *scope) :
+               const AP_VarScope *scope,
+			   Flags flags) :
 				   _address(address),
 				   _name(name),
-				   _scope(scope)
+				   _scope(scope),
+				   _flags(flags)
 {
 	// link the variable into the list of known variables
 	_link = _variables;
@@ -201,7 +203,8 @@ AP_Var::save_all(void)
 	AP_Var	*p = _variables;
 
 	while (p) {
-		p->save();
+		if (!p->has_flags(NO_AUTO_LOAD))
+			p->save();
 		p = p->_link;
 	}
 }
@@ -214,7 +217,8 @@ AP_Var::load_all(void)
 	AP_Var	*p = _variables;
 
 	while (p) {
-		p->load();
+		if (!p->has_flags(NO_AUTO_LOAD))
+			p->load();
 		p = p->_link;
 	}
 }
