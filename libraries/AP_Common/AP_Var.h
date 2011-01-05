@@ -51,6 +51,14 @@ public:
 	///
 	static const size_t	AP_VarMaxSize = 16;
 
+	/// Optional flags affecting the behavior and usage of the variable.
+	///
+	enum Flags {
+		NO_FLAGS		= 0,
+		NO_AUTO_LOAD	= (1<<0),		///< will not be loaded by ::load_all or saved by ::save_all
+		NO_IMPORT		= (1<<1)		///< new values must not be imported from e.g. a GCS
+	};
+
 	/// Constructor
 	///
 	/// @param	name			An optional name by which the variable may be known.
@@ -61,7 +69,8 @@ public:
 	///
 	AP_Var(AP_VarAddress		address = AP_VarNoAddress,
 	       const prog_char		*name = NULL,
-	       const AP_VarScope	*scope = NULL);
+	       const AP_VarScope	*scope = NULL,
+	       Flags				flags = NO_FLAGS);
 
 	/// Destructor
 	///
@@ -123,11 +132,19 @@ public:
 	///
 	static void		load_all(void);
 
+	/// Test for flags that may be set.
+	///
+	/// @param	flagval			Flag or flags to be tested
+	/// @returns				True if all of the bits in flagval are set in the flags.
+	///
+	bool			has_flags(Flags flagval) const { return (_flags & flagval) == flagval; }
+
 private:
 	const AP_VarAddress		_address;
 	const prog_char			*_name;
 	const AP_VarScope		* const _scope;
 	AP_Var					*_link;
+	uint8_t					_flags;
 
 	/// Do the arithmetic required to compute the variable's address in EEPROM
 	///
@@ -233,8 +250,9 @@ public:
 	AP_VarT<T>(T defaultValue			= 0,
 	          AP_VarAddress address		= AP_VarNoAddress,
 	          const prog_char *name		= NULL,
-	          AP_VarScope *scope		= NULL) :
-				  AP_Var(address, name, scope),
+	          AP_VarScope *scope		= NULL,
+	          Flags	flags				= NO_FLAGS) :
+				  AP_Var(address, name, scope, flags),
 				  _value(defaultValue),
 				  _defaultValue(defaultValue)
 	{
@@ -308,11 +326,12 @@ class AP_Float16 : public AP_Float
 public:
 	/// Constructor mimics AP_Float::AP_Float()
 	///
-	AP_Float16(float defaultValue			= 0,
-	           AP_VarAddress address		= AP_VarNoAddress,
-	           const prog_char *name		= NULL,
-	           AP_VarScope *scope		= NULL) :
-	        	   AP_Float(defaultValue, address, name, scope)
+	AP_Float16(float defaultValue		= 0,
+	           AP_VarAddress address	= AP_VarNoAddress,
+	           const prog_char *name	= NULL,
+	           AP_VarScope *scope		= NULL,
+	           Flags flags				= NO_FLAGS) :
+	        	   AP_Float(defaultValue, address, name, scope, flags)
 	{
 	}
 
