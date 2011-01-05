@@ -65,11 +65,17 @@ public:
 
 	/// Destructor
 	///
-	/// Note that the linked-list removal can be inefficient when named variables
+	/// Note that the linked-list removal can be inefficient when variables
 	/// are destroyed in an order other than the reverse of the order in which
-	/// they are created.
+	/// they are created.  This is not a major issue for variables created
+	/// and destroyed automatically at block boundaries, and the creation and
+	/// destruction of variables by hand is generally discouraged.
 	///
 	~AP_Var(void);
+
+	/// Set the variable to its default value
+	///
+	virtual void	set_default(void);
 
 	/// Copy the variable's name, prefixed by any parent class names, to a buffer.
 	///
@@ -224,12 +230,13 @@ public:
 	/// @param	name			An optional name by which the variable may be known.
 	/// @param	varClass		An optional class that the variable may be a member of.
 	///
-	AP_VarT<T>(T initialValue			= 0,
+	AP_VarT<T>(T defaultValue			= 0,
 	          AP_VarAddress address		= AP_VarNoAddress,
 	          const prog_char *name		= NULL,
 	          AP_VarScope *scope		= NULL) :
 				  AP_Var(address, name, scope),
-				  _value(initialValue)
+				  _value(defaultValue),
+				  _defaultValue(defaultValue)
 	{
 	}
 
@@ -249,6 +256,9 @@ public:
 		return sizeof(T);
 	}
 
+	/// Restore the variable to its default value
+	virtual void			set_default(void) { _value = _defaultValue; }
+
 	/// Value getter
 	///
 	T						get(void) const { return _value; }
@@ -267,11 +277,12 @@ public:
 	///
 	AP_VarT<T>& operator=(AP_VarT<T>& v)	{ return v; }
 
-	/// Copy assignment from
+	/// Copy assignment from T
 	AP_VarT<T>& operator=(T v)				{ _value = v; return *this; }
 
 protected:
 	T				_value;
+	T				_defaultValue;
 };
 
 
@@ -297,11 +308,11 @@ class AP_Float16 : public AP_Float
 public:
 	/// Constructor mimics AP_Float::AP_Float()
 	///
-	AP_Float16(float initialValue			= 0,
+	AP_Float16(float defaultValue			= 0,
 	           AP_VarAddress address		= AP_VarNoAddress,
 	           const prog_char *name		= NULL,
 	           AP_VarScope *scope		= NULL) :
-	        	   AP_Float(initialValue, address, name, scope)
+	        	   AP_Float(defaultValue, address, name, scope)
 	{
 	}
 
@@ -332,8 +343,11 @@ public:
 };
 
 /// Some convenient constant AP_Vars.
-extern const AP_Float		AP_FloatUnity;
-extern const AP_Float		AP_FloatNegativeUnity;
-extern const AP_Float		AP_FloatZero;
+///
+/// @todo	Work out why these can't be const and fix if possible.
+///
+extern AP_Float		AP_FloatUnity;
+extern AP_Float		AP_FloatNegativeUnity;
+extern AP_Float		AP_FloatZero;
 
 #endif // AP_Var_H

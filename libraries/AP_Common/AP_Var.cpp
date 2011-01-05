@@ -11,9 +11,11 @@
 
 #include "AP_Var.h"
 
-const AP_Float	AP_GainUnity(1.0);
-const AP_Float	AP_GainNegativeUnity(-1.0);
-const AP_Float	AP_Zero(0);
+// Global constants exported
+//
+AP_Float	AP_FloatUnity(1.0);
+AP_Float	AP_FloatNegativeUnity(-1.0);
+AP_Float	AP_FloatZero(0);
 
 // Constructor
 //
@@ -24,11 +26,12 @@ AP_Var::AP_Var(AP_VarAddress address,
 				   _name(name),
 				   _scope(scope)
 {
-	// if the variable is interesting, link it into the list
-	if (_name || (_address != AP_VarNoAddress)) {
-		_link = _variables;
-		_variables = this;
-	}
+	// link the variable into the list of known variables
+	_link = _variables;
+	_variables = this;
+
+	// reset the lookup cache
+	_lookupHintIndex = 0;
 }
 
 // Destructor
@@ -37,30 +40,36 @@ AP_Var::AP_Var(AP_VarAddress address,
 //
 AP_Var::~AP_Var(void)
 {
-	AP_Var	*p;
+	// if we are at the head of the list - for variables
+	// recently constructed this is usually the case
+	if (_variables == this) {
+		// remove us from the head of the list
+		_variables = _link;
 
-	// only do this for variables that were considered interesting
-	if (_name || (_address != AP_VarNoAddress)) {
-		// if we are at the head of the list - for variables
-		// recently constructed this is usually the case
-		if (_variables == this) {
-			// remove us from the head of the list
-			_variables = _link;
-		} else {
-			// traverse the list looking for the entry that points to us
-			p = _variables;
-			while (p) {
-				// is it pointing at us?
-				if (p->_link == this) {
-					// make it point at what we point at, and done
-					p->_link = _link;
-					break;
-				}
-				// try the next one
-				p = p->_link;
+	} else {
+		// traverse the list looking for the entry that points to us
+		AP_Var	*p = _variables;
+
+		while (p) {
+			// is it pointing at us?
+			if (p->_link == this) {
+				// make it point at what we point at, and done
+				p->_link = _link;
+				break;
 			}
+			// try the next one
+			p = p->_link;
 		}
 	}
+
+	// reset the lookup cache
+	_lookupHintIndex = 0;
+}
+
+void
+AP_Var::set_default(void)
+{
+	// Default implementation of ::set_default does nothing
 }
 
 // Copy the variable name to the provided buffer.
@@ -172,12 +181,12 @@ AP_Var::lookup(int index)
 	}
 
 	// search
-	while (index-- && p)				// count until we hit the index or the end of the list
+	while (i-- && p)					// count until we hit the index or the end of the list
 		p = p->_link;
 
 	// update the cache on hit
 	if (p) {
-		_lookupHintIndex = i;
+		_lookupHintIndex = index;
 		_lookupHint = p;
 	}
 
