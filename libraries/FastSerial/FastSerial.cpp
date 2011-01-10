@@ -210,7 +210,8 @@ void FastSerial::write(uint8_t c)
 
 bool FastSerial::_allocBuffer(Buffer *buffer, unsigned int size)
 {
-	uint8_t shift;
+	uint16_t	mask;
+	uint8_t		shift;
 
 	// init buffer state
 	buffer->head = buffer->tail = 0;
@@ -221,11 +222,23 @@ bool FastSerial::_allocBuffer(Buffer *buffer, unsigned int size)
 	// Note that we ignore requests for more than BUFFER_MAX space.
 	for (shift = 1; (1U << shift) < min(_max_buffer_size, size); shift++)
 		;
-	buffer->mask = (1 << shift) - 1;
+	mask = (1 << shift) - 1;
 
-	// allocate memory for the buffer - if this fails, we fail
-	if (buffer->bytes)
+	// If the descriptor already has a buffer allocated we need to take
+	// care of it.
+	if (buffer->bytes) {
+
+		// If the allocated buffer is already the correct size then
+		// we have nothing to do
+		if (buffer->mask == mask)
+			return true;
+
+		// Dispose of the old buffer.
 		free(buffer->bytes);
+	}
+	buffer->mask = mask;
+
+	// allocate memory for the buffer - if this fails, we fail.
 	buffer->bytes = (uint8_t *) malloc(buffer->mask + 1);
 
 	return (buffer->bytes != NULL);
