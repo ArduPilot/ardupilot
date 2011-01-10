@@ -29,8 +29,8 @@ public:
 	/// \note Non-intuitive ordering for legacy reasons
 	///
 	enum GPS_Status {
-		NO_GPS = 0,		///< No GPS connected/detected 
-		NO_FIX = 1,		///< Receiving valid GPS messages but no lock 
+		NO_GPS = 0,		///< No GPS connected/detected
+		NO_FIX = 1,		///< Receiving valid GPS messages but no lock
 		GPS_OK = 2		///< Receiving valid messages and locked
 	};
 
@@ -53,7 +53,8 @@ public:
 	virtual void	init(void) = 0;
 
 	// Properties
-	long	time;			///< GPS time in milliseconds from the start of the week
+	long	time;			///< GPS time (FORMAT TBD)
+	long	date;			///< GPS date (FORMAT TBD)
 	long	latitude;		///< latitude in degrees * 10,000,000
 	long	longitude;		///< longitude in degrees * 10,000,000
 	long	altitude;		///< altitude in cm
@@ -83,7 +84,7 @@ protected:
 	/// @note The stream is expected to be set up and configured for the
 	///       correct bitrate before ::init is called.
 	///
-	/// @param	s	Stream connected to the GPS module.  
+	/// @param	s	Stream connected to the GPS module.
 	///
 	GPS(Stream *s) : _port(s) {};
 
@@ -127,7 +128,10 @@ private:
 	/// Time in milliseconds after which we will assume the GPS is no longer
 	/// sending us updates and attempt a re-init.
 	///
-	static const unsigned long	_idleTimeout = 500;
+	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
+	/// rate.
+	///
+	static const unsigned long	_idleTimeout = 1200;
 
 	/// Last time that the GPS driver got a good packet from the GPS
 	///
