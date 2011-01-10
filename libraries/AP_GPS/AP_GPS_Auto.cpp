@@ -1,57 +1,88 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
-//
-// Auto-detecting pseudo-GPS driver
-//
+
+/// @file	AP_GPS_Auto.cpp
+/// @brief	Simple GPS auto-detection logic.
+
+#include <FastSerial.h>
+#include <AP_Common.h>
 
 #include "AP_GPS.h"		// includes AP_GPS_Auto.h
-#include <wiring.h>
+
+// Define this to add NMEA to the auto-detection cycle.
+//
+// Note that there is a potential race where NMEA data may overlap with
+// the commands that switch a GPS out of NMEA mode that can cause
+// the GPS to switch to binary mode at the same time that this code
+// detects it as being in NMEA mode.
+//
+//#define WITH_NMEA_MODE	1
 
 static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
-AP_GPS_Auto::AP_GPS_Auto(FastSerial *port, GPS **gps)  :
-	GPS(port),
-	_FSport(port),	// do we need this, or can we cast _port up?
+const prog_char	AP_GPS_Auto::_mtk_set_binary[]   PROGMEM = MTK_SET_BINARY;
+const prog_char	AP_GPS_Auto::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
+const prog_char	AP_GPS_Auto::_sirf_set_binary[]  PROGMEM = SIRF_SET_BINARY;
+
+
+AP_GPS_Auto::AP_GPS_Auto(FastSerial *s, GPS **gps)  :
+	GPS(s),
+	_fs(s),
 	_gps(gps)
 {
 }
 
-
 // Do nothing at init time - it may be too early to try detecting the GPS
+//
 void
 AP_GPS_Auto::init(void)
 {
 }
 
-//
 // Called the first time that a client tries to kick the GPS to update.
 //
 // We detect the real GPS, then update the pointer we have been called through
 // and return.
+//
+/// @todo	This routine spends a long time trying to detect a GPS.  That's not strictly
+///			desirable; it might be a good idea to rethink the logic here to make it
+///			more asynchronous, so that other parts of the system can get a chance
+///			to run while GPS detection is in progress.
+///
 bool
 AP_GPS_Auto::read(void)
 {
 	GPS		*gps;
 	int		i;
+	unsigned long then;
 
-	// loop trying to find a GPS
-	for (;;) {
-		// loop through possible baudrates
-		for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
-			Serial.printf("GPS autodetect at %d:%u\n", i, baudrates[i]);
-			_FSport->begin(baudrates[i]);
-			if (NULL != (gps = _detect())) {
-				// make the detected GPS the default
-				*_gps = gps;
+	// Loop through possible baudrates trying to detect a GPS at one of them.
+	//
+	// Note that we need to have a FastSerial rather than a Stream here because
+	// Stream has no idea of line speeds.  FastSerial is quite OK with us calling
+	// ::begin any number of times.
+	//
+	for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
 
-				// configure the detected GPS and run one update
-				gps->print_errors = true;	// XXX
-				gps->init();
+		_fs->begin(baudrates[i]);
+		if (NULL != (gps = _detect())) {
+
+			// configure the detected GPS and give it a chance to listen to its device
+			gps->init();
+			then = millis();
+			while ((millis() - then) < 1200) {
+				// if we get a successful update from the GPS, we are done
+				gps->new_data = false;
 				gps->update();
-
-				// Drop back to our caller - subsequent calls through
-				// _gps will not come here.
-				return false;
+				if (gps->new_data) {
+					Serial.println_P(PSTR("OK"));
+					*_gps = gps;
+					return true;
+				}
 			}
+			// GPS driver failed to parse any data from GPS,
+			// delete the driver and continue the process.
+			Serial.println_P(PSTR("failed, retrying"));
+			delete gps;
 		}
 	}
 }
@@ -70,6 +101,7 @@ AP_GPS_Auto::_detect(void)
 	//
 	// Loop attempting to detect a recognized GPS
 	//
+	Serial.print('G');
 	gps = NULL;
 	for (tries = 0; tries < 2; tries++) {
 
@@ -79,7 +111,6 @@ AP_GPS_Auto::_detect(void)
 		// XXX We can detect babble by counting incoming characters, but
 		//     what would we do about it?
 		//
-		Serial.println("draining and waiting");
 		_port->flush();
 		then = millis();
 		do {
@@ -92,16 +123,19 @@ AP_GPS_Auto::_detect(void)
 		//
 		// Collect four characters to fingerprint a device
 		//
-		Serial.println("collecting fingerprint");
-		fingerprint[0] = _getc();
-		fingerprint[1] = _getc();
-		fingerprint[2] = _getc();
-		fingerprint[3] = _getc();
-		Serial.printf("fingerprints 0x%02x 0x%02x 0x%02x 0x%02x\n",
-			   fingerprint[0],
-			   fingerprint[1],
-			   fingerprint[2],
-			   fingerprint[3]);
+		// If we take more than 1200ms to receive four characters, abort.
+		// This will normally only be the case where there is no GPS attached.
+		//
+		while (_port->available() < 4) {
+			if ((millis() - then) > 1200) {
+				Serial.print('!');
+				return NULL;
+			}
+		}
+		fingerprint[0] = _port->read();
+		fingerprint[1] = _port->read();
+		fingerprint[2] = _port->read();
+		fingerprint[3] = _port->read();
 
 		//
 		// ublox or MTK in DIYD binary mode (whose smart idea was
@@ -113,14 +147,14 @@ AP_GPS_Auto::_detect(void)
 
 			// message 5 is MTK pretending to talk UBX
 			if (0x05 == fingerprint[3]) {
-				Serial.printf("detected MTK in binary mode\n");
 				gps = new AP_GPS_MTK(_port);
+				Serial.print_P(PSTR(" MTK1.4 "));
 				break;
 			}
 
 			// any other message is ublox
-			Serial.printf("detected ublox in binary mode\n");
 			gps = new AP_GPS_UBLOX(_port);
+			Serial.print_P(PSTR(" ublox "));
 			break;
 		}
 
@@ -130,8 +164,8 @@ AP_GPS_Auto::_detect(void)
 		if ((0xd0 == fingerprint[0]) &&
 			(0xdd == fingerprint[1]) &&
 			(0x20 == fingerprint[2])) {
-			Serial.printf("detected MTK v1.6\n");
 			gps = new AP_GPS_MTK16(_port);
+			Serial.print_P(PSTR(" MTK1.6 "));
 			break;
 		}
 
@@ -140,8 +174,8 @@ AP_GPS_Auto::_detect(void)
 		//
 		if ((0xa0 == fingerprint[0]) &&
 			(0xa2 == fingerprint[1])) {
-			Serial.printf("detected SIRF in binary mode\n");
 			gps = new AP_GPS_SIRF(_port);
+			Serial.print_P(PSTR(" SiRF "));
 			break;
 		}
 
@@ -150,16 +184,20 @@ AP_GPS_Auto::_detect(void)
 		// and retry to avoid a false-positive on the NMEA detector.
 		//
 		if (0 == tries) {
-			Serial.printf("sending setup strings and trying again\n");
-			_port->println(MTK_SET_BINARY);
-			_port->println(UBLOX_SET_BINARY);
-			_port->println(SIRF_SET_BINARY);
+			Serial.print('*');
+			// use the FastSerial port handle so that we can use PROGMEM strings
+			_fs->println_P(_mtk_set_binary);
+			_fs->println_P(_ublox_set_binary);
+			_fs->println_P(_sirf_set_binary);
 
 			// give the GPS time to react to the settings
 			delay(100);
 			continue;
+		} else {
+			Serial.print('?');
 		}
 
+#if WITH_NMEA_MODE
 		//
 		// Something talking NMEA
 		//
@@ -168,18 +206,11 @@ AP_GPS_Auto::_detect(void)
 
 			// XXX this may be a bit presumptive, might want to give the GPS a couple of
 			//     iterations around the loop to react to init strings?
-			Serial.printf("detected NMEA\n");
 			gps = new AP_GPS_NMEA(_port);
 			break;
 		}
+#endif
 	}
 	return(gps);
 }
 
-int
-AP_GPS_Auto::_getc(void)
-{
-	while (0 == _port->available())
-		;
-	return(_port->read());
-}

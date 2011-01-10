@@ -6,8 +6,8 @@
 #ifndef AP_GPS_Auto_h
 #define AP_GPS_Auto_h
 
-#include <GPS.h>
 #include <FastSerial.h>
+#include <GPS.h>
 
 class AP_GPS_Auto : public GPS
 {
@@ -21,7 +21,7 @@ public:
 	/// @param	ptr		Pointer to a GPS * that will be fixed up by ::init
 	///					when the GPS type has been detected.
 	///
-	AP_GPS_Auto(FastSerial *port, GPS **gps);
+	AP_GPS_Auto(FastSerial *s, GPS **gps);
 
 	/// Dummy init routine, does nothing
 	virtual void		init(void);
@@ -32,8 +32,8 @@ public:
 	virtual bool 	read(void);
 
 private:
-	/// Serial port connected to the GPS.
-	FastSerial	*_FSport;
+	/// Copy of the port, known at construction time to be a real FastSerial port.
+	FastSerial	*_fs;
 
 	/// global GPS driver pointer, updated by auto-detection
 	///
@@ -43,8 +43,9 @@ private:
 	///
 	GPS			*_detect(void);
 
-	/// fetch a character from the port
-	///
-	int			_getc(void);
+	static const prog_char _mtk_set_binary[];
+	static const prog_char _ublox_set_binary[];
+	static const prog_char _sirf_set_binary[];
+
 };
 #endif
