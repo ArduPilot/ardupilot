@@ -4,6 +4,7 @@
 //
 
 #include <FastSerial.h>
+#include <AP_Common.h>
 #include <AP_GPS.h>
 
 FastSerialPort0(Serial);
@@ -14,11 +15,6 @@ AP_GPS_Auto GPS(&Serial1, &gps);
 
 #define T6 1000000
 #define T7 10000000
-
-void * operator new(size_t size) 
-{
-	return(calloc(size, 1));
-}
 
 void setup()
 {
