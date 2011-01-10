@@ -131,7 +131,8 @@ void read_EEPROM_PID(void)
 	pid_yaw.load_gains();
 	
 	pid_nav.load_gains();
-	pid_throttle.load_gains();
+	pid_baro_throttle.load_gains();
+	pid_sonar_throttle.load_gains();
 	
 	// roll pitch
 	stabilize_dampener 			= read_EE_compressed_float(EE_STAB_DAMPENER, 4);
@@ -152,7 +153,8 @@ void save_EEPROM_PID(void)
 	pid_yaw.save_gains();
 	
 	pid_nav.save_gains();
-	pid_throttle.save_gains();
+	pid_baro_throttle.save_gains();
+	pid_sonar_throttle.save_gains();
 
 	// roll pitch
 	write_EE_compressed_float(stabilize_dampener,	EE_STAB_DAMPENER, 4);
