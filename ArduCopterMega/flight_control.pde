@@ -24,13 +24,13 @@ void calc_nav_throttle()
 	long t_out;
 	
 	if(altitude_sensor == BARO) {
-		t_out = pid_baro_throttle.get_pid(err, deltaMiliSeconds, 1.0);
+		t_out = pid_baro_throttle.get_pid(altitude_error, deltaMiliSeconds, 1.0);
 	
 		// limit output of throttle control
 		t_out = throttle_cruise + constrain(t_out, -50, 100);
 	} else {
 		// SONAR
-		t_out = pid_sonar_throttle.get_pid(err, deltaMiliSeconds, 1.0);
+		t_out = pid_sonar_throttle.get_pid(altitude_error, deltaMiliSeconds, 1.0);
 	
 		// limit output of throttle control
 		t_out = throttle_cruise + constrain(t_out, -60, 100);
