@@ -1,10 +1,10 @@
-// -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 //
 // Interrupt-driven serial transmit/receive library.
 //
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
-// Receive and baudrate calculations derived from the Arduino 
+// Receive and baudrate calculations derived from the Arduino
 // HardwareSerial driver:
 //
 //      Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
@@ -35,7 +35,7 @@
 // Note that this library does not pre-declare drivers for serial
 // ports; the user must explicitly create drivers for the ports they
 // wish to use.  This is less friendly than the stock Arduino driver,
-// but it saves 24 bytes of RAM for every unused port and frees up
+// but it saves a few bytes of RAM for every unused port and frees up
 // the vector for another driver (e.g. MSPIM on USARTs).
 //
 
@@ -55,97 +55,150 @@
 
 #include "BetterStream.h"
 
-//
-// Because Arduino libraries aren't really libraries, but we want to
-// only define interrupt handlers for serial ports that are actually
-// used, we have to force our users to define them using a macro.
-//
-// FastSerialPort(<port name>, <port number>)
-//
-// <port name> is the name of the object that will be created by the
-// macro.  <port number> is the 0-based number of the port that will
-// be managed by the object.
-//
-// Previously ports were defined with a different macro for each port,
-// and these macros are retained for compatibility:
-//
-// FastSerialPort0(<port name>)         creates <port name> referencing serial port 0
-// FastSerialPort1(<port name>)         creates <port name> referencing serial port 1
-// FastSerialPort2(<port name>)         creates <port name> referencing serial port 2
-// FastSerialPort3(<port name>)         creates <port name> referencing serial port 3
-//
-// Note that compatibility macros are only defined for ports that
-// exist on the target device.
-//
+/// @file	FastSerial.h
+/// @brief	An enhanced version of the Arduino HardwareSerial class
+///			implementing interrupt-driven transmission and flexible
+///			buffer management.
+///
+/// Because Arduino libraries aren't really libraries, but we want to
+/// only define interrupt handlers for serial ports that are actually
+/// used, we have to force our users to define them using a macro.
+///
+/// FastSerialPort(<port name>, <port number>)
+///
+/// <port name> is the name of the object that will be created by the
+/// macro.  <port number> is the 0-based number of the port that will
+/// be managed by the object.
+///
+/// Previously ports were defined with a different macro for each port,
+/// and these macros are retained for compatibility:
+///
+/// FastSerialPort0(<port name>)         creates <port name> referencing serial port 0
+/// FastSerialPort1(<port name>)         creates <port name> referencing serial port 1
+/// FastSerialPort2(<port name>)         creates <port name> referencing serial port 2
+/// FastSerialPort3(<port name>)         creates <port name> referencing serial port 3
+///
+/// Note that compatibility macros are only defined for ports that
+/// exist on the target device.
+///
 
-//
-// Forward declarations for clients that want to assume that the
-// default Serial* objects exist.
-//
-// Note that the application is responsible for ensuring that these
-// actually get defined, otherwise Arduino will suck in the
-// HardwareSerial library and linking will fail.
-//
+///	@name	Compatibility
+///
+/// Forward declarations for clients that want to assume that the
+/// default Serial* objects exist.
+///
+/// Note that the application is responsible for ensuring that these
+/// actually get defined, otherwise Arduino will suck in the
+/// HardwareSerial library and linking will fail.
+//@{
 extern class FastSerial Serial;
 extern class FastSerial Serial1;
 extern class FastSerial Serial2;
 extern class FastSerial Serial3;
+//@}
 
-class FastSerial : public BetterStream {
+/// The FastSerial class definition
+///
+class FastSerial: public BetterStream {
 public:
-        FastSerial(const uint8_t portNumber,
-                   volatile uint8_t *ubrrh,
-                   volatile uint8_t *ubrrl,
-                   volatile uint8_t *ucsra,
-                   volatile uint8_t *ucsrb,
-                   const uint8_t u2x,
-                   const uint8_t portEnableBits,
-                   const uint8_t portTxBits);
+	/// Constructor
+	FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volatile uint8_t *ubrrl, volatile uint8_t *ucsra,
+			   volatile uint8_t *ucsrb, const uint8_t u2x, const uint8_t portEnableBits, const uint8_t portTxBits);
 
-        // Serial API
-        virtual void    begin(long baud);
-        virtual void    begin(long baud, unsigned int rxSpace, unsigned int txSpace);
-        virtual void    end(void);
-        virtual int     available(void);
-        virtual int     read(void);
-        virtual int     peek(void);
-        virtual void    flush(void);
-        virtual void    write(uint8_t c);
-        using BetterStream::write;
+	/// @name 	Serial API
+	//@{
+	virtual void begin(long baud);
+	virtual void end(void);
+	virtual int available(void);
+	virtual int read(void);
+	virtual int peek(void);
+	virtual void flush(void);
+	virtual void write(uint8_t c);
+	using BetterStream::write;
+	//@}
 
-        // public so the interrupt handlers can see it
-        struct Buffer {
-                volatile uint16_t head, tail;
-                uint16_t        mask;
-                uint8_t         *bytes;
-        };
+	/// Extended port open method
+	///
+	/// Allows for both opening with specified buffer sizes, and re-opening
+	/// to adjust a subset of the port's settings.
+	///
+	/// @note	Buffer sizes greater than ::_max_buffer_size will be rounded
+	///			down.
+	///
+	/// @param	baud		Selects the speed that the port will be
+	///						configured to.  If zero, the port speed is left
+	///						unchanged.
+	/// @param rxSpace		Sets the receive buffer size for the port.  If zero
+	///						then the buffer size is left unchanged if the port
+	///						is open, or set to ::_default_rx_buffer_size if it is
+	///						currently closed.
+	/// @param txSpace		Sets the transmit buffer size for the port.  If zero
+	///						then the buffer size is left unchanged if the port
+	///						is open, or set to ::_default_tx_buffer_size if it
+	///						is currently closed.
+	///
+	virtual void begin(long baud, unsigned int rxSpace, unsigned int txSpace);
+
+	/// Transmit/receive buffer descriptor.
+	///
+	/// Public so the interrupt handlers can see it
+	struct Buffer {
+		volatile uint16_t head, tail;	///< head and tail pointers
+		uint16_t mask;					///< buffer size mask for pointer wrap
+		uint8_t *bytes;					///< pointer to allocated buffer
+	};
 
 private:
-        // register accessors
-        volatile uint8_t *_ubrrh;
-        volatile uint8_t *_ubrrl;
-        volatile uint8_t *_ucsra;
-        volatile uint8_t *_ucsrb;
+	// register accessors
+	volatile uint8_t * const _ubrrh;
+	volatile uint8_t * const _ubrrl;
+	volatile uint8_t * const _ucsra;
+	volatile uint8_t * const _ucsrb;
 
-        // register magic numbers
-        uint8_t         _portEnableBits;        // rx, tx and rx interrupt enables
-        uint8_t         _portTxBits;            // tx data and completion interrupt enables
-        uint8_t         _u2x;
+	// register magic numbers
+	const uint8_t	_portEnableBits;		///< rx, tx and rx interrupt enables
+	const uint8_t	_portTxBits;			///< tx data and completion interrupt enables
+	const uint8_t	_u2x;
 
-        // ring buffers
-        Buffer          *_rxBuffer;
-        Buffer          *_txBuffer;
-        bool            _open;
+	// ring buffers
+	Buffer			* const _rxBuffer;
+	Buffer			* const _txBuffer;
+	bool 			_open;
 
-        static bool     _allocBuffer(Buffer *buffer, unsigned int size);
-        static void     _freeBuffer(Buffer *buffer);
+	/// Allocates a buffer of the given size
+	///
+	/// @param	buffer		The buffer descriptor for which the buffer will
+	///						will be allocated.
+	/// @param	size		The desired buffer size.
+	/// @returns			True if the buffer was allocated successfully.
+	///
+	static bool _allocBuffer(Buffer *buffer, unsigned int size);
+
+	/// Frees the allocated buffer in a descriptor
+	///
+	/// @param	buffer		The descriptor whose buffer should be freed.
+	///
+	static void _freeBuffer(Buffer *buffer);
+
+	/// default receive buffer size
+	static const unsigned int	_default_rx_buffer_size = 128;
+
+	/// default transmit buffer size
+	static const unsigned int	_default_tx_buffer_size = 16;
+
+	/// maxium tx/rx buffer size
+	/// @note if we could bring the max size down to 256, the mask and head/tail
+	///       pointers in the buffer could become uint8_t.
+	///
+	static const unsigned int	_max_buffer_size = 512;
 };
 
 // Used by the per-port interrupt vectors
-extern FastSerial::Buffer	__FastSerial__rxBuffer[];
-extern FastSerial::Buffer	__FastSerial__txBuffer[];
+extern FastSerial::Buffer __FastSerial__rxBuffer[];
+extern FastSerial::Buffer __FastSerial__txBuffer[];
 
-// Generic Rx/Tx vectors for a serial port - needs to know magic numbers
+/// Generic Rx/Tx vectors for a serial port - needs to know magic numbers
+///
 #define FastSerialHandler(_PORT, _RXVECTOR, _TXVECTOR, _UDR, _UCSRB, _TXBITS) \
 ISR(_RXVECTOR, ISR_BLOCK)                                               \
 {                                                                       \
@@ -215,9 +268,9 @@ struct hack
 # endif
 #endif
 
-//
-// Macro defining a FastSerial port instance.
-//
+///
+/// Macro defining a FastSerial port instance.
+///
 #define FastSerialPort(_name, _num)                                     \
 	FastSerial _name(_num,                                          \
                          &UBRR##_num##H,                                \
@@ -234,14 +287,14 @@ struct hack
                           UCSR##_num##B,                                \
                           _BV(UDRIE##_num))
 
-//
-// Compatibility macros for previous FastSerial versions.
-//
-// Note that these are not conditionally defined, as the errors
-// generated when using these macros for a board that does not support
-// the port are better than the errors generated for a macro that's not
-// defined at all.
-//
+///
+/// Compatibility macros for previous FastSerial versions.
+///
+/// Note that these are not conditionally defined, as the errors
+/// generated when using these macros for a board that does not support
+/// the port are better than the errors generated for a macro that's not
+/// defined at all.
+///
 #define FastSerialPort0(_portName)     FastSerialPort(_portName, 0)
 #define FastSerialPort1(_portName)     FastSerialPort(_portName, 1)
 #define FastSerialPort2(_portName)     FastSerialPort(_portName, 2)
