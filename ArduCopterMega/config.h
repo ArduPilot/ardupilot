@@ -274,7 +274,7 @@
 # define STABILIZE_ROLL_P 		0.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.00
+# define STABILIZE_ROLL_I 		0.01
 #endif
 #ifndef STABILIZE_ROLL_D
 # define STABILIZE_ROLL_D 		0.0
@@ -287,7 +287,7 @@
 # define STABILIZE_PITCH_P		0.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.0
+# define STABILIZE_PITCH_I		0.01
 #endif
 #ifndef STABILIZE_PITCH_D
 # define STABILIZE_PITCH_D		0.0
@@ -299,7 +299,7 @@
 // STABILZE RATE Control
 //
 #ifndef STABILIZE_DAMPENER
-# define STABILIZE_DAMPENER		0.175
+# define STABILIZE_DAMPENER		0.135
 #endif
 
 
@@ -368,17 +368,30 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
-#ifndef THROTTLE_P
-# define THROTTLE_P		1.0
+#ifndef THROTTLE_BARO_P
+# define THROTTLE_BARO_P		.25
 #endif
-#ifndef THROTTLE_I
-# define THROTTLE_I		0.01
+#ifndef THROTTLE_BARO_I
+# define THROTTLE_BARO_I		0.1
 #endif
-#ifndef THROTTLE_D
-# define THROTTLE_D		0.4
+#ifndef THROTTLE_BARO_D
+# define THROTTLE_BARO_D		0.1
 #endif
-#ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX	20
+#ifndef THROTTLE_BARO_IMAX
+# define THROTTLE_BARO_IMAX	150
+#endif
+
+#ifndef THROTTLE_SONAR_P
+# define THROTTLE_SONAR_P		.8
+#endif
+#ifndef THROTTLE_SONAR_I
+# define THROTTLE_SONAR_I		0.3
+#endif
+#ifndef THROTTLE_SONAR_D
+# define THROTTLE_SONAR_D		0.7
+#endif
+#ifndef THROTTLE_SONAR_IMAX
+# define THROTTLE_SONAR_IMAX	300
 #endif
 
 
