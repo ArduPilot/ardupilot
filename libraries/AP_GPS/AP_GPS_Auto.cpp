@@ -8,7 +8,7 @@
 
 static unsigned int	baudrates[] = {38400U, 57600U, 9600U, 4800U};
 
-AP_GPS_Auto::AP_GPS_Auto(FastSerial *port, GPS **gps)  : 
+AP_GPS_Auto::AP_GPS_Auto(FastSerial *port, GPS **gps)  :
 	GPS(port),
 	_FSport(port),	// do we need this, or can we cast _port up?
 	_gps(gps)
@@ -42,7 +42,7 @@ AP_GPS_Auto::read(void)
 			if (NULL != (gps = _detect())) {
 				// make the detected GPS the default
 				*_gps = gps;
-				
+
 				// configure the detected GPS and run one update
 				gps->print_errors = true;	// XXX
 				gps->init();
@@ -68,7 +68,7 @@ AP_GPS_Auto::_detect(void)
 	GPS		*gps;
 
 	//
-	// Loop attempting to detect a recognised GPS
+	// Loop attempting to detect a recognized GPS
 	//
 	gps = NULL;
 	for (tries = 0; tries < 2; tries++) {
@@ -88,7 +88,7 @@ AP_GPS_Auto::_detect(void)
 				_port->read();
 			}
 		} while ((millis() - then) < 50);
-			
+
 		//
 		// Collect four characters to fingerprint a device
 		//
@@ -104,11 +104,11 @@ AP_GPS_Auto::_detect(void)
 			   fingerprint[3]);
 
 		//
-		// u-blox or MTK in DIYD binary mode (whose smart idea was
+		// ublox or MTK in DIYD binary mode (whose smart idea was
 		// it to make the MTK look sort-of like it was talking UBX?)
 		//
 		if ((0xb5 == fingerprint[0]) &&
-			(0x62 == fingerprint[1]) && 
+			(0x62 == fingerprint[1]) &&
 			(0x01 == fingerprint[2])) {
 
 			// message 5 is MTK pretending to talk UBX
@@ -118,17 +118,17 @@ AP_GPS_Auto::_detect(void)
 				break;
 			}
 
-			// any other message is u-blox
-			Serial.printf("detected u-blox in binary mode\n");
+			// any other message is ublox
+			Serial.printf("detected ublox in binary mode\n");
 			gps = new AP_GPS_UBLOX(_port);
 			break;
-		} 
+		}
 
 		//
 		// MTK v1.6
 		//
 		if ((0xd0 == fingerprint[0]) &&
-			(0xdd == fingerprint[1]) && 
+			(0xdd == fingerprint[1]) &&
 			(0x20 == fingerprint[2])) {
 			Serial.printf("detected MTK v1.6\n");
 			gps = new AP_GPS_MTK16(_port);
@@ -154,6 +154,9 @@ AP_GPS_Auto::_detect(void)
 			_port->println(MTK_SET_BINARY);
 			_port->println(UBLOX_SET_BINARY);
 			_port->println(SIRF_SET_BINARY);
+
+			// give the GPS time to react to the settings
+			delay(100);
 			continue;
 		}
 
