@@ -53,6 +53,8 @@
 
 #define MAX_SERVO_OUTPUT 2700
 
+#define SONAR 0
+#define BARO 1
 
 #define WP_START_BYTE 0x130	// where in memory home WP is stored + all other WP
 #define WP_SIZE 14
