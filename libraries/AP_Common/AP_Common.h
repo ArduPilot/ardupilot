@@ -68,9 +68,18 @@
 #endif
 //@}
 
+
 ///
 /// @name Macros
 /// @{
+
+/// Define a constant string in program memory.  This is a little more obvious
+/// and less error-prone than typing the declaration out by hand.  It's required
+/// when passing PROGMEM strings to static object constructors because the PSTR
+/// hack can't be used at global scope.
+///
+#define PROGMEM_STRING(_v, _s)	static const char _v[] PROGMEM = _s
+
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 // @}
