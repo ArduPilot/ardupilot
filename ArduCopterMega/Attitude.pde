@@ -4,8 +4,11 @@ void init_pids()
 	// create limits to how much dampening we'll allow
 	// this creates symmetry with the P gain value preventing oscillations
 	
-	max_stabilize_dampener 	= pid_stabilize_roll.kP() * 2500;		// = 0.6 * 2500 = 1500 or 15°
-	max_yaw_dampener		= pid_yaw.kP() * 6000;					// .5 * 6000 = 3000
+	max_stabilize_dampener 	= pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°
+	//max_stabilize_dampener += pid_stabilize_roll.imax();		// = 0.1 * 300 = 1500 or 15°
+	
+	max_yaw_dampener		= pid_yaw.kP() * 6000;				// = .5 * 6000  = 3000
+	//max_yaw_dampener 	   += pid_yaw.imax();					// = 0.6 * 2500 = 1500 or 15°
 }
 
 
@@ -13,7 +16,7 @@ void output_stabilize()
 {
 	float roll_error, pitch_error;
 	Vector3f omega = dcm.get_gyro();
-	long rate;
+	float rate;
 	int dampener;
 	
 	// control +- 45° is mixed with the navigation request by the Autopilot
@@ -37,12 +40,12 @@ void output_stabilize()
 	// omega is the raw gyro reading
 
 	// Limit dampening to be equal to propotional term for symmetry
-	rate			= degrees(omega.x) * 100; 													// 6rad = 34377
-	dampener 		= ((float)rate * stabilize_dampener);										// 34377 * .175 = 6000
+	rate			= degrees(omega.x) * 100.0; 													// 6rad = 34377
+	dampener 		= (rate * stabilize_dampener);										// 34377 * .175 = 6000
 	rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 
-	rate			= degrees(omega.y) * 100; 													// 6rad = 34377
-	dampener 		= ((float)rate * stabilize_dampener);										// 34377 * .175 = 6000
+	rate			= degrees(omega.y) * 100.0; 													// 6rad = 34377
+	dampener 		= (rate * stabilize_dampener);										// 34377 * .175 = 6000
 	rc_2.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 }
 
@@ -86,7 +89,9 @@ void output_yaw_with_hold(boolean hold)
 	}
 	
 	if(hold){
-		yaw_error		= nav_yaw - yaw_sensor; // +- 60°
+		
+		// try and hold the current nav_yaw setting
+		yaw_error		= nav_yaw - yaw_sensor; 									// +- 60°
 		yaw_error 		= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
@@ -96,15 +101,15 @@ void output_yaw_with_hold(boolean hold)
 		rc_4.servo_out 	= pid_yaw.get_pid(yaw_error, deltaMiliSeconds, 1.0); 		// .5 * 6000 = 3000
 	
 		// We adjust the output by the rate of rotation
-		long rate		= degrees(omega.z) * 100; 									// 3rad = 17188 , 6rad = 34377
+		long rate		= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
 		int dampener 	= ((float)rate * hold_yaw_dampener);						// 18000 * .17 = 3000
 		
 		// Limit dampening to be equal to propotional term for symmetry
 		rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
 	
 	}else{		
-		// rate control
 		
+		// rate control
 		long rate		= degrees(omega.z) * 100; 									// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);							// limit to something fun!
 		long error		= ((long)rc_4.control_in * 6) - rate;						// control is += 6000 * 6 = 36000
@@ -146,7 +151,8 @@ void output_rate_control()
 void reset_I(void)
 {
 	pid_nav.reset_I();
-	pid_throttle.reset_I();
+	pid_baro_throttle.reset_I();
+	pid_sonar_throttle.reset_I();
 }
 
 
