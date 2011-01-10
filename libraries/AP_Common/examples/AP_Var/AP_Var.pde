@@ -83,7 +83,7 @@ setup(void)
 	{
 		TEST(meta_handle);
 
-		AP_Float					f;
+		AP_Float	f;
 		AP_MetaClass::AP_MetaHandle	h = f.meta_get_handle();
 
 		REQUIRE(0 != h);
@@ -103,22 +103,73 @@ setup(void)
 
 	// MetaClass: ... insert tests here ...
 
+	// AP_Var: constants
+	{
+		TEST(var_constants);
+
+		REQUIRE(AP_FloatZero == 0);
+		REQUIRE(AP_FloatUnity == 1.0);
+		REQUIRE(AP_FloatNegativeUnity = -1.0);
+	}
+
+	// AP_Var: set, get, assignment
+	{
+		TEST(var_set_get);
+
+		AP_Float	f(1.0);
+
+		REQUIRE(f == 1.0);
+		REQUIRE(f.get() == 1.0);
+
+		f.set(10.0);
+		REQUIRE(f == 10.0);
+		REQUIRE(f.get() == 10.0);
+	}
+
+	// AP_Var: default value
+	{
+		TEST(var_default_value);
+
+		AP_Float	f(10.0);
+
+		REQUIRE(f == 10.0);
+		f = 0;
+		REQUIRE(f == 0);
+		f.set_default();
+		REQUIRE(f == 10.0);
+	}
+
 	// AP_Var: cast to type
 	{
 		TEST(var_cast_to_type);
 
-		AP_Float	f(10.0);	REQUIRE(f == 10.0);
-		f = 1.0;				REQUIRE(f == 1.0);
-		f *= 2.0;				REQUIRE(f == 2.0);
-		f /= 4;					REQUIRE(f == 0.5);
-		f += f;					REQUIRE(f == 1.0);
+		AP_Float	f(1.0);
+
+		f *= 2.0;
+		REQUIRE(f == 2.0);
+		f /= 4;
+		REQUIRE(f == 0.5);
+		f += f;
+		REQUIRE(f == 1.0);
+	}
+
+	// AP_Var: equality
+	{
+		TEST(var_equality);
+
+		AP_Float	f1(1.0);
+		AP_Float	f2(1.0);
+		AP_Float	f3(2.0);
+
+		REQUIRE(f1 == f2);
+		REQUIRE(f2 != f3);
 	}
 
 	// AP_Var: naming
 	{
 		TEST(var_naming);
 
-		AP_Float	f(1.0, AP_Var::AP_VarNoAddress, PSTR("test"));
+		AP_Float	f(0, AP_Var::AP_VarNoAddress, PSTR("test"));
 		char		name_buffer[16];
 
 		f.copy_name(name_buffer, sizeof(name_buffer));
@@ -130,12 +181,12 @@ setup(void)
 		TEST(var_serialize);
 
 		float		b = 0;
-		AP_Float	f(10);
+		AP_Float	f(10.0);
 		size_t		s;
 
 		s = f.serialize(&b, sizeof(b));
 		REQUIRE(s == sizeof(b));
-		REQUIRE(b == 10);
+		REQUIRE(b == 10.0);
 	}
 
 	// AP_Var: unserialize
@@ -156,9 +207,10 @@ setup(void)
 		TEST(var_load_save);
 
 		AP_Float	f1(10, 4);
-		AP_Float	f2(0,  4);
+		AP_Float	f2(0, 4);
 
 		f2.save();
+		f2 = 1.0;
 		f2.load();
 		REQUIRE(f2 == 0);
 
@@ -172,22 +224,32 @@ setup(void)
 	{
 		TEST(var_enumeration);
 
+		AP_Var	*v = AP_Var::lookup(0);
+
 		// test basic enumeration
-		AP_Float f1(1.0, AP_Var::AP_VarNoAddress, PSTR("test1"));
+		AP_Float f1(0, AP_Var::AP_VarNoAddress, PSTR("test1"));
 		REQUIRE(AP_Var::lookup(0) == &f1);
-		REQUIRE(AP_Var::lookup(1) == NULL);
+		REQUIRE(AP_Var::lookup(1) == v);
 
 		// test that new entries arrive in order
 		{
-			AP_Float f2(2.0, AP_Var::AP_VarNoAddress, PSTR("test2"));
+			AP_Float f2(0, AP_Var::AP_VarNoAddress, PSTR("test2"));
 			REQUIRE(AP_Var::lookup(0) == &f2);
 			REQUIRE(AP_Var::lookup(1) == &f1);
-			REQUIRE(AP_Var::lookup(2) == NULL);
+			REQUIRE(AP_Var::lookup(2) == v);
+
+			{
+				AP_Float f3(0, AP_Var::AP_VarNoAddress, PSTR("test3"));
+				REQUIRE(AP_Var::lookup(0) == &f3);
+				REQUIRE(AP_Var::lookup(1) == &f2);
+				REQUIRE(AP_Var::lookup(2) == &f1);
+				REQUIRE(AP_Var::lookup(3) == v);
+			}
 		}
 
 		// test that destruction removes from the list
 		REQUIRE(AP_Var::lookup(0) == &f1);
-		REQUIRE(AP_Var::lookup(1) == NULL);
+		REQUIRE(AP_Var::lookup(1) == v);
 	}
 
 	// AP_Var: scope names
@@ -206,8 +268,8 @@ setup(void)
 	{
 		TEST(var_scope_addressing);
 
-		AP_Float	f1(10.0, 8);
 		AP_VarScope	scope(PSTR("scope"), 4);
+		AP_Float	f1(10.0, 8);
 		AP_Float	f2(1.0, 4, PSTR("var"), &scope);
 
 		f1.save();
@@ -226,14 +288,13 @@ setup(void)
 	{
 		TEST(var_derived);
 
-		AP_Float16	f1(10.0, 20);
+		AP_Float16	f(10.0, 20);
 
-		REQUIRE(f1 == 10.0);
-		f1.save();
-		f1 = 0;
-		REQUIRE(f1 == 0);
-		f1.load();
-		REQUIRE(f1 = 10.0);
+		f.save();
+		f = 0;
+		REQUIRE(f == 0);
+		f.load();
+		REQUIRE(f = 10.0);
 	}
 
 
