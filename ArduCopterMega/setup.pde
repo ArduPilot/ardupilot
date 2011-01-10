@@ -2,36 +2,32 @@
 
 // Functions called from the setup menu
 static int8_t	setup_radio				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_motors			(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_motors			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_accel				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_accel_flat		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_pid				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_compass_enable	(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_compass_disable	(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu 
 const struct Menu::command setup_menu_commands[] PROGMEM = {
 	// command			function called
 	// =======        	===============
-	{"reset", 			setup_factory},
 	{"erase", 			setup_erase},
+	{"reset", 			setup_factory},
+	{"pid",				setup_pid},
 	{"radio",			setup_radio},
 	{"motors",			setup_motors},
 	{"level",			setup_accel},
-	{"flat",			setup_accel_flat},
 	{"modes",			setup_flightmodes},
-	{"pid",				setup_pid},
 	{"frame",			setup_frame},
-	{"enable_mag",		setup_compass_enable},
-	{"disable_mag",		setup_compass_disable},
 	{"compass",			setup_compass},
+	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
 	{"show",			setup_show}
 };
@@ -70,7 +66,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	
 	
 	// frame
-	print_blanks(3);
+	print_blanks(2);
 	Serial.printf_P(PSTR("Frame\n"));
 	print_divider();
 
@@ -83,7 +79,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("(%d)\n"), (int)frame_type);
 		
 	
-	print_blanks(3);
+	print_blanks(2);
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
@@ -110,11 +106,13 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	// Nav
 	Serial.printf_P(PSTR("Nav:\npitch:\n"));
 	print_PID(&pid_nav);
-	Serial.printf_P(PSTR("throttle:\n"));
-	print_PID(&pid_throttle);
+	Serial.printf_P(PSTR("baro throttle:\n"));
+	print_PID(&pid_baro_throttle);
+	Serial.printf_P(PSTR("sonar throttle:\n"));
+	print_PID(&pid_sonar_throttle);
 	Serial.println(" ");
 	
-	print_blanks(3);
+	print_blanks(2);
 	Serial.printf_P(PSTR("User Configs\n"));
 	print_divider();
 	// Crosstrack
@@ -131,13 +129,13 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("throttle_failsafe_value: %d\n"), throttle_failsafe_value);
 	Serial.printf_P(PSTR("log_bitmask: %d\n"), log_bitmask);
 
-	print_blanks(3);
+	print_blanks(2);
 	Serial.printf_P(PSTR("IMU\n"));
 	print_divider();
 	imu.print_gyro_offsets();
 	imu.print_accel_offsets();
 	
-	print_blanks(3);
+	print_blanks(2);
 	Serial.printf_P(PSTR("Compass\n"));
 	print_divider();
 
@@ -532,10 +530,15 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 	pid_nav.kD(NAV_D);
 	pid_nav.imax(NAV_IMAX * 100);
 
-	pid_throttle.kP(THROTTLE_P);
-	pid_throttle.kI(THROTTLE_I);
-	pid_throttle.kD(THROTTLE_D);
-	pid_throttle.imax(THROTTLE_IMAX * 100);
+	pid_baro_throttle.kP(THROTTLE_BARO_P);
+	pid_baro_throttle.kI(THROTTLE_BARO_I);
+	pid_baro_throttle.kD(THROTTLE_BARO_D);
+	pid_baro_throttle.imax(THROTTLE_BARO_IMAX * 100);
+
+	pid_sonar_throttle.kP(THROTTLE_SONAR_P);
+	pid_sonar_throttle.kI(THROTTLE_SONAR_I);
+	pid_sonar_throttle.kD(THROTTLE_SONAR_D);
+	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX * 100);
 	
 	save_EEPROM_PID();
 	print_done();
@@ -591,7 +594,6 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-
 static int8_t
 setup_declination(uint8_t argc, const Menu::arg *argv)
 {
@@ -610,25 +612,40 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 
-
 static int8_t
-setup_compass_enable(uint8_t argc, const Menu::arg *argv)
+setup_compass(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nCompass enabled:\n"));
-	compass_enabled = true;
-	save_EEPROM_mag();
-	init_compass();
+	Serial.printf_P(PSTR("Compass "));
+	if (!strcmp_P(argv[1].str, PSTR("on"))) {
+		Serial.printf_P(PSTR("Enabled\n"));
+		compass_enabled = true;
+		init_compass();
+
+		save_EEPROM_mag();
+		print_done();
+	
+	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		Serial.printf_P(PSTR("Disabled\n"));
+		compass_enabled = false;
+
+		save_EEPROM_mag();
+		print_done();
+	
+	} else {
+		if (compass_enabled) {
+			Serial.printf_P(PSTR("en"));
+		} else {
+			Serial.printf_P(PSTR("dis"));
+		}
+		Serial.printf_P(PSTR("abled\n\n"));
+		
+		Serial.printf_P(PSTR("\nUsage:\nEnabled =>compass 1\nDisabled =>compass 0\n\n"));
+	}
 	return 0;
 }
 
-static int8_t
-setup_compass_disable(uint8_t argc, const Menu::arg *argv)
-{
-	Serial.printf_P(PSTR("\nCompass disabled:\n"));
-	compass_enabled = false;
-	save_EEPROM_mag();
-	return 0;
-}
+
+
 
 static int8_t
 setup_frame(uint8_t argc, const Menu::arg *argv)
@@ -637,22 +654,21 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 		Serial.printf_P(PSTR("\nUsage:\nPlus frame =>frame 1\nX frame =>frame 2\nTRI frame =>frame 3\n\n"));
 		return 0;
 	}
-	Serial.printf_P(PSTR("\nSaving "));
+	print_done();
 
 	if(argv[1].i == 1){
 		Serial.printf_P(PSTR("Plus "));
 		frame_type = PLUS_FRAME;
 
 	}else if(argv[1].i == 2){
-
 		Serial.printf_P(PSTR("X "));
 		frame_type = X_FRAME;
 	
 	}else if(argv[1].i == 3){
-
 		Serial.printf_P(PSTR("Tri "));
 		frame_type = TRI_FRAME;
 	}
+	
 	Serial.printf_P(PSTR("frame\n\n"));
 	save_EEPROM_frame();	
 	return 0;
@@ -660,7 +676,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 
 
 static int8_t
-setup_compass(uint8_t argc, const Menu::arg *argv)
+setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("\nRotate/Pitch/Roll your ArduCopter until the offset variables stop changing.\n"));
 	print_hit_enter();
