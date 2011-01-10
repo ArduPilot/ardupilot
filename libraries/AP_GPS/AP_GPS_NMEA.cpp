@@ -1,244 +1,380 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
-/*
-	GPS_NMEA.cpp - Generic NMEA GPS library for Arduino
-	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
-	Edits by HappyKillmore
-	This code works with boards based on ATMega168 / 328 and ATMega1280 (Serial port 1)
 
-	This library is free software; you can redistribute it and / or
-		modify it under the terms of the GNU Lesser General Public
-		License as published by the Free Software Foundation; either
-		version 2.1 of the License, or (at your option) any later version.
+//
+// NMEA parser, adapted by Michael Smith from TinyGPS v9:
+//
+// TinyGPS - a small GPS library for Arduino providing basic NMEA parsing
+// Copyright (C) 2008-9 Mikal Hart
+// All rights reserved.
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
 
-	GPS configuration : NMEA protocol
-	Baud rate : 38400
-	NMEA Sentences : 
-		$GPGGA : Global Positioning System fix Data
-		$GPVTG : Ttack and Ground Speed
-		
-	Methods:
-		init() : GPS Initialization
-		read() : Call this funcion as often as you want to ensure you read the incomming gps data
-		
-	Properties:
-		latitude : latitude * 10000000 (long value)
-		longitude : longitude * 10000000 (long value)
-		altitude :	altitude * 1000 (milimeters) (long value)
-		ground_speed : Speed (m / s) * 100 (long value)
-		ground_course : Course (degrees) * 100 (long value)
-		Type : 2 (This indicate that we are using the Generic NMEA library)
-		new_data : 1 when a new data is received.
-							You need to write a 0 to new_data when you read the data
-		fix : > = 1: GPS FIX, 0: No fix (normal logic)
-		quality : 0 = No fix
-							 1 = Bad (Num sats < 5)
-					 2 = Poor
-					 3 = Medium
-					 4 = Good
+/// @file	AP_GPS_NMEA.cpp
+/// @brief	NMEA protocol parser
+///
+/// This is a lightweight NMEA parser, derived originally from the
+/// TinyGPS parser by Mikal Hart.
+///
 
-	 NOTE : This code has been tested on a Locosys 20031 GPS receiver (MTK chipset)
-*/
+#include <FastSerial.h>
+#include <AP_Common.h>
+
+#include <avr/pgmspace.h>
+#include <ctype.h>
+#include <stdint.h>
+
 #include "AP_GPS_NMEA.h"
 
+// SiRF init messages //////////////////////////////////////////////////////////
+//
+// Note that we will only see a SiRF in NMEA mode if we are explicitly configured
+// for NMEA.  GPS_AUTO will try to set any SiRF unit to binary mode as part of
+// the autodetection process.
+//
+const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
+	"$PSRF103,0,0,1,1*25\r\n"	// GGA @ 1Hz
+	"$PSRF103,1,0,0,1*25\r\n"	// GLL off
+	"$PSRF103,2,0,0,1*26\r\n"	// GSA off
+	"$PSRF103,3,0,0,1*27\r\n"	// GSV off
+	"$PSRF103,4,0,1,1*20\r\n"	// RMC off
+	"$PSRF103,5,0,1,1*20\r\n"	// VTG @ 1Hz
+	"$PSRF103,6,0,0,1*22\r\n"	// MSS off
+	"$PSRF103,8,0,0,1*2C\r\n"	// ZDA off
+	"$PSRF151,1*3F\r\n"			// WAAS on (not always supported)
+	"$PSRF106,21*0F\r\n"		// datum = WGS84
+	"";
+
+// MediaTek init messages //////////////////////////////////////////////////////
+//
+// Note that we may see a MediaTek in NMEA mode if we are connected to a non-DIYDrones
+// MediaTek-based GPS.
+//
+const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
+	"$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n"	// GGA & VTG once every fix
+	"$PMTK330,0*2E"										// datum = WGS84
+	"$PMTK313,1*2E\r\n"									// SBAS on
+	"$PMTK301,2*2E\r\n"									// use SBAS data for DGPS
+	"";
+
+// ublox init messages /////////////////////////////////////////////////////////
+//
+// Note that we will only see a ublox in NMEA mode if we are explicitly configured
+// for NMEA.  GPS_AUTO will try to set any ublox unit to binary mode as part of
+// the autodetection process.
+//
+// We don't attempt to send $PUBX,41 as the unit must already be talking NMEA
+// and we don't know the baudrate.
+//
+const prog_char AP_GPS_NMEA::_ublox_init_string[] PROGMEM =
+	"$PUBX,40,gga,0,1,0,0,0,0*7B\r\n"	// GGA on at one per fix
+	"$PUBX,40,vtg,0,1,0,0,0,0*7F\r\n"	// VTG on at one per fix
+	"$PUBX,40,rmc,0,0,0,0,0,0*67\r\n"	// RMC off (XXX suppress other message types?)
+	"";
+
+// NMEA message identifiers ////////////////////////////////////////////////////
+//
+const char AP_GPS_NMEA::_gprmc_string[] PROGMEM = "GPRMC";
+const char AP_GPS_NMEA::_gpgga_string[] PROGMEM = "GPGGA";
+const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
+
+// Convenience macros //////////////////////////////////////////////////////////
+//
+#define DIGIT_TO_VAL(_x)	(_x - '0')
+
 // Constructors ////////////////////////////////////////////////////////////////
-AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) : GPS(s)
+AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
+	GPS(s)
 {
+	FastSerial	*fs = (FastSerial *)_port;
+
+	// Re-open the port with enough receive buffering for the messages we expect
+	// and very little tx buffering, since we don't care about sending.
+	// Leave the port speed alone as we don't actually know at what rate we're running...
+	//
+	fs->begin(0, 200, 16);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void 
-AP_GPS_NMEA::init(void)
+void AP_GPS_NMEA::init(void)
 {
-	//Type = 2;
-	// initialize serial port for binary protocol use
-	_port->print(NMEA_OUTPUT_SENTENCES);
-	_port->print(NMEA_OUTPUT_4HZ);
-	_port->print(SBAS_ON);
-	_port->print(DGPS_SBAS);
-	_port->print(DATUM_GOOGLE);
+	BetterStream	*bs = (BetterStream *)_port;
+
+	// send the SiRF init strings
+	bs->print_P(_SiRF_init_string);
+
+	// send the MediaTek init strings
+	bs->print_P(_MTK_init_string);
+
+	// send the ublox init strings
+	bs->print_P(_ublox_init_string);
 }
 
-// This code don´t wait for data, only proccess the data available on serial port
-// We can call this function on the main loop (50Hz loop)
-// If we get a complete packet this function call parse_nmea_gps() to parse and update the GPS info.
-bool
-AP_GPS_NMEA::read(void)
+bool AP_GPS_NMEA::read(void)
 {
-	char c;
+	char data;
 	int numc;
-	int i;
 	bool parsed = false;
 
 	numc = _port->available();
-	
-	if (numc > 0){
-		for (i = 0; i < numc; i++){
-			c = _port->read();
-			if (c == '$'){											// NMEA Start
-				bufferidx = 0;
-				buffer[bufferidx++] = c;
-				GPS_checksum = 0;
-				GPS_checksum_calc = true;
-				continue;
-				}
-			if (c == '\r'){										 // NMEA End
-				buffer[bufferidx++] = 0;
-				parsed = parse_nmea_gps();
-			} else {
-				if (bufferidx < (GPS_BUFFERSIZE - 1)){
-					if (c == '*')
-						GPS_checksum_calc = false;		// Checksum calculation end
-					buffer[bufferidx++] = c;
-					if (GPS_checksum_calc){
-						GPS_checksum ^= c;						// XOR 
-					}
-				} else {
-					bufferidx = 0;	 // Buffer overflow : restart
-				}
-			}
+	while (numc--) {
+		if (_decode(_port->read())) {
+			parsed = true;
 		}
 	}
+	return parsed;
 }
 
-/****************************************************************
- * 
- * * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * ** * **/
-// Private Methods //////////////////////////////////////////////////////////////
-bool
-AP_GPS_NMEA::parse_nmea_gps(void)
+bool AP_GPS_NMEA::_decode(char c)
 {
-	uint8_t NMEA_check;
-	long aux_deg;
-	long aux_min;
-	char *parseptr;
+	bool valid_sentence = false;
 
-	if (strncmp(buffer,"$GPGGA",6)==0){					// Check if sentence begins with $GPGGA
-		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
-			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
-			if (GPS_checksum == NMEA_check){			// Checksum validation
-				//Serial.println("buffer");
-				parseptr = strchr(buffer, ',')+1;
-				//parseptr = strchr(parseptr, ',')+1;
-				time = parsenumber(parseptr, 2);					// GPS UTC time hhmmss.ss
-				parseptr = strchr(parseptr, ',')+1;
-				aux_deg = parsedecimal(parseptr, 2);			// degrees
-				aux_min = parsenumber(parseptr + 2, 4);		 // minutes (sexagesimal) => Convert to decimal
-				latitude = aux_deg * 10000000 + (aux_min * 50) / 3;	 // degrees + minutes / 0.6	( * 10000000) (0.6 = 3 / 5)
-				parseptr = strchr(parseptr, ',')+1;
-				if ( * parseptr == 'S')
-					latitude = -1 * latitude;							// South latitudes are negative
-				parseptr = strchr(parseptr, ',')+1;
-				// W longitudes are Negative
-				aux_deg = parsedecimal(parseptr, 3);			// degrees
-				aux_min = parsenumber(parseptr + 3, 4);		 // minutes (sexagesimal)
-				longitude = aux_deg * 10000000 + (aux_min * 50) / 3;	// degrees + minutes / 0.6 ( * 10000000)
-				//longitude = -1*longitude;									 // This Assumes that we are in W longitudes...
-				parseptr = strchr(parseptr, ',')+1;
-				if ( * parseptr == 'W')
-					longitude = -1 * longitude;							// West longitudes are negative
-				parseptr = strchr(parseptr, ',')+1;
-				fix = parsedecimal(parseptr, 1);
-				parseptr = strchr(parseptr, ',')+1;
-				num_sats = parsedecimal(parseptr, 2);
-				parseptr = strchr(parseptr, ',')+1; 
-				hdop = parsenumber(parseptr, 1);					// HDOP * 10
-				parseptr = strchr(parseptr, ',')+1;
-				altitude = parsenumber(parseptr, 1) * 100;	// altitude in decimeters * 100 = milimeters
-				if (fix < 1)
-					quality = 0;			// No FIX
-				else if(num_sats < 5)
-					quality = 1;			// Bad (Num sats < 5)
-				else if(hdop > 30)
-					quality = 2;			// Poor (HDOP > 30)
-				else if(hdop > 25)
-					quality = 3;			// Medium (HDOP > 25)
-				else
-					quality = 4;			// Good (HDOP < 25)
-			} else {
-				_error("GPSERR: Checksum error!!\n");
-				return false;
-			}
+	switch (c) {
+	case ',': // term terminators
+		_parity ^= c;
+	case '\r':
+	case '\n':
+	case '*':
+		if (_term_offset < sizeof(_term)) {
+			_term[_term_offset] = 0;
+			valid_sentence = _term_complete();
 		}
-	} else if (strncmp(buffer,"$GPVTG",6)==0){				// Check if sentence begins with $GPVTG
-		//Serial.println(buffer);
-		if (buffer[bufferidx-4]=='*'){					 // Check for the "*" character
-			NMEA_check = parseHex(buffer[bufferidx - 3]) * 16 + parseHex(buffer[bufferidx - 2]);		// Read the checksums characters
-			if (GPS_checksum == NMEA_check){			// Checksum validation
-				parseptr = strchr(buffer, ',')+1;
-				ground_course = parsenumber(parseptr, 1) * 10;			// Ground course in degrees * 100
-				parseptr = strchr(parseptr, ',')+1;
-				parseptr = strchr(parseptr, ',')+1;
-				parseptr = strchr(parseptr, ',')+1;
-				parseptr = strchr(parseptr, ',')+1;
-				parseptr = strchr(parseptr, ',')+1;
-				parseptr = strchr(parseptr, ',')+1;
-				ground_speed = parsenumber(parseptr, 1) * 100 / 36; // Convert Km / h to m / s ( * 100)
-				//GPS_line = true;
-			} else {
-				_error("GPSERR: Checksum error!!\n");
-				return false;
-			}
+		++_term_number;
+		_term_offset = 0;
+		_is_checksum_term = c == '*';
+		return valid_sentence;
+
+	case '$': // sentence begin
+		_term_number = _term_offset = 0;
+		_parity = 0;
+		_sentence_type = _GPS_SENTENCE_OTHER;
+		_is_checksum_term = false;
+		_gps_data_good = false;
+		return valid_sentence;
+	}
+
+	// ordinary characters
+	if (_term_offset < sizeof(_term) - 1)
+		_term[_term_offset++] = c;
+	if (!_is_checksum_term)
+		_parity ^= c;
+
+	return valid_sentence;
+}
+
+//
+// internal utilities
+//
+int AP_GPS_NMEA::_from_hex(char a)
+{
+	if (a >= 'A' && a <= 'F')
+		return a - 'A' + 10;
+	else if (a >= 'a' && a <= 'f')
+		return a - 'a' + 10;
+	else
+		return a - '0';
+}
+
+unsigned long AP_GPS_NMEA::_parse_decimal()
+{
+	char *p = _term;
+	unsigned long ret = 100UL * atol(p);
+	while (isdigit(*p))
+		++p;
+	if (*p == '.') {
+		if (isdigit(p[1])) {
+			ret += 10 * (p[1] - '0');
+			if (isdigit(p[2]))
+				ret += p[2] - '0';
 		}
-	} else {
-		bufferidx = 0;
-		_error("GPSERR: Bad sentence!!\n");
+	}
+	return ret;
+}
+
+unsigned long AP_GPS_NMEA::_parse_degrees()
+{
+	char *p, *q;
+	uint8_t deg = 0, min = 0;
+	unsigned int frac_min = 0;
+	unsigned long result;
+
+	// scan for decimal point or end of field
+	for (p = _term; isdigit(*p); p++)
+		;
+	q = _term;
+
+	// convert degrees
+	while ((p - q) > 2) {
+		if (deg)
+			deg *= 10;
+		deg += DIGIT_TO_VAL(*q++);
+	}
+
+	// convert minutes
+	while (p > q) {
+		if (min)
+			min *= 10;
+		min += DIGIT_TO_VAL(*q++);
+	}
+
+	// convert fractional minutes
+	// expect up to four digits, result is in
+	// ten-thousandths of a minute
+	if (*p == '.') {
+		q = p + 1;
+		for (int i = 0; i < 4; i++) {
+			frac_min *= 10;
+			if (isdigit(*q))
+				frac_min += *q++ - '0';
+		}
+	}
+	return deg * 100000UL + (min * 10000UL + frac_min) / 6;
+}
+
+// Processes a just-completed term
+// Returns true if new sentence has just passed checksum test and is validated
+bool AP_GPS_NMEA::_term_complete()
+{
+	// handle the last term in a message
+	if (_is_checksum_term) {
+		uint8_t checksum = 16 * _from_hex(_term[0]) + _from_hex(_term[1]);
+		if (checksum == _parity) {
+			if (_gps_data_good) {
+				switch (_sentence_type) {
+				case _GPS_SENTENCE_GPRMC:
+					time			= _new_time;
+					date			= _new_date;
+					latitude		= _new_latitude * 100;	// degrees*10e5 -> 10e7
+					longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
+					ground_speed	= _new_speed;
+					ground_course	= _new_course;
+					num_sats		= _new_satellite_count;
+					hdop			= _new_hdop;
+					fix				= true;
+					break;
+				case _GPS_SENTENCE_GPGGA:
+					altitude		= _new_altitude;
+					time			= _new_time;
+					latitude		= _new_latitude * 100;	// degrees*10e5 -> 10e7
+					longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
+					fix				= true;
+					break;
+				case _GPS_SENTENCE_VTG:
+					ground_speed	= _new_speed;
+					ground_course	= _new_course;
+					// VTG has no fix indicator, can't change fix status
+					break;
+				}
+			} else {
+				switch (_sentence_type) {
+				case _GPS_SENTENCE_GPRMC:
+				case _GPS_SENTENCE_GPGGA:
+					// Only these sentences give us information about
+					// fix status.
+					fix = false;
+				}
+			}
+			// we got a good message
+			return true;
+		}
+		// we got a bad message, ignore it
 		return false;
 	}
-	return true;
-}
 
-
- // Parse hexadecimal numbers
-uint8_t
-AP_GPS_NMEA::parseHex(char c) {
-		if (c < '0')
-			return (0);
-		if (c <= '9')
-			return (c - '0');
-		if (c < 'A')
-			 return (0);
-		if (c <= 'F')
-			 return ((c - 'A')+10);
-}
-
-// Decimal number parser
-long
-AP_GPS_NMEA::parsedecimal(char *str, uint8_t num_car) {
-	long d = 0;
-	uint8_t i;
-	
-	i = num_car;
-	while ((str[0] != 0) && (i > 0)) {
-		if ((str[0] > '9') || (str[0] < '0'))
-			return d;
-		d *= 10;
-		d += str[0] - '0';
-		str++;
-		i--;
-	}
-	return d;
-}
-
-// Function to parse fixed point numbers (numdec=number of decimals)
-long
-AP_GPS_NMEA::parsenumber(char *str, uint8_t numdec) {
-	long d = 0;
-	uint8_t ndec = 0;
-	
-	while (str[0] != 0) {
-		 if (str[0] == '.'){
-			 ndec = 1;
+	// the first term determines the sentence type
+	if (_term_number == 0) {
+		if (!strcmp_P(_term, _gprmc_string)) {
+			_sentence_type = _GPS_SENTENCE_GPRMC;
+		} else if (!strcmp_P(_term, _gpgga_string)) {
+			_sentence_type = _GPS_SENTENCE_GPGGA;
+		} else if (!strcmp_P(_term, _gpvtg_string)) {
+			_sentence_type = _GPS_SENTENCE_VTG;
+			// VTG may not contain a data qualifier, presume the solution is good
+			// unless it tells us otherwise.
+			_gps_data_good = true;
 		} else {
-			if ((str[0] > '9') || (str[0] < '0'))
-				return d;
-			d *= 10;
-			d += str[0] - '0';
-			if (ndec > 0)
-				ndec++;
-			if (ndec > numdec)	 // we reach the number of decimals...
-				return d;
+			_sentence_type = _GPS_SENTENCE_OTHER;
 		}
-		str++;
+		return false;
 	}
-	return d;
+
+	// 10 = RMC, 20 = GGA, 30 = VTG
+	if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
+		switch (_sentence_type + _term_number) {
+		// operational status
+		//
+		case 12: // validity (RMC)
+			_gps_data_good = _term[0] == 'A';
+			break;
+		case 26: // Fix data (GGA)
+			_gps_data_good = _term[0] > '0';
+			break;
+		case 39: // validity (VTG) (we may not see this field)
+			_gps_data_good = _term[0] != 'N';
+			break;
+		case 27: // satellite count (GGA)
+			_new_satellite_count = atol(_term);
+			break;
+		case 28: // HDOP (GGA)
+			_new_hdop = _parse_decimal();
+			break;
+
+			// time and date
+			//
+		case 11: // Time (RMC)
+		case 21: // Time (GGA)
+			_new_time = _parse_decimal();
+			break;
+		case 19: // Date (GPRMC)
+			_new_date = atol(_term);
+			break;
+
+			// location
+			//
+		case 13: // Latitude
+		case 22:
+			_new_latitude = _parse_degrees();
+			break;
+		case 14: // N/S
+		case 23:
+			if (_term[0] == 'S')
+				_new_latitude = -_new_latitude;
+			break;
+		case 15: // Longitude
+		case 24:
+			_new_longitude = _parse_degrees();
+			break;
+		case 16: // E/W
+		case 25:
+			if (_term[0] == 'W')
+				_new_longitude = -_new_longitude;
+			break;
+		case 29: // Altitude (GPGGA)
+			_new_altitude = _parse_decimal();
+			break;
+
+			// course and speed
+			//
+		case 17: // Speed (GPRMC)
+			_new_speed = (_parse_decimal() * 514) / 100; 	// knots-> m/sec, approximiates * 0.514
+			break;
+		case 37: // Speed (VTG)
+			_new_speed = _parse_decimal();
+			break;
+		case 18: // Course (GPRMC)
+		case 31: // Course (VTG)
+			_new_course = _parse_decimal();
+			break;
+		}
+	}
+
+	return false;
 }
