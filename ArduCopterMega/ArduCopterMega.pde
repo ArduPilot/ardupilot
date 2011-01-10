@@ -160,7 +160,8 @@ boolean rate_yaw_flag;
 
 // Nav
 PID pid_nav					(EE_GAIN_7);
-PID pid_throttle			(EE_GAIN_8);
+PID pid_baro_throttle		(EE_GAIN_8);
+PID pid_sonar_throttle		(EE_GAIN_9);
 
 // GPS variables
 // -------------
@@ -182,7 +183,7 @@ float	x_track_gain;
 int		x_track_angle;
 
 long	alt_to_hold;						// how high we should be for RTL
-long 	nav_angle;
+long 	nav_angle;							// how much to pitch towards target
 long	pitch_max;
 
 byte	command_must_index;					// current command memory location
@@ -251,6 +252,8 @@ long	yaw_sensor;							// degrees * 100
 float 	roll;								// radians
 float 	pitch;								// radians
 float 	yaw;								// radians
+
+byte 	altitude_sensor = SONAR;				// used to know whic sensor is active, BARO or SONAR
 
 // flight mode specific
 // --------------------
@@ -321,12 +324,12 @@ long 	delay_start;						// used to delay commands
 
 // 3D Location vectors
 // -------------------
-struct Location home;						// home location
-struct Location prev_WP;					// last waypoint
-struct Location current_loc;				// current location
-struct Location next_WP;					// next waypoint
-struct Location tell_command;				// command for telemetry
-struct Location next_command;				// command preloaded
+struct 	Location home;						// home location
+struct 	Location prev_WP;					// last waypoint
+struct 	Location current_loc;				// current location
+struct 	Location next_WP;					// next waypoint
+struct 	Location tell_command;				// command for telemetry
+struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for 
 long 	offset_altitude;					// used for 
 boolean	home_is_set	= false; 				// Flag for if we have gps lock and have set the home location
@@ -780,13 +783,15 @@ void update_current_flight_mode(void)
 				break;
 				
 			case FBW:
-				// we are currently using manual throttle for testing.
+				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
 				//call at 5 hz
 				if(fbw_timer > 20){
 					fbw_timer = 0;
 
 					if(home_is_set == false){
+						// we are not using GPS
+						// reset the location, RTL won't function
 						current_loc.lat = home.lat = 0;
 						current_loc.lng = home.lng = 0;
 					}
