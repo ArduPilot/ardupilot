@@ -5,6 +5,13 @@
 // Free Software Foundation; either version 2.1 of the License, or (at
 // your option) any later version.
 //
+
+/// @file	AP_Var.h
+/// @brief	A system for managing and storing variables that are of
+///			general interest to the system.
+///
+///
+
 /// The AP variable interface. This allows different types
 /// of variables to be passed to blocks for floating point
 /// math, memory management, etc.
