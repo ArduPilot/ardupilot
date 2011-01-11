@@ -81,7 +81,7 @@ void auto_yaw()
 picth and roll control
 ****************************************************************/
 
-// how hard to tilt towards the target
+/*// how hard to tilt towards the target
 // -----------------------------------
 void calc_nav_pid()
 {
@@ -134,5 +134,14 @@ void calc_nav_roll()
 
 	nav_roll = (float)nav_angle * roll_out;
 }
+*/
+
+
+
+
+
+
+
+
 
 
