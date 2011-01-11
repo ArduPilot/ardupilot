@@ -159,9 +159,10 @@ int 	max_yaw_dampener;
 boolean rate_yaw_flag;
 
 // Nav
-PID pid_nav					(EE_GAIN_7);
-PID pid_baro_throttle		(EE_GAIN_8);
-PID pid_sonar_throttle		(EE_GAIN_9);
+PID pid_nav_lat				(EE_GAIN_7);
+PID pid_nav_lon				(EE_GAIN_8);
+PID pid_baro_throttle		(EE_GAIN_9);
+PID pid_sonar_throttle		(EE_GAIN_10);
 
 // GPS variables
 // -------------
@@ -278,6 +279,8 @@ int 	loiter_time_max;					// millis : how long to stay in LOITER mode
 long 	nav_roll;							// deg * 100 : target roll angle
 long 	nav_pitch;							// deg * 100 : target pitch angle
 long 	nav_yaw;							// deg * 100 : target yaw angle
+long 	nav_lat;							// for error calcs
+long 	nav_lon;							// for error calcs
 int 	nav_throttle;						// 0-1000 for throttle control
 
 long 	command_yaw_start;					// what angle were we to begin with
@@ -508,20 +511,22 @@ void medium_loop()
 			medium_loopCounter++;
 
 			if(GPS.new_data){
+				GPS.new_data 		= false;
 				dTnav 				= millis() - medium_loopTimer;
 				medium_loopTimer 	= millis();
+
+				// calculate the plane's desired bearing
+				// -------------------------------------			
+				navigate();
 			}
 			
-			// calculate the plane's desired bearing
-			// -------------------------------------			
-			navigate();
 			break;
 
 		// command processing
 		//-------------------
 		case 2:
 			medium_loopCounter++;
-			
+						
 			// Read Baro pressure
 			// ------------------
 			read_barometer();
@@ -607,10 +612,6 @@ void medium_loop()
 	#if ENABLE_AM
 		flight_lights();
 	#endif
-	
-	#if ENABLE_xx
-		do_something_usefull();
-	#endif              
 	
 	
 	if (millis() - perf_mon_timer > 20000) {
@@ -738,9 +739,9 @@ void update_current_flight_mode(void)
 			default:
 				// Intput Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-				calc_nav_pid();
-				calc_nav_roll();
-				calc_nav_pitch();
+				//calc_nav_pid();
+				//calc_nav_roll();
+				//calc_nav_pitch();
 				
 				// based on altitude error
 				// -----------------------
@@ -761,7 +762,7 @@ void update_current_flight_mode(void)
 	}else{
 	
 		switch(control_mode){
-				
+
 			case STABILIZE:
 				// Intput Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
@@ -783,6 +784,7 @@ void update_current_flight_mode(void)
 				break;
 				
 			case FBW:
+
 				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
 				//call at 5 hz
@@ -791,32 +793,18 @@ void update_current_flight_mode(void)
 
 					if(home_is_set == false){
 						// we are not using GPS
-						// reset the location, RTL won't function
+						// reset the location
+						// RTL won't function
 						current_loc.lat = home.lat = 0;
 						current_loc.lng = home.lng = 0;
+						// set dTnav manually
+						dTnav = 200;
 					}
 					
-					next_WP.lat = home.lat + rc_1.control_in /5; // 10 meteres
-					next_WP.lng = home.lng -rc_2.control_in /5; // 10 meteres
-					
-					// waypoint distance from plane
-					// ----------------------------
-					wp_distance = GPS_wp_distance = getDistance(&current_loc, &next_WP);
-					
-					// target_bearing is where we should be heading 
-					// --------------------------------------------
-					nav_bearing = target_bearing = get_bearing(&current_loc, &next_WP);
-					
-					// not really needed
-					//update_navigation();
+					next_WP.lat = home.lat + rc_1.control_in / 5; // 10 meteres
+					next_WP.lng = home.lng - rc_2.control_in / 5; // 10 meteres
 				}
 
-				// Intput Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-				calc_nav_pid();
-				calc_nav_roll();
-				calc_nav_pitch();
-								
 				// Yaw control
 				// -----------
 				output_manual_yaw();
@@ -826,7 +814,6 @@ void update_current_flight_mode(void)
 
 				// apply throttle control
 				output_manual_throttle();
-
 
 				// perform stabilzation
 				output_stabilize();
@@ -849,8 +836,7 @@ void update_current_flight_mode(void)
 				// based on altitude error
 				// -----------------------
 				calc_nav_throttle();
-				
-				
+								
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				// apply throttle control
@@ -863,9 +849,9 @@ void update_current_flight_mode(void)
 			case RTL:
 				// Intput Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-				calc_nav_pid();
-				calc_nav_roll();
-				calc_nav_pitch();
+				//calc_nav_pid();
+				//calc_nav_roll();
+				//calc_nav_pitch();
 				
 				// based on altitude error
 				// -----------------------
@@ -885,9 +871,9 @@ void update_current_flight_mode(void)
 			case POSITION_HOLD:
 				// Intput Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-				calc_nav_pid();
-				calc_nav_roll();
-				calc_nav_pitch();
+				//calc_nav_pid();
+				//calc_nav_roll();
+				//calc_nav_pitch();
 								
 				// Yaw control
 				// -----------
