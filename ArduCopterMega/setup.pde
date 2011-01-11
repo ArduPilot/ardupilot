@@ -104,8 +104,10 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), hold_yaw_dampener);
 	
 	// Nav
-	Serial.printf_P(PSTR("Nav:\npitch:\n"));
-	print_PID(&pid_nav);
+	Serial.printf_P(PSTR("Nav:\nlat:\n"));
+	print_PID(&pid_nav_lat);
+	Serial.printf_P(PSTR("Nav:\nlong:\n"));
+	print_PID(&pid_nav_lon);
 	Serial.printf_P(PSTR("baro throttle:\n"));
 	print_PID(&pid_baro_throttle);
 	Serial.printf_P(PSTR("sonar throttle:\n"));
@@ -525,10 +527,15 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 
 
 	// navigation
-	pid_nav.kP(NAV_P);
-	pid_nav.kI(NAV_I);
-	pid_nav.kD(NAV_D);
-	pid_nav.imax(NAV_IMAX * 100);
+	pid_nav_lat.kP(NAV_P);
+	pid_nav_lat.kI(NAV_I);
+	pid_nav_lat.kD(NAV_D);
+	pid_nav_lat.imax(NAV_IMAX * 100);
+
+	pid_nav_lon.kP(NAV_P);
+	pid_nav_lon.kI(NAV_I);
+	pid_nav_lon.kD(NAV_D);
+	pid_nav_lon.imax(NAV_IMAX * 100);
 
 	pid_baro_throttle.kP(THROTTLE_BARO_P);
 	pid_baro_throttle.kI(THROTTLE_BARO_I);
@@ -758,7 +765,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 void print_PID(PID * pid)
 {
-	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%d\n"), pid->kP(), pid->kI(), pid->kD(), (int)(pid->imax()/100));
+	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"), pid->kP(), pid->kI(), pid->kD(), (long)pid->imax());
 }
 
 void 
