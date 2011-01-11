@@ -12,42 +12,64 @@ void navigate()
 		GPS.new_data = false;
 		return;
 	}
+	
 	if(next_WP.lat == 0){
 		return;
 	}
 	
-	// We only perform most nav computations if we have new gps data to work with
-	// --------------------------------------------------------------------------
-	if(GPS.new_data){
-		GPS.new_data = false;
-		
-		// waypoint distance from plane
-		// ----------------------------
-		GPS_wp_distance = getDistance(&current_loc, &next_WP);
+	// waypoint distance from plane
+	// ----------------------------
+	GPS_wp_distance = getDistance(&current_loc, &next_WP);
 
-		if (GPS_wp_distance < 0){
-			send_message(SEVERITY_HIGH,"<navigate> WP error - distance < 0");
-			//Serial.println(wp_distance,DEC);
-			//print_current_waypoints();
-			return;
-		}
-
-		// target_bearing is where we should be heading 
-		// --------------------------------------------
-		target_bearing 	= get_bearing(&current_loc, &next_WP);
-	
-		// nav_bearing will includes xtrack correction
-		// -------------------------------------------
-		nav_bearing = target_bearing;
-
-		// look for a big angle change
-		// ---------------------------
-		//verify_missed_wp();
-
-		// control mode specific updates to nav_bearing
-		// --------------------------------------------
-		update_navigation();
+	if (GPS_wp_distance < 0){
+		send_message(SEVERITY_HIGH,"<navigate> WP error - distance < 0");
+		//Serial.println(wp_distance,DEC);
+		//print_current_waypoints();
+		return;
 	}
+
+	// target_bearing is where we should be heading 
+	// --------------------------------------------
+	target_bearing 	= get_bearing(&current_loc, &next_WP);
+
+	// nav_bearing will includes xtrack correction
+	// -------------------------------------------
+	nav_bearing = target_bearing;
+
+	// control mode specific updates to nav_bearing
+	// --------------------------------------------
+	update_navigation();
+	
+	// calc pitch and roll to target
+	// -----------------------------
+	calc_nav();
+
+}
+
+void calc_nav()
+{
+	/*
+	Becuase we are using lat and lon to do our distance errors here's a quick chart:
+	100 	= 1m
+	1000 	= 11m
+	10000 	= 111m
+	pitch_max = 22° (2200)
+	*/
+	
+	float cos_yaw = cos(dcm.yaw);
+	float sin_yaw = sin(dcm.yaw);
+		
+	// ROLL
+	nav_lon = pid_nav_lon.get_pid((long)((float)(next_WP.lng - GPS.longitude) * scaleLongDown), dTnav, 1.0);
+	nav_lon = constrain(nav_lon, -pitch_max, pitch_max); // Limit max command
+
+	// PITCH
+	nav_lat = pid_nav_lat.get_pid(next_WP.lat - GPS.latitude, dTnav, 1.0);
+	nav_lat = constrain(nav_lat, -pitch_max, pitch_max); // Limit max command
+
+	// rotate the vector
+	nav_roll 	= (float)nav_lon * cos_yaw - (float)nav_lat * sin_yaw;
+	nav_pitch 	= (float)nav_lon * sin_yaw + (float)nav_lat * cos_yaw;
 }
 
 /*
