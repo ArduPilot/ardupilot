@@ -168,8 +168,8 @@ PID pid_sonar_throttle		(EE_GAIN_10);
 // -------------
 byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
 const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
-float 	scaleLongUp;						// used to reverse longtitude scaling
-float 	scaleLongDown;						// used to reverse longtitude scaling
+float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
+float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
 boolean GPS_light			= false;		// status of the GPS light
 
 // Location & Navigation 
@@ -526,7 +526,7 @@ void medium_loop()
 		//-------------------
 		case 2:
 			medium_loopCounter++;
-						
+			
 			// Read Baro pressure
 			// ------------------
 			read_barometer();
@@ -612,6 +612,10 @@ void medium_loop()
 	#if ENABLE_AM
 		flight_lights();
 	#endif
+	
+	#if ENABLE_xx
+		do_something_usefull();
+	#endif              
 	
 	
 	if (millis() - perf_mon_timer > 20000) {
