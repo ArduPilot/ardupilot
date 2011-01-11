@@ -3,6 +3,7 @@
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
+static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
@@ -41,6 +42,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
 	{"stabilize",	test_stabilize},
+	{"fbw",			test_fbw},
 	{"gps",			test_gps},
 	{"adc", 		test_adc},
 	{"imu",			test_imu},
@@ -234,6 +236,105 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
+test_fbw(uint8_t argc, const Menu::arg *argv)
+{
+	static byte ts_num;
+	
+	print_hit_enter();
+	delay(1000);
+	
+	// setup the radio
+	// ---------------
+	init_rc_in();
+	
+	control_mode = FBW;
+	//Serial.printf_P(PSTR("pid_stabilize_roll.kP: %4.4f\n"), pid_stabilize_roll.kP());
+	//Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
+
+	motor_armed = true;
+	trim_radio();
+	
+	nav_yaw = 8000;
+	scaleLongDown = 1;
+	
+	while(1){
+		// 50 hz
+		if (millis() - fast_loopTimer > 19) {
+			deltaMiliSeconds 	= millis() - fast_loopTimer;
+			fast_loopTimer		= millis();
+			G_Dt 				= (float)deltaMiliSeconds / 1000.f;
+
+
+			if(compass_enabled){
+				medium_loopCounter++;
+				if(medium_loopCounter == 5){
+					compass.read();		 				// Read magnetometer
+					compass.calculate(roll, pitch);		// Calculate heading
+					medium_loopCounter = 0;
+				}
+			}
+			// for trim features
+			read_trim_switch();
+
+			// Filters radio input - adjust filters in the radio.pde file
+			// ----------------------------------------------------------
+			read_radio();
+	
+			// IMU
+			// ---
+			read_AHRS();
+			
+			// allow us to zero out sensors with control switches
+			if(rc_5.control_in < 600){
+				roll_sensor = pitch_sensor = 0;
+			}
+			
+			// custom code/exceptions for flight modes
+			// ---------------------------------------
+			//update_current_flight_mode();
+			
+			// write out the servo PWM values
+			// ------------------------------
+			//set_servos_4();
+			
+			ts_num++;
+			if (ts_num > 10){
+				dTnav 				= 200;
+
+				//next_WP.lat = random(-3000, 3000);
+				//next_WP.lng = random(-3000, 3000);
+				next_WP.lat = 3000;
+				next_WP.lng = 3000;
+				
+				GPS.longitude = 0;
+				GPS.latitude = 0;
+				calc_nav();
+				
+				ts_num = 0;
+				Serial.printf_P(PSTR(" ys:%ld, ny:%ld, ye:%ld, n_lat %ld, n_lon %ld -- n_pit %ld, n_rll %ld\n"),
+					dcm.yaw_sensor,
+					nav_yaw,
+					yaw_error,
+					nav_lat,
+					nav_lon,
+					nav_pitch,
+					nav_roll);
+			}
+			//r: 0, p:0 -- ny:8000, ys:2172, ye:0, n_lat 0, n_lon 0 -- n_pit 0, n_rll 0
+
+			// R: 1417,  L: 1453  F: 1453  B: 1417
+			
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			
+			if(Serial.available() > 0){
+				return (0);
+			}
+			
+		}
+	}
+}
+static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -381,34 +482,21 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 		Matrix3f temp_t = dcm.get_dcm_transposed();
 		
 		Serial.printf_P(PSTR("dcm\n"
-							 "%d \t %d \t %d \n"
-							 "%d \t %d \t %d \n"
-							 "%d \t %d \t %d \n\n"),
-							(int)(temp.a.x * 100), (int)(temp.a.y * 100), (int)(temp.a.z * 100),
-							(int)(temp.b.x * 100), (int)(temp.b.y * 100), (int)(temp.b.z * 100),
-							(int)(temp.c.x * 100), (int)(temp.c.y * 100), (int)(temp.c.z * 100));
-
-		Serial.printf_P(PSTR("dcm T\n"
-							 "%d \t %d \t %d \n"
-							 "%d \t %d \t %d \n"
-							 "%d \t %d \t %d \n\n"),
-							(int)(temp_t.a.x * 100), (int)(temp_t.a.y * 100), (int)(temp_t.a.z * 100),
-							(int)(temp_t.b.x * 100), (int)(temp_t.b.y * 100), (int)(temp_t.b.z * 100),
-							(int)(temp_t.c.x * 100), (int)(temp_t.c.y * 100), (int)(temp_t.c.z * 100));
+							 "%4.4f \t %4.4f \t %4.4f \n"
+							 "%4.4f \t %4.4f \t %4.4f \n"
+							 "%4.4f \t %4.4f \t %4.4f \n\n"),
+							temp.a.x, temp.a.y, temp.a.z,
+							temp.b.x, temp.b.y, temp.b.z,
+							temp.c.x, temp.c.y, temp.c.z);
 
 		int _pitch 		= degrees(-asin(temp.c.x));
 		int _roll 		= degrees(atan2(temp.c.y, temp.c.z));
 		int _yaw 		= degrees(atan2(temp.b.x, temp.a.x));
 		Serial.printf_P(PSTR(	"angles\n"
 								"%d \t %d \t %d\n\n"),
-								_pitch, _roll, _yaw);
-
-		int _pitch_t 		= degrees(-asin(temp_t.c.x));
-		int _roll_t 		= degrees(atan2(temp_t.c.y, temp_t.c.z));
-		int _yaw_t 			= degrees(atan2(temp_t.b.x, temp_t.a.x));
-		Serial.printf_P(PSTR(	"angles_t\n"
-								"%d \t %d \t %d\n\n"),
-								_pitch_t, _roll_t, _yaw_t);
+								_pitch, 
+								_roll,
+								_yaw);
 		
 		//_out_vector = _cam_vector * temp;
 		//Serial.printf_P(PSTR(	"cam\n"
@@ -651,13 +739,13 @@ test_nav_out(uint8_t argc, const Menu::arg *argv)
 	
 	while(1){
 		delay(50);
-		bearing_error += 100;
-		bearing_error = wrap_360(bearing_error);
-		calc_nav_pid();
-		calc_nav_pitch();
-		calc_nav_roll();
+		//bearing_error += 100;
+		//bearing_error = wrap_360(bearing_error);
+		//calc_nav_pid();
+		//calc_nav_pitch();
+		//calc_nav_roll();
 		
-		Serial.printf("error %ld,\troll %ld,\tpitch %ld\n", bearing_error, nav_roll, nav_pitch);
+		//Serial.printf("error %ld,\troll %ld,\tpitch %ld\n", bearing_error, nav_roll, nav_pitch);
 		
 		if(Serial.available() > 0){
 			return (0);
