@@ -150,7 +150,8 @@ void output_rate_control()
 // Keeps outdated data out of our calculations
 void reset_I(void)
 {
-	pid_nav.reset_I();
+	pid_nav_lat.reset_I();
+	pid_nav_lon.reset_I();
 	pid_baro_throttle.reset_I();
 	pid_sonar_throttle.reset_I();
 }
