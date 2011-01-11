@@ -101,7 +101,7 @@ void read_EEPROM_nav(void)
 	// stored as degree * 100
 	x_track_gain 		= read_EE_compressed_float(EE_XTRACK_GAIN, 4);
 	x_track_angle 		= eeprom_read_word((uint16_t *)	EE_XTRACK_ANGLE) * 100;
-	pitch_max 			= eeprom_read_word((uint16_t *) EE_PITCH_MAX);	// scale to degress * 100
+	pitch_max 			= eeprom_read_word((uint16_t *) EE_PITCH_MAX);	// stored as degress * 100
 }
 
 void save_EEPROM_nav(void)
@@ -130,7 +130,8 @@ void read_EEPROM_PID(void)
 	pid_stabilize_pitch.load_gains();
 	pid_yaw.load_gains();
 	
-	pid_nav.load_gains();
+	pid_nav_lon.load_gains();
+	pid_nav_lat.load_gains();
 	pid_baro_throttle.load_gains();
 	pid_sonar_throttle.load_gains();
 	
@@ -152,7 +153,8 @@ void save_EEPROM_PID(void)
 	pid_stabilize_pitch.save_gains();
 	pid_yaw.save_gains();
 	
-	pid_nav.save_gains();
+	pid_nav_lon.save_gains();
+	pid_nav_lat.save_gains();
 	pid_baro_throttle.save_gains();
 	pid_sonar_throttle.save_gains();
 
