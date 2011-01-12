@@ -17,7 +17,10 @@ typedef struct __mavlink_attitude_t
 
 
 /**
- * @brief Send a attitude message
+ * @brief Pack a attitude message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param usec Timestamp (microseconds)
  * @param roll Roll angle (rad)
@@ -33,38 +36,73 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_ATTITUDE;
 
-	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds)
-	i += put_float_by_index(roll, i, msg->payload); //Roll angle (rad)
-	i += put_float_by_index(pitch, i, msg->payload); //Pitch angle (rad)
-	i += put_float_by_index(yaw, i, msg->payload); //Yaw angle (rad)
-	i += put_float_by_index(rollspeed, i, msg->payload); //Roll angular speed (rad/s)
-	i += put_float_by_index(pitchspeed, i, msg->payload); //Pitch angular speed (rad/s)
-	i += put_float_by_index(yawspeed, i, msg->payload); //Yaw angular speed (rad/s)
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds)
+	i += put_float_by_index(roll, i, msg->payload); // Roll angle (rad)
+	i += put_float_by_index(pitch, i, msg->payload); // Pitch angle (rad)
+	i += put_float_by_index(yaw, i, msg->payload); // Yaw angle (rad)
+	i += put_float_by_index(rollspeed, i, msg->payload); // Roll angular speed (rad/s)
+	i += put_float_by_index(pitchspeed, i, msg->payload); // Pitch angular speed (rad/s)
+	i += put_float_by_index(yawspeed, i, msg->payload); // Yaw angular speed (rad/s)
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a attitude message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param usec Timestamp (microseconds)
+ * @param roll Roll angle (rad)
+ * @param pitch Pitch angle (rad)
+ * @param yaw Yaw angle (rad)
+ * @param rollspeed Roll angular speed (rad/s)
+ * @param pitchspeed Pitch angular speed (rad/s)
+ * @param yawspeed Yaw angular speed (rad/s)
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_attitude_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_ATTITUDE;
 
-	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp (microseconds)
-	i += put_float_by_index(roll, i, msg->payload); //Roll angle (rad)
-	i += put_float_by_index(pitch, i, msg->payload); //Pitch angle (rad)
-	i += put_float_by_index(yaw, i, msg->payload); //Yaw angle (rad)
-	i += put_float_by_index(rollspeed, i, msg->payload); //Roll angular speed (rad/s)
-	i += put_float_by_index(pitchspeed, i, msg->payload); //Pitch angular speed (rad/s)
-	i += put_float_by_index(yawspeed, i, msg->payload); //Yaw angular speed (rad/s)
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds)
+	i += put_float_by_index(roll, i, msg->payload); // Roll angle (rad)
+	i += put_float_by_index(pitch, i, msg->payload); // Pitch angle (rad)
+	i += put_float_by_index(yaw, i, msg->payload); // Yaw angle (rad)
+	i += put_float_by_index(rollspeed, i, msg->payload); // Roll angular speed (rad/s)
+	i += put_float_by_index(pitchspeed, i, msg->payload); // Pitch angular speed (rad/s)
+	i += put_float_by_index(yawspeed, i, msg->payload); // Yaw angular speed (rad/s)
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a attitude struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param attitude C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_attitude_t* attitude)
 {
 	return mavlink_msg_attitude_pack(system_id, component_id, msg, attitude->usec, attitude->roll, attitude->pitch, attitude->yaw, attitude->rollspeed, attitude->pitchspeed, attitude->yawspeed);
 }
 
+/**
+ * @brief Send a attitude message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param usec Timestamp (microseconds)
+ * @param roll Roll angle (rad)
+ * @param pitch Pitch angle (rad)
+ * @param yaw Yaw angle (rad)
+ * @param rollspeed Roll angular speed (rad/s)
+ * @param pitchspeed Pitch angular speed (rad/s)
+ * @param yawspeed Yaw angular speed (rad/s)
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_attitude_send(mavlink_channel_t chan, uint64_t usec, float roll, float pitch, float yaw, float rollspeed, float pitchspeed, float yawspeed)
@@ -186,6 +224,12 @@ static inline float mavlink_msg_attitude_get_yawspeed(const mavlink_message_t* m
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a attitude message into a struct
+ *
+ * @param msg The message to decode
+ * @param attitude C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_attitude_decode(const mavlink_message_t* msg, mavlink_attitude_t* attitude)
 {
 	attitude->usec = mavlink_msg_attitude_get_usec(msg);

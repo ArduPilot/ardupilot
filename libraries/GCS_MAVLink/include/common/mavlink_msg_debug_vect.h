@@ -16,7 +16,10 @@ typedef struct __mavlink_debug_vect_t
 
 
 /**
- * @brief Send a debug_vect message
+ * @brief Pack a debug_vect message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param name Name
  * @param usec Timestamp
@@ -30,34 +33,65 @@ static inline uint16_t mavlink_msg_debug_vect_pack(uint8_t system_id, uint8_t co
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_DEBUG_VECT;
 
-	i += put_array_by_index(name, 10, i, msg->payload); //Name
-	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp
-	i += put_float_by_index(x, i, msg->payload); //x
-	i += put_float_by_index(y, i, msg->payload); //y
-	i += put_float_by_index(z, i, msg->payload); //z
+	i += put_array_by_index(name, 10, i, msg->payload); // Name
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp
+	i += put_float_by_index(x, i, msg->payload); // x
+	i += put_float_by_index(y, i, msg->payload); // y
+	i += put_float_by_index(z, i, msg->payload); // z
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a debug_vect message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param name Name
+ * @param usec Timestamp
+ * @param x x
+ * @param y y
+ * @param z z
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_debug_vect_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const int8_t* name, uint64_t usec, float x, float y, float z)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_DEBUG_VECT;
 
-	i += put_array_by_index(name, 10, i, msg->payload); //Name
-	i += put_uint64_t_by_index(usec, i, msg->payload); //Timestamp
-	i += put_float_by_index(x, i, msg->payload); //x
-	i += put_float_by_index(y, i, msg->payload); //y
-	i += put_float_by_index(z, i, msg->payload); //z
+	i += put_array_by_index(name, 10, i, msg->payload); // Name
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp
+	i += put_float_by_index(x, i, msg->payload); // x
+	i += put_float_by_index(y, i, msg->payload); // y
+	i += put_float_by_index(z, i, msg->payload); // z
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a debug_vect struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param debug_vect C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_debug_vect_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_debug_vect_t* debug_vect)
 {
 	return mavlink_msg_debug_vect_pack(system_id, component_id, msg, debug_vect->name, debug_vect->usec, debug_vect->x, debug_vect->y, debug_vect->z);
 }
 
+/**
+ * @brief Send a debug_vect message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param name Name
+ * @param usec Timestamp
+ * @param x x
+ * @param y y
+ * @param z z
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_debug_vect_send(mavlink_channel_t chan, const int8_t* name, uint64_t usec, float x, float y, float z)
@@ -146,6 +180,12 @@ static inline float mavlink_msg_debug_vect_get_z(const mavlink_message_t* msg)
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a debug_vect message into a struct
+ *
+ * @param msg The message to decode
+ * @param debug_vect C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_debug_vect_decode(const mavlink_message_t* msg, mavlink_debug_vect_t* debug_vect)
 {
 	mavlink_msg_debug_vect_get_name(msg, debug_vect->name);

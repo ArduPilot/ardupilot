@@ -17,7 +17,10 @@ typedef struct __mavlink_position_control_setpoint_set_t
 
 
 /**
- * @brief Send a position_control_setpoint_set message
+ * @brief Pack a position_control_setpoint_set message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param target_system System ID
  * @param target_component Component ID
@@ -33,38 +36,73 @@ static inline uint16_t mavlink_msg_position_control_setpoint_set_pack(uint8_t sy
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_POSITION_CONTROL_SETPOINT_SET;
 
-	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
-	i += put_uint16_t_by_index(id, i, msg->payload); //ID of waypoint, 0 for plain position
-	i += put_float_by_index(x, i, msg->payload); //x position
-	i += put_float_by_index(y, i, msg->payload); //y position
-	i += put_float_by_index(z, i, msg->payload); //z position
-	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation in radians, 0 = NORTH
+	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
+	i += put_uint16_t_by_index(id, i, msg->payload); // ID of waypoint, 0 for plain position
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(yaw, i, msg->payload); // yaw orientation in radians, 0 = NORTH
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a position_control_setpoint_set message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param target_system System ID
+ * @param target_component Component ID
+ * @param id ID of waypoint, 0 for plain position
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param yaw yaw orientation in radians, 0 = NORTH
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_position_control_setpoint_set_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, uint16_t id, float x, float y, float z, float yaw)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_POSITION_CONTROL_SETPOINT_SET;
 
-	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
-	i += put_uint16_t_by_index(id, i, msg->payload); //ID of waypoint, 0 for plain position
-	i += put_float_by_index(x, i, msg->payload); //x position
-	i += put_float_by_index(y, i, msg->payload); //y position
-	i += put_float_by_index(z, i, msg->payload); //z position
-	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation in radians, 0 = NORTH
+	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
+	i += put_uint16_t_by_index(id, i, msg->payload); // ID of waypoint, 0 for plain position
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(yaw, i, msg->payload); // yaw orientation in radians, 0 = NORTH
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a position_control_setpoint_set struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param position_control_setpoint_set C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_position_control_setpoint_set_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_position_control_setpoint_set_t* position_control_setpoint_set)
 {
 	return mavlink_msg_position_control_setpoint_set_pack(system_id, component_id, msg, position_control_setpoint_set->target_system, position_control_setpoint_set->target_component, position_control_setpoint_set->id, position_control_setpoint_set->x, position_control_setpoint_set->y, position_control_setpoint_set->z, position_control_setpoint_set->yaw);
 }
 
+/**
+ * @brief Send a position_control_setpoint_set message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param target_system System ID
+ * @param target_component Component ID
+ * @param id ID of waypoint, 0 for plain position
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param yaw yaw orientation in radians, 0 = NORTH
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_position_control_setpoint_set_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, uint16_t id, float x, float y, float z, float yaw)
@@ -170,6 +208,12 @@ static inline float mavlink_msg_position_control_setpoint_set_get_yaw(const mavl
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a position_control_setpoint_set message into a struct
+ *
+ * @param msg The message to decode
+ * @param position_control_setpoint_set C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_position_control_setpoint_set_decode(const mavlink_message_t* msg, mavlink_position_control_setpoint_set_t* position_control_setpoint_set)
 {
 	position_control_setpoint_set->target_system = mavlink_msg_position_control_setpoint_set_get_target_system(msg);

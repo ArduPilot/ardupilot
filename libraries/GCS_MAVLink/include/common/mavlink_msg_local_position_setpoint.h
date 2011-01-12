@@ -14,7 +14,10 @@ typedef struct __mavlink_local_position_setpoint_t
 
 
 /**
- * @brief Send a local_position_setpoint message
+ * @brief Pack a local_position_setpoint message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param x x position 1
  * @param y y position 1
@@ -27,32 +30,61 @@ static inline uint16_t mavlink_msg_local_position_setpoint_pack(uint8_t system_i
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT;
 
-	i += put_float_by_index(x, i, msg->payload); //x position 1
-	i += put_float_by_index(y, i, msg->payload); //y position 1
-	i += put_float_by_index(z, i, msg->payload); //z position 1
-	i += put_float_by_index(yaw, i, msg->payload); //x position 2
+	i += put_float_by_index(x, i, msg->payload); // x position 1
+	i += put_float_by_index(y, i, msg->payload); // y position 1
+	i += put_float_by_index(z, i, msg->payload); // z position 1
+	i += put_float_by_index(yaw, i, msg->payload); // x position 2
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a local_position_setpoint message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param x x position 1
+ * @param y y position 1
+ * @param z z position 1
+ * @param yaw x position 2
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_local_position_setpoint_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float x, float y, float z, float yaw)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT;
 
-	i += put_float_by_index(x, i, msg->payload); //x position 1
-	i += put_float_by_index(y, i, msg->payload); //y position 1
-	i += put_float_by_index(z, i, msg->payload); //z position 1
-	i += put_float_by_index(yaw, i, msg->payload); //x position 2
+	i += put_float_by_index(x, i, msg->payload); // x position 1
+	i += put_float_by_index(y, i, msg->payload); // y position 1
+	i += put_float_by_index(z, i, msg->payload); // z position 1
+	i += put_float_by_index(yaw, i, msg->payload); // x position 2
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a local_position_setpoint struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param local_position_setpoint C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_local_position_setpoint_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_local_position_setpoint_t* local_position_setpoint)
 {
 	return mavlink_msg_local_position_setpoint_pack(system_id, component_id, msg, local_position_setpoint->x, local_position_setpoint->y, local_position_setpoint->z, local_position_setpoint->yaw);
 }
 
+/**
+ * @brief Send a local_position_setpoint message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param x x position 1
+ * @param y y position 1
+ * @param z z position 1
+ * @param yaw x position 2
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_local_position_setpoint_send(mavlink_channel_t chan, float x, float y, float z, float yaw)
@@ -125,6 +157,12 @@ static inline float mavlink_msg_local_position_setpoint_get_yaw(const mavlink_me
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a local_position_setpoint message into a struct
+ *
+ * @param msg The message to decode
+ * @param local_position_setpoint C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_local_position_setpoint_decode(const mavlink_message_t* msg, mavlink_local_position_setpoint_t* local_position_setpoint)
 {
 	local_position_setpoint->x = mavlink_msg_local_position_setpoint_get_x(msg);

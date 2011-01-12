@@ -16,7 +16,10 @@ typedef struct __mavlink_aux_status_t
 
 
 /**
- * @brief Send a aux_status message
+ * @brief Pack a aux_status message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
  * @param i2c0_err_count Number of I2C errors since startup
@@ -31,36 +34,69 @@ static inline uint16_t mavlink_msg_aux_status_pack(uint8_t system_id, uint8_t co
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_AUX_STATUS;
 
-	i += put_uint16_t_by_index(load, i, msg->payload); //Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-	i += put_uint16_t_by_index(i2c0_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(i2c1_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(spi0_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(spi1_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(uart_total_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(load, i, msg->payload); // Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+	i += put_uint16_t_by_index(i2c0_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(i2c1_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi0_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi1_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(uart_total_err_count, i, msg->payload); // Number of I2C errors since startup
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a aux_status message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+ * @param i2c0_err_count Number of I2C errors since startup
+ * @param i2c1_err_count Number of I2C errors since startup
+ * @param spi0_err_count Number of I2C errors since startup
+ * @param spi1_err_count Number of I2C errors since startup
+ * @param uart_total_err_count Number of I2C errors since startup
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_aux_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t load, uint16_t i2c0_err_count, uint16_t i2c1_err_count, uint16_t spi0_err_count, uint16_t spi1_err_count, uint16_t uart_total_err_count)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_AUX_STATUS;
 
-	i += put_uint16_t_by_index(load, i, msg->payload); //Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-	i += put_uint16_t_by_index(i2c0_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(i2c1_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(spi0_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(spi1_err_count, i, msg->payload); //Number of I2C errors since startup
-	i += put_uint16_t_by_index(uart_total_err_count, i, msg->payload); //Number of I2C errors since startup
+	i += put_uint16_t_by_index(load, i, msg->payload); // Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+	i += put_uint16_t_by_index(i2c0_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(i2c1_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi0_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(spi1_err_count, i, msg->payload); // Number of I2C errors since startup
+	i += put_uint16_t_by_index(uart_total_err_count, i, msg->payload); // Number of I2C errors since startup
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a aux_status struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param aux_status C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_aux_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_aux_status_t* aux_status)
 {
 	return mavlink_msg_aux_status_pack(system_id, component_id, msg, aux_status->load, aux_status->i2c0_err_count, aux_status->i2c1_err_count, aux_status->spi0_err_count, aux_status->spi1_err_count, aux_status->uart_total_err_count);
 }
 
+/**
+ * @brief Send a aux_status message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+ * @param i2c0_err_count Number of I2C errors since startup
+ * @param i2c1_err_count Number of I2C errors since startup
+ * @param spi0_err_count Number of I2C errors since startup
+ * @param spi1_err_count Number of I2C errors since startup
+ * @param uart_total_err_count Number of I2C errors since startup
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_aux_status_send(mavlink_channel_t chan, uint16_t load, uint16_t i2c0_err_count, uint16_t i2c1_err_count, uint16_t spi0_err_count, uint16_t spi1_err_count, uint16_t uart_total_err_count)
@@ -151,6 +187,12 @@ static inline uint16_t mavlink_msg_aux_status_get_uart_total_err_count(const mav
 	return (uint16_t)r.s;
 }
 
+/**
+ * @brief Decode a aux_status message into a struct
+ *
+ * @param msg The message to decode
+ * @param aux_status C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_aux_status_decode(const mavlink_message_t* msg, mavlink_aux_status_t* aux_status)
 {
 	aux_status->load = mavlink_msg_aux_status_get_load(msg);
