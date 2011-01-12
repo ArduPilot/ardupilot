@@ -48,9 +48,13 @@ public:
 	typedef uint16_t		AP_VarAddress;
 
 	/// An address value that indicates that a variable is not to be saved to EEPROM.
+	///
+	/// As the value has all bits set to 1, it's not a legal EEPROM address for any
+	/// EEPROM smaller than 64K.
+	///
 	/// This value is normally the default.
 	///
-	static const AP_VarAddress	AP_VarNoAddress = !(AP_VarAddress)0;
+	static const AP_VarAddress	AP_VarNoAddress = ~(AP_VarAddress)0;
 
 	/// The largest variable that will be saved to EEPROM.
 	/// This affects the amount of stack space that is required by the ::save, ::load,
