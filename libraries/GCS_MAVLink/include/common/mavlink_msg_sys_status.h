@@ -17,7 +17,10 @@ typedef struct __mavlink_sys_status_t
 
 
 /**
- * @brief Send a sys_status message
+ * @brief Pack a sys_status message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
  * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
@@ -33,38 +36,73 @@ static inline uint16_t mavlink_msg_sys_status_pack(uint8_t system_id, uint8_t co
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_SYS_STATUS;
 
-	i += put_uint8_t_by_index(mode, i, msg->payload); //System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
-	i += put_uint8_t_by_index(nav_mode, i, msg->payload); //Navigation mode, see MAV_NAV_MODE ENUM
-	i += put_uint8_t_by_index(status, i, msg->payload); //System status flag, see MAV_STATUS ENUM
-	i += put_uint16_t_by_index(load, i, msg->payload); //Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-	i += put_uint16_t_by_index(vbat, i, msg->payload); //Battery voltage, in millivolts (1 = 1 millivolt)
-	i += put_uint8_t_by_index(motor_block, i, msg->payload); //Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
-	i += put_uint16_t_by_index(packet_drop, i, msg->payload); //Dropped packets (packets that were corrupted on reception on the MAV)
+	i += put_uint8_t_by_index(mode, i, msg->payload); // System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+	i += put_uint8_t_by_index(nav_mode, i, msg->payload); // Navigation mode, see MAV_NAV_MODE ENUM
+	i += put_uint8_t_by_index(status, i, msg->payload); // System status flag, see MAV_STATUS ENUM
+	i += put_uint16_t_by_index(load, i, msg->payload); // Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+	i += put_uint16_t_by_index(vbat, i, msg->payload); // Battery voltage, in millivolts (1 = 1 millivolt)
+	i += put_uint8_t_by_index(motor_block, i, msg->payload); // Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
+	i += put_uint16_t_by_index(packet_drop, i, msg->payload); // Dropped packets (packets that were corrupted on reception on the MAV)
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a sys_status message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+ * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
+ * @param status System status flag, see MAV_STATUS ENUM
+ * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+ * @param vbat Battery voltage, in millivolts (1 = 1 millivolt)
+ * @param motor_block Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
+ * @param packet_drop Dropped packets (packets that were corrupted on reception on the MAV)
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_sys_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t mode, uint8_t nav_mode, uint8_t status, uint16_t load, uint16_t vbat, uint8_t motor_block, uint16_t packet_drop)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_SYS_STATUS;
 
-	i += put_uint8_t_by_index(mode, i, msg->payload); //System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
-	i += put_uint8_t_by_index(nav_mode, i, msg->payload); //Navigation mode, see MAV_NAV_MODE ENUM
-	i += put_uint8_t_by_index(status, i, msg->payload); //System status flag, see MAV_STATUS ENUM
-	i += put_uint16_t_by_index(load, i, msg->payload); //Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-	i += put_uint16_t_by_index(vbat, i, msg->payload); //Battery voltage, in millivolts (1 = 1 millivolt)
-	i += put_uint8_t_by_index(motor_block, i, msg->payload); //Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
-	i += put_uint16_t_by_index(packet_drop, i, msg->payload); //Dropped packets (packets that were corrupted on reception on the MAV)
+	i += put_uint8_t_by_index(mode, i, msg->payload); // System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+	i += put_uint8_t_by_index(nav_mode, i, msg->payload); // Navigation mode, see MAV_NAV_MODE ENUM
+	i += put_uint8_t_by_index(status, i, msg->payload); // System status flag, see MAV_STATUS ENUM
+	i += put_uint16_t_by_index(load, i, msg->payload); // Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+	i += put_uint16_t_by_index(vbat, i, msg->payload); // Battery voltage, in millivolts (1 = 1 millivolt)
+	i += put_uint8_t_by_index(motor_block, i, msg->payload); // Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
+	i += put_uint16_t_by_index(packet_drop, i, msg->payload); // Dropped packets (packets that were corrupted on reception on the MAV)
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a sys_status struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param sys_status C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_sys_status_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_sys_status_t* sys_status)
 {
 	return mavlink_msg_sys_status_pack(system_id, component_id, msg, sys_status->mode, sys_status->nav_mode, sys_status->status, sys_status->load, sys_status->vbat, sys_status->motor_block, sys_status->packet_drop);
 }
 
+/**
+ * @brief Send a sys_status message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param mode System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+ * @param nav_mode Navigation mode, see MAV_NAV_MODE ENUM
+ * @param status System status flag, see MAV_STATUS ENUM
+ * @param load Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+ * @param vbat Battery voltage, in millivolts (1 = 1 millivolt)
+ * @param motor_block Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)
+ * @param packet_drop Dropped packets (packets that were corrupted on reception on the MAV)
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_sys_status_send(mavlink_channel_t chan, uint8_t mode, uint8_t nav_mode, uint8_t status, uint16_t load, uint16_t vbat, uint8_t motor_block, uint16_t packet_drop)
@@ -156,6 +194,12 @@ static inline uint16_t mavlink_msg_sys_status_get_packet_drop(const mavlink_mess
 	return (uint16_t)r.s;
 }
 
+/**
+ * @brief Decode a sys_status message into a struct
+ *
+ * @param msg The message to decode
+ * @param sys_status C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_sys_status_decode(const mavlink_message_t* msg, mavlink_sys_status_t* sys_status)
 {
 	sys_status->mode = mavlink_msg_sys_status_get_mode(msg);

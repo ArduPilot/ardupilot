@@ -17,7 +17,10 @@ typedef struct __mavlink_marker_t
 
 
 /**
- * @brief Send a marker message
+ * @brief Pack a marker message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param id ID
  * @param x x position
@@ -33,38 +36,73 @@ static inline uint16_t mavlink_msg_marker_pack(uint8_t system_id, uint8_t compon
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_MARKER;
 
-	i += put_uint16_t_by_index(id, i, msg->payload); //ID
-	i += put_float_by_index(x, i, msg->payload); //x position
-	i += put_float_by_index(y, i, msg->payload); //y position
-	i += put_float_by_index(z, i, msg->payload); //z position
-	i += put_float_by_index(roll, i, msg->payload); //roll orientation
-	i += put_float_by_index(pitch, i, msg->payload); //pitch orientation
-	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation
+	i += put_uint16_t_by_index(id, i, msg->payload); // ID
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(roll, i, msg->payload); // roll orientation
+	i += put_float_by_index(pitch, i, msg->payload); // pitch orientation
+	i += put_float_by_index(yaw, i, msg->payload); // yaw orientation
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a marker message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param id ID
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param roll roll orientation
+ * @param pitch pitch orientation
+ * @param yaw yaw orientation
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_marker_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t id, float x, float y, float z, float roll, float pitch, float yaw)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_MARKER;
 
-	i += put_uint16_t_by_index(id, i, msg->payload); //ID
-	i += put_float_by_index(x, i, msg->payload); //x position
-	i += put_float_by_index(y, i, msg->payload); //y position
-	i += put_float_by_index(z, i, msg->payload); //z position
-	i += put_float_by_index(roll, i, msg->payload); //roll orientation
-	i += put_float_by_index(pitch, i, msg->payload); //pitch orientation
-	i += put_float_by_index(yaw, i, msg->payload); //yaw orientation
+	i += put_uint16_t_by_index(id, i, msg->payload); // ID
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(roll, i, msg->payload); // roll orientation
+	i += put_float_by_index(pitch, i, msg->payload); // pitch orientation
+	i += put_float_by_index(yaw, i, msg->payload); // yaw orientation
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a marker struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param marker C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_marker_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_marker_t* marker)
 {
 	return mavlink_msg_marker_pack(system_id, component_id, msg, marker->id, marker->x, marker->y, marker->z, marker->roll, marker->pitch, marker->yaw);
 }
 
+/**
+ * @brief Send a marker message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param id ID
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param roll roll orientation
+ * @param pitch pitch orientation
+ * @param yaw yaw orientation
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_marker_send(mavlink_channel_t chan, uint16_t id, float x, float y, float z, float roll, float pitch, float yaw)
@@ -180,6 +218,12 @@ static inline float mavlink_msg_marker_get_yaw(const mavlink_message_t* msg)
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a marker message into a struct
+ *
+ * @param msg The message to decode
+ * @param marker C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_marker_decode(const mavlink_message_t* msg, mavlink_marker_t* marker)
 {
 	marker->id = mavlink_msg_marker_get_id(msg);

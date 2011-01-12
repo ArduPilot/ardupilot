@@ -19,7 +19,10 @@ typedef struct __mavlink_rc_channels_scaled_t
 
 
 /**
- * @brief Send a rc_channels_scaled message
+ * @brief Pack a rc_channels_scaled message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param chan1_scaled RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
  * @param chan2_scaled RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
@@ -37,42 +40,81 @@ static inline uint16_t mavlink_msg_rc_channels_scaled_pack(uint8_t system_id, ui
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_RC_CHANNELS_SCALED;
 
-	i += put_int16_t_by_index(chan1_scaled, i, msg->payload); //RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan2_scaled, i, msg->payload); //RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan3_scaled, i, msg->payload); //RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan4_scaled, i, msg->payload); //RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan5_scaled, i, msg->payload); //RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan6_scaled, i, msg->payload); //RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan7_scaled, i, msg->payload); //RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan8_scaled, i, msg->payload); //RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_uint8_t_by_index(rssi, i, msg->payload); //Receive signal strength indicator, 0: 0%, 255: 100%
+	i += put_int16_t_by_index(chan1_scaled, i, msg->payload); // RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan2_scaled, i, msg->payload); // RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan3_scaled, i, msg->payload); // RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan4_scaled, i, msg->payload); // RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan5_scaled, i, msg->payload); // RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan6_scaled, i, msg->payload); // RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan7_scaled, i, msg->payload); // RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan8_scaled, i, msg->payload); // RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_uint8_t_by_index(rssi, i, msg->payload); // Receive signal strength indicator, 0: 0%, 255: 100%
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a rc_channels_scaled message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param chan1_scaled RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan2_scaled RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan3_scaled RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan4_scaled RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan5_scaled RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan6_scaled RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan7_scaled RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan8_scaled RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param rssi Receive signal strength indicator, 0: 0%, 255: 100%
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_rc_channels_scaled_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, int16_t chan1_scaled, int16_t chan2_scaled, int16_t chan3_scaled, int16_t chan4_scaled, int16_t chan5_scaled, int16_t chan6_scaled, int16_t chan7_scaled, int16_t chan8_scaled, uint8_t rssi)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_RC_CHANNELS_SCALED;
 
-	i += put_int16_t_by_index(chan1_scaled, i, msg->payload); //RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan2_scaled, i, msg->payload); //RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan3_scaled, i, msg->payload); //RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan4_scaled, i, msg->payload); //RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan5_scaled, i, msg->payload); //RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan6_scaled, i, msg->payload); //RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan7_scaled, i, msg->payload); //RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_int16_t_by_index(chan8_scaled, i, msg->payload); //RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-	i += put_uint8_t_by_index(rssi, i, msg->payload); //Receive signal strength indicator, 0: 0%, 255: 100%
+	i += put_int16_t_by_index(chan1_scaled, i, msg->payload); // RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan2_scaled, i, msg->payload); // RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan3_scaled, i, msg->payload); // RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan4_scaled, i, msg->payload); // RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan5_scaled, i, msg->payload); // RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan6_scaled, i, msg->payload); // RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan7_scaled, i, msg->payload); // RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_int16_t_by_index(chan8_scaled, i, msg->payload); // RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+	i += put_uint8_t_by_index(rssi, i, msg->payload); // Receive signal strength indicator, 0: 0%, 255: 100%
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a rc_channels_scaled struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param rc_channels_scaled C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_rc_channels_scaled_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_rc_channels_scaled_t* rc_channels_scaled)
 {
 	return mavlink_msg_rc_channels_scaled_pack(system_id, component_id, msg, rc_channels_scaled->chan1_scaled, rc_channels_scaled->chan2_scaled, rc_channels_scaled->chan3_scaled, rc_channels_scaled->chan4_scaled, rc_channels_scaled->chan5_scaled, rc_channels_scaled->chan6_scaled, rc_channels_scaled->chan7_scaled, rc_channels_scaled->chan8_scaled, rc_channels_scaled->rssi);
 }
 
+/**
+ * @brief Send a rc_channels_scaled message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param chan1_scaled RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan2_scaled RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan3_scaled RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan4_scaled RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan5_scaled RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan6_scaled RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan7_scaled RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param chan8_scaled RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+ * @param rssi Receive signal strength indicator, 0: 0%, 255: 100%
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_rc_channels_scaled_send(mavlink_channel_t chan, int16_t chan1_scaled, int16_t chan2_scaled, int16_t chan3_scaled, int16_t chan4_scaled, int16_t chan5_scaled, int16_t chan6_scaled, int16_t chan7_scaled, int16_t chan8_scaled, uint8_t rssi)
@@ -199,6 +241,12 @@ static inline uint8_t mavlink_msg_rc_channels_scaled_get_rssi(const mavlink_mess
 	return (uint8_t)(msg->payload+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t)+sizeof(int16_t))[0];
 }
 
+/**
+ * @brief Decode a rc_channels_scaled message into a struct
+ *
+ * @param msg The message to decode
+ * @param rc_channels_scaled C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_rc_channels_scaled_decode(const mavlink_message_t* msg, mavlink_rc_channels_scaled_t* rc_channels_scaled)
 {
 	rc_channels_scaled->chan1_scaled = mavlink_msg_rc_channels_scaled_get_chan1_scaled(msg);

@@ -2,8 +2,18 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
+<xsl:template match="//include">
+   <h1>MAVLink Include Files</h1>
+   <p><strong><em>Including files: </em><xsl:value-of select="." /></strong></p>
+</xsl:template>
+
+<xsl:template match="//enums">
+   <h1>MAVLink Type Enumerations</h1>
+   <xsl:apply-templates />
+</xsl:template>
+
 <xsl:template match="//messages">
-   <h4>MAVLink Messages</h4>
+   <h1>MAVLink Messages</h1>
    <xsl:apply-templates />
 </xsl:template>
 
@@ -32,5 +42,33 @@
    <td class="mavlink_comment"><xsl:value-of select="." /></td>
    </tr>
 </xsl:template>
+
+<xsl:template match="//version">
+   <h1>MAVLink Protocol Version</h1>
+   <p>This file has protocol version: <xsl:value-of select="." />. The version numbers range from 1-255.</p>
+</xsl:template>
+
+<xsl:template match="//enum">
+   <h3 class="mavlink_message_name"><xsl:value-of select="@name" /></h3>
+   <p class="description"><xsl:value-of select="description" /></p>
+
+   <table class="sortable">
+   <thead>
+   <tr>
+     <th class="mavlink_field_header">Field Name</th>
+   </tr>
+   </thead>
+   <tbody>
+   <xsl:apply-templates select="entry" />
+  </tbody>
+  </table>
+</xsl:template>
+
+<xsl:template match="//entry">
+   <tr class="mavlink_field">
+   <td class="mavlink_name"><xsl:value-of select="@name" /></td>
+   </tr>
+</xsl:template>
+
 
 </xsl:stylesheet>

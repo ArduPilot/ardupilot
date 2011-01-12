@@ -38,6 +38,11 @@
      <field name="seq" type="uint32_t">IMU seq</field>
      <field name="roll" type="float">Roll angle in rad</field>
      <field name="pitch" type="float">Pitch angle in rad</field>
+     <field name="yaw" type="float">Yaw angle in rad</field>
+     <field name="local_z" type="float">Local frame Z coordinate (height over ground)</field>
+     <field name="lat" type="float">GPS X coordinate</field>
+     <field name="lon" type="float">GPS Y coordinate</field>
+     <field name="alt" type="float">Global frame altitude</field>
    </message>
 
    <message name="IMAGE_TRIGGER_CONTROL" id="102">
@@ -60,6 +65,11 @@
      <field name="gain" type="float">Camera gain</field>
      <field name="roll" type="float">Roll angle in rad</field>
      <field name="pitch" type="float">Pitch angle in rad</field>
+     <field name="yaw" type="float">Yaw angle in rad</field>
+     <field name="local_z" type="float">Local frame Z coordinate (height over ground)</field>
+     <field name="lat" type="float">GPS X coordinate</field>
+     <field name="lon" type="float">GPS Y coordinate</field>
+     <field name="alt" type="float">Global frame altitude</field>
    </message>
 
    <message name="VISION_POSITION_ESTIMATE" id="111">
@@ -216,6 +226,19 @@
     <field name="yp2" type="float">Y2 Position</field>
     <field name="zp2" type="float">Z2 Position</field>
     <field name="name" type="array[25]">POI connection name</field>
+   </message>
+
+  <message name="DATA_TRANSMISSION_HANDSHAKE" id="170">
+    <field name="type" type="uint8_t">type of requested/acknowledged data (as defined in ENUM DATA_TYPES in mavlink/include/mavlink_types.h)</field>
+    <field name="size" type="uint32_t">total data size in bytes (set on ACK only)</field>
+    <field name="packets" type="uint8_t">number of packets beeing sent (set on ACK only)</field>
+    <field name="payload" type="uint8_t">payload size per packet (normally 253 byte, see DATA field size in message ENCAPSULATED_DATA) (set on ACK only)</field>
+    <field name="jpg_quality" type="uint8_t">JPEG quality out of [1,100]</field>
+   </message>
+
+  <message name="ENCAPSULATED_DATA" id="171">
+    <field name="seqnr" type="uint16_t">sequence number (starting with 0 on every transmission)</field>
+    <field name="data" type="uint8_t[253]">image data bytes</field>
    </message>
 
 </messages>

@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <mavlink>
-
+<version>1</version>
 <messages>
    <message name="HEARTBEAT" id="0">
      <description>The heartbeat message shows that a system is present and responding. The type of the MAV and Autopilot hardware allow the receiving system to treat further messages from this system appropriate (e.g. by laying out the user interface based on the autopilot).</description>
      <field name="type" type="uint8_t">Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)</field>
      <field name="autopilot" type="uint8_t">Type of the Autopilot: 0: Generic, 1: PIXHAWK, 2: SLUGS, 3: Ardupilot (up to 15 types), defined in MAV_AUTOPILOT_TYPE ENUM</field>
+     <field name="mavlink_version" type="uint8_t_mavlink_version">MAVLink version</field>
    </message>
  
    <message name="BOOT" id="1">
@@ -403,18 +404,25 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
 
   <message name="GPS_LOCAL_ORIGIN_SET" id="71">
     <description>Once the MAV sets a new GPS-Local correspondence, this message announces </description>
-    <field name="latitude" type="float">Latitude (WGS84)</field>
-    <field name="longitude" type="float">Longitude (WGS84)</field>
-    <field name="altitude" type="float">Altitude(WGS84)</field>
-    <field name="x" type="float">Local X coordinate in meters</field>
-    <field name="y" type="float">Local Y coordinate in meters</field>
-    <field name="z" type="float">Local Z coordinate in meters</field>
+    <field name="latitude" type="int32_t">Latitude (WGS84), expressed as * 1E7</field>
+    <field name="longitude" type="int32_t">Longitude (WGS84), expressed as * 1E7</field>
+    <field name="altitude" type="int32_t">Altitude(WGS84), expressed as * 1000</field>
   </message>
 
   <message name="AIRSPEED" id="72">
     <description>The calculated airspeed </description>
     <field name="airspeed" type="float">meters/second</field>
   </message>
+
+   <message name="GLOBAL_POSITION_INT" id="73">
+     <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up)</description>
+     <field name="lat"   type="int32_t">Latitude / X Position, expressed as * 1E7</field>
+     <field name="lon"   type="int32_t">Longitude / Y Position, expressed as * 1E7</field>
+     <field name="alt"   type="int32_t">Altitude / negative Z Position, expressed as * 1000</field>
+     <field name="vx"  type="int16_t">Ground X Speed, expressed as m/s * 100</field>
+     <field name="vy"  type="int16_t">Ground Y Speed, expressed as m/s * 100</field>
+     <field name="vz"  type="int16_t">Ground Z Speed, expressed as m/s * 100</field>
+   </message>
    
    <!-- MESSAGE IDs 80 - 250: Space for custom messages in individual projectname_messages.xml files -->
 

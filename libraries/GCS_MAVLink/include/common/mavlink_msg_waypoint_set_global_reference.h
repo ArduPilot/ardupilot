@@ -20,7 +20,10 @@ typedef struct __mavlink_waypoint_set_global_reference_t
 
 
 /**
- * @brief Send a waypoint_set_global_reference message
+ * @brief Pack a waypoint_set_global_reference message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param target_system System ID
  * @param target_component Component ID
@@ -39,44 +42,85 @@ static inline uint16_t mavlink_msg_waypoint_set_global_reference_pack(uint8_t sy
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_SET_GLOBAL_REFERENCE;
 
-	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
-	i += put_float_by_index(global_x, i, msg->payload); //global x position
-	i += put_float_by_index(global_y, i, msg->payload); //global y position
-	i += put_float_by_index(global_z, i, msg->payload); //global z position
-	i += put_float_by_index(global_yaw, i, msg->payload); //global yaw orientation in radians, 0 = NORTH
-	i += put_float_by_index(local_x, i, msg->payload); //local x position that matches the global x position
-	i += put_float_by_index(local_y, i, msg->payload); //local y position that matches the global y position
-	i += put_float_by_index(local_z, i, msg->payload); //local z position that matches the global z position
-	i += put_float_by_index(local_yaw, i, msg->payload); //local yaw that matches the global yaw orientation
+	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
+	i += put_float_by_index(global_x, i, msg->payload); // global x position
+	i += put_float_by_index(global_y, i, msg->payload); // global y position
+	i += put_float_by_index(global_z, i, msg->payload); // global z position
+	i += put_float_by_index(global_yaw, i, msg->payload); // global yaw orientation in radians, 0 = NORTH
+	i += put_float_by_index(local_x, i, msg->payload); // local x position that matches the global x position
+	i += put_float_by_index(local_y, i, msg->payload); // local y position that matches the global y position
+	i += put_float_by_index(local_z, i, msg->payload); // local z position that matches the global z position
+	i += put_float_by_index(local_yaw, i, msg->payload); // local yaw that matches the global yaw orientation
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a waypoint_set_global_reference message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param target_system System ID
+ * @param target_component Component ID
+ * @param global_x global x position
+ * @param global_y global y position
+ * @param global_z global z position
+ * @param global_yaw global yaw orientation in radians, 0 = NORTH
+ * @param local_x local x position that matches the global x position
+ * @param local_y local y position that matches the global y position
+ * @param local_z local z position that matches the global z position
+ * @param local_yaw local yaw that matches the global yaw orientation
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_waypoint_set_global_reference_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, float global_x, float global_y, float global_z, float global_yaw, float local_x, float local_y, float local_z, float local_yaw)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_SET_GLOBAL_REFERENCE;
 
-	i += put_uint8_t_by_index(target_system, i, msg->payload); //System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); //Component ID
-	i += put_float_by_index(global_x, i, msg->payload); //global x position
-	i += put_float_by_index(global_y, i, msg->payload); //global y position
-	i += put_float_by_index(global_z, i, msg->payload); //global z position
-	i += put_float_by_index(global_yaw, i, msg->payload); //global yaw orientation in radians, 0 = NORTH
-	i += put_float_by_index(local_x, i, msg->payload); //local x position that matches the global x position
-	i += put_float_by_index(local_y, i, msg->payload); //local y position that matches the global y position
-	i += put_float_by_index(local_z, i, msg->payload); //local z position that matches the global z position
-	i += put_float_by_index(local_yaw, i, msg->payload); //local yaw that matches the global yaw orientation
+	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
+	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
+	i += put_float_by_index(global_x, i, msg->payload); // global x position
+	i += put_float_by_index(global_y, i, msg->payload); // global y position
+	i += put_float_by_index(global_z, i, msg->payload); // global z position
+	i += put_float_by_index(global_yaw, i, msg->payload); // global yaw orientation in radians, 0 = NORTH
+	i += put_float_by_index(local_x, i, msg->payload); // local x position that matches the global x position
+	i += put_float_by_index(local_y, i, msg->payload); // local y position that matches the global y position
+	i += put_float_by_index(local_z, i, msg->payload); // local z position that matches the global z position
+	i += put_float_by_index(local_yaw, i, msg->payload); // local yaw that matches the global yaw orientation
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a waypoint_set_global_reference struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param waypoint_set_global_reference C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_waypoint_set_global_reference_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_waypoint_set_global_reference_t* waypoint_set_global_reference)
 {
 	return mavlink_msg_waypoint_set_global_reference_pack(system_id, component_id, msg, waypoint_set_global_reference->target_system, waypoint_set_global_reference->target_component, waypoint_set_global_reference->global_x, waypoint_set_global_reference->global_y, waypoint_set_global_reference->global_z, waypoint_set_global_reference->global_yaw, waypoint_set_global_reference->local_x, waypoint_set_global_reference->local_y, waypoint_set_global_reference->local_z, waypoint_set_global_reference->local_yaw);
 }
 
+/**
+ * @brief Send a waypoint_set_global_reference message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param target_system System ID
+ * @param target_component Component ID
+ * @param global_x global x position
+ * @param global_y global y position
+ * @param global_z global z position
+ * @param global_yaw global yaw orientation in radians, 0 = NORTH
+ * @param local_x local x position that matches the global x position
+ * @param local_y local y position that matches the global y position
+ * @param local_z local z position that matches the global z position
+ * @param local_yaw local yaw that matches the global yaw orientation
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_waypoint_set_global_reference_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, float global_x, float global_y, float global_z, float global_yaw, float local_x, float local_y, float local_z, float local_yaw)
@@ -229,6 +273,12 @@ static inline float mavlink_msg_waypoint_set_global_reference_get_local_yaw(cons
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a waypoint_set_global_reference message into a struct
+ *
+ * @param msg The message to decode
+ * @param waypoint_set_global_reference C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_waypoint_set_global_reference_decode(const mavlink_message_t* msg, mavlink_waypoint_set_global_reference_t* waypoint_set_global_reference)
 {
 	waypoint_set_global_reference->target_system = mavlink_msg_waypoint_set_global_reference_get_target_system(msg);

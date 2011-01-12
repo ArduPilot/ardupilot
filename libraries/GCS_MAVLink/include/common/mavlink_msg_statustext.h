@@ -13,7 +13,10 @@ typedef struct __mavlink_statustext_t
 
 
 /**
- * @brief Send a statustext message
+ * @brief Pack a statustext message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param severity Severity of status, 0 = info message, 255 = critical fault
  * @param text Status text message, without null termination character
@@ -24,28 +27,53 @@ static inline uint16_t mavlink_msg_statustext_pack(uint8_t system_id, uint8_t co
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_STATUSTEXT;
 
-	i += put_uint8_t_by_index(severity, i, msg->payload); //Severity of status, 0 = info message, 255 = critical fault
-	i += put_array_by_index(text, 50, i, msg->payload); //Status text message, without null termination character
+	i += put_uint8_t_by_index(severity, i, msg->payload); // Severity of status, 0 = info message, 255 = critical fault
+	i += put_array_by_index(text, 50, i, msg->payload); // Status text message, without null termination character
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a statustext message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param severity Severity of status, 0 = info message, 255 = critical fault
+ * @param text Status text message, without null termination character
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
 static inline uint16_t mavlink_msg_statustext_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t severity, const int8_t* text)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_STATUSTEXT;
 
-	i += put_uint8_t_by_index(severity, i, msg->payload); //Severity of status, 0 = info message, 255 = critical fault
-	i += put_array_by_index(text, 50, i, msg->payload); //Status text message, without null termination character
+	i += put_uint8_t_by_index(severity, i, msg->payload); // Severity of status, 0 = info message, 255 = critical fault
+	i += put_array_by_index(text, 50, i, msg->payload); // Status text message, without null termination character
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a statustext struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param statustext C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_statustext_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_statustext_t* statustext)
 {
 	return mavlink_msg_statustext_pack(system_id, component_id, msg, statustext->severity, statustext->text);
 }
 
+/**
+ * @brief Send a statustext message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param severity Severity of status, 0 = info message, 255 = critical fault
+ * @param text Status text message, without null termination character
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_statustext_send(mavlink_channel_t chan, uint8_t severity, const int8_t* text)
@@ -80,6 +108,12 @@ static inline uint16_t mavlink_msg_statustext_get_text(const mavlink_message_t* 
 	return 50;
 }
 
+/**
+ * @brief Decode a statustext message into a struct
+ *
+ * @param msg The message to decode
+ * @param statustext C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_statustext_decode(const mavlink_message_t* msg, mavlink_statustext_t* statustext)
 {
 	statustext->severity = mavlink_msg_statustext_get_severity(msg);
