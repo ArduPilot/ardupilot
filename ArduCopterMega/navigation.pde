@@ -46,30 +46,39 @@ void navigate()
 
 }
 
+#define DIST_ERROR_MAX 3000
 void calc_nav()
 {
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
 	1000 	= 11m
+	3000 	= 33m
 	10000 	= 111m
 	pitch_max = 22° (2200)
 	*/
 	
-	float cos_yaw = cos(dcm.yaw);
-	float sin_yaw = sin(dcm.yaw);
-		
+	Vector2f yawvector;
+	Matrix3f temp = dcm.get_dcm_matrix();
+
+	yawvector.x 	= temp.a.x;
+	yawvector.y 	= temp.b.x;
+	yawvector.normalize();
+	
 	// ROLL
 	nav_lon = pid_nav_lon.get_pid((long)((float)(next_WP.lng - GPS.longitude) * scaleLongDown), dTnav, 1.0);
-	nav_lon = constrain(nav_lon, -pitch_max, pitch_max); // Limit max command
+	nav_lon = constrain(nav_lon, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
 	// PITCH
 	nav_lat = pid_nav_lat.get_pid(next_WP.lat - GPS.latitude, dTnav, 1.0);
-	nav_lat = constrain(nav_lat, -pitch_max, pitch_max); // Limit max command
+	nav_lat = constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
 	// rotate the vector
-	nav_roll 	= (float)nav_lon * cos_yaw - (float)nav_lat * sin_yaw;
-	nav_pitch 	= (float)nav_lon * sin_yaw + (float)nav_lat * cos_yaw;
+	nav_roll 	= (float)nav_lon * yawvector.x - (float)nav_lat * yawvector.y;
+	nav_pitch 	= (float)nav_lon * yawvector.y + (float)nav_lat * yawvector.x;
+
+	nav_roll 	= constrain(nav_roll,  -pitch_max, pitch_max);
+	nav_pitch 	= constrain(nav_pitch, -pitch_max, pitch_max);
 }
 
 /*
