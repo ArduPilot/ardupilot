@@ -207,7 +207,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			ts_num++;
 			if (ts_num > 10){
 				ts_num = 0;
-				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, rc2:%d, rc4 %d, ny:%ld, ys:%ld, ye:%ld,  R: %d,  L: %d  F: %d  B: %d\n"),
+				/*Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, rc2:%d, rc4 %d, ny:%ld, ys:%ld, ye:%ld,  R: %d,  L: %d  F: %d  B: %d\n"),
 					(int)(roll_sensor/100),
 					(int)(pitch_sensor/100),
 					rc_1.pwm_out,
@@ -216,6 +216,16 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 					nav_yaw,
 					dcm.yaw_sensor,
 					yaw_error,
+					motor_out[RIGHT],
+					motor_out[LEFT],
+					motor_out[FRONT],
+					motor_out[BACK]);*/
+
+				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, Int%4.4f,  R: %d,  L: %d  F: %d  B: %d\n"),
+					(int)(roll_sensor/100),
+					(int)(pitch_sensor/100),
+					rc_1.pwm_out,
+					pid_stabilize_roll.get_integrator(),
 					motor_out[RIGHT],
 					motor_out[LEFT],
 					motor_out[FRONT],
@@ -390,9 +400,15 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			
 			// We are using the IMU
 			// ---------------------
-			Serial.printf_P(PSTR("A: %d,%d,%d\tG: %d,%d,%d\t"), (int)(accels.x*100), (int)(accels.y*100), (int)(accels.z*100),(int)(gyros.x*100), (int)(gyros.y*100), (int)(gyros.z*100));
+			Serial.printf_P(PSTR("A: %4.4f, %4.4f, %4.4f\t"
+								 "G: %4.4f, %4.4f, %4.4f\t"),
+								accels.x, accels.y, accels.z,
+								gyros.x,  gyros.y,  gyros.z);
 
-			Serial.printf_P(PSTR("r: %d\tp: %d\t y: %d\n"), ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\n"),
+								roll_sensor,
+								pitch_sensor,
+								yaw_sensor);
 		}
 		
 		if(Serial.available() > 0){
