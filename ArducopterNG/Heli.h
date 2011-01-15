@@ -42,7 +42,7 @@ TODO:
 #include <EEPROM.h>   // added by Randy
 #include <AP_ADC.h>                                   // ArduPilot Mega Analog to Digital Converter Library
 #include <APM_RC.h>                                    // ArduPilot Mega RC Library
-#include <APM_Compass.h>                               // ArduPilot Mega Compass Library
+#include <AP_Compass.h>                               // ArduPilot Mega Compass Library
 #include <DataFlash.h>                                 // ArduPilot Mega DataFlash Library.
 #include "../AP_Math/AP_Math.h"
 
@@ -156,9 +156,9 @@ int roll_control_switch = 1;
 int pitch_control_switch = 1;
 int yaw_control_switch = 1;
 int collective_control_switch = 0;
-int position_control_switch = 0;
-int position_control_engaged = 0;  // we don't have enough buttons so we will turn this on and off with roll + pitch positions
-int position_control_safety = 0;   // if 0 then safety is off.  if 1 then safety is on and position control will not operate
+//int position_control_switch = 0;
+//int position_control_engaged = 0;  // we don't have enough buttons so we will turn this on and off with roll + pitch positions
+//int position_control_safety = 0;   // if 0 then safety is off.  if 1 then safety is on and position control will not operate
 
 /// for sending values out to servos
 Vector3f ccpmPercents_out;            // Array of ccpm input values, converted to percents

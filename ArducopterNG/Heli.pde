@@ -164,8 +164,8 @@ void heli_setup()
   roll_control_switch = !SW_DIP1;
   pitch_control_switch = !SW_DIP2;
   yaw_control_switch = !SW_DIP3; 
-  collective_control_switch = 0; //!SW_DIP4;
-  position_control_switch = !SW_DIP4;  // switch 4 controls whether we will do GPS hold or not
+  collective_control_switch = !SW_DIP4;
+  //position_control_switch = !SW_DIP4;  // switch 4 controls whether we will do GPS hold or not
 }
 
 /*****************************************************************************************************/
@@ -231,7 +231,7 @@ void heli_read_radio()
     // get the yaw (not coded)
     yawPercent = (yawSlope * APM_RC.InputCh(CHANNEL_YAW) + yawIntercept) - trim_yaw;
     
-    // we add 1500 to make it fit in with rest of arduCopter code..
+    // put decoded values into the global variables
     ch_roll = rollPitchCollPercent.x;
     ch_pitch = rollPitchCollPercent.y;
     ch_collective = rollPitchCollPercent.z;
@@ -242,42 +242,32 @@ void heli_read_radio()
     else
         ch_yaw = yawPercent;
     
+    // get the aux channel (for tuning on/off autopilot)
+    ch_aux = APM_RC.InputCh(CH_5) * ch_aux_slope + ch_aux_offset;        
+    
     // convert to absolute angles
     command_rx_roll = ch_roll / HELI_STICK_TO_ANGLE_FACTOR;        // Convert stick position to absolute angles
     command_rx_pitch = ch_pitch / HELI_STICK_TO_ANGLE_FACTOR;      // Convert stick position to absolute angles
     command_rx_collective = ch_collective;
     command_rx_yaw = ch_yaw / HELI_YAW_STICK_TO_ANGLE_FACTOR;      // Convert stick position to turn rate
     
+    // for use by non-heli parts of code
+    ch_throttle = 1000 + (ch_collective * 10);
+    
     // hardcode flight mode
     flightMode = STABLE_MODE;
     
-    // if position_control could be active
-    if( position_control_switch == 1 && position_control_safety == 0 ) {
-      
-        //if roll or pitch ever > 40% or < -40% turn off autopilot
-        if( AP_mode == AP_AUTOMATIC_MODE && (fabs(ch_roll) >= 40 || fabs(ch_pitch) >= 40 )) {
-            position_control_safety = 1;
-            target_position = 0; // force it to reset to current position
-            Serial.println("autopilot OFF!  safety!");
-        }
-            
-        // switch on auto pilot if elevator goes over 50%
-        if( AP_mode == AP_NORMAL_MODE && ch_collective >= 50 ) {
-            AP_mode = AP_AUTOMATIC_MODE;   
-            Serial.println("autopilot on!");
-        }
-        
-        // switch off auto pilot if elevator goes below 20%
-        if( AP_mode == AP_AUTOMATIC_MODE && ch_collective <= 20 ) {
-            AP_mode = AP_NORMAL_MODE;
-            target_position = 0; // force it to reset to current position
-            Serial.println("autopilot off!");
-        }        
-    }else{
-        AP_mode = AP_NORMAL_MODE;
-    }
-    // turn off AP_AUTOMATIC_MODE if roll or pitch is > 40% or < -40%
-    
+    // Autopilot mode (only works on Stable mode)
+    if (flightMode == STABLE_MODE)
+    {
+      if(ch_aux < 1300) {
+        AP_mode = AP_AUTOMATIC_MODE;   // Automatic mode : GPS position hold mode + altitude hold
+        //SerPrln("autopilot ON!");
+      }else{ 
+        AP_mode = AP_NORMAL_MODE;   // Normal mode
+        //SerPrln("autopilot OFF!");
+      }
+    }    
 }
 
 /**********************************************************************/
@@ -334,7 +324,7 @@ void heli_attitude_control(int command_roll, int command_pitch, int command_coll
     heli_previousTimeMicros = currentTimeMicros;
     
     // always pass through collective command
-    control_collective = command_rx_collective;
+    control_collective = command_collective;
 
     // ROLL CONTROL -- ONE PID
     if( roll_control_switch ) 
@@ -428,6 +418,11 @@ void heli_attitude_control(int command_roll, int command_pitch, int command_coll
         // straight pass through
         control_yaw = ch_yaw;
     }
+    
+    Log_Write_PID(7,KP_QUAD_ROLL*err_roll,roll_I,roll_D,control_roll);
+    Log_Write_PID(8,KP_QUAD_PITCH*err_pitch,pitch_I,pitch_D,control_pitch);
+    Log_Write_PID(9,Kp_RateYaw*err_heading,heading_I,0,control_yaw_rate);
+    Log_Write_PID(10,KP_QUAD_YAW*err_yaw,yaw_I,yaw_D,control_yaw);
 }
 
 #endif  // #if AIRFRAME == HELI
