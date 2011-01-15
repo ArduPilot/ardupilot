@@ -50,10 +50,11 @@ ISR(TIMER4_CAPT_vect)
     PPM_Counter=0;
   else
     {
-    PPM_Counter &= 0x07;  // For safety only (limit PPM_Counter to 7)
-    PWM_RAW[PPM_Counter++]=Pulse_Width;  //Saving pulse. 
-    if (PPM_Counter >= NUM_CHANNELS)
-      radio_status = 1;
+      if (PPM_Counter < (sizeof(PWM_RAW) / sizeof(PWM_RAW[0]))) {
+	PWM_RAW[PPM_Counter++]=Pulse_Width;  //Saving pulse. 
+	if (PPM_Counter >= NUM_CHANNELS)
+	  radio_status = 1;
+      }
     }
   ICR4_old = Pulse;
 }
