@@ -32,6 +32,10 @@ public:
 	void 		print_accel_offsets(void);					///< XXX debug hack
 	void 		print_gyro_offsets(void);					///< XXX debug hack
 
+	int			ax()		{ return _adc_offset[3]; }
+	int			ay()		{ return _adc_offset[4]; }
+	int			az()		{ return _adc_offset[5]; }
+
 	void		ax(const int v)		{ _adc_offset[3] = v; }
 	void		ay(const int v)		{ _adc_offset[4] = v; }
 	void		az(const int v)		{ _adc_offset[5] = v; }
