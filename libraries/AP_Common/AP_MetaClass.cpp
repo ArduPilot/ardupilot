@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // This is free software; you can redistribute it and/or modify it under
 // the terms of the GNU Lesser General Public License as published by the
@@ -14,25 +14,23 @@
 #include "AP_MetaClass.h"
 
 // Default ctor, currently does nothing
-AP_MetaClass::AP_MetaClass(void)
+AP_Meta_class::AP_Meta_class(void)
 {
 }
 
 // Default dtor, currently does nothing but must be defined in order to ensure that
 // subclasses not overloading the default virtual dtor still have something in their
 // vtable.
-AP_MetaClass::~AP_MetaClass()
+AP_Meta_class::~AP_Meta_class()
 {
 }
 
-size_t
-AP_MetaClass::serialize(void *buf, size_t bufSize) const
+size_t AP_Meta_class::serialize(void *buf, size_t bufSize) const
 {
-	return 0;
+    return 0;
 }
 
-size_t
-AP_MetaClass::unserialize(void *buf, size_t bufSize)
+size_t AP_Meta_class::unserialize(void *buf, size_t bufSize)
 {
-	return 0;
+    return 0;
 }

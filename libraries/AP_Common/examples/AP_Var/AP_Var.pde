@@ -1,5 +1,5 @@
 //
-// Unit tests for the AP_MetaClass and AP_Var classes.
+// Unit tests for the AP_Meta_class and AP_Var classes.
 //
 
 #include <FastSerial.h>
@@ -17,33 +17,33 @@ FastSerialPort(Serial, 0);
 class Test
 {
 public:
-	Test(const char *name) : _name(name), _fail(false) {}
+    Test(const char *name) : _name(name), _fail(false) {}
 
-	~Test()	{
-		Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
-		if (_fail) {
-			_failed++;
-		} else {
-			_passed++;
-		}
-	}
+    ~Test()	{
+        Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
+        if (_fail) {
+            _failed++;
+        } else {
+            _passed++;
+        }
+    }
 
-	void	require(bool expr, const char *source) {
-		if (!expr) {
-			_fail = true;
-			Serial.printf("%s: fail: %s\n", _name, source);
-		}
-	}
+    void	require(bool expr, const char *source) {
+        if (!expr) {
+            _fail = true;
+            Serial.printf("%s: fail: %s\n", _name, source);
+        }
+    }
 
-	static void	report() {
-		Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
-	}
+    static void	report() {
+        Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
+    }
 
 private:
-	const char	*_name;
-	bool		_fail;
-	static int	_passed;
-	static int	_failed;
+    const char	*_name;
+    bool		_fail;
+    static int	_passed;
+    static int	_failed;
 };
 
 int Test::_passed = 0;
@@ -58,247 +58,247 @@ int Test::_failed = 0;
 void
 setup(void)
 {
-	Serial.begin(38400);
+    Serial.begin(38400);
 
-	// MetaClass: test type ID
-	{
-		TEST(meta_type_id);
+    // MetaClass: test type ID
+    {
+        TEST(meta_type_id);
 
-		AP_Float 	f1;
-		AP_Float	f2;
-		AP_Int8		i1;
+        AP_Float 	f1;
+        AP_Float	f2;
+        AP_Int8		i1;
 
-		uint16_t	m1 = f1.meta_type_id();
-		uint16_t	m2 = f2.meta_type_id();
-		uint16_t	m3 = i1.meta_type_id();
+        uint16_t	m1 = f1.meta_type_id();
+        uint16_t	m2 = f2.meta_type_id();
+        uint16_t	m3 = i1.meta_type_id();
 
-		REQUIRE(m1 != 0);
-		REQUIRE(m1 == m2);
-		REQUIRE(m1 != m3);
-		REQUIRE( AP_MetaClass::meta_type_equivalent(&f1, &f2));
-		REQUIRE(!AP_MetaClass::meta_type_equivalent(&f1, &i1));
-	}
+        REQUIRE(m1 != 0);
+        REQUIRE(m1 == m2);
+        REQUIRE(m1 != m3);
+        REQUIRE(AP_Meta_class::meta_type_equivalent(&f1, &f2));
+        REQUIRE(!AP_Meta_class::meta_type_equivalent(&f1, &i1));
+    }
 
-	// MetaClass: test external handles
-	{
-		TEST(meta_handle);
+    // MetaClass: test external handles
+    {
+        TEST(meta_handle);
 
-		AP_Float	f;
-		AP_MetaClass::AP_MetaHandle	h = f.meta_get_handle();
+        AP_Float	f;
+        AP_Meta_class::Meta_handle	h = f.meta_get_handle();
 
-		REQUIRE(0 != h);
-		REQUIRE(NULL != AP_MetaClass::meta_validate_handle(h));
-		REQUIRE(NULL == AP_MetaClass::meta_validate_handle(h + 1));
-	}
+        REQUIRE(0 != h);
+        REQUIRE(NULL != AP_Meta_class::meta_validate_handle(h));
+        REQUIRE(NULL == AP_Meta_class::meta_validate_handle(h + 1));
+    }
 
-	// MetaClass: test meta_cast
-	{
-		TEST(meta_cast);
+    // MetaClass: test meta_cast
+    {
+        TEST(meta_cast);
 
-		AP_Float	f;
+        AP_Float	f;
 
-		REQUIRE(NULL != AP_MetaClass::meta_cast<AP_Float>(&f));
-		REQUIRE(NULL == AP_MetaClass::meta_cast<AP_Int8>(&f));
-	}
+        REQUIRE(NULL != AP_Meta_class::meta_cast<AP_Float>(&f));
+        REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Int8>(&f));
+    }
 
-	// MetaClass: ... insert tests here ...
+    // MetaClass: ... insert tests here ...
 
-	// AP_Var: constants
-	{
-		TEST(var_constants);
+    // AP_Var: constants
+    {
+        TEST(var_constants);
 
-		REQUIRE(AP_FloatZero == 0);
-		REQUIRE(AP_FloatUnity == 1.0);
-		REQUIRE(AP_FloatNegativeUnity = -1.0);
-	}
+        REQUIRE(AP_Float_zero == 0);
+        REQUIRE(AP_Float_unity == 1.0);
+        REQUIRE(AP_Float_negative_unity = -1.0);
+    }
 
-	// AP_Var: set, get, assignment
-	{
-		TEST(var_set_get);
+    // AP_Var: set, get, assignment
+    {
+        TEST(var_set_get);
 
-		AP_Float	f(1.0);
+        AP_Float	f(1.0);
 
-		REQUIRE(f == 1.0);
-		REQUIRE(f.get() == 1.0);
+        REQUIRE(f == 1.0);
+        REQUIRE(f.get() == 1.0);
 
-		f.set(10.0);
-		REQUIRE(f == 10.0);
-		REQUIRE(f.get() == 10.0);
-	}
+        f.set(10.0);
+        REQUIRE(f == 10.0);
+        REQUIRE(f.get() == 10.0);
+    }
 
-	// AP_Var: default value
-	{
-		TEST(var_default_value);
+    // AP_Var: default value
+    {
+        TEST(var_default_value);
 
-		AP_Float	f(10.0);
+        AP_Float	f(10.0);
 
-		REQUIRE(f == 10.0);
-		f = 0;
-		REQUIRE(f == 0);
-		f.set_default();
-		REQUIRE(f == 10.0);
-	}
+        REQUIRE(f == 10.0);
+        f = 0;
+        REQUIRE(f == 0);
+        f.set_default();
+        REQUIRE(f == 10.0);
+    }
 
-	// AP_Var: cast to type
-	{
-		TEST(var_cast_to_type);
+    // AP_Var: cast to type
+    {
+        TEST(var_cast_to_type);
 
-		AP_Float	f(1.0);
+        AP_Float	f(1.0);
 
-		f *= 2.0;
-		REQUIRE(f == 2.0);
-		f /= 4;
-		REQUIRE(f == 0.5);
-		f += f;
-		REQUIRE(f == 1.0);
-	}
+        f *= 2.0;
+        REQUIRE(f == 2.0);
+        f /= 4;
+        REQUIRE(f == 0.5);
+        f += f;
+        REQUIRE(f == 1.0);
+    }
 
-	// AP_Var: equality
-	{
-		TEST(var_equality);
+    // AP_Var: equality
+    {
+        TEST(var_equality);
 
-		AP_Float	f1(1.0);
-		AP_Float	f2(1.0);
-		AP_Float	f3(2.0);
+        AP_Float	f1(1.0);
+        AP_Float	f2(1.0);
+        AP_Float	f3(2.0);
 
-		REQUIRE(f1 == f2);
-		REQUIRE(f2 != f3);
-	}
+        REQUIRE(f1 == f2);
+        REQUIRE(f2 != f3);
+    }
 
-	// AP_Var: naming
-	{
-		TEST(var_naming);
+    // AP_Var: naming
+    {
+        TEST(var_naming);
 
-		AP_Float	f(0, AP_Var::AP_VarNoAddress, PSTR("test"));
-		char		name_buffer[16];
+        AP_Float	f(0, AP_Var::k_no_address, PSTR("test"));
+        char		name_buffer[16];
 
-		f.copy_name(name_buffer, sizeof(name_buffer));
-		REQUIRE(!strcmp(name_buffer, "test"));
-	}
+        f.copy_name(name_buffer, sizeof(name_buffer));
+        REQUIRE(!strcmp(name_buffer, "test"));
+    }
 
-	// AP_Var: serialize
-	{
-		TEST(var_serialize);
+    // AP_Var: serialize
+    {
+        TEST(var_serialize);
 
-		float		b = 0;
-		AP_Float	f(10.0);
-		size_t		s;
+        float		b = 0;
+        AP_Float	f(10.0);
+        size_t		s;
 
-		s = f.serialize(&b, sizeof(b));
-		REQUIRE(s == sizeof(b));
-		REQUIRE(b == 10.0);
-	}
+        s = f.serialize(&b, sizeof(b));
+        REQUIRE(s == sizeof(b));
+        REQUIRE(b == 10.0);
+    }
 
-	// AP_Var: unserialize
-	{
-		TEST(var_unserialize);
+    // AP_Var: unserialize
+    {
+        TEST(var_unserialize);
 
-		float		b = 10;
-		AP_Float	f(0);
-		size_t		s;
+        float		b = 10;
+        AP_Float	f(0);
+        size_t		s;
 
-		s = f.unserialize(&b, sizeof(b));
-		REQUIRE(s == sizeof(b));
-		REQUIRE(f == 10);
-	}
+        s = f.unserialize(&b, sizeof(b));
+        REQUIRE(s == sizeof(b));
+        REQUIRE(f == 10);
+    }
 
-	// AP_Var: load and save
-	{
-		TEST(var_load_save);
+    // AP_Var: load and save
+    {
+        TEST(var_load_save);
 
-		AP_Float	f1(10, 4);
-		AP_Float	f2(0, 4);
+        AP_Float	f1(10, 4);
+        AP_Float	f2(0, 4);
 
-		f2.save();
-		f2 = 1.0;
-		f2.load();
-		REQUIRE(f2 == 0);
+        f2.save();
+        f2 = 1.0;
+        f2.load();
+        REQUIRE(f2 == 0);
 
-		f1.save();
-		f2.load();
-		REQUIRE(f2 == 10);
-	}
+        f1.save();
+        f2.load();
+        REQUIRE(f2 == 10);
+    }
 
-	// AP_Var: enumeration
-	// note that this test presumes the singly-linked list implementation of the list
-	{
-		TEST(var_enumeration);
+    // AP_Var: enumeration
+    // note that this test presumes the singly-linked list implementation of the list
+    {
+        TEST(var_enumeration);
 
-		AP_Var	*v = AP_Var::lookup(0);
+        AP_Var	*v = AP_Var::lookup(0);
 
-		// test basic enumeration
-		AP_Float f1(0, AP_Var::AP_VarNoAddress, PSTR("test1"));
-		REQUIRE(AP_Var::lookup(0) == &f1);
-		REQUIRE(AP_Var::lookup(1) == v);
+        // test basic enumeration
+        AP_Float f1(0, AP_Var::k_no_address, PSTR("test1"));
+        REQUIRE(AP_Var::lookup(0) == &f1);
+        REQUIRE(AP_Var::lookup(1) == v);
 
-		// test that new entries arrive in order
-		{
-			AP_Float f2(0, AP_Var::AP_VarNoAddress, PSTR("test2"));
-			REQUIRE(AP_Var::lookup(0) == &f2);
-			REQUIRE(AP_Var::lookup(1) == &f1);
-			REQUIRE(AP_Var::lookup(2) == v);
+        // test that new entries arrive in order
+        {
+            AP_Float f2(0, AP_Var::k_no_address, PSTR("test2"));
+            REQUIRE(AP_Var::lookup(0) == &f2);
+            REQUIRE(AP_Var::lookup(1) == &f1);
+            REQUIRE(AP_Var::lookup(2) == v);
 
-			{
-				AP_Float f3(0, AP_Var::AP_VarNoAddress, PSTR("test3"));
-				REQUIRE(AP_Var::lookup(0) == &f3);
-				REQUIRE(AP_Var::lookup(1) == &f2);
-				REQUIRE(AP_Var::lookup(2) == &f1);
-				REQUIRE(AP_Var::lookup(3) == v);
-			}
-		}
+            {
+                AP_Float f3(0, AP_Var::k_no_address, PSTR("test3"));
+                REQUIRE(AP_Var::lookup(0) == &f3);
+                REQUIRE(AP_Var::lookup(1) == &f2);
+                REQUIRE(AP_Var::lookup(2) == &f1);
+                REQUIRE(AP_Var::lookup(3) == v);
+            }
+        }
 
-		// test that destruction removes from the list
-		REQUIRE(AP_Var::lookup(0) == &f1);
-		REQUIRE(AP_Var::lookup(1) == v);
-	}
+        // test that destruction removes from the list
+        REQUIRE(AP_Var::lookup(0) == &f1);
+        REQUIRE(AP_Var::lookup(1) == v);
+    }
 
-	// AP_Var: scope names
-	{
-		TEST(var_scope_names);
+    // AP_Var: scope names
+    {
+        TEST(var_scope_names);
 
-		AP_VarScope		scope(PSTR("scope_"));
-		AP_Float		f(1.0, AP_Var::AP_VarNoAddress, PSTR("test"), &scope);
-		char			name_buffer[16];
+        AP_Var_scope	scope(PSTR("scope_"));
+        AP_Float		f(1.0, AP_Var::k_no_address, PSTR("test"), &scope);
+        char			name_buffer[16];
 
-		f.copy_name(name_buffer, sizeof(name_buffer));
-		REQUIRE(!strcmp(name_buffer, "scope_test"));
-	}
+        f.copy_name(name_buffer, sizeof(name_buffer));
+        REQUIRE(!strcmp(name_buffer, "scope_test"));
+    }
 
-	// AP_Var: scope address offsets
-	{
-		TEST(var_scope_addressing);
+    // AP_Var: scope address offsets
+    {
+        TEST(var_scope_addressing);
 
-		AP_VarScope	scope(PSTR("scope"), 4);
-		AP_Float	f1(10.0, 8);
-		AP_Float	f2(1.0, 4, PSTR("var"), &scope);
+        AP_Var_scope	scope(PSTR("scope"), 4);
+        AP_Float    	f1(10.0, 8);
+        AP_Float    	f2(1.0, 4, PSTR("var"), &scope);
 
-		f1.save();
-		f1.load();
-		REQUIRE(f1 == 10);
+        f1.save();
+        f1.load();
+        REQUIRE(f1 == 10);
 
-		f2.save();
-		f2.load();
-		REQUIRE(f2 == 1);
+        f2.save();
+        f2.load();
+        REQUIRE(f2 == 1);
 
-		f1.load();
-		REQUIRE(f1 == 1);
-	}
+        f1.load();
+        REQUIRE(f1 == 1);
+    }
 
-	// AP_Var: derived types
-	{
-		TEST(var_derived);
+    // AP_Var: derived types
+    {
+        TEST(var_derived);
 
-		AP_Float16	f(10.0, 20);
+        AP_Float16	f(10.0, 20);
 
-		f.save();
-		f = 0;
-		REQUIRE(f == 0);
-		f.load();
-		REQUIRE(f = 10.0);
-	}
+        f.save();
+        f = 0;
+        REQUIRE(f == 0);
+        f.load();
+        REQUIRE(f = 10.0);
+    }
 
 
-	Test::report();
+    Test::report();
 }
 
 void
