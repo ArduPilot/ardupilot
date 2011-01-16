@@ -61,14 +61,15 @@ unsigned long trim_timer;
 void read_trim_switch()
 {
 	// switch is engaged
-	if (rc_7.radio_in > 1500){
+	if (rc_7.control_in > 500){
 		if(trim_flag == false){
 			// called once
 			trim_timer = millis();
 		}
+		
 		trim_flag = true;
-		//trim_accel();
-		//Serial.println("trim_accels");
+		trim_accel();
+		
 		
 	}else{ // switch is disengaged
 	
@@ -76,34 +77,38 @@ void read_trim_switch()
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
 
-				///*
-				if(rc_3.control_in == 0){
-					imu.init_accel();
-					imu.print_accel_offsets();
-				}
-				/*
-				if(rc_3.control_in == 0){
-					imu.zero_accel();
-				}else{
-					Serial.printf("r: %d, p: %d\n", rc_1.control_in, rc_2.control_in);
-					// set new accel offset values
-					imu.ax(((long)rc_1.control_in * -15) / 100);
-					imu.ay(((long)rc_2.control_in * -15) / 100);
-					
-					imu.print_accel_offsets();
-				}*/
-
+				// not being used
+				
 			} else {
+			
 				// set the throttle nominal
 				if(rc_3.control_in > 50){
 					throttle_cruise = rc_3.control_in;
-					Serial.print("tnom ");
-					Serial.println(throttle_cruise, DEC);
+					//Serial.print("tnom ");
+					//Serial.println(throttle_cruise, DEC);
 					save_EEPROM_throttle_cruise();
 				}
-					
 			}
 			trim_flag = false;
 		}
 	}
 }
+
+
+void trim_accel()
+{
+	if(rc_1.control_in > 0){
+		imu.ay(imu.ay() + 1);
+	}else if (rc_1.control_in < 0){
+		imu.ay(imu.ay() - 1);
+	}
+
+	if(rc_2.control_in > 0){
+		imu.ax(imu.ax() + 1);
+	}else if (rc_2.control_in < 0){
+		imu.ax(imu.ax() - 1);
+	}
+
+	Serial.printf("r:%ld p:%ld ax:%d, ay:%d, az:%d\n", dcm.roll_sensor, dcm.pitch_sensor, imu.ax(), imu.ay(), imu.az());
+}
+
