@@ -27,10 +27,10 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 	if (_kd && (dt > 0)) {
 		float derivative = (error - _last_error) / delta_time;
 
-		// discrete low pass filter, cuts out the 
+		// discrete low pass filter, cuts out the
 		// high frequency noise that can drive the controller crazy
 		float RC = 1/(2*M_PI*_fCut);
-		derivative = _last_derivative + 
+		derivative = _last_derivative +
 			(delta_time / (RC + delta_time)) * (derivative - _last_derivative);
 
 		// update state
@@ -43,10 +43,10 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 
 	// scale the P and D components
 	output *= scaler;
-	
+
 	// Compute integral component if time has elapsed
 	if (_ki && (dt > 0)) {
-		_integrator 		+= (error * _ki) * scaler * delta_time; 
+		_integrator 		+= (error * _ki) * scaler * delta_time;
 		if (_integrator < -_imax) {
 			_integrator = -_imax;
 		} else if (_integrator > _imax) {
@@ -54,14 +54,14 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 		}
 		output 				+= _integrator;
 	}
-	
+
 	return output;
 }
 
 void
 PID::imax(float v)
 {
-	_imax = fabs(v); 
+	_imax = fabs(v);
 }
 
 void
@@ -77,19 +77,19 @@ PID::load_gains()
 			_ki 	= (float)(eeprom_read_word((uint16_t *)	(_address + 2))) / 1000.0;
 			_kd 	= (float)(eeprom_read_word((uint16_t *)	(_address + 4))) / 1000.0;
 			_imax 	= eeprom_read_word((uint16_t *)	(_address + 6)) * 100;
-			
+
 			//_kp 	= (float)_ee.read_int(_address) / 1000.0;
 			//_ki 	= (float)_ee.read_int(_address + 2) / 1000.0;
 			//_kd 	= (float)_ee.read_int(_address + 4) / 1000.0;
 			//_imax 	= (float)_ee.read_int(_address + 6) * 100;
 
 			break;
-			
+
 		case STORE_EEPROM_FLOAT:
-			//eeprom_read_block((void*)&_kp,(const void*)(_address),sizeof(_kp));
-			//eeprom_read_block((void*)&_ki,(const void*)(_address+4),sizeof(_ki));
-			//eeprom_read_block((void*)&_kd,(const void*)(_address+8),sizeof(_kd));
-			//eeprom_read_block((void*)&_imax,(const void*)(_address+12),sizeof(_imax));
+			eeprom_read_block((void*)&_kp,(const void*)(_address),sizeof(_kp));
+			eeprom_read_block((void*)&_ki,(const void*)(_address+4),sizeof(_ki));
+			eeprom_read_block((void*)&_kd,(const void*)(_address+8),sizeof(_kd));
+			eeprom_read_block((void*)&_imax,(const void*)(_address+12),sizeof(_imax));
 			break;
 	}
 }
@@ -115,10 +115,10 @@ PID::save_gains()
 			*/
 			break;
 		case STORE_EEPROM_FLOAT:
-			//eeprom_write_block((const void *)&_kp,(void *)(_address),sizeof(_kp));
-			//eeprom_write_block((const void *)&_ki,(void *)(_address+4),sizeof(_ki));
-			//eeprom_write_block((const void *)&_kd,(void *)(_address+8),sizeof(_kd));
-			//eeprom_write_block((const void *)&_imax,(void *)(_address+12),sizeof(_imax));
+			eeprom_write_block((const void *)&_kp,(void *)(_address),sizeof(_kp));
+			eeprom_write_block((const void *)&_ki,(void *)(_address+4),sizeof(_ki));
+			eeprom_write_block((const void *)&_kd,(void *)(_address+8),sizeof(_kd));
+			eeprom_write_block((const void *)&_imax,(void *)(_address+12),sizeof(_imax));
 			break;
 	}
 }
