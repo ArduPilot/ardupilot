@@ -171,19 +171,21 @@
 #define LOG_PERFORMANCE_MSG		0X06
 #define LOG_RAW_MSG				0x07
 #define LOG_CMD_MSG				0x08
-#define LOG_STARTUP_MSG			0x09
+#define LOG_CURRENT_MSG 		0x09
+#define LOG_STARTUP_MSG 		0x0A
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
 
-#define MASK_LOG_ATTITUDE_FAST 0
-#define MASK_LOG_ATTITUDE_MED 2
-#define MASK_LOG_GPS 4
-#define MASK_LOG_PM 8
-#define MASK_LOG_CTUN 16
-#define MASK_LOG_NTUN 32
-#define MASK_LOG_MODE 64
-#define MASK_LOG_RAW 128
-#define MASK_LOG_CMD 256
+#define MASK_LOG_ATTITUDE_FAST 	(1<<0)
+#define MASK_LOG_ATTITUDE_MED 	(1<<1)
+#define MASK_LOG_GPS 			(1<<2)
+#define MASK_LOG_PM 			(1<<3)
+#define MASK_LOG_CTUN 			(1<<4)
+#define MASK_LOG_NTUN			(1<<5)
+#define MASK_LOG_MODE			(1<<6)
+#define MASK_LOG_RAW			(1<<7)
+#define MASK_LOG_CMD			(1<<8)
+#define MASK_LOG_CUR			(1<<9)
 
 // Waypoint Modes
 // ----------------
@@ -205,12 +207,19 @@
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 
+#define CURRENT_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*CURR_VOLT_DIV_RATIO
+#define CURRENT_AMPS(x) (x*(INPUT_VOLTAGE/1024.0))*CURR_AMP_DIV_RATIO
+
 #define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
 #define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
 #define BATTERY_PIN2 1
 #define BATTERY_PIN3 2
 #define BATTERY_PIN4 3
+#define CURRENT_PIN1 4 // These are the pins for current sensor: voltage
+#define CURRENT_PIN2 5 // and current
+
 #define RELAY_PIN 47
+
 
 // sonar
 #define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
@@ -301,6 +310,7 @@
 #define EE_GND_TEMP 0x11A
 #define EE_GND_ALT 0x11C
 #define EE_AP_OFFSET 0x11E
+#define EE_CURRENT_SENSOR 0x127
 
 // log
 #define EE_LAST_LOG_PAGE 0xE00
@@ -317,4 +327,5 @@
 #define LOGBIT_MODE				(1<<6)
 #define LOGBIT_RAW				(1<<7)
 #define LOGBIT_CMD				(1<<8)
+#define LOGBIT_CURRENT			(1<<9)
 

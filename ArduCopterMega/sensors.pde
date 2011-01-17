@@ -38,18 +38,25 @@ void read_battery(void)
 	battery_voltage2 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN2)) * .1 + battery_voltage2 * .9;
 	battery_voltage3 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN3)) * .1 + battery_voltage3 * .9;
 	battery_voltage4 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN4)) * .1 + battery_voltage4 * .9;
-
+	
 	#if BATTERY_TYPE == 0
-		 if(battery_voltage3 < LOW_VOLTAGE)
+		if(battery_voltage3 < LOW_VOLTAGE)
 			low_battery_event();
 		battery_voltage = battery_voltage3; // set total battery voltage, for telemetry stream
 	#endif
-
+	
 	#if BATTERY_TYPE == 1
 		if(battery_voltage4 < LOW_VOLTAGE)
 			low_battery_event();
 		battery_voltage = battery_voltage4; // set total battery voltage, for telemetry stream
-	#endif	
+	#endif
 }
 #endif
 
+
+
+void read_current(void)
+{
+	current_voltage 	= CURRENT_VOLTAGE(analogRead(CURRENT_PIN1)) * .1 + battery_voltage1 * .9; //reads power sensor voltage pin
+	current_amps 		= CURRENT_AMPS(analogRead(CURRENT_PIN2)) * .1 + battery_voltage2 * .9; //reads power sensor current pin
+}

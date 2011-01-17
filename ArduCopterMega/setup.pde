@@ -80,6 +80,16 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 		
 	
 	print_blanks(2);
+	read_EEPROM_current_sensor();
+	Serial.printf_P(PSTR("Current Sensor "));
+	if(current_sensor){
+		Serial.printf_P(PSTR("enabled\n"));
+	} else {
+		Serial.printf_P(PSTR("disabled\n"));
+	}
+	
+	
+	print_blanks(2);
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
@@ -240,7 +250,8 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 		LOGBIT(NTUN)			|
 		LOGBIT(MODE)			|
 		LOGBIT(RAW)				|
-		LOGBIT(CMD);
+		LOGBIT(CMD)				|
+		LOGBIT(CURRENT);
 	#undef LOGBIT
 	save_EEPROM_configs();
 	print_done();
@@ -297,7 +308,8 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 	rc_6.radio_trim = 1500;
 	rc_7.radio_trim = 1500;
 	rc_8.radio_trim = 1500;
-			
+
+
 	Serial.printf_P(PSTR("\nMove all controls to each extreme. Hit Enter to save: "));
 	while(1){
 		
@@ -386,7 +398,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 				Serial.println("2");
 			}
 
-		}else if(frame_type == PLUS_FRAME){
+		}else if(frame_type == X_FRAME){
 
 			// lower right
 			if((rc_1.control_in > 0) 		&& (rc_2.control_in > 0)){
