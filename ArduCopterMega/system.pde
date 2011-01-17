@@ -234,7 +234,7 @@ void startup_ground(void)
 
 	// read the radio to set trims
 	// ---------------------------
-	trim_yaw();
+	trim_radio();
 
 	// Warm up and read Gyro offsets
 	// -----------------------------

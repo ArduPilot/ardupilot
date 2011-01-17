@@ -69,6 +69,7 @@ print_log_menu(void)
 		PLOG(MODE);
 		PLOG(RAW);
 		PLOG(CMD);
+		PLOG(CURRENT);
 #undef PLOG
 	}
 	Serial.println();
@@ -165,6 +166,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(MODE);
 		TARG(RAW);
 		TARG(CMD);
+		TARG(CURRENT);
 #undef TARG
 	}
 
@@ -336,6 +338,26 @@ void Log_Write_Raw()
 	DataFlash.WriteLong((long)accel.z);
 	
 	DataFlash.WriteByte(END_BYTE);
+}
+
+void Log_Write_Current()
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_CURRENT_MSG);
+	DataFlash.WriteLong((long)(current_voltage * 1000.0));
+	DataFlash.WriteLong((long)(current_amps * 1000.0));
+	DataFlash.WriteByte(END_BYTE);
+}
+// Read a Current packet
+void Log_Read_Current()
+{
+	float logvoltage, logcurrent;
+	Serial.print("CURR:");
+	Serial.print((float)DataFlash.ReadLong() / 1000.f);
+	Serial.print(comma);
+	Serial.print((float)DataFlash.ReadLong() / 1000.f);
+	Serial.println();
 }
 
 // Read an control tuning packet

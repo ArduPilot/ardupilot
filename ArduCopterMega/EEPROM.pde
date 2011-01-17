@@ -203,6 +203,18 @@ void read_EEPROM_mag_declination(void)
 
 /********************************************************************************/
 
+void save_EEPROM_current_sensor(void)
+{
+	eeprom_write_byte((uint8_t *)	EE_CURRENT_SENSOR, 	current_sensor);
+}
+
+void read_EEPROM_current_sensor(void)
+{
+	current_sensor	= eeprom_read_byte((uint8_t *) EE_CURRENT_SENSOR);
+}
+
+/********************************************************************************/
+
 void save_EEPROM_mag_offset(void)
 {
 	write_EE_compressed_float(mag_offset_x, 	EE_MAG_X, 2);

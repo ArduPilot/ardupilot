@@ -111,10 +111,16 @@
 # define BATTERY_TYPE			0
 #endif
 #ifndef LOW_VOLTAGE
-# define LOW_VOLTAGE			11.4
+# define LOW_VOLTAGE			9.6
 #endif
 #ifndef VOLT_DIV_RATIO
 # define VOLT_DIV_RATIO			3.0
+#endif
+#ifndef CURR_VOLT_DIV_RATIO
+# define CURR_VOLT_DIV_RATIO	15.7
+#endif
+#ifndef CURR_AMP_DIV_RATIO
+# define CURR_AMP_DIV_RATIO		30.35
 #endif
 
 
@@ -457,6 +463,9 @@
 #endif
 #ifndef LOG_CMD
 # define LOG_CMD				ENABLED
+#endif
+#ifndef LOG_CURRENT
+# define LOG_CURRENT			DISABLED
 #endif
 
 

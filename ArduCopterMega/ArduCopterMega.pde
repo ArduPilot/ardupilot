@@ -223,6 +223,11 @@ float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
 float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 
+float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
+float	current_amps;
+
+boolean	current_sensor		= false;
+
 // Magnetometer variables
 // ----------------------
 int 	magnetom_x;
@@ -556,12 +561,18 @@ void medium_loop()
 			if (log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(GPS.time, current_loc.lat, current_loc.lng, GPS.altitude, current_loc.alt, (long) GPS.ground_speed, GPS.ground_course, GPS.fix, GPS.num_sats);
 
+			if (log_bitmask & MASK_LOG_CUR)
+				Log_Write_Current();
+
 			send_message(MSG_ATTITUDE);		// Sends attitude data
 			break;
 			
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
+			if (current_sensor){
+				read_current();
+			}
 			
 			// shall we trim the copter?
 			// ------------------------

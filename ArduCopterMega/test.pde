@@ -11,6 +11,7 @@ static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
@@ -50,6 +51,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"dcm",			test_dcm},
 	{"omega",		test_omega},
 	{"battery",		test_battery},
+	{"current",		test_current},
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
 	{"airpressure",	test_pressure},
@@ -608,6 +610,29 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 #endif
 	return (0);
 }
+
+static int8_t
+test_current(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	while(1){
+		for (int i = 0; i < 20; i++){
+			delay(20);
+			read_current();
+		}
+		Serial.printf_P(PSTR("Volts:"));
+		Serial.print(battery_voltage1, 2); //power sensor voltage pin
+		Serial.print(" Amps:");
+		Serial.println(battery_voltage2, 2); //power sensor current pin
+		
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+
+
+
 
 
 static int8_t
