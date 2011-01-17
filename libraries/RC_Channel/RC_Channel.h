@@ -17,7 +17,10 @@ class RC_Channel{
 	/// A RC_Channel constructed in this fashion does not support save/restore.
 	///
 	RC_Channel() :
-		_address(0)
+		_address(0),
+		_reverse(1),
+		dead_zone(0),
+		scale_output(1.0)
 	{}
 
 	/// Constructor
@@ -30,7 +33,9 @@ class RC_Channel{
 		_address(address),
 		_high(1),
 		_filter(true),
-		_reverse(1)
+		_reverse(1),
+		dead_zone(0),
+		scale_output(1.0)
 	{}
 
 	// setup min and max radio values in CLI
