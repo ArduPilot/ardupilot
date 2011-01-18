@@ -345,18 +345,20 @@ void Log_Write_Current()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CURRENT_MSG);
-	DataFlash.WriteLong((long)(current_voltage * 1000.0));
-	DataFlash.WriteLong((long)(current_amps * 1000.0));
+	DataFlash.WriteInt((int)(current_voltage 	* 100.0));
+	DataFlash.WriteInt((int)(current_amps 		* 100.0));
+	DataFlash.WriteInt((int)(current_total 		* 10.0));
 	DataFlash.WriteByte(END_BYTE);
 }
 // Read a Current packet
 void Log_Read_Current()
 {
-	float logvoltage, logcurrent;
 	Serial.print("CURR:");
-	Serial.print((float)DataFlash.ReadLong() / 1000.f);
+	Serial.print((float)DataFlash.ReadInt() / 100.f);
 	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong() / 1000.f);
+	Serial.print((float)DataFlash.ReadInt() / 100.f);
+	Serial.print(comma);
+	Serial.print((float)DataFlash.ReadInt() / 10.f);
 	Serial.println();
 }
 
