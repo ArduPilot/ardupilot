@@ -170,9 +170,9 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		// 50 hz
 		if (millis() - fast_loopTimer > 19) {
-			deltaMiliSeconds 	= millis() - fast_loopTimer;
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			fast_loopTimer		= millis();
-			G_Dt 				= (float)deltaMiliSeconds / 1000.f;
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
 
 			if(compass_enabled){
 				medium_loopCounter++;
@@ -236,8 +236,8 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 			
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
 			
 			if(Serial.available() > 0){
 				return (0);
@@ -272,9 +272,9 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		// 50 hz
 		if (millis() - fast_loopTimer > 19) {
-			deltaMiliSeconds 	= millis() - fast_loopTimer;
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			fast_loopTimer		= millis();
-			G_Dt 				= (float)deltaMiliSeconds / 1000.f;
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
 
 
 			if(compass_enabled){
@@ -336,8 +336,8 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 			
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)deltaMiliSeconds, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
 			
 			if(Serial.available() > 0){
 				return (0);
@@ -379,8 +379,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		if (millis() - fast_loopTimer > 19) {
-			deltaMiliSeconds 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)deltaMiliSeconds / 1000.f;		// used by DCM integrator
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 			fast_loopTimer		= millis();
 
 			
@@ -615,15 +615,20 @@ static int8_t
 test_current(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
+	delta_ms_medium_loop = 100;
+	
 	while(1){
-		for (int i = 0; i < 20; i++){
-			delay(20);
-			read_current();
-		}
-		Serial.printf_P(PSTR("Volts:"));
-		Serial.print(battery_voltage1, 2); //power sensor voltage pin
-		Serial.print(" Amps:");
-		Serial.println(battery_voltage2, 2); //power sensor current pin
+		delay(100);
+		read_radio();
+		read_current();
+		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"), current_voltage, current_amps, current_total);
+
+		//if(rc_3.control_in > 0){
+			APM_RC.OutputCh(CH_1, rc_3.radio_in);
+			APM_RC.OutputCh(CH_2, rc_3.radio_in);
+			APM_RC.OutputCh(CH_3, rc_3.radio_in);
+			APM_RC.OutputCh(CH_4, rc_3.radio_in);
+		//}
 		
 		if(Serial.available() > 0){
 			return (0);
@@ -729,8 +734,8 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 	
 	while(1){
 		if (millis()-fast_loopTimer > 9) {
-			deltaMiliSeconds 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)deltaMiliSeconds / 1000.f;		// used by DCM integrator
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 			fast_loopTimer		= millis();
 			
 			

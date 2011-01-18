@@ -215,8 +215,9 @@
 #define BATTERY_PIN2 1
 #define BATTERY_PIN3 2
 #define BATTERY_PIN4 3
-#define CURRENT_PIN1 4 // These are the pins for current sensor: voltage
-#define CURRENT_PIN2 5 // and current
+
+#define VOLTAGE_PIN_0 0 // These are the pins for current sensor: voltage
+#define CURRENT_PIN_1 1 // and current
 
 #define RELAY_PIN 47
 

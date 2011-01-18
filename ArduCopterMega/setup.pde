@@ -713,9 +713,9 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		static float min[3], _max[3], offset[3];
 		if (millis() - fast_loopTimer > 100) {
-			deltaMiliSeconds 	= millis() - fast_loopTimer;
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			fast_loopTimer		= millis();
-			G_Dt 				= (float)deltaMiliSeconds / 1000.f;
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
 
 
 			compass.read();
