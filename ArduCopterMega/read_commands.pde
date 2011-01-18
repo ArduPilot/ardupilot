@@ -89,9 +89,9 @@ void parseCommand(char *buffer)
 				break;
 
 			case 'D':
-				pid_stabilize_roll.kD((float)value / 1000);
-				pid_stabilize_pitch.kD((float)value / 1000);
-				save_EEPROM_PID();
+				//pid_stabilize_roll.kD((float)value / 1000);
+				//pid_stabilize_pitch.kD((float)value / 1000);
+				//save_EEPROM_PID();
 				break;
 	
 			case 'X':
@@ -106,7 +106,7 @@ void parseCommand(char *buffer)
 				break;
 		}
 		init_pids();
-		//*/
+		//*/	
 	}
 }
 
