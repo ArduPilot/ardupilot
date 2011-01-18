@@ -79,30 +79,30 @@ void parseCommand(char *buffer)
 			case 'P':
 				pid_stabilize_roll.kP((float)value / 1000);
 				pid_stabilize_pitch.kP((float)value / 1000);
-				//save_EEPROM_PID();
+				save_EEPROM_PID();
 				break;
 
 			case 'I':
 				pid_stabilize_roll.kI((float)value / 1000);
 				pid_stabilize_pitch.kI((float)value / 1000);
-				//save_EEPROM_PID();
+				save_EEPROM_PID();
 				break;
 
 			case 'D':
 				pid_stabilize_roll.kD((float)value / 1000);
 				pid_stabilize_pitch.kD((float)value / 1000);
-				//save_EEPROM_PID();
+				save_EEPROM_PID();
 				break;
 	
 			case 'X':
 				pid_stabilize_roll.imax((int)(value * 100));
 				pid_stabilize_pitch.imax((int)(value * 100));
-				//save_EEPROM_PID();
+				save_EEPROM_PID();
 				break;
 
 			case 'R':
-				//stabilize_rate_roll_pitch = (float)value / 1000;
-				//save_EEPROM_PID();
+				stabilize_dampener = (float)value / 1000;
+				save_EEPROM_PID();
 				break;
 		}
 		init_pids();
