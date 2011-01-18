@@ -38,7 +38,7 @@ void read_battery(void)
 	battery_voltage2 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN2)) * .1 + battery_voltage2 * .9;
 	battery_voltage3 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN3)) * .1 + battery_voltage3 * .9;
 	battery_voltage4 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN4)) * .1 + battery_voltage4 * .9;
-	
+
 	#if BATTERY_TYPE == 0
 		if(battery_voltage3 < LOW_VOLTAGE)
 			low_battery_event();
@@ -54,9 +54,12 @@ void read_battery(void)
 #endif
 
 
-
 void read_current(void)
 {
-	current_voltage 	= CURRENT_VOLTAGE(analogRead(CURRENT_PIN1)) * .1 + battery_voltage1 * .9; //reads power sensor voltage pin
-	current_amps 		= CURRENT_AMPS(analogRead(CURRENT_PIN2)) * .1 + battery_voltage2 * .9; //reads power sensor current pin
+	current_voltage 	= CURRENT_VOLTAGE(analogRead(VOLTAGE_PIN_0)) * .1 	+ current_voltage * .9; //reads power sensor voltage pin
+	current_amps 		= CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 		+ current_amps * .9; //reads power sensor current pin
+	current_total		+= (current_amps * 0.27777) / delta_ms_medium_loop;
 }
+
+
+//v: 10.9453, a: 17.4023, mah: 8.2

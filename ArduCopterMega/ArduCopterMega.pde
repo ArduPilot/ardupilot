@@ -225,6 +225,7 @@ float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 
 float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 float	current_amps;
+float	current_total;
 
 boolean	current_sensor		= false;
 
@@ -380,7 +381,11 @@ byte 			medium_count;
 byte 			slow_loopCounter;
 byte 			superslow_loopCounter;
 
-unsigned long 	deltaMiliSeconds; 			// Delta Time in miliseconds
+unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
+
+uint8_t			delta_ms_medium_loop;
+uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
+
 unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
@@ -437,10 +442,10 @@ void loop()
 	// We want this to execute at 100Hz 
 	// --------------------------------
 	if (millis() - fast_loopTimer > 9) {
-		deltaMiliSeconds 	= millis() - fast_loopTimer;
+		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
-		load				= float(fast_loopTimeStamp - fast_loopTimer) / deltaMiliSeconds;
-		G_Dt 				= (float)deltaMiliSeconds / 1000.f;		// used by DCM integrator
+		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
+		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
 
 		// Execute the fast loop
@@ -450,7 +455,8 @@ void loop()
 	}
 	
 	if (millis() - medium_loopTimer > 19) {
-		medium_loopTimer	= millis();
+		delta_ms_medium_loop 	= millis() - medium_loopTimer;
+		medium_loopTimer		= millis();		
 		medium_loop();
 		
 		/* commented out temporarily
@@ -474,8 +480,8 @@ void fast_loop()
 
 	// This is the fast loop - we want it to execute at 200Hz if possible
 	// ------------------------------------------------------------------
-	if (deltaMiliSeconds > G_Dt_max) 
-		G_Dt_max = deltaMiliSeconds;
+	if (delta_ms_fast_loop > G_Dt_max) 
+		G_Dt_max = delta_ms_fast_loop;
 					
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -516,8 +522,8 @@ void medium_loop()
 
 			if(GPS.new_data){
 				GPS.new_data 		= false;
-				dTnav 				= millis() - medium_loopTimer;
-				medium_loopTimer 	= millis();
+				dTnav 				= millis() - nav_loopTimer;
+				nav_loopTimer 		= millis();
 
 				// calculate the plane's desired bearing
 				// -------------------------------------			
@@ -717,6 +723,8 @@ void update_GPS(void)
 				if (log_bitmask & MASK_LOG_CMD)
 					Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 				
+				// reset our nav loop timer
+				nav_loopTimer = millis();
 				init_home();
 				// init altitude
 				current_loc.alt = GPS.altitude;

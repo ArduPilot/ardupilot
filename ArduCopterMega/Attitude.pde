@@ -32,8 +32,8 @@ void output_stabilize()
 	pitch_error 	= constrain(pitch_error, -2500, 2500);
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
-	rc_1.servo_out 	= pid_stabilize_roll.get_pid(roll_error,  	deltaMiliSeconds, 1.0);
-	rc_2.servo_out 	= pid_stabilize_pitch.get_pid(pitch_error, 	deltaMiliSeconds, 1.0);
+	rc_1.servo_out 	= pid_stabilize_roll.get_pid(roll_error,  	delta_ms_fast_loop, 1.0);
+	rc_2.servo_out 	= pid_stabilize_pitch.get_pid(pitch_error, 	delta_ms_fast_loop, 1.0);
 
 	// We adjust the output by the rate of rotation:
 	// Rate control through bias corrected gyro rates
@@ -98,7 +98,7 @@ void output_yaw_with_hold(boolean hold)
 		yaw_error		= constrain(yaw_error,   -6000, 6000);						// limit error to 60 degees
 
 		// Apply PID and save the new angle back to RC_Channel
-		rc_4.servo_out 	= pid_yaw.get_pid(yaw_error, deltaMiliSeconds, 1.0); 		// .5 * 6000 = 3000
+		rc_4.servo_out 	= pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
 	
 		// We adjust the output by the rate of rotation
 		long rate		= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
@@ -114,7 +114,7 @@ void output_yaw_with_hold(boolean hold)
 		rate			= constrain(rate, -36000, 36000);							// limit to something fun!
 		long error		= ((long)rc_4.control_in * 6) - rate;						// control is += 6000 * 6 = 36000
 																					// -error = CCW, 	+error = CW
-		rc_4.servo_out 	= pid_acro_rate_yaw.get_pid(error, deltaMiliSeconds, 1.0); 	// .075 * 36000 = 2700
+		rc_4.servo_out 	= pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); 	// .075 * 36000 = 2700
 		rc_4.servo_out 	= constrain(rc_4.servo_out, -2400, 2400);					// limit to 2400
 
 	}
