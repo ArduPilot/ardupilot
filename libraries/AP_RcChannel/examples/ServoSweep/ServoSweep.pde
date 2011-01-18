@@ -8,7 +8,6 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
-#include <AP_EEProm.h>
 #include <APM_RC.h>
 
 FastSerialPort0(Serial); // make sure this procees variable declarations
@@ -51,7 +50,7 @@ void loop()
 	testPosition += testSign*.1;
 	if (testPosition > 1)
 	{
-		eepromRegistry.print(Serial); // show eeprom map
+		//eepromRegistry.print(Serial); // show eeprom map
 		testPosition = 1;
 		testSign = -1;
 	}

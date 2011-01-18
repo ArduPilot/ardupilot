@@ -8,7 +8,6 @@
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_RcChannel.h> 	// ArduPilot Mega RC Library
-#include <AP_EEProm.h>
 #include <APM_RC.h>
 
 FastSerialPort0(Serial); // make sure this procees variable declarations
@@ -43,7 +42,7 @@ void setup()
 	APM_RC.Init();		// APM Radio initialization
 
 	delay(2000);
-	eepromRegistry.print(Serial); // show eeprom map
+	//eepromRegistry.print(Serial); // show eeprom map
 }
 
 void loop()	

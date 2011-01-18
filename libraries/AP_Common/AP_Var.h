@@ -320,9 +320,16 @@ protected:
 ///
 #define AP_VARDEF(_t, _n)   typedef AP_VarT<_t> AP_##_n;
 AP_VARDEF(float, Float);    // defines AP_Float
-AP_VARDEF(int8_t, Int8);    // defines AP_UInt8
-AP_VARDEF(int16_t, Int16);  // defines AP_UInt16
-AP_VARDEF(int32_t, Int32);  // defines AP_UInt32
+AP_VARDEF(int8_t, Int8);    // defines AP_Int8
+AP_VARDEF(int16_t, Int16);  // defines AP_Int16
+AP_VARDEF(int32_t, Int32);  // defines AP_Int32
+
+/// Rely on built in casting for other variable types
+/// to minimize template creation and save memory
+#define AP_Uint8 AP_Int8
+#define AP_Uint16 AP_Int16
+#define AP_Uint32 AP_Int32
+#define AP_Bool AP_Int8
 
 /// Many float values can be saved as 16-bit fixed-point values, reducing EEPROM
 /// consumption.  AP_Float16 subclasses AP_Float and overloads serialize/unserialize
