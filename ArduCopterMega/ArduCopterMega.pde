@@ -567,9 +567,6 @@ void medium_loop()
 			if (log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(GPS.time, current_loc.lat, current_loc.lng, GPS.altitude, current_loc.alt, (long) GPS.ground_speed, GPS.ground_course, GPS.fix, GPS.num_sats);
 
-			if (log_bitmask & MASK_LOG_CUR)
-				Log_Write_Current();
-
 			send_message(MSG_ATTITUDE);		// Sends attitude data
 			break;
 			
@@ -685,6 +682,11 @@ void slow_loop()
 		case 2:
 			slow_loopCounter = 0;
 			update_events();
+			
+			// save current data to the flash
+			if (log_bitmask & MASK_LOG_CUR)
+				Log_Write_Current();
+
 			break;
 
 		default:
