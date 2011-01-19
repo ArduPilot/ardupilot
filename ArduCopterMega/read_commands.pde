@@ -95,8 +95,8 @@ void parseCommand(char *buffer)
 				break;
 	
 			case 'X':
-				pid_stabilize_roll.imax((int)(value * 100));
-				pid_stabilize_pitch.imax((int)(value * 100));
+				pid_stabilize_roll.imax(value * 100);
+				pid_stabilize_pitch.imax(value * 100);
 				save_EEPROM_PID();
 				break;
 
