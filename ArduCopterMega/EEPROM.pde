@@ -9,25 +9,22 @@ void read_EEPROM_startup(void)
 {
 	read_EEPROM_PID();
 	read_EEPROM_frame();
-	read_EEPROM_configs();
+	read_EEPROM_throttle();
+	read_EEPROM_logs();
 	read_EEPROM_flight_modes();
 	read_EEPROM_waypoint_info();
 	imu.load_gyro_eeprom();
 	imu.load_accel_eeprom();
 	read_EEPROM_alt_RTL();
-
+	read_EEPROM_current();
 	// magnatometer
-	read_EEPROM_mag();
-	read_EEPROM_mag_declination();
-	read_EEPROM_mag_offset();
+	read_EEPROM_compass();
+	read_EEPROM_compass_declination();
+	read_EEPROM_compass_offset();
 }
 
 void read_EEPROM_airstart_critical(void)
-{
-	int16_t temp = 0;
-	imu.load_gyro_eeprom();
-	imu.load_accel_eeprom();
-	
+{	
 	// Read the home location
 	//-----------------------	
 	home = get_wp_with_index(0);
@@ -196,21 +193,24 @@ void save_EEPROM_mag_declination(void)
 	write_EE_compressed_float(mag_declination, 	EE_MAG_DECLINATION, 1);
 }
 
-void read_EEPROM_mag_declination(void)
+void read_EEPROM_compass_declination(void)
 {
 	mag_declination 	= read_EE_compressed_float(EE_MAG_DECLINATION, 1);
 }
 
 /********************************************************************************/
 
-void save_EEPROM_current_sensor(void)
+void save_EEPROM_current(void)
 {
-	eeprom_write_byte((uint8_t *)	EE_CURRENT_SENSOR, 	current_sensor);
+	eeprom_write_byte((uint8_t *)	EE_CURRENT_SENSOR, 	current_enabled);
+	eeprom_write_word((uint16_t *)	EE_CURRENT_MAH, 	milliamp_hours);
+	
 }
 
-void read_EEPROM_current_sensor(void)
+void read_EEPROM_current(void)
 {
-	current_sensor	= eeprom_read_byte((uint8_t *) EE_CURRENT_SENSOR);
+	current_enabled	= eeprom_read_byte((uint8_t *) EE_CURRENT_SENSOR);
+	milliamp_hours	= eeprom_read_word((uint16_t *) EE_CURRENT_MAH);
 }
 
 /********************************************************************************/
@@ -222,7 +222,7 @@ void save_EEPROM_mag_offset(void)
 	write_EE_compressed_float(mag_offset_z, 	EE_MAG_Z, 2);
 }
 
-void read_EEPROM_mag_offset(void)
+void read_EEPROM_compass_offset(void)
 {
 	mag_offset_x 	= read_EE_compressed_float(EE_MAG_X, 2);
 	mag_offset_y 	= read_EE_compressed_float(EE_MAG_Y, 2);
@@ -231,7 +231,7 @@ void read_EEPROM_mag_offset(void)
 
 /********************************************************************************/
 
-void read_EEPROM_mag(void)
+void read_EEPROM_compass(void)
 {
 	compass_enabled	= eeprom_read_byte((uint8_t *) EE_COMPASS);
 }
@@ -297,7 +297,7 @@ void save_EEPROM_radio(void)
 
 /********************************************************************************/
 // configs are the basics
-void read_EEPROM_configs(void)
+void read_EEPROM_throttle(void)
 {
 	throttle_min 				= eeprom_read_word((uint16_t *) 	EE_THROTTLE_MIN);
 	throttle_max 				= eeprom_read_word((uint16_t *) 	EE_THROTTLE_MAX);
@@ -305,10 +305,9 @@ void read_EEPROM_configs(void)
 	throttle_failsafe_enabled 	= eeprom_read_byte((byte *) 	EE_THROTTLE_FAILSAFE);
 	throttle_failsafe_action 	= eeprom_read_byte((byte *) 	EE_THROTTLE_FAILSAFE_ACTION);
 	throttle_failsafe_value 	= eeprom_read_word((uint16_t *) EE_THROTTLE_FS_VALUE);
-	log_bitmask 				= eeprom_read_word((uint16_t *) EE_LOG_BITMASK);
 }
 
-void save_EEPROM_configs(void)
+void save_EEPROM_throttle(void)
 {
 	eeprom_write_word((uint16_t *) 	EE_THROTTLE_MIN, 			throttle_min);
 	eeprom_write_word((uint16_t *) 	EE_THROTTLE_MAX, 			throttle_max);
@@ -316,6 +315,17 @@ void save_EEPROM_configs(void)
 	eeprom_write_byte((byte *) 		EE_THROTTLE_FAILSAFE,		throttle_failsafe_enabled);
 	eeprom_write_byte((byte *) 		EE_THROTTLE_FAILSAFE_ACTION,throttle_failsafe_action);
 	eeprom_write_word((uint16_t *) 	EE_THROTTLE_FS_VALUE,		throttle_failsafe_value);
+}
+
+/********************************************************************************/
+
+void read_EEPROM_logs(void)
+{
+	log_bitmask 				= eeprom_read_word((uint16_t *) EE_LOG_BITMASK);
+}
+
+void save_EEPROM_logs(void)
+{
 	eeprom_write_word((uint16_t *) 	EE_LOG_BITMASK,				log_bitmask);
 }
 

@@ -175,7 +175,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	} else {
 		log_bitmask &= ~bits;
 	}
-	save_EEPROM_configs();		// XXX this is a bit heavyweight...
+	save_EEPROM_logs();		// XXX this is a bit heavyweight...
 
 	return(0);
 }

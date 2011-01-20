@@ -85,7 +85,7 @@ void init_ardupilot()
 #endif
 
 	Serial.printf_P(PSTR("\n\n"
-						 "Init ArduPilotMega 1.0.3 Public Alpha\n\n"
+						 "Init ArduCopterMega 1.0.0 Public Alpha\n\n"
 #if TELEMETRY_PORT == 3
 						 "Telemetry is on the xbee port\n"
 #endif	
