@@ -226,8 +226,8 @@ float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 float	current_amps;
 float	current_total;
-
-boolean	current_sensor		= false;
+int 	milliamp_hours;
+boolean	current_enabled		= false;
 
 // Magnetometer variables
 // ----------------------
@@ -573,7 +573,7 @@ void medium_loop()
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
-			if (current_sensor){
+			if (current_enabled){
 				read_current();
 			}
 			

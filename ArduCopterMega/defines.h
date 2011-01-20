@@ -312,7 +312,7 @@
 #define EE_GND_ALT 0x11C
 #define EE_AP_OFFSET 0x11E
 #define EE_CURRENT_SENSOR 0x127
-
+#define EE_CURRENT_MAH 0x0128
 // log
 #define EE_LAST_LOG_PAGE 0xE00
 #define EE_LAST_LOG_NUM 0xE02

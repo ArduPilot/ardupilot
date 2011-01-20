@@ -9,6 +9,7 @@ static int8_t	setup_erase				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_pid				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
@@ -26,6 +27,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"level",			setup_accel},
 	{"modes",			setup_flightmodes},
 	{"frame",			setup_frame},
+	{"current",			setup_current},
 	{"compass",			setup_compass},
 	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
@@ -57,120 +59,18 @@ static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
 	uint8_t		i;
-	print_blanks(10);
-	Serial.printf_P(PSTR("Radio\n"));
-	print_divider();
-	// radio
-	read_EEPROM_radio();	
-	print_radio_values();
+	// clear the area
+	print_blanks(8);
 	
-	
-	// frame
-	print_blanks(2);
-	Serial.printf_P(PSTR("Frame\n"));
-	print_divider();
-
-	read_EEPROM_frame();
-	
-	if(frame_type == X_FRAME)
-		Serial.printf_P(PSTR("X "));
-	else if(frame_type == PLUS_FRAME)
-		Serial.printf_P(PSTR("Plus "));
-	Serial.printf_P(PSTR("(%d)\n"), (int)frame_type);
-		
-	
-	print_blanks(2);
-	read_EEPROM_current_sensor();
-	Serial.printf_P(PSTR("Current Sensor "));
-	if(current_sensor){
-		Serial.printf_P(PSTR("enabled\n"));
-	} else {
-		Serial.printf_P(PSTR("disabled\n"));
-	}
-	
-	
-	print_blanks(2);
-	Serial.printf_P(PSTR("Gains\n"));
-	print_divider();
-
-	read_EEPROM_PID();
-	// Acro
-	Serial.printf_P(PSTR("Acro:\nroll:\n"));
-	print_PID(&pid_acro_rate_roll);
-	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&pid_acro_rate_pitch);
-	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&pid_acro_rate_yaw);
-
-	// Stabilize
-	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
-	print_PID(&pid_stabilize_roll);
-	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&pid_stabilize_pitch);
-	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&pid_yaw);
-	
-	Serial.printf_P(PSTR("Stabilize dampener: %4.3f\n"), stabilize_dampener);	
-	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), hold_yaw_dampener);
-	
-	// Nav
-	Serial.printf_P(PSTR("Nav:\nlat:\n"));
-	print_PID(&pid_nav_lat);
-	Serial.printf_P(PSTR("Nav:\nlong:\n"));
-	print_PID(&pid_nav_lon);
-	Serial.printf_P(PSTR("baro throttle:\n"));
-	print_PID(&pid_baro_throttle);
-	Serial.printf_P(PSTR("sonar throttle:\n"));
-	print_PID(&pid_sonar_throttle);
-	Serial.println(" ");
-	
-	print_blanks(2);
-	Serial.printf_P(PSTR("User Configs\n"));
-	print_divider();
-	// Crosstrack
-	read_EEPROM_nav();
-	Serial.printf_P(PSTR("XTRACK: %4.2f\n"), x_track_gain);
-	Serial.printf_P(PSTR("XTRACK angle: %d\n"), x_track_angle);
-	Serial.printf_P(PSTR("PITCH_MAX: %d\n"), pitch_max);
-	// User Configs
-	read_EEPROM_configs();
-	Serial.printf_P(PSTR("throttle_min: %d\n"), 	throttle_min);
-	Serial.printf_P(PSTR("throttle_max: %d\n"), 	throttle_max);
-	Serial.printf_P(PSTR("throttle_cruise: %d\n"), 	throttle_cruise);
-	Serial.printf_P(PSTR("throttle_failsafe_enabled: %d\n"), throttle_failsafe_enabled);
-	Serial.printf_P(PSTR("throttle_failsafe_value: %d\n"), throttle_failsafe_value);
-	Serial.printf_P(PSTR("log_bitmask: %d\n"), log_bitmask);
-
-	print_blanks(2);
-	Serial.printf_P(PSTR("IMU\n"));
-	print_divider();
-	imu.print_gyro_offsets();
-	imu.print_accel_offsets();
-	
-	print_blanks(2);
-	Serial.printf_P(PSTR("Compass\n"));
-	print_divider();
-
-	if(compass_enabled)
-		Serial.printf_P(PSTR("en"));
-	else
-		Serial.printf_P(PSTR("dis"));
-	Serial.printf_P(PSTR("abled\n\n"));
-
-
-	// mag declination
-	read_EEPROM_mag_declination();
-	Serial.printf_P(PSTR("Mag Delination: "));
-	Serial.println(mag_declination,2);
-	
-	// mag offsets
-	Serial.printf_P(PSTR("Mag offsets: "));
-	Serial.print(mag_offset_x, 2);
-	Serial.printf_P(PSTR(", "));
-	Serial.print(mag_offset_y, 2);
-	Serial.printf_P(PSTR(", "));
-	Serial.println(mag_offset_z, 2);
-	
+	report_radio();
+	report_frame();
+	report_current();
+	report_gains();
+	report_xtrack();
+	report_throttle();
+	report_flight_modes();
+	report_imu();
+	report_compass();
 	return(0);
 }
 
@@ -179,14 +79,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_factory(uint8_t argc, const Menu::arg *argv)
 {
-	/*
-	saves:
-		save_EEPROM_waypoint_info();
-		save_EEPROM_nav();
-		save_EEPROM_flight_modes();
-		save_EEPROM_configs();
-	*/
-	
+
 	uint8_t		i;
 	int			c;
 
@@ -198,62 +91,20 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	
 	if (('y' != c) && ('Y' != c))
 		return(-1);
-
-	//Serial.printf_P(PSTR("\nFACTORY RESET\n\n"));
 	
 	//zero_eeprom();
-	setup_pid(0 ,NULL);
+	default_gains();
 	
-	wp_radius 					= 4; //TODO: Replace this quick fix with a real way to define wp_radius
-	loiter_radius 				= 30; //TODO: Replace this quick fix with a real way to define loiter_radius
-	save_EEPROM_waypoint_info();
 	
-	// nav control
-	x_track_gain 				= XTRACK_GAIN * 100;
-	x_track_angle 				= XTRACK_ENTRY_ANGLE * 100;
-	pitch_max 					= PITCH_MAX * 100;
-	save_EEPROM_nav();
-	
-	// alt hold
-	alt_to_hold = -1;
-	save_EEPROM_alt_RTL();
-
-
-	// default to a + configuration	
-	frame_type = PLUS_FRAME;
-	save_EEPROM_frame();
-
-	flight_modes[0] 			= FLIGHT_MODE_1;
-	flight_modes[1] 			= FLIGHT_MODE_2;
-	flight_modes[2] 			= FLIGHT_MODE_3;
-	flight_modes[3] 			= FLIGHT_MODE_4;
-	flight_modes[4] 			= FLIGHT_MODE_5;
-	flight_modes[5] 			= FLIGHT_MODE_6;
-	save_EEPROM_flight_modes();
-
-	// user configs
-	throttle_min				= THROTTLE_MIN;
-	throttle_max				= THROTTLE_MAX;
-	throttle_cruise				= THROTTLE_CRUISE;
-	throttle_failsafe_enabled	= THROTTLE_FAILSAFE;
-	throttle_failsafe_action	= THROTTLE_FAILSAFE_ACTION;
-	throttle_failsafe_value		= THROTTLE_FS_VALUE;
-	
-	// convenience macro for testing LOG_* and setting LOGBIT_*
-	#define LOGBIT(_s)	(LOG_ ## _s ? LOGBIT_ ## _s : 0)
-	log_bitmask = 
-		LOGBIT(ATTITUDE_FAST)	|
-		LOGBIT(ATTITUDE_MED)	|
-		LOGBIT(GPS)				|
-		LOGBIT(PM)				|
-		LOGBIT(CTUN)			|
-		LOGBIT(NTUN)			|
-		LOGBIT(MODE)			|
-		LOGBIT(RAW)				|
-		LOGBIT(CMD)				|
-		LOGBIT(CURRENT);
-	#undef LOGBIT
-	save_EEPROM_configs();
+	// setup default values
+	default_waypoint_info();
+	default_nav();
+	default_alt_hold();
+	default_frame();
+	default_flight_modes();
+	default_throttle();
+	default_logs();
+	default_current();
 	print_done();
 	
 	// finish
@@ -340,13 +191,17 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 			break;
 		}
 	}
+	report_radio();
 	return(0);
 }
 
 static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
+	report_frame();
+
 	init_rc_in();
+
 	// read the radio to set trims
 	// ---------------------------
 	trim_radio();
@@ -357,18 +212,8 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 	
 	int out_min = rc_3.radio_min + 70;
 	
-	if(frame_type == PLUS_FRAME){
-		Serial.printf_P(PSTR("PLUS"));
 
-	}else if(frame_type == X_FRAME){
-		Serial.printf_P(PSTR("X"));
-	
-	}else if(frame_type == TRI_FRAME){
-		Serial.printf_P(PSTR("TRI"));
-	}
-	
-	Serial.printf_P(PSTR(" Frame\n"));
-	
+
 	while(1){
 		delay(20);
 		read_radio();
@@ -466,101 +311,19 @@ static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("\nHold ArduCopter completely still and level.\n"));
-
-	/*
-	imu.init_gyro();
-	print_gyro();
-	imu.load_gyro_eeprom();
-	print_gyro();
-	*/
 	
 	imu.init_accel();
 	imu.print_accel_offsets();
-	//imu.load_accel_eeprom();
-	//print_accel();
 
-	return(0);
-}
-
-static int8_t
-setup_accel_flat(uint8_t argc, const Menu::arg *argv)
-{
-	Serial.printf_P(PSTR("\nClear Accel offsets.\n"));
-	imu.zero_accel();
-	imu.print_accel_offsets();
+	report_imu();
 	return(0);
 }
 
 static int8_t
 setup_pid(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nSetting default PID gains\n"));
-	// acro, angular rate
-	pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
-	pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
-	pid_acro_rate_roll.kD(ACRO_RATE_ROLL_D);
-	pid_acro_rate_roll.imax(ACRO_RATE_ROLL_IMAX * 100);
-	
-	pid_acro_rate_pitch.kP(ACRO_RATE_PITCH_P);
-	pid_acro_rate_pitch.kI(ACRO_RATE_PITCH_I);
-	pid_acro_rate_pitch.kD(ACRO_RATE_PITCH_D);
-	pid_acro_rate_pitch.imax(ACRO_RATE_PITCH_IMAX * 100);
-
-	pid_acro_rate_yaw.kP(ACRO_RATE_YAW_P);
-	pid_acro_rate_yaw.kI(ACRO_RATE_YAW_I);
-	pid_acro_rate_yaw.kD(ACRO_RATE_YAW_D);
-	pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
-
-
-	// stabilize, angle error
-	pid_stabilize_roll.kP(STABILIZE_ROLL_P);
-	pid_stabilize_roll.kI(STABILIZE_ROLL_I);
-	pid_stabilize_roll.kD(STABILIZE_ROLL_D);
-	pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
-		
-	pid_stabilize_pitch.kP(STABILIZE_PITCH_P);
-	pid_stabilize_pitch.kI(STABILIZE_PITCH_I);
-	pid_stabilize_pitch.kD(STABILIZE_PITCH_D);
-	pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
-
-	// YAW hold
-	pid_yaw.kP(YAW_P);
-	pid_yaw.kI(YAW_I);
-	pid_yaw.kD(YAW_D);
-	pid_yaw.imax(YAW_IMAX * 100);
-
-
-	// custom dampeners
-	// roll pitch
-	stabilize_dampener 	= STABILIZE_DAMPENER;
-	
-	//yaw
-	hold_yaw_dampener	= HOLD_YAW_DAMPENER;
-
-
-	// navigation
-	pid_nav_lat.kP(NAV_P);
-	pid_nav_lat.kI(NAV_I);
-	pid_nav_lat.kD(NAV_D);
-	pid_nav_lat.imax(NAV_IMAX * 100);
-
-	pid_nav_lon.kP(NAV_P);
-	pid_nav_lon.kI(NAV_I);
-	pid_nav_lon.kD(NAV_D);
-	pid_nav_lon.imax(NAV_IMAX * 100);
-
-	pid_baro_throttle.kP(THROTTLE_BARO_P);
-	pid_baro_throttle.kI(THROTTLE_BARO_I);
-	pid_baro_throttle.kD(THROTTLE_BARO_D);
-	pid_baro_throttle.imax(THROTTLE_BARO_IMAX * 100);
-
-	pid_sonar_throttle.kP(THROTTLE_SONAR_P);
-	pid_sonar_throttle.kI(THROTTLE_SONAR_I);
-	pid_sonar_throttle.kD(THROTTLE_SONAR_D);
-	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX * 100);
-	
-	save_EEPROM_PID();
-	print_done();
+	default_gains();
+	report_gains();
 }
 
 static int8_t
@@ -608,6 +371,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		if(Serial.available() > 0){
 			save_EEPROM_flight_modes();
 			print_done();
+			report_flight_modes();
 			return (0);
 		}
 	}
@@ -618,10 +382,7 @@ setup_declination(uint8_t argc, const Menu::arg *argv)
 {
 	mag_declination = argv[1].f;
 	save_EEPROM_mag_declination();
-	read_EEPROM_mag_declination();
-
-	Serial.printf_P(PSTR("\nsaved: "));
-	Serial.println(argv[1].f, 2);
+	report_compass();
 }
 
 static int8_t
@@ -634,65 +395,71 @@ setup_erase(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("Compass "));
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		Serial.printf_P(PSTR("Enabled\n"));
 		compass_enabled = true;
 		init_compass();
-
-		save_EEPROM_mag();
-		print_done();
 	
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		Serial.printf_P(PSTR("Disabled\n"));
 		compass_enabled = false;
-
-		save_EEPROM_mag();
-		print_done();
 	
 	} else {
-		if (compass_enabled) {
-			Serial.printf_P(PSTR("en"));
-		} else {
-			Serial.printf_P(PSTR("dis"));
-		}
-		Serial.printf_P(PSTR("abled\n\n"));
-		
-		Serial.printf_P(PSTR("\nUsage:\nEnabled =>compass 1\nDisabled =>compass 0\n\n"));
+		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
+		report_compass();
+		return 0;
 	}
+	
+	save_EEPROM_mag();
+	report_compass();
 	return 0;
 }
-
-
-
 
 static int8_t
 setup_frame(uint8_t argc, const Menu::arg *argv)
 {
-	if(argv[1].i < 1){
-		Serial.printf_P(PSTR("\nUsage:\nPlus frame =>frame 1\nX frame =>frame 2\nTRI frame =>frame 3\n\n"));
-		return 0;
-	}
-	print_done();
-
-	if(argv[1].i == 1){
-		Serial.printf_P(PSTR("Plus "));
+	if (!strcmp_P(argv[1].str, PSTR("+"))) {
 		frame_type = PLUS_FRAME;
 
-	}else if(argv[1].i == 2){
-		Serial.printf_P(PSTR("X "));
+	} else if (!strcmp_P(argv[1].str, PSTR("x"))) {
 		frame_type = X_FRAME;
 	
-	}else if(argv[1].i == 3){
-		Serial.printf_P(PSTR("Tri "));
+	} else if (!strcmp_P(argv[1].str, PSTR("tri"))) {
 		frame_type = TRI_FRAME;
+
+	} else {
+		Serial.printf_P(PSTR("\nOptions:[+, x, tri]\n"));
+		report_frame();
+		return 0;
 	}
 	
-	Serial.printf_P(PSTR("frame\n\n"));
-	save_EEPROM_frame();	
+	save_EEPROM_frame();
+	report_frame();
 	return 0;
 }
 
+static int8_t
+setup_current(uint8_t argc, const Menu::arg *argv)
+{
+	if (!strcmp_P(argv[1].str, PSTR("on"))) {
+		current_enabled = true;
+		save_EEPROM_mag();
+	
+	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		current_enabled = false;
+		save_EEPROM_mag();
+	
+	} else if(argv[1].i > 10){
+		milliamp_hours = argv[1].i;
+	
+	} else {
+		Serial.printf_P(PSTR("\nOptions:[on, off, mAh]\n"));
+		report_current();
+		return 0;
+	}
+	
+	save_EEPROM_current();
+	report_current();
+	return 0;
+}
 
 static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
@@ -764,18 +531,352 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 				// set offsets to account for surrounding interference
 				compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
 				
-				print_done();
+				report_compass();
 				break;
 			}
 		}
 	}
 }
 
+
 /***************************************************************************/
 // CLI utilities
 /***************************************************************************/
 
-void print_PID(PID * pid)
+void default_waypoint_info()
+{	
+	wp_radius 			= 4; 	//TODO: Replace this quick fix with a real way to define wp_radius
+	loiter_radius 		= 30; 	//TODO: Replace this quick fix with a real way to define loiter_radius
+	save_EEPROM_waypoint_info();
+}
+
+
+void
+default_nav()
+{
+	// nav control
+	x_track_gain 				= XTRACK_GAIN * 100;
+	x_track_angle 				= XTRACK_ENTRY_ANGLE * 100;
+	pitch_max 					= PITCH_MAX * 100;
+	save_EEPROM_nav();
+}
+
+void
+default_alt_hold()
+{
+	alt_to_hold = -1;
+	save_EEPROM_alt_RTL();
+}
+
+void
+default_frame()
+{
+	frame_type = PLUS_FRAME;
+	save_EEPROM_frame();
+}
+
+void
+default_current()
+{
+	milliamp_hours 		= 2000;
+	current_enabled 	= false;
+	save_EEPROM_current();
+}
+
+void
+default_flight_modes()
+{
+	flight_modes[0] 			= FLIGHT_MODE_1;
+	flight_modes[1] 			= FLIGHT_MODE_2;
+	flight_modes[2] 			= FLIGHT_MODE_3;
+	flight_modes[3] 			= FLIGHT_MODE_4;
+	flight_modes[4] 			= FLIGHT_MODE_5;
+	flight_modes[5] 			= FLIGHT_MODE_6;
+	save_EEPROM_flight_modes();
+}
+
+void
+default_throttle()
+{
+	throttle_min				= THROTTLE_MIN;
+	throttle_max				= THROTTLE_MAX;
+	throttle_cruise				= THROTTLE_CRUISE;
+	throttle_failsafe_enabled	= THROTTLE_FAILSAFE;
+	throttle_failsafe_action	= THROTTLE_FAILSAFE_ACTION;
+	throttle_failsafe_value		= THROTTLE_FS_VALUE;
+	save_EEPROM_throttle();
+}
+
+void default_logs()
+{
+
+	// convenience macro for testing LOG_* and setting LOGBIT_*
+	#define LOGBIT(_s)	(LOG_ ## _s ? LOGBIT_ ## _s : 0)
+	log_bitmask = 
+		LOGBIT(ATTITUDE_FAST)	|
+		LOGBIT(ATTITUDE_MED)	|
+		LOGBIT(GPS)				|
+		LOGBIT(PM)				|
+		LOGBIT(CTUN)			|
+		LOGBIT(NTUN)			|
+		LOGBIT(MODE)			|
+		LOGBIT(RAW)				|
+		LOGBIT(CMD)				|
+		LOGBIT(CURRENT);
+	#undef LOGBIT
+	
+	save_EEPROM_logs();
+}
+
+
+void
+default_gains()
+{
+	// acro, angular rate
+	pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
+	pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
+	pid_acro_rate_roll.kD(ACRO_RATE_ROLL_D);
+	pid_acro_rate_roll.imax(ACRO_RATE_ROLL_IMAX * 100);
+	
+	pid_acro_rate_pitch.kP(ACRO_RATE_PITCH_P);
+	pid_acro_rate_pitch.kI(ACRO_RATE_PITCH_I);
+	pid_acro_rate_pitch.kD(ACRO_RATE_PITCH_D);
+	pid_acro_rate_pitch.imax(ACRO_RATE_PITCH_IMAX * 100);
+
+	pid_acro_rate_yaw.kP(ACRO_RATE_YAW_P);
+	pid_acro_rate_yaw.kI(ACRO_RATE_YAW_I);
+	pid_acro_rate_yaw.kD(ACRO_RATE_YAW_D);
+	pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
+
+
+	// stabilize, angle error
+	pid_stabilize_roll.kP(STABILIZE_ROLL_P);
+	pid_stabilize_roll.kI(STABILIZE_ROLL_I);
+	pid_stabilize_roll.kD(STABILIZE_ROLL_D);
+	pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
+		
+	pid_stabilize_pitch.kP(STABILIZE_PITCH_P);
+	pid_stabilize_pitch.kI(STABILIZE_PITCH_I);
+	pid_stabilize_pitch.kD(STABILIZE_PITCH_D);
+	pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
+
+	// YAW hold
+	pid_yaw.kP(YAW_P);
+	pid_yaw.kI(YAW_I);
+	pid_yaw.kD(YAW_D);
+	pid_yaw.imax(YAW_IMAX * 100);
+
+
+	// custom dampeners
+	// roll pitch
+	stabilize_dampener 	= STABILIZE_DAMPENER;
+	
+	//yaw
+	hold_yaw_dampener	= HOLD_YAW_DAMPENER;
+
+
+	// navigation
+	pid_nav_lat.kP(NAV_P);
+	pid_nav_lat.kI(NAV_I);
+	pid_nav_lat.kD(NAV_D);
+	pid_nav_lat.imax(NAV_IMAX * 100);
+
+	pid_nav_lon.kP(NAV_P);
+	pid_nav_lon.kI(NAV_I);
+	pid_nav_lon.kD(NAV_D);
+	pid_nav_lon.imax(NAV_IMAX * 100);
+
+	pid_baro_throttle.kP(THROTTLE_BARO_P);
+	pid_baro_throttle.kI(THROTTLE_BARO_I);
+	pid_baro_throttle.kD(THROTTLE_BARO_D);
+	pid_baro_throttle.imax(THROTTLE_BARO_IMAX * 100);
+
+	pid_sonar_throttle.kP(THROTTLE_SONAR_P);
+	pid_sonar_throttle.kI(THROTTLE_SONAR_I);
+	pid_sonar_throttle.kD(THROTTLE_SONAR_D);
+	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX * 100);
+	
+	save_EEPROM_PID();
+}
+
+
+
+/***************************************************************************/
+// CLI utilities
+/***************************************************************************/
+
+void report_current()
+{
+	print_blanks(2);
+	read_EEPROM_current();
+	Serial.printf_P(PSTR("Current Sensor\n"));
+	print_divider();
+	print_enabled(current_enabled);
+
+	Serial.printf_P(PSTR("mah: %d"),milliamp_hours);
+	print_blanks(2);
+}
+
+
+void report_frame()
+{
+	print_blanks(2);
+	read_EEPROM_frame();
+	Serial.printf_P(PSTR("Frame\n"));
+	print_divider();
+
+	
+	if(frame_type == X_FRAME)
+		Serial.printf_P(PSTR("X "));
+	else if(frame_type == PLUS_FRAME)
+		Serial.printf_P(PSTR("Plus "));
+	else if(frame_type == TRI_FRAME)
+		Serial.printf_P(PSTR("TRI "));
+
+	Serial.printf_P(PSTR("frame (%d)"), (int)frame_type);
+	print_blanks(2);
+}
+
+void report_radio()
+{
+	print_blanks(2);
+	Serial.printf_P(PSTR("Radio\n"));
+	print_divider();
+	// radio
+	read_EEPROM_radio();
+	print_radio_values();
+	print_blanks(2);
+}
+
+void report_gains()
+{
+	print_blanks(2);
+	Serial.printf_P(PSTR("Gains\n"));
+	print_divider();
+
+	read_EEPROM_PID();
+	// Acro
+	Serial.printf_P(PSTR("Acro:\nroll:\n"));
+	print_PID(&pid_acro_rate_roll);
+	Serial.printf_P(PSTR("pitch:\n"));
+	print_PID(&pid_acro_rate_pitch);
+	Serial.printf_P(PSTR("yaw:\n"));
+	print_PID(&pid_acro_rate_yaw);
+
+	// Stabilize
+	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
+	print_PID(&pid_stabilize_roll);
+	Serial.printf_P(PSTR("pitch:\n"));
+	print_PID(&pid_stabilize_pitch);
+	Serial.printf_P(PSTR("yaw:\n"));
+	print_PID(&pid_yaw);
+	
+	Serial.printf_P(PSTR("Stabilize dampener: %4.3f\n"), stabilize_dampener);	
+	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), hold_yaw_dampener);
+	
+	// Nav
+	Serial.printf_P(PSTR("Nav:\nlat:\n"));
+	print_PID(&pid_nav_lat);
+	Serial.printf_P(PSTR("long:\n"));
+	print_PID(&pid_nav_lon);
+	Serial.printf_P(PSTR("baro throttle:\n"));
+	print_PID(&pid_baro_throttle);
+	Serial.printf_P(PSTR("sonar throttle:\n"));
+	print_PID(&pid_sonar_throttle);
+	print_blanks(2);
+}
+
+void report_xtrack()
+{
+	print_blanks(2);
+	Serial.printf_P(PSTR("Crosstrack\n"));
+	print_divider();
+	// radio
+	read_EEPROM_nav();
+	Serial.printf_P(PSTR("XTRACK: %4.2f\n"
+						 "XTRACK angle: %d\n"
+						 "PITCH_MAX: %d"),
+						 x_track_gain,
+						 x_track_angle,
+						 pitch_max);
+	print_blanks(2);
+}
+
+void report_throttle()
+{
+	print_blanks(2);
+	Serial.printf_P(PSTR("Throttle\n"));
+	print_divider();
+
+	read_EEPROM_throttle();
+	Serial.printf_P(PSTR("min: %d\n"
+						 "max: %d\n"
+						 "cruise: %d\n"
+						 "failsafe_enabled: %d\n"
+						 "failsafe_value: %d"),
+						 throttle_min,
+						 throttle_max,
+						 throttle_cruise,
+						 throttle_failsafe_enabled,
+						 throttle_failsafe_value);
+	print_blanks(2);
+}
+
+void report_imu()
+{
+	print_blanks(2);
+	Serial.printf_P(PSTR("IMU\n"));
+	print_divider();
+
+	imu.print_gyro_offsets();
+	imu.print_accel_offsets();
+	print_blanks(2);
+}
+
+void report_compass()
+{
+	print_blanks(2);	
+	Serial.printf_P(PSTR("Compass\n"));
+	print_divider();
+
+	read_EEPROM_compass();
+	read_EEPROM_compass_declination();
+	read_EEPROM_compass_offset();
+
+	print_enabled(compass_enabled);
+	
+	// mag declination
+	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"), 
+							mag_declination);
+	
+	// mag offsets
+	Serial.printf_P(PSTR("Mag offsets: %4.4f, %4.4f, %4.4f"),
+							mag_offset_x,
+							mag_offset_y,
+							mag_offset_z);
+	print_blanks(2);
+}
+
+
+void report_flight_modes()
+{
+	print_blanks(2);	
+	Serial.printf_P(PSTR("Flight modes\n"));
+	print_divider();
+	read_EEPROM_flight_modes();
+		
+	for(int i = 0; i < 6; i++ ){
+		print_switch(i, flight_modes[i]);
+	}
+	print_blanks(2);
+}
+
+/***************************************************************************/
+// CLI utilities
+/***************************************************************************/
+
+void 
+print_PID(PID * pid)
 {
 	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"), pid->kP(), pid->kI(), pid->kD(), (long)pid->imax());
 }
@@ -854,3 +955,16 @@ void zero_eeprom(void)
 	}
 	Serial.printf_P(PSTR("done\n"));
 }
+
+
+void print_enabled(boolean b)
+{
+	if(b)
+		Serial.printf_P(PSTR("en"));
+	else
+		Serial.printf_P(PSTR("dis"));
+	Serial.printf_P(PSTR("abled\n"));
+}
+
+
+
