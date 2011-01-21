@@ -211,6 +211,9 @@ void startup_ground(void)
 		Serial.println("*")
 	}
 	*/
+	// read the radio to set trims
+	// ---------------------------
+	trim_radio();
 
 	if (log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
@@ -228,13 +231,7 @@ void startup_ground(void)
 	
 	//IMU ground start
 	//------------------------
-#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
 	init_pressure_ground();
-#endif
-
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
 
 	// Warm up and read Gyro offsets
 	// -----------------------------

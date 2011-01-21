@@ -123,22 +123,21 @@ void calc_distance_error()
 // calculated at 50 hz
 void calc_altitude_error() 
 {
-	altitude_error 		= next_WP.alt - current_loc.alt;
+	if(control_mode == AUTO && offset_altitude != 0) {
+		// limit climb rates - we draw a straight line between first location and edge of wp_radius
+		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - wp_radius));
+		
+		// stay within a certain range
+		if(prev_WP.alt > next_WP.alt){
+			target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
+		}else{
+			target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
+		}
+	} else {
+		target_altitude = next_WP.alt;
+	}
 
-	// limit climb rates
-	//target_altitude = next_WP.alt - ((float)((wp_distance -30) * offset_altitude) / (float)(wp_totalDistance - 30));
-	
-	//if(prev_WP.alt > next_WP.alt){
-//		target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
-//	}else{
-//		target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
-//	}
-	
-	// calc the GPS/Abs pressure altitude
-	//if(GPS.fix)
-	//	pressure_altitude 	+= altitude_gain * (float)(GPS.altitude - pressure_altitude);
-	//current_loc.alt		= pressure_altitude;
-//	altitude_error 		= target_altitude - current_loc.alt;
+	altitude_error 	= target_altitude - current_loc.alt;
 
 	//Serial.printf("s: %d %d t_alt %d\n", (int)current_loc.alt, (int)altitude_error, (int)target_altitude);
 }
