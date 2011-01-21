@@ -7,7 +7,6 @@ static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
@@ -15,7 +14,6 @@ static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_nav_out(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
@@ -47,7 +45,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 	{"adc", 		test_adc},
 	{"imu",			test_imu},
-	{"gyro",		test_gyro},
 	{"dcm",			test_dcm},
 	{"omega",		test_omega},
 	{"battery",		test_battery},
@@ -55,7 +52,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
 	{"airpressure",	test_pressure},
-	{"nav",			test_nav_out},
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},	
@@ -457,27 +453,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_gyro(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-	Serial.printf_P(PSTR("Gyro | Accel\n"));
-	delay(1000);
-	
-	while(1){
-		Vector3f gyros 	= imu.get_gyro();
-		Vector3f accels = imu.get_accel();
-		Serial.printf_P(PSTR("%d\t%d\t%d\t|\t%d\t%d\t%d\n"), (int)gyros.x, (int)gyros.y, (int)gyros.z, (int)accels.x, (int)accels.y, (int)accels.z);
-		delay(100);
-
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-
-
-static int8_t
 test_dcm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -767,31 +742,6 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			//Serial.print("    Raw pressure value: ");
 			//Serial.println(abs_pressure);
 		}
-		
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-
-static int8_t
-test_nav_out(uint8_t argc, const Menu::arg *argv)
-{
-	Serial.printf_P(PSTR("Nav test\n"));
-	print_hit_enter();
-	
-	wp_distance = 100;
-	dTnav 		= 50;
-	
-	while(1){
-		delay(50);
-		//bearing_error += 100;
-		//bearing_error = wrap_360(bearing_error);
-		//calc_nav_pid();
-		//calc_nav_pitch();
-		//calc_nav_roll();
-		
-		//Serial.printf("error %ld,\troll %ld,\tpitch %ld\n", bearing_error, nav_roll, nav_pitch);
 		
 		if(Serial.available() > 0){
 			return (0);
