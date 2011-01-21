@@ -280,7 +280,7 @@
 # define STABILIZE_ROLL_P 		0.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.01
+# define STABILIZE_ROLL_I 		0.0
 #endif
 #ifndef STABILIZE_ROLL_D
 # define STABILIZE_ROLL_D 		0.0
@@ -293,7 +293,7 @@
 # define STABILIZE_PITCH_P		0.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.01
+# define STABILIZE_PITCH_I		0.0
 #endif
 #ifndef STABILIZE_PITCH_D
 # define STABILIZE_PITCH_D		0.0
