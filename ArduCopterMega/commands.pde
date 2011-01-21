@@ -81,11 +81,9 @@ void increment_WP_index()
 {
 	if(wp_index < wp_total){
 		wp_index++;
-		Serial.print("MSG WP index is incremented to ");
-		Serial.println(wp_index,DEC);
+		Serial.printf_P(PSTR("WP index is incremented to %d\n"),wp_index);
 	}else{
-		Serial.print("MSG Failed to increment WP index of ");
-		Serial.println(wp_index,DEC);
+		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),wp_index);
 	}
 }
 void decrement_WP_index()
@@ -104,6 +102,9 @@ void decrement_WP_index()
 void
 return_to_launch(void)
 {
+	//so we know where we are navigating from
+	next_WP = current_loc;
+
 	// home is WP 0
 	// ------------
 	wp_index = 0;
@@ -122,9 +123,9 @@ struct
 Location get_LOITER_home_wp()
 {
 	// read home position 
-	struct Location temp = get_wp_with_index(0);	
-	temp.id 	= CMD_LOITER;
-	temp.alt 	= read_alt_to_hold();
+	struct Location temp 	= get_wp_with_index(0);	
+	temp.id 				= CMD_LOITER;
+	temp.alt 				= read_alt_to_hold();
 	return temp;
 }
 
@@ -142,9 +143,7 @@ It looks to see what the next command type is and finds the last command.
 void 
 set_next_WP(struct Location *wp)
 {
-	//send_message(SEVERITY_LOW,"load WP");
-	Serial.print("MSG set_next_WP, wp_index: ");
-	Serial.println(wp_index,DEC);
+	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), wp_index);
 	send_message(MSG_COMMAND, wp_index);
 
 	// copy the current WP into the OldWP slot
@@ -194,17 +193,14 @@ set_next_WP(struct Location *wp)
 // -------------------------------
 void init_home()
 {
-	Serial.println("MSG: init home");
-
-	// Extra read just in case
-	// -----------------------
-	//GPS.Read();
+	Serial.printf_P(PSTR("init home\n"));
 
 	// block until we get a good fix
 	// -----------------------------
 	while (!GPS.new_data || !GPS.fix) {
 		GPS.update();
 	}
+	
 	home.id 	= CMD_WAYPOINT;
 	home.lng 	= GPS.longitude;				// Lon * 10**7
 	home.lat 	= GPS.latitude;				// Lat * 10**7
@@ -213,8 +209,6 @@ void init_home()
 
 	// ground altitude in centimeters for pressure alt calculations
 	// ------------------------------------------------------------
-	//ground_alt 			= GPS.altitude;
-	//pressure_altitude 	= GPS.altitude;  // Set initial value for filter
 	save_EEPROM_pressure();
 
 	// Save Home to EEPROM
