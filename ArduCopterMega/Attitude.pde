@@ -4,11 +4,8 @@ void init_pids()
 	// create limits to how much dampening we'll allow
 	// this creates symmetry with the P gain value preventing oscillations
 	
-	max_stabilize_dampener 	= pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°
-	//max_stabilize_dampener += pid_stabilize_roll.imax();		// = 0.1 * 300 = 1500 or 15°
-	
+	max_stabilize_dampener 	= pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°	
 	max_yaw_dampener		= pid_yaw.kP() * 6000;				// = .5 * 6000  = 3000
-	//max_yaw_dampener 	   += pid_yaw.imax();					// = 0.6 * 2500 = 1500 or 15°
 }
 
 

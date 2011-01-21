@@ -193,53 +193,30 @@ void set_servos_4(void)
 		motor_out[LEFT]		= constrain(motor_out[LEFT], 	out_min, rc_3.radio_max);
 		motor_out[FRONT]	= constrain(motor_out[FRONT], 	out_min, rc_3.radio_max);
 		motor_out[BACK] 	= constrain(motor_out[BACK], 	out_min, rc_3.radio_max);
-		
-		/*
-		int r_out = ((long)(motor_out[RIGHT] - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
-		int l_out = ((long)(motor_out[LEFT]  - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
-		int f_out = ((long)(motor_out[FRONT] - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
-		int b_out = ((long)(motor_out[BACK]  - rc_3.radio_min) * 100) / (long)(rc_3.radio_max - rc_3.radio_min);
-		//*/
 				
-		//
 		
-		/* debugging and dynamic kP
 		num++;
 		if (num > 50){
 			num = 0;
 			
-			hold_yaw_dampener = (float)rc_6.control_in;
-			//pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
-			//stabilize_rate_roll_pitch = pid_stabilize_roll.kP() *.25;
-			//init_pids();
+			//debugging with Channel 6
 			
-			//Serial.print("nav_yaw: ");
-			//Serial.println(nav_yaw,DEC);
-			
+			/*
+			// ROLL and PITCH 
+			// make sure you init_pids() after changing the kP
+			pid_stabilize_roll.kP((float)rc_6.control_in / 1000);
+			init_pids();
 			//Serial.print("kP: ");
 			//Serial.println(pid_stabilize_roll.kP(),3);
+			*/
+
+			/*
+			// YAW
+			// make sure you init_pids() after changing the kP
+			pid_yaw.kP((float)rc_6.control_in / 1000);
+			init_pids();
+			*/			
 		}
-		// out: 41 38 39 39
- 		// pwm: 358, 1412 1380 1395 1389
-		//*/
-		
-		//Serial.printf("set: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);		
-		//Serial.printf("s: %d %d %d\t\t", (int)roll_sensor, (int)pitch_sensor, (int)yaw_sensor);
-		///Serial.printf("outmin: %d\n", out_min);
-		
-		/*
-		write_int(r_out);
-		write_int(l_out);
-		write_int(f_out);
-		write_int(b_out);
-		write_int((int)(roll_sensor / 100));
-		write_int((int)(pitch_sensor / 100));
-		write_int((int)(yaw_sensor / 100));
-		write_int((int)(yaw_error / 100));
-		write_int((int)(current_loc.alt));
-		write_int((int)(altitude_error));
-		flush(10);
-		//*/
 		
 		// Send commands to motors
 		if(rc_3.servo_out > 0){
