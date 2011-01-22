@@ -2,6 +2,7 @@
 // are defined below. Order matters to the compiler.
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
@@ -40,6 +41,7 @@ static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
+	{"failsafe",	test_failsafe},
 	{"stabilize",	test_stabilize},
 	{"fbw",			test_fbw},
 	{"gps",			test_gps},
@@ -139,6 +141,58 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 								);
 		*/
 		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+
+
+static int8_t
+test_failsafe(uint8_t argc, const Menu::arg *argv)
+{
+	byte fail_test;
+	print_hit_enter();
+	for(int i = 0; i < 50; i++){
+		delay(20);
+		read_radio();
+	}
+	
+	// read the radio to set trims
+	// ---------------------------
+	trim_radio();
+	
+	oldSwitchPosition = readSwitch();
+	
+	Serial.printf_P(PSTR("Unplug battery, turn off radio.\n"));
+	
+	while(1){
+		delay(20);
+
+		// Filters radio input - adjust filters in the radio.pde file
+		// ----------------------------------------------------------
+		read_radio();
+			
+		if(rc_3.control_in > 0){
+			Serial.printf_P(PSTR("THROTTLE ERROR %d \n"), rc_3.control_in);
+			fail_test++;
+		}
+		
+		if(oldSwitchPosition != readSwitch()){
+			Serial.printf_P(PSTR("MODE CHANGE: "));
+			Serial.println(flight_mode_strings[readSwitch()]);
+			fail_test++;
+		}
+		if(throttle_failsafe_enabled && rc_3.get_failsafe()){
+			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), rc_3.radio_in);
+			Serial.println(flight_mode_strings[readSwitch()]);
+			fail_test++;
+		}
+		
+		if(fail_test > 0){
+			return (0);
+		}
+		if(Serial.available() > 0){
+			Serial.printf_P(PSTR("LOS caused no change in ACM.\n"));
 			return (0);
 		}
 	}
