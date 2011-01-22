@@ -112,6 +112,15 @@ setup(void)
         REQUIRE(AP_Float_negative_unity = -1.0);
     }
 
+    // AP_Var: initial value
+    {
+        TEST(var_initial_value);
+
+        AP_Float    f(12.345);
+
+        REQUIRE(f == 12.345);
+    }
+
     // AP_Var: set, get, assignment
     {
         TEST(var_set_get);
@@ -124,19 +133,6 @@ setup(void)
         f.set(10.0);
         REQUIRE(f == 10.0);
         REQUIRE(f.get() == 10.0);
-    }
-
-    // AP_Var: default value
-    {
-        TEST(var_default_value);
-
-        AP_Float	f(10.0);
-
-        REQUIRE(f == 10.0);
-        f = 0;
-        REQUIRE(f == 0);
-        f.set_default();
-        REQUIRE(f == 10.0);
     }
 
     // AP_Var: cast to type
@@ -169,7 +165,7 @@ setup(void)
     {
         TEST(var_naming);
 
-        AP_Float	f(0, AP_Var::k_no_address, PSTR("test"));
+        AP_Float	f(0, AP_Var::k_no_key, PSTR("test"));
         char		name_buffer[16];
 
         f.copy_name(name_buffer, sizeof(name_buffer));
@@ -177,6 +173,7 @@ setup(void)
     }
 
     // AP_Var: serialize
+    // note that this presumes serialisation to the native in-memory format
     {
         TEST(var_serialize);
 
@@ -202,12 +199,58 @@ setup(void)
         REQUIRE(f == 10);
     }
 
+    // AP_Var: enumeration
+    // note that this test presumes the singly-linked list implementation of the list
+    {
+        TEST(var_enumeration);
+
+        AP_Var	*v = AP_Var::lookup_by_index(0);
+
+        // test basic enumeration
+        AP_Float f1(0, AP_Var::k_no_key, PSTR("test1"));
+        REQUIRE(AP_Var::lookup_by_index(0) == &f1);
+        REQUIRE(AP_Var::lookup_by_index(1) == v);
+
+        // test that new entries arrive in order
+        {
+            AP_Float f2(0, AP_Var::k_no_key, PSTR("test2"));
+            REQUIRE(AP_Var::lookup_by_index(0) == &f2);
+            REQUIRE(AP_Var::lookup_by_index(1) == &f1);
+            REQUIRE(AP_Var::lookup_by_index(2) == v);
+
+            {
+                AP_Float f3(0, AP_Var::k_no_key, PSTR("test3"));
+                REQUIRE(AP_Var::lookup_by_index(0) == &f3);
+                REQUIRE(AP_Var::lookup_by_index(1) == &f2);
+                REQUIRE(AP_Var::lookup_by_index(2) == &f1);
+                REQUIRE(AP_Var::lookup_by_index(3) == v);
+            }
+        }
+
+        // test that destruction removes from the list
+        REQUIRE(AP_Var::lookup_by_index(0) == &f1);
+        REQUIRE(AP_Var::lookup_by_index(1) == v);
+    }
+
+    // AP_Var: group names
+    {
+        TEST(group_names);
+
+        AP_Var_group	group(AP_Var::k_no_key, PSTR("group_"));
+        AP_Float		f(&group, 1, 1.0, PSTR("test"));
+        char			name_buffer[16];
+
+        f.copy_name(name_buffer, sizeof(name_buffer));
+        REQUIRE(!strcmp(name_buffer, "group_test"));
+    }
+
+#if SAVE
     // AP_Var: load and save
     {
         TEST(var_load_save);
 
-        AP_Float	f1(10, 4);
-        AP_Float	f2(0, 4);
+        AP_Float    f1(10, 4);
+        AP_Float    f2(0, 4);
 
         f2.save();
         f2 = 1.0;
@@ -219,58 +262,13 @@ setup(void)
         REQUIRE(f2 == 10);
     }
 
-    // AP_Var: enumeration
-    // note that this test presumes the singly-linked list implementation of the list
+    // AP_Var: group load/save
     {
-        TEST(var_enumeration);
+        TEST(var_group_loadsave);
 
-        AP_Var	*v = AP_Var::lookup(0);
-
-        // test basic enumeration
-        AP_Float f1(0, AP_Var::k_no_address, PSTR("test1"));
-        REQUIRE(AP_Var::lookup(0) == &f1);
-        REQUIRE(AP_Var::lookup(1) == v);
-
-        // test that new entries arrive in order
-        {
-            AP_Float f2(0, AP_Var::k_no_address, PSTR("test2"));
-            REQUIRE(AP_Var::lookup(0) == &f2);
-            REQUIRE(AP_Var::lookup(1) == &f1);
-            REQUIRE(AP_Var::lookup(2) == v);
-
-            {
-                AP_Float f3(0, AP_Var::k_no_address, PSTR("test3"));
-                REQUIRE(AP_Var::lookup(0) == &f3);
-                REQUIRE(AP_Var::lookup(1) == &f2);
-                REQUIRE(AP_Var::lookup(2) == &f1);
-                REQUIRE(AP_Var::lookup(3) == v);
-            }
-        }
-
-        // test that destruction removes from the list
-        REQUIRE(AP_Var::lookup(0) == &f1);
-        REQUIRE(AP_Var::lookup(1) == v);
-    }
-
-    // AP_Var: scope names
-    {
-        TEST(var_scope_names);
-
-        AP_Var_scope	scope(PSTR("scope_"));
-        AP_Float		f(1.0, AP_Var::k_no_address, PSTR("test"), &scope);
-        char			name_buffer[16];
-
-        f.copy_name(name_buffer, sizeof(name_buffer));
-        REQUIRE(!strcmp(name_buffer, "scope_test"));
-    }
-
-    // AP_Var: scope address offsets
-    {
-        TEST(var_scope_addressing);
-
-        AP_Var_scope	scope(PSTR("scope"), 4);
+        AP_Var_group	group(PSTR("group_"), 4);
         AP_Float    	f1(10.0, 8);
-        AP_Float    	f2(1.0, 4, PSTR("var"), &scope);
+        AP_Float    	f2(1.0, 4, PSTR("var"), &group);
 
         f1.save();
         f1.load();
@@ -283,6 +281,7 @@ setup(void)
         f1.load();
         REQUIRE(f1 == 1);
     }
+#endif
 
     // AP_Var: derived types
     {
