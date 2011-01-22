@@ -27,7 +27,7 @@
 
 #include "AP_MetaClass.h"
 
-class AP_Var_scope;
+class AP_Var_group;
 
 /// Base class for variables.
 ///
@@ -36,50 +36,111 @@ class AP_Var_scope;
 class AP_Var : public AP_Meta_class
 {
 public:
-    /// Storage address for variables that can be saved to EEPROM
+    /// EEPROM header
     ///
-    /// If the variable is contained within a scope, then the address
-    /// is relative to the scope.
+    /// This structure is placed at the head of the EEPROM to indicate
+    /// that the ROM is formatted for AP_Var.
     ///
-    /// @todo	This might be used as a token for mass serialisation,
-    ///			but for now it's just the address of the variable's backing
-    ///			store in EEPROM.
+    /// The EEPROM may thus be cheaply erased by overwriting just one
+    /// byte of the header magic.
     ///
-    typedef uint16_t Address;
+    struct EEPROM_header {
+        uint16_t    magic;
+        uint8_t     revision;
+        uint8_t     spare;
+    };
 
-    /// An address value that indicates that a variable is not to be saved to EEPROM.
+    static const uint16_t   k_EEPROM_magic      = 0x5041;   ///< "AP"
+    static const uint16_t   k_EEPROM_revision   = 1;        ///< current format revision
+
+    /// Storage key for variables that are saved in EEPROM.
+    ///
+    /// The key is used to associate a known variable in memory
+    /// with storage for the variable in the EEPROM.  When the
+    /// variable's storage is located in EEPROM, the key value is
+    /// replaced with an EEPROM address.
+    ///
+    /// When the variable is saved to EEPROM, a header is attached
+    /// which contains the key along with other details.
+    ///
+    typedef uint16_t Key;
+
+    /// The header prepended to a variable stored in EEPROM
+    ///
+    struct Var_header {
+        /// The size of the variable, minus one.
+        /// This allows a variable to be anything from one to 32 bytes long.
+        ///
+        uint16_t    size:5;
+
+        /// The key assigned to the variable.
+        ///
+        uint16_t    key:8;
+
+        /// Spare bits, currently unused
+        ///
+        /// @todo   One could be a parity bit?
+        ///
+        uint16_t    spare:3;
+    };
+
+    /// An key that indicates that a variable is not to be saved to EEPROM.
     ///
     /// As the value has all bits set to 1, it's not a legal EEPROM address for any
-    /// EEPROM smaller than 64K.
+    /// EEPROM smaller than 64K (and it's too big to fit the Var_header::key field).
     ///
     /// This value is normally the default.
     ///
-    static const Address k_no_address = ~(Address)0;
+    static const Key k_no_key = 0xffff;
+
+    /// A key that has this bit set is still a key; if it has been cleared then
+    /// the key's value is actually an address in EEPROM.
+    ///
+    static const Key k_not_located = (Key)1 << 15;
+
+    /// Key assigned to the terminal entry in EEPROM.
+    ///
+    static const Key k_tail_sentinel = 0xff;
+
+    /// A bitmask that removes any control bits from a key giving just the
+    /// value.
+    ///
+    static const Key k_key_mask = ~(k_not_located);
 
     /// The largest variable that will be saved to EEPROM.
     /// This affects the amount of stack space that is required by the ::save, ::load,
-    /// ::save_all and ::load_all functions.
+    /// ::save_all and ::load_all functions.  It should match the maximum size that can
+    /// be encoded in the Var_header::size field.
     ///
-    static const size_t k_max_size = 16;
+    static const size_t k_max_size = 32;
 
     /// Optional flags affecting the behavior and usage of the variable.
     ///
     enum Flags {
         k_no_flags     = 0,
-        k_no_auto_load = (1 << 0), ///< will not be loaded by ::load_all or saved by ::save_all
-        k_no_import    = (1 << 1)  ///< new values must not be imported from e.g. a GCS
+
+        /// The variable will not be loaded by ::load_all or saved by ::save_all, but it
+        /// has a key and can be loaded/saved manually.
+        k_no_auto_load = (1 << 0),
+
+        /// This flag is advisory; it indicates that the variable's value should not be
+        /// imported from outside, e.g. from a GCS.
+        k_no_import    = (1 << 1)
     };
+
+    AP_Var() {}
 
     /// Constructor
     ///
+    /// @param  key             The storage key to be associated with this variable.
     /// @param	name			An optional name by which the variable may be known.
     ///							This name may be looked up via the ::lookup function.
-    /// @param	scope			An optional scope that the variable may be a contained within.
+    /// @param	group			An optional group to which the variable may belong.
     ///							The scope's name will be prepended to the variable name
     ///							by ::copy_name.
+    /// @param  flags           Optional flags which control how the variable behaves.
     ///
-    AP_Var(Address address = k_no_address, const prog_char *name = NULL, const AP_Var_scope *scope = NULL,
-           Flags flags = k_no_flags);
+    AP_Var(Key key, const prog_char *name, AP_Var_group *group, Flags flags);
 
     /// Destructor
     ///
@@ -90,10 +151,6 @@ public:
     /// destruction of variables by hand is generally discouraged.
     ///
     ~AP_Var(void);
-
-    /// Set the variable to its default value
-    ///
-    virtual void set_default(void);
 
     /// Copy the variable's name, prefixed by any parent class names, to a buffer.
     ///
@@ -109,122 +166,184 @@ public:
 
     /// Return a pointer to the n'th known variable.
     ///
-    /// This function is used to iterate the set of variables that are considered
-    /// interesting; i.e. those that may be saved to EEPROM, or that have a name.
+    /// This function is used to iterate the set of variables, and is optimised
+    /// for the case where the index argument is increased sequentially from one
+    /// call to the next.
     ///
-    /// Note that variable index numbers are not constant, they depend on the
-    /// the static construction order.
+    /// Note that variable index numbers are not constant; they will vary
+    /// from build to build.
     ///
-    /// @param	index			enumerator for the variable to be returned
+    /// @param	index			Enumerator for the variable to be returned
+    /// @return                Pointer to the index'th variable, or NULL if
+    ///                         the set of variables has been exhausted.
     ///
-    static AP_Var *lookup(int index);
+    static AP_Var *lookup_by_index(int index);
 
     /// Save the current value of the variable to EEPROM.
     ///
     /// This interface works for any subclass that implements
-    /// serialize.
+    /// AP_Meta_class::serialize.
     ///
-    void save(void) const;
+    /// Note that invoking this method on a variable that is a group
+    /// member will cause the entire group to be saved.
+    ///
+    /// @return                True if the variable was saved successfully.
+    ///
+    bool save(void);
 
     /// Load the variable from EEPROM.
     ///
     /// This interface works for any subclass that implements
-    /// unserialize.
+    /// AP_Meta_class::unserialize.
     ///
-    void load(void);
+    /// If the variable has not previously been saved to EEPROM, this
+    /// routine will return failure.
+    ///
+    /// Note that invoking this method on a variable that is a group
+    /// member will cause the entire group to be loaded.
+    ///
+    /// @return                True if the variable was loaded successfully.
+    ///
+    bool load(void);
 
     /// Save all variables to EEPROM
     ///
-    static void save_all(void);
+    /// This routine performs a best-efforts attempt to save all
+    /// of the variables to EEPROM.  If some fail to save, the others
+    /// that succeed will still all be saved.
+    ///
+    /// @return                False if any variable failed to save.
+    ///
+    static bool save_all(void);
 
     /// Load all variables from EEPROM
     ///
-    static void load_all(void);
+    /// This function performs a best-efforts attempt to load all
+    /// of the variables from EEPROM.  If some fail to load, their
+    /// values will remain as they are.
+    ///
+    /// @return                False if any variable failed to load.  Note
+    ///                         That this may be caused by a variable not having
+    ///                         previously been saved.
+    ///
+    static bool load_all(void);
 
     /// Test for flags that may be set.
     ///
     /// @param	flagval			Flag or flags to be tested
-    /// @returns				True if all of the bits in flagval are set in the flags.
+    /// @return				True if all of the bits in flagval are set in the flags.
     ///
     bool has_flags(Flags flagval) const {
         return (_flags & flagval) == flagval;
     }
 
 private:
-    const Address       _address;
-    const prog_char     *_name;
-    const AP_Var_scope  *const _scope;
-    AP_Var              *_link;
-    uint8_t             _flags;
-
-    /// Do the arithmetic required to compute the variable's address in EEPROM
-    ///
-    /// @returns		The address at which the variable is stored in EEPROM,
-    ///					or k_no_address if it is not saved.
-    ///
-    Address _get_address(void) const;
+    AP_Var_group        *_group;            ///< Group that the variable may be a member of
+    Key                 _key;               ///< storage key
+    const prog_char     *_name;             ///< name known to external agents (GCS, etc.)
+    AP_Var              *_link;             ///< linked list pointer to next variable
+    uint8_t             _flags;             ///< flag bits
 
     // static state used by ::lookup
-    static AP_Var       *_variables;
-    static AP_Var       *_lookup_hint;      /// pointer to the last variable that was looked up by ::lookup
-    static int          _lookup_hint_index; /// index of the last variable that was looked up by ::lookup
+    static AP_Var       *_variables;        ///< linked list of all variables
+    static AP_Var       *_lookup_hint;      ///< pointer to the last variable that was looked up by ::lookup
+    static int          _lookup_hint_index; ///< index of the last variable that was looked up by ::lookup
+
+
+    // EEPROM space allocation and scanning
+    static uint16_t     _tail_sentinel;     ///< EEPROM address of the tail sentinel
+    static bool         _EEPROM_scanned;    ///< true once the EEPROM has been scanned and addresses assigned
+
+    static const uint16_t k_EEPROM_size = 4096;    ///< XXX avr-libc doesn't consistently export this
+
+
+    /// Return a pointer to the variable with a given key.
+    ///
+    /// This function is used to search the set of variables for
+    /// one with a given key.
+    ///
+    /// Note that this search will fail (XXX should it?) if the variable
+    /// assigned this key has been located in EEPROM.
+    ///
+    /// @param  key             The key to search for.
+    /// @return                Pointer to the variable assigned the key,
+    ///                         or NULL if no variable owns up to it.
+    ///
+    static AP_Var *_lookup_by_key(Key key);
+
+    /// Scan the EEPROM and assign addresses to any known variables
+    /// that have entries there.
+    ///
+    /// @return         True if the EEPROM was scanned successfully.
+    ///
+    static bool         _EEPROM_scan(void);
+
+    /// Locate this variable in the EEPROM.
+    ///
+    /// @param  allocate        If true, and the variable does not already have
+    ///                         space allocated in EEPROM, allocate it.
+    /// @return                 True if the _key field is a valid EEPROM address with
+    ///                         space reserved for the variable to be saved.  False
+    ///                         if the variable does not have a key, or space could not
+    ///                         be allocated and the variable does not already exist in
+    ///                         EEPROM.
+    ///
+    bool                _EEPROM_locate(bool allocate);
+
 };
 
-/// Nestable scopes for variable names.
+/// Variable groups.
 ///
-///	This provides a mechanism for scoping variable names and their
-/// EEPROM addresses.
+///	Grouped variables are treated as a single variable when loaded from
+/// or saved to EEPROM.  The size limits for variables apply to the entire
+/// group; thus a group cannot be larger than the largest legal variable.
 ///
-/// When AP_Var is asked for the name of a variable, it will
-/// prepend the names of all enclosing scopes.  This provides a way
-/// of grouping variables and saving memory when many share a large
-/// common prefix.
+/// When AP_Var is asked for the name of a variable that is a member
+/// of a group, it will prepend the name of the group; this helps save
+/// memory.
 ///
-/// When AP_var computes the address of a variable, it will take
-/// into account the address offsets of each of the variable's
-/// enclosing scopes.
+/// Variables belonging to a group are always sorted into the global
+/// variable list after the group.
 ///
-class AP_Var_scope
+class AP_Var_group : public AP_Var
 {
 public:
+    AP_Var_group();
+    virtual ~AP_Var_group();
+
     /// Constructor
     ///
-    /// @param	name			The name of the scope.
-    /// @param	address			An EEPROM address offset to be added to the address assigned to
-    ///							any variables within the scope.
-    ///	@param	parent			Optional parent scope to nest within.
+    /// @param  key             Storage key for the group.
+    /// @param	name			An optional name prefix for members of the group.
     ///
-    AP_Var_scope(const prog_char *name, AP_Var::Address address = 0, AP_Var_scope *parent = NULL) :
-        _name(name), _parent(parent), _address(address) {
+    AP_Var_group(Key key, const prog_char *name = NULL) :
+        AP_Var(key, name, NULL, k_no_flags)
+    {
     }
 
-    /// Copy the scope name, prefixed by any parent scope names, to a buffer.
+    /// Serialize the group.
     ///
-    /// Note that if the combination of names is larger than the buffer, the
-    /// result in the buffer will be truncated.
+    /// Iteratively serializes the entire group into the supplied buffer.
     ///
-    /// @param	buffer			The destination buffer
-    /// @param	bufferSize		Total size of the destination buffer.
+    /// @param  buf             Buffer into which serialized data should be placed.
+    /// @param  bufSize         The size of the buffer provided.
+    /// @return                 The size of the serialized data, even if that data would
+    ///                         have overflowed the buffer.
     ///
-    void copy_name(char *buffer, size_t bufferSize) const {
-        if (_parent) {
-            _parent->copy_name(buffer, bufferSize);
-        }
-        strlcat_P(buffer, _name, bufferSize);
-    }
+    virtual size_t serialize(void *buf, size_t bufSize) const;
 
-    /// Compute the address offset that this and any parent scope might apply
-    /// to variables inside the scope.
+    /// Unserialize the group.
     ///
-    /// This provides a way for variables to be grouped into collections whose
-    /// EEPROM addresses can be more easily managed.
+    /// Iteratively unserializes the group from the supplied buffer.
     ///
-    AP_Var::Address get_address(void) const;
+    /// @param  buf             Buffer containing serialized data.
+    /// @param  bufSize         The size of the buffer.
+    /// @return                 The number of bytes from the buffer that would be consumed
+    ///                         unserializing the data.  If the value is less than or equal
+    ///                         to bufSize, unserialization was successful.
+    ///
+    virtual size_t unserialize(void *buf, size_t bufSize);
 
-private:
-    const prog_char *_name;     /// pointer to the scope name in program memory
-    AP_Var_scope    *_parent;   /// pointer to a parent scope, if one exists
-    AP_Var::Address _address;   /// container base address, offsets contents
 };
 
 /// Template class for scalar variables.
@@ -238,23 +357,45 @@ template<typename T>
 class AP_VarT : public AP_Var
 {
 public:
-    /// Constructor
+    /// Constructor for non-grouped variable.
     ///
-    /// @note		Constructors for AP_Var are specialised so that they can
-    ///				pass the correct typeCode argument to the AP_Var ctor.
+    /// Initialises a stand-alone variable with optional initial value, storage key, name and flags.
     ///
-    /// @param	initialValue	Value the variable should have at startup.
-    /// @param	identity		A unique token used when saving the variable to EEPROM.
-    ///							Note that this token must be unique, and should only be
-    ///							changed for a variable if the EEPROM version is updated
-    ///							to prevent the accidental unserialisation of old data
-    ///							into the wrong variable.
-    /// @param	name			An optional name by which the variable may be known.
-    /// @param	varClass		An optional class that the variable may be a member of.
+    /// @param  default_value   Value the variable should have at startup.
+    /// @param  key             Storage key for the variable.  If not set, or set to AP_Var::k_no_key
+    ///                         the variable cannot be loaded from or saved to EEPROM.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
-    AP_VarT<T> (T default_value = 0, Address address = k_no_address, const prog_char *name = NULL,
-                AP_Var_scope *scope = NULL, Flags flags = k_no_flags) :
-        AP_Var(address, name, scope, flags), _value(default_value), _default_value(default_value) {
+    AP_VarT<T> (T initial_value = 0,
+                Key key = k_no_key,
+                const prog_char *name = NULL,
+                Flags flags = k_no_flags) :
+        AP_Var(key, name, NULL, flags),
+        _value(initial_value)
+    {
+    }
+
+    /// Constructor for grouped variable.
+    ///
+    /// Initialises a variable that is a member of a group with optional initial value, name and flags.
+    ///
+    /// @param  group           The group that this variable belongs to.
+    /// @param  index           The variable's index within the group.  Index values must be unique
+    ///                         within the group, as they ensure that the group's layout in EEPROM
+    ///                         is consistent.
+    /// @param  initial_value   The value the variable takes at startup.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behaviour of the variable.
+    ///
+    AP_VarT<T> (AP_Var_group *group,
+                Key index,
+                T initial_value = 0,
+                const prog_char *name = NULL,
+                Flags flags = k_no_flags) :
+        AP_Var(index, name, group, flags),
+        _value(initial_value)
+    {
     }
 
     // serialize _value into the buffer, but only if it is big enough.
@@ -273,11 +414,6 @@ public:
             _value = *(T *)buf;
         }
         return sizeof(T);
-    }
-
-    /// Restore the variable to its default value
-    virtual void set_default(void) {
-        _value = _default_value;
     }
 
     /// Value getter
@@ -306,7 +442,8 @@ public:
         return v;
     }
 
-    /// Copy assignment from T
+    /// Copy assignment from T is equivalent to ::set.
+    ///
     AP_VarT<T>& operator=(T v) {
         _value = v;
         return *this;
@@ -314,8 +451,8 @@ public:
 
 protected:
     T _value;
-    T _default_value;
 };
+
 /// Convenience macro for defining instances of the AP_Var template
 ///
 #define AP_VARDEF(_t, _n)   typedef AP_VarT<_t> AP_##_n;
@@ -336,20 +473,31 @@ AP_VARDEF(int32_t, Int32);  // defines AP_Int32
 /// to achieve this.
 ///
 /// Note that any protocol transporting serialized data should be aware that the
-/// encoding used is effectively Q5.10 (one sign bit, 5 integer bits, 10 fractional bits).
+/// encoding used is effectively Q5.10 (one sign bit, 5 integer bits, 10 fractional bits),
+/// giving an effective range of approximately +/-31.999
 ///
 class AP_Float16 : public AP_Float
 {
 public:
-    /// Constructor mimics AP_Float::AP_Float()
+    /// Constructors mimic AP_Float::AP_Float()
     ///
-    AP_Float16(float default_value = 0,
-               Address address = k_no_address,
+    AP_Float16(float initial_value = 0,
+               Key key = k_no_key,
                const prog_char *name = NULL,
-               AP_Var_scope *scope = NULL,
                Flags flags = k_no_flags) :
-        AP_Float(default_value, address, name, scope, flags) {
+        AP_Float(initial_value, key, name, flags)
+    {
     }
+
+    AP_Float16(AP_Var_group *group,
+               Key index,
+               float initial_value = 0,
+               const prog_char *name = NULL,
+               Flags flags = k_no_flags) :
+        AP_Float(group, index, initial_value, name, flags)
+    {
+    }
+
 
     // Serialize _value as Q5.10.
     //

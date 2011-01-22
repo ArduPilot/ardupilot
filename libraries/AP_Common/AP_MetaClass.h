@@ -24,9 +24,13 @@
 #include <inttypes.h>
 
 #include <avr/io.h>			// for RAMEND
+///
 /// Basic meta-class from which other AP_* classes can derive.
 ///
 /// Functions that form the public API to the metaclass are prefixed meta_.
+///
+/// Note that classes inheriting from AP_Meta_class *must* have a default
+/// constructor and destructor in order for meta_cast to work.
 ///
 class AP_Meta_class
 {
