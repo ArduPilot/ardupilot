@@ -25,14 +25,6 @@ int AP_Var::_lookup_hint_index = 0;
 uint16_t AP_Var::_tail_sentinel;
 bool AP_Var::_EEPROM_scanned;
 
-AP_Var_group::AP_Var_group()
-{
-}
-
-AP_Var_group::~AP_Var_group()
-{
-}
-
 // Constructor
 //
 AP_Var::AP_Var(Key key, const prog_char *name, AP_Var_group *group, Flags flags) :
@@ -440,5 +432,61 @@ bool AP_Var::_EEPROM_locate(bool allocate)
 
     // We have successfully allocated space and thus located the variable
     return true;
+}
+
+size_t
+AP_Var_group::serialize(void *buf, size_t buf_size)
+{
+    return _serialize_unserialize(buf, buf_size, true);
+}
+
+size_t
+AP_Var_group::unserialize(void *buf, size_t buf_size)
+{
+    return _serialize_unserialize(buf, buf_size, false);
+}
+
+size_t
+AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_serialize)
+{
+    AP_Var  *vp;
+    uint8_t *bp;
+    size_t  size, total_size, resid;
+
+    // Traverse the list of group members, serializing each in order
+    //
+    vp = next();
+    bp = (uint8_t *)buf;
+    resid = buf_size;
+    total_size = 0;
+    while (vp->group() == this) {
+
+        // (un)serialise the group member
+        if (do_serialize) {
+            size = vp->serialize(bp, buf_size);
+        } else {
+            size = vp->unserialize(bp, buf_size);
+        }
+
+        // Account for the space that this variable consumes in the buffer
+        //
+        // We always count the total size, and we always advance the buffer pointer
+        // if there was room for the variable.  This does mean that in the case where
+        // the buffer was too small for a variable in the middle of the group, that
+        // a smaller variable after it in the group may still be serialised into
+        // the buffer.  Since that's a rare case it's not worth optimising for - in
+        // either case this function will return a size greater than the buffer size
+        // and the calling function will have to treat it as an error.
+        //
+        total_size += size;
+        if (size <= resid) {
+            // there was space for this one, account for it
+            resid -= size;
+            bp += size;
+        }
+
+        vp = vp->next();
+    }
+    return total_size;
 }
 

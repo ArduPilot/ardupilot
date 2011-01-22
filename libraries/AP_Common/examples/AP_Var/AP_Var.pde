@@ -64,9 +64,9 @@ setup(void)
     {
         TEST(meta_type_id);
 
-        AP_Float 	f1;
-        AP_Float	f2;
-        AP_Int8		i1;
+        AP_Float 	f1(0);
+        AP_Float	f2(0);
+        AP_Int8		i1(0);
 
         uint16_t	m1 = f1.meta_type_id();
         uint16_t	m2 = f2.meta_type_id();
@@ -77,13 +77,17 @@ setup(void)
         REQUIRE(m1 != m3);
         REQUIRE(AP_Meta_class::meta_type_equivalent(&f1, &f2));
         REQUIRE(!AP_Meta_class::meta_type_equivalent(&f1, &i1));
+
+        REQUIRE(NULL != AP_Meta_class::meta_cast<AP_Float>(&f1));
+        REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Int8>(&f1));
+        REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Float16>(&f1));
     }
 
     // MetaClass: test external handles
     {
         TEST(meta_handle);
 
-        AP_Float	f;
+        AP_Float	f(0);
         AP_Meta_class::Meta_handle	h = f.meta_get_handle();
 
         REQUIRE(0 != h);
@@ -95,7 +99,7 @@ setup(void)
     {
         TEST(meta_cast);
 
-        AP_Float	f;
+        AP_Float	f(0);
 
         REQUIRE(NULL != AP_Meta_class::meta_cast<AP_Float>(&f));
         REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Int8>(&f));

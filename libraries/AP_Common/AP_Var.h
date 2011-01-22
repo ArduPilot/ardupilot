@@ -128,8 +128,6 @@ public:
         k_no_import    = (1 << 1)
     };
 
-    AP_Var() {}
-
     /// Constructor
     ///
     /// @param  key             The storage key to be associated with this variable.
@@ -140,7 +138,7 @@ public:
     ///							by ::copy_name.
     /// @param  flags           Optional flags which control how the variable behaves.
     ///
-    AP_Var(Key key, const prog_char *name, AP_Var_group *group, Flags flags);
+    AP_Var(Key key = k_no_key, const prog_char *name = NULL, AP_Var_group *group = NULL, Flags flags = k_no_flags);
 
     /// Destructor
     ///
@@ -237,11 +235,25 @@ public:
         return (_flags & flagval) == flagval;
     }
 
+    /// Returns the group that a variable belongs to
+    ///
+    /// @return             The parent group, or NULL if the variable is not grouped.
+    ///
+    AP_Var_group *group(void) { return _group; }
+
+    /// Returns the next variable in the global list
+    ///
+    /// @return             The next variable, either the next group member in order or
+    ///                     the next variable in an arbitrary order, or NULL if this is
+    ///                     the last variable in the list.
+    ///
+    AP_Var *next(void) { return _link; }
+
 private:
     AP_Var_group        *_group;            ///< Group that the variable may be a member of
+    AP_Var              *_link;             ///< linked list pointer to next variable
     Key                 _key;               ///< storage key
     const prog_char     *_name;             ///< name known to external agents (GCS, etc.)
-    AP_Var              *_link;             ///< linked list pointer to next variable
     uint8_t             _flags;             ///< flag bits
 
     // static state used by ::lookup
@@ -308,15 +320,12 @@ private:
 class AP_Var_group : public AP_Var
 {
 public:
-    AP_Var_group();
-    virtual ~AP_Var_group();
-
     /// Constructor
     ///
     /// @param  key             Storage key for the group.
     /// @param	name			An optional name prefix for members of the group.
     ///
-    AP_Var_group(Key key, const prog_char *name = NULL) :
+    AP_Var_group(Key key = k_no_key, const prog_char *name = NULL) :
         AP_Var(key, name, NULL, k_no_flags)
     {
     }
@@ -326,23 +335,39 @@ public:
     /// Iteratively serializes the entire group into the supplied buffer.
     ///
     /// @param  buf             Buffer into which serialized data should be placed.
-    /// @param  bufSize         The size of the buffer provided.
+    /// @param  buf_size        The size of the buffer provided.
     /// @return                 The size of the serialized data, even if that data would
-    ///                         have overflowed the buffer.
+    ///                         have overflowed the buffer.  If the value is less than or
+    ///                         equal to buf_size, serialization was successful.
     ///
-    virtual size_t serialize(void *buf, size_t bufSize) const;
+    virtual size_t serialize(void *buf, size_t buf_size);
 
     /// Unserialize the group.
     ///
     /// Iteratively unserializes the group from the supplied buffer.
     ///
     /// @param  buf             Buffer containing serialized data.
-    /// @param  bufSize         The size of the buffer.
+    /// @param  buf_size        The size of the buffer.
     /// @return                 The number of bytes from the buffer that would be consumed
     ///                         unserializing the data.  If the value is less than or equal
-    ///                         to bufSize, unserialization was successful.
+    ///                         to buf_size, unserialization was successful.
     ///
-    virtual size_t unserialize(void *buf, size_t bufSize);
+    virtual size_t unserialize(void *buf, size_t buf_size);
+
+private:
+    /// Common implementation of the group member traversal and accounting used
+    /// by serialize/unserialize.
+    ///
+    /// @param  buf             Buffer containing serialized data.
+    /// @param  buf_size        The size of the buffer.
+    /// @param  do_serialize    True if the operation should serialize, false if it should
+    ///                         unserialize.
+    /// @return                 The number of bytes from the buffer that would be consumed
+    ///                         operating on the data.  If the value is less than or equal
+    ///                         to buf_size, the operation was successful.
+    ///
+
+    size_t                      _serialize_unserialize(void *buf, size_t buf_size, bool do_serialize);
 
 };
 
@@ -390,7 +415,7 @@ public:
     ///
     AP_VarT<T> (AP_Var_group *group,
                 Key index,
-                T initial_value = 0,
+                T initial_value,
                 const prog_char *name = NULL,
                 Flags flags = k_no_flags) :
         AP_Var(index, name, group, flags),
