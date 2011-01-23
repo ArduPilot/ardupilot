@@ -307,13 +307,16 @@ setup(void)
 
         AP_Float    f1(10.0, 1);
         AP_Float    f2(123.0, 2);
+        AP_Int8     i(17, 3);
 
         REQUIRE(true == AP_Var::save_all());
         f1 = 0;
         f2 = 0;
+        i = 0;
         REQUIRE(true == AP_Var::load_all());
         REQUIRE(f1 == 10.0);
         REQUIRE(f2 == 123.0);
+        REQUIRE(i == 17);
 
         AP_Var::erase_all();
     }
@@ -339,57 +342,6 @@ setup(void)
         AP_Var::erase_all();
     }
 
-#if SAVE
-    // AP_Var: load and save
-    {
-        TEST(var_load_save);
-
-        AP_Float    f1(10, 4);
-        AP_Float    f2(0, 4);
-
-        f2.save();
-        f2 = 1.0;
-        f2.load();
-        REQUIRE(f2 == 0);
-
-        f1.save();
-        f2.load();
-        REQUIRE(f2 == 10);
-    }
-
-    // AP_Var: group load/save
-    {
-        TEST(var_group_loadsave);
-
-        AP_Var_group	group(PSTR("group_"), 4);
-        AP_Float    	f1(10.0, 8);
-        AP_Float    	f2(1.0, 4, PSTR("var"), &group);
-
-        f1.save();
-        f1.load();
-        REQUIRE(f1 == 10);
-
-        f2.save();
-        f2.load();
-        REQUIRE(f2 == 1);
-
-        f1.load();
-        REQUIRE(f1 == 1);
-    }
-
-    // AP_Var: derived types
-    {
-        TEST(var_derived);
-
-        AP_Float16	f(10.0, 20);
-
-        f.save();
-        f = 0;
-        REQUIRE(f == 0);
-        f.load();
-        REQUIRE(f = 10.0);
-    }
-#endif
 
     Test::report();
 }

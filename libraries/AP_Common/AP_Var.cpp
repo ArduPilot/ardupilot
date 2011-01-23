@@ -421,6 +421,23 @@ bool AP_Var::_EEPROM_scan(void)
         eeprom_address += sizeof(var_header) + var_header.size + 1;
     }
 
+    // Mark any variables that weren't assigned addresses as not-allocated,
+    // so that we don't waste time looking for them again later.
+    //
+    // Note that this isn't done when the header is not found on an empty EEPROM.
+    // The first variable written on an empty EEPROM falls out as soon as the
+    // header is not found.  The second will scan and find one variable, then
+    // mark all the rest as not allocated.
+    //
+    vp = _variables;
+    while (vp) {
+        if (vp->_key & k_key_not_located) {
+            vp->_key |= k_key_not_allocated;
+            log("key %u not allocated", vp->key());
+        }
+        vp = vp->_link;
+    }
+
     // Scanning is complete
     log("scan done");
     _tail_sentinel = eeprom_address;
@@ -448,20 +465,21 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         return true;                // it has
     }
 
-    // We don't know where this variable belongs; try scanning the EEPROM
+    // We don't know where this variable belongs.  If the variable isn't
+    // marked as already having been looked for and not found in EEPROM,
+    // try scanning to see if we can locate it.
     //
-    // XXX this is going to *suck* for mass-save operations.  Do we need
-    //     a flag/key bit that indicates that a variable was known during
-    //     but not located by a scan?
-    //
-    log("need scan");
-    _EEPROM_scan();
+    if (!(_key & k_key_not_allocated)) {
+        log("need scan");
+        _EEPROM_scan();
 
-    // Has the variable now been located?
-    //
-    if (!(_key & k_key_not_located)) {
-        return true;                // it has
+        // Has the variable now been located?
+        //
+        if (!(_key & k_key_not_located)) {
+            return true;                // it has
+        }
     }
+
     // If not located and not permitted to allocate, we have failed.
     //
     if (!allocate) {
@@ -508,7 +526,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // tail sentinel location.
     //
     new_location = _tail_sentinel;
-    _tail_sentinel += sizeof(Var_header) + size;
+    _tail_sentinel += sizeof(var_header) + size;
     log("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
 
     // Write the new sentinel first.  If we are interrupted during this operation
@@ -522,7 +540,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     var_header.key = key();
     var_header.size = size - 1;
-    eeprom_write_block(&var_header, (void *)new_location, sizeof(Var_header));
+    eeprom_write_block(&var_header, (void *)new_location, sizeof(var_header));
 
     // We have successfully allocated space and thus located the variable.
     // Update _key to point to the space allocated for it.
