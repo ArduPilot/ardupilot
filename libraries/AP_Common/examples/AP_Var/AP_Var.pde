@@ -4,67 +4,13 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <AP_Test.h>
 #include <string.h>
 
 // we need to do this, even though normally it's a bad idea
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 
 FastSerialPort(Serial, 0);
-
-//
-// Unit test framework
-//
-class Test
-{
-public:
-    Test(const char *name);
-    ~Test();
-    void        require(bool expr, const char *source);
-    static void	report();
-
-private:
-    const char	*_name;
-    bool		_fail;
-    static int	_passed;
-    static int	_failed;
-};
-
-Test::Test(const char *name) :
-        _name(name),
-        _fail(false)
-{
-}
-
-Test::~Test()
-{
-    Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
-    if (_fail) {
-        _failed++;
-    } else {
-        _passed++;
-    }
-}
-
-void
-Test::require(bool expr, const char *source)
-{
-    if (!expr) {
-        _fail = true;
-        Serial.printf("%s: fail: %s\n", _name, source);
-    }
-}
-
-void
-Test::report()
-{
-    Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
-}
-
-int Test::_passed = 0;
-int Test::_failed = 0;
-
-#define TEST(name)		Test _test(#name)
-#define	REQUIRE(expr)	_test.require(expr, #expr)
 
 //
 // Unit tests
@@ -138,6 +84,25 @@ setup(void)
         REQUIRE(AP_Float_zero == 0);
         REQUIRE(AP_Float_unity == 1.0);
         REQUIRE(AP_Float_negative_unity = -1.0);
+    }
+
+    // AP_Var: type IDs
+    {
+        TEST(var_type_ids);
+
+        AP_Float    f;
+        AP_Float16   fs;
+        AP_Int32    l;
+        AP_Int16    s;
+        AP_Int8     b;
+
+        REQUIRE(f.meta_type_id()    == AP_Var::k_typeid_float);
+        REQUIRE(fs.meta_type_id()   == AP_Var::k_typeid_float16);
+        REQUIRE(l.meta_type_id()    == AP_Var::k_typeid_int32);
+        REQUIRE(s.meta_type_id()    == AP_Var::k_typeid_int16);
+        REQUIRE(b.meta_type_id()    == AP_Var::k_typeid_int8);
+
+        REQUIRE(AP_Var::k_typeid_float != AP_Var::k_typeid_int32);
     }
 
     // AP_Var: initial value
