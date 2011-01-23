@@ -291,14 +291,53 @@ setup(void)
 
     // AP_Var: reload
     {
-        TEST(reload);
+        TEST(var_reload);
 
         AP_Float    f1(0, 1);
 
         REQUIRE(true == f1.load());
         REQUIRE(f1 == 10.0);
+
+        AP_Var::erase_all();
     }
 
+    // AP_Var: save/load all
+    {
+        TEST(var_save_load_all);
+
+        AP_Float    f1(10.0, 1);
+        AP_Float    f2(123.0, 2);
+
+        REQUIRE(true == AP_Var::save_all());
+        f1 = 0;
+        f2 = 0;
+        REQUIRE(true == AP_Var::load_all());
+        REQUIRE(f1 == 10.0);
+        REQUIRE(f2 == 123.0);
+
+        AP_Var::erase_all();
+    }
+
+    // AP_Var: group load/save
+    {
+        TEST(var_group_save_load);
+
+        AP_Var_group    group(10);
+        AP_Float        f1(&group, 0, 10.0);
+        AP_Float        f2(&group, 0, 123.0);
+        AP_Float        f3(-1.0);
+
+        REQUIRE(true == group.save());
+        f1 = 0;
+        f2 = 0;
+        f3 = 0;
+        REQUIRE(true == group.load());
+        REQUIRE(f1 == 10.0);
+        REQUIRE(f2 == 123.0);
+        REQUIRE(f3 == 0);
+
+        AP_Var::erase_all();
+    }
 
 #if SAVE
     // AP_Var: load and save

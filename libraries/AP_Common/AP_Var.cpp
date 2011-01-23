@@ -204,17 +204,17 @@ bool AP_Var::load(void)
 bool AP_Var::save_all(void)
 {
     bool result = true;
-    AP_Var *p = _variables;
+    AP_Var *vp = _variables;
 
-    while (p) {
-        if (!p->has_flags(k_flag_no_auto_load) &&    // not opted out
-            !(p->_group)) {                     // not saved with a group
+    while (vp) {
+        if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autosave
+            (vp->_key != k_key_none)) {              // has a key
 
-            if (!p->save()) {
+            if (!vp->save()) {
                 result = false;
             }
         }
-        p = p->_link;
+        vp = vp->_link;
     }
     return result;
 }
@@ -223,18 +223,18 @@ bool AP_Var::save_all(void)
 //
 bool AP_Var::load_all(void)
 {
-    bool result;
-    AP_Var *p = _variables;
+    bool result = true;
+    AP_Var *vp = _variables;
 
-    while (p) {
-        if (!p->has_flags(k_flag_no_auto_load) &&    // not opted out
-            !(p->_group)) {                     // not loaded with a group
+    while (vp) {
+        if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autoload
+            (vp->_key != k_key_none)) {             // has a key
 
-            if (!p->load()) {
+            if (!vp->load()) {
                 result = false;
             }
         }
-        p = p->_link;
+        vp = vp->_link;
     }
     return result;
 }
@@ -321,7 +321,9 @@ AP_Var::first_member(AP_Var_group *group)
 
     vp = &_grouped_variables;
 
+    log("seeking %p", group);
     while (*vp) {
+        log("consider %p with %p", *vp, (*vp)->_group);
         if ((*vp)->_group == group) {
             return *vp;
         }
@@ -412,7 +414,7 @@ bool AP_Var::_EEPROM_scan(void)
             vp = vp->_link;
         }
         if (!vp) {
-            log("key %u not claimed", var_header.key);
+            log("key %u not claimed (already scanned or unknown)", var_header.key);
         }
 
         // move to the next variable header
@@ -460,13 +462,13 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     if (!(_key & k_key_not_located)) {
         return true;                // it has
     }
-
     // If not located and not permitted to allocate, we have failed.
     //
     if (!allocate) {
-        log("not found, cannot allocate");
+        log("cannot allocate");
         return false;
     }
+    log("needs allocation");
 
     // Ask the serializer for the size of the thing we are allocating, and fail
     // if it is too large or if it has no size, as we will not be able to allocate
@@ -530,9 +532,12 @@ bool AP_Var::_EEPROM_locate(bool allocate)
 }
 
 size_t
-AP_Var_group::serialize(void *buf, size_t buf_size)
+AP_Var_group::serialize(void *buf, size_t buf_size) const
 {
-    return _serialize_unserialize(buf, buf_size, true);
+    // We have to cast away the const in order to call _serialize_unserialize,
+    // as it cannot be const due to changing this when called to unserialize.
+    //
+    return const_cast<AP_Var_group *>(this)->_serialize_unserialize(buf, buf_size, true);
 }
 
 size_t
@@ -551,6 +556,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
     // Traverse the list of group members, serializing each in order
     //
     vp = first_member(this);
+    log("starting with %p", vp);
     bp = (uint8_t *)buf;
     resid = buf_size;
     total_size = 0;
@@ -559,8 +565,10 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         // (un)serialise the group member
         if (do_serialize) {
             size = vp->serialize(bp, buf_size);
+            log("serialize %p -> %u", vp, size);
         } else {
             size = vp->unserialize(bp, buf_size);
+            log("unserialize %p -> %u", vp, size);
         }
 
         // Account for the space that this variable consumes in the buffer
@@ -574,6 +582,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         // and the calling function will have to treat it as an error.
         //
         total_size += size;
+        log("used %u", total_size);
         if (size <= resid) {
             // there was space for this one, account for it
             resid -= size;
@@ -584,4 +593,3 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
     }
     return total_size;
 }
-
