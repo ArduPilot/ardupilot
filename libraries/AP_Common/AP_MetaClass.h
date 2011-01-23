@@ -48,7 +48,7 @@ public:
     ///
     /// See ::meta_type_id for a discussion of class type IDs.
     ///
-    typedef uint16_t AP_Type_id;
+    typedef uint16_t Type_id;
 
     /// Obtain a value unique to all instances of a specific subclass.
     ///
@@ -68,21 +68,21 @@ public:
     ///
     /// @return					A type-unique value for this.
     ///
-    AP_Type_id meta_type_id(void) const {
-        return *(AP_Type_id *)this;
+    Type_id meta_type_id(void) const {
+        return *(Type_id *)this;
     }
 
     /// Obtain a value unique to all instances of a named subclass.
     ///
     /// This is similar to ::meta_type_id, but is a template taking a class name.
-    /// Use this function to cache the AP_Type_id for a class when you don't need
+    /// Use this function to cache the Type_id for a class when you don't need
     /// or cannot afford the constructor cost associated with meta_cast.
     ///
     /// @tparam T               A subclass of AP_Meta_class.
-    /// @return                 The AP_Type_id value for T.
+    /// @return                 The Type_id value for T.
     ///
     template<typename T>
-    static AP_Type_id meta_type_id(void) {
+    static Type_id meta_type_id(void) {
         T tmp;
         return tmp.meta_type_id();
     }
@@ -194,6 +194,22 @@ public:
         T tmp;
         if (meta_type_equivalent(p, &tmp)) {
             return (T *)p;
+        }
+        return NULL;
+    }
+
+    /// Cast this to an expected class type.
+    ///
+    /// This is equivalent to meta_cast<T>(this)
+    ///
+    /// @tparam T               The name of a type to which this is to be cast.
+    /// @return                 NULL if this is not of precisely type T, otherwise this cast to T.
+    ///
+    template<typename T>
+    T *meta_cast(void) {
+        T tmp;
+        if (meta_type_equivalent(this, &tmp)) {
+            return (T*)this;
         }
         return NULL;
     }
