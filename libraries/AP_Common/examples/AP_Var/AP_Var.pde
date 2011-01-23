@@ -275,40 +275,30 @@ setup(void)
         }
     }
 
-#if 0
-    // AP_Var: enumeration
-    // note that this test presumes the singly-linked list implementation of the list
+    // AP_Var: save and load
     {
-        TEST(var_enumeration);
+        TEST(var_save_load);
 
-        AP_Var	*v = AP_Var::lookup_by_index(0);
+        AP_Float    f1(10.0, 1);
 
-        // test basic enumeration
-        AP_Float f1(0, AP_Var::k_key_none, PSTR("test1"));
-        REQUIRE(AP_Var::lookup_by_index(0) == &f1);
-        REQUIRE(AP_Var::lookup_by_index(1) == v);
-
-        // test that new entries arrive in order
-        {
-            AP_Float f2(0, AP_Var::k_key_none, PSTR("test2"));
-            REQUIRE(AP_Var::lookup_by_index(0) == &f2);
-            REQUIRE(AP_Var::lookup_by_index(1) == &f1);
-            REQUIRE(AP_Var::lookup_by_index(2) == v);
-
-            {
-                AP_Float f3(0, AP_Var::k_key_none, PSTR("test3"));
-                REQUIRE(AP_Var::lookup_by_index(0) == &f3);
-                REQUIRE(AP_Var::lookup_by_index(1) == &f2);
-                REQUIRE(AP_Var::lookup_by_index(2) == &f1);
-                REQUIRE(AP_Var::lookup_by_index(3) == v);
-            }
-        }
-
-        // test that destruction removes from the list
-        REQUIRE(AP_Var::lookup_by_index(0) == &f1);
-        REQUIRE(AP_Var::lookup_by_index(1) == v);
+        AP_Var::erase_all();
+        REQUIRE(true == f1.save());
+        REQUIRE(f1 == 10.0);
+        f1 = 0;
+        REQUIRE(true == f1.load());
+        REQUIRE(f1 == 10.0);
     }
-#endif
+
+    // AP_Var: reload
+    {
+        TEST(reload);
+
+        AP_Float    f1(0, 1);
+
+        REQUIRE(true == f1.load());
+        REQUIRE(f1 == 10.0);
+    }
+
 
 #if SAVE
     // AP_Var: load and save
