@@ -64,7 +64,7 @@ public:
     /// either as a result of scanning or due to allocation of new
     /// space in the EEPROM, the k_key_not_located bit will be cleared
     /// and the _key value gives the offset into the EEPROM where
-    /// the variable's header can be found.
+    /// the variable's data can be found.
     ///
     typedef uint16_t Key;
 
@@ -329,7 +329,6 @@ private:
 
     // EEPROM space allocation and scanning
     static uint16_t     _tail_sentinel;     ///< EEPROM address of the tail sentinel
-    static bool         _EEPROM_scanned;    ///< true once the EEPROM has been scanned and addresses assigned
 
     static const uint16_t k_EEPROM_size = 4096;    ///< XXX avr-libc doesn't consistently export this
 

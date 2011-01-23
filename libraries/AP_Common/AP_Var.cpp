@@ -9,6 +9,14 @@
 /// of variables to be passed to blocks for floating point
 /// math, memory management, etc.
 
+#if 0
+# include <FastSerial.h>
+extern "C" { extern void delay(unsigned long); }
+# define log(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(100); } while(0)
+#else
+# define log(fmt, args...)
+#endif
+
 #include "AP_Var.h"
 
 // Global constants exported for general use.
@@ -23,8 +31,6 @@ AP_Float AP_Float_zero          ( 0.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_
 AP_Var      *AP_Var::_variables;
 AP_Var      *AP_Var::_grouped_variables;
 uint16_t    AP_Var::_tail_sentinel;
-bool        AP_Var::_EEPROM_scanned;
-
 
 // Constructor for standalone variables
 //
@@ -141,6 +147,7 @@ bool AP_Var::save(void)
 
     // locate the variable in EEPROM, allocating space as required
     if (!_EEPROM_locate(true)) {
+        log("locate failed");
         return false;
     }
 
@@ -149,9 +156,11 @@ bool AP_Var::save(void)
 
     // if it fit in the buffer, save it to EEPROM
     if (size <= sizeof(vbuf)) {
+        log("saving %u to %u", size, _key);
         eeprom_write_block(vbuf, (void *)_key, size);
+        return true;
     }
-    return true;
+    return false;
 }
 
 // Load the variable from EEPROM, if supported
@@ -168,6 +177,7 @@ bool AP_Var::load(void)
 
     // locate the variable in EEPROM, but do not allocate space
     if (!_EEPROM_locate(false)) {
+        log("locate failed");
         return false;
     }
 
@@ -181,10 +191,11 @@ bool AP_Var::load(void)
     // has converted _key into an EEPROM address.
     //
     if (size <= sizeof(vbuf)) {
+        log("loading %u from %u", size, _key);
         eeprom_read_block(vbuf, (void *)_key, size);
-        unserialize(vbuf, size);
+        return unserialize(vbuf, size);
     }
-    return true;
+    return false;
 }
 
 // Save all variables that don't opt out.
@@ -230,15 +241,31 @@ bool AP_Var::load_all(void)
 
 // Erase all variables in EEPROM.
 //
+// We first walk the variable set and recover their key values
+// from EEPROM, so that we have a chance of saving them later.
+//
 void
 AP_Var::erase_all()
 {
-    uint8_t c;
+    AP_Var  *vp;
+
+    log("erase EEPROM");
+
+    // Scan the list of variables/groups, fetching their key values and
+    // reverting them to their not-located state.
+    //
+    vp = _variables;
+    while (vp) {
+        vp->_key = vp->key() | k_key_not_located;
+        vp = vp->_link;
+    }
 
     // overwrite the first byte of the header, invalidating the EEPROM
     //
-    c = 0xff;
-    eeprom_write_byte(&c, 0);
+    eeprom_write_byte(0, 0xff);
+
+    // revert to ignorance about the state of the EEPROM
+    _tail_sentinel = 0;
 }
 
 // Return the key for a variable.
@@ -255,8 +282,10 @@ AP_Var::key(void)
         return _key & k_key_mask;
     }
 
-    // read key from EEPROM
-    eeprom_read_block(&var_header, (void *)_key, sizeof(var_header));
+    // Read key from EEPROM, note that _key points to the space
+    // allocated for storage; the header is immediately before.
+    //
+    eeprom_read_block(&var_header, (void *)(_key - sizeof(var_header)), sizeof(var_header));
     return var_header.key;
 }
 
@@ -325,37 +354,50 @@ bool AP_Var::_EEPROM_scan(void)
     struct EEPROM_header    ee_header;
     struct Var_header       var_header;
     AP_Var                  *vp;
+    uint16_t                eeprom_address;
 
-    // assume that the EEPROM is empty
+    // Assume that the EEPROM contents are invalid
     _tail_sentinel = 0;
 
     // read the header and validate
-    eeprom_read_block(0, &ee_header, sizeof(ee_header));
+    eeprom_address = 0;
+    eeprom_read_block(&ee_header, (void *)eeprom_address, sizeof(ee_header));
     if ((ee_header.magic != k_EEPROM_magic) ||
-        (ee_header.revision != k_EEPROM_revision))
+        (ee_header.revision != k_EEPROM_revision)) {
+
+        log("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
         return false;
+    }
 
     // scan the EEPROM
     //
     // Avoid trying to read a header when there isn't enough space left.
     //
-    _tail_sentinel = sizeof(ee_header);
-    while (_tail_sentinel < (k_EEPROM_size - sizeof(var_header) - 1)) {
+    eeprom_address = sizeof(ee_header);
+    while (eeprom_address < (k_EEPROM_size - sizeof(var_header) - 1)) {
 
-        // read a variable header
-        eeprom_read_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
+        // Read a variable header
+        //
+        log("reading header from %u", eeprom_address);
+        eeprom_read_block(&var_header, (void *)eeprom_address, sizeof(var_header));
 
-        // if the header is for the sentinel, scanning is complete
-        if (var_header.key == k_key_sentinel)
+        // If the header is for the sentinel, scanning is complete
+        //
+        if (var_header.key == k_key_sentinel) {
+            log("found tail sentinel");
             break;
+        }
 
-        // if the variable plus the sentinel would extend past the end of EEPROM, we are done
+        // Sanity-check the variable header and abort if it looks bad
+        //
         if (k_EEPROM_size <= (
-                _tail_sentinel +        // current position
-                sizeof(ee_header) +     // header for this variable
+                eeprom_address +        // current position
+                sizeof(var_header) +    // header for this variable
                 var_header.size + 1 +   // data for this variable
-                sizeof(ee_header))) {   // header for sentinel
-            break;
+                sizeof(var_header))) {  // header for sentinel
+
+            log("header overruns EEPROM");
+            return false;
         }
 
         // look for a variable with this key
@@ -363,18 +405,23 @@ bool AP_Var::_EEPROM_scan(void)
         while (vp) {
             if (vp->key() == var_header.key) {
                 // adjust the variable's key to point to this entry
-                vp->_key = _tail_sentinel;
+                vp->_key = eeprom_address + sizeof(var_header);
+                log("update %p with key %u -> %u", vp, var_header.key, vp->_key);
                 break;
             }
             vp = vp->_link;
         }
+        if (!vp) {
+            log("key %u not claimed", var_header.key);
+        }
 
         // move to the next variable header
-        _tail_sentinel += sizeof(var_header) + var_header.size + 1;
+        eeprom_address += sizeof(var_header) + var_header.size + 1;
     }
 
     // Scanning is complete
-    _EEPROM_scanned = true;
+    log("scan done");
+    _tail_sentinel = eeprom_address;
     return true;
 }
 
@@ -389,6 +436,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // Is it a group member, or does it have a no-location key?
     //
     if (_group || (_key == k_key_none)) {
+        log("not addressable");
         return false;               // it is/does, and thus it has no location
     }
 
@@ -398,15 +446,25 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         return true;                // it has
     }
 
-    // If the EEPROM has not been scanned, try that now.
+    // We don't know where this variable belongs; try scanning the EEPROM
     //
-    if (!_EEPROM_scanned) {
-        _EEPROM_scan();
+    // XXX this is going to *suck* for mass-save operations.  Do we need
+    //     a flag/key bit that indicates that a variable was known during
+    //     but not located by a scan?
+    //
+    log("need scan");
+    _EEPROM_scan();
+
+    // Has the variable now been located?
+    //
+    if (!(_key & k_key_not_located)) {
+        return true;                // it has
     }
 
     // If not located and not permitted to allocate, we have failed.
     //
-    if ((_key & k_key_not_located) && !allocate) {
+    if (!allocate) {
+        log("not found, cannot allocate");
         return false;
     }
 
@@ -415,26 +473,31 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // space for it.
     //
     size = serialize(NULL, 0);
-    if ((size == 0) || (size > k_size_max))
+    if ((size == 0) || (size > k_size_max)) {
+        log("size %u out of bounds", size);
         return false;
+    }
 
     // Make sure there will be space in the EEPROM for the variable, its
     // header and the new tail sentinel.
     //
-    if ((_tail_sentinel + size + sizeof(Var_header) * 2) > k_EEPROM_size)
+    if ((_tail_sentinel + size + sizeof(Var_header) * 2) > k_EEPROM_size) {
+        log("no space in EEPROM");
         return false;
+    }
 
     // If there is no data in the EEPROM, write the header and move the
     // sentinel.
     //
     if (0 == _tail_sentinel) {
+        log("writing header");
         EEPROM_header   ee_header;
 
         ee_header.magic = k_EEPROM_magic;
         ee_header.revision = k_EEPROM_revision;
         ee_header.spare = 0;
 
-        eeprom_write_block(0, &ee_header, sizeof(ee_header));
+        eeprom_write_block(&ee_header, (void *)0, sizeof(ee_header));
 
         _tail_sentinel = sizeof(ee_header);
     }
@@ -442,8 +505,9 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // Save the location we are going to insert at, and compute the new
     // tail sentinel location.
     //
-    _tail_sentinel += sizeof(Var_header) + size;
     new_location = _tail_sentinel;
+    _tail_sentinel += sizeof(Var_header) + size;
+    log("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
 
     // Write the new sentinel first.  If we are interrupted during this operation
     // the old sentinel will still correctly terminate the EEPROM image.
@@ -459,8 +523,9 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     eeprom_write_block(&var_header, (void *)new_location, sizeof(Var_header));
 
     // We have successfully allocated space and thus located the variable.
+    // Update _key to point to the space allocated for it.
     //
-    _key = new_location;
+    _key = new_location + sizeof(var_header);
     return true;
 }
 
