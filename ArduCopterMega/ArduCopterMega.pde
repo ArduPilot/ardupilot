@@ -259,7 +259,7 @@ float 	roll;								// radians
 float 	pitch;								// radians
 float 	yaw;								// radians
 
-byte 	altitude_sensor = SONAR;				// used to know whic sensor is active, BARO or SONAR
+byte 	altitude_sensor = BARO;				// used to know whic sensor is active, BARO or SONAR
 
 // flight mode specific
 // --------------------
@@ -851,7 +851,7 @@ void update_current_flight_mode(void)
 				nav_roll 		= 0;
 				
 				// get desired height from the throttle
-				next_WP.alt 	= home.alt + (rc_3.control_in * 4) -100; // 0 - 1000 (40 meters)
+				next_WP.alt 	= home.alt + (rc_3.control_in * 4); // 0 - 1000 (40 meters)
 				
 				// Yaw control
 				// -----------
