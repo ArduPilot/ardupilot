@@ -17,27 +17,10 @@ FastSerialPort(Serial, 0);
 class Test
 {
 public:
-    Test(const char *name) : _name(name), _fail(false) {}
-
-    ~Test()	{
-        Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
-        if (_fail) {
-            _failed++;
-        } else {
-            _passed++;
-        }
-    }
-
-    void	require(bool expr, const char *source) {
-        if (!expr) {
-            _fail = true;
-            Serial.printf("%s: fail: %s\n", _name, source);
-        }
-    }
-
-    static void	report() {
-        Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
-    }
+    Test(const char *name);
+    ~Test();
+    void        require(bool expr, const char *source);
+    static void	report();
 
 private:
     const char	*_name;
@@ -45,6 +28,37 @@ private:
     static int	_passed;
     static int	_failed;
 };
+
+Test::Test(const char *name) :
+        _name(name),
+        _fail(false)
+{
+}
+
+Test::~Test()
+{
+    Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
+    if (_fail) {
+        _failed++;
+    } else {
+        _passed++;
+    }
+}
+
+void
+Test::require(bool expr, const char *source)
+{
+    if (!expr) {
+        _fail = true;
+        Serial.printf("%s: fail: %s\n", _name, source);
+    }
+}
+
+void
+Test::report()
+{
+    Serial.printf("\n%d passed  %d failed\n", _passed, _failed);
+}
 
 int Test::_passed = 0;
 int Test::_failed = 0;
@@ -58,7 +72,8 @@ int Test::_failed = 0;
 void
 setup(void)
 {
-    Serial.begin(38400);
+    Serial.begin(115200);
+    Serial.println("AP_Var unit tests.\n");
 
     // MetaClass: test type ID
     {
@@ -71,19 +86,28 @@ setup(void)
         uint16_t	m1 = f1.meta_type_id();
         uint16_t	m2 = f2.meta_type_id();
         uint16_t	m3 = i1.meta_type_id();
+        uint16_t    m4 = AP_Meta_class::meta_type_id<AP_Float>();
 
         REQUIRE(m1 != 0);
         REQUIRE(m1 == m2);
         REQUIRE(m1 != m3);
-        REQUIRE(AP_Meta_class::meta_type_equivalent(&f1, &f2));
-        REQUIRE(!AP_Meta_class::meta_type_equivalent(&f1, &i1));
-
-        REQUIRE(NULL != AP_Meta_class::meta_cast<AP_Float>(&f1));
-        REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Int8>(&f1));
-        REQUIRE(NULL == AP_Meta_class::meta_cast<AP_Float16>(&f1));
+        REQUIRE(m1 == m4);
     }
 
-    // MetaClass: test external handles
+    // MetaClass: meta_type_equivalent
+    {
+        TEST(meta_type_equivalent);
+
+        AP_Float    f1;
+        AP_Float    f2;
+        AP_Int8     i1;
+
+        REQUIRE(AP_Meta_class::meta_type_equivalent(&f1, &f2));
+        REQUIRE(!AP_Meta_class::meta_type_equivalent(&f1, &i1));
+    }
+
+
+    // MetaClass: external handles
     {
         TEST(meta_handle);
 
@@ -120,9 +144,11 @@ setup(void)
     {
         TEST(var_initial_value);
 
-        AP_Float    f(12.345);
+        AP_Float    f1(12.345);
+        AP_Float    f2;
 
-        REQUIRE(f == 12.345);
+        REQUIRE(f1 == 12.345);
+        REQUIRE(f2 == 0);
     }
 
     // AP_Var: set, get, assignment
@@ -169,7 +195,7 @@ setup(void)
     {
         TEST(var_naming);
 
-        AP_Float	f(0, AP_Var::k_no_key, PSTR("test"));
+        AP_Float	f(0, AP_Var::k_key_none, PSTR("test"));
         char		name_buffer[16];
 
         f.copy_name(name_buffer, sizeof(name_buffer));
@@ -203,6 +229,53 @@ setup(void)
         REQUIRE(f == 10);
     }
 
+    // AP_Var: groups and names
+    {
+        TEST(group_names);
+
+        AP_Var_group    group(AP_Var::k_key_none, PSTR("group_"));
+        AP_Float        f(&group, 1, 1.0, PSTR("test"));
+        char            name_buffer[16];
+
+        f.copy_name(name_buffer, sizeof(name_buffer));
+        REQUIRE(!strcmp(name_buffer, "group_test"));
+    }
+
+    // AP_Var: enumeration
+    {
+        TEST(empty_variables);
+
+        REQUIRE(AP_Var::first() == NULL);
+    }
+
+    {
+        TEST(enumerate_variables);
+
+        AP_Float    f1;
+
+        REQUIRE(AP_Var::first() == &f1);
+
+        {
+            AP_Var_group    group;
+            AP_Var          f2(&group, 0, 0);
+            AP_Var          f3(&group, 1, 0);
+            AP_Var          *vp;
+
+            vp = AP_Var::first();
+            REQUIRE(vp == &group);      // XXX presumes FIFO insertion
+            vp = vp->next();
+            REQUIRE(vp == &f1);         // XXX presumes FIFO insertion
+            vp = vp->next();
+            REQUIRE(vp == &f2);         // first variable in the grouped list
+
+            vp = AP_Var::first_member(&group);
+            REQUIRE(vp == &f2);
+            vp = vp->next_member();
+            REQUIRE(vp == &f3);
+        }
+    }
+
+#if 0
     // AP_Var: enumeration
     // note that this test presumes the singly-linked list implementation of the list
     {
@@ -211,19 +284,19 @@ setup(void)
         AP_Var	*v = AP_Var::lookup_by_index(0);
 
         // test basic enumeration
-        AP_Float f1(0, AP_Var::k_no_key, PSTR("test1"));
+        AP_Float f1(0, AP_Var::k_key_none, PSTR("test1"));
         REQUIRE(AP_Var::lookup_by_index(0) == &f1);
         REQUIRE(AP_Var::lookup_by_index(1) == v);
 
         // test that new entries arrive in order
         {
-            AP_Float f2(0, AP_Var::k_no_key, PSTR("test2"));
+            AP_Float f2(0, AP_Var::k_key_none, PSTR("test2"));
             REQUIRE(AP_Var::lookup_by_index(0) == &f2);
             REQUIRE(AP_Var::lookup_by_index(1) == &f1);
             REQUIRE(AP_Var::lookup_by_index(2) == v);
 
             {
-                AP_Float f3(0, AP_Var::k_no_key, PSTR("test3"));
+                AP_Float f3(0, AP_Var::k_key_none, PSTR("test3"));
                 REQUIRE(AP_Var::lookup_by_index(0) == &f3);
                 REQUIRE(AP_Var::lookup_by_index(1) == &f2);
                 REQUIRE(AP_Var::lookup_by_index(2) == &f1);
@@ -235,18 +308,7 @@ setup(void)
         REQUIRE(AP_Var::lookup_by_index(0) == &f1);
         REQUIRE(AP_Var::lookup_by_index(1) == v);
     }
-
-    // AP_Var: group names
-    {
-        TEST(group_names);
-
-        AP_Var_group	group(AP_Var::k_no_key, PSTR("group_"));
-        AP_Float		f(&group, 1, 1.0, PSTR("test"));
-        char			name_buffer[16];
-
-        f.copy_name(name_buffer, sizeof(name_buffer));
-        REQUIRE(!strcmp(name_buffer, "group_test"));
-    }
+#endif
 
 #if SAVE
     // AP_Var: load and save
@@ -285,7 +347,6 @@ setup(void)
         f1.load();
         REQUIRE(f1 == 1);
     }
-#endif
 
     // AP_Var: derived types
     {
@@ -299,7 +360,7 @@ setup(void)
         f.load();
         REQUIRE(f = 10.0);
     }
-
+#endif
 
     Test::report();
 }

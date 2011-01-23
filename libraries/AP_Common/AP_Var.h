@@ -56,101 +56,134 @@ public:
     /// Storage key for variables that are saved in EEPROM.
     ///
     /// The key is used to associate a known variable in memory
-    /// with storage for the variable in the EEPROM.  When the
-    /// variable's storage is located in EEPROM, the key value is
-    /// replaced with an EEPROM address.
+    /// with storage for the variable in the EEPROM.
     ///
-    /// When the variable is saved to EEPROM, a header is attached
-    /// which contains the key along with other details.
+    /// At creation time, the _key value has the k_key_not_located bit
+    /// set, and its value is an ordinal uniquely identifying the
+    /// variable.  Once the address of the variable in EEPROM is known,
+    /// either as a result of scanning or due to allocation of new
+    /// space in the EEPROM, the k_key_not_located bit will be cleared
+    /// and the _key value gives the offset into the EEPROM where
+    /// the variable's header can be found.
     ///
     typedef uint16_t Key;
 
-    /// The header prepended to a variable stored in EEPROM
+    /// This header is prepended to a variable stored in EEPROM.
+    ///
+    /// Note that the size value is the first element in the header.
+    /// The sentinel entry marking the end of the EEPROM is always written
+    /// before updating the header of a new variable at the end of EEPROM.
+    /// This provides protection against corruption that might be caused
+    /// if the update process is interrupted.
     ///
     struct Var_header {
         /// The size of the variable, minus one.
-        /// This allows a variable to be anything from one to 32 bytes long.
+        /// This allows a variable or group to be anything from one to 32 bytes long.
         ///
-        uint16_t    size:5;
-
-        /// The key assigned to the variable.
-        ///
-        uint16_t    key:8;
+        uint8_t    size:5;
 
         /// Spare bits, currently unused
         ///
         /// @todo   One could be a parity bit?
         ///
-        uint16_t    spare:3;
+        uint8_t    spare:3;
+
+        /// The key assigned to the variable.
+        ///
+        uint8_t    key;
+
     };
 
-    /// An key that indicates that a variable is not to be saved to EEPROM.
+    /// A key value that indicates that a variable is not to be saved to EEPROM.
     ///
     /// As the value has all bits set to 1, it's not a legal EEPROM address for any
     /// EEPROM smaller than 64K (and it's too big to fit the Var_header::key field).
     ///
     /// This value is normally the default.
     ///
-    static const Key k_no_key = 0xffff;
+    static const Key k_key_none = 0xffff;
 
     /// A key that has this bit set is still a key; if it has been cleared then
     /// the key's value is actually an address in EEPROM.
     ///
-    static const Key k_not_located = (Key)1 << 15;
+    static const Key k_key_not_located = (Key)1 << 15;
 
     /// Key assigned to the terminal entry in EEPROM.
     ///
-    static const Key k_tail_sentinel = 0xff;
+    static const Key k_key_sentinel = 0xff;
 
     /// A bitmask that removes any control bits from a key giving just the
     /// value.
     ///
-    static const Key k_key_mask = ~(k_not_located);
+    static const Key k_key_mask = ~(k_key_not_located);
 
     /// The largest variable that will be saved to EEPROM.
     /// This affects the amount of stack space that is required by the ::save, ::load,
     /// ::save_all and ::load_all functions.  It should match the maximum size that can
     /// be encoded in the Var_header::size field.
     ///
-    static const size_t k_max_size = 32;
+    static const size_t k_size_max = 32;
 
     /// Optional flags affecting the behavior and usage of the variable.
     ///
-    enum Flags {
-        k_no_flags     = 0,
+    typedef uint8_t Flags;
+    static const Flags k_flags_none         = 0;
 
-        /// The variable will not be loaded by ::load_all or saved by ::save_all, but it
-        /// has a key and can be loaded/saved manually.
-        k_no_auto_load = (1 << 0),
+    /// The variable will not be loaded by ::load_all or saved by ::save_all, but it
+    /// has a key and can be loaded/saved manually.
+    static const Flags k_flag_no_auto_load  = (1 << 0);
 
-        /// This flag is advisory; it indicates that the variable's value should not be
-        /// imported from outside, e.g. from a GCS.
-        k_no_import    = (1 << 1)
-    };
+    /// This flag is advisory; it indicates that the variable's value should not be
+    /// imported from outside, e.g. from a GCS.
+    static const Flags k_flag_no_import     = (1 << 1);
 
-    /// Constructor
+    /// This flag indicates that the variable is really a group; it is normally
+    /// set automatically by the AP_Var_group constructor.
+    ///
+    static const Flags k_flag_is_group      = (1 << 2);
+
+    /// This flag indicates that the variable wants to opt out of being listed.
+    ///
+    static const Flags k_flag_unlisted      = (1 << 3);
+
+    /// Constructor for a freestanding variable
     ///
     /// @param  key             The storage key to be associated with this variable.
     /// @param	name			An optional name by which the variable may be known.
-    ///							This name may be looked up via the ::lookup function.
-    /// @param	group			An optional group to which the variable may belong.
-    ///							The scope's name will be prepended to the variable name
-    ///							by ::copy_name.
     /// @param  flags           Optional flags which control how the variable behaves.
     ///
-    AP_Var(Key key = k_no_key, const prog_char *name = NULL, AP_Var_group *group = NULL, Flags flags = k_no_flags);
+    AP_Var(Key key = k_key_none, const prog_char *name = NULL, Flags flags = k_flags_none);
+
+    /// Constructor for variable belonging to a group
+    ///
+    /// @param  group           The group the variable belongs to.
+    /// @param  index           The position of the variable in the group.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags which control how the variable behaves.
+    ///
+    AP_Var(AP_Var_group *group, Key index, const prog_char *name, Flags flags = k_flags_none);
 
     /// Destructor
     ///
-    /// Note that the linked-list removal can be inefficient when variables
-    /// are destroyed in an order other than the reverse of the order in which
-    /// they are created.  This is not a major issue for variables created
-    /// and destroyed automatically at block boundaries, and the creation and
-    /// destruction of variables by hand is generally discouraged.
+    /// For freestanding variables, this will remove the variable from the global list
+    /// of variables.  The list is organised FIFO, so locally-constructed freestanding
+    /// variables are typically cheap to destroy as they tend to be at or very close to
+    /// the head of the list.
+    ///
+    /// Destroying a variable that is a group member may be less efficient as the list
+    /// of variables that are group members is sorted by key, requiring a traversal
+    /// of the list up to the index before it can be removed.
+    ///
+    /// Destroying a group removes all variables that are members of the group from
+    /// the list, requiring a complete traversal of the list of group-member variables.
+    /// If the group is destroyed before its members, they will also traverse the entire
+    /// list as they attempt to remove themselves.
+    ///
+    /// The moral of the story: be careful when creating groups with local scope.
     ///
     ~AP_Var(void);
 
-    /// Copy the variable's name, prefixed by any parent class names, to a buffer.
+    /// Copy the variable's name, prefixed by any containing group name, to a buffer.
     ///
     /// If the variable has no name, the buffer will contain an empty string.
     ///
@@ -161,21 +194,6 @@ public:
     /// @param	bufferSize		Total size of the destination buffer.
     ///
     void copy_name(char *buffer, size_t bufferSize) const;
-
-    /// Return a pointer to the n'th known variable.
-    ///
-    /// This function is used to iterate the set of variables, and is optimised
-    /// for the case where the index argument is increased sequentially from one
-    /// call to the next.
-    ///
-    /// Note that variable index numbers are not constant; they will vary
-    /// from build to build.
-    ///
-    /// @param	index			Enumerator for the variable to be returned
-    /// @return                Pointer to the index'th variable, or NULL if
-    ///                         the set of variables has been exhausted.
-    ///
-    static AP_Var *lookup_by_index(int index);
 
     /// Save the current value of the variable to EEPROM.
     ///
@@ -226,6 +244,16 @@ public:
     ///
     static bool load_all(void);
 
+    /// Erase all variables in EEPROM.
+    ///
+    /// This can be used prior to save_all to ensure that only known variables
+    /// will be present in the EEPROM.
+    ///
+    /// It can also be used immediately prior to reset, followed by a save_all,
+    /// to restore all saved variables to their initial value.
+    ///
+    static void erase_all(void);
+
     /// Test for flags that may be set.
     ///
     /// @param	flagval			Flag or flags to be tested
@@ -241,26 +269,63 @@ public:
     ///
     AP_Var_group *group(void) { return _group; }
 
-    /// Returns the next variable in the global list
+    /// Returns the first variable in the global list.
+    ///
+    /// @return             The first variable in the global list, or NULL if
+    ///                     there are none.
+    ///
+    static AP_Var *first(void) { return _variables; }
+
+    /// Returns the next variable in the global list.
+    ///
+    /// All standalone variables are returned first, then all grouped variables.
+    /// Note that groups themselves are considered standalone variables.
+    ///
+    /// A caller not wishing to iterate grouped variables should test the return
+    /// value from this function with ::group, and if non-null, ignore it.
+    ///
+    /// XXX how to ignore groups?
     ///
     /// @return             The next variable, either the next group member in order or
     ///                     the next variable in an arbitrary order, or NULL if this is
     ///                     the last variable in the list.
     ///
-    AP_Var *next(void) { return _link; }
+    AP_Var *next(void);
+
+    /// Returns the first variable that is a member of a specific group.
+    ///
+    /// @param  group       The group whose member(s) are sought.
+    /// @return             The first variable in the group, or NULL if there are none.
+    ///
+    static AP_Var *first_member(AP_Var_group *group);
+
+    /// Returns the next variable that is a member of the same group.
+    ///
+    /// This does not behave correctly if called on a variable that is not a group member.
+    ///
+    /// @param  group       The group whose member(s) are sought.
+    /// @return             The next variable in the group, or NULL if there are none.
+    ///
+    AP_Var *next_member();
+
+    /// Returns the storage key for a variable.
+    ///
+    /// Note that group members do not have storage keys - the key is held by the group.
+    ///
+    /// @return             The variable's key, or k_key_none if it does not have a key.
+    ///
+    Key key(void);
 
 private:
     AP_Var_group        *_group;            ///< Group that the variable may be a member of
     AP_Var              *_link;             ///< linked list pointer to next variable
-    Key                 _key;               ///< storage key
+    Key                 _key;               ///< Storage key; see the discussion of Key above.
     const prog_char     *_name;             ///< name known to external agents (GCS, etc.)
     uint8_t             _flags;             ///< flag bits
 
     // static state used by ::lookup
-    static AP_Var       *_variables;        ///< linked list of all variables
-    static AP_Var       *_lookup_hint;      ///< pointer to the last variable that was looked up by ::lookup
-    static int          _lookup_hint_index; ///< index of the last variable that was looked up by ::lookup
-
+    static AP_Var       *_variables;        ///< linked list of all freestanding variables
+    static AP_Var       *_grouped_variables; ///< linked list of all grouped variables
 
     // EEPROM space allocation and scanning
     static uint16_t     _tail_sentinel;     ///< EEPROM address of the tail sentinel
@@ -268,20 +333,6 @@ private:
 
     static const uint16_t k_EEPROM_size = 4096;    ///< XXX avr-libc doesn't consistently export this
 
-
-    /// Return a pointer to the variable with a given key.
-    ///
-    /// This function is used to search the set of variables for
-    /// one with a given key.
-    ///
-    /// Note that this search will fail (XXX should it?) if the variable
-    /// assigned this key has been located in EEPROM.
-    ///
-    /// @param  key             The key to search for.
-    /// @return                Pointer to the variable assigned the key,
-    ///                         or NULL if no variable owns up to it.
-    ///
-    static AP_Var *_lookup_by_key(Key key);
 
     /// Scan the EEPROM and assign addresses to any known variables
     /// that have entries there.
@@ -325,8 +376,8 @@ public:
     /// @param  key             Storage key for the group.
     /// @param	name			An optional name prefix for members of the group.
     ///
-    AP_Var_group(Key key = k_no_key, const prog_char *name = NULL) :
-        AP_Var(key, name, NULL, k_no_flags)
+    AP_Var_group(Key key = k_key_none, const prog_char *name = NULL, Flags flags = k_flags_none) :
+        AP_Var(key, name, flags | k_flag_is_group)
     {
     }
 
@@ -368,7 +419,6 @@ private:
     ///
 
     size_t                      _serialize_unserialize(void *buf, size_t buf_size, bool do_serialize);
-
 };
 
 /// Template class for scalar variables.
@@ -387,16 +437,16 @@ public:
     /// Initialises a stand-alone variable with optional initial value, storage key, name and flags.
     ///
     /// @param  default_value   Value the variable should have at startup.
-    /// @param  key             Storage key for the variable.  If not set, or set to AP_Var::k_no_key
+    /// @param  key             Storage key for the variable.  If not set, or set to AP_Var::k_key_none
     ///                         the variable cannot be loaded from or saved to EEPROM.
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
     AP_VarT<T> (T initial_value = 0,
-                Key key = k_no_key,
+                Key key = k_key_none,
                 const prog_char *name = NULL,
-                Flags flags = k_no_flags) :
-        AP_Var(key, name, NULL, flags),
+                Flags flags = k_flags_none) :
+        AP_Var(key, name, flags),
         _value(initial_value)
     {
     }
@@ -417,8 +467,8 @@ public:
                 Key index,
                 T initial_value,
                 const prog_char *name = NULL,
-                Flags flags = k_no_flags) :
-        AP_Var(index, name, group, flags),
+                Flags flags = k_flags_none) :
+        AP_Var(group, index, name, flags),
         _value(initial_value)
     {
     }
@@ -507,9 +557,9 @@ public:
     /// Constructors mimic AP_Float::AP_Float()
     ///
     AP_Float16(float initial_value = 0,
-               Key key = k_no_key,
+               Key key = k_key_none,
                const prog_char *name = NULL,
-               Flags flags = k_no_flags) :
+               Flags flags = k_flags_none) :
         AP_Float(initial_value, key, name, flags)
     {
     }
@@ -518,7 +568,7 @@ public:
                Key index,
                float initial_value = 0,
                const prog_char *name = NULL,
-               Flags flags = k_no_flags) :
+               Flags flags = k_flags_none) :
         AP_Float(group, index, initial_value, name, flags)
     {
     }
