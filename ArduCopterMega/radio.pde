@@ -112,6 +112,7 @@ void set_servos_4(void)
 {
 	static byte num;
 
+
 	// Quadcopter mix
 	if (motor_armed == true) {
 		int out_min = rc_3.radio_min;
@@ -170,7 +171,32 @@ void set_servos_4(void)
 			APM_RC.OutputCh(CH_7,rc_4.radio_out);
 
 			
-		}else{
+		}else if (frame_type == HEXA_FRAME) {
+
+//  			int roll_out 	= rc_1.pwm_out / 2;
+//			int pitch_out 	= rc_2.pwm_out / 2;
+
+			int roll_out 	= (float)rc_1.pwm_out * .866;
+			int pitch_out 	= rc_2.pwm_out / 2;
+
+			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out + rc_4.pwm_out;  // CCW
+                        motor_out[RIGHTFRONT]   = rc_3.radio_out - roll_out + pitch_out - rc_4.pwm_out;  // CW
+
+			motor_out[LEFT]		= rc_3.radio_out + rc_1.pwm_out - rc_4.pwm_out;          // CW
+			motor_out[RIGHT]	= rc_3.radio_out - rc_1.pwm_out + rc_4.pwm_out;          // CCW
+
+                        motor_out[LEFTBACK]     = rc_3.radio_out + roll_out - pitch_out + rc_4.pwm_out;  // CW
+			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out - rc_4.pwm_out;  // CCW
+/*
+  
+            if(counteri == 5) {
+  		Serial.printf(" %d  %d \n%d    %d        %d   %d \n %d  %d \n\n", motor_out[FRONT], motor_out[RIGHTFRONT], motor_out[LEFT], motor_out[RIGHT], roll_out, pitch_out, motor_out[LEFTBACK], motor_out[BACK]);
+                counteri = 0;
+            }
+            counteri++;
+            
+*/
+                } else {
 		
 			Serial.print("frame error");
 			
@@ -225,6 +251,12 @@ void set_servos_4(void)
 			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
 			APM_RC.OutputCh(CH_3, motor_out[FRONT]);
 			APM_RC.OutputCh(CH_4, motor_out[BACK]);
+
+                  if (frame_type == HEXA_FRAME) {
+                        APM_RC.OutputCh(CH_7, motor_out[RIGHTFRONT]);
+                        APM_RC.OutputCh(CH_8, motor_out[LEFTBACK]);
+                  }
+
 			
 		}else{
 		
@@ -232,6 +264,12 @@ void set_servos_4(void)
 			APM_RC.OutputCh(CH_2, rc_3.radio_min);
 			APM_RC.OutputCh(CH_3, rc_3.radio_min);
 			APM_RC.OutputCh(CH_4, rc_3.radio_min);
+
+                  if (frame_type == HEXA_FRAME) {
+                        APM_RC.OutputCh(CH_7, rc_3.radio_min);
+                        APM_RC.OutputCh(CH_8, rc_3.radio_min);
+                  }
+
 			
 		}
 	

@@ -425,8 +425,11 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("tri"))) {
 		frame_type = TRI_FRAME;
 
+	} else if (!strcmp_P(argv[1].str, PSTR("hexa"))) {
+		frame_type = HEXA_FRAME;
+
 	} else {
-		Serial.printf_P(PSTR("\nOptions:[+, x, tri]\n"));
+		Serial.printf_P(PSTR("\nOptions:[+, x, tri, hexa]\n"));
 		report_frame();
 		return 0;
 	}
@@ -732,6 +735,8 @@ void report_frame()
 		Serial.printf_P(PSTR("Plus "));
 	else if(frame_type == TRI_FRAME)
 		Serial.printf_P(PSTR("TRI "));
+	else if(frame_type == HEXA_FRAME)
+		Serial.printf_P(PSTR("HEXA "));
 
 	Serial.printf_P(PSTR("frame (%d)"), (int)frame_type);
 	print_blanks(2);

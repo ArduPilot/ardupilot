@@ -51,6 +51,9 @@
 #define FRONT 2
 #define BACK 3
 
+#define RIGHTFRONT 6
+#define LEFTBACK 7
+
 #define MAX_SERVO_OUTPUT 2700
 
 #define SONAR 0
@@ -71,6 +74,7 @@
 #define PLUS_FRAME 0
 #define X_FRAME 1
 #define TRI_FRAME 2
+#define HEXA_FRAME 3
 
 // Auto Pilot modes
 // ----------------
