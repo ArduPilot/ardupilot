@@ -11,114 +11,108 @@
 
 #include "AP_Var.h"
 
-// Global constants exported
+// Global constants exported for general use.
 //
-AP_Float AP_Float_unity(1.0);
-AP_Float AP_Float_negative_unity(-1.0);
-AP_Float AP_Float_zero(0);
+AP_Float AP_Float_unity         ( 1.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_unlisted);
+AP_Float AP_Float_negative_unity(-1.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_unlisted);
+AP_Float AP_Float_zero          ( 0.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_unlisted);
 
-// Local state for the lookup interface
-//
-AP_Var *AP_Var::_variables = NULL;
-AP_Var *AP_Var::_lookup_hint = NULL;
-int AP_Var::_lookup_hint_index = 0;
-uint16_t AP_Var::_tail_sentinel;
-bool AP_Var::_EEPROM_scanned;
 
-// Constructor
+// Static member variables for AP_Var.
 //
-AP_Var::AP_Var(Key key, const prog_char *name, AP_Var_group *group, Flags flags) :
-        _group(group),
-        _key(key | k_not_located),
+AP_Var      *AP_Var::_variables;
+AP_Var      *AP_Var::_grouped_variables;
+uint16_t    AP_Var::_tail_sentinel;
+bool        AP_Var::_EEPROM_scanned;
+
+
+// Constructor for standalone variables
+//
+AP_Var::AP_Var(Key key, const prog_char *name, Flags flags) :
+        _group(NULL),
+        _key(key | k_key_not_located),
         _name(name),
         _flags(flags)
 {
-    AP_Var  *vp;
-
-    // Insert the variable or group into the list of known variables.
+    // Insert the variable or group into the list of known variables, unless
+    // it wants to be unlisted.
     //
-    // Variables belonging to a group are inserted into the list following the group,
-    // which may not itself yet be in the global list.  Thus groups must be
-    // statically constructed (which guarantees _link will be zero due to the BSS
-    // being cleared).
-    //
-
-    if (group) {
-
-        // Sort the variable into the list of variables following the group itself.
-        vp = group;
-
-        for (;;) {
-            // if there are no more entries, we insert at the end
-            if (vp->_link == NULL)
-                break;
-
-            // if the next entry in the list is a group, insert before it
-            if (meta_type_equivalent(this, vp->_link))
-                break;
-
-            // if the next entry has a higher index, insert before it
-            if ((vp->_link->_key & k_key_mask) > key)
-                break;
-            vp = vp->_link;
-        }
-
-        // insert into the group's list
-        _link = vp->_link;
-        vp->_link = this;
-
-    } else {
-        // Insert directly at the head of the list.  Take into account the possibility
-        // that what is being inserted is a group that already has variables sorted after it.
-        //
-        vp = this;
-        if (meta_cast<AP_Var_group>(this) != NULL) {
-            // we are inserting a group, scan to the end of any list of pre-attached variables
-            while (vp->_link != NULL)
-                vp = vp->_link;
-        }
-
-        // insert at the head of the global list
-        vp->_link = _variables;
+    if (!has_flags(k_flag_unlisted)) {
+        _link = _variables;
         _variables = this;
     }
+}
 
-    // reset the lookup cache
-    _lookup_hint_index = 0;
+// Constructor for variables in a group
+//
+AP_Var::AP_Var(AP_Var_group *group, Key index, const prog_char *name, Flags flags) :
+        _group(group),
+        _key(index),
+        _name(name),
+        _flags(flags)
+{
+    AP_Var  **vp;
+
+    // Sort the variable into the list of group-member variables.
+    //
+    // This list is kept sorted so that groups can traverse forwards along
+    // it in order to enumerate their members in key order.
+    //
+    // We use a pointer-to-pointer insertion technique here; vp points
+    // to the pointer to the node that we are considering inserting in front of.
+    //
+    vp = &_grouped_variables;
+    while (*vp != NULL) {
+        if ((*vp)->_key > _key) {
+               break;
+        }
+        vp = &((*vp)->_link);
+    }
+    _link = *vp;
+    *vp = this;
 }
 
 // Destructor
-//
-// Removes named variables from the list.
 //
 AP_Var::~AP_Var(void)
 {
     AP_Var  **vp;
 
-    // Groups can only be destroyed when they have no members.
+    // Determine which list the variable may be in.
+    // If the variable is a group member and the group has already
+    // been destroyed, it may not be in any list.
     //
-    // If this is a group with one or more members, _link is not NULL
-    // and _link->group is this.
-    //
-    if ((_link != NULL) && (_link->_group == this))
-        return;
+    if (_group) {
+        vp = &_grouped_variables;
+    } else {
+        vp = &_variables;
+    }
 
-    // Walk the list and remove this when we find it.
-    //
-    vp = &_variables;
-    while (*vp != NULL) {
-        // pointer pointing at this?
+    // Scan the list and remove this if we find it
+    while (*vp) {
         if (*vp == this) {
             *vp = _link;
             break;
         }
-
-        // address of next entry's link pointer
         vp = &((*vp)->_link);
     }
 
-    // reset the lookup cache
-    _lookup_hint_index = 0;
+    // If we are destroying a group, remove all its variables from the list
+    //
+    if (has_flags(k_flag_is_group)) {
+
+        // Scan the list and remove any variable that has this as its group
+        vp = &_grouped_variables;
+        while (*vp) {
+
+            // Does the variable claim us as its group?
+            if ((*vp)->_group == this) {
+                *vp = (*vp)->_link;
+                continue;
+            }
+            vp = &((*vp)->_link);
+        }
+    }
 }
 
 // Copy the variable's whole name to the supplied buffer.
@@ -137,7 +131,7 @@ void AP_Var::copy_name(char *buffer, size_t buffer_size) const
 //
 bool AP_Var::save(void)
 {
-    uint8_t vbuf[k_max_size];
+    uint8_t vbuf[k_size_max];
     size_t size;
 
     // if the variable is a group member, save the group
@@ -164,7 +158,7 @@ bool AP_Var::save(void)
 //
 bool AP_Var::load(void)
 {
-    uint8_t vbuf[k_max_size];
+    uint8_t vbuf[k_size_max];
     size_t size;
 
     // if the variable is a group member, load the group
@@ -193,42 +187,6 @@ bool AP_Var::load(void)
     return true;
 }
 
-//
-// Lookup interface for variables.
-//
-
-AP_Var *
-AP_Var::lookup_by_index(int index)
-{
-    AP_Var *p;
-    int i;
-
-    // establish initial search state
-    //
-    if (_lookup_hint_index &&               // we have a cached hint (cannot use a hint index of zero)
-        (index >= _lookup_hint_index)) {    // the desired index is at or after the hint
-
-        p = _lookup_hint;                   // start at the hint point
-        i = index - _lookup_hint_index;     // count only the distance from the hint to the index
-    } else {
-
-        p = _variables;                     // start at the beginning of the list
-        i = index;                          // count to the index
-    }
-
-    // search
-    while (p && i--) { // count until we hit the index or the end of the list
-        p = p->_link;
-    }
-
-    // update the cache on hit
-    if (p) {
-        _lookup_hint_index = index;
-        _lookup_hint = p;
-    }
-    return p;
-}
-
 // Save all variables that don't opt out.
 //
 //
@@ -238,7 +196,7 @@ bool AP_Var::save_all(void)
     AP_Var *p = _variables;
 
     while (p) {
-        if (!p->has_flags(k_no_auto_load) &&    // not opted out
+        if (!p->has_flags(k_flag_no_auto_load) &&    // not opted out
             !(p->_group)) {                     // not saved with a group
 
             if (!p->save()) {
@@ -258,7 +216,7 @@ bool AP_Var::load_all(void)
     AP_Var *p = _variables;
 
     while (p) {
-        if (!p->has_flags(k_no_auto_load) &&    // not opted out
+        if (!p->has_flags(k_flag_no_auto_load) &&    // not opted out
             !(p->_group)) {                     // not loaded with a group
 
             if (!p->load()) {
@@ -270,40 +228,91 @@ bool AP_Var::load_all(void)
     return result;
 }
 
-// Scan the list of variables for a matching key.
+// Erase all variables in EEPROM.
 //
-AP_Var *
-AP_Var::_lookup_by_key(Key key)
+void
+AP_Var::erase_all()
 {
-    AP_Var      *p;
-    Key         nl_key;
+    uint8_t c;
+
+    // overwrite the first byte of the header, invalidating the EEPROM
+    //
+    c = 0xff;
+    eeprom_write_byte(&c, 0);
+}
+
+// Return the key for a variable.
+//
+AP_Var::Key
+AP_Var::key(void)
+{
     Var_header  var_header;
 
-    nl_key = key | k_not_located;       // key to expect in memory
+    if (_group) {                   // group members don't have keys
+        return k_key_none;
+    }
+    if (_key && k_key_not_located) {    // if not located, key is in memory
+        return _key & k_key_mask;
+    }
 
-    // scan the list of variables
-    p = _variables;
-    while (p) {
+    // read key from EEPROM
+    eeprom_read_block(&var_header, (void *)_key, sizeof(var_header));
+    return var_header.key;
+}
 
-        // if the variable is a group member, it cannot be found by key search
-        if (p->_group) {
-            continue;
+// Return the next variable in the global list.
+//
+AP_Var *
+AP_Var::next(void)
+{
+    // If there is a variable after this one, return it.
+    //
+    if (_link)
+        return _link;
+
+    // If we are at the end of the _variables list, _group will be NULL; in that
+    // case, move to the _grouped_variables list.
+    //
+    if (!_group) {
+        return _grouped_variables;
+    }
+
+    // We must be at the end of the _grouped_variables list, nothing remains.
+    //
+    return NULL;
+}
+
+
+// Return the first variable that is a member of the group.
+//
+AP_Var *
+AP_Var::first_member(AP_Var_group *group)
+{
+    AP_Var  **vp;
+
+    vp = &_grouped_variables;
+
+    while (*vp) {
+        if ((*vp)->_group == group) {
+            return *vp;
         }
+        vp = &((*vp)->_link);
+    }
+    return NULL;
+}
 
-        // has this variable been located?
-        if (p->_key & k_not_located) {
-            // does the variable have the non-located form of the key?
-            if (p->_key == nl_key)
-                return p;                   // found it
-        } else {
-            // read the header from EEPROM and compare it with the search key
-            eeprom_read_block(&var_header, (void *)p->_key, sizeof(var_header));
-            if (var_header.key == key)
-                return p;
+// Return the next variable that is a member of the same group.
+AP_Var *
+AP_Var::next_member()
+{
+    AP_Var  *vp;
+
+    vp = _link;
+    while (vp) {
+        if (vp->_group == _group) {
+            return vp;
         }
-
-        // try the next variable
-        p = p->_link;
+        vp = vp->_link;
     }
     return NULL;
 }
@@ -337,7 +346,7 @@ bool AP_Var::_EEPROM_scan(void)
         eeprom_read_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
 
         // if the header is for the sentinel, scanning is complete
-        if (var_header.key == k_tail_sentinel)
+        if (var_header.key == k_key_sentinel)
             break;
 
         // if the variable plus the sentinel would extend past the end of EEPROM, we are done
@@ -345,19 +354,26 @@ bool AP_Var::_EEPROM_scan(void)
                 _tail_sentinel +        // current position
                 sizeof(ee_header) +     // header for this variable
                 var_header.size + 1 +   // data for this variable
-                sizeof(ee_header)))     // header for sentinel
+                sizeof(ee_header))) {   // header for sentinel
             break;
+        }
 
         // look for a variable with this key
-        vp = _lookup_by_key(var_header.key);
-        if (vp) {
-            // adjust the variable's key to point to this entry
-            vp->_key = _tail_sentinel;
+        vp = _variables;
+        while (vp) {
+            if (vp->key() == var_header.key) {
+                // adjust the variable's key to point to this entry
+                vp->_key = _tail_sentinel;
+                break;
+            }
+            vp = vp->_link;
         }
 
         // move to the next variable header
         _tail_sentinel += sizeof(var_header) + var_header.size + 1;
     }
+
+    // Scanning is complete
     _EEPROM_scanned = true;
     return true;
 }
@@ -367,41 +383,50 @@ bool AP_Var::_EEPROM_scan(void)
 bool AP_Var::_EEPROM_locate(bool allocate)
 {
     Var_header  var_header;
+    Key         new_location;
     size_t      size;
 
+    // Is it a group member, or does it have a no-location key?
+    //
+    if (_group || (_key == k_key_none)) {
+        return false;               // it is/does, and thus it has no location
+    }
+
     // Has the variable already been located?
-    if (!(_key & k_not_located)) {
+    //
+    if (!(_key & k_key_not_located)) {
         return true;                // it has
     }
 
-    // Does it have a no-key key?
-    if (_key == k_no_key) {
-        return false;               // it does, and thus it has no location
-    }
-
-    // If the EEPROM has not been scanned, try that now
+    // If the EEPROM has not been scanned, try that now.
+    //
     if (!_EEPROM_scanned) {
         _EEPROM_scan();
     }
 
-    // If not located and not permitted to allocate, we have failed
-    if ((_key & k_not_located) && !allocate) {
+    // If not located and not permitted to allocate, we have failed.
+    //
+    if ((_key & k_key_not_located) && !allocate) {
         return false;
     }
 
     // Ask the serializer for the size of the thing we are allocating, and fail
-    // if it is too large or if it has no size
+    // if it is too large or if it has no size, as we will not be able to allocate
+    // space for it.
+    //
     size = serialize(NULL, 0);
-    if ((0 == size) || (size > k_max_size))
+    if ((size == 0) || (size > k_size_max))
         return false;
 
     // Make sure there will be space in the EEPROM for the variable, its
-    // header and the new tail sentinel
+    // header and the new tail sentinel.
+    //
     if ((_tail_sentinel + size + sizeof(Var_header) * 2) > k_EEPROM_size)
         return false;
 
     // If there is no data in the EEPROM, write the header and move the
-    // sentinel
+    // sentinel.
+    //
     if (0 == _tail_sentinel) {
         EEPROM_header   ee_header;
 
@@ -414,23 +439,28 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         _tail_sentinel = sizeof(ee_header);
     }
 
-    // Write a new sentinel first
-    var_header.key = k_tail_sentinel;
-    var_header.size = 0;
-    eeprom_write_block(&var_header, (void *)(_tail_sentinel + sizeof(Var_header) + size), sizeof(var_header));
-
-    // Write the header for the block we have just located
-    var_header.key = _key & k_key_mask;
-    var_header.size = size - 1;
-    eeprom_write_block(&var_header, (void *)_tail_sentinel, sizeof(Var_header));
-
-    // Save the located address for the variable
-    _key = _tail_sentinel + sizeof(Var_header);
-
-    // Update to the new tail sentinel
+    // Save the location we are going to insert at, and compute the new
+    // tail sentinel location.
+    //
     _tail_sentinel += sizeof(Var_header) + size;
+    new_location = _tail_sentinel;
 
-    // We have successfully allocated space and thus located the variable
+    // Write the new sentinel first.  If we are interrupted during this operation
+    // the old sentinel will still correctly terminate the EEPROM image.
+    //
+    var_header.key = k_key_sentinel;
+    var_header.size = 0;
+    eeprom_write_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
+
+    // Write the header for the block we have just located, claiming the EEPROM space.
+    //
+    var_header.key = key();
+    var_header.size = size - 1;
+    eeprom_write_block(&var_header, (void *)new_location, sizeof(Var_header));
+
+    // We have successfully allocated space and thus located the variable.
+    //
+    _key = new_location;
     return true;
 }
 
@@ -455,11 +485,11 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
 
     // Traverse the list of group members, serializing each in order
     //
-    vp = next();
+    vp = first_member(this);
     bp = (uint8_t *)buf;
     resid = buf_size;
     total_size = 0;
-    while (vp->group() == this) {
+    while (vp) {
 
         // (un)serialise the group member
         if (do_serialize) {
@@ -485,7 +515,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
             bp += size;
         }
 
-        vp = vp->next();
+        vp = vp->next_member();
     }
     return total_size;
 }
