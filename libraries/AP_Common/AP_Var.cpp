@@ -555,6 +555,9 @@ AP_Var_group::serialize(void *buf, size_t buf_size) const
     // We have to cast away the const in order to call _serialize_unserialize,
     // as it cannot be const due to changing this when called to unserialize.
     //
+    // XXX it's questionable how much advantage we get from having ::serialize
+    //     const in the first place...
+    //
     return const_cast<AP_Var_group *>(this)->_serialize_unserialize(buf, buf_size, true);
 }
 
@@ -568,24 +571,21 @@ size_t
 AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_serialize)
 {
     AP_Var  *vp;
-    uint8_t *bp;
-    size_t  size, total_size, resid;
+    size_t  size, total_size;
 
     // Traverse the list of group members, serializing each in order
     //
     vp = first_member(this);
     log("starting with %p", vp);
-    bp = (uint8_t *)buf;
-    resid = buf_size;
     total_size = 0;
     while (vp) {
 
         // (un)serialise the group member
         if (do_serialize) {
-            size = vp->serialize(bp, buf_size);
+            size = vp->serialize(buf, buf_size);
             log("serialize %p -> %u", vp, size);
         } else {
-            size = vp->unserialize(bp, buf_size);
+            size = vp->unserialize(buf, buf_size);
             log("unserialize %p -> %u", vp, size);
         }
 
@@ -601,10 +601,10 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         //
         total_size += size;
         log("used %u", total_size);
-        if (size <= resid) {
+        if (size <= buf_size) {
             // there was space for this one, account for it
-            resid -= size;
-            bp += size;
+            buf_size -= size;
+            buf = (void *)((uint8_t *)buf + size);
         }
 
         vp = vp->next_member();
