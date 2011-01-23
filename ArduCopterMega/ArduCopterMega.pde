@@ -163,6 +163,8 @@ PID pid_nav_lon				(EE_GAIN_8);
 PID pid_baro_throttle		(EE_GAIN_9);
 PID pid_sonar_throttle		(EE_GAIN_10);
 
+boolean motor_light;
+
 // GPS variables
 // -------------
 byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?

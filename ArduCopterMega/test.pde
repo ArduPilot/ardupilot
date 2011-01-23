@@ -259,31 +259,14 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			ts_num++;
 			if (ts_num > 10){
 				ts_num = 0;
-				/*Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, rc2:%d, rc4 %d, ny:%ld, ys:%ld, ye:%ld,  R: %d,  L: %d  F: %d  B: %d\n"),
+				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, Int%4.4f, "),
 					(int)(roll_sensor/100),
 					(int)(pitch_sensor/100),
 					rc_1.pwm_out,
-					rc_2.pwm_out,
-					rc_4.pwm_out,
-					nav_yaw,
-					dcm.yaw_sensor,
-					yaw_error,
-					motor_out[RIGHT],
-					motor_out[LEFT],
-					motor_out[FRONT],
-					motor_out[BACK]);*/
+					pid_stabilize_roll.get_integrator());
 
-				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, Int%4.4f,  R: %d,  L: %d  F: %d  B: %d\n"),
-					(int)(roll_sensor/100),
-					(int)(pitch_sensor/100),
-					rc_1.pwm_out,
-					pid_stabilize_roll.get_integrator(),
-					motor_out[RIGHT],
-					motor_out[LEFT],
-					motor_out[FRONT],
-					motor_out[BACK]);
+				print_motor_out();
 			}
-
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 			
 			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
@@ -846,7 +829,7 @@ void print_hit_enter()
 
 
 void print_motor_out(){
-	Serial.printf("out: %d %d %d %d\n", 
+	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n", 
 				(motor_out[RIGHT] 	- rc_3.radio_min),
 				(motor_out[LEFT] 	- rc_3.radio_min),
 				(motor_out[FRONT] 	- rc_3.radio_min),

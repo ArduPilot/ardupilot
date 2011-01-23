@@ -346,19 +346,29 @@ void update_GPS_light(void)
 		GPS_light = !GPS_light;
 		if(GPS_light){
 			digitalWrite(C_LED_PIN, HIGH);
-			digitalWrite(A_LED_PIN, HIGH);
-			digitalWrite(B_LED_PIN, HIGH);
 		}else{
 			digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(B_LED_PIN, LOW);
 		}		
 	}else{
 		if(!GPS_light){
 			GPS_light = true;
 			digitalWrite(C_LED_PIN, HIGH);
+		}
+	}
+	
+	if(motor_armed == true){
+		motor_light = !motor_light;
+
+		// blink
+		if(motor_light){
 			digitalWrite(A_LED_PIN, HIGH);
-			digitalWrite(B_LED_PIN, HIGH);
+		}else{
+			digitalWrite(A_LED_PIN, LOW);
+		}		
+	}else{
+		if(!motor_light){
+			motor_light = true;
+			digitalWrite(A_LED_PIN, HIGH);
 		}
 	}
 }
