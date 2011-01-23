@@ -18,7 +18,7 @@
 /// for later reporting.  Only one test may be performed within each block.
 ///
 /// Within the test, use the REQUIRE macro to describe a condition that must be
-/// met for the test to fail.  If the condition within the macro is not met,
+/// met for the test to pass.  If the condition within the macro is not met,
 /// the condition will be output as a diagnostic and the test will be considered
 /// to have failed.
 ///
@@ -29,27 +29,52 @@
 /// to summarize the results of all of the tests that were performed.
 ///
 
+/// Unit test state and methods.
+///
 class Test
 {
 public:
+    /// Constructor - creates a new test.
+    ///
+    /// Normally called by the TEST macro.
+    ///
+    /// @param  name    The name of the test being started.
+    ///
     Test(const char *name);
+
+    /// Destructor - ends the test.
+    ///
     ~Test();
+
+    /// Perform a success check.
+    ///
+    /// @param  expr    If false, the test has failed.
+    /// @param  source  The expression source; emitted in the diagnostic
+    ///                 indicating test failure.
+    ///
     void        require(bool expr, const char *source);
+
+    /// Report the overall number of tests/pass/fails.
+    ///
     static void report();
 
 private:
-    const char  *_name;
-    bool        _fail;
-    static int  _passed;
-    static int  _failed;
+    const char  *_name;         ///< name of the current test
+    bool        _fail;          ///< set if any ::require calls indicate the test failed
+    static int  _passed;        ///< global pass count
+    static int  _failed;        ///< global fail count
 };
 
+/// Constructor
+///
 Test::Test(const char *name) :
         _name(name),
         _fail(false)
 {
 }
 
+/// Destructor
+///
 Test::~Test()
 {
     Serial.printf("%s: %s\n", _fail ? "FAILED" : "passed", _name);
@@ -60,6 +85,8 @@ Test::~Test()
     }
 }
 
+/// Success check
+///
 void
 Test::require(bool expr, const char *source)
 {
@@ -69,6 +96,8 @@ Test::require(bool expr, const char *source)
     }
 }
 
+/// Summary report
+///
 void
 Test::report()
 {
@@ -78,6 +107,21 @@ Test::report()
 int Test::_passed = 0;
 int Test::_failed = 0;
 
+/// Start a new test.
+///
+/// This should be invoked at the beginning of a block, before any REQUIRE
+/// statements.  A new test called name is started, and subsequent REQUIRE
+/// statements will be applied to the test.  The test will continue until
+/// the end of the block (or until the _test object that is created otherwise
+/// goes out of scope).
+///
 #define TEST(name)      Test _test(#name)
+
+/// Attach an expression to the test's success criteria.
+///
+/// The expression expr must evaluate true for the test to pass.  If
+/// it does not, the text of the expression is output as a diagnostic
+/// and the test is marked as a failure.
+///
 #define REQUIRE(expr)   _test.require(expr, #expr)
 
