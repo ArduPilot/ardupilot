@@ -28,6 +28,7 @@ void calc_nav_throttle()
 	
 		// limit output of throttle control
 		t_out = throttle_cruise + constrain(t_out, -50, 100);
+
 	} else {
 		// SONAR
 		t_out = pid_sonar_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
@@ -36,7 +37,7 @@ void calc_nav_throttle()
 		t_out = throttle_cruise + constrain(t_out, -60, 100);
 	}
 	
-	nav_throttle = (float)(throttle_cruise + t_out) * angle_boost();
+	nav_throttle = (float)t_out * angle_boost();
 }
 
 float angle_boost()
