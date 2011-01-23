@@ -301,7 +301,7 @@ public:
 
     /// Returns the next variable that is a member of the same group.
     ///
-    /// This does not behave correctly if called on a variable that is not a group member.
+    /// This will not behave correctly if called on a variable that is not a group member.
     ///
     /// @param  group       The group whose member(s) are sought.
     /// @return             The next variable in the group, or NULL if there are none.
@@ -310,7 +310,8 @@ public:
 
     /// Returns the storage key for a variable.
     ///
-    /// Note that group members do not have storage keys - the key is held by the group.
+    /// Note that group members do not have storage keys - the key is held by the group
+    /// and instead the key indicates the variable's ordering within the group.
     ///
     /// @return             The variable's key, or k_key_none if it does not have a key.
     ///
@@ -390,7 +391,7 @@ public:
     ///                         have overflowed the buffer.  If the value is less than or
     ///                         equal to buf_size, serialization was successful.
     ///
-    virtual size_t serialize(void *buf, size_t buf_size);
+    virtual size_t serialize(void *buf, size_t buf_size) const;
 
     /// Unserialize the group.
     ///
@@ -416,7 +417,6 @@ private:
     ///                         operating on the data.  If the value is less than or equal
     ///                         to buf_size, the operation was successful.
     ///
-
     size_t                      _serialize_unserialize(void *buf, size_t buf_size, bool do_serialize);
 };
 
