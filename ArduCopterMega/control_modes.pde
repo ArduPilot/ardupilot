@@ -98,15 +98,15 @@ void read_trim_switch()
 void trim_accel()
 {
 	if(rc_1.control_in > 0){
-		imu.ay(imu.ay() - 1);
-	}else if (rc_1.control_in < 0){
 		imu.ay(imu.ay() + 1);
+	}else if (rc_1.control_in < 0){
+		imu.ay(imu.ay() - 1);
 	}
 
 	if(rc_2.control_in > 0){
-		imu.ax(imu.ax() - 1);
-	}else if (rc_2.control_in < 0){
 		imu.ax(imu.ax() + 1);
+	}else if (rc_2.control_in < 0){
+		imu.ax(imu.ax() - 1);
 	}
 
 	Serial.printf("r:%ld p:%ld ax:%d, ay:%d, az:%d\n", dcm.roll_sensor, dcm.pitch_sensor, imu.ax(), imu.ay(), imu.az());
