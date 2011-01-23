@@ -9,12 +9,6 @@
 /// @file	AP_Var.h
 /// @brief	A system for managing and storing variables that are of
 ///			general interest to the system.
-///
-///
-
-/// The AP variable interface. This allows different types
-/// of variables to be passed to blocks for floating point
-/// math, memory management, etc.
 
 #ifndef AP_VAR_H
 #define AP_VAR_H
@@ -152,6 +146,12 @@ public:
     ///
     static const Flags k_flag_unlisted      = (1 << 3);
 
+    static AP_Meta_class::Type_id  k_typeid_float;     ///< meta_type_id() value for AP_Float
+    static AP_Meta_class::Type_id  k_typeid_float16;   ///< meta_type_id() value for AP_Float16
+    static AP_Meta_class::Type_id  k_typeid_int32;     ///< meta_type_id() value for AP_Int32
+    static AP_Meta_class::Type_id  k_typeid_int16;     ///< meta_type_id() value for AP_Int16
+    static AP_Meta_class::Type_id  k_typeid_int8;      ///< meta_type_id() value for AP_Int8
+
     /// Constructor for a freestanding variable
     ///
     /// @param  key             The storage key to be associated with this variable.
@@ -200,6 +200,16 @@ public:
     /// @param	bufferSize		Total size of the destination buffer.
     ///
     void copy_name(char *buffer, size_t bufferSize) const;
+
+    /// Find a variable by name.
+    ///
+    /// If the variable has no name, it cannot be found by this interface.
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @return                 A pointer to the variable, or NULL if
+    ///                         it does not exist.
+    ///
+    static AP_Var *find(const char *name);
 
     /// Save the current value of the variable to EEPROM.
     ///
@@ -621,5 +631,48 @@ public:
 extern AP_Float AP_Float_unity;
 extern AP_Float AP_Float_negative_unity;
 extern AP_Float AP_Float_zero;
+
+
+/// Print the value of an AP_Var
+///
+/// This function knows about the types listed in the AP_Var::k_typeid_* constants,
+/// and it will print their value using Serial, which is assumed to be a BetterStream
+/// serial port (e.g. FastSerial).
+///
+/// @param  vp      The variable to print.
+///
+extern void     AP_Var_print(AP_Var *vp);
+
+#ifndef __AP_COMMON_MENU_H
+# error Must include menu.h
+#endif
+
+/// Menu function for setting an AP_Var.
+///
+/// This function can be directly called from a Menu.  It expects two args, the
+/// first is the full name of a variable, the second is the value to set the variable
+/// to.
+///
+/// This function knows about the types listed in the AP_Var::k_typeid_* constants.
+///
+/// @param  argc        The number of arguments; must be 3.
+/// @param  argv        Arguments.  argv[1] must contain a variable name, argv[2].f and .i
+///                     are consulted when setting the value.
+/// @return             Zero if the variable was set successfully, -1 if it could not be set.
+///
+extern int8_t   AP_Var_menu_set(uint8_t argc, const Menu::arg *argv);
+
+/// Menu function for displaying AP_Vars.
+///
+/// This function can be directly called from a Menu.  It expects zero or one argument.
+/// If no arguments are supplied, all known variables are printed.  If an argument is
+/// supplied, it is expected to be the name of a variable and that variable will be
+/// printed.
+///
+/// @param  argc        The number of arguments, must be 1 or 2.
+/// @param  argv        Argument array; argv[1] may be set to the name of a variable to show.
+///
+extern int8_t   AP_Var_menu_show(uint8_t argc, const Menu::arg *argv);
+
 
 #endif // AP_VAR_H
