@@ -64,19 +64,27 @@ public:
     /// to be unique but cannot be known until the program has been compiled
     /// and linked.  Thus, the only way to know the type ID of a given
     /// type is to construct an object at runtime.  To cache the type ID
-    /// of a class Foo, one would write:
+    /// of a class Foo, see the templated version below:
     ///
-    /// AP_Meta_class::AP_Type_id	Foo_type_id;
-    ///
-    /// { Foo a; Foo_type_id = a.meta_type_id(); }
-    ///
-    /// This will construct a temporary Foo object a and save its type ID.
-    ///
-    /// @param	p				A pointer to an instance of a subclass of AP_Meta_class.
-    /// @return					A type-unique value.
+    /// @return					A type-unique value for this.
     ///
     AP_Type_id meta_type_id(void) const {
         return *(AP_Type_id *)this;
+    }
+
+    /// Obtain a value unique to all instances of a named subclass.
+    ///
+    /// This is similar to ::meta_type_id, but is a template taking a class name.
+    /// Use this function to cache the AP_Type_id for a class when you don't need
+    /// or cannot afford the constructor cost associated with meta_cast.
+    ///
+    /// @tparam T               A subclass of AP_Meta_class.
+    /// @return                 The AP_Type_id value for T.
+    ///
+    template<typename T>
+    static AP_Type_id meta_type_id(void) {
+        T tmp;
+        return tmp.meta_type_id();
     }
 
     /// External handle for an instance of an AP_Meta_class subclass, contains
@@ -171,17 +179,15 @@ public:
     /// subclass of AP_Meta_class, but the caller is not certain.  It will return the pointer
     /// if it is, or NULL if it is not a pointer to the expected class.
     ///
-    /// This should be used with caution, as _typename's default constructor and
+    /// This should be used with caution, as T's default constructor and
     /// destructor will be run, possibly introducing undesired side-effects.
     ///
     /// @todo	Consider whether we should make it difficult to have a default constructor
     ///			with appreciable side-effects.
     ///
-    /// @todo	Check whether we need to reinterpret_cast to get the right return type.
-    ///
-    /// @param	_p				An AP_Meta_class subclass whose type is to be tested.
-    /// @param	_typename		The name of a type with which _p is to be compared.
-    /// @return					True if _p is of type _typename, false otherwise.
+    /// @param	p				An AP_Meta_class subclass that may be of type T.
+    /// @tparam	T		        The name of a type to which p is to be cast.
+    /// @return					NULL if p is not of precisely type T, otherwise p cast to T.
     ///
     template<typename T>
     static T *meta_cast(AP_Meta_class *p) {
