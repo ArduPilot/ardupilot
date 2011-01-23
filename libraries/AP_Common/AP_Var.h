@@ -108,6 +108,12 @@ public:
     ///
     static const Key k_key_not_located = (Key)1 << 15;
 
+    /// A key that has this bit set was not found during a scan of the EEPROM.
+    /// If this bit is set in the key, it's not useful to scan the EEPROM again
+    /// in an attempt to find it.
+    ///
+    static const Key k_key_not_allocated = (Key)1 << 14;
+
     /// Key assigned to the terminal entry in EEPROM.
     ///
     static const Key k_key_sentinel = 0xff;
@@ -115,7 +121,7 @@ public:
     /// A bitmask that removes any control bits from a key giving just the
     /// value.
     ///
-    static const Key k_key_mask = ~(k_key_not_located);
+    static const Key k_key_mask = ~(k_key_not_located | k_key_not_allocated);
 
     /// The largest variable that will be saved to EEPROM.
     /// This affects the amount of stack space that is required by the ::save, ::load,
