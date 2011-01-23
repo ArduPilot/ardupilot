@@ -5,9 +5,9 @@
 // Free Software Foundation; either version 2.1 of the License, or (at
 // your option) any later version.
 //
-/// The AP variable interface. This allows different types
-/// of variables to be passed to blocks for floating point
-/// math, memory management, etc.
+
+/// @file   AP_Var.cpp
+/// @brief  The AP variable store.
 
 #if 0
 # include <FastSerial.h>
@@ -17,7 +17,9 @@ extern "C" { extern void delay(unsigned long); }
 # define log(fmt, args...)
 #endif
 
-#include "AP_Var.h"
+#include <AP_Common.h>
+
+#include <string.h>
 
 // Global constants exported for general use.
 //
@@ -132,6 +134,28 @@ void AP_Var::copy_name(char *buffer, size_t buffer_size) const
         _group->copy_name(buffer, buffer_size);
     strlcat_P(buffer, _name, buffer_size);
 }
+
+// Find a variable by name.
+//
+AP_Var *
+AP_Var::find(const char *name)
+{
+    AP_Var  *vp;
+
+    for (vp = first(); vp; vp = vp->next()) {
+        char    name_buffer[32];
+
+        // copy the variable's name into our scratch buffer
+        vp->copy_name(name_buffer, sizeof(name_buffer));
+
+        // compare with the user-supplied name
+        if (!strcmp(name, name_buffer)) {
+            return vp;
+        }
+    }
+    return NULL;
+}
+
 
 // Save the variable to EEPROM, if supported
 //
@@ -611,3 +635,42 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
     }
     return total_size;
 }
+
+// Static pseudo-constant type IDs for known AP_VarT subclasses.
+//
+AP_Meta_class::Type_id  AP_Var::k_typeid_float;     ///< meta_type_id() value for AP_Float
+AP_Meta_class::Type_id  AP_Var::k_typeid_float16;   ///< meta_type_id() value for AP_Float16
+AP_Meta_class::Type_id  AP_Var::k_typeid_int32;     ///< meta_type_id() value for AP_Int32
+AP_Meta_class::Type_id  AP_Var::k_typeid_int16;     ///< meta_type_id() value for AP_Int16
+AP_Meta_class::Type_id  AP_Var::k_typeid_int8;      ///< meta_type_id() value for AP_Int8
+
+/// A special class used to initialise the k_typeid_* values that AP_Var exports.
+///
+class AP_Var_typesetup
+{
+public:
+    /// Constructor
+    ///
+    /// This constructor should be run just once by creating a static instance
+    /// of the class.  It will initialise the k_typeid_* values for the well-known
+    /// AP_VarT subclasses.
+    ///
+    /// When a new subclass is created, a new k_typeid_* constant should also be
+    /// created and the list below should likewise be expanded.
+    ///
+    AP_Var_typesetup(void);
+};
+
+/// Initialise AP_Var's k_typeid_* values
+AP_Var_typesetup::AP_Var_typesetup(void)
+{
+    AP_Var::k_typeid_float      = AP_Meta_class::meta_type_id<AP_Float>();
+    AP_Var::k_typeid_float16    = AP_Meta_class::meta_type_id<AP_Float16>();
+    AP_Var::k_typeid_int32      = AP_Meta_class::meta_type_id<AP_Int32>();
+    AP_Var::k_typeid_int16      = AP_Meta_class::meta_type_id<AP_Int16>();
+    AP_Var::k_typeid_int8       = AP_Meta_class::meta_type_id<AP_Int8>();
+}
+
+/// Cause the AP_Var_typesetup constructor to be run.
+///
+static AP_Var_typesetup _typesetup __attribute__((used));
