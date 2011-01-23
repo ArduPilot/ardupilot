@@ -478,12 +478,18 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(100);
 		update_GPS();
-		if(home.lng != 0)
+		
+		if(Serial.available() > 0){
+			return (0);
+		}
+		
+		if(home.lng != 0){
 			break;
+		}
 	}
 	
 	while(1){
-		delay(20);
+		delay(100);
 		calc_distance_error();
 		// Blink GPS LED if we don't have a fix
 		// ------------------------------------
@@ -835,4 +841,14 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
+}
+
+
+
+void print_motor_out(){
+	Serial.printf("out: %d %d %d %d\n", 
+				(motor_out[RIGHT] 	- rc_3.radio_min),
+				(motor_out[LEFT] 	- rc_3.radio_min),
+				(motor_out[FRONT] 	- rc_3.radio_min),
+				(motor_out[BACK] 	- rc_3.radio_min));
 }
