@@ -426,8 +426,6 @@ boolean SW_DIP2;
 boolean SW_DIP3;
 boolean SW_DIP4;  // closest to header pins
 
-int counteri = 0;
-
 
 // Basic Initialization
 //---------------------
