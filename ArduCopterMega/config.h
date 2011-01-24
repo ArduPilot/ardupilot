@@ -378,13 +378,13 @@
 # define THROTTLE_BARO_P		.25
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.1
+# define THROTTLE_BARO_I		0.04
 #endif
 #ifndef THROTTLE_BARO_D
 # define THROTTLE_BARO_D		0.1
 #endif
 #ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX	150
+# define THROTTLE_BARO_IMAX		100
 #endif
 
 #ifndef THROTTLE_SONAR_P
