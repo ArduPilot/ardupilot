@@ -682,22 +682,22 @@ default_gains()
 	pid_nav_lat.kP(NAV_P);
 	pid_nav_lat.kI(NAV_I);
 	pid_nav_lat.kD(NAV_D);
-	pid_nav_lat.imax(NAV_IMAX * 100);
+	pid_nav_lat.imax(NAV_IMAX);
 
 	pid_nav_lon.kP(NAV_P);
 	pid_nav_lon.kI(NAV_I);
 	pid_nav_lon.kD(NAV_D);
-	pid_nav_lon.imax(NAV_IMAX * 100);
+	pid_nav_lon.imax(NAV_IMAX);
 
 	pid_baro_throttle.kP(THROTTLE_BARO_P);
 	pid_baro_throttle.kI(THROTTLE_BARO_I);
 	pid_baro_throttle.kD(THROTTLE_BARO_D);
-	pid_baro_throttle.imax(THROTTLE_BARO_IMAX * 100);
+	pid_baro_throttle.imax(THROTTLE_BARO_IMAX);
 
 	pid_sonar_throttle.kP(THROTTLE_SONAR_P);
 	pid_sonar_throttle.kI(THROTTLE_SONAR_I);
 	pid_sonar_throttle.kD(THROTTLE_SONAR_D);
-	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX * 100);
+	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
 	
 	save_EEPROM_PID();
 }
