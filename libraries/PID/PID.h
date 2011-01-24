@@ -105,7 +105,7 @@ public:
 	void	kP(const float v)		{ _gain_array[0] = v; }
 	void	kI(const float v)		{ _gain_array[1] = v; }
 	void	kD(const float v)		{ _gain_array[2] = v; }
-	void	imax(const float v);
+	void	imax(const float v)		{ _gain_array[3] = fabs(v); }
 	
 	void	address(const uint16_t v)	{ _address = v; }
 	
