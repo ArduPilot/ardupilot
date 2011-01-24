@@ -15,12 +15,20 @@
 #ifndef _AP_COMMON_H
 #define _AP_COMMON_H
 
+// Get the common arduino functions
+#include "wiring.h"
+// ... and remove some of their stupid macros
+#undef round
+#undef abs
+
 #include <stdint.h>
 #include "include/menu.h"		/// simple menu subsystem
 #include "c++.h" // c++ additions
 //#include "AP_Vector.h"
 //#include "AP_Loop.h"
 #include "AP_Var.h"
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Warning control
