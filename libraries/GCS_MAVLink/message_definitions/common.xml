@@ -99,10 +99,10 @@
   <message name="RAW_PRESSURE" id="29">
      <description>The RAW pressure readings for the typical setup of one absolute pressure and one differential pressure sensor. The sensor values should be the raw, unscaled ADC values.</description>
      <field name="usec"  type="uint64_t">Timestamp (microseconds since UNIX epoch)</field>
-     <field name="press_abs"  type="int16_t">Absolute pressure (hectopascal)</field>
+     <field name="press_abs"  type="uint16_t">Absolute pressure (hectopascal)</field>
      <field name="press_diff1"  type="int16_t">Differential pressure 1 (hectopascal)</field>
      <field name="press_diff2"  type="int16_t">Differential pressure 2 (hectopascal)</field>
-     <field name="temperature"  type="int16_t">Raw Temperature measurement </field>
+     <field name="temperature"  type="int16_t">Raw Temperature measurement (0.01 degrees celsius per tick is default unit)</field>
    </message>
 
    <message name="ATTITUDE" id="30">
@@ -423,15 +423,37 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="vy"  type="int16_t">Ground Y Speed, expressed as m/s * 100</field>
      <field name="vz"  type="int16_t">Ground Z Speed, expressed as m/s * 100</field>
    </message>
+
+
+
+
+
+
    
    <!-- MESSAGE IDs 80 - 250: Space for custom messages in individual projectname_messages.xml files -->
+
+
+
+
+
+
+<message name="NAMED_VALUE_FLOAT" id="252">
+     <description>Send a key-value pair as float. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
+     <field name="name"  type="char[10]">Name of the debug variable</field>
+     <field name="value"  type="float">Floating point value</field>
+   </message>
+
+<message name="NAMED_VALUE_INT" id="253">
+     <description>Send a key-value pair as integer. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
+     <field name="name"  type="char[10]">Name of the debug variable</field>
+     <field name="value"  type="int32_t">Signed integer value</field>
+   </message>
 
   <message name="STATUSTEXT" id= "254">
     <description>Status text message. These messages are printed in yellow in the COMM console of QGroundControl. WARNING: They consume quite some bandwidth, so use only for important status and error messages. If implemented wisely, these messages are buffered on the MCU and sent only at a limited rate (e.g. 10 Hz).</description>
     <field name="severity" type="uint8_t">Severity of status, 0 = info message, 255 = critical fault</field>
     <field name="text" type="array[50]">Status text message, without null termination character</field>
    </message>
-
 
 <message name="DEBUG" id="255">
      <description>Send a debug value. The index is used to discriminate between values. These values show up in the plot of QGroundControl as DEBUG N.</description>

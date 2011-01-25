@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Friday, January 7 2011, 10:04 UTC
+ *	 Generated on Sunday, January 23 2011, 16:32 UTC
  */
 #ifndef COMMON_H
 #define COMMON_H
@@ -78,6 +78,8 @@ extern "C" {
 #include "./mavlink_msg_gps_local_origin_set.h"
 #include "./mavlink_msg_airspeed.h"
 #include "./mavlink_msg_global_position_int.h"
+#include "./mavlink_msg_named_value_float.h"
+#include "./mavlink_msg_named_value_int.h"
 #include "./mavlink_msg_statustext.h"
 #include "./mavlink_msg_debug.h"
 #ifdef __cplusplus
