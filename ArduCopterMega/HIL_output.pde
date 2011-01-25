@@ -39,7 +39,7 @@ void output_HIL_(void)
 	output_int((int)(rc_4.servo_out));			// 	3	bytes 6, 7
 	output_int((int)wp_distance);						// 	4	bytes 8, 9
 	output_int((int)bearing_error);						// 	5	bytes 10,11
-	output_int((int)roll_sensor);						// 	6	bytes 12,13
+	output_int((int)dcm.roll_sensor);						// 	6	bytes 12,13
 	output_int((int)loiter_total);						// 	7	bytes 14,15
 	output_byte(wp_index);								// 	8	bytes 16
 	output_byte(control_mode);							// 	9	bytes 17

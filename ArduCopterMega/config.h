@@ -272,6 +272,11 @@
 # define ACRO_RATE_YAW_IMAX   0
 #endif
 
+#ifndef ACRO_RATE_TRIGGER
+# define ACRO_RATE_TRIGGER   4200
+#endif
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // STABILZE Angle Control

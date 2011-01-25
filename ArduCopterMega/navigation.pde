@@ -39,11 +39,6 @@ void navigate()
 	// control mode specific updates to nav_bearing
 	// --------------------------------------------
 	update_navigation();
-	
-	// calc pitch and roll to target
-	// -----------------------------
-	calc_nav();
-
 }
 
 #define DIST_ERROR_MAX 3000
@@ -99,7 +94,7 @@ void verify_missed_wp()
 
 void calc_bearing_error()
 {
-	bearing_error 	= nav_bearing - yaw_sensor;
+	bearing_error 	= nav_bearing - dcm.yaw_sensor;
 	bearing_error 	= wrap_180(bearing_error);
 }
 

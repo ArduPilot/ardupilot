@@ -62,7 +62,7 @@ void output_manual_yaw()
 {
 	if(rc_3.control_in == 0){
 		clear_yaw_control();
-	} else {	
+	} else {
 		// Yaw control
 		if(rc_4.control_in == 0){
 			//clear_yaw_control();
@@ -82,6 +82,7 @@ void auto_yaw()
 picth and roll control
 ****************************************************************/
 
+
 /*// how hard to tilt towards the target
 // -----------------------------------
 void calc_nav_pid()
@@ -98,7 +99,7 @@ void calc_nav_pitch()
 {
 	// how hard to pitch to target
 
-	long angle 	= wrap_360(nav_bearing - yaw_sensor);
+	long angle 	= wrap_360(nav_bearing - dcm.yaw_sensor);
 	
 	bool rev = false;
 	float roll_out;
@@ -119,7 +120,7 @@ void calc_nav_pitch()
 // --------------------------------------------------
 void calc_nav_roll()
 {
-	long angle 	= wrap_360(nav_bearing - yaw_sensor);
+	long angle 	= wrap_360(nav_bearing - dcm.yaw_sensor);
 
 	bool rev = false;
 	float roll_out;

@@ -261,6 +261,12 @@ void set_mode(byte mode)
 	
 	save_EEPROM_PID();
 	
+	// used to stop fly_aways
+	if(rc_1.control_in == 0){
+		// we are on the ground is this is true
+		// disarm motors temp
+		motor_auto_safe = false;
+	}
 	//send_message(SEVERITY_LOW,"control mode");
 	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
 	switch(control_mode)

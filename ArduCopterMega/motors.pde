@@ -32,13 +32,14 @@ void arm_motors()
 /*****************************************
  * Set the flight control servos based on the current calculated values
  *****************************************/
-void set_servos_4(void)
+void 
+set_servos_4()
 {
 	static byte num;
 	static byte counteri;
 
 	// Quadcopter mix
-	if (motor_armed == true) {
+	if (motor_armed == true && motor_auto_safe == true) {
 		int out_min = rc_3.radio_min;
 		
 		// Throttle is 0 to 1000 only
@@ -65,6 +66,12 @@ void set_servos_4(void)
 			motor_out[FRONT]	= rc_3.radio_out + rc_2.pwm_out;
 			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
 			
+			motor_out[RIGHT]	+=  rc_4.pwm_out;
+			motor_out[LEFT]		+=  rc_4.pwm_out;
+			motor_out[FRONT]	-=  rc_4.pwm_out;
+			motor_out[BACK] 	-=  rc_4.pwm_out;
+			
+			
 		}else if(frame_type == X_FRAME){
 		
 			int roll_out 	= rc_1.pwm_out / 2;
@@ -75,7 +82,14 @@ void set_servos_4(void)
 
 			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
 			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
+			//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);		
 			
+			motor_out[RIGHT]	+=  rc_4.pwm_out;
+			motor_out[LEFT]		+=  rc_4.pwm_out;
+			motor_out[FRONT]	-=  rc_4.pwm_out;
+			motor_out[BACK] 	-=  rc_4.pwm_out;
+			//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
+				
 		}else if(frame_type == TRI_FRAME){
 
 			// Tri-copter power distribution
@@ -100,13 +114,22 @@ void set_servos_4(void)
 			int roll_out 		= (float)rc_1.pwm_out * .866;
 			int pitch_out 		= rc_2.pwm_out / 2;
 			
-			motor_out[FRONT]		= rc_3.radio_out + roll_out + pitch_out + rc_4.pwm_out;  // CCW
-            motor_out[RIGHTFRONT]   = rc_3.radio_out - roll_out + pitch_out - rc_4.pwm_out;  // CW
-			motor_out[LEFT]			= rc_3.radio_out + rc_1.pwm_out - rc_4.pwm_out;          // CW
-			motor_out[RIGHT]		= rc_3.radio_out - rc_1.pwm_out + rc_4.pwm_out;          // CCW
+			motor_out[FRONT]		= rc_3.radio_out + roll_out + pitch_out;  // CCW
+            motor_out[RIGHTFRONT]   = rc_3.radio_out - roll_out + pitch_out;  // CW
+			motor_out[LEFT]			= rc_3.radio_out + rc_1.pwm_out;          // CW
+			motor_out[RIGHT]		= rc_3.radio_out - rc_1.pwm_out;          // CCW
+			motor_out[LEFTBACK]     = rc_3.radio_out + roll_out - pitch_out;  // CW
+			motor_out[BACK] 		= rc_3.radio_out - roll_out - pitch_out;  // CCW
+
+			motor_out[FRONT]		+= rc_4.pwm_out;	// CCW
+            motor_out[RIGHTFRONT]   -= rc_4.pwm_out;	// CW
+			motor_out[LEFT]			-= rc_4.pwm_out;	// CW
+			motor_out[RIGHT]		+= rc_4.pwm_out;	// CCW
+			motor_out[LEFTBACK]     += rc_4.pwm_out;  	// CW
+			motor_out[BACK] 		-= rc_4.pwm_out;	// CCW
 			
-			motor_out[LEFTBACK]     = rc_3.radio_out + roll_out - pitch_out + rc_4.pwm_out;  // CW
-			motor_out[BACK] 		= rc_3.radio_out - roll_out - pitch_out - rc_4.pwm_out;  // CCW
+			
+			
 			/*
 			if(counteri == 5) {
 				Serial.printf(" %d  %d \n%d    %d        %d   %d \n %d  %d \n\n", motor_out[FRONT], motor_out[RIGHTFRONT], motor_out[LEFT], motor_out[RIGHT], roll_out, pitch_out, motor_out[LEFTBACK], motor_out[BACK]);
@@ -120,18 +143,6 @@ void set_servos_4(void)
 			
 		}
 		
-		//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
-
-		if((frame_type == PLUS_FRAME) || (frame_type == X_FRAME)){
-		
-			motor_out[RIGHT]	+=  rc_4.pwm_out;
-			motor_out[LEFT]		+=  rc_4.pwm_out;
-			motor_out[FRONT]	-=  rc_4.pwm_out;
-			motor_out[BACK] 	-=  rc_4.pwm_out;
-			
-		}
-		
-		//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
 
 		motor_out[RIGHT]	= constrain(motor_out[RIGHT], 	out_min, rc_3.radio_max);
 		motor_out[LEFT]		= constrain(motor_out[LEFT], 	out_min, rc_3.radio_max);
@@ -140,9 +151,9 @@ void set_servos_4(void)
 				
 		
 		num++;
-		if (num > 50){
+		if (num > 10){
 			num = 0;
-			
+			Serial.print("!");
 			//debugging with Channel 6
 			
 			/*
@@ -195,10 +206,20 @@ void set_servos_4(void)
 				APM_RC.Force_Out6_Out7();
 			}
 		}
-	
 		
 	}else{
-	
+		num++;
+		if (num > 10){
+			num = 0;
+			Serial.print("-");
+		}
+		
+		if(rc_3.control_in > 0){
+			// we have pushed up the throttle
+			// remove safety
+			motor_auto_safe = true;
+		}
+		
 		// Send commands to motors
 		APM_RC.OutputCh(CH_1, rc_3.radio_min);
 		APM_RC.OutputCh(CH_2, rc_3.radio_min);

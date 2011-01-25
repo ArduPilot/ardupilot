@@ -263,10 +263,10 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 	DataFlash.WriteInt((int)(rc_1.servo_out));
 	DataFlash.WriteInt((int)nav_roll);
-	DataFlash.WriteInt((int)roll_sensor);
+	DataFlash.WriteInt((int)dcm.roll_sensor);
 	DataFlash.WriteInt((int)(rc_2.servo_out));
 	DataFlash.WriteInt((int)nav_pitch);
-	DataFlash.WriteInt((int)pitch_sensor);
+	DataFlash.WriteInt((int)dcm.pitch_sensor);
 	DataFlash.WriteInt((int)(rc_3.servo_out));
 	DataFlash.WriteInt((int)(rc_4.servo_out));
 	DataFlash.WriteInt((int)(accel.y * 10000));  
@@ -279,7 +279,7 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
-	DataFlash.WriteInt((uint16_t)yaw_sensor);
+	DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);
 	DataFlash.WriteInt((int)wp_distance);
 	DataFlash.WriteInt((uint16_t)target_bearing);
 	DataFlash.WriteInt((uint16_t)nav_bearing);

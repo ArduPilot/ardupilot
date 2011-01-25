@@ -78,9 +78,9 @@ void print_attitude(void)
 	SendSer(",THH:");
 	SendSer(rc_3.servo_out, DEC);
 	SendSer (",RLL:");
-	SendSer(roll_sensor / 100, DEC);
+	SendSer(dcm.roll_sensor / 100, DEC);
 	SendSer (",PCH:");
-	SendSer(pitch_sensor / 100, DEC);
+	SendSer(dcm.pitch_sensor / 100, DEC);
 	SendSerln(",***");
 }
 
@@ -107,7 +107,7 @@ void print_position(void)
 	SendSer(",ALH:");
 	SendSer(next_WP.alt/100,DEC);
 	SendSer(",CRS:");
-	SendSer(yaw_sensor/100,DEC);
+	SendSer(dcm.yaw_sensor/100,DEC);
 	SendSer(",BER:");
 	SendSer(target_bearing/100,DEC);
 	SendSer(",WPN:");
