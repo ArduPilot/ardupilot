@@ -12,10 +12,11 @@ namespace ArducopterConfiguratorTest
         public event Action<string> LineOfDataReceived;
         public string CommPort { get; set; }
         public List<string> SentItems = new List<string>();
+        private bool _isConnected;
 
         public bool IsConnected
         {
-            get { throw new NotImplementedException(); }
+            get { return _isConnected; }
         }
 
         public IEnumerable<string> ListCommPorts()
@@ -30,11 +31,13 @@ namespace ArducopterConfiguratorTest
 
         public bool Connect()
         {
+            _isConnected = true;
             return true;
         }
 
         public bool DisConnect()
         {
+            _isConnected = false;
             return true;
         }
 

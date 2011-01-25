@@ -47,19 +47,19 @@
             this.textBox6 = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
             this.textBox7 = new System.Windows.Forms.TextBox();
-            this.sensorRollGyro = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.sensorRollAcc = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.progressBar3 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar8 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar6 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.sensorPitchGyro = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar4 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar3 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar2 = new ArducopterConfigurator.LinearSensorIndicatorControl();
-            this.verticalProgressBar1 = new ArducopterConfigurator.LinearSensorIndicatorControl();
             this.textBox8 = new System.Windows.Forms.TextBox();
             this.textBox9 = new System.Windows.Forms.TextBox();
             this.textBox10 = new System.Windows.Forms.TextBox();
+            this.indicatorRollGyro = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.indicatorRollAccel = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl1 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl2 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl3 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl4 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl5 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl7 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl8 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -133,7 +133,7 @@
             // textBox3
             // 
             this.textBox3.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "AccelRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never, null, "N0"));
-            this.textBox3.Location = new System.Drawing.Point(124, 68);
+            this.textBox3.Location = new System.Drawing.Point(124, 78);
             this.textBox3.Name = "textBox3";
             this.textBox3.ReadOnly = true;
             this.textBox3.Size = new System.Drawing.Size(47, 20);
@@ -142,7 +142,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(9, 52);
+            this.label6.Location = new System.Drawing.Point(12, 62);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(57, 13);
             this.label6.TabIndex = 15;
@@ -220,128 +220,6 @@
             this.textBox7.Size = new System.Drawing.Size(47, 20);
             this.textBox7.TabIndex = 23;
             // 
-            // sensorRollGyro
-            // 
-            this.sensorRollGyro.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.sensorRollGyro.Location = new System.Drawing.Point(12, 25);
-            this.sensorRollGyro.Maximum = 1000;
-            this.sensorRollGyro.Name = "sensorRollGyro";
-            this.sensorRollGyro.Size = new System.Drawing.Size(100, 23);
-            this.sensorRollGyro.TabIndex = 9;
-            // 
-            // sensorRollAcc
-            // 
-            this.sensorRollAcc.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.sensorRollAcc.Location = new System.Drawing.Point(12, 68);
-            this.sensorRollAcc.Maximum = 1000;
-            this.sensorRollAcc.Name = "sensorRollAcc";
-            this.sensorRollAcc.Size = new System.Drawing.Size(100, 23);
-            this.sensorRollAcc.TabIndex = 14;
-            // 
-            // progressBar3
-            // 
-            this.progressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroYaw", true));
-            this.progressBar3.Location = new System.Drawing.Point(234, 157);
-            this.progressBar3.Maximum = 1000;
-            this.progressBar3.Name = "progressBar3";
-            this.progressBar3.Size = new System.Drawing.Size(100, 23);
-            this.progressBar3.TabIndex = 28;
-            // 
-            // verticalProgressBar8
-            // 
-            this.verticalProgressBar8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelZ", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.verticalProgressBar8.IsVertical = true;
-            this.verticalProgressBar8.Location = new System.Drawing.Point(354, 21);
-            this.verticalProgressBar8.Maximum = 1000;
-            this.verticalProgressBar8.Name = "verticalProgressBar8";
-            this.verticalProgressBar8.Size = new System.Drawing.Size(24, 82);
-            this.verticalProgressBar8.Step = 1;
-            this.verticalProgressBar8.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar8.TabIndex = 22;
-            this.verticalProgressBar8.Value = 500;
-            // 
-            // verticalProgressBar6
-            // 
-            this.verticalProgressBar6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelPitch", true, System.Windows.Forms.DataSourceUpdateMode.Never));
-            this.verticalProgressBar6.IsVertical = true;
-            this.verticalProgressBar6.Location = new System.Drawing.Point(258, 21);
-            this.verticalProgressBar6.Maximum = 1000;
-            this.verticalProgressBar6.Name = "verticalProgressBar6";
-            this.verticalProgressBar6.Size = new System.Drawing.Size(24, 82);
-            this.verticalProgressBar6.Step = 1;
-            this.verticalProgressBar6.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar6.TabIndex = 19;
-            this.verticalProgressBar6.Value = 500;
-            // 
-            // sensorPitchGyro
-            // 
-            this.sensorPitchGyro.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroPitch", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.sensorPitchGyro.IsVertical = true;
-            this.sensorPitchGyro.Location = new System.Drawing.Point(198, 21);
-            this.sensorPitchGyro.Maximum = 1000;
-            this.sensorPitchGyro.Name = "sensorPitchGyro";
-            this.sensorPitchGyro.Size = new System.Drawing.Size(24, 82);
-            this.sensorPitchGyro.Step = 1;
-            this.sensorPitchGyro.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.sensorPitchGyro.TabIndex = 16;
-            this.sensorPitchGyro.Value = 500;
-            // 
-            // verticalProgressBar4
-            // 
-            this.verticalProgressBar4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRight", true));
-            this.verticalProgressBar4.IsVertical = true;
-            this.verticalProgressBar4.Location = new System.Drawing.Point(176, 157);
-            this.verticalProgressBar4.Maximum = 2000;
-            this.verticalProgressBar4.Minimum = 1000;
-            this.verticalProgressBar4.Name = "verticalProgressBar4";
-            this.verticalProgressBar4.Size = new System.Drawing.Size(24, 84);
-            this.verticalProgressBar4.Step = 1;
-            this.verticalProgressBar4.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar4.TabIndex = 6;
-            this.verticalProgressBar4.Value = 1000;
-            // 
-            // verticalProgressBar3
-            // 
-            this.verticalProgressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
-            this.verticalProgressBar3.IsVertical = true;
-            this.verticalProgressBar3.Location = new System.Drawing.Point(124, 157);
-            this.verticalProgressBar3.Maximum = 2000;
-            this.verticalProgressBar3.Minimum = 1000;
-            this.verticalProgressBar3.Name = "verticalProgressBar3";
-            this.verticalProgressBar3.Size = new System.Drawing.Size(24, 84);
-            this.verticalProgressBar3.Step = 1;
-            this.verticalProgressBar3.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar3.TabIndex = 4;
-            this.verticalProgressBar3.Value = 1000;
-            // 
-            // verticalProgressBar2
-            // 
-            this.verticalProgressBar2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorFront", true));
-            this.verticalProgressBar2.IsVertical = true;
-            this.verticalProgressBar2.Location = new System.Drawing.Point(68, 157);
-            this.verticalProgressBar2.Maximum = 2000;
-            this.verticalProgressBar2.Minimum = 1000;
-            this.verticalProgressBar2.Name = "verticalProgressBar2";
-            this.verticalProgressBar2.Size = new System.Drawing.Size(24, 84);
-            this.verticalProgressBar2.Step = 1;
-            this.verticalProgressBar2.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar2.TabIndex = 2;
-            this.verticalProgressBar2.Value = 1000;
-            // 
-            // verticalProgressBar1
-            // 
-            this.verticalProgressBar1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorLeft", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.verticalProgressBar1.IsVertical = true;
-            this.verticalProgressBar1.Location = new System.Drawing.Point(12, 157);
-            this.verticalProgressBar1.Maximum = 2000;
-            this.verticalProgressBar1.Minimum = 1000;
-            this.verticalProgressBar1.Name = "verticalProgressBar1";
-            this.verticalProgressBar1.Size = new System.Drawing.Size(24, 84);
-            this.verticalProgressBar1.Step = 1;
-            this.verticalProgressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.verticalProgressBar1.TabIndex = 0;
-            this.verticalProgressBar1.Value = 1000;
-            // 
             // textBox8
             // 
             this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorFront", true));
@@ -369,40 +247,230 @@
             this.textBox10.Size = new System.Drawing.Size(47, 20);
             this.textBox10.TabIndex = 31;
             // 
+            // indicatorRollGyro
+            // 
+            this.indicatorRollGyro.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.indicatorRollGyro.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.indicatorRollGyro.BarBorderColor = System.Drawing.Color.Maroon;
+            this.indicatorRollGyro.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.indicatorRollGyro.BarDividersCount = 20;
+            this.indicatorRollGyro.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.indicatorRollGyro.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroRoll", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.indicatorRollGyro.IsVertical = false;
+            this.indicatorRollGyro.Location = new System.Drawing.Point(12, 28);
+            this.indicatorRollGyro.Max = 500;
+            this.indicatorRollGyro.Min = -500;
+            this.indicatorRollGyro.Name = "indicatorRollGyro";
+            this.indicatorRollGyro.Offset = 0;
+            this.indicatorRollGyro.Size = new System.Drawing.Size(109, 20);
+            this.indicatorRollGyro.TabIndex = 32;
+            this.indicatorRollGyro.Value = 100;
+            // 
+            // indicatorRollAccel
+            // 
+            this.indicatorRollAccel.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.indicatorRollAccel.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.indicatorRollAccel.BarBorderColor = System.Drawing.Color.Maroon;
+            this.indicatorRollAccel.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.indicatorRollAccel.BarDividersCount = 20;
+            this.indicatorRollAccel.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.indicatorRollAccel.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelRoll", true));
+            this.indicatorRollAccel.IsVertical = false;
+            this.indicatorRollAccel.Location = new System.Drawing.Point(12, 78);
+            this.indicatorRollAccel.Max = 500;
+            this.indicatorRollAccel.Min = -500;
+            this.indicatorRollAccel.Name = "indicatorRollAccel";
+            this.indicatorRollAccel.Offset = 0;
+            this.indicatorRollAccel.Size = new System.Drawing.Size(109, 20);
+            this.indicatorRollAccel.TabIndex = 33;
+            this.indicatorRollAccel.Value = 100;
+            // 
+            // linearIndicatorControl1
+            // 
+            this.linearIndicatorControl1.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl1.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl1.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl1.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl1.BarDividersCount = 20;
+            this.linearIndicatorControl1.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroPitch", true));
+            this.linearIndicatorControl1.IsVertical = true;
+            this.linearIndicatorControl1.Location = new System.Drawing.Point(199, 21);
+            this.linearIndicatorControl1.Max = 500;
+            this.linearIndicatorControl1.Min = -500;
+            this.linearIndicatorControl1.Name = "linearIndicatorControl1";
+            this.linearIndicatorControl1.Offset = 0;
+            this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 82);
+            this.linearIndicatorControl1.TabIndex = 34;
+            this.linearIndicatorControl1.Value = 100;
+            // 
+            // linearIndicatorControl2
+            // 
+            this.linearIndicatorControl2.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl2.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl2.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl2.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl2.BarDividersCount = 20;
+            this.linearIndicatorControl2.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelPitch", true));
+            this.linearIndicatorControl2.IsVertical = true;
+            this.linearIndicatorControl2.Location = new System.Drawing.Point(264, 21);
+            this.linearIndicatorControl2.Max = 500;
+            this.linearIndicatorControl2.Min = -500;
+            this.linearIndicatorControl2.Name = "linearIndicatorControl2";
+            this.linearIndicatorControl2.Offset = 0;
+            this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 82);
+            this.linearIndicatorControl2.TabIndex = 35;
+            this.linearIndicatorControl2.Value = 100;
+            // 
+            // linearIndicatorControl3
+            // 
+            this.linearIndicatorControl3.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl3.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl3.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl3.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl3.BarDividersCount = 20;
+            this.linearIndicatorControl3.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorLeft", true));
+            this.linearIndicatorControl3.IsVertical = true;
+            this.linearIndicatorControl3.Location = new System.Drawing.Point(15, 157);
+            this.linearIndicatorControl3.Max = 1000;
+            this.linearIndicatorControl3.Min = 0;
+            this.linearIndicatorControl3.Name = "linearIndicatorControl3";
+            this.linearIndicatorControl3.Offset = 0;
+            this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 84);
+            this.linearIndicatorControl3.TabIndex = 36;
+            this.linearIndicatorControl3.Value = 100;
+            // 
+            // linearIndicatorControl4
+            // 
+            this.linearIndicatorControl4.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl4.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl4.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl4.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl4.BarDividersCount = 20;
+            this.linearIndicatorControl4.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorFront", true));
+            this.linearIndicatorControl4.IsVertical = true;
+            this.linearIndicatorControl4.Location = new System.Drawing.Point(71, 157);
+            this.linearIndicatorControl4.Max = 1000;
+            this.linearIndicatorControl4.Min = 0;
+            this.linearIndicatorControl4.Name = "linearIndicatorControl4";
+            this.linearIndicatorControl4.Offset = 0;
+            this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 84);
+            this.linearIndicatorControl4.TabIndex = 37;
+            this.linearIndicatorControl4.Value = 100;
+            // 
+            // linearIndicatorControl5
+            // 
+            this.linearIndicatorControl5.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl5.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl5.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl5.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl5.BarDividersCount = 20;
+            this.linearIndicatorControl5.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
+            this.linearIndicatorControl5.IsVertical = true;
+            this.linearIndicatorControl5.Location = new System.Drawing.Point(124, 157);
+            this.linearIndicatorControl5.Max = 1000;
+            this.linearIndicatorControl5.Min = 0;
+            this.linearIndicatorControl5.Name = "linearIndicatorControl5";
+            this.linearIndicatorControl5.Offset = 0;
+            this.linearIndicatorControl5.Size = new System.Drawing.Size(20, 84);
+            this.linearIndicatorControl5.TabIndex = 38;
+            this.linearIndicatorControl5.Value = 100;
+            // 
+            // linearIndicatorControl6
+            // 
+            this.linearIndicatorControl6.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl6.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl6.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl6.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl6.BarDividersCount = 20;
+            this.linearIndicatorControl6.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
+            this.linearIndicatorControl6.IsVertical = true;
+            this.linearIndicatorControl6.Location = new System.Drawing.Point(179, 157);
+            this.linearIndicatorControl6.Max = 1000;
+            this.linearIndicatorControl6.Min = 0;
+            this.linearIndicatorControl6.Name = "linearIndicatorControl6";
+            this.linearIndicatorControl6.Offset = 0;
+            this.linearIndicatorControl6.Size = new System.Drawing.Size(20, 84);
+            this.linearIndicatorControl6.TabIndex = 39;
+            this.linearIndicatorControl6.Value = 100;
+            // 
+            // linearIndicatorControl7
+            // 
+            this.linearIndicatorControl7.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl7.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl7.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl7.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl7.BarDividersCount = 20;
+            this.linearIndicatorControl7.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "GyroYaw", true));
+            this.linearIndicatorControl7.IsVertical = false;
+            this.linearIndicatorControl7.Location = new System.Drawing.Point(225, 157);
+            this.linearIndicatorControl7.Max = 500;
+            this.linearIndicatorControl7.Min = -500;
+            this.linearIndicatorControl7.Name = "linearIndicatorControl7";
+            this.linearIndicatorControl7.Offset = 0;
+            this.linearIndicatorControl7.Size = new System.Drawing.Size(109, 20);
+            this.linearIndicatorControl7.TabIndex = 40;
+            this.linearIndicatorControl7.Value = 100;
+            // 
+            // linearIndicatorControl8
+            // 
+            this.linearIndicatorControl8.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl8.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl8.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl8.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl8.BarDividersCount = 20;
+            this.linearIndicatorControl8.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelZ", true));
+            this.linearIndicatorControl8.IsVertical = true;
+            this.linearIndicatorControl8.Location = new System.Drawing.Point(353, 21);
+            this.linearIndicatorControl8.Max = 500;
+            this.linearIndicatorControl8.Min = -500;
+            this.linearIndicatorControl8.Name = "linearIndicatorControl8";
+            this.linearIndicatorControl8.Offset = 0;
+            this.linearIndicatorControl8.Size = new System.Drawing.Size(20, 82);
+            this.linearIndicatorControl8.TabIndex = 41;
+            this.linearIndicatorControl8.Value = 100;
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.linearIndicatorControl8);
+            this.Controls.Add(this.linearIndicatorControl7);
+            this.Controls.Add(this.linearIndicatorControl6);
+            this.Controls.Add(this.linearIndicatorControl5);
+            this.Controls.Add(this.linearIndicatorControl4);
+            this.Controls.Add(this.linearIndicatorControl3);
+            this.Controls.Add(this.linearIndicatorControl2);
+            this.Controls.Add(this.linearIndicatorControl1);
+            this.Controls.Add(this.indicatorRollAccel);
+            this.Controls.Add(this.indicatorRollGyro);
             this.Controls.Add(this.textBox10);
             this.Controls.Add(this.textBox9);
             this.Controls.Add(this.textBox8);
-            this.Controls.Add(this.progressBar3);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.textBox6);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.textBox7);
-            this.Controls.Add(this.verticalProgressBar8);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.textBox5);
-            this.Controls.Add(this.verticalProgressBar6);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.textBox4);
-            this.Controls.Add(this.sensorPitchGyro);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.sensorRollAcc);
             this.Controls.Add(this.textBox3);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.sensorRollGyro);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.verticalProgressBar4);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.verticalProgressBar3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.verticalProgressBar2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.verticalProgressBar1);
             this.DoubleBuffered = true;
             this.Name = "FlightDataView";
             this.Size = new System.Drawing.Size(402, 275);
@@ -415,17 +483,6 @@
         #endregion
 
         private System.Windows.Forms.BindingSource FlightDataVmBindingSource;
-
-        private LinearSensorIndicatorControl sensorRollGyro;
-        private LinearSensorIndicatorControl verticalProgressBar1;
-        private LinearSensorIndicatorControl verticalProgressBar2;
-        private LinearSensorIndicatorControl verticalProgressBar3;
-        private LinearSensorIndicatorControl verticalProgressBar4;
-        private LinearSensorIndicatorControl sensorPitchGyro;
-        private LinearSensorIndicatorControl verticalProgressBar6;
-        private LinearSensorIndicatorControl verticalProgressBar8;
-        private LinearSensorIndicatorControl sensorRollAcc;
-        private LinearSensorIndicatorControl progressBar3;
 
 
 
@@ -449,5 +506,15 @@
         private System.Windows.Forms.TextBox textBox8;
         private System.Windows.Forms.TextBox textBox9;
         private System.Windows.Forms.TextBox textBox10;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl indicatorRollGyro;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl indicatorRollAccel;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl1;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl2;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl3;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl4;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl5;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl7;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl8;
     }
 }

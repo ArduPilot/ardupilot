@@ -20,9 +20,10 @@ namespace ArducopterConfigurator.views
         public override void SetDataContext(FlightDataVm model)
         {
             FlightDataVmBindingSource.DataSource = model;
-        }
 
-     
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => FlightDataVmBindingSource.ResetBindings(false));
+        }
     }
     // Required for VS2008 designer. No functional value
     public class FlightDataViewDesignable : ViewCommon<FlightDataVm> { }

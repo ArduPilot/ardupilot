@@ -48,16 +48,16 @@ namespace ArducopterConfigurator.PresentationModels
             }
 
             LoopTime = ints[0];
-            GyroRoll = ints[1] + 500;
-            GyroPitch = ints[2] + 500;
-            GyroYaw = ints[3] + 500;
+            GyroRoll = ints[1];
+            GyroPitch = ints[2];
+            GyroYaw = ints[3];
             MotorFront = ints[8];
             MotorRear = ints[9];
             MotorRight = ints[10];
             MotorLeft = ints[11];
-            AccelRoll = ints[12] + 500;
-            AccelPitch = ints[13] + 500;
-            AccelZ = ints[14] + 500;
+            AccelRoll = ints[12];
+            AccelPitch = ints[13];
+            AccelZ = ints[14];
         }
 
 
