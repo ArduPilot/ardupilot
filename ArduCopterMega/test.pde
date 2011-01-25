@@ -163,7 +163,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	
 	oldSwitchPosition = readSwitch();
 	
-	Serial.printf_P(PSTR("Unplug battery, turn off radio.\n"));
+	Serial.printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
 	
 	while(1){
 		delay(20);
@@ -203,6 +203,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
 	
+	
 	print_hit_enter();
 	delay(1000);
 	
@@ -214,8 +215,10 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("pid_stabilize_roll.kP: %4.4f\n"), pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
-	motor_armed = true;
 	trim_radio();
+
+	motor_auto_safe 	= false;
+	motor_armed 		= true;
 	
 	while(1){
 		// 50 hz
@@ -245,7 +248,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			
 			// allow us to zero out sensors with control switches
 			if(rc_5.control_in < 600){
-				roll_sensor = pitch_sensor = 0;
+				dcm.roll_sensor = dcm.pitch_sensor = 0;
 			}
 			
 			// custom code/exceptions for flight modes
@@ -260,8 +263,8 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			if (ts_num > 10){
 				ts_num = 0;
 				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, Int%4.4f, "),
-					(int)(roll_sensor/100),
-					(int)(pitch_sensor/100),
+					(int)(dcm.roll_sensor/100),
+					(int)(dcm.pitch_sensor/100),
 					rc_1.pwm_out,
 					pid_stabilize_roll.get_integrator());
 
@@ -269,8 +272,8 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			}
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 			
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
 			
 			if(Serial.available() > 0){
 				return (0);
@@ -331,7 +334,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			
 			// allow us to zero out sensors with control switches
 			if(rc_5.control_in < 600){
-				roll_sensor = pitch_sensor = 0;
+				dcm.roll_sensor = dcm.pitch_sensor = 0;
 			}
 			
 			// custom code/exceptions for flight modes
@@ -369,8 +372,8 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 			
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)roll_sensor/100), ((int)pitch_sensor/100), ((uint16_t)yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
+			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
 			
 			if(Serial.available() > 0){
 				return (0);
@@ -441,9 +444,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								gyros.x,  gyros.y,  gyros.z);
 
 			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\n"),
-								roll_sensor,
-								pitch_sensor,
-								yaw_sensor);
+								dcm.roll_sensor,
+								dcm.pitch_sensor,
+								dcm.yaw_sensor);
 		}
 		
 		if(Serial.available() > 0){
@@ -591,7 +594,6 @@ test_omega(uint8_t argc, const Menu::arg *argv)
 		
 		old_yaw = dcm.yaw;
 		
-		Vector3f omega = dcm.get_gyro();
 		ts_num++;
 		if (ts_num > 2){
 			ts_num = 0;

@@ -71,13 +71,13 @@ void send_message(byte id, long param) {
 		case MSG_ATTITUDE:								// ** Attitude message
 		mess_buffer[0] = 0x06;
 		ck = 6;
-		tempint = roll_sensor;					// Roll (degrees * 100)
+		tempint = dcm.roll_sensor;					// Roll (degrees * 100)
 		mess_buffer[3] = tempint & 0xff;
 		mess_buffer[4] = (tempint >> 8) & 0xff;
-		tempint = pitch_sensor;					// Pitch (degrees * 100)
+		tempint = dcm.pitch_sensor;					// Pitch (degrees * 100)
 		mess_buffer[5] = tempint & 0xff;
 		mess_buffer[6] = (tempint >> 8) & 0xff;
-		tempint = yaw_sensor;					// Yaw (degrees * 100)
+		tempint = dcm.yaw_sensor;					// Yaw (degrees * 100)
 		mess_buffer[7] = tempint & 0xff;
 		mess_buffer[8] = (tempint >> 8) & 0xff;
 		break;
@@ -105,7 +105,7 @@ void send_message(byte id, long param) {
 		mess_buffer[13] = tempint & 0xff;
 		mess_buffer[14] = (tempint >> 8) & 0xff;
 				
-		tempint = yaw_sensor;					// Ground Course in degreees * 100 in 2 bytes
+		tempint = dcm.yaw_sensor;					// Ground Course in degreees * 100 in 2 bytes
 		mess_buffer[15] = tempint & 0xff;
 		mess_buffer[16] = (tempint >> 8) & 0xff;
 				

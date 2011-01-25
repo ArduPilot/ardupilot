@@ -15,13 +15,13 @@ void
 camera_stabilization()
 {
 	rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6)); // I'm using CH 6 input here.
-	rc_camera_pitch.servo_out = rc_camera_pitch.control_mix(pitch_sensor / 2);
+	rc_camera_pitch.servo_out = rc_camera_pitch.control_mix(dcm.pitch_sensor / 2);
 	rc_camera_pitch.calc_pwm();
-	APM_RC.OutputCh(CH_5,rc_camera_pitch.radio_out);
+	APM_RC.OutputCh(CH_5, rc_camera_pitch.radio_out);
 
 	//If you want to do control mixing use this function.
 	// set servo_out to the control input from radio
-	//rc_camera_yaw 	= rc_2.control_mix(pitch_sensor);
+	//rc_camera_yaw 	= rc_2.control_mix(dcm.pitch_sensor);
 	//rc_camera_yaw.calc_pwm();		
 }
 

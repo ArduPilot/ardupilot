@@ -146,6 +146,8 @@ PID pid_stabilize_roll		(EE_GAIN_4);
 PID pid_stabilize_pitch		(EE_GAIN_5);
 PID pid_yaw					(EE_GAIN_6);
 
+Vector3f omega;
+
 // roll pitch
 float 	stabilize_dampener;
 int 	max_stabilize_dampener;
@@ -202,7 +204,9 @@ int 	airspeed;							// m/s * 100
 
 // Throttle Failsafe
 // ------------------
-boolean		motor_armed;
+boolean		motor_armed 		= false;
+boolean		motor_auto_safe 	= false;
+
 byte 		throttle_failsafe_enabled;
 int 		throttle_failsafe_value;
 byte 		throttle_failsafe_action;
@@ -254,9 +258,9 @@ int 			temp_unfilt;
 
 // From IMU
 // --------
-long	roll_sensor;						// degrees * 100
-long	pitch_sensor;						// degrees * 100
-long	yaw_sensor;							// degrees * 100
+//long	roll_sensor;						// degrees * 100
+//long	pitch_sensor;						// degrees * 100
+//long	yaw_sensor;							// degrees * 100
 float 	roll;								// radians
 float 	pitch;								// radians
 float 	yaw;								// radians
@@ -531,6 +535,10 @@ void medium_loop()
 				navigate();
 			}
 			
+			// calc pitch and roll to target
+			// -----------------------------
+			calc_nav();
+
 			break;
 
 		// command processing
@@ -557,7 +565,7 @@ void medium_loop()
 			medium_loopCounter++;
 						
 			if (log_bitmask & MASK_LOG_ATTITUDE_MED && (log_bitmask & MASK_LOG_ATTITUDE_FAST == 0))
-				Log_Write_Attitude((int)roll_sensor, (int)pitch_sensor, (int)yaw_sensor);
+				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
 			if (log_bitmask & MASK_LOG_CTUN)
 				Log_Write_Control_Tuning();
@@ -606,7 +614,7 @@ void medium_loop()
 
 		
 	if (log_bitmask & MASK_LOG_ATTITUDE_FAST)
-		Log_Write_Attitude((int)roll_sensor, (int)pitch_sensor, (int)yaw_sensor);
+		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
 	if (log_bitmask & MASK_LOG_RAW)
 		Log_Write_Raw();
@@ -776,8 +784,12 @@ void update_current_flight_mode(void)
 				// ------------------------------------				
 				auto_yaw();
 				
+				// mix in user control
+				control_nav_mixer();
+				
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 
 				// apply throttle control
 				output_auto_throttle();
@@ -787,7 +799,43 @@ void update_current_flight_mode(void)
 	}else{
 	
 		switch(control_mode){
+			case ACRO:
+				// Intput Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
+				// clear any AP naviagtion values
+				nav_pitch 		= 0;
+				nav_roll 		= 0;
 
+				// Output Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
+
+				// Yaw control
+				output_manual_yaw();
+				
+				// apply throttle control
+				output_manual_throttle();
+				
+				// mix in user control
+				control_nav_mixer();
+
+				// perform rate or stabilzation
+				// ----------------------------
+				
+				// Roll control
+				if(abs(rc_1.control_in) >= ACRO_RATE_TRIGGER){
+					output_rate_roll(); // rate control yaw
+				}else{
+					output_stabilize_roll(); // hold yaw
+				}
+
+				// Roll control
+				if(abs(rc_2.control_in) >= ACRO_RATE_TRIGGER){
+					output_rate_pitch(); // rate control yaw
+				}else{
+					output_stabilize_pitch(); // hold yaw
+				}
+				break;
+			
 			case STABILIZE:
 				// Intput Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
@@ -803,13 +851,16 @@ void update_current_flight_mode(void)
 				
 				// apply throttle control
 				output_manual_throttle();
+				
+				// mix in user control
+				control_nav_mixer();
 
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 				break;
 				
 			case FBW:
-
 				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
 				//call at 5 hz
@@ -840,8 +891,12 @@ void update_current_flight_mode(void)
 				// apply throttle control
 				output_manual_throttle();
 
+				// apply nav_pitch and nav_roll to output
+				fbw_nav_mixer();
+				
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 				break;
 
 			case ALT_HOLD:
@@ -866,9 +921,13 @@ void update_current_flight_mode(void)
 				// ------------------------------------
 				// apply throttle control
 				output_auto_throttle();
+				
+				// mix in user control
+				control_nav_mixer();
 
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 				break;
 				
 			case RTL:
@@ -889,8 +948,12 @@ void update_current_flight_mode(void)
 				// apply throttle control
 				output_auto_throttle();
 
+				// mix in user control
+				control_nav_mixer();
+
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 				break;
 				
 			case POSITION_HOLD:
@@ -911,11 +974,16 @@ void update_current_flight_mode(void)
 				
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
+				
 				// apply throttle control
 				output_auto_throttle();
 
+				// mix in user control
+				control_nav_mixer();
+
 				// perform stabilzation
-				output_stabilize();
+				output_stabilize_roll();
+				output_stabilize_pitch();
 				break;
 
 			default:
@@ -936,8 +1004,8 @@ void update_navigation()
 	if(control_mode == AUTO){
 		verify_must();
 		verify_may();
-	}else{
 
+	}else{
 		switch(control_mode){				
 			case RTL:
 				update_crosstrack();
@@ -950,9 +1018,7 @@ void update_navigation()
 void read_AHRS(void)
 {
 	// Perform IMU calculations and get attitude info
-	//-----------------------------------------------------
+	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
-	roll_sensor 	= dcm.roll_sensor;
-	pitch_sensor 	= dcm.pitch_sensor;
-	yaw_sensor 		= dcm.yaw_sensor;
+	omega 	= dcm.get_gyro();
 }
