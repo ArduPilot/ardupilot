@@ -31,10 +31,9 @@
             this.components = new System.ComponentModel.Container();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.progressBar3 = new System.Windows.Forms.ProgressBar();
+            this.TransmitterChannelsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.label9 = new System.Windows.Forms.Label();
             this.textBox6 = new System.Windows.Forms.TextBox();
-            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.label3 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.textBox2 = new System.Windows.Forms.TextBox();
@@ -43,11 +42,12 @@
             this.label4 = new System.Windows.Forms.Label();
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
-            this.TransmitterChannelsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.verticalProgressBar4 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar3 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar2 = new ArducopterConfigurator.VerticalProgressBar();
-            this.verticalProgressBar1 = new ArducopterConfigurator.VerticalProgressBar();
+            this.linearIndicatorControl3 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl1 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl2 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl4 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl5 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -69,16 +69,9 @@
             this.label2.TabIndex = 3;
             this.label2.Text = "Pitch";
             // 
-            // progressBar3
+            // TransmitterChannelsBindingSource
             // 
-            this.progressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Yaw", true));
-            this.progressBar3.Location = new System.Drawing.Point(174, 30);
-            this.progressBar3.Maximum = 2000;
-            this.progressBar3.Minimum = 1000;
-            this.progressBar3.Name = "progressBar3";
-            this.progressBar3.Size = new System.Drawing.Size(100, 23);
-            this.progressBar3.TabIndex = 31;
-            this.progressBar3.Value = 1000;
+            this.TransmitterChannelsBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.TransmitterChannelsVm);
             // 
             // label9
             // 
@@ -97,17 +90,6 @@
             this.textBox6.ReadOnly = true;
             this.textBox6.Size = new System.Drawing.Size(47, 20);
             this.textBox6.TabIndex = 29;
-            // 
-            // progressBar1
-            // 
-            this.progressBar1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Roll", true));
-            this.progressBar1.Location = new System.Drawing.Point(174, 80);
-            this.progressBar1.Maximum = 2000;
-            this.progressBar1.Minimum = 1000;
-            this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(100, 23);
-            this.progressBar1.TabIndex = 34;
-            this.progressBar1.Value = 1000;
             // 
             // label3
             // 
@@ -181,76 +163,142 @@
             this.label5.TabIndex = 41;
             this.label5.Text = "Aux";
             // 
-            // TransmitterChannelsBindingSource
+            // linearIndicatorControl3
             // 
-            this.TransmitterChannelsBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.TransmitterChannelsVm);
+            this.linearIndicatorControl3.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl3.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl3.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl3.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl3.BarDividersCount = 20;
+            this.linearIndicatorControl3.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Throttle", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl3.IsVertical = true;
+            this.linearIndicatorControl3.Location = new System.Drawing.Point(16, 30);
+            this.linearIndicatorControl3.Max = 2000;
+            this.linearIndicatorControl3.Min = 1000;
+            this.linearIndicatorControl3.Name = "linearIndicatorControl3";
+            this.linearIndicatorControl3.Offset = 0;
+            this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 111);
+            this.linearIndicatorControl3.TabIndex = 43;
+            this.linearIndicatorControl3.Value = 1000;
             // 
-            // verticalProgressBar4
+            // linearIndicatorControl1
             // 
-            this.verticalProgressBar4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Aux", true));
-            this.verticalProgressBar4.Location = new System.Drawing.Point(205, 131);
-            this.verticalProgressBar4.Maximum = 2000;
-            this.verticalProgressBar4.Minimum = 1000;
-            this.verticalProgressBar4.Name = "verticalProgressBar4";
-            this.verticalProgressBar4.Size = new System.Drawing.Size(27, 73);
-            this.verticalProgressBar4.TabIndex = 40;
-            this.verticalProgressBar4.Value = 1000;
+            this.linearIndicatorControl1.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl1.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl1.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl1.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl1.BarDividersCount = 20;
+            this.linearIndicatorControl1.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Pitch", true));
+            this.linearIndicatorControl1.IsVertical = true;
+            this.linearIndicatorControl1.Location = new System.Drawing.Point(67, 30);
+            this.linearIndicatorControl1.Max = 2000;
+            this.linearIndicatorControl1.Min = 1000;
+            this.linearIndicatorControl1.Name = "linearIndicatorControl1";
+            this.linearIndicatorControl1.Offset = 0;
+            this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 111);
+            this.linearIndicatorControl1.TabIndex = 44;
+            this.linearIndicatorControl1.Value = 1000;
             // 
-            // verticalProgressBar3
+            // linearIndicatorControl2
             // 
-            this.verticalProgressBar3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Mode", true));
-            this.verticalProgressBar3.Location = new System.Drawing.Point(145, 131);
-            this.verticalProgressBar3.Maximum = 2000;
-            this.verticalProgressBar3.Minimum = 1000;
-            this.verticalProgressBar3.Name = "verticalProgressBar3";
-            this.verticalProgressBar3.Size = new System.Drawing.Size(27, 73);
-            this.verticalProgressBar3.TabIndex = 37;
-            this.verticalProgressBar3.Value = 1000;
+            this.linearIndicatorControl2.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl2.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl2.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl2.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl2.BarDividersCount = 20;
+            this.linearIndicatorControl2.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Mode", true));
+            this.linearIndicatorControl2.IsVertical = true;
+            this.linearIndicatorControl2.Location = new System.Drawing.Point(155, 131);
+            this.linearIndicatorControl2.Max = 2000;
+            this.linearIndicatorControl2.Min = 1000;
+            this.linearIndicatorControl2.Name = "linearIndicatorControl2";
+            this.linearIndicatorControl2.Offset = 0;
+            this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 73);
+            this.linearIndicatorControl2.TabIndex = 45;
+            this.linearIndicatorControl2.Value = 1000;
             // 
-            // verticalProgressBar2
+            // linearIndicatorControl4
             // 
-            this.verticalProgressBar2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Pitch", true));
-            this.verticalProgressBar2.Location = new System.Drawing.Point(67, 30);
-            this.verticalProgressBar2.Maximum = 2000;
-            this.verticalProgressBar2.Minimum = 1000;
-            this.verticalProgressBar2.Name = "verticalProgressBar2";
-            this.verticalProgressBar2.Size = new System.Drawing.Size(27, 111);
-            this.verticalProgressBar2.TabIndex = 2;
-            this.verticalProgressBar2.Value = 1000;
+            this.linearIndicatorControl4.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl4.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl4.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl4.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl4.BarDividersCount = 20;
+            this.linearIndicatorControl4.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Aux", true));
+            this.linearIndicatorControl4.IsVertical = true;
+            this.linearIndicatorControl4.Location = new System.Drawing.Point(206, 131);
+            this.linearIndicatorControl4.Max = 2000;
+            this.linearIndicatorControl4.Min = 1000;
+            this.linearIndicatorControl4.Name = "linearIndicatorControl4";
+            this.linearIndicatorControl4.Offset = 0;
+            this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 73);
+            this.linearIndicatorControl4.TabIndex = 46;
+            this.linearIndicatorControl4.Value = 1000;
             // 
-            // verticalProgressBar1
+            // linearIndicatorControl5
             // 
-            this.verticalProgressBar1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Throttle", true));
-            this.verticalProgressBar1.Location = new System.Drawing.Point(15, 30);
-            this.verticalProgressBar1.Maximum = 2000;
-            this.verticalProgressBar1.Minimum = 1000;
-            this.verticalProgressBar1.Name = "verticalProgressBar1";
-            this.verticalProgressBar1.Size = new System.Drawing.Size(27, 111);
-            this.verticalProgressBar1.TabIndex = 0;
-            this.verticalProgressBar1.Value = 1000;
+            this.linearIndicatorControl5.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl5.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl5.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl5.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl5.BarDividersCount = 20;
+            this.linearIndicatorControl5.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Roll", true));
+            this.linearIndicatorControl5.IsVertical = false;
+            this.linearIndicatorControl5.Location = new System.Drawing.Point(174, 80);
+            this.linearIndicatorControl5.Max = 2000;
+            this.linearIndicatorControl5.Min = 1000;
+            this.linearIndicatorControl5.Name = "linearIndicatorControl5";
+            this.linearIndicatorControl5.Offset = 0;
+            this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 20);
+            this.linearIndicatorControl5.TabIndex = 47;
+            this.linearIndicatorControl5.Value = 1000;
+            // 
+            // linearIndicatorControl6
+            // 
+            this.linearIndicatorControl6.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.linearIndicatorControl6.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.linearIndicatorControl6.BarBorderColor = System.Drawing.Color.Maroon;
+            this.linearIndicatorControl6.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.linearIndicatorControl6.BarDividersCount = 20;
+            this.linearIndicatorControl6.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Yaw", true));
+            this.linearIndicatorControl6.IsVertical = false;
+            this.linearIndicatorControl6.Location = new System.Drawing.Point(174, 30);
+            this.linearIndicatorControl6.Max = 2000;
+            this.linearIndicatorControl6.Min = 1000;
+            this.linearIndicatorControl6.Name = "linearIndicatorControl6";
+            this.linearIndicatorControl6.Offset = 0;
+            this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 20);
+            this.linearIndicatorControl6.TabIndex = 48;
+            this.linearIndicatorControl6.Value = 1000;
             // 
             // TransmitterChannelsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.linearIndicatorControl6);
+            this.Controls.Add(this.linearIndicatorControl5);
+            this.Controls.Add(this.linearIndicatorControl4);
+            this.Controls.Add(this.linearIndicatorControl2);
+            this.Controls.Add(this.linearIndicatorControl1);
+            this.Controls.Add(this.linearIndicatorControl3);
             this.Controls.Add(this.textBox5);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.verticalProgressBar4);
             this.Controls.Add(this.textBox4);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.verticalProgressBar3);
             this.Controls.Add(this.textBox3);
             this.Controls.Add(this.textBox2);
-            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.progressBar3);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.textBox6);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.verticalProgressBar2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.verticalProgressBar1);
             this.Name = "TransmitterChannelsView";
             this.Size = new System.Drawing.Size(369, 244);
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).EndInit();
@@ -261,24 +309,24 @@
 
         #endregion
 
-        private VerticalProgressBar verticalProgressBar1;
         private System.Windows.Forms.BindingSource TransmitterChannelsBindingSource;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private VerticalProgressBar verticalProgressBar2;
-        private System.Windows.Forms.ProgressBar progressBar3;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.TextBox textBox6;
-        private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.TextBox textBox4;
         private System.Windows.Forms.Label label4;
-        private VerticalProgressBar verticalProgressBar3;
         private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.Label label5;
-        private VerticalProgressBar verticalProgressBar4;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl3;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl1;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl2;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl4;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl5;
+        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
     }
 }

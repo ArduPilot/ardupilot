@@ -95,7 +95,6 @@ namespace ArducopterConfigurator
             mainVmBindingSource.DataSource = model;
             availablePortsBindingSource.DataSource = model.AvailablePorts;
 
-			
             foreach (var monitorVm in _vm.MonitorVms)
             {
                 var tp = new TabPage(monitorVm.Name) {Tag = monitorVm};
@@ -114,6 +113,10 @@ namespace ArducopterConfigurator
             UpdateConnectionStatusLabel();
             _vm.PropertyChanged += ((sender, e) => UpdateConnectionStatusLabel());
 
+            // hack for INPC subscribe bug in Mono
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => mainVmBindingSource.ResetBindings(false));
+
         }
 
         public Control Control
@@ -125,6 +128,7 @@ namespace ArducopterConfigurator
 
         private void tabCtrlConfigs_Selected(object sender, TabControlEventArgs e)
         {
+            Console.WriteLine("Tab click");
             var control = e.TabPage.Controls[0];
             control.Size = e.TabPage.ClientRectangle.Size;
             var tabVm = e.TabPage.Tag as MonitorVm;
