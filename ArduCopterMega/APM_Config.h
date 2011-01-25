@@ -10,6 +10,13 @@
 #define MAGORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 
+#define ACRO_RATE_TRIGGER 4200
+// if you want full ACRO mode, set value to 0
+// if you want safe ACRO mode, set value to 100
+// if you want mostly stabilize with flips, set value to 4200
+
+
+
 // For future development, don't enable unless you know them
 // These are all experimental and underwork, jp 23-12-10
 //#define ENABLE_EXTRAS     ENABLED
