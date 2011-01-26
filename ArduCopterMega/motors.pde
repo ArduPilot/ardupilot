@@ -153,7 +153,7 @@ set_servos_4()
 		num++;
 		if (num > 10){
 			num = 0;
-			Serial.print("!");
+			//Serial.print("!");
 			//debugging with Channel 6
 			
 			/*
@@ -211,7 +211,7 @@ set_servos_4()
 		num++;
 		if (num > 10){
 			num = 0;
-			Serial.print("-");
+			//Serial.print("-");
 		}
 		
 		if(rc_3.control_in > 0){

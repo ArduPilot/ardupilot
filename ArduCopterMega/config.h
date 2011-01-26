@@ -273,7 +273,7 @@
 #endif
 
 #ifndef ACRO_RATE_TRIGGER
-# define ACRO_RATE_TRIGGER   4200
+# define ACRO_RATE_TRIGGER   100
 #endif
 
 

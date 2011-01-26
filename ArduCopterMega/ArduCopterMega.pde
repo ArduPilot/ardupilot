@@ -863,6 +863,7 @@ void update_current_flight_mode(void)
 			case FBW:
 				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
+				
 				//call at 5 hz
 				if(fbw_timer > 20){
 					fbw_timer = 0;
@@ -877,8 +878,8 @@ void update_current_flight_mode(void)
 						dTnav = 200;
 					}
 					
-					next_WP.lat = home.lat + rc_1.control_in / 5; // 10 meteres
-					next_WP.lng = home.lng - rc_2.control_in / 5; // 10 meteres
+					next_WP.lat = home.lat + rc_1.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
+					next_WP.lng = home.lng - rc_2.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
 				}
 
 				// Yaw control

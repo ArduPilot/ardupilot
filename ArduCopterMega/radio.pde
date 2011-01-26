@@ -2,9 +2,9 @@ void init_rc_in()
 {
 	read_EEPROM_radio();		// read Radio limits
 	rc_1.set_angle(4500);
-	rc_1.dead_zone = 60;
+	rc_1.dead_zone = 60;		// 60 = .6 degrees
 	rc_2.set_angle(4500);
-	rc_2.dead_zone = 60;
+	rc_2.dead_zone = 60;	
 	rc_3.set_range(0,1000);
 	rc_3.dead_zone = 20;
 	rc_3.scale_output = .9;
