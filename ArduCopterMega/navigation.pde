@@ -71,9 +71,9 @@ void calc_nav()
 	// rotate the vector
 	nav_roll 	= (float)nav_lat * yawvector.x - (float)nav_lon * yawvector.y;
 	nav_pitch 	= (float)nav_lon * yawvector.x + (float)nav_lat * yawvector.y;
-	Serial.printf("vx %4.4f,vy %4.4f, nr %ld, np %ld ", yawvector.x, yawvector.y, nav_roll, nav_pitch);
-	//nav_roll 	= constrain(nav_roll,  -pitch_max, pitch_max);
-	//nav_pitch 	= constrain(nav_pitch, -pitch_max, pitch_max);
+	//Serial.printf("vx %4.4f,vy %4.4f, nr %ld, np %ld ", yawvector.x, yawvector.y, nav_roll, nav_pitch);
+	nav_roll 	= constrain(nav_roll,  -pitch_max, pitch_max);
+	nav_pitch 	= constrain(nav_pitch, -pitch_max, pitch_max);
 }
 
 /*
