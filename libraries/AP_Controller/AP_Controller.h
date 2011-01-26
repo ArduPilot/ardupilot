@@ -37,11 +37,11 @@ public:
     {
     }
     const char * getName() { return _name; }
-    const Vector < AP_VarI * > & getOutput() const { return _output; }
+    const Vector < AP_Var * > & getOutput() const { return _output; }
 protected:
     const char * _name;
-    Vector< AP_VarI * > _input;
-    Vector< AP_VarI * > _output;
+    Vector< AP_Var * > _input;
+    Vector< AP_Var * > _output;
 };
 
 /// Servo Block
@@ -59,7 +59,7 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
-            _ch->setPosition(_output[0]->getF());
+            _ch->setPosition(_output[0]);
     }
 private:
     float _position;
@@ -73,17 +73,17 @@ public:
     /// Constructor that allows 1-8 sum gain pairs, more
     /// can be added if necessary
     SumGain(
-        AP_VarI * var1,  AP_VarI * gain1,
-        AP_VarI * var2 = NULL, AP_VarI * gain2 = NULL,
-        AP_VarI * var3 = NULL, AP_VarI * gain3 = NULL,
-        AP_VarI * var4 = NULL, AP_VarI * gain4 = NULL,
-        AP_VarI * var5 = NULL, AP_VarI * gain5 = NULL,
-        AP_VarI * var6 = NULL, AP_VarI * gain6 = NULL,
-        AP_VarI * var7 = NULL, AP_VarI * gain7 = NULL,
-        AP_VarI * var8 = NULL, AP_VarI * gain8 = NULL) :
+        AP_Var * var1,  AP_Var * gain1,
+        AP_Var * var2 = NULL, AP_Var * gain2 = NULL,
+        AP_Var * var3 = NULL, AP_Var * gain3 = NULL,
+        AP_Var * var4 = NULL, AP_Var * gain4 = NULL,
+        AP_Var * var5 = NULL, AP_Var * gain5 = NULL,
+        AP_Var * var6 = NULL, AP_Var * gain6 = NULL,
+        AP_Var * var7 = NULL, AP_Var * gain7 = NULL,
+        AP_Var * var8 = NULL, AP_Var * gain8 = NULL) :
         _gain()
     {
-        _output.push_back(new AP_Float(0,"",""));
+        _output.push_back(new AP_Float(0));
         if (var1 && gain1) add(var1,gain1);
         if (var2 && gain2) add(var2,gain2);
         if (var3 && gain3) add(var3,gain3);
@@ -93,7 +93,7 @@ public:
         if (var7 && gain7) add(var7,gain7);
         if (var8 && gain8) add(var8,gain8);
     }
-    void add(AP_VarI * var, AP_VarI * gain)
+    void add(AP_Var * var, AP_Var * gain)
     {
         _input.push_back(var);
         _gain.push_back(gain);
@@ -109,31 +109,32 @@ public:
         _output[0]->setF(0);
         for (int i=0;i<_input.getSize();i++)
         {
-            _output[0]->setF( _output[i]->getF() + _input[i]->getF()*_gain[i]->getF());
+            _output[0]->setF( _output[i] + _input[i]*_gain[i]);
         }
     }
 private:
-    Vector< AP_VarI * > _gain;
+    Vector< AP_Var * > _gain;
 };
 
 /// PID block
 class Pid : public Block
 {
 public:
-    Pid(const char * name="",
-            const float & kP=0,
-            const float & kI=0,
-            const float & kD=0,
-            const float & iMax=1,
-            const uint8_t & dFcut=20
+    Pid(AP_Var::Key key, const prog_char * name,
+            float kP = 0.0,
+            float kI = 0.0,
+            float kD = 0.0,
+            float iMax = 0.0,
+            uint8_t dFcut = 20.0,
             ) :
-        _kP(new AP_EEPROM_Float(kP,"KP",name)), 
-        _kI(new AP_EEPROM_Float(kI,"KI",name)), 
-        _kD(new AP_EEPROM_Float(kD,"KD",name)), 
-        _iMax(new AP_EEPROM_Float(iMax,"IMAX",name)), 
-        _dFcut(new AP_EEPROM_Uint8(dFcut,"DFCUT",name))
+        _group(key,name),
+        _kP(&_group,0,kP,P_STR("P")), 
+        _kI(&_group,0,kP,P_STR("I")), 
+        _kD(&_group,0,kP,P_STR("D")), 
+        _iMax(&_group,0,kP,P_STR("IMAX")), 
+        _fCut(&_group,0,kP,P_STR("FCUT")), 
     {
-        _output.push_back(new AP_Float(0,"OUT",name));
+        _output.push_back(new AP_Float(0));
     }
     virtual void connect(Block * block)
     {
@@ -145,18 +146,18 @@ public:
         if (_output.getSize() < 1) return;
 
         // derivative
-        float RC = 1/(2*M_PI*_dFcut->get()); // low pass filter
-        _eD =  _eD + ( ((_e - _input[0]->getF()))/dt - _eD ) * (dt / (dt + RC));
+        float RC = 1/(2*M_PI*_fCut->get()); // low pass filter
+        _eD =  _eD + ( ((_e - _input[0]))/dt - _eD ) * (dt / (dt + RC));
 
         // proportional, note must come after derivative
         // because derivatve uses _e as previous value
-        _e = _input[0]->getF();
+        _e = _input[0];
 
         // integral
         _eI += _e*dt;
 
         // pid sum
-        _output[0]->setF(_kP->getF()*_e + _kI->getF()*_eI +  _kD->getF()*_eD);
+        _output[0]->setF(_kP*_e + _kI*_eI +  _kD*_eD);
     }
 private:
     float _e; /// input
@@ -166,7 +167,7 @@ private:
     AP_Float * _kI; /// integral gain
     AP_Float * _kD; /// derivative gain
     AP_Float * _iMax; /// integrator saturation
-    AP_Uint8 * _dFcut; /// derivative low-pass cut freq (Hz)
+    AP_Uint8 * _fCut; /// derivative low-pass cut freq (Hz)
 };
 
 /// Controller class
