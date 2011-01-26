@@ -164,24 +164,26 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	oldSwitchPosition = readSwitch();
 	
 	Serial.printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
+	while(rc_3.control_in > 0){
+		delay(20);
+		read_radio();
+	}
 	
 	while(1){
 		delay(20);
-
-		// Filters radio input - adjust filters in the radio.pde file
-		// ----------------------------------------------------------
 		read_radio();
 			
 		if(rc_3.control_in > 0){
-			Serial.printf_P(PSTR("THROTTLE ERROR %d \n"), rc_3.control_in);
+			Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), rc_3.control_in);
 			fail_test++;
 		}
 		
 		if(oldSwitchPosition != readSwitch()){
-			Serial.printf_P(PSTR("MODE CHANGE: "));
+			Serial.printf_P(PSTR("CONTROL MODE CHANGED: "));
 			Serial.println(flight_mode_strings[readSwitch()]);
 			fail_test++;
 		}
+		
 		if(throttle_failsafe_enabled && rc_3.get_failsafe()){
 			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), rc_3.radio_in);
 			Serial.println(flight_mode_strings[readSwitch()]);
@@ -339,49 +341,39 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			
 			// custom code/exceptions for flight modes
 			// ---------------------------------------
-			//update_current_flight_mode();
+			update_current_flight_mode();
 			
 			// write out the servo PWM values
 			// ------------------------------
-			//set_servos_4();
+			set_servos_4();
 			
 			ts_num++;
-			if (ts_num > 10){
-				dTnav 				= 200;
-
-				//next_WP.lat = random(-3000, 3000);
-				//next_WP.lng = random(-3000, 3000);
-				next_WP.lat = 3000;
-				next_WP.lng = 3000;
-				
-				GPS.longitude = 0;
-				GPS.latitude = 0;
+			if (ts_num == 5){
+				// 10 hz
+				ts_num 				= 0;
+				GPS.longitude 		= 0;
+				GPS.latitude 		= 0;
 				calc_nav();
-				
-				ts_num = 0;
-				Serial.printf_P(PSTR(" ys:%ld, ny:%ld, ye:%ld, n_lat %ld, n_lon %ld -- n_pit %ld, n_rll %ld\n"),
+
+				Serial.printf_P(PSTR(" ys:%ld, next_WP.lat:%ld, next_WP.lng:%ld, n_lat:%ld, n_lon:%ld \n"),
 					dcm.yaw_sensor,
-					nav_yaw,
-					yaw_error,
+					next_WP.lat,
+					next_WP.lng,
 					nav_lat,
 					nav_lon,
 					nav_pitch,
 					nav_roll);
+					
+				//print_motor_out();
 			}
-			//r: 0, p:0 -- ny:8000, ys:2172, ye:0, n_lat 0, n_lon 0 -- n_pit 0, n_rll 0
-
-			// R: 1417,  L: 1453  F: 1453  B: 1417
-			
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
-			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
 			
 			if(Serial.available() > 0){
 				return (0);
 			}
-			
 		}
 	}
 }
+
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
