@@ -13,7 +13,7 @@
 
 /// @class	AP_RcChannel
 /// @brief	Object managing one RC channel
-class AP_RcChannel : public AP_Var_scope {
+class AP_RcChannel : public AP_Var_group {
  
 public:	
 
