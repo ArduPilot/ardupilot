@@ -71,10 +71,6 @@ namespace ArducopterConfigurator.PresentationModels
         }
         
 
-
-
-
-
         private int _mode;
         public int Mode
         {
@@ -152,42 +148,6 @@ namespace ArducopterConfigurator.PresentationModels
         protected override void OnStringReceived(string strReceived)
         {
             PopulatePropsFromUpdate(strReceived,false);
-        }
-
-
-        private void manualPropset(string strReceived)
-        {
-            //   PopulatePropsFromUpdate(strReceived,false);
-            var strs = strReceived.Split(',');
-            var ints = new List<int>();
-            foreach (var s in strs)
-            {
-                int val;
-                if (!int.TryParse(s, out val))
-                {
-                    Debug.WriteLine("Could not parse expected integer: " + s);
-                    return;
-                }
-                ints.Add(val);
-            }
-
-            if (ints.Count != 9)
-            {
-                Debug.WriteLine("Tx Data sentence expected, but only got one of size: " + ints.Count);
-                return;
-            }
-
-            Roll = ints[0];
-            //            Pitch = ints[1];
-            //            Yaw = ints[2];
-            Throttle = ints[3];
-            //            Mode = ints[4];
-            //            Aux = ints[5];
-            //            RollMidValue = ints[6];
-            //            PitchMidValue = ints[7];
-            //            YawMidValue = ints[8];
-        
-        
         }
 
         public override string Name

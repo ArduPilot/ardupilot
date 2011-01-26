@@ -20,6 +20,9 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(AltitudeHoldConfigVm model)
         {
             AltitudeHoldConfigBindingSource.DataSource = model;
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => AltitudeHoldConfigBindingSource.ResetBindings(false));
         }
     }
 

@@ -19,6 +19,9 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(TransmitterChannelsVm model)
         {
             TransmitterChannelsBindingSource.DataSource = model;
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => TransmitterChannelsBindingSource.ResetBindings(false));
         }
 
     }

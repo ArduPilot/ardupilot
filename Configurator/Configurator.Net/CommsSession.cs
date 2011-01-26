@@ -76,8 +76,20 @@ namespace ArducopterConfigurator
         void bgWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             // Thanks to BG worker, this should be raised on the UI thread
+
             var lineReceived = e.UserState as string;
-             if (LineOfDataReceived != null)
+
+   
+//            for (int i = 0; i < lineReceived.Length; i++)
+//            {
+//                var c = lineReceived[i];
+//                Console.WriteLine("{0}]  U+{1:x4} {2}", i, (int)c, (int)c);
+//            }
+//
+//            
+//
+
+            if (LineOfDataReceived != null)
                  LineOfDataReceived(lineReceived);
         }
 

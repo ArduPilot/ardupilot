@@ -7,8 +7,6 @@ namespace ArducopterConfigurator.Views
     // cannot be abstract due to vs2008 designer
     public class ViewCommon<T> : UserControl, IView<T> where T : IPresentationModel
     {
-        protected T _vm;
-
         public virtual void SetDataContext(T model)
         {
         }

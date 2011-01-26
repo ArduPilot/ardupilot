@@ -30,7 +30,12 @@ namespace ArducopterConfigurator.PresentationModels
 
         public float KPrate { get;  set; }
 
-        public bool MagnetometerEnable { get;  set; }
+        private bool magnetometerEnable;
+        public bool MagnetometerEnable
+        {
+            get { return magnetometerEnable; }
+            set { magnetometerEnable = value; }
+        }
 
         private void RefreshValues()
         {

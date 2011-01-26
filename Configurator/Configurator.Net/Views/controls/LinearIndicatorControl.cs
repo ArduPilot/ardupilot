@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Data;
 using System.Drawing.Drawing2D;
@@ -330,7 +331,15 @@ namespace ArducopterConfigurator.Views.controls
         public int Value
         {
             get { return _val; }
-            set { _val = value; Refresh(); }
+            set
+            {
+                if (_val != value)
+                {
+                    _val = value;
+                    Refresh();
+                }
+           
+            }
         }
 
         [System.ComponentModel.Description("Gets or sets whether the indicator is vertical")]

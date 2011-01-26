@@ -18,7 +18,9 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(PositionHoldConfigVm model)
         {
             PositionHoldConfigBindingSource.DataSource = model;
-            _vm = model;
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => PositionHoldConfigBindingSource.ResetBindings(false));
         }
     }
     // Required for VS2008 designer. No functional value

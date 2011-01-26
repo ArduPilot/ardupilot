@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Text;
 
@@ -86,11 +87,15 @@ namespace ArducopterConfigurator
         // property update order, and reflection to get the property type
         protected void PopulatePropsFromUpdate(string strRx, bool fireInpc)
         {
+           
+
             var strs = strRx.Split(',');
             
+
+
             if (PropsInUpdateOrder.Length!=strs.Length)
             {
-                Debug.WriteLine("Processing update with only " + strs.Length 
+                Console.WriteLine("Processing update with only " + strs.Length 
                     + " values, but have " + PropsInUpdateOrder.Length
                     + " properties to populate. Ignoring this update");
                 return;
@@ -107,7 +112,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Debug.WriteLine("Error parsing float: " + s);
+                        Console.WriteLine("Error parsing float: " + s);
                         break;
                     }
                     value = val;
@@ -117,7 +122,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Debug.WriteLine("Error parsing float (bool): " + s);
+                        Console.WriteLine("Error parsing float (bool): " + s);
                         break;
                     }
                     value = val != 0.0;
@@ -128,13 +133,16 @@ namespace ArducopterConfigurator
                     int val;
                     if (!int.TryParse(s, out val))
                     {
-                        Debug.WriteLine("Error parsing int: " + s);
+                        Console.WriteLine("Error parsing int: " + s);
                         break;
                     }
                     value = val;
                 }
 
                 prop.SetValue(this, value, null);
+
+                Console.WriteLine("Badoosh firing inpc");
+
 
                 if (fireInpc)
                     FirePropertyChanged(PropsInUpdateOrder[i]);
