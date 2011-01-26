@@ -20,6 +20,9 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(AcroModeConfigVm model)
         {
             AcroModeConfigVmBindingSource.DataSource = model;
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => AcroModeConfigVmBindingSource.ResetBindings(false));
         }
 
     }

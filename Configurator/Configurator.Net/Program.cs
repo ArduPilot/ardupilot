@@ -24,9 +24,13 @@ namespace ArducopterConfigurator
             var session = new CommsSession();
             //var session = new FakeCommsSession();
 			
+
             var mainVm = new MainVm(session);
 		
+
             Application.Run(new mainForm(mainVm));
         }
+    
+    
     }
 }

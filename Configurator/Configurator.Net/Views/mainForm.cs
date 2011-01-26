@@ -128,7 +128,6 @@ namespace ArducopterConfigurator
 
         private void tabCtrlConfigs_Selected(object sender, TabControlEventArgs e)
         {
-            Console.WriteLine("Tab click");
             var control = e.TabPage.Controls[0];
             control.Size = e.TabPage.ClientRectangle.Size;
             var tabVm = e.TabPage.Tag as MonitorVm;

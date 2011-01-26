@@ -20,6 +20,13 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(StableModeConfigVm model)
         {
             StableModeConfigVmBindingSource.DataSource = model;
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += (delegate
+                                              {
+                                                  Console.WriteLine("Badoosh1");
+                                                  StableModeConfigVmBindingSource.ResetBindings(false);
+                                              });
         }
 
     }

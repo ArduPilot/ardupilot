@@ -20,6 +20,10 @@ namespace ArducopterConfigurator.Views
         public override void SetDataContext(CalibrationOffsetsDataVm model)
         {
             calibrationOffsetsDataVmBindingSource.DataSource = model;
+
+
+            if (Program.IsMonoRuntime)
+                model.PropertyChanged += ((sender, e) => calibrationOffsetsDataVmBindingSource.ResetBindings(false));
         }
     }
 
