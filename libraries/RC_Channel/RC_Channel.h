@@ -52,6 +52,7 @@ class RC_Channel{
 	void 		set_range(int low, int high);
 	void 		set_angle(int angle);
 	void 		set_reverse(bool reverse);
+	bool		get_reverse(void);
 
 	// read input from APM_RC - create a control_in value
 	void 		set_pwm(int pwm);
