@@ -45,6 +45,15 @@ namespace ArducopterConfigurator.PresentationModels
             ConnectionState = SessionStates.Disconnected;
 
             AvailablePorts = new BindingList<string>();
+            
+            RefreshPorts();
+
+            // Initially have selected the last discovered com port.
+            // I think this is more likely to be the correct one, as 
+            // the built in comports come first, then the usb/serial
+            // converter ports
+            if (AvailablePorts.Count > 0)
+                SelectedPort = AvailablePorts[AvailablePorts.Count-1];
         }
 
         private void RefreshPorts()

@@ -87,12 +87,9 @@ namespace ArducopterConfigurator
         // property update order, and reflection to get the property type
         protected void PopulatePropsFromUpdate(string strRx, bool fireInpc)
         {
-           
 
             var strs = strRx.Split(',');
             
-
-
             if (PropsInUpdateOrder.Length!=strs.Length)
             {
                 Console.WriteLine("Processing update with only " + strs.Length 
@@ -112,7 +109,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing float: " + s);
+                        Console.WriteLine("Error parsing float: {0}, VM: {1}" + s, Name);
                         break;
                     }
                     value = val;
@@ -122,7 +119,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing float (bool): " + s);
+                        Console.WriteLine("Error parsing float (bool): {0}, VM: {1}" + s, Name);
                         break;
                     }
                     value = val != 0.0;
@@ -133,16 +130,13 @@ namespace ArducopterConfigurator
                     int val;
                     if (!int.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing int: " + s);
+                        Console.WriteLine("Error parsing int:{0}, VM: {1}" + s, Name);
                         break;
                     }
                     value = val;
                 }
 
                 prop.SetValue(this, value, null);
-
-                Console.WriteLine("Badoosh firing inpc");
-
 
                 if (fireInpc)
                     FirePropertyChanged(PropsInUpdateOrder[i]);

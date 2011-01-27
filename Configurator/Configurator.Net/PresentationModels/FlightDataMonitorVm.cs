@@ -35,7 +35,7 @@ namespace ArducopterConfigurator.PresentationModels
                 int val;
                 if (!int.TryParse(s, out val))
                 {
-                    Debug.WriteLine("Could not parse expected integer: " + s);
+                    Debug.WriteLine("(Flight Data) Could not parse expected integer: " + s);
                     return;
                 }
                 ints.Add(val);

@@ -93,7 +93,9 @@ namespace ArducopterConfigurator
         {
             _vm = model;
             mainVmBindingSource.DataSource = model;
+            
             availablePortsBindingSource.DataSource = model.AvailablePorts;
+            
 
             foreach (var monitorVm in _vm.MonitorVms)
             {

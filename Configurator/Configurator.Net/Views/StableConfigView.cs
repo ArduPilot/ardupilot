@@ -22,11 +22,7 @@ namespace ArducopterConfigurator.Views
             StableModeConfigVmBindingSource.DataSource = model;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += (delegate
-                                              {
-                                                  Console.WriteLine("Badoosh1");
-                                                  StableModeConfigVmBindingSource.ResetBindings(false);
-                                              });
+                model.PropertyChanged += ((sender, e) => StableModeConfigVmBindingSource.ResetBindings(false));
         }
 
     }
