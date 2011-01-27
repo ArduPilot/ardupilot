@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO.Ports;
 using System.Text;
-using System.Threading;
-using ArducopterConfigurator.PresentationModels;
 
 namespace ArducopterConfigurator
 {
@@ -43,11 +41,14 @@ namespace ArducopterConfigurator
         {
             _sp.BaudRate = 115200;
             _sp.PortName = CommPort;
+            _sp.NewLine = "\n";
+            _sp.Handshake = Handshake.None;
 
             try
             {
                 _sp.Open();
                 _sp.ReadTimeout = 50000;
+                
 
                 // start the reading BG thread
                 _bgWorker = new BackgroundWorker();
@@ -64,6 +65,7 @@ namespace ArducopterConfigurator
             return true;
         }
 
+     
 
         public bool DisConnect()
         {
@@ -76,19 +78,20 @@ namespace ArducopterConfigurator
         void bgWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             // Thanks to BG worker, this should be raised on the UI thread
-
             var lineReceived = e.UserState as string;
 
-   
-//            for (int i = 0; i < lineReceived.Length; i++)
-//            {
-//                var c = lineReceived[i];
-//                Console.WriteLine("{0}]  U+{1:x4} {2}", i, (int)c, (int)c);
-//            }
-//
-//            
-//
+            // TODO: POSSIBLE MONO ISSUE
+            // Weird thing happening with the serial port on mono; sometimes the first
+            // char is nulled. Work around for now is to drop it, and just send the remaining 
+            // chars up the stack. This is of course exteremely bogus
+            if (lineReceived[0] == 0)
+            {
+                Console.WriteLine("Warning - received null first character. Dropping.");
+                lineReceived = lineReceived.Substring(1);
+            }
 
+            //Console.WriteLine("Processing Update: " + lineReceived);
+            
             if (LineOfDataReceived != null)
                  LineOfDataReceived(lineReceived);
         }
@@ -132,6 +135,4 @@ namespace ArducopterConfigurator
                 _sp.Write(send);
         }
     }
-
-    
 }

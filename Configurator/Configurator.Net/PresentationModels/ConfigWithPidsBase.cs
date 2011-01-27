@@ -26,7 +26,6 @@ namespace ArducopterConfigurator.PresentationModels
 
         protected override void OnStringReceived(string strRx)
         {
-            Console.WriteLine("Badoosh strnig rxd");
             PopulatePropsFromUpdate(strRx,true);
         }
     }
