@@ -61,7 +61,7 @@ unsigned long trim_timer;
 void read_trim_switch()
 {
 	// switch is engaged
-	if (rc_7.control_in > 500){
+	if (rc_7.control_in > 800){
 		if(trim_flag == false){
 			// called once
 			trim_timer = millis();
