@@ -127,7 +127,7 @@ RC_Channel rc_7(EE_RADIO_7);
 RC_Channel rc_8(EE_RADIO_8);
 
 RC_Channel rc_camera_pitch(EE_RADIO_9);
-RC_Channel rc_camera_yaw(EE_RADIO_10);
+RC_Channel rc_camera_roll(EE_RADIO_10);
 
 int motor_out[4];
 byte flight_mode_channel;
