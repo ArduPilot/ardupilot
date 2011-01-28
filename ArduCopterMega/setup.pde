@@ -293,7 +293,8 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 			APM_RC.OutputCh(CH_1, rc_3.radio_in);
 			APM_RC.OutputCh(CH_2, rc_3.radio_in);
 			APM_RC.OutputCh(CH_3, rc_3.radio_in);
-			APM_RC.OutputCh(CH_4, rc_3.radio_in);
+			if(frame_type != TRI_FRAME)
+				APM_RC.OutputCh(CH_4, rc_3.radio_in);
 		}else{
 			APM_RC.OutputCh(CH_1, motor_out[RIGHT]);
 			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
