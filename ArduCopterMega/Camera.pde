@@ -28,7 +28,7 @@ camera_stabilization()
 
 	rc_camera_roll.servo_out = dcm.roll_sensor * 1;
 	rc_camera_roll.calc_pwm();
-	APM_RC.OutputCh(CH_6, rc_camera_pitch.radio_out);
+	APM_RC.OutputCh(CH_6, rc_camera_roll.radio_out);
 
 
 	//If you want to do control mixing use this function.
