@@ -180,7 +180,7 @@
             this.linearIndicatorControl3.Offset = 0;
             this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 111);
             this.linearIndicatorControl3.TabIndex = 43;
-            this.linearIndicatorControl3.Value = 1000;
+            this.linearIndicatorControl3.Value = 1600;
             // 
             // linearIndicatorControl1
             // 
@@ -199,7 +199,7 @@
             this.linearIndicatorControl1.Offset = 0;
             this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 111);
             this.linearIndicatorControl1.TabIndex = 44;
-            this.linearIndicatorControl1.Value = 1000;
+            this.linearIndicatorControl1.Value = 1100;
             // 
             // linearIndicatorControl2
             // 
@@ -218,7 +218,7 @@
             this.linearIndicatorControl2.Offset = 0;
             this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl2.TabIndex = 45;
-            this.linearIndicatorControl2.Value = 1000;
+            this.linearIndicatorControl2.Value = 1050;
             // 
             // linearIndicatorControl4
             // 
@@ -237,7 +237,7 @@
             this.linearIndicatorControl4.Offset = 0;
             this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl4.TabIndex = 46;
-            this.linearIndicatorControl4.Value = 1000;
+            this.linearIndicatorControl4.Value = 1900;
             // 
             // linearIndicatorControl5
             // 
@@ -256,7 +256,7 @@
             this.linearIndicatorControl5.Offset = 0;
             this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl5.TabIndex = 47;
-            this.linearIndicatorControl5.Value = 1000;
+            this.linearIndicatorControl5.Value = 1300;
             // 
             // linearIndicatorControl6
             // 
@@ -275,7 +275,7 @@
             this.linearIndicatorControl6.Offset = 0;
             this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl6.TabIndex = 48;
-            this.linearIndicatorControl6.Value = 1000;
+            this.linearIndicatorControl6.Value = 1200;
             // 
             // TransmitterChannelsView
             // 

@@ -101,7 +101,7 @@
             // 
             // textBox1
             // 
-            this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorLeft", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "N0"));
+            this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorLeft", true));
             this.textBox1.Location = new System.Drawing.Point(2, 247);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
@@ -144,9 +144,9 @@
             this.label6.AutoSize = true;
             this.label6.Location = new System.Drawing.Point(12, 62);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(57, 13);
+            this.label6.Size = new System.Drawing.Size(55, 13);
             this.label6.TabIndex = 15;
-            this.label6.Text = "Roll Accell";
+            this.label6.Text = "Roll Accel";
             // 
             // textBox4
             // 
