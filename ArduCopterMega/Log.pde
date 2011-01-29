@@ -245,7 +245,7 @@ void Log_Write_Startup(byte type)
 	struct Location cmd = get_wp_with_index(0);
 		Log_Write_Cmd(0, &cmd);
 	
-	for (int i=1; i<wp_total; i++){
+	for (int i = 1; i < wp_total; i++){
 		cmd = get_wp_with_index(i);
 		Log_Write_Cmd(i, &cmd);
 	}
@@ -537,13 +537,15 @@ void Log_Read(int start_page, int end_page)
 			case 0:	
 				if(data==HEAD_BYTE1)	// Head byte 1
 					log_step++;
-				break; 
+				break;
+				
 			case 1:
 				if(data==HEAD_BYTE2)	// Head byte 2
 					log_step++;
 				else
 					log_step = 0;
-				break; 
+				break;
+				
 			case 2:
 				if(data==LOG_ATTITUDE_MSG){
 					Log_Read_Attitude();
@@ -573,20 +575,26 @@ void Log_Read(int start_page, int end_page)
 					Log_Read_Cmd();
 					log_step++;
 					
+				}else if(data==LOG_CURRENT_MSG){
+					Log_Read_Current();
+					log_step++;
+					
 				}else if(data==LOG_STARTUP_MSG){
 					Log_Read_Startup();
 					log_step++;
+					
 				}else {
-					if(data==LOG_GPS_MSG){
+					if(data == LOG_GPS_MSG){
 						Log_Read_GPS();
 						log_step++;
 					} else {
 						Serial.print("Error Reading Packet: ");
 						Serial.print(packet_count); 
-						log_step=0;	 // Restart, we have a problem...
+						log_step = 0;	 // Restart, we have a problem...
 					}
 				}
 				break;
+				
 			case 3:
 				if(data==END_BYTE){
 					 packet_count++;
