@@ -68,7 +68,7 @@ what's new to commands for ACM:
 - CMD_TRACK_WAYPOINT - coming soon, will point the copter at the waypoint no matter the position
 
 Special note:
-Any mode other than stabilize will cause the props to spin once the control switch is engaged.
+Any mode other than stabilize may cause the props to spin once the control switch is engaged.
 The props will NOT spin in stabilize when throttle is in the off position, even when armed.
 Arming is Yaw right for 1 sec, disarm is yaw left for 1 sec. Just give it some juice to confirm arming.
 Good luck,
