@@ -127,13 +127,7 @@ namespace ArducopterConfigurator.Views.controls
             using (var white = new LinearGradientBrush(rect, _barBgLightColour, _barBgDarkColor, isVertical ? 0 : 90.0F, false))
                 g.FillRectangle(white, rect);
 
-            // Border around the whole thing
-            using (Pen p = new Pen(_borderColor, _borderWidth * 2))
-            {
-                p.Alignment = PenAlignment.Outset;
-                p.LineJoin = LineJoin.Round;
-                g.DrawRectangle(p, x, y, width, height);
-            }
+         
 
             // Now do the progress bar that represents the value
             var barSize = (float)Math.Abs(_val - _offset) / (_max - _min) * (isVertical ? height : width);
@@ -149,6 +143,8 @@ namespace ArducopterConfigurator.Views.controls
                 using (var bg = new LinearGradientBrush(rect, _barLightColour, _barDarkColour, isVertical ? 0 : 90.0F, false))
                     g.FillRectangle(bg, rect);
 
+                
+
                 using (Pen p = new Pen(_borderColor, _borderWidth))
                 {
                     p.Alignment = PenAlignment.Inset;
@@ -156,6 +152,28 @@ namespace ArducopterConfigurator.Views.controls
                     g.DrawLine(p, width, y, width, height);
                 } 
             } 
+
+
+            // Now the line that represents the Offset/Origin
+            if (_offset > _min && _offset < _max)
+                using (Pen p = new Pen(_borderColor, _borderWidth))
+                {
+                    var linePos = (float)(_offset - _min) / (_max - _min) * (isVertical ? height : width);
+
+                    if (isVertical)
+                        g.DrawLine(p, 0, linePos, width, linePos);
+                    else
+                        g.DrawLine(p, linePos, 0, linePos, height);
+                }
+
+
+            // Border around the whole thing
+            using (Pen p = new Pen(_borderColor, _borderWidth * 2))
+            {
+                p.Alignment = PenAlignment.Outset;
+                p.LineJoin = LineJoin.Round;
+                g.DrawRectangle(p, x, y, width, height);
+            }
 
 //            using (Pen p = new Pen(_barDarkColour, _borderWidth))
 //            {
