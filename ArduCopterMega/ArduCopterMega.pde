@@ -464,16 +464,14 @@ void loop()
 		medium_loopTimer		= millis();		
 		medium_loop();
 		
-		/* commented out temporarily
 		if (millis() - perf_mon_timer > 20000) {
-			if (mainLoop_count != 0) {
-				GCS.send_message(MSG_PERF_REPORT);
-				if (log_bitmask & MASK_LOG_PM)
-					Log_Write_Performance();
-					
-				resetPerfData();
+			send_message(MSG_PERF_REPORT);
+			if (log_bitmask & MASK_LOG_PM){
+				Log_Write_Performance();
 			}
-		}*/
+			resetPerfData();
+			perf_mon_timer = millis();
+		}
 	}
 }
 
@@ -639,15 +637,6 @@ void medium_loop()
 		do_something_usefull();
 	#endif              
 	
-	
-	if (millis() - perf_mon_timer > 20000) {
-		if (mainLoop_count != 0) {
-			send_message(MSG_PERF_REPORT);
-			if (log_bitmask & MASK_LOG_PM)
-				Log_Write_Performance();
-			resetPerfData();
-		}
-	}
 }
 
 
