@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
-using System.Data;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Text;
 using System.Windows.Forms;
 
 /*
@@ -21,55 +15,19 @@ namespace ArducopterConfigurator.Views.controls
     [ToolboxBitmap(typeof(System.Windows.Forms.ProgressBar))]
     public partial class LinearIndicatorControl : UserControl
     {
-        /// <summary>
-        /// This enum represents the diffrent states the control can take.
-        /// Animation for ex. makes the procent bar "Rubber band" to the new procent value
-        /// </summary>
-        public enum BarType
-        {
-            Static,			// Plain and simple bar with procent display
-            Progressbar,	// This makes the control act as a progressbar
-            Animated		// This makes the control "Rubber band" to new procent values (Animated).
-        };
-
-
-        #region Static Members
         public static readonly Color PreBarBaseDark = Color.FromArgb(199, 200, 201);
         public static readonly Color PreBarBaseLight = Color.WhiteSmoke;
         public static readonly Color PreBarLight = Color.FromArgb(102, 144, 252);
         public static readonly Color PreBarDark = Color.FromArgb(40, 68, 202);
         public static readonly Color PreBorderColor = Color.DarkGray;
-        #endregion
-
-        #region Private Members
-        /// <summary>
-        /// The Light background color
-        /// </summary>
+     
         private Color _barBgLightColour = PreBarBaseLight;
-
-        /// <summary>
-        /// The Dark background color
-        /// </summary>
         private Color _barBgDarkColor = PreBarBaseDark;
-
-        /// <summary>
-        /// The Light bar color
-        /// </summary>
         private Color _barLightColour = PreBarLight;
-
-        /// <summary>
-        /// The Dark bar color
-        /// </summary>
         private Color _barDarkColour = PreBarDark;
-
-        /// <summary>
-        /// The Border color for the control
-        /// </summary>
         private Color _borderColor = PreBorderColor;
+        private Color _watermarkLineColor = PreBorderColor;
 
-        /// <summary>
-        /// The border width
-        /// </summary>
         private float _borderWidth = 1.0F;
 
         private int _min = 0;
@@ -77,14 +35,12 @@ namespace ArducopterConfigurator.Views.controls
         private int _val = 50;
         private int _offset = 0;
 
-        /// <summary>
-        /// The number of dividers to draw in the bar
-        /// </summary>
         private int iNumDividers = 10;
 
         private bool _isVertical = false;
+        private int _minWatermark;
+        private int _maxWatermark;
 
-        #endregion
 
 
         public LinearIndicatorControl()
@@ -119,8 +75,6 @@ namespace ArducopterConfigurator.Views.controls
         // g is the graphics of the whole control
         private void GenerateBar(Graphics g, float x, float y, float width, float height, bool isVertical)
         {
-            float totalWidth = width;
-            
             var rect = new RectangleF(x, y, width, height);
 
             // Fill the background
@@ -155,16 +109,14 @@ namespace ArducopterConfigurator.Views.controls
 
 
             // Now the line that represents the Offset/Origin
-            if (_offset > _min && _offset < _max)
-                using (Pen p = new Pen(_borderColor, _borderWidth))
-                {
-                    var linePos = (float)(_offset - _min) / (_max - _min) * (isVertical ? height : width);
+            DrawLine(width, height, isVertical, g, _offset,_borderColor);
 
-                    if (isVertical)
-                        g.DrawLine(p, 0, linePos, width, linePos);
-                    else
-                        g.DrawLine(p, linePos, 0, linePos, height);
-                }
+            // Draw the high/low watermarks
+            if (_minWatermark!=_offset)
+                DrawLine(width, height, isVertical, g, _minWatermark, _watermarkLineColor);
+            
+            if (_maxWatermark!=_offset)
+                DrawLine(width, height, isVertical, g, _maxWatermark, _watermarkLineColor);
 
 
             // Border around the whole thing
@@ -200,6 +152,20 @@ namespace ArducopterConfigurator.Views.controls
 //                    }
 //                }
 //            } 
+        }
+
+        private void DrawLine(float width, float height, bool isVertical, Graphics g, int position, Color color)
+        {
+            if (position > _min && _offset < _max)
+                using (Pen p = new Pen(color, _borderWidth))
+                {
+                    var linePos = (float)(position - _min) / (_max - _min) * (isVertical ? height : width);
+
+                    if (isVertical)
+                        g.DrawLine(p, 0 ,height - linePos, width, height - linePos);
+                    else
+                        g.DrawLine(p, linePos, 0, linePos, height);
+                }
         }
 
 
@@ -310,12 +276,24 @@ namespace ArducopterConfigurator.Views.controls
         /// Gets or sets the color of the border.
         /// </summary>
         /// <value>The color of the border.</value>
-        [System.ComponentModel.Description("Gets or sets the border color")]
+        [System.ComponentModel.Description("The border color")]
         [System.ComponentModel.RefreshProperties(System.ComponentModel.RefreshProperties.Repaint)]
         public Color BarBorderColor
         {
             get { return _borderColor; }
             set { _borderColor = value; Refresh(); }
+        }
+
+        /// <summary>
+        /// Gets or sets the color of the border.
+        /// </summary>
+        /// <value>The color of the border.</value>
+        [System.ComponentModel.Description("The color for the watermark lines")]
+        [System.ComponentModel.RefreshProperties(System.ComponentModel.RefreshProperties.Repaint)]
+        public Color WatermarkLineColor
+        {
+            get { return _watermarkLineColor; }
+            set { _watermarkLineColor = value; Refresh(); }
         }
 
        
@@ -357,6 +335,39 @@ namespace ArducopterConfigurator.Views.controls
                     Refresh();
                 }
            
+            }
+        }
+
+        [System.ComponentModel.Description("The position of the Max watermark line. Set to Offset if not needed")]
+        [System.ComponentModel.RefreshProperties(System.ComponentModel.RefreshProperties.Repaint)]
+        public int MaxWaterMark
+        {
+            get { return _maxWatermark; }
+            set
+            {
+                if (_maxWatermark != value)
+                {
+                    _maxWatermark = value;
+                    Refresh();
+                }
+
+            }
+        }
+
+
+        [System.ComponentModel.Description("The position of the Min watermark line. Set to Offset if not needed")]
+        [System.ComponentModel.RefreshProperties(System.ComponentModel.RefreshProperties.Repaint)]
+        public int MinWatermark
+        {
+            get { return _minWatermark; }
+            set
+            {
+                if (_minWatermark != value)
+                {
+                    _minWatermark = value;
+                    Refresh();
+                }
+
             }
         }
 

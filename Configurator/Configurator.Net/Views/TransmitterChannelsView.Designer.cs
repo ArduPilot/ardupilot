@@ -175,12 +175,15 @@
             this.linearIndicatorControl3.IsVertical = true;
             this.linearIndicatorControl3.Location = new System.Drawing.Point(16, 30);
             this.linearIndicatorControl3.Max = 2000;
+            this.linearIndicatorControl3.MaxWaterMark = 0;
             this.linearIndicatorControl3.Min = 1000;
+            this.linearIndicatorControl3.MinWatermark = 0;
             this.linearIndicatorControl3.Name = "linearIndicatorControl3";
             this.linearIndicatorControl3.Offset = 0;
             this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 111);
             this.linearIndicatorControl3.TabIndex = 43;
             this.linearIndicatorControl3.Value = 1600;
+            this.linearIndicatorControl3.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl1
             // 
@@ -194,12 +197,15 @@
             this.linearIndicatorControl1.IsVertical = true;
             this.linearIndicatorControl1.Location = new System.Drawing.Point(67, 30);
             this.linearIndicatorControl1.Max = 2000;
+            this.linearIndicatorControl1.MaxWaterMark = 0;
             this.linearIndicatorControl1.Min = 1000;
+            this.linearIndicatorControl1.MinWatermark = 0;
             this.linearIndicatorControl1.Name = "linearIndicatorControl1";
             this.linearIndicatorControl1.Offset = 0;
             this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 111);
             this.linearIndicatorControl1.TabIndex = 44;
             this.linearIndicatorControl1.Value = 1100;
+            this.linearIndicatorControl1.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl2
             // 
@@ -213,12 +219,15 @@
             this.linearIndicatorControl2.IsVertical = true;
             this.linearIndicatorControl2.Location = new System.Drawing.Point(155, 131);
             this.linearIndicatorControl2.Max = 2000;
+            this.linearIndicatorControl2.MaxWaterMark = 0;
             this.linearIndicatorControl2.Min = 1000;
+            this.linearIndicatorControl2.MinWatermark = 0;
             this.linearIndicatorControl2.Name = "linearIndicatorControl2";
             this.linearIndicatorControl2.Offset = 0;
             this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl2.TabIndex = 45;
             this.linearIndicatorControl2.Value = 1050;
+            this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl4
             // 
@@ -232,12 +241,15 @@
             this.linearIndicatorControl4.IsVertical = true;
             this.linearIndicatorControl4.Location = new System.Drawing.Point(206, 131);
             this.linearIndicatorControl4.Max = 2000;
+            this.linearIndicatorControl4.MaxWaterMark = 0;
             this.linearIndicatorControl4.Min = 1000;
+            this.linearIndicatorControl4.MinWatermark = 0;
             this.linearIndicatorControl4.Name = "linearIndicatorControl4";
             this.linearIndicatorControl4.Offset = 0;
             this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl4.TabIndex = 46;
             this.linearIndicatorControl4.Value = 1900;
+            this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl5
             // 
@@ -251,12 +263,15 @@
             this.linearIndicatorControl5.IsVertical = false;
             this.linearIndicatorControl5.Location = new System.Drawing.Point(174, 80);
             this.linearIndicatorControl5.Max = 2000;
+            this.linearIndicatorControl5.MaxWaterMark = 0;
             this.linearIndicatorControl5.Min = 1000;
+            this.linearIndicatorControl5.MinWatermark = 0;
             this.linearIndicatorControl5.Name = "linearIndicatorControl5";
             this.linearIndicatorControl5.Offset = 0;
             this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl5.TabIndex = 47;
             this.linearIndicatorControl5.Value = 1300;
+            this.linearIndicatorControl5.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl6
             // 
@@ -270,12 +285,15 @@
             this.linearIndicatorControl6.IsVertical = false;
             this.linearIndicatorControl6.Location = new System.Drawing.Point(174, 30);
             this.linearIndicatorControl6.Max = 2000;
+            this.linearIndicatorControl6.MaxWaterMark = 0;
             this.linearIndicatorControl6.Min = 1000;
+            this.linearIndicatorControl6.MinWatermark = 0;
             this.linearIndicatorControl6.Name = "linearIndicatorControl6";
             this.linearIndicatorControl6.Offset = 0;
             this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl6.TabIndex = 48;
             this.linearIndicatorControl6.Value = 1200;
+            this.linearIndicatorControl6.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // TransmitterChannelsView
             // 
