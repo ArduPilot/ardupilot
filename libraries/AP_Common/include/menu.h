@@ -29,7 +29,7 @@ public:
 	/// separated into these structures.
 	///
 	/// If the argument cannot be parsed as a float or a long, the value
-	/// of f or i respectively is undefined.  You should range-check 
+	/// of f or i respectively is undefined.  You should range-check
 	/// the inputs to your function.
 	///
 	struct arg {
@@ -62,7 +62,7 @@ public:
 	/// If this function returns false, the menu exits.
 	///
 	typedef bool			(*preprompt)(void);
-	
+
 	/// menu command description
 	///
 	struct command {
@@ -98,7 +98,7 @@ public:
 
 	/// menu runner
 	void				run(void);
-	
+
 private:
 	/// Implements the default 'help' command.
 	///
@@ -133,7 +133,7 @@ private:
 #define MENU(name, prompt, commands)							\
 	static const char __menu_name__ ##name[] PROGMEM = prompt;	\
 	static Menu name(__menu_name__ ##name, commands, sizeof(commands) / sizeof(commands[0]))
-	
+
 #define MENU2(name, prompt, commands, preprompt)				\
 	static const char __menu_name__ ##name[] PROGMEM = prompt;	\
 	static Menu name(__menu_name__ ##name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
