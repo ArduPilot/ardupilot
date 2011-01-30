@@ -167,6 +167,23 @@ setup(void)
         REQUIRE(!strcmp(name_buffer, "test"));
     }
 
+    // AP_Var: arrays
+    {
+        TEST(var_array);
+
+        AP_VarA<float,4>    fa;
+
+        fa[0] = 1.0;
+        fa[1] = 10.0;
+        fa.set(2, 100.0);
+        fa[3] = -1000.0;
+
+        REQUIRE(fa.get(0) == 1.0);
+        REQUIRE(fa.get(1) == 10.0);
+        REQUIRE(fa.get(2) == 100.0);
+        REQUIRE(fa.get(3) == -1000.0);
+    }
+
     // AP_Var: serialize
     // note that this presumes serialisation to the native in-memory format
     {
