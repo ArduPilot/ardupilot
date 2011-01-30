@@ -104,6 +104,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 	last_log_num = eeprom_read_byte((uint8_t *) EE_LAST_LOG_NUM);
+	
 	if ((argc != 2) || (dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log number\n"));
 		return(-1);
@@ -111,7 +112,8 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	dump_log_start = eeprom_read_word((uint16_t *) (EE_LOG_1_START+(dump_log-1)*0x02));
 	dump_log_end = eeprom_read_word((uint16_t *) (EE_LOG_1_START+(dump_log)*0x02))-1;
-	if (dump_log == last_log_num) {	
+
+	if (dump_log == last_log_num) {
 		dump_log_end = eeprom_read_word((uint16_t *) EE_LAST_LOG_PAGE);
 	}	
 	Serial.printf_P(PSTR("Dumping Log number %d,    start page %d,   end page %d\n"),
@@ -345,21 +347,21 @@ void Log_Write_Current()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CURRENT_MSG);
+	DataFlash.WriteInt(rc_3.control_in);
 	DataFlash.WriteInt((int)(current_voltage 	* 100.0));
 	DataFlash.WriteInt((int)(current_amps 		* 100.0));
-	DataFlash.WriteInt((int)(current_total 		* 10.0));
+	DataFlash.WriteInt((int)current_total);
 	DataFlash.WriteByte(END_BYTE);
 }
+
 // Read a Current packet
 void Log_Read_Current()
 {
-	Serial.print("CURR:");
-	Serial.print((float)DataFlash.ReadInt() / 100.f);
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt() / 100.f);
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt() / 10.f);
-	Serial.println();
+	Serial.printf("CURR: %d, %4.4f, %4.4f, %d\n", 
+			DataFlash.ReadInt(),
+			((float)DataFlash.ReadInt() / 100.f),
+			((float)DataFlash.ReadInt() / 100.f),
+			DataFlash.ReadInt());
 }
 
 // Read an control tuning packet
@@ -474,17 +476,13 @@ void Log_Read_Attitude()
 // Read a mode packet
 void Log_Read_Mode()
 {	
-	byte mode;
-
-	mode = DataFlash.ReadByte();
 	Serial.print("MOD:");
-	Serial.println(flight_mode_strings[control_mode]);
+	Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
 }
 
 // Read a GPS packet
 void Log_Read_GPS()
 {
-
 	Serial.print("GPS:");
 	Serial.print(DataFlash.ReadLong());						// Time
 	Serial.print(comma);
@@ -503,12 +501,11 @@ void Log_Read_GPS()
 	Serial.print((float)DataFlash.ReadLong()/100.0);		// Ground Speed
 	Serial.print(comma);
 	Serial.println((float)DataFlash.ReadLong()/100.0);		// Ground Course
-
 }
 
 // Read a raw accel/gyro packet
 void Log_Read_Raw()
-{	
+{
 	float logvar;
 	Serial.print("RAW:");
 	for (int y=0;y<6;y++) {

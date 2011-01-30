@@ -4,10 +4,6 @@ void read_control_switch()
 	//motor_armed = (switchPosition < 5);
 	
 	if (oldSwitchPosition != switchPosition){
-		if(motor_armed)
-			Serial.println("motor_armed");
-		else
-			Serial.println("motor disarmed");
 				
 		set_mode(flight_modes[switchPosition]);
 		
@@ -76,16 +72,13 @@ void read_trim_switch()
 		if(trim_flag){
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
-
 				// not being used
 				
 			} else {
-			
 				// set the throttle nominal
 				if(rc_3.control_in > 50){
 					throttle_cruise = rc_3.control_in;
-					//Serial.print("tnom ");
-					//Serial.println(throttle_cruise, DEC);
+					Serial.printf("tnom %d\n", throttle_cruise);
 					save_EEPROM_throttle_cruise();
 				}
 			}

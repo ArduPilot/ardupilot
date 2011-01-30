@@ -571,9 +571,10 @@ void medium_loop()
 			if (log_bitmask & MASK_LOG_NTUN)
 				Log_Write_Nav_Tuning();
 
-			if (log_bitmask & MASK_LOG_GPS)
-				Log_Write_GPS(GPS.time, current_loc.lat, current_loc.lng, GPS.altitude, current_loc.alt, (long) GPS.ground_speed, GPS.ground_course, GPS.fix, GPS.num_sats);
-
+			if (log_bitmask & MASK_LOG_GPS){
+				if(home_is_set)
+					Log_Write_GPS(GPS.time, current_loc.lat, current_loc.lng, GPS.altitude, current_loc.alt, (long) GPS.ground_speed, GPS.ground_course, GPS.fix, GPS.num_sats);
+			}
 			send_message(MSG_ATTITUDE);		// Sends attitude data
 			break;
 			
