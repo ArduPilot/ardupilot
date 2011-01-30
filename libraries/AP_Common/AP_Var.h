@@ -551,7 +551,128 @@ protected:
     T _value;
 };
 
-/// Convenience macro for defining instances of the AP_Var template
+/// Template class for array variables.
+///
+/// Objects created using this template behave like arrays of the type T,
+/// but are stored like single variables.
+///
+/// Note that the size of the array cannot be greater than AP_Var::k_size_max.
+/// Unfortunately there is no way to assert this at compile time; a larger
+/// array will compile correctly and work as expected, except that ::save and
+/// ::load will always fail.
+///
+/// For example:
+///
+///  AP_VarA<float,4>   float_array(some_key, PSTR("some_name"));
+///
+/// will create float_array as an array of four floats, stored using the
+/// key some_key and visible with the name 'some_name'.
+///
+/// @note   Like regular arrays, the initial value of the members of the
+///         array is zero if the object is declared with global scope, and
+///         undefined if declared in a block (function, etc.).
+///
+/// @tparam T           The scalar type of the variable
+///
+template<typename T, uint8_t N>
+class AP_VarA : public AP_Var
+{
+public:
+    /// Constructor for non-grouped array.
+    ///
+    /// Initializes a stand-alone array with optional storage key, name and flags.
+    ///
+    /// @param  key             Storage key for the variable.  If not set, or set to AP_Var::k_key_none
+    ///                         the variable cannot be loaded from or saved to EEPROM.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behavior of the variable.
+    ///
+    AP_VarA<T,N> (Key key = k_key_none,
+                  const prog_char *name = NULL,
+                  Flags flags = k_flags_none) :
+        AP_Var(key, name, flags)
+    {
+    }
+
+    /// Constructor for a grouped array.
+    ///
+    /// Initializes a variable that is a member of a group with optional initial value, name and flags.
+    ///
+    /// @param  group           The group that this variable belongs to.
+    /// @param  index           The variable's index within the group.  Index values must be unique
+    ///                         within the group, as they ensure that the group's layout in EEPROM
+    ///                         is consistent.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behavior of the variable.
+    ///
+    AP_VarA<T,N> (AP_Var_group *group,  // XXX maybe make this a ref?
+                  Key index,
+                  const prog_char *name = NULL,
+                  Flags flags = k_flags_none) :
+        AP_Var(group, index, name, flags)
+    {
+    }
+
+    // serialize _value into the buffer, but only if it is big enough.
+    //
+    virtual size_t serialize(void *buf, size_t size) const {
+        if (size >= sizeof(_value)) {
+            memcpy(buf, &_value[0], sizeof(_value));
+        }
+        return sizeof(_value);
+    }
+
+    // Unserialize from the buffer, but only if it is big enough.
+    //
+    virtual size_t unserialize(void *buf, size_t size) {
+        if (size >= sizeof(_value)) {
+            memcpy(&_value[0], buf, sizeof(_value));
+        }
+        return sizeof(_value);
+    }
+
+    /// Array operator accesses members.
+    ///
+    /// @note It would be nice to range-check i here, but then what would we return?
+    ///
+    T &operator [](uint8_t i) {
+        return _value[i];
+    }
+
+    /// Value getter
+    ///
+    /// @note   Returns zero for index values out of range.
+    ///
+    T get(uint8_t i) const {
+        if (i < N) {
+            return _value[i];
+        } else {
+            return (T)0;
+        }
+    }
+
+    /// Value setter
+    ///
+    /// @note   Attempts to set an index out of range are discarded.
+    ///
+    void set(uint8_t i, T v) {
+        if (i < N) {
+            _value[i] = v;
+        }
+    }
+
+    /// Copy assignment from self does nothing.
+    ///
+    AP_VarA<T,N>& operator=(AP_VarA<T,N>& v) {
+        return v;
+    }
+
+protected:
+    T _value[N];
+};
+
+
+/// Convenience macro for defining instances of the AP_VarT template.
 ///
 #define AP_VARDEF(_t, _n)   typedef AP_VarT<_t> AP_##_n;
 AP_VARDEF(float, Float);    // defines AP_Float
@@ -561,10 +682,10 @@ AP_VARDEF(int32_t, Int32);  // defines AP_Int32
 
 /// Rely on built in casting for other variable types
 /// to minimize template creation and save memory
-#define AP_Uint8 AP_Int8
-#define AP_Uint16 AP_Int16
-#define AP_Uint32 AP_Int32
-#define AP_Bool AP_Int8
+#define AP_Uint8    AP_Int8
+#define AP_Uint16   AP_Int16
+#define AP_Uint32   AP_Int32
+#define AP_Bool     AP_Int8
 
 /// Many float values can be saved as 16-bit fixed-point values, reducing EEPROM
 /// consumption.  AP_Float16 subclasses AP_Float and overloads serialize/unserialize
@@ -619,7 +740,7 @@ public:
         return sizeof(*sval);
     }
 
-    // copy operators must be redefined in subclasses to get correct behaviour
+    // copy operators must be redefined in subclasses to get correct behavior
     AP_Float16 &operator=(AP_Float16 &v) {
         return v;
     }
