@@ -259,12 +259,15 @@
             this.indicatorRollGyro.IsVertical = false;
             this.indicatorRollGyro.Location = new System.Drawing.Point(12, 28);
             this.indicatorRollGyro.Max = 500;
+            this.indicatorRollGyro.MaxWaterMark = 0;
             this.indicatorRollGyro.Min = -500;
+            this.indicatorRollGyro.MinWatermark = 0;
             this.indicatorRollGyro.Name = "indicatorRollGyro";
             this.indicatorRollGyro.Offset = 0;
             this.indicatorRollGyro.Size = new System.Drawing.Size(109, 20);
             this.indicatorRollGyro.TabIndex = 32;
             this.indicatorRollGyro.Value = 100;
+            this.indicatorRollGyro.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // indicatorRollAccel
             // 
@@ -278,12 +281,15 @@
             this.indicatorRollAccel.IsVertical = false;
             this.indicatorRollAccel.Location = new System.Drawing.Point(12, 78);
             this.indicatorRollAccel.Max = 500;
+            this.indicatorRollAccel.MaxWaterMark = 0;
             this.indicatorRollAccel.Min = -500;
+            this.indicatorRollAccel.MinWatermark = 0;
             this.indicatorRollAccel.Name = "indicatorRollAccel";
             this.indicatorRollAccel.Offset = 0;
             this.indicatorRollAccel.Size = new System.Drawing.Size(109, 20);
             this.indicatorRollAccel.TabIndex = 33;
             this.indicatorRollAccel.Value = 100;
+            this.indicatorRollAccel.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl1
             // 
@@ -297,12 +303,15 @@
             this.linearIndicatorControl1.IsVertical = true;
             this.linearIndicatorControl1.Location = new System.Drawing.Point(199, 21);
             this.linearIndicatorControl1.Max = 500;
+            this.linearIndicatorControl1.MaxWaterMark = 0;
             this.linearIndicatorControl1.Min = -500;
+            this.linearIndicatorControl1.MinWatermark = 0;
             this.linearIndicatorControl1.Name = "linearIndicatorControl1";
             this.linearIndicatorControl1.Offset = 0;
             this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 82);
             this.linearIndicatorControl1.TabIndex = 34;
             this.linearIndicatorControl1.Value = 100;
+            this.linearIndicatorControl1.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl2
             // 
@@ -316,12 +325,15 @@
             this.linearIndicatorControl2.IsVertical = true;
             this.linearIndicatorControl2.Location = new System.Drawing.Point(264, 21);
             this.linearIndicatorControl2.Max = 500;
+            this.linearIndicatorControl2.MaxWaterMark = 0;
             this.linearIndicatorControl2.Min = -500;
+            this.linearIndicatorControl2.MinWatermark = 0;
             this.linearIndicatorControl2.Name = "linearIndicatorControl2";
             this.linearIndicatorControl2.Offset = 0;
             this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 82);
             this.linearIndicatorControl2.TabIndex = 35;
             this.linearIndicatorControl2.Value = 100;
+            this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl3
             // 
@@ -334,13 +346,16 @@
             this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorLeft", true));
             this.linearIndicatorControl3.IsVertical = true;
             this.linearIndicatorControl3.Location = new System.Drawing.Point(15, 157);
-            this.linearIndicatorControl3.Max = 1000;
-            this.linearIndicatorControl3.Min = 0;
+            this.linearIndicatorControl3.Max = 2000;
+            this.linearIndicatorControl3.MaxWaterMark = 0;
+            this.linearIndicatorControl3.Min = 1000;
+            this.linearIndicatorControl3.MinWatermark = 0;
             this.linearIndicatorControl3.Name = "linearIndicatorControl3";
             this.linearIndicatorControl3.Offset = 0;
             this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 84);
             this.linearIndicatorControl3.TabIndex = 36;
             this.linearIndicatorControl3.Value = 100;
+            this.linearIndicatorControl3.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl4
             // 
@@ -353,13 +368,16 @@
             this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorFront", true));
             this.linearIndicatorControl4.IsVertical = true;
             this.linearIndicatorControl4.Location = new System.Drawing.Point(71, 157);
-            this.linearIndicatorControl4.Max = 1000;
-            this.linearIndicatorControl4.Min = 0;
+            this.linearIndicatorControl4.Max = 2000;
+            this.linearIndicatorControl4.MaxWaterMark = 0;
+            this.linearIndicatorControl4.Min = 1000;
+            this.linearIndicatorControl4.MinWatermark = 0;
             this.linearIndicatorControl4.Name = "linearIndicatorControl4";
             this.linearIndicatorControl4.Offset = 0;
             this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 84);
             this.linearIndicatorControl4.TabIndex = 37;
             this.linearIndicatorControl4.Value = 100;
+            this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl5
             // 
@@ -372,13 +390,16 @@
             this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
             this.linearIndicatorControl5.IsVertical = true;
             this.linearIndicatorControl5.Location = new System.Drawing.Point(124, 157);
-            this.linearIndicatorControl5.Max = 1000;
-            this.linearIndicatorControl5.Min = 0;
+            this.linearIndicatorControl5.Max = 2000;
+            this.linearIndicatorControl5.MaxWaterMark = 0;
+            this.linearIndicatorControl5.Min = 1000;
+            this.linearIndicatorControl5.MinWatermark = 0;
             this.linearIndicatorControl5.Name = "linearIndicatorControl5";
             this.linearIndicatorControl5.Offset = 0;
             this.linearIndicatorControl5.Size = new System.Drawing.Size(20, 84);
             this.linearIndicatorControl5.TabIndex = 38;
             this.linearIndicatorControl5.Value = 100;
+            this.linearIndicatorControl5.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl6
             // 
@@ -391,13 +412,16 @@
             this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
             this.linearIndicatorControl6.IsVertical = true;
             this.linearIndicatorControl6.Location = new System.Drawing.Point(179, 157);
-            this.linearIndicatorControl6.Max = 1000;
-            this.linearIndicatorControl6.Min = 0;
+            this.linearIndicatorControl6.Max = 2000;
+            this.linearIndicatorControl6.MaxWaterMark = 0;
+            this.linearIndicatorControl6.Min = 1000;
+            this.linearIndicatorControl6.MinWatermark = 0;
             this.linearIndicatorControl6.Name = "linearIndicatorControl6";
             this.linearIndicatorControl6.Offset = 0;
             this.linearIndicatorControl6.Size = new System.Drawing.Size(20, 84);
             this.linearIndicatorControl6.TabIndex = 39;
             this.linearIndicatorControl6.Value = 100;
+            this.linearIndicatorControl6.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl7
             // 
@@ -411,12 +435,15 @@
             this.linearIndicatorControl7.IsVertical = false;
             this.linearIndicatorControl7.Location = new System.Drawing.Point(225, 157);
             this.linearIndicatorControl7.Max = 500;
+            this.linearIndicatorControl7.MaxWaterMark = 0;
             this.linearIndicatorControl7.Min = -500;
+            this.linearIndicatorControl7.MinWatermark = 0;
             this.linearIndicatorControl7.Name = "linearIndicatorControl7";
             this.linearIndicatorControl7.Offset = 0;
             this.linearIndicatorControl7.Size = new System.Drawing.Size(109, 20);
             this.linearIndicatorControl7.TabIndex = 40;
             this.linearIndicatorControl7.Value = 100;
+            this.linearIndicatorControl7.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // linearIndicatorControl8
             // 
@@ -430,12 +457,15 @@
             this.linearIndicatorControl8.IsVertical = true;
             this.linearIndicatorControl8.Location = new System.Drawing.Point(353, 21);
             this.linearIndicatorControl8.Max = 500;
+            this.linearIndicatorControl8.MaxWaterMark = 0;
             this.linearIndicatorControl8.Min = -500;
+            this.linearIndicatorControl8.MinWatermark = 0;
             this.linearIndicatorControl8.Name = "linearIndicatorControl8";
             this.linearIndicatorControl8.Offset = 0;
             this.linearIndicatorControl8.Size = new System.Drawing.Size(20, 82);
             this.linearIndicatorControl8.TabIndex = 41;
             this.linearIndicatorControl8.Value = 100;
+            this.linearIndicatorControl8.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
             // FlightDataView
             // 
