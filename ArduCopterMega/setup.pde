@@ -718,7 +718,7 @@ void report_current()
 	print_enabled(current_enabled);
 
 	Serial.printf_P(PSTR("mah: %d"),milliamp_hours);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 
@@ -740,7 +740,7 @@ void report_frame()
 		Serial.printf_P(PSTR("HEXA "));
 
 	Serial.printf_P(PSTR("frame (%d)"), (int)frame_type);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_radio()
@@ -751,7 +751,7 @@ void report_radio()
 	// radio
 	read_EEPROM_radio();
 	print_radio_values();
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_gains()
@@ -789,7 +789,7 @@ void report_gains()
 	print_PID(&pid_baro_throttle);
 	Serial.printf_P(PSTR("sonar throttle:\n"));
 	print_PID(&pid_sonar_throttle);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_xtrack()
@@ -801,11 +801,11 @@ void report_xtrack()
 	read_EEPROM_nav();
 	Serial.printf_P(PSTR("XTRACK: %4.2f\n"
 						 "XTRACK angle: %d\n"
-						 "PITCH_MAX: %d"),
+						 "PITCH_MAX: %ld"),
 						 x_track_gain,
 						 x_track_angle,
 						 pitch_max);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_throttle()
@@ -825,7 +825,7 @@ void report_throttle()
 						 throttle_cruise,
 						 throttle_failsafe_enabled,
 						 throttle_failsafe_value);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_imu()
@@ -836,7 +836,7 @@ void report_imu()
 
 	imu.print_gyro_offsets();
 	imu.print_accel_offsets();
-	print_blanks(2);
+	print_blanks(1);
 }
 
 void report_compass()
@@ -860,7 +860,7 @@ void report_compass()
 							mag_offset_x,
 							mag_offset_y,
 							mag_offset_z);
-	print_blanks(2);
+	print_blanks(1);
 }
 
 
@@ -874,7 +874,7 @@ void report_flight_modes()
 	for(int i = 0; i < 6; i++ ){
 		print_switch(i, flight_modes[i]);
 	}
-	print_blanks(2);
+	print_blanks(1);
 }
 
 /***************************************************************************/

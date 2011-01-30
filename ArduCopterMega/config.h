@@ -355,7 +355,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				22
+# define PITCH_MAX				21
 #endif
 
 
@@ -366,13 +366,13 @@
 # define NAV_P					1.2
 #endif
 #ifndef NAV_I
-# define NAV_I					0.1
+# define NAV_I					0.01
 #endif
 #ifndef NAV_D
 # define NAV_D					0.005
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX				1200
+# define NAV_IMAX				250
 #endif
 
 

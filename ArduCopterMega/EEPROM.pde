@@ -17,6 +17,7 @@ void read_EEPROM_startup(void)
 	imu.load_accel_eeprom();
 	read_EEPROM_alt_RTL();
 	read_EEPROM_current();
+	read_EEPROM_nav();
 	// magnatometer
 	read_EEPROM_compass();
 	read_EEPROM_compass_declination();

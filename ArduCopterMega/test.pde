@@ -355,16 +355,17 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 				GPS.latitude 		= 0;
 				calc_nav();
 
-				Serial.printf_P(PSTR(" ys:%ld, next_WP.lat:%ld, next_WP.lng:%ld, n_lat:%ld, n_lon:%ld \n"),
+				Serial.printf_P(PSTR("ys:%ld, WP.lat:%ld, WP.lng:%ld, n_lat:%ld, n_lon:%ld, nroll:%ld, npitch:%ld, pmax:%ld, \t- "),
 					dcm.yaw_sensor,
 					next_WP.lat,
 					next_WP.lng,
 					nav_lat,
 					nav_lon,
 					nav_pitch,
-					nav_roll);
+					nav_roll,
+					pitch_max);
 					
-				//print_motor_out();
+				print_motor_out();
 			}
 			
 			if(Serial.available() > 0){
