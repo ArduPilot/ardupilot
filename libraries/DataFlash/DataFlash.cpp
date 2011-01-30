@@ -231,6 +231,29 @@ void DataFlash_Class::StartWrite(int PageAdr)
   WaitReady();
 }
 
+void DataFlash_Class::FinishWrite(void)
+{
+	df_BufferIdx=0;
+	BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
+	df_PageAdr++;
+	if (OVERWRITE_DATA==1)
+	    {
+        if (df_PageAdr>=4096)  // If we reach the end of the memory, start from the begining
+		  df_PageAdr = 1;
+	    }
+	else
+	    {
+        if (df_PageAdr>=4096)  // If we reach the end of the memory, stop here
+		  df_Stop_Write=1;
+	    }
+
+	if (df_BufferNum==1)  // Change buffer to continue writing...
+        df_BufferNum=2;
+	else
+        df_BufferNum=1;
+}
+	
+
 void DataFlash_Class::WriteByte(byte data)
 {
   if (!df_Stop_Write)

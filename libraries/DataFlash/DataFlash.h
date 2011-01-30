@@ -71,6 +71,7 @@ class DataFlash_Class
 	void PageErase (unsigned int PageAdr);
 	// Write methods
 	void StartWrite(int PageAdr);
+	void FinishWrite();
 	void WriteByte(unsigned char data);
 	void WriteInt(int data);
 	void WriteLong(long data);
