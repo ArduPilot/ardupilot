@@ -146,6 +146,8 @@ public:
     ///
     static const Flags k_flag_unlisted      = (1 << 3);
 
+    /// @todo   Flag that indicates variable is non-volatile (auto-saved when set).
+
     static AP_Meta_class::Type_id  k_typeid_float;     ///< meta_type_id() value for AP_Float
     static AP_Meta_class::Type_id  k_typeid_float16;   ///< meta_type_id() value for AP_Float16
     static AP_Meta_class::Type_id  k_typeid_int32;     ///< meta_type_id() value for AP_Int32
@@ -457,7 +459,7 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
-    AP_VarT<T> (T initial_value = 0,
+    AP_VarT<T> (const T initial_value = 0,
                 Key key = k_key_none,
                 const prog_char *name = NULL,
                 Flags flags = k_flags_none) :
@@ -478,7 +480,7 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
-    AP_VarT<T> (AP_Var_group *group,
+    AP_VarT<T> (AP_Var_group *group,  // XXX maybe make this a ref?
                 Key index,
                 T initial_value,
                 const prog_char *name = NULL,
@@ -491,19 +493,19 @@ public:
     // serialize _value into the buffer, but only if it is big enough.
     //
     virtual size_t serialize(void *buf, size_t size) const {
-        if (size >= sizeof(T)) {
+        if (size >= sizeof(_value)) {
             *(T *)buf = _value;
         }
-        return sizeof(T);
+        return sizeof(_value);
     }
 
     // Unserialize from the buffer, but only if it is big enough.
     //
     virtual size_t unserialize(void *buf, size_t size) {
-        if (size >= sizeof(T)) {
+        if (size >= sizeof(_value)) {
             _value = *(T *)buf;
         }
-        return sizeof(T);
+        return sizeof(_value);
     }
 
     /// Value getter
@@ -516,6 +518,12 @@ public:
     ///
     void set(T v) {
         _value = v;
+    }
+
+    /// Combined set and save
+    void set_and_save(T v) {
+        set(v);
+        save();
     }
 
     /// Conversion to T returns a reference to the value.
