@@ -359,7 +359,7 @@ float COGY							= 1; 		// Course overground Y axis
 // Performance monitoring
 // ----------------------
 long 	perf_mon_timer;
-//float 	imu_health; 							// Metric based on accel gain deweighting
+float 	imu_health; 							// Metric based on accel gain deweighting
 int 	G_Dt_max;								// Max main loop cycle time in milliseconds
 byte 	gyro_sat_count;
 byte 	adc_constraints;
