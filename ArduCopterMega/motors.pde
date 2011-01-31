@@ -214,6 +214,8 @@ set_servos_4()
 			//Serial.print("-");
 		}
 		
+		reset_I();
+		
 		if(rc_3.control_in > 0){
 			// we have pushed up the throttle
 			// remove safety

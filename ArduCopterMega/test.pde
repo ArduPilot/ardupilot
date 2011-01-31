@@ -361,8 +361,8 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 					next_WP.lng,
 					nav_lat,
 					nav_lon,
-					nav_pitch,
 					nav_roll,
+					nav_pitch,
 					pitch_max);
 					
 				print_motor_out();
