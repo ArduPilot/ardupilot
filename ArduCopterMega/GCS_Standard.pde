@@ -251,6 +251,7 @@ void send_message(byte id, long param) {
 		break;
 		
 		case MSG_PID:								// PID Gains message
+		/*
 		mess_buffer[0] 	= 0x0f;
 		ck 				= 15;
 		mess_buffer[3] 	= param & 0xff;				// PID set #
@@ -272,6 +273,7 @@ void send_message(byte id, long param) {
 		tempint 		= integrator_max[param];				 	// Integrator max value
 		mess_buffer[16] = tempint & 0xff;
 		mess_buffer[17] = (tempint >> 8) & 0xff;
+		*/
 		break;
 	}
 	

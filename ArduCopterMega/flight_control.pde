@@ -7,8 +7,7 @@ throttle control
 // -----------
 void output_manual_throttle()
 {
-	rc_3.servo_out = rc_3.control_in;
-	rc_3.servo_out = (float)rc_3.servo_out * angle_boost();
+	rc_3.servo_out = (float)rc_3.control_in * angle_boost();
 }
 
 // Autopilot
@@ -16,28 +15,25 @@ void output_manual_throttle()
 void output_auto_throttle()
 {
 	rc_3.servo_out 	= (float)nav_throttle * angle_boost();
+	// make sure we never send a 0 throttle that will cut the motors
 	rc_3.servo_out = max(rc_3.servo_out, 1);
 }
 
 void calc_nav_throttle()
-{
-	long t_out;
-	
+{	
 	if(altitude_sensor == BARO) {
-		t_out = pid_baro_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
+		nav_throttle = pid_baro_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
 	
 		// limit output of throttle control
-		t_out = throttle_cruise + constrain(t_out, -50, 100);
+		nav_throttle = throttle_cruise + constrain(nav_throttle, -50, 100);
 
 	} else {
 		// SONAR
-		t_out = pid_sonar_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
+		nav_throttle = pid_sonar_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
 	
 		// limit output of throttle control
-		t_out = throttle_cruise + constrain(t_out, -60, 100);
+		nav_throttle = throttle_cruise + constrain(nav_throttle, -60, 100);
 	}
-	
-	nav_throttle = (float)t_out * angle_boost();
 }
 
 float angle_boost()
@@ -48,8 +44,8 @@ float angle_boost()
 	temp = 1.0 + (temp / 1.5);
 	
 	// limit the boost value
-	if(temp > 1.3) 
-		temp = 1.3;
+	if(temp > 1.4) 
+		temp = 1.4;
 	return temp;
 }
 
