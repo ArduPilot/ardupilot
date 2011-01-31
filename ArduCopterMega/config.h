@@ -363,7 +363,7 @@
 // Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P					1.2
+# define NAV_P					2.4
 #endif
 #ifndef NAV_I
 # define NAV_I					0.01
@@ -386,7 +386,7 @@
 # define THROTTLE_BARO_I		0.04
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.1
+# define THROTTLE_BARO_D		0.15
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		100

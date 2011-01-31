@@ -649,11 +649,15 @@ void slow_loop()
 		case 0:
 			slow_loopCounter++;
 			superslow_loopCounter++;
-			if(superslow_loopCounter >=15) {
+			if(superslow_loopCounter >= 15) {
 				// keep track of what page is in use in the log
 				// *** We need to come up with a better scheme to handle this...
 				eeprom_write_word((uint16_t *) EE_LAST_LOG_PAGE, DataFlash.GetWritePage());
 				superslow_loopCounter = 0;
+
+				// save current data to the flash
+				if (log_bitmask & MASK_LOG_CUR)
+					Log_Write_Current();
 			}
 			break;
 			
@@ -682,9 +686,6 @@ void slow_loop()
 			slow_loopCounter = 0;
 			update_events();
 			
-			// save current data to the flash
-			if (log_bitmask & MASK_LOG_CUR)
-				Log_Write_Current();
 
 			break;
 
@@ -868,17 +869,16 @@ void update_current_flight_mode(void)
 						dTnav = 200;
 					}
 					
-					next_WP.lat = home.lat + rc_1.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
-					next_WP.lng = home.lng - rc_2.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
+					next_WP.lat = home.lat + rc_2.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
+					next_WP.lng = home.lng + rc_1.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
 				}
 
-				// Yaw control
-				// -----------
-				output_manual_yaw();
-				
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 
+				// Yaw control
+				output_manual_yaw();
+				
 				// apply throttle control
 				output_manual_throttle();
 
@@ -897,6 +897,7 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 				
+				//if(rc_3.control_in)
 				// get desired height from the throttle
 				next_WP.alt 	= home.alt + (rc_3.control_in * 4); // 0 - 1000 (40 meters)
 				
