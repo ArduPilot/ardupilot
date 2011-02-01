@@ -36,12 +36,20 @@ void init_rc_out()
 	APM_RC.OutputCh(CH_3, 	rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	rc_3.radio_min);
 
+	APM_RC.OutputCh(CH_7,     rc_3.radio_min);
+    APM_RC.OutputCh(CH_8,     rc_3.radio_min);
+
 	APM_RC.Init();		// APM Radio initialization
 
 	APM_RC.OutputCh(CH_1, 	rc_3.radio_min);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, 	rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	rc_3.radio_min);
+	
+	
+	APM_RC.OutputCh(CH_7,     rc_3.radio_min);
+    APM_RC.OutputCh(CH_8,     rc_3.radio_min);
+
 }
 
 void read_radio()
