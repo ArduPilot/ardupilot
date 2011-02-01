@@ -30,6 +30,9 @@ AP_GPS_MTK::init(void)
 
 	// set 4Hz update rate
 	_port->print(MTK_OUTPUT_4HZ);
+	
+	// set initial epoch code
+	_epoch = TIME_OF_DAY;
 }
 
 // Process bytes available from the stream
@@ -132,8 +135,14 @@ restart:
 			ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
 			num_sats		= _buffer.msg.satellites;
 			
-			// XXX docs say this is UTC, but our clients expect msToW
-			time			= _swapl(&_buffer.msg.utc_time);
+			// time from gps is UTC, but convert here to msToD
+			long time_utc	= _swapl(&_buffer.msg.utc_time);
+			long temp = (time_utc/10000000);
+			time_utc -= temp*10000000;
+			time = temp * 3600000;
+			temp = (time_utc/100000);
+			time_utc -= temp*100000;
+			time += temp * 60000 + time_utc;
 
 			parsed = true;
 		}

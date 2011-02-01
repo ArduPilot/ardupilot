@@ -43,6 +43,22 @@ public:
 	///
 	GPS_Status		status(void) { return _status; }
 
+	/// GPS time epoch codes
+	///
+	enum	GPS_Time_Epoch {
+			TIME_OF_DAY 	= 0,		///< 
+			TIME_OF_WEEK 	= 1,		///< Ublox
+			TIME_OF_YEAR 	= 2,		///< MTK, NMEA
+			UNIX_EPOCH	 	= 3			///< If available
+	};									///< SIFR?  
+	
+
+	/// Query GPS time epoch
+	///
+	/// @returns			Current GPS time epoch code
+	///
+	GPS_Time_Epoch		epoch(void) { return _epoch; }
+
 	/// Startup initialisation.
 	///
 	/// This routine performs any one-off initialisation required to set the
@@ -53,7 +69,7 @@ public:
 	virtual void	init(void) = 0;
 
 	// Properties
-	long	time;			///< GPS time (FORMAT TBD)
+	long	time;			///< GPS time (milliseconds from epoch)
 	long	date;			///< GPS date (FORMAT TBD)
 	long	latitude;		///< latitude in degrees * 10,000,000
 	long	longitude;		///< longitude in degrees * 10,000,000
@@ -122,6 +138,9 @@ protected:
 	///       printf vs. the potential benefits
 	///
 	void			_error(const char *msg);
+	
+	/// Time epoch code for the gps in use
+	GPS_Time_Epoch				_epoch;
 
 private:
 
@@ -139,6 +158,7 @@ private:
 
 	/// Our current status
 	GPS_Status					_status;
+	
 };
 
 inline long
