@@ -31,6 +31,11 @@ AP_GPS_MTK16::init(void)
 
 	// set 4Hz update rate
 	_port->print(MTK_OUTPUT_4HZ);
+	
+	// set initial epoch code
+	_epoch = TIME_OF_DAY;
+	_time_offset = 0;
+	_offset_calculated = false;
 }
 
 // Process bytes available from the stream
@@ -47,9 +52,9 @@ AP_GPS_MTK16::init(void)
 bool
 AP_GPS_MTK16::read(void)
 {
-	uint8_t data;
-	int 	numc;
-	bool	parsed = false;
+	uint8_t 	data;
+	int 		numc;
+	bool		parsed = false;
 
 	numc = _port->available();
 	for (int i = 0; i < numc; i++) {	// Process bytes received
@@ -122,12 +127,34 @@ restart:
 			ground_course	= _buffer.msg.ground_course;
 			num_sats		= _buffer.msg.satellites;
 			hdop			= _buffer.msg.hdop;
-			
-			// XXX docs say this is UTC, but our clients expect msToW
-			time			= _swapl(&_buffer.msg.utc_time);
+			date			= _buffer.msg.utc_date;
+				
+			// time from gps is UTC, but convert here to msToD
+			long time_utc	= _buffer.msg.utc_time;				
+			long temp = (time_utc/10000000);
+			time_utc -= temp*10000000;
+			time = temp * 3600000;
+			temp = (time_utc/100000);
+			time_utc -= temp*100000;
+			time += temp * 60000 + time_utc;
 
 			parsed = true;
+			
+			/*	Waiting on clarification of MAVLink protocol!
+			if(!_offset_calculated && parsed) {
+				long tempd1 = date;
+				long day 	= tempd1/10000;
+				tempd1 		-= day * 10000;
+				long month	= tempd1/100;
+				long year	= tempd1 - month * 100;
+				_time_offset = _calc_epoch_offset(day, month, year);
+				_epoch = UNIX_EPOCH;
+				_offset_calculated = TRUE;
+			}
+			*/
+			
 		}
 	} 
 	return parsed;
 }
+

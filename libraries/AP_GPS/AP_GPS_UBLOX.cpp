@@ -27,6 +27,8 @@ AP_GPS_UBLOX::init(void)
 	// right reporting configuration.
 
 	_port->flush();
+	
+	_epoch = TIME_OF_WEEK;
 }
 
 // Process bytes available from the stream

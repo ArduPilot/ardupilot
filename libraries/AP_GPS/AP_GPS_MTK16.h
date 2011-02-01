@@ -55,6 +55,10 @@ private:
 	// State machine state
 	uint8_t 	_step;
 	uint8_t		_payload_counter;
+	
+	// Time from UNIX Epoch offset
+	long		_time_offset;
+	bool		_offset_calculated;
 
 	// Receive buffer
 	union {
