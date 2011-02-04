@@ -14,6 +14,7 @@ namespace ArducopterConfigurator.Views
         public TransmitterChannelsView()
         {
             InitializeComponent();
+            BindButtons();
         }
 
         public override void SetDataContext(TransmitterChannelsVm model)

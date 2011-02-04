@@ -13,7 +13,7 @@ namespace ArducopterConfigurator
     /// </remarks>
     public abstract class MonitorVm : NotifyProperyChangedBase, IPresentationModel
     {
-        private IComms _sp;
+        private readonly IComms _sp;
         protected bool isActive;
         protected string[] PropsInUpdateOrder;
 
@@ -92,18 +92,24 @@ namespace ArducopterConfigurator
             
             if (PropsInUpdateOrder.Length!=strs.Length)
             {
-                Console.WriteLine("Processing update with only " + strs.Length 
+                Console.WriteLine("Processing update with " + strs.Length 
                     + " values, but have " + PropsInUpdateOrder.Length
                     + " properties to populate. Ignoring this update");
                 return;
             }
-            
+           
             for (int i = 0; i < PropsInUpdateOrder.Length; i++)
             {
                 var prop = this.GetType().GetProperty(PropsInUpdateOrder[i]);
                 var s = strs[i];
                 object value = null;
 
+                if (prop == null)
+                {
+                    Console.WriteLine("Trying to set non existant property: " + PropsInUpdateOrder[i]);
+                    break;
+                }
+                
                 if (prop.PropertyType == typeof(float))
                 {
                     float val;

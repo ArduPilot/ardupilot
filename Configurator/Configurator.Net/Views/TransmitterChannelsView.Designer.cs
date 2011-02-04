@@ -48,6 +48,7 @@
             this.linearIndicatorControl4 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl5 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -171,6 +172,8 @@
             this.linearIndicatorControl3.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl3.BarDividersCount = 20;
             this.linearIndicatorControl3.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "ThrottleMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "ThrottleMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Throttle", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl3.IsVertical = true;
             this.linearIndicatorControl3.Location = new System.Drawing.Point(16, 30);
@@ -193,6 +196,8 @@
             this.linearIndicatorControl1.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl1.BarDividersCount = 20;
             this.linearIndicatorControl1.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl1.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "PitchMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl1.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "PitchMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Pitch", true));
             this.linearIndicatorControl1.IsVertical = true;
             this.linearIndicatorControl1.Location = new System.Drawing.Point(67, 30);
@@ -205,7 +210,7 @@
             this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 111);
             this.linearIndicatorControl1.TabIndex = 44;
             this.linearIndicatorControl1.Value = 1100;
-            this.linearIndicatorControl1.WatermarkLineColor = System.Drawing.Color.DarkGray;
+            this.linearIndicatorControl1.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl2
             // 
@@ -215,6 +220,8 @@
             this.linearIndicatorControl2.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl2.BarDividersCount = 20;
             this.linearIndicatorControl2.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "ModeMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "ModeMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Mode", true));
             this.linearIndicatorControl2.IsVertical = true;
             this.linearIndicatorControl2.Location = new System.Drawing.Point(155, 131);
@@ -227,7 +234,7 @@
             this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl2.TabIndex = 45;
             this.linearIndicatorControl2.Value = 1050;
-            this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.DarkGray;
+            this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl4
             // 
@@ -237,6 +244,8 @@
             this.linearIndicatorControl4.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl4.BarDividersCount = 20;
             this.linearIndicatorControl4.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "AuxMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "AuxMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Aux", true));
             this.linearIndicatorControl4.IsVertical = true;
             this.linearIndicatorControl4.Location = new System.Drawing.Point(206, 131);
@@ -249,7 +258,7 @@
             this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 73);
             this.linearIndicatorControl4.TabIndex = 46;
             this.linearIndicatorControl4.Value = 1900;
-            this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.DarkGray;
+            this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl5
             // 
@@ -259,6 +268,8 @@
             this.linearIndicatorControl5.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl5.BarDividersCount = 20;
             this.linearIndicatorControl5.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "RollMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "RollMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Roll", true));
             this.linearIndicatorControl5.IsVertical = false;
             this.linearIndicatorControl5.Location = new System.Drawing.Point(174, 80);
@@ -271,7 +282,7 @@
             this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl5.TabIndex = 47;
             this.linearIndicatorControl5.Value = 1300;
-            this.linearIndicatorControl5.WatermarkLineColor = System.Drawing.Color.DarkGray;
+            this.linearIndicatorControl5.WatermarkLineColor = System.Drawing.Color.Red;
             // 
             // linearIndicatorControl6
             // 
@@ -281,6 +292,8 @@
             this.linearIndicatorControl6.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
             this.linearIndicatorControl6.BarDividersCount = 20;
             this.linearIndicatorControl6.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("MaxWaterMark", this.TransmitterChannelsBindingSource, "YawMax", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "YawMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Yaw", true));
             this.linearIndicatorControl6.IsVertical = false;
             this.linearIndicatorControl6.Location = new System.Drawing.Point(174, 30);
@@ -293,12 +306,23 @@
             this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 20);
             this.linearIndicatorControl6.TabIndex = 48;
             this.linearIndicatorControl6.Value = 1200;
-            this.linearIndicatorControl6.WatermarkLineColor = System.Drawing.Color.DarkGray;
+            this.linearIndicatorControl6.WatermarkLineColor = System.Drawing.Color.Red;
+            // 
+            // button1
+            // 
+            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.TransmitterChannelsBindingSource, "ResetCommand", true));
+            this.button1.Location = new System.Drawing.Point(7, 174);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 49;
+            this.button1.Text = "Reset";
+            this.button1.UseVisualStyleBackColor = true;
             // 
             // TransmitterChannelsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.linearIndicatorControl6);
             this.Controls.Add(this.linearIndicatorControl5);
             this.Controls.Add(this.linearIndicatorControl4);
@@ -346,5 +370,6 @@
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl4;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl5;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
+        private System.Windows.Forms.Button button1;
     }
 }

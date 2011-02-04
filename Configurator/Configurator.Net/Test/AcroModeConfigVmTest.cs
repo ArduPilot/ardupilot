@@ -14,6 +14,7 @@ namespace ArducopterConfiguratorTest
             setCommand = "O";
 
             _mockComms = new MockComms();
+            _mockComms.Connect();
             _vm = new AcroModeConfigVm(_mockComms);
         }
 
