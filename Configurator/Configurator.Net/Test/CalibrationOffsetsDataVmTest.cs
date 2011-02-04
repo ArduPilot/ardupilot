@@ -15,6 +15,7 @@ namespace ArducopterConfiguratorTest
             setCommand = "I";
 
             _mockComms = new MockComms();
+            _mockComms.Connect();
             _vm = new CalibrationOffsetsDataVm(_mockComms);
         }
 

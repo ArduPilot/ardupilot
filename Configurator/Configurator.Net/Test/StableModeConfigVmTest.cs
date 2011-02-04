@@ -15,6 +15,7 @@ namespace ArducopterConfiguratorTest
             setCommand = "A";
 
             _mockComms = new MockComms();
+            _mockComms.Connect();
             _vm = new StableModeConfigVm(_mockComms);
         }
 

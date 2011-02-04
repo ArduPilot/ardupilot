@@ -15,6 +15,7 @@ namespace ArducopterConfiguratorTest
             setCommand = "E";
 
             _mockComms = new MockComms();
+            _mockComms.Connect();
             _vm = new AltitudeHoldConfigVm(_mockComms);
         }
 
