@@ -107,7 +107,6 @@ set_servos_4()
 			motor_out[CH_4] 	= rc_3.radio_out - rc_2.pwm_out;
 			
 			// servo Yaw
-			//motor_out[CH_3] 	= rc_4.radio_out;
 			APM_RC.OutputCh(CH_7, rc_4.radio_out);
 
 			
@@ -140,7 +139,8 @@ set_servos_4()
 			
 		}
 		
-
+		
+		// limit output so motors don't stop
 		motor_out[CH_1]		= constrain(motor_out[CH_1], 	out_min, rc_3.radio_max);
 		motor_out[CH_2]		= constrain(motor_out[CH_2], 	out_min, rc_3.radio_max);
 		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, rc_3.radio_max);
@@ -211,12 +211,7 @@ set_servos_4()
 		}
 		
 	}else{
-		num++;
-		if (num > 10){
-			num = 0;
-			//Serial.print("-");
-		}
-		
+		// our motor is unarmed, we're on the ground
 		reset_I();
 		
 		if(rc_3.control_in > 0){
