@@ -15,7 +15,7 @@ void init_rc_in()
 
 	// for kP values
 	//rc_6.set_range(200,800);
-	rc_6.set_range(0,4000);
+	rc_6.set_range(0,1000);
 
 	// for camera angles
 	//rc_6.set_angle(4500);
