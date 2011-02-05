@@ -61,94 +61,95 @@ set_servos_4()
 		
 		if(frame_type == PLUS_FRAME){
 
-			motor_out[RIGHT]	= rc_3.radio_out - rc_1.pwm_out;
-			motor_out[LEFT]		= rc_3.radio_out + rc_1.pwm_out;
-			motor_out[FRONT]	= rc_3.radio_out + rc_2.pwm_out;
-			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
+			motor_out[CH_1]		= rc_3.radio_out - rc_1.pwm_out;
+			motor_out[CH_2]		= rc_3.radio_out + rc_1.pwm_out;
+			motor_out[CH_3]		= rc_3.radio_out + rc_2.pwm_out;
+			motor_out[CH_4] 	= rc_3.radio_out - rc_2.pwm_out;
 			
-			motor_out[RIGHT]	+=  rc_4.pwm_out;
-			motor_out[LEFT]		+=  rc_4.pwm_out;
-			motor_out[FRONT]	-=  rc_4.pwm_out;
-			motor_out[BACK] 	-=  rc_4.pwm_out;
+			motor_out[CH_1]		+=  rc_4.pwm_out; 	// CCW
+			motor_out[CH_2]		+=  rc_4.pwm_out; 	// CCW
+			motor_out[CH_3]		-=  rc_4.pwm_out; 	// CW
+			motor_out[CH_4] 	-=  rc_4.pwm_out; 	// CW
 			
 			
 		}else if(frame_type == X_FRAME){
 		
-			int roll_out 	= rc_1.pwm_out / 2;
-			int pitch_out 	= rc_2.pwm_out / 2;
+			int roll_out 	 	= rc_1.pwm_out / 2;
+			int pitch_out 	 	= rc_2.pwm_out / 2;
 
-			motor_out[FRONT]	= rc_3.radio_out + roll_out + pitch_out;
-			motor_out[LEFT]		= rc_3.radio_out + roll_out - pitch_out;
+			motor_out[CH_3]	 	= rc_3.radio_out + roll_out + pitch_out;
+			motor_out[CH_2]	 	= rc_3.radio_out + roll_out - pitch_out;
 
-			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
-			motor_out[BACK] 	= rc_3.radio_out - roll_out - pitch_out;
-			//Serial.printf("\tb4: %d %d %d %d ", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);		
+			motor_out[CH_1]		= rc_3.radio_out - roll_out + pitch_out;
+			motor_out[CH_4] 	= rc_3.radio_out - roll_out - pitch_out;
 			
-			motor_out[RIGHT]	+=  rc_4.pwm_out;
-			motor_out[LEFT]		+=  rc_4.pwm_out;
-			motor_out[FRONT]	-=  rc_4.pwm_out;
-			motor_out[BACK] 	-=  rc_4.pwm_out;
-			//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[RIGHT], motor_out[LEFT], motor_out[FRONT], motor_out[BACK]);
+			//Serial.printf("\tb4: %d %d %d %d ", motor_out[CH_1], motor_out[CH_2], motor_out[CH_3], motor_out[CH_4]);		
+			
+			motor_out[CH_1]		+= rc_4.pwm_out;	// CCW
+			motor_out[CH_2]		+= rc_4.pwm_out;	// CCW
+			motor_out[CH_3]		-= rc_4.pwm_out;	// CW
+			motor_out[CH_4] 	-= rc_4.pwm_out;	// CW
+			
+			//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[CH_1], motor_out[CH_2], motor_out[CH_3], motor_out[CH_4]);
 				
 		}else if(frame_type == TRI_FRAME){
 
 			// Tri-copter power distribution
 			
-			int roll_out 	= (float)rc_1.pwm_out * .866;
-			int pitch_out 	= rc_2.pwm_out / 2;
+			int roll_out 		= (float)rc_1.pwm_out * .866;
+			int pitch_out 		= rc_2.pwm_out / 2;
 			
 			// front two motors
-			motor_out[LEFT]		= rc_3.radio_out + roll_out + pitch_out;
-			motor_out[RIGHT]	= rc_3.radio_out - roll_out + pitch_out;
+			motor_out[CH_2]		= rc_3.radio_out + roll_out + pitch_out;
+			motor_out[CH_1]		= rc_3.radio_out - roll_out + pitch_out;
 			
 			// rear motors
-			motor_out[BACK] 	= rc_3.radio_out - rc_2.pwm_out;
+			motor_out[CH_4] 	= rc_3.radio_out - rc_2.pwm_out;
 			
 			// servo Yaw
-			//motor_out[FRONT] 	= rc_4.radio_out;
-			APM_RC.OutputCh(CH_7,rc_4.radio_out);
+			//motor_out[CH_3] 	= rc_4.radio_out;
+			APM_RC.OutputCh(CH_7, rc_4.radio_out);
 
 			
 		}else if (frame_type == HEXA_FRAME) {
 
 			int roll_out 		= (float)rc_1.pwm_out * .866;
 			int pitch_out 		= rc_2.pwm_out / 2;
-			
-			motor_out[FRONT]		= rc_3.radio_out + roll_out + pitch_out;  // CCW
-            motor_out[RIGHTFRONT]   = rc_3.radio_out - roll_out + pitch_out;  // CW
-			motor_out[LEFT]			= rc_3.radio_out + rc_1.pwm_out;          // CW
-			motor_out[RIGHT]		= rc_3.radio_out - rc_1.pwm_out;          // CCW
-			motor_out[LEFTBACK]     = rc_3.radio_out + roll_out - pitch_out;  // CW
-			motor_out[BACK] 		= rc_3.radio_out - roll_out - pitch_out;  // CCW
 
-			motor_out[FRONT]		+= rc_4.pwm_out;	// CCW
-            motor_out[RIGHTFRONT]   -= rc_4.pwm_out;	// CW
-			motor_out[LEFT]			-= rc_4.pwm_out;	// CW
-			motor_out[RIGHT]		+= rc_4.pwm_out;	// CCW
-			motor_out[LEFTBACK]     += rc_4.pwm_out;  	// CW
-			motor_out[BACK] 		-= rc_4.pwm_out;	// CCW
+			//left side			
+			motor_out[CH_2]		= rc_3.radio_out + rc_1.pwm_out;          // CCW
+			motor_out[CH_3]		= rc_3.radio_out + roll_out + pitch_out;  // CW
+			motor_out[CH_8]     = rc_3.radio_out + roll_out - pitch_out;  // CW
+
+			//right side			
+			motor_out[CH_1]		= rc_3.radio_out - rc_1.pwm_out;          // CW
+            motor_out[CH_7] 	= rc_3.radio_out - roll_out + pitch_out;  // CCW
+			motor_out[CH_4] 	= rc_3.radio_out - roll_out - pitch_out;  // CCW
+
+            motor_out[CH_7]		+= rc_4.pwm_out;	// CCW
+			motor_out[CH_2]		+= rc_4.pwm_out;	// CCW
+			motor_out[CH_4] 	+= rc_4.pwm_out;	// CCW
+
+			motor_out[CH_3]		-= rc_4.pwm_out;	// CW
+			motor_out[CH_1]		-= rc_4.pwm_out;	// CW
+			motor_out[CH_8]     -= rc_4.pwm_out;  	// CW
 			
-			
-			
-			/*
-			if(counteri == 5) {
-				Serial.printf(" %d  %d \n%d    %d        %d   %d \n %d  %d \n\n", motor_out[FRONT], motor_out[RIGHTFRONT], motor_out[LEFT], motor_out[RIGHT], roll_out, pitch_out, motor_out[LEFTBACK], motor_out[BACK]);
-				counteri = 0;
-			}
-			counteri++;		
-			*/
-                } else {
+    	} else {
 		
 			Serial.print("frame error");
 			
 		}
 		
 
-		motor_out[RIGHT]	= constrain(motor_out[RIGHT], 	out_min, rc_3.radio_max);
-		motor_out[LEFT]		= constrain(motor_out[LEFT], 	out_min, rc_3.radio_max);
-		motor_out[FRONT]	= constrain(motor_out[FRONT], 	out_min, rc_3.radio_max);
-		motor_out[BACK] 	= constrain(motor_out[BACK], 	out_min, rc_3.radio_max);
+		motor_out[CH_1]		= constrain(motor_out[CH_1], 	out_min, rc_3.radio_max);
+		motor_out[CH_2]		= constrain(motor_out[CH_2], 	out_min, rc_3.radio_max);
+		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, rc_3.radio_max);
+		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, rc_3.radio_max);
 				
+		if (frame_type == HEXA_FRAME) {
+			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, rc_3.radio_max);
+			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, rc_3.radio_max);
+		}
 		
 		num++;
 		if (num > 10){
@@ -156,6 +157,8 @@ set_servos_4()
 			//Serial.print("!");
 			//debugging with Channel 6
 			
+			//pid_baro_throttle.kD((float)rc_6.control_in / 1000); //  0 to 1
+
 			/*
 			// ROLL and PITCH 
 			// make sure you init_pids() after changing the kP
@@ -176,17 +179,17 @@ set_servos_4()
 		// Send commands to motors
 		if(rc_3.servo_out > 0){
 		
-			APM_RC.OutputCh(CH_1, motor_out[RIGHT]);
-			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
-			APM_RC.OutputCh(CH_3, motor_out[FRONT]);
-			APM_RC.OutputCh(CH_4, motor_out[BACK]);
+			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
 			// InstantPWM
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
 			if (frame_type == HEXA_FRAME) {
-				APM_RC.OutputCh(CH_7, motor_out[RIGHTFRONT]);
-				APM_RC.OutputCh(CH_8, motor_out[LEFTBACK]);
+				APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+				APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 				APM_RC.Force_Out6_Out7();
 			}
 			
