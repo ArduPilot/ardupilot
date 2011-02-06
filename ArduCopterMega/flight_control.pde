@@ -20,16 +20,19 @@ void output_auto_throttle()
 }
 
 void calc_nav_throttle()
-{	
+{
+	// limit error
+	long error = constrain(altitude_error, -300, 300);
+	
 	if(altitude_sensor == BARO) {
-		nav_throttle = pid_baro_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
+		nav_throttle = pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
 	
 		// limit output of throttle control
 		nav_throttle = throttle_cruise + constrain(nav_throttle, -50, 100);
 
 	} else {
 		// SONAR
-		nav_throttle = pid_sonar_throttle.get_pid(altitude_error, delta_ms_fast_loop, 1.0);
+		nav_throttle = pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
 	
 		// limit output of throttle control
 		nav_throttle = throttle_cruise + constrain(nav_throttle, -60, 100);
