@@ -46,13 +46,13 @@
 #define CH_AUX2 CH_6
 
 // motors
-#define RIGHT 0
-#define LEFT 1
-#define FRONT 2
-#define BACK 3
+#define RIGHT CH_1
+#define LEFT CH_2
+#define FRONT CH_3
+#define BACK CH_4
 
-#define RIGHTFRONT 6
-#define LEFTBACK 7
+#define RIGHTFRONT CH_7
+#define LEFTBACK CH_8
 
 #define MAX_SERVO_OUTPUT 2700
 
