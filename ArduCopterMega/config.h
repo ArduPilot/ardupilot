@@ -355,7 +355,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				21
+# define PITCH_MAX				25
 #endif
 
 
@@ -363,13 +363,13 @@
 // Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P					2.4
+# define NAV_P					1.5
 #endif
 #ifndef NAV_I
-# define NAV_I					0.01
+# define NAV_I					0.00
 #endif
 #ifndef NAV_D
-# define NAV_D					0.005
+# define NAV_D					0.00
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX				250
@@ -386,7 +386,7 @@
 # define THROTTLE_BARO_I		0.04
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.15
+# define THROTTLE_BARO_D		0.45
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		100
