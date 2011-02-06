@@ -388,11 +388,13 @@ byte 			slow_loopCounter;
 byte 			superslow_loopCounter;
 
 unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
+unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
 uint8_t			delta_ms_medium_loop;
 uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
 
 unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
+unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
@@ -535,6 +537,8 @@ void medium_loop()
 			
 			// calc pitch and roll to target
 			// -----------------------------
+			dTnav2 				= millis() - nav2_loopTimer;
+			nav2_loopTimer 		= millis();
 			calc_nav();
 
 			break;
@@ -860,6 +864,7 @@ void update_current_flight_mode(void)
 					fbw_timer = 0;
 
 					if(home_is_set == false){
+						scaleLongDown = 1;
 						// we are not using GPS
 						// reset the location
 						// RTL won't function
@@ -869,8 +874,8 @@ void update_current_flight_mode(void)
 						dTnav = 200;
 					}
 					
-					next_WP.lat = home.lat + rc_2.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
-					next_WP.lng = home.lng + rc_1.control_in / 5; // 4500 / 5 = 900 = 10 meteres 
+					next_WP.lat = home.lat + rc_2.control_in / 2; // 4500 / 2 = 2250 = 25 meteres 
+					next_WP.lng = home.lng + rc_1.control_in / 2; // 4500 / 2 = 900 = 25 meteres 
 				}
 
 				// Output Pitch, Roll, Yaw and Throttle
@@ -1013,4 +1018,6 @@ void read_AHRS(void)
 	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
 	omega 	= dcm.get_gyro();
+	dcm.roll_sensor = 0;
+	dcm.pitch_sensor = 0;
 }
