@@ -763,7 +763,14 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			read_trim_switch();
 			read_barometer();
 
-			//Serial.printf_P(PSTR("Alt: %dm, Raw: %d\n"), pressure_altitude / 100, abs_pressure);   // Someone needs to fix the formatting here for long integers
+			Serial.printf_P(PSTR("AP: %ld,\tAlt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \t out:%d\n"), 
+						abs_pressure,
+						current_loc.alt,
+						next_WP.alt,
+						altitude_error,
+						throttle_cruise,
+						rc_3.servo_out);
+			
 			/*
 			Serial.print("Altitude: ");
 			Serial.print((int)current_loc.alt,DEC);
