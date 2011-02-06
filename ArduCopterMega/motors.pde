@@ -166,14 +166,33 @@ set_servos_4()
 			init_pids();
 			//Serial.print("kP: ");
 			//Serial.println(pid_stabilize_roll.kP(),3);
-			*/
+			//*/
 
 			/*
 			// YAW
 			// make sure you init_pids() after changing the kP
 			pid_yaw.kP((float)rc_6.control_in / 1000);
 			init_pids();
-			*/			
+			//*/
+			
+			/*
+			write_int(motor_out[CH_1]);
+			write_int(motor_out[CH_2]);
+			write_int(motor_out[CH_3]);
+			write_int(motor_out[CH_4]);
+			write_int((int)(dcm.roll_sensor / 100));
+			write_int((int)(dcm.pitch_sensor / 100));
+			write_int((int)(dcm.yaw_sensor / 100));
+			write_int((int)(nav_yaw / 100));
+			
+			write_int((int)nav_lat);
+			write_int((int)nav_lon);
+
+			write_int((int)nav_roll);
+			write_int((int)nav_pitch);
+			
+			flush(10);
+			//*/
 		}
 		
 		// Send commands to motors
