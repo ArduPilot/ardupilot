@@ -217,29 +217,29 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		read_radio();
-		motor_out[LEFT]		= rc_3.radio_min;
-		motor_out[BACK] 	= rc_3.radio_min;
-		motor_out[FRONT]	= rc_3.radio_min;
-		motor_out[RIGHT]	= rc_3.radio_min;
+		motor_out[CH_1]	= rc_3.radio_min;
+		motor_out[CH_2]	= rc_3.radio_min;
+		motor_out[CH_3]	= rc_3.radio_min;
+		motor_out[CH_4] = rc_3.radio_min;
 
 	
 		
 		if(frame_type == PLUS_FRAME){
 			if(rc_1.control_in > 0){
-				motor_out[RIGHT] 	= out_min;
+				motor_out[CH_1] 	= out_min;
 				Serial.println("0");
 				
 			}else if(rc_1.control_in < 0){
-				motor_out[LEFT]		= out_min;
+				motor_out[CH_2]		= out_min;
 				Serial.println("1");
 			}
 			
 			if(rc_2.control_in > 0){
-				motor_out[BACK] 	= out_min;
+				motor_out[CH_4] 	= out_min;
 				Serial.println("3");
 				
 			}else if(rc_2.control_in < 0){
-				motor_out[FRONT]	= out_min;
+				motor_out[CH_3]	= out_min;
 				Serial.println("2");
 			}
 
@@ -247,35 +247,35 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 
 			// lower right
 			if((rc_1.control_in > 0) 		&& (rc_2.control_in > 0)){
-				motor_out[BACK] 	= out_min;
+				motor_out[CH_4] 	= out_min;
 				Serial.println("3");
 			// lower left
 			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in > 0)){
-				motor_out[LEFT]		= out_min;
+				motor_out[CH_2]		= out_min;
 				Serial.println("1");
 
 			// upper left
 			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in < 0)){
-				motor_out[FRONT]	= out_min;
+				motor_out[CH_3]	= out_min;
 				Serial.println("2");
 
 			// upper right
 			}else if((rc_1.control_in > 0) 	&& (rc_2.control_in < 0)){
-				motor_out[RIGHT]	= out_min;
+				motor_out[CH_1]	= out_min;
 				Serial.println("0");
 			}
 			
 		}else if(frame_type == TRI_FRAME){
 
 			if(rc_1.control_in > 0){
-				motor_out[RIGHT] 	= out_min;
+				motor_out[CH_1] 	= out_min;
 				
 			}else if(rc_1.control_in < 0){
-				motor_out[LEFT]		= out_min;
+				motor_out[CH_2]		= out_min;
 			}
 			
 			if(rc_2.control_in > 0){
-				motor_out[BACK] 	= out_min;	
+				motor_out[CH_4] 	= out_min;	
 			}
 
 			if(rc_4.control_in > 0){
@@ -286,7 +286,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 			}
 			
 			rc_4.calc_pwm();
-			motor_out[FRONT] 	= rc_4.radio_out;
+			motor_out[CH_3] 	= rc_4.radio_out;
 		}
 		
 		if(rc_3.control_in > 0){
@@ -296,10 +296,10 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 			if(frame_type != TRI_FRAME)
 				APM_RC.OutputCh(CH_4, rc_3.radio_in);
 		}else{
-			APM_RC.OutputCh(CH_1, motor_out[RIGHT]);
-			APM_RC.OutputCh(CH_2, motor_out[LEFT]);
-			APM_RC.OutputCh(CH_3, motor_out[FRONT]);
-			APM_RC.OutputCh(CH_4, motor_out[BACK]);
+			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
 		}
 		
 		if(Serial.available() > 0){
@@ -323,7 +323,38 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_pid(uint8_t argc, const Menu::arg *argv)
 {
-	default_gains();
+	if (!strcmp_P(argv[1].str, PSTR("default"))) {
+		default_gains();
+	
+	}else if (!strcmp_P(argv[1].str, PSTR("s_kp"))) {
+		pid_stabilize_roll.kP(argv[2].f);
+		pid_stabilize_pitch.kP(argv[2].f);
+		save_EEPROM_PID();
+	
+	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
+		stabilize_dampener = argv[2].f;
+		save_EEPROM_PID();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("y_kp"))) {
+		pid_yaw.kP(argv[2].f);
+		save_EEPROM_PID();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
+		pid_yaw.kD(argv[2].f);
+		save_EEPROM_PID();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("t_kp"))) {
+		pid_baro_throttle.kP(argv[2].f);
+		save_EEPROM_PID();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("t_kd"))) {
+		pid_baro_throttle.kD(argv[2].f);
+		save_EEPROM_PID();
+	}else{
+		default_gains();
+	}
+	
+
 	report_gains();
 }
 
