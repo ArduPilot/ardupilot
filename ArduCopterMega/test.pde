@@ -264,11 +264,10 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			ts_num++;
 			if (ts_num > 10){
 				ts_num = 0;
-				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, Int:%4.4f, "),
+				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, "),
 					(int)(dcm.roll_sensor/100),
 					(int)(dcm.pitch_sensor/100),
-					rc_1.pwm_out,
-					pid_stabilize_roll.get_integrator());
+					rc_1.pwm_out);
 
 				print_motor_out();
 			}
