@@ -23,7 +23,7 @@ B	Checksum byte 2
 # define SendSer		Serial.print
 #endif
 
-byte mess_buffer[54];
+byte mess_buffer[60];
 byte buff_pointer;
 
 // Unions for getting byte values
