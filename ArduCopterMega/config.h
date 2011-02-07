@@ -355,7 +355,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				25
+# define PITCH_MAX				40
 #endif
 
 
@@ -363,7 +363,7 @@
 // Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P					1.5
+# define NAV_P					2.0
 #endif
 #ifndef NAV_I
 # define NAV_I					0.00
