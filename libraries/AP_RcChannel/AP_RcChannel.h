@@ -18,7 +18,7 @@ class AP_RcChannel : public AP_Var_group {
 public:	
 
 	/// Constructor
-	AP_RcChannel(const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
+	AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
 			const float & scale=45.0, const float & center=0.0, 
 			const uint16_t & pwmMin=1200, 
 			const uint16_t & pwmNeutral=1500, const uint16_t & pwmMax=1800,

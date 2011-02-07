@@ -14,7 +14,7 @@
 #include "AP_RcChannel.h"
 #include <AP_Common.h>
 
-AP_RcChannel::AP_RcChannel(const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
+AP_RcChannel::AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
 			const float & scale, const float & center, 
 			const uint16_t & pwmMin, 
 			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
@@ -22,18 +22,17 @@ AP_RcChannel::AP_RcChannel(const prog_char * name, APM_RC_Class & rc, const uint
 			const bool & filter, const bool & reverse) :
 		AP_Var_scope(name),
 		_rc(rc),
-		ch(ch,AP_Var::k_no_address,PSTR("CH"),this),
-		scale(scale,AP_Var::k_no_address,PSTR("SCALE"),this),
-		center(center,AP_Var::k_no_address,PSTR("CNTR"),this),
-		pwmMin(pwmMin,AP_Var::k_no_address,PSTR("PMIN"),this), 
-		pwmMax(pwmMax,AP_Var::k_no_address,PSTR("PMAX"),this),
-		pwmNeutral(pwmNeutral,AP_Var::k_no_address,PSTR("PNTRL"),this),
-		pwmDeadZone(pwmDeadZone,AP_Var::k_no_address,PSTR("PDEAD"),this),
-		filter(filter,AP_Var::k_no_address,PSTR("FLTR"),this),
-		reverse(reverse,AP_Var::k_no_address,PSTR("REV"),this),
+		ch(this,0,ch,PSTR("CH")),
+		scale(this,1,ch,PSTR("SCALE")),
+		center(this,2,ch,PSTR("CENTER")),
+		pwmMin(this,3,pwmMin,PSTR("PMIN")),
+		pwmMax(this,4,pwmMax,PSTR("PMAX")),
+		pwmNeutral(this,5,pwmNeutral,PSTR("PNTRL")),
+		pwmDeadZone(this,6,pwmDeadZone,PSTR("PDEAD")),
+		filter(this,7,filter,PSTR("FLTR")),
+		reverse(this,8,reverse,PSTR("REV")),
 		_pwm(0)
-	{
-	}
+	{ }
 
 
 void AP_RcChannel::readRadio() {

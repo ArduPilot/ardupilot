@@ -40,15 +40,15 @@ public:
     const Vector < AP_Var * > & getOutput() const { return _output; }
 protected:
     const char * _name;
-    Vector< AP_Var * > _input;
-    Vector< AP_Var * > _output;
+    Vector< const AP_Var * > _input;
+    Vector< const AP_Var * > _output;
 };
 
 /// Servo Block
 class ToServo: public Block
 {
 public:
-    ToServo(AP_RcChannel * ch) : _ch(ch)
+    ToServo(AP_RcChannel & ch) : _ch(ch)
     {
     }
     virtual void connect(Block * block)
@@ -59,11 +59,11 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
-            _ch->setPosition(_output[0]);
+            _ch.setPosition(_output[0]);
     }
 private:
     float _position;
-    AP_RcChannel * _ch;
+    AP_RcChannel & _ch;
 };
 
 /// SumGain
@@ -73,30 +73,29 @@ public:
     /// Constructor that allows 1-8 sum gain pairs, more
     /// can be added if necessary
     SumGain(
-        AP_Var * var1,  AP_Var * gain1,
-        AP_Var * var2 = NULL, AP_Var * gain2 = NULL,
-        AP_Var * var3 = NULL, AP_Var * gain3 = NULL,
-        AP_Var * var4 = NULL, AP_Var * gain4 = NULL,
-        AP_Var * var5 = NULL, AP_Var * gain5 = NULL,
-        AP_Var * var6 = NULL, AP_Var * gain6 = NULL,
-        AP_Var * var7 = NULL, AP_Var * gain7 = NULL,
-        AP_Var * var8 = NULL, AP_Var * gain8 = NULL) :
-        _gain()
+            AP_Var & var1 = AP_Float_zero, AP_Var & gain1 = AP_Float_zero,
+            AP_Var & var2 = AP_Float_zero, AP_Var & gain2 = AP_Float_zero,
+            AP_Var & var3 = AP_Float_zero, AP_Var & gain3 = AP_Float_zero,
+            AP_Var & var4 = AP_Float_zero, AP_Var & gain4 = AP_Float_zero,
+            AP_Var & var5 = AP_Float_zero, AP_Var & gain5 = AP_Float_zero,
+            AP_Var & var6 = AP_Float_zero, AP_Var & gain6 = AP_Float_zero,
+            AP_Var & var7 = AP_Float_zero, AP_Var & gain7 = AP_Float_zero,
+            AP_Var & var8 = AP_Float_zero, AP_Var & gain8 = AP_Float_zero) :
+        _input(), _gain()
     {
-        _output.push_back(new AP_Float(0));
-        if (var1 && gain1) add(var1,gain1);
-        if (var2 && gain2) add(var2,gain2);
-        if (var3 && gain3) add(var3,gain3);
-        if (var4 && gain4) add(var4,gain4);
-        if (var5 && gain5) add(var5,gain5);
-        if (var6 && gain6) add(var6,gain6);
-        if (var7 && gain7) add(var7,gain7);
-        if (var8 && gain8) add(var8,gain8);
+        if ( (&var1 == &AP_Float_zero) || (&gain1 == &AP_Float_zero) ) add(var1,gain1);
+        if ( (&var2 == &AP_Float_zero) || (&gain2 == &AP_Float_zero) ) add(var2,gain2);
+        if ( (&var3 == &AP_Float_zero) || (&gain3 == &AP_Float_zero) ) add(var3,gain3);
+        if ( (&var4 == &AP_Float_zero) || (&gain4 == &AP_Float_zero) ) add(var4,gain4);
+        if ( (&var5 == &AP_Float_zero) || (&gain5 == &AP_Float_zero) ) add(var5,gain5);
+        if ( (&var6 == &AP_Float_zero) || (&gain6 == &AP_Float_zero) ) add(var6,gain6);
+        if ( (&var7 == &AP_Float_zero) || (&gain7 == &AP_Float_zero) ) add(var7,gain7);
+        if ( (&var8 == &AP_Float_zero) || (&gain8 == &AP_Float_zero) ) add(var8,gain8);
     }
-    void add(AP_Var * var, AP_Var * gain)
+    void add(AP_Var & var, AP_Var & gain)
     {
-        _input.push_back(var);
-        _gain.push_back(gain);
+        _input.push_back(&var);
+        _gain.push_back(&gain);
     }
     virtual void connect(Block * block)
     {
@@ -117,7 +116,7 @@ private:
 };
 
 /// PID block
-class Pid : public Block
+class Pid : public Block, public AP_Var_group
 {
 public:
     Pid(AP_Var::Key key, const prog_char * name,
@@ -127,7 +126,7 @@ public:
             float iMax = 0.0,
             uint8_t dFcut = 20.0,
             ) :
-        _group(key,name),
+        AP_Var_Group(key,name),
         _kP(&_group,0,kP,P_STR("P")), 
         _kI(&_group,0,kP,P_STR("I")), 
         _kD(&_group,0,kP,P_STR("D")), 
@@ -184,9 +183,9 @@ public:
 	{
 		_rc.push_back(ch);
 	}
-    AP_RcChannel * getRc(int i)
+    AP_RcChannel & getRc(int i)
 	{
-		return _rc[i];
+		return *(_rc[i]);
 	}
     void update()
     {
