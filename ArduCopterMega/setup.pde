@@ -670,35 +670,35 @@ default_gains()
 	// acro, angular rate
 	pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
 	pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
-	pid_acro_rate_roll.kD(ACRO_RATE_ROLL_D);
+	pid_acro_rate_roll.kD(0);
 	pid_acro_rate_roll.imax(ACRO_RATE_ROLL_IMAX * 100);
 	
 	pid_acro_rate_pitch.kP(ACRO_RATE_PITCH_P);
 	pid_acro_rate_pitch.kI(ACRO_RATE_PITCH_I);
-	pid_acro_rate_pitch.kD(ACRO_RATE_PITCH_D);
+	pid_acro_rate_pitch.kD(0);
 	pid_acro_rate_pitch.imax(ACRO_RATE_PITCH_IMAX * 100);
 
 	pid_acro_rate_yaw.kP(ACRO_RATE_YAW_P);
 	pid_acro_rate_yaw.kI(ACRO_RATE_YAW_I);
-	pid_acro_rate_yaw.kD(ACRO_RATE_YAW_D);
+	pid_acro_rate_yaw.kD(0);
 	pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
 
 
 	// stabilize, angle error
 	pid_stabilize_roll.kP(STABILIZE_ROLL_P);
 	pid_stabilize_roll.kI(STABILIZE_ROLL_I);
-	pid_stabilize_roll.kD(STABILIZE_ROLL_D);
+	pid_stabilize_roll.kD(0);
 	pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
 		
 	pid_stabilize_pitch.kP(STABILIZE_PITCH_P);
 	pid_stabilize_pitch.kI(STABILIZE_PITCH_I);
-	pid_stabilize_pitch.kD(STABILIZE_PITCH_D);
+	pid_stabilize_pitch.kD(0);
 	pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
 
 	// YAW hold
 	pid_yaw.kP(YAW_P);
 	pid_yaw.kI(YAW_I);
-	pid_yaw.kD(YAW_D);
+	pid_yaw.kD(0);
 	pid_yaw.imax(YAW_IMAX * 100);
 
 
