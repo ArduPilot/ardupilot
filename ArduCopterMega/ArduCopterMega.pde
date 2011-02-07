@@ -1018,6 +1018,4 @@ void read_AHRS(void)
 	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
 	omega 	= dcm.get_gyro();
-	dcm.roll_sensor = 0;
-	dcm.pitch_sensor = 0;
 }
