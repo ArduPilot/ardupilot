@@ -380,13 +380,13 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		.25
+# define THROTTLE_BARO_P		0.12
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.04
+# define THROTTLE_BARO_I		0.05
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.45
+# define THROTTLE_BARO_D		0.06
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		100
