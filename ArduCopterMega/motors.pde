@@ -158,6 +158,7 @@ set_servos_4()
 			//debugging with Channel 6
 			
 			//pid_baro_throttle.kD((float)rc_6.control_in / 1000); //  0 to 1
+			//pid_baro_throttle.kP((float)rc_6.control_in / 4000); //  0 to .25
 
 			/*
 			// ROLL and PITCH 
@@ -180,6 +181,7 @@ set_servos_4()
 			write_int(motor_out[CH_2]);
 			write_int(motor_out[CH_3]);
 			write_int(motor_out[CH_4]);
+			
 			write_int((int)(dcm.roll_sensor / 100));
 			write_int((int)(dcm.pitch_sensor / 100));
 			write_int((int)(dcm.yaw_sensor / 100));
@@ -190,6 +192,9 @@ set_servos_4()
 
 			write_int((int)nav_roll);
 			write_int((int)nav_pitch);
+
+			write_int((int)current_loc.alt);
+			write_int((int)altitude_error);
 			
 			flush(10);
 			//*/
