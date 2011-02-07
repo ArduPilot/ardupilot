@@ -18,7 +18,7 @@ void read_barometer(void){
 	APM_BMP085.Read(); 	// Get new data from absolute pressure sensor
 	
 	//abs_pressure 			= (abs_pressure + APM_BMP085.Press) >> 1;		// Small filtering
-	abs_pressure 			= ((float)abs_pressure * .9) + ((float)APM_BMP085.Press * .1);		// large filtering
+	abs_pressure 			= ((float)abs_pressure * .7) + ((float)APM_BMP085.Press * .3);		// large filtering
 	scaling 				= (float)abs_pressure_ground / (float)abs_pressure;
 	temp 					= ((float)ground_temperature / 10.f) + 273.15;
 	x 						= log(scaling) * temp * 29271.267f;
