@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Friday, January 14 2011, 17:41 UTC
+ *	 Generated on Tuesday, February 8 2011, 09:45 UTC
  */
 #ifndef PIXHAWK_H
 #define PIXHAWK_H
@@ -54,7 +54,6 @@ enum SLUGS_PID_INDX_IDS
 #include "./mavlink_msg_marker.h"
 #include "./mavlink_msg_raw_aux.h"
 #include "./mavlink_msg_aux_status.h"
-#include "./mavlink_msg_control_status.h"
 #include "./mavlink_msg_watchdog_heartbeat.h"
 #include "./mavlink_msg_watchdog_process_info.h"
 #include "./mavlink_msg_watchdog_process_status.h"

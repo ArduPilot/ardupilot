@@ -26,18 +26,24 @@
      <field name="target_component" type="uint8_t">0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system</field>
      <field name="time" type="uint64_t">Unix timestamp in microseconds</field>
    </message>
+   
+        <message name="SYSTEM_TIME_UTC" id="4">
+    <description>UTC date and time from GPS module</description>
+    <field name="utc_date" type="uint32_t">GPS UTC date ddmmyy</field>
+    <field name="utc_time" type="uint32_t">GPS UTC time hhmmss</field>
+  </message>
+  
+     <message name="ACTION_ACK" id="9">
+	<description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
+     <field name="action" type="uint8_t">The action id</field>
+     <field name="result" type="uint8_t">0: Action DENIED, 1: Action executed</field>
+   </message>
 
    <message name="ACTION" id="10">
 	<description>An action message allows to execute a certain onboard action. These include liftoff, land, storing parameters too EEPROM, shutddown, etc. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
      <field name="target" type="uint8_t">The system executing the action</field>
      <field name="target_component" type="uint8_t">The component executing the action</field>
      <field name="action" type="uint8_t">The action id</field>
-   </message>
-
-   <message name="ACTION_ACK" id="62">
-	<description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
-     <field name="action" type="uint8_t">The action id</field>
-     <field name="result" type="uint8_t">0: Action DENIED, 1: Action executed</field>
    </message>
 
    <message name="SET_MODE" id="11">
@@ -117,7 +123,7 @@
    </message>
 
    <message name="LOCAL_POSITION" id="31">
-     <description>The filtered local position (e.g. fused computer vision and accelerometers).</description>
+     <description>The filtered local position (e.g. fused computer vision and accelerometers). Coordinate frame is right-handed, Z-axis down (aeronautical frame)</description>
      <field name="usec" type="uint64_t">Timestamp (microseconds since unix epoch)</field>
      <field name="x"   type="float">X Position</field>
      <field name="y"   type="float">Y Position</field>
@@ -129,21 +135,20 @@
 
    <message name="GPS_RAW" id="32">
      <description>The global position, as returned by the Global Positioning System (GPS). This is
-NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate.</description>
+NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame)</description>
      <field name="usec" type="uint64_t">Timestamp (microseconds since unix epoch)</field>
      <field name="fix_type" type="uint8_t">0-1: no fix, 2: 2D fix, 3: 3D fix</field>
-     <field name="lat"   type="float">X Position</field>
-     <field name="lon"   type="float">Y Position</field>
-     <field name="alt"   type="float">Z Position in meters</field>
-     <field name="eph"  type="float">Uncertainty in meters of latitude</field>
-     <field name="epv"  type="float">Uncertainty in meters of longitude</field>
-     <field name="v"  type="float">Overall speed</field>
-     <field name="hdg"  type="float">Heading, in FIXME</field>
+     <field name="lat"   type="float">Latitude in degrees</field>
+     <field name="lon"   type="float">Longitude in degrees</field>
+     <field name="alt"   type="float">Altitude in meters</field>
+     <field name="eph"  type="float">GPS HDOP</field>
+     <field name="epv"  type="float">GPS VDOP</field>
+     <field name="v"  type="float">GPS ground speed</field>
+     <field name="hdg"  type="float">Compass heading in degrees, 0..360 degrees</field>
    </message>
 
    <message name="GPS_STATUS" id="27">
-     <description>The global position, as returned by the Global Positioning System (GPS). This is
-NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. This message can contain information for up to 20 satellites.</description>
+     <description>The positioning status, as reported by GPS. This message is intended to display status information about each satellite visible to the receiver. See message GLOBAL_POSITION for the global position estimate. This message can contain information for up to 20 satellites.</description>
      <field name="satellites_visible"   type="uint8_t">Number of satellites visible</field>
      <field name="satellite_prn"   type="array[20]">Global satellite ID</field>
      <field name="satellite_used"   type="array[20]">0: Satellite not used, 1: used for localization</field>
@@ -153,14 +158,14 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
    </message>
 
    <message name="GLOBAL_POSITION" id="33">
-     <description>The filtered global position (e.g. fused GPS and accelerometers).</description>
+     <description>The filtered global position (e.g. fused GPS and accelerometers). Coordinate frame is right-handed, Z-axis up (GPS frame)</description>
      <field name="usec" type="uint64_t">Timestamp (microseconds since unix epoch)</field>
-     <field name="lat"   type="float">X Position</field>
-     <field name="lon"   type="float">Y Position</field>
-     <field name="alt"   type="float">Z Position</field>
-     <field name="vx"  type="float">X Speed</field>
-     <field name="vy"  type="float">Y Speed</field>
-     <field name="vz"  type="float">Z Speed</field>
+     <field name="lat"   type="float">Latitude, in degrees</field>
+     <field name="lon"   type="float">Longitude, in degrees</field>
+     <field name="alt"   type="float">Absolute altitude, in meters</field>
+     <field name="vx"  type="float">X Speed (in Latitude direction, positive: going north)</field>
+     <field name="vy"  type="float">Y Speed (in Longitude direction, positive: going east)</field>
+     <field name="vz"  type="float">Z Speed (in Altitude direction, positive: going up)</field>
    </message>
 
    <message name="SYS_STATUS" id="34">
@@ -170,7 +175,7 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="status" type="uint8_t">System status flag, see MAV_STATUS ENUM</field>
      <field name="load" type="uint16_t">Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000</field>
      <field name="vbat" type="uint16_t">Battery voltage, in millivolts (1 = 1 millivolt)</field>
-     <field name="motor_block" type="uint8_t">Motor block status flag, 0: Motors can be switched on (and could be either off or on), 1: Mechanical motor block switch is on, motors cannot be switched on (and are definitely off)</field>
+     <field name="battery_remaining" type="uint16_t">Remaining battery energy: (0%: 0, 100%: 1000)</field>
      <field name="packet_drop" type="uint16_t">Dropped packets (packets that were corrupted on reception on the MAV)</field>
    </message>
 
@@ -199,6 +204,18 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="chan8_scaled" type="int16_t">RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
      <field name="rssi" type="uint8_t">Receive signal strength indicator, 0: 0%, 255: 100%</field>
    </message>
+   
+     <message name="SERVO_OUTPUT_RAW" id="37">
+    <description>The RAW values of the servo outputs (for RC input from the remote, use the RC_CHANNELS messages). The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%.</description>
+    <field name="servo1_raw" type="uint16_t">Servo output 1 value, in microseconds</field>
+    <field name="servo2_raw" type="uint16_t">Servo output 2 value, in microseconds</field>
+    <field name="servo3_raw" type="uint16_t">Servo output 3 value, in microseconds</field>
+    <field name="servo4_raw" type="uint16_t">Servo output 4 value, in microseconds</field>
+    <field name="servo5_raw" type="uint16_t">Servo output 5 value, in microseconds</field>
+    <field name="servo6_raw" type="uint16_t">Servo output 6 value, in microseconds</field>
+    <field name="servo7_raw" type="uint16_t">Servo output 7 value, in microseconds</field>
+    <field name="servo8_raw" type="uint16_t">Servo output 8 value, in microseconds</field>
+  </message> 
 
    <message name="WAYPOINT" id="39">
      <description>Message encoding a waypoint. This message is emitted to announce
@@ -284,20 +301,6 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="local_yaw" type="float">local yaw that matches the global yaw orientation</field>
    </message>
 
-<!--
-   <message name="SAFETY_SET_ALLOWED_AREA" id="49">
-     Set a safety zone, which is defined by two corners of a cube. This message can be used to tell the MAV which setpoints/waypoints to accept and which to reject. Safety areas are often enforced by national or competition regulations.
-     <field name="target_system" type="uint8_t">System ID</field>
-     <field name="target_component" type="uint8_t">Component ID</field>
-     <field name="type" type="uint8_t">0: global (GPS), 1: local</field>
-     <field name="x1" type="float">x position 1</field>
-     <field name="y1" type="float">y position 1</field>
-     <field name="z1" type="float">z position 1</field>
-     <field name="x2" type="float">x position 2</field>
-     <field name="y2" type="float">y position 2</field>
-     <field name="z2" type="float">z position 2</field>
-   </message>-->
-
    <message name="LOCAL_POSITION_SETPOINT_SET" id="50">
      <description>Set the setpoint for a local position controller. This is the position in local coordinates the MAV should fly to. This message is sent by the path/waypoint planner to the onboard position controller. As some MAVs have a degree of freedom in yaw (e.g. all helicopters/quadrotors), the desired yaw angle is part of the message.</description>
      <field name="target_system" type="uint8_t">System ID</field>
@@ -314,6 +317,41 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="y" type="float">y position 1</field>
      <field name="z" type="float">z position 1</field>
      <field name="yaw" type="float">x position 2</field>
+   </message>
+   
+   <message name="CONTROL_STATUS" id="52">
+     <field name="position_fix" type="uint8_t">Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix </field>
+     <field name="vision_fix" type="uint8_t">Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix </field>
+     <field name="gps_fix" type="uint8_t">GPS position fix: 0: no reception, 1: Minimum 1 satellite, but no position fix, 2: 2D position fix, 3: 3D position fix </field>
+     <field name="ahrs_health" type="uint8_t">Attitude estimation health: 0: poor, 255: excellent</field>
+     <field name="control_att" type="uint8_t">0: Attitude control disabled, 1: enabled</field>
+     <field name="control_pos_xy" type="uint8_t">0: X, Y position control disabled, 1: enabled</field>
+     <field name="control_pos_z" type="uint8_t">0: Z position control disabled, 1: enabled</field>
+     <field name="control_pos_yaw" type="uint8_t">0: Yaw angle control disabled, 1: enabled</field>
+   </message>
+   
+      <message name="SAFETY_SET_ALLOWED_AREA" id="53">
+     <description>Set a safety zone (volume), which is defined by two corners of a cube. This message can be used to tell the MAV which setpoints/waypoints to accept and which to reject. Safety areas are often enforced by national or competition regulations.</description>
+     <field name="target_system" type="uint8_t">System ID</field>
+     <field name="target_component" type="uint8_t">Component ID</field>
+     <field name="frame" type="uint8_t">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
+     <field name="p1x" type="float">x position 1 / Latitude 1</field>
+     <field name="p1y" type="float">y position 1 / Longitude 1</field>
+     <field name="p1z" type="float">z position 1 / Altitude 1</field>
+     <field name="p2x" type="float">x position 2 / Latitude 2</field>
+     <field name="p2y" type="float">y position 2 / Longitude 2</field>
+     <field name="p2z" type="float">z position 2 / Altitude 2</field>
+   </message>
+   
+   <message name="SAFETY_ALLOWED_AREA" id="54">
+     <description>Read out the safety zone the MAV currently assumes.</description>
+     <field name="frame" type="uint8_t">Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.</field>
+     <field name="p1x" type="float">x position 1 / Latitude 1</field>
+     <field name="p1y" type="float">y position 1 / Longitude 1</field>
+     <field name="p1z" type="float">z position 1 / Altitude 1</field>
+     <field name="p2x" type="float">x position 2 / Latitude 2</field>
+     <field name="p2y" type="float">y position 2 / Longitude 2</field>
+     <field name="p2z" type="float">z position 2 / Altitude 2</field>
    </message>
 
    <message name="ATTITUDE_CONTROLLER_OUTPUT" id="60">
@@ -333,6 +371,18 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="z" type="int8_t">Position z: -128: -100%, 127: +100%</field>
      <field name="yaw" type="int8_t">Position yaw: -128: -100%, 127: +100%</field>
    </message>
+   
+      <message name="NAV_CONTROLLER_OUTPUT" id="62">
+     <description>Outputs of the APM navigation controller. The primary use of this message is to check the response and signs
+of the controller before actual flight and to assist with tuning controller parameters </description>
+     <field name="nav_roll" type="float">Current desired roll in degrees</field>
+     <field name="nav_pitch" type="float">Current desired pitch in degrees</field>
+     <field name="nav_bearing" type="int16_t">Current desired heading in degrees</field>
+     <field name="target_bearing" type="int16_t">Bearing to current waypoint/target in degrees</field>
+     <field name="wp_dist" type="uint16_t">Distance to active waypoint in meters</field>
+     <field name="alt_error" type="float">Current altitude error in meters</field>
+     <field name="aspd_error" type="float">Current airspeed error in meters/second</field>
+   </message> 
    
    <message name="POSITION_TARGET" id="63">
    <description>The goal position of the system. This position is the input to any navigation or path planning algorithm and does NOT represent the current controller setpoint.</description>
@@ -368,20 +418,6 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="start_stop" type="uint8_t">1 to start sending, 0 to stop sending.</field>
    </message>
 
-   <message name="REQUEST_DYNAMIC_GYRO_CALIBRATION" id="67">
-     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
-<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
-     <field name="mode" type="float">The current ground-truth rpm</field>
-     <field name="axis" type="uint8_t">The axis to calibrate: 0 roll, 1 pitch, 2 yaw</field>
-      <field name="time" type="uint16_t">The time to average over in ms</field>
-   </message>
-
-   <message name="REQUEST_STATIC_CALIBRATION" id="68">
-     <field name="target_system" type="uint8_t">The system which should auto-calibrate</field>
-<field name="target_component" type="uint8_t">The system component which should auto-calibrate</field>
-      <field name="time" type="uint16_t">The time to average over in ms</field>
-   </message>
-
    <message name="MANUAL_CONTROL" id="69">
      <field name="target" type="uint8_t">The system to be controlled</field>
      <field name="roll" type="float">roll</field>
@@ -394,14 +430,6 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
    </message>
 
-   <message name="DEBUG_VECT" id="70">
-     <field name="name" type="array[10]">Name</field>
-     <field name="usec" type="uint64_t">Timestamp</field>
-     <field name="x" type="float">x</field>
-     <field name="y" type="float">y</field>
-     <field name="z" type="float">z</field>
-   </message>
-
   <message name="GPS_LOCAL_ORIGIN_SET" id="71">
     <description>Once the MAV sets a new GPS-Local correspondence, this message announces </description>
     <field name="latitude" type="int32_t">Latitude (WGS84), expressed as * 1E7</field>
@@ -409,33 +437,38 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
     <field name="altitude" type="int32_t">Altitude(WGS84), expressed as * 1000</field>
   </message>
 
-  <message name="AIRSPEED" id="72">
-    <description>The calculated airspeed </description>
-    <field name="airspeed" type="float">meters/second</field>
-  </message>
-
    <message name="GLOBAL_POSITION_INT" id="73">
      <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up)</description>
      <field name="lat"   type="int32_t">Latitude / X Position, expressed as * 1E7</field>
      <field name="lon"   type="int32_t">Longitude / Y Position, expressed as * 1E7</field>
      <field name="alt"   type="int32_t">Altitude / negative Z Position, expressed as * 1000</field>
-     <field name="vx"  type="int16_t">Ground X Speed, expressed as m/s * 100</field>
-     <field name="vy"  type="int16_t">Ground Y Speed, expressed as m/s * 100</field>
-     <field name="vz"  type="int16_t">Ground Z Speed, expressed as m/s * 100</field>
+     <field name="vx"  type="int16_t">Ground X Speed (Latitude), expressed as m/s * 100</field>
+     <field name="vy"  type="int16_t">Ground Y Speed (Longitude), expressed as m/s * 100</field>
+     <field name="vz"  type="int16_t">Ground Z Speed (Altitude), expressed as m/s * 100</field>
    </message>
 
-
-
-
-
-
+  <message name="VFR_HUD" id="74">
+     <description>Metrics typically displayed on a HUD for fixed wing aircraft</description>
+     <field name="airspeed" type="float">Current airspeed in m/s</field>
+     <field name="groundspeed" type="float">Current ground speed in m/s</field>
+     <field name="heading" type="int16_t">Current heading in degrees</field>
+     <field name="alt" type="uint16_t">Current altitude (MSL), in meters</field>
+     <field name="climb" type="float">Current climb rate in meters/second</field>
+     <field name="throttle" type="uint16_t">Current throttle setting in integer percent, 0 to 100</field>
+   </message> 
    
    <!-- MESSAGE IDs 80 - 250: Space for custom messages in individual projectname_messages.xml files -->
 
 
 
 
-
+  <message name="DEBUG_VECT" id="251">
+     <field name="name" type="char[10]">Name</field>
+     <field name="usec" type="uint64_t">Timestamp</field>
+     <field name="x" type="float">x</field>
+     <field name="y" type="float">y</field>
+     <field name="z" type="float">z</field>
+   </message>
 
 <message name="NAMED_VALUE_FLOAT" id="252">
      <description>Send a key-value pair as float. The use of this message is discouraged for normal packets, but a quite efficient way for testing new messages and getting experimental debug output.</description>
@@ -452,7 +485,7 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
   <message name="STATUSTEXT" id= "254">
     <description>Status text message. These messages are printed in yellow in the COMM console of QGroundControl. WARNING: They consume quite some bandwidth, so use only for important status and error messages. If implemented wisely, these messages are buffered on the MCU and sent only at a limited rate (e.g. 10 Hz).</description>
     <field name="severity" type="uint8_t">Severity of status, 0 = info message, 255 = critical fault</field>
-    <field name="text" type="array[50]">Status text message, without null termination character</field>
+    <field name="text" type="int8_t[50]">Status text message, without null termination character</field>
    </message>
 
 <message name="DEBUG" id="255">
