@@ -20,7 +20,7 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Cla
 			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
 			const uint16_t & pwmDeadZone,
 			const bool & filter, const bool & reverse) :
-		AP_Var_scope(name),
+		AP_Var_group(key,name),
 		_rc(rc),
 		ch(this,0,ch,PSTR("CH")),
 		scale(this,1,ch,PSTR("SCALE")),
