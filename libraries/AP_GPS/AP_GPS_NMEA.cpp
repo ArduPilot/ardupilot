@@ -364,7 +364,7 @@ bool AP_GPS_NMEA::_term_complete()
 			// course and speed
 			//
 		case 17: // Speed (GPRMC)
-			_new_speed = (_parse_decimal() * 514) / 100; 	// knots-> m/sec, approximiates * 0.514
+			_new_speed = (_parse_decimal() * 514) / 1000; 	// knots-> m/sec, approximiates * 0.514
 			break;
 		case 37: // Speed (VTG)
 			_new_speed = _parse_decimal();
