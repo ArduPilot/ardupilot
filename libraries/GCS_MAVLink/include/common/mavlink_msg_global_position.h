@@ -5,12 +5,12 @@
 typedef struct __mavlink_global_position_t 
 {
 	uint64_t usec; ///< Timestamp (microseconds since unix epoch)
-	float lat; ///< X Position
-	float lon; ///< Y Position
-	float alt; ///< Z Position
-	float vx; ///< X Speed
-	float vy; ///< Y Speed
-	float vz; ///< Z Speed
+	float lat; ///< Latitude, in degrees
+	float lon; ///< Longitude, in degrees
+	float alt; ///< Absolute altitude, in meters
+	float vx; ///< X Speed (in Latitude direction, positive: going north)
+	float vy; ///< Y Speed (in Longitude direction, positive: going east)
+	float vz; ///< Z Speed (in Altitude direction, positive: going up)
 
 } mavlink_global_position_t;
 
@@ -23,12 +23,12 @@ typedef struct __mavlink_global_position_t
  * @param msg The MAVLink message to compress the data into
  *
  * @param usec Timestamp (microseconds since unix epoch)
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position
- * @param vx X Speed
- * @param vy Y Speed
- * @param vz Z Speed
+ * @param lat Latitude, in degrees
+ * @param lon Longitude, in degrees
+ * @param alt Absolute altitude, in meters
+ * @param vx X Speed (in Latitude direction, positive: going north)
+ * @param vy Y Speed (in Longitude direction, positive: going east)
+ * @param vz Z Speed (in Altitude direction, positive: going up)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_global_position_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t usec, float lat, float lon, float alt, float vx, float vy, float vz)
@@ -37,12 +37,12 @@ static inline uint16_t mavlink_msg_global_position_pack(uint8_t system_id, uint8
 	msg->msgid = MAVLINK_MSG_ID_GLOBAL_POSITION;
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since unix epoch)
-	i += put_float_by_index(lat, i, msg->payload); // X Position
-	i += put_float_by_index(lon, i, msg->payload); // Y Position
-	i += put_float_by_index(alt, i, msg->payload); // Z Position
-	i += put_float_by_index(vx, i, msg->payload); // X Speed
-	i += put_float_by_index(vy, i, msg->payload); // Y Speed
-	i += put_float_by_index(vz, i, msg->payload); // Z Speed
+	i += put_float_by_index(lat, i, msg->payload); // Latitude, in degrees
+	i += put_float_by_index(lon, i, msg->payload); // Longitude, in degrees
+	i += put_float_by_index(alt, i, msg->payload); // Absolute altitude, in meters
+	i += put_float_by_index(vx, i, msg->payload); // X Speed (in Latitude direction, positive: going north)
+	i += put_float_by_index(vy, i, msg->payload); // Y Speed (in Longitude direction, positive: going east)
+	i += put_float_by_index(vz, i, msg->payload); // Z Speed (in Altitude direction, positive: going up)
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
@@ -54,12 +54,12 @@ static inline uint16_t mavlink_msg_global_position_pack(uint8_t system_id, uint8
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
  * @param usec Timestamp (microseconds since unix epoch)
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position
- * @param vx X Speed
- * @param vy Y Speed
- * @param vz Z Speed
+ * @param lat Latitude, in degrees
+ * @param lon Longitude, in degrees
+ * @param alt Absolute altitude, in meters
+ * @param vx X Speed (in Latitude direction, positive: going north)
+ * @param vy Y Speed (in Longitude direction, positive: going east)
+ * @param vz Z Speed (in Altitude direction, positive: going up)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_global_position_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, float lat, float lon, float alt, float vx, float vy, float vz)
@@ -68,12 +68,12 @@ static inline uint16_t mavlink_msg_global_position_pack_chan(uint8_t system_id, 
 	msg->msgid = MAVLINK_MSG_ID_GLOBAL_POSITION;
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since unix epoch)
-	i += put_float_by_index(lat, i, msg->payload); // X Position
-	i += put_float_by_index(lon, i, msg->payload); // Y Position
-	i += put_float_by_index(alt, i, msg->payload); // Z Position
-	i += put_float_by_index(vx, i, msg->payload); // X Speed
-	i += put_float_by_index(vy, i, msg->payload); // Y Speed
-	i += put_float_by_index(vz, i, msg->payload); // Z Speed
+	i += put_float_by_index(lat, i, msg->payload); // Latitude, in degrees
+	i += put_float_by_index(lon, i, msg->payload); // Longitude, in degrees
+	i += put_float_by_index(alt, i, msg->payload); // Absolute altitude, in meters
+	i += put_float_by_index(vx, i, msg->payload); // X Speed (in Latitude direction, positive: going north)
+	i += put_float_by_index(vy, i, msg->payload); // Y Speed (in Longitude direction, positive: going east)
+	i += put_float_by_index(vz, i, msg->payload); // Z Speed (in Altitude direction, positive: going up)
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
@@ -96,12 +96,12 @@ static inline uint16_t mavlink_msg_global_position_encode(uint8_t system_id, uin
  * @param chan MAVLink channel to send the message
  *
  * @param usec Timestamp (microseconds since unix epoch)
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position
- * @param vx X Speed
- * @param vy Y Speed
- * @param vz Z Speed
+ * @param lat Latitude, in degrees
+ * @param lon Longitude, in degrees
+ * @param alt Absolute altitude, in meters
+ * @param vx X Speed (in Latitude direction, positive: going north)
+ * @param vy Y Speed (in Longitude direction, positive: going east)
+ * @param vz Z Speed (in Altitude direction, positive: going up)
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -137,7 +137,7 @@ static inline uint64_t mavlink_msg_global_position_get_usec(const mavlink_messag
 /**
  * @brief Get field lat from global_position message
  *
- * @return X Position
+ * @return Latitude, in degrees
  */
 static inline float mavlink_msg_global_position_get_lat(const mavlink_message_t* msg)
 {
@@ -152,7 +152,7 @@ static inline float mavlink_msg_global_position_get_lat(const mavlink_message_t*
 /**
  * @brief Get field lon from global_position message
  *
- * @return Y Position
+ * @return Longitude, in degrees
  */
 static inline float mavlink_msg_global_position_get_lon(const mavlink_message_t* msg)
 {
@@ -167,7 +167,7 @@ static inline float mavlink_msg_global_position_get_lon(const mavlink_message_t*
 /**
  * @brief Get field alt from global_position message
  *
- * @return Z Position
+ * @return Absolute altitude, in meters
  */
 static inline float mavlink_msg_global_position_get_alt(const mavlink_message_t* msg)
 {
@@ -182,7 +182,7 @@ static inline float mavlink_msg_global_position_get_alt(const mavlink_message_t*
 /**
  * @brief Get field vx from global_position message
  *
- * @return X Speed
+ * @return X Speed (in Latitude direction, positive: going north)
  */
 static inline float mavlink_msg_global_position_get_vx(const mavlink_message_t* msg)
 {
@@ -197,7 +197,7 @@ static inline float mavlink_msg_global_position_get_vx(const mavlink_message_t* 
 /**
  * @brief Get field vy from global_position message
  *
- * @return Y Speed
+ * @return Y Speed (in Longitude direction, positive: going east)
  */
 static inline float mavlink_msg_global_position_get_vy(const mavlink_message_t* msg)
 {
@@ -212,7 +212,7 @@ static inline float mavlink_msg_global_position_get_vy(const mavlink_message_t* 
 /**
  * @brief Get field vz from global_position message
  *
- * @return Z Speed
+ * @return Z Speed (in Altitude direction, positive: going up)
  */
 static inline float mavlink_msg_global_position_get_vz(const mavlink_message_t* msg)
 {

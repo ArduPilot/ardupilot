@@ -6,13 +6,13 @@ typedef struct __mavlink_gps_raw_t
 {
 	uint64_t usec; ///< Timestamp (microseconds since unix epoch)
 	uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix
-	float lat; ///< X Position
-	float lon; ///< Y Position
-	float alt; ///< Z Position in meters
-	float eph; ///< Uncertainty in meters of latitude
-	float epv; ///< Uncertainty in meters of longitude
-	float v; ///< Overall speed
-	float hdg; ///< Heading, in FIXME
+	float lat; ///< Latitude in degrees
+	float lon; ///< Longitude in degrees
+	float alt; ///< Altitude in meters
+	float eph; ///< GPS HDOP
+	float epv; ///< GPS VDOP
+	float v; ///< GPS ground speed
+	float hdg; ///< Compass heading in degrees, 0..360 degrees
 
 } mavlink_gps_raw_t;
 
@@ -26,13 +26,13 @@ typedef struct __mavlink_gps_raw_t
  *
  * @param usec Timestamp (microseconds since unix epoch)
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position in meters
- * @param eph Uncertainty in meters of latitude
- * @param epv Uncertainty in meters of longitude
- * @param v Overall speed
- * @param hdg Heading, in FIXME
+ * @param lat Latitude in degrees
+ * @param lon Longitude in degrees
+ * @param alt Altitude in meters
+ * @param eph GPS HDOP
+ * @param epv GPS VDOP
+ * @param v GPS ground speed
+ * @param hdg Compass heading in degrees, 0..360 degrees
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_gps_raw_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t usec, uint8_t fix_type, float lat, float lon, float alt, float eph, float epv, float v, float hdg)
@@ -42,13 +42,13 @@ static inline uint16_t mavlink_msg_gps_raw_pack(uint8_t system_id, uint8_t compo
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since unix epoch)
 	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix
-	i += put_float_by_index(lat, i, msg->payload); // X Position
-	i += put_float_by_index(lon, i, msg->payload); // Y Position
-	i += put_float_by_index(alt, i, msg->payload); // Z Position in meters
-	i += put_float_by_index(eph, i, msg->payload); // Uncertainty in meters of latitude
-	i += put_float_by_index(epv, i, msg->payload); // Uncertainty in meters of longitude
-	i += put_float_by_index(v, i, msg->payload); // Overall speed
-	i += put_float_by_index(hdg, i, msg->payload); // Heading, in FIXME
+	i += put_float_by_index(lat, i, msg->payload); // Latitude in degrees
+	i += put_float_by_index(lon, i, msg->payload); // Longitude in degrees
+	i += put_float_by_index(alt, i, msg->payload); // Altitude in meters
+	i += put_float_by_index(eph, i, msg->payload); // GPS HDOP
+	i += put_float_by_index(epv, i, msg->payload); // GPS VDOP
+	i += put_float_by_index(v, i, msg->payload); // GPS ground speed
+	i += put_float_by_index(hdg, i, msg->payload); // Compass heading in degrees, 0..360 degrees
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
@@ -61,13 +61,13 @@ static inline uint16_t mavlink_msg_gps_raw_pack(uint8_t system_id, uint8_t compo
  * @param msg The MAVLink message to compress the data into
  * @param usec Timestamp (microseconds since unix epoch)
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position in meters
- * @param eph Uncertainty in meters of latitude
- * @param epv Uncertainty in meters of longitude
- * @param v Overall speed
- * @param hdg Heading, in FIXME
+ * @param lat Latitude in degrees
+ * @param lon Longitude in degrees
+ * @param alt Altitude in meters
+ * @param eph GPS HDOP
+ * @param epv GPS VDOP
+ * @param v GPS ground speed
+ * @param hdg Compass heading in degrees, 0..360 degrees
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_gps_raw_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t usec, uint8_t fix_type, float lat, float lon, float alt, float eph, float epv, float v, float hdg)
@@ -77,13 +77,13 @@ static inline uint16_t mavlink_msg_gps_raw_pack_chan(uint8_t system_id, uint8_t 
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since unix epoch)
 	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix
-	i += put_float_by_index(lat, i, msg->payload); // X Position
-	i += put_float_by_index(lon, i, msg->payload); // Y Position
-	i += put_float_by_index(alt, i, msg->payload); // Z Position in meters
-	i += put_float_by_index(eph, i, msg->payload); // Uncertainty in meters of latitude
-	i += put_float_by_index(epv, i, msg->payload); // Uncertainty in meters of longitude
-	i += put_float_by_index(v, i, msg->payload); // Overall speed
-	i += put_float_by_index(hdg, i, msg->payload); // Heading, in FIXME
+	i += put_float_by_index(lat, i, msg->payload); // Latitude in degrees
+	i += put_float_by_index(lon, i, msg->payload); // Longitude in degrees
+	i += put_float_by_index(alt, i, msg->payload); // Altitude in meters
+	i += put_float_by_index(eph, i, msg->payload); // GPS HDOP
+	i += put_float_by_index(epv, i, msg->payload); // GPS VDOP
+	i += put_float_by_index(v, i, msg->payload); // GPS ground speed
+	i += put_float_by_index(hdg, i, msg->payload); // Compass heading in degrees, 0..360 degrees
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
@@ -107,13 +107,13 @@ static inline uint16_t mavlink_msg_gps_raw_encode(uint8_t system_id, uint8_t com
  *
  * @param usec Timestamp (microseconds since unix epoch)
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
- * @param lat X Position
- * @param lon Y Position
- * @param alt Z Position in meters
- * @param eph Uncertainty in meters of latitude
- * @param epv Uncertainty in meters of longitude
- * @param v Overall speed
- * @param hdg Heading, in FIXME
+ * @param lat Latitude in degrees
+ * @param lon Longitude in degrees
+ * @param alt Altitude in meters
+ * @param eph GPS HDOP
+ * @param epv GPS VDOP
+ * @param v GPS ground speed
+ * @param hdg Compass heading in degrees, 0..360 degrees
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -159,7 +159,7 @@ static inline uint8_t mavlink_msg_gps_raw_get_fix_type(const mavlink_message_t* 
 /**
  * @brief Get field lat from gps_raw message
  *
- * @return X Position
+ * @return Latitude in degrees
  */
 static inline float mavlink_msg_gps_raw_get_lat(const mavlink_message_t* msg)
 {
@@ -174,7 +174,7 @@ static inline float mavlink_msg_gps_raw_get_lat(const mavlink_message_t* msg)
 /**
  * @brief Get field lon from gps_raw message
  *
- * @return Y Position
+ * @return Longitude in degrees
  */
 static inline float mavlink_msg_gps_raw_get_lon(const mavlink_message_t* msg)
 {
@@ -189,7 +189,7 @@ static inline float mavlink_msg_gps_raw_get_lon(const mavlink_message_t* msg)
 /**
  * @brief Get field alt from gps_raw message
  *
- * @return Z Position in meters
+ * @return Altitude in meters
  */
 static inline float mavlink_msg_gps_raw_get_alt(const mavlink_message_t* msg)
 {
@@ -204,7 +204,7 @@ static inline float mavlink_msg_gps_raw_get_alt(const mavlink_message_t* msg)
 /**
  * @brief Get field eph from gps_raw message
  *
- * @return Uncertainty in meters of latitude
+ * @return GPS HDOP
  */
 static inline float mavlink_msg_gps_raw_get_eph(const mavlink_message_t* msg)
 {
@@ -219,7 +219,7 @@ static inline float mavlink_msg_gps_raw_get_eph(const mavlink_message_t* msg)
 /**
  * @brief Get field epv from gps_raw message
  *
- * @return Uncertainty in meters of longitude
+ * @return GPS VDOP
  */
 static inline float mavlink_msg_gps_raw_get_epv(const mavlink_message_t* msg)
 {
@@ -234,7 +234,7 @@ static inline float mavlink_msg_gps_raw_get_epv(const mavlink_message_t* msg)
 /**
  * @brief Get field v from gps_raw message
  *
- * @return Overall speed
+ * @return GPS ground speed
  */
 static inline float mavlink_msg_gps_raw_get_v(const mavlink_message_t* msg)
 {
@@ -249,7 +249,7 @@ static inline float mavlink_msg_gps_raw_get_v(const mavlink_message_t* msg)
 /**
  * @brief Get field hdg from gps_raw message
  *
- * @return Heading, in FIXME
+ * @return Compass heading in degrees, 0..360 degrees
  */
 static inline float mavlink_msg_gps_raw_get_hdg(const mavlink_message_t* msg)
 {
