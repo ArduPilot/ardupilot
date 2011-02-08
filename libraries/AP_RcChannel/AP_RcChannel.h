@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 #include <APM_RC.h>
-#include <AP_Var.h>
 #include <AP_Common.h>
+#include <AP_Var.h>
 
 /// @class	AP_RcChannel
 /// @brief	Object managing one RC channel

@@ -19,10 +19,14 @@
 #ifndef AP_Controller_H
 #define AP_Controller_H
 
+#include <AP_Common.h>
 #include <AP_Vector.h>
 #include <AP_Var.h>
 #include <AP_RcChannel.h>
 #include <APM_RC.h>
+
+
+#define APVarPtr2Float(var) (*(AP_Meta_class::meta_cast<AP_Float>((AP_Var *)var)))
 
 /// Block
 class Block
@@ -41,7 +45,7 @@ public:
 protected:
     const char * _name;
     Vector< const AP_Var * > _input;
-    Vector< const AP_Var * > _output;
+    Vector< AP_Var * > _output;
 };
 
 /// Servo Block
@@ -59,7 +63,7 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
-            _ch.setPosition(_output[0]);
+            _ch.setPosition(APVarPtr2Float(_output[0]));
     }
 private:
     float _position;
@@ -80,8 +84,7 @@ public:
             AP_Var & var5 = AP_Float_zero, AP_Var & gain5 = AP_Float_zero,
             AP_Var & var6 = AP_Float_zero, AP_Var & gain6 = AP_Float_zero,
             AP_Var & var7 = AP_Float_zero, AP_Var & gain7 = AP_Float_zero,
-            AP_Var & var8 = AP_Float_zero, AP_Var & gain8 = AP_Float_zero) :
-        _input(), _gain()
+            AP_Var & var8 = AP_Float_zero, AP_Var & gain8 = AP_Float_zero)
     {
         if ( (&var1 == &AP_Float_zero) || (&gain1 == &AP_Float_zero) ) add(var1,gain1);
         if ( (&var2 == &AP_Float_zero) || (&gain2 == &AP_Float_zero) ) add(var2,gain2);
@@ -105,10 +108,10 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_output.getSize() < 1) return;
-        _output[0]->setF(0);
+        _output[0]=0;
         for (int i=0;i<_input.getSize();i++)
         {
-            _output[0]->setF( _output[i] + _input[i]*_gain[i]);
+            *_output[0] = APVarPtr2Float(_output[i]) * APVarPtr2Float(_gain[i]) ;
         }
     }
 private:
@@ -124,14 +127,14 @@ public:
             float kI = 0.0,
             float kD = 0.0,
             float iMax = 0.0,
-            uint8_t dFcut = 20.0,
+            uint8_t dFcut = 20.0
             ) :
-        AP_Var_Group(key,name),
-        _kP(&_group,0,kP,P_STR("P")), 
-        _kI(&_group,0,kP,P_STR("I")), 
-        _kD(&_group,0,kP,P_STR("D")), 
-        _iMax(&_group,0,kP,P_STR("IMAX")), 
-        _fCut(&_group,0,kP,P_STR("FCUT")), 
+        AP_Var_group(key,name),
+        _kP(this,1,kP,PSTR("P")), 
+        _kI(this,2,kI,PSTR("I")), 
+        _kD(this,3,kD,PSTR("D")), 
+        _iMax(this,4,iMax,PSTR("IMAX")), 
+        _fCut(this,5,dFcut,PSTR("FCUT"))
     {
         _output.push_back(new AP_Float(0));
     }
@@ -145,28 +148,28 @@ public:
         if (_output.getSize() < 1) return;
 
         // derivative
-        float RC = 1/(2*M_PI*_fCut->get()); // low pass filter
-        _eD =  _eD + ( ((_e - _input[0]))/dt - _eD ) * (dt / (dt + RC));
+        float RC = 1/(2*M_PI*_fCut); // low pass filter
+        _eD =  _eD + ( ((_e - APVarPtr2Float(_input[0])))/dt - _eD ) * (dt / (dt + RC));
 
         // proportional, note must come after derivative
         // because derivatve uses _e as previous value
-        _e = _input[0];
+        _e = APVarPtr2Float(_input[0]);
 
         // integral
         _eI += _e*dt;
 
         // pid sum
-        _output[0]->setF(_kP*_e + _kI*_eI +  _kD*_eD);
+        *_output[0] = _kP*_e + _kI*_eI +  _kD*_eD;
     }
 private:
     float _e; /// input
     float _eI; /// integral of input
     float _eD; /// derivative of input
-    AP_Float * _kP; /// proportional gain
-    AP_Float * _kI; /// integral gain
-    AP_Float * _kD; /// derivative gain
-    AP_Float * _iMax; /// integrator saturation
-    AP_Uint8 * _fCut; /// derivative low-pass cut freq (Hz)
+    AP_Float _kP; /// proportional gain
+    AP_Float _kI; /// integral gain
+    AP_Float _kD; /// derivative gain
+    AP_Float _iMax; /// integrator saturation
+    AP_Uint8 _fCut; /// derivative low-pass cut freq (Hz)
 };
 
 /// Controller class
