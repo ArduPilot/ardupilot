@@ -56,9 +56,10 @@
 AP_Compass_HMC5843::AP_Compass_HMC5843() : orientation(0), declination(0.0)
 {
   // mag x y z offset initialisation
-  offset[0] = 0;
-  offset[1] = 0;
-  offset[2] = 0;
+  
+  _offset.x = 0;
+  _offset.y = 0;
+  _offset.z = 0;
   
   // initialise orientation matrix
   orientation_matrix = ROTATION_NONE;
@@ -70,6 +71,7 @@ bool AP_Compass_HMC5843::init(int initialise_wire_lib)
   unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
   int success = 0;
+  first_call = 1;
   
   if( initialise_wire_lib != 0 )
       Wire.begin();
@@ -143,6 +145,7 @@ void AP_Compass_HMC5843::read()
 {
   int i = 0;
   byte buff[6];
+  Vector3f rot_mag;
  
   Wire.beginTransmission(COMPASS_ADDRESS); 
   Wire.send(0x03);        //sends address to read from
@@ -164,6 +167,15 @@ void AP_Compass_HMC5843::read()
     mag_y = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
     mag_z = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
     last_update = millis();  // record time of update
+	// rotate the magnetometer values depending upon orientation
+	if( orientation == 0 )
+		rot_mag = Vector3f(mag_x,mag_y,mag_z);  
+	else
+		rot_mag = orientation_matrix*Vector3f(mag_x,mag_y,mag_z); 
+	rot_mag = rot_mag + _offset;
+	mag_x = rot_mag.x;
+	mag_y = rot_mag.y;
+	mag_z = rot_mag.z;
   }
 }
 
@@ -175,23 +187,16 @@ void AP_Compass_HMC5843::calculate(float roll, float pitch)
   float sin_roll;
   float cos_pitch;
   float sin_pitch;
-  Vector3f rotmagVec;
   
   cos_roll = cos(roll);  // Optimizacion, se puede sacar esto de la matriz DCM?
-  sin_roll = sin(roll);
+  sin_roll = 1  - (cos_roll * cos_roll);
   cos_pitch = cos(pitch);
-  sin_pitch = sin(pitch);
-  
-  // rotate the magnetometer values depending upon orientation
-  if( orientation == 0 )
-      rotmagVec = Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]);  
-  else
-      rotmagVec = orientation_matrix*Vector3f(mag_x+offset[0],mag_y+offset[1],mag_z+offset[2]); 
+  sin_pitch = 1  - (cos_pitch * cos_pitch);
   
   // Tilt compensated magnetic field X component:
-  headX = rotmagVec.x*cos_pitch+rotmagVec.y*sin_roll*sin_pitch+rotmagVec.z*cos_roll*sin_pitch;
+  headX = mag_x*cos_pitch+mag_y*sin_roll*sin_pitch+mag_z*cos_roll*sin_pitch;
   // Tilt compensated magnetic field Y component:
-  headY = rotmagVec.y*cos_roll-rotmagVec.z*sin_roll;
+  headY = mag_y*cos_roll-mag_z*sin_roll;
   // magnetic heading
   heading = atan2(-headY,headX);
   
@@ -210,6 +215,37 @@ void AP_Compass_HMC5843::calculate(float roll, float pitch)
   heading_y = sin(heading);
 }
 
+
+void AP_Compass_HMC5843::null_offsets(Matrix3f dcm_matrix)
+{
+	// Update our estimate of the offsets in the magnetometer
+	Vector3f	calc(0.0, 0.0, 0.0);
+	Matrix3f	dcm_new_from_last;
+	float		weight;
+	
+	Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);  
+
+	if(!first_call) {
+		dcm_new_from_last = dcm_matrix.transposed() * last_dcm_matrix;		// Note 11/20/2010: transpose() is not working, transposed() is.
+
+		weight = 3.0 - fabs(dcm_new_from_last.a.x) - fabs(dcm_new_from_last.b.y) - fabs(dcm_new_from_last.c.z);
+		if (weight > .001) {
+			calc = mag_body_new + mag_body_last;				// Eq 11 from Bill P's paper
+			calc -= dcm_new_from_last * mag_body_last;
+			calc -= dcm_new_from_last.transposed() * mag_body_new;
+			if(weight > 0.5) weight = 0.5;
+			calc = calc * (weight);
+			_offset -= calc;
+		}
+	
+	} else {
+		first_call = 0;
+	}
+	mag_body_last = mag_body_new - calc;		
+	last_dcm_matrix = dcm_matrix;
+
+}
+
 void AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
 {
     orientation_matrix = rotation_matrix;
@@ -221,9 +257,9 @@ void AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
 
 void AP_Compass_HMC5843::set_offsets(int x, int y, int z)
 {
-    offset[0] = x;
-	offset[1] = y;
-	offset[2] = z;
+    _offset.x = x;
+	_offset.y = y;
+	_offset.z = z;
 }
 
 void AP_Compass_HMC5843::set_declination(float radians)
