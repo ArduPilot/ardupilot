@@ -19,6 +19,7 @@ extern "C" { extern void delay(unsigned long); }
 
 #include <AP_Common.h>
 
+#include <math.h>
 #include <string.h>
 
 // Global constants exported for general use.
@@ -311,6 +312,14 @@ AP_Var::key(void)
     //
     eeprom_read_block(&var_header, (void *)(_key - sizeof(var_header)), sizeof(var_header));
     return var_header.key;
+}
+
+// Default implementation of cast_to_float, which always fails.
+//
+float
+AP_Var::cast_to_float(void) const
+{
+    return NAN;
 }
 
 // Return the next variable in the global list.

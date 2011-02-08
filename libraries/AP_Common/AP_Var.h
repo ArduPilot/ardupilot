@@ -335,6 +335,17 @@ public:
     ///
     Key key(void);
 
+    /// Casts the value to float, if possible.
+    ///
+    /// This is a convenience method for code that would rather not try to
+    /// meta-cast to the various subtypes.  It cannot guarantee that a useful value
+    /// will be returned; the caller must check the returned value against NAN
+    /// before using it.
+    ///
+    /// @return             The value cast to float, or NAN if it cannot be cast.
+    ///
+    virtual float cast_to_float() const;
+
 private:
     AP_Var_group        *_group;            ///< Group that the variable may be a member of
     AP_Var              *_link;             ///< linked list pointer to next variable
@@ -547,9 +558,22 @@ public:
         return *this;
     }
 
+    /// AP_VarT types can implement AP_Var::cast_to_float
+    ///
+    virtual float cast_to_float() const;
+
 protected:
     T _value;
 };
+
+// Implement AP_Var::cast_to_float.
+//
+template<typename T>
+float
+AP_VarT<T>::cast_to_float() const
+{
+    return (float)_value;
+}
 
 /// Template class for array variables.
 ///
@@ -670,7 +694,6 @@ public:
 protected:
     T _value[N];
 };
-
 
 /// Convenience macro for defining instances of the AP_VarT template.
 ///
