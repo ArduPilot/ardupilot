@@ -12,9 +12,9 @@
 #if 0
 # include <FastSerial.h>
 extern "C" { extern void delay(unsigned long); }
-# define log(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(100); } while(0)
+# define debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(100); } while(0)
 #else
-# define log(fmt, args...)
+# define debug(fmt, args...)
 #endif
 
 #include <AP_Common.h>
@@ -172,7 +172,7 @@ bool AP_Var::save(void)
 
     // locate the variable in EEPROM, allocating space as required
     if (!_EEPROM_locate(true)) {
-        log("locate failed");
+        debug("locate failed");
         return false;
     }
 
@@ -181,7 +181,7 @@ bool AP_Var::save(void)
 
     // if it fit in the buffer, save it to EEPROM
     if (size <= sizeof(vbuf)) {
-        log("saving %u to %u", size, _key);
+        debug("saving %u to %u", size, _key);
         eeprom_write_block(vbuf, (void *)_key, size);
         return true;
     }
@@ -202,7 +202,7 @@ bool AP_Var::load(void)
 
     // locate the variable in EEPROM, but do not allocate space
     if (!_EEPROM_locate(false)) {
-        log("locate failed");
+        debug("locate failed");
         return false;
     }
 
@@ -216,7 +216,7 @@ bool AP_Var::load(void)
     // has converted _key into an EEPROM address.
     //
     if (size <= sizeof(vbuf)) {
-        log("loading %u from %u", size, _key);
+        debug("loading %u from %u", size, _key);
         eeprom_read_block(vbuf, (void *)_key, size);
         return unserialize(vbuf, size);
     }
@@ -274,7 +274,7 @@ AP_Var::erase_all()
 {
     AP_Var  *vp;
 
-    log("erase EEPROM");
+    debug("erase EEPROM");
 
     // Scan the list of variables/groups, fetching their key values and
     // reverting them to their not-located state.
@@ -354,9 +354,9 @@ AP_Var::first_member(AP_Var_group *group)
 
     vp = &_grouped_variables;
 
-    log("seeking %p", group);
+    debug("seeking %p", group);
     while (*vp) {
-        log("consider %p with %p", *vp, (*vp)->_group);
+        debug("consider %p with %p", *vp, (*vp)->_group);
         if ((*vp)->_group == group) {
             return *vp;
         }
@@ -400,7 +400,7 @@ bool AP_Var::_EEPROM_scan(void)
     if ((ee_header.magic != k_EEPROM_magic) ||
         (ee_header.revision != k_EEPROM_revision)) {
 
-        log("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
+        debug("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
         return false;
     }
 
@@ -413,13 +413,13 @@ bool AP_Var::_EEPROM_scan(void)
 
         // Read a variable header
         //
-        log("reading header from %u", eeprom_address);
+        debug("reading header from %u", eeprom_address);
         eeprom_read_block(&var_header, (void *)eeprom_address, sizeof(var_header));
 
         // If the header is for the sentinel, scanning is complete
         //
         if (var_header.key == k_key_sentinel) {
-            log("found tail sentinel");
+            debug("found tail sentinel");
             break;
         }
 
@@ -431,7 +431,7 @@ bool AP_Var::_EEPROM_scan(void)
                 var_header.size + 1 +   // data for this variable
                 sizeof(var_header))) {  // header for sentinel
 
-            log("header overruns EEPROM");
+            debug("header overruns EEPROM");
             return false;
         }
 
@@ -441,13 +441,13 @@ bool AP_Var::_EEPROM_scan(void)
             if (vp->key() == var_header.key) {
                 // adjust the variable's key to point to this entry
                 vp->_key = eeprom_address + sizeof(var_header);
-                log("update %p with key %u -> %u", vp, var_header.key, vp->_key);
+                debug("update %p with key %u -> %u", vp, var_header.key, vp->_key);
                 break;
             }
             vp = vp->_link;
         }
         if (!vp) {
-            log("key %u not claimed (already scanned or unknown)", var_header.key);
+            debug("key %u not claimed (already scanned or unknown)", var_header.key);
         }
 
         // move to the next variable header
@@ -466,13 +466,13 @@ bool AP_Var::_EEPROM_scan(void)
     while (vp) {
         if (vp->_key & k_key_not_located) {
             vp->_key |= k_key_not_allocated;
-            log("key %u not allocated", vp->key());
+            debug("key %u not allocated", vp->key());
         }
         vp = vp->_link;
     }
 
     // Scanning is complete
-    log("scan done");
+    debug("scan done");
     _tail_sentinel = eeprom_address;
     return true;
 }
@@ -488,7 +488,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // Is it a group member, or does it have a no-location key?
     //
     if (_group || (_key == k_key_none)) {
-        log("not addressable");
+        debug("not addressable");
         return false;               // it is/does, and thus it has no location
     }
 
@@ -503,7 +503,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // try scanning to see if we can locate it.
     //
     if (!(_key & k_key_not_allocated)) {
-        log("need scan");
+        debug("need scan");
         _EEPROM_scan();
 
         // Has the variable now been located?
@@ -516,10 +516,10 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // If not located and not permitted to allocate, we have failed.
     //
     if (!allocate) {
-        log("cannot allocate");
+        debug("cannot allocate");
         return false;
     }
-    log("needs allocation");
+    debug("needs allocation");
 
     // Ask the serializer for the size of the thing we are allocating, and fail
     // if it is too large or if it has no size, as we will not be able to allocate
@@ -527,7 +527,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     size = serialize(NULL, 0);
     if ((size == 0) || (size > k_size_max)) {
-        log("size %u out of bounds", size);
+        debug("size %u out of bounds", size);
         return false;
     }
 
@@ -535,7 +535,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // header and the new tail sentinel.
     //
     if ((_tail_sentinel + size + sizeof(Var_header) * 2) > k_EEPROM_size) {
-        log("no space in EEPROM");
+        debug("no space in EEPROM");
         return false;
     }
 
@@ -543,7 +543,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // sentinel.
     //
     if (0 == _tail_sentinel) {
-        log("writing header");
+        debug("writing header");
         EEPROM_header   ee_header;
 
         ee_header.magic = k_EEPROM_magic;
@@ -560,7 +560,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     new_location = _tail_sentinel;
     _tail_sentinel += sizeof(var_header) + size;
-    log("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
+    debug("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
 
     // Write the new sentinel first.  If we are interrupted during this operation
     // the old sentinel will still correctly terminate the EEPROM image.
@@ -609,17 +609,17 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
     // Traverse the list of group members, serializing each in order
     //
     vp = first_member(this);
-    log("starting with %p", vp);
+    debug("starting with %p", vp);
     total_size = 0;
     while (vp) {
 
         // (un)serialise the group member
         if (do_serialize) {
             size = vp->serialize(buf, buf_size);
-            log("serialize %p -> %u", vp, size);
+            debug("serialize %p -> %u", vp, size);
         } else {
             size = vp->unserialize(buf, buf_size);
-            log("unserialize %p -> %u", vp, size);
+            debug("unserialize %p -> %u", vp, size);
         }
 
         // Account for the space that this variable consumes in the buffer
@@ -633,7 +633,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         // and the calling function will have to treat it as an error.
         //
         total_size += size;
-        log("used %u", total_size);
+        debug("used %u", total_size);
         if (size <= buf_size) {
             // there was space for this one, account for it
             buf_size -= size;
