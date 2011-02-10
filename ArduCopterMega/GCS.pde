@@ -82,7 +82,7 @@ void flush(byte id)
 	SendSer("4D");  			// This is the message preamble
 	SendSerw(buff_pointer);  	// Length
 	SendSerw(2);  				// id
-	SendSerw(0x01);  			// Version
+	//SendSerw(0x01);  			// Version
 
 	for (i = 0; i < buff_pointer; i++) {
 		SendSerw(mess_buffer[i]);
