@@ -355,7 +355,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				40
+# define PITCH_MAX				36
 #endif
 
 
