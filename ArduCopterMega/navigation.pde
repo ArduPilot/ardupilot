@@ -45,7 +45,7 @@ void navigate()
 void calc_nav()
 {
 	Vector2f yawvector;
-	long long_error, lat_error;
+	Matrix3f temp;
 
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
@@ -56,34 +56,33 @@ void calc_nav()
 	pitch_max = 22° (2200)
 	*/	
 
-	Matrix3f temp = dcm.get_dcm_matrix();
-	yawvector.x 	= temp.a.x; // sin
+	temp 			= dcm.get_dcm_matrix();
 	yawvector.y 	= temp.b.x;	// cos
+	yawvector.x 	= temp.a.x; // sin
 	yawvector.normalize();
 	
-	yawvector.y = -yawvector.y;
-	//cos = 
-	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;
-	lat_error	= next_WP.lat - current_loc.lat;
+	cos_yaw_x = yawvector.y;	// 0
+	sin_yaw_y = yawvector.x;	// 1
+
+	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 50 - 30 = 20 pitch right
+	lat_error	= next_WP.lat - current_loc.lat;							// 50 - 30 = 20 pitch up
 	
 	long_error	= constrain(long_error, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	
-	// ROLL
-	nav_lon		= long_error * pid_nav_lon.kP();
+	// Convert distance into ROLL X
+	nav_lon		= long_error * pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
 	//nav_lon	= pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
 	//nav_lon 	= constrain(nav_lon, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
-	// PITCH
+	// PITCH	Y
 	//nav_lat 	= pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
-	nav_lat		= lat_error * pid_nav_lat.kP();
+	nav_lat		= lat_error * pid_nav_lat.kP();							// 1800 * 2 = 3600 or 36°
 	//nav_lat 	= constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
-	// rotate the vector				
-	nav_roll 	= (float)nav_lon * yawvector.x - (float)nav_lat * yawvector.y;
-	nav_pitch 	= (float)nav_lat * yawvector.x + (float)nav_lon * yawvector.y;
-	
-	//Serial.printf("vx %4.4f,vy %4.4f ", yawvector.x, yawvector.y);
+	// rotate the vector	
+	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
 	
 	nav_roll 	= constrain(nav_roll,  -pitch_max, pitch_max);
 	nav_pitch 	= constrain(nav_pitch, -pitch_max, pitch_max);
