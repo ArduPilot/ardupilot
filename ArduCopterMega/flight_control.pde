@@ -53,7 +53,7 @@ float angle_boost()
 	//static byte flipper;
 	//float temp = 1 / (cos(dcm.roll) * cos(dcm.pitch));
 	float temp = cos(dcm.roll) * cos(dcm.pitch);
-	temp = 2.0 - constrain(temp, .7071, 1);
+	temp = 2.0 - constrain(temp, .7071, 1.0);
 	return temp;
 }
 
