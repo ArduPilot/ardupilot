@@ -45,14 +45,15 @@ void calc_nav_throttle()
 
 float angle_boost()
 {
+	// This is the furture replacement for the heavyweight trig functions in use now.
+	//Matrix3f temp = dcm.get_dcm_matrix();
+	//cos_pitch 	= sqrt(1 - (temp.c.x * temp.c.x));
+	//cos_roll 		= dcm.c.z / cos_pitch;
+
 	//static byte flipper;
 	//float temp = 1 / (cos(dcm.roll) * cos(dcm.pitch));
-	float temp =  (1.0 - (cos(dcm.roll) * cos(dcm.pitch)));
-	temp = 1.0 + (temp / 1.5);
-	
-	// limit the boost value
-	if(temp > 1.4) 
-		temp = 1.4;
+	float temp = cos(dcm.roll) * cos(dcm.pitch);
+	temp = 2.0 - constrain(temp, .7071, 1);
 	return temp;
 }
 
