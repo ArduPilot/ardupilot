@@ -404,6 +404,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 	
+	float cos_roll, sin_roll, cos_pitch, sin_pitch, cos_yaw, sin_yaw;
+	Vector2f yawvector;
+	
 	while(1){
 		delay(20);
 		if (millis() - fast_loopTimer > 19) {
@@ -412,6 +415,21 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			fast_loopTimer		= millis();
 
 			
+			Matrix3f temp 	= dcm.get_dcm_matrix();
+			
+			sin_pitch 		= -temp.c.x;
+			cos_pitch 		= sqrt(1 - (temp.c.x * temp.c.x));
+			
+			cos_roll 		= temp.c.z / cos_pitch;
+			sin_roll 		= temp.c.y / cos_pitch;
+
+			yawvector.x 	= temp.a.x; // sin
+			yawvector.y 	= temp.b.x;	// cos
+			yawvector.normalize();
+			cos_yaw 		= yawvector.y;	// 0 x = north
+			sin_yaw 		= yawvector.x;	// 1 y 
+
+
 			// IMU
 			// ---
 			read_AHRS();
@@ -435,10 +453,18 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
 
-			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\n"),
+			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\t"),
 								dcm.roll_sensor,
 								dcm.pitch_sensor,
 								dcm.yaw_sensor);
+
+			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
+								cos_pitch,
+								sin_pitch,
+								cos_roll,
+								sin_roll,
+								cos_yaw,	// x
+								sin_yaw);	// y
 		}
 		
 		if(Serial.available() > 0){
@@ -825,6 +851,26 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
+}
+
+void fake_out_gps()
+{
+	static float rads;
+	GPS.new_data 	= true;
+	GPS.fix	 		= true;
+	
+	int length = rc_6.control_in;
+	rads += .05;
+	
+	if (rads > 6.28){
+		rads = 0;
+	}
+	
+	GPS.latitude	= 377696000;	// Y
+	GPS.longitude	= -1224319000;	// X
+
+	//next_WP.lng	 	= home.lng - length * sin(rads);   // X
+	//next_WP.lat 	= home.lat + length * cos(rads);   // Y
 }
 
 
