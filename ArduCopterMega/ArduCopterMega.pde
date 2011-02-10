@@ -198,6 +198,9 @@ byte	command_may_ID;						// current command ID
 float	altitude_gain;						// in nav
 float	distance_gain;						// in nav
 
+float sin_yaw_y;
+float cos_yaw_x;
+
 // Airspeed
 // --------
 int 	airspeed;							// m/s * 100
@@ -220,6 +223,8 @@ float 	airspeed_error;						// m / s * 100
 float	crosstrack_error;					// meters we are off trackline
 long 	distance_error;						// distance to the WP
 long 	yaw_error;							// how off are we pointed
+
+long long_error, lat_error;					// temp fro debugging
 
 // Sensors
 // -------
@@ -352,8 +357,6 @@ boolean	home_is_set	= false; 				// Flag for if we have gps lock and have set th
 // IMU variables
 // -------------
 float G_Dt							= 0.02;		// Integration time for the gyros (DCM algorithm)
-float COGX;								 		// Course overground X axis
-float COGY							= 1; 		// Course overground Y axis
 
 
 // Performance monitoring
@@ -705,6 +708,8 @@ void update_GPS(void)
 	GPS.update();
 	update_GPS_light();
 	
+	//fake_out_gps();
+	
 	if (GPS.new_data && GPS.fix) {
 		send_message(MSG_LOCATION);
 
@@ -746,8 +751,6 @@ void update_GPS(void)
 		current_loc.lng = GPS.longitude;	// Lon * 10 * *7
 		current_loc.lat = GPS.latitude;		// Lat * 10 * *7
 		
-		COGX = cos(ToRad(GPS.ground_course / 100.0));
-		COGY = sin(ToRad(GPS.ground_course / 100.0));
 	}	
 }
 			
@@ -874,13 +877,17 @@ void update_current_flight_mode(void)
 						dTnav = 200;
 					}
 					
-					next_WP.lat = home.lat + rc_2.control_in / 2; // 4500 / 2 = 2250 = 25 meteres 
-					next_WP.lng = home.lng + rc_1.control_in / 2; // 4500 / 2 = 900 = 25 meteres 
+					next_WP.lng = home.lng + rc_1.control_in / 2; // X: 4500 / 2 = 2250 = 25 meteres 
+					// forward is negative so we reverse it to get a positive North translation
+					next_WP.lat = home.lat - rc_2.control_in / 2; // Y: 4500 / 2 = 2250 = 25 meteres 
 				}
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-
+				
+				// REMOVE AFTER TESTING !!!
+				//nav_yaw = dcm.yaw_sensor;
+				
 				// Yaw control
 				output_manual_yaw();
 				
@@ -1018,4 +1025,8 @@ void read_AHRS(void)
 	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
 	omega 	= dcm.get_gyro();
+	
+	// Testing remove !!!
+	//dcm.pitch_sensor = 0;
+	//dcm.roll_sensor = 0;
 }
