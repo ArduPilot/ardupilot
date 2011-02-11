@@ -69,7 +69,7 @@ AP_GPS_IMU		GPS(&Serial);	// note, console port
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
 AP_GPS_MTK		GPS(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_NONE		GPS(NULL);
+AP_GPS_None		GPS(NULL);
 #else
 # error Must define GPS_PROTOCOL in your configuration file.
 #endif
