@@ -31,6 +31,7 @@ extern "C" {
 
 // MESSAGE DEFINITIONS
 
+#include "./mavlink_msg_airspeed.h"
 #include "./mavlink_msg_heartbeat.h"
 #include "./mavlink_msg_boot.h"
 #include "./mavlink_msg_system_time.h"
