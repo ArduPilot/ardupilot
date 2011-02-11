@@ -1,12 +1,15 @@
 table.sortable {
     spacing: 5px;
     border: 1px solid #656575;
-    width: 90%;
+    width: 100%;
 }
 
 table.sortable th {
     margin: 5px;
 }
+
+tr:nth-child(odd)   { background-color:#eee; }
+tr:nth-child(even)  { background-color:#fff; }
 
 table.sortable thead {
     background-color:#eee;
@@ -16,11 +19,19 @@ table.sortable thead {
 }
 
 table.sortable td {
-    margin: 5px;
+    margin: 5px 5px 20px 5px;
+    vertical-align: top;
 }
 
 table.sortable td.mavlink_name {
     color:#226633;
+    font-weight: bold;
+    width: 25%;
+    vertical-align: top;
+}
+
+table.sortable td.mavlink_mission_param {
+    color:#334455;
     font-weight: bold;
     width: 25%;
 }

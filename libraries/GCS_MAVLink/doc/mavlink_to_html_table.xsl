@@ -37,8 +37,8 @@
 
 <xsl:template match="//field">
    <tr class="mavlink_field">
-   <td class="mavlink_name"><xsl:value-of select="@name" /></td>
-   <td class="mavlink_type"><xsl:value-of select="@type" /></td>
+   <td class="mavlink_name" valign="top"><xsl:value-of select="@name" /></td>
+   <td class="mavlink_type" valign="top"><xsl:value-of select="@type" /></td>
    <td class="mavlink_comment"><xsl:value-of select="." /></td>
    </tr>
 </xsl:template>
@@ -55,7 +55,9 @@
    <table class="sortable">
    <thead>
    <tr>
+     <th class="mavlink_field_header">CMD ID</th>
      <th class="mavlink_field_header">Field Name</th>
+     <th class="mavlink_field_header">Description</th>
    </tr>
    </thead>
    <tbody>
@@ -66,7 +68,24 @@
 
 <xsl:template match="//entry">
    <tr class="mavlink_field">
-   <td class="mavlink_name"><xsl:value-of select="@name" /></td>
+   <td class="mavlink_type" valign="top"><xsl:value-of select="@value" /></td>
+   <td class="mavlink_name" valign="top"><xsl:value-of select="@name" /></td>
+   <td class="mavlink_comment"><xsl:value-of select="description" /></td>
+   </tr>
+   <tr>
+     <td></td>
+   	 <xsl:apply-templates select="param" />
+   </tr>
+   <tr>
+    <td colspan="3"><br /></td>
+   </tr>
+</xsl:template>
+
+<xsl:template match="//param">
+   <tr>
+   <td></td>
+   <td class="mavlink_mission_param" valign="top">Mission Param #<xsl:value-of select="@index" /></td>
+   <td class="mavlink_comment"><xsl:value-of select="." /></td>
    </tr>
 </xsl:template>
 

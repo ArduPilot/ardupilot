@@ -1,6 +1,6 @@
 // MESSAGE GPS_LOCAL_ORIGIN_SET PACKING
 
-#define MAVLINK_MSG_ID_GPS_LOCAL_ORIGIN_SET 71
+#define MAVLINK_MSG_ID_GPS_LOCAL_ORIGIN_SET 49
 
 typedef struct __mavlink_gps_local_origin_set_t 
 {
