@@ -6,10 +6,10 @@ typedef struct __mavlink_local_position_setpoint_set_t
 {
 	uint8_t target_system; ///< System ID
 	uint8_t target_component; ///< Component ID
-	float x; ///< x position 1
-	float y; ///< y position 1
-	float z; ///< z position 1
-	float yaw; ///< x position 2
+	float x; ///< x position
+	float y; ///< y position
+	float z; ///< z position
+	float yaw; ///< Desired yaw angle
 
 } mavlink_local_position_setpoint_set_t;
 
@@ -23,10 +23,10 @@ typedef struct __mavlink_local_position_setpoint_set_t
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param x x position 1
- * @param y y position 1
- * @param z z position 1
- * @param yaw x position 2
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param yaw Desired yaw angle
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_local_position_setpoint_set_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, float x, float y, float z, float yaw)
@@ -36,10 +36,10 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_pack(uint8_t syst
 
 	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
 	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
-	i += put_float_by_index(x, i, msg->payload); // x position 1
-	i += put_float_by_index(y, i, msg->payload); // y position 1
-	i += put_float_by_index(z, i, msg->payload); // z position 1
-	i += put_float_by_index(yaw, i, msg->payload); // x position 2
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(yaw, i, msg->payload); // Desired yaw angle
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
@@ -52,10 +52,10 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_pack(uint8_t syst
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
- * @param x x position 1
- * @param y y position 1
- * @param z z position 1
- * @param yaw x position 2
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param yaw Desired yaw angle
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_local_position_setpoint_set_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, float x, float y, float z, float yaw)
@@ -65,10 +65,10 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_pack_chan(uint8_t
 
 	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
 	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
-	i += put_float_by_index(x, i, msg->payload); // x position 1
-	i += put_float_by_index(y, i, msg->payload); // y position 1
-	i += put_float_by_index(z, i, msg->payload); // z position 1
-	i += put_float_by_index(yaw, i, msg->payload); // x position 2
+	i += put_float_by_index(x, i, msg->payload); // x position
+	i += put_float_by_index(y, i, msg->payload); // y position
+	i += put_float_by_index(z, i, msg->payload); // z position
+	i += put_float_by_index(yaw, i, msg->payload); // Desired yaw angle
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
@@ -92,10 +92,10 @@ static inline uint16_t mavlink_msg_local_position_setpoint_set_encode(uint8_t sy
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param x x position 1
- * @param y y position 1
- * @param z z position 1
- * @param yaw x position 2
+ * @param x x position
+ * @param y y position
+ * @param z z position
+ * @param yaw Desired yaw angle
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -132,7 +132,7 @@ static inline uint8_t mavlink_msg_local_position_setpoint_set_get_target_compone
 /**
  * @brief Get field x from local_position_setpoint_set message
  *
- * @return x position 1
+ * @return x position
  */
 static inline float mavlink_msg_local_position_setpoint_set_get_x(const mavlink_message_t* msg)
 {
@@ -147,7 +147,7 @@ static inline float mavlink_msg_local_position_setpoint_set_get_x(const mavlink_
 /**
  * @brief Get field y from local_position_setpoint_set message
  *
- * @return y position 1
+ * @return y position
  */
 static inline float mavlink_msg_local_position_setpoint_set_get_y(const mavlink_message_t* msg)
 {
@@ -162,7 +162,7 @@ static inline float mavlink_msg_local_position_setpoint_set_get_y(const mavlink_
 /**
  * @brief Get field z from local_position_setpoint_set message
  *
- * @return z position 1
+ * @return z position
  */
 static inline float mavlink_msg_local_position_setpoint_set_get_z(const mavlink_message_t* msg)
 {
@@ -177,7 +177,7 @@ static inline float mavlink_msg_local_position_setpoint_set_get_z(const mavlink_
 /**
  * @brief Get field yaw from local_position_setpoint_set message
  *
- * @return x position 2
+ * @return Desired yaw angle
  */
 static inline float mavlink_msg_local_position_setpoint_set_get_yaw(const mavlink_message_t* msg)
 {

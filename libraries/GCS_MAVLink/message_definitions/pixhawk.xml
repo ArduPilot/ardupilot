@@ -9,6 +9,13 @@
       <entry name = "PID_PITCH">With comment: PID Pitch parameter</entry>
       <entry name = "PID_ALT_HOLD"  value="50" />
    </enum>
+
+   <enum name="DATA_TYPES">
+      <description>Content Types for data transmission handshake</description>
+      <entry name = "DATA_TYPE_JPEG_IMAGE" value="1" />
+      <entry name = "DATA_TYPE_RAW_IMAGE" value="2" />
+      <entry name = "DATA_TYPE_KINECT" />
+   </enum>
 </enums>
 
 <messages>

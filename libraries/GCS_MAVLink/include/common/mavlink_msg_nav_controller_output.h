@@ -11,6 +11,7 @@ typedef struct __mavlink_nav_controller_output_t
 	uint16_t wp_dist; ///< Distance to active waypoint in meters
 	float alt_error; ///< Current altitude error in meters
 	float aspd_error; ///< Current airspeed error in meters/second
+	float xtrack_error; ///< Current crosstrack error on x-y plane in meters
 
 } mavlink_nav_controller_output_t;
 
@@ -29,9 +30,10 @@ typedef struct __mavlink_nav_controller_output_t
  * @param wp_dist Distance to active waypoint in meters
  * @param alt_error Current altitude error in meters
  * @param aspd_error Current airspeed error in meters/second
+ * @param xtrack_error Current crosstrack error on x-y plane in meters
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_nav_controller_output_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error)
+static inline uint16_t mavlink_msg_nav_controller_output_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error, float xtrack_error)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT;
@@ -43,6 +45,7 @@ static inline uint16_t mavlink_msg_nav_controller_output_pack(uint8_t system_id,
 	i += put_uint16_t_by_index(wp_dist, i, msg->payload); // Distance to active waypoint in meters
 	i += put_float_by_index(alt_error, i, msg->payload); // Current altitude error in meters
 	i += put_float_by_index(aspd_error, i, msg->payload); // Current airspeed error in meters/second
+	i += put_float_by_index(xtrack_error, i, msg->payload); // Current crosstrack error on x-y plane in meters
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
@@ -60,9 +63,10 @@ static inline uint16_t mavlink_msg_nav_controller_output_pack(uint8_t system_id,
  * @param wp_dist Distance to active waypoint in meters
  * @param alt_error Current altitude error in meters
  * @param aspd_error Current airspeed error in meters/second
+ * @param xtrack_error Current crosstrack error on x-y plane in meters
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_nav_controller_output_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error)
+static inline uint16_t mavlink_msg_nav_controller_output_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error, float xtrack_error)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT;
@@ -74,6 +78,7 @@ static inline uint16_t mavlink_msg_nav_controller_output_pack_chan(uint8_t syste
 	i += put_uint16_t_by_index(wp_dist, i, msg->payload); // Distance to active waypoint in meters
 	i += put_float_by_index(alt_error, i, msg->payload); // Current altitude error in meters
 	i += put_float_by_index(aspd_error, i, msg->payload); // Current airspeed error in meters/second
+	i += put_float_by_index(xtrack_error, i, msg->payload); // Current crosstrack error on x-y plane in meters
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
@@ -88,7 +93,7 @@ static inline uint16_t mavlink_msg_nav_controller_output_pack_chan(uint8_t syste
  */
 static inline uint16_t mavlink_msg_nav_controller_output_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_nav_controller_output_t* nav_controller_output)
 {
-	return mavlink_msg_nav_controller_output_pack(system_id, component_id, msg, nav_controller_output->nav_roll, nav_controller_output->nav_pitch, nav_controller_output->nav_bearing, nav_controller_output->target_bearing, nav_controller_output->wp_dist, nav_controller_output->alt_error, nav_controller_output->aspd_error);
+	return mavlink_msg_nav_controller_output_pack(system_id, component_id, msg, nav_controller_output->nav_roll, nav_controller_output->nav_pitch, nav_controller_output->nav_bearing, nav_controller_output->target_bearing, nav_controller_output->wp_dist, nav_controller_output->alt_error, nav_controller_output->aspd_error, nav_controller_output->xtrack_error);
 }
 
 /**
@@ -102,13 +107,14 @@ static inline uint16_t mavlink_msg_nav_controller_output_encode(uint8_t system_i
  * @param wp_dist Distance to active waypoint in meters
  * @param alt_error Current altitude error in meters
  * @param aspd_error Current airspeed error in meters/second
+ * @param xtrack_error Current crosstrack error on x-y plane in meters
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_nav_controller_output_send(mavlink_channel_t chan, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error)
+static inline void mavlink_msg_nav_controller_output_send(mavlink_channel_t chan, float nav_roll, float nav_pitch, int16_t nav_bearing, int16_t target_bearing, uint16_t wp_dist, float alt_error, float aspd_error, float xtrack_error)
 {
 	mavlink_message_t msg;
-	mavlink_msg_nav_controller_output_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error);
+	mavlink_msg_nav_controller_output_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error, xtrack_error);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -215,6 +221,21 @@ static inline float mavlink_msg_nav_controller_output_get_aspd_error(const mavli
 }
 
 /**
+ * @brief Get field xtrack_error from nav_controller_output message
+ *
+ * @return Current crosstrack error on x-y plane in meters
+ */
+static inline float mavlink_msg_nav_controller_output_get_xtrack_error(const mavlink_message_t* msg)
+{
+	generic_32bit r;
+	r.b[3] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float)+sizeof(float))[0];
+	r.b[2] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float)+sizeof(float))[1];
+	r.b[1] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float)+sizeof(float))[2];
+	r.b[0] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float)+sizeof(float))[3];
+	return (float)r.f;
+}
+
+/**
  * @brief Decode a nav_controller_output message into a struct
  *
  * @param msg The message to decode
@@ -229,4 +250,5 @@ static inline void mavlink_msg_nav_controller_output_decode(const mavlink_messag
 	nav_controller_output->wp_dist = mavlink_msg_nav_controller_output_get_wp_dist(msg);
 	nav_controller_output->alt_error = mavlink_msg_nav_controller_output_get_alt_error(msg);
 	nav_controller_output->aspd_error = mavlink_msg_nav_controller_output_get_aspd_error(msg);
+	nav_controller_output->xtrack_error = mavlink_msg_nav_controller_output_get_xtrack_error(msg);
 }

@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_attitude_t 
 {
-	uint64_t usec; ///< Timestamp (microseconds)
+	uint64_t usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	float roll; ///< Roll angle (rad)
 	float pitch; ///< Pitch angle (rad)
 	float yaw; ///< Yaw angle (rad)
@@ -22,7 +22,7 @@ typedef struct __mavlink_attitude_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param usec Timestamp (microseconds)
+ * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
@@ -36,7 +36,7 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_ATTITUDE;
 
-	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds)
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	i += put_float_by_index(roll, i, msg->payload); // Roll angle (rad)
 	i += put_float_by_index(pitch, i, msg->payload); // Pitch angle (rad)
 	i += put_float_by_index(yaw, i, msg->payload); // Yaw angle (rad)
@@ -53,7 +53,7 @@ static inline uint16_t mavlink_msg_attitude_pack(uint8_t system_id, uint8_t comp
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
- * @param usec Timestamp (microseconds)
+ * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
@@ -67,7 +67,7 @@ static inline uint16_t mavlink_msg_attitude_pack_chan(uint8_t system_id, uint8_t
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_ATTITUDE;
 
-	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds)
+	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since UNIX epoch or microseconds since system boot)
 	i += put_float_by_index(roll, i, msg->payload); // Roll angle (rad)
 	i += put_float_by_index(pitch, i, msg->payload); // Pitch angle (rad)
 	i += put_float_by_index(yaw, i, msg->payload); // Yaw angle (rad)
@@ -95,7 +95,7 @@ static inline uint16_t mavlink_msg_attitude_encode(uint8_t system_id, uint8_t co
  * @brief Send a attitude message
  * @param chan MAVLink channel to send the message
  *
- * @param usec Timestamp (microseconds)
+ * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  * @param roll Roll angle (rad)
  * @param pitch Pitch angle (rad)
  * @param yaw Yaw angle (rad)
@@ -118,7 +118,7 @@ static inline void mavlink_msg_attitude_send(mavlink_channel_t chan, uint64_t us
 /**
  * @brief Get field usec from attitude message
  *
- * @return Timestamp (microseconds)
+ * @return Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  */
 static inline uint64_t mavlink_msg_attitude_get_usec(const mavlink_message_t* msg)
 {

@@ -6,7 +6,7 @@ typedef struct __mavlink_global_position_int_t
 {
 	int32_t lat; ///< Latitude / X Position, expressed as * 1E7
 	int32_t lon; ///< Longitude / Y Position, expressed as * 1E7
-	int32_t alt; ///< Altitude / negative Z Position, expressed as * 1000
+	int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters)
 	int16_t vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
 	int16_t vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
 	int16_t vz; ///< Ground Z Speed (Altitude), expressed as m/s * 100
@@ -23,7 +23,7 @@ typedef struct __mavlink_global_position_int_t
  *
  * @param lat Latitude / X Position, expressed as * 1E7
  * @param lon Longitude / Y Position, expressed as * 1E7
- * @param alt Altitude / negative Z Position, expressed as * 1000
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
  * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
@@ -36,7 +36,7 @@ static inline uint16_t mavlink_msg_global_position_int_pack(uint8_t system_id, u
 
 	i += put_int32_t_by_index(lat, i, msg->payload); // Latitude / X Position, expressed as * 1E7
 	i += put_int32_t_by_index(lon, i, msg->payload); // Longitude / Y Position, expressed as * 1E7
-	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude / negative Z Position, expressed as * 1000
+	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude in meters, expressed as * 1000 (millimeters)
 	i += put_int16_t_by_index(vx, i, msg->payload); // Ground X Speed (Latitude), expressed as m/s * 100
 	i += put_int16_t_by_index(vy, i, msg->payload); // Ground Y Speed (Longitude), expressed as m/s * 100
 	i += put_int16_t_by_index(vz, i, msg->payload); // Ground Z Speed (Altitude), expressed as m/s * 100
@@ -52,7 +52,7 @@ static inline uint16_t mavlink_msg_global_position_int_pack(uint8_t system_id, u
  * @param msg The MAVLink message to compress the data into
  * @param lat Latitude / X Position, expressed as * 1E7
  * @param lon Longitude / Y Position, expressed as * 1E7
- * @param alt Altitude / negative Z Position, expressed as * 1000
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
  * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
@@ -65,7 +65,7 @@ static inline uint16_t mavlink_msg_global_position_int_pack_chan(uint8_t system_
 
 	i += put_int32_t_by_index(lat, i, msg->payload); // Latitude / X Position, expressed as * 1E7
 	i += put_int32_t_by_index(lon, i, msg->payload); // Longitude / Y Position, expressed as * 1E7
-	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude / negative Z Position, expressed as * 1000
+	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude in meters, expressed as * 1000 (millimeters)
 	i += put_int16_t_by_index(vx, i, msg->payload); // Ground X Speed (Latitude), expressed as m/s * 100
 	i += put_int16_t_by_index(vy, i, msg->payload); // Ground Y Speed (Longitude), expressed as m/s * 100
 	i += put_int16_t_by_index(vz, i, msg->payload); // Ground Z Speed (Altitude), expressed as m/s * 100
@@ -92,7 +92,7 @@ static inline uint16_t mavlink_msg_global_position_int_encode(uint8_t system_id,
  *
  * @param lat Latitude / X Position, expressed as * 1E7
  * @param lon Longitude / Y Position, expressed as * 1E7
- * @param alt Altitude / negative Z Position, expressed as * 1000
+ * @param alt Altitude in meters, expressed as * 1000 (millimeters)
  * @param vx Ground X Speed (Latitude), expressed as m/s * 100
  * @param vy Ground Y Speed (Longitude), expressed as m/s * 100
  * @param vz Ground Z Speed (Altitude), expressed as m/s * 100
@@ -142,7 +142,7 @@ static inline int32_t mavlink_msg_global_position_int_get_lon(const mavlink_mess
 /**
  * @brief Get field alt from global_position_int message
  *
- * @return Altitude / negative Z Position, expressed as * 1000
+ * @return Altitude in meters, expressed as * 1000 (millimeters)
  */
 static inline int32_t mavlink_msg_global_position_int_get_alt(const mavlink_message_t* msg)
 {

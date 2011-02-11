@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Tuesday, February 8 2011, 09:45 UTC
+ *	 Generated on Friday, February 11 2011, 07:42 UTC
  */
 #ifndef PIXHAWK_H
 #define PIXHAWK_H
@@ -35,7 +35,17 @@ enum SLUGS_PID_INDX_IDS
 {
 	PID_YAW_DAMPER=2,
 	PID_PITCH=3, /* With comment: PID Pitch parameter*/
-	PID_ALT_HOLD=50
+	PID_ALT_HOLD=50,
+	SLUGS_PID_INDX_IDS_ENUM_END
+};
+
+/** @brief Content Types for data transmission handshake */
+enum DATA_TYPES
+{
+	DATA_TYPE_JPEG_IMAGE=1,
+	DATA_TYPE_RAW_IMAGE=2,
+	DATA_TYPE_KINECT=3,
+	DATA_TYPES_ENUM_END
 };
 
 
