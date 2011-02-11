@@ -33,6 +33,7 @@ void calc_nav_throttle()
 			pid_baro_throttle.kP(t/4.0);
 		}
 		// limit output of throttle control
+		nav_throttle = pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
 		nav_throttle = throttle_cruise + constrain(nav_throttle, -20, 70);
 		pid_baro_throttle.kP(t);
 		
