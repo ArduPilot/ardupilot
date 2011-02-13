@@ -56,13 +56,13 @@ void calc_nav()
 	pitch_max = 22° (2200)
 	*/	
 
-	temp 			= dcm.get_dcm_matrix();
-	yawvector.y 	= temp.b.x;	// cos
-	yawvector.x 	= temp.a.x; // sin
-	yawvector.normalize();
+	//temp 			= dcm.get_dcm_matrix();
+	//yawvector.y 	= temp.b.x;	// cos
+	//yawvector.x 	= temp.a.x; // sin
+	//yawvector.normalize();
 	
-	cos_yaw_x = yawvector.y;	// 0
-	sin_yaw_y = yawvector.x;	// 1
+	//cos_yaw_x = yawvector.y;	// 0
+	//sin_yaw_y = yawvector.x;	// 1
 
 	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 50 - 30 = 20 pitch right
 	lat_error	= next_WP.lat - current_loc.lat;							// 50 - 30 = 20 pitch up

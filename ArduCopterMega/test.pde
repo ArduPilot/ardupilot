@@ -404,8 +404,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 	
-	float cos_roll, sin_roll, cos_pitch, sin_pitch, cos_yaw, sin_yaw;
-	Vector2f yawvector;
+	//float cos_roll, sin_roll, cos_pitch, sin_pitch, cos_yaw, sin_yaw;
+	
 	
 	while(1){
 		delay(20);
@@ -413,8 +413,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 			fast_loopTimer		= millis();
-
-			
+			/*
 			Matrix3f temp 	= dcm.get_dcm_matrix();
 			
 			sin_pitch 		= -temp.c.x;
@@ -428,7 +427,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			yawvector.normalize();
 			cos_yaw 		= yawvector.y;	// 0 x = north
 			sin_yaw 		= yawvector.x;	// 1 y 
-
+			*/
 
 			// IMU
 			// ---
@@ -436,6 +435,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 			Vector3f accels 	= imu.get_accel();
 			Vector3f gyros 		= imu.get_gyro();
+			
+			update_trig();
 
 			if(compass_enabled){
 				medium_loopCounter++;
@@ -459,12 +460,12 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								dcm.yaw_sensor);
 
 			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
-								cos_pitch,
-								sin_pitch,
-								cos_roll,
-								sin_roll,
-								cos_yaw,	// x
-								sin_yaw);	// y
+								cos_pitch_x,
+								sin_pitch_y,
+								cos_roll_x,
+								sin_roll_y,
+								cos_yaw_x,	// x
+								sin_yaw_y);	// y
 		}
 		
 		if(Serial.available() > 0){
@@ -479,8 +480,9 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 	
-	while(1){
+	/*while(1){
 		delay(100);
+		
 		update_GPS();
 		
 		if(Serial.available() > 0){
@@ -490,26 +492,23 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 		if(home.lng != 0){
 			break;
 		}
-	}
+	}*/
 	
 	while(1){
 		delay(100);
+		update_GPS();
+		
 		calc_distance_error();
-		// Blink GPS LED if we don't have a fix
-		// ------------------------------------
-		//update_GPS_light();
 		
-		GPS.update();
-		
-		if (GPS.new_data){
+		//if (GPS.new_data){
 			Serial.print("Lat:");
 			Serial.print((float)GPS.latitude/10000000, 10);
 			Serial.print(" Lon:");
 			Serial.print((float)GPS.longitude/10000000, 10);
 			Serial.printf_P(PSTR(" alt %dm, spd: %d dist:%d, #sats: %d\n"), (int)GPS.altitude/100, (int)GPS.ground_speed, (int)wp_distance, (int)GPS.num_sats);
-		}else{
+		//}else{
 			//Serial.print(".");
-		}
+		//}
 		if(Serial.available() > 0){
 			return (0);
 		}

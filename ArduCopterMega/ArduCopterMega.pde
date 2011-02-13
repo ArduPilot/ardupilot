@@ -198,6 +198,12 @@ byte	command_may_ID;						// current command ID
 float	altitude_gain;						// in nav
 float	distance_gain;						// in nav
 
+float cos_roll_x;
+float sin_roll_y;
+
+float cos_pitch_x;
+float sin_pitch_y;
+
 float sin_yaw_y;
 float cos_yaw_x;
 
@@ -507,6 +513,10 @@ void medium_loop()
 	// ----------
 	read_radio();			// read the radio first
 
+	
+	// reads all of the necessary trig functions for cameras, throttle, etc.
+	update_trig();
+	
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
@@ -1012,4 +1022,22 @@ void read_AHRS(void)
 	// Testing remove !!!
 	//dcm.pitch_sensor = 0;
 	//dcm.roll_sensor = 0;
+}
+
+void update_trig(void){
+	Vector2f yawvector;
+	Matrix3f temp 	= dcm.get_dcm_matrix();
+	
+	yawvector.x 	= temp.a.x; // sin
+	yawvector.y 	= temp.b.x;	// cos
+	yawvector.normalize();
+
+	cos_yaw_x 		= yawvector.y;	// 0 x = north
+	sin_yaw_y 		= yawvector.x;	// 1 y 
+	
+	sin_pitch_y 	= -temp.c.x;
+	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));
+	
+	cos_roll_x 		= temp.c.z / cos_pitch_x;
+	sin_roll_y 		= temp.c.y / cos_pitch_x;
 }

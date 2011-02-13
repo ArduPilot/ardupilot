@@ -205,6 +205,14 @@ set_servos_4()
 			
 			flush(10);
 			//*/
+			
+			/*Serial.printf("a %ld, e %ld, i %d, t %d, b %4.2f\n",
+					current_loc.alt,
+					altitude_error,
+					(int)pid_baro_throttle.get_integrator(),
+					nav_throttle,
+					angle_boost());
+			*/
 		}
 		
 		// Send commands to motors
