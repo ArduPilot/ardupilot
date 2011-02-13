@@ -22,14 +22,14 @@ void output_auto_throttle()
 void calc_nav_throttle()
 {
 	// limit error
-	long error = constrain(altitude_error, -300, 300);
+	long error = constrain(altitude_error, -400, 400);
 	
 	if(altitude_sensor == BARO) {
 		float t = pid_baro_throttle.kP();
 		
-		if(error > 0){
+		if(error > 0){ 					// go up
 			pid_baro_throttle.kP(t);
-		}else{
+		}else{							// go down
 			pid_baro_throttle.kP(t/4.0);
 		}
 		
@@ -53,15 +53,8 @@ void calc_nav_throttle()
 
 float angle_boost()
 {
-	// This is the furture replacement for the heavyweight trig functions in use now.
-	//Matrix3f temp = dcm.get_dcm_matrix();
-	//cos_pitch 	= sqrt(1 - (temp.c.x * temp.c.x));
-	//cos_roll 		= dcm.c.z / cos_pitch;
-
-	//static byte flipper;
-	//float temp = 1 / (cos(dcm.roll) * cos(dcm.pitch));
-	float temp = cos(dcm.roll) * cos(dcm.pitch);
-	temp = 2.0 - constrain(temp, .7071, 1.0);
+	float temp = cos_pitch_x * cos_roll_x;
+	temp = 2.0 - constrain(temp, .7, 1.0);
 	return temp;
 }
 
