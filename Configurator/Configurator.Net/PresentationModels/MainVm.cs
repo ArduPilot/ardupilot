@@ -29,13 +29,13 @@ namespace ArducopterConfigurator.PresentationModels
                                  new PositionAltitudePidsVm(),
                                  //new MotorCommandsVm(session),
                                  new CalibrationOffsetsDataVm(),
-                                 new SerialMonitorVm(session)
+                                 new SerialMonitorVm()
                              };
 
             foreach (var vm in MonitorVms)
             {
                 if (vm is ItalksToApm)
-                    (vm as ItalksToApm).sendTextToApm += MainVm_sendTextToApm;
+                    vm.sendTextToApm += MainVm_sendTextToApm;
             }
 
             ConnectCommand = new DelegateCommand(
@@ -45,6 +45,10 @@ namespace ArducopterConfigurator.PresentationModels
             DisconnectCommand = new DelegateCommand(_ => Disconnect(), _ => IsConnected);
 
             RefreshPortListCommand = new DelegateCommand(_ => RefreshPorts());
+
+            RestoreDefaultsCommand = new DelegateCommand(_ => RestoreDefaults(), _ => IsConnected);
+
+            WriteToEepromCommand = new DelegateCommand(_ => WriteToEeprom(), _ => IsConnected);
 
             ConnectionState = SessionStates.Disconnected;
 
@@ -59,6 +63,8 @@ namespace ArducopterConfigurator.PresentationModels
             if (AvailablePorts.Count > 0)
                 SelectedPort = AvailablePorts[AvailablePorts.Count-1];
         }
+
+
 
         void MainVm_sendTextToApm(object sender, sendTextToApmEventArgs e)
         {
@@ -78,6 +84,18 @@ namespace ArducopterConfigurator.PresentationModels
             AvailablePorts.Clear();
             foreach (var c in _comms.ListCommPorts())
                 AvailablePorts.Add(c);
+        }
+
+        private void RestoreDefaults()
+        {
+             if (_comms.IsConnected)
+                _comms.Send("Y");
+        }
+
+        private void WriteToEeprom()
+        {
+            if (_comms.IsConnected)
+                _comms.Send("W");
         }
 
         void _session_LineOfDataReceived(string strRx)
@@ -105,6 +123,10 @@ namespace ArducopterConfigurator.PresentationModels
         public ICommand DisconnectCommand { get; private set; }
 
         public ICommand RefreshPortListCommand { get; private set; }
+        
+        public ICommand RestoreDefaultsCommand { get; private set; }
+
+        public ICommand WriteToEepromCommand { get; private set; }
 
         public BindingList<string> AvailablePorts { get; private set; }
 

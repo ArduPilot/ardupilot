@@ -40,6 +40,8 @@ namespace ArducopterConfigurator
             this.lblConnectionStatus = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.button3 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).BeginInit();
             this.SuspendLayout();
@@ -54,7 +56,7 @@ namespace ArducopterConfigurator
             this.tabCtrlMonitorVms.Location = new System.Drawing.Point(12, 10);
             this.tabCtrlMonitorVms.Name = "tabCtrlMonitorVms";
             this.tabCtrlMonitorVms.SelectedIndex = 0;
-            this.tabCtrlMonitorVms.Size = new System.Drawing.Size(530, 396);
+            this.tabCtrlMonitorVms.Size = new System.Drawing.Size(530, 386);
             this.tabCtrlMonitorVms.TabIndex = 3;
             this.tabCtrlMonitorVms.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabCtrlConfigs_Selected);
             // 
@@ -102,7 +104,7 @@ namespace ArducopterConfigurator
             // lblConnectionStatus
             // 
             this.lblConnectionStatus.AutoSize = true;
-            this.lblConnectionStatus.Location = new System.Drawing.Point(307, 417);
+            this.lblConnectionStatus.Location = new System.Drawing.Point(189, 418);
             this.lblConnectionStatus.Name = "lblConnectionStatus";
             this.lblConnectionStatus.Size = new System.Drawing.Size(112, 13);
             this.lblConnectionStatus.TabIndex = 8;
@@ -121,11 +123,35 @@ namespace ArducopterConfigurator
             this.toolTip.SetToolTip(this.button2, "Refresh port list");
             this.button2.UseVisualStyleBackColor = true;
             // 
+            // button3
+            // 
+            this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "RestoreDefaultsCommand", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
+            this.button3.Location = new System.Drawing.Point(502, 402);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(40, 34);
+            this.button3.TabIndex = 10;
+            this.toolTip.SetToolTip(this.button3, "Restore Defaults");
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // button4
+            // 
+            this.button4.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "WriteToEepromCommand", true));
+            this.button4.Image = ((System.Drawing.Image)(resources.GetObject("button4.Image")));
+            this.button4.Location = new System.Drawing.Point(456, 402);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(40, 34);
+            this.button4.TabIndex = 11;
+            this.toolTip.SetToolTip(this.button4, "Save to Eprom");
+            this.button4.UseVisualStyleBackColor = true;
+            // 
             // mainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(554, 445);
+            this.Controls.Add(this.button4);
+            this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.lblConnectionStatus);
             this.Controls.Add(this.button1);
@@ -154,6 +180,8 @@ namespace ArducopterConfigurator
         private System.Windows.Forms.Label lblConnectionStatus;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button4;
     }
 }
 

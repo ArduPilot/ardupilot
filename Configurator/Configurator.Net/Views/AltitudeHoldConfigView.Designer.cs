@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AltitudeHoldConfigView));
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
@@ -73,7 +74,7 @@
             this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.AltitudeHoldConfigBindingSource, "D", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.textBox4.Location = new System.Drawing.Point(27, 64);
             this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(78, 20);
+            this.textBox4.Size = new System.Drawing.Size(50, 20);
             this.textBox4.TabIndex = 13;
             // 
             // AltitudeHoldConfigBindingSource
@@ -85,7 +86,7 @@
             this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.AltitudeHoldConfigBindingSource, "I", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.textBox5.Location = new System.Drawing.Point(27, 38);
             this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(78, 20);
+            this.textBox5.Size = new System.Drawing.Size(50, 20);
             this.textBox5.TabIndex = 12;
             // 
             // textBox6
@@ -93,29 +94,29 @@
             this.textBox6.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.AltitudeHoldConfigBindingSource, "P", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.textBox6.Location = new System.Drawing.Point(27, 12);
             this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(78, 20);
+            this.textBox6.Size = new System.Drawing.Size(50, 20);
             this.textBox6.TabIndex = 11;
             // 
             // button2
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AltitudeHoldConfigBindingSource, "RefreshCommand", true));
-            this.button2.Location = new System.Drawing.Point(119, 96);
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(205, 93);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(74, 23);
+            this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 18;
-            this.button2.Text = "Refresh";
             this.button2.UseVisualStyleBackColor = true;
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AltitudeHoldConfigBindingSource, "UpdateCommand", true));
-            this.button1.Location = new System.Drawing.Point(199, 96);
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(237, 93);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(74, 23);
+            this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 17;
-            this.button1.Text = "Update";
             this.button1.UseVisualStyleBackColor = true;
             // 
             // AltitudeHoldConfigView

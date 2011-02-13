@@ -1,16 +1,24 @@
+using System;
+
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class MotorCommandsVm : MonitorVm
+    public class MotorCommandsVm : NotifyProperyChangedBase, IPresentationModel
     {
-        public MotorCommandsVm(IComms _sp)
-            : base(_sp)
-        {
-        }
-
-        public override string Name
+        public string Name
         {
             get { return "Motor Commands"; }
         }
+
+        public void Activate()
+        {
+        }
+
+        public void DeActivate()
+        {
+            // todo stop
+        }
+
+        public event EventHandler updatedByApm;
 
         public int MotorFront { get; set; }
         public int MotorRear { get; set; }
@@ -25,20 +33,10 @@ namespace ArducopterConfigurator.PresentationModels
         {
         }
 
-
-        protected override void OnDeactivated()
+        public void handleLineOfText(string strRx)
         {
-          
         }
 
-        protected override void OnActivated()
-        {
-           
-        }
-
-        protected override void OnStringReceived(string strReceived)
-        {
-            
-        }
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

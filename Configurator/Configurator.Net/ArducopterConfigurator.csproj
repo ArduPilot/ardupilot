@@ -50,7 +50,6 @@
     <Compile Include="PresentationModels\PositionAltitudePidsVm.cs" />
     <Compile Include="PresentationModels\FlightControlPidsVm.cs" />
     <Compile Include="PresentationModels\ItalksToApm.cs" />
-    <Compile Include="PresentationModels\MonitorVm.cs" />
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
     <Compile Include="PresentationModels\VmBase.cs" />
@@ -213,8 +212,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\icons\arrow_up.png" />
+    <Content Include="Views\icons\chip.gif" />
     <Content Include="Views\icons\connect.ico" />
     <Content Include="Views\icons\disconnect.ico" />
+    <Content Include="Views\icons\install.png" />
     <Content Include="Views\icons\saveIcon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
