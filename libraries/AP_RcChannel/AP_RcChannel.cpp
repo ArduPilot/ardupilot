@@ -14,7 +14,7 @@
 #include "AP_RcChannel.h"
 #include <AP_Common.h>
 
-AP_RcChannel::AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
+AP_RcChannel::AP_RcChannel(AP_Var::Key key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
 			const float & scale, const float & center, 
 			const uint16_t & pwmMin, 
 			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
@@ -23,8 +23,8 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Cla
 		AP_Var_group(key,name),
 		_rc(rc),
 		ch(this,0,ch,PSTR("CH")),
-		scale(this,1,ch,PSTR("SCALE")),
-		center(this,2,ch,PSTR("CENTER")),
+		scale(this,1,scale,PSTR("SCALE")),
+		center(this,2,center,PSTR("CENTER")),
 		pwmMin(this,3,pwmMin,PSTR("PMIN")),
 		pwmMax(this,4,pwmMax,PSTR("PMAX")),
 		pwmNeutral(this,5,pwmNeutral,PSTR("PNTRL")),

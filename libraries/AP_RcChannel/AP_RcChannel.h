@@ -18,7 +18,7 @@ class AP_RcChannel : public AP_Var_group {
 public:	
 
 	/// Constructor
-	AP_RcChannel(AP_Var::Key & key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
+	AP_RcChannel(AP_Var::Key key, const prog_char * name, APM_RC_Class & rc, const uint8_t & ch,
 			const float & scale=45.0, const float & center=0.0, 
 			const uint16_t & pwmMin=1200, 
 			const uint16_t & pwmNeutral=1500, const uint16_t & pwmMax=1800,
@@ -47,7 +47,6 @@ public:
 	uint16_t getPwm() { return _pwm; }
 	float getPosition() { return _pwmToPosition(_pwm); }
 	float getNormalized() { return getPosition()/scale; }
-	const char * getName() { return _name; }
 
 	// did our read come in 50µs below the min?
 	bool failSafe() { _pwm < (pwmMin - 50); }
