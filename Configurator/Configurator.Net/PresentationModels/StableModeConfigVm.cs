@@ -1,9 +1,10 @@
+using System;
+
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class StableModeConfigVm : ConfigWithPidsBase
+    public class StableModeConfigVm : ConfigWithPidsBase, IPresentationModel, ItalksToApm
     {
-        public StableModeConfigVm(IComms sp)
-            : base(sp)
+        public StableModeConfigVm()
         {
             PropsInUpdateOrder = new[]
                                      {
@@ -39,22 +40,39 @@ namespace ArducopterConfigurator.PresentationModels
 
         private void RefreshValues()
         {
-            SendString("B");
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("B"));
+                
         }
 
         public void UpdateValues()
         {
-            SendPropsWithCommand("A");
+            if (sendTextToApm != null)
+                sendTextToApm(this,new sendTextToApmEventArgs(ComposePropsWithCommand("A")));
         }
 
-        protected override void OnActivated()
+        public string Name
+        {
+            get { return "Stable Mode"; }
+        }
+
+        public void Activate()
         {
             RefreshValues();
         }
 
-        public override string Name
+        public void DeActivate()
         {
-            get { return "Stable Mode"; }
+            
         }
+
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
+        {
+           PopulatePropsFromUpdate(strRx,true);
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

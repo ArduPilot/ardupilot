@@ -16,7 +16,7 @@ namespace ArducopterConfigurator.Views
             InitializeComponent();
         }
 
-        public override void SetDataContext(MotorCommandsVm model)
+        public override void SetDataContext(MotorCommandsVm vm)
         {
             
         }

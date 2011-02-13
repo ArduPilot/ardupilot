@@ -17,13 +17,13 @@ namespace ArducopterConfigurator.Views
             BindButtons();
         }
 
-        public override void SetDataContext(CalibrationOffsetsDataVm model)
+        public override void SetDataContext(CalibrationOffsetsDataVm vm)
         {
-            calibrationOffsetsDataVmBindingSource.DataSource = model;
+            calibrationOffsetsDataVmBindingSource.DataSource = vm;
 
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => calibrationOffsetsDataVmBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => calibrationOffsetsDataVmBindingSource.ResetBindings(false));
         }
     }
 

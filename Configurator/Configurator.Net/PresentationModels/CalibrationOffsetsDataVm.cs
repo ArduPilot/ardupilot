@@ -4,9 +4,9 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class CalibrationOffsetsDataVm : MonitorVm
+    public class CalibrationOffsetsDataVm : VmBase, IPresentationModel, ItalksToApm
     {
-        public CalibrationOffsetsDataVm(IComms sp) : base(sp)
+        public CalibrationOffsetsDataVm() 
         {
             PropsInUpdateOrder = new[] 
             { 
@@ -26,8 +26,6 @@ namespace ArducopterConfigurator.PresentationModels
 
         public ICommand UpdateCommand { get; private set; }
 
-      
-
         public float GyroRollOffset { get; set; }
         public float GyroPitchOffset { get; set; }
         public float GyroYawOffset { get; set; }
@@ -36,30 +34,39 @@ namespace ArducopterConfigurator.PresentationModels
         public float AccelPitchOffset { get; set; }
         public float AccelZOffset { get; set; }
 
-        protected override void OnActivated()
-        {
-            RefreshValues();
-        }
-
         private void RefreshValues()
         {
-            SendString("J");
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("J"));
         }
 
         public void UpdateValues()
         {
-            SendPropsWithCommand("I");
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(ComposePropsWithCommand("I")));
         }
 
-
-        protected override void OnStringReceived(string strReceived)
-        {
-            PopulatePropsFromUpdate(strReceived,true);
-        }
-
-        public override string Name
+        public string Name
         {
             get { return "Calibration"; }
         }
+
+        public void Activate()
+        {
+            RefreshValues();
+        }
+
+        public void DeActivate()
+        {
+        }
+
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
+        {
+            PopulatePropsFromUpdate(strRx, true);
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

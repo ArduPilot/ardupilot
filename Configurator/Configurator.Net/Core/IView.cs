@@ -4,7 +4,7 @@ namespace ArducopterConfigurator
 {
     public interface IView<Tmodel> where Tmodel : IPresentationModel
     {
-        void SetDataContext(Tmodel model);
+        void SetDataContext(Tmodel vm);
         Control Control { get; }
     }
 }

@@ -17,12 +17,12 @@ namespace ArducopterConfigurator.Views
             BindButtons();
         }
 
-        public override void SetDataContext(AltitudeHoldConfigVm model)
+        public override void SetDataContext(AltitudeHoldConfigVm vm)
         {
-            AltitudeHoldConfigBindingSource.DataSource = model;
+            AltitudeHoldConfigBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => AltitudeHoldConfigBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => AltitudeHoldConfigBindingSource.ResetBindings(false));
         }
     }
 

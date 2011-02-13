@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public abstract class ConfigWithPidsBase : MonitorVm
+    public abstract class ConfigWithPidsBase : VmBase
     {
 
         public float RollP { get;  set; }
@@ -18,15 +18,5 @@ namespace ArducopterConfigurator.PresentationModels
         public float YawP { get;  set; }
         public float YawI { get;  set; }
         public float YawD { get;  set; }
-
-
-        public ConfigWithPidsBase(IComms sp) : base(sp)
-        {
-        }
-
-        protected override void OnStringReceived(string strRx)
-        {
-            PopulatePropsFromUpdate(strRx,true);
-        }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace ArducopterConfigurator.PresentationModels
 {
     /// <summary>
@@ -8,10 +10,9 @@ namespace ArducopterConfigurator.PresentationModels
     /// in a different order
     /// There is a unit test to cover it but it will need fixing.
     /// </remarks>
-    public class AltitudeHoldConfigVm : MonitorVm
+    public class AltitudeHoldConfigVm : VmBase, IPresentationModel, ItalksToApm
     {
-        public AltitudeHoldConfigVm(IComms sp)
-            : base(sp)
+        public AltitudeHoldConfigVm()
         {
             PropsInUpdateOrder = new[] {  "P",  "I",  "D", };
         
@@ -29,27 +30,38 @@ namespace ArducopterConfigurator.PresentationModels
 
         private void RefreshValues()
         {
-            SendString("F");
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("F"));
         }
 
         public void UpdateValues()
         {
-            SendPropsWithCommand("E");
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(ComposePropsWithCommand("E")));
         }
 
-        protected override void OnActivated()
+        public string Name
+        {
+            get { return "Altitude Hold"; }
+        }
+
+        public void Activate()
         {
             RefreshValues();
         }
 
-        protected override void OnStringReceived(string strReceived)
+        public void DeActivate()
         {
-            PopulatePropsFromUpdate(strReceived,true);
         }
 
-        public override string Name
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
         {
-            get { return "Altitude Hold"; }
+            PopulatePropsFromUpdate(strRx, true);
+
         }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

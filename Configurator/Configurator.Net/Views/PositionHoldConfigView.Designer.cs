@@ -63,9 +63,9 @@
             this.groupBox2.Controls.Add(this.textBox4);
             this.groupBox2.Controls.Add(this.textBox5);
             this.groupBox2.Controls.Add(this.textBox6);
-            this.groupBox2.Location = new System.Drawing.Point(117, 4);
+            this.groupBox2.Location = new System.Drawing.Point(91, 3);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(108, 101);
+            this.groupBox2.Size = new System.Drawing.Size(83, 101);
             this.groupBox2.TabIndex = 12;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Pitch";
@@ -102,7 +102,7 @@
             this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "PitchD", true));
             this.textBox4.Location = new System.Drawing.Point(23, 71);
             this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(78, 20);
+            this.textBox4.Size = new System.Drawing.Size(50, 20);
             this.textBox4.TabIndex = 2;
             // 
             // PositionHoldConfigBindingSource
@@ -115,7 +115,7 @@
             this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "PitchI", true));
             this.textBox5.Location = new System.Drawing.Point(23, 45);
             this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(78, 20);
+            this.textBox5.Size = new System.Drawing.Size(50, 20);
             this.textBox5.TabIndex = 1;
             // 
             // textBox6
@@ -123,7 +123,7 @@
             this.textBox6.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "PitchP", true));
             this.textBox6.Location = new System.Drawing.Point(23, 19);
             this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(78, 20);
+            this.textBox6.Size = new System.Drawing.Size(50, 20);
             this.textBox6.TabIndex = 0;
             // 
             // groupBox3
@@ -136,7 +136,7 @@
             this.groupBox3.Controls.Add(this.textBox1);
             this.groupBox3.Location = new System.Drawing.Point(3, 3);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(108, 101);
+            this.groupBox3.Size = new System.Drawing.Size(82, 101);
             this.groupBox3.TabIndex = 11;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Roll";
@@ -173,7 +173,7 @@
             this.textBox3.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "RollD", true));
             this.textBox3.Location = new System.Drawing.Point(23, 71);
             this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(78, 20);
+            this.textBox3.Size = new System.Drawing.Size(50, 20);
             this.textBox3.TabIndex = 2;
             // 
             // textBox2
@@ -181,7 +181,7 @@
             this.textBox2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "RollI", true));
             this.textBox2.Location = new System.Drawing.Point(23, 45);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(78, 20);
+            this.textBox2.Size = new System.Drawing.Size(50, 20);
             this.textBox2.TabIndex = 1;
             // 
             // textBox1
@@ -189,29 +189,29 @@
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "RollP", true));
             this.textBox1.Location = new System.Drawing.Point(23, 19);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(78, 20);
+            this.textBox1.Size = new System.Drawing.Size(50, 20);
             this.textBox1.TabIndex = 0;
             // 
             // textBox7
             // 
             this.textBox7.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "MaximumAngle", true));
-            this.textBox7.Location = new System.Drawing.Point(238, 22);
+            this.textBox7.Location = new System.Drawing.Point(179, 22);
             this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(100, 20);
+            this.textBox7.Size = new System.Drawing.Size(50, 20);
             this.textBox7.TabIndex = 13;
             // 
             // textBox8
             // 
             this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.PositionHoldConfigBindingSource, "GeoCorrectionFactor", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.textBox8.Location = new System.Drawing.Point(238, 78);
+            this.textBox8.Location = new System.Drawing.Point(179, 75);
             this.textBox8.Name = "textBox8";
-            this.textBox8.Size = new System.Drawing.Size(100, 20);
+            this.textBox8.Size = new System.Drawing.Size(50, 20);
             this.textBox8.TabIndex = 14;
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(251, 6);
+            this.label7.Location = new System.Drawing.Point(180, 6);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(60, 13);
             this.label7.TabIndex = 15;
@@ -220,17 +220,17 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(235, 62);
+            this.label8.Location = new System.Drawing.Point(176, 48);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(114, 13);
+            this.label8.Size = new System.Drawing.Size(81, 26);
             this.label8.TabIndex = 16;
-            this.label8.Text = "Geo Correction Factor:";
+            this.label8.Text = "Geo Correction \r\nFactor:";
+            this.label8.Click += new System.EventHandler(this.label8_Click);
             // 
             // btnRefresh
             // 
-            this.btnRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnRefresh.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "RefreshCommand", true));
-            this.btnRefresh.Location = new System.Drawing.Point(195, 126);
+            this.btnRefresh.Location = new System.Drawing.Point(86, 110);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Size = new System.Drawing.Size(74, 23);
             this.btnRefresh.TabIndex = 18;
@@ -239,9 +239,8 @@
             // 
             // btnUpdate
             // 
-            this.btnUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnUpdate.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "UpdateCommand", true));
-            this.btnUpdate.Location = new System.Drawing.Point(275, 126);
+            this.btnUpdate.Location = new System.Drawing.Point(166, 110);
             this.btnUpdate.Name = "btnUpdate";
             this.btnUpdate.Size = new System.Drawing.Size(74, 23);
             this.btnUpdate.TabIndex = 17;
@@ -261,7 +260,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox3);
             this.Name = "PositionHoldConfigView";
-            this.Size = new System.Drawing.Size(352, 152);
+            this.Size = new System.Drawing.Size(259, 139);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PositionHoldConfigBindingSource)).EndInit();

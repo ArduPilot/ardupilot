@@ -17,12 +17,12 @@ namespace ArducopterConfigurator.views
             InitializeComponent();
         }
 
-        public override void SetDataContext(FlightDataVm model)
+        public override void SetDataContext(FlightDataVm vm)
         {
-            FlightDataVmBindingSource.DataSource = model;
+            FlightDataVmBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => FlightDataVmBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => FlightDataVmBindingSource.ResetBindings(false));
         }
     }
     // Required for VS2008 designer. No functional value

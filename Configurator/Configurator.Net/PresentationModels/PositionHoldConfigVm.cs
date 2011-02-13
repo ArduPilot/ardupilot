@@ -1,9 +1,10 @@
+using System;
+
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class PositionHoldConfigVm : ConfigWithPidsBase
+    public class PositionHoldConfigVm : ConfigWithPidsBase, IPresentationModel, ItalksToApm
     {
-        public PositionHoldConfigVm(IComms sp)
-            : base(sp)
+        public PositionHoldConfigVm()
         {
             PropsInUpdateOrder = new[] 
                                      { 
@@ -33,22 +34,41 @@ namespace ArducopterConfigurator.PresentationModels
         //C[P GPS ROLL];[I GPS ROLL];[D GPS ROLL];[P GPS PITCH];[I GPS PITCH];[D GPS PITCH];[GPS MAX ANGLE];[GEOG Correction factor]
         public void UpdateValues()
         {
-            SendPropsWithCommand("C");
+            if (sendTextToApm != null)
+                sendTextToApm(this,new sendTextToApmEventArgs(ComposePropsWithCommand("C")));
         }
 
         public void RefreshValues()
         {
-            SendString("D");
+            if (sendTextToApm != null)
+                sendTextToApm(this,new sendTextToApmEventArgs("D"));
         }
 
-        protected override void OnActivated()
+        public string Name
+        {
+            get { return "Position Hold"; }
+        }
+
+        public void Activate()
         {
             RefreshValues();
         }
 
-        public override string Name
+        public void DeActivate()
         {
-            get { return "Position Hold"; }
+            
         }
+
+        public void handleLineOfText(string strRx)
+        {
+            PopulatePropsFromUpdate(strRx,true);
+            if (updatedByApm != null)
+                updatedByApm(this,EventArgs.Empty);
+
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
+        
+        public event EventHandler updatedByApm;
     }
 }

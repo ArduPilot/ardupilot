@@ -8,7 +8,7 @@ namespace ArducopterConfigurator.PresentationModels
     {
         private readonly IComms _comms;
         private bool _isConnected;
-        private MonitorVm _selectedVm;
+        private IPresentationModel _selectedVm;
         private string _selectedPort;
         private string _apmVersion;
         private Timer _connectionAttemptsTimer;
@@ -21,18 +21,22 @@ namespace ArducopterConfigurator.PresentationModels
             _comms = session;
             _comms.LineOfDataReceived += _session_LineOfDataReceived;
 
-            MonitorVms = new BindingList<MonitorVm>
+            MonitorVms = new BindingList<IPresentationModel>
                              {
-                                 new FlightDataVm(session),
-                                 new TransmitterChannelsVm(session),
-                                 new MotorCommandsVm(session),
-                                 new CalibrationOffsetsDataVm(session),
-                                 new AcroModeConfigVm(session),
-                                 new StableModeConfigVm(session),
-                                 new PositionHoldConfigVm(session),
-                                 new AltitudeHoldConfigVm(session),
+                                 new FlightDataVm(),
+                                 new TransmitterChannelsVm(),
+                                 new FlightControlPidsVm(),
+                                 new PositionAltitudePidsVm(),
+                                 //new MotorCommandsVm(session),
+                                 new CalibrationOffsetsDataVm(),
                                  new SerialMonitorVm(session)
                              };
+
+            foreach (var vm in MonitorVms)
+            {
+                if (vm is ItalksToApm)
+                    (vm as ItalksToApm).sendTextToApm += MainVm_sendTextToApm;
+            }
 
             ConnectCommand = new DelegateCommand(
                 _ => Connect(),
@@ -56,6 +60,19 @@ namespace ArducopterConfigurator.PresentationModels
                 SelectedPort = AvailablePorts[AvailablePorts.Count-1];
         }
 
+        void MainVm_sendTextToApm(object sender, sendTextToApmEventArgs e)
+        {
+           if (sender.Equals(_selectedVm)==false)
+           {
+               Console.WriteLine("Non selected vm wants to send something to the APM");
+               return;
+           }
+
+            if (_comms.IsConnected)
+                _comms.Send(e.textToSend);
+         
+        }
+
         private void RefreshPorts()
         {
             AvailablePorts.Clear();
@@ -75,6 +92,11 @@ namespace ArducopterConfigurator.PresentationModels
                ApmVersion = strRx;
                ConnectionState = SessionStates.Connected;
                _selectedVm.Activate();
+           }
+           else if (ConnectionState == SessionStates.Connected)
+           {
+               if (_selectedVm is ItalksToApm)
+                   (_selectedVm as ItalksToApm).handleLineOfText(strRx);
            }
         }
 
@@ -182,24 +204,45 @@ namespace ArducopterConfigurator.PresentationModels
             }
         }
 
-        public BindingList<MonitorVm> MonitorVms { get; private set; }
+        public BindingList<IPresentationModel> MonitorVms { get; private set; }
         
         public string Name
         {
             get { return  "Arducopter Config"; }
         }
 
-        public void Select(MonitorVm vm)
+        public void Activate()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void DeActivate()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public event EventHandler updatedByApm;
+
+        public void Select(IPresentationModel vm)
         {
             if (_selectedVm==vm)
                 return;
 
+            if (vm == null)
+                throw new ArgumentNullException("vm");
+            
             if (_selectedVm!=null)
                 _selectedVm.DeActivate();
 
             _selectedVm = vm;
-            
             _selectedVm.Activate();
         }
+
+        public void handleLineOfText(string strRx)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }
