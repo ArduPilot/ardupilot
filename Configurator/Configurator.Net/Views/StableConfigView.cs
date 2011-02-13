@@ -17,12 +17,12 @@ namespace ArducopterConfigurator.Views
             BindButtons();
         }
 
-        public override void SetDataContext(StableModeConfigVm model)
+        public override void SetDataContext(StableModeConfigVm vm)
         {
-            StableModeConfigVmBindingSource.DataSource = model;
+            StableModeConfigVmBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => StableModeConfigVmBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => StableModeConfigVmBindingSource.ResetBindings(false));
         }
 
     }

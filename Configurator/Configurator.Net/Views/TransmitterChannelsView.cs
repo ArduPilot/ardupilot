@@ -17,12 +17,12 @@ namespace ArducopterConfigurator.Views
             BindButtons();
         }
 
-        public override void SetDataContext(TransmitterChannelsVm model)
+        public override void SetDataContext(TransmitterChannelsVm vm)
         {
-            TransmitterChannelsBindingSource.DataSource = model;
+            TransmitterChannelsBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => TransmitterChannelsBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => TransmitterChannelsBindingSource.ResetBindings(false));
         }
 
     }

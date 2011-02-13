@@ -9,30 +9,28 @@ using ArducopterConfigurator.PresentationModels;
 
 namespace ArducopterConfigurator
 {
-    public partial class SerialMonitorView : UserControl, IView<SerialMonitorVm>
+    public partial class PositionAltitudePidsView : UserControl, IView<PositionAltitudePidsVm>
     {
         private IPresentationModel _vm;
 
-        public SerialMonitorView()
+        public PositionAltitudePidsView()
         {
             InitializeComponent();
         }
 
-        public void SetDataContext(SerialMonitorVm vm)
+        public void SetDataContext(PositionAltitudePidsVm vm)
         {
-            serialMonitorVmBindingSource.DataSource = vm;
+            PositionAltitudePidsBindingSource.DataSource = vm;
             _vm = vm;
+
+            positionHoldConfigView1.SetDataContext(vm.Vm1);
+            altitudeHoldConfigView1.SetDataContext(vm.Vm2);
         }
 
      
         public Control Control
         {
             get { return this; }
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            (_vm as SerialMonitorVm).SendTextCommand();
         }
     }
 }

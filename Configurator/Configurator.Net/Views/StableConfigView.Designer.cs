@@ -29,13 +29,14 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StableConfigView));
             this.button2 = new System.Windows.Forms.Button();
+            this.StableModeConfigVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
             this.textBox7 = new System.Windows.Forms.TextBox();
-            this.StableModeConfigVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.textBox8 = new System.Windows.Forms.TextBox();
             this.textBox9 = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
@@ -54,8 +55,9 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.groupBox4.SuspendLayout();
+            this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).BeginInit();
+            this.groupBox4.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.SuspendLayout();
@@ -64,12 +66,17 @@
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.StableModeConfigVmBindingSource, "RefreshCommand", true));
-            this.button2.Location = new System.Drawing.Point(187, 134);
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(207, 109);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(74, 23);
+            this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 12;
-            this.button2.Text = "Refresh";
+            this.toolTips.SetToolTip(this.button2, "Refresh");
             this.button2.UseVisualStyleBackColor = true;
+            // 
+            // StableModeConfigVmBindingSource
+            // 
+            this.StableModeConfigVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.StableModeConfigVm);
             // 
             // groupBox4
             // 
@@ -79,9 +86,9 @@
             this.groupBox4.Controls.Add(this.textBox7);
             this.groupBox4.Controls.Add(this.textBox8);
             this.groupBox4.Controls.Add(this.textBox9);
-            this.groupBox4.Location = new System.Drawing.Point(234, 6);
+            this.groupBox4.Location = new System.Drawing.Point(184, 6);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(108, 101);
+            this.groupBox4.Size = new System.Drawing.Size(82, 101);
             this.groupBox4.TabIndex = 11;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Yaw";
@@ -118,19 +125,15 @@
             this.textBox7.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "YawD", true));
             this.textBox7.Location = new System.Drawing.Point(23, 71);
             this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(78, 20);
+            this.textBox7.Size = new System.Drawing.Size(50, 20);
             this.textBox7.TabIndex = 2;
-            // 
-            // StableModeConfigVmBindingSource
-            // 
-            this.StableModeConfigVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.StableModeConfigVm);
             // 
             // textBox8
             // 
             this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "YawI", true));
             this.textBox8.Location = new System.Drawing.Point(23, 45);
             this.textBox8.Name = "textBox8";
-            this.textBox8.Size = new System.Drawing.Size(78, 20);
+            this.textBox8.Size = new System.Drawing.Size(50, 20);
             this.textBox8.TabIndex = 1;
             // 
             // textBox9
@@ -138,7 +141,7 @@
             this.textBox9.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "YawP", true));
             this.textBox9.Location = new System.Drawing.Point(23, 19);
             this.textBox9.Name = "textBox9";
-            this.textBox9.Size = new System.Drawing.Size(78, 20);
+            this.textBox9.Size = new System.Drawing.Size(50, 20);
             this.textBox9.TabIndex = 0;
             // 
             // groupBox2
@@ -149,9 +152,9 @@
             this.groupBox2.Controls.Add(this.textBox4);
             this.groupBox2.Controls.Add(this.textBox5);
             this.groupBox2.Controls.Add(this.textBox6);
-            this.groupBox2.Location = new System.Drawing.Point(120, 6);
+            this.groupBox2.Location = new System.Drawing.Point(95, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(108, 101);
+            this.groupBox2.Size = new System.Drawing.Size(83, 101);
             this.groupBox2.TabIndex = 10;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Pitch";
@@ -188,7 +191,7 @@
             this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "PitchD", true));
             this.textBox4.Location = new System.Drawing.Point(23, 71);
             this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(78, 20);
+            this.textBox4.Size = new System.Drawing.Size(50, 20);
             this.textBox4.TabIndex = 2;
             // 
             // textBox5
@@ -196,7 +199,7 @@
             this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "PitchI", true));
             this.textBox5.Location = new System.Drawing.Point(23, 45);
             this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(78, 20);
+            this.textBox5.Size = new System.Drawing.Size(50, 20);
             this.textBox5.TabIndex = 1;
             // 
             // textBox6
@@ -204,7 +207,7 @@
             this.textBox6.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "PitchP", true));
             this.textBox6.Location = new System.Drawing.Point(23, 19);
             this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(78, 20);
+            this.textBox6.Size = new System.Drawing.Size(50, 20);
             this.textBox6.TabIndex = 0;
             // 
             // groupBox3
@@ -217,7 +220,7 @@
             this.groupBox3.Controls.Add(this.textBox1);
             this.groupBox3.Location = new System.Drawing.Point(6, 5);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(108, 101);
+            this.groupBox3.Size = new System.Drawing.Size(83, 101);
             this.groupBox3.TabIndex = 9;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Roll";
@@ -254,7 +257,7 @@
             this.textBox3.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "RollD", true));
             this.textBox3.Location = new System.Drawing.Point(23, 71);
             this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(78, 20);
+            this.textBox3.Size = new System.Drawing.Size(50, 20);
             this.textBox3.TabIndex = 2;
             // 
             // textBox2
@@ -262,7 +265,7 @@
             this.textBox2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "RollI", true));
             this.textBox2.Location = new System.Drawing.Point(23, 45);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(78, 20);
+            this.textBox2.Size = new System.Drawing.Size(50, 20);
             this.textBox2.TabIndex = 1;
             // 
             // textBox1
@@ -270,18 +273,19 @@
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "RollP", true));
             this.textBox1.Location = new System.Drawing.Point(23, 19);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(78, 20);
+            this.textBox1.Size = new System.Drawing.Size(50, 20);
             this.textBox1.TabIndex = 0;
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.StableModeConfigVmBindingSource, "UpdateCommand", true));
-            this.button1.Location = new System.Drawing.Point(267, 134);
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(239, 109);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(74, 23);
+            this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 8;
-            this.button1.Text = "Update";
+            this.toolTips.SetToolTip(this.button1, "Update");
             this.button1.UseVisualStyleBackColor = true;
             // 
             // checkBox1
@@ -290,9 +294,10 @@
             this.checkBox1.DataBindings.Add(new System.Windows.Forms.Binding("Checked", this.StableModeConfigVmBindingSource, "MagnetometerEnable", true));
             this.checkBox1.Location = new System.Drawing.Point(14, 112);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(100, 17);
+            this.checkBox1.Size = new System.Drawing.Size(94, 17);
             this.checkBox1.TabIndex = 13;
-            this.checkBox1.Text = "Magnetomoeter";
+            this.checkBox1.Text = "Magnetometer";
+            this.toolTips.SetToolTip(this.checkBox1, "Enable the use of the Magnetometer, if present");
             this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // StableConfigView
@@ -306,10 +311,10 @@
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.button1);
             this.Name = "StableConfigView";
-            this.Size = new System.Drawing.Size(344, 160);
+            this.Size = new System.Drawing.Size(271, 135);
+            ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).EndInit();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
@@ -346,5 +351,6 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.BindingSource StableModeConfigVmBindingSource;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.ToolTip toolTips;
     }
 }

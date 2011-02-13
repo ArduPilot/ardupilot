@@ -2,9 +2,9 @@ using System;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class AcroModeConfigVm : ConfigWithPidsBase
+    public class AcroModeConfigVm : ConfigWithPidsBase, IPresentationModel, ItalksToApm
     {
-        public AcroModeConfigVm(IComms sp) : base(sp)
+        public AcroModeConfigVm()
         {
             PropsInUpdateOrder = new[] 
                        { 
@@ -29,25 +29,45 @@ namespace ArducopterConfigurator.PresentationModels
         public ICommand RefreshCommand { get; private set; }
  
         public ICommand UpdateCommand { get; private set; }
+       
 
-        protected override void OnActivated()
+        public void UpdateValues()
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(ComposePropsWithCommand("O")));
+        }
+
+        public void RefreshValues()
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("P"));
+                
+        }
+
+        public string Name
+        {
+            get { return "Acro Mode"; }
+        }
+
+        public void Activate()
         {
             RefreshValues();
         }
 
-        private void RefreshValues()
+        public void DeActivate()
         {
-            SendString("P");
+            
         }
 
-        public void UpdateValues()
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
         {
-            SendPropsWithCommand("O");
+            PopulatePropsFromUpdate(strRx,true);
+            if (updatedByApm != null)
+                updatedByApm(this, EventArgs.Empty);
         }
 
-        public override string Name
-        {
-            get { return "Acro Mode"; }
-        }
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

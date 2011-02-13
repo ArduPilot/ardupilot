@@ -5,12 +5,37 @@ using System.IO.Ports;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class FlightDataVm : MonitorVm
+    public class FlightDataVm : VmBase, IPresentationModel, ItalksToApm
     {
-        public FlightDataVm(IComms _sp) : base(_sp)
+        public string Name
         {
-          
+            get { return "Flight Data"; }
         }
+
+        public void Activate()
+        {
+            if (sendTextToApm!=null)
+                sendTextToApm(this, new sendTextToApmEventArgs("S"));
+                
+        }
+
+        public void DeActivate()
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("X"));
+                
+        }
+
+        public event EventHandler updatedByApm;
+
+
+        public void handleLineOfText(string strRx)
+        {
+            OnStringReceived(strRx);
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
+
 
         // 2,-10,3,-2,1011,1012,1002,1000,1001,1003,1002,1004
         // Loop Time = 2
@@ -26,7 +51,7 @@ namespace ArducopterConfigurator.PresentationModels
         // Right Motor Command = 1002
         // Left Motor Command = 1004
         // then adc 4,3, and 5
-        protected override void OnStringReceived(string data)
+        private void OnStringReceived(string data)
         {
             var strs = data.Split(',');
             var ints = new List<int>();
@@ -191,22 +216,6 @@ namespace ArducopterConfigurator.PresentationModels
                 accelZ = value;
                 FirePropertyChanged("AccelZ");
             }
-        }
-
-        protected override void OnDeactivated()
-        {
-            SendString("X");
-        }
-
-
-        protected override void OnActivated()
-        {
-            SendString("S");
-        }
-
-        public override string Name
-        {
-            get { return "Flight Data"; }
         }
     }
 }

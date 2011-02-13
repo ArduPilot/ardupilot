@@ -9,19 +9,22 @@ using ArducopterConfigurator.PresentationModels;
 
 namespace ArducopterConfigurator
 {
-    public partial class SerialMonitorView : UserControl, IView<SerialMonitorVm>
+    public partial class FlightControlPidsView : UserControl, IView<FlightControlPidsVm>
     {
         private IPresentationModel _vm;
 
-        public SerialMonitorView()
+        public FlightControlPidsView()
         {
             InitializeComponent();
         }
 
-        public void SetDataContext(SerialMonitorVm vm)
+        public void SetDataContext(FlightControlPidsVm vm)
         {
-            serialMonitorVmBindingSource.DataSource = vm;
+            FlightControlPidsBindingSource.DataSource = vm;
             _vm = vm;
+
+            stableConfigView1.SetDataContext(vm.Vm2);
+            acroConfigView1.SetDataContext(vm.Vm1);
         }
 
      
@@ -30,9 +33,6 @@ namespace ArducopterConfigurator
             get { return this; }
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            (_vm as SerialMonitorVm).SendTextCommand();
-        }
+ 
     }
 }

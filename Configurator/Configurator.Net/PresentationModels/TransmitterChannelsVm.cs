@@ -1,11 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class TransmitterChannelsVm : MonitorVm
+    public class TransmitterChannelsVm : VmBase, ItalksToApm, IPresentationModel
     {
-        public TransmitterChannelsVm(IComms sp) : base(sp)
+        public TransmitterChannelsVm() 
         {
             PropsInUpdateOrder = new[] 
             { 
@@ -35,6 +36,11 @@ namespace ArducopterConfigurator.PresentationModels
 
 
         public ICommand ResetCommand { get; private set; }
+
+        public int RollMidValue { get; set; }
+        public int PitchMidValue { get; set; }
+        public int YawMidValue { get; set; }
+
 
         private int _roll;
         public int Roll
@@ -281,25 +287,33 @@ namespace ArducopterConfigurator.PresentationModels
             }
         }
 
-
-        protected override void OnActivated()
-        {
-            SendString("U");
-        }
-
-        protected override void OnDeactivated()
-        {
-            SendString("X");
-        }
-
-        protected override void OnStringReceived(string strReceived)
-        {
-            PopulatePropsFromUpdate(strReceived,false);
-        }
-
-        public override string Name
+        public  string Name
         {
             get { return "Transmitter Channels"; }
         }
+
+        public void Activate()
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs("U"));
+                
+        }
+
+        public void DeActivate()
+        {
+             if (sendTextToApm != null)
+                 sendTextToApm(this, new sendTextToApmEventArgs("X"));
+                
+        }
+
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
+        {
+            PopulatePropsFromUpdate(strRx, false);
+           
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

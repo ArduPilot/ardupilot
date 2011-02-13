@@ -46,14 +46,31 @@
     <Compile Include="PresentationModels\AltitudeHoldConfigVm.cs" />
     <Compile Include="PresentationModels\ConfigWithPidsBase.cs" />
     <Compile Include="Core\DelegateCommand.cs" />
+    <Compile Include="PresentationModels\DoubleVm.cs" />
+    <Compile Include="PresentationModels\PositionAltitudePidsVm.cs" />
+    <Compile Include="PresentationModels\FlightControlPidsVm.cs" />
+    <Compile Include="PresentationModels\ItalksToApm.cs" />
     <Compile Include="PresentationModels\MonitorVm.cs" />
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
+    <Compile Include="PresentationModels\VmBase.cs" />
     <Compile Include="Views\controls\LinearIndicatorControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Views\controls\LinearIndicatorControl.Designer.cs">
       <DependentUpon>LinearIndicatorControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PositionAltitudePidsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PositionAltitudePidsView.Designer.cs">
+      <DependentUpon>PositionAltitudePidsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FlightControlPidsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\FlightControlPidsView.Designer.cs">
+      <DependentUpon>FlightControlPidsView.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\mainForm.cs">
       <SubType>Form</SubType>
@@ -186,11 +203,19 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Views\PositionAltitudePidsView.resx">
+      <DependentUpon>PositionAltitudePidsView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\FlightControlPidsView.resx">
+      <DependentUpon>FlightControlPidsView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\icons\refresh.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Views\icons\arrow_up.png" />
     <Content Include="Views\icons\connect.ico" />
     <Content Include="Views\icons\disconnect.ico" />
+    <Content Include="Views\icons\saveIcon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

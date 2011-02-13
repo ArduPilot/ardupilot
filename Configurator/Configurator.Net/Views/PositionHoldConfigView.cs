@@ -15,12 +15,17 @@ namespace ArducopterConfigurator.Views
             BindButtons();
         }
 
-        public override void SetDataContext(PositionHoldConfigVm model)
+        public override void SetDataContext(PositionHoldConfigVm vm)
         {
-            PositionHoldConfigBindingSource.DataSource = model;
+            PositionHoldConfigBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => PositionHoldConfigBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => PositionHoldConfigBindingSource.ResetBindings(false));
+        }
+
+        private void label8_Click(object sender, System.EventArgs e)
+        {
+
         }
     }
     // Required for VS2008 designer. No functional value

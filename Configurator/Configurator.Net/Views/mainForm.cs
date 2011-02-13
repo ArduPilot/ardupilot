@@ -31,6 +31,8 @@ namespace ArducopterConfigurator
                          {typeof (PositionHoldConfigVm), typeof (PositionHoldConfigView)},
                          {typeof (AltitudeHoldConfigVm), typeof (AltitudeHoldConfigView)},
                          {typeof (SerialMonitorVm), typeof (SerialMonitorView)},
+                         {typeof (FlightControlPidsVm), typeof (FlightControlPidsView)},
+                         {typeof (PositionAltitudePidsVm), typeof (PositionAltitudePidsView)},
                      };
 
 
@@ -44,6 +46,10 @@ namespace ArducopterConfigurator
                 var methodInfo = this.GetType().GetMethod("BindView");
                 var closedBindViewMethod = methodInfo.MakeGenericMethod(model.GetType());
                 return closedBindViewMethod.Invoke(this, new[] { model, view }) as Control;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("model","Cannot find entry in view map for type: " + model.GetType());
             }
             return null;
         }
@@ -89,12 +95,12 @@ namespace ArducopterConfigurator
      
         #region Implementation of IView
 
-        public void SetDataContext(MainVm model)
+        public void SetDataContext(MainVm vm)
         {
-            _vm = model;
-            mainVmBindingSource.DataSource = model;
+            _vm = vm;
+            mainVmBindingSource.DataSource = vm;
             
-            availablePortsBindingSource.DataSource = model.AvailablePorts;
+            availablePortsBindingSource.DataSource = vm.AvailablePorts;
             
 
             foreach (var monitorVm in _vm.MonitorVms)
@@ -109,7 +115,7 @@ namespace ArducopterConfigurator
                 tabCtrlMonitorVms.TabPages.Add(tp);
             }
 
-            var tabVm = tabCtrlMonitorVms.SelectedTab.Tag as MonitorVm;
+            var tabVm = tabCtrlMonitorVms.SelectedTab.Tag as IPresentationModel;
             _vm.Select(tabVm);
 
             UpdateConnectionStatusLabel();
@@ -117,7 +123,7 @@ namespace ArducopterConfigurator
 
             // hack for INPC subscribe bug in Mono
             if (Program.IsMonoRuntime)
-                model.PropertyChanged += ((sender, e) => mainVmBindingSource.ResetBindings(false));
+                vm.PropertyChanged += ((sender, e) => mainVmBindingSource.ResetBindings(false));
 
         }
 
@@ -132,7 +138,7 @@ namespace ArducopterConfigurator
         {
             var control = e.TabPage.Controls[0];
             control.Size = e.TabPage.ClientRectangle.Size;
-            var tabVm = e.TabPage.Tag as MonitorVm;
+            var tabVm = e.TabPage.Tag as IPresentationModel;
             _vm.Select(tabVm);
         }
 

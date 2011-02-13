@@ -4,6 +4,8 @@ using System.Text;
 
 namespace ArducopterConfigurator
 {
+    // Vm base has functionality for populating properties using reflection
+
     /// <summary>
     /// Monitor VM base class
     /// </summary>
@@ -47,6 +49,8 @@ namespace ArducopterConfigurator
             isActive = false;
             OnDeactivated();
         }
+
+        public event EventHandler updatedByApm;
 
         protected virtual void OnDeactivated()
         {
@@ -92,7 +96,7 @@ namespace ArducopterConfigurator
             
             if (PropsInUpdateOrder.Length!=strs.Length)
             {
-                Console.WriteLine("Processing update with " + strs.Length 
+                Console.WriteLine(Name +  ": Processing update with " + strs.Length 
                     + " values, but have " + PropsInUpdateOrder.Length
                     + " properties to populate. Ignoring this update");
                 return;
@@ -169,5 +173,12 @@ namespace ArducopterConfigurator
             var sentence = commandChar + string.Join(";", strings);
             SendString(sentence);
         }
+
+        public void handleLineOfText(string strRx)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

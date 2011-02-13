@@ -44,6 +44,23 @@ namespace ArducopterConfigurator
 
             if (stringSent == "!")
                 ReturnData("Fake");
+
+            if (stringSent == "D")  // position
+                ReturnData("0.015,0.005,0.010,0.015,0.005,0.010,22.000,0.870");
+              if (stringSent == "B")  // stable
+                ReturnData("1.950,0.100,0.200,1.950,0.300,0.400,3.200,0.500,0.600,0.320,1.00");
+               if (stringSent == "P")  // acro
+                ReturnData("3.950,0.100,0.000,0.000,0.300,0.400,3.200,0.500,0.600,0.320");
+              if (stringSent == "F")  // alti
+                  ReturnData("0.800,0.200,0.300");
+            if (stringSent == "J")  // calib
+                ReturnData("0.100,0.200,0.300,0.400,0.500,0.600");
+
+
+
+            
+         
+           
             if (stringSent == "S")
             {
                 // Loop Time = 2
