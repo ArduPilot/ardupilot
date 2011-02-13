@@ -77,7 +77,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(171, 14);
+            this.label9.Location = new System.Drawing.Point(103, 10);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(28, 13);
             this.label9.TabIndex = 30;
@@ -86,7 +86,7 @@
             // textBox6
             // 
             this.textBox6.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Yaw", true));
-            this.textBox6.Location = new System.Drawing.Point(280, 30);
+            this.textBox6.Location = new System.Drawing.Point(212, 26);
             this.textBox6.Name = "textBox6";
             this.textBox6.ReadOnly = true;
             this.textBox6.Size = new System.Drawing.Size(47, 20);
@@ -95,7 +95,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(171, 64);
+            this.label3.Location = new System.Drawing.Point(103, 60);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(25, 13);
             this.label3.TabIndex = 33;
@@ -104,7 +104,7 @@
             // textBox1
             // 
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Roll", true));
-            this.textBox1.Location = new System.Drawing.Point(280, 80);
+            this.textBox1.Location = new System.Drawing.Point(212, 76);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
             this.textBox1.Size = new System.Drawing.Size(47, 20);
@@ -131,7 +131,7 @@
             // textBox4
             // 
             this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Mode", true));
-            this.textBox4.Location = new System.Drawing.Point(137, 210);
+            this.textBox4.Location = new System.Drawing.Point(143, 186);
             this.textBox4.Name = "textBox4";
             this.textBox4.ReadOnly = true;
             this.textBox4.Size = new System.Drawing.Size(47, 20);
@@ -140,7 +140,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(141, 115);
+            this.label4.Location = new System.Drawing.Point(156, 104);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(34, 13);
             this.label4.TabIndex = 38;
@@ -149,7 +149,7 @@
             // textBox5
             // 
             this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Aux", true));
-            this.textBox5.Location = new System.Drawing.Point(197, 210);
+            this.textBox5.Location = new System.Drawing.Point(203, 186);
             this.textBox5.Name = "textBox5";
             this.textBox5.ReadOnly = true;
             this.textBox5.Size = new System.Drawing.Size(47, 20);
@@ -158,7 +158,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(201, 115);
+            this.label5.Location = new System.Drawing.Point(209, 104);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(25, 13);
             this.label5.TabIndex = 41;
@@ -224,14 +224,14 @@
             this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "ModeMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Mode", true));
             this.linearIndicatorControl2.IsVertical = true;
-            this.linearIndicatorControl2.Location = new System.Drawing.Point(155, 131);
+            this.linearIndicatorControl2.Location = new System.Drawing.Point(161, 123);
             this.linearIndicatorControl2.Max = 2000;
             this.linearIndicatorControl2.MaxWaterMark = 0;
             this.linearIndicatorControl2.Min = 1000;
             this.linearIndicatorControl2.MinWatermark = 0;
             this.linearIndicatorControl2.Name = "linearIndicatorControl2";
             this.linearIndicatorControl2.Offset = 0;
-            this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 73);
+            this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 57);
             this.linearIndicatorControl2.TabIndex = 45;
             this.linearIndicatorControl2.Value = 1050;
             this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.Red;
@@ -248,14 +248,14 @@
             this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "AuxMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Aux", true));
             this.linearIndicatorControl4.IsVertical = true;
-            this.linearIndicatorControl4.Location = new System.Drawing.Point(206, 131);
+            this.linearIndicatorControl4.Location = new System.Drawing.Point(212, 123);
             this.linearIndicatorControl4.Max = 2000;
             this.linearIndicatorControl4.MaxWaterMark = 0;
             this.linearIndicatorControl4.Min = 1000;
             this.linearIndicatorControl4.MinWatermark = 0;
             this.linearIndicatorControl4.Name = "linearIndicatorControl4";
             this.linearIndicatorControl4.Offset = 0;
-            this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 73);
+            this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 57);
             this.linearIndicatorControl4.TabIndex = 46;
             this.linearIndicatorControl4.Value = 1900;
             this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.Red;
@@ -272,7 +272,7 @@
             this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "RollMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Roll", true));
             this.linearIndicatorControl5.IsVertical = false;
-            this.linearIndicatorControl5.Location = new System.Drawing.Point(174, 80);
+            this.linearIndicatorControl5.Location = new System.Drawing.Point(106, 76);
             this.linearIndicatorControl5.Max = 2000;
             this.linearIndicatorControl5.MaxWaterMark = 0;
             this.linearIndicatorControl5.Min = 1000;
@@ -296,7 +296,7 @@
             this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("MinWatermark", this.TransmitterChannelsBindingSource, "YawMin", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.TransmitterChannelsBindingSource, "Yaw", true));
             this.linearIndicatorControl6.IsVertical = false;
-            this.linearIndicatorControl6.Location = new System.Drawing.Point(174, 30);
+            this.linearIndicatorControl6.Location = new System.Drawing.Point(106, 26);
             this.linearIndicatorControl6.Max = 2000;
             this.linearIndicatorControl6.MaxWaterMark = 0;
             this.linearIndicatorControl6.Min = 1000;
@@ -342,7 +342,7 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Name = "TransmitterChannelsView";
-            this.Size = new System.Drawing.Size(369, 244);
+            this.Size = new System.Drawing.Size(465, 244);
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

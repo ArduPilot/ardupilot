@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PositionHoldConfigView));
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -230,21 +231,21 @@
             // btnRefresh
             // 
             this.btnRefresh.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "RefreshCommand", true));
-            this.btnRefresh.Location = new System.Drawing.Point(86, 110);
+            this.btnRefresh.Image = ((System.Drawing.Image)(resources.GetObject("btnRefresh.Image")));
+            this.btnRefresh.Location = new System.Drawing.Point(171, 113);
             this.btnRefresh.Name = "btnRefresh";
-            this.btnRefresh.Size = new System.Drawing.Size(74, 23);
+            this.btnRefresh.Size = new System.Drawing.Size(26, 26);
             this.btnRefresh.TabIndex = 18;
-            this.btnRefresh.Text = "Refresh";
             this.btnRefresh.UseVisualStyleBackColor = true;
             // 
             // btnUpdate
             // 
             this.btnUpdate.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "UpdateCommand", true));
-            this.btnUpdate.Location = new System.Drawing.Point(166, 110);
+            this.btnUpdate.Image = ((System.Drawing.Image)(resources.GetObject("btnUpdate.Image")));
+            this.btnUpdate.Location = new System.Drawing.Point(203, 113);
             this.btnUpdate.Name = "btnUpdate";
-            this.btnUpdate.Size = new System.Drawing.Size(74, 23);
+            this.btnUpdate.Size = new System.Drawing.Size(26, 26);
             this.btnUpdate.TabIndex = 17;
-            this.btnUpdate.Text = "Update";
             this.btnUpdate.UseVisualStyleBackColor = true;
             // 
             // PositionHoldConfigView
