@@ -868,7 +868,8 @@ void fake_out_gps()
 	
 	GPS.latitude	= 377696000;	// Y
 	GPS.longitude	= -1224319000;	// X
-
+	GPS.altitude	= 9000;			// meters * 100
+	
 	//next_WP.lng	 	= home.lng - length * sin(rads);   // X
 	//next_WP.lat 	= home.lat + length * cos(rads);   // Y
 }

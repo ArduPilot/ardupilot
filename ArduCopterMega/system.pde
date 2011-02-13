@@ -258,9 +258,7 @@ void set_mode(byte mode)
 		
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
-	
-	save_EEPROM_PID();
-	
+		
 	// used to stop fly_aways
 	if(rc_1.control_in == 0){
 		// we are on the ground is this is true

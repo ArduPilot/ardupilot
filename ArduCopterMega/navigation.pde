@@ -149,6 +149,10 @@ void calc_altitude_error()
 	//Serial.printf("s: %d %d t_alt %d\n", (int)current_loc.alt, (int)altitude_error, (int)target_altitude);
 }
 
+//	target_altitude = current_loc.alt;						// PH: target_altitude = -200
+//	offset_altitude = next_WP.alt - current_loc.alt;		// PH: offset_altitude = 0
+
+
 long wrap_360(long error)
 {
 	if (error > 36000)	error -= 36000;

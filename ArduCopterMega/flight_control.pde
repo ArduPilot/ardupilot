@@ -28,13 +28,15 @@ void calc_nav_throttle()
 		float t = pid_baro_throttle.kP();
 		
 		if(error > 0){
-			//pid_baro_throttle.kP(.25);
+			pid_baro_throttle.kP(t);
 		}else{
 			pid_baro_throttle.kP(t/4.0);
 		}
+		
 		// limit output of throttle control
 		nav_throttle = pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
-		nav_throttle = throttle_cruise + constrain(nav_throttle, -20, 70);
+		nav_throttle = throttle_cruise + constrain(nav_throttle, -30, 80);
+		
 		pid_baro_throttle.kP(t);
 		
 	} else {
@@ -44,6 +46,9 @@ void calc_nav_throttle()
 		// limit output of throttle control
 		nav_throttle = throttle_cruise + constrain(nav_throttle, -60, 100);
 	}
+	
+	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
+	nav_throttle_old = nav_throttle;
 }
 
 float angle_boost()
