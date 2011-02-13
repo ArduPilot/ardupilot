@@ -3,52 +3,47 @@ using System.IO.Ports;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-  public class SerialMonitorVm : MonitorVm
+    public class SerialMonitorVm : NotifyProperyChangedBase, IPresentationModel
     {
         private string _text;
-
-        public SerialMonitorVm(IComms _sp) : base(_sp)
-        {
-            _sp.LineOfDataReceived += new Action<string>(_sp_DataReceived);
-          
-        }
-
-        void _sp_DataReceived(string obj)
-        {
-            _text += obj;
-            FirePropertyChanged("ReceviedText");
-        }
 
         public string ReceviedText { get { return _text; } }
         
         public string SendText { get; set;  }
-
-
-      protected override void OnActivated()
-        {
-          
-            SendString("X");
-            _text = string.Empty;
-            FirePropertyChanged("ReceviedText");
-        }
-       
-
-        protected override void OnStringReceived(string strReceived)
-        {
-            _text += strReceived;
-            FirePropertyChanged("ReceviedText");
-        }
-
-        public override string Name
+     
+        public string Name
         {
             get { return "Serial Monitor"; }
         }
 
+        public void Activate()
+        {
+            _text = string.Empty;
+            FirePropertyChanged("ReceviedText");
+        }
+
+        public void DeActivate()
+        {
+              if (sendTextToApm!=null)
+                sendTextToApm(this, new sendTextToApmEventArgs("X"));
+        }
+
+        public event EventHandler updatedByApm;
+
         public void SendTextCommand()
         {
-            SendString(SendText);
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(SendText));
             SendText = "";
             FirePropertyChanged("SendText");
         }
+
+        public void handleLineOfText(string strRx)
+        {
+            _text += strRx + Environment.NewLine;
+            FirePropertyChanged("ReceviedText");
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

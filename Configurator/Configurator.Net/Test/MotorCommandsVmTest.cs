@@ -12,11 +12,14 @@ namespace ArducopterConfiguratorTest
         [SetUp]
         public void Setup()
         {
-            _mockComms = new MockComms();
-            _vm = new MotorCommandsVm(_mockComms);
+         
         }
 
-       
+       // Todo 
+        // test that it stops all motors on deactivate
+        
+
+
 
 
     }

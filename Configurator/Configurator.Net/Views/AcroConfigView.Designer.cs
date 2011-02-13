@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AcroConfigView));
             this.button2 = new System.Windows.Forms.Button();
             this.AcroModeConfigVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.groupBox4 = new System.Windows.Forms.GroupBox();
@@ -65,11 +66,11 @@
             // button2
             // 
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AcroModeConfigVmBindingSource, "RefreshCommand", true));
-            this.button2.Location = new System.Drawing.Point(125, 109);
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(206, 108);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(65, 23);
+            this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 12;
-            this.button2.Text = "Refresh";
             this.button2.UseVisualStyleBackColor = true;
             // 
             // AcroModeConfigVmBindingSource
@@ -277,11 +278,11 @@
             // button1
             // 
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AcroModeConfigVmBindingSource, "UpdateCommand", true));
-            this.button1.Location = new System.Drawing.Point(196, 109);
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(235, 108);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(65, 23);
+            this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 8;
-            this.button1.Text = "Update";
             this.button1.UseVisualStyleBackColor = true;
             // 
             // textBox10
