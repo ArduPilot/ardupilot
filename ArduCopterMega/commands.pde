@@ -133,7 +133,9 @@ void
 set_current_loc_here()
 {
 	//struct Location temp;
-	set_next_WP(&current_loc);
+	Location l = current_loc;
+	l.alt = get_altitude_above_home();
+	set_next_WP(&l);
 }
 
 /*
@@ -160,8 +162,8 @@ set_next_WP(struct Location *wp)
 
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
-	target_altitude = current_loc.alt;
-	offset_altitude = next_WP.alt - current_loc.alt;
+	target_altitude = current_loc.alt;						// PH: target_altitude = 200
+	offset_altitude = next_WP.alt - current_loc.alt;		// PH: offset_altitude = 0
 	
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 	= 0;

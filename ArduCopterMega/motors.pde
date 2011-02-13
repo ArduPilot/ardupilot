@@ -182,6 +182,7 @@ set_servos_4()
 			write_int(motor_out[CH_3]);
 			write_int(motor_out[CH_4]);
 			
+			write_int(rc_3.servo_out);
 			write_int((int)(cos_yaw_x * 100));
 			write_int((int)(sin_yaw_y * 100));
 			write_int((int)(dcm.yaw_sensor / 100));
@@ -192,11 +193,12 @@ set_servos_4()
 
 			write_int((int)nav_roll);
 			write_int((int)nav_pitch);
+			
 			//24
-			write_long(home.lat);	//28
-			write_long(home.lng);	//32
-			write_int((int)home.alt);	//34
-
+			write_long(current_loc.lat);	//28
+			write_long(current_loc.lng);	//32
+			write_int((int)current_loc.alt);	//34
+			
 			write_long(next_WP.lat);
 			write_long(next_WP.lng);
 			write_int((int)next_WP.alt);		//44
