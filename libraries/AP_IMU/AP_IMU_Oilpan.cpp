@@ -82,32 +82,32 @@ AP_IMU_Oilpan::init_gyro(Start_style style)
  	delay(500);
 	Serial.println("Init Gyro");
 
-	for(int c = 0; c < 200; c++){
+	for(int c = 0; c < 25; c++){				// Mostly we are just flashing the LED's here to tell the user to keep the IMU still
 		digitalWrite(A_LED_PIN, LOW);
 		digitalWrite(C_LED_PIN, HIGH);
 		delay(20);
 
 		for (int i = 0; i < 6; i++)
 			adc_in[i] = _adc->Ch(_sensors[i]);
-
+			
 		digitalWrite(A_LED_PIN, HIGH);
 		digitalWrite(C_LED_PIN, LOW);
 		delay(20);
 	}
 
-	for(int i = 0; i < 200; i++){
+	for (int j = 0; j <= 2; j++){
+		adc_in[j] -= _gyro_temp_comp(j, tc_temp);
+		_adc_offset[j]	= adc_in[j];
+	}
+
+	for(int i = 0; i < 50; i++){
 		for (int j = 0; j <= 2; j++){
 			adc_in[j] = _adc->Ch(_sensors[j]);
-
 			// Subtract temp compensated typical gyro bias
 			adc_in[j] -= _gyro_temp_comp(j, tc_temp);
-
 			// filter
 			_adc_offset[j] = _adc_offset[j] * 0.9 + adc_in[j] * 0.1;
-			//Serial.print(_adc_offset[j], 1);
-			//Serial.print(", ");
 		}
-		//Serial.println(" ");
 
 		delay(20);
 		if(flashcount == 5) {
@@ -123,7 +123,6 @@ AP_IMU_Oilpan::init_gyro(Start_style style)
 		}
 		flashcount++;
 	}
-	Serial.println(" ");
 
 	_save_gyro_cal();
 }
@@ -151,27 +150,19 @@ AP_IMU_Oilpan::init_accel(Start_style style) // 3, 4, 5
 
 	for (int j = 3; j <= 5; j++){
 		adc_in[j] 		= _adc->Ch(_sensors[j]);
-		adc_in[j] 		-= 2025;		// XXX bias value?
+		adc_in[j] 		-= 2025;		// Typical accel bias value - subtracted in _accel_in() and update()
 		_adc_offset[j]	= adc_in[j];
 	}
 
-	for(int i = 0; i < 200; i++){		// We take some readings...
+	for(int i = 0; i < 50; i++){		// We take some readings...
 
 		delay(20);
 
 		for (int j = 3; j <= 5; j++){
 			adc_in[j] 		= _adc->Ch(_sensors[j]);
-			adc_in[j] 		-= 2025;
+			adc_in[j] 		-= 2025;		// Typical accel bias value - subtracted in _accel_in() and update()
 			_adc_offset[j]	= _adc_offset[j] * 0.9 + adc_in[j] * 0.1;
-			//Serial.print(j);
-			//Serial.print(": ");
-			//Serial.print(adc_in[j], 1);
-			//Serial.print(" | ");
-			//Serial.print(_adc_offset[j], 1);
-			//Serial.print(", ");
 		}
-
-		//Serial.println(" ");
 
 		if(flashcount == 5) {
 			Serial.print("*");
