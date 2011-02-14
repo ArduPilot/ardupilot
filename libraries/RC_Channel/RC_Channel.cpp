@@ -1,7 +1,7 @@
 /*
 	RC_Channel.cpp - Radio library for Arduino
 	Code by Jason Short. DIYDrones.com
-	
+
 	This library is free software; you can redistribute it and / or
 		modify it under the terms of the GNU Lesser General Public
 		License as published by the Free Software Foundation; either
@@ -18,7 +18,7 @@
 #define RANGE 1
 
 // setup the control preferences
-void 	
+void
 RC_Channel::set_range(int low, int high)
 {
 	_type 	= RANGE;
@@ -74,19 +74,19 @@ RC_Channel::set_pwm(int pwm)
 	}else{
 		radio_in = pwm;
 	}
-	
+
 	if(_type == RANGE){
 		//Serial.print("range ");
 		control_in = pwm_to_range();
 		control_in = (control_in < dead_zone) ? 0 : control_in;
-		if(scale_output){
+		if (fabs(scale_output) > 0){
 			control_in *= scale_output;
 		}
-		
+
 	}else{
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
-		if(scale_output){
+		if (fabs(scale_output) > 0){
 			control_in *= scale_output;
 		}
 	}
@@ -117,7 +117,7 @@ RC_Channel::calc_pwm(void)
 		pwm_out 	= angle_to_pwm();
 		radio_out 	= pwm_out + radio_trim;
 	}
-	radio_out = constrain(radio_out,radio_min, radio_max);
+	radio_out = constrain(radio_out, radio_min.get(), radio_max.get());
 }
 
 // ------------------------------------------
@@ -125,32 +125,21 @@ RC_Channel::calc_pwm(void)
 void
 RC_Channel::load_eeprom(void)
 {
-	radio_min 	= eeprom_read_word((uint16_t *)	_address);
-	radio_max	= eeprom_read_word((uint16_t *)	(_address + 2));
-	radio_trim 	= eeprom_read_word((uint16_t *)	(_address + 4));
-	//radio_min 	= _ee.read_int(_address);
-	//radio_max	= _ee.read_int(_address + 2);
-	//radio_trim 	= _ee.read_int(_address + 4);
+    _group.load();
 }
 
 void
 RC_Channel::save_eeprom(void)
 {
-	eeprom_write_word((uint16_t *)	_address, 			radio_min);
-	eeprom_write_word((uint16_t *)	(_address + 2), 	radio_max);
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
-	
-	//_ee.write_int(_address, 		radio_min);
-	//_ee.write_int((_address + 2), 	radio_max);
-	//_ee.write_int((_address + 4), 	radio_trim);
+    _group.save();
 }
 
 // ------------------------------------------
+//XXX is this still in use?
 void
 RC_Channel::save_trim(void)
 {
-	eeprom_write_word((uint16_t *)	(_address + 4), 	radio_trim);
-	//_ee.write_int((_address + 4), 	radio_trim);
+    _group.save();
 }
 
 // ------------------------------------------
@@ -158,14 +147,14 @@ RC_Channel::save_trim(void)
 void
 RC_Channel::zero_min_max()
 {
-	radio_min = radio_min = radio_in;
+	radio_min = radio_max = radio_in;
 }
 
 void
 RC_Channel::update_min_max()
 {
-	radio_min = min(radio_min, radio_in);
-	radio_max = max(radio_max, radio_in);
+	radio_min = min(radio_min.get(), radio_in);
+	radio_max = max(radio_max.get(), radio_in);
 }
 
 // ------------------------------------------
@@ -177,7 +166,7 @@ RC_Channel::pwm_to_angle()
 		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_trim - radio_min);
 	else
 		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_max  - radio_trim);
-		
+
 		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
 		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
 }
@@ -221,7 +210,7 @@ RC_Channel::range_to_pwm()
 
 // ------------------------------------------
 
-float 
+float
 RC_Channel::norm_input()
 {
 	if(radio_in < radio_trim)
@@ -230,7 +219,7 @@ RC_Channel::norm_input()
 		return _reverse * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
 }
 
-float 
+float
 RC_Channel::norm_output()
 {
 	if(radio_out < radio_trim)

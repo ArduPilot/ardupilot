@@ -6,31 +6,23 @@
 #ifndef RC_Channel_h
 #define RC_Channel_h
 
+#include <AP_Common.h>
 #include <stdint.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel{
-  public:	
+  public:
 	/// Constructor
 	///
-	/// A RC_Channel constructed in this fashion does not support save/restore.
+	/// @param key      EEPROM storage key for the channel trim parameters.
+	/// @param name     Optional name for the group.
 	///
-	RC_Channel() :
-		_address(0),
-		_reverse(1),
-		dead_zone(0),
-		scale_output(1.0)
-	{}
-
-	/// Constructor
-	///
-	/// @param address	EEPROM base address at which RC_Channel parameters
-	///					are stored.  Zero if the RC_Channel does not support
-	///					save/restore.
-	///
-	RC_Channel(uint16_t address) :
-		_address(address),
+	RC_Channel(AP_Var::Key key, const prog_char *name) :
+	    _group(key, name),
+        radio_min (&_group, 0, 1500, name ? "MIN" : 0), // suppress name if group has no name
+        radio_trim(&_group, 1, 1500, name ? "TRIM" : 0),
+        radio_max (&_group, 2, 1500, name ? "MAX" : 0),
 		_high(1),
 		_filter(true),
 		_reverse(1),
@@ -41,11 +33,11 @@ class RC_Channel{
 	// setup min and max radio values in CLI
 	void 		update_min_max();
 	void 		zero_min_max();
-	
+
 	// startup
 	void 		load_eeprom(void);
-	void 		save_eeprom(void);		
-	void 		save_trim(void);		
+	void 		save_eeprom(void);
+	void 		save_trim(void);
 	void		set_filter(bool filter);
 
 	// setup the control preferences
@@ -56,22 +48,22 @@ class RC_Channel{
 
 	// read input from APM_RC - create a control_in value
 	void 		set_pwm(int pwm);
-	
+
 	// pwm is stored here
 	int16_t		radio_in;
 
 	// call after first set_pwm
 	void 		trim();
-	
+
 	// did our read come in 50µs below the min?
 	bool		get_failsafe(void);
-	
+
 	// value generated from PWM
 	int16_t 	control_in;
 	int16_t 	dead_zone; // used to keep noise down and create a dead zone.
-	
+
 	int			control_mix(float value);
-	
+
 	// current values to the servos - degrees * 100 (approx assuming servo is -45 to 45 degrees except [3] is 0 to 100
 	int16_t 	servo_out;
 
@@ -82,10 +74,10 @@ class RC_Channel{
 	int16_t 	pwm_out;
 	int16_t 	radio_out;
 
-	int16_t 	radio_min;
-	int16_t 	radio_trim;
-	int16_t 	radio_max;
-	
+	AP_Int16 	radio_min;
+	AP_Int16 	radio_trim;
+	AP_Int16 	radio_max;
+
 	// includes offset from PWM
 	//int16_t 	get_radio_out(void);
 
@@ -97,18 +89,18 @@ class RC_Channel{
 	int16_t		range_to_pwm();
 
 	float		scale_output;
-	
+
   private:
+	AP_Var_group    _group;
 	bool		_filter;
 	int8_t 		_reverse;
 
-	int16_t		_address;			///< EEPROM address for save/restore of P/I/D
-	bool 		_type;				
+	bool 		_type;
 	int16_t 	_high;
 	int16_t 	_low;
 };
 
-#endif	
+#endif
 
 
 
