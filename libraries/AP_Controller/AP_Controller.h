@@ -52,7 +52,7 @@ protected:
 class ToServo: public Block
 {
 public:
-    ToServo(AP_RcChannel & ch) : _ch(ch)
+    ToServo(AP_RcChannel * ch) : _ch(ch)
     {
     }
     virtual void connect(Block * block)
@@ -63,11 +63,11 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
-            _ch.setPosition(APVarPtr2Float(_output[0]));
+            _ch->setNormalized(APVarPtr2Float(_input[0]));
     }
 private:
     float _position;
-    AP_RcChannel & _ch;
+    AP_RcChannel * _ch;
 };
 
 /// SumGain
@@ -94,16 +94,14 @@ public:
         if ( (&var6 == &AP_Float_zero) || (&gain6 == &AP_Float_zero) ) add(var6,gain6);
         if ( (&var7 == &AP_Float_zero) || (&gain7 == &AP_Float_zero) ) add(var7,gain7);
         if ( (&var8 == &AP_Float_zero) || (&gain8 == &AP_Float_zero) ) add(var8,gain8);
+
+        // create output
+        _output.push_back(new AP_Float(0));
     }
     void add(AP_Var & var, AP_Var & gain)
     {
         _input.push_back(&var);
         _gain.push_back(&gain);
-    }
-    virtual void connect(Block * block)
-    {
-        if (block->getOutput().getSize() > 0)
-            _input.push_back(block->getOutput()[0]);
     }
     virtual void update(const float & dt = 0)
     {
@@ -140,12 +138,13 @@ public:
     }
     virtual void connect(Block * block)
     {
+        if (!block) return;
         if (block->getOutput().getSize() > 0)
             _input.push_back(block->getOutput()[0]);
     }
     virtual void update(const float & dt = 0)
     {
-        if (_output.getSize() < 1) return;
+        if (_output.getSize() < 1 || !_input[0] || !_output[0]) return;
 
         // derivative
         float RC = 1/(2*M_PI*_fCut); // low pass filter
@@ -160,6 +159,18 @@ public:
 
         // pid sum
         *_output[0] = _kP*_e + _kI*_eI +  _kD*_eD;
+
+
+        Serial.println("debug");
+        Serial.println(_kP);
+        Serial.println(_kI);
+        Serial.println(_kD);
+        Serial.println(_e);
+        Serial.println(_eI);
+        Serial.println(_eD);
+        Serial.println(APVarPtr2Float(_output[0]));
+
+
     }
 private:
     float _e; /// input
@@ -176,28 +187,22 @@ private:
 class AP_Controller
 {
 public:
-	void addBlock(Block * block)
-	{
+    void addBlock(Block * block)
+    {
         if (_blocks.getSize() > 0) 
-            _blocks[_blocks.getSize()]->connect(block);
-		_blocks.push_back(block);
-	}
-    void addCh(AP_RcChannel * ch)
-	{
-		_rc.push_back(ch);
-	}
-    AP_RcChannel & getRc(int i)
-	{
-		return *(_rc[i]);
-	}
-    void update()
+            _blocks[_blocks.getSize()-1]->connect(block);
+        _blocks.push_back(block);
+    }
+    void update(const double dt=0)
     {
         for (int i=0;i<_blocks.getSize();i++)
-            _blocks[i]->update();
+        {
+            if (!_blocks[i]) continue;
+            _blocks[i]->update(dt);
+        }
     }
 private:
-	Vector<Block * > _blocks;	
-    Vector<AP_RcChannel * > _rc;
+    Vector<Block * > _blocks;   
 };
 
 #endif // AP_Controller_H
