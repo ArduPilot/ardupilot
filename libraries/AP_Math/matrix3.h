@@ -49,8 +49,8 @@ public:
 	Matrix3<T>(const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0): a(a0), b(b0), c(c0) {}
 
 	// setting ctor
-	Matrix3<T>(const T ax, const T ay, const T az, const T bx, const T by, const T bz, const T cx, const T cy, const T cz): a(ax,ay,az), b(bx,by,bz), c(cx,cy,cz) {} 	
-	
+	Matrix3<T>(const T ax, const T ay, const T az, const T bx, const T by, const T bz, const T cx, const T cy, const T cz): a(ax,ay,az), b(bx,by,bz), c(cx,cy,cz) {}
+
 	// function call operator
 	void operator () (const Vector3<T> a0, const Vector3<T> b0, const Vector3<T> c0)
 	{	a = a0; b = b0; c = c0;  }
@@ -78,7 +78,7 @@ public:
 	{   return Matrix3<T>(a-m.a, b-m.b, c-m.c);	 }
 	Matrix3<T> &operator -= (const Matrix3<T> &m)
 	{	return *this = *this - m;	}
-	   
+
 	// uniform scaling
 	Matrix3<T> operator * (const T num) const
 	{	return Matrix3<T>(a*num, b*num, c*num);	}
@@ -88,13 +88,13 @@ public:
 	{	return Matrix3<T>(a/num, b/num, c/num);	}
 	Matrix3<T> &operator /= (const T num)
 	{	return *this = *this / num;	}
-	
+
 	// multiplication by a vector
 	Vector3<T> operator *(const Vector3<T> &v) const
 	{
 		return Vector3<T>(a.x * v.x + a.y * v.y + a.z * v.z,
 						  b.x * v.x + b.y * v.y + b.z * v.z,
-						  c.x * v.x + c.y * v.y + c.z * v.z);						  
+						  c.x * v.x + c.y * v.y + c.z * v.z);
 	}
 
 	// multiplication by another Matrix3<T>
@@ -115,7 +115,7 @@ public:
 	{	return *this = *this * m;	}
 
 	// transpose the matrix
-	Matrix3<T> transposed(void)
+	Matrix3<T> transposed(void) const
 	{
 		return Matrix3<T>(Vector3<T>(a.x, b.x, c.x),
 						  Vector3<T>(a.y, b.y, c.y),
