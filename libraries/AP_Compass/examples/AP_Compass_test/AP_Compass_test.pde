@@ -3,9 +3,11 @@
 	Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
 */
 
-#include <Wire.h>
+#include <FastSerial.h>
+#include <AP_Common.h>
 #include <AP_Compass.h> // Compass Library
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
+#include <Wire.h>
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 #define ToDeg(x) (x*57.2957795131)  // *180/pi
@@ -19,12 +21,13 @@ void setup()
 {
   Serial.begin(38400);
   Serial.println("Compass library test (HMC5843)");
+  Wire.begin();
   compass.init();	 // Initialization
-  
+
   compass.set_orientation(AP_COMPASS_COMPONENTS_UP_PINS_FORWARD);  // set compass's orientation on aircraft
   compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
   compass.set_declination(ToRad(0.0));  // set local difference between magnetic north and true north
-  
+
   delay(1000);
   timer = millis();
 }
@@ -32,13 +35,13 @@ void setup()
 void loop()
 {
   static float min[3], max[3], offset[3];
-  
+
   if((millis()- timer) > 100)
   {
     timer = millis();
     compass.read();
     compass.calculate(0,0);  // roll = 0, pitch = 0 for this example
-    
+
     // capture min
     if( compass.mag_x < min[0] )
         min[0] = compass.mag_x;
@@ -46,7 +49,7 @@ void loop()
         min[1] = compass.mag_y;
     if( compass.mag_z < min[2] )
         min[2] = compass.mag_z;
-        
+
     // capture max
     if( compass.mag_x > max[0] )
         max[0] = compass.mag_x;
@@ -54,12 +57,12 @@ void loop()
         max[1] = compass.mag_y;
     if( compass.mag_z > max[2] )
         max[2] = compass.mag_z;
-        
+
     // calculate offsets
     offset[0] = -(max[0]+min[0])/2;
     offset[1] = -(max[1]+min[1])/2;
     offset[2] = -(max[2]+min[2])/2;
-    
+
     // display all to user
     Serial.print("Heading:");
     Serial.print(ToDeg(compass.heading));
@@ -67,7 +70,7 @@ void loop()
     Serial.print(compass.mag_x);
     Serial.print(",");
     Serial.print(compass.mag_y);
-    Serial.print(",");    
+    Serial.print(",");
     Serial.print(compass.mag_z);
     Serial.print(")");
 
