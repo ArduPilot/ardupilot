@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public abstract class ConfigWithPidsBase : VmBase
+    public abstract class ConfigWithPidsBase :  CrudVm
     {
 
         public float RollP { get;  set; }
@@ -18,5 +17,7 @@ namespace ArducopterConfigurator.PresentationModels
         public float YawP { get;  set; }
         public float YawI { get;  set; }
         public float YawD { get;  set; }
+
+     
     }
 }

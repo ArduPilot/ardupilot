@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class CalibrationOffsetsDataVm : VmBase, IPresentationModel, ItalksToApm
+    public class CalibrationOffsetsDataVm : VmBase, IPresentationModel
     {
         public CalibrationOffsetsDataVm() 
         {
