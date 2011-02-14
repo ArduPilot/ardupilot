@@ -1,26 +1,10 @@
 #ifndef AP_Compass_HMC5843_H
 #define AP_Compass_HMC5843_H
 
-#include "Compass.h"
-#include "../AP_Math/AP_Math.h"
+#include <AP_Common.h>
+#include <AP_Math.h>
 
-// Rotation matrices
-#define ROTATION_NONE				Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
-#define ROTATION_YAW_45				Matrix3f(0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1)
-#define ROTATION_YAW_90				Matrix3f(0, -1, 0, 1, 0, 0, 0, 0, 1)
-#define ROTATION_YAW_135			Matrix3f(-0.70710678, -0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, 1)
-#define ROTATION_YAW_180			Matrix3f(-1, 0, 0, 0, -1, 0, 0, 0, 1)
-#define ROTATION_YAW_225			Matrix3f(-0.70710678, 0.70710678, 0, -0.70710678, -0.70710678, 0, 0, 0, 1)
-#define ROTATION_YAW_270			Matrix3f(0, 1, 0, -1, 0, 0, 0, 0, 1)
-#define ROTATION_YAW_315			Matrix3f(0.70710678, 0.70710678, 0, -0.70710678, 0.70710678, 0, 0, 0, 1)
-#define ROTATION_ROLL_180 			Matrix3f(1, 0, 0, 0, -1, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_45	Matrix3f(0.70710678, 0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_90	Matrix3f(0, 1, 0, 1, 0, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_135	Matrix3f(-0.70710678, 0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, -1)
-#define ROTATION_PITCH_180			Matrix3f(-1, 0, 0, 0, 1, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_225	Matrix3f(-0.70710678, -0.70710678, 0, -0.70710678, 0.70710678, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_270	Matrix3f(0, -1, 0, -1, 0, 0, 0, 0, -1)
-#define ROTATION_ROLL_180_YAW_315	Matrix3f(0.70710678, -0.70710678, 0, -0.70710678, -0.70710678, 0, 0, 0, -1)
+#include "Compass.h"
 
 // orientations for DIYDrones magnetometer
 #define AP_COMPASS_COMPONENTS_UP_PINS_FORWARD ROTATION_NONE
@@ -61,23 +45,10 @@
 class AP_Compass_HMC5843 : public Compass
 {
   private:
-	int orientation;
-	Matrix3f orientation_matrix;
-	Matrix3f last_dcm_matrix;
-	Vector3f mag_body_last;
-	bool first_call;
 	float calibration[3];
-	Vector3f _offset;
-	float declination;
   public:
-	AP_Compass_HMC5843();  // Constructor
-	bool init(int initialiseWireLib = 1);
-	void read();
-	void calculate(float roll, float pitch);
-	void null_offsets(const Matrix3f dcm_matrix);
-	void set_orientation(const Matrix3f &rotation_matrix);
-	void set_offsets(int x, int y, int z);
-	Vector3f get_offsets()  {return _offset;};
-	void set_declination(float radians);
+	AP_Compass_HMC5843(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}
+	virtual bool init();
+	virtual void read();
 };
 #endif
