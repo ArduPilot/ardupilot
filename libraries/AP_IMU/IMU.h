@@ -16,7 +16,7 @@ class IMU
 public:
 	/// Constructor
 	IMU() {}
-	
+
 	enum Start_style {
 		COLD_START = 0,
 		WARM_START
@@ -24,7 +24,7 @@ public:
 
 	/// Perform startup initialisation.
 	///
-	/// Called to initialise the state of the IMU.  
+	/// Called to initialise the state of the IMU.
 	///
 	/// For COLD_START, implementations using real sensors can assume
 	/// that the airframe is stationary and nominally oriented.
@@ -36,24 +36,20 @@ public:
 	/// @param style	The initialisation startup style.
 	///
 	virtual void	init(Start_style style) = 0;
-	
-	/// Perform startup initialisation for just the accelerometers.
+
+	/// Perform cold startup initialisation for just the accelerometers.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work.
 	///
-	/// @param style	The initialisation startup style.
-	///
-	virtual void	init_accel(Start_style style) = 0;
+	virtual void	init_accel() = 0;
 
-	/// Perform cold-start initialisation for just the gyros.	
+	/// Perform cold-start initialisation for just the gyros.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work
 	///
-	/// @param style	The initialisation startup style.
-	///
-	virtual void	init_gyro(Start_style style) = 0;
+	virtual void	init_gyro() = 0;
 
 	/// Give the IMU some cycles to perform/fetch an update from its
 	/// sensors.
@@ -65,7 +61,7 @@ public:
 	/// Fetch the current gyro values
 	///
 	/// @returns	vector of rotational rates in radians/sec
-	/// 
+	///
 	Vector3f		get_gyro(void) { return _gyro; }
 
 	/// Fetch the current accelerometer values
@@ -80,10 +76,6 @@ public:
 	///       are using ADCs, etc.
 	///
 	uint8_t 	adc_constraints;
-
-	// XXX backwards compat hacks
-	void		load_gyro_eeprom(void)  { init_accel(WARM_START); }	///< XXX backwards compat hack
-	void		load_accel_eeprom(void) { init_gyro(WARM_START); }	///< XXX backwards compat hack
 
 protected:
 	/// Most recent accelerometer reading obtained by ::update
