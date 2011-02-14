@@ -652,6 +652,7 @@ AP_Meta_class::Type_id  AP_Var::k_typeid_float16;   ///< meta_type_id() value fo
 AP_Meta_class::Type_id  AP_Var::k_typeid_int32;     ///< meta_type_id() value for AP_Int32
 AP_Meta_class::Type_id  AP_Var::k_typeid_int16;     ///< meta_type_id() value for AP_Int16
 AP_Meta_class::Type_id  AP_Var::k_typeid_int8;      ///< meta_type_id() value for AP_Int8
+AP_Meta_class::Type_id  AP_Var::k_typeid_group;     ///< meta_type_id() value for AP_Var_group
 
 /// A special class used to initialise the k_typeid_* values that AP_Var exports.
 ///
@@ -678,6 +679,7 @@ AP_Var_typesetup::AP_Var_typesetup(void)
     AP_Var::k_typeid_int32      = AP_Meta_class::meta_type_id<AP_Int32>();
     AP_Var::k_typeid_int16      = AP_Meta_class::meta_type_id<AP_Int16>();
     AP_Var::k_typeid_int8       = AP_Meta_class::meta_type_id<AP_Int8>();
+    AP_Var::k_typeid_group      = AP_Meta_class::meta_type_id<AP_Var_group>();
 }
 
 /// Cause the AP_Var_typesetup constructor to be run.

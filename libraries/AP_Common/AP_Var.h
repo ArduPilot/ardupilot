@@ -153,6 +153,7 @@ public:
     static AP_Meta_class::Type_id  k_typeid_int32;     ///< meta_type_id() value for AP_Int32
     static AP_Meta_class::Type_id  k_typeid_int16;     ///< meta_type_id() value for AP_Int16
     static AP_Meta_class::Type_id  k_typeid_int8;      ///< meta_type_id() value for AP_Int8
+    static AP_Meta_class::Type_id  k_typeid_group;     ///< meta_type_id() value for AP_Var_group
 
     /// Constructor for a freestanding variable
     ///
