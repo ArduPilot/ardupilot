@@ -532,6 +532,7 @@ public:
     }
 
     /// Combined set and save
+    ///
     void set_and_save(T v) {
         set(v);
         save();
@@ -575,12 +576,110 @@ AP_VarT<T>::cast_to_float() const
     return (float)_value;
 }
 
+/// Template class for structure variables.
+///
+/// Objects created using this variable contain an instance of the type T
+///
+/// Note that the size of the structure cannot be greater than AP_Var::k_size_max
+/// if it is ever to be loaded or saved to EEPROM.
+/// Unfortunately there is no way to assert this at compile time; a larger
+/// array will compile correctly and work as expected, except that ::save and
+/// ::load will always fail.
+///
+/// @note   The initial value of the fields of the structure are set by
+///         the type's constructor at the time that the template is constructed.
+///
+template<typename T>
+class AP_VarS : public AP_Var
+{
+public:
+    /// Constructor for a non-grouped structure variable.
+    ///
+    /// Initializes a stand-alone structure variable with optional storage key, name and flags.
+    ///
+    /// @param  key             Storage key for the variable.  If not set, or set to AP_Var::k_key_none
+    ///                         the variable cannot be loaded from or saved to EEPROM.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behavior of the variable.
+    ///
+    AP_VarS<T> (Key key = k_key_none,
+                const prog_char *name = NULL,
+                Flags flags = k_flags_none) :
+        AP_Var(key, name, flags)
+    {
+    }
+
+    /// Constructor for a grouped structure variable.
+    ///
+    /// Initializes a variable that is a member of a group with optional initial value, name and flags.
+    ///
+    /// @param  group           The group that this variable belongs to.
+    /// @param  index           The variable's index within the group.  Index values must be unique
+    ///                         within the group, as they ensure that the group's layout in EEPROM
+    ///                         is consistent.
+    /// @param  name            An optional name by which the variable may be known.
+    /// @param  flags           Optional flags that may affect the behavior of the variable.
+    ///
+    AP_VarS<T> (AP_Var_group *group,  // XXX maybe make this a ref?
+                Key index,
+                const prog_char *name = NULL,
+                Flags flags = k_flags_none) :
+        AP_Var(group, index, name, flags)
+    {
+    }
+
+    // serialize _value into the buffer, but only if it is big enough.
+    //
+    virtual size_t serialize(void *buf, size_t size) const {
+        if (size >= sizeof(_value)) {
+            memcpy(buf, &_value, sizeof(_value));
+        }
+        return sizeof(_value);
+    }
+
+    // Unserialize from the buffer, but only if it is big enough.
+    //
+    virtual size_t unserialize(void *buf, size_t size) {
+        if (size >= sizeof(_value)) {
+            memcpy(&_value, buf, sizeof(_value));
+        }
+        return sizeof(_value);
+    }
+
+    /// Value getter
+    ///
+    T& get() {
+        return _value;
+    }
+
+    /// Value setter
+    ///
+    void set(T v) {
+        _value = v;
+    }
+
+    /// Combined set and save
+    ///
+    void set_and_save(T v) {
+        set(v);
+        save();
+    }
+
+    // Note no attempt to do anything fancy with the assignment or cast operators.
+    // Implementing something that works reliably and produces readable code is not
+    // straightforward, so it's been deferred for now.
+
+protected:
+    T   _value;
+};
+
 /// Template class for array variables.
 ///
 /// Objects created using this template behave like arrays of the type T,
 /// but are stored like single variables.
 ///
-/// Note that the size of the array cannot be greater than AP_Var::k_size_max.
+/// Note that the size of the array cannot be greater than AP_Var::k_size_max
+/// if it is ever to be loaded or saved to EEPROM.
 /// Unfortunately there is no way to assert this at compile time; a larger
 /// array will compile correctly and work as expected, except that ::save and
 /// ::load will always fail.
