@@ -108,7 +108,7 @@ AP_Var_menu_show(uint8_t argc, const Menu::arg *argv)
 
     // if no arguments, show all variables
     if (argc == 1) {
-        for (vp = AP_Var::first(); vp; vp = vp->next()) {
+        for (vp = AP_Var::first(); NULL != vp; vp = vp->next()) {
             char    name_buffer[32];
 
             // groups should not be displayed
