@@ -5,11 +5,31 @@ using System.IO.Ports;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class FlightDataVm : VmBase, IPresentationModel, ItalksToApm
+    /// <summary>
+    /// View Model for the sensors monitor and calibration 
+    /// </summary>
+    /// <remarks>
+    /// This tab is for the monitoring and calibration of the Gyro/Accel sensors
+    /// 
+    /// When it is activated, it retrieves the current sensor calibration values
+    /// Then, it requests the constant stream of sensor readings in order to provide
+    /// a live view.
+    /// 
+    /// The user can change the calibration offsets, and upload the new values.
+    /// When this happens, the model tells the APM to cease sending the realtime updates,
+    /// then sends the new offset values, then resumes the updates
+    /// 
+    /// There is a command to automatically fill the sensor offset values, from the 
+    /// current values of the sensors. The user would do this when the copter is
+    /// sitting still and level 
+    /// 
+    /// When the VM is deactivated, the model tells the APM to cease sending the realtime updates
+    /// </remarks>
+    public class SensorsVm : VmBase, IPresentationModel
     {
         public string Name
         {
-            get { return "Flight Data"; }
+            get { return "Sensor Data"; }
         }
 
         public void Activate()
@@ -28,32 +48,10 @@ namespace ArducopterConfigurator.PresentationModels
 
         public event EventHandler updatedByApm;
 
-
+        
         public void handleLineOfText(string strRx)
         {
-            OnStringReceived(strRx);
-        }
-
-        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
-
-
-        // 2,-10,3,-2,1011,1012,1002,1000,1001,1003,1002,1004
-        // Loop Time = 2
-        // Roll Gyro Rate = -10
-        // Pitch Gyro Rate = 3
-        // Yaw Gyro Rate = -2
-        // Throttle Output = 1011
-        // Roll PID Output = 1012
-        // Pitch PID Output = 1002
-        // Yaw PID Output 1000
-        // Front Motor Command = 1001 PWM output sent to right motor (ranges from 1000-2000)
-        // Rear Motor Command 1003
-        // Right Motor Command = 1002
-        // Left Motor Command = 1004
-        // then adc 4,3, and 5
-        private void OnStringReceived(string data)
-        {
-            var strs = data.Split(',');
+            var strs = strRx.Split(',');
             var ints = new List<int>();
             foreach (var s in strs)
             {
@@ -84,6 +82,24 @@ namespace ArducopterConfigurator.PresentationModels
             AccelPitch = ints[13];
             AccelZ = ints[14];
         }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
+
+
+        // 2,-10,3,-2,1011,1012,1002,1000,1001,1003,1002,1004
+        // Loop Time = 2
+        // Roll Gyro Rate = -10
+        // Pitch Gyro Rate = 3
+        // Yaw Gyro Rate = -2
+        // Throttle Output = 1011
+        // Roll PID Output = 1012
+        // Pitch PID Output = 1002
+        // Yaw PID Output 1000
+        // Front Motor Command = 1001 PWM output sent to right motor (ranges from 1000-2000)
+        // Rear Motor Command 1003
+        // Right Motor Command = 1002
+        // Left Motor Command = 1004
+        // then adc 4,3, and 5
 
 
         private int _loopTime;

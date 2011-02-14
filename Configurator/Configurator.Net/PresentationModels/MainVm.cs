@@ -23,7 +23,7 @@ namespace ArducopterConfigurator.PresentationModels
 
             MonitorVms = new BindingList<IPresentationModel>
                              {
-                                 new FlightDataVm(),
+                                 new SensorsVm(),
                                  new TransmitterChannelsVm(),
                                  new FlightControlPidsVm(),
                                  new PositionAltitudePidsVm(),

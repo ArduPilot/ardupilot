@@ -46,12 +46,13 @@
     <Compile Include="PresentationModels\AltitudeHoldConfigVm.cs" />
     <Compile Include="PresentationModels\ConfigWithPidsBase.cs" />
     <Compile Include="Core\DelegateCommand.cs" />
+    <Compile Include="PresentationModels\CrudVm.cs" />
     <Compile Include="PresentationModels\DoubleVm.cs" />
     <Compile Include="PresentationModels\PositionAltitudePidsVm.cs" />
     <Compile Include="PresentationModels\FlightControlPidsVm.cs" />
     <Compile Include="PresentationModels\ItalksToApm.cs" />
     <Compile Include="PresentationModels\MainVm.cs" />
-    <Compile Include="PresentationModels\FlightDataMonitorVm.cs" />
+    <Compile Include="PresentationModels\SensorsVm.cs" />
     <Compile Include="PresentationModels\VmBase.cs" />
     <Compile Include="Views\controls\LinearIndicatorControl.cs">
       <SubType>UserControl</SubType>

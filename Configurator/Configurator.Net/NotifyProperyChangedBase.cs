@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace ArducopterConfigurator
 {
-    public abstract class NotifyProperyChangedBase : INotifyPropertyChanged
+    public abstract class NotifyProperyChangedBase : INotifyPropertyChanged, ISupportsExternalInvokedInpc
     {
         public event PropertyChangedEventHandler PropertyChanged;
         
@@ -21,7 +21,7 @@ namespace ArducopterConfigurator
             return false;
         }
 
-        protected void FirePropertyChanged(string propertyName)
+        public void FirePropertyChanged(string propertyName)
         {
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));

@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class TransmitterChannelsVm : VmBase, ItalksToApm, IPresentationModel
+    public class TransmitterChannelsVm : VmBase, IPresentationModel
     {
         public TransmitterChannelsVm() 
         {
