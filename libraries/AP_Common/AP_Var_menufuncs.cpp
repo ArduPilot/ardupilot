@@ -111,10 +111,16 @@ AP_Var_menu_show(uint8_t argc, const Menu::arg *argv)
         for (vp = AP_Var::first(); vp; vp = vp->next()) {
             char    name_buffer[32];
 
+            // groups should not be displayed
+            if (vp->meta_type_id() == AP_Var::k_typeid_group) {
+                continue;
+            }
+
             // get a displayable name for the variable
             vp->copy_name(name_buffer, sizeof(name_buffer));
             if (name_buffer[0] == 0) {
-                strcpy_P(name_buffer, PSTR("??"));
+                // without a name the variable is not displayable
+                continue;
             }
 
             // print name and value

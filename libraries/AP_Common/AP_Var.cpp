@@ -131,9 +131,11 @@ AP_Var::~AP_Var(void)
 void AP_Var::copy_name(char *buffer, size_t buffer_size) const
 {
     buffer[0] = '\0';
-    if (_group)
-        _group->copy_name(buffer, buffer_size);
-    strlcat_P(buffer, _name, buffer_size);
+    if (_name) {
+        if (_group)
+            _group->copy_name(buffer, buffer_size);
+        strlcat_P(buffer, _name, buffer_size);
+    }
 }
 
 // Find a variable by name.
