@@ -37,11 +37,12 @@ public:
     virtual void update(const float & dt) = 0;
     virtual void connect( Block * block)
     {
+        if (!block) return;
+        for (int i=0;block->getOutput().getSize();i++)
+            _input.push_back(block->getOutput()[i]);
     }
-    const char * getName() { return _name; }
     const Vector < AP_Float * > & getOutput() const { return _output; }
 protected:
-    const char * _name;
     Vector< const AP_Float * > _input;
     Vector< AP_Float * > _output;
 };
@@ -53,11 +54,8 @@ public:
     ToServo(AP_RcChannel * ch) : _ch(ch)
     {
     }
-    virtual void connect(Block * block)
-    {
-        if (block->getOutput().getSize() > 0)
-            _input.push_back(block->getOutput()[0]);
-    }
+    // doesn't connect
+    virtual void connect(Block * block) {};
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
@@ -134,12 +132,7 @@ public:
     {
         _output.push_back(new AP_Float(0));
     }
-    virtual void connect(Block * block)
-    {
-        if (!block) return;
-        if (block->getOutput().getSize() > 0)
-            _input.push_back(block->getOutput()[0]);
-    }
+    
     virtual void update(const float & dt)
     {
         if (_output.getSize() < 1 || (!_input[0]) || (!_output[0]) ) return;
@@ -185,6 +178,48 @@ private:
     AP_Float _kD; /// derivative gain
     AP_Float _iMax; /// integrator saturation
     AP_Uint8 _fCut; /// derivative low-pass cut freq (Hz)
+};
+
+/// Sink block
+/// saves input port to variable
+class Sink : public Block
+{
+public:
+    Sink(AP_Float & var, uint8_t port=0) :
+        _var(var), _port(port)
+    {
+    }
+    virtual void update(const float & dt)
+    {
+        _var = _input[_port]->get(); 
+    }
+    // doesn't connect
+    virtual void connect(Block * block) {}
+private:
+    AP_Float & _var;
+    uint8_t _port;
+};
+
+/// Saturate block
+/// Constrains output to a range
+class Saturate : public Block
+{
+public:
+    Saturate(AP_Float & min, AP_Float & max, uint8_t port=0) :
+        _min(min), _max(max), _port(port)
+    {
+    }
+    virtual void update(const float & dt)
+    {
+        float u = _input[_port]->get(); 
+        if (u>_max) u = _max;
+        if (u<_min) u = _min;
+        _output[_port]->set(u);
+    }
+private:
+    uint8_t _port;
+    AP_Float & _min;
+    AP_Float & _max;
 };
 
 /// Controller class
