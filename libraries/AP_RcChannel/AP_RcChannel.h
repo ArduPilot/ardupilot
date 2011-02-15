@@ -40,7 +40,7 @@ public:
 	void readRadio();
 	void setPwm(uint16_t pwm);
 	void setPosition(float position);
-	void setNormalized(float normPosition) { setPosition(normPosition*scale); }
+	void setNormalized(float normPosition);
 	void mixRadio(uint16_t infStart);
 
 	// get
