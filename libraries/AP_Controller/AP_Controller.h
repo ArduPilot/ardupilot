@@ -26,8 +26,6 @@
 #include <APM_RC.h>
 
 
-#define APVarPtr2Float(var) (*(AP_Meta_class::meta_cast<AP_Float>((AP_Var *)var)))
-
 /// Block
 class Block
 {
@@ -36,16 +34,16 @@ public:
         _input(), _output()
     {
     }
-    virtual void update(const float & dt = 0) = 0;
+    virtual void update(const float & dt) = 0;
     virtual void connect( Block * block)
     {
     }
     const char * getName() { return _name; }
-    const Vector < AP_Var * > & getOutput() const { return _output; }
+    const Vector < AP_Float * > & getOutput() const { return _output; }
 protected:
     const char * _name;
-    Vector< const AP_Var * > _input;
-    Vector< AP_Var * > _output;
+    Vector< const AP_Float * > _input;
+    Vector< AP_Float * > _output;
 };
 
 /// Servo Block
@@ -63,7 +61,9 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_input.getSize() > 0)
-            _ch->setNormalized(APVarPtr2Float(_input[0]));
+        {
+            _ch->setNormalized(_input[0]->get());
+        }
     }
 private:
     float _position;
@@ -77,28 +77,28 @@ public:
     /// Constructor that allows 1-8 sum gain pairs, more
     /// can be added if necessary
     SumGain(
-            AP_Var & var1 = AP_Float_zero, AP_Var & gain1 = AP_Float_zero,
-            AP_Var & var2 = AP_Float_zero, AP_Var & gain2 = AP_Float_zero,
-            AP_Var & var3 = AP_Float_zero, AP_Var & gain3 = AP_Float_zero,
-            AP_Var & var4 = AP_Float_zero, AP_Var & gain4 = AP_Float_zero,
-            AP_Var & var5 = AP_Float_zero, AP_Var & gain5 = AP_Float_zero,
-            AP_Var & var6 = AP_Float_zero, AP_Var & gain6 = AP_Float_zero,
-            AP_Var & var7 = AP_Float_zero, AP_Var & gain7 = AP_Float_zero,
-            AP_Var & var8 = AP_Float_zero, AP_Var & gain8 = AP_Float_zero)
+            AP_Float & var1 = AP_Float_zero, AP_Float & gain1 = AP_Float_zero,
+            AP_Float & var2 = AP_Float_zero, AP_Float & gain2 = AP_Float_zero,
+            AP_Float & var3 = AP_Float_zero, AP_Float & gain3 = AP_Float_zero,
+            AP_Float & var4 = AP_Float_zero, AP_Float & gain4 = AP_Float_zero,
+            AP_Float & var5 = AP_Float_zero, AP_Float & gain5 = AP_Float_zero,
+            AP_Float & var6 = AP_Float_zero, AP_Float & gain6 = AP_Float_zero,
+            AP_Float & var7 = AP_Float_zero, AP_Float & gain7 = AP_Float_zero,
+            AP_Float & var8 = AP_Float_zero, AP_Float & gain8 = AP_Float_zero)
     {
-        if ( (&var1 == &AP_Float_zero) || (&gain1 == &AP_Float_zero) ) add(var1,gain1);
-        if ( (&var2 == &AP_Float_zero) || (&gain2 == &AP_Float_zero) ) add(var2,gain2);
-        if ( (&var3 == &AP_Float_zero) || (&gain3 == &AP_Float_zero) ) add(var3,gain3);
-        if ( (&var4 == &AP_Float_zero) || (&gain4 == &AP_Float_zero) ) add(var4,gain4);
-        if ( (&var5 == &AP_Float_zero) || (&gain5 == &AP_Float_zero) ) add(var5,gain5);
-        if ( (&var6 == &AP_Float_zero) || (&gain6 == &AP_Float_zero) ) add(var6,gain6);
-        if ( (&var7 == &AP_Float_zero) || (&gain7 == &AP_Float_zero) ) add(var7,gain7);
-        if ( (&var8 == &AP_Float_zero) || (&gain8 == &AP_Float_zero) ) add(var8,gain8);
+        if ( (&var1 != &AP_Float_zero) && (&gain1 != &AP_Float_zero) ) add(var1,gain1);
+        if ( (&var2 != &AP_Float_zero) && (&gain2 != &AP_Float_zero) ) add(var2,gain2);
+        if ( (&var3 != &AP_Float_zero) && (&gain3 != &AP_Float_zero) ) add(var3,gain3);
+        if ( (&var4 != &AP_Float_zero) && (&gain4 != &AP_Float_zero) ) add(var4,gain4);
+        if ( (&var5 != &AP_Float_zero) && (&gain5 != &AP_Float_zero) ) add(var5,gain5);
+        if ( (&var6 != &AP_Float_zero) && (&gain6 != &AP_Float_zero) ) add(var6,gain6);
+        if ( (&var7 != &AP_Float_zero) && (&gain7 != &AP_Float_zero) ) add(var7,gain7);
+        if ( (&var8 != &AP_Float_zero) && (&gain8 != &AP_Float_zero) ) add(var8,gain8);
 
         // create output
         _output.push_back(new AP_Float(0));
     }
-    void add(AP_Var & var, AP_Var & gain)
+    void add(AP_Float & var, AP_Float & gain)
     {
         _input.push_back(&var);
         _gain.push_back(&gain);
@@ -106,14 +106,12 @@ public:
     virtual void update(const float & dt = 0)
     {
         if (_output.getSize() < 1) return;
-        _output[0]=0;
-        for (int i=0;i<_input.getSize();i++)
-        {
-            *_output[0] = APVarPtr2Float(_output[i]) * APVarPtr2Float(_gain[i]) ;
-        }
+        float sum =0;
+        for (int i=0;i<_input.getSize();i++) sum += _input[i]->get() * _gain[i]->get() ;
+        _output[0]->set(sum);
     }
 private:
-    Vector< AP_Var * > _gain;
+    Vector< AP_Float * > _gain;
 };
 
 /// PID block
@@ -142,38 +140,44 @@ public:
         if (block->getOutput().getSize() > 0)
             _input.push_back(block->getOutput()[0]);
     }
-    virtual void update(const float & dt = 0)
+    virtual void update(const float & dt)
     {
-        if (_output.getSize() < 1 || !_input[0] || !_output[0]) return;
+        if (_output.getSize() < 1 || (!_input[0]) || (!_output[0]) ) return;
 
-        // derivative
+        // derivative with low pass
         float RC = 1/(2*M_PI*_fCut); // low pass filter
-        _eD =  _eD + ( ((_e - APVarPtr2Float(_input[0])))/dt - _eD ) * (dt / (dt + RC));
+        _eD =  _eD + ( ( _eP - _input[0]->get() )/dt - _eD ) * (dt / (dt + RC));
 
         // proportional, note must come after derivative
-        // because derivatve uses _e as previous value
-        _e = APVarPtr2Float(_input[0]);
+        // because derivatve uses _eP as previous value
+        _eP = _input[0]->get();
 
         // integral
-        _eI += _e*dt;
+        _eI += _eP*dt;
+
+        // wind up guard
+        if (_eI > _iMax) _eI = _iMax;
+        else if (_eI < -_iMax) _eI = -_iMax;
 
         // pid sum
-        *_output[0] = _kP*_e + _kI*_eI +  _kD*_eD;
+        _output[0]->set(_kP*_eP + _kI*_eI +  _kD*_eD);
 
-
-        Serial.println("debug");
-        Serial.println(_kP);
-        Serial.println(_kI);
-        Serial.println(_kD);
-        Serial.println(_e);
-        Serial.println(_eI);
-        Serial.println(_eD);
-        Serial.println(APVarPtr2Float(_output[0]));
-
-
+        // debug output
+        /*Serial.println("kP, kI, kD: ");
+        Serial.print(_kP,5); Serial.print(" ");
+        Serial.print(_kI,5); Serial.print(" ");
+        Serial.println(_kD,5);
+        Serial.print("eP, eI, eD: ");
+        Serial.print(_eP,5); Serial.print(" ");
+        Serial.print(_eI,5); Serial.print(" ");
+        Serial.println(_eD,5);
+        Serial.print("input: ");
+        Serial.println(_input[0]->get(),5);
+        Serial.print("output: ");
+        Serial.println(_output[0]->get(),5);*/
     }
 private:
-    float _e; /// input
+    float _eP; /// input
     float _eI; /// integral of input
     float _eD; /// derivative of input
     AP_Float _kP; /// proportional gain
@@ -190,10 +194,10 @@ public:
     void addBlock(Block * block)
     {
         if (_blocks.getSize() > 0) 
-            _blocks[_blocks.getSize()-1]->connect(block);
+            block->connect(_blocks[_blocks.getSize()-1]);
         _blocks.push_back(block);
     }
-    void update(const double dt=0)
+    void update(const double dt)
     {
         for (int i=0;i<_blocks.getSize();i++)
         {

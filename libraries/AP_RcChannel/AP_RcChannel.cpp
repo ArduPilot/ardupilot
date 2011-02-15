@@ -32,7 +32,9 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key key, const prog_char * name, APM_RC_Class
 		filter(this,7,filter,PSTR("FLTR")),
 		reverse(this,8,reverse,PSTR("REV")),
 		_pwm(0)
-	{ }
+	{
+		setNormalized(0.0);
+	}
 
 
 void AP_RcChannel::readRadio() {
@@ -74,7 +76,15 @@ AP_RcChannel::setPwm(uint16_t pwm)
 void
 AP_RcChannel::setPosition(float position)
 {
+	if (position > scale) position = scale;
+	else if (position < -scale) position = -scale;
 	setPwm(_positionToPwm(position));
+}
+
+void
+AP_RcChannel::setNormalized(float normPosition)
+{
+	setPosition(normPosition*scale);
 }
 
 void
