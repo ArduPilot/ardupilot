@@ -20,7 +20,7 @@ namespace ArducopterConfigurator
     /// instead of having specific value assignment logic in every class to pick
     /// apart the update and populate properties, this guy will Set the properties
     /// in the correct order. All the interested class needs to provide is the
-    /// list of property names in the same order as the update from the APM
+    /// list of property names in the same order as the update from the APMwl
     /// </remarks>
     public static class PropertyHelper
     {

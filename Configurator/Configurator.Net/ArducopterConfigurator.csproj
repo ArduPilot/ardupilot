@@ -79,7 +79,6 @@
       <DependentUpon>mainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="NotifyProperyChangedBase.cs" />
-    <Compile Include="PresentationModels\CalibrationOffsetsDataVm.cs" />
     <Compile Include="PresentationModels\MotorCommandsVm.cs" />
     <Compile Include="PresentationModels\PositionHoldConfigVm.cs" />
     <Compile Include="PresentationModels\StableModeConfigVm.cs" />
@@ -99,10 +98,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Views\AltitudeHoldConfigView.resx">
       <DependentUpon>AltitudeHoldConfigView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Views\CalibrationView.resx">
-      <DependentUpon>CalibrationView.cs</DependentUpon>
-      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\PositionHoldConfigView.resx">
       <DependentUpon>PositionHoldConfigView.cs</DependentUpon>
@@ -152,12 +147,6 @@
     </Compile>
     <Compile Include="Views\AltitudeHoldConfigView.Designer.cs">
       <DependentUpon>AltitudeHoldConfigView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Views\CalibrationView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Views\CalibrationView.Designer.cs">
-      <DependentUpon>CalibrationView.cs</DependentUpon>
     </Compile>
     <Compile Include="Core\IPresentationModel.cs" />
     <Compile Include="Core\IView.cs" />

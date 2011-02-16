@@ -24,7 +24,6 @@ namespace ArducopterConfigurator
                      {
                          {typeof (SensorsVm), typeof (FlightDataView)},
                          {typeof (TransmitterChannelsVm), typeof (TransmitterChannelsView)},
-                         {typeof (CalibrationOffsetsDataVm), typeof (CalibrationView)},
                          {typeof (MotorCommandsVm), typeof (MotorCommandsView)},
                          {typeof (AcroModeConfigVm), typeof (AcroConfigView)},
                          {typeof (StableModeConfigVm), typeof (StableConfigView)},

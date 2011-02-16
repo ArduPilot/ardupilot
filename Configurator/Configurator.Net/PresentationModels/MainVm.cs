@@ -28,7 +28,6 @@ namespace ArducopterConfigurator.PresentationModels
                                  new FlightControlPidsVm(),
                                  new PositionAltitudePidsVm(),
                                  //new MotorCommandsVm(session),
-                                 new CalibrationOffsetsDataVm(),
                                  new SerialMonitorVm()
                              };
 
