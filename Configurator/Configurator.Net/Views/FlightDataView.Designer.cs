@@ -110,7 +110,7 @@
             // 
             // FlightDataVmBindingSource
             // 
-            this.FlightDataVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightDataVm);
+            this.FlightDataVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.SensorsVm);
             // 
             // label5
             // 

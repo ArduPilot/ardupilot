@@ -25,25 +25,42 @@ namespace ArducopterConfigurator.PresentationModels
     /// 
     /// When the VM is deactivated, the model tells the APM to cease sending the realtime updates
     /// </remarks>
-    public class SensorsVm : VmBase, IPresentationModel
+    public class SensorsVm : NotifyProperyChangedBase, IPresentationModel
     {
         public string Name
         {
             get { return "Sensor Data"; }
         }
 
+        private readonly string[] _propsInUpdateOrder = new[] 
+                       { 
+                           "LoopTime", 
+                           "GyroRoll", 
+                           "GyroPitch", 
+                           "GyroYaw", 
+                           "Unused", // Throttle
+                           "Unused", // control roll
+                           "Unused", // control pitch
+                           "Unused", // control yaw
+                           "MotorFront", 
+                           "MotorRear", 
+                           "MotorRight", 
+                           "MotorLeft", 
+                           "AccelRoll", 
+                           "AccelPitch", 
+                           "AccelZ", 
+                       };
+        
         public void Activate()
         {
             if (sendTextToApm!=null)
                 sendTextToApm(this, new sendTextToApmEventArgs("S"));
-                
         }
 
         public void DeActivate()
         {
             if (sendTextToApm != null)
                 sendTextToApm(this, new sendTextToApmEventArgs("X"));
-                
         }
 
         public event EventHandler updatedByApm;
@@ -51,57 +68,12 @@ namespace ArducopterConfigurator.PresentationModels
         
         public void handleLineOfText(string strRx)
         {
-            var strs = strRx.Split(',');
-            var ints = new List<int>();
-            foreach (var s in strs)
-            {
-                int val;
-                if (!int.TryParse(s, out val))
-                {
-                    Debug.WriteLine("(Flight Data) Could not parse expected integer: " + s);
-                    return;
-                }
-                ints.Add(val);
-            }
-
-            if (ints.Count!=15)
-            {
-                Debug.WriteLine("Flight Data seentence expected, but only got one of size: " + ints.Count);
-                return;
-            }
-
-            LoopTime = ints[0];
-            GyroRoll = ints[1];
-            GyroPitch = ints[2];
-            GyroYaw = ints[3];
-            MotorFront = ints[8];
-            MotorRear = ints[9];
-            MotorRight = ints[10];
-            MotorLeft = ints[11];
-            AccelRoll = ints[12];
-            AccelPitch = ints[13];
-            AccelZ = ints[14];
+            PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
         }
 
+
         public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
-
-
-        // 2,-10,3,-2,1011,1012,1002,1000,1001,1003,1002,1004
-        // Loop Time = 2
-        // Roll Gyro Rate = -10
-        // Pitch Gyro Rate = 3
-        // Yaw Gyro Rate = -2
-        // Throttle Output = 1011
-        // Roll PID Output = 1012
-        // Pitch PID Output = 1002
-        // Yaw PID Output 1000
-        // Front Motor Command = 1001 PWM output sent to right motor (ranges from 1000-2000)
-        // Rear Motor Command 1003
-        // Right Motor Command = 1002
-        // Left Motor Command = 1004
-        // then adc 4,3, and 5
-
-
+     
         private int _loopTime;
         public int LoopTime
         {
@@ -233,5 +205,7 @@ namespace ArducopterConfigurator.PresentationModels
                 FirePropertyChanged("AccelZ");
             }
         }
+
+        public int Unused { get; set; }
     }
 }

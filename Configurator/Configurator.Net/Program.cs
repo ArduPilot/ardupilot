@@ -21,8 +21,8 @@ namespace ArducopterConfigurator
             var t = Type.GetType("Mono.Runtime");
             IsMonoRuntime = (t != null);
 
-            //var session = new CommsSession();
-            var session = new FakeCommsSession();
+            var session = new CommsSession();
+            //var session = new FakeCommsSession();
 			
 
             var mainVm = new MainVm(session);

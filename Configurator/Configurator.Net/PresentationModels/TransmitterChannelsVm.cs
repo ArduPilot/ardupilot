@@ -4,11 +4,9 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class TransmitterChannelsVm : VmBase, IPresentationModel
+    public class TransmitterChannelsVm : NotifyProperyChangedBase, IPresentationModel
     {
-        public TransmitterChannelsVm() 
-        {
-            PropsInUpdateOrder = new[] 
+        private readonly string[] _propsInUpdateOrder = new[] 
             { 
                 "Roll", // Aileron
                 "Pitch",  // Elevator
@@ -21,6 +19,9 @@ namespace ArducopterConfigurator.PresentationModels
                 "YawMidValue", 
             };
 
+
+        public TransmitterChannelsVm() 
+        {
             ResetCommand = new DelegateCommand(_ => ResetWatermarks());
         }
 
@@ -33,7 +34,6 @@ namespace ArducopterConfigurator.PresentationModels
             AuxMax = AuxMin = Aux;
             ModeMax = ModeMin = Mode;
         }
-
 
         public ICommand ResetCommand { get; private set; }
 
@@ -204,9 +204,6 @@ namespace ArducopterConfigurator.PresentationModels
             }
         }
 
-
-
-
         private int _mode;
         public int Mode
         {
@@ -310,7 +307,8 @@ namespace ArducopterConfigurator.PresentationModels
 
         public void handleLineOfText(string strRx)
         {
-            PopulatePropsFromUpdate(strRx, false);
+            PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
+           
            
         }
 

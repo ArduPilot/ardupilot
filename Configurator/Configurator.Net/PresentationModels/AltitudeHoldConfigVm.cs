@@ -11,7 +11,7 @@ namespace ArducopterConfigurator.PresentationModels
     /// There is a unit test to cover it but it will need fixing.
     /// TODO: test this 
     /// </remarks>
-    public class AltitudeHoldConfigVm : CrudVm, IPresentationModel, ISupportsPropertyPopulation
+    public class AltitudeHoldConfigVm : CrudVm
     {
         public AltitudeHoldConfigVm()
         {
