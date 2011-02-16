@@ -91,6 +91,10 @@ public:
 
 	// Debug support
 	bool	print_errors; 	///< deprecated
+	
+	// HIL support
+	virtual void setHIL(long time, float latitude, float longitude, float altitude,
+            float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
 protected:
 	Stream	*_port;			///< port the GPS is attached to
