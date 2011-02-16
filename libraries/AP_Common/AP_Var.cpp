@@ -28,12 +28,12 @@ AP_Float AP_Float_unity         ( 1.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_
 AP_Float AP_Float_negative_unity(-1.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_unlisted);
 AP_Float AP_Float_zero          ( 0.0, AP_Var::k_key_none, NULL, AP_Var::k_flag_unlisted);
 
-
 // Static member variables for AP_Var.
 //
 AP_Var      *AP_Var::_variables;
 AP_Var      *AP_Var::_grouped_variables;
 uint16_t    AP_Var::_tail_sentinel;
+uint16_t    AP_Var::_bytes_in_use;
 
 // Constructor for standalone variables
 //
@@ -172,6 +172,8 @@ bool AP_Var::save(void)
         return _group->save();
     }
 
+    debug("save: %S", _name ? _name : PSTR("??"));
+
     // locate the variable in EEPROM, allocating space as required
     if (!_EEPROM_locate(true)) {
         debug("locate failed");
@@ -201,6 +203,8 @@ bool AP_Var::load(void)
     if (_group) {
         return _group->load();
     }
+
+    debug("load: %S", _name ? _name : PSTR("??"));
 
     // locate the variable in EEPROM, but do not allocate space
     if (!_EEPROM_locate(false)) {

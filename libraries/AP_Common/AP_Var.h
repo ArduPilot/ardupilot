@@ -347,6 +347,16 @@ public:
     ///
     virtual float cast_to_float() const;
 
+    /// Report the amount of memory being used by AP_Var subclasses.
+    ///
+    /// @return             The sum of sizeof(*this) for all constructed AP_Var subclass instances.
+    ///
+    static uint16_t     get_memory_use() { return _bytes_in_use; }
+
+protected:
+    // Memory statistics
+    static uint16_t     _bytes_in_use;
+
 private:
     AP_Var_group        *_group;            ///< Group that the variable may be a member of
     AP_Var              *_link;             ///< linked list pointer to next variable
@@ -362,7 +372,6 @@ private:
     static uint16_t     _tail_sentinel;     ///< EEPROM address of the tail sentinel
 
     static const uint16_t k_EEPROM_size = 4096;    ///< XXX avr-libc doesn't consistently export this
-
 
     /// Scan the EEPROM and assign addresses to any known variables
     /// that have entries there.
@@ -409,6 +418,7 @@ public:
     AP_Var_group(Key key = k_key_none, const prog_char *name = NULL, Flags flags = k_flags_none) :
         AP_Var(key, name, flags | k_flag_is_group)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     /// Serialize the group.
@@ -478,6 +488,7 @@ public:
         AP_Var(key, name, flags),
         _value(initial_value)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     /// Constructor for grouped variable.
@@ -500,6 +511,7 @@ public:
         AP_Var(group, index, name, flags),
         _value(initial_value)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     // serialize _value into the buffer, but only if it is big enough.
@@ -608,6 +620,7 @@ public:
                 Flags flags = k_flags_none) :
         AP_Var(key, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     /// Constructor for a grouped structure variable.
@@ -627,6 +640,7 @@ public:
                 Flags flags = k_flags_none) :
         AP_Var(group, index, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     // serialize _value into the buffer, but only if it is big enough.
@@ -716,6 +730,7 @@ public:
                   Flags flags = k_flags_none) :
         AP_Var(key, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     /// Constructor for a grouped array.
@@ -735,6 +750,7 @@ public:
                   Flags flags = k_flags_none) :
         AP_Var(group, index, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     // serialize _value into the buffer, but only if it is big enough.
@@ -829,6 +845,7 @@ public:
                Flags flags = k_flags_none) :
         AP_Float(initial_value, key, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
     AP_Float16(AP_Var_group *group,
@@ -838,6 +855,7 @@ public:
                Flags flags = k_flags_none) :
         AP_Float(group, index, initial_value, name, flags)
     {
+        _bytes_in_use += sizeof(*this);
     }
 
 
