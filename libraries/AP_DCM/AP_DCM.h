@@ -21,18 +21,7 @@ class AP_DCM
 {
 public:
 	// Constructors
-	AP_DCM(IMU *imu, GPS *gps) :
-		_imu(imu),
-		_gps(gps),
-		_compass(0),
-		_dcm_matrix(1, 0, 0,
-					0, 1, 0,
-					0, 0, 1),
-		_course_over_ground_x(0),
-		_course_over_ground_y(1)
-	{}
-
-	AP_DCM(IMU *imu, GPS *gps, Compass *withCompass) :
+	AP_DCM(IMU *imu, GPS *&gps, Compass *withCompass = NULL) :
 		_imu(imu),
 		_gps(gps),
 		_compass(withCompass),
@@ -82,8 +71,12 @@ private:
 
 	// members
 	Compass 	* _compass;
-	GPS 				* _gps;
-	IMU 				* _imu;
+
+	// note: we use ref-to-pointer here so that our caller can change the GPS without our noticing
+	//       IMU under us without our noticing.
+	GPS 		*&_gps;                     // note: this is a reference to a pointer owned by the caller
+
+	IMU 		*_imu;
 
 	Matrix3f	_dcm_matrix;
 
