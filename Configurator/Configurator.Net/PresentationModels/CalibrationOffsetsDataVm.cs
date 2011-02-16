@@ -4,11 +4,9 @@ using System.Diagnostics;
 
 namespace ArducopterConfigurator.PresentationModels
 {
-    public class CalibrationOffsetsDataVm : VmBase, IPresentationModel
+    public class CalibrationOffsetsDataVm : NotifyProperyChangedBase, IPresentationModel
     {
-        public CalibrationOffsetsDataVm() 
-        {
-            PropsInUpdateOrder = new[] 
+        private readonly string[] PropsInUpdateOrder = new[] 
             { 
                 "GyroRollOffset", 
                 "GyroPitchOffset", 
@@ -17,6 +15,10 @@ namespace ArducopterConfigurator.PresentationModels
                 "AccelPitchOffset", 
                 "AccelZOffset" 
             };
+
+        public CalibrationOffsetsDataVm() 
+        {
+          
 
             RefreshCommand = new DelegateCommand(_ => RefreshValues());
             UpdateCommand = new DelegateCommand(_ => UpdateValues());
@@ -43,7 +45,10 @@ namespace ArducopterConfigurator.PresentationModels
         public void UpdateValues()
         {
             if (sendTextToApm != null)
-                sendTextToApm(this, new sendTextToApmEventArgs(ComposePropsWithCommand("I")));
+            {
+                var apmString = PropertyHelper.ComposePropValuesWithCommand(this, PropsInUpdateOrder, "I");
+                sendTextToApm(this, new sendTextToApmEventArgs(apmString));
+            }
         }
 
         public string Name
@@ -64,7 +69,10 @@ namespace ArducopterConfigurator.PresentationModels
 
         public void handleLineOfText(string strRx)
         {
-            PopulatePropsFromUpdate(strRx, true);
+            PropertyHelper.PopulatePropsFromUpdate(this, PropsInUpdateOrder, strRx, true);
+
+            if (updatedByApm != null)
+                updatedByApm(this, EventArgs.Empty);
         }
 
         public event EventHandler<sendTextToApmEventArgs> sendTextToApm;

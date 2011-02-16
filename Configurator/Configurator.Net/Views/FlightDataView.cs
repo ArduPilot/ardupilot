@@ -17,7 +17,7 @@ namespace ArducopterConfigurator.views
             InitializeComponent();
         }
 
-        public override void SetDataContext(FlightDataVm vm)
+        public override void SetDataContext(SensorsVm vm)
         {
             FlightDataVmBindingSource.DataSource = vm;
 
@@ -26,5 +26,5 @@ namespace ArducopterConfigurator.views
         }
     }
     // Required for VS2008 designer. No functional value
-    public class FlightDataViewDesignable : ViewCommon<FlightDataVm> { }
+    public class FlightDataViewDesignable : ViewCommon<SensorsVm> { }
 }

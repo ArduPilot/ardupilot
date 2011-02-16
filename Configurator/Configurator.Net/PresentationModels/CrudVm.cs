@@ -5,7 +5,7 @@ namespace ArducopterConfigurator.PresentationModels
     /// <summary>
     /// Common base for the simple VMs that deal with an update from APM and Get and Update them
     /// </summary>
-    public abstract class CrudVm : NotifyProperyChangedBase, ISupportsPropertyPopulation, ItalksToApm, IPresentationModel
+    public abstract class CrudVm : NotifyProperyChangedBase, IPresentationModel
     {
         protected string updateString;
         protected string refreshString;
@@ -33,7 +33,7 @@ namespace ArducopterConfigurator.PresentationModels
         {
             if (sendTextToApm != null)
             {
-                var apmString = PropertyHelper.ComposePropValuesWithCommand(this, updateString);
+                var apmString = PropertyHelper.ComposePropValuesWithCommand(this, PropsInUpdateOrder, updateString);
                 sendTextToApm(this, new sendTextToApmEventArgs(apmString));
             }
         }
@@ -52,7 +52,7 @@ namespace ArducopterConfigurator.PresentationModels
 
         public void handleLineOfText(string strRx)
         {
-            PropertyHelper.PopulatePropsFromUpdate(this, strRx, true);
+            PropertyHelper.PopulatePropsFromUpdate(this,PropsInUpdateOrder, strRx, true);
             
             if (updatedByApm != null)
                 updatedByApm(this, EventArgs.Empty);

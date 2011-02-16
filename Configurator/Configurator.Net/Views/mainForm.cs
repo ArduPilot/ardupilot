@@ -22,7 +22,7 @@ namespace ArducopterConfigurator
         // IPresentationModel to IView map
         private readonly Dictionary<Type, Type> _viewMap = new Dictionary<Type, Type>
                      {
-                         {typeof (FlightDataVm), typeof (FlightDataView)},
+                         {typeof (SensorsVm), typeof (FlightDataView)},
                          {typeof (TransmitterChannelsVm), typeof (TransmitterChannelsView)},
                          {typeof (CalibrationOffsetsDataVm), typeof (CalibrationView)},
                          {typeof (MotorCommandsVm), typeof (MotorCommandsView)},
