@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FlightDataView));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -60,6 +61,15 @@
             this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl7 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl8 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
+            this.textBox11 = new System.Windows.Forms.TextBox();
+            this.textBox12 = new System.Windows.Forms.TextBox();
+            this.textBox13 = new System.Windows.Forms.TextBox();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
+            this.label11 = new System.Windows.Forms.Label();
+            this.label12 = new System.Windows.Forms.Label();
+            this.label13 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -75,7 +85,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(68, 138);
+            this.label2.Location = new System.Drawing.Point(53, 138);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(31, 13);
             this.label2.TabIndex = 3;
@@ -84,7 +94,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(124, 138);
+            this.label3.Location = new System.Drawing.Point(100, 138);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(30, 13);
             this.label3.TabIndex = 5;
@@ -93,7 +103,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(176, 138);
+            this.label4.Location = new System.Drawing.Point(146, 138);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(32, 13);
             this.label4.TabIndex = 7;
@@ -102,10 +112,10 @@
             // textBox1
             // 
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorLeft", true));
-            this.textBox1.Location = new System.Drawing.Point(2, 247);
+            this.textBox1.Location = new System.Drawing.Point(11, 247);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(47, 20);
+            this.textBox1.Size = new System.Drawing.Size(35, 20);
             this.textBox1.TabIndex = 8;
             // 
             // FlightDataVmBindingSource
@@ -127,7 +137,7 @@
             this.textBox2.Location = new System.Drawing.Point(124, 28);
             this.textBox2.Name = "textBox2";
             this.textBox2.ReadOnly = true;
-            this.textBox2.Size = new System.Drawing.Size(47, 20);
+            this.textBox2.Size = new System.Drawing.Size(35, 20);
             this.textBox2.TabIndex = 12;
             // 
             // textBox3
@@ -136,7 +146,7 @@
             this.textBox3.Location = new System.Drawing.Point(124, 78);
             this.textBox3.Name = "textBox3";
             this.textBox3.ReadOnly = true;
-            this.textBox3.Size = new System.Drawing.Size(47, 20);
+            this.textBox3.Size = new System.Drawing.Size(35, 20);
             this.textBox3.TabIndex = 13;
             // 
             // label6
@@ -154,7 +164,7 @@
             this.textBox4.Location = new System.Drawing.Point(187, 109);
             this.textBox4.Name = "textBox4";
             this.textBox4.ReadOnly = true;
-            this.textBox4.Size = new System.Drawing.Size(47, 20);
+            this.textBox4.Size = new System.Drawing.Size(35, 20);
             this.textBox4.TabIndex = 17;
             // 
             // label7
@@ -181,7 +191,7 @@
             this.textBox5.Location = new System.Drawing.Point(247, 109);
             this.textBox5.Name = "textBox5";
             this.textBox5.ReadOnly = true;
-            this.textBox5.Size = new System.Drawing.Size(47, 20);
+            this.textBox5.Size = new System.Drawing.Size(35, 20);
             this.textBox5.TabIndex = 20;
             // 
             // label9
@@ -199,7 +209,7 @@
             this.textBox6.Location = new System.Drawing.Point(340, 157);
             this.textBox6.Name = "textBox6";
             this.textBox6.ReadOnly = true;
-            this.textBox6.Size = new System.Drawing.Size(47, 20);
+            this.textBox6.Size = new System.Drawing.Size(35, 20);
             this.textBox6.TabIndex = 26;
             // 
             // label10
@@ -217,7 +227,7 @@
             this.textBox7.Location = new System.Drawing.Point(343, 109);
             this.textBox7.Name = "textBox7";
             this.textBox7.ReadOnly = true;
-            this.textBox7.Size = new System.Drawing.Size(47, 20);
+            this.textBox7.Size = new System.Drawing.Size(35, 20);
             this.textBox7.TabIndex = 23;
             // 
             // textBox8
@@ -226,25 +236,25 @@
             this.textBox8.Location = new System.Drawing.Point(55, 247);
             this.textBox8.Name = "textBox8";
             this.textBox8.ReadOnly = true;
-            this.textBox8.Size = new System.Drawing.Size(47, 20);
+            this.textBox8.Size = new System.Drawing.Size(35, 20);
             this.textBox8.TabIndex = 29;
             // 
             // textBox9
             // 
             this.textBox9.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorRear", true));
-            this.textBox9.Location = new System.Drawing.Point(108, 247);
+            this.textBox9.Location = new System.Drawing.Point(99, 247);
             this.textBox9.Name = "textBox9";
             this.textBox9.ReadOnly = true;
-            this.textBox9.Size = new System.Drawing.Size(47, 20);
+            this.textBox9.Size = new System.Drawing.Size(35, 20);
             this.textBox9.TabIndex = 30;
             // 
             // textBox10
             // 
             this.textBox10.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorRight", true));
-            this.textBox10.Location = new System.Drawing.Point(161, 247);
+            this.textBox10.Location = new System.Drawing.Point(143, 247);
             this.textBox10.Name = "textBox10";
             this.textBox10.ReadOnly = true;
-            this.textBox10.Size = new System.Drawing.Size(47, 20);
+            this.textBox10.Size = new System.Drawing.Size(35, 20);
             this.textBox10.TabIndex = 31;
             // 
             // indicatorRollGyro
@@ -323,7 +333,7 @@
             this.linearIndicatorControl2.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
             this.linearIndicatorControl2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelPitch", true));
             this.linearIndicatorControl2.IsVertical = true;
-            this.linearIndicatorControl2.Location = new System.Drawing.Point(264, 21);
+            this.linearIndicatorControl2.Location = new System.Drawing.Point(259, 21);
             this.linearIndicatorControl2.Max = 500;
             this.linearIndicatorControl2.MaxWaterMark = 0;
             this.linearIndicatorControl2.Min = -500;
@@ -367,7 +377,7 @@
             this.linearIndicatorControl4.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
             this.linearIndicatorControl4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorFront", true));
             this.linearIndicatorControl4.IsVertical = true;
-            this.linearIndicatorControl4.Location = new System.Drawing.Point(71, 157);
+            this.linearIndicatorControl4.Location = new System.Drawing.Point(60, 157);
             this.linearIndicatorControl4.Max = 2000;
             this.linearIndicatorControl4.MaxWaterMark = 0;
             this.linearIndicatorControl4.Min = 1000;
@@ -389,7 +399,7 @@
             this.linearIndicatorControl5.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
             this.linearIndicatorControl5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
             this.linearIndicatorControl5.IsVertical = true;
-            this.linearIndicatorControl5.Location = new System.Drawing.Point(124, 157);
+            this.linearIndicatorControl5.Location = new System.Drawing.Point(105, 157);
             this.linearIndicatorControl5.Max = 2000;
             this.linearIndicatorControl5.MaxWaterMark = 0;
             this.linearIndicatorControl5.Min = 1000;
@@ -411,7 +421,7 @@
             this.linearIndicatorControl6.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
             this.linearIndicatorControl6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorRear", true));
             this.linearIndicatorControl6.IsVertical = true;
-            this.linearIndicatorControl6.Location = new System.Drawing.Point(179, 157);
+            this.linearIndicatorControl6.Location = new System.Drawing.Point(150, 157);
             this.linearIndicatorControl6.Max = 2000;
             this.linearIndicatorControl6.MaxWaterMark = 0;
             this.linearIndicatorControl6.Min = 1000;
@@ -455,7 +465,7 @@
             this.linearIndicatorControl8.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
             this.linearIndicatorControl8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "AccelZ", true));
             this.linearIndicatorControl8.IsVertical = true;
-            this.linearIndicatorControl8.Location = new System.Drawing.Point(353, 21);
+            this.linearIndicatorControl8.Location = new System.Drawing.Point(347, 21);
             this.linearIndicatorControl8.Max = 500;
             this.linearIndicatorControl8.MaxWaterMark = 0;
             this.linearIndicatorControl8.Min = -500;
@@ -467,10 +477,112 @@
             this.linearIndicatorControl8.Value = 100;
             this.linearIndicatorControl8.WatermarkLineColor = System.Drawing.Color.DarkGray;
             // 
+            // textBox11
+            // 
+            this.textBox11.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textBox11.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "AccelRollOffset", true));
+            this.textBox11.Enabled = false;
+            this.textBox11.Location = new System.Drawing.Point(47, 98);
+            this.textBox11.Name = "textBox11";
+            this.textBox11.ReadOnly = true;
+            this.textBox11.Size = new System.Drawing.Size(35, 13);
+            this.textBox11.TabIndex = 42;
+            this.textBox11.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // textBox12
+            // 
+            this.textBox12.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textBox12.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "AccelZOffset", true));
+            this.textBox12.Enabled = false;
+            this.textBox12.Location = new System.Drawing.Point(313, 46);
+            this.textBox12.Name = "textBox12";
+            this.textBox12.ReadOnly = true;
+            this.textBox12.Size = new System.Drawing.Size(34, 13);
+            this.textBox12.TabIndex = 43;
+            this.textBox12.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // textBox13
+            // 
+            this.textBox13.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textBox13.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "AccelPitchOffset", true));
+            this.textBox13.Enabled = false;
+            this.textBox13.Location = new System.Drawing.Point(225, 46);
+            this.textBox13.Name = "textBox13";
+            this.textBox13.ReadOnly = true;
+            this.textBox13.Size = new System.Drawing.Size(34, 13);
+            this.textBox13.TabIndex = 44;
+            this.textBox13.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // button2
+            // 
+            this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "RefreshCalibrationOffsetsCommand", true));
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(225, 241);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(26, 26);
+            this.button2.TabIndex = 46;
+            this.button2.UseVisualStyleBackColor = true;
+            // 
+            // button1
+            // 
+            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "UpdateCalibrationOffsetsCommand", true));
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(225, 212);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(26, 26);
+            this.button1.TabIndex = 45;
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // button3
+            // 
+            this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "CalculateCalibrationOffsetsCommand", true));
+            this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
+            this.button3.Location = new System.Drawing.Point(225, 183);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(26, 26);
+            this.button3.TabIndex = 47;
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(257, 190);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(48, 13);
+            this.label11.TabIndex = 48;
+            this.label11.Text = "Calibrate";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(257, 219);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(84, 13);
+            this.label12.TabIndex = 49;
+            this.label12.Text = "Save Calibration";
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(257, 250);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(96, 13);
+            this.label13.TabIndex = 50;
+            this.label13.Text = "Refresh Calibration";
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.label11);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.textBox13);
+            this.Controls.Add(this.textBox12);
+            this.Controls.Add(this.textBox11);
             this.Controls.Add(this.linearIndicatorControl8);
             this.Controls.Add(this.linearIndicatorControl7);
             this.Controls.Add(this.linearIndicatorControl6);
@@ -546,5 +658,14 @@
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl7;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl8;
+        private System.Windows.Forms.TextBox textBox11;
+        private System.Windows.Forms.TextBox textBox12;
+        private System.Windows.Forms.TextBox textBox13;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Label label13;
     }
 }

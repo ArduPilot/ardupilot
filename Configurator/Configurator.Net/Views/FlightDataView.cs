@@ -15,6 +15,7 @@ namespace ArducopterConfigurator.views
         public FlightDataView()
         {
             InitializeComponent();
+            BindButtons();
         }
 
         public override void SetDataContext(SensorsVm vm)
@@ -24,6 +25,7 @@ namespace ArducopterConfigurator.views
             if (Program.IsMonoRuntime)
                 vm.PropertyChanged += ((sender, e) => FlightDataVmBindingSource.ResetBindings(false));
         }
+
     }
     // Required for VS2008 designer. No functional value
     public class FlightDataViewDesignable : ViewCommon<SensorsVm> { }

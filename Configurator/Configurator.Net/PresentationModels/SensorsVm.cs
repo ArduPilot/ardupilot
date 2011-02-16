@@ -27,53 +27,139 @@ namespace ArducopterConfigurator.PresentationModels
     /// </remarks>
     public class SensorsVm : NotifyProperyChangedBase, IPresentationModel
     {
+
+        private const string CALIB_REFRESH = "J";
+        private const string CALIB_UPDATE = "I";
+        private const string SEND_SENSOR_DATA = "S";
+        private const string STOP_UPDATES = "X";
+
+        private bool waitingForCalibData;
+        public SensorsVm()
+        {
+            RefreshCalibrationOffsetsCommand = new DelegateCommand(_ => RefreshCalibValues());
+            UpdateCalibrationOffsetsCommand = new DelegateCommand(_ => UpdateCalibValues());
+            CalculateCalibrationOffsetsCommand = new DelegateCommand(_ => CalcCalibValues());
+        }
+
+        public void RefreshCalibValues()
+        {
+            sendString(STOP_UPDATES);
+            waitingForCalibData = true;
+            sendString(CALIB_REFRESH);
+        }
+
+        public void UpdateCalibValues()
+        {
+            sendString(PropertyHelper.ComposePropValuesWithCommand(this, _calibrationPropsInUpdateOrder, CALIB_UPDATE));
+            sendString(SEND_SENSOR_DATA);
+        }
+
+        public void CalcCalibValues()
+        {
+            AccelRollOffset = AccelRollOffset - AccelRoll;
+            AccelPitchOffset = AccelPitchOffset - AccelPitch;
+            //AccelZOffset = AccelZOffset - AccelZ;
+            FirePropertyChanged("AccelRollOffset");
+            FirePropertyChanged("AccelPitchOffset");
+            //FirePropertyChanged("AccelZOffset");
+        }
+
         public string Name
         {
             get { return "Sensor Data"; }
         }
 
-        private readonly string[] _propsInUpdateOrder = new[] 
-                       { 
-                           "LoopTime", 
-                           "GyroRoll", 
-                           "GyroPitch", 
-                           "GyroYaw", 
-                           "Unused", // Throttle
-                           "Unused", // control roll
-                           "Unused", // control pitch
-                           "Unused", // control yaw
-                           "MotorFront", 
-                           "MotorRear", 
-                           "MotorRight", 
-                           "MotorLeft", 
-                           "AccelRoll", 
-                           "AccelPitch", 
-                           "AccelZ", 
-                       };
+      
+
+
+        private readonly string[] _sensorPropsInUpdateOrder = new[] 
+               { 
+                   "LoopTime", 
+                   "GyroRoll", 
+                   "GyroPitch", 
+                   "GyroYaw", 
+                   "Unused", // Throttle
+                   "Unused", // control roll
+                   "Unused", // control pitch
+                   "Unused", // control yaw
+                   "MotorFront", 
+                   "MotorRear", 
+                   "MotorRight", 
+                   "MotorLeft", 
+                   "AccelRoll", 
+                   "AccelPitch", 
+                   "AccelZ", 
+               };
+
+        private readonly string[] _calibrationPropsInUpdateOrder = new[] 
+            { 
+                "GyroRollOffset", 
+                "GyroPitchOffset", 
+                "GyroYawOffset", 
+                "AccelRollOffset", 
+                "AccelPitchOffset", 
+                "AccelZOffset" 
+            };
         
+
+        private void sendString(string str)
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(str));
+        }
+
         public void Activate()
         {
-            if (sendTextToApm!=null)
-                sendTextToApm(this, new sendTextToApmEventArgs("S"));
+            // Get the calib. data first
+            waitingForCalibData = true;
+            sendString(CALIB_REFRESH);
         }
 
         public void DeActivate()
         {
-            if (sendTextToApm != null)
-                sendTextToApm(this, new sendTextToApmEventArgs("X"));
+            sendString(STOP_UPDATES);
+        }
+
+        public void handleLineOfText(string strRx)
+        {
+            if ( waitingForCalibData)
+            {
+                PropertyHelper.PopulatePropsFromUpdate(this, _calibrationPropsInUpdateOrder, strRx, true);
+                waitingForCalibData = false;
+                sendString(SEND_SENSOR_DATA);
+            }
+            else
+            {
+                PropertyHelper.PopulatePropsFromUpdate(this, _sensorPropsInUpdateOrder, strRx, false);
+            }
         }
 
         public event EventHandler updatedByApm;
 
-        
-        public void handleLineOfText(string strRx)
-        {
-            PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
-        }
-
-
         public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
-     
+
+        public ICommand RefreshCalibrationOffsetsCommand { get; private set; }
+
+        public ICommand UpdateCalibrationOffsetsCommand { get; private set; }
+        
+        public ICommand CalculateCalibrationOffsetsCommand { get; private set; }
+
+
+        #region Calibration Properties
+
+        public float GyroRollOffset { get; set; }
+        public float GyroPitchOffset { get; set; }
+        public float GyroYawOffset { get; set; }
+
+        public float AccelRollOffset { get; set; }
+        public float AccelPitchOffset { get; set; }
+        public float AccelZOffset { get; set; }
+
+
+        #endregion
+
+        #region Sensor Properties
+
         private int _loopTime;
         public int LoopTime
         {
@@ -195,6 +281,7 @@ namespace ArducopterConfigurator.PresentationModels
         }
 
         private int accelZ;
+
         public int AccelZ
         {
             get { return accelZ; }
@@ -205,6 +292,7 @@ namespace ArducopterConfigurator.PresentationModels
                 FirePropertyChanged("AccelZ");
             }
         }
+        #endregion
 
         public int Unused { get; set; }
     }
