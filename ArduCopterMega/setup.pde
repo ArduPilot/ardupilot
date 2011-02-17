@@ -125,7 +125,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 	}
 	
-	if(rc_1.radio_in < 500){
+	if(g.rc_1.radio_in < 500){
 		while(1){
 			Serial.printf_P(PSTR("\nNo radio; Check connectors."));
 			delay(1000);
@@ -133,32 +133,32 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 	
-	rc_1.radio_min = rc_1.radio_in;
-	rc_2.radio_min = rc_2.radio_in;
-	rc_3.radio_min = rc_3.radio_in;
-	rc_4.radio_min = rc_4.radio_in;
-	rc_5.radio_min = rc_5.radio_in;
-	rc_6.radio_min = rc_6.radio_in;
-	rc_7.radio_min = rc_7.radio_in;
-	rc_8.radio_min = rc_8.radio_in;
+	g.rc_1.radio_min = g.rc_1.radio_in;
+	g.rc_2.radio_min = g.rc_2.radio_in;
+	g.rc_3.radio_min = g.rc_3.radio_in;
+	g.rc_4.radio_min = g.rc_4.radio_in;
+	g.rc_5.radio_min = g.rc_5.radio_in;
+	g.rc_6.radio_min = g.rc_6.radio_in;
+	g.rc_7.radio_min = g.rc_7.radio_in;
+	g.rc_8.radio_min = g.rc_8.radio_in;
 
-	rc_1.radio_max = rc_1.radio_in;
-	rc_2.radio_max = rc_2.radio_in;
-	rc_3.radio_max = rc_3.radio_in;
-	rc_4.radio_max = rc_4.radio_in;
-	rc_5.radio_max = rc_5.radio_in;
-	rc_6.radio_max = rc_6.radio_in;
-	rc_7.radio_max = rc_7.radio_in;
-	rc_8.radio_max = rc_8.radio_in;
+	g.rc_1.radio_max = g.rc_1.radio_in;
+	g.rc_2.radio_max = g.rc_2.radio_in;
+	g.rc_3.radio_max = g.rc_3.radio_in;
+	g.rc_4.radio_max = g.rc_4.radio_in;
+	g.rc_5.radio_max = g.rc_5.radio_in;
+	g.rc_6.radio_max = g.rc_6.radio_in;
+	g.rc_7.radio_max = g.rc_7.radio_in;
+	g.rc_8.radio_max = g.rc_8.radio_in;
 
-	rc_1.radio_trim = rc_1.radio_in;
-	rc_2.radio_trim = rc_2.radio_in;
-	rc_4.radio_trim = rc_4.radio_in;
+	g.rc_1.radio_trim = g.rc_1.radio_in;
+	g.rc_2.radio_trim = g.rc_2.radio_in;
+	g.rc_4.radio_trim = g.rc_4.radio_in;
 	// 3 is not trimed
-	rc_5.radio_trim = 1500;
-	rc_6.radio_trim = 1500;
-	rc_7.radio_trim = 1500;
-	rc_8.radio_trim = 1500;
+	g.rc_5.radio_trim = 1500;
+	g.rc_6.radio_trim = 1500;
+	g.rc_7.radio_trim = 1500;
+	g.rc_8.radio_trim = 1500;
 
 
 	Serial.printf_P(PSTR("\nMove all controls to each extreme. Hit Enter to save: "));
@@ -169,17 +169,17 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		rc_1.update_min_max();
-		rc_2.update_min_max();
-		rc_3.update_min_max();
-		rc_4.update_min_max();
-		rc_5.update_min_max();
-		rc_6.update_min_max();
-		rc_7.update_min_max();
-		rc_8.update_min_max();
+		g.rc_1.update_min_max();
+		g.rc_2.update_min_max();
+		g.rc_3.update_min_max();
+		g.rc_4.update_min_max();
+		g.rc_5.update_min_max();
+		g.rc_6.update_min_max();
+		g.rc_7.update_min_max();
+		g.rc_8.update_min_max();
 		
 		if(Serial.available() > 0){
-			//rc_3.radio_max += 250;
+			//g.rc_3.radio_max += 250;
 			Serial.flush();
 			
 			save_EEPROM_radio();
@@ -210,35 +210,35 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	
-	int out_min = rc_3.radio_min + 70;
+	int out_min = g.rc_3.radio_min + 70;
 	
 
 
 	while(1){
 		delay(20);
 		read_radio();
-		motor_out[CH_1]	= rc_3.radio_min;
-		motor_out[CH_2]	= rc_3.radio_min;
-		motor_out[CH_3]	= rc_3.radio_min;
-		motor_out[CH_4] = rc_3.radio_min;
+		motor_out[CH_1]	= g.rc_3.radio_min;
+		motor_out[CH_2]	= g.rc_3.radio_min;
+		motor_out[CH_3]	= g.rc_3.radio_min;
+		motor_out[CH_4] = g.rc_3.radio_min;
 
 	
 		
 		if(frame_type == PLUS_FRAME){
-			if(rc_1.control_in > 0){
+			if(g.rc_1.control_in > 0){
 				motor_out[CH_1] 	= out_min;
 				Serial.println("0");
 				
-			}else if(rc_1.control_in < 0){
+			}else if(g.rc_1.control_in < 0){
 				motor_out[CH_2]		= out_min;
 				Serial.println("1");
 			}
 			
-			if(rc_2.control_in > 0){
+			if(g.rc_2.control_in > 0){
 				motor_out[CH_4] 	= out_min;
 				Serial.println("3");
 				
-			}else if(rc_2.control_in < 0){
+			}else if(g.rc_2.control_in < 0){
 				motor_out[CH_3]	= out_min;
 				Serial.println("2");
 			}
@@ -246,55 +246,55 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 		}else if(frame_type == X_FRAME){
 
 			// lower right
-			if((rc_1.control_in > 0) 		&& (rc_2.control_in > 0)){
+			if((g.rc_1.control_in > 0) 		&& (g.rc_2.control_in > 0)){
 				motor_out[CH_4] 	= out_min;
 				Serial.println("3");
 			// lower left
-			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in > 0)){
+			}else if((g.rc_1.control_in < 0) 	&& (g.rc_2.control_in > 0)){
 				motor_out[CH_2]		= out_min;
 				Serial.println("1");
 
 			// upper left
-			}else if((rc_1.control_in < 0) 	&& (rc_2.control_in < 0)){
+			}else if((g.rc_1.control_in < 0) 	&& (g.rc_2.control_in < 0)){
 				motor_out[CH_3]	= out_min;
 				Serial.println("2");
 
 			// upper right
-			}else if((rc_1.control_in > 0) 	&& (rc_2.control_in < 0)){
+			}else if((g.rc_1.control_in > 0) 	&& (g.rc_2.control_in < 0)){
 				motor_out[CH_1]	= out_min;
 				Serial.println("0");
 			}
 			
 		}else if(frame_type == TRI_FRAME){
 
-			if(rc_1.control_in > 0){
+			if(g.rc_1.control_in > 0){
 				motor_out[CH_1] 	= out_min;
 				
-			}else if(rc_1.control_in < 0){
+			}else if(g.rc_1.control_in < 0){
 				motor_out[CH_2]		= out_min;
 			}
 			
-			if(rc_2.control_in > 0){
+			if(g.rc_2.control_in > 0){
 				motor_out[CH_4] 	= out_min;	
 			}
 
-			if(rc_4.control_in > 0){
-				rc_4.servo_out	= 2000;
+			if(g.rc_4.control_in > 0){
+				g.rc_4.servo_out	= 2000;
 				
-			}else if(rc_4.control_in < 0){
-				rc_4.servo_out	= -2000;
+			}else if(g.rc_4.control_in < 0){
+				g.rc_4.servo_out	= -2000;
 			}
 			
-			rc_4.calc_pwm();
-			motor_out[CH_3] 	= rc_4.radio_out;
+			g.rc_4.calc_pwm();
+			motor_out[CH_3] 	= g.rc_4.radio_out;
 		}
 		
-		if(rc_3.control_in > 0){
-			APM_RC.OutputCh(CH_1, rc_3.radio_in);
-			APM_RC.OutputCh(CH_2, rc_3.radio_in);
-			APM_RC.OutputCh(CH_3, rc_3.radio_in);
+		if(g.rc_3.control_in > 0){
+			APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
 			if(frame_type != TRI_FRAME)
-				APM_RC.OutputCh(CH_4, rc_3.radio_in);
+				APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 		}else{
 			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
 			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
@@ -327,8 +327,8 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 		default_gains();
 	
 	}else if (!strcmp_P(argv[1].str, PSTR("s_kp"))) {
-		pid_stabilize_roll.kP(argv[2].f);
-		pid_stabilize_pitch.kP(argv[2].f);
+		g.pid_stabilize_roll.kP(argv[2].f);
+		g.pid_stabilize_pitch.kP(argv[2].f);
 		save_EEPROM_PID();
 	
 	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
@@ -336,19 +336,19 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 		save_EEPROM_PID();
 
 	}else if (!strcmp_P(argv[1].str, PSTR("y_kp"))) {
-		pid_yaw.kP(argv[2].f);
+		g.pid_yaw.kP(argv[2].f);
 		save_EEPROM_PID();
 
 	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
-		pid_yaw.kD(argv[2].f);
+		g.pid_yaw.kD(argv[2].f);
 		save_EEPROM_PID();
 
 	}else if (!strcmp_P(argv[1].str, PSTR("t_kp"))) {
-		pid_baro_throttle.kP(argv[2].f);
+		g.pid_baro_throttle.kP(argv[2].f);
 		save_EEPROM_PID();
 
 	}else if (!strcmp_P(argv[1].str, PSTR("t_kd"))) {
-		pid_baro_throttle.kD(argv[2].f);
+		g.pid_baro_throttle.kD(argv[2].f);
 		save_EEPROM_PID();
 	}else{
 		default_gains();
@@ -376,7 +376,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		// look for control switch change
 		if (oldSwitchPosition != switchPosition){
 		
-			mode = flight_modes[switchPosition];
+			mode = g.flight_modes[switchPosition];
 			mode = constrain(mode, 0, NUM_MODES-1);
 
 			// update the user
@@ -393,7 +393,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode = 0;
 
 			// save new mode
-			flight_modes[switchPosition] = mode;
+			g.flight_modes[switchPosition] = mode;
 
 			// print new mode
 			print_switch(switchPosition, mode);
@@ -428,11 +428,11 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		compass_enabled = true;
+		g.compass_enabled = true;
 		init_compass();
 	
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		compass_enabled = false;
+		g.compass_enabled = false;
 	
 	} else {
 		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
@@ -557,14 +557,14 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 						
 			if(Serial.available() > 0){
 				
-				mag_offset_x = offset[0];
-				mag_offset_y = offset[1];
-				mag_offset_z = offset[2];
+				//mag_offset_x = offset[0];
+				//mag_offset_y = offset[1];
+				//mag_offset_z = offset[2];
 			
-				save_EEPROM_mag_offset();
+				//save_EEPROM_mag_offset();
 				
 				// set offsets to account for surrounding interference
-				compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
+				//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
 				
 				report_compass();
 				break;
@@ -580,8 +580,8 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 void default_waypoint_info()
 {	
-	wp_radius 			= 4; 	//TODO: Replace this quick fix with a real way to define wp_radius
-	loiter_radius 		= 30; 	//TODO: Replace this quick fix with a real way to define loiter_radius
+	g.waypoint_radius 		= 4; 	//TODO: Replace this quick fix with a real way to define wp_radius
+	g.loiter_radius 		= 30; 	//TODO: Replace this quick fix with a real way to define loiter_radius
 	save_EEPROM_waypoint_info();
 }
 
@@ -590,9 +590,9 @@ void
 default_nav()
 {
 	// nav control
-	x_track_gain 				= XTRACK_GAIN * 100;
-	x_track_angle 				= XTRACK_ENTRY_ANGLE * 100;
-	pitch_max 					= PITCH_MAX * 100;
+	g.crosstrack_gain 				= XTRACK_GAIN * 100;
+	g.crosstrack_entry_angle 		= XTRACK_ENTRY_ANGLE * 100;
+	g.pitch_max 					= PITCH_MAX * 100;
 	save_EEPROM_nav();
 }
 
@@ -621,21 +621,21 @@ default_current()
 void
 default_flight_modes()
 {
-	flight_modes[0] 			= FLIGHT_MODE_1;
-	flight_modes[1] 			= FLIGHT_MODE_2;
-	flight_modes[2] 			= FLIGHT_MODE_3;
-	flight_modes[3] 			= FLIGHT_MODE_4;
-	flight_modes[4] 			= FLIGHT_MODE_5;
-	flight_modes[5] 			= FLIGHT_MODE_6;
+	g.flight_modes[0] 			= FLIGHT_MODE_1;
+	g.flight_modes[1] 			= FLIGHT_MODE_2;
+	g.flight_modes[2] 			= FLIGHT_MODE_3;
+	g.flight_modes[3] 			= FLIGHT_MODE_4;
+	g.flight_modes[4] 			= FLIGHT_MODE_5;
+	g.flight_modes[5] 			= FLIGHT_MODE_6;
 	save_EEPROM_flight_modes();
 }
 
 void
 default_throttle()
 {
-	throttle_min				= THROTTLE_MIN;
-	throttle_max				= THROTTLE_MAX;
-	throttle_cruise				= THROTTLE_CRUISE;
+	g.throttle_min				= THROTTLE_MIN;
+	g.throttle_max				= THROTTLE_MAX;
+	g.throttle_cruise			= THROTTLE_CRUISE;
 	throttle_failsafe_enabled	= THROTTLE_FAILSAFE;
 	throttle_failsafe_action	= THROTTLE_FAILSAFE_ACTION;
 	throttle_failsafe_value		= THROTTLE_FS_VALUE;
@@ -647,7 +647,7 @@ void default_logs()
 
 	// convenience macro for testing LOG_* and setting LOGBIT_*
 	#define LOGBIT(_s)	(LOG_ ## _s ? LOGBIT_ ## _s : 0)
-	log_bitmask = 
+	g.log_bitmask = 
 		LOGBIT(ATTITUDE_FAST)	|
 		LOGBIT(ATTITUDE_MED)	|
 		LOGBIT(GPS)				|
@@ -668,38 +668,38 @@ void
 default_gains()
 {
 	// acro, angular rate
-	pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
-	pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
-	pid_acro_rate_roll.kD(0);
-	pid_acro_rate_roll.imax(ACRO_RATE_ROLL_IMAX * 100);
+	g.pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
+	g.pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
+	g.pid_acro_rate_roll.kD(0);
+	g.pid_acro_rate_roll.imax(ACRO_RATE_ROLL_IMAX * 100);
 	
-	pid_acro_rate_pitch.kP(ACRO_RATE_PITCH_P);
-	pid_acro_rate_pitch.kI(ACRO_RATE_PITCH_I);
-	pid_acro_rate_pitch.kD(0);
-	pid_acro_rate_pitch.imax(ACRO_RATE_PITCH_IMAX * 100);
+	g.pid_acro_rate_pitch.kP(ACRO_RATE_PITCH_P);
+	g.pid_acro_rate_pitch.kI(ACRO_RATE_PITCH_I);
+	g.pid_acro_rate_pitch.kD(0);
+	g.pid_acro_rate_pitch.imax(ACRO_RATE_PITCH_IMAX * 100);
 
-	pid_acro_rate_yaw.kP(ACRO_RATE_YAW_P);
-	pid_acro_rate_yaw.kI(ACRO_RATE_YAW_I);
-	pid_acro_rate_yaw.kD(0);
-	pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
+	g.pid_acro_rate_yaw.kP(ACRO_RATE_YAW_P);
+	g.pid_acro_rate_yaw.kI(ACRO_RATE_YAW_I);
+	g.pid_acro_rate_yaw.kD(0);
+	g.pid_acro_rate_yaw.imax(ACRO_RATE_YAW_IMAX * 100);
 
 
 	// stabilize, angle error
-	pid_stabilize_roll.kP(STABILIZE_ROLL_P);
-	pid_stabilize_roll.kI(STABILIZE_ROLL_I);
-	pid_stabilize_roll.kD(0);
-	pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
+	g.pid_stabilize_roll.kP(STABILIZE_ROLL_P);
+	g.pid_stabilize_roll.kI(STABILIZE_ROLL_I);
+	g.pid_stabilize_roll.kD(0);
+	g.pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
 		
-	pid_stabilize_pitch.kP(STABILIZE_PITCH_P);
-	pid_stabilize_pitch.kI(STABILIZE_PITCH_I);
-	pid_stabilize_pitch.kD(0);
-	pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
+	g.pid_stabilize_pitch.kP(STABILIZE_PITCH_P);
+	g.pid_stabilize_pitch.kI(STABILIZE_PITCH_I);
+	g.pid_stabilize_pitch.kD(0);
+	g.pid_stabilize_pitch.imax(STABILIZE_PITCH_IMAX * 100);
 
 	// YAW hold
-	pid_yaw.kP(YAW_P);
-	pid_yaw.kI(YAW_I);
-	pid_yaw.kD(0);
-	pid_yaw.imax(YAW_IMAX * 100);
+	g.pid_yaw.kP(YAW_P);
+	g.pid_yaw.kI(YAW_I);
+	g.pid_yaw.kD(0);
+	g.pid_yaw.imax(YAW_IMAX * 100);
 
 
 	// custom dampeners
@@ -711,25 +711,25 @@ default_gains()
 
 
 	// navigation
-	pid_nav_lat.kP(NAV_P);
-	pid_nav_lat.kI(NAV_I);
-	pid_nav_lat.kD(NAV_D);
-	pid_nav_lat.imax(NAV_IMAX);
+	g.pid_nav_lat.kP(NAV_P);
+	g.pid_nav_lat.kI(NAV_I);
+	g.pid_nav_lat.kD(NAV_D);
+	g.pid_nav_lat.imax(NAV_IMAX);
 
-	pid_nav_lon.kP(NAV_P);
-	pid_nav_lon.kI(NAV_I);
-	pid_nav_lon.kD(NAV_D);
-	pid_nav_lon.imax(NAV_IMAX);
+	g.pid_nav_lon.kP(NAV_P);
+	g.pid_nav_lon.kI(NAV_I);
+	g.pid_nav_lon.kD(NAV_D);
+	g.pid_nav_lon.imax(NAV_IMAX);
 
-	pid_baro_throttle.kP(THROTTLE_BARO_P);
-	pid_baro_throttle.kI(THROTTLE_BARO_I);
-	pid_baro_throttle.kD(THROTTLE_BARO_D);
-	pid_baro_throttle.imax(THROTTLE_BARO_IMAX);
+	g.pid_baro_throttle.kP(THROTTLE_BARO_P);
+	g.pid_baro_throttle.kI(THROTTLE_BARO_I);
+	g.pid_baro_throttle.kD(THROTTLE_BARO_D);
+	g.pid_baro_throttle.imax(THROTTLE_BARO_IMAX);
 
-	pid_sonar_throttle.kP(THROTTLE_SONAR_P);
-	pid_sonar_throttle.kI(THROTTLE_SONAR_I);
-	pid_sonar_throttle.kD(THROTTLE_SONAR_D);
-	pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
+	g.pid_sonar_throttle.kP(THROTTLE_SONAR_P);
+	g.pid_sonar_throttle.kI(THROTTLE_SONAR_I);
+	g.pid_sonar_throttle.kD(THROTTLE_SONAR_D);
+	g.pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
 	
 	save_EEPROM_PID();
 }
@@ -794,32 +794,32 @@ void report_gains()
 	read_EEPROM_PID();
 	// Acro
 	Serial.printf_P(PSTR("Acro:\nroll:\n"));
-	print_PID(&pid_acro_rate_roll);
+	print_PID(&g.pid_acro_rate_roll);
 	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&pid_acro_rate_pitch);
+	print_PID(&g.pid_acro_rate_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&pid_acro_rate_yaw);
+	print_PID(&g.pid_acro_rate_yaw);
 
 	// Stabilize
 	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
-	print_PID(&pid_stabilize_roll);
+	print_PID(&g.pid_stabilize_roll);
 	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&pid_stabilize_pitch);
+	print_PID(&g.pid_stabilize_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&pid_yaw);
+	print_PID(&g.pid_yaw);
 	
 	Serial.printf_P(PSTR("Stabilize dampener: %4.3f\n"), stabilize_dampener);	
 	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), hold_yaw_dampener);
 	
 	// Nav
 	Serial.printf_P(PSTR("Nav:\nlat:\n"));
-	print_PID(&pid_nav_lat);
+	print_PID(&g.pid_nav_lat);
 	Serial.printf_P(PSTR("long:\n"));
-	print_PID(&pid_nav_lon);
+	print_PID(&g.pid_nav_lon);
 	Serial.printf_P(PSTR("baro throttle:\n"));
-	print_PID(&pid_baro_throttle);
+	print_PID(&g.pid_baro_throttle);
 	Serial.printf_P(PSTR("sonar throttle:\n"));
-	print_PID(&pid_sonar_throttle);
+	print_PID(&g.pid_sonar_throttle);
 	print_blanks(1);
 }
 
@@ -833,9 +833,9 @@ void report_xtrack()
 	Serial.printf_P(PSTR("XTRACK: %4.2f\n"
 						 "XTRACK angle: %d\n"
 						 "PITCH_MAX: %ld"),
-						 x_track_gain,
-						 x_track_angle,
-						 pitch_max);
+						 g.crosstrack_gain,
+						 g.crosstrack_entry_angle,
+						 g.pitch_max);
 	print_blanks(1);
 }
 
@@ -851,9 +851,9 @@ void report_throttle()
 						 "cruise: %d\n"
 						 "failsafe_enabled: %d\n"
 						 "failsafe_value: %d"),
-						 throttle_min,
-						 throttle_max,
-						 throttle_cruise,
+						 g.throttle_min,
+						 g.throttle_max,
+						 g.throttle_cruise,
 						 throttle_failsafe_enabled,
 						 throttle_failsafe_value);
 	print_blanks(1);
@@ -880,7 +880,7 @@ void report_compass()
 	read_EEPROM_compass_declination();
 	read_EEPROM_compass_offset();
 
-	print_enabled(compass_enabled);
+	print_enabled(g.compass_enabled);
 	
 	// mag declination
 	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"), 
@@ -903,7 +903,7 @@ void report_flight_modes()
 	read_EEPROM_flight_modes();
 		
 	for(int i = 0; i < 6; i++ ){
-		print_switch(i, flight_modes[i]);
+		print_switch(i, g.flight_modes[i]);
 	}
 	print_blanks(1);
 }
@@ -921,14 +921,14 @@ print_PID(PID * pid)
 void 
 print_radio_values()
 {
-	Serial.printf_P(PSTR("CH1: %d | %d\n"), rc_1.radio_min, rc_1.radio_max);
-	Serial.printf_P(PSTR("CH2: %d | %d\n"), rc_2.radio_min, rc_2.radio_max);
-	Serial.printf_P(PSTR("CH3: %d | %d\n"), rc_3.radio_min, rc_3.radio_max);
-	Serial.printf_P(PSTR("CH4: %d | %d\n"), rc_4.radio_min, rc_4.radio_max);
-	Serial.printf_P(PSTR("CH5: %d | %d\n"), rc_5.radio_min, rc_5.radio_max);
-	Serial.printf_P(PSTR("CH6: %d | %d\n"), rc_6.radio_min, rc_6.radio_max);
-	Serial.printf_P(PSTR("CH7: %d | %d\n"), rc_7.radio_min, rc_7.radio_max);
-	Serial.printf_P(PSTR("CH8: %d | %d\n"), rc_8.radio_min, rc_8.radio_max);
+	Serial.printf_P(PSTR("CH1: %d | %d\n"), g.rc_1.radio_min, g.rc_1.radio_max);
+	Serial.printf_P(PSTR("CH2: %d | %d\n"), g.rc_2.radio_min, g.rc_2.radio_max);
+	Serial.printf_P(PSTR("CH3: %d | %d\n"), g.rc_3.radio_min, g.rc_3.radio_max);
+	Serial.printf_P(PSTR("CH4: %d | %d\n"), g.rc_4.radio_min, g.rc_4.radio_max);
+	Serial.printf_P(PSTR("CH5: %d | %d\n"), g.rc_5.radio_min, g.rc_5.radio_max);
+	Serial.printf_P(PSTR("CH6: %d | %d\n"), g.rc_6.radio_min, g.rc_6.radio_max);
+	Serial.printf_P(PSTR("CH7: %d | %d\n"), g.rc_7.radio_min, g.rc_7.radio_max);
+	Serial.printf_P(PSTR("CH8: %d | %d\n"), g.rc_8.radio_min, g.rc_8.radio_max);
 }
 
 void
@@ -969,7 +969,7 @@ radio_input_switch(void)
 {
 	static byte bouncer;
 	
-	if (abs(rc_1.radio_in - rc_1.radio_trim) > 200)
+	if (abs(g.rc_1.radio_in - g.rc_1.radio_trim) > 200)
 		bouncer = 10;
 
 	if (bouncer > 0)

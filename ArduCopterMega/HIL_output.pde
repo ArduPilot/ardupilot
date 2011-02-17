@@ -11,15 +11,15 @@ void output_HIL(void)
 {
 	// output real-time sensor data
 	Serial.print("AAA"); 		 						// 		Message preamble
-	output_int((int)(rc_1.servo_out));				// 	0	bytes 0, 1
-	output_int((int)(rc_2.servo_out));				// 	1	bytes 2, 3
-	output_int((int)(rc_3.servo_out));			// 	2	bytes 4, 5
-	output_int((int)(rc_4.servo_out));			// 	3	bytes 6, 7
+	output_int((int)(g.rc_1.servo_out));				// 	0	bytes 0, 1
+	output_int((int)(g.rc_2.servo_out));				// 	1	bytes 2, 3
+	output_int((int)(g.rc_3.servo_out));			// 	2	bytes 4, 5
+	output_int((int)(g.rc_4.servo_out));			// 	3	bytes 6, 7
 	output_int((int)wp_distance);						// 	4	bytes 8,9
 	output_int((int)bearing_error);						// 	5	bytes 10,11
 	output_int((int)next_WP.alt / 100);					// 	6	bytes 12, 13
 	output_int((int)energy_error);						// 	7	bytes 14,15
-	output_byte(wp_index);								// 	8	bytes 16
+	output_byte(g.waypoint_index);								// 	8	bytes 16
 	output_byte(control_mode);							// 	9	bytes 17
 	
 	// print out the buffer and checksum
@@ -33,15 +33,15 @@ void output_HIL_(void)
 {
 	// output real-time sensor data
 	Serial.print("AAA"); 		 						// 		Message preamble
-	output_int((int)(rc_1.servo_out));				// 	0	bytes 0, 1
-	output_int((int)(rc_2.servo_out));				// 	1	bytes 2, 3
-	output_int((int)(rc_3.servo_out));			// 	2	bytes 4, 5
-	output_int((int)(rc_4.servo_out));			// 	3	bytes 6, 7
+	output_int((int)(g.rc_1.servo_out));				// 	0	bytes 0, 1
+	output_int((int)(g.rc_2.servo_out));				// 	1	bytes 2, 3
+	output_int((int)(g.rc_3.servo_out));			// 	2	bytes 4, 5
+	output_int((int)(g.rc_4.servo_out));			// 	3	bytes 6, 7
 	output_int((int)wp_distance);						// 	4	bytes 8, 9
 	output_int((int)bearing_error);						// 	5	bytes 10,11
 	output_int((int)dcm.roll_sensor);						// 	6	bytes 12,13
 	output_int((int)loiter_total);						// 	7	bytes 14,15
-	output_byte(wp_index);								// 	8	bytes 16
+	output_byte(g.waypoint_index);								// 	8	bytes 16
 	output_byte(control_mode);							// 	9	bytes 17
 	
 	// print out the buffer and checksum

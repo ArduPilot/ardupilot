@@ -3,7 +3,7 @@
 void init_commands()
 {
 	read_EEPROM_waypoint_info();
-	wp_index 			= 0;
+	g.waypoint_index 			= 0;
 	command_must_index	= 0;
 	command_may_index	= 0;
 	next_command.id 	= CMD_BLANK;
@@ -11,19 +11,26 @@ void init_commands()
 
 void update_auto()
 {
-	if (wp_index == wp_total){
+	if (g.waypoint_index == g.waypoint_total){
 		return_to_launch();
-		//wp_index 			= 0;
+		//g.waypoint_index 			= 0;
 	}
 }
 
 void reload_commands()
 {
 	init_commands();
-	read_command_index();			// Get wp_index = command_must_index from EEPROM
-	if(wp_index > 0){
-		decrement_WP_index;
-	}
+	g.waypoint_index.load();        // XXX can we assume it's been loaded already by ::load_all?
+	decrement_WP_index();
+}
+
+long read_alt_to_hold()
+{	
+	read_EEPROM_alt_RTL();
+	if(g.RTL_altitude == -1)
+		return current_loc.alt;
+	else
+		return g.RTL_altitude + home.alt;
 }
 
 // Getters
@@ -36,7 +43,7 @@ struct Location get_wp_with_index(int i)
 	
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
-	if (i > wp_total) {
+	if (i > g.waypoint_total) {
 		temp.id = CMD_BLANK;
 	}else{
 		// read WP position 
@@ -59,7 +66,7 @@ struct Location get_wp_with_index(int i)
 void set_wp_with_index(struct Location temp, int i)
 {
 
-	i = constrain(i,0,wp_total);
+	i = constrain(i, 0, g.waypoint_total);
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -79,17 +86,17 @@ void set_wp_with_index(struct Location temp, int i)
 
 void increment_WP_index()
 {
-	if(wp_index < wp_total){
-		wp_index++;
-		Serial.printf_P(PSTR("WP index is incremented to %d\n"),wp_index);
+	if(g.waypoint_index < g.waypoint_total){
+		g.waypoint_index++;
+		Serial.printf_P(PSTR("WP index is incremented to %d\n"),g.waypoint_index);
 	}else{
-		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),wp_index);
+		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),g.waypoint_index);
 	}
 }
 void decrement_WP_index()
 {
-	if(wp_index > 0){
-		wp_index--;
+	if(g.waypoint_index > 0){
+		g.waypoint_index--;
 	}
 }
 
@@ -107,7 +114,7 @@ return_to_launch(void)
 
 	// home is WP 0
 	// ------------
-	wp_index = 0;
+	g.waypoint_index = 0;
 	
 	// Loads WP from Memory
 	// --------------------
@@ -145,8 +152,8 @@ It looks to see what the next command type is and finds the last command.
 void 
 set_next_WP(struct Location *wp)
 {
-	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), wp_index);
-	send_message(MSG_COMMAND, wp_index);
+	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), g.waypoint_index);
+	send_message(MSG_COMMAND, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
@@ -199,14 +206,14 @@ void init_home()
 
 	// block until we get a good fix
 	// -----------------------------
-	while (!GPS.new_data || !GPS.fix) {
-		GPS.update();
+	while (!gps->new_data || !gps->fix) {
+		gps->update();
 	}
 	
 	home.id 	= CMD_WAYPOINT;
-	home.lng 	= GPS.longitude;				// Lon * 10**7
-	home.lat 	= GPS.latitude;				// Lat * 10**7
-	home.alt 	= GPS.altitude;
+	home.lng 	= gps->longitude;				// Lon * 10**7
+	home.lat 	= gps->latitude;				// Lat * 10**7
+	home.alt 	= gps->altitude;
 	home_is_set = true;
 
 	// ground altitude in centimeters for pressure alt calculations

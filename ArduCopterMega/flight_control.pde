@@ -7,16 +7,16 @@ throttle control
 // -----------
 void output_manual_throttle()
 {
-	rc_3.servo_out = (float)rc_3.control_in * angle_boost();
+	g.rc_3.servo_out = (float)g.rc_3.control_in * angle_boost();
 }
 
 // Autopilot
 // ---------
 void output_auto_throttle()
 {
-	rc_3.servo_out 	= (float)nav_throttle * angle_boost();
+	g.rc_3.servo_out 	= (float)nav_throttle * angle_boost();
 	// make sure we never send a 0 throttle that will cut the motors
-	rc_3.servo_out = max(rc_3.servo_out, 1);
+	g.rc_3.servo_out = max(g.rc_3.servo_out, 1);
 }
 
 void calc_nav_throttle()
@@ -25,26 +25,26 @@ void calc_nav_throttle()
 	long error = constrain(altitude_error, -400, 400);
 	
 	if(altitude_sensor == BARO) {
-		float t = pid_baro_throttle.kP();
+		float t = g.pid_baro_throttle.kP();
 		
 		if(error > 0){ 					// go up
-			pid_baro_throttle.kP(t);
+			g.pid_baro_throttle.kP(t);
 		}else{							// go down
-			pid_baro_throttle.kP(t/4.0);
+			g.pid_baro_throttle.kP(t/4.0);
 		}
 		
 		// limit output of throttle control
-		nav_throttle = pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
-		nav_throttle = throttle_cruise + constrain(nav_throttle, -30, 80);
+		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
 		
-		pid_baro_throttle.kP(t);
+		g.pid_baro_throttle.kP(t);
 		
 	} else {
 		// SONAR
-		nav_throttle = pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
 	
 		// limit output of throttle control
-		nav_throttle = throttle_cruise + constrain(nav_throttle, -60, 100);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 100);
 	}
 	
 	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
@@ -65,11 +65,11 @@ yaw control
 
 void output_manual_yaw()
 {
-	if(rc_3.control_in == 0){
+	if(g.rc_3.control_in == 0){
 		clear_yaw_control();
 	} else {
 		// Yaw control
-		if(rc_4.control_in == 0){
+		if(g.rc_4.control_in == 0){
 			//clear_yaw_control();
 			output_yaw_with_hold(true); // hold yaw
 		}else{
@@ -94,7 +94,7 @@ void calc_nav_pid()
 {
 	// how hard to pitch to target
 	
-	nav_angle 	= pid_nav.get_pid(wp_distance * 100, dTnav, 1.0);
+	nav_angle 	= g.pid_nav.get_pid(wp_distance * 100, dTnav, 1.0);
 	nav_angle 	= constrain(nav_angle, -pitch_max, pitch_max);
 }
 

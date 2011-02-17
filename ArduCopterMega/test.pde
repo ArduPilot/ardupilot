@@ -97,7 +97,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"), rc_1.radio_in, rc_2.radio_in, rc_3.radio_in, rc_4.radio_in, rc_5.radio_in, rc_6.radio_in, rc_7.radio_in, rc_8.radio_in);
+		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"), g.rc_1.radio_in, g.rc_2.radio_in, g.rc_3.radio_in, g.rc_4.radio_in, g.rc_5.radio_in, g.rc_6.radio_in, g.rc_7.radio_in, g.rc_8.radio_in);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -120,24 +120,24 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 		output_manual_throttle();
 		
-		rc_1.calc_pwm();
-		rc_2.calc_pwm();
-		rc_3.calc_pwm();
-		rc_4.calc_pwm();
+		g.rc_1.calc_pwm();
+		g.rc_2.calc_pwm();
+		g.rc_3.calc_pwm();
+		g.rc_4.calc_pwm();
 		
-		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"), (rc_1.control_in), (rc_2.control_in), (rc_3.control_in), (rc_4.control_in), rc_5.control_in, rc_6.control_in, rc_7.control_in);
-		//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (rc_1.servo_out / 100), (rc_2.servo_out / 100), rc_3.servo_out, (rc_4.servo_out / 100));
+		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"), (g.rc_1.control_in), (g.rc_2.control_in), (g.rc_3.control_in), (g.rc_4.control_in), g.rc_5.control_in, g.rc_6.control_in, g.rc_7.control_in);
+		//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (g.rc_1.servo_out / 100), (g.rc_2.servo_out / 100), g.rc_3.servo_out, (g.rc_4.servo_out / 100));
 		
 		/*Serial.printf_P(PSTR(	"min: %d"
 								"\t in: %d"
 								"\t pwm_in: %d"
 								"\t sout: %d"
 								"\t pwm_out %d\n"),
-								rc_3.radio_min, 
-								rc_3.control_in,
-								rc_3.radio_in,
-								rc_3.servo_out,
-								rc_3.pwm_out
+								g.rc_3.radio_min, 
+								g.rc_3.control_in,
+								g.rc_3.radio_in,
+								g.rc_3.servo_out,
+								g.rc_3.pwm_out
 								);
 		*/
 		if(Serial.available() > 0){
@@ -164,7 +164,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	oldSwitchPosition = readSwitch();
 	
 	Serial.printf_P(PSTR("Unplug battery, throttle in neutral, turn off radio.\n"));
-	while(rc_3.control_in > 0){
+	while(g.rc_3.control_in > 0){
 		delay(20);
 		read_radio();
 	}
@@ -173,8 +173,8 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_radio();
 			
-		if(rc_3.control_in > 0){
-			Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), rc_3.control_in);
+		if(g.rc_3.control_in > 0){
+			Serial.printf_P(PSTR("THROTTLE CHANGED %d \n"), g.rc_3.control_in);
 			fail_test++;
 		}
 		
@@ -184,8 +184,8 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			fail_test++;
 		}
 		
-		if(throttle_failsafe_enabled && rc_3.get_failsafe()){
-			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), rc_3.radio_in);
+		if(g.throttle_failsafe_enabled && g.rc_3.get_failsafe()){
+			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.rc_3.radio_in);
 			Serial.println(flight_mode_strings[readSwitch()]);
 			fail_test++;
 		}
@@ -214,7 +214,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	init_rc_in();
 	
 	control_mode = STABILIZE;
-	Serial.printf_P(PSTR("pid_stabilize_roll.kP: %4.4f\n"), pid_stabilize_roll.kP());
+	Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
 	trim_radio();
@@ -229,11 +229,11 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			fast_loopTimer		= millis();
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
 
-			if(compass_enabled){
+			if(g.compass_enabled){
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					compass.read();		 				// Read magnetometer
-					compass.calculate(roll, pitch);		// Calculate heading
+					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 					medium_loopCounter = 0;
 				}
 			}
@@ -249,7 +249,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			read_AHRS();
 			
 			// allow us to zero out sensors with control switches
-			if(rc_5.control_in < 600){
+			if(g.rc_5.control_in < 600){
 				dcm.roll_sensor = dcm.pitch_sensor = 0;
 			}
 			
@@ -267,7 +267,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, "),
 					(int)(dcm.roll_sensor/100),
 					(int)(dcm.pitch_sensor/100),
-					rc_1.pwm_out);
+					g.rc_1.pwm_out);
 
 				print_motor_out();
 			}
@@ -297,7 +297,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 	init_rc_in();
 	
 	control_mode = FBW;
-	//Serial.printf_P(PSTR("pid_stabilize_roll.kP: %4.4f\n"), pid_stabilize_roll.kP());
+	//Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
 	//Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
 	motor_armed = true;
@@ -314,11 +314,11 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
 
 
-			if(compass_enabled){
+			if(g.compass_enabled){
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					compass.read();		 				// Read magnetometer
-					compass.calculate(roll, pitch);		// Calculate heading
+					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 					medium_loopCounter = 0;
 				}
 			}
@@ -334,7 +334,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			read_AHRS();
 			
 			// allow us to zero out sensors with control switches
-			if(rc_5.control_in < 600){
+			if(g.rc_5.control_in < 600){
 				dcm.roll_sensor = dcm.pitch_sensor = 0;
 			}
 			
@@ -350,8 +350,8 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			if (ts_num == 5){
 				// 10 hz
 				ts_num 				= 0;
-				GPS.longitude 		= 0;
-				GPS.latitude 		= 0;
+				gps->longitude 		= 0;
+				gps->latitude 		= 0;
 				calc_nav();
 
 				Serial.printf_P(PSTR("ys:%ld, WP.lat:%ld, WP.lng:%ld, n_lat:%ld, n_lon:%ld, nroll:%ld, npitch:%ld, pmax:%ld, \t- "),
@@ -362,7 +362,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 					nav_lon,
 					nav_roll,
 					nav_pitch,
-					pitch_max);
+					g.pitch_max);
 					
 				print_motor_out();
 			}
@@ -438,11 +438,11 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			
 			update_trig();
 
-			if(compass_enabled){
+			if(g.compass_enabled){
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
 					compass.read();		 				// Read magnetometer
-					compass.calculate(roll, pitch);		// Calculate heading
+					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 					medium_loopCounter = 0;
 				}
 			}
@@ -500,12 +500,14 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 		
 		calc_distance_error();
 		
-		//if (GPS.new_data){
-			Serial.print("Lat:");
-			Serial.print((float)GPS.latitude/10000000, 10);
-			Serial.print(" Lon:");
-			Serial.print((float)GPS.longitude/10000000, 10);
-			Serial.printf_P(PSTR(" alt %dm, spd: %d dist:%d, #sats: %d\n"), (int)GPS.altitude/100, (int)GPS.ground_speed, (int)wp_distance, (int)GPS.num_sats);
+		//if (gps->new_data){
+			Serial.printf_P(PSTR("Lat: %3.8f, Lon: %3.8f, alt %dm, spd: %d dist:%d, #sats: %d\n"),
+						((float)gps->latitude /  10000000),
+						((float)gps->longitude / 10000000),
+						(int)gps->altitude / 100,
+						(int)gps->ground_speed,
+						(int)wp_distance,
+						(int)gps->num_sats);
 		//}else{
 			//Serial.print(".");
 		//}
@@ -660,11 +662,11 @@ test_current(uint8_t argc, const Menu::arg *argv)
 		read_current();
 		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"), current_voltage, current_amps, current_total);
 
-		//if(rc_3.control_in > 0){
-			APM_RC.OutputCh(CH_1, rc_3.radio_in);
-			APM_RC.OutputCh(CH_2, rc_3.radio_in);
-			APM_RC.OutputCh(CH_3, rc_3.radio_in);
-			APM_RC.OutputCh(CH_4, rc_3.radio_in);
+		//if(g.rc_3.control_in > 0){
+			APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 		//}
 		
 		if(Serial.available() > 0){
@@ -708,17 +710,17 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	
 
 	// save the alitude above home option
-	if(alt_to_hold == -1){
+	if(g.RTL_altitude == -1){
 		Serial.printf_P(PSTR("Hold current altitude\n"));
 	}else{
-		Serial.printf_P(PSTR("Hold altitude of %dm\n"), alt_to_hold/100);
+		Serial.printf_P(PSTR("Hold altitude of %dm\n"), g.RTL_altitude);
 	}
 	
-	Serial.printf_P(PSTR("%d waypoints\n"), wp_total);
-	Serial.printf_P(PSTR("Hit radius: %d\n"), wp_radius);
-	Serial.printf_P(PSTR("Loiter radius: %d\n\n"), loiter_radius);
+	Serial.printf_P(PSTR("%d waypoints\n"), g.waypoint_total);
+	Serial.printf_P(PSTR("Hit radius: %d\n"), g.waypoint_radius);
+	Serial.printf_P(PSTR("Loiter radius: %d\n\n"), g.loiter_radius);
 	
-	for(byte i = 0; i <= wp_total; i++){
+	for(byte i = 0; i <= g.waypoint_total; i++){
 		struct Location temp = get_wp_with_index(i);
 		print_waypoint(&temp, i);
 	}
@@ -784,7 +786,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			medium_loopTimer	= millis();
 
 			read_radio();			// read the radio first
-			next_WP.alt = home.alt + rc_6.control_in; // 0 - 2000 (20 meters)		
+			next_WP.alt = home.alt + g.rc_6.control_in; // 0 - 2000 (20 meters)		
 			read_trim_switch();
 			read_barometer();
 
@@ -793,8 +795,8 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 						current_loc.alt,
 						next_WP.alt,
 						altitude_error,
-						throttle_cruise,
-						rc_3.servo_out);
+						g.,
+						g.rc_3.servo_out);
 			
 			/*
 			Serial.print("Altitude: ");
@@ -804,9 +806,9 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			Serial.print("\talt_err: ");
 			Serial.print((int)altitude_error,DEC);
 			Serial.print("\ttNom: ");
-			Serial.print(throttle_cruise,DEC);
+			Serial.print(g.,DEC);
 			Serial.print("\ttOut: ");
-			Serial.println(rc_3.servo_out,DEC);
+			Serial.println(g.rc_3.servo_out,DEC);
 			*/
 			//Serial.print("    Raw pressure value: ");
 			//Serial.println(abs_pressure);
@@ -821,7 +823,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-	if(compass_enabled == false){
+	if(g.compass_enabled == false){
 		Serial.printf_P(PSTR("Compass disabled\n"));
 		return (0);
 	}else{
@@ -855,19 +857,19 @@ void print_hit_enter()
 void fake_out_gps()
 {
 	static float rads;
-	GPS.new_data 	= true;
-	GPS.fix	 		= true;
+	gps->new_data 	= true;
+	gps->fix	 	= true;
 	
-	int length = rc_6.control_in;
+	int length = g.rc_6.control_in;
 	rads += .05;
 	
 	if (rads > 6.28){
 		rads = 0;
 	}
 	
-	GPS.latitude	= 377696000;	// Y
-	GPS.longitude	= -1224319000;	// X
-	GPS.altitude	= 9000;			// meters * 100
+	gps->latitude	= 377696000;	// Y
+	gps->longitude	= -1224319000;	// X
+	gps->altitude	= 9000;			// meters * 100
 	
 	//next_WP.lng	 	= home.lng - length * sin(rads);   // X
 	//next_WP.lat 	= home.lat + length * cos(rads);   // Y
@@ -877,8 +879,8 @@ void fake_out_gps()
 
 void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n", 
-				(motor_out[RIGHT] 	- rc_3.radio_min),
-				(motor_out[LEFT] 	- rc_3.radio_min),
-				(motor_out[FRONT] 	- rc_3.radio_min),
-				(motor_out[BACK] 	- rc_3.radio_min));
+				(motor_out[RIGHT] 	- g.rc_3.radio_min),
+				(motor_out[LEFT] 	- g.rc_3.radio_min),
+				(motor_out[FRONT] 	- g.rc_3.radio_min),
+				(motor_out[BACK] 	- g.rc_3.radio_min));
 }

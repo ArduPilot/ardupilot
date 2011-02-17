@@ -150,16 +150,16 @@ void print_location(void)
 	Serial.print(",ALT:");
 	Serial.print(current_loc.alt/100);    // meters
 	Serial.print(",COG:");
-	Serial.print(GPS.ground_course);
+	Serial.print(gps->ground_course);
 	Serial.print(",SOG:");
-	Serial.print(GPS.ground_speed);
+	Serial.print(gps->ground_speed);
 	Serial.print(",FIX:");
-	Serial.print((int)GPS.fix);
+	Serial.print((int)gps->fix);
 	Serial.print(",SAT:"); 
-	Serial.print((int)GPS.num_sats);
+	Serial.print((int)gps->num_sats);
 	Serial.print (",");      
 	Serial.print("TOW:");
-	Serial.print(GPS.time);
+	Serial.print(gps->time);
 	Serial.println("***");
 }
 

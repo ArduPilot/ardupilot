@@ -77,26 +77,26 @@ void parseCommand(char *buffer)
 		///*
 		switch(cmd[0]){
 			case 'P':
-				pid_stabilize_roll.kP((float)value / 1000);
-				pid_stabilize_pitch.kP((float)value / 1000);
+				g.pid_stabilize_roll.kP((float)value / 1000);
+				g.pid_stabilize_pitch.kP((float)value / 1000);
 				save_EEPROM_PID();
 				break;
 
 			case 'I':
-				pid_stabilize_roll.kI((float)value / 1000);
-				pid_stabilize_pitch.kI((float)value / 1000);
+				g.pid_stabilize_roll.kI((float)value / 1000);
+				g.pid_stabilize_pitch.kI((float)value / 1000);
 				save_EEPROM_PID();
 				break;
 
 			case 'D':
-				//pid_stabilize_roll.kD((float)value / 1000);
-				//pid_stabilize_pitch.kD((float)value / 1000);
+				//g.pid_stabilize_roll.kD((float)value / 1000);
+				//g.pid_stabilize_pitch.kD((float)value / 1000);
 				//save_EEPROM_PID();
 				break;
 	
 			case 'X':
-				pid_stabilize_roll.imax(value * 100);
-				pid_stabilize_pitch.imax(value * 100);
+				g.pid_stabilize_roll.imax(value * 100);
+				g.pid_stabilize_pitch.imax(value * 100);
 				save_EEPROM_PID();
 				break;
 

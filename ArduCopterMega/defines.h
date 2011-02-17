@@ -6,6 +6,9 @@
 #define DEBUG 0
 #define LOITER_RANGE 30 // for calculating power outside of loiter radius
 
+#define T6 1000000
+#define T7 10000000
+
 // GPS baud rates
 // --------------
 #define NO_GPS		38400

@@ -24,10 +24,10 @@ void load_next_command()
 	// fetch next command if it's empty
 	// --------------------------------
 	if(next_command.id == CMD_BLANK){
-		next_command = get_wp_with_index(wp_index+1);
+		next_command = get_wp_with_index(g.waypoint_index + 1);
 		if(next_command.id != CMD_BLANK){
 			//Serial.print("MSG fetch found new cmd from list at index: ");
-			//Serial.println((wp_index+1),DEC);
+			//Serial.println((g.waypoint_index + 1),DEC);
 			//Serial.print("MSG cmd id: ");
 			//Serial.println(next_command.id,DEC);	
 		}
@@ -40,7 +40,7 @@ void load_next_command()
 		// we are out of commands!
 		//send_message(SEVERITY_LOW,"out of commands!");
 		//Serial.print("MSG out of commands, wp_index: ");
-		//Serial.println(wp_index,DEC);
+		//Serial.println(g.waypoint_index,DEC);
 
 		
 		switch (control_mode){
@@ -65,14 +65,14 @@ void process_next_command()
 		if (next_command.id >= 0x10 && next_command.id <= 0x1F ){
 			increment_WP_index();
 			save_command_index();	// to Recover from in air Restart
-			command_must_index = wp_index;
+			command_must_index = g.waypoint_index;
 			
 			//Serial.print("MSG new command_must_id ");
 			//Serial.print(next_command.id,DEC);
 			//Serial.print(" index:");
 			//Serial.println(command_must_index,DEC);
-			if (log_bitmask & MASK_LOG_CMD)		
-				Log_Write_Cmd(wp_index, &next_command);
+			if (g.log_bitmask & MASK_LOG_CMD)		
+				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_must();
 		}
 	}
@@ -82,11 +82,11 @@ void process_next_command()
 	if (command_may_index == 0){
 		if (next_command.id >= 0x20 && next_command.id <= 0x2F ){
 			increment_WP_index();// this command is from the command list in EEPROM
-			command_may_index = wp_index;
+			command_may_index = g.waypoint_index;
 			//Serial.print("new command_may_index ");
 			//Serial.println(command_may_index,DEC);
-			if (log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(wp_index, &next_command);
+			if (g.log_bitmask & MASK_LOG_CMD)
+				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_may();
 		}
 	}
@@ -95,8 +95,8 @@ void process_next_command()
 	// ---------------------------
 	if (next_command.id >= 0x30){
 		increment_WP_index();// this command is from the command list in EEPROM	
-		if (log_bitmask & MASK_LOG_CMD)
-			Log_Write_Cmd(wp_index, &next_command);				
+		if (g.log_bitmask & MASK_LOG_CMD)
+			Log_Write_Cmd(g.waypoint_index, &next_command);				
 		process_now();
 	}
 
@@ -111,7 +111,7 @@ void process_must()
 	//Serial.println(command_must_index,DEC);
 
 	send_message(SEVERITY_LOW,"New cmd: ");
-	send_message(MSG_COMMAND, wp_index);
+	send_message(MSG_COMMAND, g.waypoint_index);
 	
 	// clear May indexes
 	command_may_index	= 0;
@@ -185,7 +185,7 @@ void process_must()
 void process_may()
 {
 	//Serial.print("process_may cmd# ");
-	//Serial.println(wp_index,DEC);	
+	//Serial.println(g.waypoint_index,DEC);	
 	command_may_ID = next_command.id;
 
 	// invalidate command so a new one is loaded
@@ -193,7 +193,7 @@ void process_may()
 	next_command.id = 0;
 	
 	send_message(SEVERITY_LOW,"New cmd: ");
-	send_message(MSG_COMMAND, wp_index);
+	send_message(MSG_COMMAND, g.waypoint_index);
 	
 	// do the command
 	// --------------
@@ -274,7 +274,7 @@ void process_now()
 {
 	const 	float t5			= 100000.0;
 	//Serial.print("process_now cmd# ");
-	//Serial.println(wp_index,DEC);
+	//Serial.println(g.waypoint_index,DEC);
 
 	byte id = next_command.id;
 
@@ -283,7 +283,7 @@ void process_now()
 	next_command.id = 0;
 	
 	send_message(SEVERITY_LOW, "New cmd: ");
-	send_message(MSG_COMMAND, wp_index);
+	send_message(MSG_COMMAND, g.waypoint_index);
 		
 	// do the command
 	// --------------
@@ -311,7 +311,7 @@ void process_now()
 			//break;
 
 		case CMD_THROTTLE_CRUISE:	
-			throttle_cruise = next_command.p1;
+			g.throttle_cruise = next_command.p1;
 			// todo save to EEPROM
 			break;
 
@@ -368,7 +368,7 @@ void process_now()
 		case CMD_INDEX:
 			command_must_index = 0;
 			command_may_index = 0;
-			wp_index = next_command.p1 - 1;
+			g.waypoint_index = next_command.p1 - 1;
 			break;
 
 		case CMD_RELAY:

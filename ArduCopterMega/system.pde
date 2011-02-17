@@ -91,9 +91,30 @@ void init_ardupilot()
 #endif	
 						 "freeRAM: %d\n"),freeRAM());
 
+	//
+	// Check the EEPROM format version before loading any parameters from EEPROM.
+	//
+	if (!g.format_version.load() ||
+	     g.format_version != Parameters::k_format_version) {
 
+		Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
+		                     "\n\nForcing complete parameter reset..."),
+		                     g.format_version.get(), Parameters::k_format_version);
 
-	read_EEPROM_startup(); // Read critical config information to start
+		// erase all parameters
+		AP_Var::erase_all();
+
+		// save the new format version
+		g.format_version.set_and_save(Parameters::k_format_version);
+
+		Serial.println_P(PSTR("done."));
+	} else {
+
+	    // Load all auto-loaded EEPROM variables
+	    AP_Var::load_all();
+	}
+
+	//read_EEPROM_startup(); // Read critical config information to start
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
@@ -101,9 +122,11 @@ void init_ardupilot()
 	adc.Init();	 		// APM ADC library initialization
 	APM_BMP085.Init();	// APM Abs Pressure sensor initialization
 	DataFlash.Init(); 	// DataFlash log initialization
-	GPS.init();			// GPS Initialization
+
+	gps = &GPS;
+	gps->init();
 	
-	if(compass_enabled)
+	if(g.compass_enabled)
 		init_compass();
 	
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
@@ -135,7 +158,7 @@ void init_ardupilot()
 	}
 	
 
-	if(log_bitmask > 0){
+	if(g.log_bitmask > 0){
 		//	Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
 		last_log_num 	= eeprom_read_byte((uint8_t *) EE_LAST_LOG_NUM);
@@ -171,28 +194,13 @@ void init_ardupilot()
 	send_message(SEVERITY_LOW,"GROUND START");
 	startup_ground();
 	
-	if (log_bitmask & MASK_LOG_CMD)
+	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
 }
-
-/*
-byte startup_check(void){
-	if(DEBUG_SUBSYSTEM > 0){
-		debug_subsystem();
-	}else{
-		if (rc_3.radio_in < (rc_3.radio_in + 25)){
-			// we are on the ground
-			return 1;
-		}else{
-			return 0;
-		}
-	}
-}
-*/
 
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
@@ -201,13 +209,13 @@ void startup_ground(void)
 {
 	/*
 	read_radio();
-	while (rc_3.control_in > 0){
+	while (g.rc_3.control_in > 0){
 		delay(20);
 		read_radio();
-		APM_RC.OutputCh(CH_1, rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, rc_3.radio_in);
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 		Serial.println("*")
 	}
 	*/
@@ -215,7 +223,7 @@ void startup_ground(void)
 	// ---------------------------
 	trim_radio();
 
-	if (log_bitmask & MASK_LOG_CMD)
+	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
 	#if(GROUND_START_DELAY > 0)	
@@ -225,8 +233,8 @@ void startup_ground(void)
 	
 	// Output waypoints for confirmation
 	// --------------------------------
-	for(int i = 1; i < wp_total + 1; i++) {
-		send_message(MSG_COMMAND, i);
+	for(int i = 1; i < g.waypoint_total + 1; i++) {
+		gcs.send_message(MSG_COMMAND_LIST, i);
 	}
 	
 	//IMU ground start
@@ -260,7 +268,7 @@ void set_mode(byte mode)
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 		
 	// used to stop fly_aways
-	if(rc_1.control_in == 0){
+	if(g.rc_1.control_in == 0){
 		// we are on the ground is this is true
 		// disarm motors temp
 		motor_auto_safe = false;
@@ -305,7 +313,7 @@ void set_mode(byte mode)
 	// output control mode to the ground station
 	send_message(MSG_HEARTBEAT);
 	
-	if (log_bitmask & MASK_LOG_MODE)	
+	if (g.log_bitmask & MASK_LOG_MODE)	
 		Log_Write_Mode(control_mode);
 }
 
@@ -346,7 +354,7 @@ void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
-	if(GPS.fix == 0){
+	if(gps->fix == 0){
 		GPS_light = !GPS_light;
 		if(GPS_light){
 			digitalWrite(C_LED_PIN, HIGH);

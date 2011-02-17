@@ -76,7 +76,7 @@ void print_attitude(void)
 	SendSer("ASP:");
 	SendSer((int)airspeed / 100, DEC);
 	SendSer(",THH:");
-	SendSer(rc_3.servo_out, DEC);
+	SendSer(g.rc_3.servo_out, DEC);
 	SendSer (",RLL:");
 	SendSer(dcm.roll_sensor / 100, DEC);
 	SendSer (",PCH:");
@@ -99,7 +99,7 @@ void print_position(void)
 	SendSer(",LON:");
 	SendSer(current_loc.lng/10,DEC); //wp_current_lat
 	SendSer(",SPD:");
-	SendSer(GPS.ground_speed/100,DEC);		
+	SendSer(gps->ground_speed/100,DEC);		
 	SendSer(",CRT:");
 	SendSer(climb_rate,DEC);
 	SendSer(",ALT:");
@@ -111,15 +111,15 @@ void print_position(void)
 	SendSer(",BER:");
 	SendSer(target_bearing/100,DEC);
 	SendSer(",WPN:");
-	SendSer(wp_index,DEC);//Actually is the waypoint.
+	SendSer(g.waypoint_index,DEC);//Actually is the waypoint.
 	SendSer(",DST:");
 	SendSer(wp_distance,DEC);
 	SendSer(",BTV:");
 	SendSer(battery_voltage,DEC);
 	SendSer(",RSP:");
-	SendSer(rc_1.servo_out/100,DEC);
+	SendSer(g.rc_1.servo_out/100,DEC);
 	SendSer(",TOW:");
-	SendSer(GPS.time);
+	SendSer(gps->time);
 	SendSerln(",***");
 }
 

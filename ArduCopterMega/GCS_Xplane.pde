@@ -67,7 +67,7 @@ void print_current_waypoints()
 	
 	Serial.print("MSG: ");
 	Serial.print("NWP:");
-	Serial.print(wp_index,DEC);
+	Serial.print(g.waypoint_index,DEC);
 	Serial.print(",\t");
 	Serial.print(next_WP.lat,DEC);
 	Serial.print(",\t");
@@ -109,7 +109,7 @@ void print_waypoints()
 {
 	Serial.println("Commands in memory");
 	Serial.print("commands total: ");
-	Serial.println(wp_total, DEC);
+	Serial.println(g.waypoint_total, DEC);
 	// create a location struct to hold the temp Waypoints for printing
 	//Location tmp;
 	Serial.println("Home: ");
@@ -117,7 +117,7 @@ void print_waypoints()
 	print_waypoint(&cmd, 0);
 	Serial.println("Commands: ");
 	
-	for (int i=1; i<wp_total; i++){
+	for (int i=1; i < g.waypoint_total; i++){
 		cmd = get_wp_with_index(i);
 		print_waypoint(&cmd, i);
 	}

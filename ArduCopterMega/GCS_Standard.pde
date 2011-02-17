@@ -97,11 +97,11 @@ void send_message(byte id, long param) {
 		mess_buffer[9] = (templong >> 16) & 0xff;
 		mess_buffer[10] = (templong >> 24) & 0xff;
 			
-		tempint = GPS.altitude / 100;			 		// Altitude MSL in meters * 10 in 2 bytes
+		tempint = gps->altitude / 100;			 		// Altitude MSL in meters * 10 in 2 bytes
 		mess_buffer[11] = tempint & 0xff;
 		mess_buffer[12] = (tempint >> 8) & 0xff;
 			
-		tempint = GPS.ground_speed;	 			// Speed in M / S * 100 in 2 bytes
+		tempint = gps->ground_speed;	 			// Speed in M / S * 100 in 2 bytes
 		mess_buffer[13] = tempint & 0xff;
 		mess_buffer[14] = (tempint >> 8) & 0xff;
 				
@@ -109,7 +109,7 @@ void send_message(byte id, long param) {
 		mess_buffer[15] = tempint & 0xff;
 		mess_buffer[16] = (tempint >> 8) & 0xff;
 				
-		templong = GPS.time;						// Time of Week (milliseconds) in 4 bytes
+		templong = gps->time;						// Time of Week (milliseconds) in 4 bytes
 		mess_buffer[17] = templong & 0xff;
 		mess_buffer[18] = (templong >> 8) & 0xff;
 		mess_buffer[19] = (templong >> 16) & 0xff;
@@ -199,7 +199,7 @@ void send_message(byte id, long param) {
 		tempint = param;			 				// item number
 		mess_buffer[3] 	= tempint & 0xff;
 		mess_buffer[4] 	= (tempint >> 8) & 0xff;
-		tempint 		= wp_total;			 		// list length (# of commands in mission)
+		tempint 		= g.waypoint_total;			 		// list length (# of commands in mission)
 		mess_buffer[5] 	= tempint & 0xff;
 		mess_buffer[6] 	= (tempint >> 8) & 0xff;
 		tell_command 	= get_wp_with_index((int)param);

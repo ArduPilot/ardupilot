@@ -52,14 +52,14 @@ print_log_menu(void)
 	byte last_log_num = eeprom_read_byte((uint8_t *) EE_LAST_LOG_NUM);
 
 	Serial.printf_P(PSTR("logs enabled: "));
-	if (0 == log_bitmask) {
+	if (0 == g.log_bitmask) {
 		Serial.printf_P(PSTR("none"));
 	} else {
 		// Macro to make the following code a bit easier on the eye.
 		// Pass it the capitalised name of the log option, as defined
 		// in defines.h but without the LOG_ prefix.  It will check for
 		// the bit being set and print the name of the log option to suit.
-#define PLOG(_s)	if (log_bitmask & LOGBIT_ ## _s) Serial.printf_P(PSTR(" %S"), PSTR(#_s))
+#define PLOG(_s)	if (g.log_bitmask & LOGBIT_ ## _s) Serial.printf_P(PSTR(" %S"), PSTR(#_s))
 		PLOG(ATTITUDE_FAST);
 		PLOG(ATTITUDE_MED);
 		PLOG(GPS);
@@ -173,9 +173,9 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	}
 
 	if (!strcasecmp_P(argv[0].str, PSTR("enable"))) {
-		log_bitmask |= bits;
+		g.log_bitmask |= bits;
 	} else {
-		log_bitmask &= ~bits;
+		g.log_bitmask &= ~bits;
 	}
 	save_EEPROM_logs();		// XXX this is a bit heavyweight...
 
@@ -240,14 +240,14 @@ void Log_Write_Startup(byte type)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_STARTUP_MSG);
 	DataFlash.WriteByte(type);
-	DataFlash.WriteByte(wp_total);
+	DataFlash.WriteByte(g.waypoint_total);
 	DataFlash.WriteByte(END_BYTE);
 
 	// create a location struct to hold the temp Waypoints for printing
 	struct Location cmd = get_wp_with_index(0);
 		Log_Write_Cmd(0, &cmd);
 	
-	for (int i = 1; i < wp_total; i++){
+	for (int i = 1; i < g.waypoint_total; i++){
 		cmd = get_wp_with_index(i);
 		Log_Write_Cmd(i, &cmd);
 	}
@@ -263,14 +263,14 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
-	DataFlash.WriteInt((int)(rc_1.servo_out));
+	DataFlash.WriteInt((int)(g.rc_1.servo_out));
 	DataFlash.WriteInt((int)nav_roll);
 	DataFlash.WriteInt((int)dcm.roll_sensor);
-	DataFlash.WriteInt((int)(rc_2.servo_out));
+	DataFlash.WriteInt((int)(g.rc_2.servo_out));
 	DataFlash.WriteInt((int)nav_pitch);
 	DataFlash.WriteInt((int)dcm.pitch_sensor);
-	DataFlash.WriteInt((int)(rc_3.servo_out));
-	DataFlash.WriteInt((int)(rc_4.servo_out));
+	DataFlash.WriteInt((int)(g.rc_3.servo_out));
+	DataFlash.WriteInt((int)(g.rc_4.servo_out));
 	DataFlash.WriteInt((int)(accel.y * 10000));  
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -347,7 +347,7 @@ void Log_Write_Current()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CURRENT_MSG);
-	DataFlash.WriteInt(rc_3.control_in);
+	DataFlash.WriteInt(g.rc_3.control_in);
 	DataFlash.WriteInt((int)(current_voltage 	* 100.0));
 	DataFlash.WriteInt((int)(current_amps 		* 100.0));
 	DataFlash.WriteInt((int)current_total);
