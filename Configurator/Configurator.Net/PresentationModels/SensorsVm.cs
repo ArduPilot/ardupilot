@@ -88,7 +88,14 @@ namespace ArducopterConfigurator.PresentationModels
                    "MotorLeft", 
                    "AccelRoll", 
                    "AccelPitch", 
-                   "AccelZ", 
+                   "AccelZ",
+                   "UnusedFloat", // AP_Compass.heading
+                   "UnusedFloat", // AP_Compass.heading_x
+                   "UnusedFloat", // AP_Compass.heading_y
+                   "Unused", // AP_Compass.mag_x
+                   "Unused", // AP_Compass.mag_y
+                   "Unused", // AP_Compass.mag_z
+               
                };
 
         private readonly string[] _calibrationPropsInUpdateOrder = new[] 
@@ -295,5 +302,6 @@ namespace ArducopterConfigurator.PresentationModels
         #endregion
 
         public int Unused { get; set; }
+        public float UnusedFloat { get; set; }
     }
 }

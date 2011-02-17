@@ -74,7 +74,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing float: {0}, VM: {1}" + s, obj);
+                        Console.WriteLine("Error parsing float: '{0}', VM: {1}" ,s, obj);
                         break;
                     }
                     value = val;
@@ -84,7 +84,7 @@ namespace ArducopterConfigurator
                     float val;
                     if (!float.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing float (bool): {0}, VM: {1}" + s, obj);
+                        Console.WriteLine("Error parsing float (bool): '{0}', VM: {1}" ,s, obj);
                         break;
                     }
                     value = val != 0.0;
@@ -95,7 +95,7 @@ namespace ArducopterConfigurator
                     int val;
                     if (!int.TryParse(s, out val))
                     {
-                        Console.WriteLine("Error parsing int:{0}, VM: {1}" + s, obj);
+                        Console.WriteLine("Error parsing int: '{0}', VM: {1}"  ,s, obj);
                         break;
                     }
                     value = val;
