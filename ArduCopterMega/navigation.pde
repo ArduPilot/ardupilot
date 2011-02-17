@@ -131,8 +131,8 @@ void calc_distance_error()
 void calc_altitude_error() 
 {
 	if(control_mode == AUTO && offset_altitude != 0) {
-		// limit climb rates - we draw a straight line between first location and edge of wp_radius
-		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - wp_radius));
+		// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
+		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - waypoint_radius));
 		
 		// stay within a certain range
 		if(prev_WP.alt > next_WP.alt){

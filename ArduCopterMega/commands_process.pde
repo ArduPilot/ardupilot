@@ -414,7 +414,7 @@ void verify_must()
 			break;
 		
 		case CMD_WAYPOINT:	// reach a waypoint
-			if ((wp_distance > 0) && (wp_distance <= wp_radius)) {
+			if ((wp_distance > 0) && (wp_distance <= waypoint_radius)) {
 				Serial.print("MSG REACHED_WAYPOINT #");
 				Serial.println(command_must_index,DEC);
 				// clear the command queue;
@@ -435,7 +435,7 @@ void verify_must()
 			break;
 			
 		case CMD_RTL:
-			if (wp_distance <= wp_radius) {
+			if (wp_distance <= waypoint_radius) {
 				//Serial.println("REACHED_HOME");
 				command_must_index 	= 0;
 			}

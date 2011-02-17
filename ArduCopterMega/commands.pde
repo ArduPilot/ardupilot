@@ -3,7 +3,7 @@
 void init_commands()
 {
 	read_EEPROM_waypoint_info();
-	g.waypoint_index 			= 0;
+    g.waypoint_index.set_and_save(0);
 	command_must_index	= 0;
 	command_may_index	= 0;
 	next_command.id 	= CMD_BLANK;
@@ -24,14 +24,6 @@ void reload_commands()
 	decrement_WP_index();
 }
 
-long read_alt_to_hold()
-{	
-	read_EEPROM_alt_RTL();
-	if(g.RTL_altitude == -1)
-		return current_loc.alt;
-	else
-		return g.RTL_altitude + home.alt;
-}
 
 // Getters
 // -------
@@ -87,19 +79,29 @@ void set_wp_with_index(struct Location temp, int i)
 void increment_WP_index()
 {
 	if(g.waypoint_index < g.waypoint_total){
-		g.waypoint_index++;
+        g.waypoint_index.set_and_save(g.waypoint_index + 1);
 		Serial.printf_P(PSTR("WP index is incremented to %d\n"),g.waypoint_index);
 	}else{
 		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),g.waypoint_index);
 	}
+    SendDebugln(g.waypoint_index,DEC);
 }
+
 void decrement_WP_index()
 {
 	if(g.waypoint_index > 0){
-		g.waypoint_index--;
+        g.waypoint_index.set_and_save(g.waypoint_index - 1);
 	}
 }
 
+long read_alt_to_hold()
+{	
+	read_EEPROM_alt_RTL();
+	if(g.RTL_altitude == -1)
+		return current_loc.alt;
+	else
+		return g.RTL_altitude + home.alt;
+}
 
 //********************************************************************************
 //This function sets the waypoint and modes for Return to Launch
@@ -114,7 +116,7 @@ return_to_launch(void)
 
 	// home is WP 0
 	// ------------
-	g.waypoint_index = 0;
+	g.waypoint_index.set_and_save(0);
 	
 	// Loads WP from Memory
 	// --------------------

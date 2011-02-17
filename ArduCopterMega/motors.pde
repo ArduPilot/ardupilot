@@ -43,7 +43,7 @@ set_servos_4()
 		int out_min = g.rc_3.radio_min;
 		
 		// Throttle is 0 to 1000 only
-		g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);	
+		g.rc_3.servo_out 	= constrain(g.rc_3.servo_out.get(), 0, 1000);	
 
 		if(g.rc_3.servo_out > 0)
 			out_min = g.rc_3.radio_min + 50;
@@ -141,14 +141,14 @@ set_servos_4()
 		
 		
 		// limit output so motors don't stop
-		motor_out[CH_1]		= constrain(motor_out[CH_1], 	out_min, g.rc_3.radio_max);
-		motor_out[CH_2]		= constrain(motor_out[CH_2], 	out_min, g.rc_3.radio_max);
-		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max);
-		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max);
+		motor_out[CH_1]		= constrain(motor_out[CH_1], 	out_min, g.rc_3.radio_max.get());
+		motor_out[CH_2]		= constrain(motor_out[CH_2], 	out_min, g.rc_3.radio_max.get());
+		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max.get());
+		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max.get());
 				
 		if (frame_type == HEXA_FRAME) {
-			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max);
-			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max);
+			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max.get());
+			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
 		
 		num++;
