@@ -5,7 +5,7 @@ void read_control_switch()
 	
 	if (oldSwitchPosition != switchPosition){
 				
-		set_mode(flight_modes[switchPosition]);
+		set_mode(g.flight_modes[switchPosition]);
 		
 		oldSwitchPosition = switchPosition;
 
@@ -17,13 +17,13 @@ void read_control_switch()
 
 byte readSwitch(void){
 #if   FLIGHT_MODE_CHANNEL == CH_5
-	int pulsewidth = rc_5.radio_in;			// default for Arducopter
+	int pulsewidth = g.rc_5.radio_in;			// default for Arducopter
 #elif FLIGHT_MODE_CHANNEL == CH_6
-	int pulsewidth = rc_6.radio_in;			//
+	int pulsewidth = g.rc_6.radio_in;			//
 #elif FLIGHT_MODE_CHANNEL == CH_7
-	int pulsewidth = rc_7.radio_in;			//
+	int pulsewidth = g.rc_7.radio_in;			//
 #elif FLIGHT_MODE_CHANNEL == CH_8
-	int pulsewidth = rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux! 
+	int pulsewidth = g.rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux! 
 #else
 # error Must define FLIGHT_MODE_CHANNEL as CH_5 - CH_8
 #endif
@@ -57,7 +57,7 @@ unsigned long trim_timer;
 void read_trim_switch()
 {
 	// switch is engaged
-	if (rc_7.control_in > 800){
+	if (g.rc_7.control_in > 800){
 		if(trim_flag == false){
 			// called once
 			trim_timer = millis();
@@ -76,10 +76,10 @@ void read_trim_switch()
 				
 			} else {
 				// set the throttle nominal
-				if(rc_3.control_in > 50){
-					throttle_cruise = rc_3.control_in;
-					Serial.printf("tnom %d\n", throttle_cruise);
-					save_EEPROM_throttle_cruise();
+				if(g.rc_3.control_in > 50){
+					g.throttle_cruise = g.rc_3.control_in;
+					Serial.printf("tnom %d\n", g.);
+					save_EEPROM_g.();
 				}
 			}
 			trim_flag = false;
@@ -90,15 +90,15 @@ void read_trim_switch()
 
 void trim_accel()
 {
-	if(rc_1.control_in > 0){
+	if(g.rc_1.control_in > 0){
 		imu.ay(imu.ay() + 1);
-	}else if (rc_1.control_in < 0){
+	}else if (g.rc_1.control_in < 0){
 		imu.ay(imu.ay() - 1);
 	}
 
-	if(rc_2.control_in > 0){
+	if(g.rc_2.control_in > 0){
 		imu.ax(imu.ax() + 1);
-	}else if (rc_2.control_in < 0){
+	}else if (g.rc_2.control_in < 0){
 		imu.ax(imu.ax() - 1);
 	}
 

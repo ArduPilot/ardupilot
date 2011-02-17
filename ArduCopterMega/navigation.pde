@@ -7,9 +7,9 @@ void navigate()
 {
 	// do not navigate with corrupt data
 	// ---------------------------------
-	if (GPS.fix == 0)
+	if (gps->fix == 0)
 	{
-		GPS.new_data = false;
+		gps->new_data = false;
 		return;
 	}
 	
@@ -71,21 +71,21 @@ void calc_nav()
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	
 	// Convert distance into ROLL X
-	nav_lon		= long_error * pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
-	//nav_lon	= pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
+	nav_lon		= long_error * g.pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
+	//nav_lon	= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
 	//nav_lon 	= constrain(nav_lon, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
 	// PITCH	Y
-	//nav_lat 	= pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
-	nav_lat		= lat_error * pid_nav_lat.kP();							// 1800 * 2 = 3600 or 36°
+	//nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
+	nav_lat		= lat_error * g.pid_nav_lat.kP();							// 1800 * 2 = 3600 or 36°
 	//nav_lat 	= constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
 	// rotate the vector	
 	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
 	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
 	
-	nav_roll 	= constrain(nav_roll,  -pitch_max, pitch_max);
-	nav_pitch 	= constrain(nav_pitch, -pitch_max, pitch_max);
+	nav_roll 	= constrain(nav_roll,  -g.pitch_max, g.pitch_max);
+	nav_pitch 	= constrain(nav_pitch, -g.pitch_max, g.pitch_max);
 }
 
 /*
@@ -116,7 +116,7 @@ void calc_distance_error()
 	
 	// this wants to work only while moving, but it should filter out jumpy GPS reads
 	//						scale gs to whole deg		(50hz / 100)	scale bearing error down to whole deg
-	//distance_estimate 	+= (float)GPS.ground_speed * 	.0002 * 		cos(radians(bearing_error / 100));
+	//distance_estimate 	+= (float)gps->ground_speed * 	.0002 * 		cos(radians(bearing_error / 100));
 	//distance_estimate 	-= distance_gain * (float)(distance_estimate - GPS_wp_distance);
 	//wp_distance			=  distance_estimate;
 }
@@ -186,7 +186,7 @@ void update_crosstrack(void)
 	// ----------------
 	if (abs(target_bearing - crosstrack_bearing) < 4500) {	 // If we are too far off or too close we don't do track following
 		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
-		nav_bearing += constrain(crosstrack_error * x_track_gain, -x_track_angle, x_track_angle);
+		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle, g.crosstrack_entry_angle);
 		nav_bearing = wrap_360(nav_bearing);
 	}
 }

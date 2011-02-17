@@ -1,9 +1,9 @@
 void init_camera()
 {
 	rc_camera_pitch.set_angle(4500);
-	rc_camera_pitch.radio_min 	= rc_6.radio_min;
-	rc_camera_pitch.radio_trim 	= rc_6.radio_trim;
-	rc_camera_pitch.radio_max 	= rc_6.radio_max;
+	rc_camera_pitch.radio_min 	= g.rc_6.radio_min;
+	rc_camera_pitch.radio_trim 	= g.rc_6.radio_trim;
+	rc_camera_pitch.radio_max 	= g.rc_6.radio_max;
 	
 	rc_camera_roll.set_angle(4500);
 	rc_camera_roll.radio_min 	= 1000;
@@ -33,7 +33,7 @@ camera_stabilization()
 
 	//If you want to do control mixing use this function.
 	// set servo_out to the control input from radio
-	//rc_camera_roll 	= rc_2.control_mix(dcm.pitch_sensor);
+	//rc_camera_roll 	= g.rc_2.control_mix(dcm.pitch_sensor);
 	//rc_camera_roll.calc_pwm();		
 }
 

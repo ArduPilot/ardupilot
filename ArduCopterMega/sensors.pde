@@ -22,7 +22,7 @@ void read_barometer(void){
 	scaling 				= (float)abs_pressure_ground / (float)abs_pressure;
 	temp 					= ((float)ground_temperature / 10.f) + 273.15;
 	x 						= log(scaling) * temp * 29271.267f;
-	current_loc.alt 		= (long)(x / 10) + home.alt + baro_offset;		// Pressure altitude in centimeters
+	current_loc.alt 		= (long)(x / 10) + home.alt;// + baro_offset;		// Pressure altitude in centimeters
 }
 
 // in M/S * 100

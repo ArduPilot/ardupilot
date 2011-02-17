@@ -53,11 +53,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL
 //
-#ifndef GPS_PROTOCOL
-# error XXX
-# error XXX You must define GPS_PROTOCOL in APM_Config.h
-# error XXX
-#endif
+//#ifndef GPS_PROTOCOL
+//# error XXX
+//# error XXX You must define GPS_PROTOCOL in APM_Config.h
+//# error XXX
+//#endif
 
 // The X-Plane GCS requires the IMU GPS configuration
 #if (ENABLE_HIL == ENABLED) && (GPS_PROTOCOL != GPS_PROTOCOL_IMU)
@@ -245,6 +245,7 @@
 #ifndef ACRO_RATE_ROLL_IMAX
 # define ACRO_RATE_ROLL_IMAX	 20
 #endif
+# define ACRO_RATE_ROLL_IMAX_CENTIDEGREE ACRO_RATE_ROLL_IMAX * 100
 
 #ifndef ACRO_RATE_PITCH_P
 # define ACRO_RATE_PITCH_P         .190
@@ -258,6 +259,7 @@
 #ifndef ACRO_RATE_PITCH_IMAX
 # define ACRO_RATE_PITCH_IMAX   20 
 #endif
+#define ACRO_RATE_PITCH_IMAX_CENTIDEGREE ACRO_RATE_PITCH_IMAX * 100
 
 #ifndef ACRO_RATE_YAW_P
 # define ACRO_RATE_YAW_P         .07
@@ -271,6 +273,7 @@
 #ifndef ACRO_RATE_YAW_IMAX
 # define ACRO_RATE_YAW_IMAX   0
 #endif
+# define ACRO_RATE_YAW_IMAX_CENTIDEGREE ACRO_RATE_YAW_IMAX * 100
 
 #ifndef ACRO_RATE_TRIGGER
 # define ACRO_RATE_TRIGGER   100
@@ -293,6 +296,7 @@
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	3
 #endif
+#define STABILIZE_ROLL_IMAX_CENTIDEGREE STABILIZE_ROLL_IMAX * 100
 
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		0.6
@@ -306,6 +310,7 @@
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	3
 #endif
+# define STABILIZE_PITCH_IMAX_CENTIDEGREE	STABILIZE_PITCH_IMAX * 100
 
 // STABILZE RATE Control
 //
@@ -329,6 +334,7 @@
 #ifndef  YAW_IMAX
 # define YAW_IMAX				1
 #endif
+# define YAW_IMAX_CENTIDEGREE	YAW_IMAX * 100
 
 // STABILZE YAW Control
 //
@@ -357,6 +363,7 @@
 #ifndef PITCH_MAX
 # define PITCH_MAX				36
 #endif
+#define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -374,6 +381,7 @@
 #ifndef NAV_IMAX
 # define NAV_IMAX				250
 #endif
+# define NAV_IMAX_CENTIDEGREE	NAV_IMAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -391,6 +399,8 @@
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		50
 #endif
+# define THROTTLE_BARO_IMAX_CENTIDEGREE	THROTTLE_BARO_IMAX * 100
+
 
 #ifndef THROTTLE_SONAR_P
 # define THROTTLE_SONAR_P		.8
@@ -404,17 +414,20 @@
 #ifndef THROTTLE_SONAR_IMAX
 # define THROTTLE_SONAR_IMAX	300
 #endif
+# define THROTTLE_SONAR_IMAX_CENTIDEGREE	THROTTLE_SONAR_IMAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Crosstrack compensation
 //
 #ifndef XTRACK_GAIN
-# define XTRACK_GAIN          0.01
+# define XTRACK_GAIN          1 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   30
+# define XTRACK_ENTRY_ANGLE   30 // deg
 #endif
+# define XTRACK_GAIN_SCALED XTRACK_GAIN * 100
+# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -422,14 +435,6 @@
 // DEBUGGING
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// DEBUG_SUBSYSTEM
-//
-#ifndef DEBUG_SUBSYSTEM
-# define DEBUG_SUBSYSTEM		0
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // DEBUG_LEVEL
@@ -473,5 +478,64 @@
 # define LOG_CURRENT			DISABLED
 #endif
 
+#ifndef DEBUG_PORT
+# define DEBUG_PORT 0
+#endif
 
+#if DEBUG_PORT == 0
+# define SendDebug_P(a) Serial.print_P(PSTR(a))
+# define SendDebugln_P(a) Serial.println_P(PSTR(a))
+# define SendDebug Serial.print
+# define SendDebugln Serial.println
+#elif DEBUG_PORT == 1
+# define SendDebug_P(a) Serial1.print_P(PSTR(a))
+# define SendDebugln_P(a) Serial1.println_P(PSTR(a))
+# define SendDebug Serial1.print
+# define SendDebugln Serial1.println
+#elif DEBUG_PORT == 2
+# define SendDebug_P(a) Serial2.print_P(PSTR(a))
+# define SendDebugln_P(a) Serial2.println_P(PSTR(a))
+# define SendDebug Serial2.print
+# define SendDebugln Serial2.println
+#elif DEBUG_PORT == 3
+# define SendDebug_P(a) Serial3.print_P(PSTR(a))
+# define SendDebugln_P(a) Serial3.println_P(PSTR(a))
+# define SendDebug Serial3.print
+# define SendDebugln Serial3.println
+#endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Navigation defaults
+//
+#ifndef WP_RADIUS_DEFAULT
+# define WP_RADIUS_DEFAULT		3
+#endif
+
+#ifndef LOITER_RADIUS_DEFAULT
+# define LOITER_RADIUS_DEFAULT 10
+#endif
+
+#ifndef ALT_HOLD_HOME
+# define ALT_HOLD_HOME 8
+#endif
+#define ALT_HOLD_HOME_CM ALT_HOLD_HOME*100
+
+#ifndef USE_CURRENT_ALT
+# define USE_CURRENT_ALT FALSE
+#endif
+
+#if USE_CURRENT_ALT == TRUE
+# define CONFIG_OPTIONS 0
+#else
+# define CONFIG_OPTIONS HOLD_ALT_ABOVE_HOME
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Developer Items
+//
+
+#ifndef STANDARD_SPEED
+# define STANDARD_SPEED		15.0
+#define STANDARD_SPEED_SQUARED (STANDARD_SPEED * STANDARD_SPEED)
+#endif
+#define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
