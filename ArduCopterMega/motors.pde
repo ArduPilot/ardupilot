@@ -59,7 +59,7 @@ set_servos_4()
 		//Serial.printf("out: %d %d %d %d\n", g.rc_1.radio_out, g.rc_2.radio_out, g.rc_3.radio_out, g.rc_4.radio_out);
 		//Serial.printf("yaw: %d ", g.rc_4.radio_out);
 		
-		if(frame_type == PLUS_FRAME){
+		if(g.frame_type == PLUS_FRAME){
 
 			motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;
 			motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;
@@ -72,7 +72,7 @@ set_servos_4()
 			motor_out[CH_4] 	-=  g.rc_4.pwm_out; 	// CW
 			
 			
-		}else if(frame_type == X_FRAME){
+		}else if(g.frame_type == X_FRAME){
 		
 			int roll_out 	 	= g.rc_1.pwm_out / 2;
 			int pitch_out 	 	= g.rc_2.pwm_out / 2;
@@ -92,7 +92,7 @@ set_servos_4()
 			
 			//Serial.printf("\tl8r: %d %d %d %d\n", motor_out[CH_1], motor_out[CH_2], motor_out[CH_3], motor_out[CH_4]);
 				
-		}else if(frame_type == TRI_FRAME){
+		}else if(g.frame_type == TRI_FRAME){
 
 			// Tri-copter power distribution
 			
@@ -110,7 +110,7 @@ set_servos_4()
 			APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 
 			
-		}else if (frame_type == HEXA_FRAME) {
+		}else if (g.frame_type == HEXA_FRAME) {
 
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
 			int pitch_out 		= g.rc_2.pwm_out / 2;
@@ -146,7 +146,7 @@ set_servos_4()
 		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max.get());
 		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max.get());
 				
-		if (frame_type == HEXA_FRAME) {
+		if (g.frame_type == HEXA_FRAME) {
 			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max.get());
 			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
@@ -226,7 +226,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if (frame_type == HEXA_FRAME) {
+			if (g.frame_type == HEXA_FRAME) {
 				APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 				APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 				APM_RC.Force_Out6_Out7();
@@ -242,7 +242,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if (frame_type == HEXA_FRAME) {
+			if (g.frame_type == HEXA_FRAME) {
 				APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 				APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 				APM_RC.Force_Out6_Out7();
@@ -265,7 +265,7 @@ set_servos_4()
 		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
 		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
 
-		if (frame_type == HEXA_FRAME) {
+		if (g.frame_type == HEXA_FRAME) {
 			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 		}
