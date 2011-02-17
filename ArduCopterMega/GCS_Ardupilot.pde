@@ -99,7 +99,7 @@ void print_position(void)
 	SendSer(",LON:");
 	SendSer(current_loc.lng/10,DEC); //wp_current_lat
 	SendSer(",SPD:");
-	SendSer(gps->ground_speed/100,DEC);		
+	SendSer(g_gps->ground_speed/100,DEC);		
 	SendSer(",CRT:");
 	SendSer(climb_rate,DEC);
 	SendSer(",ALT:");
@@ -119,7 +119,7 @@ void print_position(void)
 	SendSer(",RSP:");
 	SendSer(g.rc_1.servo_out/100,DEC);
 	SendSer(",TOW:");
-	SendSer(gps->time);
+	SendSer(g_gps->time);
 	SendSerln(",***");
 }
 

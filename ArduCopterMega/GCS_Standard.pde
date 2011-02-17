@@ -97,11 +97,11 @@ void send_message(byte id, long param) {
 		mess_buffer[9] = (templong >> 16) & 0xff;
 		mess_buffer[10] = (templong >> 24) & 0xff;
 			
-		tempint = gps->altitude / 100;			 		// Altitude MSL in meters * 10 in 2 bytes
+		tempint = g_gps->altitude / 100;			 		// Altitude MSL in meters * 10 in 2 bytes
 		mess_buffer[11] = tempint & 0xff;
 		mess_buffer[12] = (tempint >> 8) & 0xff;
 			
-		tempint = gps->ground_speed;	 			// Speed in M / S * 100 in 2 bytes
+		tempint = g_gps->ground_speed;	 			// Speed in M / S * 100 in 2 bytes
 		mess_buffer[13] = tempint & 0xff;
 		mess_buffer[14] = (tempint >> 8) & 0xff;
 				
@@ -109,7 +109,7 @@ void send_message(byte id, long param) {
 		mess_buffer[15] = tempint & 0xff;
 		mess_buffer[16] = (tempint >> 8) & 0xff;
 				
-		templong = gps->time;						// Time of Week (milliseconds) in 4 bytes
+		templong = g_gps->time;						// Time of Week (milliseconds) in 4 bytes
 		mess_buffer[17] = templong & 0xff;
 		mess_buffer[18] = (templong >> 8) & 0xff;
 		mess_buffer[19] = (templong >> 16) & 0xff;

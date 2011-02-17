@@ -138,7 +138,7 @@ void process_must()
 			next_WP.lat 		= current_loc.lat + 10;	// so we don't have bad calcs
 			next_WP.lng 		= current_loc.lng + 10;	// so we don't have bad calcs
 			next_WP.alt			= current_loc.alt + takeoff_altitude;
-			takeoff_complete 	= false;			// set flag to use gps ground course during TO.  IMU will be doing yaw drift correction 
+			takeoff_complete 	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction 
 			//set_next_WP(&next_WP);
 			break;
 
@@ -158,7 +158,7 @@ void process_must()
 			next_WP.lat 		= current_loc.lat;	
 			next_WP.lng 		= current_loc.lng;	
 			next_WP.alt 		= home.alt;			
-			land_complete 		= false;			// set flag to use gps ground course during TO.  IMU will be doing yaw drift correction 
+			land_complete 		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction 
 			break;
 			
 		case CMD_ALTITUDE:	// Loiter indefinitely

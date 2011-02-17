@@ -494,7 +494,7 @@ void Log_Read_GPS()
 	Serial.print(comma);
 	Serial.print((float)DataFlash.ReadLong()/t7, 7);			// Longitude
 	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/100.0);		// Baro/gps altitude mix
+	Serial.print((float)DataFlash.ReadLong()/100.0);		// Baro/g_gps altitude mix
 	Serial.print(comma);
 	Serial.print((float)DataFlash.ReadLong()/100.0);		// GPS altitude
 	Serial.print(comma);

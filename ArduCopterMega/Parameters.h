@@ -57,8 +57,8 @@ public:
         k_param_ground_temperature,
         k_param_ground_altitude,
         k_param_ground_pressure,
-		k_param_current,		
-		k_param_compass,		
+		k_param_current,
+		k_param_compass,
 		k_param_mag_declination,
 
         //
@@ -172,7 +172,7 @@ public:
     AP_Int16    ground_pressure;
     AP_Int16    RTL_altitude;
     AP_Int8		frame_type;
-    
+
     AP_Int8		current_enabled;
     AP_Int8		compass_enabled;
     AP_Float	mag_declination;
@@ -186,7 +186,7 @@ public:
 	RC_Channel	rc_5;
 	RC_Channel	rc_6;
 	RC_Channel	rc_7;
-	RC_Channel	rc_8;	
+	RC_Channel	rc_8;
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
 
@@ -256,8 +256,8 @@ public:
         rc_7					(k_param_rc_7,		PSTR("RC7_")),
         rc_8					(k_param_rc_8,		PSTR("RC8_")),
 
-        rc_camera_pitch			(k_param_rc_8,		PSTR("RC9_")),
-        rc_camera_roll			(k_param_rc_8,		PSTR("RC10_")),
+        rc_camera_pitch			(k_param_rc_9,		PSTR("RC9_")),
+        rc_camera_roll			(k_param_rc_10,		PSTR("RC10_")),
 
 
         // PID controller   group key                       name                  initial P        initial I        initial D        initial imax
@@ -265,7 +265,7 @@ public:
 		pid_acro_rate_roll	(k_param_pid_acro_rate_roll,   PSTR("ACR_RLL_"),    ACRO_RATE_ROLL_P,      ACRO_RATE_ROLL_I,      ACRO_RATE_ROLL_D,      ACRO_RATE_ROLL_IMAX_CENTIDEGREE),
 		pid_acro_rate_pitch	(k_param_pid_acro_rate_pitch,  PSTR("ACR_PIT_"),    ACRO_RATE_PITCH_P,     ACRO_RATE_PITCH_I,     ACRO_RATE_PITCH_D,     ACRO_RATE_PITCH_IMAX_CENTIDEGREE),
 		pid_acro_rate_yaw	(k_param_pid_acro_rate_yaw,    PSTR("ACR_YAW_"),    ACRO_RATE_YAW_P,       ACRO_RATE_YAW_I,       ACRO_RATE_YAW_D,       ACRO_RATE_YAW_IMAX_CENTIDEGREE),
-		
+
 		pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),   STABILIZE_ROLL_P,      STABILIZE_ROLL_I,     STABILIZE_ROLL_D,      STABILIZE_ROLL_IMAX_CENTIDEGREE),
 		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,   PSTR("STB_PIT_"),   STABILIZE_PITCH_P,     STABILIZE_PITCH_I,    STABILIZE_PITCH_D,     STABILIZE_PITCH_IMAX_CENTIDEGREE),
 		pid_yaw				(k_param_pid_yaw,   			PSTR("STB_YAW_"),   YAW_P,      			YAW_I,      		  YAW_D,  				 YAW_IMAX_CENTIDEGREE),

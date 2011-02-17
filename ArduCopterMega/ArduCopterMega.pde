@@ -27,17 +27,17 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_Common.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
 #include <RC_Channel.h>     // RC Channel Library
-#include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library 
+#include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library
 #include <AP_GPS.h>			// ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
-#include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library 
+#include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library
 #include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
-#include <AP_Compass_HMC5843.h>	// ArduPilot Mega Magnetometer Library
+#include <AP_Compass.h>	// ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <AP_IMU.h>			// ArduPilot Mega IMU Library
 #include <AP_DCM.h>		// ArduPilot Mega DCM Library
 #include <PID.h> 			// ArduPilot Mega RC Library
-//#include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
 
 // Configuration
@@ -47,6 +47,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include "defines.h"
 #include "Parameters.h"
 #include "global_data.h"
+#include "GCS.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -107,17 +108,18 @@ AP_GPS_None		GPS(NULL);
 # error Must define GPS_PROTOCOL in your configuration file.
 #endif
 */
+
+GPS             *g_gps;
 #if GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     gps(NULL);
+AP_GPS_None     GPS(NULL);
 #else
-GPS	    *gps;
-AP_GPS_Auto GPS(&Serial1, &gps);
+AP_GPS_Auto     GPS(&Serial1, &g_gps);
 #endif // GPS PROTOCOL
 
 
 
 AP_IMU_Oilpan 		imu(&adc, EE_IMU_OFFSET);
-AP_DCM 				dcm(&imu, &GPS);
+AP_DCM 				dcm(&imu, g_gps);
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -155,7 +157,7 @@ const char* flight_mode_strings[] = {
 	"LAND"};
 
 /* Radio values
-		Channel assignments	
+		Channel assignments
 			1	Ailerons (rudder if no ailerons)
 			2	Elevator
 			3	Throttle
@@ -199,7 +201,7 @@ float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
 // ----------------------
 Vector3f	mag_offsets;
 
-// Location & Navigation 
+// Location & Navigation
 // ---------------------
 const   float radius_of_earth 	= 6378100;	// meters
 const   float gravity 			= 9.81;		// meters/ sec^2
@@ -229,7 +231,7 @@ float cos_yaw_x;
 // Airspeed
 // --------
 int 	airspeed;							// m/s * 100
-float 	airspeed_error;						// m / s * 100 
+float 	airspeed_error;						// m / s * 100
 
 // Throttle Failsafe
 // ------------------
@@ -243,7 +245,7 @@ boolean		motor_auto_safe 	= false;
 
 // Location Errors
 // ---------------
-long 	bearing_error;						// deg * 100 : 0 to 36000 
+long 	bearing_error;						// deg * 100 : 0 to 36000
 long 	altitude_error;						// meters * 100 we are off in altitude
 float	crosstrack_error;					// meters we are off trackline
 long 	distance_error;						// distance to the WP
@@ -291,10 +293,10 @@ byte 	altitude_sensor = BARO;				// used to know whic sensor is active, BARO or 
 // --------------------
 boolean takeoff_complete	= false;		// Flag for using take-off controls
 boolean land_complete		= false;
-int 	takeoff_altitude;		
+int 	takeoff_altitude;
 int 	landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
-int		velocity_land;						
+int		velocity_land;
 
 // Loiter management
 // -----------------
@@ -340,7 +342,7 @@ int 	event_delay; 						// how long to delay the next firing of event in millis
 int 	event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
 int 	event_value; 						// per command value, such as PWM for servos
 int 	event_undo_value;					// the value used to undo commands
-byte 	repeat_forever;						
+byte 	repeat_forever;
 byte 	undo_event;							// counter for timing the undo
 
 // delay command
@@ -356,9 +358,9 @@ struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
 struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
-long 	target_altitude;					// used for 
-long 	offset_altitude;					// used for 
-boolean	home_is_set; 						// Flag for if we have gps lock and have set the home location
+long 	target_altitude;					// used for
+long 	offset_altitude;					// used for
+boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
 
 // IMU variables
@@ -419,7 +421,7 @@ void setup() {
 
 void loop()
 {
-	// We want this to execute at 100Hz 
+	// We want this to execute at 100Hz
 	// --------------------------------
 	if (millis() - fast_loopTimer > 9) {
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
@@ -433,12 +435,12 @@ void loop()
 		fast_loop();
 		fast_loopTimeStamp = millis();
 	}
-	
+
 	if (millis() - medium_loopTimer > 19) {
 		delta_ms_medium_loop 	= millis() - medium_loopTimer;
-		medium_loopTimer		= millis();		
+		medium_loopTimer		= millis();
 		medium_loop();
-		
+
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
 				gcs.send_message(MSG_PERF_REPORT);
@@ -459,9 +461,9 @@ void fast_loop()
 
 	// This is the fast loop - we want it to execute at >= 100Hz
 	// ---------------------------------------------------------
-	if (delta_ms_fast_loop > G_Dt_max) 
+	if (delta_ms_fast_loop > G_Dt_max)
 		G_Dt_max = delta_ms_fast_loop;
-					
+
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_current_flight_mode();
@@ -477,27 +479,27 @@ void medium_loop()
 	// ----------
 	read_radio();			// read the radio first
 
-	
+
 	// reads all of the necessary trig functions for cameras, throttle, etc.
 	update_trig();
-	
+
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
-	
+
 		// This case deals with the GPS
 		//-------------------------------
 		case 0:
 			medium_loopCounter++;
 			update_GPS();
 			//readCommands();
-			
+
 			if(g.compass_enabled){
 				compass.read();		 						// Read magnetometer
 				compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 				compass.null_offsets(dcm.get_dcm_matrix());
 			}
- 
+
 			break;
 
 		// This case performs some navigation computations
@@ -505,16 +507,16 @@ void medium_loop()
 		case 1:
 			medium_loopCounter++;
 
-			if(gps->new_data){
-				gps->new_data 		= false;
+			if(g_gps->new_data){
+				g_gps->new_data 		= false;
 				dTnav 				= millis() - nav_loopTimer;
 				nav_loopTimer 		= millis();
 
 				// calculate the plane's desired bearing
-				// -------------------------------------			
+				// -------------------------------------
 				navigate();
 			}
-			
+
 			// calc pitch and roll to target
 			// -----------------------------
 			dTnav2 				= millis() - nav2_loopTimer;
@@ -527,7 +529,7 @@ void medium_loop()
 		//-------------------
 		case 2:
 			medium_loopCounter++;
-			
+
 			// Read Baro pressure
 			// ------------------
 			read_barometer();
@@ -545,7 +547,7 @@ void medium_loop()
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-						
+
 			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && (g.log_bitmask & MASK_LOG_ATTITUDE_FAST == 0))
 				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
@@ -557,41 +559,41 @@ void medium_loop()
 
 			if (g.log_bitmask & MASK_LOG_GPS){
 				if(home_is_set)
-					Log_Write_GPS(gps->time, current_loc.lat, current_loc.lng, gps->altitude, current_loc.alt, (long) gps->ground_speed, gps->ground_course, gps->fix, gps->num_sats);
+					Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
 			}
             gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
 			break;
-			
+
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
 			if (g.current_enabled){
 				read_current();
 			}
-			
+
 			// shall we trim the copter?
 			// ------------------------
 			read_trim_switch();
-			
+
 			// shall we check for engine start?
 			// --------------------------------
 			arm_motors();
-			
+
 			medium_loopCounter = 0;
 			slow_loop();
 			break;
-			
+
 		default:
 			medium_loopCounter = 0;
 			break;
 	}
-	
+
 	// stuff that happens at 50 hz
 	// ---------------------------
-	
+
 	// use Yaw to find our bearing error
 	calc_bearing_error();
-	
+
 	// guess how close we are - fixed observer calc
 	calc_distance_error();
 
@@ -600,15 +602,15 @@ void medium_loop()
 
 	if (g.log_bitmask & MASK_LOG_RAW)
 		Log_Write_Raw();
-		
+
 	#if GCS_PROTOCOL == 6		// This is here for Benjamin Pelletier.	Please do not remove without checking with me.	Doug W
 		readgcsinput();
 	#endif
-	
+
 	#if ENABLE_CAM
 		camera_stabilization();
 	#endif
-	
+
     // kick the GCS to process uplink data
     gcs.update();
 }
@@ -621,40 +623,40 @@ void slow_loop()
 	switch (slow_loopCounter){
 		case 0:
 			slow_loopCounter++;
-			
+
 			superslow_loopCounter++;
 			if(superslow_loopCounter == 30) {
-			
+
 				// save current data to the flash
 				if (g.log_bitmask & MASK_LOG_CUR)
 					Log_Write_Current();
-					
+
 			}else if(superslow_loopCounter >= 400) {
                 compass.save_offsets();
 				//eeprom_write_word((uint16_t *) EE_LAST_LOG_PAGE, DataFlash.GetWritePage());
 				superslow_loopCounter = 0;
 			}
 			break;
-			
+
 		case 1:
 			slow_loopCounter++;
 
 			// Read 3-position switch on radio
 			// -------------------------------
-			read_control_switch();			
-			
+			read_control_switch();
+
 			// Read main battery voltage if hooked up - does not read the 5v from radio
 			// ------------------------------------------------------------------------
 			#if BATTERY_EVENT == 1
 				read_battery();
 			#endif
-					
+
 			break;
-			
+
 		case 2:
 			slow_loopCounter = 0;
 			update_events();
-			
+
 			// XXX this should be a "GCS slow loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				gcs.data_stream_send(1,5);
@@ -662,9 +664,9 @@ void slow_loop()
 				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
-				gcs.send_message(MSG_CPU_LOAD, load*100);
+// XXX				gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
-			
+
             gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
 
 			break;
@@ -678,94 +680,94 @@ void slow_loop()
 
 void update_GPS(void)
 {
-	gps->update();
+	g_gps->update();
 	update_GPS_light();
-	
+
 	// !!! comment out after testing
 	//fake_out_gps();
-	
-	//if (gps->new_data && gps->fix) {
-	if (gps->new_data){
+
+	//if (g_gps->new_data && g_gps->fix) {
+	if (g_gps->new_data){
 		send_message(MSG_LOCATION);
 
 		// for performance
 		// ---------------
 		gps_fix_count++;
-		
+
 		//Serial.printf("gs: %d\n", (int)ground_start_count);
 		if(ground_start_count > 1){
 			ground_start_count--;
-		
+
 		} else if (ground_start_count == 1) {
-		
+
 			// We countdown N number of good GPS fixes
 			// so that the altitude is more accurate
 			// -------------------------------------
 			if (current_loc.lat == 0) {
                 SendDebugln("!! bad loc");
 				ground_start_count = 5;
-				
+
 			} else {
 				//Serial.printf("init Home!");
 
 				if (g.log_bitmask & MASK_LOG_CMD)
 					Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-				
+
 				// reset our nav loop timer
 				nav_loopTimer = millis();
 				init_home();
 				// init altitude
-				current_loc.alt = gps->altitude;
+				current_loc.alt = g_gps->altitude;
 				ground_start_count = 0;
 			}
 		}
 
 		/* disabled for now
-		// baro_offset is an integrator for the gps altitude error 
-		baro_offset 	+= altitude_gain * (float)(gps->altitude - current_loc.alt);
+		// baro_offset is an integrator for the g_gps altitude error
+		baro_offset 	+= altitude_gain * (float)(g_gps->altitude - current_loc.alt);
 		*/
-		
-		current_loc.lng = gps->longitude;	// Lon * 10 * *7
-		current_loc.lat = gps->latitude;		// Lat * 10 * *7
+
+		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
+		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
 
 		/*Serial.printf_P(PSTR("Lat: %.7f, Lon: %.7f, Alt: %dm, GSP: %d COG: %d, dist: %d, #sats: %d\n"),
-					((float)gps->latitude /  T7),
-					((float)gps->longitude / T7),
-					(int)gps->altitude / 100,
-					(int)gps->ground_speed / 100,
-					(int)gps->ground_course / 100,
+					((float)g_gps->latitude /  T7),
+					((float)g_gps->longitude / T7),
+					(int)g_gps->altitude / 100,
+					(int)g_gps->ground_speed / 100,
+					(int)g_gps->ground_course / 100,
 					(int)wp_distance,
-					(int)gps->num_sats);
+					(int)g_gps->num_sats);
 		*/
 	}else{
 		//Serial.println("No fix");
 	}
 }
-			
+
 void update_current_flight_mode(void)
 {
 	if(control_mode == AUTO){
-		
+
 		switch(command_must_ID){
 			//case MAV_CMD_NAV_TAKEOFF:
 			//	break;
-	
+
 			//case MAV_CMD_NAV_LAND:
 			//	break;
-				
+
 			default:
-				
+
 				// based on altitude error
 				// -----------------------
 				calc_nav_throttle();
 
 				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------				
+				// ------------------------------------
 				auto_yaw();
-				
+
 				// mix in user control
 				control_nav_mixer();
-				
+
 				// perform stabilzation
 				output_stabilize_roll();
 				output_stabilize_pitch();
@@ -774,9 +776,9 @@ void update_current_flight_mode(void)
 				output_auto_throttle();
 				break;
 		}
-	
+
 	}else{
-	
+
 		switch(control_mode){
 			case ACRO:
 				// clear any AP naviagtion values
@@ -788,16 +790,16 @@ void update_current_flight_mode(void)
 
 				// Yaw control
 				output_manual_yaw();
-				
+
 				// apply throttle control
 				output_manual_throttle();
-				
+
 				// mix in user control
 				control_nav_mixer();
 
 				// perform rate or stabilzation
 				// ----------------------------
-				
+
 				// Roll control
 				if(abs(g.rc_1.control_in) >= ACRO_RATE_TRIGGER){
 					output_rate_roll(); // rate control yaw
@@ -812,7 +814,7 @@ void update_current_flight_mode(void)
 					output_stabilize_pitch(); // hold yaw
 				}
 				break;
-			
+
 			case STABILIZE:
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;
@@ -823,10 +825,10 @@ void update_current_flight_mode(void)
 
 				// Yaw control
 				output_manual_yaw();
-				
+
 				// apply throttle control
 				output_manual_throttle();
-				
+
 				// mix in user control
 				control_nav_mixer();
 
@@ -834,11 +836,11 @@ void update_current_flight_mode(void)
 				output_stabilize_roll();
 				output_stabilize_pitch();
 				break;
-				
+
 			case FBW:
 				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
-				
+
 				//call at 5 hz
 				if(fbw_timer > 20){
 					fbw_timer = 0;
@@ -853,27 +855,27 @@ void update_current_flight_mode(void)
 						// set dTnav manually
 						dTnav = 200;
 					}
-					
-					next_WP.lng = home.lng + g.rc_1.control_in / 2; // X: 4500 / 2 = 2250 = 25 meteres 
+
+					next_WP.lng = home.lng + g.rc_1.control_in / 2; // X: 4500 / 2 = 2250 = 25 meteres
 					// forward is negative so we reverse it to get a positive North translation
-					next_WP.lat = home.lat - g.rc_2.control_in / 2; // Y: 4500 / 2 = 2250 = 25 meteres 
+					next_WP.lat = home.lat - g.rc_2.control_in / 2; // Y: 4500 / 2 = 2250 = 25 meteres
 				}
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-				
+
 				// REMOVE AFTER TESTING !!!
 				//nav_yaw = dcm.yaw_sensor;
-				
+
 				// Yaw control
 				output_manual_yaw();
-				
+
 				// apply throttle control
 				output_manual_throttle();
 
 				// apply nav_pitch and nav_roll to output
 				fbw_nav_mixer();
-				
+
 				// perform stabilzation
 				output_stabilize_roll();
 				output_stabilize_pitch();
@@ -883,27 +885,27 @@ void update_current_flight_mode(void)
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
-				
+
 				//if(g.rc_3.control_in)
 				// get desired height from the throttle
 				next_WP.alt 	= home.alt + (g.rc_3.control_in * 4); // 0 - 1000 (40 meters)
-				
+
 				// !!! testing
 				//next_WP.alt 	-= 500;
-				
+
 				// Yaw control
 				// -----------
 				output_manual_yaw();
-				
+
 				// based on altitude error
 				// -----------------------
 				calc_nav_throttle();
-								
+
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				// apply throttle control
 				output_auto_throttle();
-				
+
 				// mix in user control
 				control_nav_mixer();
 
@@ -911,8 +913,8 @@ void update_current_flight_mode(void)
 				output_stabilize_roll();
 				output_stabilize_pitch();
 				break;
-				
-			case RTL:				
+
+			case RTL:
 				// based on altitude error
 				// -----------------------
 				calc_nav_throttle();
@@ -920,7 +922,7 @@ void update_current_flight_mode(void)
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				auto_yaw();
-				
+
 				// apply throttle control
 				output_auto_throttle();
 
@@ -931,21 +933,21 @@ void update_current_flight_mode(void)
 				output_stabilize_roll();
 				output_stabilize_pitch();
 				break;
-				
+
 			case POSITION_HOLD:
 
 				// Yaw control
 				// -----------
 				output_manual_yaw();
-				
+
 				// based on altitude error
 				// -----------------------
 				calc_nav_throttle();
-				
-				
+
+
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
-				
+
 				// apply throttle control
 				output_auto_throttle();
 
@@ -960,7 +962,7 @@ void update_current_flight_mode(void)
 			default:
 				//Serial.print("$");
 				break;
-				
+
 		}
 	}
 }
@@ -976,10 +978,10 @@ void update_navigation()
 		verify_must();
 		verify_may();
 	}else{
-		switch(control_mode){				
+		switch(control_mode){
 			case RTL:
 				update_crosstrack();
-				break;							
+				break;
 		}
 	}
 }
@@ -991,7 +993,7 @@ void read_AHRS(void)
 	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
 	omega = dcm.get_gyro();
-	
+
 	// Testing remove !!!
 	//dcm.pitch_sensor = 0;
 	//dcm.roll_sensor = 0;
@@ -1000,17 +1002,17 @@ void read_AHRS(void)
 void update_trig(void){
 	Vector2f yawvector;
 	Matrix3f temp 	= dcm.get_dcm_matrix();
-	
+
 	yawvector.x 	= temp.a.x; // sin
 	yawvector.y 	= temp.b.x;	// cos
 	yawvector.normalize();
 
 	cos_yaw_x 		= yawvector.y;	// 0 x = north
-	sin_yaw_y 		= yawvector.x;	// 1 y 
-	
+	sin_yaw_y 		= yawvector.x;	// 1 y
+
 	sin_pitch_y 	= -temp.c.x;
 	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));
-	
+
 	cos_roll_x 		= temp.c.z / cos_pitch_x;
 	sin_roll_y 		= temp.c.y / cos_pitch_x;
 }

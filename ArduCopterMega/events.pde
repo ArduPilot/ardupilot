@@ -44,7 +44,7 @@ void new_event(struct Location *cmd)
 {
 	Serial.print("New Event Loaded ");
 	Serial.println(cmd->p1,DEC);
-	
+
 
 	if(cmd->p1 == STOP_REPEAT){
 		Serial.println("STOP repeat ");
@@ -64,9 +64,9 @@ void new_event(struct Location *cmd)
 		event_delay 		= cmd->lat;
 		event_repeat 		= cmd->lng; 	// convert seconds to millis
 		event_undo_value	= 0;
-		repeat_forever = (event_repeat == 0) ? 1:0;	
+		repeat_forever = (event_repeat == 0) ? 1:0;
 	}
-	
+
 	/*
 	Serial.print("event_id: ");
 	Serial.println(event_id,DEC);
@@ -93,22 +93,22 @@ void perform_event()
 	}
 	switch(event_id) {
 		case CH_4_TOGGLE:
-			event_undo_value = rc_5.radio_out;
+			event_undo_value = g.rc_5.radio_out;
 			APM_RC.OutputCh(CH_5, event_value); // send to Servos
 			undo_event = 2;
 			break;
 		case CH_5_TOGGLE:
-			event_undo_value = rc_6.radio_out;
+			event_undo_value = g.rc_6.radio_out;
 			APM_RC.OutputCh(CH_6, event_value); // send to Servos
 			undo_event = 2;
 			break;
 		case CH_6_TOGGLE:
-			event_undo_value = rc_7.radio_out;
+			event_undo_value = g.rc_7.radio_out;
 			APM_RC.OutputCh(CH_7, event_value); // send to Servos
 			undo_event = 2;
 			break;
 		case CH_7_TOGGLE:
-			event_undo_value = rc_8.radio_out;
+			event_undo_value = g.rc_8.radio_out;
 			APM_RC.OutputCh(CH_8, event_value); // send to Servos
 			undo_event = 2;
 			event_undo_value = 1;
@@ -125,7 +125,7 @@ void perform_event()
 			Serial.println(PORTL,BIN);
 			undo_event = 2;
 			break;
-			
+
 	}
 }
 
@@ -149,12 +149,12 @@ void update_events()
 		undo_event --;
 	}
 
-	if(event_timer == -1) 
+	if(event_timer == -1)
 		return;
-		
+
 	if((millis() - event_timer) > event_delay){
 		perform_event();
-		
+
 		if(event_repeat > 0 || repeat_forever == 1){
 			event_repeat--;
 			event_timer = millis();
