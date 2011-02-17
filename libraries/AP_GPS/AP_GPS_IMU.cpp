@@ -224,3 +224,10 @@ void AP_GPS_IMU::checksum(byte data)
         ck_a += data;
         ck_b += ck_a; 
 }
+
+
+/****************************************************************
+ * Unused
+ ****************************************************************/
+void AP_GPS_IMU::setHIL(long time, float latitude, float longitude, float altitude,
+            float ground_speed, float ground_course, float speed_3d, uint8_t num_sats) {};
