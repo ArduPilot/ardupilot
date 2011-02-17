@@ -143,8 +143,8 @@ public:
 
     // Throttle
     //
-    AP_Int8     throttle_min;
-    AP_Int8     throttle_max;
+    AP_Int16    throttle_min;
+    AP_Int16    throttle_max;
     AP_Int8     throttle_failsafe_enabled;
     AP_Int8     throttle_failsafe_action;
     AP_Int16    throttle_failsafe_value;
