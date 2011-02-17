@@ -7,16 +7,16 @@ void navigate()
 {
 	// do not navigate with corrupt data
 	// ---------------------------------
-	if (gps->fix == 0)
+	if (g_gps->fix == 0)
 	{
-		gps->new_data = false;
+		g_gps->new_data = false;
 		return;
 	}
-	
+
 	if(next_WP.lat == 0){
 		return;
 	}
-	
+
 	// waypoint distance from plane
 	// ----------------------------
 	GPS_wp_distance = getDistance(&current_loc, &next_WP);
@@ -28,7 +28,7 @@ void navigate()
 		return;
 	}
 
-	// target_bearing is where we should be heading 
+	// target_bearing is where we should be heading
 	// --------------------------------------------
 	target_bearing 	= get_bearing(&current_loc, &next_WP);
 
@@ -54,22 +54,22 @@ void calc_nav()
 	3000 	= 33m
 	10000 	= 111m
 	pitch_max = 22° (2200)
-	*/	
+	*/
 
 	//temp 			= dcm.get_dcm_matrix();
 	//yawvector.y 	= temp.b.x;	// cos
 	//yawvector.x 	= temp.a.x; // sin
 	//yawvector.normalize();
-	
+
 	//cos_yaw_x = yawvector.y;	// 0
 	//sin_yaw_y = yawvector.x;	// 1
 
 	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 50 - 30 = 20 pitch right
 	lat_error	= next_WP.lat - current_loc.lat;							// 50 - 30 = 20 pitch up
-	
+
 	long_error	= constrain(long_error, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
-	
+
 	// Convert distance into ROLL X
 	nav_lon		= long_error * g.pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
 	//nav_lon	= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
@@ -80,12 +80,12 @@ void calc_nav()
 	nav_lat		= lat_error * g.pid_nav_lat.kP();							// 1800 * 2 = 3600 or 36°
 	//nav_lat 	= constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
-	// rotate the vector	
+	// rotate the vector
 	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
 	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
-	
-	nav_roll 	= constrain(nav_roll,  -g.pitch_max, g.pitch_max);
-	nav_pitch 	= constrain(nav_pitch, -g.pitch_max, g.pitch_max);
+
+	nav_roll 	= constrain(nav_roll,  -g.pitch_max.get(), g.pitch_max.get());
+	nav_pitch 	= constrain(nav_pitch, -g.pitch_max.get(), g.pitch_max.get());
 }
 
 /*
@@ -93,10 +93,10 @@ void verify_missed_wp()
 {
 	// check if we have missed the WP
 	loiter_delta = (target_bearing - old_target_bearing) / 100;
-	
+
 	// reset the old value
 	old_target_bearing = target_bearing;
-	
+
 	// wrap values
 	if (loiter_delta > 170) loiter_delta -= 360;
 	if (loiter_delta < -170) loiter_delta += 360;
@@ -113,10 +113,10 @@ void calc_bearing_error()
 void calc_distance_error()
 {
 	wp_distance = GPS_wp_distance;
-	
+
 	// this wants to work only while moving, but it should filter out jumpy GPS reads
 	//						scale gs to whole deg		(50hz / 100)	scale bearing error down to whole deg
-	//distance_estimate 	+= (float)gps->ground_speed * 	.0002 * 		cos(radians(bearing_error / 100));
+	//distance_estimate 	+= (float)g_gps->ground_speed * 	.0002 * 		cos(radians(bearing_error / 100));
 	//distance_estimate 	-= distance_gain * (float)(distance_estimate - GPS_wp_distance);
 	//wp_distance			=  distance_estimate;
 }
@@ -128,12 +128,12 @@ void calc_distance_error()
 } */
 
 // calculated at 50 hz
-void calc_altitude_error() 
+void calc_altitude_error()
 {
 	if(control_mode == AUTO && offset_altitude != 0) {
 		// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
-		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - waypoint_radius));
-		
+		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - g.waypoint_radius));
+
 		// stay within a certain range
 		if(prev_WP.alt > next_WP.alt){
 			target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
@@ -186,7 +186,7 @@ void update_crosstrack(void)
 	// ----------------
 	if (abs(target_bearing - crosstrack_bearing) < 4500) {	 // If we are too far off or too close we don't do track following
 		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
-		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle, g.crosstrack_entry_angle);
+		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360(nav_bearing);
 	}
 }
@@ -207,9 +207,9 @@ int get_altitude_above_home(void)
 
 long getDistance(struct Location *loc1, struct Location *loc2)
 {
-	if(loc1->lat == 0 || loc1->lng == 0) 
+	if(loc1->lat == 0 || loc1->lng == 0)
 		return -1;
-	if(loc2->lat == 0 || loc2->lng == 0) 
+	if(loc2->lat == 0 || loc2->lng == 0)
 		return -1;
 	float dlat 		= (float)(loc2->lat - loc1->lat);
 	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;

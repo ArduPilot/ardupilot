@@ -3,8 +3,8 @@ void init_pids()
 {
 	// create limits to how much dampening we'll allow
 	// this creates symmetry with the P gain value preventing oscillations
-	
-	max_stabilize_dampener 	= g.pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°	
+
+	max_stabilize_dampener 	= g.pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°
 	max_yaw_dampener		= g.pid_yaw.kP() * 6000;				// = .5 * 6000  = 3000
 }
 
@@ -29,14 +29,14 @@ void output_stabilize_roll()
 {
 	float error, rate;
 	int dampener;
-	
-	error 		= g.rc_1.servo_out - dcm.roll_sensor;	
-	
+
+	error 		= g.rc_1.servo_out - dcm.roll_sensor;
+
 	// limit the error we're feeding to the PID
 	error 		= constrain(error,  -2500, 2500);
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
-	g.rc_1.servo_out 	= g.g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);
+	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);
 
 	// We adjust the output by the rate of rotation:
 	// Rate control through bias corrected gyro rates
@@ -52,9 +52,9 @@ void output_stabilize_pitch()
 {
 	float error, rate;
 	int dampener;
-	
+
 	error 	= g.rc_2.servo_out - dcm.pitch_sensor;
-	
+
 	// limit the error we're feeding to the PID
 	error 	= constrain(error, -2500, 2500);
 
@@ -94,16 +94,16 @@ void output_yaw_with_hold(boolean hold)
 				hold = false;
 			}
 		}
-		
+
 	}else{
 		// rate control
-		
-		// this indicates we are under rate control, when we enter Yaw Hold and 
-		// return to 0° per second, we exit rate control and hold the current Yaw		
+
+		// this indicates we are under rate control, when we enter Yaw Hold and
+		// return to 0° per second, we exit rate control and hold the current Yaw
 		rate_yaw_flag 	= true;
 		yaw_error 		= 0;
 	}
-	
+
 	if(hold){
 		// try and hold the current nav_yaw setting
 		yaw_error		= nav_yaw - dcm.yaw_sensor; 									// +- 60°
@@ -114,15 +114,15 @@ void output_yaw_with_hold(boolean hold)
 
 		// Apply PID and save the new angle back to RC_Channel
 		g.rc_4.servo_out 	= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
-	
+
 		// We adjust the output by the rate of rotation
 		long rate		= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
 		int dampener 	= ((float)rate * g.hold_yaw_dampener);						// 18000 * .17 = 3000
-		
+
 		// Limit dampening to be equal to propotional term for symmetry
 		g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
-	
-	}else{		
+
+	}else{
 		// rate control
 		long rate		= degrees(omega.z) * 100; 									// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);							// limit to something fun!
@@ -162,7 +162,7 @@ void output_rate_pitch()
 
 	g.rc_1.servo_out = g.rc_2.control_in;
 	g.rc_2.servo_out = g.rc_2.control_in;
-	
+
 	// Rate control through bias corrected gyro rates
 	// omega is the raw gyro reading plus Omega_I, so it´s bias corrected
 	g.rc_1.servo_out 	-= (omega.x * 5729.57795 * acro_dampener);

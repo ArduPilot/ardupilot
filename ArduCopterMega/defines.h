@@ -28,7 +28,7 @@
 #define GPS_PROTOCOL_MTK	4
 
 // Radio channels
-// Note channels are from 0!  
+// Note channels are from 0!
 //
 // XXX these should be CH_n defines from RC.h at some point.
 #define CH_1 0
@@ -107,7 +107,7 @@
 // Command IDs - May
 #define CMD_DELAY 0x20
 #define CMD_CLIMB 0x21 // NOT IMPLEMENTED
-#define CMD_LAND_OPTIONS 0x22			// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0 
+#define CMD_LAND_OPTIONS 0x22			// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
 #define CMD_ANGLE 0x23	// move servo N to PWM value
 
 // Command IDs - Now
@@ -202,8 +202,8 @@
 // Command Queues
 // ---------------
 #define COMMAND_MUST 0
-#define COMMAND_MAY 1 
-#define COMMAND_NOW 2 
+#define COMMAND_MAY 1
+#define COMMAND_NOW 2
 
 // Events
 // ------
@@ -244,7 +244,7 @@
 // ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
 // Tested value : 418
 
-#define ToRad(x) (x * 0.01745329252)	// *pi/180
+//#define ToRad(x) (x * 0.01745329252)	// *pi/180
 //#define ToDeg(x) (x * 57.2957795131)	// *180/pi
 
 

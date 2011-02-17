@@ -32,13 +32,13 @@ struct Location get_wp_with_index(int i)
 	struct Location temp;
 	long mem;
 
-	
+
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
 	if (i > g.waypoint_total) {
 		temp.id = CMD_BLANK;
 	}else{
-		// read WP position 
+		// read WP position
 		mem = (WP_START_BYTE) + (i * WP_SIZE);
 		temp.id = eeprom_read_byte((uint8_t*)mem);
 		mem++;
@@ -58,7 +58,7 @@ struct Location get_wp_with_index(int i)
 void set_wp_with_index(struct Location temp, int i)
 {
 
-	i = constrain(i, 0, g.waypoint_total);
+	i = constrain(i, 0, g.waypoint_total.get());    // XXX if i was unsigned this could be simply < g.waypoint_total
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -80,9 +80,9 @@ void increment_WP_index()
 {
 	if(g.waypoint_index < g.waypoint_total){
         g.waypoint_index.set_and_save(g.waypoint_index + 1);
-		Serial.printf_P(PSTR("WP index is incremented to %d\n"),g.waypoint_index);
+		Serial.printf_P(PSTR("WP index is incremented to %d\n"),(int)g.waypoint_index);
 	}else{
-		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),g.waypoint_index);
+		Serial.printf_P(PSTR("WP Failed to incremented WP index of %d\n"),(int)g.waypoint_index);
 	}
     SendDebugln(g.waypoint_index,DEC);
 }
@@ -95,7 +95,7 @@ void decrement_WP_index()
 }
 
 long read_alt_to_hold()
-{	
+{
 	read_EEPROM_alt_RTL();
 	if(g.RTL_altitude == -1)
 		return current_loc.alt;
@@ -117,7 +117,7 @@ return_to_launch(void)
 	// home is WP 0
 	// ------------
 	g.waypoint_index.set_and_save(0);
-	
+
 	// Loads WP from Memory
 	// --------------------
 	set_next_WP(&home);
@@ -131,8 +131,8 @@ return_to_launch(void)
 struct
 Location get_LOITER_home_wp()
 {
-	// read home position 
-	struct Location temp 	= get_wp_with_index(0);	
+	// read home position
+	struct Location temp 	= get_wp_with_index(0);
 	temp.id 				= CMD_LOITER;
 	temp.alt 				= read_alt_to_hold();
 	return temp;
@@ -151,20 +151,20 @@ set_current_loc_here()
 This function stores waypoint commands
 It looks to see what the next command type is and finds the last command.
 */
-void 
+void
 set_next_WP(struct Location *wp)
 {
-	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), g.waypoint_index);
+	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), (int)g.waypoint_index);
 	send_message(MSG_COMMAND, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
 	prev_WP = current_loc;
-	
+
 	// Load the next_WP slot
 	// ---------------------
 	next_WP = *wp;
-	
+
 	// offset the altitude relative to home position
 	// ---------------------------------------------
 	next_WP.alt += home.alt;
@@ -173,27 +173,27 @@ set_next_WP(struct Location *wp)
 	// -----------------------------------------------
 	target_altitude = current_loc.alt;						// PH: target_altitude = 200
 	offset_altitude = next_WP.alt - current_loc.alt;		// PH: offset_altitude = 0
-	
+
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 	= 0;
 	loiter_sum 		= 0;
 	loiter_total 	= 0;
 
 	float rads = (abs(next_WP.lat)/t7) * 0.0174532925;
-	//377,173,810 / 10,000,000 = 37.717381 * 0.0174532925 = 0.658292482926943		
+	//377,173,810 / 10,000,000 = 37.717381 * 0.0174532925 = 0.658292482926943
 	scaleLongDown = cos(rads);
 	scaleLongUp = 1.0f/cos(rads);
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= getDistance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	
-	print_current_waypoints();	
-	
+
+	print_current_waypoints();
+
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
 	old_target_bearing 	= target_bearing;
-	// this is used to offset the shrinking longitude as we go towards the poles	
-	
+	// this is used to offset the shrinking longitude as we go towards the poles
+
 	// set a new crosstrack bearing
 	// ----------------------------
 	reset_crosstrack();
@@ -208,14 +208,14 @@ void init_home()
 
 	// block until we get a good fix
 	// -----------------------------
-	while (!gps->new_data || !gps->fix) {
-		gps->update();
+	while (!g_gps->new_data || !g_gps->fix) {
+		g_gps->update();
 	}
-	
+
 	home.id 	= CMD_WAYPOINT;
-	home.lng 	= gps->longitude;				// Lon * 10**7
-	home.lat 	= gps->latitude;				// Lat * 10**7
-	home.alt 	= gps->altitude;
+	home.lng 	= g_gps->longitude;				// Lon * 10**7
+	home.lat 	= g_gps->latitude;				// Lat * 10**7
+	home.alt 	= g_gps->altitude;
 	home_is_set = true;
 
 	// ground altitude in centimeters for pressure alt calculations

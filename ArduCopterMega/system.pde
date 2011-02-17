@@ -1,9 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*****************************************************************************
 The init_ardupilot function processes everything we need for an in - air restart
-	We will determine later if we are actually on the ground and process a 
+	We will determine later if we are actually on the ground and process a
 	ground start in that case.
-	
+
 *****************************************************************************/
 
 // Functions called from the top-level menu
@@ -62,7 +62,7 @@ void init_ardupilot()
 	// Not used if the IMU/X-Plane GPS is in use.
 	//
 	// XXX currently the EM406 (SiRF receiver) is nominally configured
-	// at 57600, however it's not been supported to date.  We should 
+	// at 57600, however it's not been supported to date.  We should
 	// probably standardise on 38400.
 	//
 	// XXX the 128 byte receive buffer may be too small for NMEA, depending
@@ -88,7 +88,7 @@ void init_ardupilot()
 						 "Init ArduCopterMega 1.0.2 Public Alpha\n\n"
 #if TELEMETRY_PORT == 3
 						 "Telemetry is on the xbee port\n"
-#endif	
+#endif
 						 "freeRAM: %d\n"),freeRAM());
 
 	//
@@ -123,12 +123,12 @@ void init_ardupilot()
 	APM_BMP085.Init();	// APM Abs Pressure sensor initialization
 	DataFlash.Init(); 	// DataFlash log initialization
 
-	gps = &GPS;
-	gps->init();
-	
+	g_gps = &GPS;
+	g_gps->init();
+
 	if(g.compass_enabled)
 		init_compass();
-	
+
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
@@ -156,7 +156,7 @@ void init_ardupilot()
 			main_menu.run();
 		}
 	}
-	
+
 
 	if(g.log_bitmask > 0){
 		//	Here we will check  on the length of the last log
@@ -165,35 +165,35 @@ void init_ardupilot()
 		last_log_start 	= eeprom_read_word((uint16_t *) (EE_LOG_1_START+(last_log_num - 1) * 0x02));
 		last_log_end 	= eeprom_read_word((uint16_t *) EE_LAST_LOG_PAGE);
 
-		if(last_log_num == 0) {		
+		if(last_log_num == 0) {
 			// The log space is empty.  Start a write session on page 1
-			DataFlash.StartWrite(1);	 
+			DataFlash.StartWrite(1);
 			eeprom_write_byte((uint8_t *)	EE_LAST_LOG_NUM, (1));
-			eeprom_write_word((uint16_t *)	EE_LOG_1_START, (1));		
-	
-		} else if (last_log_end <= last_log_start + 10) { 		
+			eeprom_write_word((uint16_t *)	EE_LOG_1_START, (1));
+
+		} else if (last_log_end <= last_log_start + 10) {
 			// The last log is small.  We consider it junk.  Overwrite it.
-			DataFlash.StartWrite(last_log_start);	 
-	
+			DataFlash.StartWrite(last_log_start);
+
 		} else {
 			//  The last log is valid.  Start a new log
 			if(last_log_num >= 19) {
 				Serial.println("Number of log files exceeds max.  Log 19 will be overwritten.");
 				last_log_num --;
 			}
-			DataFlash.StartWrite(last_log_end + 1);   
+			DataFlash.StartWrite(last_log_end + 1);
 			eeprom_write_byte((uint8_t *)	EE_LAST_LOG_NUM, (last_log_num + 1));
-			eeprom_write_word((uint16_t *)	(EE_LOG_1_START+(last_log_num)*0x02), (last_log_end + 1));	
+			eeprom_write_word((uint16_t *)	(EE_LOG_1_START+(last_log_num)*0x02), (last_log_end + 1));
 		}
 	}
-	
+
 	// read in the flight switches
 	//update_servo_switches();
-	
+
 	//Serial.print("GROUND START");
 	send_message(SEVERITY_LOW,"GROUND START");
 	startup_ground();
-	
+
 	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
@@ -226,17 +226,17 @@ void startup_ground(void)
 	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
-	#if(GROUND_START_DELAY > 0)	
+	#if(GROUND_START_DELAY > 0)
 		send_message(SEVERITY_LOW,"With Delay");
-		delay(GROUND_START_DELAY * 1000);		
+		delay(GROUND_START_DELAY * 1000);
 	#endif
-	
+
 	// Output waypoints for confirmation
 	// --------------------------------
 	for(int i = 1; i < g.waypoint_total + 1; i++) {
 		gcs.send_message(MSG_COMMAND_LIST, i);
 	}
-	
+
 	//IMU ground start
 	//------------------------
 	init_pressure_ground();
@@ -248,25 +248,25 @@ void startup_ground(void)
 	// Save the settings for in-air restart
 	// ------------------------------------
 	save_EEPROM_groundstart();
-		
+
 	// initialize commands
 	// -------------------
 	init_commands();
-	
+
 	send_message(SEVERITY_LOW,"\n\n Ready to FLY.");
 }
 
 void set_mode(byte mode)
 {
-	
+
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
-		
+
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
-		
+
 	// used to stop fly_aways
 	if(g.rc_1.control_in == 0){
 		// we are on the ground is this is true
@@ -279,27 +279,27 @@ void set_mode(byte mode)
 	{
 		case ACRO:
 			break;
-		
+
 		case STABILIZE:
 			set_current_loc_here();
 			break;
-			
+
 		case ALT_HOLD:
 			set_current_loc_here();
 			break;
-		
+
 		case AUTO:
 			update_auto();
 			break;
-			
+
 		case POSITION_HOLD:
 			set_current_loc_here();
 			break;
-		
+
 		case RTL:
 			return_to_launch();
 			break;
-		
+
 		case TAKEOFF:
 			break;
 
@@ -309,11 +309,11 @@ void set_mode(byte mode)
 		default:
 			break;
 	}
-	
+
 	// output control mode to the ground station
 	send_message(MSG_HEARTBEAT);
-	
-	if (g.log_bitmask & MASK_LOG_MODE)	
+
+	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
 }
 
@@ -333,17 +333,17 @@ void set_failsafe(boolean mode)
 
 			// re-read the switch so we can return to our preferred mode
 			reset_control_switch();
-			
+
 			// Reset control integrators
 			// ---------------------
 			reset_I();
-			
+
 		}else{
 			// We've lost radio contact
 			// ------------------------
 			// nothing to do right now
 		}
-		
+
 		// Let the user know what's up so they can override the behavior
 		// -------------------------------------------------------------
 		failsafe_event();
@@ -354,20 +354,20 @@ void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
-	if(gps->fix == 0){
+	if(g_gps->fix == 0){
 		GPS_light = !GPS_light;
 		if(GPS_light){
 			digitalWrite(C_LED_PIN, HIGH);
 		}else{
 			digitalWrite(C_LED_PIN, LOW);
-		}		
+		}
 	}else{
 		if(!GPS_light){
 			GPS_light = true;
 			digitalWrite(C_LED_PIN, HIGH);
 		}
 	}
-	
+
 	if(motor_armed == true){
 		motor_light = !motor_light;
 
@@ -376,7 +376,7 @@ void update_GPS_light(void)
 			digitalWrite(A_LED_PIN, HIGH);
 		}else{
 			digitalWrite(A_LED_PIN, LOW);
-		}		
+		}
 	}else{
 		if(!motor_light){
 			motor_light = true;
@@ -392,7 +392,7 @@ void resetPerfData(void) {
 	G_Dt_max 			= 0;
 	gyro_sat_count 		= 0;
 	adc_constraints 	= 0;
-	renorm_sqrt_count 	= 0;	
+	renorm_sqrt_count 	= 0;
 	renorm_blowup_count = 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
@@ -403,7 +403,7 @@ void
 init_compass()
 {
 	dcm.set_compass(&compass);
-	compass.init(false);
+	compass.init();
 	compass.set_orientation(MAGORIENTATION);						// set compass's orientation on aircraft
 	compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);	// set offsets to account for surrounding interference
 	compass.set_declination(ToRad(mag_declination));					// set local difference between magnetic north and true north

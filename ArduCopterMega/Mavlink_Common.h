@@ -137,8 +137,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
     {
         Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
         mavlink_msg_global_position_int_send(chan,current_loc.lat,
-			current_loc.lng,current_loc.alt*10,gps.ground_speed/1.0e2*rot.a.x,
-			gps.ground_speed/1.0e2*rot.b.x,gps.ground_speed/1.0e2*rot.c.x);
+			current_loc.lng,current_loc.alt*10,g_gps.ground_speed/1.0e2*rot.a.x,
+			g_gps.ground_speed/1.0e2*rot.b.x,g_gps.ground_speed/1.0e2*rot.c.x);
         break;
     }
     case MSG_LOCAL_LOCATION:
@@ -146,15 +146,15 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
         Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
         mavlink_msg_local_position_send(chan,timeStamp,ToRad((current_loc.lat-home.lat)/1.0e7)*radius_of_earth,
 			ToRad((current_loc.lng-home.lng)/1.0e7)*radius_of_earth*cos(ToRad(home.lat/1.0e7)),
-			(current_loc.alt-home.alt)/1.0e2, gps.ground_speed/1.0e2*rot.a.x,
-			gps.ground_speed/1.0e2*rot.b.x,gps.ground_speed/1.0e2*rot.c.x);
+			(current_loc.alt-home.alt)/1.0e2, g_gps.ground_speed/1.0e2*rot.a.x,
+			g_gps.ground_speed/1.0e2*rot.b.x,g_gps.ground_speed/1.0e2*rot.c.x);
         break;
     }
     case MSG_GPS_RAW:
     {
-        mavlink_msg_gps_raw_send(chan,timeStamp,gps.status(),
-			gps.latitude/1.0e7,gps.longitude/1.0e7,gps.altitude/100.0,
-			gps.hdop,0.0,gps.ground_speed/100.0,gps.ground_course/100.0);
+        mavlink_msg_gps_raw_send(chan,timeStamp,g_gps.status(),
+			g_gps.latitude/1.0e7,g_gps.longitude/1.0e7,g_gps.altitude/100.0,
+			g_gps.hdop,0.0,g_gps.ground_speed/100.0,g_gps.ground_course/100.0);
         break;
     }
     case MSG_SERVO_OUT:
@@ -200,7 +200,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
     }
     case MSG_VFR_HUD:
     {
-        mavlink_msg_vfr_hud_send(chan, (float)airspeed/100.0, (float)gps.ground_speed/100.0, dcm.yaw_sensor, current_loc.alt/100.0,
+        mavlink_msg_vfr_hud_send(chan, (float)airspeed/100.0, (float)g_gps.ground_speed/100.0, dcm.yaw_sensor, current_loc.alt/100.0,
 			climb_rate, (int)rc[CH_THROTTLE]->servo_out);
         break;
     }
@@ -224,7 +224,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 
     case MSG_GPS_STATUS:
     {
-        mavlink_msg_gps_status_send(chan,gps.num_sats,NULL,NULL,NULL,NULL,NULL);
+        mavlink_msg_gps_status_send(chan,g_gps.num_sats,NULL,NULL,NULL,NULL,NULL);
         break;
     }
 
