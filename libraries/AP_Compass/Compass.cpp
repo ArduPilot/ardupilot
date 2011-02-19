@@ -54,6 +54,14 @@ Compass::set_declination(float radians)
     _declination.set_and_save(radians);
 }
 
+float
+Compass::get_declination()
+{
+  return _declination.get();
+}
+
+
+
 void
 Compass::calculate(float roll, float pitch)
 {
