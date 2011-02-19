@@ -72,14 +72,14 @@ void read_trim_switch()
 		if(trim_flag){
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
-				// not being used
+				imu.save();
 				
 			} else {
 				// set the throttle nominal
 				if(g.rc_3.control_in > 50){
-					g.throttle_cruise = g.rc_3.control_in;
-					Serial.printf("tnom %d\n", g.);
-					save_EEPROM_g.();
+					g.throttle_cruise.set(g.rc_3.control_in);
+					Serial.printf("tnom %d\n", g.throttle_cruise.get());
+					save_EEPROM_throttle_cruise();
 				}
 			}
 			trim_flag = false;

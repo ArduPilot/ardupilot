@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 /*
 	This event will be called when the failsafe changes
 	boolean failsafe reflects the current state
@@ -18,9 +20,9 @@ void failsafe_event()
 
 void low_battery_event(void)
 {
-	send_message(SEVERITY_HIGH,"Low Battery!");
+	gcs.send_text(SEVERITY_HIGH,"Low Battery!");
 	set_mode(RTL);
-	throttle_cruise = THROTTLE_CRUISE;
+	g.throttle_cruise.set(THROTTLE_CRUISE);
 }
 
 
@@ -42,12 +44,12 @@ undo_event
 
 void new_event(struct Location *cmd)
 {
-	Serial.print("New Event Loaded ");
-	Serial.println(cmd->p1,DEC);
+	SendDebug("New Event Loaded ");
+	SendDebugln(cmd->p1,DEC);
 
 
 	if(cmd->p1 == STOP_REPEAT){
-		Serial.println("STOP repeat ");
+		SendDebugln("STOP repeat ");
 		event_id 			= NO_REPEAT;
 		event_timer 		= -1;
 		undo_event 			= 0;
@@ -116,25 +118,26 @@ void perform_event()
 		case RELAY_TOGGLE:
 
 			event_undo_value = PORTL & B00000100 ? 1:0;
-			if(event_undo_value == 1){
-				relay_A();
-			}else{
-				relay_B();
-			}
-			Serial.print("toggle relay ");
-			Serial.println(PORTL,BIN);
+			relay_toggle();
+			SendDebug("toggle relay ");
+			SendDebugln(PORTL,BIN);
 			undo_event = 2;
 			break;
 
 	}
 }
 
-void relay_A()
+void relay_on()
 {
 	PORTL |= B00000100;
 }
 
-void relay_B()
+void relay_off()
+{
+	PORTL &= ~B00000100;
+}
+
+void relay_toggle()
 {
 	PORTL ^= B00000100;
 }
@@ -184,14 +187,9 @@ void perform_event_undo()
 			break;
 
 		case RELAY_TOGGLE:
-
-			if(event_undo_value == 1){
-				relay_A();
-			}else{
-				relay_B();
-			}
-			Serial.print("untoggle relay ");
-			Serial.println(PORTL,BIN);
+			relay_toggle();
+			SendDebug("untoggle relay ");
+			SendDebugln(PORTL,BIN);
 			break;
 	}
 }

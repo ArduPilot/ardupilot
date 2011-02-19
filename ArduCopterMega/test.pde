@@ -686,15 +686,15 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		Serial.println("Relay A");
-		relay_A();
+		Serial.println("Relay on");
+		relay_on();
 		delay(3000);
 		if(Serial.available() > 0){
 			return (0);
 		}
 
-		Serial.println("Relay B");
-		relay_B();
+		Serial.println("Relay off");
+		relay_off();
 		delay(3000);
 		if(Serial.available() > 0){
 			return (0);
@@ -764,7 +764,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			sum += abs_pressure;
 		delay(10);
 	}
-	abs_pressure_ground = (float)sum / 100.0;
+	ground_pressure = (float)sum / 100.0;
 	*/
 
 	home.alt = 0;
@@ -795,7 +795,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 						current_loc.alt,
 						next_WP.alt,
 						altitude_error,
-						g.,
+						g.throttle_cruise,
 						g.rc_3.servo_out);
 
 			/*

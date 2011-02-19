@@ -55,11 +55,10 @@ public:
         //
         k_param_IMU_calibration = 140,
         k_param_ground_temperature,
-        k_param_ground_altitude,
         k_param_ground_pressure,
 		k_param_current,
+		k_param_milliamp_hours,
 		k_param_compass,
-		k_param_mag_declination,
 
         //
         // 160: Navigation parameters
@@ -97,6 +96,7 @@ public:
         k_param_waypoint_mode = 220,
         k_param_waypoint_total,
         k_param_waypoint_index,
+        k_param_command_must_index,        
         k_param_waypoint_radius,
         k_param_loiter_radius,
 
@@ -138,6 +138,7 @@ public:
     AP_Int8     waypoint_mode;
     AP_Int8     waypoint_total;
     AP_Int8     waypoint_index;
+    AP_Int8		command_must_index;
     AP_Int8     waypoint_radius;
     AP_Int8     loiter_radius;
 
@@ -168,14 +169,13 @@ public:
     //
     AP_Int16    log_bitmask;
     AP_Int16    ground_temperature;
-    AP_Int16    ground_altitude;
     AP_Int16    ground_pressure;
     AP_Int16    RTL_altitude;
     AP_Int8		frame_type;
 
     AP_Int8		current_enabled;
+    AP_Int16	milliamp_hours;
     AP_Int8		compass_enabled;
-    AP_Float	mag_declination;
 
 
     // RC channels
@@ -218,21 +218,22 @@ public:
         frame_type  			(FRAME_CONFIG,				k_param_frame_type,				PSTR("FRAME_CONFIG")),
 
         current_enabled  		(DISABLED,					k_param_current,				PSTR("CURRENT_ENABLE")),
+        milliamp_hours  		(2100,						k_param_milliamp_hours,			PSTR("MAH")),
         compass_enabled  		(DISABLED,					k_param_compass,				PSTR("COMPASS_ENABLE")),
-        mag_declination  		(0,							k_param_mag_declination,		PSTR("MAG_DEC")),
 
         waypoint_mode           (0,                         k_param_waypoint_mode,          PSTR("WP_MODE")),
         waypoint_total          (0,                         k_param_waypoint_total,         PSTR("WP_TOTAL")),
         waypoint_index          (0,                         k_param_waypoint_index,         PSTR("WP_INDEX")),
+        command_must_index      (0,                         k_param_command_must_index,     PSTR("WP_MUST_INDEX")),
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        PSTR("WP_RADIUS")),
         loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          PSTR("LOITER_RADIUS")),
 
-        throttle_min            (THROTTLE_MIN,              k_param_throttle_min,           PSTR("THR_MIN")),
-        throttle_max            (THROTTLE_MAX,              k_param_throttle_max,           PSTR("THR_MAX")),
+        throttle_min            	(THROTTLE_MIN,              k_param_throttle_min,				PSTR("THR_MIN")),
+        throttle_max            	(THROTTLE_MAX,              k_param_throttle_max,				PSTR("THR_MAX")),
         throttle_failsafe_enabled   (THROTTLE_FAILSAFE,         k_param_throttle_failsafe_enabled,  PSTR("THR_FAILSAFE")),
         throttle_failsafe_action	(THROTTLE_FAILSAFE_ACTION,  k_param_throttle_failsafe_action, 	PSTR("THR_FS_ACTION")),
         throttle_failsafe_value 	(THROTTLE_FS_VALUE,         k_param_throttle_failsafe_value, 	PSTR("THR_FS_VALUE")),
-        throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,        PSTR("TRIM_THROTTLE")),
+        throttle_cruise         	(THROTTLE_CRUISE,           k_param_throttle_cruise,        	PSTR("TRIM_THROTTLE")),
 
         flight_mode_channel     (FLIGHT_MODE_CHANNEL,       k_param_flight_mode_channel,    PSTR("FLIGHT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                      PSTR("FLIGHT_MODES")),
@@ -241,7 +242,6 @@ public:
 
         log_bitmask             (0,                         k_param_log_bitmask,            PSTR("LOG_BITMASK")),
         ground_temperature      (0,                         k_param_ground_temperature,     PSTR("GND_TEMP")),
-        ground_altitude         (0,                         k_param_ground_altitude,        PSTR("GND_ALT_CM")),
         ground_pressure         (0,                         k_param_ground_pressure,        PSTR("GND_ABS_PRESS")),
         RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,           PSTR("ALT_HOLD_RTL")),
 

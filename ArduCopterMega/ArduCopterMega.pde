@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /*
-ArduCopterMega Version 0.1 Experimental
+ArduCopterMega Version 0.1.3 Experimental
 Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Jose Julio, Randy Mackay, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
@@ -216,8 +216,7 @@ byte	command_may_index;					// current command memory location
 byte	command_must_ID;					// current command ID
 byte	command_may_ID;						// current command ID
 
-float	altitude_gain;						// in nav
-float	distance_gain;						// in nav
+//float	altitude_gain;						// in nav
 
 float cos_roll_x;
 float sin_roll_y;
@@ -281,11 +280,9 @@ int 	milliamp_hours;
 
 // Barometer Sensor variables
 // --------------------------
-//int				baro_offset;				// used to correct drift of absolute pressue sensor
 unsigned long 	abs_pressure;
-unsigned long 	abs_pressure_ground;
+unsigned long 	ground_pressure;
 int 			ground_temperature;
-//int 			temp_unfilt;
 
 byte 	altitude_sensor = BARO;				// used to know whic sensor is active, BARO or SONAR
 

@@ -5,7 +5,7 @@
 
 // Macro functions
 // ---------------
-void read_EEPROM_startup(void)
+/*void read_EEPROM_startup(void)
 {
 	read_EEPROM_PID();
 	read_EEPROM_frame();
@@ -13,27 +13,17 @@ void read_EEPROM_startup(void)
 	read_EEPROM_logs();
 	read_EEPROM_flight_modes();
 	read_EEPROM_waypoint_info();
-	imu.load_gyro_eeprom();
-	imu.load_accel_eeprom();
+	//imu.load_gyro_eeprom();
+	//imu.load_accel_eeprom();
 	read_EEPROM_alt_RTL();
 	read_EEPROM_current();
 	read_EEPROM_nav();
 	// magnatometer
 	read_EEPROM_compass();
-	read_EEPROM_compass_declination();
+	//read_EEPROM_compass_declination();
 	read_EEPROM_compass_offset();
 }
-
-void read_EEPROM_airstart_critical(void)
-{	
-	// Read the home location
-	//-----------------------	
-	home = get_wp_with_index(0);
-		
-	// Read pressure sensor values
-	//----------------------------
-	read_EEPROM_pressure();
-}
+*/
 
 void save_EEPROM_groundstart(void)
 {
@@ -56,56 +46,45 @@ void save_EEPROM_groundstart(void)
 
 void save_EEPROM_alt_RTL(void)
 {
-	eeprom_write_dword((uint32_t *)EE_ALT_HOLD_HOME, alt_to_hold);
+	g.RTL_altitude.save();
+	
 }
 
 void read_EEPROM_alt_RTL(void)
 {
-	alt_to_hold = eeprom_read_dword((const uint32_t *)	EE_ALT_HOLD_HOME);
+	g.RTL_altitude.load();
 }
 
 /********************************************************************************/
 
 void read_EEPROM_waypoint_info(void)
 {
-	g.waypoint_total 		= eeprom_read_byte((uint8_t *) EE_WP_TOTAL);				
-	wp_radius 		= eeprom_read_byte((uint8_t *) EE_WP_RADIUS);
-	loiter_radius 	= eeprom_read_byte((uint8_t *) EE_LOITER_RADIUS);
+	g.waypoint_total.load();
+	g.waypoint_radius.load();
+	g.loiter_radius.load();
 }
 
 void save_EEPROM_waypoint_info(void)
 {
-	eeprom_write_byte((uint8_t *)	EE_WP_TOTAL, 		g.waypoint_total);
-	eeprom_write_byte((uint8_t *)	EE_WP_RADIUS, 		wp_radius);
-	eeprom_write_byte((uint8_t *)	EE_LOITER_RADIUS, 	loiter_radius);
+	g.waypoint_total.save();
+	g.waypoint_radius.save();
+	g.loiter_radius.save();
 }
 
 /********************************************************************************/
 
 void read_EEPROM_nav(void)
 {
-	// for nav estimation
-	distance_gain 		= read_EE_compressed_float(EE_DISTANCE_GAIN, 4);
-	altitude_gain 		= read_EE_compressed_float(EE_ALTITUDE_GAIN, 4);
-
-	// stored as degree * 100
-	g.crosstrack_gain 			= read_EE_compressed_float(EE_XTRACK_GAIN, 4);
-	g.crosstrack_entry_angle 	= eeprom_read_word((uint16_t *)	EE_XTRACK_ANGLE) * 100;
-	pitch_max 			= eeprom_read_word((uint16_t *) EE_PITCH_MAX);	// stored as degress * 100
+	g.crosstrack_gain.load();
+	g.crosstrack_entry_angle.load();
+	g.pitch_max.load();
 }
 
 void save_EEPROM_nav(void)
 {
-	// for nav estimation
-	write_EE_compressed_float(altitude_gain, 	EE_ALTITUDE_GAIN, 	4);
-	write_EE_compressed_float(distance_gain, 	EE_DISTANCE_GAIN, 	4);
-	write_EE_compressed_float(crosstrack_gain, 	EE_XTRACK_GAIN, 	4);
-	
-	// stored as degrees
- 	eeprom_write_word((uint16_t *)	EE_XTRACK_ANGLE, g.crosstrack_entry_angle / 100);
-
-	// stored as degrees
-	eeprom_write_word((uint16_t *)	EE_PITCH_MAX, pitch_max);
+	g.crosstrack_gain.save();
+ 	g.crosstrack_entry_angle.save();
+	g.pitch_max.save();
 }
 
 /********************************************************************************/
@@ -126,10 +105,10 @@ void read_EEPROM_PID(void)
 	g.pid_sonar_throttle.load_gains();
 	
 	// roll pitch
-	stabilize_dampener 			= read_EE_compressed_float(EE_STAB_DAMPENER, 4);
+	g.stabilize_dampener.load();
 
 	// yaw
-	hold_yaw_dampener			= read_EE_compressed_float(EE_HOLD_YAW_DAMPENER, 4);
+	g.hold_yaw_dampener.load();
  	init_pids();
 }
 
@@ -149,61 +128,47 @@ void save_EEPROM_PID(void)
 	g.pid_sonar_throttle.save_gains();
 
 	// roll pitch
-	write_EE_compressed_float(stabilize_dampener,	EE_STAB_DAMPENER, 4);
-
+	g.stabilize_dampener.save();
 	// yaw
-	write_EE_compressed_float(hold_yaw_dampener, 	EE_HOLD_YAW_DAMPENER, 4);
+	g.hold_yaw_dampener.save();
 }
 
 /********************************************************************************/
 
 void save_EEPROM_frame(void)
 {
-	eeprom_write_byte((uint8_t *)EE_FRAME, frame_type);
+	g.frame_type.save();
 }
 
 void read_EEPROM_frame(void)
 {
-	frame_type 	= eeprom_read_byte((uint8_t *)	EE_FRAME);
+	g.frame_type.load();
 }
 
 /********************************************************************************/
 
-void save_EEPROM_g.(void)
+void save_EEPROM_throttle_cruise (void)
 {
-	eeprom_write_word((uint16_t *)EE_THROTTLE_CRUISE, g.);
+	g.throttle_cruise.save();
 }
 
-void read_EEPROM_g.(void)
+void read_EEPROM_throttle_cruise(void)
 {
-	g.throttle_cruise 	= eeprom_read_word((uint16_t *)	EE_THROTTLE_CRUISE);
-}
-
-/********************************************************************************/
-
-void save_EEPROM_mag_declination(void)
-{
-	write_EE_compressed_float(mag_declination, 	EE_MAG_DECLINATION, 1);
-}
-
-void read_EEPROM_compass_declination(void)
-{
-	mag_declination 	= read_EE_compressed_float(EE_MAG_DECLINATION, 1);
+	g.throttle_cruise.load();
 }
 
 /********************************************************************************/
 
 void save_EEPROM_current(void)
 {
-	eeprom_write_byte((uint8_t *)	EE_CURRENT_SENSOR, 	current_enabled);
-	eeprom_write_word((uint16_t *)	EE_CURRENT_MAH, 	milliamp_hours);
-	
+	g.current_enabled.save();
+	g.milliamp_hours.save();
 }
 
 void read_EEPROM_current(void)
 {
-	current_enabled	= eeprom_read_byte((uint8_t *) EE_CURRENT_SENSOR);
-	milliamp_hours	= eeprom_read_word((uint16_t *) EE_CURRENT_MAH);
+	g.current_enabled.load();
+	g.milliamp_hours.load();
 }
 
 /********************************************************************************/
@@ -226,40 +191,42 @@ void read_EEPROM_compass_offset(void)
 
 void read_EEPROM_compass(void)
 {
-	compass_enabled	= eeprom_read_byte((uint8_t *) EE_COMPASS);
+	g.compass_enabled.load();
 }
 
 void save_EEPROM_mag(void)
 {
-	eeprom_write_byte((uint8_t *)	EE_COMPASS, 	compass_enabled);
+	g.compass_enabled.save();
 }
 
 /********************************************************************************/
 
 void save_command_index(void)
 {
-	eeprom_write_byte((uint8_t *) EE_WP_INDEX, command_must_index);
+	g.command_must_index.save();
 }
 
 void read_command_index(void)
 {
-	g.waypoint_index = command_must_index 	= eeprom_read_byte((uint8_t *) EE_WP_INDEX);
+	g.command_must_index.load();
 }
 
 /********************************************************************************/
 
 void save_EEPROM_pressure(void)
 {
-	eeprom_write_dword((uint32_t *)EE_ABS_PRESS_GND, 	abs_pressure_ground);
-	eeprom_write_word((uint16_t *)EE_GND_TEMP, 			ground_temperature);
+	g.ground_pressure.save();
+	g.ground_temperature.save();
+
 }
 
 void read_EEPROM_pressure(void)
 {
-	abs_pressure_ground = eeprom_read_dword((uint32_t *) 	EE_ABS_PRESS_GND);
-	// Better than zero for an air start value
-	abs_pressure	 	= abs_pressure_ground;
-	ground_temperature 	= eeprom_read_word((uint16_t *) 	EE_GND_TEMP);
+	g.ground_pressure.load();
+	g.ground_temperature.load();	
+
+	// to prime the filter
+	abs_pressure	 	= g.ground_pressure;
 }
 
 /********************************************************************************/
@@ -292,52 +259,51 @@ void save_EEPROM_radio(void)
 // configs are the basics
 void read_EEPROM_throttle(void)
 {
-	throttle_min 				= eeprom_read_word((uint16_t *) 	EE_THROTTLE_MIN);
-	throttle_max 				= eeprom_read_word((uint16_t *) 	EE_THROTTLE_MAX);
-	read_EEPROM_g.();
-	throttle_failsafe_enabled 	= eeprom_read_byte((byte *) 	EE_THROTTLE_FAILSAFE);
-	throttle_failsafe_action 	= eeprom_read_byte((byte *) 	EE_THROTTLE_FAILSAFE_ACTION);
-	throttle_failsafe_value 	= eeprom_read_word((uint16_t *) EE_THROTTLE_FS_VALUE);
+	g.throttle_min.load();
+	g.throttle_max.load();
+	g.throttle_cruise.load();
+	g.throttle_failsafe_enabled.load();
+	g.throttle_failsafe_action.load();
+	g.throttle_failsafe_value.load();
 }
 
 void save_EEPROM_throttle(void)
 {
-	eeprom_write_word((uint16_t *) 	EE_THROTTLE_MIN, 			throttle_min);
-	eeprom_write_word((uint16_t *) 	EE_THROTTLE_MAX, 			throttle_max);
-	save_EEPROM_g.();
-	eeprom_write_byte((byte *) 		EE_THROTTLE_FAILSAFE,		throttle_failsafe_enabled);
-	eeprom_write_byte((byte *) 		EE_THROTTLE_FAILSAFE_ACTION,throttle_failsafe_action);
-	eeprom_write_word((uint16_t *) 	EE_THROTTLE_FS_VALUE,		throttle_failsafe_value);
+	g.throttle_min.load();
+	g.throttle_max.load();
+	g.throttle_cruise.save();
+	g.throttle_failsafe_enabled.load();
+	g.throttle_failsafe_action.load();
+	g.throttle_failsafe_value.load();
 }
 
 /********************************************************************************/
 
 void read_EEPROM_logs(void)
 {
-	g.log_bitmask 				= eeprom_read_word((uint16_t *) EE_LOG_BITMASK);
+	g.log_bitmask.load();
 }
 
 void save_EEPROM_logs(void)
 {
-	eeprom_write_word((uint16_t *) 	EE_LOG_BITMASK,				log_bitmask);
+	g.log_bitmask.save();
 }
 
 /********************************************************************************/
 
 void read_EEPROM_flight_modes(void)
 {
-	// Read Radio min/max settings
-	eeprom_read_block((void*)&flight_modes, (const void*)EE_FLIGHT_MODES, sizeof(flight_modes));
+	g.flight_modes.load();
 }
 
 void save_EEPROM_flight_modes(void)
 {
-	// Save Radio min/max settings
- 	eeprom_write_block((const void *)&flight_modes, (void *)EE_FLIGHT_MODES, sizeof(flight_modes));
+	g.flight_modes.save();
+	
 }
 
 /********************************************************************************/
-
+/*
 float
 read_EE_float(int address)
 {
@@ -362,9 +328,9 @@ void write_EE_float(float value, int address)
 	for (int i = 0; i < 4; i++) 
 		eeprom_write_byte((uint8_t *) (address + i), _floatIn.bytes[i]);
 }
-
+*/
 /********************************************************************************/
-
+/*
 float
 read_EE_compressed_float(int address, byte places)
 {
@@ -380,3 +346,4 @@ void write_EE_compressed_float(float value, int address, byte places)
 	int temp 	= value * scale;
 	eeprom_write_word((uint16_t *) 	address, temp);
 }
+*/

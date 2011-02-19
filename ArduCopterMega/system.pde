@@ -85,7 +85,7 @@ void init_ardupilot()
 #endif
 
 	Serial.printf_P(PSTR("\n\n"
-						 "Init ArduCopterMega 1.0.2 Public Alpha\n\n"
+						 "Init ArduCopterMega 1.0.3 Public Alpha\n\n"
 #if TELEMETRY_PORT == 3
 						 "Telemetry is on the xbee port\n"
 #endif
@@ -125,6 +125,9 @@ void init_ardupilot()
 
 	g_gps = &GPS;
 	g_gps->init();
+	
+	imu.init(IMU::WARM_START);	// offsets are loaded from EEPROM
+
 
 	if(g.compass_enabled)
 		init_compass();
@@ -243,7 +246,7 @@ void startup_ground(void)
 
 	// Warm up and read Gyro offsets
 	// -----------------------------
-	imu.init_gyro();
+	imu.init(IMU::COLD_START);
 
 	// Save the settings for in-air restart
 	// ------------------------------------
@@ -403,10 +406,9 @@ void
 init_compass()
 {
 	dcm.set_compass(&compass);
-	compass.init();
+	bool junkbool = compass.init();
 	compass.set_orientation(MAGORIENTATION);						// set compass's orientation on aircraft
-	compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);	// set offsets to account for surrounding interference
-	compass.set_declination(ToRad(mag_declination));					// set local difference between magnetic north and true north
+	Vector3f junkvector = compass.get_offsets();						// load offsets to account for airframe magnetic interference	
 }
 
 

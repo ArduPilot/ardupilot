@@ -155,7 +155,7 @@ void
 set_next_WP(struct Location *wp)
 {
 	Serial.printf_P(PSTR("set_next_WP, wp_index %d\n"), (int)g.waypoint_index);
-	send_message(MSG_COMMAND, g.waypoint_index);
+	send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
