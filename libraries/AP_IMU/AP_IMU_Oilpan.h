@@ -41,11 +41,22 @@ public:
 	///                 WARM_START loads accelerometer and gyro calibration from a previous cold start.
 	///
 	virtual void		init(Start_style style = COLD_START);
-
+	
+	virtual void		save();
 	virtual void		init_accel();
 	virtual void		init_gyro();
 	virtual bool		update(void);
+	
+	// for jason
+	int			ax()				{ return _sensor_cal[3]; }
+	int			ay()				{ return _sensor_cal[4]; }
+	int			az()				{ return _sensor_cal[5]; }
 
+	void		ax(const int v)		{ _sensor_cal[3] = v; }
+	void		ay(const int v)		{ _sensor_cal[4] = v; }
+	void		az(const int v)		{ _sensor_cal[5] = v; }
+	
+	
 private:
     AP_ADC              *_adc;          ///< ADC that we use for reading sensors
     AP_VarA<float,6>    _sensor_cal;    ///< Calibrated sensor offsets

@@ -124,6 +124,12 @@ AP_IMU_Oilpan::_init_gyro()
 }
 
 void
+AP_IMU_Oilpan::save()
+{
+    _sensor_cal.save();
+}
+
+void
 AP_IMU_Oilpan::init_accel()
 {
     _init_accel();
