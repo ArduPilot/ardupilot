@@ -6,7 +6,7 @@ void init_pressure_ground(void)
 	for(int i = 0; i < 300; i++){		// We take some readings...
 		delay(20);
 		APM_BMP085.Read(); 	// Get initial data from absolute pressure sensor
-		abs_pressure_ground = (abs_pressure_ground * 9l + APM_BMP085.Press) / 10l;
+		ground_pressure = (ground_pressure * 9l + APM_BMP085.Press) / 10l;
 		ground_temperature 	= (ground_temperature * 9 + APM_BMP085.Temp) / 10;		
 	}
 	abs_pressure  = APM_BMP085.Press;
@@ -19,7 +19,7 @@ void read_barometer(void){
 	
 	//abs_pressure 			= (abs_pressure + APM_BMP085.Press) >> 1;		// Small filtering
 	abs_pressure 			= ((float)abs_pressure * .7) + ((float)APM_BMP085.Press * .3);		// large filtering
-	scaling 				= (float)abs_pressure_ground / (float)abs_pressure;
+	scaling 				= (float)ground_pressure / (float)abs_pressure;
 	temp 					= ((float)ground_temperature / 10.f) + 273.15;
 	x 						= log(scaling) * temp * 29271.267f;
 	current_loc.alt 		= (long)(x / 10) + home.alt;// + baro_offset;		// Pressure altitude in centimeters

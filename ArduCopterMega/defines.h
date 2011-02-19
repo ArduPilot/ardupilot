@@ -62,7 +62,8 @@
 #define SONAR 0
 #define BARO 1
 
-#define WP_START_BYTE 0x130	// where in memory home WP is stored + all other WP
+// parameters get the first 1KiB of EEPROM, remainder is for waypoints
+#define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
 #define WP_SIZE 14
 
 // GCS enumeration
@@ -156,18 +157,59 @@
 #define MSG_PRESSURE 0x04
 #define MSG_STATUS_TEXT 0x05
 #define MSG_PERF_REPORT 0x06
-#define MSG_COMMAND 0x22
+#define MSG_MODE_CHANGE 0x07 //This is different than HEARTBEAT because it occurs only when the mode is actually changed
+#define MSG_VERSION_REQUEST 0x08
+#define MSG_VERSION 0x09
+#define MSG_EXTENDED_STATUS 0x0a
+#define MSG_CPU_LOAD 0x0b
+
+#define MSG_COMMAND_REQUEST 0x20
+#define MSG_COMMAND_UPLOAD 0x21
+#define MSG_COMMAND_LIST 0x22
+#define MSG_COMMAND_MODE_CHANGE 0x23
+#define MSG_CURRENT_WAYPOINT 0x24
+
+#define MSG_VALUE_REQUEST 0x30
+#define MSG_VALUE_SET 0x31
 #define MSG_VALUE 0x32
+
+#define MSG_PID_REQUEST 0x40
+#define MSG_PID_SET 0x41
 #define MSG_PID 0x42
-#define MSG_TRIMS 0x50
-#define MSG_MINS 0x51
-#define MSG_MAXS 0x52
-#define MSG_IMU_OUT 0x53
+#define MSG_VFR_HUD 0x4a
+
+#define MSG_TRIM_STARTUP 0x50
+#define MSG_TRIM_MIN 0x51
+#define MSG_TRIM_MAX 0x52
+#define MSG_RADIO_OUT 0x53
+#define MSG_RADIO_IN  0x54
+
+#define MSG_RAW_IMU 0x60
+#define MSG_GPS_STATUS 0x61
+#define MSG_GPS_RAW 0x62
+
+#define MSG_SERVO_OUT 0x70
+
+#define MSG_PIN_REQUEST 0x80
+#define MSG_PIN_SET 0x81
+
+#define MSG_DATAFLASH_REQUEST 0x90
+#define MSG_DATAFLASH_SET 0x91
+
+#define MSG_EEPROM_REQUEST 0xa0
+#define MSG_EEPROM_SET 0xa1
+
+#define MSG_POSITION_CORRECT 0xb0
+#define MSG_ATTITUDE_CORRECT 0xb1
+#define MSG_POSITION_SET 0xb2
+#define MSG_ATTITUDE_SET 0xb3
+#define MSG_LOCAL_LOCATION 0xb4
 
 #define SEVERITY_LOW 1
 #define SEVERITY_MEDIUM 2
 #define SEVERITY_HIGH 3
 #define SEVERITY_CRITICAL 4
+
 
 //  Logging parameters
 #define LOG_ATTITUDE_MSG		0x01
@@ -269,8 +311,8 @@
 #define EE_XTRACK_GAIN 0x30
 #define EE_XTRACK_ANGLE 0x32
 #define EE_PITCH_MAX 0x34
-#define EE_DISTANCE_GAIN 0x36
-#define EE_ALTITUDE_GAIN 0x38
+//#define EE_DISTANCE_GAIN 0x36
+//#define EE_ALTITUDE_GAIN 0x38
 
 #define EE_GAIN_1 0x40	// all gains stored from here
 #define EE_GAIN_2 0x48	// all gains stored from here

@@ -274,6 +274,6 @@ set_servos_4()
 		reset_I();
 
 		// Initialize yaw command to actual yaw when throttle is down...
-		g.rc_4.control_in = ToDeg(yaw);
+		g.rc_4.control_in = ToDeg(dcm.yaw);
 	}
  }
