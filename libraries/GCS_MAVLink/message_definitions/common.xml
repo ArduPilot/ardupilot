@@ -79,6 +79,16 @@
         <param index="6">Longitude</param>
         <param index="7">Altitude</param>
         </entry>
+      <entry name="MAV_CMD_NAV_R_WAYPOINT" value="23">
+        <description>Navigate to waypoint, relative to home.</description>
+        <param index="1">Hold time (ignored by fixed wing, time to stay at waypoint for rotary wing)</param>
+        <param index="2">Acceptance radius (if the sphere with this radius is hit, the waypoint counts as reached)</param>
+        <param index="3">0 to pass through the WP, if > 0 radius to pass by WP. Allows trajectory control.</param>
+        <param index="4">Desired yaw angle</param>
+        <param index="5">Latitude</param>
+        <param index="6">Longitude</param>
+        <param index="7">Altitude</param>
+      </entry>
       <entry name="MAV_CMD_NAV_LAST" value="95">
       <description>NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration</description>
         <param index="1">Empty</param>
