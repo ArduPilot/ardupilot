@@ -31,7 +31,8 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"compass",			setup_compass},
 	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
-	{"show",			setup_show}
+	{"show",			setup_show},
+	{"ap_show",			AP_Var_menu_show}
 };
 
 // Create the setup menu object.
@@ -91,12 +92,20 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 
 	if (('y' != c) && ('Y' != c))
 		return(-1);
+	AP_Var::erase_all();
+	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
+	for (;;) {
+	}
+	
+	// note, cannot actually return here
+	return(0);
 
 	//zero_eeprom();
-	default_gains();
+	//default_gains();
 
 
 	// setup default values
+	/*
 	default_waypoint_info();
 	default_nav();
 	default_alt_hold();
@@ -106,10 +115,10 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	default_logs();
 	default_current();
 	print_done();
-
+	*/
 	// finish
 	// ------
-	return(0);
+	//return(0);
 }
 
 // Perform radio setup.
@@ -684,7 +693,9 @@ default_gains()
 
 
 	// stabilize, angle error
+	Serial.printf("b4 %4.2f, ",g.pid_stabilize_roll.kP());
 	g.pid_stabilize_roll.kP(STABILIZE_ROLL_P);
+	Serial.printf("L8R %4.2f\n ",g.pid_stabilize_roll.kP());
 	g.pid_stabilize_roll.kI(STABILIZE_ROLL_I);
 	g.pid_stabilize_roll.kD(0);
 	g.pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
@@ -706,8 +717,7 @@ default_gains()
 	g.stabilize_dampener 	= STABILIZE_DAMPENER;
 
 	//yaw
-	g.hold_yaw_dampener	= HOLD_YAW_DAMPENER;
-
+	g.hold_yaw_dampener		= HOLD_YAW_DAMPENER;
 
 	// navigation
 	g.pid_nav_lat.kP(NAV_P);
@@ -731,6 +741,8 @@ default_gains()
 	g.pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
 
 	save_EEPROM_PID();
+	Serial.printf("EL8R %4.2f\n ",g.pid_stabilize_roll.kP());
+	
 }
 
 
@@ -884,7 +896,7 @@ void report_compass()
 	// mag declination
 	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"),
 							degrees(compass.get_declination()));
-
+							
 	Vector3f offsets = compass.get_offsets();
 
 	// mag offsets
@@ -968,18 +980,25 @@ print_divider(void)
 boolean
 radio_input_switch(void)
 {
-	static byte bouncer;
+	static int8_t bouncer = 0;
 
-	if (abs(g.rc_1.radio_in - g.rc_1.radio_trim) > 200)
-		bouncer = 10;
+	if (int16_t(g.rc_1.radio_in - g.rc_1.radio_trim) > 100) {
+	    bouncer = 10;
+	}
+	if (int16_t(g.rc_1.radio_in - g.rc_1.radio_trim) < -100) {
+	    bouncer = -10;
+	}
+	if (bouncer >0) {
+	    bouncer --;
+	}
+	if (bouncer <0) {
+	    bouncer ++;
+	}
 
-	if (bouncer > 0)
-		bouncer--;
-
-	if (bouncer == 1){
-		return true;
-	}else{
-		return false;
+	if (bouncer == 1 || bouncer == -1) {
+	    return bouncer;
+	} else {
+	    return 0;
 	}
 }
 
