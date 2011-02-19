@@ -79,16 +79,6 @@
         <param index="6">Longitude</param>
         <param index="7">Altitude</param>
         </entry>
-      <entry name="MAV_CMD_NAV_R_WAYPOINT" value="23">
-        <description>Navigate to waypoint, relative to home.</description>
-        <param index="1">Hold time (ignored by fixed wing, time to stay at waypoint for rotary wing)</param>
-        <param index="2">Acceptance radius (if the sphere with this radius is hit, the waypoint counts as reached)</param>
-        <param index="3">0 to pass through the WP, if > 0 radius to pass by WP. Allows trajectory control.</param>
-        <param index="4">Desired yaw angle</param>
-        <param index="5">Latitude</param>
-        <param index="6">Longitude</param>
-        <param index="7">Altitude</param>
-      </entry>
       <entry name="MAV_CMD_NAV_LAST" value="95">
       <description>NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration</description>
         <param index="1">Empty</param>
@@ -241,9 +231,9 @@
      <entry name="MAV_DATA_STREAM_RC_CHANNELS" value="3"><description>Enable RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW</description></entry>
      <entry name="MAV_DATA_STREAM_RAW_CONTROLLER" value="4"><description>Enable ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT, NAV_CONTROLLER_OUTPUT.</description></entry>
      <entry name="MAV_DATA_STREAM_POSITION" value="6"><description>Enable LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT messages.</description></entry>
-     <entry name="MAV_DATA_STREAM_EXTRA1" value="250"><description>Dependent on the autopilot</description></entry>
-     <entry name="MAV_DATA_STREAM_EXTRA2" value="251"><description>Dependent on the autopilot</description></entry>
-     <entry name="MAV_DATA_STREAM_EXTRA3" value="252"><description>Dependent on the autopilot</description></entry>
+     <entry name="MAV_DATA_STREAM_EXTRA1" value="10"><description>Dependent on the autopilot</description></entry>
+     <entry name="MAV_DATA_STREAM_EXTRA2" value="11"><description>Dependent on the autopilot</description></entry>
+     <entry name="MAV_DATA_STREAM_EXTRA3" value="12"><description>Dependent on the autopilot</description></entry>
    </enum>
 </enums>
 
@@ -273,13 +263,28 @@
      <field name="time" type="uint64_t">Unix timestamp in microseconds</field>
    </message>
    
-        <message name="SYSTEM_TIME_UTC" id="4">
+  <message name="SYSTEM_TIME_UTC" id="4">
     <description>UTC date and time from GPS module</description>
     <field name="utc_date" type="uint32_t">GPS UTC date ddmmyy</field>
     <field name="utc_time" type="uint32_t">GPS UTC time hhmmss</field>
   </message>
   
-     <message name="ACTION_ACK" id="9">
+  <message name="CHANGE_OPERATOR_CONTROL" id="5">
+    <description>Request to control this MAV</description>
+    <field name="target_system" type="uint8_t">System the GCS requests control for</field>
+    <field name="control_request" type="uint8_t">0: request control of this MAV, 1: Release control of this MAV</field>
+    <field name="version" type="uint8_t">0: key as plaintext, 1-255: future, different hashing/encryption variants. The GCS should in general use the safest mode possible initially and then gradually move down the encryption level if it gets a NACK message indicating an encryption mismatch.</field>
+    <field name="passkey" type="char[25]">Password / Key, depending on version plaintext or encrypted. 25 or less characters, NULL terminated. The characters may involve A-Z, a-z, 0-9, and "!?,.-"</field>
+  </message>
+  
+  <message name="CHANGE_OPERATOR_CONTROL_ACK" id="6">
+    <description>Accept / deny control of this MAV</description>
+    <field name="gcs_system_id" type="uint8_t">ID of the GCS this message </field>
+    <field name="control_request" type="uint8_t">0: request control of this MAV, 1: Release control of this MAV</field>
+    <field name="ack" type="uint8_t">0: ACK, 1: NACK: Wrong passkey, 2: NACK: Unsupported passkey encryption method, 3: NACK: Already under control</field>
+  </message>
+  
+   <message name="ACTION_ACK" id="9">
 	<description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
      <field name="action" type="uint8_t">The action id</field>
      <field name="result" type="uint8_t">0: Action DENIED, 1: Action executed</field>
@@ -309,7 +314,7 @@
      <field name="target_system" type="uint8_t">System ID</field>
      <field name="target_component" type="uint8_t">Component ID</field>
      <field name="param_id" type="array[15]">Onboard parameter id</field>
-     <field name="param_index" type="uint16_t">Parameter index</field>
+     <field name="param_index" type="int16_t">Parameter index. Send -1 to use the param ID field as identifier</field>
    </message>
 
    <message name="PARAM_REQUEST_LIST" id="21">
@@ -338,7 +343,7 @@
      <description>The global position, as returned by the Global Positioning System (GPS). This is
 NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame)</description>
      <field name="usec" type="uint64_t">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-     <field name="fix_type" type="uint8_t">0-1: no fix, 2: 2D fix, 3: 3D fix</field>
+     <field name="fix_type" type="uint8_t">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
      <field name="lat"   type="int32_t">Latitude in 1E7 degrees</field>
      <field name="lon"   type="int32_t">Longitude in 1E7 degrees</field>
      <field name="alt"   type="int32_t">Altitude in 1E3 meters (millimeters)</field>
@@ -432,7 +437,7 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <description>The global position, as returned by the Global Positioning System (GPS). This is
 NOT the global position estimate of the sytem, but rather a RAW sensor value. See message GLOBAL_POSITION for the global position estimate. Coordinate frame is right-handed, Z-axis up (GPS frame)</description>
      <field name="usec" type="uint64_t">Timestamp (microseconds since UNIX epoch or microseconds since system boot)</field>
-     <field name="fix_type" type="uint8_t">0-1: no fix, 2: 2D fix, 3: 3D fix</field>
+     <field name="fix_type" type="uint8_t">0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.</field>
      <field name="lat"   type="float">Latitude in degrees</field>
      <field name="lon"   type="float">Longitude in degrees</field>
      <field name="alt"   type="float">Altitude in meters</field>

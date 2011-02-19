@@ -5,7 +5,7 @@
 typedef struct __mavlink_gps_raw_int_t 
 {
 	uint64_t usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-	uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix
+	uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
 	int32_t lat; ///< Latitude in 1E7 degrees
 	int32_t lon; ///< Longitude in 1E7 degrees
 	int32_t alt; ///< Altitude in 1E3 meters (millimeters)
@@ -25,7 +25,7 @@ typedef struct __mavlink_gps_raw_int_t
  * @param msg The MAVLink message to compress the data into
  *
  * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
+ * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude in 1E7 degrees
  * @param lon Longitude in 1E7 degrees
  * @param alt Altitude in 1E3 meters (millimeters)
@@ -41,7 +41,7 @@ static inline uint16_t mavlink_msg_gps_raw_int_pack(uint8_t system_id, uint8_t c
 	msg->msgid = MAVLINK_MSG_ID_GPS_RAW_INT;
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix
+	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
 	i += put_int32_t_by_index(lat, i, msg->payload); // Latitude in 1E7 degrees
 	i += put_int32_t_by_index(lon, i, msg->payload); // Longitude in 1E7 degrees
 	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude in 1E3 meters (millimeters)
@@ -60,7 +60,7 @@ static inline uint16_t mavlink_msg_gps_raw_int_pack(uint8_t system_id, uint8_t c
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
  * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
+ * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude in 1E7 degrees
  * @param lon Longitude in 1E7 degrees
  * @param alt Altitude in 1E3 meters (millimeters)
@@ -76,7 +76,7 @@ static inline uint16_t mavlink_msg_gps_raw_int_pack_chan(uint8_t system_id, uint
 	msg->msgid = MAVLINK_MSG_ID_GPS_RAW_INT;
 
 	i += put_uint64_t_by_index(usec, i, msg->payload); // Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix
+	i += put_uint8_t_by_index(fix_type, i, msg->payload); // 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
 	i += put_int32_t_by_index(lat, i, msg->payload); // Latitude in 1E7 degrees
 	i += put_int32_t_by_index(lon, i, msg->payload); // Longitude in 1E7 degrees
 	i += put_int32_t_by_index(alt, i, msg->payload); // Altitude in 1E3 meters (millimeters)
@@ -106,7 +106,7 @@ static inline uint16_t mavlink_msg_gps_raw_int_encode(uint8_t system_id, uint8_t
  * @param chan MAVLink channel to send the message
  *
  * @param usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix
+ * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude in 1E7 degrees
  * @param lon Longitude in 1E7 degrees
  * @param alt Altitude in 1E3 meters (millimeters)
@@ -149,7 +149,7 @@ static inline uint64_t mavlink_msg_gps_raw_int_get_usec(const mavlink_message_t*
 /**
  * @brief Get field fix_type from gps_raw_int message
  *
- * @return 0-1: no fix, 2: 2D fix, 3: 3D fix
+ * @return 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  */
 static inline uint8_t mavlink_msg_gps_raw_int_get_fix_type(const mavlink_message_t* msg)
 {
