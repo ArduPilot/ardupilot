@@ -8,8 +8,7 @@ class AP_Compass_HIL : public Compass
   public:
 	AP_Compass_HIL(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}
 
-	virtual bool 	init();
-	virtual void 	read();
+	void 			read();
     void 	    	setHIL(float Mag_X, float Mag_Y, float Mag_Z);
 };
 
