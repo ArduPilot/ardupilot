@@ -120,6 +120,8 @@
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
+#define MAV_CMD_CONDITION_ANGLE 23
+
 //  GCS Message ID's
 #define MSG_ACKNOWLEDGE 0x00
 #define MSG_HEARTBEAT 0x01
