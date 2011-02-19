@@ -795,7 +795,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 						current_loc.alt,
 						next_WP.alt,
 						altitude_error,
-						g.throttle_cruise,
+						(int)g.throttle_cruise,
 						g.rc_3.servo_out);
 
 			/*
