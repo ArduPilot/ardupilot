@@ -145,13 +145,13 @@ void process_must()
 		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
 			break;
 			
-		case MAV_CMD_NAV_R_WAYPOINT:	// Navigate to Waypoint
-			next_command.lat 	+= home.lat;	// offset from home location
-			next_command.lng 	+= home.lng;	// offset from home location
+		//case MAV_CMD_NAV_R_WAYPOINT:	// Navigate to Waypoint
+		//	next_command.lat 	+= home.lat;	// offset from home location
+		//	next_command.lng 	+= home.lng;	// offset from home location
 
 			// we've recalculated the WP so we need to set it again
-			set_next_WP(&next_command);
-			break;
+		//	set_next_WP(&next_command);
+		//	break;
 
 		case MAV_CMD_NAV_LAND:	// LAND to Waypoint
 			velocity_land		= 1000;

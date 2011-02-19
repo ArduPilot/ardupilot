@@ -110,11 +110,13 @@ AP_GPS_None		GPS(NULL);
 */
 
 GPS             *g_gps;
+
 #if GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     GPS(NULL);
+	AP_GPS_None     GPS(NULL);
 #else
-AP_GPS_Auto     GPS(&Serial1, &g_gps);
-#endif // GPS PROTOCOL
+	AP_GPS_Auto     GPS(&Serial1, &g_gps);
+#endif 
+
 
 
 

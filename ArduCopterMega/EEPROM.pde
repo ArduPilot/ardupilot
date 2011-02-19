@@ -25,19 +25,6 @@
 }
 */
 
-void save_EEPROM_groundstart(void)
-{
-	g.rc_1.save_trim();
-	g.rc_2.save_trim();
-	g.rc_3.save_trim();
-	g.rc_4.save_trim();
-	g.rc_5.save_trim();
-	g.rc_6.save_trim();
-	g.rc_7.save_trim();
-	g.rc_8.save_trim();
-	
-	// pressure sensor data saved by init_home
-}
 
 /********************************************************************************/
 

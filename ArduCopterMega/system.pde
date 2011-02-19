@@ -80,16 +80,11 @@ void init_ardupilot()
 	// the receive buffer, and the transmit buffer could also be
 	// shrunk for protocols that don't send large messages.
 	//
-#if GCS_PORT == 3
 	Serial3.begin(SERIAL3_BAUD, 128, 128);
-#endif
 
-	Serial.printf_P(PSTR("\n\n"
-						 "Init ArduCopterMega 1.0.3 Public Alpha\n\n"
-#if TELEMETRY_PORT == 3
-						 "Telemetry is on the xbee port\n"
-#endif
-						 "freeRAM: %d\n"),freeRAM());
+	Serial.printf_P(PSTR("\n\nInit ArduPilotMega (unstable development version)"
+						 "\n\nFree RAM: %lu\n"),
+						 freeRAM());
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -109,12 +104,13 @@ void init_ardupilot()
 
 		Serial.println_P(PSTR("done."));
 	} else {
-
+	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
-	}
 
-	//read_EEPROM_startup(); // Read critical config information to start
+	    Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
+	    Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
+	}
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
@@ -123,10 +119,19 @@ void init_ardupilot()
 	APM_BMP085.Init();	// APM Abs Pressure sensor initialization
 	DataFlash.Init(); 	// DataFlash log initialization
 
-	g_gps = &GPS;
-	g_gps->init();
+	// Do GPS init
+	//g_gps = &GPS;
+	g_gps = &g_gps_driver;
+	g_gps->init();			// GPS Initialization
+
+	// init the GCS
+	#if GCS_PORT == 3
+		gcs.init(&Serial3);
+	#else
+		gcs.init(&Serial);
+	#endif
+		
 	
-	imu.init(IMU::WARM_START);	// offsets are loaded from EEPROM
 
 
 	if(g.compass_enabled)
@@ -137,6 +142,7 @@ void init_ardupilot()
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
+	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
 
 	// If the switch is in 'menu' mode, run the main menu.
 	//
@@ -153,48 +159,26 @@ void init_ardupilot()
 							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
 							 "Visit the 'setup' menu for first-time configuration.\n"));
 		for (;;) {
-			Serial.printf_P(PSTR("\n"
-								 "Move the slide switch and reset to FLY.\n"
-								 "\n"));
+			Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
 			main_menu.run();
 		}
 	}
 
-
 	if(g.log_bitmask > 0){
-		//	Here we will check  on the length of the last log
+		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
-		last_log_num 	= eeprom_read_byte((uint8_t *) EE_LAST_LOG_NUM);
-		last_log_start 	= eeprom_read_word((uint16_t *) (EE_LOG_1_START+(last_log_num - 1) * 0x02));
-		last_log_end 	= eeprom_read_word((uint16_t *) EE_LAST_LOG_PAGE);
-
-		if(last_log_num == 0) {
-			// The log space is empty.  Start a write session on page 1
-			DataFlash.StartWrite(1);
-			eeprom_write_byte((uint8_t *)	EE_LAST_LOG_NUM, (1));
-			eeprom_write_word((uint16_t *)	EE_LOG_1_START, (1));
-
-		} else if (last_log_end <= last_log_start + 10) {
-			// The last log is small.  We consider it junk.  Overwrite it.
-			DataFlash.StartWrite(last_log_start);
-
-		} else {
-			//  The last log is valid.  Start a new log
-			if(last_log_num >= 19) {
-				Serial.println("Number of log files exceeds max.  Log 19 will be overwritten.");
-				last_log_num --;
-			}
-			DataFlash.StartWrite(last_log_end + 1);
-			eeprom_write_byte((uint8_t *)	EE_LAST_LOG_NUM, (last_log_num + 1));
-			eeprom_write_word((uint16_t *)	(EE_LOG_1_START+(last_log_num)*0x02), (last_log_end + 1));
-		}
+		last_log_num = get_num_logs();
+		start_new_log(last_log_num);
 	}
+
+	// read in the flight switches
+	update_servo_switches();
 
 	// read in the flight switches
 	//update_servo_switches();
 
-	//Serial.print("GROUND START");
-	send_message(SEVERITY_LOW,"GROUND START");
+	imu.init(IMU::WARM_START);	// offsets are loaded from EEPROM
+
 	startup_ground();
 
 	if (g.log_bitmask & MASK_LOG_CMD)
@@ -210,27 +194,10 @@ void init_ardupilot()
 //********************************************************************************
 void startup_ground(void)
 {
-	/*
-	read_radio();
-	while (g.rc_3.control_in > 0){
-		delay(20);
-		read_radio();
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
-		Serial.println("*")
-	}
-	*/
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
-
-	if (g.log_bitmask & MASK_LOG_CMD)
-		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+	gcs.send_text(SEVERITY_LOW,"<startup_ground> GROUND START");
 
 	#if(GROUND_START_DELAY > 0)
-		send_message(SEVERITY_LOW,"With Delay");
+		gcs.send_text(SEVERITY_LOW,"<startup_ground> With Delay");
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -240,28 +207,31 @@ void startup_ground(void)
 		gcs.send_message(MSG_COMMAND_LIST, i);
 	}
 
-	//IMU ground start
-	//------------------------
-	init_pressure_ground();
-
 	// Warm up and read Gyro offsets
 	// -----------------------------
 	imu.init(IMU::COLD_START);
 
-	// Save the settings for in-air restart
-	// ------------------------------------
-	save_EEPROM_groundstart();
+	// read the radio to set trims
+	// ---------------------------
+	trim_radio();
+
+	if (g.log_bitmask & MASK_LOG_CMD)
+		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+
+
+	// read Baro pressure at ground
+	//-----------------------------
+	init_pressure_ground();
 
 	// initialize commands
 	// -------------------
 	init_commands();
 
-	send_message(SEVERITY_LOW,"\n\n Ready to FLY.");
+	gcs.send_text(SEVERITY_LOW,"\n\n Ready to FLY.");
 }
 
 void set_mode(byte mode)
 {
-
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
 		return;
@@ -314,7 +284,7 @@ void set_mode(byte mode)
 	}
 
 	// output control mode to the ground station
-	send_message(MSG_HEARTBEAT);
+	gcs.send_message(MSG_MODE_CHANGE);
 
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
@@ -357,18 +327,26 @@ void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
-	if(g_gps->fix == 0){
-		GPS_light = !GPS_light;
-		if(GPS_light){
-			digitalWrite(C_LED_PIN, HIGH);
-		}else{
+	switch (g_gps->status()) {
+		case(2):
+			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
+			break;
+
+		case(1):
+			if (g_gps->valid_read == true){
+				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
+				if (GPS_light){
+					digitalWrite(C_LED_PIN, LOW);
+				} else {
+					digitalWrite(C_LED_PIN, HIGH);
+				}
+				g_gps->valid_read = false;
+			}
+			break;
+
+		default:
 			digitalWrite(C_LED_PIN, LOW);
-		}
-	}else{
-		if(!GPS_light){
-			GPS_light = true;
-			digitalWrite(C_LED_PIN, HIGH);
-		}
+			break;
 	}
 
 	if(motor_armed == true){
