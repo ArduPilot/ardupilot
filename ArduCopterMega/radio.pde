@@ -74,6 +74,10 @@ void trim_radio()
 	g.rc_1.trim();	// roll
 	g.rc_2.trim();	// pitch
 	g.rc_4.trim();	// yaw
+	
+	g.rc_1.save_trim();
+	g.rc_2.save_trim();
+	g.rc_4.save_trim();	
 }
 
 void trim_yaw()
