@@ -29,6 +29,12 @@ GPS::update(void)
 	_idleTimer = millis();
 }
 
+void 
+GPS::setHIL(long time, float latitude, float longitude, float altitude,
+            float ground_speed, float ground_course, float speed_3d, uint8_t num_sats)
+{
+}
+
 // XXX this is probably the wrong way to do it, too
 void
 GPS::_error(const char *msg)
