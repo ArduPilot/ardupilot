@@ -113,10 +113,10 @@ public:
 	float	kD() const 				{ return _kd.get(); }
 	int16_t	imax() const			{ return _imax.get(); }
 
-	void	kP(const float v)		{ _kp = v; }
-	void	kI(const float v)		{ _ki = v; }
-	void	kD(const float v)		{ _kd = v; }
-	void	imax(const int16_t v)	{ _imax = abs(v); }
+	void	kP(const float v)		{ _kp.set(v); }
+	void	kI(const float v)		{ _ki.set(v); }
+	void	kD(const float v)		{ _kd.set(v); }
+	void	imax(const int16_t v)	{ _imax.set(abs(v)); }
 
 	float	get_integrator() const	{ return _integrator; }
 
