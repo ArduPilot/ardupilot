@@ -82,6 +82,9 @@ Parameters      g;
 //   supply data from the simulation.
 //
 
+// All GPS access should be through this pointer.
+GPS             *g_gps;
+
 //#if HIL_MODE == HIL_MODE_NONE
 
 // real sensors
@@ -90,37 +93,27 @@ APM_BMP085_Class	APM_BMP085;
 AP_Compass_HMC5843	compass;
 
 
-// GPS selection
-/*
-#if   GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA		GPS(&Serial1);
+// real GPS selection
+#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
+	AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
+	AP_GPS_NMEA     g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF		GPS(&Serial1);
+	AP_GPS_SIRF     g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX	GPS(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_IMU
-AP_GPS_IMU		GPS(&Serial);	// note, console port
+	AP_GPS_UBLOX    g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK		GPS(&Serial1);
+	AP_GPS_MTK      g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
+	AP_GPS_MTK16    g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None		GPS(NULL);
+	AP_GPS_None     g_gps_driver(NULL);
 #else
-# error Must define GPS_PROTOCOL in your configuration file.
-#endif
-*/
-
-GPS             *g_gps;
-
-#if GPS_PROTOCOL == GPS_PROTOCOL_NONE
-	AP_GPS_None     GPS(NULL);
-#else
-	AP_GPS_Auto     GPS(&Serial1, &g_gps);
-#endif 
+	#error Unrecognised GPS_PROTOCOL setting.
+#endif // GPS PROTOCOL
 
 
-
-
-AP_IMU_Oilpan 		imu(&adc, EE_IMU_OFFSET);
+AP_IMU_Oilpan 		imu(&adc, Parameters::k_param_IMU_calibration); // normal imu
 AP_DCM 				dcm(&imu, g_gps);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -191,6 +184,8 @@ boolean rate_yaw_flag;						// used to transition yaw control from Rate control 
 // ----------
 boolean motor_light;						// status of the Motor safety
 boolean GPS_light;							// status of the GPS light
+
+float       nav_gain_scaler = 1;        // Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 
 // GPS variables
 // -------------
