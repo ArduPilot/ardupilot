@@ -107,6 +107,7 @@ public:
 	/// @param  radians             Local field declination.
 	///
 	virtual void set_declination(float radians);
+	float get_declination();
 
 protected:
 	AP_Var_group        _group;                 ///< storage group holding the compass' calibration data
