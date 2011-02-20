@@ -96,7 +96,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
 	for (;;) {
 	}
-	
+
 	// note, cannot actually return here
 	return(0);
 
@@ -491,7 +491,7 @@ setup_current(uint8_t argc, const Menu::arg *argv)
 		save_EEPROM_mag();
 
 	} else if(argv[1].i > 10){
-		milliamp_hours = argv[1].i;
+		g.milliamp_hours = argv[1].i;
 
 	} else {
 		Serial.printf_P(PSTR("\nOptions:[on, off, mAh]\n"));
@@ -515,8 +515,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 	compass.init();	 // Initialization
 	compass.set_orientation(MAGORIENTATION);		// set compass's orientation on aircraft
-	compass.set_offsets(0, 0, 0);					// set offsets to account for surrounding interference
-	compass.set_declination(ToRad(DECLINATION));	// set local difference between magnetic north and true north
+	//compass.set_offsets(0, 0, 0);					// set offsets to account for surrounding interference
 	//int counter = 0;
 	float _min[3], _max[3], _offset[3];
 
@@ -621,7 +620,7 @@ default_frame()
 void
 default_current()
 {
-	milliamp_hours 		= 2000;
+	g.milliamp_hours 		= 2000;
 	g.current_enabled.set(false);
 	save_EEPROM_current();
 }
@@ -644,9 +643,9 @@ default_throttle()
 	g.throttle_min					= THROTTLE_MIN;
 	g.throttle_max					= THROTTLE_MAX;
 	g.throttle_cruise				= THROTTLE_CRUISE;
-	g.throttle_failsafe_enabled		= THROTTLE_FAILSAFE;
-	g.throttle_failsafe_action		= THROTTLE_FAILSAFE_ACTION;
-	g.throttle_failsafe_value		= THROTTLE_FS_VALUE;
+	g.throttle_fs_enabled			= THROTTLE_FAILSAFE;
+	g.throttle_fs_action			= THROTTLE_FAILSAFE_ACTION;
+	g.throttle_fs_value				= THROTTLE_FS_VALUE;
 	save_EEPROM_throttle();
 }
 
@@ -742,7 +741,7 @@ default_gains()
 
 	save_EEPROM_PID();
 	Serial.printf("EL8R %4.2f\n ",g.pid_stabilize_roll.kP());
-	
+
 }
 
 
@@ -759,7 +758,7 @@ void report_current()
 	print_divider();
 	print_enabled(g.current_enabled.get());
 
-	Serial.printf_P(PSTR("mah: %d"),milliamp_hours);
+	Serial.printf_P(PSTR("mah: %d"),g.milliamp_hours);
 	print_blanks(1);
 }
 
@@ -865,8 +864,8 @@ void report_throttle()
 						 (int)g.throttle_min,
 						 (int)g.throttle_max,
 						 (int)g.throttle_cruise,
-						 (int)g.throttle_failsafe_enabled,
-						 (int)g.throttle_failsafe_value);
+						 (int)g.throttle_fs_enabled,
+						 (int)g.throttle_fs_value);
 	print_blanks(1);
 }
 
@@ -896,7 +895,7 @@ void report_compass()
 	// mag declination
 	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"),
 							degrees(compass.get_declination()));
-							
+
 	Vector3f offsets = compass.get_offsets();
 
 	// mag offsets

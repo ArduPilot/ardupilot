@@ -1,5 +1,6 @@
 
-void init_pids()
+void
+init_pids()
 {
 	// create limits to how much dampening we'll allow
 	// this creates symmetry with the P gain value preventing oscillations
@@ -9,7 +10,8 @@ void init_pids()
 }
 
 
-void control_nav_mixer()
+void
+control_nav_mixer()
 {
 	// control +- 45° is mixed with the navigation request by the Autopilot
 	// output is in degrees = target pitch and roll of copter
@@ -17,7 +19,8 @@ void control_nav_mixer()
 	g.rc_2.servo_out = g.rc_2.control_mix(nav_pitch);
 }
 
-void fbw_nav_mixer()
+void
+fbw_nav_mixer()
 {
 	// control +- 45° is mixed with the navigation request by the Autopilot
 	// output is in degrees = target pitch and roll of copter
@@ -25,7 +28,8 @@ void fbw_nav_mixer()
 	g.rc_2.servo_out = nav_pitch;
 }
 
-void output_stabilize_roll()
+void
+output_stabilize_roll()
 {
 	float error, rate;
 	int dampener;
@@ -48,7 +52,8 @@ void output_stabilize_roll()
 	g.rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 }
 
-void output_stabilize_pitch()
+void
+output_stabilize_pitch()
 {
 	float error, rate;
 	int dampener;
@@ -80,7 +85,8 @@ clear_yaw_control()
 	yaw_error 		= 0;
 }
 
-void output_yaw_with_hold(boolean hold)
+void
+output_yaw_with_hold(boolean hold)
 {
 	if(hold){
 		// look to see if we have exited rate control properly - ie stopped turning
@@ -134,9 +140,8 @@ void output_yaw_with_hold(boolean hold)
 	}
 }
 
-
-
-void output_rate_roll()
+void
+output_rate_roll()
 {
 	// rate control
 	long rate		= degrees(omega.x) * 100; 									// 3rad = 17188 , 6rad = 34377
@@ -147,7 +152,8 @@ void output_rate_roll()
 	g.rc_1.servo_out 	= constrain(g.rc_1.servo_out, -2400, 2400);					// limit to 2400
 }
 
-void output_rate_pitch()
+void
+output_rate_pitch()
 {
 	// rate control
 	long rate		= degrees(omega.y) * 100; 									// 3rad = 17188 , 6rad = 34377
@@ -158,29 +164,10 @@ void output_rate_pitch()
 	g.rc_2.servo_out 	= constrain(g.rc_2.servo_out, -2400, 2400);					// limit to 2400
 }
 
-/*
-
-	g.rc_1.servo_out = g.rc_2.control_in;
-	g.rc_2.servo_out = g.rc_2.control_in;
-
-	// Rate control through bias corrected gyro rates
-	// omega is the raw gyro reading plus Omega_I, so it´s bias corrected
-	g.rc_1.servo_out 	-= (omega.x * 5729.57795 * acro_dampener);
-	g.rc_2.servo_out 	-= (omega.y * 5729.57795 * acro_dampener);
-
-	//Serial.printf("\trated out %d, omega ", g.rc_1.servo_out);
-	//Serial.print((Omega[0] * 5729.57795 * stabilize_rate_roll_pitch), 3);
-
-	// Limit output
-	g.rc_1.servo_out  = constrain(g.rc_1.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
-	g.rc_2.servo_out 	= constrain(g.rc_2.servo_out, -MAX_SERVO_OUTPUT, MAX_SERVO_OUTPUT);
-	*/
-//}
-
-
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-void reset_I(void)
+void
+reset_I(void)
 {
 	g.pid_nav_lat.reset_I();
 	g.pid_nav_lon.reset_I();
@@ -190,3 +177,87 @@ void reset_I(void)
 
 
 
+
+/*************************************************************
+throttle control
+****************************************************************/
+
+// user input:
+// -----------
+void output_manual_throttle()
+{
+	g.rc_3.servo_out = (float)g.rc_3.control_in * angle_boost();
+}
+
+// Autopilot
+// ---------
+void output_auto_throttle()
+{
+	g.rc_3.servo_out 	= (float)nav_throttle * angle_boost();
+	// make sure we never send a 0 throttle that will cut the motors
+	g.rc_3.servo_out = max(g.rc_3.servo_out, 1);
+}
+
+void calc_nav_throttle()
+{
+	// limit error
+	long error = constrain(altitude_error, -400, 400);
+	
+	if(altitude_sensor == BARO) {
+		float t = g.pid_baro_throttle.kP();
+		
+		if(error > 0){ 					// go up
+			g.pid_baro_throttle.kP(t);
+		}else{							// go down
+			g.pid_baro_throttle.kP(t/4.0);
+		}
+		
+		// limit output of throttle control
+		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
+		
+		g.pid_baro_throttle.kP(t);
+		
+	} else {
+		// SONAR
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
+	
+		// limit output of throttle control
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 100);
+	}
+	
+	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
+	nav_throttle_old = nav_throttle;
+}
+
+float angle_boost()
+{
+	float temp = cos_pitch_x * cos_roll_x;
+	temp = 2.0 - constrain(temp, .7, 1.0);
+	return temp;
+}
+
+
+/*************************************************************
+yaw control
+****************************************************************/
+
+void output_manual_yaw()
+{
+	if(g.rc_3.control_in == 0){
+		clear_yaw_control();
+	} else {
+		// Yaw control
+		if(g.rc_4.control_in == 0){
+			//clear_yaw_control();
+			output_yaw_with_hold(true); // hold yaw
+		}else{
+			output_yaw_with_hold(false); // rate control yaw
+		}
+	}
+}
+
+void auto_yaw()
+{
+	output_yaw_with_hold(true); // hold yaw
+}

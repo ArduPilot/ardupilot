@@ -25,12 +25,12 @@
 ///
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
-/// 
+///
 #include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT
 ///
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
-/// 
+///
 
 // Just so that it's completely clear...
 #define ENABLED			1
@@ -67,7 +67,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // FRAME_CONFIG
-// 
+//
 #ifndef FRAME_CONFIG
 # define FRAME_CONFIG		PLUS_FRAME
 #endif
@@ -121,6 +121,9 @@
 #endif
 #ifndef CURR_AMP_DIV_RATIO
 # define CURR_AMP_DIV_RATIO		30.35
+#endif
+#ifndef CURR_AMP_HOURS
+# define CURR_AMP_HOURS		2000
 #endif
 
 
@@ -257,7 +260,7 @@
 # define ACRO_RATE_PITCH_D         0.0
 #endif
 #ifndef ACRO_RATE_PITCH_IMAX
-# define ACRO_RATE_PITCH_IMAX   20 
+# define ACRO_RATE_PITCH_IMAX   20
 #endif
 #define ACRO_RATE_PITCH_IMAX_CENTIDEGREE ACRO_RATE_PITCH_IMAX * 100
 
@@ -426,8 +429,8 @@
 #ifndef XTRACK_ENTRY_ANGLE
 # define XTRACK_ENTRY_ANGLE   30 // deg
 #endif
-# define XTRACK_GAIN_SCALED XTRACK_GAIN * 100
-# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE * 100
+//# define XTRACK_GAIN_SCALED XTRACK_GAIN * 100
+//# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE * 100
 
 
 //////////////////////////////////////////////////////////////////////////////

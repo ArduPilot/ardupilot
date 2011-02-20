@@ -34,7 +34,7 @@
 void save_EEPROM_alt_RTL(void)
 {
 	g.RTL_altitude.save();
-	
+
 }
 
 void read_EEPROM_alt_RTL(void)
@@ -81,16 +81,16 @@ void read_EEPROM_PID(void)
 	g.pid_acro_rate_roll.load_gains();
 	g.pid_acro_rate_pitch.load_gains();
 	g.pid_acro_rate_yaw.load_gains();
-	
+
 	g.pid_stabilize_roll.load_gains();
 	g.pid_stabilize_pitch.load_gains();
 	g.pid_yaw.load_gains();
-	
+
 	g.pid_nav_lon.load_gains();
 	g.pid_nav_lat.load_gains();
 	g.pid_baro_throttle.load_gains();
 	g.pid_sonar_throttle.load_gains();
-	
+
 	// roll pitch
 	g.stabilize_dampener.load();
 
@@ -101,14 +101,15 @@ void read_EEPROM_PID(void)
 
 void save_EEPROM_PID(void)
 {
-	g.pid_acro_rate_roll.save_gains(); 
+
+	g.pid_acro_rate_roll.save_gains();
 	g.pid_acro_rate_pitch.save_gains();
 	g.pid_acro_rate_yaw.save_gains();
-	
+
 	g.pid_stabilize_roll.save_gains();
 	g.pid_stabilize_pitch.save_gains();
 	g.pid_yaw.save_gains();
-	
+
 	g.pid_nav_lon.save_gains();
 	g.pid_nav_lat.save_gains();
 	g.pid_baro_throttle.save_gains();
@@ -210,7 +211,7 @@ void save_EEPROM_pressure(void)
 void read_EEPROM_pressure(void)
 {
 	g.ground_pressure.load();
-	g.ground_temperature.load();	
+	g.ground_temperature.load();
 
 	// to prime the filter
 	abs_pressure	 	= g.ground_pressure;
@@ -231,7 +232,7 @@ void read_EEPROM_radio(void)
 }
 
 void save_EEPROM_radio(void)
-{	
+{
 	g.rc_1.save_eeprom();
 	g.rc_2.save_eeprom();
 	g.rc_3.save_eeprom();
@@ -249,9 +250,9 @@ void read_EEPROM_throttle(void)
 	g.throttle_min.load();
 	g.throttle_max.load();
 	g.throttle_cruise.load();
-	g.throttle_failsafe_enabled.load();
-	g.throttle_failsafe_action.load();
-	g.throttle_failsafe_value.load();
+	g.throttle_fs_enabled.load();
+	g.throttle_fs_action.load();
+	g.throttle_fs_value.load();
 }
 
 void save_EEPROM_throttle(void)
@@ -259,9 +260,9 @@ void save_EEPROM_throttle(void)
 	g.throttle_min.load();
 	g.throttle_max.load();
 	g.throttle_cruise.save();
-	g.throttle_failsafe_enabled.load();
-	g.throttle_failsafe_action.load();
-	g.throttle_failsafe_value.load();
+	g.throttle_fs_enabled.load();
+	g.throttle_fs_action.load();
+	g.throttle_fs_value.load();
 }
 
 /********************************************************************************/
@@ -286,7 +287,7 @@ void read_EEPROM_flight_modes(void)
 void save_EEPROM_flight_modes(void)
 {
 	g.flight_modes.save();
-	
+
 }
 
 /********************************************************************************/
@@ -298,8 +299,8 @@ read_EE_float(int address)
 		byte bytes[4];
 		float value;
 	} _floatOut;
-	
-	for (int i = 0; i < 4; i++) 
+
+	for (int i = 0; i < 4; i++)
 		_floatOut.bytes[i] = eeprom_read_byte((uint8_t *) (address + i));
 	return _floatOut.value;
 }
@@ -310,9 +311,9 @@ void write_EE_float(float value, int address)
 		byte bytes[4];
 		float value;
 	} _floatIn;
-	
+
 	_floatIn.value = value;
-	for (int i = 0; i < 4; i++) 
+	for (int i = 0; i < 4; i++)
 		eeprom_write_byte((uint8_t *) (address + i), _floatIn.bytes[i]);
 }
 */
@@ -322,7 +323,7 @@ float
 read_EE_compressed_float(int address, byte places)
 {
 	float scale = pow(10, places);
-	
+
 	int temp 	= eeprom_read_word((uint16_t *) address);
 	return ((float)temp / scale);
 }

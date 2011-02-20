@@ -97,9 +97,9 @@
 
 // Auto Pilot modes
 // ----------------
-#define ACRO 0				// rate control
-#define STABILIZE 1			// hold level position
-#define ALT_HOLD 2				// AUTO control
+#define STABILIZE 0			// hold level position
+#define ACRO 1				// rate control
+#define ALT_HOLD 2			// AUTO control
 #define FBW 3				// AUTO control
 #define AUTO 4				// AUTO control
 #define POSITION_HOLD 5		// Hold a single location
