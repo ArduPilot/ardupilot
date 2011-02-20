@@ -6,6 +6,26 @@ namespace ArducopterConfigurator.PresentationModels
 {
     public class TransmitterChannelsVm : NotifyProperyChangedBase, IPresentationModel
     {
+        private const string CALIB_REFRESH = "J";
+        private const string CALIB_UPDATE = "I";
+        private const string STOP_UPDATES = "X";
+        private const string START_UPDATES = "U";
+        private const string WRITE_TO_EEPROM = "W";
+
+        private bool _isCalibrating;
+
+        public bool IsCalibrating
+        {
+            get { return _isCalibrating; }
+            set
+            {
+                if (_isCalibrating == value) return;
+                _isCalibrating = value;
+                FirePropertyChanged("IsCalibrating");
+            }
+        }
+
+
         private readonly string[] _propsInUpdateOrder = new[] 
             { 
                 "Roll", // Aileron
@@ -22,7 +42,103 @@ namespace ArducopterConfigurator.PresentationModels
 
         public TransmitterChannelsVm() 
         {
+            StartCalibrationCommand = new DelegateCommand(_ => BeginCalibration(),_=>!IsCalibrating);
+            SaveCalibrationCommand = new DelegateCommand(_ => SaveCalibration(),_=> IsCalibrating);
+            
+            // todo: cancel calibration?
+            CancelCalibrationCommand = new DelegateCommand(_ => CancelCalibration(), _ => IsCalibrating);
+            
+            
             ResetCommand = new DelegateCommand(_ => ResetWatermarks());
+        }
+
+
+        private void sendString(string str)
+        {
+            if (sendTextToApm != null)
+                sendTextToApm(this, new sendTextToApmEventArgs(str));
+        }
+
+        private void BeginCalibration()
+        {
+            ResetWatermarks();
+            IsCalibrating = true;
+
+            // send x command to stop jabber
+            sendString(STOP_UPDATES);
+
+            // send command to clear the slope and offsets
+            // 11;0;1;0;1;0;1;0;1;0;1;0;
+            sendString("11;0;1;0;1;0;1;0;1;0;1;0;");
+            
+            // continue the sensor
+            sendString(START_UPDATES);
+            
+        }
+
+
+        private void CancelCalibration()
+        {
+            IsCalibrating = false;
+        }
+
+        private float GetScale(int min, int max)
+        {
+            var span = max - min;
+            return 1000F / span;
+        }
+
+        private int GetOffset(int min, int max)
+        {
+            return 0 - (int) ((min  * GetScale(min,max)-1000));
+        }
+
+        private void SaveCalibration()
+        {
+            // send values
+            // eg 1.17,-291.91,1.18,-271.76,1.19,-313.91,1.18,-293.63,1.66,-1009.9
+
+//              ch_roll_slope = readFloatSerial();
+//      ch_roll_offset = readFloatSerial();
+//      ch_pitch_slope = readFloatSerial();
+//      ch_pitch_offset = readFloatSerial();
+//      ch_yaw_slope = readFloatSerial();
+//      ch_yaw_offset = readFloatSerial();
+//      ch_throttle_slope = readFloatSerial();
+//      ch_throttle_offset = readFloatSerial();
+//      ch_aux_slope = readFloatSerial();
+//      ch_aux_offset = readFloatSerial();
+//      ch_aux2_slope = readFloatSerial();
+//      ch_aux2_offset = readFloatSerial();
+
+            // From Configurator:
+            // 1.20,-331.74,1.20,-296.87,1.21,-350.73,1.19,-315.41,1.76,-1186.95,1.77,-1194.35
+
+
+
+            var vals = string.Format("{0:0.00};{1};{2:0.00};{3};{4:0.00};{5};{6:0.00};{7};{8:0.00};{9};{10:0.00};{11};",
+                          GetScale(RollMin, RollMax),
+                          GetOffset(RollMin, RollMax),
+                          GetScale(PitchMin, PitchMax),
+                          GetOffset(PitchMin, PitchMax),
+                          GetScale(YawMin, YawMax),
+                          GetOffset(YawMin, YawMax),
+                          GetScale(ThrottleMin, ThrottleMax),
+                          GetOffset(ThrottleMin, ThrottleMax),
+                          GetScale(AuxMin, AuxMax),                          
+                          GetOffset(AuxMin, AuxMax),
+                          GetScale(ModeMin, ModeMax),
+                          GetOffset(ModeMin, ModeMax) // this correct?
+                );
+
+
+           
+
+
+            IsCalibrating = false;
+
+            // save
+            //sendString(WRITE_TO_EEPROM);
         }
 
         private void ResetWatermarks()
@@ -36,11 +152,44 @@ namespace ArducopterConfigurator.PresentationModels
         }
 
         public ICommand ResetCommand { get; private set; }
+        public ICommand StartCalibrationCommand { get; private set; }
+        public ICommand SaveCalibrationCommand { get; private set; }
+        public ICommand CancelCalibrationCommand { get; private set; }
 
         public int RollMidValue { get; set; }
         public int PitchMidValue { get; set; }
         public int YawMidValue { get; set; }
 
+
+
+        public string Name
+        {
+            get { return "Transmitter Channels"; }
+        }
+
+        public void Activate()
+        {
+            IsCalibrating = false;
+            sendString(START_UPDATES);
+        }
+
+        public void DeActivate()
+        {
+            sendString(STOP_UPDATES);
+        }
+
+        public event EventHandler updatedByApm;
+
+        public void handleLineOfText(string strRx)
+        {
+            PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
+
+
+        }
+
+        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
+
+        #region bindables
 
         private int _roll;
         public int Roll
@@ -273,6 +422,7 @@ namespace ArducopterConfigurator.PresentationModels
         }
 
         private int _auxMin;
+
         public int AuxMin
         {
             get { return _auxMin; }
@@ -284,34 +434,8 @@ namespace ArducopterConfigurator.PresentationModels
             }
         }
 
-        public  string Name
-        {
-            get { return "Transmitter Channels"; }
-        }
+        #endregion
 
-        public void Activate()
-        {
-            if (sendTextToApm != null)
-                sendTextToApm(this, new sendTextToApmEventArgs("U"));
-                
-        }
 
-        public void DeActivate()
-        {
-             if (sendTextToApm != null)
-                 sendTextToApm(this, new sendTextToApmEventArgs("X"));
-                
-        }
-
-        public event EventHandler updatedByApm;
-
-        public void handleLineOfText(string strRx)
-        {
-            PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
-           
-           
-        }
-
-        public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
     }
 }

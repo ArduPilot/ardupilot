@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TransmitterChannelsView));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.TransmitterChannelsBindingSource = new System.Windows.Forms.BindingSource(this.components);
@@ -49,6 +50,12 @@
             this.linearIndicatorControl5 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.button1 = new System.Windows.Forms.Button();
+            this.label12 = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
+            this.button3 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.label6 = new System.Windows.Forms.Label();
+            this.button4 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
@@ -183,7 +190,7 @@
             this.linearIndicatorControl3.MinWatermark = 0;
             this.linearIndicatorControl3.Name = "linearIndicatorControl3";
             this.linearIndicatorControl3.Offset = 0;
-            this.linearIndicatorControl3.Size = new System.Drawing.Size(20, 111);
+            this.linearIndicatorControl3.Size = new System.Drawing.Size(14, 111);
             this.linearIndicatorControl3.TabIndex = 43;
             this.linearIndicatorControl3.Value = 1600;
             this.linearIndicatorControl3.WatermarkLineColor = System.Drawing.Color.Red;
@@ -207,7 +214,7 @@
             this.linearIndicatorControl1.MinWatermark = 0;
             this.linearIndicatorControl1.Name = "linearIndicatorControl1";
             this.linearIndicatorControl1.Offset = 0;
-            this.linearIndicatorControl1.Size = new System.Drawing.Size(20, 111);
+            this.linearIndicatorControl1.Size = new System.Drawing.Size(14, 111);
             this.linearIndicatorControl1.TabIndex = 44;
             this.linearIndicatorControl1.Value = 1100;
             this.linearIndicatorControl1.WatermarkLineColor = System.Drawing.Color.Red;
@@ -231,7 +238,7 @@
             this.linearIndicatorControl2.MinWatermark = 0;
             this.linearIndicatorControl2.Name = "linearIndicatorControl2";
             this.linearIndicatorControl2.Offset = 0;
-            this.linearIndicatorControl2.Size = new System.Drawing.Size(20, 57);
+            this.linearIndicatorControl2.Size = new System.Drawing.Size(14, 57);
             this.linearIndicatorControl2.TabIndex = 45;
             this.linearIndicatorControl2.Value = 1050;
             this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.Red;
@@ -255,7 +262,7 @@
             this.linearIndicatorControl4.MinWatermark = 0;
             this.linearIndicatorControl4.Name = "linearIndicatorControl4";
             this.linearIndicatorControl4.Offset = 0;
-            this.linearIndicatorControl4.Size = new System.Drawing.Size(20, 57);
+            this.linearIndicatorControl4.Size = new System.Drawing.Size(14, 57);
             this.linearIndicatorControl4.TabIndex = 46;
             this.linearIndicatorControl4.Value = 1900;
             this.linearIndicatorControl4.WatermarkLineColor = System.Drawing.Color.Red;
@@ -279,7 +286,7 @@
             this.linearIndicatorControl5.MinWatermark = 0;
             this.linearIndicatorControl5.Name = "linearIndicatorControl5";
             this.linearIndicatorControl5.Offset = 0;
-            this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 20);
+            this.linearIndicatorControl5.Size = new System.Drawing.Size(100, 14);
             this.linearIndicatorControl5.TabIndex = 47;
             this.linearIndicatorControl5.Value = 1300;
             this.linearIndicatorControl5.WatermarkLineColor = System.Drawing.Color.Red;
@@ -303,7 +310,7 @@
             this.linearIndicatorControl6.MinWatermark = 0;
             this.linearIndicatorControl6.Name = "linearIndicatorControl6";
             this.linearIndicatorControl6.Offset = 0;
-            this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 20);
+            this.linearIndicatorControl6.Size = new System.Drawing.Size(100, 14);
             this.linearIndicatorControl6.TabIndex = 48;
             this.linearIndicatorControl6.Value = 1200;
             this.linearIndicatorControl6.WatermarkLineColor = System.Drawing.Color.Red;
@@ -318,10 +325,73 @@
             this.button1.Text = "Reset";
             this.button1.UseVisualStyleBackColor = true;
             // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(304, 159);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(84, 13);
+            this.label12.TabIndex = 53;
+            this.label12.Text = "Save Calibration";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(304, 130);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(48, 13);
+            this.label11.TabIndex = 52;
+            this.label11.Text = "Calibrate";
+            // 
+            // button3
+            // 
+            this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.TransmitterChannelsBindingSource, "StartCalibrationCommand", true));
+            this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
+            this.button3.Location = new System.Drawing.Point(272, 123);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(26, 26);
+            this.button3.TabIndex = 51;
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // button2
+            // 
+            this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.TransmitterChannelsBindingSource, "SaveCalibrationCommand", true));
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(272, 152);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(26, 26);
+            this.button2.TabIndex = 50;
+            this.button2.UseVisualStyleBackColor = true;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(304, 189);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(40, 13);
+            this.label6.TabIndex = 55;
+            this.label6.Text = "Cancel";
+            // 
+            // button4
+            // 
+            this.button4.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.TransmitterChannelsBindingSource, "CancelCalibrationCommand", true));
+            this.button4.Image = ((System.Drawing.Image)(resources.GetObject("button4.Image")));
+            this.button4.Location = new System.Drawing.Point(272, 182);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(26, 26);
+            this.button4.TabIndex = 54;
+            this.button4.UseVisualStyleBackColor = true;
+            // 
             // TransmitterChannelsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.button4);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.label11);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.linearIndicatorControl6);
             this.Controls.Add(this.linearIndicatorControl5);
@@ -371,5 +441,11 @@
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl5;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button button4;
     }
 }

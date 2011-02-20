@@ -12,11 +12,14 @@ namespace ArducopterConfigurator.Views
         public PositionHoldConfigView()
         {
             InitializeComponent();
-            BindButtons();
+          
         }
 
         public override void SetDataContext(PositionHoldConfigVm vm)
         {
+            BindButtons(vm);
+
+
             PositionHoldConfigBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)

@@ -14,11 +14,13 @@ namespace ArducopterConfigurator.Views
         public AltitudeHoldConfigView()
         {
             InitializeComponent();
-            BindButtons();
+     
         }
 
         public override void SetDataContext(AltitudeHoldConfigVm vm)
         {
+            BindButtons(vm);
+
             AltitudeHoldConfigBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)
