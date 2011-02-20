@@ -184,7 +184,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			fail_test++;
 		}
 
-		if(g.throttle_failsafe_enabled && g.rc_3.get_failsafe()){
+		if(g.throttle_fs_enabled && g.rc_3.get_failsafe()){
 			Serial.printf_P(PSTR("THROTTLE FAILSAFE ACTIVATED: %d, "), g.rc_3.radio_in);
 			Serial.println(flight_mode_strings[readSwitch()]);
 			fail_test++;
@@ -237,6 +237,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 					medium_loopCounter = 0;
 				}
 			}
+
 			// for trim features
 			read_trim_switch();
 

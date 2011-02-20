@@ -116,7 +116,7 @@ void init_ardupilot()
 	init_rc_out();		// sets up the timer libs
 	init_camera();
 	adc.Init();	 		// APM ADC library initialization
-	APM_BMP085.Init();	// APM Abs Pressure sensor initialization
+	barometer.Init();	// APM Abs Pressure sensor initialization
 	DataFlash.Init(); 	// DataFlash log initialization
 
 	// Do GPS init
@@ -130,8 +130,8 @@ void init_ardupilot()
 	#else
 		gcs.init(&Serial);
 	#endif
-		
-	
+
+
 
 
 	if(g.compass_enabled)
@@ -386,7 +386,7 @@ init_compass()
 	dcm.set_compass(&compass);
 	bool junkbool = compass.init();
 	compass.set_orientation(MAGORIENTATION);						// set compass's orientation on aircraft
-	Vector3f junkvector = compass.get_offsets();						// load offsets to account for airframe magnetic interference	
+	Vector3f junkvector = compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
 
 

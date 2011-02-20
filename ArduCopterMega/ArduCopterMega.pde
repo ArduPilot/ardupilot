@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /*
 ArduCopterMega Version 0.1.3 Experimental
@@ -6,7 +6,8 @@ Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Jose Julio, Randy Mackay, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
 
-This firmware is free software; you can redistribute it and / or
+
+This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
@@ -26,19 +27,19 @@ version 2.1 of the License, or (at your option) any later version.
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
-#include <RC_Channel.h>     // RC Channel Library
-#include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library
 #include <AP_GPS.h>			// ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
-#include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library
 #include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
-#include <AP_Compass.h>	// ArduPilot Mega Magnetometer Library
+#include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library
+#include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library
+#include <AP_Compass.h>		// ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <AP_IMU.h>			// ArduPilot Mega IMU Library
-#include <AP_DCM.h>		// ArduPilot Mega DCM Library
+#include <AP_DCM.h>			// ArduPilot Mega DCM Library
 #include <PID.h> 			// ArduPilot Mega RC Library
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <RC_Channel.h>     // RC Channel Library
 
+#include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
 // Configuration
 #include "config.h"
@@ -57,9 +58,9 @@ version 2.1 of the License, or (at your option) any later version.
 // so there is not much of a penalty to defining ports that we don't
 // use.
 //
-FastSerialPort0(Serial);		// FTDI/console
-FastSerialPort1(Serial1);		// GPS port (except for GPS_PROTOCOL_IMU)
-FastSerialPort3(Serial3);		// Telemetry port (optional, Standard and ArduPilot protocols only)
+FastSerialPort0(Serial);        // FTDI/console
+FastSerialPort1(Serial1);       // GPS port
+FastSerialPort3(Serial3);       // Telemetry port
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
@@ -83,15 +84,12 @@ Parameters      g;
 //
 
 // All GPS access should be through this pointer.
-GPS             *g_gps;
-
-//#if HIL_MODE == HIL_MODE_NONE
+GPS         *g_gps;
 
 // real sensors
 AP_ADC_ADS7844 		adc;
-APM_BMP085_Class	APM_BMP085;
-AP_Compass_HMC5843	compass;
-
+APM_BMP085_Class	barometer;
+AP_Compass_HMC5843	compass(Parameters::k_param_compass);
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -135,14 +133,12 @@ byte 	control_mode		= STABILIZE;
 boolean failsafe			= false;		// did our throttle dip below the failsafe value?
 boolean ch3_failsafe		= false;
 byte 	oldSwitchPosition;					// for remembering the control mode switch
-byte	fbw_timer;							// for limiting the execution of FBW input
 
 const char *comma = ",";
 
-//byte flight_modes[6];
 const char* flight_mode_strings[] = {
-	"ACRO",
 	"STABILIZE",
+	"ACRO",
 	"ALT_HOLD",
 	"FBW",
 	"AUTO",
@@ -166,14 +162,7 @@ const char* flight_mode_strings[] = {
 // Radio
 // -----
 int motor_out[4];
-//byte flight_mode_channel;
-//byte frame_type = PLUS_FRAME;
-
 Vector3f omega;
-
-
-//float 	stabilize_dampener;
-//float 	hold_yaw_dampener;
 
 // PIDs
 int 	max_stabilize_dampener;				//
@@ -189,10 +178,10 @@ float       nav_gain_scaler = 1;        // Gain scaling for headwind/tailwind TO
 
 // GPS variables
 // -------------
-byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
 const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
 float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
 float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
+byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
 
 // Magnetometer variables
 // ----------------------
@@ -213,16 +202,9 @@ byte	command_may_index;					// current command memory location
 byte	command_must_ID;					// current command ID
 byte	command_may_ID;						// current command ID
 
-//float	altitude_gain;						// in nav
-
-float cos_roll_x;
-float sin_roll_y;
-
-float cos_pitch_x;
-float sin_pitch_y;
-
-float sin_yaw_y;
-float cos_yaw_x;
+float cos_roll_x, 	sin_roll_y;
+float cos_pitch_x,	sin_pitch_y;
+float sin_yaw_y,	cos_yaw_x;
 
 // Airspeed
 // --------
@@ -233,11 +215,6 @@ float 	airspeed_error;						// m / s * 100
 // ------------------
 boolean		motor_armed 		= false;
 boolean		motor_auto_safe 	= false;
-
-//byte 		throttle_failsafe_enabled;
-//int 		throttle_failsafe_value;
-//byte 		throttle_failsafe_action;
-//uint16_t 	log_bitmask;
 
 // Location Errors
 // ---------------
@@ -260,7 +237,7 @@ float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 float	current_amps;
 float	current_total;
-int 	milliamp_hours;
+//int 	milliamp_hours;
 //boolean	current_enabled		= false;
 
 // Magnetometer variables
@@ -273,7 +250,6 @@ int 	milliamp_hours;
 //float 	mag_offset_y;
 //float 	mag_offset_z;
 //float 	mag_declination;
-//bool	compass_enabled;
 
 // Barometer Sensor variables
 // --------------------------
@@ -392,6 +368,7 @@ byte 			medium_count;
 
 byte 			slow_loopCounter;
 byte 			superslow_loopCounter;
+byte			fbw_timer;					// for limiting the execution of FBW input
 
 unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
@@ -609,7 +586,6 @@ void medium_loop()
     gcs.update();
 }
 
-
 void slow_loop()
 {
 	// This is the slow (3 1/3 Hz) loop pieces
@@ -617,17 +593,14 @@ void slow_loop()
 	switch (slow_loopCounter){
 		case 0:
 			slow_loopCounter++;
-
 			superslow_loopCounter++;
-			if(superslow_loopCounter == 30) {
 
-				// save current data to the flash
+			if(superslow_loopCounter >= 200){
 				if (g.log_bitmask & MASK_LOG_CUR)
 					Log_Write_Current();
-
-			}else if(superslow_loopCounter >= 400) {
-                compass.save_offsets();
-				//eeprom_write_word((uint16_t *) EE_LAST_LOG_PAGE, DataFlash.GetWritePage());
+				if(g.compass_enabled){
+                	compass.save_offsets();
+                }
 				superslow_loopCounter = 0;
 			}
 			break;
@@ -677,18 +650,17 @@ void update_GPS(void)
 	g_gps->update();
 	update_GPS_light();
 
-	// !!! comment out after testing
-	//fake_out_gps();
-
-	//if (g_gps->new_data && g_gps->fix) {
-	if (g_gps->new_data){
-		send_message(MSG_LOCATION);
+    if (g_gps->new_data && g_gps->fix) {
+		// XXX We should be sending GPS data off one of the regular loops so that we send
+		// no-GPS-fix data too
+		#if GCS_PROTOCOL != GCS_PROTOCOL_MAVLINK
+			gcs.send_message(MSG_LOCATION);
+		#endif
 
 		// for performance
 		// ---------------
 		gps_fix_count++;
 
-		//Serial.printf("gs: %d\n", (int)ground_start_count);
 		if(ground_start_count > 1){
 			ground_start_count--;
 
@@ -710,16 +682,12 @@ void update_GPS(void)
 				// reset our nav loop timer
 				nav_loopTimer = millis();
 				init_home();
+
 				// init altitude
 				current_loc.alt = g_gps->altitude;
 				ground_start_count = 0;
 			}
 		}
-
-		/* disabled for now
-		// baro_offset is an integrator for the g_gps altitude error
-		baro_offset 	+= altitude_gain * (float)(g_gps->altitude - current_loc.alt);
-		*/
 
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7

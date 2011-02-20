@@ -58,6 +58,7 @@ public:
         k_param_ground_pressure,
 		k_param_current,
 		k_param_milliamp_hours,
+		k_param_compass_enabled,
 		k_param_compass,
 
         //
@@ -83,9 +84,9 @@ public:
         k_param_rc_10,
         k_param_throttle_min,
         k_param_throttle_max,
-        k_param_throttle_failsafe_enabled,
-        k_param_throttle_failsafe_action,
-        k_param_throttle_failsafe_value,
+        k_param_throttle_fs_enabled,
+        k_param_throttle_fs_action,
+        k_param_throttle_fs_value,
         k_param_throttle_cruise,
         k_param_flight_mode_channel,
         k_param_flight_modes,
@@ -96,7 +97,7 @@ public:
         k_param_waypoint_mode = 220,
         k_param_waypoint_total,
         k_param_waypoint_index,
-        k_param_command_must_index,        
+        k_param_command_must_index,
         k_param_waypoint_radius,
         k_param_loiter_radius,
 
@@ -146,9 +147,9 @@ public:
     //
     AP_Int16    throttle_min;
     AP_Int16    throttle_max;
-    AP_Int8     throttle_failsafe_enabled;
-    AP_Int8     throttle_failsafe_action;
-    AP_Int16    throttle_failsafe_value;
+    AP_Int8     throttle_fs_enabled;
+    AP_Int8     throttle_fs_action;
+    AP_Int16    throttle_fs_value;
     AP_Int16    throttle_cruise;
 
     // Flight modes
@@ -214,13 +215,13 @@ public:
 
         crosstrack_gain         (XTRACK_GAIN * 100,			k_param_crosstrack_gain,        		PSTR("XTRK_GAIN")),
         crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRACK_ANGLE")),
-		
+
         frame_type  			(FRAME_CONFIG,				k_param_frame_type,						PSTR("FRAME_CONFIG")),
-		
+
         current_enabled  		(DISABLED,					k_param_current,						PSTR("CURRENT_ENABLE")),
-        milliamp_hours  		(2100,						k_param_milliamp_hours,					PSTR("MAH")),
-        compass_enabled  		(DISABLED,					k_param_compass,						PSTR("COMPASS_ENABLE")),
-		
+        milliamp_hours  		(CURR_AMP_HOURS,			k_param_milliamp_hours,					PSTR("MAH")),
+        compass_enabled  		(DISABLED,					k_param_compass_enabled,				PSTR("COMPASS_ENABLE")),
+
         waypoint_mode           (0,                         k_param_waypoint_mode,          		PSTR("WP_MODE")),
         waypoint_total          (0,                         k_param_waypoint_total,         		PSTR("WP_TOTAL")),
         waypoint_index          (0,                         k_param_waypoint_index,         		PSTR("WP_INDEX")),
@@ -228,18 +229,18 @@ public:
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        		PSTR("WP_RADIUS")),
         loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          		PSTR("LOITER_RADIUS")),
 
-        throttle_min            	(THROTTLE_MIN,              k_param_throttle_min,				PSTR("THR_MIN")),
-        throttle_max            	(THROTTLE_MAX,              k_param_throttle_max,				PSTR("THR_MAX")),
-        throttle_failsafe_enabled   (THROTTLE_FAILSAFE,         k_param_throttle_failsafe_enabled,  PSTR("THR_FAILSAFE")),
-        throttle_failsafe_action	(THROTTLE_FAILSAFE_ACTION,  k_param_throttle_failsafe_action, 	PSTR("THR_FS_ACTION")),
-        throttle_failsafe_value 	(THROTTLE_FS_VALUE,         k_param_throttle_failsafe_value, 	PSTR("THR_FS_VALUE")),
-        throttle_cruise         	(THROTTLE_CRUISE,           k_param_throttle_cruise,        	PSTR("TRIM_THROTTLE")),
-			
+        throttle_min            (THROTTLE_MIN,              k_param_throttle_min,					PSTR("THR_MIN")),
+        throttle_max            (THROTTLE_MAX,              k_param_throttle_max,					PSTR("THR_MAX")),
+        throttle_fs_enabled   	(THROTTLE_FAILSAFE,         k_param_throttle_fs_enabled,			PSTR("THR_FAILSAFE")),
+        throttle_fs_action		(THROTTLE_FAILSAFE_ACTION,  k_param_throttle_fs_action, 			PSTR("THR_FS_ACTION")),
+        throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
+        throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
+
         flight_mode_channel     (FLIGHT_MODE_CHANNEL,       k_param_flight_mode_channel,   			PSTR("FLIGHT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
-			
+
         pitch_max         		(PITCH_MAX_CENTIDEGREE,     k_param_pitch_max,		       			PSTR("PITCH_MAX_CENTIDEGREE")),
-			
+
         log_bitmask             (0,                         k_param_log_bitmask,           			PSTR("LOG_BITMASK")),
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
@@ -257,7 +258,6 @@ public:
         rc_8					(k_param_rc_8,		PSTR("RC8_")),
         rc_camera_pitch			(k_param_rc_9,		PSTR("RC9_")),
         rc_camera_roll			(k_param_rc_10,		PSTR("RC10_")),
-
 
         // PID controller   group key						name				initial P			initial I			initial D			initial imax
         //--------------------------------------------------------------------------------------------------------------------------------------------------------------------
