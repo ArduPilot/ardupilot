@@ -865,7 +865,7 @@ public:
         uint16_t *sval = (uint16_t *)buf;
 
         if (size >= sizeof(*sval)) {
-            *sval = _value / 1024.0;    // scale by power of 2, may be more efficient
+            *sval = _value * 1024.0;    // scale by power of 2, may be more efficient
         }
         return sizeof(*sval);
     }
@@ -876,9 +876,10 @@ public:
         uint16_t *sval = (uint16_t *)buf;
 
         if (size >= sizeof(*sval)) {
-            _value = *sval * 1024.0;    // scale by power of 2, may be more efficient
+            _value = (float)*sval / 1024.0;    // scale by power of 2, may be more efficient
+            return sizeof(*sval);
         }
-        return sizeof(*sval);
+        return 0;
     }
 
     // copy operators must be redefined in subclasses to get correct behavior

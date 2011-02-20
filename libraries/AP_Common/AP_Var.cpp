@@ -72,7 +72,7 @@ AP_Var::AP_Var(AP_Var_group *group, Key index, const prog_char *name, Flags flag
     //
     vp = &_grouped_variables;
     while (*vp != NULL) {
-        if ((*vp)->_key > _key) {
+        if ((*vp)->_key >= _key) {
                break;
         }
         vp = &((*vp)->_link);
@@ -212,11 +212,11 @@ bool AP_Var::load(void)
         return false;
     }
 
-    // ask the unserializer how big the variable is
+    // ask the serializer how big the variable is
     //
     // XXX should check size in EEPROM var header too...
     //
-    size = unserialize(NULL, 0);
+    size = serialize(NULL, 0);
 
     // Read the buffer from EEPROM, now that _EEPROM_locate
     // has converted _key into an EEPROM address.
@@ -627,6 +627,8 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
             size = vp->unserialize(buf, buf_size);
             debug("unserialize %p -> %u", vp, size);
         }
+
+        // XXX HANDLE ERRORS HERE
 
         // Account for the space that this variable consumes in the buffer
         //
