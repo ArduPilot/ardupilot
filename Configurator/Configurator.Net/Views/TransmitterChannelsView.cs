@@ -14,11 +14,14 @@ namespace ArducopterConfigurator.Views
         public TransmitterChannelsView()
         {
             InitializeComponent();
-            BindButtons();
+          
         }
 
         public override void SetDataContext(TransmitterChannelsVm vm)
         {
+            BindButtons(vm);
+
+
             TransmitterChannelsBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)

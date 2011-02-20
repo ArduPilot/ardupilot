@@ -15,11 +15,14 @@ namespace ArducopterConfigurator.views
         public FlightDataView()
         {
             InitializeComponent();
-            BindButtons();
+          
         }
 
         public override void SetDataContext(SensorsVm vm)
         {
+            BindButtons(vm);
+
+
             FlightDataVmBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)

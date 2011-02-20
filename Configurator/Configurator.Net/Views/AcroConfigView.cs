@@ -14,11 +14,12 @@ namespace ArducopterConfigurator.Views
         public AcroConfigView()
         {
             InitializeComponent();
-            BindButtons();
         }
 
         public override void SetDataContext(AcroModeConfigVm vm)
         {
+            BindButtons(vm);
+
             AcroModeConfigVmBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)

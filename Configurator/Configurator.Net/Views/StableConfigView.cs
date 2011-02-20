@@ -14,11 +14,14 @@ namespace ArducopterConfigurator.Views
         public StableConfigView()
         {
             InitializeComponent();
-            BindButtons();
+           
         }
 
         public override void SetDataContext(StableModeConfigVm vm)
         {
+            BindButtons(vm);
+
+
             StableModeConfigVmBindingSource.DataSource = vm;
 
             if (Program.IsMonoRuntime)

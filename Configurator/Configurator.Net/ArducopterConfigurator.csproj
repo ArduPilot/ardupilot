@@ -54,6 +54,18 @@
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\SensorsVm.cs" />
     <Compile Include="PresentationModels\VmBase.cs" />
+    <Compile Include="Views\controls\PropControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Views\controls\PropControl.Designer.cs">
+      <DependentUpon>PropControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\controls\QuadPlanControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\controls\QuadPlanControl.Designer.cs">
+      <DependentUpon>QuadPlanControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\controls\LinearIndicatorControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -192,6 +204,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Views\controls\PropControl.resx">
+      <DependentUpon>PropControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\controls\QuadPlanControl.resx">
+      <DependentUpon>QuadPlanControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\PositionAltitudePidsView.resx">
       <DependentUpon>PositionAltitudePidsView.cs</DependentUpon>
     </EmbeddedResource>
