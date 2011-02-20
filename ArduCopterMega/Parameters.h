@@ -60,6 +60,7 @@ public:
 		k_param_milliamp_hours,
 		k_param_compass_enabled,
 		k_param_compass,
+		k_param_sonar,
 
         //
         // 160: Navigation parameters
@@ -174,6 +175,7 @@ public:
     AP_Int16    RTL_altitude;
     AP_Int8		frame_type;
 
+    AP_Int8		sonar_enabled;
     AP_Int8		current_enabled;
     AP_Int16	milliamp_hours;
     AP_Int8		compass_enabled;
@@ -218,6 +220,7 @@ public:
 
         frame_type  			(FRAME_CONFIG,				k_param_frame_type,						PSTR("FRAME_CONFIG")),
 
+        sonar_enabled  			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
         current_enabled  		(DISABLED,					k_param_current,						PSTR("CURRENT_ENABLE")),
         milliamp_hours  		(CURR_AMP_HOURS,			k_param_milliamp_hours,					PSTR("MAH")),
         compass_enabled  		(DISABLED,					k_param_compass_enabled,				PSTR("COMPASS_ENABLE")),
@@ -239,7 +242,7 @@ public:
         flight_mode_channel     (FLIGHT_MODE_CHANNEL,       k_param_flight_mode_channel,   			PSTR("FLIGHT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
 
-        pitch_max         		(PITCH_MAX_CENTIDEGREE,     k_param_pitch_max,		       			PSTR("PITCH_MAX_CENTIDEGREE")),
+        pitch_max         		(PITCH_MAX * 100,			k_param_pitch_max,		       			PSTR("PITCH_MAX")),
 
         log_bitmask             (0,                         k_param_log_bitmask,           			PSTR("LOG_BITMASK")),
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),

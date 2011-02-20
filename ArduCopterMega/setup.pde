@@ -10,6 +10,7 @@ static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_pid				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
@@ -28,6 +29,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"modes",			setup_flightmodes},
 	{"frame",			setup_frame},
 	{"current",			setup_current},
+	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
 	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
@@ -66,6 +68,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_radio();
 	report_frame();
 	report_current();
+	report_sonar();
 	report_gains();
 	report_xtrack();
 	report_throttle();
@@ -505,6 +508,25 @@ setup_current(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
+setup_sonar(uint8_t argc, const Menu::arg *argv)
+{
+	if (!strcmp_P(argv[1].str, PSTR("on"))) {
+		g.sonar_enabled.set_and_save(true);
+
+	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		g.sonar_enabled.set_and_save(false);
+
+	} else {
+		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
+		report_sonar();
+		return 0;
+	}
+
+	report_sonar();
+	return 0;
+}
+
+static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("\nRotate/Pitch/Roll your ArduCopter until the offset variables stop changing.\n"));
@@ -759,7 +781,17 @@ void report_current()
 	print_enabled(g.current_enabled.get());
 
 	Serial.printf_P(PSTR("mah: %d"),(int)g.milliamp_hours.get());
-	print_blanks(1);
+	print_blanks(2);
+}
+
+void report_sonar()
+{
+	//print_blanks(2);
+	g.sonar_enabled.load();
+	Serial.printf_P(PSTR("Sonar Sensor\n"));
+	print_divider();
+	print_enabled(g.sonar_enabled.get());
+	print_blanks(2);
 }
 
 
@@ -781,7 +813,7 @@ void report_frame()
 		Serial.printf_P(PSTR("HEXA "));
 
 	Serial.printf_P(PSTR("frame (%d)"), (int)g.frame_type);
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_radio()
@@ -792,7 +824,7 @@ void report_radio()
 	// radio
 	read_EEPROM_radio();
 	print_radio_values();
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_gains()
@@ -830,7 +862,7 @@ void report_gains()
 	print_PID(&g.pid_baro_throttle);
 	Serial.printf_P(PSTR("sonar throttle:\n"));
 	print_PID(&g.pid_sonar_throttle);
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_xtrack()
@@ -846,7 +878,7 @@ void report_xtrack()
 						 (float)g.crosstrack_gain,
 						 (int)g.crosstrack_entry_angle,
 						 (long)g.pitch_max);
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_throttle()
@@ -866,7 +898,7 @@ void report_throttle()
 						 (int)g.throttle_cruise,
 						 (int)g.throttle_fs_enabled,
 						 (int)g.throttle_fs_value);
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_imu()
@@ -877,7 +909,7 @@ void report_imu()
 
 	print_gyro_offsets();
 	print_accel_offsets();
-	print_blanks(1);
+	print_blanks(2);
 }
 
 void report_compass()
@@ -903,7 +935,7 @@ void report_compass()
 							offsets.x,
 							offsets.y,
 							offsets.z);
-	print_blanks(1);
+	print_blanks(2);
 }
 
 
@@ -917,7 +949,7 @@ void report_flight_modes()
 	for(int i = 0; i < 6; i++ ){
 		print_switch(i, g.flight_modes[i]);
 	}
-	print_blanks(1);
+	print_blanks(2);
 }
 
 /***************************************************************************/
