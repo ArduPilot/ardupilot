@@ -38,6 +38,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_DCM.h>			// ArduPilot Mega DCM Library
 #include <PID.h> 			// ArduPilot Mega RC Library
 #include <RC_Channel.h>     // RC Channel Library
+#include <AP_RangeFinder.h>	// Range finder library
 
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
@@ -124,6 +125,8 @@ GCS_MAVLINK         gcs;
 // If we are not using a GCS, we need a stub that does nothing.
 GCS_Class           gcs;
 #endif
+
+AP_RangeFinder_MaxsonarXL sonar;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -257,7 +260,13 @@ unsigned long 	abs_pressure;
 unsigned long 	ground_pressure;
 int 			ground_temperature;
 
-byte 	altitude_sensor = BARO;				// used to know whic sensor is active, BARO or SONAR
+byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
+
+// Sonar Sensor variables
+// ----------------------
+long	sonar_alt;
+long	baro_alt;
+
 
 // flight mode specific
 // --------------------
@@ -504,6 +513,14 @@ void medium_loop()
 			// Read Baro pressure
 			// ------------------
 			read_barometer();
+
+			if(g.sonar_enabled){
+				sonar.read();
+				update_alt();
+			}else{
+				// no sonar altitude
+				current_loc.alt = baro_alt;
+			}
 
 			// altitude smoothing
 			// ------------------
@@ -851,6 +868,7 @@ void update_current_flight_mode(void)
 				//if(g.rc_3.control_in)
 				// get desired height from the throttle
 				next_WP.alt 	= home.alt + (g.rc_3.control_in * 4); // 0 - 1000 (40 meters)
+				next_WP.alt		= max(next_WP.alt, 30);
 
 				// !!! testing
 				//next_WP.alt 	-= 500;
@@ -977,4 +995,17 @@ void update_trig(void){
 
 	cos_roll_x 		= temp.c.z / cos_pitch_x;
 	sin_roll_y 		= temp.c.y / cos_pitch_x;
+}
+
+
+void
+update_alt(){
+
+	altitude_sensor = (target_altitude > 500) ? BARO : SONAR;
+
+	if(altitude_sensor == BARO){
+		current_loc.alt = baro_alt;
+	}else{
+		current_loc.alt = sonar_alt;
+	}
 }

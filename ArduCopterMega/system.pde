@@ -137,6 +137,10 @@ void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
+	if(g.sonar_enabled){
+	  sonar.init(SONAR_PIN, &adc);
+	}
+
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
@@ -177,7 +181,7 @@ void init_ardupilot()
 	// read in the flight switches
 	//update_servo_switches();
 
-	imu.init(IMU::WARM_START);	// offsets are loaded from EEPROM
+	//imu.init_gyro(IMU::WARM_START);	// offsets are loaded from EEPROM
 
 	startup_ground();
 
@@ -201,6 +205,8 @@ void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
+	setup_show(NULL,NULL);
+
 	// Output waypoints for confirmation
 	// --------------------------------
 	for(int i = 1; i < g.waypoint_total + 1; i++) {
@@ -209,7 +215,8 @@ void startup_ground(void)
 
 	// Warm up and read Gyro offsets
 	// -----------------------------
-	imu.init(IMU::COLD_START);
+	imu.init_gyro();
+	report_imu();
 
 	// read the radio to set trims
 	// ---------------------------

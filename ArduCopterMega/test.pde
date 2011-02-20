@@ -400,7 +400,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
 
+	report_imu();
 	imu.init_gyro();
+	report_imu();
 
 	print_hit_enter();
 	delay(1000);
