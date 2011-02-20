@@ -27,7 +27,8 @@ public:
     ///
 	AP_IMU_Oilpan(AP_ADC *adc, AP_Var::Key key) :
         _adc(adc),
-	    _sensor_cal(key, PSTR("IMU_SENSOR_CAL"), AP_Var::k_flag_no_auto_load)
+	    _sensor_cal(key, PSTR("IMU_SENSOR_CAL"))
+	  //  _sensor_cal(key, PSTR("IMU_SENSOR_CAL"), AP_Var::k_flag_no_auto_load)
 	{}
 
 	/// Do warm or cold start.
@@ -41,22 +42,25 @@ public:
 	///                 WARM_START loads accelerometer and gyro calibration from a previous cold start.
 	///
 	virtual void		init(Start_style style = COLD_START);
-	
+
 	virtual void		save();
 	virtual void		init_accel();
 	virtual void		init_gyro();
 	virtual bool		update(void);
-	
-	// for jason
-	int			ax()				{ return _sensor_cal[3]; }
-	int			ay()				{ return _sensor_cal[4]; }
-	int			az()				{ return _sensor_cal[5]; }
 
-	void		ax(const int v)		{ _sensor_cal[3] = v; }
-	void		ay(const int v)		{ _sensor_cal[4] = v; }
-	void		az(const int v)		{ _sensor_cal[5] = v; }
-	
-	
+	// for jason
+	float		gx()				{ return _sensor_cal[0]; }
+	float		gy()				{ return _sensor_cal[1]; }
+	float		gz()				{ return _sensor_cal[2]; }
+	float		ax()				{ return _sensor_cal[3]; }
+	float		ay()				{ return _sensor_cal[4]; }
+	float		az()				{ return _sensor_cal[5]; }
+
+	void		ax(const float v)		{ _sensor_cal[3] = v; }
+	void		ay(const float v)		{ _sensor_cal[4] = v; }
+	void		az(const float v)		{ _sensor_cal[5] = v; }
+
+
 private:
     AP_ADC              *_adc;          ///< ADC that we use for reading sensors
     AP_VarA<float,6>    _sensor_cal;    ///< Calibrated sensor offsets

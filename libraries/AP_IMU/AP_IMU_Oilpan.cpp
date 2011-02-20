@@ -87,7 +87,7 @@ AP_IMU_Oilpan::_init_gyro()
 
 		for (int i = 0; i < 6; i++)
 			adc_in = _adc->Ch(_sensors[i]);
-			
+
 		digitalWrite(A_LED_PIN, HIGH);
 		digitalWrite(C_LED_PIN, LOW);
 		delay(20);
@@ -98,7 +98,7 @@ AP_IMU_Oilpan::_init_gyro()
 		_sensor_cal[j]	= adc_in;
 	}
 
-	for(int i = 0; i < 50; i++){
+	for(int i = 0; i < 100; i++){
 		for (int j = 0; j < 3; j++){
 			adc_in = _adc->Ch(_sensors[j]);
 			// Subtract temp compensated typical gyro bias
