@@ -752,20 +752,20 @@ default_gains()
 
 void report_current()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	read_EEPROM_current();
 	Serial.printf_P(PSTR("Current Sensor\n"));
 	print_divider();
 	print_enabled(g.current_enabled.get());
 
-	Serial.printf_P(PSTR("mah: %d"),g.milliamp_hours);
+	Serial.printf_P(PSTR("mah: %d"),(int)g.milliamp_hours.get());
 	print_blanks(1);
 }
 
 
 void report_frame()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	read_EEPROM_frame();
 	Serial.printf_P(PSTR("Frame\n"));
 	print_divider();
@@ -786,7 +786,7 @@ void report_frame()
 
 void report_radio()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Radio\n"));
 	print_divider();
 	// radio
@@ -797,7 +797,7 @@ void report_radio()
 
 void report_gains()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
@@ -835,7 +835,7 @@ void report_gains()
 
 void report_xtrack()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Crosstrack\n"));
 	print_divider();
 	// radio
@@ -851,7 +851,7 @@ void report_xtrack()
 
 void report_throttle()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Throttle\n"));
 	print_divider();
 
@@ -871,7 +871,7 @@ void report_throttle()
 
 void report_imu()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("IMU\n"));
 	print_divider();
 
@@ -882,7 +882,7 @@ void report_imu()
 
 void report_compass()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Compass\n"));
 	print_divider();
 
@@ -909,7 +909,7 @@ void report_compass()
 
 void report_flight_modes()
 {
-	print_blanks(2);
+	//print_blanks(2);
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
 	read_EEPROM_flight_modes();
@@ -1022,28 +1022,36 @@ void print_enabled(boolean b)
 	Serial.printf_P(PSTR("abled\n"));
 }
 
-
-
 void
 print_accel_offsets(void)
 {
-	//Serial.print("Accel offsets: ");
-	//Serial.print(imu._adc_offset[3], 2);
-	//Serial.print(", ");
-	//Serial.print(_adc_offset[4], 2);
-	//Serial.print(", ");
-	//Serial.println(_adc_offset[5], 2);
+	Serial.println("jason");
+	Serial.println(imu.ax(), 2);
+	Serial.println((float)imu.ax(),2);
+	Serial.println(imu.ax(), DEC);
+	Serial.println("jason");
+
+	Serial.printf(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
+						(float)imu.ax(),
+						(float)imu.ay(),
+						(float)imu.az()
+	);
 }
 
 void
 print_gyro_offsets(void)
 {
-	//Serial.print("Gyro offsets: ");
-	//Serial.print(_adc_offset[0], 2);
-	//Serial.print(", ");
-	//Serial.print(_adc_offset[1], 2);
-	//Serial.print(", ");
-	//Serial.println(_adc_offset[2], 2);
+	Serial.println("jasong");
+	Serial.println(imu.gx(), 2);
+	Serial.println((float)imu.gx(),2);
+	Serial.println(imu.gx(), DEC);
+	Serial.println("jasong");
+
+	Serial.printf(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
+						(float)imu.gx(),
+						(float)imu.gy(),
+						(float)imu.gz()
+	);
 }
 
 
