@@ -5,16 +5,18 @@
 // their values.
 //
 Compass::Compass(AP_Var::Key key) :
-    _group(key),
-    _orientation_matrix(&_group, 0),
-    _offset(&_group, 1),
-    _declination(&_group, 2, 0.0),
+    _group(key, PSTR("COMPASS_")),
+    _orientation_matrix	(&_group, 0),
+    _offset				(&_group, 1),
+    _declination		(&_group, 2, 0.0, PSTR("DEC")),
     _null_init_done(false)
 {
     // Default the orientation matrix to none - will be overridden at group load time
     // if an orientation has previously been saved.
     _orientation_matrix.set(ROTATION_NONE);
 }
+
+//_group
 
 // Default init method, just returns success.
 //
