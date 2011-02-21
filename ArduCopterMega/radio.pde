@@ -4,11 +4,11 @@ void init_rc_in()
 	g.rc_1.set_angle(4500);
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
 	g.rc_2.set_angle(4500);
-	g.rc_2.dead_zone = 60;	
+	g.rc_2.dead_zone = 60;
 	g.rc_3.set_range(0,1000);
 	g.rc_3.dead_zone = 20;
 	g.rc_3.scale_output = .9;
-	g.rc_4.set_angle(6000); 
+	g.rc_4.set_angle(6000);
 	g.rc_4.dead_zone = 500;
 	g.rc_5.set_range(0,1000);
 	g.rc_5.set_filter(false);
@@ -46,8 +46,8 @@ void init_rc_out()
 	APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
-	
-	
+
+
 	APM_RC.OutputCh(CH_7,     g.rc_3.radio_min);
     APM_RC.OutputCh(CH_8,     g.rc_3.radio_min);
 
@@ -71,13 +71,14 @@ void trim_radio()
 	for (byte i = 0; i < 30; i++){
 		read_radio();
 	}
+
 	g.rc_1.trim();	// roll
 	g.rc_2.trim();	// pitch
 	g.rc_4.trim();	// yaw
-	
+
 	g.rc_1.save_trim();
 	g.rc_2.save_trim();
-	g.rc_4.save_trim();	
+	g.rc_4.save_trim();
 }
 
 void trim_yaw()

@@ -71,7 +71,6 @@ set_servos_4()
 			motor_out[CH_3]		-=  g.rc_4.pwm_out; 	// CW
 			motor_out[CH_4] 	-=  g.rc_4.pwm_out; 	// CW
 
-
 		}else if(g.frame_type == X_FRAME){
 			//Serial.println("X_FRAME");
 			int roll_out 	 	= g.rc_1.pwm_out / 2;
@@ -97,6 +96,11 @@ set_servos_4()
 			//Serial.println("TRI_FRAME");
 			// Tri-copter power distribution
 
+			float temp = cos_pitch_x * cos_roll_x;
+			temp = 2.0 - constrain(temp, .7, 1.0);
+			return temp;
+			}
+
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
 			int pitch_out 		= g.rc_2.pwm_out / 2;
 
@@ -106,6 +110,9 @@ set_servos_4()
 
 			// rear motors
 			motor_out[CH_4] 	= g.rc_3.radio_out - g.rc_2.pwm_out;
+
+			// this is a compensation for the angle of the yaw motor. Its linear, but should work ok.
+			motor_out[CH_4]		+= (float)(abs(g.rc_4.control_in)) * .013;
 
 			// servo Yaw
 			APM_RC.OutputCh(CH_7, g.rc_4.radio_out);

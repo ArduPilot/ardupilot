@@ -53,15 +53,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL
 //
-//#ifndef GPS_PROTOCOL
-//# error XXX
-//# error XXX You must define GPS_PROTOCOL in APM_Config.h
-//# error XXX
-//#endif
-
-// The X-Plane GCS requires the IMU GPS configuration
-#if (ENABLE_HIL == ENABLED) && (GPS_PROTOCOL != GPS_PROTOCOL_IMU)
-# error Must select GPS_PROTOCOL_IMU when configuring for X-Plane or Flight Gear HIL
+// Note that this test must follow the HIL_PROTOCOL block as the HIL
+// setup may override the GPS configuration.
+//
+#ifndef GPS_PROTOCOL
+# define GCS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
 
@@ -278,7 +274,7 @@
 # define ACRO_RATE_YAW_I         0.0
 #endif
 #ifndef ACRO_RATE_YAW_D
-# define ACRO_RATE_YAW_D         0.0
+# define ACRO_RATE_YAW_D         0.05
 #endif
 #ifndef ACRO_RATE_YAW_IMAX
 # define ACRO_RATE_YAW_IMAX   0
@@ -306,7 +302,6 @@
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	3
 #endif
-#define STABILIZE_ROLL_IMAX_CENTIDEGREE STABILIZE_ROLL_IMAX * 100
 
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		0.6
@@ -320,7 +315,6 @@
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	3
 #endif
-# define STABILIZE_PITCH_IMAX_CENTIDEGREE	STABILIZE_PITCH_IMAX * 100
 
 // STABILZE RATE Control
 //
@@ -344,7 +338,6 @@
 #ifndef  YAW_IMAX
 # define YAW_IMAX				1
 #endif
-# define YAW_IMAX_CENTIDEGREE	YAW_IMAX * 100
 
 // STABILZE YAW Control
 //
