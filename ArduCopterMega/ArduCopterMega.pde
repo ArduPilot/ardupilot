@@ -1016,7 +1016,9 @@ void update_alt()
 			sonar_alt		= min(sonar_alt, 600);
 			current_loc.alt = sonar_alt + home.alt;
 		}
+
 	}else{
+
 		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
 	}

@@ -1057,33 +1057,19 @@ void print_enabled(boolean b)
 void
 print_accel_offsets(void)
 {
-	Serial.println("jason");
-	Serial.println(imu.ax(), 2);
-	Serial.println((float)imu.ax(),2);
-	Serial.println(imu.ax(), DEC);
-	Serial.println("jason");
-
-	Serial.printf(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
+	Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
 						(float)imu.ax(),
 						(float)imu.ay(),
-						(float)imu.az()
-	);
+						(float)imu.az());
 }
 
 void
 print_gyro_offsets(void)
 {
-	Serial.println("jasong");
-	Serial.println(imu.gx(), 2);
-	Serial.println((float)imu.gx(),2);
-	Serial.println(imu.gx(), DEC);
-	Serial.println("jasong");
-
-	Serial.printf(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
+	Serial.printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
 						(float)imu.gx(),
 						(float)imu.gy(),
-						(float)imu.gz()
-	);
+						(float)imu.gz());
 }
 
 
