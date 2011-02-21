@@ -44,12 +44,7 @@ namespace ArducopterConfigurator.PresentationModels
         {
             StartCalibrationCommand = new DelegateCommand(_ => BeginCalibration(),_=>!IsCalibrating);
             SaveCalibrationCommand = new DelegateCommand(_ => SaveCalibration(),_=> IsCalibrating);
-            
-            // todo: cancel calibration?
             CancelCalibrationCommand = new DelegateCommand(_ => CancelCalibration(), _ => IsCalibrating);
-            
-            
-            ResetCommand = new DelegateCommand(_ => ResetWatermarks());
         }
 
 
@@ -61,16 +56,17 @@ namespace ArducopterConfigurator.PresentationModels
 
         private void BeginCalibration()
         {
-            ResetWatermarks();
-            IsCalibrating = true;
-
             // send x command to stop jabber
             sendString(STOP_UPDATES);
+
+            ResetWatermarks();
+
+            IsCalibrating = true;
 
             // send command to clear the slope and offsets
             // 11;0;1;0;1;0;1;0;1;0;1;0;
             sendString("11;0;1;0;1;0;1;0;1;0;1;0;");
-            
+
             // continue the sensor
             sendString(START_UPDATES);
             
@@ -80,6 +76,7 @@ namespace ArducopterConfigurator.PresentationModels
         private void CancelCalibration()
         {
             IsCalibrating = false;
+            HideWatermarks();
         }
 
         private float GetScale(int min, int max)
@@ -116,7 +113,7 @@ namespace ArducopterConfigurator.PresentationModels
 
 
 
-            var vals = string.Format("{0:0.00};{1};{2:0.00};{3};{4:0.00};{5};{6:0.00};{7};{8:0.00};{9};{10:0.00};{11};",
+            var vals = string.Format("{0:0.00};{1:0.00};{2:0.00};{3:0.00};{4:0.00};{5:0.00};{6:0.00};{7:0.00};{8:0.00};{9:0.00};{10:0.00};{11:0.00};",
                           GetScale(RollMin, RollMax),
                           GetOffset(RollMin, RollMax),
                           GetScale(PitchMin, PitchMax),
@@ -136,7 +133,7 @@ namespace ArducopterConfigurator.PresentationModels
 
 
             IsCalibrating = false;
-
+            HideWatermarks();
             // save
             //sendString(WRITE_TO_EEPROM);
         }
@@ -151,7 +148,16 @@ namespace ArducopterConfigurator.PresentationModels
             ModeMax = ModeMin = Mode;
         }
 
-        public ICommand ResetCommand { get; private set; }
+        private void HideWatermarks()
+        {
+            ThrottleMin = ThrottleMax = 0;
+            RollMax = RollMin = 0;
+            YawMax = YawMin = 0;
+            PitchMax = PitchMin = 0;
+            AuxMax = AuxMin = 0;
+            ModeMax = ModeMin = 0;
+        }
+
         public ICommand StartCalibrationCommand { get; private set; }
         public ICommand SaveCalibrationCommand { get; private set; }
         public ICommand CancelCalibrationCommand { get; private set; }
@@ -183,8 +189,6 @@ namespace ArducopterConfigurator.PresentationModels
         public void handleLineOfText(string strRx)
         {
             PropertyHelper.PopulatePropsFromUpdate(this, _propsInUpdateOrder, strRx, false);
-
-
         }
 
         public event EventHandler<sendTextToApmEventArgs> sendTextToApm;
