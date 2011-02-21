@@ -19,7 +19,6 @@ namespace ArducopterConfigurator.PresentationModels
             get { return _isCalibrating; }
             set
             {
-                if (_isCalibrating == value) return;
                 _isCalibrating = value;
                 FirePropertyChanged("IsCalibrating");
             }
@@ -129,11 +128,11 @@ namespace ArducopterConfigurator.PresentationModels
                 );
 
 
-           
-
+            sendString("1" + vals);
 
             IsCalibrating = false;
             HideWatermarks();
+
             // save
             //sendString(WRITE_TO_EEPROM);
         }
@@ -176,6 +175,7 @@ namespace ArducopterConfigurator.PresentationModels
         public void Activate()
         {
             IsCalibrating = false;
+            HideWatermarks();
             sendString(START_UPDATES);
         }
 
@@ -204,6 +204,8 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_roll == value) return;
                 _roll = value;
                 FirePropertyChanged("Roll");
+                if (!_isCalibrating) return;
+                
                 if (value > RollMax)
                     RollMax = value;
                 if (value < RollMin)
@@ -244,6 +246,8 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_pitch == value) return;
                 _pitch = value;
                 FirePropertyChanged("Pitch");
+                if (!_isCalibrating) return;
+
                 if (value > PitchMax)
                     PitchMax = value;
                 if (value < PitchMin)
@@ -264,7 +268,6 @@ namespace ArducopterConfigurator.PresentationModels
         }
 
         private int _pitchMin;
-
         public int PitchMin
         {
             get { return _pitchMin; }
@@ -286,6 +289,8 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_yaw == value) return;
                 _yaw = value;
                 FirePropertyChanged("Yaw");
+                if (!_isCalibrating) return;
+                
                 if (value > YawMax)
                     YawMax = value;
                 if (value < YawMin)
@@ -326,6 +331,7 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_throttle == value) return;
                 _throttle = value;
                 FirePropertyChanged("Throttle");
+                if (!_isCalibrating) return;
                 if (value > ThrottleMax)
                     ThrottleMax = value;
                 if (value < ThrottleMin)
@@ -366,6 +372,7 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_mode == value) return;
                 _mode = value;
                 FirePropertyChanged("Mode");
+                if (!_isCalibrating) return;                
                 if (value > ModeMax)
                     ModeMax = value;
                 if (value < ModeMin)
@@ -406,6 +413,8 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_aux == value) return;
                 _aux = value;
                 FirePropertyChanged("Aux");
+                if (!_isCalibrating) return;
+
                 if (value > AuxMax)
                     AuxMax = value;
                 if (value < AuxMin)
