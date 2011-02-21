@@ -76,8 +76,10 @@ namespace ArducopterConfigurator
                 // Right Motor Command = 1002
                 // Left Motor Command = 1004
                 // then adc 4,3, and 5
+                // mag heading float * 3
+                // mag heading int * 3
 
-                _jabberData = "2,-10,3,-2,1011,1012,1002,1000,1001,1200,1003,1400,1000,1000,1000";
+                _jabberData = "2,-10,3,-2,1011,1012,1002,1000,1001,1200,1003,1400,1000,1000,1000,1.000,1.000,1.000,0,0,0";
                 StartJabber();
             }
             if (stringSent == "X")
