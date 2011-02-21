@@ -92,7 +92,7 @@ output_yaw_with_hold(boolean hold)
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
 			// we are still in motion from rate control
-			if(fabs(omega.y) < .15){
+			if(fabs(omega.y) < .08){
 				clear_yaw_control();
 				hold 			= true;			// just to be explicit
 			}else{
@@ -130,13 +130,12 @@ output_yaw_with_hold(boolean hold)
 
 	}else{
 		// rate control
-		long rate		= degrees(omega.z) * 100; 									// 3rad = 17188 , 6rad = 34377
-		rate			= constrain(rate, -36000, 36000);							// limit to something fun!
-		long error		= ((long)g.rc_4.control_in * 6) - rate;						// control is += 6000 * 6 = 36000
-																					// -error = CCW, 	+error = CW
-		g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); 	// .075 * 36000 = 2700
-		g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);					// limit to 2400
-
+		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
+		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
+		long error		= ((long)g.rc_4.control_in * 6) - rate;								// control is += 6000 * 6 = 36000
+																							// -error = CCW, 	+error = CW
+		g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); 	// kP .07 * 36000 = 2520
+		g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);						// limit to 24°
 	}
 }
 
@@ -144,12 +143,12 @@ void
 output_rate_roll()
 {
 	// rate control
-	long rate		= degrees(omega.x) * 100; 									// 3rad = 17188 , 6rad = 34377
-	rate			= constrain(rate, -36000, 36000);							// limit to something fun!
-	long error		= ((long)g.rc_1.control_in * 8) - rate;						// control is += 4500 * 8 = 36000
+	long rate		= degrees(omega.x) * 100; 												// 3rad = 17188 , 6rad = 34377
+	rate			= constrain(rate, -36000, 36000);										// limit to something fun!
+	long error		= ((long)g.rc_1.control_in * 8) - rate;									// control is += 4500 * 8 = 36000
 
 	g.rc_1.servo_out 	= g.pid_acro_rate_roll.get_pid(error, delta_ms_fast_loop, 1.0); 	// .075 * 36000 = 2700
-	g.rc_1.servo_out 	= constrain(g.rc_1.servo_out, -2400, 2400);					// limit to 2400
+	g.rc_1.servo_out 	= constrain(g.rc_1.servo_out, -2400, 2400);							// limit to 2400
 }
 
 void

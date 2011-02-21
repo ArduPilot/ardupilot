@@ -45,7 +45,7 @@ Command ID	Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
 
 ***********************************
 Unexecuted commands >= 0x20 are dropped when ready for the next command <= 0x1F so plan/queue commands accordingly!
-For example if you had a string of 0x21 commands following a 0x10 command that had not finished when the waypoint was 
+For example if you had a string of 0x21 commands following a 0x10 command that had not finished when the waypoint was
 reached, the unexecuted 0x21 commands would be skipped and the next command <= 0x1F would be loaded
 ***********************************
 Now Commands - these commands are executed once until no more new now commands are available
@@ -59,17 +59,17 @@ Now Commands - these commands are executed once until no more new now commands a
 //0x41		CMD_AIRSPEED_CRUISE 		speed
 0x44		CMD_RESET_HOME									altitude			lat					lon
 
-0x60		CMD_KP_GAIN					array index			gain value*100,000	
-0x61		CMD_KI_GAIN					array index			gain value*100,000	
-0x62		CMD_KD_GAIN					array index			gain value*100,000	
-0x63		CMD_KI_MAX					array index			gain value*100,000	
-0x64		CMD_KFF_GAIN				array index			gain value*100,000	
-	
+0x60		CMD_KP_GAIN					array index			gain value*100,000
+0x61		CMD_KI_GAIN					array index			gain value*100,000
+0x62		CMD_KD_GAIN					array index			gain value*100,000
+0x63		CMD_KI_MAX					array index			gain value*100,000
+0x64		CMD_KFF_GAIN				array index			gain value*100,000
+
 0x70		CMD_RADIO_TRIM				array index			value
 0x71		CMD_RADIO_MAX				array index			value
 0x72		CMD_RADIO_MIN				array index			value
 0x73		CMD_ELEVON_TRIM				array index			value	(index 0 = elevon 1 trim, 1 = elevon 2 trim)
-0x75		CMD_INDEX	    			index 
+0x75		CMD_INDEX	    			index
 
 0x80		CMD_REPEAT					type				value				delay in sec		repeat count
 0x81		CMD_RELAY					(0,1 to change swicth position)

@@ -83,6 +83,12 @@ void read_trim_switch()
 					g.throttle_cruise.save();
 
 				}
+
+				// this is a test for Max's tri-copter
+				if(g.frame_type == TRI_FRAME){
+					g.rc_4.trim();	// yaw
+					g.rc_4.save_trim();
+				}
 			}
 			trim_flag = false;
 		}
