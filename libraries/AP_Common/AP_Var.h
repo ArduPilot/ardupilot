@@ -546,9 +546,9 @@ public:
 
     /// Combined set and save
     ///
-    void set_and_save(T v) {
+    bool set_and_save(T v) {
         set(v);
-        save();
+        return save();
     }
 
     /// Conversion to T returns a reference to the value.
