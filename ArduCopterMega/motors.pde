@@ -60,7 +60,7 @@ set_servos_4()
 		//Serial.printf("yaw: %d ", g.rc_4.radio_out);
 
 		if(g.frame_type == PLUS_FRAME){
-			Serial.println("P_FRAME");
+			//Serial.println("P_FRAME");
 			motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;
 			motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;
 			motor_out[CH_3]		= g.rc_3.radio_out + g.rc_2.pwm_out;
@@ -73,7 +73,7 @@ set_servos_4()
 
 
 		}else if(g.frame_type == X_FRAME){
-			Serial.println("X_FRAME");
+			//Serial.println("X_FRAME");
 			int roll_out 	 	= g.rc_1.pwm_out / 2;
 			int pitch_out 	 	= g.rc_2.pwm_out / 2;
 
@@ -94,7 +94,7 @@ set_servos_4()
 
 		}else if(g.frame_type == TRI_FRAME){
 
-			Serial.println("TRI_FRAME");
+			//Serial.println("TRI_FRAME");
 			// Tri-copter power distribution
 
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
@@ -112,7 +112,7 @@ set_servos_4()
 
 
 		}else if (g.frame_type == HEXA_FRAME) {
-			Serial.println("6_FRAME");
+			//Serial.println("6_FRAME");
 
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
 			int pitch_out 		= g.rc_2.pwm_out / 2;
@@ -154,8 +154,18 @@ set_servos_4()
 		}
 
 		num++;
-		if (num > 10){
+		if (num > 50){
 			num = 0;
+			Serial.printf("t_alt:%ld, alt:%ld, thr: %d sen: ",
+						target_altitude,
+						current_loc.alt,
+						g.rc_3.servo_out);
+
+			if(altitude_sensor == BARO){
+				Serial.println("Baro");
+			}else{
+				Serial.println("Sonar");
+			}
 			//Serial.print("!");
 			//debugging with Channel 6
 
@@ -178,7 +188,7 @@ set_servos_4()
 			init_pids();
 			//*/
 
-			///*
+			/*
 			write_int(motor_out[CH_1]);
 			write_int(motor_out[CH_2]);
 			write_int(motor_out[CH_3]);

@@ -762,7 +762,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\nCalibrating....\n"));
 	/*
 	for (int i = 1; i < 301; i++) {
-		read_barometer();
+		baro_alt = read_barometer();
 		if(i > 200)
 			sum += abs_pressure;
 		delay(10);
@@ -790,12 +790,14 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 
 			read_radio();			// read the radio first
 			next_WP.alt = home.alt + g.rc_6.control_in; // 0 - 2000 (20 meters)
-			read_trim_switch();
-			read_barometer();
+			next_WP.alt =  max(next_WP.alt, 30);
 
+			read_trim_switch();
+			baro_alt = read_barometer();
+			current_loc.alt = baro_alt + home.alt;
 			Serial.printf_P(PSTR("AP: %ld,\tAlt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \t out:%d\n"),
 						abs_pressure,
-						current_loc.alt,
+						baro_alt,
 						next_WP.alt,
 						altitude_error,
 						(int)g.throttle_cruise,

@@ -2,11 +2,11 @@ void read_control_switch()
 {
 	byte switchPosition = readSwitch();
 	//motor_armed = (switchPosition < 5);
-	
+
 	if (oldSwitchPosition != switchPosition){
-				
+
 		set_mode(g.flight_modes[switchPosition]);
-		
+
 		oldSwitchPosition = switchPosition;
 
 		// reset navigation integrators
@@ -23,7 +23,7 @@ byte readSwitch(void){
 #elif FLIGHT_MODE_CHANNEL == CH_7
 	int pulsewidth = g.rc_7.radio_in;			//
 #elif FLIGHT_MODE_CHANNEL == CH_8
-	int pulsewidth = g.rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux! 
+	int pulsewidth = g.rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux!
 #else
 # error Must define FLIGHT_MODE_CHANNEL as CH_5 - CH_8
 #endif
@@ -62,24 +62,26 @@ void read_trim_switch()
 			// called once
 			trim_timer = millis();
 		}
-		
+
 		trim_flag = true;
 		trim_accel();
-		
-		
+
+
 	}else{ // switch is disengaged
-	
+
 		if(trim_flag){
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
 				imu.save();
-				
+
 			} else {
 				// set the throttle nominal
 				if(g.rc_3.control_in > 50){
 					g.throttle_cruise.set(g.rc_3.control_in);
 					Serial.printf("tnom %d\n", g.throttle_cruise.get());
-					save_EEPROM_throttle_cruise();
+					//save_EEPROM_throttle_cruise();
+					g.throttle_cruise.save();
+
 				}
 			}
 			trim_flag = false;
