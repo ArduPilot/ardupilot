@@ -20,9 +20,45 @@ namespace ArducopterConfigurator.PresentationModels
             PropsInUpdateOrder = new[] {"P", "I", "D",};
         }
 
-        public float P { get;  set; }
-        public float I { get;  set; }
-        public float D { get;  set; }
+
+        private float _p;
+        public float P
+        {
+            get { return _p; }
+            set
+            {
+                if (_p == value) return;
+                _p = value;
+                FirePropertyChanged("P");
+            }
+        }
+
+        private float _i;
+
+        public float I
+        {
+            get { return _i; }
+            set
+            {
+                if (_i == value) return;
+                _i = value;
+                FirePropertyChanged("I");
+            }
+        }
+
+        private float _d;
+
+        public float D
+        {
+            get { return _d; }
+            set
+            {
+                if (_d == value) return;
+                _d = value;
+                FirePropertyChanged("D");
+            }
+        }
+
 
         public override string Name
         {

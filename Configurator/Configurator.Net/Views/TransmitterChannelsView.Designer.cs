@@ -90,12 +90,13 @@
             // 
             // textBox6
             // 
+            this.textBox6.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox6.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Yaw", true));
             this.textBox6.Enabled = false;
             this.textBox6.Location = new System.Drawing.Point(206, 26);
             this.textBox6.Name = "textBox6";
             this.textBox6.ReadOnly = true;
-            this.textBox6.Size = new System.Drawing.Size(35, 20);
+            this.textBox6.Size = new System.Drawing.Size(35, 13);
             this.textBox6.TabIndex = 29;
             // 
             // label3
@@ -109,42 +110,46 @@
             // 
             // textBox1
             // 
+            this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Roll", true));
             this.textBox1.Enabled = false;
             this.textBox1.Location = new System.Drawing.Point(206, 76);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(35, 20);
+            this.textBox1.Size = new System.Drawing.Size(35, 13);
             this.textBox1.TabIndex = 32;
             // 
             // textBox2
             // 
+            this.textBox2.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Throttle", true));
             this.textBox2.Enabled = false;
             this.textBox2.Location = new System.Drawing.Point(13, 141);
             this.textBox2.Name = "textBox2";
             this.textBox2.ReadOnly = true;
-            this.textBox2.Size = new System.Drawing.Size(35, 20);
+            this.textBox2.Size = new System.Drawing.Size(35, 13);
             this.textBox2.TabIndex = 35;
             // 
             // textBox3
             // 
+            this.textBox3.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox3.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Pitch", true));
             this.textBox3.Enabled = false;
             this.textBox3.Location = new System.Drawing.Point(65, 141);
             this.textBox3.Name = "textBox3";
             this.textBox3.ReadOnly = true;
-            this.textBox3.Size = new System.Drawing.Size(35, 20);
+            this.textBox3.Size = new System.Drawing.Size(35, 13);
             this.textBox3.TabIndex = 36;
             // 
             // textBox4
             // 
+            this.textBox4.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Mode", true));
             this.textBox4.Enabled = false;
             this.textBox4.Location = new System.Drawing.Point(118, 182);
             this.textBox4.Name = "textBox4";
             this.textBox4.ReadOnly = true;
-            this.textBox4.Size = new System.Drawing.Size(35, 20);
+            this.textBox4.Size = new System.Drawing.Size(35, 13);
             this.textBox4.TabIndex = 39;
             // 
             // label4
@@ -158,12 +163,13 @@
             // 
             // textBox5
             // 
+            this.textBox5.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.TransmitterChannelsBindingSource, "Aux", true));
             this.textBox5.Enabled = false;
             this.textBox5.Location = new System.Drawing.Point(176, 182);
             this.textBox5.Name = "textBox5";
             this.textBox5.ReadOnly = true;
-            this.textBox5.Size = new System.Drawing.Size(35, 20);
+            this.textBox5.Size = new System.Drawing.Size(35, 13);
             this.textBox5.TabIndex = 42;
             // 
             // label5
@@ -395,7 +401,7 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Name = "TransmitterChannelsView";
-            this.Size = new System.Drawing.Size(465, 244);
+            this.Size = new System.Drawing.Size(399, 244);
             ((System.ComponentModel.ISupportInitialize)(this.TransmitterChannelsBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
