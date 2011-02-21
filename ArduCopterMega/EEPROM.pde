@@ -205,7 +205,6 @@ void save_EEPROM_pressure(void)
 {
 	g.ground_pressure.save();
 	g.ground_temperature.save();
-
 }
 
 void read_EEPROM_pressure(void)

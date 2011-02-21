@@ -510,17 +510,10 @@ void medium_loop()
 		case 2:
 			medium_loopCounter++;
 
-			// Read Baro pressure
-			// ------------------
-			read_barometer();
 
-			if(g.sonar_enabled){
-				sonar.read();
-				update_alt();
-			}else{
-				// no sonar altitude
-				current_loc.alt = baro_alt;
-			}
+			// Read altitude from sensors
+			// ------------------
+			update_alt();
 
 			// altitude smoothing
 			// ------------------
@@ -867,7 +860,7 @@ void update_current_flight_mode(void)
 
 				//if(g.rc_3.control_in)
 				// get desired height from the throttle
-				next_WP.alt 	= home.alt + (g.rc_3.control_in * 4); // 0 - 1000 (40 meters)
+				next_WP.alt 	= home.alt + (g.rc_3.control_in); // 0 - 1000 (40 meters)
 				next_WP.alt		= max(next_WP.alt, 30);
 
 				// !!! testing
@@ -998,14 +991,33 @@ void update_trig(void){
 }
 
 
-void
-update_alt(){
+void update_alt()
+{
+	altitude_sensor = BARO;
+	baro_alt 		= read_barometer();
 
-	altitude_sensor = (target_altitude > 500) ? BARO : SONAR;
+	if(g.sonar_enabled){
+		// decide which sensor we're usings
+		sonar_alt 		= sonar.read();
 
-	if(altitude_sensor == BARO){
-		current_loc.alt = baro_alt;
+		if(baro_alt < 550){
+			altitude_sensor = SONAR;
+		}
+
+		if(sonar_alt > 600){
+			altitude_sensor = BARO;
+		}
+
+		//altitude_sensor = (target_altitude > (home.alt + 500)) ? BARO : SONAR;
+
+		if(altitude_sensor == BARO){
+			current_loc.alt = baro_alt + home.alt;
+		}else{
+			sonar_alt		= min(sonar_alt, 600);
+			current_loc.alt = sonar_alt + home.alt;
+		}
 	}else{
-		current_loc.alt = sonar_alt;
+		// no sonar altitude
+		current_loc.alt = baro_alt + home.alt;
 	}
 }

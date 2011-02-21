@@ -409,22 +409,20 @@
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		50
 #endif
-# define THROTTLE_BARO_IMAX_CENTIDEGREE	THROTTLE_BARO_IMAX * 100
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		.8
+# define THROTTLE_SONAR_P		.3
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.3
+# define THROTTLE_SONAR_I		0.01
 #endif
 #ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.7
+# define THROTTLE_SONAR_D		0.2
 #endif
 #ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	300
+# define THROTTLE_SONAR_IMAX	50
 #endif
-# define THROTTLE_SONAR_IMAX_CENTIDEGREE	THROTTLE_SONAR_IMAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
