@@ -522,7 +522,6 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // If not located and not permitted to allocate, we have failed.
     //
     if (!allocate) {
-        debug("cannot allocate");
         return false;
     }
     debug("needs allocation");

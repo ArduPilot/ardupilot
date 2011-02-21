@@ -45,7 +45,7 @@ public:
     };
 
     static const uint16_t   k_EEPROM_magic      = 0x5041;   ///< "AP"
-    static const uint16_t   k_EEPROM_revision   = 1;        ///< current format revision
+    static const uint16_t   k_EEPROM_revision   = 2;        ///< current format revision
 
     /// Storage key for variables that are saved in EEPROM.
     ///
@@ -72,15 +72,15 @@ public:
     ///
     struct Var_header {
         /// The size of the variable, minus one.
-        /// This allows a variable or group to be anything from one to 32 bytes long.
+        /// This allows a variable or group to be anything from one to 64 bytes long.
         ///
-        uint8_t    size:5;
+        uint8_t    size:6;
 
         /// Spare bits, currently unused
         ///
         /// @todo   One could be a parity bit?
         ///
-        uint8_t    spare:3;
+        uint8_t    spare:2;
 
         /// The key assigned to the variable.
         ///
@@ -122,7 +122,7 @@ public:
     /// ::save_all and ::load_all functions.  It should match the maximum size that can
     /// be encoded in the Var_header::size field.
     ///
-    static const size_t k_size_max = 32;
+    static const size_t k_size_max = 64;
 
     /// Optional flags affecting the behavior and usage of the variable.
     ///
