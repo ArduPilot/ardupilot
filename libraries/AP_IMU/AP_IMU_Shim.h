@@ -22,6 +22,17 @@ public:
 		return updated;
 	}
 	//@}
+	
+	float		gx()				{ return 0; }
+	float		gy()				{ return 0; }
+	float		gz()				{ return 0; }
+	float		ax()				{ return 0; }
+	float		ay()				{ return 0; }
+	float		az()				{ return 0; }
+
+	void		ax(const int v)		{  }
+	void		ay(const int v)		{  }
+	void		az(const int v)		{  }
 
 	/// Set the gyro vector.  ::update will return
 	/// true once after this call.
