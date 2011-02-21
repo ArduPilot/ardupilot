@@ -182,6 +182,11 @@ bool AP_Var::save(void)
 
     // serialize the variable into the buffer and work out how big it is
     size = serialize(vbuf, sizeof(vbuf));
+    if (0 == size) {
+        // variable cannot be serialised into the buffer
+        debug("cannot save (too big or not supported)");
+        return false;
+    }
 
     // if it fit in the buffer, save it to EEPROM
     if (size <= sizeof(vbuf)) {
@@ -217,6 +222,10 @@ bool AP_Var::load(void)
     // XXX should check size in EEPROM var header too...
     //
     size = serialize(NULL, 0);
+    if (0 == size) {
+        debug("cannot load (too big or not supported)");
+        return false;
+    }
 
     // Read the buffer from EEPROM, now that _EEPROM_locate
     // has converted _key into an EEPROM address.
@@ -627,7 +636,15 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
             debug("unserialize %p -> %u", vp, size);
         }
 
-        // XXX HANDLE ERRORS HERE
+        // Unserialize will return zero if the buffer is too small
+        // Serialize will only return zero if the variable cannot be serialised
+        // Either case is fatal for any operation we might be trying.
+        //
+        if (0 == size) {
+            debug("group (un)serialize failed, buffer too small or not supported");
+            return 0;
+        }
+
 
         // Account for the space that this variable consumes in the buffer
         //
