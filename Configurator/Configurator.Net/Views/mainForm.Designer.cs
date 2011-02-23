@@ -103,6 +103,7 @@ namespace ArducopterConfigurator
             // 
             // lblConnectionStatus
             // 
+            this.lblConnectionStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lblConnectionStatus.AutoSize = true;
             this.lblConnectionStatus.Location = new System.Drawing.Point(189, 418);
             this.lblConnectionStatus.Name = "lblConnectionStatus";
@@ -125,6 +126,7 @@ namespace ArducopterConfigurator
             // 
             // button3
             // 
+            this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "RestoreDefaultsCommand", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
             this.button3.Location = new System.Drawing.Point(502, 402);
@@ -136,6 +138,7 @@ namespace ArducopterConfigurator
             // 
             // button4
             // 
+            this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button4.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "WriteToEepromCommand", true));
             this.button4.Image = ((System.Drawing.Image)(resources.GetObject("button4.Image")));
             this.button4.Location = new System.Drawing.Point(456, 402);
@@ -159,6 +162,7 @@ namespace ArducopterConfigurator
             this.Controls.Add(this.cmboComPorts);
             this.Controls.Add(this.tabCtrlMonitorVms);
             this.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "Name", true));
+            this.MinimumSize = new System.Drawing.Size(550, 400);
             this.Name = "mainForm";
             this.Load += new System.EventHandler(this.MainFormLoaded);
             this.SizeChanged += new System.EventHandler(this.mainForm_SizeChanged);

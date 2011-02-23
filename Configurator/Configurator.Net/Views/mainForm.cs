@@ -151,6 +151,16 @@ namespace ArducopterConfigurator
         {
             ResizeChildControls();
             BindButtons(_vm);
+
+            if (System.Deployment.Application.ApplicationDeployment.IsNetworkDeployed)
+            {
+                var ad = System.Deployment.Application.ApplicationDeployment.CurrentDeployment;
+                Text = "Arducopter Configurator " + ad.CurrentVersion;
+            }
+            else
+            {
+                Text = "Arducopter Configurator (No Version)";
+            }
         }
 
         private void ResizeChildControls()

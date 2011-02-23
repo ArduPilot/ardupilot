@@ -175,8 +175,11 @@ namespace ArducopterConfigurator.Views.controls
                 using (var bmp = new Bitmap(width, height))
                 {
                     using (var g1 = Graphics.FromImage(bmp))
-                        GenerateCircle(g1, 0.0F, 0.0F, width, height, _isVertical,0.85F);
-                    
+                    {
+                        var fraction = ((float)(Value - Min))/(Max - Min);
+
+                        GenerateCircle(g1, 0.0F, 0.0F, width, height, _isVertical, fraction);
+                    }
                     g.DrawImage(bmp, 0, 0);
                 }
             }
