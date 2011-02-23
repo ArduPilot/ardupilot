@@ -135,14 +135,6 @@ RC_Channel::save_eeprom(void)
 }
 
 // ------------------------------------------
-//XXX is this still in use?
-void
-RC_Channel::save_trim(void)
-{
-    _group.save();
-}
-
-// ------------------------------------------
 
 void
 RC_Channel::zero_min_max()
