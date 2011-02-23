@@ -54,6 +54,12 @@
     <Compile Include="PresentationModels\MainVm.cs" />
     <Compile Include="PresentationModels\SensorsVm.cs" />
     <Compile Include="PresentationModels\VmBase.cs" />
+    <Compile Include="Views\controls\CircularIndicatorControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\controls\CircularIndicatorControl.Designer.cs">
+      <DependentUpon>CircularIndicatorControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\controls\PropControl.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -204,6 +210,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Views\controls\CircularIndicatorControl.resx">
+      <DependentUpon>CircularIndicatorControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\controls\PropControl.resx">
       <DependentUpon>PropControl.cs</DependentUpon>
     </EmbeddedResource>

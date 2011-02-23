@@ -30,7 +30,6 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FlightDataView));
-            this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
@@ -55,7 +54,6 @@
             this.indicatorRollAccel = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl1 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl2 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
-            this.linearIndicatorControl3 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl4 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl5 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
             this.linearIndicatorControl6 = new ArducopterConfigurator.Views.controls.LinearIndicatorControl();
@@ -72,19 +70,11 @@
             this.label13 = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.cirularIndicatorControl1 = new ArducopterConfigurator.Views.controls.CirularIndicatorControl();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(107, 135);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(25, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Left";
             // 
             // label2
             // 
@@ -118,7 +108,7 @@
             this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorLeft", true));
             this.textBox1.Enabled = false;
-            this.textBox1.Location = new System.Drawing.Point(122, 155);
+            this.textBox1.Location = new System.Drawing.Point(120, 161);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
             this.textBox1.Size = new System.Drawing.Size(38, 13);
@@ -372,28 +362,6 @@
             this.linearIndicatorControl2.Value = 100;
             this.linearIndicatorControl2.WatermarkLineColor = System.Drawing.Color.Red;
             // 
-            // linearIndicatorControl3
-            // 
-            this.linearIndicatorControl3.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
-            this.linearIndicatorControl3.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
-            this.linearIndicatorControl3.BarBorderColor = System.Drawing.Color.Maroon;
-            this.linearIndicatorControl3.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
-            this.linearIndicatorControl3.BarDividersCount = 20;
-            this.linearIndicatorControl3.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
-            this.linearIndicatorControl3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "MotorLeft", true));
-            this.linearIndicatorControl3.IsVertical = true;
-            this.linearIndicatorControl3.Location = new System.Drawing.Point(134, 121);
-            this.linearIndicatorControl3.Max = 2000;
-            this.linearIndicatorControl3.MaxWaterMark = 0;
-            this.linearIndicatorControl3.Min = 1000;
-            this.linearIndicatorControl3.MinWatermark = 0;
-            this.linearIndicatorControl3.Name = "linearIndicatorControl3";
-            this.linearIndicatorControl3.Offset = 0;
-            this.linearIndicatorControl3.Size = new System.Drawing.Size(13, 34);
-            this.linearIndicatorControl3.TabIndex = 36;
-            this.linearIndicatorControl3.Value = 100;
-            this.linearIndicatorControl3.WatermarkLineColor = System.Drawing.Color.DarkGray;
-            // 
             // linearIndicatorControl4
             // 
             this.linearIndicatorControl4.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
@@ -612,10 +580,28 @@
             this.pictureBox2.TabIndex = 52;
             this.pictureBox2.TabStop = false;
             // 
+            // cirularIndicatorControl1
+            // 
+            this.cirularIndicatorControl1.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.cirularIndicatorControl1.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.cirularIndicatorControl1.BarBorderColor = System.Drawing.Color.DarkGray;
+            this.cirularIndicatorControl1.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.cirularIndicatorControl1.BarLight = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(144)))), ((int)(((byte)(252)))));
+            this.cirularIndicatorControl1.IsVertical = false;
+            this.cirularIndicatorControl1.Location = new System.Drawing.Point(120, 115);
+            this.cirularIndicatorControl1.Max = 100;
+            this.cirularIndicatorControl1.Min = 0;
+            this.cirularIndicatorControl1.Name = "cirularIndicatorControl1";
+            this.cirularIndicatorControl1.Offset = 0;
+            this.cirularIndicatorControl1.Size = new System.Drawing.Size(40, 40);
+            this.cirularIndicatorControl1.TabIndex = 53;
+            this.cirularIndicatorControl1.Value = 50;
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.cirularIndicatorControl1);
             this.Controls.Add(this.label13);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.label11);
@@ -630,7 +616,6 @@
             this.Controls.Add(this.linearIndicatorControl6);
             this.Controls.Add(this.linearIndicatorControl5);
             this.Controls.Add(this.linearIndicatorControl4);
-            this.Controls.Add(this.linearIndicatorControl3);
             this.Controls.Add(this.linearIndicatorControl2);
             this.Controls.Add(this.linearIndicatorControl1);
             this.Controls.Add(this.indicatorRollAccel);
@@ -654,7 +639,6 @@
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.pictureBox2);
             this.DoubleBuffered = true;
@@ -671,10 +655,6 @@
         #endregion
 
         private System.Windows.Forms.BindingSource FlightDataVmBindingSource;
-
-
-
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
@@ -698,7 +678,6 @@
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl indicatorRollAccel;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl1;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl2;
-        private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl3;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl4;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl5;
         private ArducopterConfigurator.Views.controls.LinearIndicatorControl linearIndicatorControl6;
@@ -715,5 +694,6 @@
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.PictureBox pictureBox2;
+        private ArducopterConfigurator.Views.controls.CirularIndicatorControl cirularIndicatorControl1;
     }
 }
