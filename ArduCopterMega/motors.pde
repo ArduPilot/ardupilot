@@ -37,10 +37,11 @@ set_servos_4()
 {
 	static byte num;
 	static byte counteri;
+	int out_min;
 
 	// Quadcopter mix
 	if (motor_armed == true && motor_auto_safe == true) {
-		int out_min = g.rc_3.radio_min;
+		out_min = g.rc_3.radio_min;
 
 		// Throttle is 0 to 1000 only
 		g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);
@@ -125,24 +126,24 @@ set_servos_4()
 			int pitch_out 		= g.rc_2.pwm_out / 2;
 
 			//left side
-			motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;          // CCW
-			motor_out[CH_3]		= g.rc_3.radio_out + roll_out + pitch_out;  // CW
-			motor_out[CH_8]     = g.rc_3.radio_out + roll_out - pitch_out;  // CW
+			motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW
+			motor_out[CH_3]		= g.rc_3.radio_out + roll_out + pitch_out;	// CW
+			motor_out[CH_8]     = g.rc_3.radio_out + roll_out - pitch_out;	// CW
 
 			//right side
-			motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;          // CW
-            motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;  // CCW
-			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;  // CCW
+			motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW
+            motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
+			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW
 
-            motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
+			motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
 			motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
 			motor_out[CH_4] 	+= g.rc_4.pwm_out;	// CCW
 
 			motor_out[CH_3]		-= g.rc_4.pwm_out;	// CW
 			motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
-			motor_out[CH_8]     -= g.rc_4.pwm_out;  	// CW
+			motor_out[CH_8]     -= g.rc_4.pwm_out;  // CW
 
-    	} else {
+    	}else{
 
 			Serial.print("frame error");
 
