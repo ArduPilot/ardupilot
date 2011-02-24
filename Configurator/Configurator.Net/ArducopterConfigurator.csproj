@@ -255,11 +255,13 @@
     <EmbeddedResource Include="Views\icons\refresh.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Readme.txt" />
     <Content Include="Views\icons\arrow_up.png" />
     <Content Include="Views\icons\chip.gif" />
     <Content Include="Views\icons\connect.ico" />
     <Content Include="Views\icons\disconnect.ico" />
     <Content Include="Views\icons\install.png" />
+    <Content Include="Views\icons\Misc-Tools.ico" />
     <Content Include="Views\icons\saveIcon.png" />
   </ItemGroup>
   <ItemGroup>

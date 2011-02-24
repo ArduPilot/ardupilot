@@ -50,7 +50,6 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.btnRefresh = new System.Windows.Forms.Button();
-            this.btnUpdate = new System.Windows.Forms.Button();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PositionHoldConfigBindingSource)).BeginInit();
             this.groupBox3.SuspendLayout();
@@ -232,28 +231,17 @@
             // 
             this.btnRefresh.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "RefreshCommand", true));
             this.btnRefresh.Image = ((System.Drawing.Image)(resources.GetObject("btnRefresh.Image")));
-            this.btnRefresh.Location = new System.Drawing.Point(179, 110);
+            this.btnRefresh.Location = new System.Drawing.Point(203, 110);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Size = new System.Drawing.Size(26, 26);
             this.btnRefresh.TabIndex = 18;
             this.btnRefresh.UseVisualStyleBackColor = true;
-            // 
-            // btnUpdate
-            // 
-            this.btnUpdate.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.PositionHoldConfigBindingSource, "UpdateCommand", true));
-            this.btnUpdate.Image = ((System.Drawing.Image)(resources.GetObject("btnUpdate.Image")));
-            this.btnUpdate.Location = new System.Drawing.Point(211, 110);
-            this.btnUpdate.Name = "btnUpdate";
-            this.btnUpdate.Size = new System.Drawing.Size(26, 26);
-            this.btnUpdate.TabIndex = 17;
-            this.btnUpdate.UseVisualStyleBackColor = true;
             // 
             // PositionHoldConfigView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.btnRefresh);
-            this.Controls.Add(this.btnUpdate);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.textBox8);
@@ -294,6 +282,5 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.BindingSource PositionHoldConfigBindingSource;
         private System.Windows.Forms.Button btnRefresh;
-        private System.Windows.Forms.Button btnUpdate;
     }
 }

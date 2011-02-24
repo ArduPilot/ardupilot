@@ -189,5 +189,10 @@ namespace ArducopterConfigurator
                     throw new ArgumentOutOfRangeException();
             }
         }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            System.Diagnostics.Process.Start("http://diydrones.com/profile/AndrewRadford");
+        }
     }
 }

@@ -53,7 +53,6 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
             this.textBox10 = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
@@ -76,7 +75,7 @@
             // 
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AcroModeConfigVmBindingSource, "RefreshCommand", true));
             this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(206, 108);
+            this.button2.Location = new System.Drawing.Point(235, 108);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 12;
@@ -94,7 +93,7 @@
             this.groupBox4.Controls.Add(this.label7);
             this.groupBox4.Controls.Add(this.label8);
             this.groupBox4.Controls.Add(this.label9);
-            this.groupBox4.Location = new System.Drawing.Point(181, 6);
+            this.groupBox4.Location = new System.Drawing.Point(181, 3);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(80, 101);
             this.groupBox4.TabIndex = 11;
@@ -178,7 +177,7 @@
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label6);
-            this.groupBox2.Location = new System.Drawing.Point(94, 6);
+            this.groupBox2.Location = new System.Drawing.Point(94, 3);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(81, 101);
             this.groupBox2.TabIndex = 10;
@@ -262,7 +261,7 @@
             this.groupBox3.Controls.Add(this.label3);
             this.groupBox3.Controls.Add(this.label2);
             this.groupBox3.Controls.Add(this.label1);
-            this.groupBox3.Location = new System.Drawing.Point(6, 5);
+            this.groupBox3.Location = new System.Drawing.Point(6, 2);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(82, 101);
             this.groupBox3.TabIndex = 9;
@@ -338,16 +337,6 @@
             this.label1.TabIndex = 3;
             this.label1.Text = "P";
             // 
-            // button1
-            // 
-            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.AcroModeConfigVmBindingSource, "UpdateCommand", true));
-            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(235, 108);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(26, 26);
-            this.button1.TabIndex = 8;
-            this.button1.UseVisualStyleBackColor = true;
-            // 
             // textBox10
             // 
             this.textBox10.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.AcroModeConfigVmBindingSource, "TransmitterFactor", true));
@@ -377,7 +366,6 @@
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox3);
-            this.Controls.Add(this.button1);
             this.Name = "AcroConfigView";
             this.Size = new System.Drawing.Size(271, 136);
             ((System.ComponentModel.ISupportInitialize)(this.AcroModeConfigVmBindingSource)).EndInit();
@@ -416,7 +404,6 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button button1;
         private System.Windows.Forms.TextBox textBox10;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.BindingSource AcroModeConfigVmBindingSource;
