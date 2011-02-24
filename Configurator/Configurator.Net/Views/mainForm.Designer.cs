@@ -33,21 +33,19 @@ namespace ArducopterConfigurator
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             this.tabCtrlMonitorVms = new System.Windows.Forms.TabControl();
             this.mainVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.cmboComPorts = new System.Windows.Forms.ComboBox();
             this.availablePortsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.btnConnect = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.lblConnectionStatus = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.button3 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.label1 = new System.Windows.Forms.Label();
+            this.btnConnect = new System.Windows.Forms.Button();
+            this.cmboComPorts = new System.Windows.Forms.ComboBox();
+            this.button1 = new System.Windows.Forms.Button();
+            this.lblConnectionStatus = new System.Windows.Forms.Label();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).BeginInit();
-            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabCtrlMonitorVms
@@ -60,73 +58,13 @@ namespace ArducopterConfigurator
             this.tabCtrlMonitorVms.Location = new System.Drawing.Point(12, 10);
             this.tabCtrlMonitorVms.Name = "tabCtrlMonitorVms";
             this.tabCtrlMonitorVms.SelectedIndex = 0;
-            this.tabCtrlMonitorVms.Size = new System.Drawing.Size(530, 367);
+            this.tabCtrlMonitorVms.Size = new System.Drawing.Size(530, 383);
             this.tabCtrlMonitorVms.TabIndex = 3;
             this.tabCtrlMonitorVms.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabCtrlConfigs_Selected);
             // 
             // mainVmBindingSource
             // 
             this.mainVmBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.MainVm);
-            // 
-            // cmboComPorts
-            // 
-            this.cmboComPorts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.cmboComPorts.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "SelectedPort", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.cmboComPorts.DataSource = this.availablePortsBindingSource;
-            this.cmboComPorts.FormattingEnabled = true;
-            this.cmboComPorts.Location = new System.Drawing.Point(6, 19);
-            this.cmboComPorts.Name = "cmboComPorts";
-            this.cmboComPorts.Size = new System.Drawing.Size(79, 21);
-            this.cmboComPorts.TabIndex = 5;
-            // 
-            // btnConnect
-            // 
-            this.btnConnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnConnect.Cursor = System.Windows.Forms.Cursors.Arrow;
-            this.btnConnect.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "ConnectCommand", true));
-            this.btnConnect.Image = ((System.Drawing.Image)(resources.GetObject("btnConnect.Image")));
-            this.btnConnect.Location = new System.Drawing.Point(123, 16);
-            this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(26, 26);
-            this.btnConnect.TabIndex = 6;
-            this.toolTip.SetToolTip(this.btnConnect, "Connect");
-            this.btnConnect.UseVisualStyleBackColor = true;
-            // 
-            // button1
-            // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button1.Cursor = System.Windows.Forms.Cursors.Arrow;
-            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "DisconnectCommand", true));
-            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(154, 16);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(26, 26);
-            this.button1.TabIndex = 7;
-            this.toolTip.SetToolTip(this.button1, "Disconnect");
-            this.button1.UseVisualStyleBackColor = true;
-            // 
-            // lblConnectionStatus
-            // 
-            this.lblConnectionStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.lblConnectionStatus.AutoSize = true;
-            this.lblConnectionStatus.Location = new System.Drawing.Point(186, 21);
-            this.lblConnectionStatus.Name = "lblConnectionStatus";
-            this.lblConnectionStatus.Size = new System.Drawing.Size(112, 13);
-            this.lblConnectionStatus.TabIndex = 8;
-            this.lblConnectionStatus.Text = "connection string here";
-            // 
-            // button2
-            // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button2.Cursor = System.Windows.Forms.Cursors.Arrow;
-            this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "RefreshPortListCommand", true));
-            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(91, 16);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(26, 26);
-            this.button2.TabIndex = 9;
-            this.toolTip.SetToolTip(this.button2, "Refresh port list");
-            this.button2.UseVisualStyleBackColor = true;
             // 
             // button3
             // 
@@ -152,20 +90,6 @@ namespace ArducopterConfigurator
             this.toolTip.SetToolTip(this.button4, "Save to Eeprom");
             this.button4.UseVisualStyleBackColor = true;
             // 
-            // groupBox1
-            // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.groupBox1.Controls.Add(this.button2);
-            this.groupBox1.Controls.Add(this.lblConnectionStatus);
-            this.groupBox1.Controls.Add(this.button1);
-            this.groupBox1.Controls.Add(this.cmboComPorts);
-            this.groupBox1.Controls.Add(this.btnConnect);
-            this.groupBox1.Location = new System.Drawing.Point(12, 383);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(317, 50);
-            this.groupBox1.TabIndex = 12;
-            this.groupBox1.TabStop = false;
-            // 
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
@@ -186,17 +110,81 @@ namespace ArducopterConfigurator
             this.label1.TabIndex = 14;
             this.label1.Text = "Use with caution!";
             // 
+            // btnConnect
+            // 
+            this.btnConnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnConnect.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.btnConnect.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "ConnectCommand", true));
+            this.btnConnect.Image = ((System.Drawing.Image)(resources.GetObject("btnConnect.Image")));
+            this.btnConnect.Location = new System.Drawing.Point(128, 407);
+            this.btnConnect.Name = "btnConnect";
+            this.btnConnect.Size = new System.Drawing.Size(26, 26);
+            this.btnConnect.TabIndex = 6;
+            this.toolTip.SetToolTip(this.btnConnect, "Connect");
+            this.btnConnect.UseVisualStyleBackColor = true;
+            // 
+            // cmboComPorts
+            // 
+            this.cmboComPorts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.cmboComPorts.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "SelectedPort", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
+            this.cmboComPorts.DataSource = this.availablePortsBindingSource;
+            this.cmboComPorts.FormattingEnabled = true;
+            this.cmboComPorts.Location = new System.Drawing.Point(11, 410);
+            this.cmboComPorts.Name = "cmboComPorts";
+            this.cmboComPorts.Size = new System.Drawing.Size(79, 21);
+            this.cmboComPorts.TabIndex = 5;
+            // 
+            // button1
+            // 
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button1.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "DisconnectCommand", true));
+            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
+            this.button1.Location = new System.Drawing.Point(159, 407);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(26, 26);
+            this.button1.TabIndex = 7;
+            this.toolTip.SetToolTip(this.button1, "Disconnect");
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // lblConnectionStatus
+            // 
+            this.lblConnectionStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.lblConnectionStatus.AutoSize = true;
+            this.lblConnectionStatus.Location = new System.Drawing.Point(191, 412);
+            this.lblConnectionStatus.Name = "lblConnectionStatus";
+            this.lblConnectionStatus.Size = new System.Drawing.Size(112, 13);
+            this.lblConnectionStatus.TabIndex = 8;
+            this.lblConnectionStatus.Text = "connection string here";
+            // 
+            // button2
+            // 
+            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button2.Cursor = System.Windows.Forms.Cursors.Arrow;
+            this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "RefreshPortListCommand", true));
+            this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
+            this.button2.Location = new System.Drawing.Point(96, 407);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(26, 26);
+            this.button2.TabIndex = 9;
+            this.toolTip.SetToolTip(this.button2, "Refresh port list");
+            this.button2.UseVisualStyleBackColor = true;
+            // 
             // mainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(554, 445);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.label1);
+            this.Controls.Add(this.lblConnectionStatus);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.linkLabel1);
+            this.Controls.Add(this.cmboComPorts);
             this.Controls.Add(this.button4);
+            this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.tabCtrlMonitorVms);
-            this.Controls.Add(this.groupBox1);
             this.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "Name", true));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MinimumSize = new System.Drawing.Size(550, 400);
@@ -205,8 +193,6 @@ namespace ArducopterConfigurator
             this.SizeChanged += new System.EventHandler(this.mainForm_SizeChanged);
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).EndInit();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -216,18 +202,17 @@ namespace ArducopterConfigurator
 
         private System.Windows.Forms.TabControl tabCtrlMonitorVms;
         private System.Windows.Forms.BindingSource mainVmBindingSource;
-        private System.Windows.Forms.ComboBox cmboComPorts;
-        private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.BindingSource availablePortsBindingSource;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Label lblConnectionStatus;
-        private System.Windows.Forms.Button button2;
         private System.Windows.Forms.ToolTip toolTip;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnConnect;
+        private System.Windows.Forms.ComboBox cmboComPorts;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Label lblConnectionStatus;
+        private System.Windows.Forms.Button button2;
     }
 }
 

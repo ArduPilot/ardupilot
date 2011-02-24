@@ -68,8 +68,8 @@ namespace ArducopterConfigurator.PresentationModels
         public void handleLineOfText(string strRx)
         {
             _apmUpdatingProperties = true;
-            PropertyHelper.PopulatePropsFromUpdate(this,PropsInUpdateOrder, strRx, true);
-            _apmUpdatingProperties = true;
+            PropertyHelper.PopulatePropsFromUpdate(this,PropsInUpdateOrder, strRx,false);
+            _apmUpdatingProperties = false;
             
             if (updatedByApm != null)
                 updatedByApm(this, EventArgs.Empty);

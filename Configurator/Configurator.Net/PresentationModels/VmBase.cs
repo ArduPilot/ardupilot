@@ -37,7 +37,7 @@ namespace ArducopterConfigurator
                 if (prop.PropertyType == typeof(bool))
                     strings[i] = ((bool)prop.GetValue(obj, null)) ? "1" : "0";
                 else
-                    strings[i] = prop.GetValue(obj, null).ToString();
+                    strings[i] =  prop.GetValue(obj, null).ToString(); // Todo: culture aware strings for floats etc
             }
 
             return commandChar + string.Join(";", strings);

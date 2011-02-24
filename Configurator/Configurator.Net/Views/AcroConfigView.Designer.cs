@@ -102,7 +102,7 @@
             // 
             // numericUpDown9
             // 
-            this.numericUpDown9.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "YawD", true));
+            this.numericUpDown9.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "YawD", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown9.DecimalPlaces = 2;
             this.numericUpDown9.Increment = new decimal(new int[] {
             5,
@@ -116,7 +116,7 @@
             // 
             // numericUpDown8
             // 
-            this.numericUpDown8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchI", true));
+            this.numericUpDown8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchI", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown8.DecimalPlaces = 2;
             this.numericUpDown8.Increment = new decimal(new int[] {
             5,
@@ -130,7 +130,7 @@
             // 
             // numericUpDown3
             // 
-            this.numericUpDown3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "YawP", true));
+            this.numericUpDown3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "YawP", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown3.DecimalPlaces = 2;
             this.numericUpDown3.Increment = new decimal(new int[] {
             5,
@@ -186,7 +186,7 @@
             // 
             // numericUpDown7
             // 
-            this.numericUpDown7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchD", true));
+            this.numericUpDown7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchD", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown7.DecimalPlaces = 2;
             this.numericUpDown7.Increment = new decimal(new int[] {
             5,
@@ -200,7 +200,7 @@
             // 
             // numericUpDown6
             // 
-            this.numericUpDown6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchI", true));
+            this.numericUpDown6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchI", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown6.DecimalPlaces = 2;
             this.numericUpDown6.Increment = new decimal(new int[] {
             5,
@@ -214,7 +214,7 @@
             // 
             // numericUpDown2
             // 
-            this.numericUpDown2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchP", true));
+            this.numericUpDown2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "PitchP", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown2.DecimalPlaces = 2;
             this.numericUpDown2.Increment = new decimal(new int[] {
             5,
@@ -270,7 +270,7 @@
             // 
             // numericUpDown5
             // 
-            this.numericUpDown5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollD", true));
+            this.numericUpDown5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollD", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown5.DecimalPlaces = 2;
             this.numericUpDown5.Increment = new decimal(new int[] {
             25,
@@ -284,7 +284,7 @@
             // 
             // numericUpDown4
             // 
-            this.numericUpDown4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollI", true));
+            this.numericUpDown4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollI", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown4.DecimalPlaces = 2;
             this.numericUpDown4.Increment = new decimal(new int[] {
             25,
@@ -298,7 +298,7 @@
             // 
             // numericUpDown1
             // 
-            this.numericUpDown1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollP", true));
+            this.numericUpDown1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.AcroModeConfigVmBindingSource, "RollP", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.numericUpDown1.DecimalPlaces = 2;
             this.numericUpDown1.Increment = new decimal(new int[] {
             5,
