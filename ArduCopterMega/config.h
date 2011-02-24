@@ -26,7 +26,7 @@
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
 ///
-#include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT
+#include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
 ///
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
@@ -41,24 +41,6 @@
 // HARDWARE CONFIGURATION AND CONNECTIONS
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE_HIL
-// Hardware in the loop output
-//
-#ifndef ENABLE_HIL
-# define ENABLE_HIL		DISABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GPS_PROTOCOL
-//
-// Note that this test must follow the HIL_PROTOCOL block as the HIL
-// setup may override the GPS configuration.
-//
-#ifndef GPS_PROTOCOL
-# define GCS_PROTOCOL GPS_PROTOCOL_AUTO
-#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -75,32 +57,81 @@
 # define SONAR_PIN		AP_RANGEFINDER_PITOT_TUBE
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// AIRSPEED_SENSOR
+// AIRSPEED_RATIO
+//
+#ifndef AIRSPEED_SENSOR
+# define AIRSPEED_SENSOR		DISABLED
+#endif
+#ifndef AIRSPEED_RATIO
+# define AIRSPEED_RATIO			1.9936		// Note - this varies from the value in ArduPilot due to the difference in ADC resolution
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// HIL_PROTOCOL                             OPTIONAL
+// HIL_MODE                                 OPTIONAL
+// HIL_PORT                                 OPTIONAL
+
+#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
+
+ # undef GPS_PROTOCOL
+ # define GPS_PROTOCOL GPS_PROTOCOL_NONE
+
+ #ifndef HIL_PROTOCOL
+ # error Must define HIL_PROTOCOL if HIL_MODE is not disabled
+ #endif
+
+ #ifndef HIL_PORT
+ # error Must define HIL_PORT if HIL_PROTOCOL is set
+ #endif
+
+#endif
+
+
+// If we are in XPlane, diasble the mag
+#if HIL_MODE != HIL_MODE_DISABLED // we are in HIL mode
+
+ // check xplane settings
+ #if HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
+
+  // MAGNETOMETER not supported by XPLANE
+  # undef MAGNETOMETER
+  # define MAGNETOMETER			DISABLED
+
+  # if HIL_MODE != HIL_MODE_ATTITUDE
+  #  error HIL_PROTOCOL_XPLANE requires HIL_MODE_ATTITUDE
+  # endif
+
+ #endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// GPS_PROTOCOL
+//
+// Note that this test must follow the HIL_PROTOCOL block as the HIL
+// setup may override the GPS configuration.
+//
+#ifndef GPS_PROTOCOL
+# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // GCS_PROTOCOL
 // GCS_PORT
 //
 #ifndef GCS_PROTOCOL
-# define GCS_PROTOCOL			GCS_PROTOCOL_STANDARD
+# define GCS_PROTOCOL			GCS_PROTOCOL_NONE
 #endif
-
-#ifndef GCS_PORT
-# if (GCS_PROTOCOL == GCS_PROTOCOL_STANDARD) || (GCS_PROTOCOL == GCS_PROTOCOL_LEGACY)
-#  define GCS_PORT				3
-# else
-#  define GCS_PORT				0
-# endif
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //
 #ifndef SERIAL0_BAUD
-# define SERIAL0_BAUD			38400
+# define SERIAL0_BAUD			115200
 #endif
 #ifndef SERIAL3_BAUD
-# define SERIAL3_BAUD			115200
+# define SERIAL3_BAUD			 57600
 #endif
 
 
@@ -119,6 +150,7 @@
 #ifndef VOLT_DIV_RATIO
 # define VOLT_DIV_RATIO			3.0
 #endif
+
 #ifndef CURR_VOLT_DIV_RATIO
 # define CURR_VOLT_DIV_RATIO	15.7
 #endif
@@ -137,27 +169,14 @@
 # define INPUT_VOLTAGE			5.0
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
-#ifndef MAGORIENTATION
-# define MAGORIENTATION			APM_COMPASS_COMPONENTS_UP_PINS_FORWARD
+#ifndef MAGNETOMETER
+# define MAGNETOMETER			DISABLED
 #endif
-
-// run the CLI tool to get this value
-#ifndef MAGOFFSET
-# define MAGOFFSET	0,0,0
+#ifndef MAG_ORIENTATION
+# define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
-
-// Declination is a correction factor between North Pole and real magnetic North. This is different on every location
-// IF you want to use really accurate headholding and future navigation features, you should update this
-// You can check Declination to your location from http://www.magnetic-declination.com/
-#ifndef DECLINATION
-# define DECLINATION	0
-#endif
-
-
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -366,7 +385,6 @@
 #ifndef PITCH_MAX
 # define PITCH_MAX				36
 #endif
-#define PITCH_MAX_CENTIDEGREE PITCH_MAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -427,8 +445,6 @@
 #ifndef XTRACK_ENTRY_ANGLE
 # define XTRACK_ENTRY_ANGLE   30 // deg
 #endif
-//# define XTRACK_GAIN_SCALED XTRACK_GAIN * 100
-//# define XTRACK_ENTRY_ANGLE_CENTIDEGREE XTRACK_ENTRY_ANGLE * 100
 
 
 //////////////////////////////////////////////////////////////////////////////

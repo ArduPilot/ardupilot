@@ -20,52 +20,6 @@ static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
     else return 0; // no error
 }
 
-/**
- * @brief Send low-priority messages at a maximum rate of xx Hertz
- *
- * This function sends messages at a lower rate to not exceed the wireless
- * bandwidth. It sends one message each time it is called until the buffer is empty.
- * Call this function with xx Hertz to increase/decrease the bandwidth.
- */
-static void mavlink_queued_send(mavlink_channel_t chan)
-{
-    AP_Var      *vp;
-    float       value;
-
-    // send parameters one by one and prevent cross port comms
-    if (NULL != global_data.parameter_p && global_data.requested_interface == chan) {
-
-        // if the value can't be represented as a float, we will skip it here
-        vp = global_data.parameter_p;
-        value = vp->cast_to_float();
-        if (!isnan(value)) {
-            char param_name[ONBOARD_PARAM_NAME_LENGTH];         /// XXX HACK
-
-            vp->copy_name(param_name, sizeof(param_name));
-            mavlink_msg_param_value_send(chan,
-                                         (int8_t*)param_name,
-                                         value,
-                                         256,
-                                         vp->meta_get_handle());
-        }
-
-        // remember the next variable we're going to send
-        global_data.parameter_p = vp->next();
-    }
-
-    // this is called at 50hz, count runs to prevent flooding serialport and delayed to allow eeprom write
-    mavdelay++;
-
-    // request waypoints one by one
-    if (global_data.waypoint_receiving && global_data.requested_interface == chan &&
-            global_data.waypoint_request_i <= g.waypoint_total && mavdelay > 15) // limits to 3.33 hz
-    {
-        mavlink_msg_waypoint_request_send(chan,
-                                          global_data.waypoint_dest_sysid,
-                                          global_data.waypoint_dest_compid ,global_data.waypoint_request_i);
-                                          mavdelay = 0;
-    }
-}
 
 void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, uint16_t packet_drops)
 {
@@ -137,8 +91,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
     {
         Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
         mavlink_msg_global_position_int_send(chan,current_loc.lat,
-			current_loc.lng,current_loc.alt*10,g_gps.ground_speed/1.0e2*rot.a.x,
-			g_gps.ground_speed/1.0e2*rot.b.x,g_gps.ground_speed/1.0e2*rot.c.x);
+			current_loc.lng,current_loc.alt*10,g_gps->ground_speed/1.0e2*rot.a.x,
+			g_gps->ground_speed/1.0e2*rot.b.x,g_gps->ground_speed/1.0e2*rot.c.x);
         break;
     }
     case MSG_LOCAL_LOCATION:
@@ -146,15 +100,15 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
         Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
         mavlink_msg_local_position_send(chan,timeStamp,ToRad((current_loc.lat-home.lat)/1.0e7)*radius_of_earth,
 			ToRad((current_loc.lng-home.lng)/1.0e7)*radius_of_earth*cos(ToRad(home.lat/1.0e7)),
-			(current_loc.alt-home.alt)/1.0e2, g_gps.ground_speed/1.0e2*rot.a.x,
-			g_gps.ground_speed/1.0e2*rot.b.x,g_gps.ground_speed/1.0e2*rot.c.x);
+			(current_loc.alt-home.alt)/1.0e2, g_gps->ground_speed/1.0e2*rot.a.x,
+			g_gps->ground_speed/1.0e2*rot.b.x,g_gps->ground_speed/1.0e2*rot.c.x);
         break;
     }
     case MSG_GPS_RAW:
     {
-        mavlink_msg_gps_raw_send(chan,timeStamp,g_gps.status(),
-			g_gps.latitude/1.0e7,g_gps.longitude/1.0e7,g_gps.altitude/100.0,
-			g_gps.hdop,0.0,g_gps.ground_speed/100.0,g_gps.ground_course/100.0);
+        mavlink_msg_gps_raw_send(chan,timeStamp,g_gps->status(),
+			g_gps->latitude/1.0e7,g_gps->longitude/1.0e7,g_gps->altitude/100.0,
+			g_gps->hdop,0.0,g_gps->ground_speed/100.0,g_gps->ground_course/100.0);
         break;
     }
     case MSG_SERVO_OUT:
@@ -200,7 +154,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
     }
     case MSG_VFR_HUD:
     {
-        mavlink_msg_vfr_hud_send(chan, (float)airspeed/100.0, (float)g_gps.ground_speed/100.0, dcm.yaw_sensor, current_loc.alt/100.0,
+        mavlink_msg_vfr_hud_send(chan, (float)airspeed/100.0, (float)g_gps->ground_speed/100.0, dcm.yaw_sensor, current_loc.alt/100.0,
 			climb_rate, (int)rc[CH_THROTTLE]->servo_out);
         break;
     }
@@ -224,7 +178,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 
     case MSG_GPS_STATUS:
     {
-        mavlink_msg_gps_status_send(chan,g_gps.num_sats,NULL,NULL,NULL,NULL,NULL);
+        mavlink_msg_gps_status_send(chan,g_gps->num_sats,NULL,NULL,NULL,NULL,NULL);
         break;
     }
 

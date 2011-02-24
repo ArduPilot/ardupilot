@@ -54,7 +54,7 @@ print_log_menu(void)
 	Serial.printf_P(PSTR("logs enabled: "));
 	if (0 == g.log_bitmask) {
 		Serial.printf_P(PSTR("none"));
-	} else {
+	}else{
 		// Macro to make the following code a bit easier on the eye.
 		// Pass it the capitalised name of the log option, as defined
 		// in defines.h but without the LOG_ prefix.  It will check for
@@ -76,7 +76,7 @@ print_log_menu(void)
 
 	if (last_log_num == 0) {
 		Serial.printf_P(PSTR("\nNo logs available for download\n"));
-	} else {
+	}else{
 
 		Serial.printf_P(PSTR("\n%d logs available for download\n"), last_log_num);
 		for(int i=1;i<last_log_num+1;i++) {
@@ -151,7 +151,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
 		bits = ~(bits = 0);
-	} else {
+	}else{
 #define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= LOGBIT_ ## _s
 		TARG(ATTITUDE_FAST);
 		TARG(ATTITUDE_MED);
@@ -168,7 +168,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 
 	if (!strcasecmp_P(argv[0].str, PSTR("enable"))) {
 		g.log_bitmask.set_and_save(g.log_bitmask | bits);
-	} else {
+	}else{
 		g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
 	}
 	return(0);
@@ -206,7 +206,7 @@ byte get_num_logs(void)
 				if(data==LOG_INDEX_MSG){
 					byte num_logs = DataFlash.ReadByte();
 					return num_logs;
-				} else {
+				}else{
 						log_step=0;	 // Restart, we have a problem...
 				}
 				break;
@@ -248,7 +248,7 @@ void start_new_log(byte num_existing_logs)
 		DataFlash.WriteByte(END_BYTE);
 		DataFlash.FinishWrite();
 		DataFlash.StartWrite(start_pages[num_existing_logs-1]);
-	} else {
+	}else{
 		gcs.send_text(SEVERITY_LOW,"<start_new_log> Logs full - logging discontinued");
 	}
 }
@@ -285,7 +285,7 @@ void get_log_boundaries(byte num_logs, byte log_num, int & start_page, int & end
 						end_page = find_last_log_page(start_page);
 
 					return;		// This is the normal exit point
-				} else {
+				}else{
 						log_step=0;	 // Restart, we have a problem...
 				}
 				break;
@@ -381,6 +381,7 @@ void Log_Write_Startup(byte type)
 
 
 // Write a control tuning packet. Total length : 22 bytes
+#if HIL_MODE != HIL_MODE_ATTITUDE
 void Log_Write_Control_Tuning()
 {
 	Vector3f accel = imu.get_accel();
@@ -396,9 +397,10 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)dcm.pitch_sensor);
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
-	DataFlash.WriteInt((int)(accel.y * 10000));  
+	DataFlash.WriteInt((int)(accel.y * 10000));
 	DataFlash.WriteByte(END_BYTE);
 }
+#endif
 
 // Write a navigation tuning packet. Total length : 18 bytes
 void Log_Write_Nav_Tuning()
@@ -447,6 +449,7 @@ void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long 
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
+#if HIL_MODE != HIL_MODE_ATTITUDE
 void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
@@ -463,9 +466,10 @@ void Log_Write_Raw()
 	DataFlash.WriteLong((long)accel.x);
 	DataFlash.WriteLong((long)accel.y);
 	DataFlash.WriteLong((long)accel.z);
-	
+
 	DataFlash.WriteByte(END_BYTE);
 }
+#endif
 
 void Log_Write_Current()
 {
@@ -482,7 +486,7 @@ void Log_Write_Current()
 // Read a Current packet
 void Log_Read_Current()
 {
-	Serial.printf("CURR: %d, %4.4f, %4.4f, %d\n", 
+	Serial.printf("CURR: %d, %4.4f, %4.4f, %d\n",
 			DataFlash.ReadInt(),
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),
@@ -519,10 +523,10 @@ void Log_Read_Nav_Tuning()
 	Serial.print(comma);
 	Serial.print((float)DataFlash.ReadInt()/100.0);						// Altitude error
 	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt()/100.0);						// Airspeed 
+	Serial.print((float)DataFlash.ReadInt()/100.0);						// Airspeed
+	Serial.print(comma);
+	Serial.print((float)DataFlash.ReadInt()/1000.0);					// nav_gain_scaler
 	Serial.println(comma);
-	//Serial.print((float)DataFlash.ReadInt()/1000.0);					// nav_gain_scaler
-	//Serial.println(comma);
 }
 
 // Read a performance packet
@@ -600,7 +604,7 @@ void Log_Read_Attitude()
 
 // Read a mode packet
 void Log_Read_Mode()
-{	
+{
 	Serial.print("MOD:");
 	Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
 }
@@ -696,11 +700,11 @@ void Log_Read(int start_page, int end_page)
 				}else if(data==LOG_CMD_MSG){
 					Log_Read_Cmd();
 					log_step++;
-					
+
 				}else if(data==LOG_CURRENT_MSG){
 					Log_Read_Current();
 					log_step++;
-					
+
 				}else if(data==LOG_STARTUP_MSG){
 					Log_Read_Startup();
 					log_step++;
@@ -708,9 +712,9 @@ void Log_Read(int start_page, int end_page)
 					if(data == LOG_GPS_MSG){
 						Log_Read_GPS();
 						log_step++;
-					} else {
+					}else{
 						Serial.print("Error Reading Packet: ");
-						Serial.print(packet_count); 
+						Serial.print(packet_count);
 						log_step = 0;	 // Restart, we have a problem...
 					}
 				}

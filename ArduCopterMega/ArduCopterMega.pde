@@ -26,17 +26,18 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
-#include <APM_RC.h> 		// ArduPilot Mega RC Library
-#include <AP_GPS.h>			// ArduPilot GPS library
+#include <APM_BinComm.h>
+#include <APM_RC.h>         // ArduPilot Mega RC Library
+#include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
-#include <DataFlash.h>		// ArduPilot Mega Flash Memory Library
-#include <AP_ADC.h>			// ArduPilot Mega Analog to Digital Converter Library
-#include <APM_BMP085.h> 	// ArduPilot Mega BMP085 Library
-#include <AP_Compass.h>		// ArduPilot Mega Magnetometer Library
-#include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
-#include <AP_IMU.h>			// ArduPilot Mega IMU Library
-#include <AP_DCM.h>			// ArduPilot Mega DCM Library
-#include <PID.h> 			// ArduPilot Mega RC Library
+#include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
+#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
+#include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
+#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_DCM.h>         // ArduPilot Mega DCM Library
+#include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 
@@ -50,6 +51,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include "Parameters.h"
 #include "global_data.h"
 #include "GCS.h"
+#include "HIL.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -87,33 +89,63 @@ Parameters      g;
 // All GPS access should be through this pointer.
 GPS         *g_gps;
 
+#if HIL_MODE == HIL_MODE_NONE
+
 // real sensors
-AP_ADC_ADS7844 		adc;
-APM_BMP085_Class	barometer;
-AP_Compass_HMC5843	compass(Parameters::k_param_compass);
+AP_ADC_ADS7844          adc;
+APM_BMP085_Class        barometer;
+AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-	AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-	AP_GPS_NMEA     g_gps_driver(&Serial1);
+AP_GPS_NMEA     g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-	AP_GPS_SIRF     g_gps_driver(&Serial1);
+AP_GPS_SIRF     g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-	AP_GPS_UBLOX    g_gps_driver(&Serial1);
+AP_GPS_UBLOX    g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-	AP_GPS_MTK      g_gps_driver(&Serial1);
+AP_GPS_MTK      g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-	AP_GPS_MTK16    g_gps_driver(&Serial1);
+AP_GPS_MTK16    g_gps_driver(&Serial1);
 #elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-	AP_GPS_None     g_gps_driver(NULL);
+AP_GPS_None     g_gps_driver(NULL);
 #else
-	#error Unrecognised GPS_PROTOCOL setting.
+ #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
 
+#elif HIL_MODE == HIL_MODE_SENSORS
+// sensor emulators
+AP_ADC_HIL              adc;
+APM_BMP085_HIL_Class    barometer;
+AP_Compass_HIL  compass;
+AP_GPS_HIL              g_gps_driver(NULL);
 
-AP_IMU_Oilpan 		imu(&adc, Parameters::k_param_IMU_calibration); // normal imu
-AP_DCM 				dcm(&imu, g_gps);
+#elif HIL_MODE == HIL_MODE_ATTITUDE
+AP_DCM_HIL dcm;
+AP_GPS_HIL              g_gps_driver(NULL);
+
+#else
+ #error Unrecognised HIL_MODE setting.
+#endif // HIL MODE
+
+#if HIL_MODE != HIL_MODE_DISABLED
+	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
+		GCS_MAVLINK hil;
+	#elif HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
+		HIL_XPLANE hil;
+	#endif // HIL PROTOCOL
+#endif // HIL_MODE
+
+#if HIL_MODE != HIL_MODE_ATTITUDE
+	#if HIL_MODE != HIL_MODE_SENSORS
+		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration); // normal imu
+	#else
+		AP_IMU_Shim imu; // hil imu
+	#endif
+	AP_DCM  dcm(&imu, g_gps); // normal dcm
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -306,7 +338,7 @@ byte	command_yaw_dir;
 
 // Waypoints
 // ---------
-long 	GPS_wp_distance;					// meters - distance between plane and next waypoint
+//long 	GPS_wp_distance;					// meters - distance between plane and next waypoint
 long 	wp_distance;						// meters - distance between plane and next waypoint
 long 	wp_totalDistance;					// meters - distance between old and next waypoint
 //byte 	wp_total;							// # of Commands total including way
@@ -369,11 +401,12 @@ char display_PID = -1;					// Flag used by DebugTerminal to indicate that the ne
 // --------------
 unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
+uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
 int 			mainLoop_count;
 
 unsigned long 	medium_loopTimer;			// Time in miliseconds of navigation control loop
 byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-byte 			medium_count;
+uint8_t			delta_ms_medium_loop;
 
 byte 			slow_loopCounter;
 byte 			superslow_loopCounter;
@@ -382,8 +415,6 @@ byte			fbw_timer;					// for limiting the execution of FBW input
 unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
-uint8_t			delta_ms_medium_loop;
-uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
 
 unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
@@ -424,9 +455,9 @@ void loop()
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
 				gcs.send_message(MSG_PERF_REPORT);
-				if (g.log_bitmask & MASK_LOG_PM){
+				if (g.log_bitmask & MASK_LOG_PM)
 					Log_Write_Performance();
-				}
+
                 resetPerfData();
             }
         }
@@ -488,7 +519,7 @@ void medium_loop()
 			medium_loopCounter++;
 
 			if(g_gps->new_data){
-				g_gps->new_data 		= false;
+				g_gps->new_data 	= false;
 				dTnav 				= millis() - nav_loopTimer;
 				nav_loopTimer 		= millis();
 
@@ -576,7 +607,7 @@ void medium_loop()
 	calc_bearing_error();
 
 	// guess how close we are - fixed observer calc
-	calc_distance_error();
+	//calc_distance_error();
 
 	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
@@ -605,14 +636,18 @@ void slow_loop()
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
-			if(superslow_loopCounter >= 200){
+			if(superslow_loopCounter >= 200){				//	Execute every minute
+				#if HIL_MODE != HIL_MODE_ATTITUDE
+					if(g.compass_enabled) {
+						compass.save_offsets();
+					}
+				#endif
+
 				if (g.log_bitmask & MASK_LOG_CUR)
 					Log_Write_Current();
-				if(g.compass_enabled){
-                	compass.save_offsets();
-                }
+
 				superslow_loopCounter = 0;
-			}
+            }
 			break;
 
 		case 1:
@@ -683,7 +718,7 @@ void update_GPS(void)
                 SendDebugln("!! bad loc");
 				ground_start_count = 5;
 
-			} else {
+			}else{
 				//Serial.printf("init Home!");
 
 				if (g.log_bitmask & MASK_LOG_CMD)
@@ -787,6 +822,7 @@ void update_current_flight_mode(void)
 				}
 				break;
 
+			case LOITER:
 			case STABILIZE:
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;

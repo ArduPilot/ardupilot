@@ -1,7 +1,8 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 void ReadSCP1000(void) {}
 
-
-void init_pressure_ground(void)
+void init_barometer(void)
 {
 	for(int i = 0; i < 300; i++){		// We take some readings...
 		delay(20);
@@ -12,8 +13,10 @@ void init_pressure_ground(void)
 	abs_pressure  = barometer.Press;
 }
 
-long
-read_barometer(void)
+// Sensors are not available in HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE
+
+long read_barometer(void)
 {
  	float x, scaling, temp;
 
@@ -24,6 +27,7 @@ read_barometer(void)
 	scaling 				= (float)ground_pressure / (float)abs_pressure;
 	temp 					= ((float)ground_temperature / 10.0f) + 273.15f;
 	x 						= log(scaling) * temp * 29271.267f;
+
 	return 	(x / 10);
 }
 
@@ -32,6 +36,10 @@ void read_airspeed(void)
 {
 
 }
+
+#endif // HIL_MODE != HIL_MODE_ATTITUDE
+
+
 
 #if BATTERY_EVENT == 1
 void read_battery(void)

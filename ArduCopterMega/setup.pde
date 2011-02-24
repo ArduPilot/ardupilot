@@ -102,26 +102,6 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 
 	// note, cannot actually return here
 	return(0);
-
-	//zero_eeprom();
-	//default_gains();
-
-
-	// setup default values
-	/*
-	default_waypoint_info();
-	default_nav();
-	default_alt_hold();
-	default_frame();
-	default_flight_modes();
-	default_throttle();
-	default_logs();
-	default_current();
-	print_done();
-	*/
-	// finish
-	// ------
-	//return(0);
 }
 
 // Perform radio setup.
@@ -191,14 +171,9 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		g.rc_8.update_min_max();
 
 		if(Serial.available() > 0){
-			//g.rc_3.radio_max += 250;
 			Serial.flush();
 
 			save_EEPROM_radio();
-			//delay(100);
-			// double checking
-			//read_EEPROM_radio();
-			//print_radio_values();
 			print_done();
 			break;
 		}
@@ -445,7 +420,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.compass_enabled = false;
 
-	} else {
+	}else{
 		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
 		report_compass();
 		return 0;
@@ -471,7 +446,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("hexa"))) {
 		g.frame_type = HEXA_FRAME;
 
-	} else {
+	}else{
 		Serial.printf_P(PSTR("\nOptions:[+, x, tri, hexa]\n"));
 		report_frame();
 		return 0;
@@ -486,23 +461,20 @@ static int8_t
 setup_current(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		g.current_enabled.set(true);
-		save_EEPROM_mag();
+		g.current_enabled.set_and_save(true);
 
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		g.current_enabled.set(false);
-		save_EEPROM_mag();
+		g.current_enabled.set_and_save(false);
 
 	} else if(argv[1].i > 10){
-		g.milliamp_hours = argv[1].i;
+		g.milliamp_hours.set_and_save(argv[1].i);
 
-	} else {
+	}else{
 		Serial.printf_P(PSTR("\nOptions:[on, off, mAh]\n"));
 		report_current();
 		return 0;
 	}
 
-	save_EEPROM_current();
 	report_current();
 	return 0;
 }
@@ -516,7 +488,7 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.sonar_enabled.set_and_save(false);
 
-	} else {
+	}else{
 		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
 		report_sonar();
 		return 0;
@@ -604,7 +576,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 
 /***************************************************************************/
-// CLI utilities
+// CLI defaults
 /***************************************************************************/
 
 void default_waypoint_info()
@@ -769,7 +741,7 @@ default_gains()
 
 
 /***************************************************************************/
-// CLI utilities
+// CLI reports
 /***************************************************************************/
 
 void report_current()
@@ -938,7 +910,6 @@ void report_compass()
 	print_blanks(2);
 }
 
-
 void report_flight_modes()
 {
 	//print_blanks(2);
@@ -1006,9 +977,7 @@ print_divider(void)
 	Serial.println("");
 }
 
-
-// for reading in vales for mode switch
-boolean
+int8_t
 radio_input_switch(void)
 {
 	static int8_t bouncer = 0;
@@ -1028,7 +997,7 @@ radio_input_switch(void)
 
 	if (bouncer == 1 || bouncer == -1) {
 	    return bouncer;
-	} else {
+	}else{
 	    return 0;
 	}
 }
@@ -1043,7 +1012,6 @@ void zero_eeprom(void)
 	}
 	Serial.printf_P(PSTR("done\n"));
 }
-
 
 void print_enabled(boolean b)
 {
