@@ -33,36 +33,41 @@
             this.button2 = new System.Windows.Forms.Button();
             this.StableModeConfigVmBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
-            this.textBox7 = new System.Windows.Forms.TextBox();
-            this.textBox8 = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
-            this.textBox4 = new System.Windows.Forms.TextBox();
-            this.textBox5 = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.textBox3 = new System.Windows.Forms.TextBox();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
-            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
-            this.numericUpDown3 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown4 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown5 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown6 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown7 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown8 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown9 = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).BeginInit();
             this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
             this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
             this.SuspendLayout();
             // 
             // button2
@@ -70,7 +75,7 @@
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.StableModeConfigVmBindingSource, "RefreshCommand", true));
             this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(207, 109);
+            this.button2.Location = new System.Drawing.Point(240, 109);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 12;
@@ -83,18 +88,32 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.numericUpDown9);
+            this.groupBox4.Controls.Add(this.numericUpDown8);
             this.groupBox4.Controls.Add(this.numericUpDown3);
             this.groupBox4.Controls.Add(this.label7);
             this.groupBox4.Controls.Add(this.label8);
             this.groupBox4.Controls.Add(this.label9);
-            this.groupBox4.Controls.Add(this.textBox7);
-            this.groupBox4.Controls.Add(this.textBox8);
             this.groupBox4.Location = new System.Drawing.Point(184, 6);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(82, 101);
             this.groupBox4.TabIndex = 11;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Yaw";
+            // 
+            // numericUpDown3
+            // 
+            this.numericUpDown3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "YawP", true));
+            this.numericUpDown3.DecimalPlaces = 2;
+            this.numericUpDown3.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown3.Location = new System.Drawing.Point(23, 18);
+            this.numericUpDown3.Name = "numericUpDown3";
+            this.numericUpDown3.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown3.TabIndex = 16;
             // 
             // label7
             // 
@@ -123,36 +142,34 @@
             this.label9.TabIndex = 3;
             this.label9.Text = "P";
             // 
-            // textBox7
-            // 
-            this.textBox7.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "YawD", true));
-            this.textBox7.Location = new System.Drawing.Point(23, 71);
-            this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(50, 20);
-            this.textBox7.TabIndex = 2;
-            // 
-            // textBox8
-            // 
-            this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "YawI", true));
-            this.textBox8.Location = new System.Drawing.Point(23, 45);
-            this.textBox8.Name = "textBox8";
-            this.textBox8.Size = new System.Drawing.Size(50, 20);
-            this.textBox8.TabIndex = 1;
-            // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.numericUpDown7);
+            this.groupBox2.Controls.Add(this.numericUpDown6);
             this.groupBox2.Controls.Add(this.numericUpDown2);
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.label6);
-            this.groupBox2.Controls.Add(this.textBox4);
-            this.groupBox2.Controls.Add(this.textBox5);
             this.groupBox2.Location = new System.Drawing.Point(95, 6);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(83, 101);
             this.groupBox2.TabIndex = 10;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Pitch";
+            // 
+            // numericUpDown2
+            // 
+            this.numericUpDown2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "PitchP", true));
+            this.numericUpDown2.DecimalPlaces = 2;
+            this.numericUpDown2.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown2.Location = new System.Drawing.Point(23, 18);
+            this.numericUpDown2.Name = "numericUpDown2";
+            this.numericUpDown2.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown2.TabIndex = 15;
             // 
             // label4
             // 
@@ -181,36 +198,34 @@
             this.label6.TabIndex = 3;
             this.label6.Text = "P";
             // 
-            // textBox4
-            // 
-            this.textBox4.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "PitchD", true));
-            this.textBox4.Location = new System.Drawing.Point(23, 71);
-            this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(50, 20);
-            this.textBox4.TabIndex = 2;
-            // 
-            // textBox5
-            // 
-            this.textBox5.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "PitchI", true));
-            this.textBox5.Location = new System.Drawing.Point(23, 45);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(50, 20);
-            this.textBox5.TabIndex = 1;
-            // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.numericUpDown5);
+            this.groupBox3.Controls.Add(this.numericUpDown4);
             this.groupBox3.Controls.Add(this.numericUpDown1);
             this.groupBox3.Controls.Add(this.label3);
             this.groupBox3.Controls.Add(this.label2);
             this.groupBox3.Controls.Add(this.label1);
-            this.groupBox3.Controls.Add(this.textBox3);
-            this.groupBox3.Controls.Add(this.textBox2);
             this.groupBox3.Location = new System.Drawing.Point(6, 5);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(83, 101);
             this.groupBox3.TabIndex = 9;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Roll";
+            // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "RollP", true));
+            this.numericUpDown1.DecimalPlaces = 2;
+            this.numericUpDown1.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown1.Location = new System.Drawing.Point(23, 19);
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown1.TabIndex = 14;
             // 
             // label3
             // 
@@ -239,34 +254,6 @@
             this.label1.TabIndex = 3;
             this.label1.Text = "P";
             // 
-            // textBox3
-            // 
-            this.textBox3.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "RollD", true));
-            this.textBox3.Location = new System.Drawing.Point(23, 71);
-            this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(50, 20);
-            this.textBox3.TabIndex = 2;
-            // 
-            // textBox2
-            // 
-            this.textBox2.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.StableModeConfigVmBindingSource, "RollI", true));
-            this.textBox2.Location = new System.Drawing.Point(23, 45);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(50, 20);
-            this.textBox2.TabIndex = 1;
-            // 
-            // button1
-            // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.StableModeConfigVmBindingSource, "UpdateCommand", true));
-            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(239, 109);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(26, 26);
-            this.button1.TabIndex = 8;
-            this.toolTips.SetToolTip(this.button1, "Update");
-            this.button1.UseVisualStyleBackColor = true;
-            // 
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
@@ -279,47 +266,89 @@
             this.toolTips.SetToolTip(this.checkBox1, "Enable the use of the Magnetometer, if present");
             this.checkBox1.UseVisualStyleBackColor = true;
             // 
-            // numericUpDown1
+            // numericUpDown4
             // 
-            this.numericUpDown1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "RollP", true));
-            this.numericUpDown1.DecimalPlaces = 2;
-            this.numericUpDown1.Increment = new decimal(new int[] {
-            25,
+            this.numericUpDown4.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "RollI", true));
+            this.numericUpDown4.DecimalPlaces = 2;
+            this.numericUpDown4.Increment = new decimal(new int[] {
+            5,
             0,
             0,
             131072});
-            this.numericUpDown1.Location = new System.Drawing.Point(23, 19);
-            this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDown1.TabIndex = 14;
+            this.numericUpDown4.Location = new System.Drawing.Point(23, 46);
+            this.numericUpDown4.Name = "numericUpDown4";
+            this.numericUpDown4.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown4.TabIndex = 15;
             // 
-            // numericUpDown2
+            // numericUpDown5
             // 
-            this.numericUpDown2.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "PitchP", true));
-            this.numericUpDown2.DecimalPlaces = 2;
-            this.numericUpDown2.Increment = new decimal(new int[] {
-            25,
+            this.numericUpDown5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "RollD", true));
+            this.numericUpDown5.DecimalPlaces = 2;
+            this.numericUpDown5.Increment = new decimal(new int[] {
+            5,
             0,
             0,
             131072});
-            this.numericUpDown2.Location = new System.Drawing.Point(23, 18);
-            this.numericUpDown2.Name = "numericUpDown2";
-            this.numericUpDown2.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDown2.TabIndex = 15;
+            this.numericUpDown5.Location = new System.Drawing.Point(23, 73);
+            this.numericUpDown5.Name = "numericUpDown5";
+            this.numericUpDown5.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown5.TabIndex = 16;
             // 
-            // numericUpDown3
+            // numericUpDown6
             // 
-            this.numericUpDown3.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "YawP", true));
-            this.numericUpDown3.DecimalPlaces = 2;
-            this.numericUpDown3.Increment = new decimal(new int[] {
-            25,
+            this.numericUpDown6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "PitchI", true));
+            this.numericUpDown6.DecimalPlaces = 2;
+            this.numericUpDown6.Increment = new decimal(new int[] {
+            5,
             0,
             0,
             131072});
-            this.numericUpDown3.Location = new System.Drawing.Point(23, 18);
-            this.numericUpDown3.Name = "numericUpDown3";
-            this.numericUpDown3.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDown3.TabIndex = 16;
+            this.numericUpDown6.Location = new System.Drawing.Point(23, 45);
+            this.numericUpDown6.Name = "numericUpDown6";
+            this.numericUpDown6.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown6.TabIndex = 17;
+            // 
+            // numericUpDown7
+            // 
+            this.numericUpDown7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "PitchD", true));
+            this.numericUpDown7.DecimalPlaces = 2;
+            this.numericUpDown7.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown7.Location = new System.Drawing.Point(23, 72);
+            this.numericUpDown7.Name = "numericUpDown7";
+            this.numericUpDown7.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown7.TabIndex = 18;
+            // 
+            // numericUpDown8
+            // 
+            this.numericUpDown8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "YawI", true));
+            this.numericUpDown8.DecimalPlaces = 2;
+            this.numericUpDown8.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown8.Location = new System.Drawing.Point(23, 46);
+            this.numericUpDown8.Name = "numericUpDown8";
+            this.numericUpDown8.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown8.TabIndex = 19;
+            // 
+            // numericUpDown9
+            // 
+            this.numericUpDown9.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.StableModeConfigVmBindingSource, "YawD", true));
+            this.numericUpDown9.DecimalPlaces = 2;
+            this.numericUpDown9.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            131072});
+            this.numericUpDown9.Location = new System.Drawing.Point(23, 71);
+            this.numericUpDown9.Name = "numericUpDown9";
+            this.numericUpDown9.Size = new System.Drawing.Size(50, 20);
+            this.numericUpDown9.TabIndex = 20;
             // 
             // StableConfigView
             // 
@@ -330,19 +359,24 @@
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox3);
-            this.Controls.Add(this.button1);
             this.Name = "StableConfigView";
             this.Size = new System.Drawing.Size(271, 135);
             ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown5)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown6)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -355,26 +389,25 @@
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.TextBox textBox7;
-        private System.Windows.Forms.TextBox textBox8;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.TextBox textBox4;
-        private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox textBox3;
-        private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.Button button1;
         private System.Windows.Forms.BindingSource StableModeConfigVmBindingSource;
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.ToolTip toolTips;
         private System.Windows.Forms.NumericUpDown numericUpDown3;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private System.Windows.Forms.NumericUpDown numericUpDown9;
+        private System.Windows.Forms.NumericUpDown numericUpDown8;
+        private System.Windows.Forms.NumericUpDown numericUpDown7;
+        private System.Windows.Forms.NumericUpDown numericUpDown6;
+        private System.Windows.Forms.NumericUpDown numericUpDown5;
+        private System.Windows.Forms.NumericUpDown numericUpDown4;
     }
 }

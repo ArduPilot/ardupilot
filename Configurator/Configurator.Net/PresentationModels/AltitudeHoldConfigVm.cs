@@ -18,7 +18,10 @@ namespace ArducopterConfigurator.PresentationModels
             updateString = "E";
             refreshString = "F";
             PropsInUpdateOrder = new[] {"P", "I", "D",};
+
         }
+
+    
 
 
         private float _p;

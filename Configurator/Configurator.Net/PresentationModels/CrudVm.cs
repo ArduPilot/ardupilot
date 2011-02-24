@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace ArducopterConfigurator.PresentationModels
 {
@@ -10,10 +11,25 @@ namespace ArducopterConfigurator.PresentationModels
         protected string updateString;
         protected string refreshString;
 
+        // true when we are populating the properties from a serial command
+        protected bool _apmUpdatingProperties;
+
         protected CrudVm()
         {
             RefreshCommand = new DelegateCommand(_ => RefreshValues());
             UpdateCommand = new DelegateCommand(_ => UpdateValues());
+            PropertyChanged += AltitudeHoldConfigVm_PropertyChanged;
+        }
+
+        void AltitudeHoldConfigVm_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            // When this happens, a property has been set either when the user has adjusted it,
+            // or when the APM has sent us an update, probably due to an refresh command.
+            if (!_apmUpdatingProperties)
+            {
+                // Since here we know it was the user updating. Send to the apm
+                UpdateValues();
+            }
         }
 
         public string[] PropsInUpdateOrder { get; protected set; }
@@ -26,7 +42,6 @@ namespace ArducopterConfigurator.PresentationModels
         {
             if (sendTextToApm != null)
                 sendTextToApm(this, new sendTextToApmEventArgs(refreshString));
-
         }
 
         protected void UpdateValues()
@@ -52,7 +67,9 @@ namespace ArducopterConfigurator.PresentationModels
 
         public void handleLineOfText(string strRx)
         {
+            _apmUpdatingProperties = true;
             PropertyHelper.PopulatePropsFromUpdate(this,PropsInUpdateOrder, strRx, true);
+            _apmUpdatingProperties = true;
             
             if (updatedByApm != null)
                 updatedByApm(this, EventArgs.Empty);
