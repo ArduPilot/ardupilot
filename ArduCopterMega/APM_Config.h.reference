@@ -118,7 +118,7 @@
 //#define SERIAL0_BAUD        38400
 //#define SERIAL3_BAUD        115200
 //
-                                
+
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring                       OPTIONAL
 //
@@ -127,7 +127,7 @@
 //
 // BATTERY_EVENT                            OPTIONAL
 //
-// Set BATTERY_EVENT to ENABLED to enable battery monitoring.  The default is 
+// Set BATTERY_EVENT to ENABLED to enable battery monitoring.  The default is
 // DISABLED.
 //
 // BATTERY_TYPE                             OPTIONAL if BATTERY_EVENT is set
@@ -184,16 +184,16 @@
 // others have them marked the standard 1-8.  The FLIGHT_MODE_CHANNEL option
 // uses channel numbers 1-8 (and defaults to 8).
 //
-// If you only have a three-position switch or just want three modes, set your 
-// switch to produce 1165, 1425, and 1815 microseconds and configure 
+// If you only have a three-position switch or just want three modes, set your
+// switch to produce 1165, 1425, and 1815 microseconds and configure
 // FLIGHT_MODE 1 & 2, 3 & 4 and 5 & 6 to be the same.  This is the default.
 //
 // If you have FLIGHT_MODE_CHANNEL set to 8 (the default) and your control
 // channel connected to input channel 8, the hardware failsafe mode will
 // activate for any control input over 1750ms.
 //
-// For more modes (up to six), set your switch(es) to produce any of 1165, 
-// 1295, 1425, 1555, 1685, and 1815 microseconds. 
+// For more modes (up to six), set your switch(es) to produce any of 1165,
+// 1295, 1425, 1555, 1685, and 1815 microseconds.
 //
 // Flight mode |  Switch Setting (ms)
 // ------------+---------------------
@@ -259,7 +259,7 @@
 // by a setting on the throttle input channel (channel 3).
 //
 // This can be used to achieve a failsafe override on loss of radio control
-// without having to sacrifice one of your FLIGHT_MODE settings, as the 
+// without having to sacrifice one of your FLIGHT_MODE settings, as the
 // throttle failsafe overrides the switch-selected mode.
 //
 // Throttle failsafe is enabled by setting THROTTLE_FAILSAFE to 1.  The default
@@ -273,15 +273,15 @@
 // Configure your receiver's failsafe setting for the throttle channel to the
 // absolute minimum, and use the ArduPilotMega_demo program to check that
 // you cannot reach that value with the throttle control.  Leave a margin of
-// at least 50 microseconds between the lowest throttle setting and 
+// at least 50 microseconds between the lowest throttle setting and
 // THROTTLE_FS_VALUE.
 //
 // The FAILSAFE_ACTION setting determines what APM will do when throttle failsafe
 // mode is entered while flying in AUTO mode.  This is important in order to avoid
-// accidental failsafe behaviour when flying waypoints that take the aircraft 
+// accidental failsafe behaviour when flying waypoints that take the aircraft
 // temporarily out of radio range.
 //
-// If FAILSAFE_ACTION is 1, when failsafe is entered in AUTO or LOITER modes, 
+// If FAILSAFE_ACTION is 1, when failsafe is entered in AUTO or LOITER modes,
 // the aircraft will head for home in RTL mode.  If the throttle channel moves
 // back up, it will return to AUTO or LOITER mode.
 //
@@ -309,16 +309,16 @@
 // for the IMU calibration.
 //
 // The default is to begin IMU calibration immediately at startup.
-// 
+//
 //#define GROUND_START_DELAY  0
 //
 
 //////////////////////////////////////////////////////////////////////////////
 // ENABLE_AIR_START                         OPTIONAL
 //
-// If air start is disabled then you will get a ground start (including IMU 
-// calibration) every time the AP is powered up. This means that if you get 
-// a power glitch or reboot for some reason in the air, you will probably 
+// If air start is disabled then you will get a ground start (including IMU
+// calibration) every time the AP is powered up. This means that if you get
+// a power glitch or reboot for some reason in the air, you will probably
 // crash, but it prevents a lot of problems on the ground like unintentional
 // motor start-ups, etc.
 //
@@ -351,7 +351,7 @@
 // ALT_EST_GAIN                             OPTIONAL
 //
 // The gain of the altitude estimation function; a lower number results
-// in slower error correction and smoother output.  The default is a 
+// in slower error correction and smoother output.  The default is a
 // reasonable starting point.
 //
 //#define ALT_EST_GAIN        0.01
@@ -372,7 +372,7 @@
 //
 // THROTTLE_MIN                             OPTIONAL
 //
-// The minimum throttle setting to which the autopilot will reduce the 
+// The minimum throttle setting to which the autopilot will reduce the
 // throttle while descending.  The default is zero, which is
 // suitable for aircraft with a steady power-off glide.  Increase this
 // value if your aircraft needs throttle to maintain a stable descent in
@@ -386,7 +386,7 @@
 // THROTTLE_MAX                             OPTIONAL
 //
 // The maximum throttle setting the autopilot will apply.  The default is 75%.
-// Reduce this value if your aicraft is overpowered, or has complex flight 
+// Reduce this value if your aicraft is overpowered, or has complex flight
 // characteristics at high throttle settings.
 //
 //#define THROTTLE_MIN        0
@@ -419,7 +419,7 @@
 // term if you are not familiar with tuning PID loops.  It should normally
 // be zero for most aircraft.
 //
-// Note: When tuning these values, start with changes of no more than 25% at 
+// Note: When tuning these values, start with changes of no more than 25% at
 // a time.
 //
 // SERVO_ROLL_P                             OPTIONAL
@@ -473,9 +473,9 @@
 //
 // RUDDER_MIX                               OPTIONAL
 //
-// Roll to yaw mixing.  This allows for co-ordinated turns. 
+// Roll to yaw mixing.  This allows for co-ordinated turns.
 // Default is 0.50 (50% of roll control also applied to yaw control.)
-// 
+//
 //#define SERVO_ROLL_P        0.4
 //#define SERVO_ROLL_I        0.0
 //#define SERVO_ROLL_D        0.0
@@ -495,7 +495,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // Navigation control gains
-// 
+//
 // Tuning values for the navigation control PID loops.
 //
 // The P term is the primary tuning value.  This determines how the control
@@ -503,17 +503,17 @@
 //
 // The I term is used to control drift.
 //
-// The D term is used to control overshoot.  Avoid adjusting this term if 
+// The D term is used to control overshoot.  Avoid adjusting this term if
 // you are not familiar with tuning PID loops.
 //
-// Note: When tuning these values, start with changes of no more than 25% at 
+// Note: When tuning these values, start with changes of no more than 25% at
 // a time.
 //
 // NAV_ROLL_P                               OPTIONAL
 // NAV_ROLL_I                               OPTIONAL
 // NAV_ROLL_D                               OPTIONAL
 //
-// P, I and D terms for navigation control over roll, normally used for 
+// P, I and D terms for navigation control over roll, normally used for
 // controlling the aircraft's course.  The P term controls how aggressively
 // the aircraft will bank to change or hold course.
 // Defaults are 0.7, 0.01, 0.02.
@@ -544,7 +544,7 @@
 //
 // P, I and D terms for pitch adjustments made to maintain altitude.
 // Defaults are 0.65, 0, 0.
-// 
+//
 // NAV_PITCH_ALT_INT_MAX                    OPTIONAL
 //
 // Maximum pitch offset due to the integral.  This limits the control
@@ -577,7 +577,7 @@
 //
 // The I term is used to compensate for small offsets.
 //
-// The D term is used to control overshoot.  Avoid adjusting this term if 
+// The D term is used to control overshoot.  Avoid adjusting this term if
 // you are not familiar with tuning PID loops.
 //
 // THROTTLE_TE_P                            OPTIONAL
@@ -609,7 +609,7 @@
 //#define THROTTLE_TE_P       0.50
 //#define THROTTLE_TE_I       0.0
 //#define THROTTLE_TE_D       0.0
-//#define THROTTLE_TE_INT_MAX 20 
+//#define THROTTLE_TE_INT_MAX 20
 //#define THROTTLE_SLEW_LIMIT 0
 //#define P_TO_T              2.5
 //
@@ -639,36 +639,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// Subsystem test and debug.
-//
-// DEBUG_SUBSYSTEM                          DEBUG
-//
-// Selects a subsystem debug mode.  Default is 0.
-//
-// 0 = no debug
-// 1 = Debug the Radio input
-// 2 = Radio Setup / Servo output
-// 4 = Debug the GPS input
-// 5 = Debug the GPS input - RAW OUTPUT
-// 6 = Debug the IMU
-// 7 = Debug the Control Switch
-// 8 = Debug the Servo DIP switches
-// 9 = Debug the Relay out
-// 10 = Debug the Magnetometer
-// 11 = Debug the ABS pressure sensor
-// 12 = Debug the stored waypoints
-// 13 = Debug the Throttle
-// 14 = Debug the Radio Min Max
-// 15 = Debug the EEPROM - Hex Dump
-// 16 = XBee X-CTU Range and RSSI Test
-// 17 = Debug IMU - raw gyro and accel outputs
-// 20 = Debug Analog Sensors
-// 
-//
-//#define DEBUG_SUBSYSTEM     0
-//                                
-
-//////////////////////////////////////////////////////////////////////////////
 // DEBUG_LEVEL                              DEBUG
 //
 // Selects the lowest level of debug messages passed to the telemetry system.
@@ -690,12 +660,12 @@
 //
 // LOG_ATTITUDE_FAST                        DEBUG
 //
-// Logs basic attitude info to the dataflash at 50Hz (uses more space). 
+// Logs basic attitude info to the dataflash at 50Hz (uses more space).
 // Defaults to DISABLED.
 //
 // LOG_ATTITUDE_MED                         OPTIONAL
 //
-// Logs basic attitude info to the dataflash at 10Hz (uses less space than 
+// Logs basic attitude info to the dataflash at 10Hz (uses less space than
 // LOG_ATTITUDE_FAST).  Defaults to ENABLED.
 //
 // LOG_GPS                                  OPTIONAL
@@ -704,7 +674,7 @@
 //
 // LOG_PM                                   OPTIONAL
 //
-// Logs IMU performance monitoring info every 20 seconds.  
+// Logs IMU performance monitoring info every 20 seconds.
 // Defaults to DISABLED.
 //
 // LOG_CTUN                                 OPTIONAL
@@ -728,7 +698,7 @@
 //
 // LOG_CMD                                  OPTIONAL
 //
-// Logs new commands when they process. 
+// Logs new commands when they process.
 // Defaults to ENABLED.
 //
 //#define LOG_ATTITUDE_FAST   DISABLED
@@ -743,7 +713,7 @@
 //
 
 //
-// Do not remove - this is to discourage users from copying this file 
+// Do not remove - this is to discourage users from copying this file
 // and using it as-is rather than editing their own.
 //
 #error You should not copy APM_Config.h.reference - make your own APM_Config.h file with just the options you need.

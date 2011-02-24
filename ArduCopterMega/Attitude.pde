@@ -217,7 +217,7 @@ void calc_nav_throttle()
 
 		g.pid_baro_throttle.kP(t);
 
-	} else {
+	}else{
 		// SONAR
 		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
 
@@ -245,7 +245,7 @@ void output_manual_yaw()
 {
 	if(g.rc_3.control_in == 0){
 		clear_yaw_control();
-	} else {
+	}else{
 		// Yaw control
 		if(g.rc_4.control_in == 0){
 			//clear_yaw_control();

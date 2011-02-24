@@ -111,13 +111,35 @@ set_current_loc_here()
 	set_next_WP(&l);
 }
 
+void loiter_at_location()
+{
+	next_WP = current_loc;
+}
+
+void set_mode_loiter_home(void)
+{
+	control_mode = LOITER;
+	//crash_timer = 0;
+
+	next_WP = current_loc;
+	// Altitude to hold over home
+	// Set by configuration tool
+	// -------------------------
+	next_WP.alt = read_alt_to_hold();
+
+	// output control mode to the ground station
+	gcs.send_message(MSG_HEARTBEAT);
+
+	if (g.log_bitmask & MASK_LOG_MODE)
+		Log_Write_Mode(control_mode);
+}
+
 //********************************************************************************
 //This function sets the waypoint and modes for Return to Launch
 //********************************************************************************
 
 // add a new command at end of command set to RTL.
-void
-return_to_launch(void)
+void return_to_launch(void)
 {
 	//so we know where we are navigating from
 	next_WP = current_loc;
@@ -137,8 +159,7 @@ return_to_launch(void)
 	//send_message(SEVERITY_LOW,"Return To Launch");
 }
 
-struct
-Location get_LOITER_home_wp()
+struct Location get_LOITER_home_wp()
 {
 	// read home position
 	struct Location temp 	= get_wp_with_index(0);
@@ -151,8 +172,7 @@ Location get_LOITER_home_wp()
 This function stores waypoint commands
 It looks to see what the next command type is and finds the last command.
 */
-void
-set_next_WP(struct Location *wp)
+void set_next_WP(struct Location *wp)
 {
 	//GCS.send_text(SEVERITY_LOW,"load WP");
 	SendDebug("MSG <set_next_wp> wp_index: ");
@@ -173,8 +193,12 @@ set_next_WP(struct Location *wp)
 
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
-	target_altitude = current_loc.alt;						// PH: target_altitude = 200
-	offset_altitude = next_WP.alt - prev_WP.alt;			// PH: offset_altitude = 0
+	target_altitude = current_loc.alt;
+
+	if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
+		offset_altitude = next_WP.alt - prev_WP.alt;
+	else
+		offset_altitude = 0;
 
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 		= 0;
@@ -223,7 +247,8 @@ void init_home()
 
 	// ground altitude in centimeters for pressure alt calculations
 	// ------------------------------------------------------------
-	save_EEPROM_pressure();
+	g.ground_pressure.save();
+
 
 	// Save Home to EEPROM
 	// -------------------

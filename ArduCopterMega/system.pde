@@ -103,7 +103,7 @@ void init_ardupilot()
 		g.format_version.set_and_save(Parameters::k_format_version);
 
 		Serial.println_P(PSTR("done."));
-	} else {
+	}else{
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
@@ -228,7 +228,7 @@ void startup_ground(void)
 
 	// read Baro pressure at ground
 	//-----------------------------
-	init_pressure_ground();
+	init_barometer();
 
 	// initialize commands
 	// -------------------
@@ -344,7 +344,7 @@ void update_GPS_light(void)
 				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
 				if (GPS_light){
 					digitalWrite(C_LED_PIN, LOW);
-				} else {
+				}else{
 					digitalWrite(C_LED_PIN, HIGH);
 				}
 				g_gps->valid_read = false;

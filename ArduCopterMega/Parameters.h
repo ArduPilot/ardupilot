@@ -223,7 +223,7 @@ public:
         sonar_enabled  			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
         current_enabled  		(DISABLED,					k_param_current,						PSTR("CURRENT_ENABLE")),
         milliamp_hours  		(CURR_AMP_HOURS,			k_param_milliamp_hours,					PSTR("MAH")),
-        compass_enabled  		(DISABLED,					k_param_compass_enabled,				PSTR("COMPASS_ENABLE")),
+        compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
 
         waypoint_mode           (0,                         k_param_waypoint_mode,          		PSTR("WP_MODE")),
         waypoint_total          (0,                         k_param_waypoint_total,         		PSTR("WP_TOTAL")),

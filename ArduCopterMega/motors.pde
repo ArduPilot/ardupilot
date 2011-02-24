@@ -97,11 +97,6 @@ set_servos_4()
 			//Serial.println("TRI_FRAME");
 			// Tri-copter power distribution
 
-			float temp = cos_pitch_x * cos_roll_x;
-			temp = 2.0 - constrain(temp, .7, 1.0);
-			return temp;
-			}
-
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
 			int pitch_out 		= g.rc_2.pwm_out / 2;
 

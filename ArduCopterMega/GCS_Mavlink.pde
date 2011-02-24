@@ -16,7 +16,7 @@ GCS_MAVLINK::init(BetterStream * port)
     if (port == &Serial) { // to split hil vs gcs
         mavlink_comm_0_port = port;
         chan = MAVLINK_COMM_0;
-    } else {
+    }else{
         mavlink_comm_1_port = port;
         chan = MAVLINK_COMM_1;
     }
@@ -347,7 +347,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 x = tell_command.lat/1.0e7; // local (x), global (longitude)
                 y = tell_command.lng/1.0e7; // local (y), global (latitude)
                 z = tell_command.alt/1.0e2; // local (z), global (altitude)
-            } else {
+            }else{
                 // command is raw
                 x = tell_command.lat;
                 y = tell_command.lng;
@@ -508,7 +508,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                         tell_command.lat = packet.x; // in as long no conversion
                         tell_command.lng = packet.y; // in as long no conversion
                         tell_command.alt = packet.z; // in as int no conversion
-                    } else {
+                    }else{
                         tell_command.p1 = packet.param1; // in as byte no conversion
                         tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
                         tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7

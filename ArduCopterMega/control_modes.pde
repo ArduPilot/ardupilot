@@ -8,6 +8,7 @@ void read_control_switch()
 		set_mode(g.flight_modes[switchPosition]);
 
 		oldSwitchPosition = switchPosition;
+		prev_WP = current_loc;
 
 		// reset navigation integrators
 		// -------------------------
@@ -40,8 +41,8 @@ void reset_control_switch()
 {
 	oldSwitchPosition = -1;
 	read_control_switch();
-	//Serial.print("MSG: reset_control_switch");
-	//Serial.println(oldSwitchPosition , DEC);
+	SendDebug("MSG: reset_control_switch");
+	SendDebugln(oldSwitchPosition , DEC);
 }
 
 void update_servo_switches()
@@ -74,7 +75,7 @@ void read_trim_switch()
 			if((millis() - trim_timer) > 2000){
 				imu.save();
 
-			} else {
+			}else{
 				// set the throttle nominal
 				if(g.rc_3.control_in > 50){
 					g.throttle_cruise.set(g.rc_3.control_in);
@@ -87,7 +88,7 @@ void read_trim_switch()
 				// this is a test for Max's tri-copter
 				if(g.frame_type == TRI_FRAME){
 					g.rc_4.trim();	// yaw
-					g.rc_4.save_trim();
+					g.rc_4.save_eeprom();
 				}
 			}
 			trim_flag = false;

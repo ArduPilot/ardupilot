@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
@@ -8,8 +10,8 @@ static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
+//static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -47,8 +49,8 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 	{"adc", 		test_adc},
 	{"imu",			test_imu},
-	{"dcm",			test_dcm},
-	{"omega",		test_omega},
+	//{"dcm",			test_dcm},
+	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"current",		test_current},
 	{"relay",		test_relay},
@@ -97,7 +99,15 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"), g.rc_1.radio_in, g.rc_2.radio_in, g.rc_3.radio_in, g.rc_4.radio_in, g.rc_5.radio_in, g.rc_6.radio_in, g.rc_7.radio_in, g.rc_8.radio_in);
+		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+							g.rc_1.radio_in,
+							g.rc_2.radio_in,
+							g.rc_3.radio_in,
+							g.rc_4.radio_in,
+							g.rc_5.radio_in,
+							g.rc_6.radio_in,
+							g.rc_7.radio_in,
+							g.rc_8.radio_in);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -125,7 +135,15 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		g.rc_3.calc_pwm();
 		g.rc_4.calc_pwm();
 
-		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"), (g.rc_1.control_in), (g.rc_2.control_in), (g.rc_3.control_in), (g.rc_4.control_in), g.rc_5.control_in, g.rc_6.control_in, g.rc_7.control_in);
+		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
+							(g.rc_1.control_in),
+							(g.rc_2.control_in),
+							(g.rc_3.control_in),
+							(g.rc_4.control_in),
+							g.rc_5.control_in,
+							g.rc_6.control_in,
+							g.rc_7.control_in);
+
 		//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d\n"), (g.rc_1.servo_out / 100), (g.rc_2.servo_out / 100), g.rc_3.servo_out, (g.rc_4.servo_out / 100));
 
 		/*Serial.printf_P(PSTR(	"min: %d"
@@ -439,8 +457,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			Vector3f accels 	= imu.get_accel();
 			Vector3f gyros 		= imu.get_gyro();
 
-			update_trig();
-
 			if(g.compass_enabled){
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
@@ -452,16 +468,18 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 			// We are using the IMU
 			// ---------------------
+			/*
 			Serial.printf_P(PSTR("A: %4.4f, %4.4f, %4.4f\t"
 								 "G: %4.4f, %4.4f, %4.4f\t"),
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
-
+			*/
 			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\t"),
 								dcm.roll_sensor,
 								dcm.pitch_sensor,
 								dcm.yaw_sensor);
-
+			/*
+			update_trig();
 			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
 								cos_pitch_x,
 								sin_pitch_y,
@@ -469,6 +487,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								sin_roll_y,
 								cos_yaw_x,	// x
 								sin_yaw_y);	// y
+			*/
 		}
 
 		if(Serial.available() > 0){
@@ -483,43 +502,31 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-	/*while(1){
-		delay(100);
-
-		update_GPS();
-
-		if(Serial.available() > 0){
-			return (0);
-		}
-
-		if(home.lng != 0){
-			break;
-		}
-	}*/
-
 	while(1){
-		delay(100);
-		update_GPS();
+		delay(333);
 
-		calc_distance_error();
+		// Blink GPS LED if we don't have a fix
+		// ------------------------------------
+		update_GPS_light();
 
-		//if (g_gps->new_data){
-			Serial.printf_P(PSTR("Lat: %3.8f, Lon: %3.8f, alt %dm, spd: %d dist:%d, #sats: %d\n"),
-						((float)g_gps->latitude /  10000000),
-						((float)g_gps->longitude / 10000000),
-						(int)g_gps->altitude / 100,
-						(int)g_gps->ground_speed,
-						(int)wp_distance,
-						(int)g_gps->num_sats);
-		//}else{
-			//Serial.print(".");
-		//}
+		g_gps->update();
+
+		if (g_gps->new_data){
+			Serial.printf_P(PSTR("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n"),
+					g_gps->latitude,
+					g_gps->longitude,
+					g_gps->altitude/100,
+					g_gps->num_sats);
+		}else{
+			Serial.print(".");
+		}
 		if(Serial.available() > 0){
 			return (0);
 		}
 	}
 }
 
+/*
 static int8_t
 test_dcm(uint8_t argc, const Menu::arg *argv)
 {
@@ -569,8 +576,7 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-
-
+*/
 /*
 static int8_t
 test_dcm(uint8_t argc, const Menu::arg *argv)
@@ -594,7 +600,8 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 	}
 }
 */
-static int8_t
+
+/*static int8_t
 test_omega(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
@@ -629,6 +636,7 @@ test_omega(uint8_t argc, const Menu::arg *argv)
 	}
 	return (0);
 }
+*/
 
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
@@ -638,14 +646,11 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_battery();
 	}
-	Serial.printf_P(PSTR("Volts: 1:"));
-	Serial.print(battery_voltage1, 4);
-	Serial.print(" 2:");
-	Serial.print(battery_voltage2, 4);
-	Serial.print(" 3:");
-	Serial.print(battery_voltage3, 4);
-	Serial.print(" 4:");
-	Serial.println(battery_voltage4, 4);
+	Serial.printf_P(PSTR("Volts: 1:%2.2f, 2:%2.2f, 3:%2.2f, 4:%2.2f\n")
+			battery_voltage1,
+			battery_voltage2,
+			battery_voltage3,
+			battery_voltage4);
 #else
 	Serial.printf_P(PSTR("Not enabled\n"));
 
@@ -663,7 +668,10 @@ test_current(uint8_t argc, const Menu::arg *argv)
 		delay(100);
 		read_radio();
 		read_current();
-		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"), current_voltage, current_amps, current_total);
+		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
+						current_voltage,
+						current_amps,
+						current_total);
 
 		//if(g.rc_3.control_in > 0){
 			APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
@@ -678,10 +686,6 @@ test_current(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-
-
-
-
 static int8_t
 test_relay(uint8_t argc, const Menu::arg *argv)
 {
@@ -689,14 +693,14 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		Serial.println("Relay on");
+		Serial.printf_P(PSTR("Relay on\n"));
 		relay_on();
 		delay(3000);
 		if(Serial.available() > 0){
 			return (0);
 		}
 
-		Serial.println("Relay off");
+		Serial.printf_P(PSTR("Relay off\n"));
 		relay_off();
 		delay(3000);
 		if(Serial.available() > 0){
@@ -725,10 +729,22 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
 	for(byte i = 0; i <= g.waypoint_total; i++){
 		struct Location temp = get_wp_with_index(i);
-		print_waypoint(&temp, i);
+		test_wp_print(&temp, i);
 	}
 
 	return (0);
+}
+
+void
+test_wp_print(struct Location *cmd, byte index)
+{
+	Serial.printf_P(PSTR("command #: %d id:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+		(int)index,
+		(int)cmd->id,
+		(int)cmd->p1,
+		cmd->alt,
+		cmd->lat,
+		cmd->lng);
 }
 
 
@@ -772,7 +788,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 
 	home.alt = 0;
 	wp_distance = 0;
-	init_pressure_ground();
+	init_barometer();
 
 	while(1){
 		if (millis()-fast_loopTimer > 9) {
@@ -828,31 +844,29 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-	if(g.compass_enabled == false){
-		Serial.printf_P(PSTR("Compass disabled\n"));
-		return (0);
-	}else{
+	if(g.compass_enabled) {
 		print_hit_enter();
+
 		while(1){
 			delay(250);
 			compass.read();
 			compass.calculate(0,0);
-			Serial.printf_P(PSTR("Heading: ("));
-			Serial.print(ToDeg(compass.heading));
-			Serial.printf_P(PSTR(")  XYZ: ("));
-			Serial.print(compass.mag_x);
-			Serial.print(comma);
-			Serial.print(compass.mag_y);
-			Serial.print(comma);
-			Serial.print(compass.mag_z);
-			Serial.println(")");
-			if(Serial.available() > 0){
+			Serial.printf_P(PSTR("Heading: %4.2f, XYZ: %4.2f, %4.2f, %4.2f"),
+						ToDeg(compass.heading),
+						compass.mag_x,
+						compass.mag_y,
+						compass.mag_z);
+
+    		if(Serial.available() > 0){
 				return (0);
 			}
 		}
+	} else {
+		Serial.printf_P(PSTR("Compass: "));
+		print_enabled(false);
+		return (0);
 	}
 }
-
 
 void print_hit_enter()
 {

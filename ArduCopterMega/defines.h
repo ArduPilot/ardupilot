@@ -1,5 +1,26 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
+
+// ACM:
+// Motors
+#define RIGHT CH_1
+#define LEFT CH_2
+#define FRONT CH_3
+#define BACK CH_4
+#define RIGHTFRONT CH_7
+#define LEFTBACK CH_8
+#define MAX_SERVO_OUTPUT 2700
+
+// active altitude sensor
+#define SONAR 0
+#define BARO 1
+
+// Frame types
+#define PLUS_FRAME 0
+#define X_FRAME 1
+#define TRI_FRAME 2
+#define HEXA_FRAME 3
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -13,16 +34,6 @@
 
 #define T6 1000000
 #define T7 10000000
-
-// GPS baud rates
-// --------------
-#define NO_GPS		38400
-#define NMEA_GPS	38400
-#define EM406_GPS	57600
-#define UBLOX_GPS	38400
-#define ARDU_IMU	38400
-#define MTK_GPS		38400
-#define SIM_GPS		38400
 
 // GPS type codes - use the names, not the numbers
 #define GPS_PROTOCOL_NONE	-1
@@ -52,8 +63,6 @@
 #define CH_THROTTLE CH_3
 #define CH_RUDDER CH_4
 #define CH_YAW CH_4
-#define CH_AUX CH_5
-#define CH_AUX2 CH_6
 
 // HIL enumerations
 #define HIL_PROTOCOL_XPLANE			1
@@ -63,37 +72,13 @@
 #define HIL_MODE_ATTITUDE			1
 #define HIL_MODE_SENSORS			2
 
-// motors
-#define RIGHT CH_1
-#define LEFT CH_2
-#define FRONT CH_3
-#define BACK CH_4
-
-#define RIGHTFRONT CH_7
-#define LEFTBACK CH_8
-
-#define MAX_SERVO_OUTPUT 2700
-
-#define SONAR 0
-#define BARO 1
-
-// parameters get the first 1KiB of EEPROM, remainder is for waypoints
-#define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
-#define WP_SIZE 14
-
 // GCS enumeration
-#define GCS_PROTOCOL_STANDARD	0	// standard APM protocol
-#define GCS_PROTOCOL_SPECIAL	1	// special test protocol (?)
-#define GCS_PROTOCOL_LEGACY		2	// legacy ArduPilot protocol
-#define GCS_PROTOCOL_XPLANE		3	// X-Plane HIL simulation
-#define GCS_PROTOCOL_IMU		4	// ArdiPilot IMU output
-#define GCS_PROTOCOL_JASON		5	// Jason's special secret GCS protocol
-#define GCS_PROTOCOL_NONE		-1	// No GCS output
-
-#define PLUS_FRAME 0
-#define X_FRAME 1
-#define TRI_FRAME 2
-#define HEXA_FRAME 3
+#define GCS_PROTOCOL_STANDARD		0	// standard APM protocol
+#define GCS_PROTOCOL_LEGACY			1	// legacy ArduPilot protocol
+#define GCS_PROTOCOL_XPLANE			2	// X-Plane HIL simulation
+#define GCS_PROTOCOL_DEBUGTERMINAL	3	//Human-readable debug interface for use with a dumb terminal
+#define GCS_PROTOCOL_MAVLINK	        4	// binary protocol for qgroundcontrol
+#define GCS_PROTOCOL_NONE			-1	// No GCS output
 
 // Auto Pilot modes
 // ----------------
@@ -102,14 +87,16 @@
 #define ALT_HOLD 2			// AUTO control
 #define FBW 3				// AUTO control
 #define AUTO 4				// AUTO control
-#define POSITION_HOLD 5		// Hold a single location
-#define RTL 6				// AUTO control
-#define TAKEOFF 7			// controlled decent rate
-#define LAND 8				// controlled decent rate
-#define NUM_MODES 9
+#define LOITER 5				// AUTO control
+#define POSITION_HOLD 6		// Hold a single location
+#define RTL 7				// AUTO control
+#define TAKEOFF 8			// controlled decent rate
+#define LAND 9				// controlled decent rate
+#define NUM_MODES 10
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0x00 // there is no command stored in the mem location requested
+
 
 //repeating events
 #define NO_REPEAT 0
@@ -183,7 +170,6 @@
 #define SEVERITY_HIGH 3
 #define SEVERITY_CRITICAL 4
 
-
 //  Logging parameters
 #define LOG_INDEX_MSG			0xF0
 #define LOG_ATTITUDE_MSG		0x01
@@ -211,6 +197,18 @@
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CUR			(1<<9)
 
+// bits in log_bitmask
+#define LOGBIT_ATTITUDE_FAST	(1<<0)
+#define LOGBIT_ATTITUDE_MED		(1<<1)
+#define LOGBIT_GPS				(1<<2)
+#define LOGBIT_PM				(1<<3)
+#define LOGBIT_CTUN				(1<<4)
+#define LOGBIT_NTUN				(1<<5)
+#define LOGBIT_MODE				(1<<6)
+#define LOGBIT_RAW				(1<<7)
+#define LOGBIT_CMD				(1<<8)
+#define LOGBIT_CURRENT			(1<<9)
+
 // Waypoint Modes
 // ----------------
 #define ABS_WP 0
@@ -228,6 +226,10 @@
 #define EVENT_SET_NEW_WAYPOINT_INDEX 2
 #define EVENT_LOADED_WAYPOINT 3
 #define EVENT_LOOP 4
+
+// Climb rate calculations
+#define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
+
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 
@@ -257,24 +259,9 @@
 #define B_LED_PIN 36
 #define C_LED_PIN 35
 
-// ADC : Voltage reference 3.3v / 12bits(4096 steps) => 0.8mV/ADC step
-// ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
-// Tested value : 418
-
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096
-
-
-// bits in log_bitmask
-#define LOGBIT_ATTITUDE_FAST	(1<<0)
-#define LOGBIT_ATTITUDE_MED		(1<<1)
-#define LOGBIT_GPS				(1<<2)
-#define LOGBIT_PM				(1<<3)
-#define LOGBIT_CTUN				(1<<4)
-#define LOGBIT_NTUN				(1<<5)
-#define LOGBIT_MODE				(1<<6)
-#define LOGBIT_RAW				(1<<7)
-#define LOGBIT_CMD				(1<<8)
-#define LOGBIT_CURRENT			(1<<9)
-
+// parameters get the first 1KiB of EEPROM, remainder is for waypoints
+#define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
+#define WP_SIZE 14

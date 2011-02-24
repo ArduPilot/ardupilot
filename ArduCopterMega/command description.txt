@@ -1,80 +1,61 @@
-ArduPilotMega 1.0.0 Commands
+ArduPilotMega 2.0 Commands
 
 Command Structure in bytes
 0 0x00	byte	Command ID
 1 0x01	byte	Parameter 1
-2 0x02	int		Parameter 2
+2 0x02	long	Parameter 2
 3 0x03	..
-4 0x04	long	Parameter 3
+4 0x04	..
 5 0x05	..
-6 0x06	..
+6 0x06	long	Parameter 3
 7 0x07	..
-8 0x08	long	Parameter 4
+8 0x08	..
 9 0x09	..
-10 0x0A	..
+10 0x0A	long	Parameter 4
 11 0x0B	..
+11 0x0C	..
+11 0x0D	..
 
-0x00		Reserved
-....
-0x0F		Reserved
+
 
 ***********************************
-Commands 0x10 to 0x2F are commands that have a end criteria, eg "reached waypoint" or "reached altitude"
+Commands below MAV_CMD_NAV_LAST are commands that have a end criteria, eg "reached waypoint" or "reached altitude"
 ***********************************
-Command ID	Name						Parameter 1			Altitude			Latitude			Longitude
-0x10		CMD_WAYPOINT				-					altitude			lat					lon
-0x11		CMD_LOITER (indefinitely)	-					altitude			lat					lon
-0x12		CMD_LOITER_N_TURNS			turns				altitude			lat					lon
-0x13		CMD_LOITER_TIME				time (seconds*10)	altitude			lat					lon
-0x14		CMD_RTL						-					altitude			lat					lon
-0x15		CMD_LAND					-					altitude			lat					lon
-0x16		CMD_TAKEOFF					angle				altitude			-					-
-0x17		CMD_ALTITUDE				-					altitude			-					-
-0x18		CMD_R_WAYPOINT				-					altitude			rlat				rlon
-0x19		CMD_TARGET					-					altitude			lat					lon
+Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
+0x10 / 16	MAV_CMD_NAV_WAYPOINT				-					altitude			lat					lon
+0x11 / 17	MAV_CMD_NAV_LOITER_UNLIM 	(indefinitely)	-			altitude			lat					lon
+0x12 / 18	MAV_CMD_NAV_LOITER_TURNS			turns				altitude			lat					lon
+0x13 / 19	MAV_CMD_NAV_LOITER_TIME				time (seconds*10)	altitude			lat					lon
+0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					altitude			lat					lon
+0x15 / 21	MAV_CMD_NAV_LAND					-					altitude			lat					lon
+0x16 / 22	MAV_CMD_NAV_TAKEOFF					takeoff pitch		altitude			-					-
+			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
+0x17 / 23	MAV_CMD_NAV_TARGET					-					altitude			lat					lon
 
 
 ***********************************
 May Commands - these commands are optional to finish
-Command ID	Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
-0x20		CMD_DELAY					-					-					time (milliseconds) -
-0x21		CMD_CLIMB					rate (cm/sec)		alt (finish)		-					-
-0x22 		CMD_LAND_OPTIONS			pitch deg			airspeed m/s, 		throttle %, 		distance to WP
-0x23		CMD_ANGLE					angle				speed				direction (-1,1)	rel (1), abs (0)
+Command ID		Name								Parameter 1			Parameter 2			Parameter 3			Parameter 4
+0x70 / 112		MAV_CMD_CONDITION_DELAY				-					-					time (milliseconds) -
+0x71 / 113		MAV_CMD_CONDITION_CHANGE_ALT 		rate (cm/sec)		alt (finish)		-					-
+0x72 / 114 		MAV_CMD_NAV_LAND_OPTIONS			(NOT CURRENTLY IN MAVLINK PROTOCOL)
+0x23			MAV_CMD_CONDITION_ANGLE				angle				speed				direction (-1,1)	rel (1), abs (0)
 
 
 ***********************************
-Unexecuted commands >= 0x20 are dropped when ready for the next command <= 0x1F so plan/queue commands accordingly!
-For example if you had a string of 0x21 commands following a 0x10 command that had not finished when the waypoint was
-reached, the unexecuted 0x21 commands would be skipped and the next command <= 0x1F would be loaded
+Unexecuted commands > MAV_CMD_NAV_LAST are dropped when ready for the next command < MAV_CMD_NAV_LAST so plan/queue commands accordingly!
+For example if you had a string of CMD_MAV_CONDITION commands following a 0x10 command that had not finished when the waypoint was
+reached, the unexecuted CMD_MAV_CONDITION and CMD_MAV_DO commands would be skipped and the next command < MAV_CMD_NAV_LAST would be loaded
 ***********************************
 Now Commands - these commands are executed once until no more new now commands are available
-0x31		CMD_RESET_INDEX
-0x32		CMD_GOTO_INDEX				index				repeat count
-0x33		CMD_GETVAR_INDEX			variable ID
-0x34		CMD_SENDVAR_INDEX			off/on = 0/1
-0x35		CMD_TELEMETRY				off/on = 0/1
 
-0x40		CMD_THROTTLE_CRUISE 		speed
-//0x41		CMD_AIRSPEED_CRUISE 		speed
-0x44		CMD_RESET_HOME									altitude			lat					lon
-
-0x60		CMD_KP_GAIN					array index			gain value*100,000
-0x61		CMD_KI_GAIN					array index			gain value*100,000
-0x62		CMD_KD_GAIN					array index			gain value*100,000
-0x63		CMD_KI_MAX					array index			gain value*100,000
-0x64		CMD_KFF_GAIN				array index			gain value*100,000
-
-0x70		CMD_RADIO_TRIM				array index			value
-0x71		CMD_RADIO_MAX				array index			value
-0x72		CMD_RADIO_MIN				array index			value
-0x73		CMD_ELEVON_TRIM				array index			value	(index 0 = elevon 1 trim, 1 = elevon 2 trim)
-0x75		CMD_INDEX	    			index
-
-0x80		CMD_REPEAT					type				value				delay in sec		repeat count
-0x81		CMD_RELAY					(0,1 to change swicth position)
-0x82		CMD_SERVO					number				value
-
-
-
+Command ID		Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
+0xB1 / 177		MAV_CMD_DO_JUMP				index				repeat count
+0XB2 / 178		MAV_CMD_DO_CHANGE_SPEED 	TODO - Fill in from protocol
+0xB3 / 179		MAV_CMD_DO_SET_HOME
+0xB4 / 180		MAV_CMD_DO_SET_PARAMETER
+0xB5 / 181		MAV_CMD_DO_SET_RELAY
+0xB6 / 182		MAV_CMD_DO_REPEAT_RELAY
+0xB7 / 183		MAV_CMD_DO_SET_SERVO
+0xB8 / 184		MAV_CMD_DO_REPEAT_SERVO
 
