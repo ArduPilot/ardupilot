@@ -36,9 +36,9 @@ const int8_t  AP_IMU_Oilpan::_sensor_signs[6]	= {	1,-1,-1, 1,-1,-1};  // Channel
 // [X/Y/Z gyro][A/B/C or 0 order/1st order/2nd order constants]
 //
 const float   AP_IMU_Oilpan::_gyro_temp_curve[3][3] = {
-	{1665,0,0},
-	{1665,0,0},
-	{1665,0,0}
+	{1658,0,0},			// Values to use if no temp compensation data available
+	{1658,0,0},			// Based on average values for 20 sample boards
+	{1658,0,0}
 };
 
 void
@@ -74,11 +74,14 @@ AP_IMU_Oilpan::_init_gyro()
 	int flashcount = 0;
 	int tc_temp;
 	float adc_in;
+	float prev[3] = {0,0,0};
+	float total_change;
+	float max_offset;
 
 	// cold start
 	tc_temp = _adc->Ch(_gyro_temp_ch);
  	delay(500);
-	Serial.println("Init Gyro");
+	Serial.printf_P(PSTR("Init Gyro"));
 
 	for(int c = 0; c < 25; c++){				// Mostly we are just flashing the LED's here to tell the user to keep the IMU still
 		digitalWrite(A_LED_PIN, LOW);
@@ -93,34 +96,45 @@ AP_IMU_Oilpan::_init_gyro()
 		delay(20);
 	}
 
-	for (int j = 0; j <= 2; j++){
-		adc_in -= _sensor_compensation(j, tc_temp);
-		_sensor_cal[j]	= adc_in;
-	}
-
-	for(int i = 0; i < 100; i++){
-		for (int j = 0; j < 3; j++){
+	for (int j=0; j<=2; j++) _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
+	
+	do {
+		for (int j = 0; j <= 2; j++){
+			prev[j] = _sensor_cal[j];
 			adc_in = _adc->Ch(_sensors[j]);
-			// Subtract temp compensated typical gyro bias
 			adc_in -= _sensor_compensation(j, tc_temp);
-			// filter
-			_sensor_cal[j] = _sensor_cal[j] * 0.9 + adc_in * 0.1;
+			_sensor_cal[j]	= adc_in;
 		}
 
-		delay(20);
-		if(flashcount == 5) {
-			Serial.print("*");
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(C_LED_PIN, HIGH);
-		}
+		for(int i = 0; i < 50; i++){
+			for (int j = 0; j < 3; j++){
+				adc_in = _adc->Ch(_sensors[j]);
+				// Subtract temp compensated typical gyro bias
+				adc_in -= _sensor_compensation(j, tc_temp);
+				// filter
+				_sensor_cal[j] = _sensor_cal[j] * 0.9 + adc_in * 0.1;
+			}
 
-		if(flashcount >= 10) {
-			flashcount = 0;
-			digitalWrite(C_LED_PIN, LOW);
+			delay(20);
+			if(flashcount == 5) {
+				Serial.printf_P(PSTR("*"));
+				digitalWrite(A_LED_PIN, LOW);
+				digitalWrite(C_LED_PIN, HIGH);
+			}
+
+			if(flashcount >= 10) {
+				flashcount = 0;
+				digitalWrite(C_LED_PIN, LOW);
 			digitalWrite(A_LED_PIN, HIGH);
+			}
+			flashcount++;
 		}
-		flashcount++;
-	}
+		
+		total_change = fabs(prev[0] - _sensor_cal[0]) + fabs(prev[1] - _sensor_cal[1]) +fabs(prev[2] - _sensor_cal[2]);
+		max_offset = (_sensor_cal[0] > _sensor_cal[1]) ? _sensor_cal[0] : _sensor_cal[1];
+		max_offset = (max_offset > _sensor_cal[2]) ? max_offset : _sensor_cal[2];
+		delay(500);
+	} while (  total_change > _gyro_total_cal_change || max_offset > _gyro_max_cal_offset);
 }
 
 void
@@ -141,47 +155,60 @@ AP_IMU_Oilpan::_init_accel()
 {
 	int flashcount = 0;
 	float adc_in;
+	float prev[6] = {0,0,0};
+	float total_change;
+	float max_offset;
 
 	// cold start
  	delay(500);
 
-	Serial.println("Init Accel");
+	Serial.printf_P(PSTR("Init Accel"));
 
-	// init to initial reading (unlike gyro which presumes zero...)
-	//
-	for (int j = 3; j < 6; j++){
-		adc_in 		    = _adc->Ch(_sensors[j]);
-		adc_in 		    -= _sensor_compensation(j, 0);  // XXX secret knowledge, temperature ignored
-		_sensor_cal[j]	= adc_in;
-	}
-
-	for(int i = 0; i < 50; i++){		// We take some readings...
-
-		delay(20);
-
-		for (int j = 3; j < 6; j++){
-			adc_in 	    	= _adc->Ch(_sensors[j]);
-			adc_in 		    -= _sensor_compensation(j, 0);  // XXX secret knowledge, temperature ignored
-			_sensor_cal[j]	= _sensor_cal[j] * 0.9 + adc_in * 0.1;
+	for (int j=3; j<=5; j++) _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
+	
+	do {
+		for (int j = 3; j <= 5; j++){
+			prev[j] = _sensor_cal[j];
+			adc_in 		    = _adc->Ch(_sensors[j]);
+			adc_in 		    -= _sensor_compensation(j, 0);  //  temperature ignored
+			_sensor_cal[j]	= adc_in;
 		}
 
-		if(flashcount == 5) {
-			Serial.print("*");
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(C_LED_PIN, HIGH);
+		for(int i = 0; i < 50; i++){		// We take some readings...
+
+			delay(20);
+
+			for (int j = 3; j < 6; j++){
+				adc_in 	    	= _adc->Ch(_sensors[j]);
+				adc_in 		    -= _sensor_compensation(j, 0);  //  temperature ignored
+				_sensor_cal[j]	= _sensor_cal[j] * 0.9 + adc_in * 0.1;
+			}
+
+			if(flashcount == 5) {
+				Serial.printf_P(PSTR("*"));
+				digitalWrite(A_LED_PIN, LOW);
+				digitalWrite(C_LED_PIN, HIGH);
+			}
+
+			if(flashcount >= 10) {
+				flashcount = 0;
+				digitalWrite(C_LED_PIN, LOW);
+				digitalWrite(A_LED_PIN, HIGH);
+			}
+			flashcount++;
 		}
 
-		if(flashcount >= 10) {
-			flashcount = 0;
-			digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, HIGH);
-		}
-		flashcount++;
-	}
-	Serial.println(" ");
+		// null gravity from the Z accel
+		_sensor_cal[5] += _gravity * _sensor_signs[5];
+		
+		total_change = fabs(prev[3] - _sensor_cal[3]) + fabs(prev[4] - _sensor_cal[4]) +fabs(prev[5] - _sensor_cal[5]);
+		max_offset = (_sensor_cal[3] > _sensor_cal[4]) ? _sensor_cal[3] : _sensor_cal[4];
+		max_offset = (max_offset > _sensor_cal[5]) ? max_offset : _sensor_cal[5];
 
-	// null gravity from the Z accel
-	_sensor_cal[5] += _gravity * _sensor_signs[5];
+		delay(500);
+	} while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
+	
+	Serial.printf_P(PSTR(" "));
 }
 
 /**************************************************/
@@ -200,7 +227,7 @@ AP_IMU_Oilpan::_sensor_compensation(uint8_t channel, int temperature) const
     }
 
     // do fixed-offset accelerometer compensation
-    return 2025;    // XXX magic number!
+    return 2041;    // Average raw value from a 20 board sample
 }
 
 float

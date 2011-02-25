@@ -81,8 +81,9 @@ private:
 	// ADXL335 Sensitivity(from datasheet) => 330mV/g, 0.8mV/ADC step => 330/0.8 = 412
 	// Tested value : 418
 	//
-	static const float      _gravity = 418.0;       ///< 1G in the raw data coming from the accelerometer
-	static const float      _accel_scale = 9.80665 / 418.0; ///< would like to use _gravity here, but cannot
+	static const float      _gravity = 423.8;       ///< 1G in the raw data coming from the accelerometer
+													// Value based on actual sample data from 20 boards
+	static const float      _accel_scale = 9.80665 / 423.8; ///< would like to use _gravity here, but cannot
 
 	// IDG500 Sensitivity (from datasheet) => 2.0mV/degree/s, 0.8mV/ADC step => 0.8/3.33 = 0.4
 	// Tested values : 0.4026, ?, 0.4192
@@ -94,6 +95,14 @@ private:
 	// Maximum possible value returned by an offset-corrected sensor channel
 	//
 	static const float      _adc_constraint = 900;
+	
+	// Gyro and Accelerometer calibration criterial
+	//
+	static const float		_gyro_total_cal_change = 4.0;		// Experimentally derived - allows for some minor motion
+	static const float		_gyro_max_cal_offset = 320.0;		
+	static const float		_accel_total_cal_change = 4.0;
+	static const float		_accel_max_cal_offset = 250.0;
+	
 };
 
 #endif
