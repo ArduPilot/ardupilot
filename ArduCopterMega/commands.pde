@@ -95,8 +95,7 @@ void decrement_WP_index()
 
 long read_alt_to_hold()
 {
-	read_EEPROM_alt_RTL();
-	if(g.RTL_altitude == -1)
+	if(g.RTL_altitude < 0)
 		return current_loc.alt;
 	else
 		return g.RTL_altitude + home.alt;

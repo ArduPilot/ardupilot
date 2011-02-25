@@ -392,7 +392,7 @@ init_compass()
 {
 	dcm.set_compass(&compass);
 	bool junkbool = compass.init();
-	compass.set_orientation(MAGORIENTATION);						// set compass's orientation on aircraft
+	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
 	Vector3f junkvector = compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
 

@@ -129,15 +129,21 @@ output_yaw_with_hold(boolean hold)
 		g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
 
 	}else{
+
 		// rate control
 		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
+
+		if(abs(rate) < 1000 )	//experiment to limit yaw reversing
+			rate = 0;
+
 		long error		= ((long)g.rc_4.control_in * 6) - rate;								// control is += 6000 * 6 = 36000
 																							// -error = CCW, 	+error = CW
 		g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); 	// kP .07 * 36000 = 2520
 		g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);						// limit to 24°
 	}
 }
+// slight left rudder give right roll.
 
 void
 output_rate_roll()
@@ -201,32 +207,24 @@ void calc_nav_throttle()
 {
 	// limit error
 	long error = constrain(altitude_error, -400, 400);
+	float scaler = 1.0;
 
-	if(altitude_sensor == BARO) {
-		float t = g.pid_baro_throttle.kP();
+	if(error < 0){
+		scaler = (altitude_sensor == BARO) ? .5 : .9;
+	}
 
-		if(error > 0){ 					// go up
-			g.pid_baro_throttle.kP(t);
-		}else{							// go down
-			g.pid_baro_throttle.kP(t/4.0);
-		}
-
-		// limit output of throttle control
-		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
+	if(altitude_sensor == BARO){
+		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
-
-		g.pid_baro_throttle.kP(t);
-
 	}else{
-		// SONAR
-		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, 1.0);
-
-		// limit output of throttle control
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 100);
 	}
 
 	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
 	nav_throttle_old = nav_throttle;
+
+	//Serial.printf("nav_thr %d, scaler %2.2f ", nav_throttle, scaler);
 }
 
 float angle_boost()
