@@ -1,17 +1,28 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
+//Function that will read the radio data, limit servos and trigger a failsafe
+// ----------------------------------------------------------------------------
+byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+
+
 void init_rc_in()
 {
-	read_EEPROM_radio();		// read Radio limits
+	//read_EEPROM_radio();		// read Radio limits
+
+	// set rc channel ranges
 	g.rc_1.set_angle(4500);
 	g.rc_2.set_angle(4500);
 	g.rc_3.set_range(0,1000);
 	g.rc_3.scale_output = .9;
 	g.rc_4.set_angle(6000);
 
+	// set rc dead zones
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
 	g.rc_2.dead_zone = 60;
 	g.rc_3.dead_zone = 20;
 	g.rc_4.dead_zone = 500;
 
+	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
 	g.rc_5.set_filter(false);
 	g.rc_6.set_range(0,1000);
@@ -56,10 +67,12 @@ void read_radio()
 	g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
+
+	//throttle_failsafe(g.rc_3.radio_in);
+
 	//Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"), g.rc_1.control_in, g.rc_2.control_in, g.rc_3.control_in, g.rc_4.control_in);
 }
 
-/*
 void throttle_failsafe(uint16_t pwm)
 {
 	if(g.throttle_fs_enabled == 0)
@@ -101,7 +114,6 @@ void throttle_failsafe(uint16_t pwm)
 		}
 	}
 }
-*/
 
 void trim_radio()
 {

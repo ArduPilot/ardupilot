@@ -74,8 +74,8 @@ set_servos_4()
 
 		}else if(g.frame_type == X_FRAME){
 			//Serial.println("X_FRAME");
-			int roll_out 	 	= g.rc_1.pwm_out / 2;
-			int pitch_out 	 	= g.rc_2.pwm_out / 2;
+			int roll_out 	 	= g.rc_1.pwm_out * .707;
+			int pitch_out 	 	= g.rc_2.pwm_out * .707;
 
 			motor_out[CH_3]	 	= g.rc_3.radio_out + roll_out + pitch_out;
 			motor_out[CH_2]	 	= g.rc_3.radio_out + roll_out - pitch_out;

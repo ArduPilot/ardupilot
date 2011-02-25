@@ -6,11 +6,9 @@
 
 #define GCS_PROTOCOL        GCS_PROTOCOL_NONE
 
-//#define MAGORIENTATION	AP_COMPASS_COMPONENTS_UP_PINS_BACK
-#define MAGORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
+//#define MAG_ORIENTATION	AP_COMPASS_COMPONENTS_UP_PINS_BACK
 
 # define SERIAL0_BAUD			38400
-//# define SERIAL0_BAUD			115200
 
 //# define STABILIZE_ROLL_P 		0.4
 //# define STABILIZE_PITCH_P		0.4
@@ -24,15 +22,6 @@
 
 
 
-// For future development, don't enable unless you know them
-// These are all experimental and underwork, jp 23-12-10
-//#define ENABLE_EXTRAS     ENABLED
-//#define ENABLE_EXTRAINIT  ENABLED
-//#define ENABLE_CAM        ENABLED
-//#define ENABLE_AM         ENABLED
-//#define ENABLE_xx         ENABLED
-
- 
 // Logging
 //#define LOG_CURRENT ENABLED
 

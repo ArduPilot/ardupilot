@@ -351,6 +351,8 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 			// IMU
 			// ---
 			read_AHRS();
+			update_trig();
+
 
 			// allow us to zero out sensors with control switches
 			if(g.rc_5.control_in < 600){
@@ -367,6 +369,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 
 			ts_num++;
 			if (ts_num == 5){
+				update_alt();
 				// 10 hz
 				ts_num 				= 0;
 				g_gps->longitude 		= 0;
@@ -474,7 +477,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
 			*/
-			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\t"),
+			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\n"),
 								dcm.roll_sensor,
 								dcm.pitch_sensor,
 								dcm.yaw_sensor);
@@ -717,10 +720,10 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
 
 	// save the alitude above home option
-	if(g.RTL_altitude == -1){
+	if(g.RTL_altitude < 0){
 		Serial.printf_P(PSTR("Hold current altitude\n"));
 	}else{
-		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude);
+		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude / 100);
 	}
 
 	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.waypoint_total);
@@ -769,39 +772,25 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_pressure(uint8_t argc, const Menu::arg *argv)
 {
-	uint32_t sum;
-
-	Serial.printf_P(PSTR("Uncalibrated Abs Airpressure\n"));
-	Serial.printf_P(PSTR("Altitude is relative to the start of this test\n"));
+	Serial.printf_P(PSTR("Uncalibrated relative airpressure\n"));
 	print_hit_enter();
-
-	Serial.printf_P(PSTR("\nCalibrating....\n"));
-	/*
-	for (int i = 1; i < 301; i++) {
-		baro_alt = read_barometer();
-		if(i > 200)
-			sum += abs_pressure;
-		delay(10);
-	}
-	ground_pressure = (float)sum / 100.0;
-	*/
 
 	home.alt = 0;
 	wp_distance = 0;
 	init_barometer();
+	reset_I();
+
+	// to prevent boost from skewing results
+	cos_pitch_x = cos_roll_x = 1;
 
 	while(1){
-		if (millis()-fast_loopTimer > 9) {
+		if (millis() - fast_loopTimer > 100) {
 			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 			fast_loopTimer		= millis();
-
-
-			calc_altitude_error();
-			calc_nav_throttle();
 		}
 
-		if (millis()-medium_loopTimer > 100) {
+		if (millis() - medium_loopTimer > 100) {
 			medium_loopTimer	= millis();
 
 			read_radio();			// read the radio first
@@ -809,14 +798,15 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			next_WP.alt =  max(next_WP.alt, 30);
 
 			read_trim_switch();
-			baro_alt = read_barometer();
-			current_loc.alt = baro_alt + home.alt;
-			Serial.printf_P(PSTR("AP: %ld,\tAlt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \t out:%d\n"),
-						abs_pressure,
+			update_alt();
+			output_auto_throttle();
+
+			Serial.printf_P(PSTR("Alt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \tint: %6.2f \tout:%d\n"),
 						baro_alt,
 						next_WP.alt,
 						altitude_error,
 						(int)g.throttle_cruise,
+						g.pid_baro_throttle.get_integrator(),
 						g.rc_3.servo_out);
 
 			/*
@@ -843,29 +833,35 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
-{
-	if(g.compass_enabled) {
-		print_hit_enter();
+	{
+		if(g.compass_enabled) {
+			//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
-		while(1){
-			delay(250);
-			compass.read();
-			compass.calculate(0,0);
-			Serial.printf_P(PSTR("Heading: %4.2f, XYZ: %4.2f, %4.2f, %4.2f"),
-						ToDeg(compass.heading),
-						compass.mag_x,
-						compass.mag_y,
-						compass.mag_z);
+			print_hit_enter();
 
-    		if(Serial.available() > 0){
-				return (0);
+			while(1){
+				delay(250);
+				compass.read();
+				compass.calculate(0,0);
+				Vector3f maggy = compass.get_offsets();
+				Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+							(wrap_360(ToDeg(compass.heading) * 100)) /100,
+							compass.mag_x,
+							compass.mag_y,
+							compass.mag_z,
+							maggy.x,
+							maggy.y,
+							maggy.z);
+
+				if(Serial.available() > 0){
+					return (0);
+				}
 			}
+		} else {
+			Serial.printf_P(PSTR("Compass: "));
+			print_enabled(false);
+			return (0);
 		}
-	} else {
-		Serial.printf_P(PSTR("Compass: "));
-		print_enabled(false);
-		return (0);
-	}
 }
 
 void print_hit_enter()

@@ -86,8 +86,10 @@ void calc_nav()
 	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
 	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
 
-	nav_roll 	= constrain(nav_roll,  -g.pitch_max.get(), g.pitch_max.get());
-	nav_pitch 	= constrain(nav_pitch, -g.pitch_max.get(), g.pitch_max.get());
+	long pmax = g.pitch_max.get();
+
+	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
+	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
 }
 
 void calc_bearing_error()

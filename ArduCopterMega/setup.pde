@@ -33,8 +33,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"compass",			setup_compass},
 	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
-	{"show",			setup_show},
-	{"ap_show",			AP_Var_menu_show}
+	{"show",			setup_show}
 };
 
 // Create the setup menu object.
@@ -75,6 +74,8 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_flight_modes();
 	report_imu();
 	report_compass();
+
+	AP_Var_menu_show(argc, argv);
 	return(0);
 }
 
@@ -388,7 +389,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 
 		// escape hatch
 		if(Serial.available() > 0){
-			save_EEPROM_flight_modes();
+			g.flight_modes.save();
 			print_done();
 			report_flight_modes();
 			return (0);
@@ -426,7 +427,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 		return 0;
 	}
 
-	save_EEPROM_mag();
+	g.compass_enabled.save();
 	report_compass();
 	return 0;
 }
@@ -451,8 +452,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 		report_frame();
 		return 0;
 	}
-
-	save_EEPROM_frame();
+	g.frame_type.save();
 	report_frame();
 	return 0;
 }
@@ -508,7 +508,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 
 	compass.init();	 // Initialization
-	compass.set_orientation(MAGORIENTATION);		// set compass's orientation on aircraft
+	compass.set_orientation(MAG_ORIENTATION);		// set compass's orientation on aircraft
 	//compass.set_offsets(0, 0, 0);					// set offsets to account for surrounding interference
 	//int counter = 0;
 	float _min[3], _max[3], _offset[3];
@@ -600,15 +600,13 @@ default_nav()
 void
 default_alt_hold()
 {
-	g.RTL_altitude.set(-1);
-	save_EEPROM_alt_RTL();
+	g.RTL_altitude.set_and_save(-1);
 }
 
 void
 default_frame()
 {
-	g.frame_type = PLUS_FRAME;
-	save_EEPROM_frame();
+	g.frame_type.set_and_save(PLUS_FRAME);
 }
 
 void
@@ -628,7 +626,7 @@ default_flight_modes()
 	g.flight_modes[3] 			= FLIGHT_MODE_4;
 	g.flight_modes[4] 			= FLIGHT_MODE_5;
 	g.flight_modes[5] 			= FLIGHT_MODE_6;
-	save_EEPROM_flight_modes();
+	g.flight_modes.save();
 }
 
 void
@@ -661,7 +659,7 @@ void default_logs()
 		LOGBIT(CURRENT);
 	#undef LOGBIT
 
-	save_EEPROM_logs();
+	g.log_bitmask.save();
 }
 
 
@@ -686,9 +684,7 @@ default_gains()
 
 
 	// stabilize, angle error
-	Serial.printf("b4 %4.2f, ",g.pid_stabilize_roll.kP());
 	g.pid_stabilize_roll.kP(STABILIZE_ROLL_P);
-	Serial.printf("L8R %4.2f\n ",g.pid_stabilize_roll.kP());
 	g.pid_stabilize_roll.kI(STABILIZE_ROLL_I);
 	g.pid_stabilize_roll.kD(0);
 	g.pid_stabilize_roll.imax(STABILIZE_ROLL_IMAX * 100);
@@ -734,8 +730,6 @@ default_gains()
 	g.pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
 
 	save_EEPROM_PID();
-	Serial.printf("EL8R %4.2f\n ",g.pid_stabilize_roll.kP());
-
 }
 
 
@@ -746,7 +740,6 @@ default_gains()
 
 void report_current()
 {
-	//print_blanks(2);
 	read_EEPROM_current();
 	Serial.printf_P(PSTR("Current Sensor\n"));
 	print_divider();
@@ -758,7 +751,6 @@ void report_current()
 
 void report_sonar()
 {
-	//print_blanks(2);
 	g.sonar_enabled.load();
 	Serial.printf_P(PSTR("Sonar Sensor\n"));
 	print_divider();
@@ -769,8 +761,6 @@ void report_sonar()
 
 void report_frame()
 {
-	//print_blanks(2);
-	read_EEPROM_frame();
 	Serial.printf_P(PSTR("Frame\n"));
 	print_divider();
 
@@ -790,7 +780,6 @@ void report_frame()
 
 void report_radio()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Radio\n"));
 	print_divider();
 	// radio
@@ -801,7 +790,6 @@ void report_radio()
 
 void report_gains()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
@@ -839,7 +827,6 @@ void report_gains()
 
 void report_xtrack()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Crosstrack\n"));
 	print_divider();
 	// radio
@@ -855,7 +842,6 @@ void report_xtrack()
 
 void report_throttle()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Throttle\n"));
 	print_divider();
 
@@ -875,7 +861,6 @@ void report_throttle()
 
 void report_imu()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("IMU\n"));
 	print_divider();
 
@@ -886,13 +871,8 @@ void report_imu()
 
 void report_compass()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Compass\n"));
 	print_divider();
-
-	read_EEPROM_compass();
-	//read_EEPROM_compass_declination();
-	//read_EEPROM_compass_offset();
 
 	print_enabled(g.compass_enabled);
 
@@ -912,10 +892,8 @@ void report_compass()
 
 void report_flight_modes()
 {
-	//print_blanks(2);
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
-	read_EEPROM_flight_modes();
 
 	for(int i = 0; i < 6; i++ ){
 		print_switch(i, g.flight_modes[i]);
@@ -1041,3 +1019,194 @@ print_gyro_offsets(void)
 }
 
 
+
+/***************************************************************************/
+// EEPROM convenience functions
+/***************************************************************************/
+
+
+void read_EEPROM_waypoint_info(void)
+{
+	g.waypoint_total.load();
+	g.waypoint_radius.load();
+	g.loiter_radius.load();
+}
+
+void save_EEPROM_waypoint_info(void)
+{
+	g.waypoint_total.save();
+	g.waypoint_radius.save();
+	g.loiter_radius.save();
+}
+
+/********************************************************************************/
+
+void read_EEPROM_nav(void)
+{
+	g.crosstrack_gain.load();
+	g.crosstrack_entry_angle.load();
+	g.pitch_max.load();
+}
+
+void save_EEPROM_nav(void)
+{
+	g.crosstrack_gain.save();
+ 	g.crosstrack_entry_angle.save();
+	g.pitch_max.save();
+}
+
+/********************************************************************************/
+
+void read_EEPROM_PID(void)
+{
+	g.pid_acro_rate_roll.load_gains();
+	g.pid_acro_rate_pitch.load_gains();
+	g.pid_acro_rate_yaw.load_gains();
+
+	g.pid_stabilize_roll.load_gains();
+	g.pid_stabilize_pitch.load_gains();
+	g.pid_yaw.load_gains();
+
+	g.pid_nav_lon.load_gains();
+	g.pid_nav_lat.load_gains();
+	g.pid_baro_throttle.load_gains();
+	g.pid_sonar_throttle.load_gains();
+
+	// roll pitch
+	g.stabilize_dampener.load();
+
+	// yaw
+	g.hold_yaw_dampener.load();
+ 	init_pids();
+}
+
+void save_EEPROM_PID(void)
+{
+
+	g.pid_acro_rate_roll.save_gains();
+	g.pid_acro_rate_pitch.save_gains();
+	g.pid_acro_rate_yaw.save_gains();
+
+	g.pid_stabilize_roll.save_gains();
+	g.pid_stabilize_pitch.save_gains();
+	g.pid_yaw.save_gains();
+
+	g.pid_nav_lon.save_gains();
+	g.pid_nav_lat.save_gains();
+	g.pid_baro_throttle.save_gains();
+	g.pid_sonar_throttle.save_gains();
+
+	// roll pitch
+	g.stabilize_dampener.save();
+	// yaw
+	g.hold_yaw_dampener.save();
+}
+
+/********************************************************************************/
+
+void save_EEPROM_current(void)
+{
+	g.current_enabled.save();
+	g.milliamp_hours.save();
+}
+
+void read_EEPROM_current(void)
+{
+	g.current_enabled.load();
+	g.milliamp_hours.load();
+}
+
+/********************************************************************************/
+
+void read_EEPROM_radio(void)
+{
+	g.rc_1.load_eeprom();
+	g.rc_2.load_eeprom();
+	g.rc_3.load_eeprom();
+	g.rc_4.load_eeprom();
+	g.rc_5.load_eeprom();
+	g.rc_6.load_eeprom();
+	g.rc_7.load_eeprom();
+	g.rc_8.load_eeprom();
+}
+
+void save_EEPROM_radio(void)
+{
+	g.rc_1.save_eeprom();
+	g.rc_2.save_eeprom();
+	g.rc_3.save_eeprom();
+	g.rc_4.save_eeprom();
+	g.rc_5.save_eeprom();
+	g.rc_6.save_eeprom();
+	g.rc_7.save_eeprom();
+	g.rc_8.save_eeprom();
+}
+
+/********************************************************************************/
+// configs are the basics
+void read_EEPROM_throttle(void)
+{
+	g.throttle_min.load();
+	g.throttle_max.load();
+	g.throttle_cruise.load();
+	g.throttle_fs_enabled.load();
+	g.throttle_fs_action.load();
+	g.throttle_fs_value.load();
+}
+
+void save_EEPROM_throttle(void)
+{
+	g.throttle_min.load();
+	g.throttle_max.load();
+	g.throttle_cruise.save();
+	g.throttle_fs_enabled.load();
+	g.throttle_fs_action.load();
+	g.throttle_fs_value.load();
+}
+
+
+/********************************************************************************/
+/*
+float
+read_EE_float(int address)
+{
+	union {
+		byte bytes[4];
+		float value;
+	} _floatOut;
+
+	for (int i = 0; i < 4; i++)
+		_floatOut.bytes[i] = eeprom_read_byte((uint8_t *) (address + i));
+	return _floatOut.value;
+}
+
+void write_EE_float(float value, int address)
+{
+	union {
+		byte bytes[4];
+		float value;
+	} _floatIn;
+
+	_floatIn.value = value;
+	for (int i = 0; i < 4; i++)
+		eeprom_write_byte((uint8_t *) (address + i), _floatIn.bytes[i]);
+}
+*/
+/********************************************************************************/
+/*
+float
+read_EE_compressed_float(int address, byte places)
+{
+	float scale = pow(10, places);
+
+	int temp 	= eeprom_read_word((uint16_t *) address);
+	return ((float)temp / scale);
+}
+
+void write_EE_compressed_float(float value, int address, byte places)
+{
+	float scale = pow(10, places);
+	int temp 	= value * scale;
+	eeprom_write_word((uint16_t *) 	address, temp);
+}
+*/

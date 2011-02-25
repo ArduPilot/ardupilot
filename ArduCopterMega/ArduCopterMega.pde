@@ -91,43 +91,52 @@ GPS         *g_gps;
 
 #if HIL_MODE == HIL_MODE_NONE
 
-// real sensors
-AP_ADC_ADS7844          adc;
-APM_BMP085_Class        barometer;
-AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+	// real sensors
+	AP_ADC_ADS7844          adc;
+	APM_BMP085_Class        barometer;
+	AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
-// real GPS selection
-#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-AP_GPS_NMEA     g_gps_driver(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-AP_GPS_SIRF     g_gps_driver(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-AP_GPS_UBLOX    g_gps_driver(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-AP_GPS_MTK      g_gps_driver(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-AP_GPS_MTK16    g_gps_driver(&Serial1);
-#elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-AP_GPS_None     g_gps_driver(NULL);
-#else
- #error Unrecognised GPS_PROTOCOL setting.
-#endif // GPS PROTOCOL
+	// real GPS selection
+	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
+		AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
+		AP_GPS_NMEA     g_gps_driver(&Serial1);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
+		AP_GPS_SIRF     g_gps_driver(&Serial1);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
+		AP_GPS_UBLOX    g_gps_driver(&Serial1);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
+		AP_GPS_MTK      g_gps_driver(&Serial1);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
+		AP_GPS_MTK16    g_gps_driver(&Serial1);
+
+	#elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
+		AP_GPS_None     g_gps_driver(NULL);
+
+	#else
+		#error Unrecognised GPS_PROTOCOL setting.
+	#endif // GPS PROTOCOL
 
 #elif HIL_MODE == HIL_MODE_SENSORS
-// sensor emulators
-AP_ADC_HIL              adc;
-APM_BMP085_HIL_Class    barometer;
-AP_Compass_HIL  compass;
-AP_GPS_HIL              g_gps_driver(NULL);
+	// sensor emulators
+	AP_ADC_HIL              adc;
+	APM_BMP085_HIL_Class    barometer;
+	AP_Compass_HIL          compass;
+	AP_GPS_HIL              g_gps_driver(NULL);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_DCM_HIL dcm;
-AP_GPS_HIL              g_gps_driver(NULL);
+	AP_DCM_HIL              dcm;
+	AP_GPS_HIL              g_gps_driver(NULL);
+	AP_Compass_HIL          compass; // never used
+	AP_IMU_Shim             imu; // never used
 
 #else
- #error Unrecognised HIL_MODE setting.
+	#error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
 #if HIL_MODE != HIL_MODE_DISABLED
@@ -152,10 +161,10 @@ AP_GPS_HIL              g_gps_driver(NULL);
 ////////////////////////////////////////////////////////////////////////////////
 //
 #if   GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-GCS_MAVLINK         gcs;
+	GCS_MAVLINK         gcs;
 #else
-// If we are not using a GCS, we need a stub that does nothing.
-GCS_Class           gcs;
+	// If we are not using a GCS, we need a stub that does nothing.
+	GCS_Class           gcs;
 #endif
 
 AP_RangeFinder_MaxsonarXL sonar;
@@ -165,8 +174,6 @@ AP_RangeFinder_MaxsonarXL sonar;
 ////////////////////////////////////////////////////////////////////////////////
 
 byte 	control_mode		= STABILIZE;
-boolean failsafe			= false;		// did our throttle dip below the failsafe value?
-boolean ch3_failsafe		= false;
 byte 	oldSwitchPosition;					// for remembering the control mode switch
 
 const char *comma = ",";
@@ -177,6 +184,7 @@ const char* flight_mode_strings[] = {
 	"ALT_HOLD",
 	"FBW",
 	"AUTO",
+	"LOITER",
 	"POSITION_HOLD",
 	"RTL",
 	"TAKEOFF",
@@ -189,7 +197,7 @@ const char* flight_mode_strings[] = {
 			3	Throttle
 			4	Rudder (if we have ailerons)
 			5	Mode - 3 position switch
-			6 	Altitude for Hold, user assignable
+			6 	User assignable
 			7	trainer switch - sets throttle nominal (toggle switch), sets accels to Level (hold > 1 second)
 			8	TBD
 */
@@ -199,7 +207,15 @@ const char* flight_mode_strings[] = {
 int motor_out[4];
 Vector3f omega;
 
+// Failsafe
+// --------
+boolean 	failsafe;						// did our throttle dip below the failsafe value?
+boolean 	ch3_failsafe;
+boolean		motor_armed;
+boolean		motor_auto_safe;
+
 // PIDs
+// ----
 int 	max_stabilize_dampener;				//
 int 	max_yaw_dampener;					//
 boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
@@ -209,8 +225,6 @@ boolean rate_yaw_flag;						// used to transition yaw control from Rate control 
 boolean motor_light;						// status of the Motor safety
 boolean GPS_light;							// status of the GPS light
 
-float       nav_gain_scaler = 1;        // Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
-
 // GPS variables
 // -------------
 const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
@@ -218,51 +232,41 @@ float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
 float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
 byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
 
-// Magnetometer variables
-// ----------------------
-Vector3f	mag_offsets;
-
 // Location & Navigation
 // ---------------------
-const   float radius_of_earth 	= 6378100;	// meters
-const   float gravity 			= 9.81;		// meters/ sec^2
-//byte 	wp_radius				= 3;		// meters
+const	float radius_of_earth 	= 6378100;	// meters
+const	float gravity 			= 9.81;		// meters/ sec^2
 long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
-long 	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
-long 	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-int 	climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
+long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
+long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
+int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
+float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 
 byte	command_must_index;					// current command memory location
 byte	command_may_index;					// current command memory location
 byte	command_must_ID;					// current command ID
 byte	command_may_ID;						// current command ID
 
-float cos_roll_x, 	sin_roll_y;
-float cos_pitch_x,	sin_pitch_y;
-float sin_yaw_y,	cos_yaw_x;
+float cos_roll_x 	= 1;
+float cos_pitch_x 	= 1;
+float cos_yaw_x 	= 1;
+float sin_pitch_y, sin_yaw_y, sin_roll_y;
 
 // Airspeed
 // --------
-int 	airspeed;							// m/s * 100
-float 	airspeed_error;						// m / s * 100
-
-// Throttle Failsafe
-// ------------------
-boolean		motor_armed 		= false;
-boolean		motor_auto_safe 	= false;
+int		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-long 	bearing_error;						// deg * 100 : 0 to 36000
-long 	altitude_error;						// meters * 100 we are off in altitude
+long	bearing_error;						// deg * 100 : 0 to 36000
+long	altitude_error;						// meters * 100 we are off in altitude
 float	crosstrack_error;					// meters we are off trackline
 long 	distance_error;						// distance to the WP
 long 	yaw_error;							// how off are we pointed
+long	long_error, lat_error;				// temp for debugging
 
-long long_error, lat_error;					// temp fro debugging
-
-// Sensors
-// -------
+// Battery Sensors
+// ---------------
 float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
 float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cell 1, initialized above threshold for filter
 float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2, initialized above threshold for filter
@@ -272,19 +276,9 @@ float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 float	current_amps;
 float	current_total;
-//int 	milliamp_hours;
-//boolean	current_enabled		= false;
 
-// Magnetometer variables
-// ----------------------
-//int 	magnetom_x;
-//int 	magnetom_y;
-//int 	magnetom_z;
-
-//float 	mag_offset_x;
-//float 	mag_offset_y;
-//float 	mag_offset_z;
-//float 	mag_declination;
+// Airspeed Sensors
+// ----------------
 
 // Barometer Sensor variables
 // --------------------------
@@ -292,20 +286,18 @@ unsigned long 	abs_pressure;
 unsigned long 	ground_pressure;
 int 			ground_temperature;
 
-byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
-
-// Sonar Sensor variables
+// Altitude Sensor variables
 // ----------------------
 long	sonar_alt;
 long	baro_alt;
-
+byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 
 // flight mode specific
 // --------------------
-boolean takeoff_complete	= false;		// Flag for using take-off controls
-boolean land_complete		= false;
-int 	takeoff_altitude;
-int 	landing_distance;					// meters;
+boolean	takeoff_complete;					// Flag for using take-off controls
+boolean	land_complete;
+int		takeoff_altitude;
+int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
 
@@ -320,13 +312,13 @@ int 	loiter_time_max;					// millis : how long to stay in LOITER mode
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
-long 	nav_roll;							// deg * 100 : target roll angle
-long 	nav_pitch;							// deg * 100 : target pitch angle
-long 	nav_yaw;							// deg * 100 : target yaw angle
-long 	nav_lat;							// for error calcs
-long 	nav_lon;							// for error calcs
-int 	nav_throttle;						// 0-1000 for throttle control
-int 	nav_throttle_old;					// for filtering
+long	nav_roll;							// deg * 100 : target roll angle
+long	nav_pitch;							// deg * 100 : target pitch angle
+long	nav_yaw;							// deg * 100 : target yaw angle
+long	nav_lat;							// for error calcs
+long	nav_lon;							// for error calcs
+int		nav_throttle;						// 0-1000 for throttle control
+int		nav_throttle_old;					// for filtering
 
 long 	command_yaw_start;					// what angle were we to begin with
 long 	command_yaw_start_time;				// when did we start turning
@@ -338,12 +330,9 @@ byte	command_yaw_dir;
 
 // Waypoints
 // ---------
-//long 	GPS_wp_distance;					// meters - distance between plane and next waypoint
-long 	wp_distance;						// meters - distance between plane and next waypoint
-long 	wp_totalDistance;					// meters - distance between old and next waypoint
-//byte 	wp_total;							// # of Commands total including way
-//byte 	wp_index;							// Current active command index
-byte 	next_wp_index;						// Current active command index
+long	wp_distance;						// meters - distance between plane and next waypoint
+long	wp_totalDistance;					// meters - distance between old and next waypoint
+byte	next_wp_index;						// Current active command index
 
 // repeating event control
 // -----------------------
@@ -376,14 +365,14 @@ boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the ho
 
 // IMU variables
 // -------------
-float G_Dt							= 0.02;		// Integration time for the gyros (DCM algorithm)
+float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
 
 
 // Performance monitoring
 // ----------------------
 long 	perf_mon_timer;
-float 	imu_health; 							// Metric based on accel gain deweighting
-int 	G_Dt_max;								// Max main loop cycle time in milliseconds
+float 	imu_health; 						// Metric based on accel gain deweighting
+int 	G_Dt_max;							// Max main loop cycle time in milliseconds
 byte 	gyro_sat_count;
 byte 	adc_constraints;
 byte 	renorm_sqrt_count;
@@ -395,7 +384,7 @@ byte	gcs_messages_sent;
 // GCS
 // ---
 char GCS_buffer[53];
-char display_PID = -1;					// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
+char display_PID = -1;						// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
 
 // System Timers
 // --------------
@@ -415,12 +404,12 @@ byte			fbw_timer;					// for limiting the execution of FBW input
 unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
-
 unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
+byte			counter_one_herz;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -450,7 +439,13 @@ void loop()
 	if (millis() - medium_loopTimer > 19) {
 		delta_ms_medium_loop 	= millis() - medium_loopTimer;
 		medium_loopTimer		= millis();
+
 		medium_loop();
+
+		counter_one_herz++;
+		if(counter_one_herz == 50){
+			super_slow_loop();
+		}
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
@@ -541,14 +536,9 @@ void medium_loop()
 		case 2:
 			medium_loopCounter++;
 
-
 			// Read altitude from sensors
 			// ------------------
 			update_alt();
-
-			// altitude smoothing
-			// ------------------
-			calc_altitude_error();
 
 			// perform next command
 			// --------------------
@@ -643,9 +633,6 @@ void slow_loop()
 					}
 				#endif
 
-				if (g.log_bitmask & MASK_LOG_CUR)
-					Log_Write_Current();
-
 				superslow_loopCounter = 0;
             }
 			break;
@@ -689,6 +676,13 @@ void slow_loop()
 
 	}
 }
+
+void super_slow_loop()
+{
+	if (g.log_bitmask & MASK_LOG_CUR)
+		Log_Write_Current();
+}
+
 
 void update_GPS(void)
 {
@@ -737,17 +731,6 @@ void update_GPS(void)
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
 
-		/*Serial.printf_P(PSTR("Lat: %.7f, Lon: %.7f, Alt: %dm, GSP: %d COG: %d, dist: %d, #sats: %d\n"),
-					((float)g_gps->latitude /  T7),
-					((float)g_gps->longitude / T7),
-					(int)g_gps->altitude / 100,
-					(int)g_gps->ground_speed / 100,
-					(int)g_gps->ground_course / 100,
-					(int)wp_distance,
-					(int)g_gps->num_sats);
-		*/
-	}else{
-		//Serial.println("No fix");
 	}
 }
 
@@ -763,11 +746,6 @@ void update_current_flight_mode(void)
 			//	break;
 
 			default:
-
-				// based on altitude error
-				// -----------------------
-				calc_nav_throttle();
-
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				auto_yaw();
@@ -906,10 +884,6 @@ void update_current_flight_mode(void)
 				// -----------
 				output_manual_yaw();
 
-				// based on altitude error
-				// -----------------------
-				calc_nav_throttle();
-
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				// apply throttle control
@@ -924,10 +898,6 @@ void update_current_flight_mode(void)
 				break;
 
 			case RTL:
-				// based on altitude error
-				// -----------------------
-				calc_nav_throttle();
-
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				auto_yaw();
@@ -948,11 +918,6 @@ void update_current_flight_mode(void)
 				// Yaw control
 				// -----------
 				output_manual_yaw();
-
-				// based on altitude error
-				// -----------------------
-				calc_nav_throttle();
-
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
@@ -1031,6 +996,7 @@ void update_alt()
 {
 	altitude_sensor = BARO;
 	baro_alt 		= read_barometer();
+	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
 
 	if(g.sonar_enabled){
 		// decide which sensor we're usings
@@ -1058,4 +1024,13 @@ void update_alt()
 		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
 	}
+	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
+
+	// altitude smoothing
+	// ------------------
+	calc_altitude_error();
+
+	// Amount of throttle to apply for hovering
+	// ----------------------------------------
+	calc_nav_throttle();
 }

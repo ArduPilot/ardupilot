@@ -247,7 +247,7 @@ public:
         log_bitmask             (0,                         k_param_log_bitmask,           			PSTR("LOG_BITMASK")),
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
-        RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
+        RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
 
         // RC channel           group key                   name
         //----------------------------------------------------------------------
