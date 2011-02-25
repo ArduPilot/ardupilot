@@ -228,7 +228,7 @@ AP_DCM::drift_correction(void)
 	accel_weight = constrain(1 - 2 * fabs(1 - accel_magnitude), 0, 1);	//	
 	
 	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
-	_health += constrain((0.02 * (accel_weight - .5)), 0, 1);
+	_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
 
 	// adjust the ground of reference 
 	_error_roll_pitch =  _dcm_matrix.c % _accel_vector;			// Equation 27  *** sign changed from prev implementation???

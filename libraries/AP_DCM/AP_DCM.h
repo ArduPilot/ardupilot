@@ -29,7 +29,8 @@ public:
 					0, 1, 0,
 					0, 0, 1),
 		_course_over_ground_x(0),
-		_course_over_ground_y(1)
+		_course_over_ground_y(1),
+		_health(1.)
 	{}
 
 	// Accessors
