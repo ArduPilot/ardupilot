@@ -146,8 +146,8 @@
   <data name="button1.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
-        YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAALBgAA
-        CwYBZDTpJAAAA11JREFUOE8tkYtTVHUUx+8fU5PCUjjlMDT42JB4qcSjoumxk00FG6USapngOrvuDg+B
+        YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAK/wAA
+        Cv8BNGKaggAAA11JREFUOE8tkYtTVHUUx+8fU5PCUjjlMDT42JB4qcSjoumxk00FG6USapngOrvuDg+B
         SlYmZQKFxWZyyiBRHBChKMCw5e6CzYagsu+9+4gWVxb49NulO/d353vO/X7P+Z7zk87/uICm7nvKdcM0
         X/wV0yWZxss2mjplmnptNPdYOdM9TUOPwL3zGDrsFNf+wgHdBB39i0hv1o2g7fRwuHueGP8/q4/hSQKv
         syq+ImJD4LggxAU+1D3LwU4Hr33+A9Leoz9RdcVNlcXJCmtJycamVgjjIpNUCyTUIsfGKtre+2gtS5Qd
@@ -172,4 +172,7 @@
         kDAHyJw4EoECAARSrmTK0SPIjAQxYjW4taBWrF8zhrU4tkBAADs=
 </value>
   </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>225, 28</value>
+  </metadata>
 </root>

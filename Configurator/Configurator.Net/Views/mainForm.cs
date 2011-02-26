@@ -194,5 +194,10 @@ namespace ArducopterConfigurator
         {
             System.Diagnostics.Process.Start("http://diydrones.com/profile/AndrewRadford");
         }
+
+        private void cmboComPorts_DropDown(object sender, EventArgs e)
+        {
+            _vm.RefreshPortListCommand.Execute(null);
+        }
     }
 }

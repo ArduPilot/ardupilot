@@ -70,6 +70,7 @@
             this.cirularIndicatorControl4 = new ArducopterConfigurator.Views.controls.CirularIndicatorControl();
             this.cirularIndicatorControl5 = new ArducopterConfigurator.Views.controls.CirularIndicatorControl();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -79,6 +80,7 @@
             // 
             this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorLeft", true));
+            this.textBox1.DataBindings.Add(new System.Windows.Forms.Binding("Visible", this.FlightDataVmBindingSource, "IsArmed", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.textBox1.Enabled = false;
             this.textBox1.Location = new System.Drawing.Point(99, 162);
             this.textBox1.Name = "textBox1";
@@ -217,8 +219,9 @@
             // 
             this.textBox8.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorFront", true));
+            this.textBox8.DataBindings.Add(new System.Windows.Forms.Binding("Visible", this.FlightDataVmBindingSource, "IsArmed", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.textBox8.Enabled = false;
-            this.textBox8.Location = new System.Drawing.Point(173, 83);
+            this.textBox8.Location = new System.Drawing.Point(182, 83);
             this.textBox8.Name = "textBox8";
             this.textBox8.ReadOnly = true;
             this.textBox8.Size = new System.Drawing.Size(38, 13);
@@ -228,8 +231,9 @@
             // 
             this.textBox9.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox9.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorRear", true));
+            this.textBox9.DataBindings.Add(new System.Windows.Forms.Binding("Visible", this.FlightDataVmBindingSource, "IsArmed", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.textBox9.Enabled = false;
-            this.textBox9.Location = new System.Drawing.Point(117, 192);
+            this.textBox9.Location = new System.Drawing.Point(107, 192);
             this.textBox9.Name = "textBox9";
             this.textBox9.ReadOnly = true;
             this.textBox9.Size = new System.Drawing.Size(32, 13);
@@ -239,6 +243,7 @@
             // 
             this.textBox10.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox10.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "MotorRight", true));
+            this.textBox10.DataBindings.Add(new System.Windows.Forms.Binding("Visible", this.FlightDataVmBindingSource, "IsArmed", true, System.Windows.Forms.DataSourceUpdateMode.Never));
             this.textBox10.Enabled = false;
             this.textBox10.Location = new System.Drawing.Point(186, 163);
             this.textBox10.Name = "textBox10";
@@ -424,7 +429,7 @@
             // 
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "RefreshCalibrationOffsetsCommand", true));
             this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(280, 214);
+            this.button2.Location = new System.Drawing.Point(311, 214);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 46;
@@ -434,7 +439,7 @@
             // 
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "UpdateCalibrationOffsetsCommand", true));
             this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(280, 185);
+            this.button1.Location = new System.Drawing.Point(311, 185);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 45;
@@ -444,7 +449,7 @@
             // 
             this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "CalculateCalibrationOffsetsCommand", true));
             this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
-            this.button3.Location = new System.Drawing.Point(280, 156);
+            this.button3.Location = new System.Drawing.Point(311, 156);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(26, 26);
             this.button3.TabIndex = 47;
@@ -454,7 +459,7 @@
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(312, 163);
+            this.label11.Location = new System.Drawing.Point(343, 163);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(78, 13);
             this.label11.TabIndex = 48;
@@ -463,7 +468,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(312, 192);
+            this.label12.Location = new System.Drawing.Point(343, 192);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(84, 13);
             this.label12.TabIndex = 49;
@@ -472,7 +477,7 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(312, 223);
+            this.label13.Location = new System.Drawing.Point(343, 223);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(96, 13);
             this.label13.TabIndex = 50;
@@ -590,10 +595,24 @@
             this.cirularIndicatorControl5.TabIndex = 56;
             this.cirularIndicatorControl5.Value = 1500;
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.label1.DataBindings.Add(new System.Windows.Forms.Binding("Visible", this.FlightDataVmBindingSource, "IsArmed", true, System.Windows.Forms.DataSourceUpdateMode.Never));
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.ForeColor = System.Drawing.Color.Red;
+            this.label1.Location = new System.Drawing.Point(308, 29);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(59, 19);
+            this.label1.TabIndex = 57;
+            this.label1.Text = "ARMED";
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.cirularIndicatorControl5);
             this.Controls.Add(this.cirularIndicatorControl4);
             this.Controls.Add(this.cirularIndicatorControl3);
@@ -633,7 +652,7 @@
             this.Controls.Add(this.pictureBox2);
             this.DoubleBuffered = true;
             this.Name = "FlightDataView";
-            this.Size = new System.Drawing.Size(412, 260);
+            this.Size = new System.Drawing.Size(453, 260);
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
@@ -684,5 +703,6 @@
         private ArducopterConfigurator.Views.controls.CirularIndicatorControl cirularIndicatorControl4;
         private ArducopterConfigurator.Views.controls.CirularIndicatorControl cirularIndicatorControl5;
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.Label label1;
     }
 }

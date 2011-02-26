@@ -34,11 +34,17 @@ namespace ArducopterConfigurator.PresentationModels
         private const string STOP_UPDATES = "X";
 
         private bool waitingForCalibData;
+
         public SensorsVm()
         {
             RefreshCalibrationOffsetsCommand = new DelegateCommand(_ => RefreshCalibValues());
             UpdateCalibrationOffsetsCommand = new DelegateCommand(_ => UpdateCalibValues());
             CalculateCalibrationOffsetsCommand = new DelegateCommand(_ => CalcCalibValues());
+
+            PropertyChanged += ((sender, e) => 
+            {                        
+                IsArmed = !(MotorFront == 1040 && MotorRear == 1040 && MotorLeft == 1040 && MotorRight == 1040);
+            });
         }
 
         public void RefreshCalibValues()
@@ -79,9 +85,9 @@ namespace ArducopterConfigurator.PresentationModels
                    "GyroPitch", 
                    "GyroYaw", 
                    "Unused", // Throttle
-                   "Unused", // control roll
-                   "Unused", // control pitch
-                   "Unused", // control yaw
+                   "ControlRoll", // control roll
+                   "ControlPitch", // control pitch
+                   "ControlYaw", // control yaw
                    "MotorFront", 
                    "MotorRear", 
                    "MotorRight", 
@@ -164,6 +170,29 @@ namespace ArducopterConfigurator.PresentationModels
 
 
         #endregion
+
+
+        private bool _isArmed;
+
+
+        /// <summary>
+        /// Whether the Arducopter is Armed or not
+        /// </summary>
+        /// <remarks>
+        /// We don't get this information directly, but we can infer it if all motors are
+        /// at 1040 then the thing is NOT armed.
+        /// </remarks>
+        public bool IsArmed
+        {
+            get { return _isArmed; }
+            set
+            {
+                if (_isArmed == value) return;
+                _isArmed = value;
+                FirePropertyChanged("IsArmed");
+            }
+        }
+
 
         #region Sensor Properties
 
@@ -299,6 +328,46 @@ namespace ArducopterConfigurator.PresentationModels
                 FirePropertyChanged("AccelZ");
             }
         }
+
+        private int _controlRoll;
+
+        public int ControlRoll
+        {
+            get { return _controlRoll; }
+            set
+            {
+                if (_controlRoll == value) return;
+                _controlRoll = value;
+                FirePropertyChanged("ControlRoll");
+            }
+        }
+
+        private int _controlPitch;
+
+        public int ControlPitch
+        {
+            get { return _controlPitch; }
+            set
+            {
+                if (_controlPitch == value) return;
+                _controlPitch = value;
+                FirePropertyChanged("ControlPitch");
+            }
+        }
+
+        private int _controlYaw;
+
+        public int ControlYaw
+        {
+            get { return _controlYaw; }
+            set
+            {
+                if (_controlYaw == value) return;
+                _controlYaw = value;
+                FirePropertyChanged("ControlYaw");
+            }
+        }
+
         #endregion
 
         public int Unused { get; set; }
