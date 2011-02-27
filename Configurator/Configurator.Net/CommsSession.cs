@@ -61,6 +61,7 @@ namespace ArducopterConfigurator
             catch (Exception ex)
             {
                 Error = ex.Message;
+                return false;
             }
             return true;
         }

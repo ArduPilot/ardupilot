@@ -71,6 +71,8 @@
             this.cirularIndicatorControl5 = new ArducopterConfigurator.Views.controls.CirularIndicatorControl();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.label1 = new System.Windows.Forms.Label();
+            this.textBox14 = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -608,10 +610,33 @@
             this.label1.TabIndex = 57;
             this.label1.Text = "ARMED";
             // 
+            // textBox14
+            // 
+            this.textBox14.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox14.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "CompassHeadingDegrees", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "N0"));
+            this.textBox14.Enabled = false;
+            this.textBox14.Location = new System.Drawing.Point(102, 244);
+            this.textBox14.Name = "textBox14";
+            this.textBox14.ReadOnly = true;
+            this.textBox14.Size = new System.Drawing.Size(35, 20);
+            this.textBox14.TabIndex = 58;
+            this.textBox14.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(44, 246);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(47, 13);
+            this.label2.TabIndex = 59;
+            this.label2.Text = "Heading";
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.textBox14);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.cirularIndicatorControl5);
             this.Controls.Add(this.cirularIndicatorControl4);
@@ -652,7 +677,7 @@
             this.Controls.Add(this.pictureBox2);
             this.DoubleBuffered = true;
             this.Name = "FlightDataView";
-            this.Size = new System.Drawing.Size(453, 260);
+            this.Size = new System.Drawing.Size(453, 273);
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
@@ -704,5 +729,7 @@
         private ArducopterConfigurator.Views.controls.CirularIndicatorControl cirularIndicatorControl5;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.TextBox textBox14;
+        private System.Windows.Forms.Label label2;
     }
 }

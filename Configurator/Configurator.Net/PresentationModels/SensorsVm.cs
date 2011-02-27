@@ -95,7 +95,7 @@ namespace ArducopterConfigurator.PresentationModels
                    "AccelRoll", 
                    "AccelPitch", 
                    "AccelZ",
-                   "UnusedFloat", // AP_Compass.heading
+                   "CompassHeading", // AP_Compass.heading
                    "UnusedFloat", // AP_Compass.heading_x
                    "UnusedFloat", // AP_Compass.heading_y
                    "Unused", // AP_Compass.mag_x
@@ -365,6 +365,36 @@ namespace ArducopterConfigurator.PresentationModels
                 if (_controlYaw == value) return;
                 _controlYaw = value;
                 FirePropertyChanged("ControlYaw");
+            }
+        }
+
+        private float _compassHeading;
+
+
+        /// <summary>
+        /// The current compass Heading as read from the magnetometer in radians?
+        /// </summary>
+        public float CompassHeading
+        {
+            get { return _compassHeading; }
+            set
+            {
+                if (_compassHeading == value) return;
+                _compassHeading = value;
+                FirePropertyChanged("CompassHeading");
+                FirePropertyChanged("CompassHeadingDegrees");
+            }
+        }
+
+        /// <summary>
+        /// The current compass Heading as read from the magnetometer in degrees
+        /// </summary>
+        public float CompassHeadingDegrees
+        {
+            get
+            {
+                var degrees = (float) ((CompassHeading) * (180 / Math.PI));
+                return (360 + degrees) % 360;
             }
         }
 
