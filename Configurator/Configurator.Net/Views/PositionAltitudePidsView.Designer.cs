@@ -34,10 +34,10 @@ namespace ArducopterConfigurator
             this.txtSend = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.positionHoldConfigView1 = new ArducopterConfigurator.Views.PositionHoldConfigView();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.altitudeHoldConfigView1 = new ArducopterConfigurator.Views.AltitudeHoldConfigView();
             this.PositionAltitudePidsBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.positionHoldConfigView1 = new ArducopterConfigurator.Views.PositionHoldConfigView();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PositionAltitudePidsBindingSource)).BeginInit();
@@ -53,7 +53,7 @@ namespace ArducopterConfigurator
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(980, 929);
+            this.button1.Location = new System.Drawing.Point(1264, 929);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(104, 23);
             this.button1.TabIndex = 6;
@@ -70,12 +70,19 @@ namespace ArducopterConfigurator
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Position Hold";
             // 
+            // positionHoldConfigView1
+            // 
+            this.positionHoldConfigView1.Location = new System.Drawing.Point(7, 20);
+            this.positionHoldConfigView1.Name = "positionHoldConfigView1";
+            this.positionHoldConfigView1.Size = new System.Drawing.Size(259, 139);
+            this.positionHoldConfigView1.TabIndex = 0;
+            // 
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.altitudeHoldConfigView1);
             this.groupBox2.Location = new System.Drawing.Point(7, 177);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(283, 167);
+            this.groupBox2.Size = new System.Drawing.Size(283, 112);
             this.groupBox2.TabIndex = 10;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Altitude Hold";
@@ -84,19 +91,12 @@ namespace ArducopterConfigurator
             // 
             this.altitudeHoldConfigView1.Location = new System.Drawing.Point(7, 20);
             this.altitudeHoldConfigView1.Name = "altitudeHoldConfigView1";
-            this.altitudeHoldConfigView1.Size = new System.Drawing.Size(276, 122);
+            this.altitudeHoldConfigView1.Size = new System.Drawing.Size(270, 91);
             this.altitudeHoldConfigView1.TabIndex = 0;
             // 
             // PositionAltitudePidsBindingSource
             // 
             this.PositionAltitudePidsBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightControlPidsVm);
-            // 
-            // positionHoldConfigView1
-            // 
-            this.positionHoldConfigView1.Location = new System.Drawing.Point(7, 20);
-            this.positionHoldConfigView1.Name = "positionHoldConfigView1";
-            this.positionHoldConfigView1.Size = new System.Drawing.Size(259, 139);
-            this.positionHoldConfigView1.TabIndex = 0;
             // 
             // PositionAltitudePidsView
             // 
@@ -109,7 +109,7 @@ namespace ArducopterConfigurator
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtSend);
             this.Name = "PositionAltitudePidsView";
-            this.Size = new System.Drawing.Size(400, 476);
+            this.Size = new System.Drawing.Size(684, 476);
             this.groupBox1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.PositionAltitudePidsBindingSource)).EndInit();

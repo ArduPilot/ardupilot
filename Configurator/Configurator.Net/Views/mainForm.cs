@@ -32,6 +32,7 @@ namespace ArducopterConfigurator
                          {typeof (SerialMonitorVm), typeof (SerialMonitorView)},
                          {typeof (FlightControlPidsVm), typeof (FlightControlPidsView)},
                          {typeof (PositionAltitudePidsVm), typeof (PositionAltitudePidsView)},
+                         {typeof (GpsStatusVm), typeof (GpsStatusView)},
                      };
 
 
