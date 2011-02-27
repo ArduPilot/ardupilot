@@ -182,7 +182,12 @@ namespace ArducopterConfigurator.PresentationModels
             _comms.CommPort = SelectedPort;
             
             // Todo: check the status of this call success/failure
-            _comms.Connect();
+            if (!_comms.Connect())
+            {
+                ConnectionState = SessionStates.Disconnected;
+                ApmVersion = "Error";
+                return;
+            }
 
             ConnectionState = SessionStates.Connecting;
 
