@@ -27,8 +27,10 @@ namespace ArducopterConfigurator.PresentationModels
                                  new TransmitterChannelsVm(),
                                  new FlightControlPidsVm(),
                                  new PositionAltitudePidsVm(),
+                                 new GpsStatusVm(),
+
                                  //new MotorCommandsVm(session),
-                                 new SerialMonitorVm()
+                                 new SerialMonitorVm(),
                              };
 
             foreach (var vm in MonitorVms)

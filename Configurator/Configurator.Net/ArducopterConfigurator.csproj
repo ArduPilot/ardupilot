@@ -72,6 +72,7 @@
     <Compile Include="PresentationModels\AltitudeHoldConfigVm.cs" />
     <Compile Include="PresentationModels\ConfigWithPidsBase.cs" />
     <Compile Include="Core\DelegateCommand.cs" />
+    <Compile Include="PresentationModels\GPSstatusVm.cs" />
     <Compile Include="PresentationModels\CrudVm.cs" />
     <Compile Include="PresentationModels\DoubleVm.cs" />
     <Compile Include="PresentationModels\PositionAltitudePidsVm.cs" />
@@ -103,6 +104,12 @@
     </Compile>
     <Compile Include="Views\controls\LinearIndicatorControl.Designer.cs">
       <DependentUpon>LinearIndicatorControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GpsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\GpsView.Designer.cs">
+      <DependentUpon>GpsView.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\PositionAltitudePidsView.cs">
       <SubType>UserControl</SubType>
@@ -245,6 +252,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Views\controls\QuadPlanControl.resx">
       <DependentUpon>QuadPlanControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\GpsView.resx">
+      <DependentUpon>GpsView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\PositionAltitudePidsView.resx">
       <DependentUpon>PositionAltitudePidsView.cs</DependentUpon>
