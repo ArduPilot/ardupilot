@@ -19,6 +19,10 @@ class APM_RC_Class
 	void Force_Out0_Out1(void);
 	void Force_Out2_Out3(void);
 	void Force_Out6_Out7(void);
+	void setHIL(int16_t v[NUM_CHANNELS]);
+
+  private:
+	int16_t _HIL_override[NUM_CHANNELS];
 };
 
 extern APM_RC_Class APM_RC;
