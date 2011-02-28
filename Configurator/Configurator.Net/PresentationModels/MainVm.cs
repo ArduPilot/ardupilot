@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using Timer=System.Windows.Forms.Timer;
 
@@ -10,6 +11,7 @@ namespace ArducopterConfigurator.PresentationModels
         private bool _isConnected;
         private IPresentationModel _selectedVm;
         private string _selectedPort;
+        private int _selectedBaudRate;
         private string _apmVersion;
         private Timer _connectionAttemptsTimer;
 
@@ -54,7 +56,10 @@ namespace ArducopterConfigurator.PresentationModels
             ConnectionState = SessionStates.Disconnected;
 
             AvailablePorts = new BindingList<string>();
-            
+
+            AvailableBaudRates = new BindingList<int>() {115200, 57600, 38400, 9600};
+            SelectedBaudRate = 115200;
+
             RefreshPorts();
 
             // Initially have selected the last discovered com port.
@@ -131,6 +136,8 @@ namespace ArducopterConfigurator.PresentationModels
 
         public BindingList<string> AvailablePorts { get; private set; }
 
+        public BindingList<int> AvailableBaudRates { get; private set; }
+
         public enum SessionStates
         {
             Disconnected,
@@ -178,11 +185,26 @@ namespace ArducopterConfigurator.PresentationModels
                 }
             }
         }
+
+
+        public int SelectedBaudRate
+        {
+            get { return _selectedBaudRate; }
+            set
+            {
+                if (_selectedBaudRate != value)
+                {
+                    _selectedBaudRate = value;
+                    FirePropertyChanged("SelectedBaudRate");
+                }
+            }
+        }
       
         public void Connect()
         {
             _comms.CommPort = SelectedPort;
-            
+            _comms.BaudRate = SelectedBaudRate;
+
             // Todo: check the status of this call success/failure
             if (!_comms.Connect())
             {

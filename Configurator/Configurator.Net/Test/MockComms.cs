@@ -16,6 +16,12 @@ namespace ArducopterConfiguratorTest
             get { return _isConnected; }
         }
 
+        public int BaudRate
+        {
+            get { throw new System.NotImplementedException(); }
+            set { throw new System.NotImplementedException(); }
+        }
+
         public IEnumerable<string> ListCommPorts()
         {
             return new[] {"MockComport1"};

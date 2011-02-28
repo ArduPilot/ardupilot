@@ -11,6 +11,7 @@ namespace ArducopterConfigurator
         event Action<string> LineOfDataReceived;
         string CommPort { get; set; }
         bool IsConnected { get; }
+        int BaudRate { get; set; }
         IEnumerable<string> ListCommPorts();
         void Send(string send);
         bool Connect();
@@ -37,9 +38,11 @@ namespace ArducopterConfigurator
 
         public string CommPort { get; set; }
 
+        public int BaudRate { get; set; }
+     
         public bool Connect()
         {
-            _sp.BaudRate = 115200;
+            _sp.BaudRate = BaudRate;
             _sp.PortName = CommPort;
             _sp.NewLine = "\n";
             _sp.Handshake = Handshake.None;
@@ -124,6 +127,8 @@ namespace ArducopterConfigurator
         {
             get { return _sp.IsOpen; }
         }
+
+      
 
         public IEnumerable<string> ListCommPorts()
         {

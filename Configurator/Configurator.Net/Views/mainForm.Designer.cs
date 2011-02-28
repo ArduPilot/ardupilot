@@ -39,12 +39,15 @@ namespace ArducopterConfigurator
             this.button4 = new System.Windows.Forms.Button();
             this.btnConnect = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.label1 = new System.Windows.Forms.Label();
             this.cmboComPorts = new System.Windows.Forms.ComboBox();
             this.lblConnectionStatus = new System.Windows.Forms.Label();
+            this.availableBaudRatesBindingSource = new System.Windows.Forms.BindingSource(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.availableBaudRatesBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // tabCtrlMonitorVms
@@ -95,7 +98,7 @@ namespace ArducopterConfigurator
             this.btnConnect.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.btnConnect.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "ConnectCommand", true));
             this.btnConnect.Image = ((System.Drawing.Image)(resources.GetObject("btnConnect.Image")));
-            this.btnConnect.Location = new System.Drawing.Point(96, 407);
+            this.btnConnect.Location = new System.Drawing.Point(165, 408);
             this.btnConnect.Name = "btnConnect";
             this.btnConnect.Size = new System.Drawing.Size(26, 26);
             this.btnConnect.TabIndex = 6;
@@ -108,17 +111,29 @@ namespace ArducopterConfigurator
             this.button1.Cursor = System.Windows.Forms.Cursors.Arrow;
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.mainVmBindingSource, "DisconnectCommand", true));
             this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(127, 407);
+            this.button1.Location = new System.Drawing.Point(196, 408);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 7;
             this.toolTip.SetToolTip(this.button1, "Disconnect");
             this.button1.UseVisualStyleBackColor = true;
             // 
+            // comboBox1
+            // 
+            this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.comboBox1.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.mainVmBindingSource, "SelectedBaudRate", true));
+            this.comboBox1.DataSource = this.availableBaudRatesBindingSource;
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Location = new System.Drawing.Point(80, 411);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(79, 21);
+            this.comboBox1.TabIndex = 15;
+            this.toolTip.SetToolTip(this.comboBox1, "Baud Rate");
+            // 
             // linkLabel1
             // 
             this.linkLabel1.AutoSize = true;
-            this.linkLabel1.Location = new System.Drawing.Point(346, 415);
+            this.linkLabel1.Location = new System.Drawing.Point(355, 423);
             this.linkLabel1.Name = "linkLabel1";
             this.linkLabel1.Size = new System.Drawing.Size(84, 13);
             this.linkLabel1.TabIndex = 13;
@@ -129,7 +144,7 @@ namespace ArducopterConfigurator
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(346, 399);
+            this.label1.Location = new System.Drawing.Point(355, 407);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(89, 13);
             this.label1.TabIndex = 14;
@@ -143,7 +158,7 @@ namespace ArducopterConfigurator
             this.cmboComPorts.FormattingEnabled = true;
             this.cmboComPorts.Location = new System.Drawing.Point(11, 410);
             this.cmboComPorts.Name = "cmboComPorts";
-            this.cmboComPorts.Size = new System.Drawing.Size(79, 21);
+            this.cmboComPorts.Size = new System.Drawing.Size(63, 21);
             this.cmboComPorts.TabIndex = 5;
             this.cmboComPorts.DropDown += new System.EventHandler(this.cmboComPorts_DropDown);
             // 
@@ -151,17 +166,23 @@ namespace ArducopterConfigurator
             // 
             this.lblConnectionStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.lblConnectionStatus.AutoSize = true;
-            this.lblConnectionStatus.Location = new System.Drawing.Point(159, 418);
+            this.lblConnectionStatus.Location = new System.Drawing.Point(228, 419);
             this.lblConnectionStatus.Name = "lblConnectionStatus";
             this.lblConnectionStatus.Size = new System.Drawing.Size(112, 13);
             this.lblConnectionStatus.TabIndex = 8;
             this.lblConnectionStatus.Text = "connection string here";
+            // 
+            // availableBaudRatesBindingSource
+            // 
+            this.availableBaudRatesBindingSource.DataMember = "AvailableBaudRates";
+            this.availableBaudRatesBindingSource.DataSource = this.mainVmBindingSource;
             // 
             // mainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(554, 445);
+            this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.lblConnectionStatus);
             this.Controls.Add(this.button1);
@@ -179,6 +200,7 @@ namespace ArducopterConfigurator
             this.SizeChanged += new System.EventHandler(this.mainForm_SizeChanged);
             ((System.ComponentModel.ISupportInitialize)(this.mainVmBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.availablePortsBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.availableBaudRatesBindingSource)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -198,6 +220,8 @@ namespace ArducopterConfigurator
         private System.Windows.Forms.ComboBox cmboComPorts;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label lblConnectionStatus;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.BindingSource availableBaudRatesBindingSource;
     }
 }
 

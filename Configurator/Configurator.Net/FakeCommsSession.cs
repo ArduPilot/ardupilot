@@ -32,6 +32,9 @@ namespace ArducopterConfigurator
             get { return _connected; }
         }
 
+        public int BaudRate { get; set; }
+     
+
         public IEnumerable<string> ListCommPorts()
         {
             return new[] {"FakePort1", "FakePort2"};
