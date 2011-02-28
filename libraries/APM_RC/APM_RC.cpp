@@ -150,6 +150,10 @@ uint16_t APM_RC_Class::InputCh(unsigned char ch)
   uint16_t result;
   uint16_t result2;
   
+	if (_HIL_override[ch] != 0) {
+		return _HIL_override[ch];
+	}
+	
   // Because servo pulse variables are 16 bits and the interrupts are running values could be corrupted.
   // We dont want to stop interrupts to read radio channels so we have to do two readings to be sure that the value is correct...
   result =  PWM_RAW[ch]>>1;  // Because timer runs at 0.5us we need to do value/2
@@ -186,6 +190,19 @@ void APM_RC_Class::Force_Out6_Out7(void)
 {
   if (TCNT3>5000)
     TCNT3=39990;
+}
+
+// allow HIL override of RC values
+// A value of -1 means no change
+// A value of 0 means no override, use the real RC values
+void APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
+{
+	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
+		if (v[i] != -1) {
+			_HIL_override[i] = v[i];
+		}
+	}
+	radio_status = 1;
 }
 
 // make one instance for the user to use
