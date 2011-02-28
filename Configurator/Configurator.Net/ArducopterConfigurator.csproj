@@ -87,6 +87,12 @@
     <Compile Include="Views\controls\CircularIndicatorControl.Designer.cs">
       <DependentUpon>CircularIndicatorControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Views\controls\CompassControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\controls\CompassControl.Designer.cs">
+      <DependentUpon>CompassControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\controls\PropControl.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -246,6 +252,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Views\controls\CircularIndicatorControl.resx">
       <DependentUpon>CircularIndicatorControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\controls\CompassControl.resx">
+      <DependentUpon>CompassControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\controls\PropControl.resx">
       <DependentUpon>PropControl.cs</DependentUpon>

@@ -73,6 +73,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.textBox14 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
+            this.compassControl1 = new ArducopterConfigurator.Views.controls.CompassControl();
             ((System.ComponentModel.ISupportInitialize)(this.FlightDataVmBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -431,7 +432,7 @@
             // 
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "RefreshCalibrationOffsetsCommand", true));
             this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(311, 214);
+            this.button2.Location = new System.Drawing.Point(304, 139);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 46;
@@ -441,7 +442,7 @@
             // 
             this.button1.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "UpdateCalibrationOffsetsCommand", true));
             this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(311, 185);
+            this.button1.Location = new System.Drawing.Point(304, 110);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(26, 26);
             this.button1.TabIndex = 45;
@@ -451,7 +452,7 @@
             // 
             this.button3.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.FlightDataVmBindingSource, "CalculateCalibrationOffsetsCommand", true));
             this.button3.Image = ((System.Drawing.Image)(resources.GetObject("button3.Image")));
-            this.button3.Location = new System.Drawing.Point(311, 156);
+            this.button3.Location = new System.Drawing.Point(304, 81);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(26, 26);
             this.button3.TabIndex = 47;
@@ -461,7 +462,7 @@
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(343, 163);
+            this.label11.Location = new System.Drawing.Point(336, 88);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(78, 13);
             this.label11.TabIndex = 48;
@@ -470,7 +471,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(343, 192);
+            this.label12.Location = new System.Drawing.Point(336, 117);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(84, 13);
             this.label12.TabIndex = 49;
@@ -479,7 +480,7 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(343, 223);
+            this.label13.Location = new System.Drawing.Point(336, 148);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(96, 13);
             this.label13.TabIndex = 50;
@@ -612,29 +613,44 @@
             // 
             // textBox14
             // 
-            this.textBox14.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.textBox14.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox14.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.FlightDataVmBindingSource, "CompassHeadingDegrees", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "N0"));
             this.textBox14.Enabled = false;
-            this.textBox14.Location = new System.Drawing.Point(102, 244);
+            this.textBox14.Location = new System.Drawing.Point(264, 222);
             this.textBox14.Name = "textBox14";
             this.textBox14.ReadOnly = true;
-            this.textBox14.Size = new System.Drawing.Size(35, 20);
+            this.textBox14.Size = new System.Drawing.Size(35, 13);
             this.textBox14.TabIndex = 58;
             this.textBox14.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(44, 246);
+            this.label2.Location = new System.Drawing.Point(255, 205);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(47, 13);
             this.label2.TabIndex = 59;
             this.label2.Text = "Heading";
             // 
+            // compassControl1
+            // 
+            this.compassControl1.BarBackgroundDark = System.Drawing.Color.FromArgb(((int)(((byte)(199)))), ((int)(((byte)(200)))), ((int)(((byte)(201)))));
+            this.compassControl1.BarBackgroundLight = System.Drawing.Color.WhiteSmoke;
+            this.compassControl1.BarBorderColor = System.Drawing.Color.Black;
+            this.compassControl1.BarDark = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(68)))), ((int)(((byte)(202)))));
+            this.compassControl1.BarLight = System.Drawing.Color.LightBlue;
+            this.compassControl1.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.FlightDataVmBindingSource, "CompassHeadingDegrees", true));
+            this.compassControl1.Location = new System.Drawing.Point(308, 192);
+            this.compassControl1.Name = "compassControl1";
+            this.compassControl1.Size = new System.Drawing.Size(50, 50);
+            this.compassControl1.TabIndex = 0;
+            this.compassControl1.Value = 90;
+            // 
             // FlightDataView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.compassControl1);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.textBox14);
             this.Controls.Add(this.label1);
@@ -731,5 +747,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox textBox14;
         private System.Windows.Forms.Label label2;
+        private ArducopterConfigurator.Views.controls.CompassControl compassControl1;
     }
 }
