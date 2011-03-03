@@ -213,7 +213,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_HALT:
-                loiter_at_location();
+                do_hold_position();
                 break;
 
                 // can't implement due to APM configuration
@@ -285,7 +285,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_LOITER:
-                set_mode(LOITER);
+                //set_mode(LOITER);
                 break;
 
             default: break;

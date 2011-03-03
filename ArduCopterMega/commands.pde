@@ -12,12 +12,12 @@ void init_commands()
 void update_auto()
 {
 	if (g.waypoint_index == g.waypoint_total) {
-		return_to_launch();
-		//wp_index 			= 0;
+		do_RTL();
 	}
 }
 
-void reload_commands()
+// this is only used by an air-start
+void reload_commands_airstart()
 {
 	init_commands();
 	g.waypoint_index.load();        // XXX can we assume it's been loaded already by ::load_all?
@@ -30,7 +30,6 @@ struct Location get_wp_with_index(int i)
 {
 	struct Location temp;
 	long mem;
-
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
@@ -49,6 +48,11 @@ struct Location get_wp_with_index(int i)
 		mem += 4;
 		temp.lng = (long)eeprom_read_dword((uint32_t*)mem);
 	}
+
+	// Add on home altitude if we are a nav command
+	if(temp.id < 50)
+		temp.alt += home.alt;
+
 	return temp;
 }
 
@@ -57,6 +61,12 @@ struct Location get_wp_with_index(int i)
 void set_wp_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.waypoint_total.get());
+
+	if(i > 0 && temp.id < 50){
+		// remove home altitude if we are a nav command
+		temp.alt -= home.alt;
+	}
+
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -101,69 +111,18 @@ long read_alt_to_hold()
 		return g.RTL_altitude + home.alt;
 }
 
-void
-set_current_loc_here()
-{
-	//struct Location temp;
-	Location l = current_loc;
-	l.alt = get_altitude_above_home();
-	set_next_WP(&l);
-}
-
-void loiter_at_location()
-{
-	next_WP = current_loc;
-}
-
-void set_mode_loiter_home(void)
-{
-	control_mode = LOITER;
-	//crash_timer = 0;
-
-	next_WP = current_loc;
-	// Altitude to hold over home
-	// Set by configuration tool
-	// -------------------------
-	next_WP.alt = read_alt_to_hold();
-
-	// output control mode to the ground station
-	gcs.send_message(MSG_HEARTBEAT);
-
-	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
-}
 
 //********************************************************************************
 //This function sets the waypoint and modes for Return to Launch
 //********************************************************************************
 
-// add a new command at end of command set to RTL.
-void return_to_launch(void)
-{
-	//so we know where we are navigating from
-	next_WP = current_loc;
 
-	// home is WP 0
-	// ------------
-	g.waypoint_index.set_and_save(0);
-
-	// Loads WP from Memory
-	// --------------------
-	set_next_WP(&home);
-
-	// Altitude to hold over home
-	// Set by configuration tool
-	// -------------------------
-	next_WP.alt = read_alt_to_hold();
-	//send_message(SEVERITY_LOW,"Return To Launch");
-}
-
-struct Location get_LOITER_home_wp()
+Location get_LOITER_home_wp()
 {
 	// read home position
 	struct Location temp 	= get_wp_with_index(0);
 	temp.id 				= MAV_CMD_NAV_LOITER_UNLIM;
-	temp.alt 				= read_alt_to_hold() - home.alt;  // will be incremented up by home.alt in set_next_WP
+	temp.alt 				= read_alt_to_hold();
 	return temp;
 }
 
@@ -186,14 +145,11 @@ void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
-	// offset the altitude relative to home position
-	// ---------------------------------------------
-	next_WP.alt += home.alt;
-
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
 	target_altitude = current_loc.alt;
 
+	// XXX YUCK!
 	if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
 		offset_altitude = next_WP.alt - prev_WP.alt;
 	else
@@ -210,10 +166,12 @@ void set_next_WP(struct Location *wp)
 	scaleLongUp 		= 1.0f/cos(rads);
 
 	// this is handy for the groundstation
-	wp_totalDistance 	= getDistance(&current_loc, &next_WP);
+	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
+	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
 
-	wp_distance 		= wp_totalDistance;
+	// to check if we have missed the WP
+	// ----------------------------
 	old_target_bearing 	= target_bearing;
 
 	// set a new crosstrack bearing
@@ -222,7 +180,6 @@ void set_next_WP(struct Location *wp)
 
 	gcs.print_current_waypoints();
 }
-
 
 // run this at setup on the ground
 // -------------------------------

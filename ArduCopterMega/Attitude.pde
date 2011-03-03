@@ -246,7 +246,6 @@ void output_manual_yaw()
 	}else{
 		// Yaw control
 		if(g.rc_4.control_in == 0){
-			//clear_yaw_control();
 			output_yaw_with_hold(true); // hold yaw
 		}else{
 			output_yaw_with_hold(false); // rate control yaw

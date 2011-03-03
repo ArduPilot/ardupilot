@@ -1,157 +1,59 @@
+/********************************************************************************/
+// Command Event Handlers
+/********************************************************************************/
 void
-handle_no_commands()
-{
-	switch (control_mode){
-		case LAND:
-			// don't get a new command
-			break;
-
-		default:
-			next_command = get_LOITER_home_wp();
-			//SendDebug("MSG <load_next_command> Preload RTL cmd id: ");
-			//SendDebugln(next_command.id,DEC);
-			break;
-	}
-}
-
-void
-handle_process_must(byte id)
+handle_process_must()
 {
 	// reset navigation integrators
 	// -------------------------
 	reset_I();
 
-	switch(id){
-		case MAV_CMD_NAV_TAKEOFF:	// TAKEOFF!
-			// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-			takeoff_altitude 	= (int)next_command.alt;
-			next_WP.lat 		= current_loc.lat + 10;	// so we don't have bad calcs
-			next_WP.lng 		= current_loc.lng + 10;	// so we don't have bad calcs
-			next_WP.alt			= current_loc.alt + takeoff_altitude;
-			takeoff_complete 	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
-			//set_next_WP(&next_WP);
+	switch(next_command.id){
+
+		case MAV_CMD_NAV_TAKEOFF:
+			do_takeoff();
 			break;
 
 		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
+			do_nav_wp();
 			break;
-
-		//case MAV_CMD_NAV_R_WAYPOINT:	// Navigate to Waypoint
-		//	next_command.lat 	+= home.lat;	// offset from home location
-		//	next_command.lng 	+= home.lng;	// offset from home location
-
-			// we've recalculated the WP so we need to set it again
-		//	set_next_WP(&next_command);
-		//	break;
 
 		case MAV_CMD_NAV_LAND:	// LAND to Waypoint
-			velocity_land		= 1000;
-			next_WP.lat 		= current_loc.lat;
-			next_WP.lng 		= current_loc.lng;
-			next_WP.alt 		= home.alt;
-			land_complete 		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
-			break;
-
-		/*
-		case MAV_CMD_ALTITUDE:	//
-			next_WP.lat 		= current_loc.lat + 10;	// so we don't have bad calcs
-			next_WP.lng 		= current_loc.lng + 10;	// so we don't have bad calcs
-			break;
-		*/
-
-		case MAV_CMD_NAV_LOITER_UNLIM:	// Loiter indefinitely
-			break;
-
-		case MAV_CMD_NAV_LOITER_TURNS:	// Loiter N Times
-			break;
-
-		case MAV_CMD_NAV_LOITER_TIME:
+			do_land();
 			break;
 
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-			return_to_launch();
+			do_RTL();
 			break;
 	}
 }
 
 void
-handle_process_may(byte id)
+handle_process_may()
 {
-	switch(id){
+	switch(next_command.id){
 
-		case MAV_CMD_CONDITION_DELAY:	// Navigate to Waypoint
-			delay_start = millis();
-			delay_timeout  = next_command.lat;
+		case MAV_CMD_CONDITION_DELAY:
+			do_delay();
 			break;
 
-		//case MAV_CMD_NAV_LAND_OPTIONS:	// Land this puppy
-		//	break;
+		case MAV_CMD_CONDITION_CHANGE_ALT:
+			do_change_alt();
+			break;
 
 		case MAV_CMD_CONDITION_YAW:
-			// p1:		bearing
-			// alt:		speed
-			// lat:		direction (-1,1),
-			// lng:		rel (1) abs (0)
-
-			// target angle in degrees
-			command_yaw_start		= nav_yaw; // current position
-			command_yaw_start_time 	= millis();
-
-			// which direction to turn
-			// 1 = clockwise, -1 = counterclockwise
-			command_yaw_dir		= next_command.lat;
-
-			// 1 = Relative or 0 = Absolute
-			if (next_command.lng == 1) {
-				// relative
-				command_yaw_dir  = (command_yaw_end > 0) ? 1 : -1;
-				command_yaw_end += nav_yaw;
-				command_yaw_end = wrap_360(command_yaw_end);
-			}else{
-				// absolute
-				command_yaw_end 	= next_command.p1 * 100;
-			}
-
-
-			// if unspecified go 10° a second
-			if(command_yaw_speed == 0)
-				command_yaw_speed = 10;
-
-			// if unspecified go clockwise
-			if(command_yaw_dir == 0)
-				command_yaw_dir = 1;
-
-			// calculate the delta travel
-			if(command_yaw_dir == 1){
-				if(command_yaw_start > command_yaw_end){
-					command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
-				}else{
-					command_yaw_delta = command_yaw_end - command_yaw_start;
-				}
-			}else{
-				if(command_yaw_start > command_yaw_end){
-					command_yaw_delta = command_yaw_start - command_yaw_end;
-				}else{
-					command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
-				}
-			}
-			command_yaw_delta = wrap_360(command_yaw_delta);
-
-			// rate to turn deg per second - default is ten
-			command_yaw_speed 	= next_command.alt;
-			command_yaw_time 	= command_yaw_delta / command_yaw_speed;
-			//9000 turn in 10 seconds
-			//command_yaw_time = 9000/ 10 = 900° per second
-
+			do_yaw();
 			break;
 
 		default:
 			break;
-	}}
+	}
+}
 
 void
-handle_process_now(byte id)
+handle_process_now()
 {
-	switch(id){
+	switch(next_command.id){
 		case MAV_CMD_DO_SET_HOME:
 			init_home();
 			break;
@@ -161,125 +63,327 @@ handle_process_now(byte id)
 			break;
 
 		case MAV_CMD_DO_SET_SERVO:
-			//Serial.print("MAV_CMD_DO_SET_SERVO ");
-			//Serial.print(next_command.p1,DEC);
-			//Serial.print(" PWM: ");
-			//Serial.println(next_command.alt,DEC);
-			APM_RC.OutputCh(next_command.p1, next_command.alt);
+			do_set_servo();
 			break;
 
 		case MAV_CMD_DO_SET_RELAY:
-			if (next_command.p1 == 0) {
-				relay_on();
-			} else if (next_command.p1 == 1) {
-				relay_off();
-			}else{
-				relay_toggle();
-			}
+			do_set_relay();
 			break;
 	}
 }
 
-// Verify commands
-// ---------------
-void verify_must()
+void
+handle_no_commands()
+{
+	switch (control_mode){
+		case LAND:
+			// don't get a new command
+			break;
+
+		//case GCS_AUTO:
+		//	set_mode(LOITER);
+
+		default:
+			set_mode(RTL);
+			//next_command = get_LOITER_home_wp();
+			//SendDebug("MSG <load_next_command> Preload RTL cmd id: ");
+			//SendDebugln(next_command.id,DEC);
+			break;
+	}
+}
+
+bool verify_must()
 {
 	switch(command_must_ID) {
 
-		/*case MAV_CMD_ALTITUDE:
-				if (abs(next_WP.alt - current_loc.alt) < 100){
-					command_must_index 	= 0;
-				}
-			break;
-		*/
-
 		case MAV_CMD_NAV_TAKEOFF:	// Takeoff!
-			if (current_loc.alt > (next_WP.alt -100)){
-				command_must_index 	= 0;
-				takeoff_complete 	= true;
-			}
+			return verify_takeoff();
 			break;
 
 		case MAV_CMD_NAV_LAND:
-			// 10 - 9  = 1
-			velocity_land  = ((old_alt - current_loc.alt) *.05) + (velocity_land * .95);
-			old_alt = current_loc.alt;
-			if(velocity_land == 0){
-				land_complete 		= true;
-				command_must_index 	= 0;
-			}
-			update_crosstrack();
-
+			return verify_land();
 			break;
 
 		case MAV_CMD_NAV_WAYPOINT:	// reach a waypoint
-			update_crosstrack();
-			if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-				//SendDebug("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
-				//SendDebugln(command_must_index,DEC);
-				char message[50];
-				sprintf(message,"Reached Waypoint #%i",command_must_index);
-				gcs.send_text(SEVERITY_LOW,message);
-
-				// clear the command queue;
-				command_must_index 	= 0;
-			}
-			// add in a more complex case
-			// Doug to do
-			if(loiter_sum > 300){
-				send_message(SEVERITY_MEDIUM,"Missed WP");
-				command_must_index 	= 0;
-			}
-			break;
-
-		case MAV_CMD_NAV_LOITER_TURNS:	// LOITER N times
-			break;
-
-		case MAV_CMD_NAV_LOITER_TIME:	// loiter N milliseconds
+			return verify_nav_wp();
 			break;
 
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-			if (wp_distance <= g.waypoint_radius) {
-				gcs.send_text(SEVERITY_LOW,"Reached home");
-				command_must_index 	= 0;
-			}
+			return verify_RTL();
 			break;
 
-		//case MAV_CMD_NAV_LOITER_UNLIM:	// Just plain LOITER
-		//	break;
-
-
 		default:
-			gcs.send_text(SEVERITY_HIGH,"<verify_must: default> No current Must commands");
+			//gcs.send_text(SEVERITY_HIGH,"<verify_must: default> No current Must commands");
+			return false;
 			break;
 	}
 }
 
-void verify_may()
+bool verify_may()
 {
-	float power;
 	switch(command_may_ID) {
 
 		case MAV_CMD_CONDITION_ANGLE:
-			if((millis() - command_yaw_start_time) > command_yaw_time){
-				command_must_index 	= 0;
-				nav_yaw = command_yaw_end;
-			}else{
-				// else we need to be at a certain place
-				// power is a ratio of the time : .5 = half done
-				power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
-				nav_yaw = command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
-			}
+			return verify_yaw();
 			break;
 
 		case MAV_CMD_CONDITION_DELAY:
-			if ((millis() - delay_start) > delay_timeout){
-				command_may_index = 0;
-				delay_timeout = 0;
-			}
+			return verify_delay();
+			break;
 
-		//case CMD_LAND_OPTIONS:
-		//	break;
+		case MAV_CMD_CONDITION_CHANGE_ALT:
+			return verify_change_alt();
+			break;
+
+		default:
+			//gcs.send_text(SEVERITY_HIGH,"<verify_must: default> No current May commands");
+			return false;
+			break;
+
 	}
 }
 
+/********************************************************************************/
+// Must command implementations
+/********************************************************************************/
+
+void
+do_takeoff()
+{
+	Location temp 		= current_loc;
+	temp.alt			= next_command.alt;
+	takeoff_complete 	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+
+	set_next_WP(&temp);
+}
+
+bool
+verify_takeoff()
+{
+	if (current_loc.alt > next_WP.alt){
+		takeoff_complete 	= true;
+		return true;
+	}else{
+		return false;
+	}
+}
+
+void
+do_nav_wp()
+{
+	set_next_WP(&next_command);
+}
+
+bool
+verify_nav_wp()
+{
+	update_crosstrack();
+	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
+		//SendDebug("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
+		//SendDebugln(command_must_index,DEC);
+		char message[30];
+		sprintf(message,"Reached Waypoint #%i",command_must_index);
+		gcs.send_text(SEVERITY_LOW,message);
+		return true;
+	}
+	// add in a more complex case
+	// Doug to do
+	if(loiter_sum > 300){
+		send_message(SEVERITY_MEDIUM,"Missed WP");
+		return true;
+	}
+	return false;
+}
+
+void
+do_land()
+{
+	land_complete 		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+	velocity_land		= 1000;
+
+	Location temp 		= current_loc;
+	temp.alt 			= home.alt;
+
+	set_next_WP(&temp);
+}
+
+bool
+verify_land()
+{
+	update_crosstrack();
+
+	velocity_land  = ((old_alt - current_loc.alt) *.05) + (velocity_land * .95);
+	old_alt = current_loc.alt;
+
+	if(velocity_land == 0){
+		land_complete 		= true;
+		return true;
+	}
+
+	return false;
+}
+
+// add a new command at end of command set to RTL.
+void
+do_RTL()
+{
+	Location temp 	= home;
+	temp.alt 		= read_alt_to_hold();
+
+	//so we know where we are navigating from
+	next_WP = current_loc;
+
+	// Loads WP from Memory
+	// --------------------
+	set_next_WP(&temp);
+}
+
+bool
+verify_RTL()
+{
+	if (wp_distance <= g.waypoint_radius) {
+		gcs.send_text(SEVERITY_LOW,"Reached home");
+		return true;
+	}else{
+		return false;
+	}
+}
+
+/********************************************************************************/
+// May command implementations
+/********************************************************************************/
+
+void
+do_yaw()
+{
+	// p1:		bearing
+	// alt:		speed
+	// lat:		direction (-1,1),
+	// lng:		rel (1) abs (0)
+
+	// target angle in degrees
+	command_yaw_start		= nav_yaw; // current position
+	command_yaw_start_time 	= millis();
+
+	// which direction to turn
+	// 1 = clockwise, -1 = counterclockwise
+	command_yaw_dir		= next_command.lat;
+
+	// 1 = Relative or 0 = Absolute
+	if (next_command.lng == 1) {
+		// relative
+		command_yaw_dir  = (command_yaw_end > 0) ? 1 : -1;
+		command_yaw_end += nav_yaw;
+		command_yaw_end = wrap_360(command_yaw_end);
+	}else{
+		// absolute
+		command_yaw_end 	= next_command.p1 * 100;
+	}
+
+
+	// if unspecified go 10° a second
+	if(command_yaw_speed == 0)
+		command_yaw_speed = 10;
+
+	// if unspecified go clockwise
+	if(command_yaw_dir == 0)
+		command_yaw_dir = 1;
+
+	// calculate the delta travel
+	if(command_yaw_dir == 1){
+		if(command_yaw_start > command_yaw_end){
+			command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
+		}else{
+			command_yaw_delta = command_yaw_end - command_yaw_start;
+		}
+	}else{
+		if(command_yaw_start > command_yaw_end){
+			command_yaw_delta = command_yaw_start - command_yaw_end;
+		}else{
+			command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
+		}
+	}
+	command_yaw_delta = wrap_360(command_yaw_delta);
+
+	// rate to turn deg per second - default is ten
+	command_yaw_speed 	= next_command.alt;
+	command_yaw_time 	= command_yaw_delta / command_yaw_speed;
+	//9000 turn in 10 seconds
+	//command_yaw_time = 9000/ 10 = 900° per second
+}
+
+bool
+verify_yaw()
+{
+	if((millis() - command_yaw_start_time) > command_yaw_time){
+		nav_yaw = command_yaw_end;
+		return true;
+	}else{
+		// else we need to be at a certain place
+		// power is a ratio of the time : .5 = half done
+		float power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
+		nav_yaw 	= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
+		return false;
+	}
+}
+
+void
+do_delay()
+{
+	delay_start = millis();
+	delay_timeout  = next_command.lat;
+}
+
+bool
+verify_delay()
+{
+	if ((millis() - delay_start) > delay_timeout){
+		delay_timeout = 0;
+		return true;
+	}else{
+		return false;
+	}
+}
+
+void
+do_change_alt()
+{
+	Location temp 	= next_WP;
+	temp.alt 		= next_command.alt + home.alt;
+	set_next_WP(&temp);
+}
+
+bool
+verify_change_alt()
+{
+	if(abs(current_loc.alt - next_WP.alt) < 100){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+/********************************************************************************/
+// Now command implementations
+/********************************************************************************/
+
+void do_hold_position()
+{
+	set_next_WP(&current_loc);
+}
+
+void do_set_servo()
+{
+	APM_RC.OutputCh(next_command.p1, next_command.alt);
+}
+
+void do_set_relay()
+{
+	if (next_command.p1 == 0) {
+		relay_on();
+	} else if (next_command.p1 == 1) {
+		relay_off();
+	}else{
+		relay_toggle();
+	}
+}

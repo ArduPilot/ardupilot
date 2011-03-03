@@ -136,10 +136,10 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 		g.rc_4.calc_pwm();
 
 		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
-							(g.rc_1.control_in),
-							(g.rc_2.control_in),
-							(g.rc_3.control_in),
-							(g.rc_4.control_in),
+							g.rc_1.control_in,
+							g.rc_2.control_in,
+							g.rc_3.control_in,
+							g.rc_4.control_in,
 							g.rc_5.control_in,
 							g.rc_6.control_in,
 							g.rc_7.control_in);

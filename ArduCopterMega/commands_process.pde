@@ -5,43 +5,55 @@ void update_commands(void)
 	// This function loads commands into three buffers
 	// when a new command is loaded, it is processed with process_XXX()
 	// ----------------------------------------------------------------
-	if((home_is_set == false) || (control_mode != AUTO)){
+	if(home_is_set == false){
 		return;	// don't do commands
 	}
 
 	if(control_mode == AUTO){
-		load_next_command();
+		load_next_command_from_EEPROM();
 		process_next_command();
+	}else if(control_mode == GCS_AUTO){
+		/*if( there is a command recieved )
+			process_next_command();
+		*/
 	}
-
-	//verify_must();
-	//verify_may();
 }
 
-
-void load_next_command()
+void verify_commands(void)
 {
-	// fetch next command if it's empty
-	// --------------------------------
-	if(next_command.id == CMD_BLANK){
+	if(verify_must()){
+		command_must_index 	= NO_COMMAND;
+	}
+
+	if(verify_may()){
+		command_may_index 	= NO_COMMAND;
+	}
+}
+
+void load_next_command_from_EEPROM()
+{
+	// fetch next command if the next command queue is empty
+	// -----------------------------------------------------
+	if(next_command.id == NO_COMMAND){
+
 		next_command = get_wp_with_index(g.waypoint_index + 1);
-		if(next_command.id != CMD_BLANK){
+
+		//if(next_command.id != NO_COMMAND){
 			//SendDebug("MSG <load_next_command> fetch found new cmd from list at index ");
 			//SendDebug((g.waypoint_index + 1),DEC);
 			//SendDebug(" with cmd id ");
 			//SendDebugln(next_command.id,DEC);
-		}
+		//}
 	}
 
 	// If the preload failed, return or just Loiter
 	// generate a dynamic command for RTL
 	// --------------------------------------------
-	if(next_command.id == CMD_BLANK){
+	if(next_command.id == NO_COMMAND){
 		// we are out of commands!
 		gcs.send_text(SEVERITY_LOW,"out of commands!");
 		//SendDebug("MSG <load_next_command> out of commands, g.waypoint_index: ");
 		//SendDebugln(g.waypoint_index,DEC);
-
 		handle_no_commands();
 	}
 }
@@ -88,11 +100,12 @@ void process_next_command()
 			Log_Write_Cmd(g.waypoint_index, &next_command);
 		process_now();
 	}
-
 }
+
 /*
 These functions implement the waypoint commands.
 */
+
 void process_must()
 {
 	//SendDebug("process must index: ");
@@ -109,12 +122,12 @@ void process_must()
 
 	// loads the waypoint into Next_WP struct
 	// --------------------------------------
-	set_next_WP(&next_command);
+	//set_next_WP(&next_command);
 
 	// invalidate command so a new one is loaded
 	// -----------------------------------------
-	next_command.id = 0;
-	handle_process_must(command_must_ID);
+	handle_process_must();
+	next_command.id = NO_COMMAND;
 }
 
 void process_may()
@@ -123,14 +136,14 @@ void process_may()
 	//Serial.println(g.waypoint_index,DEC);
 	command_may_ID = next_command.id;
 
-	// invalidate command so a new one is loaded
-	// -----------------------------------------
-	next_command.id = 0;
-
 	gcs.send_text(SEVERITY_LOW,"<process_may> New may command loaded:");
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
-	handle_process_may(command_may_ID);
+	handle_process_may();
+
+	// invalidate command so a new one is loaded
+	// -----------------------------------------
+	next_command.id = NO_COMMAND;
 }
 
 void process_now()
@@ -139,14 +152,12 @@ void process_now()
 	//Serial.print("process_now cmd# ");
 	//Serial.println(g.waypoint_index,DEC);
 
-	byte id = next_command.id;
+	gcs.send_text(SEVERITY_LOW, "<process_now> New now command loaded: ");
+	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	handle_process_now();
 
 	// invalidate command so a new one is loaded
 	// -----------------------------------------
-	next_command.id = 0;
-
-	gcs.send_text(SEVERITY_LOW, "<process_now> New now command loaded: ");
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
-	handle_process_now(id);
+	next_command.id = NO_COMMAND;
 }
 
