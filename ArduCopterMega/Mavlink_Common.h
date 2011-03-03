@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 #ifndef Mavlink_Common_H
 #define Mavlink_Common_H
 
@@ -39,40 +41,37 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
         uint8_t nav_mode = MAV_NAV_VECTOR;
 
 		switch(control_mode) {
-		case MANUAL:
-			mode 		= MAV_MODE_MANUAL;
-			break;
-		case CIRCLE:
-			mode 		= MAV_MODE_TEST3;
+		case ACRO:
+			mode = MAV_MODE_MANUAL;
 			break;
 		case STABILIZE:
-			mode 		= MAV_MODE_GUIDED;
+			mode = MAV_MODE_GUIDED;
 			break;
-		case FLY_BY_WIRE_A:
-			mode 		= MAV_MODE_TEST1;
+		case FBW:
+			mode = MAV_MODE_TEST1;
 			break;
-		case FLY_BY_WIRE_B:
-			mode 		= MAV_MODE_TEST2;
+		case ALT_HOLD:
+			mode = MAV_MODE_TEST2;
+			break;
+		case POSITION_HOLD:
+			mode = MAV_MODE_AUTO;
+			nav_mode = MAV_NAV_HOLD;
 			break;
 		case AUTO:
-			mode 		= MAV_MODE_AUTO;
-			nav_mode 	= MAV_NAV_WAYPOINT;
+			mode = MAV_MODE_AUTO;
+			nav_mode = MAV_NAV_WAYPOINT;
 			break;
 		case RTL:
-			mode 		= MAV_MODE_AUTO;
-			nav_mode 	= MAV_NAV_RETURNING;
-			break;
-		case LOITER:
-			mode 		= MAV_MODE_AUTO;
-			nav_mode 	= MAV_NAV_HOLD;
+			mode = MAV_MODE_AUTO;
+			nav_mode = MAV_NAV_RETURNING;
 			break;
 		case TAKEOFF:
-			mode 		= MAV_MODE_AUTO;
-			nav_mode 	= MAV_NAV_LIFTOFF;
+			mode = MAV_MODE_AUTO;
+			nav_mode = MAV_NAV_LIFTOFF;
 			break;
 		case LAND:
-			mode 		= MAV_MODE_AUTO;
-			nav_mode 	= MAV_NAV_LANDING;
+			mode = MAV_MODE_AUTO;
+			nav_mode = MAV_NAV_LANDING;
 			break;
 		}
 		uint8_t status 		= MAV_STATE_ACTIVE;
@@ -155,50 +154,40 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
         uint8_t rssi = 1;
 		// normalized values scaled to -10000 to 10000
 		// This is used for HIL.  Do not change without discussing with HIL maintainers
-        mavlink_msg_rc_channels_scaled_send(
-				chan,
-				10000 * g.channel_roll.norm_output(),
-				10000 * g.channel_pitch.norm_output(),
-				10000 * g.channel_throttle.norm_output(),
-				10000 * g.channel_rudder.norm_output(),
-				0,
-				0,
-				0,
-				0,
-				rssi);
+        mavlink_msg_rc_channels_scaled_send(chan,
+											g.rc_1.norm_output(),
+											g.rc_2.norm_output(),
+											g.rc_3.norm_output(),
+											g.rc_4.norm_output(),
+											0,0,0,0,rssi);
         break;
     }
 
     case MSG_RADIO_IN:
     {
         uint8_t rssi = 1;
-        mavlink_msg_rc_channels_raw_send(
-				chan,
-				g.channel_roll.radio_in,
-				g.channel_pitch.radio_in,
-				g.channel_throttle.radio_in,
-				g.channel_rudder.radio_in,
-				g.rc_5.radio_in,       // XXX currently only 4 RC channels defined
-				g.rc_6.radio_in,
-				g.rc_7.radio_in,
-				g.rc_8.radio_in,
-				rssi);
+        mavlink_msg_rc_channels_raw_send(chan,
+										 g.rc_1.radio_in,
+										 g.rc_2.radio_in,
+										 g.rc_3.radio_in,
+										 g.rc_4.radio_in,
+										 g.rc_5.radio_in,
+										 g.rc_6.radio_in,
+										 g.rc_7.radio_in,
+										 g.rc_8.radio_in,
+										 rssi);
         break;
     }
 
     case MSG_RADIO_OUT:
     {
-        mavlink_msg_servo_output_raw_send(
-				chan,
-				g.channel_roll.radio_out,
-				g.channel_pitch.radio_out,
-				g.channel_throttle.radio_out,
-				g.channel_rudder.radio_out,
-				g.rc_5.radio_out,       // XXX currently only 4 RC channels defined
-				g.rc_6.radio_out,
-				g.rc_7.radio_out,
-				g.rc_8.radio_out);
-        break;
+	    mavlink_msg_servo_output_raw_send(chan,
+										  motor_out[0],
+										  motor_out[1],
+										  motor_out[2],
+										  motor_out[3],
+										  0, 0, 0, 0);
+	    break;
     }
 
     case MSG_VFR_HUD:
@@ -210,7 +199,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 				dcm.yaw_sensor,
 				current_loc.alt / 100.0,
 				climb_rate,
-				(int)g.channel_throttle.servo_out);
+				nav_throttle);
         break;
     }
 

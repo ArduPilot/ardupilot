@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 void read_control_switch()
 {
 	byte switchPosition = readSwitch();
@@ -73,8 +75,9 @@ void read_trim_switch()
 		if(trim_flag){
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
+#if HIL_MODE != HIL_MODE_ATTITUDE
 				imu.save();
-
+#endif
 			}else{
 				// set the throttle nominal
 				if(g.rc_3.control_in > 50){
