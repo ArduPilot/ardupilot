@@ -618,6 +618,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             airspeed = 100*packet.airspeed;
             break;
         }
+
+	case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+	    {
+			// allow override of RC channel values for HIL
+			mavlink_rc_channels_raw_t packet;
+			int16_t v[8];
+			mavlink_msg_rc_channels_raw_decode(msg, &packet);
+			v[0] = packet.chan1_raw;
+			v[1] = packet.chan2_raw;
+			v[2] = packet.chan3_raw;
+			v[3] = packet.chan4_raw;
+			v[4] = packet.chan5_raw;
+			v[5] = packet.chan6_raw;
+			v[6] = packet.chan7_raw;
+			v[7] = packet.chan8_raw;
+			APM_RC.setHIL(v);
+			break;
+		}
 #endif
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE:
