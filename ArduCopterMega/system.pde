@@ -261,11 +261,11 @@ void set_mode(byte mode)
 			break;
 
 		case STABILIZE:
-			set_current_loc_here();
+			do_hold_position();
 			break;
 
 		case ALT_HOLD:
-			set_current_loc_here();
+			do_hold_position();
 			break;
 
 		case AUTO:
@@ -273,11 +273,11 @@ void set_mode(byte mode)
 			break;
 
 		case POSITION_HOLD:
-			set_current_loc_here();
+			do_hold_position();
 			break;
 
 		case RTL:
-			return_to_launch();
+			do_RTL();
 			break;
 
 		case TAKEOFF:

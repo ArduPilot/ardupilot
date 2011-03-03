@@ -139,6 +139,7 @@ GPS         *g_gps;
 	#error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
+// HIL
 #if HIL_MODE != HIL_MODE_DISABLED
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 		GCS_MAVLINK hil;
@@ -149,11 +150,14 @@ GPS         *g_gps;
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	#if HIL_MODE != HIL_MODE_SENSORS
-		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration); // normal imu
+		// Normal
+		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration);
 	#else
-		AP_IMU_Shim imu; // hil imu
+		// hil imu
+		AP_IMU_Shim imu;
 	#endif
-	AP_DCM  dcm(&imu, g_gps); // normal dcm
+	// normal dcm
+	AP_DCM  dcm(&imu, g_gps);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,8 +188,8 @@ const char* flight_mode_strings[] = {
 	"ALT_HOLD",
 	"FBW",
 	"AUTO",
-	"LOITER",
-	"POSITION_HOLD",
+	"GCS_AUTO",
+	"POS_HOLD",
 	"RTL",
 	"TAKEOFF",
 	"LAND"};
@@ -296,7 +300,7 @@ byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or
 // --------------------
 boolean	takeoff_complete;					// Flag for using take-off controls
 boolean	land_complete;
-int		takeoff_altitude;
+//int		takeoff_altitude;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
@@ -356,7 +360,7 @@ struct 	Location home;						// home location
 struct 	Location prev_WP;					// last waypoint
 struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
-struct 	Location tell_command;				// command for telemetry
+//struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
 long 	offset_altitude;					// used for
@@ -542,7 +546,9 @@ void medium_loop()
 
 			// perform next command
 			// --------------------
-			update_commands();
+			if(control_mode == AUTO || control_mode == GCS_AUTO){
+				update_commands();
+			}
 			break;
 
 		// This case deals with sending high rate telemetry
@@ -683,7 +689,6 @@ void super_slow_loop()
 		Log_Write_Current();
 }
 
-
 void update_GPS(void)
 {
 	g_gps->update();
@@ -800,7 +805,7 @@ void update_current_flight_mode(void)
 				}
 				break;
 
-			case LOITER:
+			//case LOITER:
 			case STABILIZE:
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;
@@ -905,7 +910,7 @@ void update_current_flight_mode(void)
 				// apply throttle control
 				output_auto_throttle();
 
-				// mix in user control
+				// mix in user control with Nav control
 				control_nav_mixer();
 
 				// perform stabilzation
@@ -925,7 +930,7 @@ void update_current_flight_mode(void)
 				// apply throttle control
 				output_auto_throttle();
 
-				// mix in user control
+				// mix in user control with Nav control
 				control_nav_mixer();
 
 				// perform stabilzation
@@ -948,9 +953,8 @@ void update_navigation()
 	// ------------------------------------------------------------------------
 
 	// distance and bearing calcs only
-	if(control_mode == AUTO){
-		verify_must();
-		verify_may();
+	if(control_mode == AUTO || control_mode == GCS_AUTO){
+		verify_commands();
 	}else{
 		switch(control_mode){
 			case RTL:

@@ -36,7 +36,6 @@ void
 set_servos_4()
 {
 	static byte num;
-	static byte counteri;
 	int out_min;
 
 	// Quadcopter mix
@@ -292,3 +291,4 @@ set_servos_4()
 		g.rc_4.control_in = ToDeg(dcm.yaw);
 	}
  }
+

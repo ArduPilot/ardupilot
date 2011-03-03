@@ -18,7 +18,7 @@ void navigate()
 
 	// waypoint distance from plane
 	// ----------------------------
-	wp_distance = getDistance(&current_loc, &next_WP);
+	wp_distance = get_distance(&current_loc, &next_WP);
 
 	if (wp_distance < 0){
 		gcs.send_text(SEVERITY_HIGH,"<navigate> WP error - distance < 0");
@@ -184,7 +184,7 @@ long get_altitude_above_home(void)
 	return current_loc.alt - home.alt;
 }
 
-long getDistance(struct Location *loc1, struct Location *loc2)
+long get_distance(struct Location *loc1, struct Location *loc2)
 {
 	if(loc1->lat == 0 || loc1->lng == 0)
 		return -1;

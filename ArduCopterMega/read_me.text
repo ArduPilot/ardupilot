@@ -15,11 +15,11 @@ CLI interactive setup - You must go through each item and set the values to matc
 
 "setup" menu:
 erase			- run this first! erases bad values from EEPROMS just in case
-reset			- Performs factory reset and initialization of EEPROM values 
+reset			- Performs factory reset and initialization of EEPROM values
 radio			- records the limits of ALL radio channels - very important!
 pid				- restores default PID values
 frame			- sets your frame config: [x, +, tri]
-motors			- interactive setup of your ESC and motors, enter this mode, then plug-in battery, 
+motors			- interactive setup of your ESC and motors, enter this mode, then plug-in battery,
 					point at motors to make them spin
 					throttle will output full range to each motor - this is good for esc calibration
 level			- sets initial value of accelerometers - hold copter level
@@ -55,7 +55,7 @@ Alt_hold   - You need to set your g. value by toggling ch_7 for less than 1 seco
 			 altitude is controlled by the throttle lever using absolute position - from 0 to 40 meters.
 			 this control method will change after testing.
 FBW 	   - Simulates GPS Hold with the sticks being the position offset. Manual Throttle.
-position_hold 
+position_hold
 			- When selected, it will hold the current altitude, position and yaw. Yaw is user controllable. roll and pitch can be overridden temporarily with the radio.
 RTL 		- Will try and fly back to home at the current altitude.
 Auto 		- Will fly the mission loaded by the Waypoint writer
@@ -64,7 +64,6 @@ Auto 		- Will fly the mission loaded by the Waypoint writer
 what's new to commands for ACM:
 - CMD_ANGLE - will set the desired yaw with control of angle/second and direction.
 - CMD_ALTITUDE - will send the copter up from current position to desired altitude
-- CMD_R_WAYPOINT - is just like a waypoint but relative to home
 - CMD_TRACK_WAYPOINT - coming soon, will point the copter at the waypoint no matter the position
 
 Special note:

@@ -87,7 +87,7 @@
 #define ALT_HOLD 2			// AUTO control
 #define FBW 3				// AUTO control
 #define AUTO 4				// AUTO control
-#define LOITER 5				// AUTO control
+#define GCS_AUTO 5				// AUTO control
 #define POSITION_HOLD 6		// Hold a single location
 #define RTL 7				// AUTO control
 #define TAKEOFF 8			// controlled decent rate
@@ -95,7 +95,9 @@
 #define NUM_MODES 10
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
-#define CMD_BLANK 0x00 // there is no command stored in the mem location requested
+#define CMD_BLANK 0 // there is no command stored in the mem location requested
+#define NO_COMMAND 0
+
 
 
 //repeating events
