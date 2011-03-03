@@ -112,6 +112,13 @@ void init_ardupilot()
 	    Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
 	}
 
+#ifdef RADIO_OVERRIDE_DEFAULTS
+	{
+		int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
+		APM_RC.setHIL(rc_override);
+	}
+#endif
+
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 	init_camera();
