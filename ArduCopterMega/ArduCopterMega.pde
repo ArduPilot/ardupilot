@@ -360,7 +360,7 @@ struct 	Location home;						// home location
 struct 	Location prev_WP;					// last waypoint
 struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
-//struct 	Location tell_command;				// command for telemetry
+struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
 long 	offset_altitude;					// used for
@@ -559,8 +559,10 @@ void medium_loop()
 			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && (g.log_bitmask & MASK_LOG_ATTITUDE_FAST == 0))
 				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 			if (g.log_bitmask & MASK_LOG_CTUN)
 				Log_Write_Control_Tuning();
+#endif
 
 			if (g.log_bitmask & MASK_LOG_NTUN)
 				Log_Write_Nav_Tuning();
@@ -608,8 +610,10 @@ void medium_loop()
 	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	if (g.log_bitmask & MASK_LOG_RAW)
 		Log_Write_Raw();
+#endif
 
 	#if GCS_PROTOCOL == 6		// This is here for Benjamin Pelletier.	Please do not remove without checking with me.	Doug W
 		readgcsinput();
@@ -998,6 +1002,9 @@ void update_trig(void){
 
 void update_alt()
 {
+#if HIL_MODE == HIL_MODE_ATTITUDE
+	current_loc.alt = g_gps->altitude;
+#else
 	altitude_sensor = BARO;
 	baro_alt 		= read_barometer();
 	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
@@ -1029,6 +1036,7 @@ void update_alt()
 		current_loc.alt = baro_alt + home.alt;
 	}
 	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
+#endif
 
 	// altitude smoothing
 	// ------------------

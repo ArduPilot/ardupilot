@@ -115,8 +115,10 @@ void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 	init_camera();
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	adc.Init();	 		// APM ADC library initialization
 	barometer.Init();	// APM Abs Pressure sensor initialization
+#endif
 	DataFlash.Init(); 	// DataFlash log initialization
 
 	// Do GPS init
@@ -137,9 +139,11 @@ void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	if(g.sonar_enabled){
-	  sonar.init(SONAR_PIN, &adc);
+		sonar.init(SONAR_PIN, &adc);
 	}
+#endif
 
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
@@ -213,10 +217,12 @@ void startup_ground(void)
 		gcs.send_message(MSG_COMMAND_LIST, i);
 	}
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	// Warm up and read Gyro offsets
 	// -----------------------------
 	imu.init_gyro();
 	report_imu();
+#endif
 
 	// read the radio to set trims
 	// ---------------------------
@@ -226,9 +232,11 @@ void startup_ground(void)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	// read Baro pressure at ground
 	//-----------------------------
 	init_barometer();
+#endif
 
 	// initialize commands
 	// -------------------
@@ -253,7 +261,7 @@ void set_mode(byte mode)
 		// disarm motors temp
 		motor_auto_safe = false;
 	}
-	//send_message(SEVERITY_LOW,"control mode");
+	//send_text(SEVERITY_LOW,"control mode");
 	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
 	switch(control_mode)
 	{

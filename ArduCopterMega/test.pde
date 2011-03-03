@@ -47,7 +47,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"stabilize",	test_stabilize},
 	{"fbw",			test_fbw},
 	{"gps",			test_gps},
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	{"adc", 		test_adc},
+#endif
 	{"imu",			test_imu},
 	//{"dcm",			test_dcm},
 	//{"omega",		test_omega},
@@ -55,7 +57,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"current",		test_current},
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	{"airpressure",	test_pressure},
+#endif
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
@@ -396,6 +400,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
@@ -416,6 +421,8 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+#endif
+
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
@@ -769,6 +776,7 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
 test_pressure(uint8_t argc, const Menu::arg *argv)
 {
@@ -830,6 +838,7 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+#endif
 
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)

@@ -189,7 +189,7 @@ verify_nav_wp()
 	// add in a more complex case
 	// Doug to do
 	if(loiter_sum > 300){
-		send_message(SEVERITY_MEDIUM,"Missed WP");
+		gcs.send_text(SEVERITY_MEDIUM,"Missed WP");
 		return true;
 	}
 	return false;

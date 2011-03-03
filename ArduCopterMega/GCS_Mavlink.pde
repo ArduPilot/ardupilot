@@ -223,7 +223,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_ACTION_EMCY_KILL:
             case MAV_ACTION_MOTORS_STOP:
             case MAV_ACTION_SHUTDOWN:
-                set_mode(MANUAL);
+                set_mode(ACRO);
                 break;
 
             case MAV_ACTION_CONTINUE:
@@ -231,7 +231,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_SET_MANUAL:
-                set_mode(MANUAL);
+                set_mode(ACRO);
                 break;
 
             case MAV_ACTION_SET_AUTO:
@@ -265,7 +265,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_ACTION_CALIBRATE_ACC:
             case MAV_ACTION_CALIBRATE_PRESSURE:
             case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                startup_IMU_ground();
+                startup_ground();
                 break;
 
             case MAV_ACTION_REC_START: break;
