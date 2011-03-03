@@ -551,7 +551,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
             // set parameter
-            const char * key = (const char*) packet.param_id;
+
+			char key[ONBOARD_PARAM_NAME_LENGTH+1];
+			strncpy(key, (char *)packet.param_id, ONBOARD_PARAM_NAME_LENGTH);
+			key[ONBOARD_PARAM_NAME_LENGTH] = 0;
 
             // find the requested parameter
             vp = AP_Var::find(key);
@@ -581,13 +584,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 
             // Report back new value
-            char param_name[ONBOARD_PARAM_NAME_LENGTH];             // XXX HACK - need something to return a char *
-            vp->copy_name(param_name, sizeof(param_name));
-            mavlink_msg_param_value_send(chan,
-            (int8_t*)param_name,
-            packet.param_value,
-            _count_parameters(),
-            -1);                       // XXX we don't actually know what its index is...
+            mavlink_msg_param_value_send(chan, (int8_t *)key, packet.param_value,
+										 _count_parameters(),
+										 -1); // XXX we don't actually know what its index is...
 
             break;
         } // end case
