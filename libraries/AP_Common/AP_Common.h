@@ -96,12 +96,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Types
 ///
-/// Data structures and types used throughout the libraries and applications.
-///
+/// Data structures and types used throughout the libraries and applications. 0 = default
+/// bit 0: Altitude is stored 			0: Absolute,	1: Relative
+/// bit 1: Chnage Alt between WP 		0: Gradually,	1: ASAP
+/// bit 2: Yaw towards WP when flying 	0: No, 			1: Yes (for quads)
+/// bit 3:
+/// bit 4:
+/// bit 5:
+/// bit 6:
+/// bit 7: Move to next Command 		0: YES, 		1: Loiter until commanded
+
 //@{
 
 struct Location {
 	uint8_t		id;					///< command id
+	uint8_t		options;			///< wp options bitmask
 	uint8_t		p1;					///< param 1
 	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
 	int32_t		lat;				///< param 3 - Lattitude * 10**7
