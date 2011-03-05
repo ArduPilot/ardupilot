@@ -959,6 +959,7 @@ void update_navigation()
 	// distance and bearing calcs only
 	if(control_mode == AUTO || control_mode == GCS_AUTO){
 		verify_commands();
+
 	}else{
 		switch(control_mode){
 			case RTL:

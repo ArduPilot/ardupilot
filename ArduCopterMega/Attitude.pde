@@ -255,5 +255,8 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
+	if(next_WP.options & WP_OPT_YAW){
+		nav_yaw = target_bearing;
+	}
 	output_yaw_with_hold(true); // hold yaw
 }
