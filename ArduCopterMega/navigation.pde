@@ -101,8 +101,9 @@ void calc_bearing_error()
 void calc_altitude_error()
 {
 	//if(control_mode == AUTO && offset_altitude != 0) {
-	if(next_WP.options & WP_OPT_ALT_CHANGE) {
+	if(next_WP.options & WP_OPT_ALT_CHANGE || offset_altitude == 0) {
 		target_altitude = next_WP.alt;
+
 	}else{
 		// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
 		target_altitude = next_WP.alt - ((wp_distance * offset_altitude) / (wp_totalDistance - g.waypoint_radius));
