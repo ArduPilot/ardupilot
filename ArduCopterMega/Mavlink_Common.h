@@ -154,39 +154,42 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
         uint8_t rssi = 1;
 		// normalized values scaled to -10000 to 10000
 		// This is used for HIL.  Do not change without discussing with HIL maintainers
-        mavlink_msg_rc_channels_scaled_send(chan,
-											g.rc_1.norm_output(),
-											g.rc_2.norm_output(),
-											g.rc_3.norm_output(),
-											g.rc_4.norm_output(),
-											0,0,0,0,rssi);
+        mavlink_msg_rc_channels_scaled_send(
+        		chan,
+				g.rc_1.norm_output(),
+				g.rc_2.norm_output(),
+				g.rc_3.norm_output(),
+				g.rc_4.norm_output(),
+				0,0,0,0,rssi);
         break;
     }
 
     case MSG_RADIO_IN:
     {
         uint8_t rssi = 1;
-        mavlink_msg_rc_channels_raw_send(chan,
-										 g.rc_1.radio_in,
-										 g.rc_2.radio_in,
-										 g.rc_3.radio_in,
-										 g.rc_4.radio_in,
-										 g.rc_5.radio_in,
-										 g.rc_6.radio_in,
-										 g.rc_7.radio_in,
-										 g.rc_8.radio_in,
-										 rssi);
+        mavlink_msg_rc_channels_raw_send(
+        		chan,
+				 g.rc_1.radio_in,
+				 g.rc_2.radio_in,
+				 g.rc_3.radio_in,
+				 g.rc_4.radio_in,
+				 g.rc_5.radio_in,
+				 g.rc_6.radio_in,
+				 g.rc_7.radio_in,
+				 g.rc_8.radio_in,
+				 rssi);
         break;
     }
 
     case MSG_RADIO_OUT:
     {
-	    mavlink_msg_servo_output_raw_send(chan,
-										  motor_out[0],
-										  motor_out[1],
-										  motor_out[2],
-										  motor_out[3],
-										  0, 0, 0, 0);
+	    mavlink_msg_servo_output_raw_send(
+	    		chan,
+				motor_out[0],
+				motor_out[1],
+				motor_out[2],
+				motor_out[3],
+				0, 0, 0, 0);
 	    break;
     }
 
@@ -263,9 +266,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 void mavlink_send_text(mavlink_channel_t chan, uint8_t severity, const char *str)
 {
 	mavlink_msg_statustext_send(
-			chan,
-			severity,
-			(const int8_t*) str);
+				chan,
+				severity,
+				(const int8_t*) str);
 }
 
 void mavlink_acknowledge(mavlink_channel_t chan, uint8_t id, uint8_t sum1, uint8_t sum2)
