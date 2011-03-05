@@ -39,19 +39,27 @@ struct Location get_wp_with_index(int i)
 		// read WP position
 		mem = (WP_START_BYTE) + (i * WP_SIZE);
 		temp.id = eeprom_read_byte((uint8_t*)mem);
+
+		mem++;
+		temp.options = eeprom_read_byte((uint8_t*)mem);
+
 		mem++;
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
+
 		mem++;
 		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);
+
 		mem += 4;
 		temp.lat = (long)eeprom_read_dword((uint32_t*)mem);
+
 		mem += 4;
 		temp.lng = (long)eeprom_read_dword((uint32_t*)mem);
 	}
 
 	// Add on home altitude if we are a nav command
-	if(temp.id < 50)
+	if(temp.options & WP_OPT_ALT_RELATIVE){
 		temp.alt += home.alt;
+	}
 
 	return temp;
 }
@@ -62,14 +70,24 @@ void set_wp_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.waypoint_total.get());
 
-	if(i > 0 && temp.id < 50){
+	//if(i > 0 && temp.id < 50){
+	//	temp.options & WP_OPT_LOCATION
 		// remove home altitude if we are a nav command
+	//	temp.alt -= home.alt;
+	//}
+
+	// Store the location relatove to home
+	if(temp.options & WP_OPT_ALT_RELATIVE){
 		temp.alt -= home.alt;
 	}
+
 
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
+
+	mem++;
+	eeprom_write_byte((uint8_t *)	mem, temp.options);
 
 	mem++;
 	eeprom_write_byte((uint8_t *)	mem, temp.p1);
