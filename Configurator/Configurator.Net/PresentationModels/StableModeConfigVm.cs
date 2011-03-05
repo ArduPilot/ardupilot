@@ -25,9 +25,33 @@ namespace ArducopterConfigurator.PresentationModels
                                      };
         }
 
-        public float KPrate { get;  set; }
 
-        public bool MagnetometerEnable { get; set; }
+        private float _kprate;
+
+        public float KPrate
+        {
+            get { return _kprate; }
+            set
+            {
+                if (_kprate == value) return;
+                _kprate = value;
+                FirePropertyChanged("KPrate");
+            }
+        }
+
+
+        private bool _magEnable;
+
+        public bool MagnetometerEnable
+        {
+            get { return _magEnable; }
+            set
+            {
+                if (_magEnable == value) return;
+                _magEnable = value;
+                FirePropertyChanged("MagnetometerEnable");
+            }
+        }
 
         public override string Name
         {
