@@ -94,7 +94,15 @@
 #define LAND 9				// controlled decent rate
 #define NUM_MODES 10
 
-// Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
+
+#define WP_OPT_ALT_RELATIVE 	(1<<0)
+#define WP_OPT_ALT_CHANGE 		(1<<1)
+#define WP_OPT_YAW				(1<<2)
+// ..
+#define WP_OPT_CMD_WAIT			(1<<7)
+
+
+// Commands - Note that APM (1<<9)now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
 #define NO_COMMAND 0
 
