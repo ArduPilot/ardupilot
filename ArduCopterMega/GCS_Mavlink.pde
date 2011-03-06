@@ -239,21 +239,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_STORAGE_READ:
-                //read_EEPROM_startup();
-                //read_EEPROM_airstart_critical();
-                //read_command_index();
-                //read_EEPROM_flight_modes();
+                AP_Var::load_all();
                 break;
 
             case MAV_ACTION_STORAGE_WRITE:
-                //save_EEPROM_trims();
-                //save_EEPROM_waypoint_info();
-                //save_EEPROM_gains();
-                //save_command_index();
-                //save_pressure_data();
-                //save_EEPROM_radio_minmax();
-                //save_user_configs();
-                //save_EEPROM_flight_modes();
+                AP_Var::save_all();
                 break;
 
             case MAV_ACTION_CALIBRATE_RC: break;
