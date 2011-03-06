@@ -280,6 +280,11 @@ set_servos_4()
 		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
 		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
 
+		// fill the motor_out[] array for HIL use
+		for (unsigned char i=0; i<8; i++) {
+			motor_out[i] = 0;
+		}
+
 		if (g.frame_type == HEXA_FRAME) {
 			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
