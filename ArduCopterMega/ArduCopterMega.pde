@@ -481,6 +481,11 @@ void fast_loop()
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos_4();
+
+#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
+	// HIL for a copter needs very fast update of the servo values
+	gcs.send_message(MSG_RADIO_OUT);
+#endif
 }
 
 void medium_loop()
