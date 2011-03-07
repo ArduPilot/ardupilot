@@ -143,9 +143,6 @@ output_yaw_with_hold(boolean hold)
 		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
 
-		//if(abs(rate) < 1000 )	//experiment to limit yaw reversing
-		//	rate = 0;
-
 		long error		= ((long)g.rc_4.control_in * 6) - rate;									// control is += 6000 * 6 = 36000
 																							// -error = CCW, 	+error = CW
 
@@ -154,11 +151,14 @@ output_yaw_with_hold(boolean hold)
 			// we are breaking;
 			g.rc_4.servo_out = (omega.z > 0) ? -1800 : 1800;
 
+			//switch comments to get old behavior.
+			//g.rc_4.servo_out = g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
+
 		}else{
-				g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
+			g.rc_4.servo_out = g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
 		}
 
-		g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);						// limit to 24°
+		g.rc_4.servo_out = constrain(g.rc_4.servo_out, -2400, 2400);						// limit to 24°
 	}
 
 }
