@@ -75,6 +75,7 @@ handle_process_now()
 void
 handle_no_commands()
 {
+	if (command_must_ID) return;
 	switch (control_mode){
 		case LAND:
 			// don't get a new command
@@ -84,6 +85,7 @@ handle_no_commands()
 		//	set_mode(LOITER);
 
 		default:
+			if()
 			set_mode(RTL);
 			//next_command = get_LOITER_home_wp();
 			//SendDebug("MSG <load_next_command> Preload RTL cmd id: ");

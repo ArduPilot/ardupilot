@@ -63,6 +63,7 @@ void init_rc_out()
 	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
 
+
 	APM_RC.OutputCh(CH_7,     g.rc_3.radio_min);
     APM_RC.OutputCh(CH_8,     g.rc_3.radio_min);
 }
