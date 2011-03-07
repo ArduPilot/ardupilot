@@ -558,11 +558,12 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 			if(Serial.available() > 0){
 
+
 				//mag_offset_x = offset[0];
 				//mag_offset_y = offset[1];
 				//mag_offset_z = offset[2];
 
-				//save_EEPROM_mag_offset();
+				//setup_mag_offset();
 
 				// set offsets to account for surrounding interference
 				//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);

@@ -159,6 +159,7 @@ set_servos_4()
 		num++;
 		if (num > 50){
 			num = 0;
+			/*
 			Serial.printf("t_alt:%ld, alt:%ld, thr: %d sen: ",
 						target_altitude,
 						current_loc.alt,
@@ -169,6 +170,10 @@ set_servos_4()
 			}else{
 				Serial.println("Sonar");
 			}
+			*/
+
+
+
 			//Serial.print("!");
 			//debugging with Channel 6
 

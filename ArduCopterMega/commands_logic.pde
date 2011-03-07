@@ -41,7 +41,7 @@ handle_process_may()
 			do_change_alt();
 			break;
 
-		case MAV_CMD_CONDITION_YAW:
+		case MAV_CMD_CONDITION_ANGLE:
 			do_yaw();
 			break;
 

@@ -28,6 +28,8 @@ void init_rc_in()
 	g.rc_6.set_range(0,1000);
 	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
+
+	//catch bad RC_3 min values
 }
 
 void init_rc_out()
@@ -46,15 +48,23 @@ void init_rc_out()
 
 	APM_RC.Init();		// APM Radio initialization
 
+	for(byte i = 0; i < 10; i++){
+		delay(20);
+		read_radio();
+	}
+
+	// sanity check on the EEPROM values for radio_min
+	if(abs(g.rc_3.radio_min - g.rc_3.radio_in) > 40){
+		g.rc_3.radio_min = g.rc_3.radio_in;
+	}
+
 	APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
 
-
 	APM_RC.OutputCh(CH_7,     g.rc_3.radio_min);
     APM_RC.OutputCh(CH_8,     g.rc_3.radio_min);
-
 }
 
 void read_radio()

@@ -206,6 +206,8 @@ const char* flight_mode_strings[] = {
 			8	TBD
 */
 
+long error_a;
+
 // Radio
 // -----
 int motor_out[4];
@@ -678,7 +680,8 @@ void slow_loop()
 				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
-// XXX				gcs.send_message(MSG_CPU_LOAD, load*100);
+				// XXX
+				// gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
             gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
