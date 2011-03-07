@@ -327,7 +327,7 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 		g.pid_yaw.kP(argv[2].f);
 		save_EEPROM_PID();
 
-	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
+	}else if (!strcmp_P(argv[1].str, PSTR("y_kd"))) {
 		g.pid_yaw.kD(argv[2].f);
 		save_EEPROM_PID();
 
