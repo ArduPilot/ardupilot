@@ -11,7 +11,7 @@ static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
-//static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -52,7 +52,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	{"imu",			test_imu},
 	//{"dcm",			test_dcm},
-	//{"omega",		test_omega},
+	{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"current",		test_current},
 	{"relay",		test_relay},
@@ -238,6 +238,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	control_mode = STABILIZE;
 	Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
+	Serial.printf_P(PSTR("max_yaw_dampener:%d\n\n "), max_yaw_dampener);
 
 	trim_radio();
 
@@ -285,14 +286,21 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			set_servos_4();
 
 			ts_num++;
-			if (ts_num > 10){
+			if (ts_num > 0){
 				ts_num = 0;
+				/*
 				Serial.printf_P(PSTR("r: %d, p:%d, rc1:%d, "),
 					(int)(dcm.roll_sensor/100),
 					(int)(dcm.pitch_sensor/100),
 					g.rc_1.pwm_out);
+				*/
 
-				print_motor_out();
+				Serial.printf_P(PSTR("e:%ld, 4out:%d,  O%4.4f\n"),
+					error_a,
+					g.rc_4.servo_out,
+					omega.z);
+
+				//print_motor_out();
 			}
 			// R: 1417,  L: 1453  F: 1453  B: 1417
 
@@ -611,7 +619,8 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 }
 */
 
-/*static int8_t
+///*
+static int8_t
 test_omega(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
@@ -629,6 +638,7 @@ test_omega(uint8_t argc, const Menu::arg *argv)
 		// IMU
 		// ---
 		read_AHRS();
+
 		float my_oz = (dcm.yaw - old_yaw) * 50;
 
 		old_yaw = dcm.yaw;
@@ -646,7 +656,7 @@ test_omega(uint8_t argc, const Menu::arg *argv)
 	}
 	return (0);
 }
-*/
+//*/
 
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
