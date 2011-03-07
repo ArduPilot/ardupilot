@@ -206,8 +206,6 @@ const char* flight_mode_strings[] = {
 			8	TBD
 */
 
-long error_a;
-
 // Radio
 // -----
 int motor_out[4];
