@@ -256,6 +256,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 				if(medium_loopCounter == 5){
 					compass.read();		 				// Read magnetometer
 					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
+					compass.null_offsets(dcm.get_dcm_matrix());
 					medium_loopCounter = 0;
 				}
 			}
@@ -300,6 +301,10 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			//Serial.printf_P(PSTR("timer: %d, r: %d\tp: %d\t y: %d\n"), (int)delta_ms_fast_loop, ((int)dcm.roll_sensor/100), ((int)dcm.pitch_sensor/100), ((uint16_t)dcm.yaw_sensor/100));
 
 			if(Serial.available() > 0){
+				if(g.compass_enabled){
+					compass.save_offsets();
+				}
+				report_compass();
 				return (0);
 			}
 

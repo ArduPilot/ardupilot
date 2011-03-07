@@ -12,7 +12,7 @@ static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
+//static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 
@@ -31,7 +31,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"current",			setup_current},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
-	{"mag_offset",		setup_mag_offset},
+//	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
 	{"show",			setup_show}
 };
@@ -498,7 +498,7 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 
-static int8_t
+/*static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("\nRotate/Pitch/Roll your ArduCopter until the offset variables stop changing.\n"));
@@ -574,6 +574,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+*/
 
 
 /***************************************************************************/
