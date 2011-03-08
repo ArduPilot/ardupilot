@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
 // called by 10 Hz loop
 // --------------------
 void update_commands(void)
