@@ -5,10 +5,15 @@
 
 enum MAV_CLASS
 {
-    MAV_CLASS_GENERIC = 0,
-    MAV_CLASS_PIXHAWK = 1,
-    MAV_CLASS_SLUGS = 2,
-    MAV_CLASS_ARDUPILOTMEGA = 3
+    MAV_CLASS_GENERIC = 0,        ///< Generic autopilot, full support for everything
+    MAV_CLASS_PIXHAWK = 1,        ///< PIXHAWK autopilot, http://pixhawk.ethz.ch
+    MAV_CLASS_SLUGS = 2,          ///< SLUGS autopilot, http://slugsuav.soe.ucsc.edu
+    MAV_CLASS_ARDUPILOTMEGA = 3,  ///< ArduPilotMega / ArduCopter, http://diydrones.com
+	MAV_CLASS_OPENPILOT = 4,      ///< OpenPilot, http://openpilot.org
+	MAV_CLASS_GENERIC_MISSION_WAYPOINTS_ONLY = 5,  ///< Generic autopilot only supporting simple waypoints
+	MAV_CLASS_GENERIC_MISSION_NAVIGATION_ONLY = 6, ///< Generic autopilot supporting waypoints and other simple navigation commands
+	MAV_CLASS_GENERIC_MISSION_FULL = 7,            ///< Generic autopilot supporting the full mission command set
+	MAV_CLASS_NB                  ///< Number of autopilot classes
 };
 
 enum MAV_ACTION
