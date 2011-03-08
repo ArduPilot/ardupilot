@@ -39,7 +39,8 @@ public:
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
 
-	void		set_centripetal(bool b);
+	void		set_centripetal(bool b) {_centripetal = b;}
+	bool		get_centripetal(void) {return _centripetal;}
 	void		set_compass(Compass *compass);
 
 	// Methods
