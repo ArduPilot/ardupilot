@@ -7,14 +7,14 @@
       <description>Commands to be executed by the MAV. They can be executed on user request,
       or as part of a mission script. If the action is used in a mission, the parameter mapping
       to the waypoint/mission message is as follows:
-      Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7.
-      </description>
+      Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what
+      ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data.</description>
       <entry name="MAV_CMD_NAV_WAYPOINT" value="16">
         <description>Navigate to waypoint.</description>
-        <param index="1">Hold time (ignored by fixed wing, time to stay at waypoint for rotary wing)</param>
-        <param index="2">Acceptance radius (if the sphere with this radius is hit, the waypoint counts as reached)</param>
-        <param index="3">0 to pass through the WP, if > 0 radius to pass by WP. Allows trajectory control.</param>
-        <param index="4">Desired yaw angle</param>
+        <param index="1">Hold time in decimal seconds. (ignored by fixed wing, time to stay at waypoint for rotary wing)</param>
+        <param index="2">Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached)</param>
+        <param index="3">0 to pass through the WP, if > 0 radius in meters to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.</param>
+        <param index="4">Desired yaw angle at waypoint (rotary wing)</param>
         <param index="5">Latitude</param>
         <param index="6">Longitude</param>
         <param index="7">Altitude</param>
@@ -79,6 +79,27 @@
         <param index="6">Longitude</param>
         <param index="7">Altitude</param>
         </entry>
+      <entry name="MAV_CMD_NAV_ORIENTATION_TARGET" value="80">
+        <description>Set the location the system should be heading towards (camera heads or
+        rotary wing aircraft).</description>
+        <param index="1">Empty</param>
+        <param index="2">Empty</param>
+        <param index="3">Empty</param>
+        <param index="4">Empty</param>
+        <param index="5">Latitude</param>
+        <param index="6">Longitude</param>
+        <param index="7">Altitude</param>
+      </entry>
+      <entry name="MAV_CMD_NAV_PATHPLANNING" value="81">
+        <description>Control autonomous path planning on the MAV.</description>
+        <param index="1">0: Disable local obstacle avoidance / local path planning (without resetting map), 1: Enable local path planning, 2: Enable and reset local path planning</param>
+        <param index="2">0: Disable full path planning (without resetting map), 1: Enable, 2: Enable and reset map/occupancy grid, 3: Enable and reset planned route, but not occupancy grid</param>
+        <param index="3">Empty</param>
+        <param index="4">Yaw angle at goal, in compass degrees, [0..360]</param>
+        <param index="5">Latitude/X of goal</param>
+        <param index="6">Longitude/Y of goal</param>
+        <param index="7">Altitude/Z of goal</param>
+      </entry>
       <entry name="MAV_CMD_NAV_LAST" value="95">
       <description>NOP - This command is only used to mark the upper limit of the NAV/ACTION commands in the enumeration</description>
         <param index="1">Empty</param>
@@ -115,6 +136,16 @@
         <param index="2">Empty</param>
         <param index="3">Empty</param>
         <param index="4">Empty</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_CONDITION_YAW" value="115">
+        <description>Reach a certain target angle.</description>
+        <param index="1">target angle: [0-360], 0 is north</param>
+        <param index="2">speed during yaw change:[deg per second]</param>
+        <param index="3">direction: negative: counter clockwise, positive: clockwise [-1,1]</param>
+        <param index="4">relative offset or absolute angle: [ 1,0]</param>
         <param index="5">Empty</param>
         <param index="6">Empty</param>
         <param index="7">Empty</param>
@@ -210,11 +241,51 @@
         <param index="7">Empty</param>
       </entry>
       <entry name="MAV_CMD_DO_REPEAT_SERVO" value="184">
-        <description>Cycle a between its nominal setting and a desired PWM for a desired number of cyles with a desired period.</description>
+        <description>Cycle a between its nominal setting and a desired PWM for a desired number of cycles with a desired period.</description>
         <param index="1">Servo number</param>
         <param index="2">PWM (microseconds, 1000 to 2000 typical)</param>
         <param index="3">Cycle count</param>
         <param index="4">Cycle time (seconds)</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_DO_CONTROL_VIDEO" value="200">
+        <description>Control onboard camera system.</description>
+        <param index="1">Camera ID (-1 for all)</param>
+        <param index="2">Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw</param>
+        <param index="3">Transmission mode: 0: video stream, >0: single images every n seconds (decimal)</param>
+        <param index="4">Recording: 0: disabled, 1: enabled compressed, 2: enabled raw</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_DO_LAST" value="240">
+      <description>NOP - This command is only used to mark the upper limit of the DO commands in the enumeration</description>
+        <param index="1">Empty</param>
+        <param index="2">Empty</param>
+        <param index="3">Empty</param>
+        <param index="4">Empty</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_PREFLIGHT_CALIBRATION" value="241">
+        <description>Trigger calibration. This command will be only accepted if in pre-flight mode.</description>
+        <param index="1">Gyro calibration: 0: no, 1: yes</param>
+        <param index="2">Magnetometer calibration: 0: no, 1: yes</param>
+        <param index="3">Ground pressure: 0: no, 1: yes</param>
+        <param index="4">Radio calibration: 0: no, 1: yes</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_PREFLIGHT_STORAGE" value="245">
+        <description>Request storage of different parameter values and logs. This command will be only accepted if in pre-flight mode.</description>
+        <param index="1">Parameter storage: 0: READ FROM FLASH/EEPROM, 1: WRITE CURRENT TO FLASH/EEPROM</param>
+        <param index="2">Mission storage: 0: READ FROM FLASH/EEPROM, 1: WRITE CURRENT TO FLASH/EEPROM</param>
+        <param index="3">Reserved</param>
+        <param index="4">Reserved</param>
         <param index="5">Empty</param>
         <param index="6">Empty</param>
         <param index="7">Empty</param>
@@ -498,7 +569,7 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
 
    <message name="WAYPOINT" id="39">
      <description>Message encoding a waypoint. This message is emitted to announce
-     the presence of a waypoint and to set a waypoint on the system. The waypoint can be either in x, y, z meters (type: LOCAL) or x:lat, y:lon. The global and body frame are related as: positive Z-down, positive X(front looking north, positive Y(body:right) looking east. Therefore y encodes in global mode the latitude, whereas x encodes the longitude and z the GPS altitude (WGS84).</description>
+     the presence of a waypoint and to set a waypoint on the system. The waypoint can be either in x, y, z meters (type: LOCAL) or x:lat, y:lon, z:altitude. Local frame is Z-down, right handed, global frame is Z-up, right handed</description>
      <field name="target_system" type="uint8_t">System ID</field>
      <field name="target_component" type="uint8_t">Component ID</field>
      <field name="seq" type="uint16_t">Sequence</field>
@@ -510,8 +581,8 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <field name="param2" type="float">PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds</field>
      <field name="param3" type="float">PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.</field>
      <field name="param4" type="float">PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH</field>
-     <field name="x" type="float">PARAM5 / local: x position, global: longitude</field>
-     <field name="y" type="float">PARAM6 / y position: global: latitude</field>
+     <field name="x" type="float">PARAM5 / local: x position, global: latitude</field>
+     <field name="y" type="float">PARAM6 / y position: global: longitude</field>
      <field name="z" type="float">PARAM7 / z position: global: altitude</field>
    </message>
 
@@ -569,12 +640,9 @@ NOT the global position estimate of the sytem, but rather a RAW sensor value. Se
      <description>As local waypoints exist, the global waypoint reference allows to transform between the local coordinate frame and the global (GPS) coordinate frame. This can be necessary when e.g. in- and outdoor settings are connected and the MAV should move from in- to outdoor.</description>
      <field name="target_system" type="uint8_t">System ID</field>
      <field name="target_component" type="uint8_t">Component ID</field>
-     <field name="global_x" type="uint32_t">global x position * 1E7</field>
-     <field name="global_y" type="uint32_t">global y position * 1E7</field>
-     <field name="global_z" type="uint32_t">global z position * 1000</field>
-     <field name="local_x" type="float">local x position that matches the global x position</field>
-     <field name="local_y" type="float">local y position that matches the global y position</field>
-     <field name="local_z" type="float">local z position that matches the global z position</field>
+     <field name="latitude" type="uint32_t">global position * 1E7</field>
+     <field name="longitude" type="uint32_t">global position * 1E7</field>
+     <field name="altitude" type="uint32_t">global position * 1000</field>
    </message>
    
    <message name="GPS_LOCAL_ORIGIN_SET" id="49">
@@ -716,8 +784,8 @@ of the controller before actual flight and to assist with tuning controller para
 
    <message name="GLOBAL_POSITION_INT" id="73">
      <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up)</description>
-     <field name="lat"   type="int32_t">Latitude / X Position, expressed as * 1E7</field>
-     <field name="lon"   type="int32_t">Longitude / Y Position, expressed as * 1E7</field>
+     <field name="lat"   type="int32_t">Latitude, expressed as * 1E7</field>
+     <field name="lon"   type="int32_t">Longitude, expressed as * 1E7</field>
      <field name="alt"   type="int32_t">Altitude in meters, expressed as * 1000 (millimeters)</field>
      <field name="vx"  type="int16_t">Ground X Speed (Latitude), expressed as m/s * 100</field>
      <field name="vy"  type="int16_t">Ground Y Speed (Longitude), expressed as m/s * 100</field>
@@ -733,6 +801,24 @@ of the controller before actual flight and to assist with tuning controller para
      <field name="alt" type="float">Current altitude (MSL), in meters</field>
      <field name="climb" type="float">Current climb rate in meters/second</field>
    </message> 
+   
+   <message name="COMMAND" id="75">
+     <description>Send a command with up to four parameters to the MAV</description>
+     <field name="target_system" type="uint8_t">System which should execute the command</field>
+     <field name="target_component" type="uint8_t">Component which should execute the command, 0 for all components</field>
+     <field name="command" type="uint8_t">Command ID, as defined by MAV_CMD enum.</field>
+     <field name="confirmation" type="uint8_t">0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)</field>
+     <field name="param1" type="float">Parameter 1, as defined by MAV_CMD enum.</field>
+     <field name="param2" type="float">Parameter 2, as defined by MAV_CMD enum.</field>
+     <field name="param3" type="float">Parameter 3, as defined by MAV_CMD enum.</field>
+     <field name="param4" type="float">Parameter 4, as defined by MAV_CMD enum.</field>
+   </message>
+   
+   <message name="COMMAND_ACK" id="76">
+     <description>Report status of a command. Includes feedback wether the command was executed</description>
+     <field name="command" type="float">Current airspeed in m/s</field>
+     <field name="result" type="float">1: Action ACCEPTED and EXECUTED, 1: Action TEMPORARY REJECTED/DENIED, 2: Action PERMANENTLY DENIED, 3: Action UNKNOWN/UNSUPPORTED, 4: Requesting CONFIRMATION</field>
+   </message>
    
    <!-- MESSAGE IDs 80 - 250: Space for custom messages in individual projectname_messages.xml files -->
 
