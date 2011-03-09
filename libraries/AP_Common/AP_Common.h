@@ -110,7 +110,6 @@
 
 struct Location {
 	uint8_t		id;					///< command id
-	uint8_t		options;			///< wp options bitmask
 	uint8_t		p1;					///< param 1
 	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
 	int32_t		lat;				///< param 3 - Lattitude * 10**7
