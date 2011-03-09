@@ -41,9 +41,6 @@ struct Location get_wp_with_index(int i)
 		temp.id = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
-		temp.options = eeprom_read_byte((uint8_t*)mem);
-
-		mem++;
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
@@ -57,8 +54,10 @@ struct Location get_wp_with_index(int i)
 	}
 
 	// Add on home altitude if we are a nav command
-	if(temp.options & WP_OPT_ALT_RELATIVE){
-		temp.alt += home.alt;
+	if(temp.id < 0x70){
+		//if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
+			temp.alt += home.alt;
+		//}
 	}
 
 	return temp;
@@ -77,7 +76,7 @@ void set_wp_with_index(struct Location temp, int i)
 	//}
 
 	// Store the location relatove to home
-	if(temp.options & WP_OPT_ALT_RELATIVE){
+	if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
 		temp.alt -= home.alt;
 	}
 
@@ -85,9 +84,6 @@ void set_wp_with_index(struct Location temp, int i)
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
-
-	mem++;
-	eeprom_write_byte((uint8_t *)	mem, temp.options);
 
 	mem++;
 	eeprom_write_byte((uint8_t *)	mem, temp.p1);
@@ -166,12 +162,6 @@ void set_next_WP(struct Location *wp)
 	// used to control FBW and limit the rate of climb
 	// -----------------------------------------------
 	target_altitude = current_loc.alt;
-
-	// XXX YUCK!
-	if(prev_WP.id != MAV_CMD_NAV_TAKEOFF && prev_WP.alt != home.alt && (next_WP.id == MAV_CMD_NAV_WAYPOINT || next_WP.id == MAV_CMD_NAV_LAND))
-		offset_altitude = next_WP.alt - prev_WP.alt;
-	else
-		offset_altitude = 0;
 
 	// zero out our loiter vals to watch for missed waypoints
 	loiter_delta 		= 0;

@@ -59,7 +59,7 @@ print_log_menu(void)
 		// Pass it the capitalised name of the log option, as defined
 		// in defines.h but without the LOG_ prefix.  It will check for
 		// the bit being set and print the name of the log option to suit.
-#define PLOG(_s)	if (g.log_bitmask & LOGBIT_ ## _s) Serial.printf_P(PSTR(" %S"), PSTR(#_s))
+		#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) Serial.printf_P(PSTR(" %S"), PSTR(#_s))
 		PLOG(ATTITUDE_FAST);
 		PLOG(ATTITUDE_MED);
 		PLOG(GPS);
@@ -69,8 +69,8 @@ print_log_menu(void)
 		PLOG(MODE);
 		PLOG(RAW);
 		PLOG(CMD);
-		PLOG(CURRENT);
-#undef PLOG
+		PLOG(CUR);
+		#undef PLOG
 	}
 	Serial.println();
 
@@ -107,7 +107,10 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Dumping Log number %d,    start page %d,   end page %d\n"),
-				  dump_log, dump_log_start, dump_log_end);
+				  dump_log,
+				  dump_log_start,
+				  dump_log_end);
+
 	Log_Read(dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Log read complete\n"));
 }
@@ -128,6 +131,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	DataFlash.WriteByte(LOG_INDEX_MSG);
 	DataFlash.WriteByte(0);
 	DataFlash.WriteByte(END_BYTE);
+	DataFlash.FinishWrite();
 	Serial.printf_P(PSTR("\nLog erased.\n"));
 }
 
@@ -151,8 +155,8 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
 		bits = ~(bits = 0);
-	}else{
-#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= LOGBIT_ ## _s
+	} else {
+		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
 		TARG(ATTITUDE_MED);
 		TARG(GPS);
@@ -162,8 +166,8 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(MODE);
 		TARG(RAW);
 		TARG(CMD);
-		TARG(CURRENT);
-#undef TARG
+		TARG(CUR);
+		#undef TARG
 	}
 
 	if (!strcasecmp_P(argv[0].str, PSTR("enable"))) {
@@ -373,7 +377,7 @@ void Log_Write_Startup(byte type)
 	struct Location cmd = get_wp_with_index(0);
 		Log_Write_Cmd(0, &cmd);
 
-	for (int i=1; i<g.waypoint_total; i++){
+	for (int i = 1; i <= g.waypoint_total; i++){
 		cmd = get_wp_with_index(i);
 		Log_Write_Cmd(i, &cmd);
 	}
@@ -486,7 +490,7 @@ void Log_Write_Current()
 // Read a Current packet
 void Log_Read_Current()
 {
-	Serial.printf("CURR: %d, %4.4f, %4.4f, %d\n",
+	Serial.printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),
@@ -498,11 +502,11 @@ void Log_Read_Control_Tuning()
 {
 	float logvar;
 
-	Serial.print("CTUN:");
-	for (int y=1;y<10;y++) {
+	Serial.printf_P(PSTR("CTUN:"));
+	for (int y = 1; y < 10; y++) {
 		logvar = DataFlash.ReadInt();
-		if(y < 8) logvar = logvar/100.f;
-		if(y == 9) logvar = logvar/10000.f;
+		if(y < 8) logvar 	= logvar/100.f;
+		if(y == 9) logvar 	= logvar/10000.f;
 		Serial.print(logvar);
 		Serial.print(comma);
 	}
@@ -512,21 +516,14 @@ void Log_Read_Control_Tuning()
 // Read a nav tuning packet
 void Log_Read_Nav_Tuning()
 {
-	Serial.print("NTUN:");
-	Serial.print((float)((uint16_t)DataFlash.ReadInt())/100.0);			// Yaw from IMU
-	Serial.print(comma);
-	Serial.print(DataFlash.ReadInt());									// wp_distance
-	Serial.print(comma);
-	Serial.print((float)((uint16_t)DataFlash.ReadInt())/100.0);			// target_bearing - Bearing to Target
-	Serial.print(comma);
-	Serial.print((float)((uint16_t)DataFlash.ReadInt())/100.0);			// nav_bearing - Bearing to steer
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt()/100.0);						// Altitude error
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt()/100.0);						// Airspeed
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadInt()/1000.0);					// nav_gain_scaler
-	Serial.println(comma);
+	Serial.printf_P(PSTR("NTUN: %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),
+				(float)((uint16_t)DataFlash.ReadInt())/100.0,
+				DataFlash.ReadInt(),
+				(float)((uint16_t)DataFlash.ReadInt())/100.0,
+				(float)((uint16_t)DataFlash.ReadInt())/100.0,
+				(float)DataFlash.ReadInt()/100.0,
+				(float)DataFlash.ReadInt()/100.0,
+				(float)DataFlash.ReadInt()/1000.0);
 }
 
 // Read a performance packet
@@ -539,10 +536,12 @@ void Log_Read_Performance()
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
-	for (int y=1;y<9;y++) {
-		if(y<3 || y>7) logvar = DataFlash.ReadInt();
-		else logvar = DataFlash.ReadByte();
-		//if(y > 7) logvar = logvar/1000.f;
+	for (int y = 1; y < 9; y++) {
+		if(y < 3 || y > 7){
+			logvar = DataFlash.ReadInt();
+		}else{
+			logvar = DataFlash.ReadByte();
+		}
 		Serial.print(logvar);
 		Serial.print(comma);
 	}
@@ -556,14 +555,14 @@ void Log_Read_Cmd()
 	long logvarl;
 
 	Serial.print("CMD:");
-	for(int i=1;i<4;i++) {
+	for(int i = 1; i < 4; i++) {
 		logvarb = DataFlash.ReadByte();
-		Serial.print(logvarb,DEC);
+		Serial.print(logvarb, DEC);
 		Serial.print(comma);
 	}
-	for(int i=1;i<4;i++) {
+	for(int i = 1; i < 4; i++) {
 		logvarl = DataFlash.ReadLong();
-		Serial.print(logvarl,DEC);
+		Serial.print(logvarl, DEC);
 		Serial.print(comma);
 	}
 	Serial.println(" ");
@@ -572,34 +571,24 @@ void Log_Read_Cmd()
 void Log_Read_Startup()
 {
 	byte logbyte = DataFlash.ReadByte();
+
 	if (logbyte == TYPE_AIRSTART_MSG)
-		Serial.print("AIR START - ");
+		Serial.printf_P(PSTR("AIR START - "));
 	else if (logbyte == TYPE_GROUNDSTART_MSG)
-		Serial.print("GROUND START - ");
+		Serial.printf_P(PSTR("GROUND START - "));
 	else
-		Serial.print("UNKNOWN STARTUP TYPE -");
-	Serial.print(DataFlash.ReadByte(), DEC);
-	Serial.println(" commands in memory");
+		Serial.printf_P(PSTR("UNKNOWN STARTUP - "));
+
+	Serial.printf_P(PSTR(" %d commands in memory\n"),(int)DataFlash.ReadByte());
 }
 
 // Read an attitude packet
 void Log_Read_Attitude()
 {
-	int log_roll;
-	int log_pitch;
-	uint16_t log_yaw;
-
-	log_roll 	= DataFlash.ReadInt();
-	log_pitch 	= DataFlash.ReadInt();
-	log_yaw 	= (uint16_t)DataFlash.ReadInt();
-
-	Serial.print("ATT:");
-	Serial.print(log_roll);
-	Serial.print(comma);
-	Serial.print(log_pitch);
-	Serial.print(comma);
-	Serial.print(log_yaw);
-	Serial.println();
+	Serial.printf_P(PSTR("ATT: %d, %d, %d\n"),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+			(uint16_t)DataFlash.ReadInt());
 }
 
 // Read a mode packet
@@ -612,25 +601,16 @@ void Log_Read_Mode()
 // Read a GPS packet
 void Log_Read_GPS()
 {
-
-	Serial.print("GPS:");
-	Serial.print(DataFlash.ReadLong());						// Time
-	Serial.print(comma);
-	Serial.print((int)DataFlash.ReadByte());				// Fix
-	Serial.print(comma);
-	Serial.print((int)DataFlash.ReadByte());				// Num of Sats
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/t7, 7);			// Lattitude
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/t7, 7);			// Longitude
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/100.0);		// Baro/gps altitude mix
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/100.0);		// GPS altitude
-	Serial.print(comma);
-	Serial.print((float)DataFlash.ReadLong()/100.0);		// Ground Speed
-	Serial.print(comma);
-	Serial.println((float)DataFlash.ReadLong()/100.0);		// Ground Course
+	Serial.printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+			DataFlash.ReadLong(),
+			(int)DataFlash.ReadByte(),
+			(int)DataFlash.ReadByte(),
+			(float)DataFlash.ReadLong() / t7,
+			(float)DataFlash.ReadLong() / t7,
+			(float)DataFlash.ReadLong() / 100.0,
+			(float)DataFlash.ReadLong() / 100.0,
+			(float)DataFlash.ReadLong() / 100.0,
+			(float)DataFlash.ReadLong() / 100.0);
 
 }
 
@@ -639,8 +619,8 @@ void Log_Read_Raw()
 {
 	float logvar;
 	Serial.print("RAW:");
-	for (int y=0;y<6;y++) {
-		logvar = (float)DataFlash.ReadLong()/t7;
+	for (int y = 0; y < 6; y++) {
+		logvar = (float)DataFlash.ReadLong() / t7;
 		Serial.print(logvar);
 		Serial.print(comma);
 	}
@@ -651,61 +631,60 @@ void Log_Read_Raw()
 void Log_Read(int start_page, int end_page)
 {
 	byte data;
-	byte log_step=0;
-	int packet_count=0;
+	byte log_step;
+	int packet_count;
 	int page = start_page;
 
 
 	DataFlash.StartRead(start_page);
-	while (page < end_page && page != -1)
-		{
+	while (page < end_page && page != -1){
 		data = DataFlash.ReadByte();
-		switch(log_step)		 //This is a state machine to read the packets
+		switch(log_step)		 // This is a state machine to read the packets
 			{
 			case 0:
-				if(data==HEAD_BYTE1)	// Head byte 1
+				if(data == HEAD_BYTE1)	// Head byte 1
 					log_step++;
 				break;
 			case 1:
-				if(data==HEAD_BYTE2)	// Head byte 2
+				if(data == HEAD_BYTE2)	// Head byte 2
 					log_step++;
 				else
 					log_step = 0;
 				break;
 			case 2:
-				if(data==LOG_ATTITUDE_MSG){
+				if(data == LOG_ATTITUDE_MSG){
 					Log_Read_Attitude();
 					log_step++;
 
-				}else if(data==LOG_MODE_MSG){
+				}else if(data == LOG_MODE_MSG){
 					Log_Read_Mode();
 					log_step++;
 
-				}else if(data==LOG_CONTROL_TUNING_MSG){
+				}else if(data == LOG_CONTROL_TUNING_MSG){
 					Log_Read_Control_Tuning();
 					log_step++;
 
-				}else if(data==LOG_NAV_TUNING_MSG){
+				}else if(data == LOG_NAV_TUNING_MSG){
 					Log_Read_Nav_Tuning();
 					log_step++;
 
-				}else if(data==LOG_PERFORMANCE_MSG){
+				}else if(data == LOG_PERFORMANCE_MSG){
 					Log_Read_Performance();
 					log_step++;
 
-				}else if(data==LOG_RAW_MSG){
+				}else if(data == LOG_RAW_MSG){
 					Log_Read_Raw();
 					log_step++;
 
-				}else if(data==LOG_CMD_MSG){
+				}else if(data == LOG_CMD_MSG){
 					Log_Read_Cmd();
 					log_step++;
 
-				}else if(data==LOG_CURRENT_MSG){
+				}else if(data == LOG_CURRENT_MSG){
 					Log_Read_Current();
 					log_step++;
 
-				}else if(data==LOG_STARTUP_MSG){
+				}else if(data == LOG_STARTUP_MSG){
 					Log_Read_Startup();
 					log_step++;
 				}else {
@@ -713,26 +692,23 @@ void Log_Read(int start_page, int end_page)
 						Log_Read_GPS();
 						log_step++;
 					}else{
-						Serial.print("Error Reading Packet: ");
-						Serial.print(packet_count);
+						Serial.printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
 						log_step = 0;	 // Restart, we have a problem...
 					}
 				}
 				break;
 			case 3:
-				if(data==END_BYTE){
+				if(data == END_BYTE){
 					 packet_count++;
 				}else{
-					Serial.print("Error Reading END_BYTE  ");
-					Serial.println(data,DEC);
+					Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
 				}
-				log_step=0;			// Restart sequence: new packet...
+				log_step = 0;			// Restart sequence: new packet...
 				break;
 			}
 		page = DataFlash.GetPage();
 		}
-	Serial.print("Number of packets read: ");
-	Serial.println(packet_count);
+	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
 }
 
 

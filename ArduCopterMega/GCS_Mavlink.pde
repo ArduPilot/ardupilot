@@ -201,7 +201,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             {
 
             case MAV_ACTION_LAUNCH:
-                set_mode(TAKEOFF);
+				//set_mode(TAKEOFF);
                 break;
 
             case MAV_ACTION_RETURN:
@@ -209,7 +209,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_EMCY_LAND:
-                set_mode(LAND);
+                //set_mode(LAND);
                 break;
 
             case MAV_ACTION_HALT:
@@ -263,7 +263,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_ACTION_REC_STOP: break;
 
             case MAV_ACTION_TAKEOFF:
-                set_mode(TAKEOFF);
+                //set_mode(TAKEOFF);
                 break;
 
             case MAV_ACTION_NAVIGATE:
@@ -271,7 +271,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_ACTION_LAND:
-                set_mode(LAND);
+                //set_mode(LAND);
                 break;
 
             case MAV_ACTION_LOITER:

@@ -81,9 +81,6 @@ handle_no_commands()
 		return;
 
 	switch (control_mode){
-		case LAND:
-			// don't get a new command
-			break;
 
 		//case GCS_AUTO:
 		//	set_mode(LOITER);
