@@ -76,9 +76,9 @@ void set_wp_with_index(struct Location temp, int i)
 	//}
 
 	// Store the location relatove to home
-	if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
+	//if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
 		temp.alt -= home.alt;
-	}
+	//}
 
 
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
