@@ -287,18 +287,12 @@ void set_mode(byte mode)
 			update_auto();
 			break;
 
-		case POSITION_HOLD:
+		case LOITER:
 			do_hold_position();
 			break;
 
 		case RTL:
 			do_RTL();
-			break;
-
-		case TAKEOFF:
-			break;
-
-		case LAND:
 			break;
 
 		default:

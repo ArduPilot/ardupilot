@@ -647,7 +647,8 @@ void default_logs()
 {
 
 	// convenience macro for testing LOG_* and setting LOGBIT_*
-	#define LOGBIT(_s)	(LOG_ ## _s ? LOGBIT_ ## _s : 0)
+	#define LOGBIT(_s)	(MASK_LOG_##_s ? MASK_LOG_##_s : 0)
+
 	g.log_bitmask =
 		LOGBIT(ATTITUDE_FAST)	|
 		LOGBIT(ATTITUDE_MED)	|
@@ -658,7 +659,7 @@ void default_logs()
 		LOGBIT(MODE)			|
 		LOGBIT(RAW)				|
 		LOGBIT(CMD)				|
-		LOGBIT(CURRENT);
+		LOGBIT(CUR);
 	#undef LOGBIT
 
 	g.log_bitmask.save();

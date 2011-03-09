@@ -88,11 +88,9 @@
 #define FBW 3				// AUTO control
 #define AUTO 4				// AUTO control
 #define GCS_AUTO 5				// AUTO control
-#define POSITION_HOLD 6		// Hold a single location
+#define LOITER 6		// Hold a single location
 #define RTL 7				// AUTO control
-#define TAKEOFF 8			// controlled decent rate
-#define LAND 9				// controlled decent rate
-#define NUM_MODES 10
+#define NUM_MODES 8
 
 
 #define WP_OPT_ALT_RELATIVE 	(1<<0)
@@ -206,18 +204,6 @@
 #define MASK_LOG_RAW			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CUR			(1<<9)
-
-// bits in log_bitmask
-#define LOGBIT_ATTITUDE_FAST	(1<<0)
-#define LOGBIT_ATTITUDE_MED		(1<<1)
-#define LOGBIT_GPS				(1<<2)
-#define LOGBIT_PM				(1<<3)
-#define LOGBIT_CTUN				(1<<4)
-#define LOGBIT_NTUN				(1<<5)
-#define LOGBIT_MODE				(1<<6)
-#define LOGBIT_RAW				(1<<7)
-#define LOGBIT_CMD				(1<<8)
-#define LOGBIT_CURRENT			(1<<9)
 
 // Waypoint Modes
 // ----------------

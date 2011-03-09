@@ -189,10 +189,8 @@ const char* flight_mode_strings[] = {
 	"FBW",
 	"AUTO",
 	"GCS_AUTO",
-	"POS_HOLD",
-	"RTL",
-	"TAKEOFF",
-	"LAND"};
+	"LOITER",
+	"RTL"};
 
 /* Radio values
 		Channel assignments
@@ -304,6 +302,9 @@ boolean	land_complete;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
+bool 	nav_yaw_towards_wp;					// point at the next WP
+
+
 
 // Loiter management
 // -----------------
@@ -363,7 +364,7 @@ struct 	Location next_WP;					// next waypoint
 struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
-long 	offset_altitude;					// used for
+//long 	offset_altitude;					// used for
 boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
 
@@ -414,6 +415,8 @@ unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
 byte			counter_one_herz;
+
+byte			GPS_failure_counter = 255;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -506,7 +509,10 @@ void medium_loop()
 		//-------------------------------
 		case 0:
 			medium_loopCounter++;
-			update_GPS();
+
+			if(GPS_failure_counter > 0){
+				update_GPS();
+			}
 			//readCommands();
 
 			if(g.compass_enabled){
@@ -643,7 +649,7 @@ void slow_loop()
 
 			if(superslow_loopCounter >= 200){				//	Execute every minute
 				#if HIL_MODE != HIL_MODE_ATTITUDE
-					if(g.compass_enabled) {
+					if(g.compass_enabled){
 						compass.save_offsets();
 					}
 				#endif
@@ -678,11 +684,8 @@ void slow_loop()
 				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
-				// XXX
-				// gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
-            gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
 
 			break;
 
@@ -693,10 +696,15 @@ void slow_loop()
 	}
 }
 
+// 1Hz loop
 void super_slow_loop()
 {
 	if (g.log_bitmask & MASK_LOG_CUR)
 		Log_Write_Current();
+
+    gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
+	// gcs.send_message(MSG_CPU_LOAD, load*100);
+
 }
 
 void update_GPS(void)
@@ -705,6 +713,8 @@ void update_GPS(void)
 	update_GPS_light();
 
     if (g_gps->new_data && g_gps->fix) {
+    	GPS_failure_counter = 255;
+
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
 		#if GCS_PROTOCOL != GCS_PROTOCOL_MAVLINK
@@ -746,6 +756,9 @@ void update_GPS(void)
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
 
+	}else{
+		if(GPS_failure_counter > 0)
+			GPS_failure_counter--;
 	}
 }
 
@@ -928,7 +941,7 @@ void update_current_flight_mode(void)
 				output_stabilize_pitch();
 				break;
 
-			case POSITION_HOLD:
+			case LOITER:
 
 				// Yaw control
 				// -----------
@@ -1047,7 +1060,10 @@ void update_alt()
 
 	// altitude smoothing
 	// ------------------
-	calc_altitude_error();
+	calc_altitude_smoothing_error();
+
+
+	//calc_altitude_error();
 
 	// Amount of throttle to apply for hovering
 	// ----------------------------------------

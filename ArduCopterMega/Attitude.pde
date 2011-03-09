@@ -231,7 +231,7 @@ void calc_nav_throttle()
 	float scaler = 1.0;
 
 	if(error < 0){
-		scaler = (altitude_sensor == BARO) ? .5 : .9;
+		scaler = (altitude_sensor == BARO) ? .5 : .8;
 	}
 
 	if(altitude_sensor == BARO){
@@ -276,7 +276,7 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
-	if(next_WP.options & WP_OPT_YAW){
+	if(nav_yaw_towards_wp){
 		nav_yaw = target_bearing;
 	}
 	output_yaw_with_hold(true); // hold yaw
