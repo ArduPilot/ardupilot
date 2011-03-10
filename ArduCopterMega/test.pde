@@ -791,10 +791,9 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		int incomingByte;
-		if(Serial3.available()>0){
-			  incomingByte = Serial3.read();
-			  Serial3.print(incomingByte,byte);
-		}
+	    if (Serial3.available())
+   			Serial3.write(Serial3.read());
+
 		if(Serial.available() > 0){
 			return (0);
 		}
