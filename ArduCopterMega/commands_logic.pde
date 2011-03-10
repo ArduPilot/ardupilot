@@ -43,7 +43,7 @@ handle_process_may()
 			do_change_alt();
 			break;
 
-		case MAV_CMD_CONDITION_ANGLE:
+		case MAV_CMD_CONDITION_YAW:
 			do_yaw();
 			break;
 
@@ -125,7 +125,7 @@ bool verify_may()
 {
 	switch(command_may_ID) {
 
-		case MAV_CMD_CONDITION_ANGLE:
+		case MAV_CMD_CONDITION_YAW:
 			return verify_yaw();
 			break;
 
