@@ -788,12 +788,13 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 	Serial.printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
+
 	while(1){
-		delay(250);
-		// Timeout set high enough for X-CTU RSSI Calc over XBee @ 115200
-		Serial3.printf_P(PSTR("0123456789:;<=>?@ABCDEFGHIJKLMNO\n"));
-		//Serial.print("X");
-		// Default 32bit data from X-CTU Range Test
+		int incomingByte;
+		if(Serial3.available()>0){
+			  incomingByte = Serial3.read();
+			  Serial3.print(incomingByte,byte);
+		}
 		if(Serial.available() > 0){
 			return (0);
 		}
