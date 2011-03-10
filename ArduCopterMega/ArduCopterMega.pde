@@ -26,7 +26,6 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
-#include <APM_BinComm.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
