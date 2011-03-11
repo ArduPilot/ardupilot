@@ -98,9 +98,12 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 		return(-1);
 	AP_Var::erase_all();
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
+
+	default_log_bitmask();
+	default_gains();
+
 	for (;;) {
 	}
-
 	// note, cannot actually return here
 	return(0);
 }
@@ -643,7 +646,7 @@ default_throttle()
 	save_EEPROM_throttle();
 }
 
-void default_logs()
+void default_log_bitmask()
 {
 
 	// convenience macro for testing LOG_* and setting LOGBIT_*

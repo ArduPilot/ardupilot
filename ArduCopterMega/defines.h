@@ -115,7 +115,7 @@
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
-//#define MAV_CMD_CONDITION_YAW 23
+#define MAV_CMD_CONDITION_YAW 23
 
 //  GCS Message ID's
 #define MSG_ACKNOWLEDGE 0x00

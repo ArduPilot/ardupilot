@@ -774,10 +774,12 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
   while(1){
     if (Serial3.available())
       Serial1.write(Serial3.read());
+
     if (Serial1.available())
       Serial3.write(Serial1.read());
+
     if(Serial.available() > 0){
-  return (0);
+		return (0);
     }
   }
 }
