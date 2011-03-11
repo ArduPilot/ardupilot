@@ -304,6 +304,7 @@ void set_mode(byte mode)
 
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
+
 }
 
 void set_failsafe(boolean mode)
