@@ -141,7 +141,8 @@ void init_ardupilot()
 	#endif
 
 
-
+	if (g.log_bitmask & MASK_LOG_MODE)
+		Log_Write_Mode(control_mode);
 
 	if(g.compass_enabled)
 		init_compass();
@@ -199,6 +200,10 @@ void init_ardupilot()
 	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
+	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS) {
+		default_log_bitmask();
+	}
+
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
@@ -212,7 +217,7 @@ void startup_ground(void)
 	gcs.send_text(SEVERITY_LOW,"<startup_ground> GROUND START");
 
 	#if(GROUND_START_DELAY > 0)
-		gcs.send_text(SEVERITY_LOW,"<startup_ground> With Delay");
+		//gcs.send_text(SEVERITY_LOW," With Delay");
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -301,9 +306,6 @@ void set_mode(byte mode)
 
 	// output control mode to the ground station
 	gcs.send_message(MSG_MODE_CHANGE);
-
-	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
 
 }
 

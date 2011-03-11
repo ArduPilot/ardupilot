@@ -20,7 +20,7 @@ static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_rawgps(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -64,7 +64,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
-  {"rawgps",		test_rawgps},
+	{"rawgps",		test_rawgps},
 };
 
 // A Macro to create the Menu
@@ -768,20 +768,20 @@ test_wp_print(struct Location *cmd, byte index)
 static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)
 {
-  print_hit_enter();
-  delay(1000);
+	print_hit_enter();
+	delay(1000);
 
-  while(1){
-    if (Serial3.available())
-      Serial1.write(Serial3.read());
+	while(1){
+		if (Serial3.available())
+			Serial1.write(Serial3.read());
 
-    if (Serial1.available())
-      Serial3.write(Serial1.read());
+		if (Serial1.available())
+			Serial3.write(Serial1.read());
 
-    if(Serial.available() > 0){
+		if(Serial.available() > 0){
 		return (0);
-    }
-  }
+		}
+	}
 }
 
 static int8_t
@@ -835,8 +835,9 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 			update_alt();
 			output_auto_throttle();
 
-			Serial.printf_P(PSTR("Alt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \tint: %6.2f \tout:%d\n"),
+			Serial.printf_P(PSTR("B_alt: %ld, S_alt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \tint: %6.2f \tout:%d\n"),
 						baro_alt,
+						sonar_alt,
 						next_WP.alt,
 						altitude_error,
 						(int)g.throttle_cruise,

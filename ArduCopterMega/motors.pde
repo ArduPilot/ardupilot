@@ -279,20 +279,21 @@ set_servos_4()
 			motor_auto_safe = true;
 		}
 
-		// Send commands to motors
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-
 		// fill the motor_out[] array for HIL use
-		for (unsigned char i=0; i<8; i++) {
-			motor_out[i] = 0;
+		for (unsigned char i = 0; i < 8; i++) {
+			motor_out[i] = g.rc_3.radio_min;
 		}
 
+		// Send commands to motors
+		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+
+
 		if (g.frame_type == HEXA_FRAME) {
-			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 		}
 
 		// reset I terms of PID controls

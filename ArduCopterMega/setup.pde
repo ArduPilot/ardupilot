@@ -99,6 +99,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	AP_Var::erase_all();
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
 
+	delay(1000);
 	default_log_bitmask();
 	default_gains();
 
