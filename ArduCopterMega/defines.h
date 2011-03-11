@@ -204,6 +204,7 @@
 #define MASK_LOG_RAW			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CUR			(1<<9)
+#define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
 // ----------------

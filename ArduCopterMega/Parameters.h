@@ -239,12 +239,12 @@ public:
         throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
         throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
 
-        flight_mode_channel     (FLIGHT_MODE_CHANNEL+1,       k_param_flight_mode_channel,   			PSTR("FLT_MODE_CH")),
+        flight_mode_channel     (FLIGHT_MODE_CHANNEL+1,       k_param_flight_mode_channel,   		PSTR("FLT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
 
         pitch_max         		(PITCH_MAX * 100,			k_param_pitch_max,		       			PSTR("PITCH_MAX")),
 
-        log_bitmask             (0,                         k_param_log_bitmask,           			PSTR("LOG_BITMASK")),
+        log_bitmask             (MASK_LOG_SET_DEFAULTS,		k_param_log_bitmask,            		PSTR("LOG_BITMASK")),
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
         RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),

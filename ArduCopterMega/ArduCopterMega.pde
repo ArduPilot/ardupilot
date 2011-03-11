@@ -205,7 +205,7 @@ const char* flight_mode_strings[] = {
 
 // Radio
 // -----
-int motor_out[4];
+int motor_out[8];
 Vector3f omega;
 
 // Failsafe

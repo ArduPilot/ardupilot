@@ -52,19 +52,13 @@ GCS_MAVLINK::update(void)
     _queued_send();
 
     // stop waypoint sending if timeout
-    if (global_data.waypoint_sending &&
-            millis() - global_data.waypoint_timelast_send >
-            global_data.waypoint_send_timeout)
-    {
+    if (global_data.waypoint_sending && (millis() - global_data.waypoint_timelast_send) > global_data.waypoint_send_timeout){
         send_text(SEVERITY_LOW,"waypoint send timeout");
         global_data.waypoint_sending = false;
     }
 
     // stop waypoint receiving if timeout
-    if (global_data.waypoint_receiving &&
-            millis() - global_data.waypoint_timelast_receive >
-            global_data.waypoint_receive_timeout)
-    {
+    if (global_data.waypoint_receiving && (millis() - global_data.waypoint_timelast_receive) > global_data.waypoint_receive_timeout){
         send_text(SEVERITY_LOW,"waypoint receive timeout");
         global_data.waypoint_receiving = false;
     }
@@ -74,7 +68,7 @@ void
 GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 {
     if (freqLoopMatch(global_data.streamRateRawSensors,freqMin,freqMax))
-    send_message(MSG_RAW_IMU);
+    	send_message(MSG_RAW_IMU);
 
     if (freqLoopMatch(global_data.streamRateExtendedStatus,freqMin,freqMax)) {
         send_message(MSG_EXTENDED_STATUS);
@@ -84,7 +78,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
     }
 
     if (freqLoopMatch(global_data.streamRatePosition,freqMin,freqMax))
-    send_message(MSG_LOCATION);
+	    send_message(MSG_LOCATION);
 
     if (freqLoopMatch(global_data.streamRateRawController,freqMin,freqMax)) {
         // This is used for HIL.  Do not change without discussing with HIL maintainers
@@ -100,10 +94,9 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
     send_message(MSG_ATTITUDE);
 
     if (freqLoopMatch(global_data.streamRateExtra2,freqMin,freqMax))    // Use Extra 3 for additional HIL info
-    send_message(MSG_VFR_HUD);
+    	send_message(MSG_VFR_HUD);
 
-    if (freqLoopMatch(global_data.streamRateExtra3,freqMin,freqMax))
-    {
+    if (freqLoopMatch(global_data.streamRateExtra3,freqMin,freqMax)){
         // Available datastream
     }
 }
@@ -146,14 +139,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch(packet.req_stream_id)
             {
             case MAV_DATA_STREAM_ALL:
-                global_data.streamRateRawSensors = freq;
-                global_data.streamRateExtendedStatus = freq;
-                global_data.streamRateRCChannels = freq;
-                global_data.streamRateRawController = freq;
-                global_data.streamRatePosition = freq;
-                global_data.streamRateExtra1 = freq;
-                global_data.streamRateExtra2 = freq;
-                global_data.streamRateExtra3 = freq;
+                global_data.streamRateRawSensors 		= freq;
+                global_data.streamRateExtendedStatus 	= freq;
+                global_data.streamRateRCChannels 		= freq;
+                global_data.streamRateRawController 	= freq;
+                global_data.streamRatePosition 			= freq;
+                global_data.streamRateExtra1 			= freq;
+                global_data.streamRateExtra2 			= freq;
+                global_data.streamRateExtra3 			= freq;
                 break;
             case MAV_DATA_STREAM_RAW_SENSORS:
                 global_data.streamRateRawSensors = freq;
@@ -197,89 +190,88 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // do action
             send_text(SEVERITY_LOW,"action received");
-            switch(packet.action)
-            {
+			switch(packet.action){
 
-            case MAV_ACTION_LAUNCH:
-				//set_mode(TAKEOFF);
-                break;
+				case MAV_ACTION_LAUNCH:
+					//set_mode(TAKEOFF);
+					break;
 
-            case MAV_ACTION_RETURN:
-                set_mode(RTL);
-                break;
+				case MAV_ACTION_RETURN:
+					set_mode(RTL);
+					break;
 
-            case MAV_ACTION_EMCY_LAND:
-                //set_mode(LAND);
-                break;
+				case MAV_ACTION_EMCY_LAND:
+					//set_mode(LAND);
+					break;
 
-            case MAV_ACTION_HALT:
-                do_hold_position();
-                break;
+				case MAV_ACTION_HALT:
+					do_hold_position();
+					break;
 
-                // can't implement due to APM configuration
-                // just setting to manual to be safe
-            case MAV_ACTION_MOTORS_START:
-            case MAV_ACTION_CONFIRM_KILL:
-            case MAV_ACTION_EMCY_KILL:
-            case MAV_ACTION_MOTORS_STOP:
-            case MAV_ACTION_SHUTDOWN:
-                set_mode(ACRO);
-                break;
+					// can't implement due to APM configuration
+					// just setting to manual to be safe
+				case MAV_ACTION_MOTORS_START:
+				case MAV_ACTION_CONFIRM_KILL:
+				case MAV_ACTION_EMCY_KILL:
+				case MAV_ACTION_MOTORS_STOP:
+				case MAV_ACTION_SHUTDOWN:
+					set_mode(ACRO);
+					break;
 
-            case MAV_ACTION_CONTINUE:
-                process_next_command();
-                break;
+				case MAV_ACTION_CONTINUE:
+					process_next_command();
+					break;
 
-            case MAV_ACTION_SET_MANUAL:
-                set_mode(ACRO);
-                break;
+				case MAV_ACTION_SET_MANUAL:
+					set_mode(ACRO);
+					break;
 
-            case MAV_ACTION_SET_AUTO:
-                set_mode(AUTO);
-                break;
+				case MAV_ACTION_SET_AUTO:
+					set_mode(AUTO);
+					break;
 
-            case MAV_ACTION_STORAGE_READ:
-                AP_Var::load_all();
-                break;
+				case MAV_ACTION_STORAGE_READ:
+					AP_Var::load_all();
+					break;
 
-            case MAV_ACTION_STORAGE_WRITE:
-                AP_Var::save_all();
-                break;
+				case MAV_ACTION_STORAGE_WRITE:
+					AP_Var::save_all();
+					break;
 
-            case MAV_ACTION_CALIBRATE_RC: break;
-                trim_radio();
-                break;
+				case MAV_ACTION_CALIBRATE_RC: break;
+					trim_radio();
+					break;
 
-            case MAV_ACTION_CALIBRATE_GYRO:
-            case MAV_ACTION_CALIBRATE_MAG:
-            case MAV_ACTION_CALIBRATE_ACC:
-            case MAV_ACTION_CALIBRATE_PRESSURE:
-            case MAV_ACTION_REBOOT:  // this is a rough interpretation
-                startup_ground();
-                break;
+				case MAV_ACTION_CALIBRATE_GYRO:
+				case MAV_ACTION_CALIBRATE_MAG:
+				case MAV_ACTION_CALIBRATE_ACC:
+				case MAV_ACTION_CALIBRATE_PRESSURE:
+				case MAV_ACTION_REBOOT:  // this is a rough interpretation
+					startup_ground();
+					break;
 
-            case MAV_ACTION_REC_START: break;
-            case MAV_ACTION_REC_PAUSE: break;
-            case MAV_ACTION_REC_STOP: break;
+				case MAV_ACTION_REC_START: break;
+				case MAV_ACTION_REC_PAUSE: break;
+				case MAV_ACTION_REC_STOP: break;
 
-            case MAV_ACTION_TAKEOFF:
-                //set_mode(TAKEOFF);
-                break;
+				case MAV_ACTION_TAKEOFF:
+					//set_mode(TAKEOFF);
+					break;
 
-            case MAV_ACTION_NAVIGATE:
-                set_mode(AUTO);
-                break;
+				case MAV_ACTION_NAVIGATE:
+					set_mode(AUTO);
+					break;
 
-            case MAV_ACTION_LAND:
-                //set_mode(LAND);
-                break;
+				case MAV_ACTION_LAND:
+					//set_mode(LAND);
+					break;
 
-            case MAV_ACTION_LOITER:
-                //set_mode(LOITER);
-                break;
+				case MAV_ACTION_LOITER:
+					//set_mode(LOITER);
+					break;
 
-            default: break;
-            }
+				default: break;
+			}
             break;
         }
 
@@ -290,17 +282,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_waypoint_request_list_t packet;
             mavlink_msg_waypoint_request_list_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+            if (mavlink_check_target(packet.target_system,packet.target_component))
+            	break;
 
             // Start sending waypoints
-            mavlink_msg_waypoint_count_send(chan,msg->sysid,
-            msg->compid,g.waypoint_total + 1); // + home
-            global_data.waypoint_timelast_send = millis();
-            global_data.waypoint_sending = true;
-            global_data.waypoint_receiving = false;
-            global_data.waypoint_dest_sysid = msg->sysid;
-            global_data.waypoint_dest_compid = msg->compid;
-            global_data.requested_interface = chan;
+            mavlink_msg_waypoint_count_send(
+            	chan,msg->sysid,
+	            msg->compid,
+	            g.waypoint_total + 1); // + home
+
+            global_data.waypoint_timelast_send 	= millis();
+            global_data.waypoint_sending 		= true;
+            global_data.waypoint_receiving 		= false;
+            global_data.waypoint_dest_sysid 	= msg->sysid;
+            global_data.waypoint_dest_compid 	= msg->compid;
+            global_data.requested_interface 	= chan;
             break;
         }
 
@@ -444,9 +441,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             g.waypoint_total.set_and_save(packet.count - 1);
             global_data.waypoint_timelast_receive = millis();
-            global_data.waypoint_receiving = true;
-            global_data.waypoint_sending = false;
-            global_data.waypoint_request_i = 0;
+            global_data.waypoint_receiving 		= true;
+            global_data.waypoint_sending 		= false;
+            global_data.waypoint_request_i 		= 0;
             break;
         }
 
@@ -520,7 +517,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (global_data.waypoint_request_i > g.waypoint_total)
             {
                 uint8_t type = 0; // ok (0), error(1)
-                mavlink_msg_waypoint_ack_send(chan,msg->sysid,msg->compid,type);
+
+                mavlink_msg_waypoint_ack_send(
+                	chan,
+                	msg->sysid,
+                	msg->compid,
+                	type);
+
                 send_text(SEVERITY_LOW,"flight plan received");
                 global_data.waypoint_receiving = false;
                 // XXX ignores waypoint radius for individual waypoints, can
@@ -574,9 +577,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
 
             // Report back new value
-            mavlink_msg_param_value_send(chan, (int8_t *)key, packet.param_value,
-										 _count_parameters(),
-										 -1); // XXX we don't actually know what its index is...
+            mavlink_msg_param_value_send(
+            	chan,
+            	(int8_t *)key,
+            	packet.param_value,
+            	_count_parameters(),
+            	-1); // XXX we don't actually know what its index is...
 
             break;
         } // end case
@@ -748,13 +754,9 @@ GCS_MAVLINK::_queued_send()
         AP_Var      *vp;
         float       value;
 
-
-
         // copy the current parameter and prepare to move to the next
         vp = _queued_parameter;
         _queued_parameter = _queued_parameter->next();
-
-
 
         // if the parameter can be cast to float, report it here and break out of the loop
         value = vp->cast_to_float();
@@ -763,11 +765,12 @@ GCS_MAVLINK::_queued_send()
             char param_name[ONBOARD_PARAM_NAME_LENGTH];         /// XXX HACK
             vp->copy_name(param_name, sizeof(param_name));
 
-            mavlink_msg_param_value_send(chan,
-            (int8_t*)param_name,
-            value,
-            _count_parameters(),
-            _queued_parameter_index);
+            mavlink_msg_param_value_send(
+            	chan,
+	            (int8_t*)param_name,
+    	        value,
+        	    _count_parameters(),
+            	_queued_parameter_index);
 
             _queued_parameter_index++;
             break;
@@ -783,12 +786,16 @@ GCS_MAVLINK::_queued_send()
 
     // request waypoints one by one
     // XXX note that this is pan-interface
-    if (global_data.waypoint_receiving && global_data.requested_interface == chan &&
-            global_data.waypoint_request_i <= g.waypoint_total && mavdelay > 15) // limits to 3.33 hz
+    if (global_data.waypoint_receiving &&
+    		(global_data.requested_interface == chan) &&
+            global_data.waypoint_request_i <= (g.waypoint_total && mavdelay > 15)) // limits to 3.33 hz
     {
-        mavlink_msg_waypoint_request_send(chan,
-        global_data.waypoint_dest_sysid,
-        global_data.waypoint_dest_compid ,global_data.waypoint_request_i);
+        mavlink_msg_waypoint_request_send(
+        	chan,
+        	global_data.waypoint_dest_sysid,
+        	global_data.waypoint_dest_compid,
+        	global_data.waypoint_request_i);
+
         mavdelay = 0;
     }
 }
