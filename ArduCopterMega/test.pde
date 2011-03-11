@@ -796,8 +796,7 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("Begin XBee X-CTU Range and RSSI Test:\n"));
 
 	while(1){
-		int incomingByte;
-	    if (Serial3.available())
+  	    if (Serial3.available())
    			Serial3.write(Serial3.read());
 
 		if(Serial.available() > 0){
