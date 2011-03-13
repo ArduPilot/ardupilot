@@ -14,11 +14,7 @@ void update_commands(void)
 	if(control_mode == AUTO){
 		load_next_command_from_EEPROM();
 		process_next_command();
-	}else if(control_mode == GCS_AUTO){
-		/*if( there is a command recieved )
-			process_next_command();
-		*/
-	}
+	}									// Other (eg GCS_Auto) modes may be implemented here
 }
 
 void verify_commands(void)
@@ -29,6 +25,7 @@ void verify_commands(void)
 
 	if(verify_may()){
 		command_may_index 	= NO_COMMAND;
+		command_may_ID		= NO_COMMAND;
 	}
 }
 
@@ -37,15 +34,7 @@ void load_next_command_from_EEPROM()
 	// fetch next command if the next command queue is empty
 	// -----------------------------------------------------
 	if(next_command.id == NO_COMMAND){
-
 		next_command = get_wp_with_index(g.waypoint_index + 1);
-
-		//if(next_command.id != NO_COMMAND){
-			//SendDebug("MSG <load_next_command> fetch found new cmd from list at index ");
-			//SendDebug((g.waypoint_index + 1),DEC);
-			//SendDebug(" with cmd id ");
-			//SendDebugln(next_command.id,DEC);
-		//}
 	}
 
 	// If the preload failed, return or just Loiter
@@ -54,20 +43,18 @@ void load_next_command_from_EEPROM()
 	if(next_command.id == NO_COMMAND){
 		// we are out of commands!
 		gcs.send_text(SEVERITY_LOW,"out of commands!");
-		//SendDebug("MSG <load_next_command> out of commands, g.waypoint_index: ");
-		//SendDebugln(g.waypoint_index,DEC);
 		handle_no_commands();
 	}
 }
 
 void process_next_command()
 {
-	// these are waypoint/Must commands
+	// these are Navigation/Must commands
 	// ---------------------------------
 	if (command_must_index == 0){ // no current command loaded
 		if (next_command.id < MAV_CMD_NAV_LAST ){
 			increment_WP_index();
-			//save_command_index();	// to Recover from in air Restart
+			//save_command_index();			// TO DO - fix - to Recover from in air Restart
 			command_must_index = g.waypoint_index;
 
 			//SendDebug("MSG <process_next_command> new command_must_id ");
@@ -80,67 +67,60 @@ void process_next_command()
 		}
 	}
 
-	// these are May commands
+	// these are Condition/May commands
 	// ----------------------
 	if (command_may_index == 0){
 		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
-			increment_WP_index();// this command is from the command list in EEPROM
+			increment_WP_index();		// this command is from the command list in EEPROM
 			command_may_index = g.waypoint_index;
-			//Serial.print("new command_may_index ");
-			//Serial.println(command_may_index,DEC);
+				//SendDebug("MSG <process_next_command> new command_may_id ");
+				//SendDebug(next_command.id,DEC);
+				//Serial.print("new command_may_index ");
+				//Serial.println(command_may_index,DEC);
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_may();
 		}
-	}
 
-	// these are do it now commands
-	// ---------------------------
-	if (next_command.id > MAV_CMD_CONDITION_LAST){
-		increment_WP_index();// this command is from the command list in EEPROM
-		if (g.log_bitmask & MASK_LOG_CMD)
-			Log_Write_Cmd(g.waypoint_index, &next_command);
-		process_now();
+		// these are Do/Now commands
+		// ---------------------------
+		if (next_command.id > MAV_CMD_CONDITION_LAST){
+			increment_WP_index();		// this command is from the command list in EEPROM
+				//SendDebug("MSG <process_next_command> new command_now_id ");
+				//SendDebug(next_command.id,DEC);
+			if (g.log_bitmask & MASK_LOG_CMD)
+				Log_Write_Cmd(g.waypoint_index, &next_command);
+			process_now();
+		}
 	}
 }
 
-/*
-These functions implement the waypoint commands.
-*/
-
+/**************************************************/
+//  These functions implement the commands.
+/**************************************************/
 void process_must()
 {
-	//SendDebug("process must index: ");
-	//SendDebugln(command_must_index,DEC);
-
 	gcs.send_text(SEVERITY_LOW,"New cmd: <process_must>");
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// clear May indexes
-	command_may_index	= 0;
-	command_may_ID		= 0;
+	command_may_index	= NO_COMMAND;
+	command_may_ID		= NO_COMMAND;
 
-	command_must_ID = next_command.id;
-
-	// loads the waypoint into Next_WP struct
-	// --------------------------------------
-	//set_next_WP(&next_command);
+	command_must_ID 	= next_command.id;
+	handle_process_must();
 
 	// invalidate command so a new one is loaded
 	// -----------------------------------------
-	handle_process_must();
-	next_command.id = NO_COMMAND;
+	next_command.id		= NO_COMMAND;
 }
 
 void process_may()
 {
-	//Serial.print("process_may cmd# ");
-	//Serial.println(g.waypoint_index,DEC);
-	command_may_ID = next_command.id;
-
-	gcs.send_text(SEVERITY_LOW,"<process_may> New may command loaded:");
+	gcs.send_text(SEVERITY_LOW,"<process_may>");
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
+	command_may_ID = next_command.id;
 	handle_process_may();
 
 	// invalidate command so a new one is loaded
@@ -150,16 +130,13 @@ void process_may()
 
 void process_now()
 {
-	const 	float t5			= 100000.0;
-	//Serial.print("process_now cmd# ");
-	//Serial.println(g.waypoint_index,DEC);
-
-	gcs.send_text(SEVERITY_LOW, "<process_now> New now command loaded: ");
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 	handle_process_now();
 
 	// invalidate command so a new one is loaded
 	// -----------------------------------------
 	next_command.id = NO_COMMAND;
+
+	gcs.send_text(SEVERITY_LOW, "<process_now>");
+	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 }
 

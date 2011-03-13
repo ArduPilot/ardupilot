@@ -159,7 +159,7 @@ output_yaw_with_hold(boolean hold)
 			g.rc_4.servo_out = g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
 		}
 
-		g.rc_4.servo_out = constrain(g.rc_4.servo_out, -2400, 2400);						// limit to 24°
+		g.rc_4.servo_out = constrain(g.rc_4.servo_out, -1800, 1800);						// limit to 24°
 	}
 
 }

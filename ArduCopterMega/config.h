@@ -541,12 +541,6 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
-#if USE_CURRENT_ALT == TRUE
-# define CONFIG_OPTIONS 0
-#else
-# define CONFIG_OPTIONS HOLD_ALT_ABOVE_HOME
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //

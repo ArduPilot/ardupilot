@@ -281,11 +281,11 @@ void set_mode(byte mode)
 			break;
 
 		case STABILIZE:
-			do_hold_position();
+			do_loiter_at_location();
 			break;
 
 		case ALT_HOLD:
-			do_hold_position();
+			do_loiter_at_location();
 			break;
 
 		case AUTO:
@@ -293,7 +293,7 @@ void set_mode(byte mode)
 			break;
 
 		case LOITER:
-			do_hold_position();
+			do_loiter_at_location();
 			break;
 
 		case RTL:
@@ -320,25 +320,16 @@ void set_failsafe(boolean mode)
 		failsafe = mode;
 
 		if (failsafe == false){
-			// We're back in radio contact
-			// ---------------------------
-
-			// re-read the switch so we can return to our preferred mode
-			reset_control_switch();
-
-			// Reset control integrators
-			// ---------------------
-			reset_I();
+			// We've regained radio contact
+			// ----------------------------
+			failsafe_off_event();
 
 		}else{
 			// We've lost radio contact
 			// ------------------------
-			// nothing to do right now
-		}
+			failsafe_on_event();
 
-		// Let the user know what's up so they can override the behavior
-		// -------------------------------------------------------------
-		failsafe_event();
+		}
 	}
 }
 

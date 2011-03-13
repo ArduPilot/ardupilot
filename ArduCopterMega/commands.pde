@@ -55,9 +55,7 @@ struct Location get_wp_with_index(int i)
 
 	// Add on home altitude if we are a nav command
 	if(temp.id < 0x70){
-		//if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
-			temp.alt += home.alt;
-		//}
+		temp.alt += home.alt;
 	}
 
 	return temp;
@@ -68,19 +66,6 @@ struct Location get_wp_with_index(int i)
 void set_wp_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.waypoint_total.get());
-
-	//if(i > 0 && temp.id < 50){
-	//	temp.options & WP_OPT_LOCATION
-		// remove home altitude if we are a nav command
-	//	temp.alt -= home.alt;
-	//}
-
-	// Store the location relatove to home
-	//if((flight_options_mask & WP_OPT_ALT_RELATIVE) == 0){
-		temp.alt -= home.alt;
-	//}
-
-
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -130,9 +115,11 @@ long read_alt_to_hold()
 //This function sets the waypoint and modes for Return to Launch
 //********************************************************************************
 
-
 Location get_LOITER_home_wp()
 {
+	//so we know where we are navigating from
+	next_WP = current_loc;
+
 	// read home position
 	struct Location temp 	= get_wp_with_index(0);
 	temp.id 				= MAV_CMD_NAV_LOITER_UNLIM;
@@ -208,11 +195,6 @@ void init_home()
 	home_is_set = true;
 
 	Serial.printf("gps alt: %ld", home.alt);
-
-	// ground altitude in centimeters for pressure alt calculations
-	// ------------------------------------------------------------
-	g.ground_pressure.save();
-
 
 	// Save Home to EEPROM
 	// -------------------

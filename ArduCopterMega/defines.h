@@ -12,6 +12,7 @@
 #define MAX_SERVO_OUTPUT 2700
 
 // active altitude sensor
+// ----------------------
 #define SONAR 0
 #define BARO 1
 
@@ -30,7 +31,7 @@
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
 #define DEBUG 0
-#define LOITER_RANGE 30 // for calculating power outside of loiter radius
+#define LOITER_RANGE 60 // for calculating power outside of loiter radius
 
 #define T6 1000000
 #define T7 10000000
@@ -93,25 +94,16 @@
 #define NUM_MODES 8
 
 
-#define WP_OPT_ALT_RELATIVE 	(1<<0)
-#define WP_OPT_ALT_CHANGE 		(1<<1)
-#define WP_OPT_YAW				(1<<2)
-// ..
-#define WP_OPT_CMD_WAIT			(1<<7)
-
-
-// Commands - Note that APM (1<<9)now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
+// Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
 #define NO_COMMAND 0
 
-
-
 //repeating events
 #define NO_REPEAT 0
-#define CH_4_TOGGLE 1
-#define CH_5_TOGGLE 2
-#define CH_6_TOGGLE 3
-#define CH_7_TOGGLE 4
+#define CH_5_TOGGLE 1
+#define CH_6_TOGGLE 2
+#define CH_7_TOGGLE 3
+#define CH_8_TOGGLE 4
 #define RELAY_TOGGLE 5
 #define STOP_REPEAT 10
 
@@ -261,4 +253,4 @@
 #define EEPROM_MAX_ADDR		4096
 // parameters get the first 1KiB of EEPROM, remainder is for waypoints
 #define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
-#define WP_SIZE 15
+#define WP_SIZE 14
