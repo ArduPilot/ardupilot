@@ -4,18 +4,40 @@
 	This event will be called when the failsafe changes
 	boolean failsafe reflects the current state
 */
-void failsafe_event()
+void failsafe_on_event()
 {
-	if (failsafe == true){
+	// This is how to handle a failsafe.
+	switch(control_mode)
+	{
 
-		// This is how to handle a failsafe.
-		switch(control_mode)
-		{
-
-		}
-	}else{
-		reset_I();
 	}
+}
+
+void failsafe_off_event()
+{
+	/*
+	if (g.throttle_fs_action == 2){
+		// We're back in radio contact
+		// return to AP
+		// ---------------------------
+
+		// re-read the switch so we can return to our preferred mode
+		// --------------------------------------------------------
+		reset_control_switch();
+
+		// Reset control integrators
+		// ---------------------
+		reset_I();
+
+	}else if (g.throttle_fs_action == 1){
+		// We're back in radio contact
+		// return to Home
+		// we should already be in RTL and throttle set to cruise
+		// ------------------------------------------------------
+		set_mode(RTL);
+		g.throttle_cruise = THROTTLE_CRUISE;
+	}
+	*/
 }
 
 void low_battery_event(void)
@@ -26,104 +48,29 @@ void low_battery_event(void)
 }
 
 
-/*
-4 simultaneous events
-int event_original 		- original time in seconds
-int event_countdown 	- count down to zero
-byte event_countdown 	- ID for what to do
-byte event_countdown	- how many times to loop, 0 = indefinite
-byte event_value		- specific information for an event like PWM value
-byte counterEvent		- undo the event if nescessary
-
-count down each one
-
-
-new event
-undo_event
-*/
-
-void new_event(struct Location *cmd)
+void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {
-	SendDebug("New Event Loaded ");
-	SendDebugln(cmd->p1,DEC);
+	if(event_repeat == 0 || (millis() - event_timer) < event_delay)
+		return;
 
-
-	if(cmd->p1 == STOP_REPEAT){
-		SendDebugln("STOP repeat ");
-		event_id 			= NO_REPEAT;
-		event_timer 		= -1;
-		undo_event 			= 0;
-		event_value 		= 0;
-		event_delay 		= 0;
-		event_repeat 		= 0; 	// convert seconds to millis
-		event_undo_value	= 0;
-		repeat_forever 		= 0;
-	}else{
-		// reset the event timer
-		event_timer 		= millis();
-		event_id 			= cmd->p1;
-		event_value 		= cmd->alt;
-		event_delay 		= cmd->lat;
-		event_repeat 		= cmd->lng; 	// convert seconds to millis
-		event_undo_value	= 0;
-		repeat_forever = (event_repeat == 0) ? 1:0;
-	}
-
-	/*
-	Serial.print("event_id: ");
-	Serial.println(event_id,DEC);
-	Serial.print("event_value: ");
-	Serial.println(event_value,DEC);
-	Serial.print("event_delay: ");
-	Serial.println(event_delay,DEC);
-	Serial.print("event_repeat: ");
-	Serial.println(event_repeat,DEC);
-	Serial.print("event_undo_value: ");
-	Serial.println(event_undo_value,DEC);
-	Serial.print("repeat_forever: ");
-	Serial.println(repeat_forever,DEC);
-	Serial.print("Event_timer: ");
-	Serial.println(event_timer,DEC);
-	*/
-	perform_event();
-}
-
-void perform_event()
-{
 	if (event_repeat > 0){
 		event_repeat --;
 	}
-	switch(event_id) {
-		case CH_4_TOGGLE:
-			event_undo_value = g.rc_5.radio_out;
-			APM_RC.OutputCh(CH_5, event_value); // send to Servos
-			undo_event = 2;
-			break;
-		case CH_5_TOGGLE:
-			event_undo_value = g.rc_6.radio_out;
-			APM_RC.OutputCh(CH_6, event_value); // send to Servos
-			undo_event = 2;
-			break;
-		case CH_6_TOGGLE:
-			event_undo_value = g.rc_7.radio_out;
-			APM_RC.OutputCh(CH_7, event_value); // send to Servos
-			undo_event = 2;
-			break;
-		case CH_7_TOGGLE:
-			event_undo_value = g.rc_8.radio_out;
-			APM_RC.OutputCh(CH_8, event_value); // send to Servos
-			undo_event = 2;
-			event_undo_value = 1;
-			break;
-		case RELAY_TOGGLE:
 
-			event_undo_value = PORTL & B00000100 ? 1:0;
+	if(event_repeat != 0) {		// event_repeat = -1 means repeat forever
+		event_timer = millis();
+
+		if (event_id >= CH_5 && event_id <= CH_8) {
+			if(event_repeat%2) {
+				APM_RC.OutputCh(event_id, event_value); // send to Servos
+			} else {
+				APM_RC.OutputCh(event_id, event_undo_value);
+			}
+		}
+
+		if  (event_id == RELAY_TOGGLE) {
 			relay_toggle();
-			SendDebug("toggle relay ");
-			SendDebugln(PORTL,BIN);
-			undo_event = 2;
-			break;
-
+		}
 	}
 }
 
@@ -142,54 +89,3 @@ void relay_toggle()
 	PORTL ^= B00000100;
 }
 
-void update_events()
-{
-	// repeating events
-	if(undo_event == 1){
-		perform_event_undo();
-		undo_event = 0;
-	}else if(undo_event > 1){
-		undo_event --;
-	}
-
-	if(event_timer == -1)
-		return;
-
-	if((millis() - event_timer) > event_delay){
-		perform_event();
-
-		if(event_repeat > 0 || repeat_forever == 1){
-			event_repeat--;
-			event_timer = millis();
-		}else{
-			event_timer = -1;
-		}
-	}
-}
-
-void perform_event_undo()
-{
-	switch(event_id) {
-		case CH_4_TOGGLE:
-			APM_RC.OutputCh(CH_5, event_undo_value); // send to Servos
-			break;
-
-		case CH_5_TOGGLE:
-			APM_RC.OutputCh(CH_6, event_undo_value); // send to Servos
-			break;
-
-		case CH_6_TOGGLE:
-			APM_RC.OutputCh(CH_7, event_undo_value); // send to Servos
-			break;
-
-		case CH_7_TOGGLE:
-			APM_RC.OutputCh(CH_8, event_undo_value); // send to Servos
-			break;
-
-		case RELAY_TOGGLE:
-			relay_toggle();
-			SendDebug("untoggle relay ");
-			SendDebugln(PORTL,BIN);
-			break;
-	}
-}

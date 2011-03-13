@@ -77,8 +77,9 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
         send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
     }
 
-    if (freqLoopMatch(global_data.streamRatePosition,freqMin,freqMax))
-	    send_message(MSG_LOCATION);
+    if (freqLoopMatch(global_data.streamRatePosition,freqMin,freqMax)) {
+		send_message(MSG_LOCATION);
+	}
 
     if (freqLoopMatch(global_data.streamRateRawController,freqMin,freqMax)) {
         // This is used for HIL.  Do not change without discussing with HIL maintainers
@@ -90,11 +91,13 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
         send_message(MSG_RADIO_IN);
     }
 
-    if (freqLoopMatch(global_data.streamRateExtra1,freqMin,freqMax))    // Use Extra 1 for AHRS info
-    send_message(MSG_ATTITUDE);
+    if (freqLoopMatch(global_data.streamRateExtra1,freqMin,freqMax)){   // Use Extra 1 for AHRS info
+	    send_message(MSG_ATTITUDE);
+    }
 
-    if (freqLoopMatch(global_data.streamRateExtra2,freqMin,freqMax))    // Use Extra 3 for additional HIL info
+    if (freqLoopMatch(global_data.streamRateExtra2,freqMin,freqMax)){    // Use Extra 2 for additional HIL info
     	send_message(MSG_VFR_HUD);
+    }
 
     if (freqLoopMatch(global_data.streamRateExtra3,freqMin,freqMax)){
         // Available datastream
@@ -121,6 +124,7 @@ GCS_MAVLINK::acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2)
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
+	struct 	Location tell_command;				// command for telemetry
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
@@ -136,48 +140,48 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             else if (packet.start_stop == 1) freq = packet.req_message_rate; // start sending
             else break;
 
-            switch(packet.req_stream_id)
-            {
-            case MAV_DATA_STREAM_ALL:
-                global_data.streamRateRawSensors 		= freq;
-                global_data.streamRateExtendedStatus 	= freq;
-                global_data.streamRateRCChannels 		= freq;
-                global_data.streamRateRawController 	= freq;
-                global_data.streamRatePosition 			= freq;
-                global_data.streamRateExtra1 			= freq;
-                global_data.streamRateExtra2 			= freq;
-                global_data.streamRateExtra3 			= freq;
-                break;
-            case MAV_DATA_STREAM_RAW_SENSORS:
-                global_data.streamRateRawSensors = freq;
-                break;
-            case MAV_DATA_STREAM_EXTENDED_STATUS:
-                global_data.streamRateExtendedStatus = freq;
-                break;
-            case MAV_DATA_STREAM_RC_CHANNELS:
-                global_data.streamRateRCChannels = freq;
-                break;
-            case MAV_DATA_STREAM_RAW_CONTROLLER:
-                global_data.streamRateRawController = freq;
-                break;
-                //case MAV_DATA_STREAM_RAW_SENSOR_FUSION:
-                //    global_data.streamRateRawSensorFusion = freq;
-                //    break;
-            case MAV_DATA_STREAM_POSITION:
-                global_data.streamRatePosition = freq;
-                break;
-            case MAV_DATA_STREAM_EXTRA1:
-                global_data.streamRateExtra1 = freq;
-                break;
-            case MAV_DATA_STREAM_EXTRA2:
-                global_data.streamRateExtra2 = freq;
-                break;
-            case MAV_DATA_STREAM_EXTRA3:
-                global_data.streamRateExtra3 = freq;
-                break;
-            default:
-                break;
-            }
+			switch(packet.req_stream_id){
+
+				case MAV_DATA_STREAM_ALL:
+					global_data.streamRateRawSensors 		= freq;
+					global_data.streamRateExtendedStatus 	= freq;
+					global_data.streamRateRCChannels 		= freq;
+					global_data.streamRateRawController 	= freq;
+					global_data.streamRatePosition 			= freq;
+					global_data.streamRateExtra1 			= freq;
+					global_data.streamRateExtra2 			= freq;
+					global_data.streamRateExtra3 			= freq;
+					break;
+				case MAV_DATA_STREAM_RAW_SENSORS:
+					global_data.streamRateRawSensors = freq;
+					break;
+				case MAV_DATA_STREAM_EXTENDED_STATUS:
+					global_data.streamRateExtendedStatus = freq;
+					break;
+				case MAV_DATA_STREAM_RC_CHANNELS:
+					global_data.streamRateRCChannels = freq;
+					break;
+				case MAV_DATA_STREAM_RAW_CONTROLLER:
+					global_data.streamRateRawController = freq;
+					break;
+					//case MAV_DATA_STREAM_RAW_SENSOR_FUSION:
+					//    global_data.streamRateRawSensorFusion = freq;
+					//    break;
+				case MAV_DATA_STREAM_POSITION:
+					global_data.streamRatePosition = freq;
+					break;
+				case MAV_DATA_STREAM_EXTRA1:
+					global_data.streamRateExtra1 = freq;
+					break;
+				case MAV_DATA_STREAM_EXTRA2:
+					global_data.streamRateExtra2 = freq;
+					break;
+				case MAV_DATA_STREAM_EXTRA3:
+					global_data.streamRateExtra3 = freq;
+					break;
+				default:
+					break;
+			}
             break;
         }
 
@@ -205,25 +209,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
 				case MAV_ACTION_HALT:
-					do_hold_position();
+					do_loiter_at_location();
 					break;
 
-					// can't implement due to APM configuration
-					// just setting to manual to be safe
+					/* No mappable implementation in APM 2.0
 				case MAV_ACTION_MOTORS_START:
 				case MAV_ACTION_CONFIRM_KILL:
 				case MAV_ACTION_EMCY_KILL:
 				case MAV_ACTION_MOTORS_STOP:
 				case MAV_ACTION_SHUTDOWN:
-					set_mode(ACRO);
 					break;
+				*/
 
 				case MAV_ACTION_CONTINUE:
 					process_next_command();
 					break;
 
 				case MAV_ACTION_SET_MANUAL:
-					set_mode(ACRO);
+					set_mode(STABILIZE);
 					break;
 
 				case MAV_ACTION_SET_AUTO:
@@ -247,31 +250,37 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_ACTION_CALIBRATE_ACC:
 				case MAV_ACTION_CALIBRATE_PRESSURE:
 				case MAV_ACTION_REBOOT:  // this is a rough interpretation
-					startup_ground();
+					startup_IMU_ground();
 					break;
 
+				/*    For future implemtation
 				case MAV_ACTION_REC_START: break;
 				case MAV_ACTION_REC_PAUSE: break;
 				case MAV_ACTION_REC_STOP: break;
+				*/
 
+				/* Takeoff is not an implemented flight mode in APM 2.0
 				case MAV_ACTION_TAKEOFF:
-					//set_mode(TAKEOFF);
+					set_mode(TAKEOFF);
 					break;
+				*/
 
 				case MAV_ACTION_NAVIGATE:
 					set_mode(AUTO);
 					break;
 
+				/* Land is not an implemented flight mode in APM 2.0
 				case MAV_ACTION_LAND:
-					//set_mode(LAND);
+					set_mode(LAND);
 					break;
+				*/
 
 				case MAV_ACTION_LOITER:
-					//set_mode(LOITER);
+					set_mode(LOITER);
 					break;
 
 				default: break;
-			}
+				}
             break;
         }
 
@@ -318,10 +327,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // set frame of waypoint
             uint8_t frame = MAV_FRAME_GLOBAL; // reference frame
-            uint8_t command = tell_command.id; // command
             float param1 = 0, param2 = 0 , param3 = 0, param4 = 0;
-
-            param1 = tell_command.p1;
 
             // time that the mav should loiter in milliseconds
             uint8_t current = 0; // 1 (true), 0 (false)
@@ -329,22 +335,54 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t autocontinue = 1; // 1 (true), 0 (false)
             float x = 0, y = 0, z = 0;
 
-            if (command < MAV_CMD_NAV_LAST) {
+            if (tell_command.id < MAV_CMD_NAV_LAST) {
                 // command needs scaling
-                x = tell_command.lat/1.0e7; // local (x), global (longitude)
-                y = tell_command.lng/1.0e7; // local (y), global (latitude)
+                x = tell_command.lat/1.0e7; // local (x), global (latitude)
+                y = tell_command.lng/1.0e7; // local (y), global (longitude)
                 z = tell_command.alt/1.0e2; // local (z), global (altitude)
-            }else{
-                // command is raw
-                x = tell_command.lat;
-                y = tell_command.lng;
-                z = tell_command.alt;
             }
-            // TODO - Need to add translation for many of the commands > MAV_CMD_NAV_LAST
 
-            // note XXX: documented x,y,z order does not match with gps raw
+			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
+			case MAV_CMD_NAV_LOITER_TURNS:
+			case MAV_CMD_NAV_TAKEOFF:
+			case MAV_CMD_CONDITION_CHANGE_ALT:
+			case MAV_CMD_DO_SET_HOME:
+				param1 = tell_command.p1;
+				break;
+
+			case MAV_CMD_NAV_LOITER_TIME:
+				param1 = tell_command.p1*10;	// APM loiter time is in ten second increments
+				break;
+
+			case MAV_CMD_CONDITION_DELAY:
+			case MAV_CMD_CONDITION_DISTANCE:
+				param1 = tell_command.lat;
+				break;
+
+			case MAV_CMD_DO_JUMP:
+				param2 = tell_command.lat;
+				param1 = tell_command.p1;
+				break;
+
+			case MAV_CMD_DO_REPEAT_SERVO:
+				param4 = tell_command.lng;
+			case MAV_CMD_DO_REPEAT_RELAY:
+			case MAV_CMD_DO_CHANGE_SPEED:
+				param3 = tell_command.lat;
+				param2 = tell_command.alt;
+				param1 = tell_command.p1;
+				break;
+
+			case MAV_CMD_DO_SET_PARAMETER:
+			case MAV_CMD_DO_SET_RELAY:
+			case MAV_CMD_DO_SET_SERVO:
+				param2 = tell_command.alt;
+				param1 = tell_command.p1;
+				break;
+			}
+
             mavlink_msg_waypoint_send(chan,msg->sysid,
-            msg->compid,packet.seq,frame,command,current,autocontinue,
+            msg->compid,packet.seq,frame,tell_command.id,current,autocontinue,
             param1,param2,param3,param4,x,y,z);
 
             // update last waypoint comm stamp
@@ -441,9 +479,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             g.waypoint_total.set_and_save(packet.count - 1);
             global_data.waypoint_timelast_receive = millis();
-            global_data.waypoint_receiving 		= true;
-            global_data.waypoint_sending 		= false;
-            global_data.waypoint_request_i 		= 0;
+            global_data.waypoint_receiving 	= true;
+            global_data.waypoint_sending 	= false;
+            global_data.waypoint_request_i 	= 0;
             break;
         }
 
@@ -469,9 +507,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             switch (packet.frame)
             {
             case MAV_FRAME_GLOBAL:
+            case MAV_FRAME_MISSION:
                 {
-                    tell_command.p1 = packet.param1; // in as byte no conversion
-                    //tell_command.p1 = packet.param1; // in as byte no conversion
                     tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
                     tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
                     tell_command.alt = packet.z*1.0e2; // in as m converted to cm
@@ -481,30 +518,56 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case MAV_FRAME_LOCAL: // local (relative to home position)
                 {
                     tell_command.lat = 1.0e7*ToDeg(packet.x/
-                    (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lng;
-                    tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lat;
+                    (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
+                    tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
                     tell_command.alt = -packet.z*1.0e2 + home.alt;
                     break;
                 }
-
-            case MAV_FRAME_MISSION:
-                {
-                    if(tell_command.id >= MAV_CMD_NAV_LAST){
-                        // these are raw values
-                        tell_command.p1 = packet.param1; // in as byte no conversion
-                        tell_command.lat = packet.x; // in as long no conversion
-                        tell_command.lng = packet.y; // in as long no conversion
-                        tell_command.alt = packet.z; // in as int no conversion
-                    }else{
-                        tell_command.p1 = packet.param1; // in as byte no conversion
-                        tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
-                        tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
-                        tell_command.alt = packet.z*1.0e2; // in as m converted to cm
-                    }
-                    break;
-                }
-
             }
+
+			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
+			case MAV_CMD_NAV_LOITER_TURNS:
+			case MAV_CMD_NAV_TAKEOFF:
+			case MAV_CMD_DO_SET_HOME:
+				tell_command.p1 = packet.param1;
+				break;
+
+			case MAV_CMD_CONDITION_CHANGE_ALT:
+				tell_command.p1 = packet.param1 * 100;
+				break;
+
+			case MAV_CMD_NAV_LOITER_TIME:
+				tell_command.p1 = packet.param1 / 10;	// APM loiter time is in ten second increments
+				break;
+
+			case MAV_CMD_CONDITION_DELAY:
+			case MAV_CMD_CONDITION_DISTANCE:
+				tell_command.lat = packet.param1;
+				break;
+
+			case MAV_CMD_DO_JUMP:
+				tell_command.lat = packet.param2;
+				tell_command.p1 = packet.param1;
+				break;
+
+			case MAV_CMD_DO_REPEAT_SERVO:
+				tell_command.lng = packet.param4;
+			case MAV_CMD_DO_REPEAT_RELAY:
+			case MAV_CMD_DO_CHANGE_SPEED:
+				tell_command.lat = packet.param3;
+				tell_command.alt = packet.param2;
+				tell_command.p1 = packet.param1;
+				break;
+
+			case MAV_CMD_DO_SET_PARAMETER:
+			case MAV_CMD_DO_SET_RELAY:
+			case MAV_CMD_DO_SET_SERVO:
+				tell_command.alt = packet.param2;
+				tell_command.p1 = packet.param1;
+				break;
+			}
+
+
 
             // save waypoint - and prevent re-setting home
             if (packet.seq != 0)
@@ -578,11 +641,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // Report back new value
             mavlink_msg_param_value_send(
-            	chan,
-            	(int8_t *)key,
-            	packet.param_value,
-            	_count_parameters(),
-            	-1); // XXX we don't actually know what its index is...
+				chan,
+				(int8_t *)key,
+				packet.param_value,
+				_count_parameters(),
+				-1); // XXX we don't actually know what its index is...
 
             break;
         } // end case
@@ -782,22 +845,22 @@ GCS_MAVLINK::_queued_send()
     }
 
     // this is called at 50hz, count runs to prevent flooding serialport and delayed to allow eeprom write
-    mavdelay++;
+		mavdelay++;
 
     // request waypoints one by one
     // XXX note that this is pan-interface
-    if (global_data.waypoint_receiving &&
-    		(global_data.requested_interface == chan) &&
-            global_data.waypoint_request_i <= (g.waypoint_total && mavdelay > 15)) // limits to 3.33 hz
-    {
-        mavlink_msg_waypoint_request_send(
-        	chan,
-        	global_data.waypoint_dest_sysid,
-        	global_data.waypoint_dest_compid,
-        	global_data.waypoint_request_i);
+		if (global_data.waypoint_receiving &&
+			(global_data.requested_interface == chan) &&
+			global_data.waypoint_request_i <= (g.waypoint_total && mavdelay > 15)){ // limits to 3.33 hz
 
-        mavdelay = 0;
-    }
+			mavlink_msg_waypoint_request_send(
+				chan,
+				global_data.waypoint_dest_sysid,
+				global_data.waypoint_dest_compid,
+			global_data.waypoint_request_i);
+
+		mavdelay = 0;
+		}
 }
 
 #endif

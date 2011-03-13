@@ -8,6 +8,8 @@
 uint16_t system_type = MAV_FIXED_WING;
 byte mavdelay = 0;
 
+
+// what does this do?
 static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 {
     if (sysid != mavlink_system.sysid){
@@ -17,7 +19,7 @@ static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 		gcs.send_text(SEVERITY_LOW,"component id mismatch");
         return 0; // XXX currently not receiving correct compid from gcs
 
-    } else {
+    }else{
     	return 0; // no error
     }
 }
@@ -42,38 +44,31 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 
 			switch(control_mode) {
 				case ACRO:
-					mode = MAV_MODE_MANUAL;
+					mode 		= MAV_MODE_MANUAL;
 					break;
 				case STABILIZE:
-					mode = MAV_MODE_GUIDED;
+					mode 		= MAV_MODE_GUIDED;
 					break;
 				case FBW:
-					mode = MAV_MODE_TEST1;
+					mode 		= MAV_MODE_TEST1;
 					break;
 				case ALT_HOLD:
-					mode = MAV_MODE_TEST2;
+					mode 		= MAV_MODE_TEST2;
 					break;
 				case LOITER:
-					mode = MAV_MODE_AUTO;
-					nav_mode = MAV_NAV_HOLD;
+					mode 		= MAV_MODE_AUTO;
+					nav_mode 	= MAV_NAV_HOLD;
 					break;
 				case AUTO:
-					mode = MAV_MODE_AUTO;
-					nav_mode = MAV_NAV_WAYPOINT;
+					mode 		= MAV_MODE_AUTO;
+					nav_mode 	= MAV_NAV_WAYPOINT;
 					break;
 				case RTL:
-					mode = MAV_MODE_AUTO;
-					nav_mode = MAV_NAV_RETURNING;
+					mode 		= MAV_MODE_AUTO;
+					nav_mode 	= MAV_NAV_RETURNING;
 					break;
-				//case TAKEOFF:
-				//	mode = MAV_MODE_AUTO;
-				//	nav_mode = MAV_NAV_LIFTOFF;
-				//	break;
-				//case LAND:
-				//	mode = MAV_MODE_AUTO;
-				//	nav_mode = MAV_NAV_LANDING;
-				//	break;
 			}
+
 			uint8_t status 		= MAV_STATE_ACTIVE;
 			uint8_t motor_block = false;
 
@@ -112,9 +107,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					current_loc.lat,
 					current_loc.lng,
 					current_loc.alt * 10,
-					g_gps->ground_speed / 1.0e2 * rot.a.x,
-					g_gps->ground_speed / 1.0e2 * rot.b.x,
-					g_gps->ground_speed / 1.0e2 * rot.c.x);
+					g_gps->ground_speed * rot.a.x,
+					g_gps->ground_speed * rot.b.x,
+					g_gps->ground_speed * rot.c.x);
 			break;
 		}
 
@@ -160,7 +155,11 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					g.rc_2.norm_output(),
 					g.rc_3.norm_output(),
 					g.rc_4.norm_output(),
-					0,0,0,0,rssi);
+					0,
+					0,
+					0,
+					0,
+					rssi);
 			break;
 		}
 
@@ -189,7 +188,10 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					motor_out[1],
 					motor_out[2],
 					motor_out[3],
-					0, 0, 0, 0);
+					0,
+					0,
+					0,
+					0);
 			break;
 		}
 

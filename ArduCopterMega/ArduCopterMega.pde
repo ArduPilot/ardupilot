@@ -303,8 +303,6 @@ long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
 bool 	nav_yaw_towards_wp;					// point at the next WP
 
-
-
 // Loiter management
 // -----------------
 long 	old_target_bearing;					// deg * 100
@@ -351,8 +349,9 @@ byte 	undo_event;							// counter for timing the undo
 
 // delay command
 // --------------
-int 	delay_timeout;						// used to delay commands
-long 	delay_start;						// used to delay commands
+long 	condition_value;					// used in condition commands (eg delay, change alt, etc.)
+long 	condition_start;
+int 	condition_rate;
 
 // 3D Location vectors
 // -------------------

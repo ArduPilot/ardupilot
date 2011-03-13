@@ -17,11 +17,8 @@
 //
 struct global_struct
 {
-	// parameters
-    uint16_t requested_interface; // store port to use
-	AP_Var  *parameter_p; // parameter pointer
-
 	// waypoints
+    uint16_t requested_interface; // request port to use
 	uint16_t waypoint_request_i; // request index
 	uint16_t waypoint_dest_sysid; // where to send requests
 	uint16_t waypoint_dest_compid; // "
