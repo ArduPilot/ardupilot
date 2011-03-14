@@ -185,6 +185,7 @@ const char* flight_mode_strings[] = {
 	"STABILIZE",
 	"ACRO",
 	"ALT_HOLD",
+	"SIMPLE",
 	"FBW",
 	"AUTO",
 	"GCS_AUTO",
@@ -252,6 +253,8 @@ float cos_roll_x 	= 1;
 float cos_pitch_x 	= 1;
 float cos_yaw_x 	= 1;
 float sin_pitch_y, sin_yaw_y, sin_roll_y;
+float sin_nav_y, cos_nav_x;					// used in calc_waypoint_nav
+long initial_simple_bearing;				// used for Simple mode
 
 // Airspeed
 // --------
@@ -526,6 +529,10 @@ void medium_loop()
 		case 1:
 			medium_loopCounter++;
 
+			// hack to stop navigation in Simple mode
+			if (control_mode == SIMPLE)
+				break;
+
 			if(g_gps->new_data){
 				g_gps->new_data 	= false;
 				dTnav 				= millis() - nav_loopTimer;
@@ -540,7 +547,13 @@ void medium_loop()
 			// -----------------------------
 			dTnav2 				= millis() - nav2_loopTimer;
 			nav2_loopTimer 		= millis();
-			calc_nav();
+
+			if(wp_distance < 800){ // 8 meters
+				calc_loiter_nav();
+			}else{
+				calc_waypoint_nav();
+			}
+
 
 			break;
 
@@ -849,12 +862,47 @@ void update_current_flight_mode(void)
 				output_stabilize_pitch();
 				break;
 
+			case SIMPLE:
+				fbw_timer++;
+				// 25 hz
+				if(fbw_timer > 4){
+					Location temp = current_loc;
+					temp.lng += g.rc_1.control_in / 2;
+					temp.lat -= g.rc_2.control_in / 2;
+
+					// calc a new bearing
+					nav_bearing 	= get_bearing(&current_loc, &temp) + initial_simple_bearing;
+					nav_bearing 	= wrap_360(nav_bearing);
+					wp_distance 	= get_distance(&current_loc, &temp);
+
+					calc_bearing_error();
+
+					// get nav_pitch and nav_roll
+					calc_waypoint_nav();
+				}
+
+				// Output Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
+				// Yaw control
+				output_manual_yaw();
+
+				// apply throttle control
+				output_manual_throttle();
+
+				// apply nav_pitch and nav_roll to output
+				fbw_nav_mixer();
+
+				// perform stabilzation
+				output_stabilize_roll();
+				output_stabilize_pitch();
+			break;
+
 			case FBW:
 				// we are currently using manual throttle during alpha testing.
 				fbw_timer++;
 
-				//call at 5 hz
-				if(fbw_timer > 20){
+				// 10 hz
+				if(fbw_timer > 10){
 					fbw_timer = 0;
 
 					if(home_is_set == false){

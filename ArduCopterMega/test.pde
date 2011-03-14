@@ -385,7 +385,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 				ts_num 				= 0;
 				g_gps->longitude 		= 0;
 				g_gps->latitude 		= 0;
-				calc_nav();
+				calc_loiter_nav();
 
 				Serial.printf_P(PSTR("ys:%ld, WP.lat:%ld, WP.lng:%ld, n_lat:%ld, n_lon:%ld, nroll:%ld, npitch:%ld, pmax:%ld, \t- "),
 					dcm.yaw_sensor,
@@ -504,7 +504,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								sin_roll_y,
 								cos_yaw_x,	// x
 								sin_yaw_y);	// y
-			*/
+			//*/
 		}
 
 		if(Serial.available() > 0){

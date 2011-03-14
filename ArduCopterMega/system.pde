@@ -292,6 +292,10 @@ void set_mode(byte mode)
 			update_auto();
 			break;
 
+		case SIMPLE:
+			initial_simple_bearing = dcm.yaw_sensor;
+			break;
+
 		case LOITER:
 			do_loiter_at_location();
 			break;
