@@ -52,11 +52,8 @@ void navigate()
 }
 
 #define DIST_ERROR_MAX 1800
-void calc_nav()
+void calc_loiter_nav()
 {
-	Vector2f yawvector;
-	Matrix3f temp;
-
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
@@ -83,11 +80,32 @@ void calc_nav()
 	//nav_lat 	= constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
 
 	// rotate the vector
-	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_roll 	=   (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
 	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
 
 	long pmax = g.pitch_max.get();
 
+	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
+	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
+}
+
+void calc_waypoint_nav()
+{
+	nav_lat	= constrain(wp_distance, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
+
+	// get the sin and cos of the bearing error - rotated 90°
+	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
+	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
+
+	// rotate the vector
+	nav_roll 	= (float)nav_lat * cos_nav_x;
+	nav_pitch 	= (float)nav_lat * sin_nav_y;
+
+	// Scale response by kP
+	nav_roll	*= g.pid_nav_lon.kP();	// 1800 * 2 = 3600 or 36°
+	nav_pitch	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+
+	long pmax = g.pitch_max.get();
 	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
 	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
 }

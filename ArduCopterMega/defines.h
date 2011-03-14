@@ -86,12 +86,13 @@
 #define STABILIZE 0			// hold level position
 #define ACRO 1				// rate control
 #define ALT_HOLD 2			// AUTO control
-#define FBW 3				// AUTO control
-#define AUTO 4				// AUTO control
-#define GCS_AUTO 5				// AUTO control
-#define LOITER 6		// Hold a single location
-#define RTL 7				// AUTO control
-#define NUM_MODES 8
+#define SIMPLE 3			//
+#define FBW 4				// AUTO control
+#define AUTO 5				// AUTO control
+#define GCS_AUTO 6			// AUTO control
+#define LOITER 7			// Hold a single location
+#define RTL 8				// AUTO control
+#define NUM_MODES 9
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
