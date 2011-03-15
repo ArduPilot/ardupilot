@@ -287,7 +287,7 @@
 #define ACRO_RATE_PITCH_IMAX_CENTIDEGREE ACRO_RATE_PITCH_IMAX * 100
 
 #ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .5
+# define ACRO_RATE_YAW_P         .1
 #endif
 #ifndef ACRO_RATE_YAW_I
 # define ACRO_RATE_YAW_I         0.0
@@ -394,7 +394,7 @@
 # define NAV_P					2.0
 #endif
 #ifndef NAV_I
-# define NAV_I					0.00
+# define NAV_I					0.1
 #endif
 #ifndef NAV_D
 # define NAV_D					0.00

@@ -70,14 +70,12 @@ void calc_loiter_nav()
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 
 	// Convert distance into ROLL X
-	nav_lon		= long_error * g.pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
-	//nav_lon	= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
-	//nav_lon 	= constrain(nav_lon, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
+	//nav_lon		= long_error * g.pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
+	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
 
 	// PITCH	Y
-	//nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
-	nav_lat		= lat_error * g.pid_nav_lat.kP();							// 1800 * 2 = 3600 or 36°
-	//nav_lat 	= constrain(nav_lat, -DIST_ERROR_MAX, DIST_ERROR_MAX); // Limit max command
+	//nav_lat		= lat_error * g.pid_nav_lat.kP();						// 1800 * 2 = 3600 or 36°
+	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
 
 	// rotate the vector
 	nav_roll 	=   (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
@@ -91,23 +89,30 @@ void calc_loiter_nav()
 
 void calc_waypoint_nav()
 {
-	nav_lat	= constrain(wp_distance, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
+	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
+	//nav_lat = max(wp_distance, -DIST_ERROR_MAX);
+	//nav_lat = min(wp_distance, DIST_ERROR_MAX);
+
+	//Serial.printf("nav_lat %ld, ", nav_lat);
+	// Scale response by kP
+	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+	//Serial.printf("%ld, ",nav_lat);
 
 	// get the sin and cos of the bearing error - rotated 90°
 	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
 	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
+	//Serial.printf("X%2.4f, Y%2.4f ", cos_nav_x, sin_nav_y);
 
 	// rotate the vector
 	nav_roll 	= (float)nav_lat * cos_nav_x;
 	nav_pitch 	= (float)nav_lat * sin_nav_y;
 
-	// Scale response by kP
-	nav_roll	*= g.pid_nav_lon.kP();	// 1800 * 2 = 3600 or 36°
-	nav_pitch	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+	//Serial.printf("R%ld, P%ld ", nav_roll, nav_pitch);
 
 	long pmax = g.pitch_max.get();
 	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
 	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
+	//Serial.printf("R%ld, P%ld \n", nav_roll, nav_pitch);
 }
 
 void calc_bearing_error()
@@ -205,10 +210,10 @@ long get_altitude_above_home(void)
 
 long get_distance(struct Location *loc1, struct Location *loc2)
 {
-	if(loc1->lat == 0 || loc1->lng == 0)
-		return -1;
-	if(loc2->lat == 0 || loc2->lng == 0)
-		return -1;
+	//if(loc1->lat == 0 || loc1->lng == 0)
+	//	return -1;
+	//if(loc2->lat == 0 || loc2->lng == 0)
+	//	return -1;
 	float dlat 		= (float)(loc2->lat - loc1->lat);
 	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
 	return sqrt(sq(dlat) + sq(dlong)) * .01113195;

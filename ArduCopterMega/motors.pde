@@ -13,12 +13,14 @@ void arm_motors()
 			if (arming_counter > ARM_DELAY) {
 				motor_armed = true;
 			} else{
+				//Serial.printf("arm %d\n", arming_counter);
 				arming_counter++;
 			}
 		}else if (g.rc_4.control_in < -2700) {
 			if (arming_counter > DISARM_DELAY){
 				motor_armed = false;
 			}else{
+				//Serial.printf("arm %d\n", arming_counter);
 				arming_counter++;
 			}
 		}else{
@@ -67,10 +69,10 @@ set_servos_4()
 			motor_out[CH_3]		= g.rc_3.radio_out + g.rc_2.pwm_out;
 			motor_out[CH_4] 	= g.rc_3.radio_out - g.rc_2.pwm_out;
 
-			motor_out[CH_1]		+=  g.rc_4.pwm_out; 	// CCW
-			motor_out[CH_2]		+=  g.rc_4.pwm_out; 	// CCW
-			motor_out[CH_3]		-=  g.rc_4.pwm_out; 	// CW
-			motor_out[CH_4] 	-=  g.rc_4.pwm_out; 	// CW
+			motor_out[CH_1]		+=	g.rc_4.pwm_out; 	// CCW
+			motor_out[CH_2]		+=	g.rc_4.pwm_out; 	// CCW
+			motor_out[CH_3]		-=	g.rc_4.pwm_out; 	// CW
+			motor_out[CH_4] 	-=	g.rc_4.pwm_out; 	// CW
 
 		}else if(g.frame_type == X_FRAME){
 			//Serial.println("X_FRAME");
@@ -123,11 +125,11 @@ set_servos_4()
 			//left side
 			motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW
 			motor_out[CH_3]		= g.rc_3.radio_out + roll_out + pitch_out;	// CW
-			motor_out[CH_8]     = g.rc_3.radio_out + roll_out - pitch_out;	// CW
+			motor_out[CH_8]		 = g.rc_3.radio_out + roll_out - pitch_out;	// CW
 
 			//right side
 			motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW
-            motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
+						motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
 			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW
 
 			motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
@@ -136,9 +138,9 @@ set_servos_4()
 
 			motor_out[CH_3]		-= g.rc_4.pwm_out;	// CW
 			motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
-			motor_out[CH_8]     -= g.rc_4.pwm_out;  // CW
+			motor_out[CH_8]		 -= g.rc_4.pwm_out;	// CW
 
-    	}else{
+			}else{
 
 			Serial.print("frame error");
 
@@ -157,6 +159,7 @@ set_servos_4()
 		}
 
 		num++;
+
 		if (num > 50){
 			num = 0;
 			/*
@@ -171,8 +174,6 @@ set_servos_4()
 				Serial.println("Sonar");
 			}
 			*/
-
-
 
 			//Serial.print("!");
 			//debugging with Channel 6
@@ -196,7 +197,7 @@ set_servos_4()
 			init_pids();
 			//*/
 
-			/*
+			///*
 			write_int(motor_out[CH_1]);
 			write_int(motor_out[CH_2]);
 			write_int(motor_out[CH_3]);
@@ -214,14 +215,13 @@ set_servos_4()
 			write_int((int)nav_roll);
 			write_int((int)nav_pitch);
 
-			//24
-			write_long(current_loc.lat);	//28
-			write_long(current_loc.lng);	//32
-			write_int((int)current_loc.alt);	//34
+			write_long(current_loc.lat);		// 28
+			write_long(current_loc.lng);		// 32
+			write_int((int)current_loc.alt);	// 34
 
 			write_long(next_WP.lat);
 			write_long(next_WP.lng);
-			write_int((int)next_WP.alt);		//44
+			write_int((int)next_WP.alt);		// 44
 
 			flush(10);
 			//*/

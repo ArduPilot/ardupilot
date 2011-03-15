@@ -407,17 +407,18 @@ byte 			slow_loopCounter;
 byte 			superslow_loopCounter;
 byte			fbw_timer;					// for limiting the execution of FBW input
 
-unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
+//unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
-unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
+//unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
 byte			counter_one_herz;
 
-byte			GPS_failure_counter = 255;
+byte			GPS_failure_counter = 3;
+bool			GPS_disabled 		= false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -498,7 +499,6 @@ void medium_loop()
 	// ----------
 	read_radio();			// read the radio first
 
-
 	// reads all of the necessary trig functions for cameras, throttle, etc.
 	update_trig();
 
@@ -506,13 +506,16 @@ void medium_loop()
 	// -----------------------------------------
 	switch(medium_loopCounter) {
 
-		// This case deals with the GPS
-		//-------------------------------
+		// This case deals with the GPS and Compass
+		//-----------------------------------------
 		case 0:
 			medium_loopCounter++;
 
 			if(GPS_failure_counter > 0){
 				update_GPS();
+
+			}else if(GPS_failure_counter == 0){
+				GPS_disabled = true;
 			}
 			//readCommands();
 
@@ -529,31 +532,38 @@ void medium_loop()
 		case 1:
 			medium_loopCounter++;
 
-			// hack to stop navigation in Simple mode
-			if (control_mode == SIMPLE)
-				break;
-
-			if(g_gps->new_data){
-				g_gps->new_data 	= false;
-				dTnav 				= millis() - nav_loopTimer;
-				nav_loopTimer 		= millis();
-
-				// calculate the plane's desired bearing
-				// -------------------------------------
-				navigate();
-			}
-
 			// calc pitch and roll to target
 			// -----------------------------
 			dTnav2 				= millis() - nav2_loopTimer;
 			nav2_loopTimer 		= millis();
 
+			// hack to stop navigation in Simple mode
+			if (control_mode == SIMPLE)
+				break;
+
+			if (control_mode == FBW)
+				break;
+
+			// Auto control modes:
+			if(g_gps->new_data){
+				g_gps->new_data 	= false;
+
+				// we are not tracking I term on navigation, so this isn't needed
+				//dTnav 				= millis() - nav_loopTimer;
+				//nav_loopTimer 		= millis();
+
+				// calculate the copter's desired bearing and WP distance
+				// ------------------------------------------------------
+				navigate();
+			}
+
+			// we call these regardless of GPS because of the rapid nature of the yaw sensor
+			// -----------------------------------------------------------------------------
 			if(wp_distance < 800){ // 8 meters
 				calc_loiter_nav();
 			}else{
 				calc_waypoint_nav();
 			}
-
 
 			break;
 
@@ -563,7 +573,7 @@ void medium_loop()
 			medium_loopCounter++;
 
 			// Read altitude from sensors
-			// ------------------
+			// --------------------------
 			update_alt();
 
 			// perform next command
@@ -581,41 +591,55 @@ void medium_loop()
 			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && (g.log_bitmask & MASK_LOG_ATTITUDE_FAST == 0))
 				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+			#if HIL_MODE != HIL_MODE_ATTITUDE
 			if (g.log_bitmask & MASK_LOG_CTUN)
 				Log_Write_Control_Tuning();
-#endif
+			#endif
 
 			if (g.log_bitmask & MASK_LOG_NTUN)
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS){
-				if(home_is_set)
-					Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
+				if(home_is_set){
+					Log_Write_GPS(g_gps->time,
+						current_loc.lat,
+						current_loc.lng,
+						g_gps->altitude,
+						current_loc.alt,
+						(long)g_gps->ground_speed,
+						g_gps->ground_course,
+						g_gps->fix,
+						g_gps->num_sats);
+				}
 			}
+
             gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
 			break;
 
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
+			medium_loopCounter = 0;
+
 			if (g.current_enabled){
 				read_current();
 			}
 
-			// shall we trim the copter?
-			// ------------------------
+			// Accel trims 		= hold > 2 seconds
+			// Throttle cruise  = switch less than 1 second
+			// --------------------------------------------
 			read_trim_switch();
 
-			// shall we check for engine start?
-			// --------------------------------
+			// Check for engine arming
+			// -----------------------
 			arm_motors();
 
-			medium_loopCounter = 0;
 			slow_loop();
 			break;
 
 		default:
+			// this is just a catch all
+			// ------------------------
 			medium_loopCounter = 0;
 			break;
 	}
@@ -632,10 +656,10 @@ void medium_loop()
 	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	if (g.log_bitmask & MASK_LOG_RAW)
-		Log_Write_Raw();
-#endif
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		if (g.log_bitmask & MASK_LOG_RAW)
+			Log_Write_Raw();
+	#endif
 
 	#if GCS_PROTOCOL == 6		// This is here for Benjamin Pelletier.	Please do not remove without checking with me.	Doug W
 		readgcsinput();
@@ -688,6 +712,9 @@ void slow_loop()
 			slow_loopCounter = 0;
 			update_events();
 
+			// blink if we are armed
+			update_motor_light();
+
 			// XXX this should be a "GCS slow loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				gcs.data_stream_send(1,5);
@@ -724,7 +751,7 @@ void update_GPS(void)
 	update_GPS_light();
 
     if (g_gps->new_data && g_gps->fix) {
-    	GPS_failure_counter = 255;
+    	GPS_failure_counter = 3;
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
@@ -755,7 +782,7 @@ void update_GPS(void)
 					Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
 				// reset our nav loop timer
-				nav_loopTimer = millis();
+				//nav_loopTimer = millis();
 				init_home();
 
 				// init altitude
@@ -866,17 +893,28 @@ void update_current_flight_mode(void)
 				fbw_timer++;
 				// 25 hz
 				if(fbw_timer > 4){
-					Location temp = current_loc;
-					temp.lng += g.rc_1.control_in / 2;
-					temp.lat -= g.rc_2.control_in / 2;
+					fbw_timer = 0;
+
+					current_loc.lat = 0;
+					current_loc.lng = 0;
+
+					next_WP.lng =   (float)g.rc_1.control_in *.4;  // X: 4500 / 2 = 2250 = 25 meteres
+					next_WP.lat = -((float)g.rc_2.control_in *.4); // Y: 4500 / 2 = 2250 = 25 meteres
 
 					// calc a new bearing
-					nav_bearing 	= get_bearing(&current_loc, &temp) + initial_simple_bearing;
+					nav_bearing 	= get_bearing(&current_loc, &next_WP) + initial_simple_bearing;
 					nav_bearing 	= wrap_360(nav_bearing);
-					wp_distance 	= get_distance(&current_loc, &temp);
-
+					wp_distance 	= get_distance(&current_loc, &next_WP);
 					calc_bearing_error();
-
+					/*
+					Serial.printf("lat: %ld lon:%ld, bear:%ld, dist:%ld, init:%ld, err:%ld ",
+							next_WP.lat,
+							next_WP.lng,
+							nav_bearing,
+							wp_distance,
+							initial_simple_bearing,
+							bearing_error);
+					*/
 					// get nav_pitch and nav_roll
 					calc_waypoint_nav();
 				}
@@ -905,20 +943,15 @@ void update_current_flight_mode(void)
 				if(fbw_timer > 10){
 					fbw_timer = 0;
 
-					if(home_is_set == false){
-						scaleLongDown = 1;
-						// we are not using GPS
-						// reset the location
-						// RTL won't function
+					if(GPS_disabled){
 						current_loc.lat = home.lat = 0;
 						current_loc.lng = home.lng = 0;
-						// set dTnav manually
-						dTnav = 200;
 					}
 
 					next_WP.lng = home.lng + g.rc_1.control_in / 2; // X: 4500 / 2 = 2250 = 25 meteres
-					// forward is negative so we reverse it to get a positive North translation
 					next_WP.lat = home.lat - g.rc_2.control_in / 2; // Y: 4500 / 2 = 2250 = 25 meteres
+
+					calc_loiter_nav();
 				}
 
 				// Output Pitch, Roll, Yaw and Throttle
