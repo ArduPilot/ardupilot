@@ -144,7 +144,7 @@ output_yaw_with_hold(boolean hold)
 		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
 
-		long error		= ((long)g.rc_4.control_in * 6) - rate;									// control is += 6000 * 6 = 36000
+		long error		= ((long)g.rc_4.control_in * 6) - rate;								// control is += 6000 * 6 = 36000
 																							// -error = CCW, 	+error = CW
 
 		if(g.rc_4.control_in == 0){
@@ -231,7 +231,7 @@ void calc_nav_throttle()
 	float scaler = 1.0;
 
 	if(error < 0){
-		scaler = (altitude_sensor == BARO) ? .5 : .8;
+		scaler = (altitude_sensor == BARO) ? .5 : .5;
 	}
 
 	if(altitude_sensor == BARO){

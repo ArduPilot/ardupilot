@@ -82,7 +82,7 @@ void init_ardupilot()
 	//
 	Serial3.begin(SERIAL3_BAUD, 128, 128);
 
-	Serial.printf_P(PSTR("\n\nInit ArduPilotMega (unstable development version)"
+	Serial.printf_P(PSTR("\n\nInit ArduCopterMega"
 						 "\n\nFree RAM: %lu\n"),
 						 freeRAM());
 
@@ -92,9 +92,11 @@ void init_ardupilot()
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
 
-		Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
+		/*Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
 		                     "\n\nForcing complete parameter reset..."),
-		                     g.format_version.get(), Parameters::k_format_version);
+		                     g.format_version.get(),
+		                     Parameters::k_format_version);
+		*/
 
 		// erase all parameters
 		AP_Var::erase_all();
@@ -102,14 +104,14 @@ void init_ardupilot()
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 
-		Serial.println_P(PSTR("done."));
+		//Serial.println_P(PSTR("done."));
 	}else{
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
 
-	    Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
-	    Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
+	  //  Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
+	  //  Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
 	}
 
 #ifdef RADIO_OVERRIDE_DEFAULTS
@@ -171,11 +173,10 @@ void init_ardupilot()
 		Serial.printf_P(PSTR("\n"
 							 "Entering interactive setup mode...\n"
 							 "\n"
-							 "If using the Arduino Serial Monitor, ensure Line Ending is set to Carriage Return.\n"
 							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
 							 "Visit the 'setup' menu for first-time configuration.\n"));
 		for (;;) {
-			Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
+			//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
 			main_menu.run();
 		}
 	}
@@ -341,7 +342,8 @@ void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
-	switch (g_gps->status()) {
+	switch (g_gps->status()){
+
 		case(2):
 			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
 			break;
@@ -362,7 +364,10 @@ void update_GPS_light(void)
 			digitalWrite(C_LED_PIN, LOW);
 			break;
 	}
+}
 
+void update_motor_light(void)
+{
 	if(motor_armed == true){
 		motor_light = !motor_light;
 
