@@ -355,6 +355,11 @@
     <field name="ack" type="uint8_t">0: ACK, 1: NACK: Wrong passkey, 2: NACK: Unsupported passkey encryption method, 3: NACK: Already under control</field>
   </message>
   
+  <message name="AUTH_KEY" id="7">
+    <description>Emit an encrypted signature / key identifying this system. PLEASE NOTE: This protocol has been kept simple, so transmitting the key requires an encrypted channel for true safety.</description>
+    <field name="key" type="char[32]">key</field>
+  </message>
+  
    <message name="ACTION_ACK" id="9">
 	<description>This message acknowledges an action. IMPORTANT: The acknowledgement can be also negative, e.g. the MAV rejects a reset message because it is in-flight. The action ids are defined in ENUM MAV_ACTION in mavlink/include/mavlink_types.h</description>
      <field name="action" type="uint8_t">The action id</field>
