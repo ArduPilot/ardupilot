@@ -404,7 +404,7 @@ byte 			medium_loopCounter;			// Counters for branching from main control loop t
 uint8_t			delta_ms_medium_loop;
 
 byte 			slow_loopCounter;
-byte 			superslow_loopCounter;
+int 			superslow_loopCounter;
 byte			fbw_timer;					// for limiting the execution of FBW input
 
 //unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
@@ -682,14 +682,13 @@ void slow_loop()
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
-			if(superslow_loopCounter >= 200){				//	Execute every minute
+			if(superslow_loopCounter > 1400){ // every 7 minutes
 				#if HIL_MODE != HIL_MODE_ATTITUDE
-					if(g.compass_enabled){
+					if(g.rc_3.control_in == 0 && g.compass_enabled){
 						compass.save_offsets();
+						superslow_loopCounter = 0;
 					}
 				#endif
-
-				superslow_loopCounter = 0;
             }
 			break;
 
