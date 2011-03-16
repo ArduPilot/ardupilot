@@ -238,5 +238,16 @@
     <field name="data" type="uint8_t[253]">image data bytes</field>
    </message>
 
+  <message name="BRIEF_FEATURE" id="172">
+    <field name="x" type="float">x position in m</field>
+    <field name="y" type="float">y position in m</field>
+    <field name="z" type="float">z position in m</field>
+    <field name="orientation_assignment" type="uint8_t">Orientation assignment 0: false, 1:true</field>
+    <field name="size" type="uint16_t">Size in pixels</field>
+    <field name="orientation" type="uint16_t">Orientation</field>
+    <field name="descriptor" type="uint8_t[32]">Descriptor</field>
+    <field name="response" type="float">Harris operator response at this location</field>
+  </message>
+
 </messages>
 </mavlink>

@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://pixhawk.ethz.ch/software/mavlink
- *	 Generated on Saturday, February 26 2011, 13:25 UTC
+ *	 Generated on Tuesday, March 15 2011, 19:25 UTC
  */
 #ifndef COMMON_H
 #define COMMON_H
@@ -57,7 +57,7 @@ enum MAV_CMD
 	MAV_CMD_DO_REPEAT_SERVO=184, /* Cycle a between its nominal setting and a desired PWM for a desired number of cycles with a desired period.Servo numberPWM (microseconds, 1000 to 2000 typical)Cycle countCycle time (seconds)EmptyEmptyEmpty*/
 	MAV_CMD_DO_CONTROL_VIDEO=200, /* Control onboard camera system.Camera ID (-1 for all)Transmission: 0: disabled, 1: enabled compressed, 2: enabled rawTransmission mode: 0: video stream, >0: single images every n seconds (decimal)Recording: 0: disabled, 1: enabled compressed, 2: enabled rawEmptyEmptyEmpty*/
 	MAV_CMD_DO_LAST=240, /* NOP - This command is only used to mark the upper limit of the DO commands in the enumerationEmptyEmptyEmptyEmptyEmptyEmptyEmpty*/
-	MAV_CMD_PREFLIGHT_CALIBRATION=241, /* Trigger calibration. This command will be only accepted if in pre-flight mode.Gyro calibration: 0: no, 1: yesMagnetometer calibration: 0: no, 1: yesRadio calibration: 0: no, 1: yesRadio calibration: 0: no, 1: yesEmptyEmptyEmpty*/
+	MAV_CMD_PREFLIGHT_CALIBRATION=241, /* Trigger calibration. This command will be only accepted if in pre-flight mode.Gyro calibration: 0: no, 1: yesMagnetometer calibration: 0: no, 1: yesGround pressure: 0: no, 1: yesRadio calibration: 0: no, 1: yesEmptyEmptyEmpty*/
 	MAV_CMD_PREFLIGHT_STORAGE=245, /* Request storage of different parameter values and logs. This command will be only accepted if in pre-flight mode.Parameter storage: 0: READ FROM FLASH/EEPROM, 1: WRITE CURRENT TO FLASH/EEPROMMission storage: 0: READ FROM FLASH/EEPROM, 1: WRITE CURRENT TO FLASH/EEPROMReservedReservedEmptyEmptyEmpty*/
 	MAV_CMD_ENUM_END
 };
@@ -87,6 +87,7 @@ enum MAV_DATA_STREAM
 #include "./mavlink_msg_system_time_utc.h"
 #include "./mavlink_msg_change_operator_control.h"
 #include "./mavlink_msg_change_operator_control_ack.h"
+#include "./mavlink_msg_auth_key.h"
 #include "./mavlink_msg_action_ack.h"
 #include "./mavlink_msg_action.h"
 #include "./mavlink_msg_set_mode.h"

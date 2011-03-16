@@ -15,8 +15,8 @@ typedef struct __mavlink_waypoint_t
 	float param2; ///< PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
 	float param3; ///< PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
 	float param4; ///< PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
-	float x; ///< PARAM5 / local: x position, global: longitude
-	float y; ///< PARAM6 / y position: global: latitude
+	float x; ///< PARAM5 / local: x position, global: latitude
+	float y; ///< PARAM6 / y position: global: longitude
 	float z; ///< PARAM7 / z position: global: altitude
 
 } mavlink_waypoint_t;
@@ -40,8 +40,8 @@ typedef struct __mavlink_waypoint_t
  * @param param2 PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
  * @param param3 PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
  * @param param4 PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
- * @param x PARAM5 / local: x position, global: longitude
- * @param y PARAM6 / y position: global: latitude
+ * @param x PARAM5 / local: x position, global: latitude
+ * @param y PARAM6 / y position: global: longitude
  * @param z PARAM7 / z position: global: altitude
  * @return length of the message in bytes (excluding serial stream start sign)
  */
@@ -61,8 +61,8 @@ static inline uint16_t mavlink_msg_waypoint_pack(uint8_t system_id, uint8_t comp
 	i += put_float_by_index(param2, i, msg->payload); // PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
 	i += put_float_by_index(param3, i, msg->payload); // PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
 	i += put_float_by_index(param4, i, msg->payload); // PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
-	i += put_float_by_index(x, i, msg->payload); // PARAM5 / local: x position, global: longitude
-	i += put_float_by_index(y, i, msg->payload); // PARAM6 / y position: global: latitude
+	i += put_float_by_index(x, i, msg->payload); // PARAM5 / local: x position, global: latitude
+	i += put_float_by_index(y, i, msg->payload); // PARAM6 / y position: global: longitude
 	i += put_float_by_index(z, i, msg->payload); // PARAM7 / z position: global: altitude
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
@@ -85,8 +85,8 @@ static inline uint16_t mavlink_msg_waypoint_pack(uint8_t system_id, uint8_t comp
  * @param param2 PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
  * @param param3 PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
  * @param param4 PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
- * @param x PARAM5 / local: x position, global: longitude
- * @param y PARAM6 / y position: global: latitude
+ * @param x PARAM5 / local: x position, global: latitude
+ * @param y PARAM6 / y position: global: longitude
  * @param z PARAM7 / z position: global: altitude
  * @return length of the message in bytes (excluding serial stream start sign)
  */
@@ -106,8 +106,8 @@ static inline uint16_t mavlink_msg_waypoint_pack_chan(uint8_t system_id, uint8_t
 	i += put_float_by_index(param2, i, msg->payload); // PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
 	i += put_float_by_index(param3, i, msg->payload); // PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
 	i += put_float_by_index(param4, i, msg->payload); // PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
-	i += put_float_by_index(x, i, msg->payload); // PARAM5 / local: x position, global: longitude
-	i += put_float_by_index(y, i, msg->payload); // PARAM6 / y position: global: latitude
+	i += put_float_by_index(x, i, msg->payload); // PARAM5 / local: x position, global: latitude
+	i += put_float_by_index(y, i, msg->payload); // PARAM6 / y position: global: longitude
 	i += put_float_by_index(z, i, msg->payload); // PARAM7 / z position: global: altitude
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
@@ -141,8 +141,8 @@ static inline uint16_t mavlink_msg_waypoint_encode(uint8_t system_id, uint8_t co
  * @param param2 PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
  * @param param3 PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
  * @param param4 PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
- * @param x PARAM5 / local: x position, global: longitude
- * @param y PARAM6 / y position: global: latitude
+ * @param x PARAM5 / local: x position, global: latitude
+ * @param y PARAM6 / y position: global: longitude
  * @param z PARAM7 / z position: global: altitude
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
@@ -293,7 +293,7 @@ static inline float mavlink_msg_waypoint_get_param4(const mavlink_message_t* msg
 /**
  * @brief Get field x from waypoint message
  *
- * @return PARAM5 / local: x position, global: longitude
+ * @return PARAM5 / local: x position, global: latitude
  */
 static inline float mavlink_msg_waypoint_get_x(const mavlink_message_t* msg)
 {
@@ -308,7 +308,7 @@ static inline float mavlink_msg_waypoint_get_x(const mavlink_message_t* msg)
 /**
  * @brief Get field y from waypoint message
  *
- * @return PARAM6 / y position: global: latitude
+ * @return PARAM6 / y position: global: longitude
  */
 static inline float mavlink_msg_waypoint_get_y(const mavlink_message_t* msg)
 {

@@ -139,7 +139,8 @@ enum MAV_FRAME
 {
     MAV_FRAME_GLOBAL = 0,
     MAV_FRAME_LOCAL = 1,
-    MAV_FRAME_MISSION = 2
+    MAV_FRAME_MISSION = 2,
+	MAV_FRAME_GLOBAL_RELATIVE_ALT = 3
 };
 
 #define MAVLINK_STX 0x55 ///< Packet start sign
