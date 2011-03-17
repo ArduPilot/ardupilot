@@ -104,8 +104,8 @@ void calc_waypoint_nav()
 	//Serial.printf("X%2.4f, Y%2.4f ", cos_nav_x, sin_nav_y);
 
 	// rotate the vector
-	nav_roll 	= (float)nav_lat * cos_nav_x;
-	nav_pitch 	= (float)nav_lat * sin_nav_y;
+	nav_roll 	=  (float)nav_lat * cos_nav_x;
+	nav_pitch 	= -(float)nav_lat * sin_nav_y;
 
 	//Serial.printf("R%ld, P%ld ", nav_roll, nav_pitch);
 
