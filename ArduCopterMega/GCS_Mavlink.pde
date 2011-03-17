@@ -250,7 +250,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_ACTION_CALIBRATE_ACC:
 				case MAV_ACTION_CALIBRATE_PRESSURE:
 				case MAV_ACTION_REBOOT:  // this is a rough interpretation
-					startup_IMU_ground();
+					//startup_IMU_ground();
 					break;
 
 				/*    For future implemtation
