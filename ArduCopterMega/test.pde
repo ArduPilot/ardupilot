@@ -18,6 +18,7 @@ static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -61,6 +62,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"airpressure",	test_pressure},
 #endif
+	{"sonar",		test_sonar},
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
@@ -902,6 +904,26 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 }
+
+/*
+  test the sonar
+ */
+static int8_t
+test_sonar(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+
+	while(1) {
+		Serial.printf_P(PSTR("%d cm\n"), sonar.read());
+		delay(100);
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+	return (0);
+}
+
 
 void print_hit_enter()
 {
