@@ -10,7 +10,6 @@
 
 #include <BetterStream.h>
 #include <AP_Common.h>
-#include <APM_BinComm.h>
 #include <GPS.h>
 #include <Stream.h>
 #include <stdint.h>
