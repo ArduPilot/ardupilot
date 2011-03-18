@@ -34,12 +34,7 @@ static void mavlink_parse_state_initialize(mavlink_status_t* initStatus)
 
 static inline mavlink_status_t* mavlink_get_channel_status(uint8_t chan)
 {
-#if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
-	static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB_HIGH];
-#else
-	static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB];
-#endif
-
+	static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
 	return &m_mavlink_status[chan];
 }
 
@@ -73,7 +68,7 @@ static inline uint16_t mavlink_finalize_message(mavlink_message_t* msg, uint8_t 
 	msg->compid = component_id;
 	// One sequence number per component
 	msg->seq = mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq;
-        mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq = mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq+1;
+    mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq = mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq+1;
 	checksum = crc_calculate((uint8_t*)((void*)msg), length + MAVLINK_CORE_HEADER_LEN);
 	msg->ck_a = (uint8_t)(checksum & 0xFF); ///< High byte
 	msg->ck_b = (uint8_t)(checksum >> 8); ///< Low byte
@@ -202,11 +197,8 @@ static inline void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c)
  */
 static inline uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status)
 {
-#if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
-	static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB_HIGH];
-#else
-	static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB];
-#endif
+	static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NUM_BUFFERS];
+
 	// Initializes only once, values keep unchanged after first initialization
 	mavlink_parse_state_initialize(mavlink_get_channel_status(chan));
 
@@ -391,23 +383,13 @@ static inline uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messag
 /*
 static inline uint8_t mavlink_parse_char_new(uint8_t chan, uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status)
 {
-	#if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
-	    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB_HIGH];
-	    static uint8_t m_msgbuf[MAVLINK_COMM_NB_HIGH][MAVLINK_MAX_PACKET_LEN * 2];
-	    static uint8_t m_msgbuf_index[MAVLINK_COMM_NB_HIGH];
-	    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB_HIGH];
-	    static uint8_t m_packet_start[MAVLINK_COMM_NB_HIGH][MAVLINK_PACKET_START_CANDIDATES];
-	    static uint8_t m_packet_start_index_read[MAVLINK_COMM_NB_HIGH];
-	    static uint8_t m_packet_start_index_write[MAVLINK_COMM_NB_HIGH];
-	#else
-	    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB];
-	    static uint8_t m_msgbuf[MAVLINK_COMM_NB][MAVLINK_MAX_PACKET_LEN * 2];
-	    static uint8_t m_msgbuf_index[MAVLINK_COMM_NB];
-	    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB];
-	    static uint8_t m_packet_start[MAVLINK_COMM_NB][MAVLINK_PACKET_START_CANDIDATES];
-	    static uint8_t m_packet_start_index_read[MAVLINK_COMM_NB];
-	    static uint8_t m_packet_start_index_write[MAVLINK_COMM_NB];
-	#endif
+	    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
+	    static uint8_t m_msgbuf[MAVLINK_COMM_NUM_BUFFERS][MAVLINK_MAX_PACKET_LEN * 2];
+	    static uint8_t m_msgbuf_index[MAVLINK_COMM_NUM_BUFFERS];
+	    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NUM_BUFFERS];
+	    static uint8_t m_packet_start[MAVLINK_COMM_NUM_BUFFERS][MAVLINK_PACKET_START_CANDIDATES];
+	    static uint8_t m_packet_start_index_read[MAVLINK_COMM_NUM_BUFFERS];
+	    static uint8_t m_packet_start_index_write[MAVLINK_COMM_NUM_BUFFERS];
 
 	    // Set a packet start candidate index if sign is start sign
 	    if (c == MAVLINK_STX)
@@ -417,13 +399,8 @@ static inline uint8_t mavlink_parse_char_new(uint8_t chan, uint8_t c, mavlink_me
 
 	    // Parse normally, if a CRC mismatch occurs retry with the next packet index
 }
-//#if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
-//    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB_HIGH];
-//    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB_HIGH];
-//#else
-//    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NB];
-//    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NB];
-//#endif
+//    static mavlink_status_t m_mavlink_status[MAVLINK_COMM_NUM_BUFFERS];
+//    static mavlink_message_t m_mavlink_message[MAVLINK_COMM_NUM_BUFFERS];
 //// Initializes only once, values keep unchanged after first initialization
 //    mavlink_parse_state_initialize(&m_mavlink_status[chan]);
 //
@@ -575,6 +552,7 @@ typedef union __generic_64bit
 {
 	uint8_t b[8];
 	int64_t ll; ///< Long long (64 bit)
+	double  d;  ///< IEEE-754 double precision floating point
 } generic_64bit;
 
 /**
@@ -883,6 +861,103 @@ void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 }
  */
 
+static inline void mavlink_send_uart_uint8_t(mavlink_channel_t chan, uint8_t b, uint16_t* checksum)
+{
+	crc_accumulate(b, checksum);
+	comm_send_ch(chan, b);
+}
+
+static inline void mavlink_send_uart_int8_t(mavlink_channel_t chan, int8_t b, uint16_t* checksum)
+{
+	crc_accumulate(b, checksum);
+	comm_send_ch(chan, b);
+}
+
+static inline void mavlink_send_uart_uint16_t(mavlink_channel_t chan, uint16_t b, uint16_t* checksum)
+{
+	char s;
+	s = (b>>8)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b & 0xff);
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+}
+
+static inline void mavlink_send_uart_int16_t(mavlink_channel_t chan, int16_t b, uint16_t* checksum)
+{
+	mavlink_send_uart_uint16_t(chan, b, checksum);
+}
+
+static inline void mavlink_send_uart_uint32_t(mavlink_channel_t chan, uint32_t b, uint16_t* checksum)
+{
+	char s;
+	s = (b>>24)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>16)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>8)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b & 0xff);
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+}
+
+static inline void mavlink_send_uart_int32_t(mavlink_channel_t chan, int32_t b, uint16_t* checksum)
+{
+	mavlink_send_uart_uint32_t(chan, b, checksum);
+}
+
+static inline void mavlink_send_uart_uint64_t(mavlink_channel_t chan, uint64_t b, uint16_t* checksum)
+{
+	char s;
+	s = (b>>56)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>48)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>40)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>32)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>24)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>16)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b>>8)&0xff;
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+	s = (b & 0xff);
+	comm_send_ch(chan, s);
+	crc_accumulate(s, checksum);
+}
+
+static inline void mavlink_send_uart_int64_t(mavlink_channel_t chan, int64_t b, uint16_t* checksum)
+{
+	mavlink_send_uart_uint64_t(chan, b, checksum);
+}
+
+static inline void mavlink_send_uart_float(mavlink_channel_t chan, float b, uint16_t* checksum)
+{
+	generic_32bit g;
+	g.f = b;
+	mavlink_send_uart_uint32_t(chan, g.i, checksum);
+}
+
+static inline void mavlink_send_uart_double(mavlink_channel_t chan, double b, uint16_t* checksum)
+{
+	generic_64bit g;
+	g.d = b;
+	mavlink_send_uart_uint32_t(chan, g.ll, checksum);
+}
 
 static inline void mavlink_send_uart(mavlink_channel_t chan, mavlink_message_t* msg)
 {
