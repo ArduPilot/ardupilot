@@ -48,6 +48,9 @@ public:
 	///
 	void		set_accel(Vector3f v) { _accel = v; _updated = true; }
 
+	// dummy save method
+	void		save(void) { }
+
 private:
 	/// set true when new data is delivered
 	bool		_updated;
