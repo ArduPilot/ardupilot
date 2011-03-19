@@ -535,6 +535,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     tell_command.alt = -packet.z*1.0e2 + home.alt;
                     break;
                 }
+
+            case MAV_FRAME_GLOBAL_RELATIVE_ALT: // absolute lat/lng, relative altitude
+                {
+                    if (!home_is_set) {
+                        send_text_P(SEVERITY_MEDIUM, PSTR("Refusing relative alt wp: home not set"));
+                        return;
+                    }
+                    tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
+                    tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
+                    tell_command.alt = packet.z*1.0e2 + home.alt;
+                    break;
+                }
             }
 
 			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
