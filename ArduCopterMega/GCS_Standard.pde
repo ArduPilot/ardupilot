@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 // Doug _ command index is a byte and not an int
 
 #if GCS_PROTOCOL == GCS_PROTOCOL_STANDARD

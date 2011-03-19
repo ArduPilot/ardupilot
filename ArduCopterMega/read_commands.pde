@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define INPUT_BUF_LEN 40
 char input_buffer[INPUT_BUF_LEN];
