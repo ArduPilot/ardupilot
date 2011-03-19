@@ -53,13 +53,13 @@ GCS_MAVLINK::update(void)
 
     // stop waypoint sending if timeout
     if (global_data.waypoint_sending && (millis() - global_data.waypoint_timelast_send) > global_data.waypoint_send_timeout){
-        send_text(SEVERITY_LOW,"waypoint send timeout");
+        send_text(SEVERITY_LOW,PSTR("waypoint send timeout"));
         global_data.waypoint_sending = false;
     }
 
     // stop waypoint receiving if timeout
     if (global_data.waypoint_receiving && (millis() - global_data.waypoint_timelast_receive) > global_data.waypoint_receive_timeout){
-        send_text(SEVERITY_LOW,"waypoint receive timeout");
+        send_text(SEVERITY_LOW,PSTR("waypoint receive timeout"));
         global_data.waypoint_receiving = false;
     }
 }
@@ -193,7 +193,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (mavlink_check_target(packet.target,packet.target_component)) break;
 
             // do action
-            send_text(SEVERITY_LOW,"action received");
+            send_text(SEVERITY_LOW,PSTR("action received"));
 			switch(packet.action){
 
 				case MAV_ACTION_LAUNCH:
@@ -286,7 +286,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST:
         {
-            //send_text(SEVERITY_LOW,"waypoint request list");
+            //send_text(SEVERITY_LOW,PSTR("waypoint request list"));
 
             // decode
             mavlink_waypoint_request_list_t packet;
@@ -312,7 +312,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST:
         {
-            //send_text(SEVERITY_LOW,"waypoint request");
+            //send_text(SEVERITY_LOW,PSTR("waypoint request"));
 
             // Check if sending waypiont
             if (!global_data.waypoint_sending) break;
@@ -392,7 +392,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_ACK:
         {
-            //send_text(SEVERITY_LOW,"waypoint ack");
+            //send_text(SEVERITY_LOW,PSTR("waypoint ack"));
 
             // decode
             mavlink_waypoint_ack_t packet;
@@ -409,7 +409,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
-            //send_text(SEVERITY_LOW,"param request list");
+            //send_text(SEVERITY_LOW,PSTR("param request list"));
 
             // decode
             mavlink_param_request_list_t packet;
@@ -425,7 +425,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL:
         {
-            //send_text(SEVERITY_LOW,"waypoint clear all");
+            //send_text(SEVERITY_LOW,PSTR("waypoint clear all"));
 
             // decode
             mavlink_waypoint_clear_all_t packet;
@@ -444,7 +444,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT:
         {
-            //send_text(SEVERITY_LOW,"waypoint set current");
+            //send_text(SEVERITY_LOW,PSTR("waypoint set current"));
 
             // decode
             mavlink_waypoint_set_current_t packet;
@@ -466,7 +466,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_COUNT:
         {
-            //send_text(SEVERITY_LOW,"waypoint count");
+            //send_text(SEVERITY_LOW,PSTR("waypoint count"));
 
             // decode
             mavlink_waypoint_count_t packet;
@@ -587,7 +587,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 	msg->compid,
                 	type);
 
-                send_text(SEVERITY_LOW,"flight plan received");
+                send_text(SEVERITY_LOW,PSTR("flight plan received"));
                 global_data.waypoint_receiving = false;
                 // XXX ignores waypoint radius for individual waypoints, can
                 // only set WP_RADIUS parameter
@@ -618,34 +618,45 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     !isnan(packet.param_value) &&               // not nan
                     !isinf(packet.param_value)) {               // not inf
 
+				// add a small amount before casting parameter values
+				// from float to integer to avoid truncating to the
+				// next lower integer value.
+				const float rounding_addition = 0.01;
+
                 // fetch the variable type ID
                 var_type = vp->meta_type_id();
 
                 // handle variables with standard type IDs
                 if (var_type == AP_Var::k_typeid_float) {
-                    ((AP_Float *)vp)->set(packet.param_value);
+                    ((AP_Float *)vp)->set_and_save(packet.param_value);
 
                 } else if (var_type == AP_Var::k_typeid_float16) {
-                    ((AP_Float16 *)vp)->set(packet.param_value);
+                    ((AP_Float16 *)vp)->set_and_save(packet.param_value);
 
                 } else if (var_type == AP_Var::k_typeid_int32) {
-                    ((AP_Int32 *)vp)->set(packet.param_value);
+                    ((AP_Int32 *)vp)->set_and_save(packet.param_value+rounding_addition);
 
                 } else if (var_type == AP_Var::k_typeid_int16) {
-                    ((AP_Int16 *)vp)->set(packet.param_value);
+                    ((AP_Int16 *)vp)->set_and_save(packet.param_value+rounding_addition);
 
                 } else if (var_type == AP_Var::k_typeid_int8) {
-                    ((AP_Int8 *)vp)->set(packet.param_value);
+                    ((AP_Int8 *)vp)->set(packet.param_value+rounding_addition);
+                } else {
+                    // we don't support mavlink set on this parameter
+                    break;
                 }
-            }
 
-            // Report back new value
-            mavlink_msg_param_value_send(
-				chan,
-				(int8_t *)key,
-				packet.param_value,
-				_count_parameters(),
-				-1); // XXX we don't actually know what its index is...
+                // Report back the new value if we accepted the change
+                // we send the value we actually set, which could be
+                // different from the value sent, in case someone sent
+                // a fractional value to an integer type
+                mavlink_msg_param_value_send(
+                    chan,
+                    (int8_t *)key,
+                    vp->cast_to_float(),
+                    _count_parameters(),
+                    -1); // XXX we don't actually know what its index is...
+            }
 
             break;
         } // end case
@@ -845,22 +856,22 @@ GCS_MAVLINK::_queued_send()
     }
 
     // this is called at 50hz, count runs to prevent flooding serialport and delayed to allow eeprom write
-		mavdelay++;
+	mavdelay++;
 
     // request waypoints one by one
     // XXX note that this is pan-interface
-		if (global_data.waypoint_receiving &&
-			(global_data.requested_interface == chan) &&
-			global_data.waypoint_request_i <= (g.waypoint_total && mavdelay > 15)){ // limits to 3.33 hz
-
-			mavlink_msg_waypoint_request_send(
-				chan,
-				global_data.waypoint_dest_sysid,
-				global_data.waypoint_dest_compid,
+	if (global_data.waypoint_receiving &&
+		(global_data.requested_interface == chan) &&
+		global_data.waypoint_request_i <= g.waypoint_total &&
+		mavdelay > 15) { // limits to 3.33 hz
+		mavlink_msg_waypoint_request_send(
+			chan,
+			global_data.waypoint_dest_sysid,
+			global_data.waypoint_dest_compid,
 			global_data.waypoint_request_i);
 
 		mavdelay = 0;
-		}
+	}
 }
 
 #endif
