@@ -100,11 +100,13 @@ set_servos_4()
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
 			int pitch_out 		= g.rc_2.pwm_out / 2;
 
-			// front two motors
+			//left front
 			motor_out[CH_2]		= g.rc_3.radio_out + roll_out + pitch_out;
+
+			//right front
 			motor_out[CH_1]		= g.rc_3.radio_out - roll_out + pitch_out;
 
-			// rear motors
+			// rear
 			motor_out[CH_4] 	= g.rc_3.radio_out - g.rc_2.pwm_out;
 
 			// this is a compensation for the angle of the yaw motor. Its linear, but should work ok.
@@ -130,13 +132,40 @@ set_servos_4()
             motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
 			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW
 
-			motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
 			motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
+			motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
 			motor_out[CH_4] 	+= g.rc_4.pwm_out;	// CCW
 
 			motor_out[CH_3]		-= g.rc_4.pwm_out;	// CW
 			motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
-			motor_out[CH_8]     -= g.rc_4.pwm_out;  // CW
+			motor_out[CH_8]		-= g.rc_4.pwm_out;  // CW
+
+		}else if (g.frame_type == Y6_FRAME) {
+			//Serial.println("Y6_FRAME");
+
+			int roll_out 		= (float)g.rc_1.pwm_out * .866;
+			int pitch_out 		=  g.rc_2.pwm_out / 2;
+
+			//left
+			motor_out[CH_2]		= (g.rc_3.radio_out + roll_out + pitch_out) * 0.95;  // CCW TOP
+			motor_out[CH_3]		=  g.rc_3.radio_out + roll_out + pitch_out;			// CW
+
+			//right
+			motor_out[CH_7]		= (g.rc_3.radio_out - roll_out + pitch_out) * 0.95;	// CCW TOP
+			motor_out[CH_1]		=  g.rc_3.radio_out - roll_out + pitch_out;			// CW
+
+			//back
+			motor_out[CH_8]     = (g.rc_3.radio_out - g.rc_2.pwm_out) * 0.95;	// CW TOP
+			motor_out[CH_4] 	=  g.rc_3.radio_out - g.rc_2.pwm_out;			// CCW
+
+			//yaw
+			motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
+			motor_out[CH_7]		+= g.rc_4.pwm_out;	// CCW
+			motor_out[CH_4] 	+= g.rc_4.pwm_out;	// CCW
+
+			motor_out[CH_3]		-= g.rc_4.pwm_out;	// CW
+			motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
+			motor_out[CH_8]		-= g.rc_4.pwm_out;  // CW
 
     	}else{
 
@@ -151,7 +180,7 @@ set_servos_4()
 		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max.get());
 		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max.get());
 
-		if (g.frame_type == HEXA_FRAME) {
+		if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
 			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max.get());
 			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
@@ -244,7 +273,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if (g.frame_type == HEXA_FRAME) {
+			if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
 				APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 				APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 				APM_RC.Force_Out6_Out7();
@@ -260,7 +289,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if (g.frame_type == HEXA_FRAME) {
+			if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
 				APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 				APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 				APM_RC.Force_Out6_Out7();
@@ -289,7 +318,7 @@ set_servos_4()
 		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
 
 
-		if (g.frame_type == HEXA_FRAME) {
+		if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)){
 			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 		}
