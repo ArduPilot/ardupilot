@@ -153,7 +153,7 @@ bool verify_must()
 			break;
 
 		default:
-			//gcs.send_text(SEVERITY_HIGH,"<verify_must: default> No current Must commands");
+			//gcs.send_text_P(SEVERITY_HIGH,PSTR("<verify_must: default> No current Must commands"));
 			return false;
 			break;
 	}
@@ -180,7 +180,7 @@ bool verify_may()
 			break;
 
 		default:
-			//gcs.send_text(SEVERITY_HIGH,"<verify_must: default> No current May commands");
+			//gcs.send_text_P(SEVERITY_HIGH,PSTR("<verify_must: default> No current May commands"));
 			return false;
 			break;
 	}
@@ -297,7 +297,7 @@ bool verify_nav_wp()
 
 	// Have we passed the WP?
 	if(loiter_sum > 90){
-		gcs.send_text(SEVERITY_MEDIUM,"Missed WP");
+		gcs.send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
 		return true;
 	}
 	return false;
@@ -311,7 +311,7 @@ bool verify_loiter_unlim()
 bool verify_loiter_time()
 {
 	if ((millis() - loiter_time) > (long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
-		gcs.send_text(SEVERITY_LOW,"<verify_must: MAV_CMD_NAV_LOITER_TIME> LOITER time complete ");
+		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
 		return true;
 	}
 	return false;
@@ -320,7 +320,7 @@ bool verify_loiter_time()
 bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs.send_text(SEVERITY_LOW,"Reached home");
+		gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 		return true;
 	}else{
 		return false;

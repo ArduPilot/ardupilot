@@ -42,7 +42,7 @@ void load_next_command_from_EEPROM()
 	// --------------------------------------------
 	if(next_command.id == NO_COMMAND){
 		// we are out of commands!
-		gcs.send_text(SEVERITY_LOW,"out of commands!");
+		gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 		handle_no_commands();
 	}
 }
@@ -100,7 +100,7 @@ void process_next_command()
 /**************************************************/
 void process_must()
 {
-	gcs.send_text(SEVERITY_LOW,"New cmd: <process_must>");
+	gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// clear May indexes
@@ -117,7 +117,7 @@ void process_must()
 
 void process_may()
 {
-	gcs.send_text(SEVERITY_LOW,"<process_may>");
+	gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	command_may_ID = next_command.id;
@@ -136,7 +136,7 @@ void process_now()
 	// -----------------------------------------
 	next_command.id = NO_COMMAND;
 
-	gcs.send_text(SEVERITY_LOW, "<process_now>");
+	gcs.send_text_P(SEVERITY_LOW, PSTR("<process_now>"));
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 }
 

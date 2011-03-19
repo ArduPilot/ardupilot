@@ -133,7 +133,7 @@ It looks to see what the next command type is and finds the last command.
 */
 void set_next_WP(struct Location *wp)
 {
-	//GCS.send_text(SEVERITY_LOW,"load WP");
+	//GCS.send_text_P(SEVERITY_LOW,PSTR("load WP"));
 	SendDebug("MSG <set_next_wp> wp_index: ");
 	SendDebugln(g.waypoint_index, DEC);
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);

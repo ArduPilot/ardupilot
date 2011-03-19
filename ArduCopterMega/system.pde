@@ -215,10 +215,10 @@ void init_ardupilot()
 //********************************************************************************
 void startup_ground(void)
 {
-	gcs.send_text(SEVERITY_LOW,"<startup_ground> GROUND START");
+	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
 
 	#if(GROUND_START_DELAY > 0)
-		//gcs.send_text(SEVERITY_LOW," With Delay");
+		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -255,7 +255,7 @@ void startup_ground(void)
 	// -------------------
 	init_commands();
 
-	gcs.send_text(SEVERITY_LOW,"\n\n Ready to FLY.");
+	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
 void set_mode(byte mode)
@@ -274,7 +274,7 @@ void set_mode(byte mode)
 		// disarm motors temp
 		motor_auto_safe = false;
 	}
-	//send_text(SEVERITY_LOW,"control mode");
+	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
 	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
 	switch(control_mode)
 	{

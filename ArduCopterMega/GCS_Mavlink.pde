@@ -53,13 +53,13 @@ GCS_MAVLINK::update(void)
 
     // stop waypoint sending if timeout
     if (global_data.waypoint_sending && (millis() - global_data.waypoint_timelast_send) > global_data.waypoint_send_timeout){
-        send_text(SEVERITY_LOW,PSTR("waypoint send timeout"));
+        send_text_P(SEVERITY_LOW,PSTR("waypoint send timeout"));
         global_data.waypoint_sending = false;
     }
 
     // stop waypoint receiving if timeout
     if (global_data.waypoint_receiving && (millis() - global_data.waypoint_timelast_receive) > global_data.waypoint_receive_timeout){
-        send_text(SEVERITY_LOW,PSTR("waypoint receive timeout"));
+        send_text_P(SEVERITY_LOW,PSTR("waypoint receive timeout"));
         global_data.waypoint_receiving = false;
     }
 }
@@ -114,6 +114,18 @@ void
 GCS_MAVLINK::send_text(uint8_t severity, const char *str)
 {
     mavlink_send_text(chan,severity,str);
+}
+
+void
+GCS_MAVLINK::send_text_P(uint8_t severity, const char *str)
+{
+	mavlink_statustext_t m;
+	uint8_t i;
+	for (i=0; i<sizeof(m.text); i++) {
+		m.text[i] = pgm_read_byte(str++);
+	}
+	if (i < sizeof(m.text)) m.text[i] = 0;
+    mavlink_send_text(chan, severity, (const char *)m.text);
 }
 
 void
@@ -193,7 +205,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (mavlink_check_target(packet.target,packet.target_component)) break;
 
             // do action
-            send_text(SEVERITY_LOW,PSTR("action received"));
+            send_text_P(SEVERITY_LOW,PSTR("action received"));
 			switch(packet.action){
 
 				case MAV_ACTION_LAUNCH:
@@ -286,7 +298,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint request list"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint request list"));
 
             // decode
             mavlink_waypoint_request_list_t packet;
@@ -312,7 +324,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint request"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
 
             // Check if sending waypiont
             if (!global_data.waypoint_sending) break;
@@ -392,7 +404,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_ACK:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint ack"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint ack"));
 
             // decode
             mavlink_waypoint_ack_t packet;
@@ -409,7 +421,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
-            //send_text(SEVERITY_LOW,PSTR("param request list"));
+            //send_text_P(SEVERITY_LOW,PSTR("param request list"));
 
             // decode
             mavlink_param_request_list_t packet;
@@ -425,7 +437,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint clear all"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint clear all"));
 
             // decode
             mavlink_waypoint_clear_all_t packet;
@@ -444,7 +456,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint set current"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint set current"));
 
             // decode
             mavlink_waypoint_set_current_t packet;
@@ -466,7 +478,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_COUNT:
         {
-            //send_text(SEVERITY_LOW,PSTR("waypoint count"));
+            //send_text_P(SEVERITY_LOW,PSTR("waypoint count"));
 
             // decode
             mavlink_waypoint_count_t packet;
@@ -587,7 +599,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 	msg->compid,
                 	type);
 
-                send_text(SEVERITY_LOW,PSTR("flight plan received"));
+                send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
                 global_data.waypoint_receiving = false;
                 // XXX ignores waypoint radius for individual waypoints, can
                 // only set WP_RADIUS parameter

@@ -16,7 +16,7 @@ static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
         return 1;
 
     }else if(compid != mavlink_system.compid){
-		gcs.send_text(SEVERITY_LOW,"component id mismatch");
+		gcs.send_text_P(SEVERITY_LOW,PSTR("component id mismatch"));
         return 0; // XXX currently not receiving correct compid from gcs
 
     }else{

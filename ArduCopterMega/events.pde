@@ -42,7 +42,7 @@ void failsafe_off_event()
 
 void low_battery_event(void)
 {
-	gcs.send_text(SEVERITY_HIGH,"Low Battery!");
+	gcs.send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	set_mode(RTL);
 	g.throttle_cruise.set(THROTTLE_CRUISE);
 }
