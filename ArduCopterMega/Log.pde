@@ -253,7 +253,7 @@ void start_new_log(byte num_existing_logs)
 		DataFlash.FinishWrite();
 		DataFlash.StartWrite(start_pages[num_existing_logs-1]);
 	}else{
-		gcs.send_text(SEVERITY_LOW,"<start_new_log> Logs full - logging discontinued");
+		gcs.send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full - logging discontinued"));
 	}
 }
 

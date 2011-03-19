@@ -119,6 +119,11 @@ HIL_XPLANE::send_text(uint8_t severity, const char *str)
 }
 
 void
+HIL_XPLANE::send_text_P(uint8_t severity, const char *str)
+{
+}
+
+void
 HIL_XPLANE::acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2)
 {
 }
