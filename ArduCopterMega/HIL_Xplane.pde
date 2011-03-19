@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #if HIL_MODE != HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
 
