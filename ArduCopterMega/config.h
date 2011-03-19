@@ -550,3 +550,11 @@
 #define STANDARD_SPEED_SQUARED (STANDARD_SPEED * STANDARD_SPEED)
 #endif
 #define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
+
+
+//////////////////////////////////////////////////////////////////////////////
+// RC override
+//
+#ifndef ALLOW_RC_OVERRIDE
+# define ALLOW_RC_OVERRIDE DISABLED
+#endif

@@ -712,6 +712,21 @@
 //#define LOG_CMD             ENABLED
 //
 
+//////////////////////////////////////////////////////////////////////////////
+// RC override
+//
+// ALLOW_RC_OVERRIDE                         OPTIONAL
+//
+// This is for advanced used only!
+//
+// If you enable ALLOW_RC_OVERRIDE then a GCS will be able to
+// override RC input values using a MAVLINK_MSG_ID_RC_CHANNELS_RAW
+// message sent to APM. This allows the GCS to precisely control
+// all PWM values as seen by APM, which means it can set any switch
+// position, or set a precise control value. Do not enable unless you
+// really know what you are doing!
+//
+
 //
 // Do not remove - this is to discourage users from copying this file
 // and using it as-is rather than editing their own.
