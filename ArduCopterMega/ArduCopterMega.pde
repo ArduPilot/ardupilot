@@ -459,6 +459,7 @@ void loop()
 		counter_one_herz++;
 		if(counter_one_herz == 50){
 			super_slow_loop();
+			counter_one_herz = 0;
 		}
 
 		if (millis() - perf_mon_timer > 20000) {
@@ -618,7 +619,14 @@ void medium_loop()
 				}
 			}
 
-            gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
+			// XXX this should be a "GCS medium loop" interface
+			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
+				gcs.data_stream_send(5,45);
+				// send all requested output streams with rates requested
+				// between 5 and 45 Hz
+			#else
+				gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
+			#endif
 			break;
 
 		// This case controls the slow loop
@@ -676,6 +684,9 @@ void medium_loop()
 
     // kick the GCS to process uplink data
     gcs.update();
+	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
+		gcs.data_stream_send(45,1000);
+	#endif
 }
 
 void slow_loop()
