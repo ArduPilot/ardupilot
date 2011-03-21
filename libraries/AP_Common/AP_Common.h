@@ -84,6 +84,11 @@ typedef struct {
                 (prog_char_t *)&__c[0];}))
 #endif
 
+// a varient of PSTR() for progmem strings passed to %S in printf()
+// this gets the gcc __format__ checking right
+#define FPSTR(s) (wchar_t *)(s)
+
+
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
 	return strcasecmp_P(str1, (const prog_char *)pstr);

@@ -44,7 +44,7 @@ Menu::run(void)
 
 		// loop reading characters from the input
 		len = 0;
-		Serial.printf("%S] ", _prompt);
+		Serial.printf("%S] ", FPSTR(_prompt));
 		for (;;) {
 			c = Serial.read();
 			if (-1 == c)
@@ -127,7 +127,7 @@ Menu::_help(void)
 	
 	Serial.println("Commands:");
 	for (i = 0; i < _entries; i++)
-		Serial.printf("  %S\n", _commands[i].command);
+		Serial.printf("  %S\n", FPSTR(_commands[i].command));
 }
 
 // run the n'th command in the menu
