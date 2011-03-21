@@ -119,7 +119,7 @@ HIL_XPLANE::send_text(uint8_t severity, const char *str)
 }
 
 void
-HIL_XPLANE::send_text_P(uint8_t severity, const char *str)
+HIL_XPLANE::send_text(uint8_t severity, const prog_char_t *str)
 {
 }
 
