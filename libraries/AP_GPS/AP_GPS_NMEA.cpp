@@ -109,13 +109,13 @@ void AP_GPS_NMEA::init(void)
 	BetterStream	*bs = (BetterStream *)_port;
 
 	// send the SiRF init strings
-	bs->print_P(_SiRF_init_string);
+	bs->print_P((const prog_char_t *)_SiRF_init_string);
 
 	// send the MediaTek init strings
-	bs->print_P(_MTK_init_string);
+	bs->print_P((const prog_char_t *)_MTK_init_string);
 
 	// send the ublox init strings
-	bs->print_P(_ublox_init_string);
+	bs->print_P((const prog_char_t *)_ublox_init_string);
 }
 
 bool AP_GPS_NMEA::read(void)
