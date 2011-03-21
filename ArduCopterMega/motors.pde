@@ -6,24 +6,28 @@
 void arm_motors()
 {
 	static byte arming_counter;
-
+	// Serial.printf("rc3: %u  rc4: %u\n", g.rc_3.control_in, g.rc_4.control_in);
 	// Arm motor output : Throttle down and full yaw right for more than 2 seconds
-	if (g.rc_3.control_in == 0){
-		if (g.rc_4.control_in > 2700) {
-			if (arming_counter > ARM_DELAY) {
-				motor_armed = true;
-			} else{
-				arming_counter++;
+	if (MOTOR_ARM_CONDITION) {
+		if (arming_counter > ARM_DELAY) {
+			if (!motor_armed) {
+				gcs.send_text(SEVERITY_MEDIUM, "Arming motors");
 			}
-		}else if (g.rc_4.control_in < -2700) {
-			if (arming_counter > DISARM_DELAY){
-				motor_armed = false;
-			}else{
-				arming_counter++;
-			}
-		}else{
-			arming_counter = 0;
+			motor_armed = true;
+		} else{
+			arming_counter++;
 		}
+	} else if (MOTOR_DISARM_CONDITION) {
+		if (arming_counter > DISARM_DELAY){
+			if (motor_armed) {
+				gcs.send_text(SEVERITY_MEDIUM, "Dis-arming motors");
+			}
+			motor_armed = false;
+		} else {
+			arming_counter++;
+		}
+	} else {
+		arming_counter = 0;
 	}
 }
 
