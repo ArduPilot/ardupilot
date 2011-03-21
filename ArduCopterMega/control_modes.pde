@@ -116,6 +116,7 @@ void trim_accel()
 		imu.ax(imu.ax() - 1);
 	}
 
-	Serial.printf("r:%ld p:%ld ax:%d, ay:%d, az:%d\n", dcm.roll_sensor, dcm.pitch_sensor, imu.ax(), imu.ay(), imu.az());
+	Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"), dcm.roll_sensor, dcm.pitch_sensor,
+                  (double)imu.ax(), (double)imu.ay(), (double)imu.az());
 }
 
