@@ -70,7 +70,7 @@ public:
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text_P(uint8_t severity, const char *str) {}
+	void		send_text_P(uint8_t severity, const prog_char_t *str) {}
 
 	/// Send acknowledgement for a message.
 	///
@@ -140,7 +140,7 @@ public:
 	void	init(BetterStream *port);
 	void	send_message(uint8_t id, uint32_t param = 0);
 	void	send_text(uint8_t severity, const char *str);
-	void	send_text_P(uint8_t severity, const char *str);
+	void	send_text_P(uint8_t severity, const prog_char_t *str);
 	void	acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
 private:

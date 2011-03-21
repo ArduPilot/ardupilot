@@ -117,12 +117,12 @@ GCS_MAVLINK::send_text(uint8_t severity, const char *str)
 }
 
 void
-GCS_MAVLINK::send_text_P(uint8_t severity, const char *str)
+GCS_MAVLINK::send_text_P(uint8_t severity, const prog_char_t *str)
 {
 	mavlink_statustext_t m;
 	uint8_t i;
 	for (i=0; i<sizeof(m.text); i++) {
-		m.text[i] = pgm_read_byte(str++);
+		m.text[i] = pgm_read_byte((const prog_char *)str++);
 	}
 	if (i < sizeof(m.text)) m.text[i] = 0;
     mavlink_send_text(chan, severity, (const char *)m.text);
