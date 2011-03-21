@@ -11,11 +11,11 @@
 //  GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include "GPS_SIMPLE.h"
+#include "GCS_SIMPLE.h"
 #include <stdint.h>
 
 // Public Methods //////////////////////////////////////////////////////////////
-GPS_SIMPLE::GPS_SIMPLE(Stream *s) : _port(s)
+GCS_SIMPLE::GCS_SIMPLE(Stream *s) : _port(s)
 {
 }
 
@@ -32,9 +32,8 @@ GPS_SIMPLE::GPS_SIMPLE(Stream *s) : _port(s)
 //
 
 bool
-GPS_SIMPLE::read(void)
+GCS_SIMPLE::read(void)
 {
-/*
     uint8_t data;
     int     numc;
     bool    parsed = false;
@@ -84,7 +83,5 @@ GPS_SIMPLE::read(void)
             }
     }
     return parsed;
-    */
-    return true;
 }
 
