@@ -159,7 +159,7 @@ endif
 # Tool options
 #
 DEFINES			=	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERS)
-OPTFLAGS		=	-Os
+OPTFLAGS		=	-Os -Wformat
 DEPFLAGS		=	-MD -MT $@
 
 # XXX warning options TBD
