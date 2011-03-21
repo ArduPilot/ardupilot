@@ -10,22 +10,26 @@
 //
 //  GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
-// Note - see GPS_SIMPLE16.h for firmware 1.6 and later.
+// Note - see GCS_SIMPLE16.h for firmware 1.6 and later.
 //
-#ifndef GPS_SIMPLE_h
-#define GPS_SIMPLE_h
+#ifndef GCS_SIMPLE_h
+#define GCS_SIMPLE_h
 
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
-class GPS_SIMPLE {
+
+
+class GCS_SIMPLE {
 public:
-    GPS_SIMPLE(Stream *s);
-    virtual bool    read(void);
+    //GCS_SIMPLE();
+    GCS_SIMPLE(Stream *s);
+    bool    read(void);
 	Stream	*_port;			///< port the GPS is attached to
 
 private:
 #pragma pack(1)
     struct diyd_mtk_msg {
+        int8_t      index;
         int8_t      id;
         int8_t      p1;
         int32_t     altitude;
@@ -47,4 +51,4 @@ private:
     } _buffer;
 };
 
-#endif  // GPS_SIMPLE_H
+#endif  // GCS_SIMPLE_H
