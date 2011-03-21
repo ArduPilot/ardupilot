@@ -6,13 +6,11 @@ void read_control_switch()
 	//motor_armed = (switchPosition < 5);
 
 	if (oldSwitchPosition != switchPosition){
+
 		set_mode(g.flight_modes[switchPosition]);
 
 		oldSwitchPosition = switchPosition;
 		prev_WP = current_loc;
-
-		Serial.print("Changed to flight mode: ");
-		Serial.println(flight_mode_strings[g.flight_modes[switchPosition]]);
 
 		// reset navigation integrators
 		// -------------------------

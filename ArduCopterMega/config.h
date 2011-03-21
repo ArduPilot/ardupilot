@@ -558,16 +558,3 @@
 #ifndef ALLOW_RC_OVERRIDE
 # define ALLOW_RC_OVERRIDE DISABLED
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Motor arming
-//
-// The default is for MODE2 setups. We wait for throttle to reach
-// zero, and rudder to be at maximum extent.
-#ifndef MOTOR_ARM_CONDITION
-# define MOTOR_ARM_CONDITION (g.rc_3.control_in == 0 && g.rc_4.control_in > 2700)
-#endif
-
-#ifndef MOTOR_DISARM_CONDITION
-# define MOTOR_DISARM_CONDITION (g.rc_3.control_in == 0 && g.rc_4.control_in < -2700)
-#endif
