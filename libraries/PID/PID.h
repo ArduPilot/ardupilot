@@ -29,7 +29,7 @@ public:
     /// @param  initial_imax    Initial value for the imax term.4
 	///
 	PID(AP_Var::Key key,
-	    const prog_char *name,
+	    const prog_char_t *name,
 	    const float &initial_p = 0.0,
 	    const float &initial_i = 0.0,
 	    const float &initial_d = 0.0,
@@ -55,7 +55,7 @@ public:
     /// @param  initial_d       Initial value for the D term.
     /// @param  initial_imax    Initial value for the imax term.4
 	///
-    PID(const prog_char *name,
+    PID(const prog_char_t *name,
         const float &initial_p = 0.0,
         const float &initial_i = 0.0,
         const float &initial_d = 0.0,

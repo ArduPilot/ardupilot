@@ -161,7 +161,7 @@ public:
     /// @param	name			An optional name by which the variable may be known.
     /// @param  flags           Optional flags which control how the variable behaves.
     ///
-    AP_Var(Key key = k_key_none, const prog_char *name = NULL, Flags flags = k_flags_none);
+    AP_Var(Key key = k_key_none, const prog_char_t *name = NULL, Flags flags = k_flags_none);
 
     /// Constructor for variable belonging to a group
     ///
@@ -170,7 +170,7 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags which control how the variable behaves.
     ///
-    AP_Var(AP_Var_group *group, Key index, const prog_char *name, Flags flags = k_flags_none);
+    AP_Var(AP_Var_group *group, Key index, const prog_char_t *name, Flags flags = k_flags_none);
 
     /// Destructor
     ///
@@ -361,7 +361,7 @@ private:
     AP_Var_group        *_group;            ///< Group that the variable may be a member of
     AP_Var              *_link;             ///< linked list pointer to next variable
     Key                 _key;               ///< Storage key; see the discussion of Key above.
-    const prog_char     *_name;             ///< name known to external agents (GCS, etc.)
+    const prog_char_t   *_name;             ///< name known to external agents (GCS, etc.)
     uint8_t             _flags;             ///< flag bits
 
     // static state used by ::lookup
@@ -415,7 +415,7 @@ public:
     /// @param  key             Storage key for the group.
     /// @param	name			An optional name prefix for members of the group.
     ///
-    AP_Var_group(Key key = k_key_none, const prog_char *name = NULL, Flags flags = k_flags_none) :
+    AP_Var_group(Key key = k_key_none, const prog_char_t *name = NULL, Flags flags = k_flags_none) :
         AP_Var(key, name, flags | k_flag_is_group)
     {
         _bytes_in_use += sizeof(*this);
@@ -483,7 +483,7 @@ public:
     ///
     AP_VarT<T> (const T initial_value = 0,
                 Key key = k_key_none,
-                const prog_char *name = NULL,
+                const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
         AP_Var(key, name, flags),
         _value(initial_value)
@@ -506,7 +506,7 @@ public:
     AP_VarT<T> (AP_Var_group *group,  // XXX maybe make this a ref?
                 Key index,
                 T initial_value,
-                const prog_char *name = NULL,
+                const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
         AP_Var(group, index, name, flags),
         _value(initial_value)
@@ -616,7 +616,7 @@ public:
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
     AP_VarS<T> (Key key = k_key_none,
-                const prog_char *name = NULL,
+                const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
         AP_Var(key, name, flags)
     {
@@ -636,7 +636,7 @@ public:
     ///
     AP_VarS<T> (AP_Var_group *group,  // XXX maybe make this a ref?
                 Key index,
-                const prog_char *name = NULL,
+                const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
         AP_Var(group, index, name, flags)
     {
@@ -726,7 +726,7 @@ public:
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
     AP_VarA<T,N> (Key key = k_key_none,
-                  const prog_char *name = NULL,
+                  const prog_char_t *name = NULL,
                   Flags flags = k_flags_none) :
         AP_Var(key, name, flags)
     {
@@ -746,7 +746,7 @@ public:
     ///
     AP_VarA<T,N> (AP_Var_group *group,  // XXX maybe make this a ref?
                   Key index,
-                  const prog_char *name = NULL,
+                  const prog_char_t *name = NULL,
                   Flags flags = k_flags_none) :
         AP_Var(group, index, name, flags)
     {
@@ -841,7 +841,7 @@ public:
     ///
     AP_Float16(float initial_value = 0,
                Key key = k_key_none,
-               const prog_char *name = NULL,
+               const prog_char_t *name = NULL,
                Flags flags = k_flags_none) :
         AP_Float(initial_value, key, name, flags)
     {
@@ -851,7 +851,7 @@ public:
     AP_Float16(AP_Var_group *group,
                Key index,
                float initial_value = 0,
-               const prog_char *name = NULL,
+               const prog_char_t *name = NULL,
                Flags flags = k_flags_none) :
         AP_Float(group, index, initial_value, name, flags)
     {

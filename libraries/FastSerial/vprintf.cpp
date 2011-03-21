@@ -246,7 +246,7 @@ BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                 p = PSTR("inf");
                                 if (vtype & FTOA_NAN)
                                         p = PSTR("nan");
-                                while ( (ndigs = pgm_read_byte(p)) != 0) {
+                                while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
                                         write(ndigs);

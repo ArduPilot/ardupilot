@@ -186,9 +186,9 @@ AP_GPS_Auto::_detect(void)
 		if (0 == tries) {
 			Serial.print('*');
 			// use the FastSerial port handle so that we can use PROGMEM strings
-			_fs->println_P(_mtk_set_binary);
-			_fs->println_P(_ublox_set_binary);
-			_fs->println_P(_sirf_set_binary);
+			_fs->println_P((const prog_char_t *)_mtk_set_binary);
+			_fs->println_P((const prog_char_t *)_ublox_set_binary);
+			_fs->println_P((const prog_char_t *)_sirf_set_binary);
 
 			// give the GPS time to react to the settings
 			delay(100);

@@ -1,4 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // This is free software; you can redistribute it and/or modify it under
 // the terms of the GNU Lesser General Public License as published by the
@@ -20,6 +20,14 @@
 // ... and remove some of their stupid macros
 #undef round
 #undef abs
+
+// prog_char_t is used as a wrapper type for prog_char, which is
+// a character stored in flash. By using this wrapper type we can
+// auto-detect at compile time if a call to a string function is using
+// a flash-stored string or not
+typedef struct {
+	char c;
+} prog_char_t;
 
 #include <stdint.h>
 #include "include/menu.h"		/// simple menu subsystem
@@ -72,8 +80,25 @@
 # undef PROGMEM
 # define PROGMEM __attribute__(( section(".progmem.data") ))
 # undef PSTR
-# define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];}))
+# define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
+                (prog_char_t *)&__c[0];}))
 #endif
+
+static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
+{
+	return strcasecmp_P(str1, (const prog_char *)pstr);
+}
+
+static inline int strcmp_P(const char *str1, const prog_char_t *pstr)
+{
+	return strcmp_P(str1, (const prog_char *)pstr);
+}
+
+static inline size_t strlcat_P(char *buffer, const prog_char_t *pstr, size_t buffer_size)
+{
+	return strlcat_P(buffer, (const prog_char *)pstr, buffer_size);
+}
+
 //@}
 
 

@@ -18,7 +18,7 @@ class RC_Channel{
 	/// @param key      EEPROM storage key for the channel trim parameters.
 	/// @param name     Optional name for the group.
 	///
-	RC_Channel(AP_Var::Key key, const prog_char *name) :
+	RC_Channel(AP_Var::Key key, const prog_char_t *name) :
 	    _group(key, name),
         radio_min (&_group, 0, 1500, name ? PSTR("MIN") : 0), // suppress name if group has no name
         radio_trim(&_group, 1, 1500, name ? PSTR("TRIM") : 0),
