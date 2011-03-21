@@ -123,6 +123,20 @@ void init_ardupilot()
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
+
+#ifdef ALWAYS_RESET_SETTINGS
+	{
+		RC_Channel *rcp = &g.rc_1;
+		for (unsigned char i=0; i<8; i++) {
+			rcp[i].radio_min = 1000;
+			rcp[i].radio_max = 2000;
+			rcp[i].save_eeprom();
+		}
+	}
+
+	default_flight_modes();
+#endif
+
 	init_camera();
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	adc.Init();	 		// APM ADC library initialization
