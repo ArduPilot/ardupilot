@@ -124,7 +124,7 @@ void init_ardupilot()
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
-#ifdef ALWAYS_RESET_SETTINGS
+#ifdef ALWAYS_RESET_RADIO_RANGE
 	{
 		RC_Channel *rcp = &g.rc_1;
 		for (unsigned char i=0; i<8; i++) {
@@ -133,7 +133,9 @@ void init_ardupilot()
 			rcp[i].save_eeprom();
 		}
 	}
+#endif
 
+#ifdef ALWAYS_RESET_MODES
 	default_flight_modes();
 #endif
 
