@@ -182,13 +182,13 @@ void CALIB_CompassOffset() {
       // display all to user
       SerPri("Heading:");
       SerPri(ToDeg(AP_Compass.heading));
-      SerPri("  \t(");
+      SerPri("    \t(");
       SerPri(AP_Compass.mag_x);
       SerPri(",");
       SerPri(AP_Compass.mag_y);
       SerPri(",");    
       SerPri(AP_Compass.mag_z);
-      SerPri(")");
+      SerPri(")  ");
 
       // display offsets
       SerPri("\t offsets(");
