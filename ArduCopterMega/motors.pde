@@ -147,15 +147,15 @@ set_servos_4()
 			int pitch_out 		=  g.rc_2.pwm_out / 2;
 
 			//left
-			motor_out[CH_2]		= (g.rc_3.radio_out + roll_out + pitch_out) * 0.95;  // CCW TOP
+			motor_out[CH_2]		= ((g.rc_3.radio_out * 0.92) + roll_out + pitch_out);  // CCW TOP
 			motor_out[CH_3]		=  g.rc_3.radio_out + roll_out + pitch_out;			// CW
 
 			//right
-			motor_out[CH_7]		= (g.rc_3.radio_out - roll_out + pitch_out) * 0.95;	// CCW TOP
+			motor_out[CH_7]		= ((g.rc_3.radio_out * 0.92) - roll_out + pitch_out);	// CCW TOP
 			motor_out[CH_1]		=  g.rc_3.radio_out - roll_out + pitch_out;			// CW
 
 			//back
-			motor_out[CH_8]     = (g.rc_3.radio_out - g.rc_2.pwm_out) * 0.95;	// CW TOP
+			motor_out[CH_8]     = ((g.rc_3.radio_out * 0.92) - g.rc_2.pwm_out);	// CW TOP
 			motor_out[CH_4] 	=  g.rc_3.radio_out - g.rc_2.pwm_out;			// CCW
 
 			//yaw
@@ -169,7 +169,7 @@ set_servos_4()
 
     	}else{
 
-			Serial.print("frame error");
+			//Serial.print("frame error");
 
 		}
 
@@ -224,33 +224,33 @@ set_servos_4()
 			//*/
 
 			/*
-			write_int(motor_out[CH_1]);
-			write_int(motor_out[CH_2]);
-			write_int(motor_out[CH_3]);
-			write_int(motor_out[CH_4]);
+			gcs_simple.write_int(motor_out[CH_1]);
+			gcs_simple.write_int(motor_out[CH_2]);
+			gcs_simple.write_int(motor_out[CH_3]);
+			gcs_simple.write_int(motor_out[CH_4]);
 
-			write_int(g.rc_3.servo_out);
-			write_int((int)(cos_yaw_x * 100));
-			write_int((int)(sin_yaw_y * 100));
-			write_int((int)(dcm.yaw_sensor / 100));
-			write_int((int)(nav_yaw / 100));
+			gcs_simple.write_int(g.rc_3.servo_out);
+			gcs_simple.write_int((int)(cos_yaw_x * 100));
+			gcs_simple.write_int((int)(sin_yaw_y * 100));
+			gcs_simple.write_int((int)(dcm.yaw_sensor / 100));
+			gcs_simple.write_int((int)(nav_yaw / 100));
 
-			write_int((int)nav_lat);
-			write_int((int)nav_lon);
+			gcs_simple.write_int((int)nav_lat);
+			gcs_simple.write_int((int)nav_lon);
 
-			write_int((int)nav_roll);
-			write_int((int)nav_pitch);
+			gcs_simple.write_int((int)nav_roll);
+			gcs_simple.write_int((int)nav_pitch);
 
 			//24
-			write_long(current_loc.lat);	//28
-			write_long(current_loc.lng);	//32
-			write_int((int)current_loc.alt);	//34
+			gcs_simple.write_long(current_loc.lat);	//28
+			gcs_simple.write_long(current_loc.lng);	//32
+			gcs_simple.write_int((int)current_loc.alt);	//34
 
-			write_long(next_WP.lat);
-			write_long(next_WP.lng);
-			write_int((int)next_WP.alt);		//44
+			gcs_simple.write_long(next_WP.lat);
+			gcs_simple.write_long(next_WP.lng);
+			gcs_simple.write_int((int)next_WP.alt);		//44
 
-			flush(10);
+			gcs_simple.flush(10); // Message ID
 			//*/
 
 			/*Serial.printf("a %ld, e %ld, i %d, t %d, b %4.2f\n",
