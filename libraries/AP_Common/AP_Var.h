@@ -214,6 +214,14 @@ public:
     ///
     static AP_Var *find(const char *name);
 
+    /// Find a variable by key.
+    ///
+    /// @param  key             The key being looked up.
+    /// @return                 A pointer to the variable, or NULL if
+    ///                         it does not exist.
+    ///
+    static AP_Var *find(Key key);
+
     /// Save the current value of the variable to EEPROM.
     ///
     /// This interface works for any subclass that implements
