@@ -159,6 +159,22 @@ AP_Var::find(const char *name)
     return NULL;
 }
 
+// Find a variable by key.
+//
+AP_Var *
+AP_Var::find(Key key)
+{
+    AP_Var  *vp;
+
+    for (vp = first(); vp; vp = vp->next()) {
+
+        if (key == vp->key()) {
+            return vp;
+        }
+    }
+    return NULL;
+}
+
 
 // Save the variable to EEPROM, if supported
 //
