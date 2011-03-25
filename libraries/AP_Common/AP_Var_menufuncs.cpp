@@ -124,7 +124,7 @@ AP_Var_menu_show(uint8_t argc, const Menu::arg *argv)
             }
 
             // print name and value
-            Serial.printf_P(PSTR("%-32.32s: "), name_buffer);
+            Serial.printf_P(PSTR("%03u:%-32.32s: "), vp->key(), name_buffer);
             AP_Var_print(vp);
             Serial.println();
         }
@@ -132,12 +132,12 @@ AP_Var_menu_show(uint8_t argc, const Menu::arg *argv)
     }
 
     // show variable by name
-    Serial.printf_P(PSTR("%s: "), argv[1].str);
     vp = AP_Var::find(argv[1].str);
     if (NULL == vp) {
         Serial.println_P(PSTR("not found"));
         return -1;
     }
+    Serial.printf_P(PSTR("%03u:%s: "), vp->key(), argv[1].str);
     AP_Var_print(vp);
     Serial.println();
 
