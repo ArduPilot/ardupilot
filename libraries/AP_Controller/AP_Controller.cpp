@@ -1,5 +1,5 @@
 /*
- * AP_EEProm.cpp
+ * AP_Controller.cpp
  * Copyright (C) James Goppert 2010 <james.goppert@gmail.com>
  *
  * This file is free software: you can redistribute it and/or modify it
@@ -16,29 +16,6 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_EEProm.h>
-void AP_EEPromRegistry::print(BetterStream & stream)
-{
-	stream.printf("\nEEPROM Registry\n");
-	for (int i=0;i<getSize();i++)				
-	{
-		stream.printf("id:\t%u\t%s\t%s\tval:\t%10.4f\taddr:\t%u\t\n",
-				(*this)[i]->getEntryId(),
-				(*this)[i]->getEntryParentName(),
-				(*this)[i]->getEntryName(),
-				(*this)[i]->getEntry(),
-				(*this)[i]->getEntryAddress());
-	}
-}
+#include "AP_Controller.h"
 
-
-void AP_EEPromRegistry::add(AP_EEPromEntryI * entry, uint16_t & id, uint16_t & address, size_t size)
-{
-	if (_newAddress + size > _maxSize) return;
-	address = _newAddress;
-	_newAddress += size;
-	id = _newId++;
-	push_back(entry);
-}
-
-extern AP_EEPromRegistry eepromRegistry(1024);
+// vim:ts=4:sw=4:expandtab
