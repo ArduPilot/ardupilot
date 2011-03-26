@@ -41,7 +41,6 @@ MENU(main_menu, "ArduPilotMega", main_menu_commands);
 
 void init_ardupilot()
 {
-
 	byte last_log_num;
 	int last_log_start;
 	int last_log_end;
@@ -174,7 +173,7 @@ void init_ardupilot()
 							 "Entering interactive setup mode...\n"
 							 "\n"
 							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-							 "Visit the 'setup' menu for first-time configuration.\n"));
+							 "Visit the 'setup' menu for first-time configuration.\n\n"));
 		for (;;) {
 			//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
 			main_menu.run();

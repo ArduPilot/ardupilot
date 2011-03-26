@@ -49,6 +49,13 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 						 //"and then the 'radio' command to configure for your radio.\n"
 						 //"\n"));
 
+	if(g.rc_1.radio_min >= 1300){
+		delay(1000);
+		Serial.printf_P(PSTR("\n!!!Warning, your radio is not configured!!!"));
+		delay(1000);
+		Serial.printf_P(PSTR("\n Type 'radio' to configure now.\n\n"));
+	}
+
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
 	setup_menu.run();
 }
@@ -94,6 +101,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 
 	if (('y' != c) && ('Y' != c))
 		return(-1);
+
 	AP_Var::erase_all();
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - reboot APM"));
 
@@ -174,6 +182,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 		g.rc_8.update_min_max();
 
 		if(Serial.available() > 0){
+			delay(20);
 			Serial.flush();
 
 			save_EEPROM_radio();
