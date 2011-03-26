@@ -783,8 +783,10 @@ void update_GPS(void)
 	g_gps->update();
 	update_GPS_light();
 
+	if(g_gps->new_data)
+		GPS_failure_counter = 3;
+
     if (g_gps->new_data && g_gps->fix) {
-    	GPS_failure_counter = 3;
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
