@@ -255,4 +255,4 @@
 #define EEPROM_MAX_ADDR		4096
 // parameters get the first 1KiB of EEPROM, remainder is for waypoints
 #define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
-#define WP_SIZE 14
+#define WP_SIZE 15

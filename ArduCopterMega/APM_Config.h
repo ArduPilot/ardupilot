@@ -5,10 +5,9 @@
 // GPS is auto-selected
 
 #define GCS_PROTOCOL        GCS_PROTOCOL_NONE
+//#define GCS_PORT 0
 
-//#define MAG_ORIENTATION	AP_COMPASS_COMPONENTS_UP_PINS_BACK
-
-# define SERIAL0_BAUD			38400
+#define SERIAL0_BAUD			38400
 
 //# define STABILIZE_ROLL_P 		0.4
 //# define STABILIZE_PITCH_P		0.4

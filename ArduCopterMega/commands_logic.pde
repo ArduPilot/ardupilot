@@ -230,7 +230,8 @@ void do_land()
 	velocity_land		= 1000;
 
 	Location temp 		= current_loc;
-	temp.alt 			= home.alt;
+	//temp.alt 			= home.alt;
+	temp.alt 			= -1000;
 
 	set_next_WP(&temp);
 }
@@ -269,17 +270,21 @@ bool verify_takeoff()
 
 bool verify_land()
 {
-	// XXX not sure
-
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
 
-	if((current_loc.alt < home.alt + 100) && velocity_land == 0){
-		land_complete = true;
-		return true;
-	}
+   	if(g.sonar_enabled){
+		// decide which sensor we're usings
+		if(sonar_alt < 20){
+    		land_complete = true;
+	    	return true;
+	    }
+    } else {
+		//land_complete = true;
+		//return true;
+    }
 
-	update_crosstrack();
+	//update_crosstrack();
 	return false;
 }
 
@@ -353,61 +358,66 @@ void do_within_distance()
 
 void do_yaw()
 {
-	// p1:		bearing
-	// alt:		speed
-	// lat:		direction (-1,1),
-	// lng:		rel (1) abs (0)
+//	{				// CMD					opt		dir		angle/deg	deg/s		relative
+//	Location t = {MAV_CMD_CONDITION_YAW,	0,      1, 		360, 		60, 		1};
+
 
 	// target angle in degrees
 	command_yaw_start		= nav_yaw; // current position
 	command_yaw_start_time 	= millis();
 
-	// which direction to turn
-	// 1 = clockwise, -1 = counterclockwise
-	command_yaw_dir		= next_command.lat;
+	command_yaw_dir		    = next_command.p1;      // 1 = clockwise,    0 = counterclockwise
+	command_yaw_relative    = next_command.lng;     // 1 = Relative,     0 = Absolute
 
-	// 1 = Relative or 0 = Absolute
-	if (next_command.lng == 1) {
-		// relative
-		command_yaw_dir  = (command_yaw_end > 0) ? 1 : -1;
-		command_yaw_end += nav_yaw;
-		command_yaw_end = wrap_360(command_yaw_end);
-	}else{
-		// absolute
-		command_yaw_end 	= next_command.p1 * 100;
-	}
+	command_yaw_speed   	= next_command.lat * 100;
 
 
 	// if unspecified go 10° a second
 	if(command_yaw_speed == 0)
-		command_yaw_speed = 10;
+		command_yaw_speed = 6000;
 
-	// if unspecified go clockwise
+	// if unspecified go counterclockwise
 	if(command_yaw_dir == 0)
-		command_yaw_dir = 1;
+		command_yaw_dir = -1;
 
-	// calculate the delta travel
-	if(command_yaw_dir == 1){
-		if(command_yaw_start > command_yaw_end){
-			command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
-		}else{
-			command_yaw_delta = command_yaw_end - command_yaw_start;
-		}
+	if (command_yaw_relative){
+		// relative
+		//command_yaw_dir     = (command_yaw_end > 0) ? 1 : -1;
+		//command_yaw_end     += nav_yaw;
+		//command_yaw_end     = wrap_360(command_yaw_end);
+		command_yaw_delta   = next_command.alt * 100;
 	}else{
-		if(command_yaw_start > command_yaw_end){
-			command_yaw_delta = command_yaw_start - command_yaw_end;
-		}else{
-			command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
-		}
+		// absolute
+		command_yaw_end 	= next_command.alt * 100;
+
+        // calculate the delta travel in deg * 100
+        if(command_yaw_dir == 1){
+            if(command_yaw_start >= command_yaw_end){
+                command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
+            }else{
+                command_yaw_delta = command_yaw_end - command_yaw_start;
+            }
+        }else{
+            if(command_yaw_start > command_yaw_end){
+                command_yaw_delta = command_yaw_start - command_yaw_end;
+            }else{
+                command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
+            }
+        }
+    	command_yaw_delta = wrap_360(command_yaw_delta);
 	}
-	command_yaw_delta = wrap_360(command_yaw_delta);
+
 
 	// rate to turn deg per second - default is ten
-	command_yaw_speed 	= next_command.alt;
 	command_yaw_time 	= command_yaw_delta / command_yaw_speed;
+	command_yaw_time    *= 1000;
+
+
+    //
 	//9000 turn in 10 seconds
 	//command_yaw_time = 9000/ 10 = 900° per second
 }
+
 
 /********************************************************************************/
 // Verify Condition (May) commands
@@ -452,13 +462,17 @@ bool verify_within_distance()
 bool verify_yaw()
 {
 	if((millis() - command_yaw_start_time) > command_yaw_time){
+		// time out
 		nav_yaw = command_yaw_end;
 		return true;
+
 	}else{
 		// else we need to be at a certain place
 		// power is a ratio of the time : .5 = half done
 		float power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
+
 		nav_yaw 	= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
+		nav_yaw     = wrap_360(nav_yaw);
 		return false;
 	}
 }

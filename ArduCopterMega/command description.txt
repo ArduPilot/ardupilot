@@ -23,21 +23,15 @@ Commands below MAV_CMD_NAV_LAST are commands that have a end criteria, eg "reach
 ***********************************
 Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
 0x10 / 16	MAV_CMD_NAV_WAYPOINT				-					altitude			lat					lon
-
-0x11 / 17	MAV_CMD_NAV_LOITER_UNLIM 		(indefinitely)			altitude			lat					lon
-
+0x11 / 17	MAV_CMD_NAV_LOITER_UNLIM 			(forever)			altitude			lat					lon
 0x12 / 18	MAV_CMD_NAV_LOITER_TURNS			turns				altitude			lat					lon
-
 0x13 / 19	MAV_CMD_NAV_LOITER_TIME				time (seconds*10)	altitude			lat					lon
-
 0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					altitude			lat					lon
-
 0x15 / 21	MAV_CMD_NAV_LAND					-					altitude			lat					lon
-
 0x16 / 22	MAV_CMD_NAV_TAKEOFF					takeoff pitch		altitude			-					-
-			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
-
 0x17 / 23	MAV_CMD_NAV_TARGET					-					altitude			lat					lon
+
+			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
 
 
 ***********************************

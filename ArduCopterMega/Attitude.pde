@@ -89,7 +89,6 @@ clear_yaw_control()
 void
 output_yaw_with_hold(boolean hold)
 {
-	//digitalWrite(B_LED_PIN, LOW);
 	if(hold){
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
@@ -100,8 +99,6 @@ output_yaw_with_hold(boolean hold)
 				//Serial.print("C");
 
 			}else{
-
-				//digitalWrite(B_LED_PIN, HIGH);
 
 				// return to rate control until we slow down.
 				hold = false;
@@ -119,7 +116,6 @@ output_yaw_with_hold(boolean hold)
 	}
 
 	if(hold){
-		//Serial.println("H");
 		// try and hold the current nav_yaw setting
 		yaw_error		= nav_yaw - dcm.yaw_sensor; 									// +- 60°
 		yaw_error 		= wrap_180(yaw_error);
@@ -139,11 +135,9 @@ output_yaw_with_hold(boolean hold)
 
 	}else{
 
-		//Serial.println("R");
 		// rate control
 		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
-
 		long error		= ((long)g.rc_4.control_in * 6) - rate;								// control is += 6000 * 6 = 36000
 																							// -error = CCW, 	+error = CW
 
@@ -161,10 +155,9 @@ output_yaw_with_hold(boolean hold)
 
 		g.rc_4.servo_out = constrain(g.rc_4.servo_out, -1800, 1800);						// limit to 24°
 	}
-
 }
 
-// slight left rudder give right roll.
+// slight left rudder gives right roll.
 
 void
 output_rate_roll()

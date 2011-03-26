@@ -16,7 +16,7 @@ B	Checksum byte 2
 
 */
 
-
+/*
 #if GCS_PORT == 3
 # define SendSerw		Serial3.write
 # define SendSer		Serial3.print
@@ -80,23 +80,15 @@ void flush(byte id)
 	byte mess_ck_a = 0;
 	byte mess_ck_b = 0;
 	byte i;
-	
+
 	SendSer("4D");  			// This is the message preamble
 	SendSerw(buff_pointer);  	// Length
 	SendSerw(2);  				// id
-	//SendSerw(0x01);  			// Version
 
 	for (i = 0; i < buff_pointer; i++) {
 		SendSerw(mess_buffer[i]);
 	}
-	
-	//for (i = 0; i < buff_pointer; i++) {
-	//	mess_ck_a += mess_buffer[i];	// Calculates checksums
-	//	mess_ck_b += mess_ck_a;
-	//}
-
-	//SendSerw(mess_ck_a);
-	//SendSerw(mess_ck_b);
 
 	buff_pointer = 0;
 }
+*/
