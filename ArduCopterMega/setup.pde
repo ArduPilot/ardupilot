@@ -12,7 +12,6 @@ static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
-//static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 
@@ -31,7 +30,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"current",			setup_current},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
-//	{"mag_offset",		setup_mag_offset},
 	{"declination",		setup_declination},
 	{"show",			setup_show}
 };
@@ -44,12 +42,12 @@ int8_t
 setup_mode(uint8_t argc, const Menu::arg *argv)
 {
 	// Give the user some guidance
-	Serial.printf_P(PSTR("Setup Mode\n"
-						 "\n"
-						 "IMPORTANT: if you have not previously set this system up, use the\n"
-						 "'reset' command to initialize the EEPROM to sensible default values\n"
-						 "and then the 'radio' command to configure for your radio.\n"
-						 "\n"));
+	Serial.printf_P(PSTR("Setup Mode\n"));
+						 //"\n"
+						 //"IMPORTANT: if you have not previously set this system up, use the\n"
+						 //"'reset' command to initialize the EEPROM to sensible default values\n"
+						 //"and then the 'radio' command to configure for your radio.\n"
+						 //"\n"));
 
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
 	setup_menu.run();
@@ -88,7 +86,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	uint8_t		i;
 	int			c;
 
-	Serial.printf_P(PSTR("\nType 'Y' and hit Enter to perform factory reset, any other key to abort:\n"));
+	Serial.printf_P(PSTR("\n'Y' + Enter to factory reset, any other key to abort:\n"));
 
 	do {
 		c = Serial.read();
@@ -97,7 +95,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	if (('y' != c) && ('Y' != c))
 		return(-1);
 	AP_Var::erase_all();
-	Serial.printf_P(PSTR("\nFACTORY RESET complete - please reset APM to continue"));
+	Serial.printf_P(PSTR("\nFACTORY RESET complete - reboot APM"));
 
 	delay(1000);
 	default_log_bitmask();
@@ -124,7 +122,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 
 	if(g.rc_1.radio_in < 500){
 		while(1){
-			Serial.printf_P(PSTR("\nNo radio; Check connectors."));
+			//Serial.printf_P(PSTR("\nNo radio; Check connectors."));
 			delay(1000);
 			// stop here
 		}
@@ -303,7 +301,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nHold ArduCopter completely still and level.\n"));
+	//Serial.printf_P(PSTR("\nHold ArduCopter completely still and level.\n"));
 
 	imu.init_accel();
 	print_accel_offsets();
@@ -318,34 +316,51 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 	if (!strcmp_P(argv[1].str, PSTR("default"))) {
 		default_gains();
 
-	}else if (!strcmp_P(argv[1].str, PSTR("s_kp"))) {
+	}else if (!strcmp_P(argv[1].str, PSTR("stabilize"))) {
 		g.pid_stabilize_roll.kP(argv[2].f);
 		g.pid_stabilize_pitch.kP(argv[2].f);
-		save_EEPROM_PID();
+		g.stabilize_dampener.set_and_save(argv[3].f);
 
-	}else if (!strcmp_P(argv[1].str, PSTR("s_kd"))) {
-		g.stabilize_dampener = argv[2].f;
-		save_EEPROM_PID();
+		g.pid_stabilize_roll.save_gains();
+		g.pid_stabilize_pitch.save_gains();
 
-	}else if (!strcmp_P(argv[1].str, PSTR("y_kp"))) {
+	}else if (!strcmp_P(argv[1].str, PSTR("yaw"))) {
 		g.pid_yaw.kP(argv[2].f);
-		save_EEPROM_PID();
 
-	}else if (!strcmp_P(argv[1].str, PSTR("y_kd"))) {
-		g.pid_yaw.kD(argv[2].f);
-		save_EEPROM_PID();
+		g.pid_yaw.save_gains();
+		g.hold_yaw_dampener.set_and_save(argv[3].f);
 
-	}else if (!strcmp_P(argv[1].str, PSTR("t_kp"))) {
+	}else if (!strcmp_P(argv[1].str, PSTR("nav"))) {
+		g.pid_nav_lat.kP(argv[2].f);
+		g.pid_nav_lat.kI(argv[3].f);
+		g.pid_nav_lat.imax(argv[4].i);
+
+		g.pid_nav_lon.kP(argv[2].f);
+		g.pid_nav_lon.kI(argv[3].f);
+		g.pid_nav_lon.imax(argv[4].i);
+
+		g.pid_nav_lon.save_gains();
+		g.pid_nav_lat.save_gains();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("baro"))) {
 		g.pid_baro_throttle.kP(argv[2].f);
-		save_EEPROM_PID();
+		g.pid_baro_throttle.kI(argv[3].f);
+		g.pid_baro_throttle.kD(0);
+		g.pid_baro_throttle.imax(argv[4].i);
 
-	}else if (!strcmp_P(argv[1].str, PSTR("t_kd"))) {
-		g.pid_baro_throttle.kD(argv[2].f);
-		save_EEPROM_PID();
+		g.pid_baro_throttle.save_gains();
+
+	}else if (!strcmp_P(argv[1].str, PSTR("sonar"))) {
+		g.pid_sonar_throttle.kP(argv[2].f);
+		g.pid_sonar_throttle.kI(argv[3].f);
+		g.pid_sonar_throttle.kD(argv[4].f);
+		g.pid_sonar_throttle.imax(argv[5].i);
+
+		g.pid_sonar_throttle.save_gains();
+
 	}else{
 		default_gains();
 	}
-
 
 	report_gains();
 }
@@ -379,7 +394,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		}
 
 		// look for stick input
-		if (radio_input_switch() == true){
+		if (radio_input_switch() ==  true){
 			mode++;
 			if(mode >= NUM_MODES)
 				mode = 0;
@@ -407,6 +422,7 @@ setup_declination(uint8_t argc, const Menu::arg *argv)
 	compass.set_declination(radians(argv[1].f));
 	report_compass();
 }
+
 
 static int8_t
 setup_erase(uint8_t argc, const Menu::arg *argv)
@@ -747,11 +763,34 @@ default_gains()
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/
+void report_wp(byte index = 255)
+{
+	if(index == 255){
+		for(byte i = 0; i <= g.waypoint_total; i++){
+			struct Location temp = get_wp_with_index(i);
+			print_wp(&temp, i);
+		}
+	}else{
+		struct Location temp = get_wp_with_index(index);
+		print_wp(&temp, index);
+	}
+}
+
+void print_wp(struct Location *cmd, byte index)
+{
+	Serial.printf_P(PSTR("command #: %d id:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+		(int)index,
+		(int)cmd->id,
+		(int)cmd->p1,
+		cmd->alt,
+		cmd->lat,
+		cmd->lng);
+}
 
 void report_current()
 {
 	read_EEPROM_current();
-	Serial.printf_P(PSTR("Current Sensor\n"));
+	Serial.printf_P(PSTR("Current \n"));
 	print_divider();
 	print_enabled(g.current_enabled.get());
 
@@ -762,7 +801,7 @@ void report_current()
 void report_sonar()
 {
 	g.sonar_enabled.load();
-	Serial.printf_P(PSTR("Sonar Sensor\n"));
+	Serial.printf_P(PSTR("Sonar\n"));
 	print_divider();
 	print_enabled(g.sonar_enabled.get());
 	print_blanks(2);
@@ -822,8 +861,8 @@ void report_gains()
 	Serial.printf_P(PSTR("yaw:\n"));
 	print_PID(&g.pid_yaw);
 
-	Serial.printf_P(PSTR("Stabilize dampener: %4.3f\n"), (float)g.stabilize_dampener);
-	Serial.printf_P(PSTR("Yaw Dampener: %4.3f\n\n"), (float)g.hold_yaw_dampener);
+	Serial.printf_P(PSTR("Stab D: %4.3f\n"), (float)g.stabilize_dampener);
+	Serial.printf_P(PSTR("Yaw D: %4.3f\n\n"), (float)g.hold_yaw_dampener);
 
 	// Nav
 	Serial.printf_P(PSTR("Nav:\nlat:\n"));
@@ -839,7 +878,7 @@ void report_gains()
 
 void report_xtrack()
 {
-	Serial.printf_P(PSTR("Crosstrack\n"));
+	Serial.printf_P(PSTR("XTrack\n"));
 	print_divider();
 	// radio
 	read_EEPROM_nav();
@@ -889,7 +928,7 @@ void report_compass()
 	print_enabled(g.compass_enabled);
 
 	// mag declination
-	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"),
+	Serial.printf_P(PSTR("Mag Dec: %4.4f\n"),
 							degrees(compass.get_declination()));
 
 	Vector3f offsets = compass.get_offsets();
@@ -920,12 +959,35 @@ void report_flight_modes()
 void
 print_PID(PID * pid)
 {
-	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"), pid->kP(), pid->kI(), pid->kD(), (long)pid->imax());
+	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"),
+						pid->kP(),
+						pid->kI(),
+						pid->kD(),
+						(long)pid->imax());
 }
 
 void
 print_radio_values()
 {
+	/*Serial.printf_P(PSTR(	"CH1: %d | %d\n"
+							"CH2: %d | %d\n"
+							"CH3: %d | %d\n"
+							"CH4: %d | %d\n"
+							"CH5: %d | %d\n"
+							"CH6: %d | %d\n"
+							"CH7: %d | %d\n"
+							"CH8: %d | %d\n"),
+							g.rc_1.radio_min, g.rc_1.radio_max,
+							g.rc_2.radio_min, g.rc_2.radio_max,
+							g.rc_3.radio_min, g.rc_3.radio_max,
+							g.rc_4.radio_min, g.rc_4.radio_max,
+							g.rc_5.radio_min, g.rc_5.radio_max,
+							g.rc_6.radio_min, g.rc_6.radio_max,
+							g.rc_7.radio_min, g.rc_7.radio_max,
+							g.rc_8.radio_min, g.rc_8.radio_max);*/
+
+
+	///*
 	Serial.printf_P(PSTR("CH1: %d | %d\n"), (int)g.rc_1.radio_min, (int)g.rc_1.radio_max);
 	Serial.printf_P(PSTR("CH2: %d | %d\n"), (int)g.rc_2.radio_min, (int)g.rc_2.radio_max);
 	Serial.printf_P(PSTR("CH3: %d | %d\n"), (int)g.rc_3.radio_min, (int)g.rc_3.radio_max);
@@ -934,6 +996,7 @@ print_radio_values()
 	Serial.printf_P(PSTR("CH6: %d | %d\n"), (int)g.rc_6.radio_min, (int)g.rc_6.radio_max);
 	Serial.printf_P(PSTR("CH7: %d | %d\n"), (int)g.rc_7.radio_min, (int)g.rc_7.radio_max);
 	Serial.printf_P(PSTR("CH8: %d | %d\n"), (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
+	//*/
 }
 
 void
@@ -967,7 +1030,8 @@ print_divider(void)
 	Serial.println("");
 }
 
-int8_t
+// read at 50Hz
+bool
 radio_input_switch(void)
 {
 	static int8_t bouncer = 0;

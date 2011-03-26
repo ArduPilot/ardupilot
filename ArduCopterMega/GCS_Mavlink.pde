@@ -34,19 +34,12 @@ GCS_MAVLINK::update(void)
     {
         uint8_t c = comm_receive_ch(chan);
 
-
-
         // Try to get a new message
         if(mavlink_parse_char(chan, c, &msg, &status)) handleMessage(&msg);
     }
 
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
-
-
-
-
-
 
     // send out queued params/ waypoints
     _queued_send();

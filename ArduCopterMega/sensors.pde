@@ -20,7 +20,7 @@ void init_barometer(void)
 		ground_pressure 	= barometer.Press;
 		ground_temperature 	= barometer.Temp;
 		delay(20);
-		Serial.printf("barometer.Press %ld\n", barometer.Press);
+		//Serial.printf("barometer.Press %ld\n", barometer.Press);
 	}
 
 	for(int i = 0; i < 30; i++){		// We take some readings...

@@ -42,6 +42,8 @@ version 2.1 of the License, or (at your option) any later version.
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+//#include <GCS_SIMPLE.h>
+
 
 // Configuration
 #include "config.h"
@@ -174,6 +176,8 @@ GPS         *g_gps;
 	// If we are not using a GCS, we need a stub that does nothing.
 	GCS_Class           gcs;
 #endif
+
+//GCS_SIMPLE    gcs_simple(&Serial);
 
 AP_RangeFinder_MaxsonarXL sonar;
 
@@ -337,6 +341,7 @@ long 	command_yaw_end;					// what angle are we trying to be
 long 	command_yaw_delta;					// how many degrees will we turn
 int		command_yaw_speed;					// how fast to turn
 byte	command_yaw_dir;
+byte	command_yaw_relative;
 
 // Waypoints
 // ---------
@@ -758,6 +763,19 @@ void super_slow_loop()
     gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
 	// gcs.send_message(MSG_CPU_LOAD, load*100);
 
+	//if(gcs_simple.read()){
+	//	Serial.print("!");
+		/*
+		Location temp;
+		temp.id 	= gcs_simple.id;
+		temp.p1 	= gcs_simple.p1;
+		temp.alt 	= gcs_simple.altitude;
+		temp.lat 	= gcs_simple.latitude;
+		temp.lng 	= gcs_simple.longitude;
+		set_wp_with_index(temp, gcs_simple.index);
+		gcs_simple.ack();
+		*/
+	//}
 }
 
 void update_GPS(void)
@@ -1127,11 +1145,9 @@ void update_alt()
 		// decide which sensor we're usings
 		sonar_alt 		= sonar.read();
 
-		if(baro_alt < 550){
+		if(baro_alt < 500 && sonar_alt < 600){
 			altitude_sensor = SONAR;
-		}
-
-		if(sonar_alt > 600){
+		}else{
 			altitude_sensor = BARO;
 		}
 
@@ -1163,3 +1179,4 @@ void update_alt()
 	// ----------------------------------------
 	calc_nav_throttle();
 }
+

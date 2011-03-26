@@ -22,10 +22,10 @@ static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("\n"
 						 "Commands:\n"
-						 "  dump <n>             dump log <n>\n"
-						 "  erase                erase all logs\n"
-						 "  enable <name>|all    enable logging <name> or everything\n"
-						 "  disable <name>|all   disable logging <name> or everything\n"
+						 "  dump <n>"
+						 "  erase (all logs)\n"
+						 "  enable <name> | all\n"
+						 "  disable <name> | all\n"
 						 "\n"));
 }
 
@@ -75,13 +75,13 @@ print_log_menu(void)
 	Serial.println();
 
 	if (last_log_num == 0) {
-		Serial.printf_P(PSTR("\nNo logs available for download\n"));
+		Serial.printf_P(PSTR("\nNo logs\n"));
 	}else{
 
-		Serial.printf_P(PSTR("\n%d logs available for download\n"), last_log_num);
+		Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
 		for(int i=1;i<last_log_num+1;i++) {
 			get_log_boundaries(last_log_num, i, log_start, log_end);
-			Serial.printf_P(PSTR("Log number %d,    start page %d,   end page %d\n"),
+			Serial.printf_P(PSTR("Log # %d,    start %d,   end %d\n"),
 							i, log_start, log_end);
 		}
 		Serial.println();
@@ -106,20 +106,20 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	}
 
 	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
-	Serial.printf_P(PSTR("Dumping Log number %d,    start page %d,   end page %d\n"),
+	Serial.printf_P(PSTR("Dumping Log number %d,    start %d,   end %d\n"),
 				  dump_log,
 				  dump_log_start,
 				  dump_log_end);
 
 	Log_Read(dump_log_start, dump_log_end);
-	Serial.printf_P(PSTR("Log read complete\n"));
+	Serial.printf_P(PSTR("Complete\n"));
 }
 
 static int8_t
 erase_logs(uint8_t argc, const Menu::arg *argv)
 {
 	for(int i = 10 ; i > 0; i--) {
-		Serial.printf_P(PSTR("ATTENTION - Erasing log in %d seconds.  Power off now to save log! \n"), i);
+		Serial.printf_P(PSTR("ATTENTION - Erasing log in %d seconds.\n"), i);
 		delay(1000);
 	}
 	Serial.printf_P(PSTR("\nErasing log...\n"));
@@ -253,7 +253,7 @@ void start_new_log(byte num_existing_logs)
 		DataFlash.FinishWrite();
 		DataFlash.StartWrite(start_pages[num_existing_logs-1]);
 	}else{
-		gcs.send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full - logging discontinued"));
+		gcs.send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full"));
 	}
 }
 
@@ -708,7 +708,7 @@ void Log_Read(int start_page, int end_page)
 			}
 		page = DataFlash.GetPage();
 		}
-	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	Serial.printf_P(PSTR("# of packets read: %d\n"), packet_count);
 }
 
 

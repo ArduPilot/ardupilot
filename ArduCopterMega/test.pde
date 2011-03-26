@@ -6,7 +6,7 @@ static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
+//static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
@@ -22,6 +22,7 @@ static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_mission(uint8_t argc, 		const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -47,7 +48,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"radio",		test_radio},
 	{"failsafe",	test_failsafe},
 	{"stabilize",	test_stabilize},
-	{"fbw",			test_fbw},
+//	{"fbw",			test_fbw},
 	{"gps",			test_gps},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"adc", 		test_adc},
@@ -67,6 +68,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
+	{"mission",		test_mission},
 };
 
 // A Macro to create the Menu
@@ -315,7 +317,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-
+/*
 static int8_t
 test_fbw(uint8_t argc, const Menu::arg *argv)
 {
@@ -408,6 +410,7 @@ test_fbw(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+*/
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
@@ -737,34 +740,20 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 
 
 	// save the alitude above home option
+	Serial.printf_P(PSTR("Hold altitude "));
 	if(g.RTL_altitude < 0){
-		Serial.printf_P(PSTR("Hold current altitude\n"));
+		Serial.printf_P(PSTR("\n"));
 	}else{
-		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude / 100);
+		Serial.printf_P(PSTR("of %dm\n"), (int)g.RTL_altitude / 100);
 	}
 
 	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.waypoint_total);
 	Serial.printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
-	Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
+	//Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
-	for(byte i = 0; i <= g.waypoint_total; i++){
-		struct Location temp = get_wp_with_index(i);
-		test_wp_print(&temp, i);
-	}
+	report_wp();
 
 	return (0);
-}
-
-void
-test_wp_print(struct Location *cmd, byte index)
-{
-	Serial.printf_P(PSTR("command #: %d id:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
-		(int)index,
-		(int)cmd->id,
-		(int)cmd->p1,
-		cmd->alt,
-		cmd->lat,
-		cmd->lng);
 }
 
 static int8_t
@@ -924,6 +913,53 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
+
+static int8_t
+test_mission(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+	//write out a basic mission to the EEPROM
+	Location t;
+/*{
+	uint8_t		id;					///< command id
+	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
+	uint8_t		p1;					///< param 1
+	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
+	int32_t		lat;				///< param 3 - Lattitude * 10**7
+	int32_t		lng;				///< param 4 - Longitude * 10**7
+}*/
+
+	{
+	Location t = {0,   	0,      0, 		0, 		0, 			0};
+	set_wp_with_index(t,0);
+	}
+
+	{			// CMD						opt		pitch   alt/cm
+	Location t = {MAV_CMD_NAV_TAKEOFF,   	0,      0, 		300, 		0, 			0};
+	set_wp_with_index(t,1);
+	}
+	{			// CMD						opt		   					time/ms
+	Location t = {MAV_CMD_CONDITION_DELAY,   0,      0, 		0, 			3000, 		0};
+	set_wp_with_index(t,2);
+
+	}
+	{				// CMD					opt		dir		angle/deg	time/ms		relative
+	Location t = {MAV_CMD_CONDITION_YAW,	0,      1, 		360, 		1000, 		1};
+	set_wp_with_index(t,3);
+	}
+	{			// CMD						opt
+	Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 			0};
+	set_wp_with_index(t,4);
+	}
+
+	g.RTL_altitude.set_and_save(300);
+	g.waypoint_total.set_and_save(4);
+	g.waypoint_radius.set_and_save(3);
+
+	test_wp(NULL, NULL);
+
+}
 
 void print_hit_enter()
 {

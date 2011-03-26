@@ -41,6 +41,9 @@ struct Location get_wp_with_index(int i)
 		temp.id = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
+		temp.options = eeprom_read_byte((uint8_t*)mem);
+
+		mem++;
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
@@ -69,6 +72,9 @@ void set_wp_with_index(struct Location temp, int i)
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
+
+	mem++;
+	eeprom_write_byte((uint8_t *)	mem, temp.options);
 
 	mem++;
 	eeprom_write_byte((uint8_t *)	mem, temp.p1);
@@ -194,7 +200,7 @@ void init_home()
 	home.alt 	= max(g_gps->altitude, 0);
 	home_is_set = true;
 
-	Serial.printf("gps alt: %ld", home.alt);
+	//Serial.printf_P(PSTR("gps alt: %ld\n"), home.alt);
 
 	// Save Home to EEPROM
 	// -------------------

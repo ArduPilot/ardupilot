@@ -208,6 +208,7 @@ long get_altitude_above_home(void)
 	return current_loc.alt - home.alt;
 }
 
+// distance is returned in meters
 long get_distance(struct Location *loc1, struct Location *loc2)
 {
 	//if(loc1->lat == 0 || loc1->lng == 0)

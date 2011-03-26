@@ -8,7 +8,6 @@
 uint16_t system_type = MAV_FIXED_WING;
 byte mavdelay = 0;
 
-
 // what does this do?
 static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 {
@@ -23,7 +22,6 @@ static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
     	return 0; // no error
     }
 }
-
 
 void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, uint16_t packet_drops)
 {

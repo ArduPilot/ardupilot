@@ -19,17 +19,17 @@ void read_control_switch()
 }
 
 byte readSwitch(void){
-#if   FLIGHT_MODE_CHANNEL == CH_5
-	int pulsewidth = g.rc_5.radio_in;			// default for Arducopter
-#elif FLIGHT_MODE_CHANNEL == CH_6
-	int pulsewidth = g.rc_6.radio_in;			//
-#elif FLIGHT_MODE_CHANNEL == CH_7
-	int pulsewidth = g.rc_7.radio_in;			//
-#elif FLIGHT_MODE_CHANNEL == CH_8
-	int pulsewidth = g.rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux!
-#else
-# error Must define FLIGHT_MODE_CHANNEL as CH_5 - CH_8
-#endif
+	#if   FLIGHT_MODE_CHANNEL == CH_5
+		int pulsewidth = g.rc_5.radio_in;			// default for Arducopter
+	#elif FLIGHT_MODE_CHANNEL == CH_6
+		int pulsewidth = g.rc_6.radio_in;			//
+	#elif FLIGHT_MODE_CHANNEL == CH_7
+		int pulsewidth = g.rc_7.radio_in;			//
+	#elif FLIGHT_MODE_CHANNEL == CH_8
+		int pulsewidth = g.rc_8.radio_in;			// default for Ardupilot. Don't use for Arducopter! it has a hardware failsafe mux!
+	#else
+	# error Must define FLIGHT_MODE_CHANNEL as CH_5 - CH_8
+	#endif
 
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
 	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;
@@ -75,14 +75,14 @@ void read_trim_switch()
 		if(trim_flag){
 			// switch was just released
 			if((millis() - trim_timer) > 2000){
-#if HIL_MODE != HIL_MODE_ATTITUDE
+				#if HIL_MODE != HIL_MODE_ATTITUDE
 				imu.save();
-#endif
+				#endif
 			}else{
 				// set the throttle nominal
 				if(g.rc_3.control_in > 50){
 					g.throttle_cruise.set(g.rc_3.control_in);
-					Serial.printf("tnom %d\n", g.throttle_cruise.get());
+					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
 					//save_EEPROM_throttle_cruise();
 					g.throttle_cruise.save();
 
@@ -114,7 +114,11 @@ void trim_accel()
 		imu.ax(imu.ax() - 1);
 	}
 
-	Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"), dcm.roll_sensor, dcm.pitch_sensor,
-                  (double)imu.ax(), (double)imu.ay(), (double)imu.az());
+	/*Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"),
+							dcm.roll_sensor,
+							dcm.pitch_sensor,
+							(double)imu.ax(),
+							(double)imu.ay(),
+							(double)imu.az());*/
 }
 
