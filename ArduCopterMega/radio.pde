@@ -38,36 +38,43 @@ void init_rc_out()
 		motor_armed = 1;
 	#endif
 
-	APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
-	APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
-
-	APM_RC.OutputCh(CH_7,     g.rc_3.radio_min);
-    APM_RC.OutputCh(CH_8,     g.rc_3.radio_min);
 
 	APM_RC.Init();		// APM Radio initialization
 
-	for(byte i = 0; i < 10; i++){
+    // fix for crazy output
+    OCR1B = 0xFFFF;     // PB6, OUT3
+    OCR1C = 0xFFFF;     // PB7, OUT4
+    OCR5B = 0xFFFF;     // PL4, OUT1
+    OCR5C = 0xFFFF;     // PL5, OUT2
+    OCR4B = 0xFFFF;     // PH4, OUT6
+    OCR4C = 0xFFFF;     // PH5, OUT5
+
+    if(g.rc_3.radio_min <= 1200){
+        output_min();
+    }
+
+	for(byte i = 0; i < 5; i++){
 		delay(20);
 		read_radio();
 	}
 
-	// sanity check on the EEPROM values for radio_min
-	if(abs(g.rc_3.radio_min - g.rc_3.radio_in) > 40){
-		g.rc_3.radio_min = g.rc_3.radio_in;
-	}
+    // sanity check
+    if(g.rc_3.radio_min >= 1300){
+        g.rc_3.radio_min = g.rc_3.radio_in;
+        output_min();
+    }
+}
 
+void output_min()
+{
 	APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
 
-
-	APM_RC.OutputCh(CH_7,     g.rc_3.radio_min);
-    APM_RC.OutputCh(CH_8,     g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_7,   g.rc_3.radio_min);
+    APM_RC.OutputCh(CH_8,   g.rc_3.radio_min);
 }
-
 void read_radio()
 {
 	g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
