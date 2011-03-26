@@ -55,6 +55,9 @@
             this.label1 = new System.Windows.Forms.Label();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
+            this.label10 = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
+            this.label12 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).BeginInit();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
@@ -75,7 +78,7 @@
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.button2.DataBindings.Add(new System.Windows.Forms.Binding("Tag", this.StableModeConfigVmBindingSource, "RefreshCommand", true));
             this.button2.Image = ((System.Drawing.Image)(resources.GetObject("button2.Image")));
-            this.button2.Location = new System.Drawing.Point(240, 109);
+            this.button2.Location = new System.Drawing.Point(240, 131);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(26, 26);
             this.button2.TabIndex = 12;
@@ -88,6 +91,7 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.label12);
             this.groupBox4.Controls.Add(this.numericUpDown9);
             this.groupBox4.Controls.Add(this.numericUpDown8);
             this.groupBox4.Controls.Add(this.numericUpDown3);
@@ -96,7 +100,7 @@
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Location = new System.Drawing.Point(184, 6);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(82, 101);
+            this.groupBox4.Size = new System.Drawing.Size(82, 120);
             this.groupBox4.TabIndex = 11;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Yaw";
@@ -172,6 +176,7 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.label11);
             this.groupBox2.Controls.Add(this.numericUpDown7);
             this.groupBox2.Controls.Add(this.numericUpDown6);
             this.groupBox2.Controls.Add(this.numericUpDown2);
@@ -180,7 +185,7 @@
             this.groupBox2.Controls.Add(this.label6);
             this.groupBox2.Location = new System.Drawing.Point(95, 6);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(83, 101);
+            this.groupBox2.Size = new System.Drawing.Size(83, 120);
             this.groupBox2.TabIndex = 10;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Pitch";
@@ -256,6 +261,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.label10);
             this.groupBox3.Controls.Add(this.numericUpDown5);
             this.groupBox3.Controls.Add(this.numericUpDown4);
             this.groupBox3.Controls.Add(this.numericUpDown1);
@@ -264,7 +270,7 @@
             this.groupBox3.Controls.Add(this.label1);
             this.groupBox3.Location = new System.Drawing.Point(6, 5);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(83, 101);
+            this.groupBox3.Size = new System.Drawing.Size(83, 120);
             this.groupBox3.TabIndex = 9;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Roll";
@@ -342,13 +348,40 @@
             // 
             this.checkBox1.AutoSize = true;
             this.checkBox1.DataBindings.Add(new System.Windows.Forms.Binding("Checked", this.StableModeConfigVmBindingSource, "MagnetometerEnable", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
-            this.checkBox1.Location = new System.Drawing.Point(14, 112);
+            this.checkBox1.Location = new System.Drawing.Point(16, 131);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(94, 17);
             this.checkBox1.TabIndex = 13;
             this.checkBox1.Text = "Magnetometer";
             this.toolTips.SetToolTip(this.checkBox1, "Enable the use of the Magnetometer, if present");
             this.checkBox1.UseVisualStyleBackColor = true;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(20, 96);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(41, 13);
+            this.label10.TabIndex = 17;
+            this.label10.Text = "(P rate)";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(20, 95);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(41, 13);
+            this.label11.TabIndex = 18;
+            this.label11.Text = "(P rate)";
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(20, 95);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(41, 13);
+            this.label12.TabIndex = 19;
+            this.label12.Text = "(P rate)";
             // 
             // StableConfigView
             // 
@@ -360,7 +393,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox3);
             this.Name = "StableConfigView";
-            this.Size = new System.Drawing.Size(271, 135);
+            this.Size = new System.Drawing.Size(271, 157);
             ((System.ComponentModel.ISupportInitialize)(this.StableModeConfigVmBindingSource)).EndInit();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
@@ -409,5 +442,8 @@
         private System.Windows.Forms.NumericUpDown numericUpDown6;
         private System.Windows.Forms.NumericUpDown numericUpDown5;
         private System.Windows.Forms.NumericUpDown numericUpDown4;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Label label10;
     }
 }
