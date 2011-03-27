@@ -221,7 +221,7 @@ void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	setup_show(NULL,NULL);
+	//setup_show(NULL,NULL);
 
 	// Output waypoints for confirmation
 	// --------------------------------
@@ -253,6 +253,9 @@ void startup_ground(void)
 	// initialize commands
 	// -------------------
 	init_commands();
+
+    // clear out the GPS buffer
+	Serial1.flush();
 
 	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -293,7 +296,14 @@ void set_mode(byte mode)
 			break;
 
 		case SIMPLE:
-			initial_simple_bearing = dcm.yaw_sensor;
+		    if(g.rc_3.control_in == 0){                         // we are on the ground
+		        if(initial_simple_bearing == -1){               // only set once
+    		    	initial_simple_bearing = dcm.yaw_sensor;
+                }
+		    }else if(initial_simple_bearing == -1){             // we are flying
+		        // don't enter simple mode
+                control_mode = STABILIZE;                       // just stabilize
+		    }
 			break;
 
 		case LOITER:
@@ -310,7 +320,6 @@ void set_mode(byte mode)
 
 	// output control mode to the ground station
 	gcs.send_message(MSG_MODE_CHANGE);
-
 }
 
 void set_failsafe(boolean mode)
