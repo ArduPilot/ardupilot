@@ -100,6 +100,11 @@
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
 #define NO_COMMAND 0
 
+// Nav Yaw Tracking
+#define TRACK_NONE 		1
+#define TRACK_NEXT_WP 	2
+#define TRACK_TARGET_WP 4
+
 //repeating events
 #define NO_REPEAT 0
 #define CH_5_TOGGLE 1

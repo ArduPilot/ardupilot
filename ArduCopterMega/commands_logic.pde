@@ -38,7 +38,6 @@ void handle_process_must()
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			do_RTL();
 			break;
-
 		default:
 			break;
 	}
@@ -100,6 +99,9 @@ void handle_process_now()
 		case MAV_CMD_DO_REPEAT_RELAY:
 			do_repeat_relay();
 			break;
+
+        case MAV_CMD_NAV_ORIENTATION_TARGET:
+            do_target_yaw();
 	}
 }
 
@@ -358,9 +360,7 @@ void do_within_distance()
 
 void do_yaw()
 {
-//	{				// CMD					opt		dir		angle/deg	deg/s		relative
-//	Location t = {MAV_CMD_CONDITION_YAW,	0,      1, 		360, 		60, 		1};
-
+    yaw_tracking = TRACK_NONE;
 
 	// target angle in degrees
 	command_yaw_start		= nav_yaw; // current position
@@ -480,6 +480,16 @@ bool verify_yaw()
 /********************************************************************************/
 //  Do (Now) commands
 /********************************************************************************/
+
+void do_target_yaw()
+{
+    yaw_tracking = next_command.p1;
+
+    if(yaw_tracking & TRACK_TARGET_WP){
+        target_WP = next_command;
+    }
+
+}
 
 void do_loiter_at_location()
 {

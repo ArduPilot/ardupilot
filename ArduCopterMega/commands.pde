@@ -47,7 +47,7 @@ struct Location get_wp_with_index(int i)
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
-		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);	// alt is stored in CM!
 
 		mem += 4;
 		temp.lat = (long)eeprom_read_dword((uint32_t*)mem);
@@ -80,7 +80,7 @@ void set_wp_with_index(struct Location temp, int i)
 	eeprom_write_byte((uint8_t *)	mem, temp.p1);
 
 	mem++;
-	eeprom_write_dword((uint32_t *)	mem, temp.alt);
+	eeprom_write_dword((uint32_t *)	mem, temp.alt);	// alt is stored in CM!
 
 	mem += 4;
 	eeprom_write_dword((uint32_t *)	mem, temp.lat);
