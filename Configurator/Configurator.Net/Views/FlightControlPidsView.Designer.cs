@@ -34,10 +34,10 @@ namespace ArducopterConfigurator
             this.txtSend = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.FlightControlPidsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.stableConfigView1 = new ArducopterConfigurator.Views.StableConfigView();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.acroConfigView1 = new ArducopterConfigurator.Views.AcroConfigView();
+            this.FlightControlPidsBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.FlightControlPidsBindingSource)).BeginInit();
@@ -53,7 +53,7 @@ namespace ArducopterConfigurator
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(838, 753);
+            this.button1.Location = new System.Drawing.Point(980, 929);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(104, 23);
             this.button1.TabIndex = 6;
@@ -65,31 +65,27 @@ namespace ArducopterConfigurator
             this.groupBox1.Controls.Add(this.stableConfigView1);
             this.groupBox1.Location = new System.Drawing.Point(7, 9);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(283, 162);
+            this.groupBox1.Size = new System.Drawing.Size(283, 176);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Stable Mode";
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.acroConfigView1);
-            this.groupBox2.Location = new System.Drawing.Point(7, 177);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(283, 167);
-            this.groupBox2.TabIndex = 10;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Acro Mode";
-            // 
-            // FlightControlPidsBindingSource
-            // 
-            this.FlightControlPidsBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightControlPidsVm);
             // 
             // stableConfigView1
             // 
             this.stableConfigView1.Location = new System.Drawing.Point(7, 20);
             this.stableConfigView1.Name = "stableConfigView1";
-            this.stableConfigView1.Size = new System.Drawing.Size(271, 135);
+            this.stableConfigView1.Size = new System.Drawing.Size(271, 150);
             this.stableConfigView1.TabIndex = 0;
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.acroConfigView1);
+            this.groupBox2.Location = new System.Drawing.Point(7, 191);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(283, 164);
+            this.groupBox2.TabIndex = 10;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Acro Mode";
             // 
             // acroConfigView1
             // 
@@ -97,6 +93,10 @@ namespace ArducopterConfigurator
             this.acroConfigView1.Name = "acroConfigView1";
             this.acroConfigView1.Size = new System.Drawing.Size(271, 136);
             this.acroConfigView1.TabIndex = 0;
+            // 
+            // FlightControlPidsBindingSource
+            // 
+            this.FlightControlPidsBindingSource.DataSource = typeof(ArducopterConfigurator.PresentationModels.FlightControlPidsVm);
             // 
             // FlightControlPidsView
             // 
@@ -109,7 +109,7 @@ namespace ArducopterConfigurator
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtSend);
             this.Name = "FlightControlPidsView";
-            this.Size = new System.Drawing.Size(400, 300);
+            this.Size = new System.Drawing.Size(542, 476);
             this.groupBox1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.FlightControlPidsBindingSource)).EndInit();
