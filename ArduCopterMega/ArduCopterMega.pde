@@ -263,7 +263,7 @@ float cos_pitch_x 	= 1;
 float cos_yaw_x 	= 1;
 float sin_pitch_y, sin_yaw_y, sin_roll_y;
 float sin_nav_y, cos_nav_x;					// used in calc_waypoint_nav
-long initial_simple_bearing;				// used for Simple mode
+long initial_simple_bearing = -1;				// used for Simple mode
 
 // Airspeed
 // --------
@@ -426,9 +426,7 @@ unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
 byte			counter_one_herz;
-
-byte			GPS_failure_counter = 3;
-bool			GPS_disabled 		= false;
+bool			GPS_disabled 		= true;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -522,12 +520,7 @@ void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			if(GPS_failure_counter > 0){
-				update_GPS();
-
-			}else if(GPS_failure_counter == 0){
-				GPS_disabled = true;
-			}
+			update_GPS();
 			//readCommands();
 
 			if(g.compass_enabled){
@@ -780,13 +773,15 @@ void super_slow_loop()
 
 void update_GPS(void)
 {
+	if(Serial1.available() == 0){
+		return;
+	}
+
 	g_gps->update();
 	update_GPS_light();
 
-	if(g_gps->new_data)
-		GPS_failure_counter = 3;
-
     if (g_gps->new_data && g_gps->fix) {
+		GPS_disabled = false;
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
@@ -828,10 +823,6 @@ void update_GPS(void)
 
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
-
-	}else{
-		if(GPS_failure_counter > 0)
-			GPS_failure_counter--;
 	}
 }
 
