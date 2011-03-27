@@ -313,7 +313,7 @@ boolean	land_complete;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
-bool 	nav_yaw_towards_wp;					// point at the next WP
+byte 	yaw_tracking = TRACK_NONE;			// no tracking, point at next wp, or at a target
 
 // Loiter management
 // -----------------
@@ -372,6 +372,7 @@ struct 	Location home;						// home location
 struct 	Location prev_WP;					// last waypoint
 struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
+struct 	Location target_WP;					// where do we want to you towards?
 struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
@@ -447,6 +448,9 @@ void loop()
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
 
+		if(delta_ms_fast_loop > 11){
+			Serial.println(delta_ms_fast_loop,DEC);
+		}
 		// Execute the fast loop
 		// ---------------------
 		fast_loop();
@@ -1083,6 +1087,10 @@ void update_navigation()
 	// distance and bearing calcs only
 	if(control_mode == AUTO || control_mode == GCS_AUTO){
 		verify_commands();
+
+		if(yaw_tracking & TRACK_TARGET_WP){
+			nav_yaw = get_bearing(&current_loc, &target_WP);
+		}
 
 	}else{
 		switch(control_mode){

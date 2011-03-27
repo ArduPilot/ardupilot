@@ -309,8 +309,8 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 			if(Serial.available() > 0){
 				if(g.compass_enabled){
 					compass.save_offsets();
+					report_compass();
 				}
-				report_compass();
 				return (0);
 			}
 
@@ -930,28 +930,26 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	int32_t		lng;				///< param 4 - Longitude * 10**7
 }*/
 
-	{
-	Location t = {0,   	0,      0, 		0, 		0, 			0};
-	set_wp_with_index(t,0);
-	}
+	// clear home
+	{Location t = {0,   	0,      0, 		0, 		0, 			0};
+	set_wp_with_index(t,0);}
 
-	{			// CMD						opt		pitch   alt/cm
-	Location t = {MAV_CMD_NAV_TAKEOFF,   	0,      0, 		300, 		0, 			0};
-	set_wp_with_index(t,1);
-	}
-	{			// CMD						opt		   					time/ms
-	Location t = {MAV_CMD_CONDITION_DELAY,   0,      0, 		0, 			3000, 		0};
-	set_wp_with_index(t,2);
+	// CMD										opt		pitch   alt/cm
+	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		300, 		0, 			0};
+	set_wp_with_index(t,1);}
 
-	}
-	{				// CMD					opt		dir		angle/deg	time/ms		relative
-	Location t = {MAV_CMD_CONDITION_YAW,	0,      1, 		360, 		1000, 		1};
-	set_wp_with_index(t,3);
-	}
-	{			// CMD						opt
-	Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 			0};
-	set_wp_with_index(t,4);
-	}
+	// CMD										opt		   					time/ms
+	{Location t = {MAV_CMD_CONDITION_DELAY,   	0,      0, 		0, 			3000, 		0};
+	set_wp_with_index(t,2);}
+
+	// CMD										opt		dir		angle/deg	time/ms		relative
+	{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		1000, 		1};
+	set_wp_with_index(t,3);}
+
+	// CMD										opt
+	{Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 			0};
+	set_wp_with_index(t,4);}
+
 
 	g.RTL_altitude.set_and_save(300);
 	g.waypoint_total.set_and_save(4);

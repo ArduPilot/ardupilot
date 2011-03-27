@@ -276,6 +276,11 @@ void set_mode(byte mode)
 		// disarm motors temp
 		motor_auto_safe = false;
 	}
+
+
+	// clear our tracking behaviors
+	yaw_tracking = TRACK_NONE;
+
 	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
 	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
 	switch(control_mode)

@@ -269,8 +269,9 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
-	if(nav_yaw_towards_wp){
+	if(yaw_tracking & TRACK_NEXT_WP){
 		nav_yaw = target_bearing;
 	}
+
 	output_yaw_with_hold(true); // hold yaw
 }
