@@ -193,7 +193,7 @@ void init_ardupilot()
 	// read in the flight switches
 	//update_servo_switches();
 
-	//imu.init_gyro(IMU::WARM_START);	// offsets are loaded from EEPROM
+	//imu.init_gyro(IMU::WARM_START);
 
 	startup_ground();
 

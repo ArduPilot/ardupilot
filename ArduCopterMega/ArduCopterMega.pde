@@ -448,9 +448,9 @@ void loop()
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
 
-		if(delta_ms_fast_loop > 11){
-			Serial.println(delta_ms_fast_loop,DEC);
-		}
+		//if(delta_ms_fast_loop > 11){
+		//	Serial.println(delta_ms_fast_loop,DEC);
+		//}
 		// Execute the fast loop
 		// ---------------------
 		fast_loop();
@@ -524,7 +524,7 @@ void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			update_GPS();
+			//update_GPS();
 			//readCommands();
 
 			if(g.compass_enabled){
