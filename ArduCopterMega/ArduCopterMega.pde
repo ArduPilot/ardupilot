@@ -524,7 +524,11 @@ void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			//update_GPS();
+
+			if(Serial1.available() > 0){
+				update_GPS();
+			}
+
 			//readCommands();
 
 			if(g.compass_enabled){
@@ -777,10 +781,6 @@ void super_slow_loop()
 
 void update_GPS(void)
 {
-	if(Serial1.available() == 0){
-		return;
-	}
-
 	g_gps->update();
 	update_GPS_light();
 
