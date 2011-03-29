@@ -112,12 +112,13 @@ void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 #endif
 
 		if (use_u2x) {
+			*_ucsra = 1 << _u2x;
 			ubrr = (F_CPU / 4 / baud - 1) / 2;
 		} else {
+			*_ucsra = 0;
 			ubrr = (F_CPU / 8 / baud - 1) / 2;
 		}
 
-		*_ucsra = use_u2x ? _BV(_u2x) : 0;
 		*_ubrrh = ubrr >> 8;
 		*_ubrrl = ubrr;
 	}
