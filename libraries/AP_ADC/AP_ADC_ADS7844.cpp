@@ -79,10 +79,10 @@ ISR (TIMER2_OVF_vect)
   ADC_SPI_transfer(adc_cmd[0]);                       // Command to read the first channel
   for (ch=0;ch<8;ch++)
       {
-      if (adc_counter[ch] >= 16)                       // To prevent overflow of adc_value
-      {                                                //       
-	    adc_value[ch] /= 2;
-	    adc_counter[ch] /= 2;
+      if (adc_counter[ch] >= 17)                        // HJI - Added this to prevent
+      {                                                //       overflow of adc_value
+	    adc_value[ch] = 0;
+	    adc_counter[ch] = 0;
 	  }
 	  adc_tmp = ADC_SPI_transfer(0)<<8;               // Read first byte
       adc_tmp |= ADC_SPI_transfer(adc_cmd[ch+1]);     // Read second byte and send next command
@@ -132,16 +132,13 @@ void AP_ADC_ADS7844::Init(void)
 // Read one channel value
 int AP_ADC_ADS7844::Ch(unsigned char ch_num)         
 {
-  int result;         
+  int result;                                      
 
-  while(adc_counter[ch_num] < 2) { }				// Wait for at least 2 samples in accumlator
-
-  cli();             
+  cli();                                              // We stop interrupts to read the variables
   if (adc_counter[ch_num]>0)
 	result = adc_value[ch_num]/adc_counter[ch_num];
   else
 	result = 0;
-	
   adc_value[ch_num] = 0;                              // Initialize for next reading
   adc_counter[ch_num] = 0;
   sei();
