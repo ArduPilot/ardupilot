@@ -416,7 +416,7 @@ uint8_t			delta_ms_medium_loop;
 
 byte 			slow_loopCounter;
 int 			superslow_loopCounter;
-byte			fbw_timer;					// for limiting the execution of FBW input
+byte			flight_timer;				// for limiting the execution of flight mode thingys
 
 //unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
@@ -919,10 +919,10 @@ void update_current_flight_mode(void)
 				break;
 
 			case SIMPLE:
-				fbw_timer++;
+				flight_timer++;
 				// 25 hz
-				if(fbw_timer > 4){
-					fbw_timer = 0;
+				if(flight_timer > 4){
+					flight_timer = 0;
 
 					current_loc.lat = 0;
 					current_loc.lng = 0;
@@ -966,11 +966,11 @@ void update_current_flight_mode(void)
 
 			case FBW:
 				// we are currently using manual throttle during alpha testing.
-				fbw_timer++;
+				flight_timer++;
 
 				// 10 hz
-				if(fbw_timer > 10){
-					fbw_timer = 0;
+				if(flight_timer > 10){
+					flight_timer = 0;
 
 					if(GPS_disabled){
 						current_loc.lat = home.lat = 0;
@@ -1010,9 +1010,20 @@ void update_current_flight_mode(void)
 
 				//if(g.rc_3.control_in)
 				// get desired height from the throttle
-				next_WP.alt 	= home.alt + (g.rc_3.control_in); // 0 - 1000 (40 meters)
-				next_WP.alt		= max(next_WP.alt, 30);
+				//next_WP.alt 	= home.alt + (g.rc_3.control_in); // 0 - 1000 (40 meters)
+				//next_WP.alt		= max(next_WP.alt, 30);
 
+				flight_timer++;
+
+				if(flight_timer >= 2){
+					flight_timer = 0;
+
+					if(g.rc_3.control_in <= 0){
+						next_WP.alt -= 1;
+					}else if (g.rc_3.control_in > 700){
+						next_WP.alt += 1;
+					}
+				}
 				// !!! testing
 				//next_WP.alt 	-= 500;
 
@@ -1051,9 +1062,22 @@ void update_current_flight_mode(void)
 
 			case LOITER:
 
+				flight_timer++;
+
+				if(flight_timer >= 2){
+					flight_timer = 0;
+
+					if(g.rc_3.control_in <= 0){
+						next_WP.alt -= 1;
+					}else if (g.rc_3.control_in > 700){
+						next_WP.alt += 1;
+					}
+				}
+
 				// Yaw control
 				// -----------
 				output_manual_yaw();
+
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
