@@ -254,8 +254,20 @@ void startup_ground(void)
 	// -------------------
 	init_commands();
 
-    // clear out the GPS buffer
-	Serial1.flush();
+    byte counter = 4;
+    GPS_disabled = true;
+
+    // Read in the GPS
+	for (byte counter = 0; ; counter++) {
+		g_gps->update();
+		if (g_gps->status() != 0){
+			break;
+		}
+		if (counter >= 4) {
+			GPS_disabled = true;
+			break;
+	    }
+	}
 
 	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
