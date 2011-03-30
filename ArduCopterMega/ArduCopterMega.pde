@@ -525,7 +525,7 @@ void medium_loop()
 			medium_loopCounter++;
 
 
-			if(Serial1.available() > 0){
+			if(GPS_disabled == false){
 				update_GPS();
 			}
 
@@ -785,7 +785,6 @@ void update_GPS(void)
 	update_GPS_light();
 
     if (g_gps->new_data && g_gps->fix) {
-		GPS_disabled = false;
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
