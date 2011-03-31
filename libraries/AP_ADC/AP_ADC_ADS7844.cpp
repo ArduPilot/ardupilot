@@ -53,7 +53,7 @@ extern "C" {
 
 // Commands for reading ADC channels on ADS7844
 static const unsigned char adc_cmd[9]=  { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
-static volatile long          adc_value[8]   = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static volatile unsigned int  adc_value[8]   = { 0, 0, 0, 0, 0, 0, 0, 0 };
 static volatile unsigned char adc_counter[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static unsigned char ADC_SPI_transfer(unsigned char data)
@@ -79,10 +79,10 @@ ISR (TIMER2_OVF_vect)
   ADC_SPI_transfer(adc_cmd[0]);                       // Command to read the first channel
   for (ch=0;ch<8;ch++)
       {
-      if (adc_counter[ch] >= 17)                        // HJI - Added this to prevent
-      {                                                //       overflow of adc_value
-	    adc_value[ch] = 0;
-	    adc_counter[ch] = 0;
+      if (adc_counter[ch] >= 16)                       // To prevent overflow of adc_value
+      {                                                //       
+	    adc_value[ch] /= 2;
+	    adc_counter[ch] /= 2;
 	  }
 	  adc_tmp = ADC_SPI_transfer(0)<<8;               // Read first byte
       adc_tmp |= ADC_SPI_transfer(adc_cmd[ch+1]);     // Read second byte and send next command
@@ -132,13 +132,16 @@ void AP_ADC_ADS7844::Init(void)
 // Read one channel value
 int AP_ADC_ADS7844::Ch(unsigned char ch_num)         
 {
-  int result;                                      
+  int result;         
 
-  cli();                                              // We stop interrupts to read the variables
+  while(adc_counter[ch_num] < 2) { }				// Wait for at least 2 samples in accumlator
+
+  cli();             
   if (adc_counter[ch_num]>0)
 	result = adc_value[ch_num]/adc_counter[ch_num];
   else
 	result = 0;
+	
   adc_value[ch_num] = 0;                              // Initialize for next reading
   adc_counter[ch_num] = 0;
   sei();
