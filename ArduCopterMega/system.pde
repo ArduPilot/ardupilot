@@ -85,11 +85,15 @@ void init_ardupilot()
 						 "\n\nFree RAM: %lu\n"),
 						 freeRAM());
 
+
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
 	//
+	report_version();
+
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
+		Serial.printf_P(PSTR("\n\nForcing complete parameter reset..."));
 
 		/*Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
 		                     "\n\nForcing complete parameter reset..."),
@@ -255,20 +259,22 @@ void startup_ground(void)
 	init_commands();
 
     byte counter = 4;
-    GPS_disabled = true;
+    GPS_enabled = false;
 
     // Read in the GPS
 	for (byte counter = 0; ; counter++) {
 		g_gps->update();
 		if (g_gps->status() != 0){
+			GPS_enabled = true;
 			break;
 		}
 		if (counter >= 4) {
-			GPS_disabled = true;
+			GPS_enabled = false;
 			break;
 	    }
 	}
-
+	report_gps();
+	SendDebug("\nReady to FLY ");
 	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
@@ -407,6 +413,15 @@ void update_motor_light(void)
 			motor_light = true;
 			digitalWrite(A_LED_PIN, HIGH);
 		}
+	}
+}
+
+void update_timer_light(bool light)
+{
+	if(light == true){
+		digitalWrite(B_LED_PIN, HIGH);
+	}else{
+		digitalWrite(B_LED_PIN, LOW);
 	}
 }
 

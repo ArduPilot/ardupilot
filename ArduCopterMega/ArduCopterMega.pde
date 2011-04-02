@@ -235,6 +235,7 @@ boolean rate_yaw_flag;						// used to transition yaw control from Rate control 
 // ----------
 boolean motor_light;						// status of the Motor safety
 boolean GPS_light;							// status of the GPS light
+boolean timer_light;						// status of the Motor safety
 
 // GPS variables
 // -------------
@@ -427,7 +428,7 @@ unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
 byte			counter_one_herz;
-bool			GPS_disabled 		= true;
+bool			GPS_enabled 	= false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -448,9 +449,14 @@ void loop()
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
 
-		//if(delta_ms_fast_loop > 11){
-		//	Serial.println(delta_ms_fast_loop,DEC);
-		//}
+		/*
+		if(delta_ms_fast_loop > 11){
+			update_timer_light(true);
+			//Serial.println(delta_ms_fast_loop,DEC);
+		}else{
+			update_timer_light(false);
+		}*/
+
 		// Execute the fast loop
 		// ---------------------
 		fast_loop();
@@ -525,7 +531,7 @@ void medium_loop()
 			medium_loopCounter++;
 
 
-			if(GPS_disabled == false){
+			if(GPS_enabled){
 				update_GPS();
 			}
 
@@ -972,7 +978,7 @@ void update_current_flight_mode(void)
 				if(flight_timer > 10){
 					flight_timer = 0;
 
-					if(GPS_disabled){
+					if(GPS_enabled == false){
 						current_loc.lat = home.lat = 0;
 						current_loc.lng = home.lng = 0;
 					}

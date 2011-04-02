@@ -69,6 +69,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	// clear the area
 	print_blanks(8);
 
+	report_version();
 	report_radio();
 	report_frame();
 	report_current();
@@ -807,12 +808,27 @@ void report_current()
 	print_blanks(2);
 }
 
+void report_gps()
+{
+	Serial.printf_P(PSTR("\nGPS\n"));
+	print_divider();
+	print_enabled(GPS_enabled);
+	print_blanks(2);
+}
+
 void report_sonar()
 {
 	g.sonar_enabled.load();
 	Serial.printf_P(PSTR("Sonar\n"));
 	print_divider();
 	print_enabled(g.sonar_enabled.get());
+	print_blanks(2);
+}
+
+void report_version()
+{
+	Serial.printf_P(PSTR("FW Version %d\n"),(int)g.format_version.get());
+	print_divider();
 	print_blanks(2);
 }
 
