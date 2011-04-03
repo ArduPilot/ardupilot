@@ -462,10 +462,10 @@ void
 init_simple_bearing()
 {
 	if(simple_bearing_is_set == false){
-		if(g.rc_3.control_in == 0){
+		//if(g.rc_3.control_in == 0){
 			// we are on the ground
 			initial_simple_bearing = dcm.yaw_sensor;
 			simple_bearing_is_set = true;
-		}
+		//}
 	}
 }
