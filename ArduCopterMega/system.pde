@@ -93,7 +93,7 @@ void init_ardupilot()
 
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
-		Serial.printf_P(PSTR("\n\nForcing complete parameter reset..."));
+		//Serial.printf_P(PSTR("\n\nForcing complete parameter reset..."));
 
 		/*Serial.printf_P(PSTR("\n\nEEPROM format version  %d not compatible with this firmware (requires %d)"
 		                     "\n\nForcing complete parameter reset..."),
@@ -225,7 +225,7 @@ void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	//setup_show(NULL,NULL);
+	setup_show(NULL,NULL);
 
 	// Output waypoints for confirmation
 	// --------------------------------
@@ -319,14 +319,8 @@ void set_mode(byte mode)
 			break;
 
 		case SIMPLE:
-		    if(g.rc_3.control_in == 0){                         // we are on the ground
-		        if(initial_simple_bearing == -1){               // only set once
-    		    	initial_simple_bearing = dcm.yaw_sensor;
-                }
-		    }else if(initial_simple_bearing == -1){             // we are flying
-		        // don't enter simple mode
-                control_mode = STABILIZE;                       // just stabilize
-		    }
+			//initial_simple_bearing = dcm.yaw_sensor;
+			init_simple_bearing();
 			break;
 
 		case LOITER:
@@ -464,3 +458,14 @@ unsigned long freeRAM() {
 	return stackptr - heapptr;
 }
 
+void
+init_simple_bearing()
+{
+	if(simple_bearing_is_set == false){
+		if(g.rc_3.control_in == 0){
+			// we are on the ground
+			initial_simple_bearing = dcm.yaw_sensor;
+			simple_bearing_is_set = true;
+		}
+	}
+}
