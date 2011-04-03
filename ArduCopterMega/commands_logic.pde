@@ -38,6 +38,7 @@ void handle_process_must()
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			do_RTL();
 			break;
+
 		default:
 			break;
 	}
@@ -488,7 +489,6 @@ void do_target_yaw()
     if(yaw_tracking & TRACK_TARGET_WP){
         target_WP = next_command;
     }
-
 }
 
 void do_loiter_at_location()
