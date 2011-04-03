@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// called by 10 Hz loop
-// --------------------
+// called by 10 Hz Medium loop
+// ---------------------------
 void update_commands(void)
 {
 	// This function loads commands into three buffers
@@ -38,12 +38,13 @@ void load_next_command_from_EEPROM()
 	}
 
 	// If the preload failed, return or just Loiter
-	// generate a dynamic command for RTL
 	// --------------------------------------------
 	if(next_command.id == NO_COMMAND){
+		Serial.println("lnc_nc");
 		// we are out of commands!
-		gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
-		handle_no_commands();
+		if(handle_no_commands() == true){
+			gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+		}
 	}
 }
 
@@ -57,10 +58,10 @@ void process_next_command()
 			//save_command_index();			// TO DO - fix - to Recover from in air Restart
 			command_must_index = g.waypoint_index;
 
-			//SendDebug("MSG <process_next_command> new command_must_id ");
-			//SendDebug(next_command.id,DEC);
-			//SendDebug(" index:");
-			//SendDebugln(command_must_index,DEC);
+			SendDebug("MSG <pnc> new c_must_id ");
+			SendDebug(next_command.id,DEC);
+			SendDebug(" index:");
+			SendDebugln(command_must_index,DEC);
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_must();
@@ -73,8 +74,8 @@ void process_next_command()
 		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
 			increment_WP_index();		// this command is from the command list in EEPROM
 			command_may_index = g.waypoint_index;
-				//SendDebug("MSG <process_next_command> new command_may_id ");
-				//SendDebug(next_command.id,DEC);
+				SendDebug("MSG <pnc> new may ");
+				SendDebugln(next_command.id,DEC);
 				//Serial.print("new command_may_index ");
 				//Serial.println(command_may_index,DEC);
 			if (g.log_bitmask & MASK_LOG_CMD)
@@ -86,8 +87,9 @@ void process_next_command()
 		// ---------------------------
 		if (next_command.id > MAV_CMD_CONDITION_LAST){
 			increment_WP_index();		// this command is from the command list in EEPROM
-				//SendDebug("MSG <process_next_command> new command_now_id ");
-				//SendDebug(next_command.id,DEC);
+				SendDebug("MSG <pnc> new now ");
+				SendDebugln(next_command.id,DEC);
+
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_now();
@@ -100,8 +102,9 @@ void process_next_command()
 /**************************************************/
 void process_must()
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	//gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
+	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	Serial.printf("pmst %d\n", (int)next_command.id);
 
 	// clear May indexes
 	command_may_index	= NO_COMMAND;
@@ -117,8 +120,9 @@ void process_must()
 
 void process_may()
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	//gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
+	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	Serial.print("pmay");
 
 	command_may_ID = next_command.id;
 	handle_process_may();
@@ -130,13 +134,14 @@ void process_may()
 
 void process_now()
 {
+	Serial.print("pnow");
 	handle_process_now();
 
 	// invalidate command so a new one is loaded
 	// -----------------------------------------
 	next_command.id = NO_COMMAND;
 
-	gcs.send_text_P(SEVERITY_LOW, PSTR("<process_now>"));
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	//gcs.send_text_P(SEVERITY_LOW, PSTR("<process_now>"));
+	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 }
 

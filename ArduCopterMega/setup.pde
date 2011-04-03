@@ -799,7 +799,7 @@ void print_wp(struct Location *cmd, byte index)
 
 void report_current()
 {
-	read_EEPROM_current();
+	//read_EEPROM_current();
 	Serial.printf_P(PSTR("Current \n"));
 	print_divider();
 	print_enabled(g.current_enabled.get());
@@ -859,7 +859,7 @@ void report_radio()
 	Serial.printf_P(PSTR("Radio\n"));
 	print_divider();
 	// radio
-	read_EEPROM_radio();
+	//read_EEPROM_radio();
 	print_radio_values();
 	print_blanks(2);
 }
@@ -869,7 +869,8 @@ void report_gains()
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
-	read_EEPROM_PID();
+	//read_EEPROM_PID();
+
 	// Acro
 	Serial.printf_P(PSTR("Acro:\nroll:\n"));
 	print_PID(&g.pid_acro_rate_roll);
@@ -906,7 +907,7 @@ void report_xtrack()
 	Serial.printf_P(PSTR("XTrack\n"));
 	print_divider();
 	// radio
-	read_EEPROM_nav();
+	//read_EEPROM_nav();
 	Serial.printf_P(PSTR("XTRACK: %4.2f\n"
 						 "XTRACK angle: %d\n"
 						 "PITCH_MAX: %ld"),
@@ -921,7 +922,7 @@ void report_throttle()
 	Serial.printf_P(PSTR("Throttle\n"));
 	print_divider();
 
-	read_EEPROM_throttle();
+	//read_EEPROM_throttle();
 	Serial.printf_P(PSTR("min: %d\n"
 						 "max: %d\n"
 						 "cruise: %d\n"

@@ -4,7 +4,7 @@
 
 // GPS is auto-selected
 
-#define GCS_PROTOCOL        GCS_PROTOCOL_NONE
+//#define GCS_PROTOCOL        GCS_PROTOCOL_NONE
 //#define GCS_PORT 0
 
 #define SERIAL0_BAUD			38400

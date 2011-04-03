@@ -101,22 +101,23 @@ void handle_process_now()
 			do_repeat_relay();
 			break;
 
-        case MAV_CMD_NAV_ORIENTATION_TARGET:
-            do_target_yaw();
+		case MAV_CMD_NAV_ORIENTATION_TARGET:
+			do_target_yaw();
 	}
 }
 
-void handle_no_commands()
+bool handle_no_commands()
 {
 	if (command_must_ID)
-		return;
+		return false;
 
 	switch (control_mode){
 
 		default:
-			set_mode(RTL);
+			//set_mode(RTL);
 			break;
 	}
+	return true;
 }
 
 /********************************************************************************/
@@ -125,6 +126,8 @@ void handle_no_commands()
 
 bool verify_must()
 {
+	Serial.printf("vmust ::%d", nav_throttle);
+
 	switch(command_must_ID) {
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -190,14 +193,14 @@ bool verify_may()
 }
 
 /********************************************************************************/
-//  Nav (Must) commands
+//	Nav (Must) commands
 /********************************************************************************/
 
 void do_RTL(void)
 {
-	control_mode 	= LOITER;
-	Location temp 	= home;
-	temp.alt 		= read_alt_to_hold();
+	control_mode	= LOITER;
+	Location temp	= home;
+	temp.alt		= read_alt_to_hold();
 
 	//so we know where we are navigating from
 	next_WP = current_loc;
@@ -215,9 +218,12 @@ void do_RTL(void)
 
 void do_takeoff()
 {
-	Location temp 		= current_loc;
-	temp.alt			= next_command.alt;
-	takeoff_complete 	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+	Location temp		= current_loc;
+	temp.alt			+= next_command.alt;
+	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+
+	Serial.print("dt ");
+	Serial.println(temp.alt,DEC);
 
 	set_next_WP(&temp);
 }
@@ -229,63 +235,86 @@ void do_nav_wp()
 
 void do_land()
 {
-	land_complete 		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
-	velocity_land		= 1000;
+	Serial.println("dlnd ");
+	land_complete		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+	velocity_land		= 2000;
 
-	Location temp 		= current_loc;
-	//temp.alt 			= home.alt;
-	temp.alt 			= -1000;
+	Location temp		= current_loc;
+	//temp.alt			= home.alt;
+	// just go down far
+	temp.alt			= -100000;
 
 	set_next_WP(&temp);
 }
 
 void do_loiter_unlimited()
 {
-	set_next_WP(&next_command);
+	Serial.println("dloi ");
+	if(next_command.lat == 0)
+		set_next_WP(&current_loc);
+	else
+		set_next_WP(&next_command);
 }
 
 void do_loiter_turns()
 {
-	set_next_WP(&next_command);
+	if(next_command.lat == 0)
+		set_next_WP(&current_loc);
+	else
+		set_next_WP(&next_command);
+
 	loiter_total = next_command.p1 * 360;
 }
 
 void do_loiter_time()
 {
-	set_next_WP(&next_command);
-	loiter_time = millis();
-	loiter_time_max = next_command.p1; // units are (seconds * 10)
+	if(next_command.lat == 0)
+		set_next_WP(&current_loc);
+	else
+		set_next_WP(&next_command);
+
+	loiter_time 	= millis();
+	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
+	Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
 }
 
 /********************************************************************************/
-//  Verify Nav (Must) commands
+//	Verify Nav (Must) commands
 /********************************************************************************/
 
 bool verify_takeoff()
 {
+	Serial.print("vt ");
 	if (current_loc.alt > next_WP.alt){
+		Serial.println("Y");
 		takeoff_complete = true;
 		return true;
 	}else{
+		Serial.println("N");
 		return false;
 	}
 }
 
 bool verify_land()
 {
+	Serial.print("vlnd ");
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
 
-   	if(g.sonar_enabled){
+	if(g.sonar_enabled){
 		// decide which sensor we're usings
 		if(sonar_alt < 20){
-    		land_complete = true;
-	    	return true;
-	    }
-    } else {
-		//land_complete = true;
-		//return true;
-    }
+			land_complete = true;
+			Serial.println("Y");
+			return true;
+		}
+	}
+
+	if(velocity_land <= 0)
+		land_complete = true;
+		return true;
+	}
+	Serial.printf("N, %d\n", velocity_land);
 
 	//update_crosstrack();
 	return false;
@@ -318,8 +347,11 @@ bool verify_loiter_unlim()
 
 bool verify_loiter_time()
 {
-	if ((millis() - loiter_time) > (long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
+	Serial.printf("vlt %ld\n",(millis() - loiter_time));
+
+	if ((millis() - loiter_time) > loiter_time_max) {		// scale loiter_time_max from (sec*10) to milliseconds
 		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
+		Serial.println("vlt done");
 		return true;
 	}
 	return false;
@@ -336,44 +368,47 @@ bool verify_RTL()
 }
 
 /********************************************************************************/
-//  Condition (May) commands
+//	Condition (May) commands
 /********************************************************************************/
 
 void do_wait_delay()
 {
+	Serial.print("dwd ");
 	condition_start = millis();
-	condition_value  = next_command.lat * 1000;	// convert to milliseconds
+	condition_value	 = next_command.lat * 1000; // convert to milliseconds
+	Serial.println(condition_value,DEC);
 }
 
 void do_change_alt()
 {
-	Location temp 	= next_WP;
+	Location temp	= next_WP;
 	condition_start = current_loc.alt;
 	condition_value = next_command.alt + home.alt;
-	temp.alt 		= condition_value;
+	temp.alt		= condition_value;
 	set_next_WP(&temp);
 }
 
 void do_within_distance()
 {
-	condition_value  = next_command.lat;
+	condition_value	 = next_command.lat;
 }
 
 void do_yaw()
 {
-    yaw_tracking = TRACK_NONE;
+	Serial.println("dyaw ");
+	yaw_tracking = TRACK_NONE;
 
 	// target angle in degrees
 	command_yaw_start		= nav_yaw; // current position
-	command_yaw_start_time 	= millis();
+	command_yaw_start_time	= millis();
 
-	command_yaw_dir		    = next_command.p1;      // 1 = clockwise,    0 = counterclockwise
-	command_yaw_relative    = next_command.lng;     // 1 = Relative,     0 = Absolute
+	command_yaw_dir			= next_command.p1;		// 1 = clockwise,	 0 = counterclockwise
+	command_yaw_relative	= next_command.lng;		// 1 = Relative,	 0 = Absolute
 
-	command_yaw_speed   	= next_command.lat * 100;
+	command_yaw_speed		= next_command.lat * 100; // ms * 100
 
 
-	// if unspecified go 10° a second
+	// if unspecified go 60° a second
 	if(command_yaw_speed == 0)
 		command_yaw_speed = 6000;
 
@@ -383,40 +418,34 @@ void do_yaw()
 
 	if (command_yaw_relative){
 		// relative
-		//command_yaw_dir     = (command_yaw_end > 0) ? 1 : -1;
-		//command_yaw_end     += nav_yaw;
-		//command_yaw_end     = wrap_360(command_yaw_end);
-		command_yaw_delta   = next_command.alt * 100;
+		//command_yaw_dir	  = (command_yaw_end > 0) ? 1 : -1;
+		//command_yaw_end	  += nav_yaw;
+		//command_yaw_end	  = wrap_360(command_yaw_end);
+		command_yaw_delta	= next_command.alt * 100;
 	}else{
 		// absolute
-		command_yaw_end 	= next_command.alt * 100;
+		command_yaw_end		= next_command.alt * 100;
 
-        // calculate the delta travel in deg * 100
-        if(command_yaw_dir == 1){
-            if(command_yaw_start >= command_yaw_end){
-                command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
-            }else{
-                command_yaw_delta = command_yaw_end - command_yaw_start;
-            }
-        }else{
-            if(command_yaw_start > command_yaw_end){
-                command_yaw_delta = command_yaw_start - command_yaw_end;
-            }else{
-                command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
-            }
-        }
-    	command_yaw_delta = wrap_360(command_yaw_delta);
+		// calculate the delta travel in deg * 100
+		if(command_yaw_dir == 1){
+			if(command_yaw_start >= command_yaw_end){
+				command_yaw_delta = 36000 - (command_yaw_start - command_yaw_end);
+			}else{
+				command_yaw_delta = command_yaw_end - command_yaw_start;
+			}
+		}else{
+			if(command_yaw_start > command_yaw_end){
+				command_yaw_delta = command_yaw_start - command_yaw_end;
+			}else{
+				command_yaw_delta = 36000 + (command_yaw_start - command_yaw_end);
+			}
+		}
+		command_yaw_delta = wrap_360(command_yaw_delta);
 	}
 
 
 	// rate to turn deg per second - default is ten
-	command_yaw_time 	= command_yaw_delta / command_yaw_speed;
-	command_yaw_time    *= 1000;
-
-
-    //
-	//9000 turn in 10 seconds
-	//command_yaw_time = 9000/ 10 = 900° per second
+	command_yaw_time	= (command_yaw_delta / command_yaw_speed) * 1000;
 }
 
 
@@ -426,10 +455,13 @@ void do_yaw()
 
 bool verify_wait_delay()
 {
+	Serial.print("vwd");
 	if ((millis() - condition_start) > condition_value){
-		condition_value 	= 0;
+		Serial.println("y");
+		condition_value		= 0;
 		return true;
 	}
+	Serial.println("n");
 	return false;
 }
 
@@ -462,9 +494,13 @@ bool verify_within_distance()
 
 bool verify_yaw()
 {
+	Serial.print("vyaw ");
+
 	if((millis() - command_yaw_start_time) > command_yaw_time){
 		// time out
+		// make sure we hold at the final desired yaw angle
 		nav_yaw = command_yaw_end;
+		Serial.println("Y");
 		return true;
 
 	}else{
@@ -472,23 +508,24 @@ bool verify_yaw()
 		// power is a ratio of the time : .5 = half done
 		float power = (float)(millis() - command_yaw_start_time) / (float)command_yaw_time;
 
-		nav_yaw 	= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
-		nav_yaw     = wrap_360(nav_yaw);
+		nav_yaw		= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
+		nav_yaw		= wrap_360(nav_yaw);
+		Serial.printf("ny %ld\n",nav_yaw);
 		return false;
 	}
 }
 
 /********************************************************************************/
-//  Do (Now) commands
+//	Do (Now) commands
 /********************************************************************************/
 
 void do_target_yaw()
 {
-    yaw_tracking = next_command.p1;
+	yaw_tracking = next_command.p1;
 
-    if(yaw_tracking & TRACK_TARGET_WP){
-        target_WP = next_command;
-    }
+	if(yaw_tracking & TRACK_TARGET_WP){
+		target_WP = next_command;
+	}
 }
 
 void do_loiter_at_location()
@@ -501,10 +538,10 @@ void do_jump()
 	struct Location temp;
 	if(next_command.lat > 0) {
 
-		command_must_index 	= 0;
-		command_may_index 	= 0;
-		temp 				= get_wp_with_index(g.waypoint_index);
-		temp.lat 			= next_command.lat - 1;					// Decrement repeat counter
+		command_must_index	= 0;
+		command_may_index	= 0;
+		temp				= get_wp_with_index(g.waypoint_index);
+		temp.lat			= next_command.lat - 1;					// Decrement repeat counter
 
 		set_wp_with_index(temp, g.waypoint_index);
 		g.waypoint_index.set_and_save(next_command.p1 - 1);
@@ -516,10 +553,10 @@ void do_set_home()
 	if(next_command.p1 == 1) {
 		init_home();
 	} else {
-		home.id 	= MAV_CMD_NAV_WAYPOINT;
-		home.lng 	= next_command.lng;				// Lon * 10**7
-		home.lat 	= next_command.lat;				// Lat * 10**7
-		home.alt 	= max(next_command.alt, 0);
+		home.id		= MAV_CMD_NAV_WAYPOINT;
+		home.lng	= next_command.lng;				// Lon * 10**7
+		home.lat	= next_command.lat;				// Lat * 10**7
+		home.alt	= max(next_command.alt, 0);
 		home_is_set = true;
 	}
 }
@@ -546,10 +583,10 @@ void do_repeat_servo()
 
 	if(next_command.p1 >= CH_5 + 1 && next_command.p1 <= CH_8 + 1) {
 
-		event_timer 	= 0;
-		event_delay 	= next_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
-		event_repeat 	= next_command.lat * 2;
-		event_value 	= next_command.alt;
+		event_timer		= 0;
+		event_delay		= next_command.lng * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
+		event_repeat	= next_command.lat * 2;
+		event_value		= next_command.alt;
 
 		switch(next_command.p1) {
 			case CH_5:
@@ -571,9 +608,9 @@ void do_repeat_servo()
 
 void do_repeat_relay()
 {
-	event_id 		= RELAY_TOGGLE;
-	event_timer 	= 0;
-	event_delay 	= next_command.lat * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
+	event_id		= RELAY_TOGGLE;
+	event_timer		= 0;
+	event_delay		= next_command.lat * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
 	event_repeat	= next_command.alt * 2;
 	update_events();
 }

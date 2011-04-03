@@ -324,7 +324,7 @@ int		loiter_total; 						// deg : how many times to loiter * 360
 int 	loiter_delta;						// deg : how far we just turned
 int		loiter_sum;							// deg : how far we have turned around a waypoint
 long 	loiter_time;						// millis : when we started LOITER mode
-int 	loiter_time_max;					// millis : how long to stay in LOITER mode
+long 	loiter_time_max;					// millis : how long to stay in LOITER mode
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
@@ -574,6 +574,10 @@ void medium_loop()
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
 				navigate();
+
+				// control mode specific updates to nav_bearing
+				// --------------------------------------------
+				update_navigation();
 			}
 
 			// we call these regardless of GPS because of the rapid nature of the yaw sensor
