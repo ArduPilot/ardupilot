@@ -736,7 +736,7 @@ static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
-	read_EEPROM_waypoint_info();
+	//read_EEPROM_waypoint_info();
 
 
 	// save the alitude above home option
@@ -917,8 +917,8 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
 {
-	print_hit_enter();
-	delay(1000);
+	//print_hit_enter();
+	//delay(1000);
 	//write out a basic mission to the EEPROM
 	Location t;
 /*{
@@ -938,12 +938,12 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		300, 		0, 			0};
 	set_wp_with_index(t,1);}
 
-	// CMD										opt		   					time/ms
-	{Location t = {MAV_CMD_CONDITION_DELAY,   	0,      0, 		0, 			3000, 		0};
+	// CMD										opt		time/s
+	{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      15, 		0, 			0, 		0};
 	set_wp_with_index(t,2);}
 
-	// CMD										opt		dir		angle/deg	time/ms		relative
-	{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		1000, 		1};
+	// CMD										opt		dir		angle/deg	deg/s		relative
+	{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		60, 		1};
 	set_wp_with_index(t,3);}
 
 	// CMD										opt

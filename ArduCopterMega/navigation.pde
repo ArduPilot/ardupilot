@@ -45,10 +45,6 @@ void navigate()
 	if (loiter_delta > 180) loiter_delta -= 360;
 	if (loiter_delta < -180) loiter_delta += 360;
 	loiter_sum += abs(loiter_delta);
-
-	// control mode specific updates to nav_bearing
-	// --------------------------------------------
-	update_navigation();
 }
 
 #define DIST_ERROR_MAX 1800

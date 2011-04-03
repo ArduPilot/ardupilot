@@ -9,20 +9,22 @@ void init_commands()
 	next_command.id 	= CMD_BLANK;
 }
 
-void update_auto()
+void init_auto()
 {
 	if (g.waypoint_index == g.waypoint_total) {
+		Serial.println("ia_f");
 		do_RTL();
 	}
 }
 
 // this is only used by an air-start
-void reload_commands_airstart()
+/*void reload_commands_airstart()
 {
 	init_commands();
 	g.waypoint_index.load();        // XXX can we assume it's been loaded already by ::load_all?
 	decrement_WP_index();
 }
+*/
 
 // Getters
 // -------

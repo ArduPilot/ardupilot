@@ -227,6 +227,9 @@ void startup_ground(void)
 
 	setup_show(NULL,NULL);
 
+	// setup up PID value max
+	init_pids();
+
 	// Output waypoints for confirmation
 	// --------------------------------
 	for(int i = 1; i < g.waypoint_total + 1; i++) {
@@ -315,7 +318,7 @@ void set_mode(byte mode)
 			break;
 
 		case AUTO:
-			update_auto();
+			init_auto();
 			break;
 
 		case SIMPLE:
