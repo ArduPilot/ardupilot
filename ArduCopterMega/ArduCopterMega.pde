@@ -264,7 +264,8 @@ float cos_pitch_x 	= 1;
 float cos_yaw_x 	= 1;
 float sin_pitch_y, sin_yaw_y, sin_roll_y;
 float sin_nav_y, cos_nav_x;					// used in calc_waypoint_nav
-long initial_simple_bearing = -1;				// used for Simple mode
+bool simple_bearing_is_set = false;
+long initial_simple_bearing;				// used for Simple mode
 
 // Airspeed
 // --------
