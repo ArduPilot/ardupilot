@@ -16,6 +16,9 @@ GPS::update(void)
 		if ((millis() - _idleTimer) > _idleTimeout) {
 			_status = NO_GPS;
 			init();
+
+			// reset the idle timer
+			_idleTimer = millis();
 		}
 	} else {
 		// we got a message, update our status correspondingly
@@ -23,10 +26,10 @@ GPS::update(void)
 
 		valid_read = true;
 		new_data = true;
-	}
 
-	// reset the idle timer
-	_idleTimer = millis();
+		// reset the idle timer
+		_idleTimer = millis();
+	}
 }
 
 void 
