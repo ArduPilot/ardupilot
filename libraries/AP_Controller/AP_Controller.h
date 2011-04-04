@@ -97,10 +97,10 @@ public:
     ToServo(AP_RcChannel * ch) : _ch(ch)
     {
     }
-    // doesn't connect
-    virtual void connect(Block * block) {};
     virtual void update(const float & dt = 0)
     {
+    	//Serial.println("calling to servo update");
+    	//Serial.println("input: "); Serial.println(input(0));
         if (_input.getSize() > 0)
         {
             _ch->setNormalized(input(0));
@@ -146,9 +146,15 @@ public:
     }
     virtual void update(const float & dt = 0)
     {
+    	//Serial.println("calling sumgain update");
         if (_output.getSize() < 1) return;
         float sum =0;
-        for (int i=0;i<_input.getSize();i++) sum += input(i) * gain(i);
+        for (int i=0;i<_input.getSize();i++)
+        {
+        	//Serial.println("input: "); Serial.println(input(i));
+        	//Serial.println("gain: ");Serial.println(gain(i));
+        	sum += input(i) * gain(i);
+        }
         output(0) = sum;
     }
     float gain(int i) { return *(_gain[i]); }
@@ -184,6 +190,9 @@ public:
     
     virtual void update(const float & dt)
     {
+    	//Serial.println("calling pid update");
+    	//Serial.println("input: "); Serial.println(input(0));
+
         if (_output.getSize() < 1 || (!_input[0]) || (!_output[0]) ) return;
 
         // derivative with low pass
@@ -203,6 +212,8 @@ public:
 
         // pid sum
         output(0) = _kP*_eP + _kI*_eI +  _kD*_eD;
+
+        //Serial.println("output: "); Serial.println(output(0));
 
         // debug output
         /*
@@ -243,10 +254,10 @@ public:
     }
     virtual void update(const float & dt)
     {
+    	//Serial.println("calling sink update");
+    	//Serial.println("input: "); Serial.println(input(0));
         _var = input(_port); 
     }
-    // doesn't connect
-    virtual void connect(Block * block) {}
 private:
     float & _var;
     uint8_t _port;
@@ -261,6 +272,7 @@ public:
         _min(min), _max(max), _port(port)
     {
         // create output
+    	//Serial.println("calling satruate update");
         _output.push_back(new float(0.0));
     }
     virtual void update(const float & dt)
