@@ -297,7 +297,7 @@ bool verify_takeoff()
 
 bool verify_land()
 {
-	Serial.print("vlnd ");
+	//Serial.print("vlnd ");
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
 
@@ -310,7 +310,7 @@ bool verify_land()
 		}
 	}
 
-	if(velocity_land <= 0)
+	if(velocity_land <= 0){
 		land_complete = true;
 		return true;
 	}
@@ -347,11 +347,11 @@ bool verify_loiter_unlim()
 
 bool verify_loiter_time()
 {
-	Serial.printf("vlt %ld\n",(millis() - loiter_time));
+	//Serial.printf("vlt %ld\n",(millis() - loiter_time));
 
 	if ((millis() - loiter_time) > loiter_time_max) {		// scale loiter_time_max from (sec*10) to milliseconds
 		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
-		Serial.println("vlt done");
+		//Serial.println("vlt done");
 		return true;
 	}
 	return false;
