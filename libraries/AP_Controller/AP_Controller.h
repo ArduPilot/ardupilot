@@ -76,7 +76,7 @@ public:
         }
         _blocks.push_back(block);
     }
-    virtual void update(const double dt)
+    virtual void update(const float & dt)
     {
         for (int i=0;i<_blocks.getSize();i++)
         {
