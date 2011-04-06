@@ -37,7 +37,7 @@ public:
 	AP_Bool reverse;
 
 	// set
-	void readRadio();
+	uint16_t readRadio();
 	void setPwm(uint16_t pwm);
 	void setPosition(float position);
 	void setNormalized(float normPosition);
