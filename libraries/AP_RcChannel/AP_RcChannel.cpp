@@ -37,10 +37,8 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key key, const prog_char_t * name, APM_RC_Cla
 	}
 
 
-void AP_RcChannel::readRadio() {
-	// apply reverse
-	uint16_t pwmRadio = _rc.InputCh(ch);
-	setPwm(pwmRadio);
+uint16_t AP_RcChannel::readRadio() {
+	return _rc.InputCh(ch);
 }
 
 void
