@@ -6,7 +6,6 @@ static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
-//static int8_t	test_fbw(uint8_t argc,			const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
@@ -48,7 +47,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"radio",		test_radio},
 	{"failsafe",	test_failsafe},
 	{"stabilize",	test_stabilize},
-//	{"fbw",			test_fbw},
 	{"gps",			test_gps},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"adc", 		test_adc},
@@ -317,100 +315,6 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-/*
-static int8_t
-test_fbw(uint8_t argc, const Menu::arg *argv)
-{
-	static byte ts_num;
-
-	print_hit_enter();
-	delay(1000);
-
-	// setup the radio
-	// ---------------
-	init_rc_in();
-
-	control_mode = FBW;
-	//Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
-	//Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
-
-	motor_armed = true;
-	trim_radio();
-
-	nav_yaw = 8000;
-	scaleLongDown = 1;
-
-	while(1){
-		// 50 hz
-		if (millis() - fast_loopTimer > 19) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			fast_loopTimer		= millis();
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
-
-
-			if(g.compass_enabled){
-				medium_loopCounter++;
-				if(medium_loopCounter == 5){
-					compass.read();		 				// Read magnetometer
-					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
-					medium_loopCounter = 0;
-				}
-			}
-			// for trim features
-			read_trim_switch();
-
-			// Filters radio input - adjust filters in the radio.pde file
-			// ----------------------------------------------------------
-			read_radio();
-
-			// IMU
-			// ---
-			read_AHRS();
-			update_trig();
-
-
-			// allow us to zero out sensors with control switches
-			if(g.rc_5.control_in < 600){
-				dcm.roll_sensor = dcm.pitch_sensor = 0;
-			}
-
-			// custom code/exceptions for flight modes
-			// ---------------------------------------
-			update_current_flight_mode();
-
-			// write out the servo PWM values
-			// ------------------------------
-			set_servos_4();
-
-			ts_num++;
-			if (ts_num == 5){
-				update_alt();
-				// 10 hz
-				ts_num 				= 0;
-				g_gps->longitude 		= 0;
-				g_gps->latitude 		= 0;
-				calc_loiter_nav();
-
-				Serial.printf_P(PSTR("ys:%ld, WP.lat:%ld, WP.lng:%ld, n_lat:%ld, n_lon:%ld, nroll:%ld, npitch:%ld, pmax:%ld, \t- "),
-					dcm.yaw_sensor,
-					next_WP.lat,
-					next_WP.lng,
-					nav_lat,
-					nav_lon,
-					nav_roll,
-					nav_pitch,
-					(long)g.pitch_max);
-
-				print_motor_out();
-			}
-
-			if(Serial.available() > 0){
-				return (0);
-			}
-		}
-	}
-}
-*/
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
@@ -863,35 +767,35 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
-	{
-		if(g.compass_enabled) {
-			//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
+{
+	if(g.compass_enabled) {
+		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
-			print_hit_enter();
+		print_hit_enter();
 
-			while(1){
-				delay(250);
-				compass.read();
-				compass.calculate(0,0);
-				Vector3f maggy = compass.get_offsets();
-				Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-							(wrap_360(ToDeg(compass.heading) * 100)) /100,
-							compass.mag_x,
-							compass.mag_y,
-							compass.mag_z,
-							maggy.x,
-							maggy.y,
-							maggy.z);
+		while(1){
+			delay(250);
+			compass.read();
+			compass.calculate(0,0);
+			Vector3f maggy = compass.get_offsets();
+			Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+						(wrap_360(ToDeg(compass.heading) * 100)) /100,
+						compass.mag_x,
+						compass.mag_y,
+						compass.mag_z,
+						maggy.x,
+						maggy.y,
+						maggy.z);
 
-				if(Serial.available() > 0){
-					return (0);
-				}
+			if(Serial.available() > 0){
+				return (0);
 			}
-		} else {
-			Serial.printf_P(PSTR("Compass: "));
-			print_enabled(false);
-			return (0);
 		}
+	} else {
+		Serial.printf_P(PSTR("Compass: "));
+		print_enabled(false);
+		return (0);
+	}
 }
 
 /*
@@ -938,18 +842,34 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		300, 		0, 			0};
 	set_wp_with_index(t,1);}
 
-	// CMD										opt		time/s
-	{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      15, 		0, 			0, 		0};
-	set_wp_with_index(t,2);}
+	if (!strcmp_P(argv[1].str, PSTR("wp"))) {
 
-	// CMD										opt		dir		angle/deg	deg/s		relative
-	{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		60, 		1};
-	set_wp_with_index(t,3);}
+		// CMD											opt
+		{Location t = {MAV_CMD_NAV_WAYPOINT,  			WP_OPTION_RELATIVE,		15, 0, 0, 0};
+		set_wp_with_index(t,2);}
+		// CMD											opt
+		{Location t = {MAV_CMD_NAV_RETURN_TO_LAUNCH,   	WP_OPTION_YAW,      0, 		0, 		0,		0};
+		set_wp_with_index(t,3);}
 
-	// CMD										opt
-	{Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 			0};
-	set_wp_with_index(t,4);}
+		// CMD											opt
+		{Location t = {MAV_CMD_NAV_LAND,				0,      0, 		0, 		0,		0};
+		set_wp_with_index(t,4);}
 
+	} else {
+		//2250 = 25 meteres
+		// CMD										opt		p1		//alt		//NS		//WE
+		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      0,  	300, 		1100, 		0};
+		set_wp_with_index(t,2);}
+
+		// CMD										opt		dir		angle/deg	deg/s	relative
+		{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		60, 	1};
+		set_wp_with_index(t,3);}
+
+		// CMD										opt
+		{Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 		0};
+		set_wp_with_index(t,4);}
+
+	}
 
 	g.RTL_altitude.set_and_save(300);
 	g.waypoint_total.set_and_save(4);

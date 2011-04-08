@@ -80,12 +80,9 @@ void read_trim_switch()
 				#endif
 			}else{
 				// set the throttle nominal
-				if(g.rc_3.control_in > 50){
-					g.throttle_cruise.set(g.rc_3.control_in);
+				if(g.rc_3.control_in > 200){
+					g.throttle_cruise.set_and_save(g.rc_3.control_in);
 					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
-					//save_EEPROM_throttle_cruise();
-					g.throttle_cruise.save();
-
 				}
 
 				// this is a test for Max's tri-copter

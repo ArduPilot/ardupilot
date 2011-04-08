@@ -195,7 +195,6 @@ const char* flight_mode_strings[] = {
 	"ACRO",
 	"ALT_HOLD",
 	"SIMPLE",
-	"FBW",
 	"AUTO",
 	"GCS_AUTO",
 	"LOITER",
@@ -335,6 +334,8 @@ long	nav_lat;							// for error calcs
 long	nav_lon;							// for error calcs
 int		nav_throttle;						// 0-1000 for throttle control
 int		nav_throttle_old;					// for filtering
+
+bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
 long 	command_yaw_start;					// what angle were we to begin with
 long 	command_yaw_start_time;				// when did we start turning
@@ -558,9 +559,6 @@ void medium_loop()
 
 			// hack to stop navigation in Simple mode
 			if (control_mode == SIMPLE)
-				break;
-
-			if (control_mode == FBW)
 				break;
 
 			// Auto control modes:
@@ -974,45 +972,6 @@ void update_current_flight_mode(void)
 				output_stabilize_roll();
 				output_stabilize_pitch();
 			break;
-
-			case FBW:
-				// we are currently using manual throttle during alpha testing.
-				flight_timer++;
-
-				// 10 hz
-				if(flight_timer > 10){
-					flight_timer = 0;
-
-					if(GPS_enabled == false){
-						current_loc.lat = home.lat = 0;
-						current_loc.lng = home.lng = 0;
-					}
-
-					next_WP.lng = home.lng + g.rc_1.control_in / 2; // X: 4500 / 2 = 2250 = 25 meteres
-					next_WP.lat = home.lat - g.rc_2.control_in / 2; // Y: 4500 / 2 = 2250 = 25 meteres
-
-					calc_loiter_nav();
-				}
-
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-
-				// REMOVE AFTER TESTING !!!
-				//nav_yaw = dcm.yaw_sensor;
-
-				// Yaw control
-				output_manual_yaw();
-
-				// apply throttle control
-				output_manual_throttle();
-
-				// apply nav_pitch and nav_roll to output
-				fbw_nav_mixer();
-
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
-				break;
 
 			case ALT_HOLD:
 				// clear any AP naviagtion values
