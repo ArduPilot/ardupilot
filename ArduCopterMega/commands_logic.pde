@@ -327,14 +327,14 @@ bool verify_nav_wp()
 	update_crosstrack();
 
 	if (next_WP.options & WP_OPTION_ALT_REQUIRED){
-		byte = current_loc.alt > next_WP.alt;
+		alt = (current_loc.alt > next_WP.alt);
 	}
 
 	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
 		//SendDebug("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
 		//SendDebugln(command_must_index,DEC);
 
-		if (alt){
+		if (alt == true){
 			char message[30];
 			sprintf(message,"Reached Waypoint #%i",command_must_index);
 			gcs.send_text(SEVERITY_LOW,message);
