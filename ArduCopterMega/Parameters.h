@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 2;
+    static const uint16_t k_format_version = 3;
 
     //
     // Parameter identities.
