@@ -63,6 +63,17 @@ struct Location get_wp_with_index(int i)
 		temp.alt += home.alt;
 	}
 
+	if(temp.options & WP_OPTION_RELATIVE){
+		temp.lat	+=	home.lat;
+		temp.lng	+=	home.lng;
+	}
+
+	// XXX this is a little awkward. We have two methods to control Yaw tracking
+	// one is global and one is per waypoint.
+	if(temp.options & WP_OPTION_YAW){
+		yaw_tracking = TRACK_NEXT_WP;
+	}
+
 	return temp;
 }
 
@@ -154,7 +165,7 @@ void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
-	// used to control FBW and limit the rate of climb
+	// used to control and limit the rate of climb
 	// -----------------------------------------------
 	target_altitude = current_loc.alt;
 

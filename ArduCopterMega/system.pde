@@ -271,7 +271,8 @@ void startup_ground(void)
 			GPS_enabled = true;
 			break;
 		}
-		if (counter >= 4) {
+
+		if (counter >= 2) {
 			GPS_enabled = false;
 			break;
 	    }
@@ -314,23 +315,27 @@ void set_mode(byte mode)
 			break;
 
 		case ALT_HOLD:
+			init_throttle_cruise();
 			do_loiter_at_location();
 			break;
 
 		case AUTO:
+			init_throttle_cruise();
+			init_simple_bearing();
 			init_auto();
 			break;
 
 		case SIMPLE:
-			//initial_simple_bearing = dcm.yaw_sensor;
 			init_simple_bearing();
 			break;
 
 		case LOITER:
+			init_throttle_cruise();
 			do_loiter_at_location();
 			break;
 
 		case RTL:
+			init_throttle_cruise();
 			do_RTL();
 			break;
 
@@ -470,5 +475,14 @@ init_simple_bearing()
 			initial_simple_bearing = dcm.yaw_sensor;
 			simple_bearing_is_set = true;
 		//}
+	}
+}
+
+void
+init_throttle_cruise()
+{
+	if(set_throttle_cruise_flag == false && g.rc_3.control_in > 250){
+		set_throttle_cruise_flag = true;
+		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}
 }

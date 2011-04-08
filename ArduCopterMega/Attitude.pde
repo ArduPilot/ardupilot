@@ -10,7 +10,6 @@ init_pids()
 	max_yaw_dampener		= g.pid_yaw.kP() * 6000;				// = .5 * 6000  = 3000
 }
 
-
 void
 control_nav_mixer()
 {
@@ -158,7 +157,6 @@ output_yaw_with_hold(boolean hold)
 }
 
 // slight left rudder gives right roll.
-
 void
 output_rate_roll()
 {
@@ -175,12 +173,12 @@ void
 output_rate_pitch()
 {
 	// rate control
-	long rate		= degrees(omega.y) * 100; 									// 3rad = 17188 , 6rad = 34377
-	rate			= constrain(rate, -36000, 36000);							// limit to something fun!
-	long error		= ((long)g.rc_2.control_in * 8) - rate;						// control is += 4500 * 8 = 36000
+	long rate		= degrees(omega.y) * 100; 												// 3rad = 17188 , 6rad = 34377
+	rate			= constrain(rate, -36000, 36000);										// limit to something fun!
+	long error		= ((long)g.rc_2.control_in * 8) - rate;									// control is += 4500 * 8 = 36000
 
 	g.rc_2.servo_out 	= g.pid_acro_rate_pitch.get_pid(error, delta_ms_fast_loop, 1.0); 	// .075 * 36000 = 2700
-	g.rc_2.servo_out 	= constrain(g.rc_2.servo_out, -2400, 2400);					// limit to 2400
+	g.rc_2.servo_out 	= constrain(g.rc_2.servo_out, -2400, 2400);							// limit to 2400
 }
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
@@ -193,8 +191,6 @@ reset_I(void)
 	g.pid_baro_throttle.reset_I();
 	g.pid_sonar_throttle.reset_I();
 }
-
-
 
 
 /*************************************************************
@@ -247,7 +243,6 @@ float angle_boost()
 	temp = 2.0 - constrain(temp, .7, 1.0);
 	return temp;
 }
-
 
 /*************************************************************
 yaw control

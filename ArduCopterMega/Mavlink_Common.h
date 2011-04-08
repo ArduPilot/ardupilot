@@ -47,7 +47,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 				case STABILIZE:
 					mode 		= MAV_MODE_GUIDED;
 					break;
-				case FBW:
+				case SIMPLE:
 					mode 		= MAV_MODE_TEST1;
 					break;
 				case ALT_HOLD:

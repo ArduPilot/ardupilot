@@ -88,12 +88,11 @@
 #define ACRO 1				// rate control
 #define ALT_HOLD 2			// AUTO control
 #define SIMPLE 3			//
-#define FBW 4				// AUTO control
-#define AUTO 5				// AUTO control
-#define GCS_AUTO 6			// AUTO control
-#define LOITER 7			// Hold a single location
-#define RTL 8				// AUTO control
-#define NUM_MODES 9
+#define AUTO 4				// AUTO control
+#define GCS_AUTO 5			// AUTO control
+#define LOITER 6			// Hold a single location
+#define RTL 7				// AUTO control
+#define NUM_MODES 8
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
@@ -104,6 +103,16 @@
 #define TRACK_NONE 		1
 #define TRACK_NEXT_WP 	2
 #define TRACK_TARGET_WP 4
+
+// Waypoint options
+#define WP_OPTION_ALT_RELATIVE 		1
+#define WP_OPTION_ALT_CHANGE 		2
+#define WP_OPTION_YAW 				4
+#define WP_OPTION_ALT_REQUIRED		8
+#define WP_OPTION_RELATIVE			16
+//#define WP_OPTION_					32
+//#define WP_OPTION_					64
+#define WP_OPTION_NEXT_CMD			128
 
 //repeating events
 #define NO_REPEAT 0

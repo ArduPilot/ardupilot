@@ -303,7 +303,7 @@ bool verify_land()
 
 	if(g.sonar_enabled){
 		// decide which sensor we're usings
-		if(sonar_alt < 20){
+		if(sonar_alt < 40){
 			land_complete = true;
 			Serial.println("Y");
 			return true;
@@ -322,22 +322,35 @@ bool verify_land()
 
 bool verify_nav_wp()
 {
+	bool alt = true;
+
 	update_crosstrack();
+
+	if (next_WP.options & WP_OPTION_ALT_REQUIRED){
+		byte = current_loc.alt > next_WP.alt;
+	}
+
 	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
 		//SendDebug("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
 		//SendDebugln(command_must_index,DEC);
-		char message[30];
-		sprintf(message,"Reached Waypoint #%i",command_must_index);
-		gcs.send_text(SEVERITY_LOW,message);
-		return true;
+
+		if (alt){
+			char message[30];
+			sprintf(message,"Reached Waypoint #%i",command_must_index);
+			gcs.send_text(SEVERITY_LOW,message);
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 	// Have we passed the WP?
-	if(loiter_sum > 90){
+	if(alt && (loiter_sum > 90)){
 		gcs.send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
 		return true;
+	}else{
+		return false;
 	}
-	return false;
 }
 
 bool verify_loiter_unlim()
