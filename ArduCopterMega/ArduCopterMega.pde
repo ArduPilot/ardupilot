@@ -990,6 +990,7 @@ void update_current_flight_mode(void)
 
 					if(g.rc_3.control_in <= 0){
 						next_WP.alt -= 1;
+						next_WP.alt = max(next_WP.alt, 100);
 					}else if (g.rc_3.control_in > 700){
 						next_WP.alt += 1;
 					}
