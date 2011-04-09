@@ -9,6 +9,8 @@
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <Wire.h>
 
+FastSerialPort0(Serial);
+
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 #define ToDeg(x) (x*57.2957795131)  // *180/pi
 
