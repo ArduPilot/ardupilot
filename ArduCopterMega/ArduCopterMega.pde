@@ -42,7 +42,7 @@ version 2.1 of the License, or (at your option) any later version.
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
-//#include <GCS_SIMPLE.h>
+#include <GCS_SIMPLE.h>
 
 
 // Configuration
@@ -177,7 +177,7 @@ GPS         *g_gps;
 	GCS_Class           gcs;
 #endif
 
-//GCS_SIMPLE    gcs_simple(&Serial);
+GCS_SIMPLE    gcs_simple(&Serial);
 
 AP_RangeFinder_MaxsonarXL sonar;
 
@@ -933,16 +933,16 @@ void update_current_flight_mode(void)
 				if(flight_timer > 4){
 					flight_timer = 0;
 
-					current_loc.lat = 0;
-					current_loc.lng = 0;
+					tell_command.lat = 0;
+					tell_command.lng = 0;
 
 					next_WP.lng =   (float)g.rc_1.control_in *.4;  // X: 4500 / 2 = 2250 = 25 meteres
 					next_WP.lat = -((float)g.rc_2.control_in *.4); // Y: 4500 / 2 = 2250 = 25 meteres
 
 					// calc a new bearing
-					nav_bearing 	= get_bearing(&current_loc, &next_WP) + initial_simple_bearing;
+					nav_bearing 	= get_bearing(&tell_command, &next_WP) + initial_simple_bearing;
 					nav_bearing 	= wrap_360(nav_bearing);
-					wp_distance 	= get_distance(&current_loc, &next_WP);
+					wp_distance 	= get_distance(&tell_command, &next_WP);
 					calc_bearing_error();
 					/*
 					Serial.printf("lat: %ld lon:%ld, bear:%ld, dist:%ld, init:%ld, err:%ld ",
@@ -983,18 +983,7 @@ void update_current_flight_mode(void)
 				//next_WP.alt 	= home.alt + (g.rc_3.control_in); // 0 - 1000 (40 meters)
 				//next_WP.alt		= max(next_WP.alt, 30);
 
-				flight_timer++;
-
-				if(flight_timer >= 2){
-					flight_timer = 0;
-
-					if(g.rc_3.control_in <= 200){
-						next_WP.alt -= 1;				// 1 meter per second
-						next_WP.alt = max(next_WP.alt, 100);
-					}else if (g.rc_3.control_in > 700){
-						next_WP.alt += 1;
-					}
-				}
+				adjust_altitude();
 				// !!! testing
 				//next_WP.alt 	-= 500;
 
@@ -1033,25 +1022,14 @@ void update_current_flight_mode(void)
 
 			case LOITER:
 
-				flight_timer++;
+				adjust_altitude();
 
-				if(flight_timer >= 2){
-					flight_timer = 0;
-
-					if(g.rc_3.control_in <= 0){
-						next_WP.alt -= 1;
-					}else if (g.rc_3.control_in > 700){
-						next_WP.alt += 1;
-					}
-				}
+				// Output Pitch, Roll, Yaw and Throttle
+				// ------------------------------------
 
 				// Yaw control
 				// -----------
 				output_manual_yaw();
-
-
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
 
 				// apply throttle control
 				output_auto_throttle();
@@ -1171,3 +1149,20 @@ void update_alt()
 	calc_nav_throttle();
 }
 
+void
+adjust_altitude()
+{
+	flight_timer++;
+	if(flight_timer >= 2){
+		flight_timer = 0;
+
+		if(g.rc_3.control_in <= 200){
+			next_WP.alt -= 3;												// 1 meter per second
+			next_WP.alt = max(next_WP.alt, 100); 							// no lower than 1 meter?
+			next_WP.alt = max((current_loc.alt - 400), next_WP.alt);		// don't go more than 4 meters below current location
+		}else if (g.rc_3.control_in > 700){
+			next_WP.alt += 3;												// 1 meter per second
+			next_WP.alt = min((current_loc.alt + 400), next_WP.alt);		// don't go more than 4 meters below current location
+		}
+	}
+}

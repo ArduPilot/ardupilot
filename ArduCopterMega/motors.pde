@@ -228,8 +228,8 @@ set_servos_4()
 			gcs_simple.write_int(motor_out[CH_2]);
 			gcs_simple.write_int(motor_out[CH_3]);
 			gcs_simple.write_int(motor_out[CH_4]);
-
 			gcs_simple.write_int(g.rc_3.servo_out);
+
 			gcs_simple.write_int((int)(cos_yaw_x * 100));
 			gcs_simple.write_int((int)(sin_yaw_y * 100));
 			gcs_simple.write_int((int)(dcm.yaw_sensor / 100));
