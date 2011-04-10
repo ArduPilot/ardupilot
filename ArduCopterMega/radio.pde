@@ -86,6 +86,10 @@ void read_radio()
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
 
+
+	// limit our input to 800 so we can still pitch and roll
+	g.rc_3.control_in = min(g.rc_3.control_in, 800);
+
 	//throttle_failsafe(g.rc_3.radio_in);
 
 	/*
