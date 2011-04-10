@@ -287,7 +287,7 @@
 #define ACRO_RATE_PITCH_IMAX_CENTIDEGREE ACRO_RATE_PITCH_IMAX * 100
 
 #ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .1
+# define ACRO_RATE_YAW_P         .2			// used to control response in turning
 #endif
 #ifndef ACRO_RATE_YAW_I
 # define ACRO_RATE_YAW_I         0.0
@@ -305,7 +305,6 @@
 #endif
 
 
-
 //////////////////////////////////////////////////////////////////////////////
 // STABILZE Angle Control
 //
@@ -313,32 +312,26 @@
 # define STABILIZE_ROLL_P 		0.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.0
+# define STABILIZE_ROLL_I 		0.1		//
 #endif
 #ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.0
+# define STABILIZE_ROLL_D 		0.135
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	3
+# define STABILIZE_ROLL_IMAX 	10		// 10 degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		0.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.0
+# define STABILIZE_PITCH_I		0.1
 #endif
 #ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.0
+# define STABILIZE_PITCH_D		0.135
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	3
-#endif
-
-// STABILZE RATE Control
-//
-#ifndef STABILIZE_DAMPENER
-# define STABILIZE_DAMPENER		0.135
+# define STABILIZE_PITCH_IMAX	10
 #endif
 
 
@@ -346,44 +339,24 @@
 // YAW Control
 //
 #ifndef  YAW_P
-# define YAW_P					0.25
+# define YAW_P					0.35		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
-# define YAW_I					0.0
+# define YAW_I					0.0			// Always 0
 #endif
 #ifndef  YAW_D
-# define YAW_D					0.0
+# define YAW_D					0.175		//
 #endif
 #ifndef  YAW_IMAX
-# define YAW_IMAX				1
+# define YAW_IMAX				0			//	Always 0
 #endif
-
-// STABILZE YAW Control
-//
-#ifndef HOLD_YAW_DAMPENER
-# define HOLD_YAW_DAMPENER		0.175
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Throttle control
-//
-#ifndef THROTTLE_MIN
-# define THROTTLE_MIN			0
-#endif
-#ifndef THROTTLE_CRUISE
-# define THROTTLE_CRUISE		250
-#endif
-#ifndef THROTTLE_MAX
-# define THROTTLE_MAX			1000
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				36
+# define PITCH_MAX				25			// degrees
 #endif
 
 
@@ -397,12 +370,11 @@
 # define NAV_I					0.1
 #endif
 #ifndef NAV_D
-# define NAV_D					0.00
+# define NAV_D					0.00		// should always be 0
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX				250
+# define NAV_IMAX				250			// 250 degrees
 #endif
-# define NAV_IMAX_CENTIDEGREE	NAV_IMAX * 100
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -540,16 +512,6 @@
 #ifndef USE_CURRENT_ALT
 # define USE_CURRENT_ALT FALSE
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Developer Items
-//
-
-#ifndef STANDARD_SPEED
-# define STANDARD_SPEED		15.0
-#define STANDARD_SPEED_SQUARED (STANDARD_SPEED * STANDARD_SPEED)
-#endif
-#define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
 
 
 //////////////////////////////////////////////////////////////////////////////

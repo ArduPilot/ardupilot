@@ -20,7 +20,7 @@ control_nav_mixer()
 }
 
 void
-fbw_nav_mixer()
+simple_mixer()
 {
 	// control +- 45° is mixed with the navigation request by the Autopilot
 	// output is in degrees = target pitch and roll of copter
@@ -37,7 +37,12 @@ output_stabilize_roll()
 	error 		= g.rc_1.servo_out - dcm.roll_sensor;
 
 	// limit the error we're feeding to the PID
-	error 		= constrain(error,  -2500, 2500);
+	error 		= constrain(error, -2500, 2500);
+
+	// only buildup I if we are trying to roll hard
+	if(abs(g.rc_1.servo_out) < 1500){
+		g.pid_stabilize_roll.reset_I();
+	}
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
 	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);
@@ -58,10 +63,15 @@ output_stabilize_pitch()
 	float error, rate;
 	int dampener;
 
-	error 	= g.rc_2.servo_out - dcm.pitch_sensor;
+	error		= g.rc_2.servo_out - dcm.pitch_sensor;
 
 	// limit the error we're feeding to the PID
-	error 	= constrain(error, -2500, 2500);
+	error		= constrain(error, -2500, 2500);
+
+	// only buildup I if we are trying to roll hard
+	if(abs(g.rc_2.servo_out) < 1500){
+		g.pid_stabilize_pitch.reset_I();
+	}
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
 	g.rc_2.servo_out 	= g.pid_stabilize_pitch.get_pid(error, 	delta_ms_fast_loop, 1.0);

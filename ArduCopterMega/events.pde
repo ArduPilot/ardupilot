@@ -35,7 +35,6 @@ void failsafe_off_event()
 		// we should already be in RTL and throttle set to cruise
 		// ------------------------------------------------------
 		set_mode(RTL);
-		g.throttle_cruise = THROTTLE_CRUISE;
 	}
 	*/
 }
@@ -44,7 +43,6 @@ void low_battery_event(void)
 {
 	gcs.send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	set_mode(RTL);
-	g.throttle_cruise.set(THROTTLE_CRUISE);
 }
 
 

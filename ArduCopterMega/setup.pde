@@ -667,9 +667,9 @@ default_flight_modes()
 void
 default_throttle()
 {
-	g.throttle_min					= THROTTLE_MIN;
-	g.throttle_max					= THROTTLE_MAX;
-	g.throttle_cruise				= THROTTLE_CRUISE;
+	g.throttle_min					= 0;
+	g.throttle_max					= 1000;
+	g.throttle_cruise				= 100;
 	g.throttle_fs_enabled			= THROTTLE_FAILSAFE;
 	g.throttle_fs_action			= THROTTLE_FAILSAFE_ACTION;
 	g.throttle_fs_value				= THROTTLE_FS_VALUE;
@@ -739,10 +739,10 @@ default_gains()
 
 	// custom dampeners
 	// roll pitch
-	g.stabilize_dampener 	= STABILIZE_DAMPENER;
+	g.stabilize_dampener 	= STABILIZE_ROLL_D;
 
 	//yaw
-	g.hold_yaw_dampener		= HOLD_YAW_DAMPENER;
+	g.hold_yaw_dampener		= YAW_D;
 
 	// navigation
 	g.pid_nav_lat.kP(NAV_P);
