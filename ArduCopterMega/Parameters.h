@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 3;
+    static const uint16_t k_format_version = 4;
 
     //
     // Parameter identities.
@@ -232,12 +232,12 @@ public:
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        		PSTR("WP_RADIUS")),
         loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          		PSTR("LOITER_RADIUS")),
 
-        throttle_min            (THROTTLE_MIN,              k_param_throttle_min,					PSTR("THR_MIN")),
-        throttle_max            (THROTTLE_MAX,              k_param_throttle_max,					PSTR("THR_MAX")),
+        throttle_min            (0,             			k_param_throttle_min,					PSTR("THR_MIN")),
+        throttle_max            (1000, 			            k_param_throttle_max,					PSTR("THR_MAX")),
         throttle_fs_enabled   	(THROTTLE_FAILSAFE,         k_param_throttle_fs_enabled,			PSTR("THR_FAILSAFE")),
         throttle_fs_action		(THROTTLE_FAILSAFE_ACTION,  k_param_throttle_fs_action, 			PSTR("THR_FS_ACTION")),
         throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
-        throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
+        throttle_cruise         (100,						k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
 
         flight_mode_channel     (FLIGHT_MODE_CHANNEL+1,       k_param_flight_mode_channel,   		PSTR("FLT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
@@ -268,9 +268,9 @@ public:
 		pid_acro_rate_pitch	(k_param_pid_acro_rate_pitch,	PSTR("ACR_PIT_"),	ACRO_RATE_PITCH_P,  ACRO_RATE_PITCH_I,	ACRO_RATE_PITCH_D,	ACRO_RATE_PITCH_IMAX * 100),
 		pid_acro_rate_yaw	(k_param_pid_acro_rate_yaw,		PSTR("ACR_YAW_"),	ACRO_RATE_YAW_P,    ACRO_RATE_YAW_I,	ACRO_RATE_YAW_D,	ACRO_RATE_YAW_IMAX * 100),
 
-		pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),	STABILIZE_ROLL_P,   STABILIZE_ROLL_I,	STABILIZE_ROLL_D,   STABILIZE_ROLL_IMAX * 100),
-		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,  STABILIZE_PITCH_I,	STABILIZE_PITCH_D,  STABILIZE_PITCH_IMAX * 100),
-		pid_yaw				(k_param_pid_yaw,				PSTR("STB_YAW_"),	YAW_P,      		YAW_I,				YAW_D,				YAW_IMAX * 100),
+		pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),	STABILIZE_ROLL_P,   STABILIZE_ROLL_I,	0,   				STABILIZE_ROLL_IMAX * 100),
+		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,  STABILIZE_PITCH_I,	0,  				STABILIZE_PITCH_IMAX * 100),
+		pid_yaw				(k_param_pid_yaw,				PSTR("STB_YAW_"),	YAW_P,      		YAW_I,				0,					YAW_IMAX * 100),
 
 		pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,      		NAV_I,				NAV_D,				NAV_IMAX * 100),
 		pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_P,      		NAV_I,				NAV_D,				NAV_IMAX * 100),
@@ -278,8 +278,8 @@ public:
 		pid_baro_throttle	(k_param_pid_baro_throttle,		PSTR("THR_BAR_"),	THROTTLE_BARO_P,    THROTTLE_BARO_I,	THROTTLE_BARO_D,	THROTTLE_BARO_IMAX * 100),
 		pid_sonar_throttle	(k_param_pid_sonar_throttle,	PSTR("THR_SON_"),	THROTTLE_SONAR_P,   THROTTLE_SONAR_I,	THROTTLE_SONAR_D,	THROTTLE_SONAR_IMAX * 100),
 
-		stabilize_dampener	(STABILIZE_DAMPENER,	k_param_stabilize_dampener, 	PSTR("STB_DAMP")),
-		hold_yaw_dampener	(HOLD_YAW_DAMPENER, 	k_param_hold_yaw_dampener, 		PSTR("YAW_DAMP")),
+		stabilize_dampener	(STABILIZE_ROLL_D,		k_param_stabilize_dampener, 	PSTR("STB_DAMP")),
+		hold_yaw_dampener	(YAW_D,				 	k_param_hold_yaw_dampener, 		PSTR("YAW_DAMP")),
 
         junk(0)     // XXX just so that we can add things without worrying about the trailing comma
     {

@@ -966,7 +966,7 @@ void update_current_flight_mode(void)
 				output_manual_throttle();
 
 				// apply nav_pitch and nav_roll to output
-				fbw_nav_mixer();
+				simple_mixer();
 
 				// perform stabilzation
 				output_stabilize_roll();
@@ -988,8 +988,8 @@ void update_current_flight_mode(void)
 				if(flight_timer >= 2){
 					flight_timer = 0;
 
-					if(g.rc_3.control_in <= 0){
-						next_WP.alt -= 1;
+					if(g.rc_3.control_in <= 200){
+						next_WP.alt -= 1;				// 1 meter per second
 						next_WP.alt = max(next_WP.alt, 100);
 					}else if (g.rc_3.control_in > 700){
 						next_WP.alt += 1;
@@ -1102,10 +1102,6 @@ void read_AHRS(void)
 	//-----------------------------------------------
 	dcm.update_DCM(G_Dt);
 	omega = dcm.get_gyro();
-
-	// Testing remove !!!
-	//dcm.pitch_sensor = 0;
-	//dcm.roll_sensor = 0;
 }
 
 void update_trig(void){
@@ -1140,7 +1136,7 @@ void update_alt()
 		// decide which sensor we're usings
 		sonar_alt 		= sonar.read();
 
-		if(baro_alt < 500 && sonar_alt < 600){
+		if(baro_alt < 500 && sonar_alt < 600){  // less than 5m or 15 feet
 			altitude_sensor = SONAR;
 		}else{
 			altitude_sensor = BARO;
@@ -1165,10 +1161,10 @@ void update_alt()
 
 	// altitude smoothing
 	// ------------------
-	calc_altitude_smoothing_error();
+	//calc_altitude_smoothing_error();
 
 
-	//calc_altitude_error();
+	calc_altitude_error();
 
 	// Amount of throttle to apply for hovering
 	// ----------------------------------------

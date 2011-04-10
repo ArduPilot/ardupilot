@@ -368,33 +368,6 @@
 //
 
 //////////////////////////////////////////////////////////////////////////////
-// Throttle control
-//
-// THROTTLE_MIN                             OPTIONAL
-//
-// The minimum throttle setting to which the autopilot will reduce the
-// throttle while descending.  The default is zero, which is
-// suitable for aircraft with a steady power-off glide.  Increase this
-// value if your aircraft needs throttle to maintain a stable descent in
-// level flight.
-//
-// THROTTLE_CRUISE                          OPTIONAL
-//
-// The approximate throttle setting to achieve AIRSPEED_CRUISE in level flight.
-// The default is 45%, which is reasonable for a modestly powered aircraft.
-//
-// THROTTLE_MAX                             OPTIONAL
-//
-// The maximum throttle setting the autopilot will apply.  The default is 75%.
-// Reduce this value if your aicraft is overpowered, or has complex flight
-// characteristics at high throttle settings.
-//
-//#define THROTTLE_MIN        0
-//#define THROTTLE_CRUISE     45
-//#define THROTTLE_MAX        75
-//
-
-//////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits
 //
 // PITCH_MAX                                OPTIONAL
