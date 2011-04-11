@@ -293,7 +293,7 @@
 # define ACRO_RATE_YAW_I         0.0
 #endif
 #ifndef ACRO_RATE_YAW_D
-# define ACRO_RATE_YAW_D         0.05
+# define ACRO_RATE_YAW_D         0.00		//
 #endif
 #ifndef ACRO_RATE_YAW_IMAX
 # define ACRO_RATE_YAW_IMAX   0
