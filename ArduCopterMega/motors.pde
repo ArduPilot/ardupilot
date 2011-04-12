@@ -116,7 +116,7 @@ set_servos_4()
 			APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 
 
-		}else if (g.frame_type == HEXA_FRAME) {
+		}else if (g.frame_type == HEXAX_FRAME) {
 			//Serial.println("6_FRAME");
 
 			int roll_out 		= (float)g.rc_1.pwm_out * .866;
@@ -180,7 +180,7 @@ set_servos_4()
 		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max.get());
 		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max.get());
 
-		if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
+		if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == Y6_FRAME)) {
 			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max.get());
 			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
@@ -273,7 +273,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
+			if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == Y6_FRAME)) {
 				APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 				APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 				APM_RC.Force_Out6_Out7();
@@ -289,7 +289,7 @@ set_servos_4()
 			APM_RC.Force_Out0_Out1();
 			APM_RC.Force_Out2_Out3();
 
-			if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)) {
+			if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == Y6_FRAME)) {
 				APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 				APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 				APM_RC.Force_Out6_Out7();
@@ -318,7 +318,7 @@ set_servos_4()
 		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
 
 
-		if ((g.frame_type == HEXA_FRAME) || (g.frame_type == Y6_FRAME)){
+		if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == Y6_FRAME)){
 			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 		}
