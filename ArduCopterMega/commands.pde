@@ -74,6 +74,9 @@ struct Location get_wp_with_index(int i)
 		yaw_tracking = TRACK_NEXT_WP;
 	}
 
+	// this is a hack for now, until we get GUI support
+	yaw_tracking = TRACK_NEXT_WP;
+
 	return temp;
 }
 
