@@ -20,8 +20,9 @@
 #define PLUS_FRAME 0
 #define X_FRAME 1
 #define TRI_FRAME 2
-#define HEXA_FRAME 3
+#define HEXAX_FRAME 3
 #define Y6_FRAME 4
+#define HEXAP_FRAME 5
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
