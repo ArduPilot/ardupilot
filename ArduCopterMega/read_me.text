@@ -17,7 +17,7 @@ erase			- when installing ACM for the first time, run this to erases bad values 
 reset			- Performs factory reset and initialization of EEPROM values
 radio			- records the limits of ALL radio channels - very important!!!
 pid				- restores default PID values if you have changed them.
-frame			- sets your frame config: [x, +, tri, hexa, y6]
+frame			- sets your frame config: [x, +, tri, hexax, y6]
 motors			- interactive setup of your ESC and motors, enter this mode, then plug-in battery,
 					point at motors to make them spin
 					throttle will output full range to each motor - this is good for esc calibration
