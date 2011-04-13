@@ -292,6 +292,10 @@ void set_mode(byte mode)
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 
+	// XXX temporary
+	//if (g.log_bitmask & MASK_LOG_MODE)
+		Log_Write_Mode(control_mode);
+
 	// used to stop fly_aways
 	if(g.rc_1.control_in == 0){
 		// we are on the ground is this is true
@@ -481,8 +485,11 @@ init_simple_bearing()
 void
 init_throttle_cruise()
 {
-	if(set_throttle_cruise_flag == false && g.rc_3.control_in > 250){
-		set_throttle_cruise_flag = true;
-		g.throttle_cruise.set_and_save(g.rc_3.control_in);
+	if(set_throttle_cruise_flag == false){
+		if(g.rc_3.control_in > 200){
+			//set_throttle_cruise_flag = true;
+			g.throttle_cruise.set_and_save(g.rc_3.control_in);
+			//Serial.printf("throttle_cruise: %d\n", g.throttle_cruise.get());
+		}
 	}
 }

@@ -69,7 +69,7 @@ print_log_menu(void)
 		PLOG(MODE);
 		PLOG(RAW);
 		PLOG(CMD);
-		PLOG(CUR);
+		PLOG(CURRENT);
 		#undef PLOG
 	}
 	Serial.println();
@@ -166,7 +166,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(MODE);
 		TARG(RAW);
 		TARG(CMD);
-		TARG(CUR);
+		TARG(CURRENT);
 		#undef TARG
 	}
 

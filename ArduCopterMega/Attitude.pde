@@ -41,6 +41,10 @@ output_stabilize_roll()
 
 	// only buildup I if we are trying to roll hard
 	if(abs(g.rc_1.servo_out) < 1500){
+		// smoother alternative to reset?
+		//if(g.pid_stabilize_roll.kI() != 0){
+		//	g.pid_stabilize_roll.kI(g.pid_stabilize_roll.kI() * .8);
+		//}
 		g.pid_stabilize_roll.reset_I();
 	}
 
@@ -126,18 +130,18 @@ output_yaw_with_hold(boolean hold)
 
 	if(hold){
 		// try and hold the current nav_yaw setting
-		yaw_error		= nav_yaw - dcm.yaw_sensor; 									// +- 60°
-		yaw_error 		= wrap_180(yaw_error);
+		yaw_error			= nav_yaw - dcm.yaw_sensor; 									// +- 60°
+		yaw_error 			= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
-		yaw_error		= constrain(yaw_error,   -6000, 6000);						// limit error to 60 degees
+		yaw_error			= constrain(yaw_error,	 -6000, 6000);						// limit error to 60 degees
 
 		// Apply PID and save the new angle back to RC_Channel
 		g.rc_4.servo_out 	= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
 
 		// We adjust the output by the rate of rotation
-		long rate		= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
-		int dampener 	= ((float)rate * g.hold_yaw_dampener);						// 18000 * .17 = 3000
+		long rate			= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
+		int dampener 		= (float)rate * g.hold_yaw_dampener;						// 18000 * .17 = 3000
 
 		// Limit dampening to be equal to propotional term for symmetry
 		g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
@@ -155,15 +159,26 @@ output_yaw_with_hold(boolean hold)
 			// we are breaking;
 			g.rc_4.servo_out = (omega.z > 0) ? -1800 : 1800;
 
+			//g.rc_4.servo_out = (int)((float)g.rc_4.servo_out * (omega.z / 6.0));
+
 			//switch comments to get old behavior.
 			//g.rc_4.servo_out = g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
 
 		}else{
-			g.rc_4.servo_out = g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);// kP .07 * 36000 = 2520
+			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); // kP .07 * 36000 = 2520
+
+			// We adjust the output by the rate of rotation
+			//long rate			= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
+			//int dampener 		= (float)rate * g.hold_yaw_dampener;							// 18000 * .17 = 3000
+
+			// Limit dampening to be equal to propotional term for symmetry
+			//g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
+			g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);							// limit to 24°
 		}
 
-		g.rc_4.servo_out = constrain(g.rc_4.servo_out, -1800, 1800);						// limit to 24°
 	}
+
+	//Serial.printf("%d\n",g.rc_4.servo_out);
 }
 
 // slight left rudder gives right roll.

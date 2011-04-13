@@ -212,8 +212,8 @@ void do_RTL(void)
 	// output control mode to the ground station
 	gcs.send_message(MSG_HEARTBEAT);
 
-	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+	//if (g.log_bitmask & MASK_LOG_MODE)
+	//	Log_Write_Mode(control_mode);
 }
 
 void do_takeoff()

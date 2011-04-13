@@ -107,8 +107,8 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - reboot APM"));
 
 	delay(1000);
-	default_log_bitmask();
-	default_gains();
+	//default_log_bitmask();
+	//default_gains();
 
 	for (;;) {
 	}
@@ -683,7 +683,7 @@ void default_log_bitmask()
 {
 
 	// convenience macro for testing LOG_* and setting LOGBIT_*
-	#define LOGBIT(_s)	(MASK_LOG_##_s ? MASK_LOG_##_s : 0)
+	#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
 
 	g.log_bitmask =
 		LOGBIT(ATTITUDE_FAST)	|
@@ -695,7 +695,7 @@ void default_log_bitmask()
 		LOGBIT(MODE)			|
 		LOGBIT(RAW)				|
 		LOGBIT(CMD)				|
-		LOGBIT(CUR);
+		LOGBIT(CURRENT);
 	#undef LOGBIT
 
 	g.log_bitmask.save();
