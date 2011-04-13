@@ -80,7 +80,7 @@ void read_trim_switch()
 				#endif
 			}else{
 				// set the throttle nominal
-				if(g.rc_3.control_in > 200){
+				if(g.rc_3.control_in > 150){
 					g.throttle_cruise.set_and_save(g.rc_3.control_in);
 					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
 				}

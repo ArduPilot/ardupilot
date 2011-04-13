@@ -42,6 +42,7 @@ version 2.1 of the License, or (at your option) any later version.
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+
 //#include <GCS_SIMPLE.h>
 
 
@@ -767,7 +768,7 @@ void slow_loop()
 // 1Hz loop
 void super_slow_loop()
 {
-	if (g.log_bitmask & MASK_LOG_CUR)
+	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
 
     gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
@@ -1162,7 +1163,10 @@ adjust_altitude()
 			next_WP.alt = max((current_loc.alt - 400), next_WP.alt);		// don't go more than 4 meters below current location
 		}else if (g.rc_3.control_in > 700){
 			next_WP.alt += 3;												// 1 meter per second
-			next_WP.alt = min((current_loc.alt + 400), next_WP.alt);		// don't go more than 4 meters below current location
+			//next_WP.alt = min((current_loc.alt + 400), next_WP.alt);		// don't go more than 4 meters below current location
+			if(next_WP.alt > (current_loc.alt + 400)){
+				next_WP.alt = current_loc.alt + 400;
+			}
 		}
 	}
 }

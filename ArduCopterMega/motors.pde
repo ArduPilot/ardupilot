@@ -9,21 +9,29 @@ void arm_motors()
 
 	// Arm motor output : Throttle down and full yaw right for more than 2 seconds
 	if (g.rc_3.control_in == 0){
-		if (g.rc_4.control_in > 2700) {
-			if (arming_counter > ARM_DELAY) {
-				motor_armed = true;
+		// full right
+		if (g.rc_4.control_in > 4000) {
+			if (arming_counter >= ARM_DELAY) {
+				motor_armed 	= true;
+				arming_counter 	= ARM_DELAY;
 			} else{
 				arming_counter++;
 			}
-		}else if (g.rc_4.control_in < -2700) {
-			if (arming_counter > DISARM_DELAY){
-				motor_armed = false;
+		// full left
+		}else if (g.rc_4.control_in < -4000) {
+			if (arming_counter >= DISARM_DELAY){
+				motor_armed 	= false;
+				arming_counter 	= DISARM_DELAY;
 			}else{
 				arming_counter++;
 			}
+		// centered
 		}else{
 			arming_counter = 0;
 		}
+
+	}else{
+		arming_counter = 0;
 	}
 }
 
@@ -186,7 +194,7 @@ set_servos_4()
 		}
 
 		num++;
-		if (num > 50){
+		if (num > 25){
 			num = 0;
 			/*
 			Serial.printf("t_alt:%ld, alt:%ld, thr: %d sen: ",
@@ -224,24 +232,15 @@ set_servos_4()
 			//*/
 
 			/*
-			gcs_simple.write_int(motor_out[CH_1]);
-			gcs_simple.write_int(motor_out[CH_2]);
-			gcs_simple.write_int(motor_out[CH_3]);
-			gcs_simple.write_int(motor_out[CH_4]);
-			gcs_simple.write_int(g.rc_3.servo_out);
 
-			gcs_simple.write_int((int)(cos_yaw_x * 100));
-			gcs_simple.write_int((int)(sin_yaw_y * 100));
-			gcs_simple.write_int((int)(dcm.yaw_sensor / 100));
-			gcs_simple.write_int((int)(nav_yaw / 100));
+			gcs_simple.write_byte(control_mode);
+			gcs_simple.write_int(g.rc_3.servo_out);
 
 			gcs_simple.write_int((int)nav_lat);
 			gcs_simple.write_int((int)nav_lon);
-
 			gcs_simple.write_int((int)nav_roll);
 			gcs_simple.write_int((int)nav_pitch);
 
-			//24
 			gcs_simple.write_long(current_loc.lat);	//28
 			gcs_simple.write_long(current_loc.lng);	//32
 			gcs_simple.write_int((int)current_loc.alt);	//34
@@ -249,6 +248,27 @@ set_servos_4()
 			gcs_simple.write_long(next_WP.lat);
 			gcs_simple.write_long(next_WP.lng);
 			gcs_simple.write_int((int)next_WP.alt);		//44
+
+			gcs_simple.write_int((int)(target_bearing / 100));
+			gcs_simple.write_int((int)(nav_bearing / 100));
+			gcs_simple.write_int((int)(nav_yaw / 100));
+			gcs_simple.write_int((int)(dcm.yaw_sensor / 100));
+
+			if(altitude_sensor == BARO){
+				gcs_simple.write_int((int)g.pid_baro_throttle.get_integrator());
+			}else{
+				gcs_simple.write_int((int)g.pid_sonar_throttle.get_integrator());
+			}
+
+			gcs_simple.write_int(g.throttle_cruise);
+
+
+			//gcs_simple.write_int((int)(cos_yaw_x * 100));
+			//gcs_simple.write_int((int)(sin_yaw_y * 100));
+			//gcs_simple.write_int((int)(nav_yaw / 100));
+
+
+			//24
 
 			gcs_simple.flush(10); // Message ID
 			//*/

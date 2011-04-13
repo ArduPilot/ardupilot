@@ -270,7 +270,6 @@
 #ifndef ACRO_RATE_ROLL_IMAX
 # define ACRO_RATE_ROLL_IMAX	 20
 #endif
-# define ACRO_RATE_ROLL_IMAX_CENTIDEGREE ACRO_RATE_ROLL_IMAX * 100
 
 #ifndef ACRO_RATE_PITCH_P
 # define ACRO_RATE_PITCH_P         .190
@@ -284,10 +283,9 @@
 #ifndef ACRO_RATE_PITCH_IMAX
 # define ACRO_RATE_PITCH_IMAX   20
 #endif
-#define ACRO_RATE_PITCH_IMAX_CENTIDEGREE ACRO_RATE_PITCH_IMAX * 100
 
 #ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .2			// used to control response in turning
+# define ACRO_RATE_YAW_P         .1			// used to control response in turning
 #endif
 #ifndef ACRO_RATE_YAW_I
 # define ACRO_RATE_YAW_I         0.0
@@ -298,7 +296,6 @@
 #ifndef ACRO_RATE_YAW_IMAX
 # define ACRO_RATE_YAW_IMAX   0
 #endif
-# define ACRO_RATE_YAW_IMAX_CENTIDEGREE ACRO_RATE_YAW_IMAX * 100
 
 #ifndef ACRO_RATE_TRIGGER
 # define ACRO_RATE_TRIGGER   0
@@ -315,7 +312,7 @@
 # define STABILIZE_ROLL_I 		0.1		//
 #endif
 #ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.135
+# define STABILIZE_ROLL_D 		0.11
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	10		// 10 degrees
@@ -328,7 +325,7 @@
 # define STABILIZE_PITCH_I		0.1
 #endif
 #ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.135
+# define STABILIZE_PITCH_D		0.11
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	10
@@ -384,10 +381,10 @@
 # define THROTTLE_BARO_P		0.25
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.01
+# define THROTTLE_BARO_I		0.04
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.2
+# define THROTTLE_BARO_D		0.0	// lowered to 0 to debug effects
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		50
@@ -398,7 +395,7 @@
 # define THROTTLE_SONAR_P		.3
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.01
+# define THROTTLE_SONAR_I		0.1
 #endif
 #ifndef THROTTLE_SONAR_D
 # define THROTTLE_SONAR_D		0.03
