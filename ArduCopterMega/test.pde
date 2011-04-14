@@ -129,10 +129,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
-
 	while(1){
 		delay(20);
 		read_radio();
@@ -182,10 +178,6 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_radio();
 	}
-
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
 
 	oldSwitchPosition = readSwitch();
 
@@ -242,8 +234,6 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	control_mode = STABILIZE;
 	Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
-
-	trim_radio();
 
 	motor_auto_safe 	= false;
 	motor_armed 		= true;

@@ -43,7 +43,7 @@ version 2.1 of the License, or (at your option) any later version.
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
-//#include <GCS_SIMPLE.h>
+
 
 
 // Configuration
@@ -178,6 +178,7 @@ GPS         *g_gps;
 	GCS_Class           gcs;
 #endif
 
+//#include <GCS_SIMPLE.h>
 //GCS_SIMPLE    gcs_simple(&Serial);
 
 AP_RangeFinder_MaxsonarXL sonar;

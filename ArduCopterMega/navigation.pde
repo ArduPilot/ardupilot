@@ -54,6 +54,7 @@ void calc_loiter_nav()
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
 	1000 	= 11m
+	1800 	= 1980m = 60 feet
 	3000 	= 33m
 	10000 	= 111m
 	pitch_max = 22° (2200)
@@ -89,26 +90,21 @@ void calc_waypoint_nav()
 	//nav_lat = max(wp_distance, -DIST_ERROR_MAX);
 	//nav_lat = min(wp_distance, DIST_ERROR_MAX);
 
-	//Serial.printf("nav_lat %ld, ", nav_lat);
 	// Scale response by kP
 	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
-	//Serial.printf("%ld, ",nav_lat);
 
 	// get the sin and cos of the bearing error - rotated 90°
 	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
 	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
-	//Serial.printf("X%2.4f, Y%2.4f ", cos_nav_x, sin_nav_y);
 
 	// rotate the vector
 	nav_roll 	=  (float)nav_lat * cos_nav_x;
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
 
-	//Serial.printf("R%ld, P%ld ", nav_roll, nav_pitch);
 
 	long pmax = g.pitch_max.get();
 	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
 	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
-	//Serial.printf("R%ld, P%ld \n", nav_roll, nav_pitch);
 }
 
 void calc_bearing_error()

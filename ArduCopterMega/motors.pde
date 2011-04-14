@@ -29,7 +29,6 @@ void arm_motors()
 		}else{
 			arming_counter = 0;
 		}
-
 	}else{
 		arming_counter = 0;
 	}
@@ -55,7 +54,7 @@ set_servos_4()
 		g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);
 
 		if(g.rc_3.servo_out > 0)
-			out_min = g.rc_3.radio_min + 50;
+			out_min = g.rc_3.radio_min + 60;
 
 		//Serial.printf("out: %d %d %d %d\t\t", g.rc_1.servo_out, g.rc_2.servo_out, g.rc_3.servo_out, g.rc_4.servo_out);
 
@@ -64,6 +63,10 @@ set_servos_4()
 		g.rc_2.calc_pwm();
 		g.rc_3.calc_pwm();
 		g.rc_4.calc_pwm();
+
+		// limit Yaw control so we don't clip and loose altitude
+		// this is only a partial solution.
+		g.rc_4.pwm_out = min(g.rc_4.pwm_out, (g.rc_3.radio_out - out_min));
 
 		//Serial.printf("out: %d %d %d %d\n", g.rc_1.radio_out, g.rc_2.radio_out, g.rc_3.radio_out, g.rc_4.radio_out);
 		//Serial.printf("yaw: %d ", g.rc_4.radio_out);
@@ -240,6 +243,7 @@ set_servos_4()
 			gcs_simple.write_int((int)nav_lon);
 			gcs_simple.write_int((int)nav_roll);
 			gcs_simple.write_int((int)nav_pitch);
+
 
 			gcs_simple.write_long(current_loc.lat);	//28
 			gcs_simple.write_long(current_loc.lng);	//32
