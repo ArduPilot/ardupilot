@@ -202,10 +202,6 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 
 	init_rc_in();
 
-	// read the radio to set trims
-	// ---------------------------
-	trim_radio();
-
 	print_hit_enter();
 	delay(1000);
 
@@ -382,7 +378,6 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 
 	Serial.printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
 	print_hit_enter();
-	trim_radio();
 
 	while(1){
 		delay(20);
