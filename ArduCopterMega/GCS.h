@@ -65,12 +65,13 @@ public:
 	///
 	void		send_text(uint8_t severity, const char *str) {}
 
+#define send_text_P(severity, msg) send_text(severity, msg)
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text_P(uint8_t severity, const prog_char_t *str) {}
+	void		send_text(uint8_t severity, const prog_char_t *str) {}
 
 	/// Send acknowledgement for a message.
 	///
@@ -140,7 +141,7 @@ public:
 	void	init(BetterStream *port);
 	void	send_message(uint8_t id, uint32_t param = 0);
 	void	send_text(uint8_t severity, const char *str);
-	void	send_text_P(uint8_t severity, const prog_char_t *str);
+	void	send_text(uint8_t severity, const prog_char_t *str);
 	void	acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
 private:
@@ -152,6 +153,7 @@ private:
 
 	AP_Var      *_queued_parameter;                 ///< next parameter to be sent in queue
 	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
+    uint16_t    _queued_parameter_count;            ///< saved count of parameters for queued send
 
 	/// Count the number of reportable parameters.
 	///
@@ -175,6 +177,30 @@ private:
     uint16_t rawControllerStreamRate;
     uint16_t rcStreamRate;
     uint16_t extraStreamRate[3];
+
+	// waypoints
+    uint16_t requested_interface; // request port to use
+	uint16_t waypoint_request_i; // request index
+	uint16_t waypoint_dest_sysid; // where to send requests
+	uint16_t waypoint_dest_compid; // "
+	bool waypoint_sending; // currently in send process
+	bool waypoint_receiving; // currently receiving
+	uint16_t waypoint_count;
+	uint32_t waypoint_timelast_send; // milliseconds
+	uint32_t waypoint_timelast_receive; // milliseconds
+	uint16_t waypoint_send_timeout; // milliseconds
+	uint16_t waypoint_receive_timeout; // milliseconds
+	float junk; //used to return a junk value for interface
+
+	// data stream rates
+	uint16_t streamRateRawSensors;
+	uint16_t streamRateExtendedStatus;
+	uint16_t streamRateRCChannels;
+	uint16_t streamRateRawController;
+	uint16_t streamRatePosition;
+	uint16_t streamRateExtra1;
+	uint16_t streamRateExtra2;
+	uint16_t streamRateExtra3;
 };
 #endif // GCS_PROTOCOL_MAVLINK
 

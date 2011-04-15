@@ -5,7 +5,6 @@
 
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK || GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 
-uint16_t system_type = MAV_FIXED_WING;
 byte mavdelay = 0;
 
 // what does this do?
@@ -31,7 +30,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 		case MSG_HEARTBEAT:
 			mavlink_msg_heartbeat_send(
 					chan,
-					system_type,
+					mavlink_system.type,
 					MAV_AUTOPILOT_ARDUPILOTMEGA);
 			break;
 
@@ -149,10 +148,10 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 			// This is used for HIL.  Do not change without discussing with HIL maintainers
 			mavlink_msg_rc_channels_scaled_send(
 					chan,
-					g.rc_1.norm_output(),
-					g.rc_2.norm_output(),
-					g.rc_3.norm_output(),
-					g.rc_4.norm_output(),
+					10000 * g.rc_1.norm_output(),
+					10000 * g.rc_2.norm_output(),
+					10000 * g.rc_3.norm_output(),
+					10000 * g.rc_4.norm_output(),
 					0,
 					0,
 					0,
@@ -199,10 +198,10 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					chan,
 					(float)airspeed / 100.0,
 					(float)g_gps->ground_speed / 100.0,
-					dcm.yaw_sensor,
+					(dcm.yaw_sensor / 100) % 360,
+					nav_throttle,
 					current_loc.alt / 100.0,
-					climb_rate,
-					nav_throttle);
+					climb_rate);
 			break;
 		}
 
@@ -258,7 +257,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 			break;
 		}
 
-		defualt:
+		default:
 			break;
 	}
 }
