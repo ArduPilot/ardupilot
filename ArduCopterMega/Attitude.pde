@@ -7,7 +7,7 @@ init_pids()
 	// this creates symmetry with the P gain value preventing oscillations
 
 	max_stabilize_dampener 	= g.pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°
-	max_yaw_dampener		= g.pid_yaw.kP() * 6000;				// = .5 * 6000  = 3000
+	//max_yaw_dampener		= g.pid_yaw.kP() * 6000;				// = .35 * 6000  = 2100
 }
 
 void
@@ -57,7 +57,7 @@ output_stabilize_roll()
 
 	// Limit dampening to be equal to propotional term for symmetry
 	rate				= degrees(omega.x) * 100.0; 													// 6rad = 34377
-	dampener 			= (rate * g.stabilize_dampener);										// 34377 * .175 = 6000
+	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
 	g.rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 }
 
@@ -86,7 +86,7 @@ output_stabilize_pitch()
 
 	// Limit dampening to be equal to propotional term for symmetry
 	rate				= degrees(omega.y) * 100.0; 													// 6rad = 34377
-	dampener 			= (rate * g.stabilize_dampener);										// 34377 * .175 = 6000
+	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
 	g.rc_2.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 }
 
@@ -102,6 +102,11 @@ clear_yaw_control()
 void
 output_yaw_with_hold(boolean hold)
 {
+	// rate control
+	int dampener;
+	long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
+	rate			= constrain(rate, -36000, 36000);									// limit to something fun!
+
 	if(hold){
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
@@ -140,33 +145,23 @@ output_yaw_with_hold(boolean hold)
 		g.rc_4.servo_out 	= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
 
 	}else{
-
-		// rate control
-		long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
-		rate			= constrain(rate, -36000, 36000);									// limit to something fun!
-		long error		= ((long)g.rc_4.control_in * 6) - rate;								// control is += 6000 * 6 = 36000
 																							// -error = CCW, 	+error = CW
-
 		if(g.rc_4.control_in == 0){
 			// we are breaking;
 			//g.rc_4.servo_out = (omega.z > 0) ? -600 : 600;
-			g.rc_4.servo_out = (int)((float)g.rc_4.servo_out * (omega.z / 6.0));
-
+			g.rc_4.servo_out 	= (int)((float)g.rc_4.servo_out * (omega.z / 6.0));
 		}else{
-
-			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0); // kP .07 * 36000 = 2520
+			long error			= ((long)g.rc_4.control_in * 6) - rate;							// control is += 6000 * 6 = 36000
+			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
 		}
 	}
 
-	// We adjust the output by the rate of rotation
-	long rate			= degrees(omega.z) * 100.0; 									// 3rad = 17188 , 6rad = 34377
-	int dampener 		= (float)rate * g.hold_yaw_dampener;						// 18000 * .17 = 3000
-
 	// Limit dampening to be equal to propotional term for symmetry
-	//g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
+	dampener 			= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
+	g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
 
 	// Limit Output
-	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);							// limit to 24°
+	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);								// limit to 24°
 
 	//Serial.printf("%d\n",g.rc_4.servo_out);
 }

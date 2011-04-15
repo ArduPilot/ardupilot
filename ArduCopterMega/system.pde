@@ -339,12 +339,10 @@ void set_mode(byte mode)
 
 		case AUTO:
 			init_throttle_cruise();
-			init_simple_bearing();
 			init_auto();
 			break;
 
 		case SIMPLE:
-			init_simple_bearing();
 			break;
 
 		case LOITER:
@@ -487,13 +485,14 @@ unsigned long freeRAM() {
 void
 init_simple_bearing()
 {
-	if(simple_bearing_is_set == false){
+	initial_simple_bearing = dcm.yaw_sensor;
+	//if(simple_bearing_is_set == false){
 		//if(g.rc_3.control_in == 0){
 			// we are on the ground
-			initial_simple_bearing = dcm.yaw_sensor;
-			simple_bearing_is_set = true;
+	//		initial_simple_bearing = dcm.yaw_sensor;
+	//		simple_bearing_is_set = true;
 		//}
-	}
+	//}
 }
 
 void
