@@ -14,6 +14,11 @@ void arm_motors()
 			if (arming_counter >= ARM_DELAY) {
 				motor_armed 	= true;
 				arming_counter 	= ARM_DELAY;
+
+				// Remember Orientation
+				// ---------------------------
+				init_simple_bearing();
+
 			} else{
 				arming_counter++;
 			}
@@ -243,7 +248,6 @@ set_servos_4()
 			gcs_simple.write_int((int)nav_lon);
 			gcs_simple.write_int((int)nav_roll);
 			gcs_simple.write_int((int)nav_pitch);
-
 
 			gcs_simple.write_long(current_loc.lat);	//28
 			gcs_simple.write_long(current_loc.lng);	//32

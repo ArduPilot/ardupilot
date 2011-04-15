@@ -336,7 +336,7 @@
 // YAW Control
 //
 #ifndef  YAW_P
-# define YAW_P					0.35		// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define YAW_P					0.5		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
 # define YAW_I					0.0			// Always 0
