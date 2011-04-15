@@ -449,7 +449,6 @@ void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long 
 	DataFlash.WriteLong(log_Ground_Speed);
 	DataFlash.WriteLong(log_Ground_Course);
 	DataFlash.WriteByte(END_BYTE);
-	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
@@ -532,7 +531,7 @@ void Log_Read_Performance()
 	long pm_time;
 	int logvar;
 
-	Serial.print("PM:");
+	Serial.printf_P(PSTR("PM:"));
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
@@ -554,7 +553,7 @@ void Log_Read_Cmd()
 	byte logvarb;
 	long logvarl;
 
-	Serial.print("CMD:");
+	Serial.printf_P(PSTR("CMD:"));
 	for(int i = 1; i < 4; i++) {
 		logvarb = DataFlash.ReadByte();
 		Serial.print(logvarb, DEC);
@@ -585,7 +584,7 @@ void Log_Read_Startup()
 // Read an attitude packet
 void Log_Read_Attitude()
 {
-	Serial.printf_P(PSTR("ATT: %d, %d, %d\n"),
+	Serial.printf_P(PSTR("ATT: %d, %d, %u\n"),
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt(),
 			(uint16_t)DataFlash.ReadInt());
@@ -594,7 +593,7 @@ void Log_Read_Attitude()
 // Read a mode packet
 void Log_Read_Mode()
 {
-	Serial.print("MOD:");
+	Serial.printf_P(PSTR("MOD:"));
 	Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
 }
 
@@ -618,7 +617,7 @@ void Log_Read_GPS()
 void Log_Read_Raw()
 {
 	float logvar;
-	Serial.print("RAW:");
+	Serial.printf_P(PSTR("RAW:"));
 	for (int y = 0; y < 6; y++) {
 		logvar = (float)DataFlash.ReadLong() / t7;
 		Serial.print(logvar);
@@ -631,8 +630,8 @@ void Log_Read_Raw()
 void Log_Read(int start_page, int end_page)
 {
 	byte data;
-	byte log_step;
-	int packet_count;
+	byte log_step = 0;
+	int packet_count = 0;
 	int page = start_page;
 
 

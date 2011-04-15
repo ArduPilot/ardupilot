@@ -52,7 +52,6 @@ version 2.1 of the License, or (at your option) any later version.
 // Local modules
 #include "defines.h"
 #include "Parameters.h"
-#include "global_data.h"
 #include "GCS.h"
 #include "HIL.h"
 
