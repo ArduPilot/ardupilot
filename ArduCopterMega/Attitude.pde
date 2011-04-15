@@ -163,7 +163,7 @@ output_yaw_with_hold(boolean hold)
 	int dampener 		= (float)rate * g.hold_yaw_dampener;						// 18000 * .17 = 3000
 
 	// Limit dampening to be equal to propotional term for symmetry
-	g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
+	//g.rc_4.servo_out	-= constrain(dampener, -max_yaw_dampener, max_yaw_dampener); 	// -3000
 
 	// Limit Output
 	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);							// limit to 24°
