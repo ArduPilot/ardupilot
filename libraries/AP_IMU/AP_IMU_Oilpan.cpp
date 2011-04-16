@@ -96,13 +96,14 @@ AP_IMU_Oilpan::_init_gyro()
 		delay(20);
 	}
 
-	for (int j=0; j<=2; j++) _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
-	
+	for (int j = 0; j <= 2; j++)
+	    _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
+
 	do {
 		for (int j = 0; j <= 2; j++){
-			prev[j] = _sensor_cal[j];
-			adc_in = _adc->Ch(_sensors[j]);
-			adc_in -= _sensor_compensation(j, tc_temp);
+			prev[j]     = _sensor_cal[j];
+			adc_in      = _adc->Ch(_sensors[j]);
+			adc_in     -= _sensor_compensation(j, tc_temp);
 			_sensor_cal[j]	= adc_in;
 		}
 
@@ -125,14 +126,14 @@ AP_IMU_Oilpan::_init_gyro()
 			if(flashcount >= 10) {
 				flashcount = 0;
 				digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, HIGH);
+			    digitalWrite(A_LED_PIN, HIGH);
 			}
 			flashcount++;
 		}
-		
-		total_change = fabs(prev[0] - _sensor_cal[0]) + fabs(prev[1] - _sensor_cal[1]) +fabs(prev[2] - _sensor_cal[2]);
-		max_offset = (_sensor_cal[0] > _sensor_cal[1]) ? _sensor_cal[0] : _sensor_cal[1];
-		max_offset = (max_offset > _sensor_cal[2]) ? max_offset : _sensor_cal[2];
+
+		total_change    = fabs(prev[0] - _sensor_cal[0]) + fabs(prev[1] - _sensor_cal[1]) +fabs(prev[2] - _sensor_cal[2]);
+		max_offset      = (_sensor_cal[0] > _sensor_cal[1]) ? _sensor_cal[0] : _sensor_cal[1];
+		max_offset      = (max_offset > _sensor_cal[2]) ? max_offset : _sensor_cal[2];
 		delay(500);
 	} while (  total_change > _gyro_total_cal_change || max_offset > _gyro_max_cal_offset);
 }
@@ -165,7 +166,7 @@ AP_IMU_Oilpan::_init_accel()
 	Serial.printf_P(PSTR("Init Accel"));
 
 	for (int j=3; j<=5; j++) _sensor_cal[j] = 500;		// Just a large value to load prev[j] the first time
-	
+
 	do {
 		for (int j = 3; j <= 5; j++){
 			prev[j] = _sensor_cal[j];
@@ -200,14 +201,14 @@ AP_IMU_Oilpan::_init_accel()
 
 		// null gravity from the Z accel
 		_sensor_cal[5] += _gravity * _sensor_signs[5];
-		
+
 		total_change = fabs(prev[3] - _sensor_cal[3]) + fabs(prev[4] - _sensor_cal[4]) +fabs(prev[5] - _sensor_cal[5]);
 		max_offset = (_sensor_cal[3] > _sensor_cal[4]) ? _sensor_cal[3] : _sensor_cal[4];
 		max_offset = (max_offset > _sensor_cal[5]) ? max_offset : _sensor_cal[5];
 
 		delay(500);
 	} while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
-	
+
 	Serial.printf_P(PSTR(" "));
 }
 
