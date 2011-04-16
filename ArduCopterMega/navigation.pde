@@ -54,14 +54,17 @@ void calc_loiter_nav()
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
 	1000 	= 11m
-	1800 	= 1980m = 60 feet
+	1800 	= 19.80m = 60 feet
 	3000 	= 33m
 	10000 	= 111m
 	pitch_max = 22° (2200)
 	*/
+	// X ROLL
+	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
 
-	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 50 - 30 = 20 pitch right
-	lat_error	= next_WP.lat - current_loc.lat;							// 50 - 30 = 20 pitch up
+	// Y PITCH
+	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
+
 
 	long_error	= constrain(long_error, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
@@ -72,11 +75,38 @@ void calc_loiter_nav()
 
 	// PITCH	Y
 	//nav_lat		= lat_error * g.pid_nav_lat.kP();						// 1800 * 2 = 3600 or 36°
-	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);
+	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);			// invert lat (for pitch)
+
+
+	// nav_lat  = -1000  Y Pitch
+	// nav_lon  =  1000  X Roll
 
 	// rotate the vector
-	nav_roll 	=   (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	= -((float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y);
+	nav_roll 	=   (float)nav_lon * sin_yaw_y 	- (float)nav_lat * -cos_yaw_x;
+					// BAD
+					//NORTH  -1000 *  1			- 1000 *  0 	= -1000	// roll left
+					//WEST   -1000 *  0			- 1000 * -1 	=  1000	// roll right  - Backwards
+					//EAST   -1000 *  0			- 1000 *  1		= -1000	// roll left   - Backwards
+					//SOUTH  -1000 * -1			- 1000 *  0 	=  1000	// roll right
+
+					// GOOD
+					//NORTH  -1000 *  1			- 1000 *  0 	= -1000	// roll left
+					//WEST   -1000 *  0			- 1000 *  1 	= -1000	// roll right
+					//EAST   -1000 *  0			- 1000 * -1		=  1000	// roll left
+					//SOUTH  -1000 * -1			- 1000 *  0 	=  1000	// roll right
+
+	nav_pitch 	=  ((float)nav_lon * -cos_yaw_x + (float)nav_lat * sin_yaw_y);
+					// BAD
+					//NORTH  -1000 *  0			+ 1000 *  1 	=  1000	// pitch back
+					//WEST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back     - Backwards
+					//EAST   -1000 *  1			+ 1000 *  0 	= -1000	// pitch forward  - Backwards
+ 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
+
+					// GOOD
+					//NORTH  -1000 *  0			+ 1000 *  1 	=  1000	// pitch back
+					//WEST   -1000 *  1			+ 1000 *  0 	= -1000	// pitch forward
+					//EAST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back
+					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
 
 	long pmax = g.pitch_max.get();
 
@@ -87,8 +117,6 @@ void calc_loiter_nav()
 void calc_waypoint_nav()
 {
 	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
-	//nav_lat = max(wp_distance, -DIST_ERROR_MAX);
-	//nav_lat = min(wp_distance, DIST_ERROR_MAX);
 
 	// Scale response by kP
 	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
@@ -100,7 +128,6 @@ void calc_waypoint_nav()
 	// rotate the vector
 	nav_roll 	=  (float)nav_lat * cos_nav_x;
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
-
 
 	long pmax = g.pitch_max.get();
 	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
