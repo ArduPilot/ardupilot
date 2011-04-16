@@ -285,7 +285,7 @@
 #endif
 
 #ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .1			// used to control response in turning
+# define ACRO_RATE_YAW_P         .13			// used to control response in turning
 #endif
 #ifndef ACRO_RATE_YAW_I
 # define ACRO_RATE_YAW_I         0.0
@@ -353,7 +353,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				25			// degrees
+# define PITCH_MAX				15			// degrees
 #endif
 
 
@@ -370,7 +370,7 @@
 # define NAV_D					0.00		// should always be 0
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX				250			// 250 degrees
+# define NAV_IMAX				250			// 250 Lat and Longtitude
 #endif
 
 
