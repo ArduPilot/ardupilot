@@ -285,6 +285,11 @@ void do_loiter_time()
 bool verify_takeoff()
 {
 	Serial.print("vt ");
+
+	// wait until we are ready!
+	if(g.rc_3.control_in == 0)
+		return false;
+
 	if (current_loc.alt > next_WP.alt){
 		Serial.println("Y");
 		takeoff_complete = true;
