@@ -388,20 +388,29 @@ void Log_Write_Startup(byte type)
 #if HIL_MODE != HIL_MODE_ATTITUDE
 void Log_Write_Control_Tuning()
 {
-	Vector3f accel = imu.get_accel();
-
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
+
+	// Control
 	DataFlash.WriteInt((int)(g.rc_1.servo_out));
-	DataFlash.WriteInt((int)nav_roll);
-	DataFlash.WriteInt((int)dcm.roll_sensor);
 	DataFlash.WriteInt((int)(g.rc_2.servo_out));
-	DataFlash.WriteInt((int)nav_pitch);
-	DataFlash.WriteInt((int)dcm.pitch_sensor);
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
-	DataFlash.WriteInt((int)(accel.y * 10000));
+
+	// Yaw mode
+	DataFlash.WriteByte(yaw_debug);
+
+	// Gyro Rates
+	DataFlash.WriteInt((int)(omega.x * 1000));
+	DataFlash.WriteInt((int)(omega.y * 1000));
+	DataFlash.WriteInt((int)(omega.z * 1000));
+
+	// Position
+	DataFlash.WriteInt((int)dcm.pitch_sensor);
+	DataFlash.WriteInt((int)dcm.roll_sensor);
+	DataFlash.WriteInt((int)(dcm.yaw_sensor/10));
+
 	DataFlash.WriteByte(END_BYTE);
 }
 #endif
@@ -499,17 +508,26 @@ void Log_Read_Current()
 // Read an control tuning packet
 void Log_Read_Control_Tuning()
 {
-	float logvar;
+	Serial.printf_P(PSTR("CTUN: %d, %d, %d, %d, %d, %1.4f, %1.4f, %1.4f, %d, %d, %ld\n"),
+				// Control
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
 
-	Serial.printf_P(PSTR("CTUN:"));
-	for (int y = 1; y < 10; y++) {
-		logvar = DataFlash.ReadInt();
-		if(y < 8) logvar 	= logvar/100.f;
-		if(y == 9) logvar 	= logvar/10000.f;
-		Serial.print(logvar);
-		Serial.print(comma);
-	}
-	Serial.println(" ");
+				// Yaw Mode
+				(int)DataFlash.ReadByte(),
+
+				// Gyro Rates
+				(float)DataFlash.ReadInt() / 1000.0,
+				(float)DataFlash.ReadInt() / 1000.0,
+				(float)DataFlash.ReadInt() / 1000.0,
+
+				// Position
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				(long)DataFlash.ReadInt() * 10);
+
 }
 
 // Read a nav tuning packet
