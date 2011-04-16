@@ -445,7 +445,6 @@ void update_timer_light(bool light)
 
 
 void resetPerfData(void) {
-	/*
 	mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
 	gyro_sat_count 		= 0;
@@ -454,7 +453,6 @@ void resetPerfData(void) {
 	renorm_blowup_count = 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
-	*/
 }
 
 void
