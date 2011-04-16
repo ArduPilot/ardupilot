@@ -610,7 +610,7 @@ void medium_loop()
 		case 3:
 			medium_loopCounter++;
 
-			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && (g.log_bitmask & MASK_LOG_ATTITUDE_FAST == 0))
+			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
 				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -683,7 +683,7 @@ void medium_loop()
 	//calc_distance_error();
 
 	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (int)dcm.yaw_sensor);
+		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		if (g.log_bitmask & MASK_LOG_RAW)
