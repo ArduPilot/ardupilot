@@ -115,11 +115,9 @@ output_yaw_with_hold(boolean hold)
 				clear_yaw_control();
 				hold = true;			// just to be explicit
 				//Serial.print("C");
-
 			}else{
 
-				// return to rate control until we slow down.
-				hold = false;
+				hold = false;			// return to rate control until we slow down.
 				//Serial.print("D");
 			}
 		}
@@ -144,21 +142,26 @@ output_yaw_with_hold(boolean hold)
 		// Apply PID and save the new angle back to RC_Channel
 		g.rc_4.servo_out 	= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
 
+		yaw_debug = YAW_HOLD;
+
 	}else{
 																							// -error = CCW, 	+error = CW
 		if(g.rc_4.control_in == 0){
 			// we are breaking;
 			//g.rc_4.servo_out = (omega.z > 0) ? -600 : 600;
 			g.rc_4.servo_out 	= (int)((float)g.rc_4.servo_out * (omega.z / 6.0));
+			yaw_debug = YAW_BRAKE;
+
 		}else{
 			long error			= ((long)g.rc_4.control_in * 6) - rate;							// control is += 6000 * 6 = 36000
 			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
+			yaw_debug = YAW_RATE;
 		}
 	}
 
 	// Limit dampening to be equal to propotional term for symmetry
-	dampener 			= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
-	g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
+	//dampener 			= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
+	//g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
 
 	// Limit Output
 	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);								// limit to 24°
