@@ -71,7 +71,7 @@ set_servos_4()
 
 		// limit Yaw control so we don't clip and loose altitude
 		// this is only a partial solution.
-		g.rc_4.pwm_out = min(g.rc_4.pwm_out, (g.rc_3.radio_out - out_min));
+		//g.rc_4.pwm_out = min(g.rc_4.pwm_out, (g.rc_3.radio_out - out_min));
 
 		//Serial.printf("out: %d %d %d %d\n", g.rc_1.radio_out, g.rc_2.radio_out, g.rc_3.radio_out, g.rc_4.radio_out);
 		//Serial.printf("yaw: %d ", g.rc_4.radio_out);
