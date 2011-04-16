@@ -15,9 +15,9 @@ static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_pressure(uint8_t argc, 	const Menu::arg *argv);
+static int8_t	test_altitude(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -59,9 +59,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	{"airpressure",	test_pressure},
+	{"altitude",	test_altitude},
 #endif
-	{"sonar",		test_sonar},
+	//{"sonar",		test_sonar},
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
@@ -692,7 +692,7 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
-test_pressure(uint8_t argc, const Menu::arg *argv)
+test_altitude(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("Uncalibrated relative airpressure\n"));
 	print_hit_enter();
@@ -791,7 +791,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 /*
   test the sonar
  */
-static int8_t
+/*static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -806,7 +806,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 	}
 	return (0);
 }
-
+*/
 
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
@@ -829,7 +829,7 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	set_wp_with_index(t,0);}
 
 	// CMD										opt		pitch   alt/cm
-	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		300, 		0, 			0};
+	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		100, 		0, 			0};
 	set_wp_with_index(t,1);}
 
 	if (!strcmp_P(argv[1].str, PSTR("wp"))) {
@@ -848,7 +848,7 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	} else {
 		//2250 = 25 meteres
 		// CMD										opt		p1		//alt		//NS		//WE
-		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      0,  	300, 		1100, 		0};
+		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      0,  	100, 		1100, 		0};
 		set_wp_with_index(t,2);}
 
 		// CMD										opt		dir		angle/deg	deg/s	relative
