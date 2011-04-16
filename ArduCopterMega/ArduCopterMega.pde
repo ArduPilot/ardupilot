@@ -230,6 +230,7 @@ boolean		motor_auto_safe;
 int 	max_stabilize_dampener;				//
 int 	max_yaw_dampener;					//
 boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
+byte 	yaw_debug;
 
 // LED output
 // ----------
@@ -1170,3 +1171,4 @@ adjust_altitude()
 		}
 	}
 }
+
