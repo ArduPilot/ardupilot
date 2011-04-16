@@ -95,6 +95,12 @@
 #define RTL 7				// AUTO control
 #define NUM_MODES 8
 
+// YAW debug
+// ---------
+#define YAW_HOLD 0
+#define YAW_BRAKE 1
+#define YAW_RATE 2
+
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
