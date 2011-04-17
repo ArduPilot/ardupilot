@@ -171,6 +171,13 @@ void init_ardupilot()
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
+	
+	// Logging:
+	// --------
+	DataFlash.Init(); 	// DataFlash log initialization
+	// setup the log bitmask
+	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS)
+		default_log_bitmask();
 
 	// If the switch is in 'menu' mode, run the main menu.
 	//
@@ -201,11 +208,6 @@ void init_ardupilot()
 
 	// Logging:
 	// --------
-	DataFlash.Init(); 	// DataFlash log initialization
-	// setup the log bitmask
-	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS)
-		default_log_bitmask();
-
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
