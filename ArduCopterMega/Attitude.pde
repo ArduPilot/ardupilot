@@ -13,6 +13,11 @@ init_pids()
 void
 control_nav_mixer()
 {
+	// limit the nav pitch and roll of the copter
+	long pmax = g.pitch_max.get();
+	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
+	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
+
 	// control +- 45° is mixed with the navigation request by the Autopilot
 	// output is in degrees = target pitch and roll of copter
 	g.rc_1.servo_out = g.rc_1.control_mix(nav_roll);
@@ -149,7 +154,9 @@ output_yaw_with_hold(boolean hold)
 		if(g.rc_4.control_in == 0){
 			// we are breaking;
 			//g.rc_4.servo_out = (omega.z > 0) ? -600 : 600;
-			g.rc_4.servo_out 	= (int)((float)g.rc_4.servo_out * (omega.z / 6.0));
+			// adaptive braking
+			g.rc_4.servo_out 	= (int)((1800.0 * omega.z) / 6.0);
+
 			yaw_debug = YAW_BRAKE;
 
 		}else{
@@ -160,8 +167,8 @@ output_yaw_with_hold(boolean hold)
 	}
 
 	// Limit dampening to be equal to propotional term for symmetry
-	//dampener 			= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
-	//g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
+	dampener 			= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
+	g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
 
 	// Limit Output
 	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);								// limit to 24°
@@ -263,7 +270,11 @@ yaw control
 void output_manual_yaw()
 {
 	if(g.rc_3.control_in == 0){
-		clear_yaw_control();
+		// we want to only call this once
+		if(did_clear_yaw_control == false){
+			clear_yaw_control();
+			did_clear_yaw_control = true;
+		}
 	}else{
 		// Yaw control
 		if(g.rc_4.control_in == 0){
@@ -271,6 +282,8 @@ void output_manual_yaw()
 		}else{
 			output_yaw_with_hold(false); // rate control yaw
 		}
+
+		did_clear_yaw_control = false;
 	}
 }
 

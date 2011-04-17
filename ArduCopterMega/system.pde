@@ -41,10 +41,6 @@ MENU(main_menu, "ACM", main_menu_commands);
 
 void init_ardupilot()
 {
-	byte last_log_num;
-	int last_log_start;
-	int last_log_end;
-
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
@@ -67,9 +63,9 @@ void init_ardupilot()
 	// XXX the 128 byte receive buffer may be too small for NMEA, depending
 	// on the message set configured.
 	//
-#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
+	#if GPS_PROTOCOL != GPS_PROTOCOL_IMU
 	Serial1.begin(38400, 128, 16);
-#endif
+	#endif
 
 	// Telemetry port.
 	//
@@ -81,8 +77,8 @@ void init_ardupilot()
 	//
 	Serial3.begin(SERIAL3_BAUD, 128, 128);
 
-	Serial.printf_P(PSTR("\n\nInit ArduCopterMega"
-						 "\n\nFree RAM: %lu\n"),
+	Serial.printf_P(PSTR("\n\nInit ACM"
+						 "\n\nRAM: %lu\n"),
 						 freeRAM());
 
 
@@ -131,21 +127,22 @@ void init_ardupilot()
 	  //  Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
 	}
 
-#ifdef RADIO_OVERRIDE_DEFAULTS
+
+	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
 		int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
 		APM_RC.setHIL(rc_override);
 	}
-#endif
+	#endif
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 	init_camera();
-#if HIL_MODE != HIL_MODE_ATTITUDE
+
+	#if HIL_MODE != HIL_MODE_ATTITUDE
 	adc.Init();	 		// APM ADC library initialization
 	barometer.Init();	// APM Abs Pressure sensor initialization
-#endif
-	DataFlash.Init(); 	// DataFlash log initialization
+	#endif
 
 	// Do GPS init
 	//g_gps = &GPS;
@@ -159,18 +156,14 @@ void init_ardupilot()
 		gcs.init(&Serial);
 	#endif
 
-
-	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
-
 	if(g.compass_enabled)
 		init_compass();
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
+	#if HIL_MODE != HIL_MODE_ATTITUDE
 	if(g.sonar_enabled){
 		sonar.init(SONAR_PIN, &adc);
 	}
-#endif
+	#endif
 
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
@@ -198,33 +191,30 @@ void init_ardupilot()
 		}
 	}
 
-	if(g.log_bitmask > 0){
-		//	TODO - Here we will check  on the length of the last log
-		//  We don't want to create a bunch of little logs due to powering on and off
-		last_log_num = get_num_logs();
-		start_new_log(last_log_num);
-	}
-
-	// read in the flight switches
-	update_servo_switches();
-
-	// read in the flight switches
-	//update_servo_switches();
-
-	//imu.init_gyro(IMU::WARM_START);
-
+	// All of the Gyro calibrations
+	// ----------------------------
 	startup_ground();
-
-	if (g.log_bitmask & MASK_LOG_CMD)
-		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-
-	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS) {
-		default_log_bitmask();
-	}
 
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
+
+	// Logging:
+	// --------
+	DataFlash.Init(); 	// DataFlash log initialization
+	// setup the log bitmask
+	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS)
+		default_log_bitmask();
+
+	if(g.log_bitmask != 0){
+		//	TODO - Here we will check  on the length of the last log
+		//  We don't want to create a bunch of little logs due to powering on and off
+		byte last_log_num = get_num_logs();
+		start_new_log(last_log_num);
+	}
+
+	if (g.log_bitmask & MASK_LOG_MODE)
+		Log_Write_Mode(control_mode);
 }
 
 //********************************************************************************
@@ -256,14 +246,6 @@ void startup_ground(void)
 	imu.init_gyro();
 	report_imu();
 #endif
-
-	// read the radio to set trims
-	// ---------------------------
-	//trim_radio();
-
-	if (g.log_bitmask & MASK_LOG_CMD)
-		Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	// read Baro pressure at ground

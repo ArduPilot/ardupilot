@@ -77,9 +77,8 @@ print_log_menu(void)
 	if (last_log_num == 0) {
 		Serial.printf_P(PSTR("\nNo logs\n"));
 	}else{
-
 		Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
-		for(int i=1;i<last_log_num+1;i++) {
+		for(int i = 1; i < last_log_num + 1; i++) {
 			get_log_boundaries(last_log_num, i, log_start, log_end);
 			Serial.printf_P(PSTR("Log # %d,    start %d,   end %d\n"),
 							i, log_start, log_end);
@@ -112,7 +111,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 				  dump_log_end);
 
 	Log_Read(dump_log_start, dump_log_end);
-	Serial.printf_P(PSTR("Complete\n"));
+	Serial.printf_P(PSTR("Done\n"));
 }
 
 static int8_t
@@ -227,31 +226,36 @@ void start_new_log(byte num_existing_logs)
 	int end_pages[50]	= {0,0,0};
 	byte data;
 
-	if(num_existing_logs > 0) {
+	if (num_existing_logs > 0) {
 		for(int i=0;i<num_existing_logs;i++) {
 			get_log_boundaries(num_existing_logs, i+1,start_pages[i],end_pages[i]);
 		}
 		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
 	}
 
-	if(end_pages[num_existing_logs - 1] < 4095 && num_existing_logs < MAX_NUM_LOGS) {
+	if (end_pages[num_existing_logs - 1] < 4095 && num_existing_logs < MAX_NUM_LOGS) {
 		if(num_existing_logs > 0)
 			start_pages[num_existing_logs] = end_pages[num_existing_logs - 1] + 1;
 		else
 			start_pages[0] = 2;
+
 		num_existing_logs++;
+
 		DataFlash.StartWrite(1);
 		DataFlash.WriteByte(HEAD_BYTE1);
 		DataFlash.WriteByte(HEAD_BYTE2);
 		DataFlash.WriteByte(LOG_INDEX_MSG);
 		DataFlash.WriteByte(num_existing_logs);
+
 		for(int i=0;i<MAX_NUM_LOGS;i++) {
 			DataFlash.WriteInt(start_pages[i]);
 			DataFlash.WriteInt(end_pages[i]);
 		}
+
 		DataFlash.WriteByte(END_BYTE);
 		DataFlash.FinishWrite();
 		DataFlash.StartWrite(start_pages[num_existing_logs-1]);
+
 	}else{
 		gcs.send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full"));
 	}
@@ -363,26 +367,6 @@ void Log_Write_Cmd(byte num, struct Location *wp)
 	DataFlash.WriteLong(wp->lng);
 	DataFlash.WriteByte(END_BYTE);
 }
-
-void Log_Write_Startup(byte type)
-{
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_STARTUP_MSG);
-	DataFlash.WriteByte(type);
-	DataFlash.WriteByte(g.waypoint_total);
-	DataFlash.WriteByte(END_BYTE);
-
-	// create a location struct to hold the temp Waypoints for printing
-	struct Location cmd = get_wp_with_index(0);
-		Log_Write_Cmd(0, &cmd);
-
-	for (int i = 1; i <= g.waypoint_total; i++){
-		cmd = get_wp_with_index(i);
-		Log_Write_Cmd(i, &cmd);
-	}
-}
-
 
 // Write a control tuning packet. Total length : 22 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -585,20 +569,6 @@ void Log_Read_Cmd()
 	Serial.println(" ");
 }
 
-void Log_Read_Startup()
-{
-	byte logbyte = DataFlash.ReadByte();
-
-	if (logbyte == TYPE_AIRSTART_MSG)
-		Serial.printf_P(PSTR("AIR START - "));
-	else if (logbyte == TYPE_GROUNDSTART_MSG)
-		Serial.printf_P(PSTR("GROUND START - "));
-	else
-		Serial.printf_P(PSTR("UNKNOWN STARTUP - "));
-
-	Serial.printf_P(PSTR(" %d commands in memory\n"),(int)DataFlash.ReadByte());
-}
-
 // Read an attitude packet
 void Log_Read_Attitude()
 {
@@ -648,26 +618,30 @@ void Log_Read_Raw()
 void Log_Read(int start_page, int end_page)
 {
 	byte data;
-	byte log_step = 0;
-	int packet_count = 0;
-	int page = start_page;
-
+	byte log_step 		= 0;
+	int packet_count 	= 0;
+	int page 			= start_page;
 
 	DataFlash.StartRead(start_page);
+
 	while (page < end_page && page != -1){
+
 		data = DataFlash.ReadByte();
-		switch(log_step)		 // This is a state machine to read the packets
-			{
+
+		// This is a state machine to read the packets
+		switch(log_step){
 			case 0:
 				if(data == HEAD_BYTE1)	// Head byte 1
 					log_step++;
 				break;
+
 			case 1:
 				if(data == HEAD_BYTE2)	// Head byte 2
 					log_step++;
 				else
 					log_step = 0;
 				break;
+
 			case 2:
 				if(data == LOG_ATTITUDE_MSG){
 					Log_Read_Attitude();
@@ -702,30 +676,32 @@ void Log_Read(int start_page, int end_page)
 					log_step++;
 
 				}else if(data == LOG_STARTUP_MSG){
-					Log_Read_Startup();
+					// not implemented
 					log_step++;
-				}else {
-					if(data == LOG_GPS_MSG){
-						Log_Read_GPS();
-						log_step++;
-					}else{
-						Serial.printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
-						log_step = 0;	 // Restart, we have a problem...
-					}
+
+				}else if(data == LOG_GPS_MSG){
+					Log_Read_GPS();
+					log_step++;
+
+				}else{
+					Serial.printf_P(PSTR("Error P: %d\n"),packet_count);
+					log_step = 0;	 // Restart, we have a problem...
 				}
 				break;
+
 			case 3:
 				if(data == END_BYTE){
 					 packet_count++;
 				}else{
-					Serial.printf_P(PSTR("Error Reading END_BYTE: %d\n"),data);
+					Serial.printf_P(PSTR("Error EB: %d\n"),data);
 				}
 				log_step = 0;			// Restart sequence: new packet...
 				break;
-			}
-		page = DataFlash.GetPage();
 		}
-	Serial.printf_P(PSTR("# of packets read: %d\n"), packet_count);
+
+		page = DataFlash.GetPage();
+	}
+	//Serial.printf_P(PSTR("# of packets read: %d\n"), packet_count);
 }
 
 

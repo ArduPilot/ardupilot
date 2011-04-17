@@ -108,10 +108,6 @@ void calc_loiter_nav()
 					//EAST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back
 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
 
-	long pmax = g.pitch_max.get();
-
-	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
-	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
 }
 
 void calc_waypoint_nav()
@@ -129,9 +125,6 @@ void calc_waypoint_nav()
 	nav_roll 	=  (float)nav_lat * cos_nav_x;
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
 
-	long pmax = g.pitch_max.get();
-	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
-	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
 }
 
 void calc_bearing_error()
