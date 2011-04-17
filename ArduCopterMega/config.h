@@ -255,6 +255,14 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+
+//////////////////////////////////////////////////////////////////////////////
+// Y6 Support
+
+#ifndef Y6_MOTOR_SCALER
+# define Y6_MOTOR_SCALER	0.92
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // ACRO Rate Control
 
@@ -312,7 +320,7 @@
 # define STABILIZE_ROLL_I 		0.1		//
 #endif
 #ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.11
+# define STABILIZE_ROLL_D 		0.13
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	10		// 10 degrees
@@ -325,12 +333,11 @@
 # define STABILIZE_PITCH_I		0.1
 #endif
 #ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.11
+# define STABILIZE_PITCH_D		0.13
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	10
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // YAW Control

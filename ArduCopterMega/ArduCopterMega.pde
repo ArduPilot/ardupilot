@@ -231,6 +231,7 @@ int 	max_stabilize_dampener;				//
 int 	max_yaw_dampener;					//
 boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
 byte 	yaw_debug;
+bool 	did_clear_yaw_control;
 
 // LED output
 // ----------
@@ -583,6 +584,7 @@ void medium_loop()
 			// we call these regardless of GPS because of the rapid nature of the yaw sensor
 			// -----------------------------------------------------------------------------
 			if(wp_distance < 800){ // 8 meters
+			//if(g.rc_6.control_in > 500){ // 8 meters
 				calc_loiter_nav();
 			}else{
 				calc_waypoint_nav();
@@ -795,6 +797,11 @@ void update_GPS(void)
 	g_gps->update();
 	update_GPS_light();
 
+	//current_loc.lng =   377697000;		// Lon * 10 * *7
+	//current_loc.lat = -1224318000;		// Lat * 10 * *7
+	//current_loc.alt = 100;				// alt * 10 * *7
+	//return;
+
     if (g_gps->new_data && g_gps->fix) {
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
@@ -821,9 +828,6 @@ void update_GPS(void)
 
 			}else{
 				//Serial.printf("init Home!");
-
-				if (g.log_bitmask & MASK_LOG_CMD)
-					Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
 				// reset our nav loop timer
 				//nav_loopTimer = millis();
@@ -980,14 +984,7 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 
-				//if(g.rc_3.control_in)
-				// get desired height from the throttle
-				//next_WP.alt 	= home.alt + (g.rc_3.control_in); // 0 - 1000 (40 meters)
-				//next_WP.alt		= max(next_WP.alt, 30);
-
 				adjust_altitude();
-				// !!! testing
-				//next_WP.alt 	-= 500;
 
 				// Yaw control
 				// -----------

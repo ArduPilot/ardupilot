@@ -59,7 +59,7 @@ set_servos_4()
 		g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);
 
 		if(g.rc_3.servo_out > 0)
-			out_min = g.rc_3.radio_min + 60;
+			out_min = g.rc_3.radio_min + 90;
 
 		//Serial.printf("out: %d %d %d %d\t\t", g.rc_1.servo_out, g.rc_2.servo_out, g.rc_3.servo_out, g.rc_4.servo_out);
 
@@ -71,7 +71,8 @@ set_servos_4()
 
 		// limit Yaw control so we don't clip and loose altitude
 		// this is only a partial solution.
-		//g.rc_4.pwm_out = min(g.rc_4.pwm_out, (g.rc_3.radio_out - out_min));
+
+		// g.rc_4.pwm_out = min(g.rc_4.pwm_out, (g.rc_3.radio_out - out_min));
 
 		//Serial.printf("out: %d %d %d %d\n", g.rc_1.radio_out, g.rc_2.radio_out, g.rc_3.radio_out, g.rc_4.radio_out);
 		//Serial.printf("yaw: %d ", g.rc_4.radio_out);
@@ -163,15 +164,15 @@ set_servos_4()
 			int pitch_out 		=  g.rc_2.pwm_out / 2;
 
 			//left
-			motor_out[CH_2]		= ((g.rc_3.radio_out * 0.92) + roll_out + pitch_out);  // CCW TOP
+			motor_out[CH_2]		= ((g.rc_3.radio_out * Y6_MOTOR_SCALER) + roll_out + pitch_out);  // CCW TOP
 			motor_out[CH_3]		=  g.rc_3.radio_out + roll_out + pitch_out;			// CW
 
 			//right
-			motor_out[CH_7]		= ((g.rc_3.radio_out * 0.92) - roll_out + pitch_out);	// CCW TOP
+			motor_out[CH_7]		= ((g.rc_3.radio_out * Y6_MOTOR_SCALER) - roll_out + pitch_out);	// CCW TOP
 			motor_out[CH_1]		=  g.rc_3.radio_out - roll_out + pitch_out;			// CW
 
 			//back
-			motor_out[CH_8]     = ((g.rc_3.radio_out * 0.92) - g.rc_2.pwm_out);	// CCW TOP
+			motor_out[CH_8]     = ((g.rc_3.radio_out * Y6_MOTOR_SCALER) - g.rc_2.pwm_out);	// CCW TOP
 			motor_out[CH_4] 	=  g.rc_3.radio_out - g.rc_2.pwm_out;			// CW
 
 			//yaw
@@ -223,6 +224,13 @@ set_servos_4()
 			//g.pid_baro_throttle.kD((float)g.rc_6.control_in / 1000); //  0 to 1
 			//g.pid_baro_throttle.kP((float)g.rc_6.control_in / 4000); //  0 to .25
 
+
+			// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
+			// use test,radio to get the value to use in your config.
+			//g.stabilize_dampener.set((float)g.rc_6.control_in / 1000.0);
+
+
+
 			/*
 			// ROLL and PITCH
 			// make sure you init_pids() after changing the kP
@@ -240,14 +248,39 @@ set_servos_4()
 			//*/
 
 			/*
+			Serial.printf("yaw: %d, lat_e: %ld, lng_e: %ld, \tnlat: %ld, nlng: %ld,\tnrll: %ld, nptc: %ld, \tcx: %.2f, sy: %.2f, \ttber: %ld, \tnber: %ld\n",
+					(int)(dcm.yaw_sensor / 100),
+					lat_error,
+					long_error,
+					nav_lat,
+					nav_lon,
+					nav_roll,
+					nav_pitch,
+					cos_yaw_x,
+					sin_yaw_y,
+					target_bearing,
+					nav_bearing);
+			//*/
+
+			/*
 
 			gcs_simple.write_byte(control_mode);
+			//gcs_simple.write_int(motor_out[CH_1]);
+			//gcs_simple.write_int(motor_out[CH_2]);
+			//gcs_simple.write_int(motor_out[CH_3]);
+			//gcs_simple.write_int(motor_out[CH_4]);
+
 			gcs_simple.write_int(g.rc_3.servo_out);
+
+			gcs_simple.write_int((int)(dcm.yaw_sensor 	/ 100));
 
 			gcs_simple.write_int((int)nav_lat);
 			gcs_simple.write_int((int)nav_lon);
 			gcs_simple.write_int((int)nav_roll);
 			gcs_simple.write_int((int)nav_pitch);
+
+			//gcs_simple.write_int((int)(cos_yaw_x * 100));
+			//gcs_simple.write_int((int)(sin_yaw_y * 100));
 
 			gcs_simple.write_long(current_loc.lat);	//28
 			gcs_simple.write_long(current_loc.lng);	//32
@@ -257,10 +290,9 @@ set_servos_4()
 			gcs_simple.write_long(next_WP.lng);
 			gcs_simple.write_int((int)next_WP.alt);		//44
 
-			gcs_simple.write_int((int)(target_bearing / 100));
-			gcs_simple.write_int((int)(nav_bearing / 100));
-			gcs_simple.write_int((int)(nav_yaw / 100));
-			gcs_simple.write_int((int)(dcm.yaw_sensor / 100));
+			gcs_simple.write_int((int)(target_bearing 	/ 100));
+			gcs_simple.write_int((int)(nav_bearing 		/ 100));
+			gcs_simple.write_int((int)(nav_yaw 			/ 100));
 
 			if(altitude_sensor == BARO){
 				gcs_simple.write_int((int)g.pid_baro_throttle.get_integrator());
@@ -269,17 +301,15 @@ set_servos_4()
 			}
 
 			gcs_simple.write_int(g.throttle_cruise);
-
-
-			//gcs_simple.write_int((int)(cos_yaw_x * 100));
-			//gcs_simple.write_int((int)(sin_yaw_y * 100));
-			//gcs_simple.write_int((int)(nav_yaw / 100));
-
+			gcs_simple.write_int(g.throttle_cruise);
 
 			//24
-
 			gcs_simple.flush(10); // Message ID
+
 			//*/
+			//Serial.printf("\n tb  %d\n", (int)(target_bearing 	/ 100));
+			//Serial.printf("\n nb  %d\n", (int)(nav_bearing 	/ 100));
+			//Serial.printf("\n dcm %d\n", (int)(dcm.yaw_sensor 	/ 100));
 
 			/*Serial.printf("a %ld, e %ld, i %d, t %d, b %4.2f\n",
 					current_loc.alt,
