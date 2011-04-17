@@ -164,15 +164,15 @@ set_servos_4()
 			int pitch_out 		=  g.rc_2.pwm_out / 2;
 
 			//left
-			motor_out[CH_2]		= ((g.rc_3.radio_out * Y6_MOTOR_SCALER) + roll_out + pitch_out);  // CCW TOP
+			motor_out[CH_2]		= ((g.rc_3.radio_out * Y6_scaling) + roll_out + pitch_out);  // CCW TOP
 			motor_out[CH_3]		=  g.rc_3.radio_out + roll_out + pitch_out;			// CW
 
 			//right
-			motor_out[CH_7]		= ((g.rc_3.radio_out * Y6_MOTOR_SCALER) - roll_out + pitch_out);	// CCW TOP
+			motor_out[CH_7]		= ((g.rc_3.radio_out * Y6_scaling) - roll_out + pitch_out);	// CCW TOP
 			motor_out[CH_1]		=  g.rc_3.radio_out - roll_out + pitch_out;			// CW
 
 			//back
-			motor_out[CH_8]     = ((g.rc_3.radio_out * Y6_MOTOR_SCALER) - g.rc_2.pwm_out);	// CCW TOP
+			motor_out[CH_8]     = ((g.rc_3.radio_out * Y6_scaling) - g.rc_2.pwm_out);	// CCW TOP
 			motor_out[CH_4] 	=  g.rc_3.radio_out - g.rc_2.pwm_out;			// CW
 
 			//yaw

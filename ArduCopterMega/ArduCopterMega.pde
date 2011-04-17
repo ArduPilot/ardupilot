@@ -269,6 +269,8 @@ float sin_nav_y, cos_nav_x;					// used in calc_waypoint_nav
 bool simple_bearing_is_set = false;
 long initial_simple_bearing;				// used for Simple mode
 
+float Y6_scaling = Y6_MOTOR_SCALER;
+
 // Airspeed
 // --------
 int		airspeed;							// m/s * 100
@@ -1198,6 +1200,6 @@ void tuning(){
 		g.pid_sonar_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
 
 	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
-		g.Y6_scaling.set((float)g.rc_6.control_in / 1000.0)
+		Y6_scaling = (float)g.rc_6.control_in / 1000.0;
 	#endif
 }
