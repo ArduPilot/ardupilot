@@ -399,7 +399,7 @@
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		.3
+# define THROTTLE_SONAR_P		.5
 #endif
 #ifndef THROTTLE_SONAR_I
 # define THROTTLE_SONAR_I		0.1
@@ -436,6 +436,10 @@
 # define DEBUG_LEVEL SEVERITY_LOW
 #endif
 
+
+#ifndef CHANNEL_6_TUNING
+# define CHANNEL_6_TUNING CH6_NONE
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control

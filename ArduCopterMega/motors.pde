@@ -202,50 +202,13 @@ set_servos_4()
 			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
 
-		num++;
-		if (num > 25){
+		if (num++ > 25){
 			num = 0;
-			/*
-			Serial.printf("t_alt:%ld, alt:%ld, thr: %d sen: ",
-						target_altitude,
-						current_loc.alt,
-						g.rc_3.servo_out);
 
-			if(altitude_sensor == BARO){
-				Serial.println("Baro");
-			}else{
-				Serial.println("Sonar");
-			}
-			*/
-
-			//Serial.print("!");
-			//debugging with Channel 6
-
-			//g.pid_baro_throttle.kD((float)g.rc_6.control_in / 1000); //  0 to 1
-			//g.pid_baro_throttle.kP((float)g.rc_6.control_in / 4000); //  0 to .25
-
-
-			// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
-			// use test,radio to get the value to use in your config.
-			//g.stabilize_dampener.set((float)g.rc_6.control_in / 1000.0);
-
-
-
-			/*
-			// ROLL and PITCH
-			// make sure you init_pids() after changing the kP
-			g.pid_stabilize_roll.kP((float)g.rc_6.control_in / 1000);
-			init_pids();
 			//Serial.print("kP: ");
 			//Serial.println(g.pid_stabilize_roll.kP(),3);
 			//*/
 
-			/*
-			// YAW
-			// make sure you init_pids() after changing the kP
-			g.pid_yaw.kP((float)g.rc_6.control_in / 1000);
-			init_pids();
-			//*/
 
 			/*
 			Serial.printf("yaw: %d, lat_e: %ld, lng_e: %ld, \tnlat: %ld, nlng: %ld,\tnrll: %ld, nptc: %ld, \tcx: %.2f, sy: %.2f, \ttber: %ld, \tnber: %ld\n",
