@@ -101,6 +101,17 @@
 #define YAW_BRAKE 1
 #define YAW_RATE 2
 
+// CH_6 Tuning
+#define CH6_NONE 0
+#define CH6_STABLIZE_KP 1
+#define CH6_STABLIZE_KD 2
+#define CH6_BARO_KP 3
+#define CH6_BARO_KD 4
+#define CH6_SONAR_KP 5
+#define CH6_SONAR_KD 6
+#define CH6_Y6_SCALING 7
+
+
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested

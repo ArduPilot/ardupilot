@@ -679,6 +679,7 @@ void medium_loop()
 	// stuff that happens at 50 hz
 	// ---------------------------
 
+
 	// use Yaw to find our bearing error
 	calc_bearing_error();
 
@@ -758,6 +759,9 @@ void slow_loop()
 				gcs.send_message(MSG_LOCATION);
 			#endif
 
+			#if CHANNEL_6_TUNING != CH6_NONE
+				tuning();
+			#endif
 
 			break;
 
@@ -1169,3 +1173,31 @@ adjust_altitude()
 	}
 }
 
+void tuning(){
+
+	#if CHANNEL_6_TUNING == CH6_STABLIZE_KP
+		g.pid_stabilize_roll.kP((float)g.rc_6.control_in / 1000.0);
+		g.pid_stabilize_pitch.kP((float)g.rc_6.control_in / 1000.0);
+		init_pids();
+
+	#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
+		// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
+		// use test,radio to get the value to use in your config.
+		g.stabilize_dampener.set((float)g.rc_6.control_in / 1000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_BARO_KP
+		g.pid_baro_throttle.kP((float)g.rc_6.control_in / 1000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_BARO_KD
+		g.pid_baro_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
+
+	#elif CHANNEL_6_TUNING == CH6_SONAR_KP
+		g.pid_sonar_throttle.kP((float)g.rc_6.control_in / 1000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_SONAR_KD
+		g.pid_sonar_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
+
+	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
+		g.Y6_scaling.set((float)g.rc_6.control_in / 1000.0)
+	#endif
+}

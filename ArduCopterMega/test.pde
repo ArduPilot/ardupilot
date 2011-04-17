@@ -12,6 +12,7 @@ static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
@@ -55,6 +56,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	//{"dcm",			test_dcm},
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
+	{"tune",		test_tuning},
 	{"current",		test_current},
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
@@ -573,6 +575,45 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 
 #endif
 	return (0);
+}
+
+static int8_t
+test_tuning(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+
+	while(1){
+		delay(200);
+		read_radio();
+
+		#if CHANNEL_6_TUNING == CH6_NONE
+			Serial.printf_P(PSTR("disabled\n"));
+
+		#elif CHANNEL_6_TUNING == CH6_STABLIZE_KP
+			Serial.printf_P(PSTR("stab kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
+			Serial.printf_P(PSTR("stab kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_BARO_KP
+			Serial.printf_P(PSTR("baro kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_BARO_KD
+			Serial.printf_P(PSTR("baro kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_SONAR_KP
+			Serial.printf_P(PSTR("sonar kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_SONAR_KD
+			Serial.printf_P(PSTR("sonar kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
+			Serial.printf_P(PSTR("Y6: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+		#endif
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
 }
 
 static int8_t

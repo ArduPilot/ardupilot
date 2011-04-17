@@ -29,6 +29,19 @@ void init_rc_in()
 	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
 
+	#if CHANNEL_6_TUNING == CH6_STABLIZE_KD
+		g.rc_6.set_range(0,300);
+
+	#elif CHANNEL_6_TUNING == CH6_BARO_KP
+		g.rc_6.set_range(0,500);
+
+	#elif CHANNEL_6_TUNING == CH6_BARO_KD
+		g.rc_6.set_range(0,500);
+
+	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
+		g.rc_6.set_range(800,1000);
+	#endif
+
 	//catch bad RC_3 min values
 }
 
