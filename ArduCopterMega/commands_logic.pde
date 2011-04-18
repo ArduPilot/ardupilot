@@ -231,6 +231,14 @@ void do_takeoff()
 void do_nav_wp()
 {
 	set_next_WP(&next_command);
+	wp_verify_byte 	= 0;
+	loiter_time 	= 0;
+	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
+
+	if((next_WP.options & WP_OPTION_ALT_REQUIRED) == 0){
+		// we don't need to worry about it
+		wp_verify_byte |= NAV_ALTITUDE;
+	}
 }
 
 void do_land()
@@ -327,31 +335,39 @@ bool verify_land()
 
 bool verify_nav_wp()
 {
-	bool alt = true;
-
 	update_crosstrack();
 
-	if (next_WP.options & WP_OPTION_ALT_REQUIRED){
-		alt = (current_loc.alt > next_WP.alt);
-	}
-
-	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-		//SendDebug("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
-		//SendDebugln(command_must_index,DEC);
-
-		if (alt == true){
-			char message[30];
-			sprintf(message,"Reached Waypoint #%i",command_must_index);
-			gcs.send_text(SEVERITY_LOW,message);
-			return true;
-		}else{
-			return false;
+	// Altitude checking
+	if(next_WP.options & WP_OPTION_ALT_REQUIRED){
+		// we desire a certain minimum altitude
+		if (current_loc.alt > next_WP.alt){
+			// we have reached that altitude
+			wp_verify_byte |= NAV_ALTITUDE;
 		}
 	}
 
-	// Have we passed the WP?
-	if(alt && (loiter_sum > 90)){
-		gcs.send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
+	// Distance checking
+	if((wp_distance > 0) && (wp_distance <= g.waypoint_radius)){
+		wp_verify_byte |= NAV_LOCATION;
+		if(loiter_time == 0){
+			loiter_time = millis();
+		}
+	}
+
+	// Hold at Waypoint checking
+	if(wp_verify_byte & NAV_LOCATION){							// we have reached our goal
+
+		if ((millis() - loiter_time) > loiter_time_max) {
+			wp_verify_byte |= NAV_DELAY;
+			//gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
+			//Serial.println("vlt done");
+		}
+	}
+
+	if(wp_verify_byte == 7){
+		char message[30];
+		sprintf(message,"Reached Waypoint #%i",command_must_index);
+		gcs.send_text(SEVERITY_LOW,message);
 		return true;
 	}else{
 		return false;
