@@ -260,6 +260,7 @@ byte	command_must_index;					// current command memory location
 byte	command_may_index;					// current command memory location
 byte	command_must_ID;					// current command ID
 byte	command_may_ID;						// current command ID
+byte 	wp_verify_byte;						// used for tracking state of navigating waypoints
 
 float cos_roll_x 	= 1;
 float cos_pitch_x 	= 1;

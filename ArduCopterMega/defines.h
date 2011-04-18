@@ -102,6 +102,7 @@
 #define YAW_RATE 2
 
 // CH_6 Tuning
+// -----------
 #define CH6_NONE 0
 #define CH6_STABLIZE_KP 1
 #define CH6_STABLIZE_KD 2
@@ -111,6 +112,11 @@
 #define CH6_SONAR_KD 6
 #define CH6_Y6_SCALING 7
 
+// nav byte mask
+// -------------
+#define NAV_LOCATION 1
+#define NAV_ALTITUDE 2
+#define NAV_DELAY    4
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
