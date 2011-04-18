@@ -9,7 +9,7 @@
     version 2.1 of the License, or (at your option) any later version.
 
 	Dataflash library for AT45DB161D flash memory
-	Memory organization : 4096 pages of 512 bytes
+	Memory organization : 4096 pages of 512 bytes or 528 bytes
 
 	Maximun write bandwidth : 512 bytes in 14ms
 	This code is written so the master never has to wait to write the data on the eeprom
@@ -94,6 +94,9 @@ void DataFlash_Class::Init(void)
   // Cleanup registers...
   tmp=SPSR;
   tmp=SPDR;
+
+  // get page size: 512 or 528
+  df_PageSize=PageSize();
 }
 
 // This function is mainly to test the device
@@ -113,19 +116,31 @@ void DataFlash_Class::ReadManufacturerID()
   tmp = dataflash_SPI_transfer(0xff);
 }
 
-// Read the status of the DataFlash
-byte DataFlash_Class::ReadStatus()
+// Read the status register
+byte DataFlash_Class::ReadStatusReg()
 { 
-  byte tmp;
-  
   dataflash_CS_inactive();    // Reset dataflash command decoder
   dataflash_CS_active();     
  
   // Read status command
   dataflash_SPI_transfer(DF_STATUS_REGISTER_READ);
-  tmp = dataflash_SPI_transfer(0x00);
-  return(tmp&0x80);  // We only want to extract the READY/BUSY bit
+  return dataflash_SPI_transfer(0x00);  // We only want to extract the READY/BUSY bit
 }
+
+// Read the status of the DataFlash
+inline
+byte DataFlash_Class::ReadStatus()
+{ 
+  return(ReadStatusReg()&0x80);  // We only want to extract the READY/BUSY bit
+}
+
+
+inline
+unsigned int DataFlash_Class::PageSize()
+{ 
+  return(528-((ReadStatusReg()&0x01)<<4));  // if first bit 1 trhen 512 else 528 bytes
+}
+
 
 // Wait until DataFlash is in ready state...
 void DataFlash_Class::WaitReady()
@@ -140,9 +155,15 @@ void DataFlash_Class::PageToBuffer(unsigned char BufferNum, unsigned int PageAdr
   if (BufferNum==1)				
     dataflash_SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
   else
-    dataflash_SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);		
-  dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
-  dataflash_SPI_transfer((unsigned char)(PageAdr << 2));	
+    dataflash_SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
+  
+  if(df_PageSize==512){
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
+  }else{
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
+  }
   dataflash_SPI_transfer(0x00);	// don´t care bytes			
 
   dataflash_CS_inactive();	//initiate the transfer
@@ -160,8 +181,14 @@ void DataFlash_Class::BufferToPage (unsigned char BufferNum, unsigned int PageAd
     dataflash_SPI_transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
   else
     dataflash_SPI_transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
-  dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
-  dataflash_SPI_transfer((unsigned char)(PageAdr << 2));	
+
+  if(df_PageSize==512){
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
+  }else{
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
+  }
   dataflash_SPI_transfer(0x00);	// don´t care bytes			
 
   dataflash_CS_inactive();	//initiate the transfer
@@ -213,9 +240,32 @@ void DataFlash_Class::PageErase (unsigned int PageAdr)
   dataflash_CS_inactive();																//make sure to toggle CS signal in order
   dataflash_CS_active();																//to reset Dataflash command decoder
   dataflash_SPI_transfer(DF_PAGE_ERASE);   // Command
-  dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	//upper part of page address
-  dataflash_SPI_transfer((unsigned char)(PageAdr << 2));	//lower part of page address and MSB of int.page adr.
+
+  if(df_PageSize==512){
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
+  }else{
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
+  }
+
   dataflash_SPI_transfer(0x00);	           // "dont cares"
+  dataflash_CS_inactive();               //initiate flash page erase
+  dataflash_CS_active();
+  while(!ReadStatus());
+}
+
+
+void DataFlash_Class::ChipErase ()
+{
+  dataflash_CS_inactive();																//make sure to toggle CS signal in order
+  dataflash_CS_active();																//to reset Dataflash command decoder
+  // opcodes for chip erase
+  dataflash_SPI_transfer(DF_CHIP_ERASE_0);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_1);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_2);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_3);
+  
   dataflash_CS_inactive();               //initiate flash page erase
   dataflash_CS_active();
   while(!ReadStatus());
@@ -260,7 +310,7 @@ void DataFlash_Class::WriteByte(byte data)
     {
     BufferWrite(df_BufferNum,df_BufferIdx,data);
     df_BufferIdx++;
-    if (df_BufferIdx >= 512)  // End of buffer?
+    if (df_BufferIdx >= df_PageSize)  // End of buffer?
       {
       df_BufferIdx=0;
 	  BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
@@ -327,7 +377,7 @@ byte DataFlash_Class::ReadByte()
   WaitReady();
   result = BufferRead(df_Read_BufferNum,df_Read_BufferIdx);
   df_Read_BufferIdx++;
-  if (df_Read_BufferIdx >= 512)  // End of buffer?
+  if (df_Read_BufferIdx >= df_PageSize)  // End of buffer?
     {
     df_Read_BufferIdx=0;
     PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write memory page to Buffer

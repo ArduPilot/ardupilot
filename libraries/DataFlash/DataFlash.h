@@ -56,12 +56,15 @@ class DataFlash_Class
 	void BufferToPage (unsigned char BufferNum, unsigned int PageAdr, unsigned char wait);
 	void PageToBuffer(unsigned char BufferNum, unsigned int PageAdr);
 	void WaitReady();
+	unsigned char ReadStatusReg();
 	unsigned char ReadStatus();
+	unsigned int PageSize();
 
   public:
 	unsigned char df_manufacturer;
 	unsigned char df_device_0;
 	unsigned char df_device_1;
+	unsigned int df_PageSize;
 
 	DataFlash_Class(); // Constructor
 	void Init();
@@ -69,12 +72,14 @@ class DataFlash_Class
 	int GetPage();
 	int GetWritePage();
 	void PageErase (unsigned int PageAdr);
+	void ChipErase ();
 	// Write methods
 	void StartWrite(int PageAdr);
 	void FinishWrite();
 	void WriteByte(unsigned char data);
 	void WriteInt(int data);
 	void WriteLong(long data);
+
 	// Read methods
 	void StartRead(int PageAdr);
 	unsigned char ReadByte();
