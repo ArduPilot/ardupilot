@@ -377,9 +377,9 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
 	// Control
-	DataFlash.WriteInt((int)(g.rc_1.servo_out));
-	DataFlash.WriteInt((int)(g.rc_2.servo_out));
+	DataFlash.WriteInt((int)(g.rc_3.control_in));
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
+	DataFlash.WriteInt((int)(g.rc_4.control_in));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
 
 	// Yaw mode
