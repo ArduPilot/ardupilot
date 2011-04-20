@@ -116,7 +116,7 @@ output_yaw_with_hold(boolean hold)
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
 			// we are still in motion from rate control
-			if(fabs(omega.z) < .5){
+			if(fabs(omega.z) < .2){
 				clear_yaw_control();
 				hold = true;			// just to be explicit
 				//Serial.print("C");
@@ -152,12 +152,12 @@ output_yaw_with_hold(boolean hold)
 		yaw_debug = YAW_HOLD; //0
 
 	}else{
-																							// -error = CCW, 	+error = CW
+
 		if(g.rc_4.control_in == 0){
 			// we are breaking;
 			//g.rc_4.servo_out = (omega.z > 0) ? -600 : 600;
 			// adaptive braking
-			g.rc_4.servo_out 	= (int)((-1800.0 * omega.z) / 1.5);
+			g.rc_4.servo_out 	= (int)((-1800.0 * omega.z) / 1);
 								//	-1800 * 0.925 / 6 = -277
 
 			yaw_debug = YAW_BRAKE;  // 1

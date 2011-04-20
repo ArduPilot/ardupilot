@@ -381,6 +381,8 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
 	DataFlash.WriteInt((int)(g.rc_4.control_in));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
+	DataFlash.WriteInt((int)yaw_error);
+
 
 	// Yaw mode
 	DataFlash.WriteByte(yaw_debug);
@@ -492,11 +494,13 @@ void Log_Read_Current()
 // Read an control tuning packet
 void Log_Read_Control_Tuning()
 {
-	Serial.printf_P(PSTR("CTUN: %d, %d, %d, %d, %d, %1.4f, %1.4f, %1.4f, %d, %d, %ld\n"),
+	Serial.printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %1.4f, %1.4f, %1.4f, %d, %d, %ld\n"),
 				// Control
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+
 				DataFlash.ReadInt(),
 
 				// Yaw Mode
