@@ -735,59 +735,22 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_altitude(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("Uncalibrated relative airpressure\n"));
 	print_hit_enter();
 
-	home.alt = 0;
-	wp_distance = 0;
 	init_barometer();
-	reset_I();
-
-	// to prevent boost from skewing results
-	cos_pitch_x = cos_roll_x = 1;
 
 	while(1){
-		if (millis() - fast_loopTimer > 100) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+		delay(100);
+
+		baro_alt 		= read_barometer();
+
+		if(g.sonar_enabled){
+			// decide which sensor we're usings
+			sonar_alt 		= sonar.read();
 		}
-
-		if (millis() - medium_loopTimer > 100) {
-			medium_loopTimer	= millis();
-
-			read_radio();			// read the radio first
-			next_WP.alt = home.alt + g.rc_6.control_in; // 0 - 2000 (20 meters)
-			next_WP.alt =  max(next_WP.alt, 30);
-
-			read_trim_switch();
-			update_alt();
-			output_auto_throttle();
-
-			Serial.printf_P(PSTR("B_alt: %ld, S_alt: %ld, \tnext_alt: %ld \terror: %ld, \tcruise: %d, \tint: %6.2f \tout:%d\n"),
-						baro_alt,
-						sonar_alt,
-						next_WP.alt,
-						altitude_error,
-						(int)g.throttle_cruise,
-						g.pid_baro_throttle.get_integrator(),
-						g.rc_3.servo_out);
-
-			/*
-			Serial.print("Altitude: ");
-			Serial.print((int)current_loc.alt,DEC);
-			Serial.print("\tnext_alt: ");
-			Serial.print((int)next_WP.alt,DEC);
-			Serial.print("\talt_err: ");
-			Serial.print((int)altitude_error,DEC);
-			Serial.print("\ttNom: ");
-			Serial.print(g.,DEC);
-			Serial.print("\ttOut: ");
-			Serial.println(g.rc_3.servo_out,DEC);
-			*/
-			//Serial.print("    Raw pressure value: ");
-			//Serial.println(abs_pressure);
-		}
+		Serial.printf_P(PSTR("B_alt: %ld, S_alt: %ld\n"),
+					baro_alt,
+					sonar_alt);
 
 		if(Serial.available() > 0){
 			return (0);

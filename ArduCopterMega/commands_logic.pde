@@ -246,18 +246,20 @@ void do_land()
 	Serial.println("dlnd ");
 	land_complete		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 	velocity_land		= 2000;
+	land_start 			= millis();
+	original_alt		= current_loc.alt;
 
-	Location temp		= current_loc;
+	//Location temp		= current_loc;
 	//temp.alt			= home.alt;
 	// just go down far
-	temp.alt			= -100000;
+	//temp.alt			= -100000;
 
-	set_next_WP(&temp);
+	set_next_WP(&current_loc);
 }
 
 void do_loiter_unlimited()
 {
-	Serial.println("dloi ");
+	//Serial.println("dloi ");
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
 	else
@@ -310,12 +312,14 @@ bool verify_takeoff()
 
 bool verify_land()
 {
-	//Serial.print("vlnd ");
+	// land at 1 meter per second
+	next_WP.alt  = original_alt - ((millis() - land_start) / 10);			// condition_value = our initial
+
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
 
 	if(g.sonar_enabled){
-		// decide which sensor we're usings
+		// decide which sensor we're using
 		if(sonar_alt < 40){
 			land_complete = true;
 			Serial.println("Y");
