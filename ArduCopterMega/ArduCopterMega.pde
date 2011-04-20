@@ -375,6 +375,11 @@ long 	condition_value;					// used in condition commands (eg delay, change alt, 
 long 	condition_start;
 int 	condition_rate;
 
+// land command
+// ------------
+long 	land_start;							// when we intiated command in millis()
+long 	original_alt;						// altitide reference for start of command
+
 // 3D Location vectors
 // -------------------
 struct 	Location home;						// home location
@@ -385,7 +390,6 @@ struct 	Location target_WP;					// where do we want to you towards?
 struct 	Location tell_command;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
-//long 	offset_altitude;					// used for
 boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
 

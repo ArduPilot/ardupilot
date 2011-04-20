@@ -515,7 +515,6 @@
 #ifndef ALT_HOLD_HOME
 # define ALT_HOLD_HOME 8
 #endif
-#define ALT_HOLD_HOME_CM ALT_HOLD_HOME * 100
 
 #ifndef USE_CURRENT_ALT
 # define USE_CURRENT_ALT FALSE

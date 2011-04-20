@@ -49,13 +49,13 @@ struct Location get_wp_with_index(int i)
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
-		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);	// alt is stored in CM!
+		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);	// alt is stored in CM! Alt is stored relative!
 
 		mem += 4;
-		temp.lat = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.lat = (long)eeprom_read_dword((uint32_t*)mem); // lat is stored in decimal * 10,000,000
 
 		mem += 4;
-		temp.lng = (long)eeprom_read_dword((uint32_t*)mem);
+		temp.lng = (long)eeprom_read_dword((uint32_t*)mem); // lon is stored in decimal * 10,000,000
 	}
 
 	// Add on home altitude if we are a nav command

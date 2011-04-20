@@ -105,7 +105,7 @@ void init_ardupilot()
 
 		Serial.printf_P(PSTR("Please Run Setup...\n"));
 		while (true) {
-			delay(100);
+			delay(1000);
 			if(motor_light){
 				digitalWrite(A_LED_PIN, HIGH);
 				digitalWrite(B_LED_PIN, HIGH);
