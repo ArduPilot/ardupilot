@@ -22,7 +22,7 @@ Command Structure in bytes
 Commands below MAV_CMD_NAV_LAST are commands that have a end criteria, eg "reached waypoint" or "reached altitude"
 ***********************************
 Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
-	0x10 / 16	MAV_CMD_NAV_WAYPOINT				delay (seconds)		altitude			lat					lon
+0x10 / 16	MAV_CMD_NAV_WAYPOINT				delay (seconds)		altitude			lat					lon
 0x11 / 17	MAV_CMD_NAV_LOITER_UNLIM 			(forever)			altitude			lat					lon
 
 0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					-					-					-
