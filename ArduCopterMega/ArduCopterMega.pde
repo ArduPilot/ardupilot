@@ -632,17 +632,9 @@ void medium_loop()
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS){
-				if(home_is_set){
-					Log_Write_GPS(g_gps->time,
-						current_loc.lat,
-						current_loc.lng,
-						g_gps->altitude,
-						current_loc.alt,
-						(long)g_gps->ground_speed,
-						g_gps->ground_course,
-						g_gps->fix,
-						g_gps->num_sats);
-				}
+				//if(home_is_set){
+					Log_Write_GPS();
+				//}
 			}
 
 			// XXX this should be a "GCS medium loop" interface
@@ -845,7 +837,7 @@ void update_GPS(void)
 				init_home();
 
 				// init altitude
-				current_loc.alt = g_gps->altitude;
+				current_loc.alt = home.alt;
 				ground_start_count = 0;
 			}
 		}
@@ -1135,15 +1127,14 @@ void update_alt()
 		if(altitude_sensor == BARO){
 			current_loc.alt = baro_alt + home.alt;
 		}else{
-			sonar_alt		= min(sonar_alt, 600);
 			current_loc.alt = sonar_alt + home.alt;
 		}
 
 	}else{
-
 		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
 	}
+
 	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
 #endif
 

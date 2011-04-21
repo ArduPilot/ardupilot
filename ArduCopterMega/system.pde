@@ -17,9 +17,9 @@ extern int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
 static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("Commands:\n"
-						 "  logs        log readback/setup mode\n"
-						 "  setup       setup mode\n"
-						 "  test        test mode\n"
+						 "  logs\n"
+						 "  setup\n"
+						 "  test\n"
 						 "\n"
 						 "Move the slide switch and reset to FLY.\n"
 						 "\n"));
@@ -171,7 +171,7 @@ void init_ardupilot()
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
-	
+
 	// Logging:
 	// --------
 	DataFlash.Init(); 	// DataFlash log initialization
@@ -224,7 +224,7 @@ void init_ardupilot()
 //********************************************************************************
 void startup_ground(void)
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
+	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
 	#if(GROUND_START_DELAY > 0)
 		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
@@ -275,9 +275,10 @@ void startup_ground(void)
 			break;
 	    }
 	}
+
 	report_gps();
 	SendDebug("\nReady to FLY ");
-	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+	//gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
 void set_mode(byte mode)

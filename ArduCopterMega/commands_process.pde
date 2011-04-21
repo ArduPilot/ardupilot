@@ -35,6 +35,8 @@ void load_next_command_from_EEPROM()
 	// -----------------------------------------------------
 	if(next_command.id == NO_COMMAND){
 		next_command = get_wp_with_index(g.waypoint_index + 1);
+		//Serial.println("AA");
+		print_wp(&next_command, g.waypoint_index + 1);
 	}
 
 	// If the preload failed, return or just Loiter
@@ -61,6 +63,7 @@ void process_next_command()
 			SendDebug("MSG <pnc> new c_must_id ");
 			SendDebug(next_command.id,DEC);
 			SendDebug(" index:");
+
 			SendDebugln(command_must_index,DEC);
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);
@@ -104,7 +107,8 @@ void process_must()
 {
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
-	Serial.printf("pmst %d\n", (int)next_command.id);
+	//Serial.printf("pmst %d\n", (int)next_command.id);
+	print_wp(&next_command, g.waypoint_index);
 
 	// clear May indexes
 	command_may_index	= NO_COMMAND;

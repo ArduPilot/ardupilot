@@ -45,7 +45,7 @@ output_stabilize_roll()
 	error 		= constrain(error, -2500, 2500);
 
 	// only buildup I if we are trying to roll hard
-	if(abs(g.rc_1.servo_out) < 1500){
+	if(abs(g.rc_1.servo_out) < 1000){
 		// smoother alternative to reset?
 		//if(g.pid_stabilize_roll.kI() != 0){
 		//	g.pid_stabilize_roll.kI(g.pid_stabilize_roll.kI() * .8);
@@ -54,7 +54,7 @@ output_stabilize_roll()
 	}
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
-	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);
+	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);		// 2500 * .7 = 1750
 
 	// We adjust the output by the rate of rotation:
 	// Rate control through bias corrected gyro rates
@@ -99,9 +99,11 @@ void
 clear_yaw_control()
 {
 	//Serial.print("Clear ");
-	rate_yaw_flag  	= false;			// exit rate_yaw_flag
-	nav_yaw 		= dcm.yaw_sensor;	// save our Yaw
-	yaw_error 		= 0;
+	rate_yaw_flag  		= false;			// exit rate_yaw_flag
+	nav_yaw 			= dcm.yaw_sensor;	// save our Yaw
+	g.rc_4.servo_out 	= 0;				// reset our output. It can stick when we are at 0 throttle
+	yaw_error 			= 0;
+	yaw_debug 			= YAW_HOLD; 		//0
 }
 
 void
@@ -138,40 +140,38 @@ output_yaw_with_hold(boolean hold)
 
 	if(hold){
 		// try and hold the current nav_yaw setting
-		yaw_error			= nav_yaw - dcm.yaw_sensor; 									// +- 60°
-		yaw_error 			= wrap_180(yaw_error);
+		yaw_error				= nav_yaw - dcm.yaw_sensor; 									// +- 60°
+		yaw_error 				= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
-		yaw_error			= constrain(yaw_error,	 -6000, 6000);						// limit error to 60 degees
+		yaw_error				= constrain(yaw_error,	 -6000, 6000);						// limit error to 60 degees
 
 		// Apply PID and save the new angle back to RC_Channel
-		g.rc_4.servo_out 	= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
+		g.rc_4.servo_out 		= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
 
 		// add in yaw dampener
-		g.rc_4.servo_out	-= constrain(dampener, -1800, 1800);
-		yaw_debug = YAW_HOLD; //0
+		g.rc_4.servo_out		-= constrain(dampener, -2400, 2400);
+		yaw_debug 				= YAW_HOLD; //0
 
 	}else{
 
 		if(g.rc_4.control_in == 0){
-			// we are breaking;
-			//g.rc_4.servo_out = (omega.z > 0) ? -600 : 600;
-			// adaptive braking
-			g.rc_4.servo_out 	= (int)((-1800.0 * omega.z) / 1);
-								//	-1800 * 0.925 / 6 = -277
 
-			yaw_debug = YAW_BRAKE;  // 1
+			// adaptive braking
+			g.rc_4.servo_out 	= (int)((-3000.0 * omega.z) / 1);
+
+			yaw_debug 			= YAW_BRAKE;  // 1
 
 		}else{
 			// RATE control
 			long error			= ((long)g.rc_4.control_in * 6) - rate;							// control is += 6000 * 6 = 36000
 			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
-			yaw_debug = YAW_RATE;  // 2
+			yaw_debug 			= YAW_RATE;  // 2
 		}
 	}
 
 	// Limit Output
-	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -1800, 1800);								// limit to 24°
+	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);								// limit to 24°
 
 	//Serial.printf("%d\n",g.rc_4.servo_out);
 }
@@ -243,10 +243,10 @@ void calc_nav_throttle()
 	}
 
 	if(altitude_sensor == BARO){
-		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);
+		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .25
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
 	}else{
-		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .5
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 100);
 	}
 

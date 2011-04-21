@@ -349,7 +349,7 @@
 # define YAW_I					0.0			// Always 0
 #endif
 #ifndef  YAW_D
-# define YAW_D					0.175		//
+# define YAW_D					0.05		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
 # define YAW_IMAX				0			//	Always 0
@@ -399,7 +399,7 @@
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		.5
+# define THROTTLE_SONAR_P		.65		// upped a hair from .5
 #endif
 #ifndef THROTTLE_SONAR_I
 # define THROTTLE_SONAR_I		0.1

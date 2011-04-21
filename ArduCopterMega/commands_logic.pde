@@ -126,7 +126,7 @@ bool handle_no_commands()
 
 bool verify_must()
 {
-	Serial.printf("vmust ::%d", nav_throttle);
+	//Serial.printf("vmust: %d\n", command_must_ID);
 
 	switch(command_must_ID) {
 
@@ -219,11 +219,12 @@ void do_RTL(void)
 void do_takeoff()
 {
 	Location temp		= current_loc;
-	temp.alt			+= next_command.alt;
+	temp.alt			= next_command.alt;
+
 	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 
-	Serial.print("dt ");
-	Serial.println(temp.alt,DEC);
+	//Serial.print("dt ");
+	//Serial.println(temp.alt, DEC);
 
 	set_next_WP(&temp);
 }
@@ -294,7 +295,7 @@ void do_loiter_time()
 
 bool verify_takeoff()
 {
-	Serial.print("vt ");
+	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	// wait until we are ready!
 	if(g.rc_3.control_in == 0)

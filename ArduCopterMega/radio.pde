@@ -14,7 +14,7 @@ void init_rc_in()
 	g.rc_2.set_angle(4500);
 	g.rc_3.set_range(0,1000);
 	g.rc_3.scale_output = .9;
-	g.rc_4.set_angle(6000);
+	g.rc_4.set_angle(4500);
 
 	// set rc dead zones
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
