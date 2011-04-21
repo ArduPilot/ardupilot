@@ -144,13 +144,13 @@ output_yaw_with_hold(boolean hold)
 		yaw_error 				= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
-		yaw_error				= constrain(yaw_error,	 -6000, 6000);						// limit error to 60 degees
+		yaw_error				= constrain(yaw_error,	 -4000, 4000);						// limit error to 60 degees
 
 		// Apply PID and save the new angle back to RC_Channel
-		g.rc_4.servo_out 		= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .5 * 6000 = 3000
+		g.rc_4.servo_out 		= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
 
 		// add in yaw dampener
-		g.rc_4.servo_out		-= constrain(dampener, -2400, 2400);
+		g.rc_4.servo_out		-= constrain(dampener, -1600, 1600);
 		yaw_debug 				= YAW_HOLD; //0
 
 	}else{
@@ -239,15 +239,16 @@ void calc_nav_throttle()
 	float scaler = 1.0;
 
 	if(error < 0){
-		scaler = (altitude_sensor == BARO) ? .5 : .5;
+		// try and prevent rapid fall
+		scaler = (altitude_sensor == BARO) ? .3 : .3;
 	}
 
 	if(altitude_sensor == BARO){
 		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .25
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 120);
 	}else{
 		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .5
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 100);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -50, 150);
 	}
 
 	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
@@ -259,7 +260,7 @@ void calc_nav_throttle()
 float angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
-	temp = 2.0 - constrain(temp, .7, 1.0);
+	temp = 2.0 - constrain(temp, .5, 1.0);
 	return temp;
 }
 

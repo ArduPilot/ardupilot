@@ -343,13 +343,13 @@
 // YAW Control
 //
 #ifndef  YAW_P
-# define YAW_P					0.5		// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define YAW_P					0.4		// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
 # define YAW_I					0.0			// Always 0
 #endif
 #ifndef  YAW_D
-# define YAW_D					0.05		// Trying a lower value to prevent odd behavior
+# define YAW_D					0.13		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
 # define YAW_IMAX				0			//	Always 0
@@ -385,13 +385,13 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.25
+# define THROTTLE_BARO_P		0.4
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.04
+# define THROTTLE_BARO_I		0.1
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.0	// lowered to 0 to debug effects
+# define THROTTLE_BARO_D		0.03	// lowered to 0 to debug effects
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		50
@@ -399,13 +399,13 @@
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		.65		// upped a hair from .5
+# define THROTTLE_SONAR_P		.8		// upped a hair from .5
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.1
+# define THROTTLE_SONAR_I		0.4
 #endif
 #ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.03
+# define THROTTLE_SONAR_D		0.15
 #endif
 #ifndef THROTTLE_SONAR_IMAX
 # define THROTTLE_SONAR_IMAX	50
@@ -416,10 +416,10 @@
 // Crosstrack compensation
 //
 #ifndef XTRACK_GAIN
-# define XTRACK_GAIN          1 // deg/m
+# define XTRACK_GAIN          5 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   30 // deg
+# define XTRACK_ENTRY_ANGLE   40 // deg
 #endif
 
 

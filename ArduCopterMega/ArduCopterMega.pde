@@ -244,7 +244,7 @@ boolean timer_light;						// status of the Motor safety
 const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
 float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
 float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
-byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
+byte 	ground_start_count	= 10;			// have we achieved first lock and set Home?
 
 // Location & Navigation
 // ---------------------
@@ -308,8 +308,9 @@ int 			ground_temperature;
 
 // Altitude Sensor variables
 // ----------------------
-long	sonar_alt;
-long	baro_alt;
+int		sonar_alt;
+int		baro_alt;
+int		baro_alt_offset;
 byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 
 // flight mode specific
@@ -1108,29 +1109,46 @@ void update_alt()
 #if HIL_MODE == HIL_MODE_ATTITUDE
 	current_loc.alt = g_gps->altitude;
 #else
-	altitude_sensor = BARO;
-	baro_alt 		= read_barometer();
-	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
-
 	if(g.sonar_enabled){
-		// decide which sensor we're usings
-		sonar_alt 		= sonar.read();
+		// read barometer
+		baro_alt 		= read_barometer();
 
-		if(baro_alt < 500 && sonar_alt < 600){  // less than 5m or 15 feet
+		//filter out bad sonar reads
+		int temp 		= sonar.read();
+
+		if(abs(temp - sonar_alt) < 300){
+			sonar_alt = temp;
+		}
+
+		// correct alt for angle of the sonar
+		sonar_alt = (float)sonar_alt * (cos_pitch_x * cos_roll_x);
+
+		// output a light to show sonar is working
+		update_sonar_light(sonar_alt > 100);
+
+		// decide which sensor we're usings
+		if(sonar_alt < 500){  // less than 5m or 15 feet
 			altitude_sensor = SONAR;
+
+			// XXX this is a hack for now. it kills accuracy from GPS reading of altitude and focuses
+			// on altitude above flat ground.
+			baro_alt_offset = sonar_alt - baro_alt;
+
 		}else{
 			altitude_sensor = BARO;
 		}
 
-		//altitude_sensor = (target_altitude > (home.alt + 500)) ? BARO : SONAR;
-
+		// calculate our altitude
 		if(altitude_sensor == BARO){
-			current_loc.alt = baro_alt + home.alt;
+			current_loc.alt = baro_alt + baro_alt_offset + home.alt;
 		}else{
 			current_loc.alt = sonar_alt + home.alt;
 		}
 
 	}else{
+
+		altitude_sensor = BARO;
+		baro_alt 		= read_barometer();
 		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
 	}
@@ -1197,5 +1215,9 @@ void tuning(){
 
 	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
 		Y6_scaling = (float)g.rc_6.control_in / 1000.0;
+
+	#elif CHANNEL_6_TUNING == CH6_PMAX
+		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
+
 	#endif
 }

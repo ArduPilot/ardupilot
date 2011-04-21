@@ -111,6 +111,7 @@
 #define CH6_SONAR_KP 5
 #define CH6_SONAR_KD 6
 #define CH6_Y6_SCALING 7
+#define CH6_PMAX 8
 
 // nav byte mask
 // -------------

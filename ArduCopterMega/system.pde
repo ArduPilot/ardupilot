@@ -419,7 +419,7 @@ void update_motor_light(void)
 	}
 }
 
-void update_timer_light(bool light)
+void update_sonar_light(bool light)
 {
 	if(light == true){
 		digitalWrite(B_LED_PIN, HIGH);
