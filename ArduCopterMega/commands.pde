@@ -189,6 +189,7 @@ void set_next_WP(struct Location *wp)
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
+	nav_bearing 		= target_bearing;
 
 	// to check if we have missed the WP
 	// ----------------------------
@@ -196,7 +197,7 @@ void set_next_WP(struct Location *wp)
 
 	// set a new crosstrack bearing
 	// ----------------------------
-	reset_crosstrack();
+	crosstrack_bearing 	= target_bearing;	// Used for track following
 
 	gcs.print_current_waypoints();
 }

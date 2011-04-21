@@ -20,6 +20,9 @@ static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 // printf_P is a version of print_f that reads from flash memory
 static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 {
+	// log hack
+	//Serial.begin(115200, 128, 128);
+
 	Serial.printf_P(PSTR("\n"
 						 "Commands:\n"
 						 "  dump <n>"
@@ -380,26 +383,28 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)(target_bearing/100));		// 3
 	DataFlash.WriteInt((int)(nav_bearing/100));			// 4
 
-	DataFlash.WriteByte(altitude_sensor);				// 5
-	DataFlash.WriteInt((int)sonar_alt);					// 6
-	DataFlash.WriteInt((int)baro_alt);					// 7
+	DataFlash.WriteInt((int)(g.rc_3.servo_out));		// 5
+	DataFlash.WriteByte(altitude_sensor);				// 6
+	DataFlash.WriteInt((int)sonar_alt);					// 7
+	DataFlash.WriteInt((int)baro_alt);					// 8
 
-	DataFlash.WriteInt(home.alt);						// 8
-	DataFlash.WriteInt((int)next_WP.alt);				// 9
-	DataFlash.WriteInt((int)altitude_error);			// 10
+	DataFlash.WriteInt(home.alt);						// 9
+	DataFlash.WriteInt((int)next_WP.alt);				// 11
+	DataFlash.WriteInt((int)altitude_error);			// 11
 
 	DataFlash.WriteByte(END_BYTE);
 }
 
 void Log_Read_Nav_Tuning()
 {
-							 //	1	2	3	4	5	6	7	8	9	10
-	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+							 //	1	2	3	4	5	6	7	8	9	10  11
+	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
 				DataFlash.ReadInt(),	//yaw sensor
 				DataFlash.ReadInt(),	//distance
 				DataFlash.ReadInt(),	//target bearing
 				DataFlash.ReadInt(),	//nav bearing
 
+				DataFlash.ReadInt(),	//throttle
 				DataFlash.ReadByte(),	//Alt sensor
 				DataFlash.ReadInt(),	//Sonar
 				DataFlash.ReadInt(),	//Baro

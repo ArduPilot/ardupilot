@@ -42,7 +42,7 @@ int8_t
 setup_mode(uint8_t argc, const Menu::arg *argv)
 {
 	// Give the user some guidance
-	Serial.printf_P(PSTR("Setup Mode\n"));
+	Serial.printf_P(PSTR("Setup Mode\n\n\n"));
 						 //"\n"
 						 //"IMPORTANT: if you have not previously set this system up, use the\n"
 						 //"'reset' command to initialize the EEPROM to sensible default values\n"
