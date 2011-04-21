@@ -134,14 +134,12 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		read_radio();
-		output_manual_throttle();
+		//output_manual_throttle();
+		//g.rc_1.calc_pwm();
+		//g.rc_2.calc_pwm();
+		//g.rc_4.calc_pwm();
 
-		g.rc_1.calc_pwm();
-		g.rc_2.calc_pwm();
-		g.rc_3.calc_pwm();
-		g.rc_4.calc_pwm();
-
-		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
+		Serial.printf_P(PSTR("IN  1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\n"),
 							g.rc_1.control_in,
 							g.rc_2.control_in,
 							g.rc_3.control_in,

@@ -15,6 +15,10 @@ void init_auto()
 		Serial.println("ia_f");
 		do_RTL();
 	}
+
+	// initialize commands
+	// -------------------
+	init_commands();
 }
 
 // this is only used by an air-start
@@ -76,7 +80,6 @@ struct Location get_wp_with_index(int i)
 
 	// this is a hack for now, until we get GUI support
 	yaw_tracking = TRACK_NEXT_WP;
-
 	return temp;
 }
 
@@ -221,6 +224,8 @@ void init_home()
 	// Save Home to EEPROM
 	// -------------------
 	set_wp_with_index(home, 0);
+
+	print_wp(&home, 0);
 
 	// Save prev loc
 	// -------------
