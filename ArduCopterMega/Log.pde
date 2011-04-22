@@ -20,9 +20,6 @@ static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 // printf_P is a version of print_f that reads from flash memory
 static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 {
-	// log hack
-	//Serial.begin(115200, 128, 128);
-
 	Serial.printf_P(PSTR("\n"
 						 "Commands:\n"
 						 "  dump <n>"
@@ -527,7 +524,10 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
 	DataFlash.WriteInt((int)(g.rc_4.control_in));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
+
+	// yaw
 	DataFlash.WriteInt((int)yaw_error);
+	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 
 	// Yaw mode
 	DataFlash.WriteByte(yaw_debug);
@@ -553,13 +553,15 @@ void Log_Write_Control_Tuning()
 // Read an control tuning packet
 void Log_Read_Control_Tuning()
 {
-	Serial.printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %1.4f, %1.4f, %1.4f, %d, %d, %d\n"),
+	Serial.printf_P(PSTR("CTUN, %d, %d, %d, %d, %d, %d, %d, %1.4f, %1.4f, %1.4f, %d, %d, %d\n"),
 				// Control
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 
+				// yaw
+				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 
 				// Yaw Mode
