@@ -276,7 +276,9 @@ void output_manual_yaw()
 			clear_yaw_control();
 			did_clear_yaw_control = true;
 		}
-	}else{
+
+	}else{ // motors running
+
 		// Yaw control
 		if(g.rc_4.control_in == 0){
 			output_yaw_with_hold(true); // hold yaw
