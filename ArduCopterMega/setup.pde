@@ -700,6 +700,7 @@ void default_log_bitmask()
 void
 default_gains()
 {
+	/*
 	// acro, angular rate
 	g.pid_acro_rate_roll.kP(ACRO_RATE_ROLL_P);
 	g.pid_acro_rate_roll.kI(ACRO_RATE_ROLL_I);
@@ -764,6 +765,7 @@ default_gains()
 	g.pid_sonar_throttle.imax(THROTTLE_SONAR_IMAX);
 
 	save_EEPROM_PID();
+	*/
 }
 
 
@@ -775,11 +777,11 @@ void report_wp(byte index = 255)
 {
 	if(index == 255){
 		for(byte i = 0; i <= g.waypoint_total; i++){
-			struct Location temp = get_wp_with_index(i);
+			struct Location temp = get_command_with_index(i);
 			print_wp(&temp, i);
 		}
 	}else{
-		struct Location temp = get_wp_with_index(index);
+		struct Location temp = get_command_with_index(index);
 		print_wp(&temp, index);
 	}
 }
@@ -1185,7 +1187,7 @@ void read_EEPROM_PID(void)
 
 void save_EEPROM_PID(void)
 {
-
+	/*
 	g.pid_acro_rate_roll.save_gains();
 	g.pid_acro_rate_pitch.save_gains();
 	g.pid_acro_rate_yaw.save_gains();
@@ -1203,6 +1205,7 @@ void save_EEPROM_PID(void)
 	g.stabilize_dampener.save();
 	// yaw
 	g.hold_yaw_dampener.save();
+	*/
 }
 
 /********************************************************************************/

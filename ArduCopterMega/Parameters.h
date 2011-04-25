@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 4;
+    static const uint16_t k_format_version = 5;
 
     //
     // Parameter identities.
@@ -117,6 +117,7 @@ public:
 		k_param_pid_yaw,
 		k_param_pid_nav_lat,
 		k_param_pid_nav_lon,
+		k_param_pid_nav_wp,
 		k_param_pid_baro_throttle,
 		k_param_pid_sonar_throttle,
 		// special D term alternatives
@@ -202,6 +203,7 @@ public:
 	PID			pid_yaw;
 	PID			pid_nav_lat;
 	PID			pid_nav_lon;
+	PID			pid_nav_wp;
 	PID			pid_baro_throttle;
 	PID			pid_sonar_throttle;
 
@@ -272,11 +274,12 @@ public:
 		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,  STABILIZE_PITCH_I,	0,  				STABILIZE_PITCH_IMAX * 100),
 		pid_yaw				(k_param_pid_yaw,				PSTR("STB_YAW_"),	YAW_P,      		YAW_I,				0,					YAW_IMAX * 100),
 
-		pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,      		NAV_I,				NAV_D,				NAV_IMAX * 100),
-		pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_P,      		NAV_I,				NAV_D,				NAV_IMAX * 100),
+		pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_LOITER_P,		NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
+		pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_LOITER_P,      	NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
+		pid_nav_wp			(k_param_pid_nav_wp,			PSTR("NAV_WP_"),	NAV_WP_P,      		NAV_WP_I,			NAV_WP_D,			NAV_WP_IMAX * 100),
 
-		pid_baro_throttle	(k_param_pid_baro_throttle,		PSTR("THR_BAR_"),	THROTTLE_BARO_P,    THROTTLE_BARO_I,	THROTTLE_BARO_D,	THROTTLE_BARO_IMAX * 100),
-		pid_sonar_throttle	(k_param_pid_sonar_throttle,	PSTR("THR_SON_"),	THROTTLE_SONAR_P,   THROTTLE_SONAR_I,	THROTTLE_SONAR_D,	THROTTLE_SONAR_IMAX * 100),
+		pid_baro_throttle	(k_param_pid_baro_throttle,		PSTR("THR_BAR_"),	THROTTLE_BARO_P,    THROTTLE_BARO_I,	THROTTLE_BARO_D,	THROTTLE_BARO_IMAX),
+		pid_sonar_throttle	(k_param_pid_sonar_throttle,	PSTR("THR_SON_"),	THROTTLE_SONAR_P,   THROTTLE_SONAR_I,	THROTTLE_SONAR_D,	THROTTLE_SONAR_IMAX),
 
 		stabilize_dampener	(STABILIZE_ROLL_D,		k_param_stabilize_dampener, 	PSTR("STB_DAMP")),
 		hold_yaw_dampener	(YAW_D,				 	k_param_hold_yaw_dampener, 		PSTR("YAW_DAMP")),

@@ -35,16 +35,13 @@ void navigate()
 	// ------------------------------------------
 	nav_bearing = target_bearing;
 
-	// check if we have missed the WP
-	loiter_delta = (target_bearing - old_target_bearing)/100;
+}
 
-	// reset the old value
-	old_target_bearing = target_bearing;
-
-	// wrap values
-	if (loiter_delta > 180) loiter_delta -= 360;
-	if (loiter_delta < -180) loiter_delta += 360;
-	loiter_sum += abs(loiter_delta);
+bool check_missed_wp()
+{
+	long temp 	= target_bearing - saved_target_bearing;
+	temp 		= wrap_180(temp);
+	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
 #define DIST_ERROR_MAX 1800
@@ -59,6 +56,7 @@ void calc_loiter_nav()
 	10000 	= 111m
 	pitch_max = 22° (2200)
 	*/
+
 	// X ROLL
 	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
 
@@ -76,10 +74,6 @@ void calc_loiter_nav()
 	// PITCH	Y
 	//nav_lat		= lat_error * g.pid_nav_lat.kP();						// 1800 * 2 = 3600 or 36°
 	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);			// invert lat (for pitch)
-
-
-	// nav_lat  = -1000  Y Pitch
-	// nav_lon  =  1000  X Roll
 
 	// rotate the vector
 	nav_roll 	=   (float)nav_lon * sin_yaw_y 	- (float)nav_lat * -cos_yaw_x;
@@ -110,13 +104,37 @@ void calc_loiter_nav()
 
 }
 
-void calc_waypoint_nav()
+void calc_simple_nav()
 {
+	// no dampening here in SIMPLE mode
+	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
+	// Scale response by kP
+	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+}
+
+void calc_rate_nav()
+{
+	// calc distance error
 	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
 
 	// Scale response by kP
 	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
 
+	// Scale response by kP
+	//long output 	= g.pid_nav_wp.kP() * error;
+	int dampening	= g.pid_nav_wp.kD() * (g_gps->ground_speed - last_ground_speed);
+
+	// remember our old speed
+	last_ground_speed = g_gps->ground_speed;
+
+
+	// dampen our response
+	nav_lat -= constrain(dampening, 	-1800, 1800); // +- 20m max error
+
+}
+
+void calc_nav_output()
+{
 	// get the sin and cos of the bearing error - rotated 90°
 	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
 	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
@@ -124,8 +142,39 @@ void calc_waypoint_nav()
 	// rotate the vector
 	nav_roll 	=  (float)nav_lat * cos_nav_x;
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
-
 }
+
+#define WAYPOINT_SPEED 450
+
+
+// called after we get GPS read
+void calc_rate_nav2()
+{
+	// change to rate error
+	// we want to be going 450cm/s
+	int error = WAYPOINT_SPEED - g_gps->ground_speed;
+
+	// which direction are we moving?
+	long target_error 	= target_bearing - g_gps->ground_course;
+	target_error 		= wrap_180(target_error);
+
+	// calc the cos of the error to tell how fast we are moving towards the target
+	error = (float)error * cos(radians((float)target_error/100));
+
+	// Scale response by kP
+	long nav_lat 	= g.pid_nav_wp.kP() * error;
+	int dampening	= g.pid_nav_wp.kD() * (g_gps->ground_speed - last_ground_speed);
+
+	// remember our old speed
+	last_ground_speed = g_gps->ground_speed;
+
+	// dampen our response
+	nav_lat -= constrain(dampening, 	-1800, 1800); // +- 20m max error
+
+	// limit our output
+	nav_lat	= constrain(nav_lat, 	-3800, 3800); // +- 20m max error
+}
+
 
 void calc_bearing_error()
 {
@@ -165,34 +214,6 @@ long wrap_180(long error)
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
 	return error;
-}
-
-void update_loiter()
-{
-	float power;
-
-	if(wp_distance <= g.loiter_radius){
-		power = float(wp_distance) / float(g.loiter_radius);
-		nav_bearing += (int)(9000.0 * (2.0 + power));
-
-	}else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
-		power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
-		power = constrain(power, 0, 1);
-		nav_bearing -= power * 9000;
-
-	}else{
-		update_crosstrack();
-		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
-	}
-
-	if (wp_distance < g.loiter_radius){
-		nav_bearing += 9000;
-	}else{
-		nav_bearing -= 100 * M_PI / 180 * asin(g.loiter_radius / wp_distance);
-	}
-
-	update_crosstrack;
-	nav_bearing = wrap_360(nav_bearing);
 }
 
 void update_crosstrack(void)

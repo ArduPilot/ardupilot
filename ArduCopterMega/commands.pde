@@ -2,11 +2,15 @@
 
 void init_commands()
 {
-	//read_EEPROM_waypoint_info();
     g.waypoint_index.set_and_save(0);
-	command_must_index	= 0;
-	command_may_index	= 0;
-	next_command.id 	= CMD_BLANK;
+
+    // This are registers for the current may and must commands
+    // setting to zero will allow them to be written to by new commands
+	command_must_index	= NO_COMMAND;
+	command_may_index	= NO_COMMAND;
+
+	// clear the command queue
+	clear_command_queue();
 }
 
 void init_auto()
@@ -21,29 +25,33 @@ void init_auto()
 	init_commands();
 }
 
-// this is only used by an air-start
-/*void reload_commands_airstart()
-{
-	init_commands();
-	g.waypoint_index.load();        // XXX can we assume it's been loaded already by ::load_all?
-	decrement_WP_index();
+// forces the loading of a new command
+// queue is emptied after a new command is processed
+void clear_command_queue(){
+	next_command.id 	= CMD_BLANK;
 }
-*/
 
 // Getters
 // -------
-struct Location get_wp_with_index(int i)
+struct Location get_command_with_index(int i)
 {
 	struct Location temp;
-	long mem;
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
 	if (i > g.waypoint_total) {
+		// we do not have a valid command to load
+		// return a WP with a "Blank" id
 		temp.id = CMD_BLANK;
+
+		// no reason to carry on
+		return temp;
+
 	}else{
+		// we can load a command, we don't process it yet
 		// read WP position
-		mem = (WP_START_BYTE) + (i * WP_SIZE);
+		long mem = (WP_START_BYTE) + (i * WP_SIZE);
+
 		temp.id = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
@@ -62,30 +70,18 @@ struct Location get_wp_with_index(int i)
 		temp.lng = (long)eeprom_read_dword((uint32_t*)mem); // lon is stored in decimal * 10,000,000
 	}
 
-	// Add on home altitude if we are a nav command
-	if(temp.id < 0x70){
-		temp.alt += home.alt;
-	}
-
 	if(temp.options & WP_OPTION_RELATIVE){
+		// If were relative, just offset from home
 		temp.lat	+=	home.lat;
 		temp.lng	+=	home.lng;
 	}
 
-	// XXX this is a little awkward. We have two methods to control Yaw tracking
-	// one is global and one is per waypoint.
-	if(temp.options & WP_OPTION_YAW){
-		yaw_tracking = TRACK_NEXT_WP;
-	}
-
-	// this is a hack for now, until we get GUI support
-	yaw_tracking = TRACK_NEXT_WP;
 	return temp;
 }
 
 // Setters
 // -------
-void set_wp_with_index(struct Location temp, int i)
+void set_command_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.waypoint_total.get());
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
@@ -99,13 +95,13 @@ void set_wp_with_index(struct Location temp, int i)
 	eeprom_write_byte((uint8_t *)	mem, temp.p1);
 
 	mem++;
-	eeprom_write_dword((uint32_t *)	mem, temp.alt);	// alt is stored in CM!
+	eeprom_write_dword((uint32_t *)	mem, temp.alt);	// Alt is stored in CM!
 
 	mem += 4;
-	eeprom_write_dword((uint32_t *)	mem, temp.lat);
+	eeprom_write_dword((uint32_t *)	mem, temp.lat);	// Lat is stored in decimal degrees * 10^7
 
 	mem += 4;
-	eeprom_write_dword((uint32_t *)	mem, temp.lng);
+	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
 }
 
 void increment_WP_index()
@@ -137,7 +133,8 @@ long read_alt_to_hold()
 
 
 //********************************************************************************
-//This function sets the waypoint and modes for Return to Launch
+// This function sets the waypoint and modes for Return to Launch
+// It's not currently used
 //********************************************************************************
 
 Location get_LOITER_home_wp()
@@ -146,19 +143,19 @@ Location get_LOITER_home_wp()
 	next_WP = current_loc;
 
 	// read home position
-	struct Location temp 	= get_wp_with_index(0);
+	struct Location temp 	= get_command_with_index(0);	// 0 = home
 	temp.id 				= MAV_CMD_NAV_LOITER_UNLIM;
 	temp.alt 				= read_alt_to_hold();
 	return temp;
 }
 
 /*
-This function stores waypoint commands
-It looks to see what the next command type is and finds the last command.
+This function sets the next waypoint command
+It precalculates all the necessary stuff.
 */
+
 void set_next_WP(struct Location *wp)
 {
-	//GCS.send_text_P(SEVERITY_LOW,PSTR("load WP"));
 	SendDebug("MSG <set_next_wp> wp_index: ");
 	SendDebugln(g.waypoint_index, DEC);
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
@@ -171,14 +168,14 @@ void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
-	// used to control and limit the rate of climb
-	// -----------------------------------------------
+	// used to control and limit the rate of climb - not used right now!
+	// -----------------------------------------------------------------
 	target_altitude = current_loc.alt;
 
 	// zero out our loiter vals to watch for missed waypoints
-	loiter_delta 		= 0;
-	loiter_sum 			= 0;
-	loiter_total 		= 0;
+	//loiter_delta 		= 0;
+	//loiter_sum 			= 0;
+	//loiter_total 		= 0;
 
 	// this is used to offset the shrinking longitude as we go towards the poles
 	float rads 			= (abs(next_WP.lat)/t7) * 0.0174532925;
@@ -187,13 +184,15 @@ void set_next_WP(struct Location *wp)
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
+
+	// this makes the data not log for a GPS read
 	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
 	nav_bearing 		= target_bearing;
 
 	// to check if we have missed the WP
 	// ----------------------------
-	old_target_bearing 	= target_bearing;
+	saved_target_bearing = target_bearing;
 
 	// set a new crosstrack bearing
 	// ----------------------------
@@ -217,19 +216,17 @@ void init_home()
 	home.id 	= MAV_CMD_NAV_WAYPOINT;
 	home.lng 	= g_gps->longitude;				// Lon * 10**7
 	home.lat 	= g_gps->latitude;				// Lat * 10**7
-	home.alt 	= max(g_gps->altitude, 0);
+	home.alt 	= max(g_gps->altitude, 0);		// we sometimes get negatives from GPS, not valid
 	home_is_set = true;
 
 	//Serial.printf_P(PSTR("gps alt: %ld\n"), home.alt);
 
 	// Save Home to EEPROM
 	// -------------------
-	set_wp_with_index(home, 0);
-
+	set_command_with_index(home, 0);
 	print_wp(&home, 0);
 
-	// Save prev loc
-	// -------------
+	// Save prev loc this makes the calcs look better before commands are loaded
 	next_WP = prev_WP = home;
 }
 

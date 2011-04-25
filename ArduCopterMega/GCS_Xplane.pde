@@ -34,7 +34,7 @@ void send_message(byte id, long param) {
 		break;
 		
 		case MSG_COMMAND:
-			struct Location cmd = get_wp_with_index(param);
+			struct Location cmd = get_command_with_index(param);
 			print_waypoint(&cmd, param);
 		break;
 		
@@ -113,12 +113,12 @@ void print_waypoints()
 	// create a location struct to hold the temp Waypoints for printing
 	//Location tmp;
 	Serial.println("Home: ");
-	struct Location cmd = get_wp_with_index(0);
+	struct Location cmd = get_command_with_index(0);
 	print_waypoint(&cmd, 0);
 	Serial.println("Commands: ");
 	
 	for (int i=1; i < g.waypoint_total; i++){
-		cmd = get_wp_with_index(i);
+		cmd = get_command_with_index(i);
 		print_waypoint(&cmd, i);
 	}
 }

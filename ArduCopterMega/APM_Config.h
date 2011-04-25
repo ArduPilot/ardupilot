@@ -43,12 +43,12 @@
 
 # define LOG_ATTITUDE_FAST		DISABLED
 # define LOG_ATTITUDE_MED 		DISABLED
-# define LOG_GPS 				DISABLED
+# define LOG_GPS 				ENABLED
 # define LOG_PM 				DISABLED
 # define LOG_CTUN				ENABLED
-# define LOG_NTUN				DISABLED
-# define LOG_MODE				DISABLED
+# define LOG_NTUN				ENABLED
+# define LOG_MODE				ENABLED
 # define LOG_RAW				DISABLED
-# define LOG_CMD				DISABLED
+# define LOG_CMD				ENABLED
 # define LOG_CURRENT			DISABLED
 

@@ -360,24 +360,38 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				15			// degrees
+# define PITCH_MAX				45			// degrees
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Navigation control gains
 //
-#ifndef NAV_P
-# define NAV_P					2.0
+#ifndef NAV_LOITER_P
+# define NAV_LOITER_P			2.0
 #endif
-#ifndef NAV_I
-# define NAV_I					0.1
+#ifndef NAV_LOITER_I
+# define NAV_LOITER_I			0.1
 #endif
-#ifndef NAV_D
-# define NAV_D					0.00		// should always be 0
+#ifndef NAV_LOITER_D
+# define NAV_LOITER_D			0.00
 #endif
-#ifndef NAV_IMAX
-# define NAV_IMAX				250			// 250 Lat and Longtitude
+#ifndef NAV_LOITER_IMAX
+# define NAV_LOITER_IMAX		250			// 250 Lat and Longtitude
+#endif
+
+
+#ifndef NAV_WP_P
+# define NAV_WP_P				4.0
+#endif
+#ifndef NAV_WP_I
+# define NAV_WP_I				0.0
+#endif
+#ifndef NAV_WP_D
+# define NAV_WP_D				15
+#endif
+#ifndef NAV_WP_IMAX
+# define NAV_WP_IMAX			20			// 20 degrees
 #endif
 
 
@@ -391,24 +405,24 @@
 # define THROTTLE_BARO_I		0.1
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.03	// lowered to 0 to debug effects
+# define THROTTLE_BARO_D		0.1
 #endif
 #ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX		50
+# define THROTTLE_BARO_IMAX		80
 #endif
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		.8		// upped a hair from .5
+# define THROTTLE_SONAR_P		.8		// upped from .5
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.4
+# define THROTTLE_SONAR_I		0.1
 #endif
 #ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.15
+# define THROTTLE_SONAR_D		0.1
 #endif
 #ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	50
+# define THROTTLE_SONAR_IMAX	80
 #endif
 
 

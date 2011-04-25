@@ -5,10 +5,6 @@
 /********************************************************************************/
 void handle_process_must()
 {
-	// reset navigation integrators
-	// -------------------------
-	reset_I();
-
 	switch(next_command.id){
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -101,23 +97,27 @@ void handle_process_now()
 			do_repeat_relay();
 			break;
 
-		case MAV_CMD_NAV_ORIENTATION_TARGET:
-			do_target_yaw();
+		//case MAV_CMD_DO_ORIENTATION:
+		//	do_target_yaw();
 	}
 }
 
-bool handle_no_commands()
+void handle_no_commands()
 {
+	// we don't want to RTL. Maybe this will change in the future. RTL is kinda dangerous.
+	// use landing commands
+	return;
+	/*
 	if (command_must_ID)
-		return false;
+		return;
 
 	switch (control_mode){
-
 		default:
 			//set_mode(RTL);
 			break;
 	}
-	return true;
+	return;
+	*/
 }
 
 /********************************************************************************/
@@ -219,7 +219,9 @@ void do_RTL(void)
 void do_takeoff()
 {
 	Location temp		= current_loc;
-	temp.alt			= next_command.alt;
+
+	// next_command.alt is a relative altitude!!!
+	temp.alt			= next_command.alt + home.alt;
 
 	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 
@@ -231,11 +233,21 @@ void do_takeoff()
 
 void do_nav_wp()
 {
-	set_next_WP(&next_command);
-	wp_verify_byte 	= 0;
-	loiter_time 	= 0;
-	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
+	// next_command.alt is a relative altitude!!!
+	next_command.alt += home.alt;
 
+	set_next_WP(&next_command);
+
+	// this is our bitmask to verify we have met all conditions to move on
+	wp_verify_byte 	= 0;
+
+	// this will be used to remember the time in millis after we reach or pass the WP.
+	loiter_time 	= 0;
+
+	// this is the delay, stored in seconds and expanded to millis
+	loiter_time_max = next_command.p1 * 1000;
+
+	// if we don't require an altitude minimum, we save this flag as passed (1)
 	if((next_WP.options & WP_OPTION_ALT_REQUIRED) == 0){
 		// we don't need to worry about it
 		wp_verify_byte |= NAV_ALTITUDE;
@@ -245,16 +257,20 @@ void do_nav_wp()
 void do_land()
 {
 	Serial.println("dlnd ");
-	land_complete		= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+
+	// not really used right now, might be good for debugging
+	land_complete		= false;
+
+	// A value that drives to 0 when the altitude doesn't change
 	velocity_land		= 2000;
+
+	// used to limit decent rate
 	land_start 			= millis();
+
+	// used to limit decent rate
 	original_alt		= current_loc.alt;
 
-	//Location temp		= current_loc;
-	//temp.alt			= home.alt;
-	// just go down far
-	//temp.alt			= -100000;
-
+	// hold at our current location
 	set_next_WP(&current_loc);
 }
 
@@ -269,16 +285,19 @@ void do_loiter_unlimited()
 
 void do_loiter_turns()
 {
+/*
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
 	else
 		set_next_WP(&next_command);
 
 	loiter_total = next_command.p1 * 360;
+*/
 }
 
 void do_loiter_time()
 {
+	/*
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
 	else
@@ -287,6 +306,7 @@ void do_loiter_time()
 	loiter_time 	= millis();
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
 	Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
+	*/
 }
 
 /********************************************************************************/
@@ -295,7 +315,7 @@ void do_loiter_time()
 
 bool verify_takeoff()
 {
-	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
+	Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	// wait until we are ready!
 	if(g.rc_3.control_in == 0)
@@ -305,7 +325,9 @@ bool verify_takeoff()
 		Serial.println("Y");
 		takeoff_complete = true;
 		return true;
+
 	}else{
+
 		Serial.println("N");
 		return false;
 	}
@@ -314,7 +336,7 @@ bool verify_takeoff()
 bool verify_land()
 {
 	// land at 1 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 10);			// condition_value = our initial
+	next_WP.alt  = original_alt - ((millis() - land_start) / 5);			// condition_value = our initial
 
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
@@ -324,15 +346,16 @@ bool verify_land()
 		if(sonar_alt < 40){
 			land_complete = true;
 			Serial.println("Y");
-			return true;
+			//return true;
 		}
 	}
 
 	if(velocity_land <= 0){
 		land_complete = true;
-		return true;
+		//return true;
 	}
-	Serial.printf("N, %d\n", velocity_land);
+	//Serial.printf("N, %d\n", velocity_land);
+	Serial.printf("N_alt, %d\n", next_WP.alt);
 
 	//update_crosstrack();
 	return false;
@@ -351,16 +374,24 @@ bool verify_nav_wp()
 		}
 	}
 
-	// Distance checking
-	if((wp_distance > 0) && (wp_distance <= g.waypoint_radius)){
-		wp_verify_byte |= NAV_LOCATION;
-		if(loiter_time == 0){
-			loiter_time = millis();
+	// Did we pass the WP?	// Distance checking
+	if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
+
+		// if we have a distance calc error, wp_distance may be less than 0
+		if(wp_distance > 0){
+
+			// XXX does this work?
+			wp_verify_byte |= NAV_LOCATION;
+
+			if(loiter_time == 0){
+				loiter_time = millis();
+			}
 		}
 	}
 
-	// Hold at Waypoint checking
-	if(wp_verify_byte & NAV_LOCATION){							// we have reached our goal
+	// Hold at Waypoint checking, we cant move on until this is OK
+	if(wp_verify_byte & NAV_LOCATION){
+		// we have reached our goal
 
 		if ((millis() - loiter_time) > loiter_time_max) {
 			wp_verify_byte |= NAV_DELAY;
@@ -371,7 +402,7 @@ bool verify_nav_wp()
 
 	if(wp_verify_byte == 7){
 		char message[30];
-		sprintf(message,"Reached Waypoint #%i",command_must_index);
+		sprintf(message,"Reached Command #%i",command_must_index);
 		gcs.send_text(SEVERITY_LOW,message);
 		return true;
 	}else{
@@ -579,10 +610,10 @@ void do_jump()
 
 		command_must_index	= 0;
 		command_may_index	= 0;
-		temp				= get_wp_with_index(g.waypoint_index);
+		temp				= get_command_with_index(g.waypoint_index);
 		temp.lat			= next_command.lat - 1;					// Decrement repeat counter
 
-		set_wp_with_index(temp, g.waypoint_index);
+		set_command_with_index(temp, g.waypoint_index);
 		g.waypoint_index.set_and_save(next_command.p1 - 1);
 	}
 }

@@ -14,7 +14,7 @@ void read_control_switch()
 
 		// reset navigation integrators
 		// -------------------------
-		reset_I();
+		//reset_I();
 	}
 }
 
