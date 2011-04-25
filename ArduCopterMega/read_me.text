@@ -78,3 +78,8 @@ Auto modes will NOT engage until the throttle is above neutral. So if you put th
 Good luck,
 Jason
 
+
+
+
+TODO:
+Move crosstrack navigation to full PID to limit the velocity towards a waypoint

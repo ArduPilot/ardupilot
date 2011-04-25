@@ -828,38 +828,38 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 
 	// clear home
 	{Location t = {0,   	0,      0, 		0, 		0, 			0};
-	set_wp_with_index(t,0);}
+	set_command_with_index(t,0);}
 
 	// CMD										opt		pitch   alt/cm
 	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		100, 		0, 			0};
-	set_wp_with_index(t,1);}
+	set_command_with_index(t,1);}
 
 	if (!strcmp_P(argv[1].str, PSTR("wp"))) {
 
 		// CMD											opt
 		{Location t = {MAV_CMD_NAV_WAYPOINT,  			WP_OPTION_RELATIVE,		15, 0, 0, 0};
-		set_wp_with_index(t,2);}
+		set_command_with_index(t,2);}
 		// CMD											opt
 		{Location t = {MAV_CMD_NAV_RETURN_TO_LAUNCH,   	WP_OPTION_YAW,      0, 		0, 		0,		0};
-		set_wp_with_index(t,3);}
+		set_command_with_index(t,3);}
 
 		// CMD											opt
 		{Location t = {MAV_CMD_NAV_LAND,				0,      0, 		0, 		0,		0};
-		set_wp_with_index(t,4);}
+		set_command_with_index(t,4);}
 
 	} else {
 		//2250 = 25 meteres
 		// CMD										opt		p1		//alt		//NS		//WE
 		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      0,  	100, 		1100, 		0};
-		set_wp_with_index(t,2);}
+		set_command_with_index(t,2);}
 
 		// CMD										opt		dir		angle/deg	deg/s	relative
 		{Location t = {MAV_CMD_CONDITION_YAW,		0,      1, 		360, 		60, 	1};
-		set_wp_with_index(t,3);}
+		set_command_with_index(t,3);}
 
 		// CMD										opt
 		{Location t = {MAV_CMD_NAV_LAND,			0,      0, 		0, 			0, 		0};
-		set_wp_with_index(t,4);}
+		set_command_with_index(t,4);}
 
 	}
 

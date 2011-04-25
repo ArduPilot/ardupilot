@@ -319,7 +319,7 @@ set_servos_4()
 
 	}else{
 		// our motor is unarmed, we're on the ground
-		reset_I();
+		//reset_I();
 
 		if(g.rc_3.control_in > 0){
 			// we have pushed up the throttle
@@ -345,7 +345,7 @@ set_servos_4()
 		}
 
 		// reset I terms of PID controls
-		reset_I();
+		//reset_I();
 
 		// Initialize yaw command to actual yaw when throttle is down...
 		g.rc_4.control_in = ToDeg(dcm.yaw);

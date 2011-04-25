@@ -385,12 +385,15 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)sonar_alt);					// 7
 	DataFlash.WriteInt((int)baro_alt);					// 8
 
-	DataFlash.WriteInt(home.alt);						// 9
-	DataFlash.WriteInt((int)next_WP.alt);				// 11
+	DataFlash.WriteInt((int)home.alt);					// 9
+	DataFlash.WriteInt((int)next_WP.alt);				// 10
 	DataFlash.WriteInt((int)altitude_error);			// 11
 
 	DataFlash.WriteByte(END_BYTE);
 }
+
+    //	1	2	3	4  5  6	 7	 8	   9	  10   11
+//NTUN, 236, 0, 132, 10, 0, 0, 29, 2963, 16545, 16682, 108
 
 void Log_Read_Nav_Tuning()
 {
@@ -446,8 +449,8 @@ void Log_Write_GPS()
 
 // Read a GPS packet
 void Log_Read_GPS()
-{						//	1	2	3 4				5			6		 7			8        9
-					//	GPS, t, 1, 8, 37.7659070, -122.4329400, 57.0500, 58.1400, 658.8400, -11636846.0000
+{						//	1		 2	3  4			5			 6		   7	   8       9
+					//GPS, 77361250, 1, 9, 40.0584750, -105.2034500, 166.2600, 2.8100, 0.0600, 266.0000
 							//	1   2   3   4      5		6	 7		 8		9
 	Serial.printf_P(PSTR("GPS, %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
 

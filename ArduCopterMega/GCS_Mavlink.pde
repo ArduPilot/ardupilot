@@ -363,7 +363,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
             // send waypoint
-            tell_command = get_wp_with_index(packet.seq);
+            tell_command = get_command_with_index(packet.seq);
 
             // set frame of waypoint
             uint8_t frame;
@@ -507,7 +507,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             {
                 Location temp;  // XXX this is gross
-                temp = get_wp_with_index(packet.seq);
+                temp = get_command_with_index(packet.seq);
                 set_next_WP(&temp);
             }
 
@@ -631,7 +631,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
 
-            set_wp_with_index(tell_command, packet.seq);
+            set_command_with_index(tell_command, packet.seq);
 
             // update waypoint receiving state machine
             waypoint_timelast_receive = millis();
@@ -939,4 +939,5 @@ GCS_MAVLINK::_queued_send()
 }
 
 #endif
+
 

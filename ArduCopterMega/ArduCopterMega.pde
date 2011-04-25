@@ -256,6 +256,8 @@ long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to t
 int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
 float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 
+int 	last_ground_speed;					// used to dampen navigation
+
 byte	command_must_index;					// current command memory location
 byte	command_may_index;					// current command memory location
 byte	command_must_ID;					// current command ID
@@ -310,7 +312,6 @@ int 			ground_temperature;
 // ----------------------
 int		sonar_alt;
 int		baro_alt;
-int		baro_alt_offset;
 byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 
 // flight mode specific
@@ -325,10 +326,10 @@ byte 	yaw_tracking = TRACK_NONE;			// no tracking, point at next wp, or at a tar
 
 // Loiter management
 // -----------------
-long 	old_target_bearing;					// deg * 100
-int		loiter_total; 						// deg : how many times to loiter * 360
-int 	loiter_delta;						// deg : how far we just turned
-int		loiter_sum;							// deg : how far we have turned around a waypoint
+long 	saved_target_bearing;				// deg * 100
+//int		loiter_total; 						// deg : how many times to loiter * 360
+//int 	loiter_delta;						// deg : how far we just turned
+//int		loiter_sum;							// deg : how far we have turned around a waypoint
 long 	loiter_time;						// millis : when we started LOITER mode
 long 	loiter_time_max;					// millis : how long to stay in LOITER mode
 
@@ -342,6 +343,8 @@ long	nav_lon;							// for error calcs
 int		nav_throttle;						// 0-1000 for throttle control
 int		nav_throttle_old;					// for filtering
 
+bool 	invalid_throttle;					// used to control when we calculate nav_throttle
+bool 	invalid_nav;						// used to control when we calculate nav_throttle
 bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
 long 	command_yaw_start;					// what angle were we to begin with
@@ -591,12 +594,17 @@ void medium_loop()
 
 			// we call these regardless of GPS because of the rapid nature of the yaw sensor
 			// -----------------------------------------------------------------------------
-			if(wp_distance < 800){ // 8 meters
+			//if(wp_distance < 800){ // 8 meters
 			//if(g.rc_6.control_in > 500){ // 8 meters
-				calc_loiter_nav();
-			}else{
-				calc_waypoint_nav();
-			}
+				//calc_loiter_nav();
+			//	calc_waypoint_nav();
+			//}else{
+			//	calc_waypoint_nav();
+			//}
+			invalid_nav = true;
+
+			// replace with invalidater byte
+			//calc_waypoint_nav();
 
 			break;
 
@@ -609,10 +617,22 @@ void medium_loop()
 			// --------------------------
 			update_alt();
 
+			// altitude smoothing
+			// ------------------
+			//calc_altitude_smoothing_error();
+
+			calc_altitude_error();
+
+			// invalidate the throttle hold value
+			// ----------------------------------
+			invalid_throttle = true;
+
 			// perform next command
 			// --------------------
 			if(control_mode == AUTO || control_mode == GCS_AUTO){
-				update_commands();
+				if(home_is_set){
+					update_commands();
+				}
 			}
 			break;
 
@@ -790,7 +810,7 @@ void super_slow_loop()
 		temp.alt 	= gcs_simple.altitude;
 		temp.lat 	= gcs_simple.latitude;
 		temp.lng 	= gcs_simple.longitude;
-		set_wp_with_index(temp, gcs_simple.index);
+		set_command_with_index(temp, gcs_simple.index);
 		gcs_simple.ack();
 		*/
 	//}
@@ -852,6 +872,12 @@ void update_current_flight_mode(void)
 {
 	if(control_mode == AUTO){
 
+		// this is a hack to prevent run up of the throttle I term for alt hold
+		if(command_must_ID == MAV_CMD_NAV_TAKEOFF){
+			invalid_throttle = (g.rc_3.control_in != 0);
+			// make invalid_throttle false if we are waiting to take off.
+		}
+
 		switch(command_must_ID){
 			//case MAV_CMD_NAV_TAKEOFF:
 			//	break;
@@ -864,12 +890,18 @@ void update_current_flight_mode(void)
 				// ------------------------------------
 				auto_yaw();
 
+				//if(invalid_nav)
+					//calc_waypoint_nav();
+
 				// mix in user control
 				control_nav_mixer();
 
 				// perform stabilzation
 				output_stabilize_roll();
 				output_stabilize_pitch();
+
+				if(invalid_throttle)
+					calc_nav_throttle();
 
 				// apply throttle control
 				output_auto_throttle();
@@ -964,7 +996,9 @@ void update_current_flight_mode(void)
 							bearing_error);
 					*/
 					// get nav_pitch and nav_roll
-					calc_waypoint_nav();
+					calc_simple_nav();
+					calc_nav_output();
+					limit_nav_pitch_roll(4500);
 				}
 
 				// Output Pitch, Roll, Yaw and Throttle
@@ -996,6 +1030,10 @@ void update_current_flight_mode(void)
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
+
+				if(invalid_throttle)
+					calc_nav_throttle();
+
 				// apply throttle control
 				output_auto_throttle();
 
@@ -1011,6 +1049,9 @@ void update_current_flight_mode(void)
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				auto_yaw();
+
+				if(invalid_throttle)
+					calc_nav_throttle();
 
 				// apply throttle control
 				output_auto_throttle();
@@ -1033,6 +1074,9 @@ void update_current_flight_mode(void)
 				// Yaw control
 				// -----------
 				output_manual_yaw();
+
+				if(invalid_throttle)
+					calc_nav_throttle();
 
 				// apply throttle control
 				output_auto_throttle();
@@ -1063,6 +1107,16 @@ void update_navigation()
 	if(control_mode == AUTO || control_mode == GCS_AUTO){
 		verify_commands();
 
+		// calc a rate dampened pitch to the target
+		calc_rate_nav();
+
+		// rotate that pitch to the copter frame of reference
+		calc_nav_output();
+
+		//limit our copter pitch - this will change if we go to a fully rate limited approach.
+		limit_nav_pitch_roll(g.pitch_max.get());
+
+		// this tracks a location so the copter is always pointing towards it.
 		if(yaw_tracking & TRACK_TARGET_WP){
 			nav_yaw = get_bearing(&current_loc, &target_WP);
 		}
@@ -1106,6 +1160,8 @@ void update_trig(void){
 
 void update_alt()
 {
+	altitude_sensor = BARO;
+
 #if HIL_MODE == HIL_MODE_ATTITUDE
 	current_loc.alt = g_gps->altitude;
 #else
@@ -1114,40 +1170,36 @@ void update_alt()
 		baro_alt 		= read_barometer();
 
 		//filter out bad sonar reads
-		int temp 		= sonar.read();
+		//int temp 		= sonar.read();
 
-		if(abs(temp - sonar_alt) < 300){
-			sonar_alt = temp;
-		}
+		//if(abs(temp - sonar_alt) < 300){
+		//	sonar_alt = temp;
+		//}
 
-		// correct alt for angle of the sonar
-		sonar_alt = (float)sonar_alt * (cos_pitch_x * cos_roll_x);
+		sonar_alt = sonar.read();
 
 		// output a light to show sonar is working
 		update_sonar_light(sonar_alt > 100);
 
-		// decide which sensor we're usings
-		if(sonar_alt < 500){  // less than 5m or 15 feet
-			altitude_sensor = SONAR;
+		// decide if we're using sonar
+		if (baro_alt < 1200){
 
-			// XXX this is a hack for now. it kills accuracy from GPS reading of altitude and focuses
-			// on altitude above flat ground.
-			baro_alt_offset = sonar_alt - baro_alt;
+			// correct alt for angle of the sonar
+			sonar_alt = (float)sonar_alt * (cos_pitch_x * cos_roll_x);
 
-		}else{
-			altitude_sensor = BARO;
+			if(sonar_alt < 500){
+				altitude_sensor = SONAR;
+			}
 		}
 
 		// calculate our altitude
 		if(altitude_sensor == BARO){
-			current_loc.alt = baro_alt + baro_alt_offset + home.alt;
+			current_loc.alt = baro_alt + home.alt;
 		}else{
 			current_loc.alt = sonar_alt + home.alt;
 		}
 
 	}else{
-
-		altitude_sensor = BARO;
 		baro_alt 		= read_barometer();
 		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
@@ -1155,17 +1207,6 @@ void update_alt()
 
 	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
 #endif
-
-	// altitude smoothing
-	// ------------------
-	//calc_altitude_smoothing_error();
-
-
-	calc_altitude_error();
-
-	// Amount of throttle to apply for hovering
-	// ----------------------------------------
-	calc_nav_throttle();
 }
 
 void

@@ -202,7 +202,7 @@ void send_message(byte id, long param) {
 		tempint 		= g.waypoint_total;			 		// list length (# of commands in mission)
 		mess_buffer[5] 	= tempint & 0xff;
 		mess_buffer[6] 	= (tempint >> 8) & 0xff;
-		tell_command 	= get_wp_with_index((int)param);
+		tell_command 	= get_command_with_index((int)param);
 		mess_buffer[7]	= tell_command.id;			// command id
 		mess_buffer[8]	= tell_command.p1;			// P1
 		tempint			= tell_command.alt;				// P2

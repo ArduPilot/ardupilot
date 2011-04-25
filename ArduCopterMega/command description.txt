@@ -16,6 +16,9 @@ Command Structure in bytes
 11 0x0C	..
 11 0x0D	..
 
+Update:
+MAV_CMD_NAV_ORIENTATION_TARGET > MAV_CMD_DO_ORIENTATION
+Remove MAV_CMD_NAV_TARGET
 
 
 ***********************************
@@ -28,7 +31,6 @@ Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
 0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					-					-					-
 0x15 / 21	MAV_CMD_NAV_LAND					-					-					-					-
 0x16 / 22	MAV_CMD_NAV_TAKEOFF					-					altitude			-					-
-0x17 / 23	MAV_CMD_NAV_TARGET					-					altitude			lat					lon
 
 			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
 
@@ -37,14 +39,12 @@ Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
 May Commands - these commands are optional to finish
 Command ID		Name								Parameter 1			Parameter 2			Parameter 3			Parameter 4
 0x70 / 112		MAV_CMD_CONDITION_DELAY				-					-					time (seconds) -
-
 0x71 / 113		MAV_CMD_CONDITION_CHANGE_ALT 		rate (cm/sec)		alt (finish)		-					-
 													Note: rate must be > 10 cm/sec due to integer math
 
-MAV_CMD_NAV_LAND_OPTIONS			(NOT CURRENTLY IN MAVLINK PROTOCOL OR IMPLEMENTED IN APM)
+//	MAV_CMD_NAV_LAND_OPTIONS			(NOT CURRENTLY IN MAVLINK PROTOCOL OR IMPLEMENTED IN APM)
 
 0x72 / 114		MAV_CMD_CONDITION_DISTANCE			-					-					distance (meters)	-
-
 0x71 / 115		MAV_CMD_CONDITION_YAW				angle				speed				direction (-1,1)	rel (1), abs (0)
 
 ***********************************
@@ -65,14 +65,16 @@ Command ID		Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
 								(1=use current location, 0=use specified location)
 
 0xB4 / 180		MAV_CMD_DO_SET_PARAMETER	Param number		Param value			(NOT CURRENTLY IMPLEMENTED IN APM)
-
 0xB5 / 181		MAV_CMD_DO_SET_RELAY		Relay number		On/off  (1/0)		-					-
-
 0xB6 / 182		MAV_CMD_DO_REPEAT_RELAY		Relay number		Cycle count			Cycle time (sec)	-
 				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
 
 0xB7 / 183		MAV_CMD_DO_SET_SERVO		Servo number (5-8)	On/off  (1/0)		-					-
-
 0xB6 / 184		MAV_CMD_DO_REPEAT_SERVO		Servo number (5-8)	Cycle count			Cycle time (sec)	-
 				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
 
+// need to add command
+0xB7 / 185		MAV_CMD_DO_ORIENTATION		Yaw_Mode			altitude			lat					lon
+											TRACK_NONE 		1
+											TRACK_NEXT_WP 	2
+											TRACK_TARGET_WP 4
