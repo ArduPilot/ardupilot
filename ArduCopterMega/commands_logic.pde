@@ -193,11 +193,13 @@ bool verify_may()
 }
 
 /********************************************************************************/
-//	Nav (Must) commands
+//
 /********************************************************************************/
 
 void do_RTL(void)
 {
+	// we need to change this.
+	wp_control 		= LOITER_MODE;
 	control_mode	= LOITER;
 	Location temp	= home;
 	temp.alt		= read_alt_to_hold();
@@ -216,8 +218,14 @@ void do_RTL(void)
 	//	Log_Write_Mode(control_mode);
 }
 
+/********************************************************************************/
+//	Nav (Must) commands
+/********************************************************************************/
+
 void do_takeoff()
 {
+	wp_control 			= LOITER_MODE;
+
 	Location temp		= current_loc;
 
 	// next_command.alt is a relative altitude!!!
@@ -233,6 +241,8 @@ void do_takeoff()
 
 void do_nav_wp()
 {
+	wp_control = WP_MODE;
+
 	// next_command.alt is a relative altitude!!!
 	next_command.alt += home.alt;
 
@@ -256,6 +266,8 @@ void do_nav_wp()
 
 void do_land()
 {
+	wp_control = LOITER_MODE;
+
 	Serial.println("dlnd ");
 
 	// not really used right now, might be good for debugging
@@ -276,6 +288,8 @@ void do_land()
 
 void do_loiter_unlimited()
 {
+	wp_control = LOITER_MODE;
+
 	//Serial.println("dloi ");
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
@@ -286,6 +300,8 @@ void do_loiter_unlimited()
 void do_loiter_turns()
 {
 /*
+	wp_control = LOITER_MODE;
+
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
 	else
@@ -298,6 +314,7 @@ void do_loiter_turns()
 void do_loiter_time()
 {
 	/*
+	wp_control = LOITER_MODE;
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
 	else
@@ -392,6 +409,9 @@ bool verify_nav_wp()
 	// Hold at Waypoint checking, we cant move on until this is OK
 	if(wp_verify_byte & NAV_LOCATION){
 		// we have reached our goal
+
+		// loiter at the WP
+		wp_control 	= LOITER_MODE;
 
 		if ((millis() - loiter_time) > loiter_time_max) {
 			wp_verify_byte |= NAV_DELAY;
