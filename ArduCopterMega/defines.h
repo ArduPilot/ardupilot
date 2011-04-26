@@ -129,6 +129,9 @@
 #define TRACK_NEXT_WP 	2
 #define TRACK_TARGET_WP 4
 
+#define LOITER_MODE 1
+#define WP_MODE 2
+
 // Waypoint options
 #define WP_OPTION_ALT_RELATIVE 		1
 #define WP_OPTION_ALT_CHANGE 		2

@@ -257,6 +257,7 @@ int		climb_rate;							// m/s * 100  - For future implementation of controlled a
 float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 
 int 	last_ground_speed;					// used to dampen navigation
+byte	wp_control;							// used to control - navgation or loiter
 
 byte	command_must_index;					// current command memory location
 byte	command_may_index;					// current command memory location
@@ -327,9 +328,6 @@ byte 	yaw_tracking = TRACK_NONE;			// no tracking, point at next wp, or at a tar
 // Loiter management
 // -----------------
 long 	saved_target_bearing;				// deg * 100
-//int		loiter_total; 						// deg : how many times to loiter * 360
-//int 	loiter_delta;						// deg : how far we just turned
-//int		loiter_sum;							// deg : how far we have turned around a waypoint
 long 	loiter_time;						// millis : when we started LOITER mode
 long 	loiter_time_max;					// millis : how long to stay in LOITER mode
 
@@ -591,21 +589,6 @@ void medium_loop()
 				// --------------------------------------------
 				update_navigation();
 			}
-
-			// we call these regardless of GPS because of the rapid nature of the yaw sensor
-			// -----------------------------------------------------------------------------
-			//if(wp_distance < 800){ // 8 meters
-			//if(g.rc_6.control_in > 500){ // 8 meters
-				//calc_loiter_nav();
-			//	calc_waypoint_nav();
-			//}else{
-			//	calc_waypoint_nav();
-			//}
-			invalid_nav = true;
-
-			// replace with invalidater byte
-			//calc_waypoint_nav();
-
 			break;
 
 		// command processing
@@ -946,7 +929,6 @@ void update_current_flight_mode(void)
 				}
 				break;
 
-			//case LOITER:
 			case STABILIZE:
 				// clear any AP naviagtion values
 				nav_pitch 		= 0;
@@ -1107,11 +1089,17 @@ void update_navigation()
 	if(control_mode == AUTO || control_mode == GCS_AUTO){
 		verify_commands();
 
-		// calc a rate dampened pitch to the target
-		calc_rate_nav();
+		if(wp_control == LOITER_MODE){
+			// calc a pitch to the target
+			calc_loiter_nav();
 
-		// rotate that pitch to the copter frame of reference
-		calc_nav_output();
+		} else {
+			// calc a rate dampened pitch to the target
+			calc_rate_nav();
+
+			// rotate that pitch to the copter frame of reference
+			calc_nav_output();
+		}
 
 		//limit our copter pitch - this will change if we go to a fully rate limited approach.
 		limit_nav_pitch_roll(g.pitch_max.get());
@@ -1122,8 +1110,22 @@ void update_navigation()
 		}
 
 	}else{
+
 		switch(control_mode){
+			case LOITER:
+				// calc a pitch to the target
+				calc_loiter_nav();
+
+				// limit tilt
+				limit_nav_pitch_roll(g.pitch_max.get());
+				break;
+
 			case RTL:
+				// calc a pitch to the target
+				calc_loiter_nav();
+
+				// limit tilt
+				limit_nav_pitch_roll(g.pitch_max.get());
 				update_crosstrack();
 				break;
 		}
@@ -1169,6 +1171,8 @@ void update_alt()
 		// read barometer
 		baro_alt 		= read_barometer();
 
+
+		// XXX temp removed fr debugging
 		//filter out bad sonar reads
 		//int temp 		= sonar.read();
 
@@ -1182,12 +1186,15 @@ void update_alt()
 		update_sonar_light(sonar_alt > 100);
 
 		// decide if we're using sonar
-		if (baro_alt < 1200){
+		if ((baro_alt < 1200) || sonar_alt < 300){
 
 			// correct alt for angle of the sonar
-			sonar_alt = (float)sonar_alt * (cos_pitch_x * cos_roll_x);
+			float temp = cos_pitch_x * cos_roll_x;
+			temp = max(temp, 0.707);
 
-			if(sonar_alt < 500){
+			sonar_alt = (float)sonar_alt * temp;
+
+			if(sonar_alt < 400){
 				altitude_sensor = SONAR;
 			}
 		}
