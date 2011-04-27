@@ -899,9 +899,6 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-
 				// Yaw control
 				output_manual_yaw();
 
@@ -1170,7 +1167,6 @@ void update_alt()
 	if(g.sonar_enabled){
 		// read barometer
 		baro_alt 		= read_barometer();
-
 
 		// XXX temp removed fr debugging
 		//filter out bad sonar reads

@@ -18,13 +18,16 @@ void update_commands(void)
 	next_command = get_command_with_index(g.waypoint_index + 1);
 
 	if(next_command.id == NO_COMMAND){
+
 		// if no commands were available from EEPROM
 		// --------------------------------------------
+		if (command_must_ID == NO_COMMAND)
+			handle_no_commands();
 
-		handle_no_commands();
 		gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 
 	} else {
+
 		// A command was loaded from EEPROM
 		// --------------------------------------------
 

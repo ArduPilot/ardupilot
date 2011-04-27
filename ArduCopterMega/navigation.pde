@@ -112,6 +112,20 @@ void calc_simple_nav()
 	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
 }
 
+void calc_nav_output()
+{
+	// get the sin and cos of the bearing error - rotated 90°
+	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
+	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
+
+	// rotate the vector
+	nav_roll 	=  (float)nav_lat * cos_nav_x;
+	nav_pitch 	= -(float)nav_lat * sin_nav_y;
+}
+#define WAYPOINT_SPEED 450
+
+#if NAV_TEST == 0
+
 void calc_rate_nav()
 {
 	// calc distance error
@@ -133,22 +147,10 @@ void calc_rate_nav()
 
 }
 
-void calc_nav_output()
-{
-	// get the sin and cos of the bearing error - rotated 90°
-	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
-	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
-
-	// rotate the vector
-	nav_roll 	=  (float)nav_lat * cos_nav_x;
-	nav_pitch 	= -(float)nav_lat * sin_nav_y;
-}
-
-#define WAYPOINT_SPEED 450
-
+#else
 
 // called after we get GPS read
-void calc_rate_nav2()
+void calc_rate_nav()
 {
 	// change to rate error
 	// we want to be going 450cm/s
@@ -175,6 +177,7 @@ void calc_rate_nav2()
 	nav_lat	= constrain(nav_lat, 	-3800, 3800); // +- 20m max error
 }
 
+#endif
 
 void calc_bearing_error()
 {
@@ -220,7 +223,7 @@ void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
-	if (cross_track_test() < 9000) {	 // If we are too far off or too close we don't do track following
+	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
 		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
 		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360(nav_bearing);
