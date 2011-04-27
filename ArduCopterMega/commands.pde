@@ -108,11 +108,9 @@ void increment_WP_index()
 {
     if (g.waypoint_index < g.waypoint_total) {
         g.waypoint_index.set_and_save(g.waypoint_index + 1);
-		SendDebug("MSG <increment_WP_index> WP index is incremented to ");
-	}else{
-		//SendDebug("MSG <increment_WP_index> Failed to increment WP index of ");
-		// This message is used excessively at the end of a mission
+		//SendDebug("MSG <increment_WP_index> WP index is incremented to ");
 	}
+
     SendDebugln(g.waypoint_index,DEC);
 }
 

@@ -106,11 +106,7 @@ void handle_no_commands()
 {
 	// we don't want to RTL. Maybe this will change in the future. RTL is kinda dangerous.
 	// use landing commands
-	return;
 	/*
-	if (command_must_ID)
-		return;
-
 	switch (control_mode){
 		default:
 			//set_mode(RTL);
@@ -226,6 +222,7 @@ void do_takeoff()
 {
 	wp_control 			= LOITER_MODE;
 
+	// Start with current location
 	Location temp		= current_loc;
 
 	// next_command.alt is a relative altitude!!!
@@ -233,9 +230,7 @@ void do_takeoff()
 
 	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 
-	//Serial.print("dt ");
-	//Serial.println(temp.alt, DEC);
-
+	// Set our waypoint
 	set_next_WP(&temp);
 }
 

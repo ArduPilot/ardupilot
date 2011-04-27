@@ -368,32 +368,30 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			2.0
+# define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.1
+# define NAV_LOITER_I			0.15		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
 # define NAV_LOITER_D			0.00
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		250			// 250 Lat and Longtitude
+# define NAV_LOITER_IMAX		20			// 20°
 #endif
-
 
 #ifndef NAV_WP_P
 # define NAV_WP_P				4.0
 #endif
 #ifndef NAV_WP_I
-# define NAV_WP_I				0.0
+# define NAV_WP_I				0.0			// leave 0
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				15
+# define NAV_WP_D				15			// not sure about at all
 #endif
 #ifndef NAV_WP_IMAX
 # define NAV_WP_IMAX			20			// 20 degrees
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
