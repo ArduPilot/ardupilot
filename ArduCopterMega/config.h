@@ -390,7 +390,7 @@
 # define NAV_WP_D				15			// not sure about at all
 #endif
 #ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			20			// 20 degrees
+# define NAV_WP_IMAX			30			// 20 degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -406,7 +406,7 @@
 # define THROTTLE_BARO_D		0.1
 #endif
 #ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX		80
+# define THROTTLE_BARO_IMAX		50
 #endif
 
 
@@ -420,7 +420,7 @@
 # define THROTTLE_SONAR_D		0.1
 #endif
 #ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	80
+# define THROTTLE_SONAR_IMAX	60
 #endif
 
 
