@@ -313,6 +313,7 @@ int 			ground_temperature;
 // ----------------------
 int		sonar_alt;
 int		baro_alt;
+int		baro_alt_offset;
 byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 
 // flight mode specific
@@ -766,6 +767,11 @@ void slow_loop()
 				tuning();
 			#endif
 
+
+			// filter out the baro offset.
+			if(baro_alt_offset > 0) baro_alt_offset--;
+			if(baro_alt_offset < 0) baro_alt_offset++;
+
 			break;
 
 		default:
@@ -1165,18 +1171,20 @@ void update_alt()
 	current_loc.alt = g_gps->altitude;
 #else
 	if(g.sonar_enabled){
+		// filter out offset
+
 		// read barometer
 		baro_alt 		= read_barometer();
 
 		// XXX temp removed fr debugging
 		//filter out bad sonar reads
-		//int temp 		= sonar.read();
+		int temp 		= sonar.read();
 
-		//if(abs(temp - sonar_alt) < 300){
-		//	sonar_alt = temp;
-		//}
+		if(abs(temp - sonar_alt) < 300){
+			sonar_alt = temp;
+		}
 
-		sonar_alt = sonar.read();
+		//sonar_alt = sonar.read();
 
 		// output a light to show sonar is working
 		update_sonar_light(sonar_alt > 100);
@@ -1192,12 +1200,15 @@ void update_alt()
 
 			if(sonar_alt < 400){
 				altitude_sensor = SONAR;
+				baro_alt_offset = sonar_alt - baro_alt;
 			}
 		}
 
+
+
 		// calculate our altitude
 		if(altitude_sensor == BARO){
-			current_loc.alt = baro_alt + home.alt;
+			current_loc.alt = baro_alt + baro_alt_offset + home.alt;
 		}else{
 			current_loc.alt = sonar_alt + home.alt;
 		}
