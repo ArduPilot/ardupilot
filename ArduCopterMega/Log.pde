@@ -496,18 +496,24 @@ void Log_Write_Current()
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CURRENT_MSG);
+
 	DataFlash.WriteInt(g.rc_3.control_in);
+	DataFlash.WriteLong(throttle_integrator);
+
 	DataFlash.WriteInt((int)(current_voltage 	* 100.0));
 	DataFlash.WriteInt((int)(current_amps 		* 100.0));
 	DataFlash.WriteInt((int)current_total);
+
 	DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a Current packet
 void Log_Read_Current()
 {
-	Serial.printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
+	Serial.printf_P(PSTR("CURR: %d, %ld, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
+			DataFlash.ReadLong(),
+
 			((float)DataFlash.ReadInt() / 100.f),
 			((float)DataFlash.ReadInt() / 100.f),
 			DataFlash.ReadInt());
