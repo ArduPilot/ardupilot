@@ -34,7 +34,6 @@ void navigate()
 	// nav_bearing will includes xtrac correction
 	// ------------------------------------------
 	nav_bearing = target_bearing;
-
 }
 
 bool check_missed_wp()
@@ -122,6 +121,7 @@ void calc_nav_output()
 	nav_roll 	=  (float)nav_lat * cos_nav_x;
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
 }
+
 #define WAYPOINT_SPEED 450
 
 #if NAV_TEST == 0
@@ -144,7 +144,6 @@ void calc_rate_nav()
 
 	// dampen our response
 	nav_lat -= constrain(dampening, 	-1800, 1800); // +- 20m max error
-
 }
 
 #else
@@ -161,7 +160,7 @@ void calc_rate_nav()
 	target_error 		= wrap_180(target_error);
 
 	// calc the cos of the error to tell how fast we are moving towards the target
-	error = (float)error * cos(radians((float)target_error/100));
+	//error = (float)error * cos(radians((float)target_error/100));
 
 	// Scale response by kP
 	long nav_lat 	= g.pid_nav_wp.kP() * error;
@@ -171,10 +170,10 @@ void calc_rate_nav()
 	last_ground_speed = g_gps->ground_speed;
 
 	// dampen our response
-	nav_lat -= constrain(dampening, 	-1800, 1800); // +- 20m max error
+	nav_lat -= constrain(dampening, 	-1800, 1800); // +- max error
 
 	// limit our output
-	nav_lat	= constrain(nav_lat, 	-3800, 3800); // +- 20m max error
+	nav_lat	= constrain(nav_lat, 	-2500, 2500); // +- max error
 }
 
 #endif

@@ -342,6 +342,7 @@ long	nav_lon;							// for error calcs
 int		nav_throttle;						// 0-1000 for throttle control
 int		nav_throttle_old;					// for filtering
 
+long 	throttle_integrator;					// used to control when we calculate nav_throttle
 bool 	invalid_throttle;					// used to control when we calculate nav_throttle
 bool 	invalid_nav;						// used to control when we calculate nav_throttle
 bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
@@ -520,6 +521,10 @@ void fast_loop()
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos_4();
+
+	// record throttle output
+	// ------------------------------
+	throttle_integrator += g.rc_3.servo_out;
 
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 	// HIL for a copter needs very fast update of the servo values
