@@ -19,20 +19,21 @@ AP_RangeFinder_MaxsonarXL aRF;
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(38400);
   Serial.println("Range Finder Test v1.0");
   adc.Init();            // APM ADC library initialization
   aRF.init(RF_PIN, &adc);
 }
 
 void loop()
-{   
+{
     int i = 0;
     Serial.print("dist:");
     Serial.print(aRF.read());
     Serial.print("\traw:");
-    Serial.print(aRF.raw_value); 
+    Serial.print(aRF.raw_value);
     Serial.println();
-    delay(20); 
+    delay(20);
 }
+
 
