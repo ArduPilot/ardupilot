@@ -39,11 +39,16 @@ extern "C" {
 }
 
 #include "DataFlash.h"
-#include "../SPI/SPI.h"
 
 #define OVERWRITE_DATA 0 // 0: When reach the end page stop, 1: Start overwritten from page 1
 
 // *** INTERNAL FUNCTIONS ***
+unsigned char dataflash_SPI_transfer(unsigned char output)
+{
+  SPDR = output;                     // Start the transmission
+  while (!(SPSR & (1<<SPIF)));       // Wait the end of the transmission
+  return SPDR; 
+}
 
 void dataflash_CS_inactive()
 {
@@ -82,10 +87,13 @@ void DataFlash_Class::Init(void)
   dataflash_CS_inactive();     //disable device
   
   // Setup SPI  Master, Mode 3, fosc/4 = 4MHz
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE3);
-  SPI.setClockDivider(SPI_CLOCK_DIV4);
+  SPCR = (1<<SPE)|(1<<MSTR)|(1<<CPHA)|(1<<CPOL);
+  // Setup SPI  Master, Mode 3, 2MHz
+  //SPCR = (1<<SPE)|(1<<MSTR)|(1<<CPHA)|(1<<CPOL)|(1<<SPR0);
+  //SPSR = (1<<SPI2X);
+  // Cleanup registers...
+  tmp=SPSR;
+  tmp=SPDR;
 
   // get page size: 512 or 528
   df_PageSize=PageSize();
@@ -95,30 +103,28 @@ void DataFlash_Class::Init(void)
 void DataFlash_Class::ReadManufacturerID()
 {
   byte tmp;
-
-  dataflash_CS_active();     // activate dataflash
+  
+  dataflash_CS_inactive();    // Reset dataflash command decoder
+  dataflash_CS_active();     
  
   // Read manufacturer and ID command...
-  SPI.transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
+  dataflash_SPI_transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
 
-  df_manufacturer = SPI.transfer(0xff);
-  df_device_0 = SPI.transfer(0xff);
-  df_device_1 = SPI.transfer(0xff);
-  tmp = SPI.transfer(0xff);
-
-  dataflash_CS_inactive();    // Reset dataflash command decoder  
+  df_manufacturer = dataflash_SPI_transfer(0xff);
+  df_device_0 = dataflash_SPI_transfer(0xff);
+  df_device_1 = dataflash_SPI_transfer(0xff);
+  tmp = dataflash_SPI_transfer(0xff);
 }
 
 // Read the status register
 byte DataFlash_Class::ReadStatusReg()
 { 
-  dataflash_CS_active();     // activate dataflash
+  dataflash_CS_inactive();    // Reset dataflash command decoder
+  dataflash_CS_active();     
  
-  // Read status command  
-  SPI.transfer(DF_STATUS_REGISTER_READ);
-  return SPI.transfer(0x00);  // We only want to extract the READY/BUSY bit
-  
-  dataflash_CS_inactive();    // Reset dataflash command decoder  
+  // Read status command
+  dataflash_SPI_transfer(DF_STATUS_REGISTER_READ);
+  return dataflash_SPI_transfer(0x00);  // We only want to extract the READY/BUSY bit
 }
 
 // Read the status of the DataFlash
@@ -144,48 +150,46 @@ void DataFlash_Class::WaitReady()
 
 void DataFlash_Class::PageToBuffer(unsigned char BufferNum, unsigned int PageAdr)
 {
+  dataflash_CS_inactive();	
   dataflash_CS_active();		
-  if (BufferNum==1)	{
-	SPI.transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
-  }else{
-	SPI.transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
-  }
+  if (BufferNum==1)				
+    dataflash_SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_1);
+  else
+    dataflash_SPI_transfer(DF_TRANSFER_PAGE_TO_BUFFER_2);
   
   if(df_PageSize==512){
-	SPI.transfer((unsigned char)(PageAdr >> 7));
-	SPI.transfer((unsigned char)(PageAdr << 1));
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
   }else{
-	SPI.transfer((unsigned char)(PageAdr >> 6));
-	SPI.transfer((unsigned char)(PageAdr << 2));
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
   }
-  SPI.transfer(0x00);	// don´t care bytes	
+  dataflash_SPI_transfer(0x00);	// don´t care bytes			
 
   dataflash_CS_inactive();	//initiate the transfer
   dataflash_CS_active();
   
   while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
-  
-  dataflash_CS_inactive();  
 }
 
 void DataFlash_Class::BufferToPage (unsigned char BufferNum, unsigned int PageAdr, unsigned char wait)
 {
+  dataflash_CS_inactive();     // Reset dataflash command decoder
   dataflash_CS_active();
   
-  if (BufferNum==1)	{
-	SPI.transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
-  }else{
-	SPI.transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
-  }
-  
+  if (BufferNum==1)	
+    dataflash_SPI_transfer(DF_BUFFER_1_TO_PAGE_WITH_ERASE);
+  else
+    dataflash_SPI_transfer(DF_BUFFER_2_TO_PAGE_WITH_ERASE);
+
   if(df_PageSize==512){
-    SPI.transfer((unsigned char)(PageAdr >> 7));
-    SPI.transfer((unsigned char)(PageAdr << 1));
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
   }else{
-	SPI.transfer((unsigned char)(PageAdr >> 6));
-	SPI.transfer((unsigned char)(PageAdr << 2));
-  }		
-  SPI.transfer(0x00);	// don´t care bytes
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
+  }
+  dataflash_SPI_transfer(0x00);	// don´t care bytes			
 
   dataflash_CS_inactive();	//initiate the transfer
   dataflash_CS_active();
@@ -193,45 +197,39 @@ void DataFlash_Class::BufferToPage (unsigned char BufferNum, unsigned int PageAd
   // Check if we need to wait to write the buffer to memory or we can continue...
   if (wait)
 	while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
-	
-  dataflash_CS_inactive();     // Reset dataflash command decoder	
 }
 
 void DataFlash_Class::BufferWrite (unsigned char BufferNum, unsigned int IntPageAdr, unsigned char Data)
 {
+  dataflash_CS_inactive();   // Reset dataflash command decoder
   dataflash_CS_active();
   
-  if (BufferNum==1)	{
-	SPI.transfer(DF_BUFFER_1_WRITE);
-  }else{
-	SPI.transfer(DF_BUFFER_2_WRITE);
-  }
-  SPI.transfer(0x00);				 //don't cares
-  SPI.transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
-  SPI.transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
-  SPI.transfer(Data);				 //write data byte
-  
-  dataflash_CS_inactive();   // Reset dataflash command decoder  
+  if (BufferNum==1)	
+    dataflash_SPI_transfer(DF_BUFFER_1_WRITE);
+  else
+    dataflash_SPI_transfer(DF_BUFFER_2_WRITE);
+  dataflash_SPI_transfer(0x00);				 //don't cares
+  dataflash_SPI_transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
+  dataflash_SPI_transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
+  dataflash_SPI_transfer(Data);				 //write data byte
 }
   
 unsigned char DataFlash_Class::BufferRead (unsigned char BufferNum, unsigned int IntPageAdr)
 {
   byte tmp;
   
+  dataflash_CS_inactive();   // Reset dataflash command decoder
   dataflash_CS_active();
   
-  if (BufferNum==1)	{
-	SPI.transfer(DF_BUFFER_1_READ);
-  }else{
-	SPI.transfer(DF_BUFFER_2_READ);
-  }
-  SPI.transfer(0x00);				 //don't cares
-  SPI.transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
-  SPI.transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
-  SPI.transfer(0x00);                            //don't cares
-  tmp = SPI.transfer(0x00);		         //read data byte
-  
-  dataflash_CS_inactive();   // Reset dataflash command decoder
+  if (BufferNum==1)	
+    dataflash_SPI_transfer(DF_BUFFER_1_READ);
+  else
+    dataflash_SPI_transfer(DF_BUFFER_2_READ);
+  dataflash_SPI_transfer(0x00);				 //don't cares
+  dataflash_SPI_transfer((unsigned char)(IntPageAdr>>8));  //upper part of internal buffer address
+  dataflash_SPI_transfer((unsigned char)(IntPageAdr));	 //lower part of internal buffer address
+  dataflash_SPI_transfer(0x00);                            //don't cares
+  tmp = dataflash_SPI_transfer(0x00);		         //read data byte
   
   return (tmp);
 }
@@ -239,40 +237,38 @@ unsigned char DataFlash_Class::BufferRead (unsigned char BufferNum, unsigned int
 
 void DataFlash_Class::PageErase (unsigned int PageAdr)
 {
+  dataflash_CS_inactive();																//make sure to toggle CS signal in order
   dataflash_CS_active();																//to reset Dataflash command decoder
-  SPI.transfer(DF_PAGE_ERASE);   // Command
+  dataflash_SPI_transfer(DF_PAGE_ERASE);   // Command
 
   if(df_PageSize==512){
-    SPI.transfer((unsigned char)(PageAdr >> 7));	
-    SPI.transfer((unsigned char)(PageAdr << 1));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 7));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 1));	
   }else{
-    SPI.transfer((unsigned char)(PageAdr >> 6));	
-    SPI.transfer((unsigned char)(PageAdr << 2));
+    dataflash_SPI_transfer((unsigned char)(PageAdr >> 6));	
+    dataflash_SPI_transfer((unsigned char)(PageAdr << 2));
   }
 
-  SPI.transfer(0x00);	           // "dont cares"
+  dataflash_SPI_transfer(0x00);	           // "dont cares"
   dataflash_CS_inactive();               //initiate flash page erase
   dataflash_CS_active();
   while(!ReadStatus());
-  
-  dataflash_CS_inactive();																//make sure to toggle CS signal in order  
 }
 
 
 void DataFlash_Class::ChipErase ()
 {
+  dataflash_CS_inactive();																//make sure to toggle CS signal in order
   dataflash_CS_active();																//to reset Dataflash command decoder
   // opcodes for chip erase
-  SPI.transfer(DF_CHIP_ERASE_0);
-  SPI.transfer(DF_CHIP_ERASE_1);
-  SPI.transfer(DF_CHIP_ERASE_2);
-  SPI.transfer(DF_CHIP_ERASE_3);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_0);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_1);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_2);
+  dataflash_SPI_transfer(DF_CHIP_ERASE_3);
   
   dataflash_CS_inactive();               //initiate flash page erase
   dataflash_CS_active();
   while(!ReadStatus());
-  
-  dataflash_CS_inactive();																//make sure to toggle CS signal in order  
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
