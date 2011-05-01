@@ -129,7 +129,7 @@ static inline size_t strlcat_P(char *buffer, const prog_char_t *pstr, size_t buf
 /// Data structures and types used throughout the libraries and applications. 0 = default
 /// bit 0: Altitude is stored 			    0: Absolute,	1: Relative
 /// bit 1: Chnage Alt between WP 		    0: Gradually,	1: ASAP
-/// bit 2: Yaw towards WP when flying 	    0: No, 			1: Yes (mostly for quads)
+/// bit 2:
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No, 			1: Yes
 /// bit 5:
