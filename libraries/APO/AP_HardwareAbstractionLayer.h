@@ -47,7 +47,7 @@ public:
 	AP_HardwareAbstractionLayer(halMode_t mode, board_t board, vehicle_t vehicle) :
 		_mode(mode), _board(board), _vehicle(vehicle), adc(),
 		gps(), baro(), compass(), rangeFinders(),
-		imu(), rc(), gcs(), hil(), debug(), load()
+		imu(), rc(), gcs(), hil(), debug(), load(), lastHeartBeat()
 	{
 	}
 	/**
