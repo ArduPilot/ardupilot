@@ -200,13 +200,13 @@ public:
 			//airSpeedCommand = 0;
 			//groundSpeedCommand = 0;
 			headingCommand -= 45*deg2Rad;
-			_hal->debug->print("Obstacle Distance (m): ");
-			_hal->debug->println(frontDistance);
-			_hal->debug->print("Obstacle avoidance Heading Command: ");
-			_hal->debug->println(headingCommand);
-			_hal->debug->printf_P(
-											PSTR("Front Distance, %f\n"),
-											frontDistance);
+//			_hal->debug->print("Obstacle Distance (m): ");
+//			_hal->debug->println(frontDistance);
+//			_hal->debug->print("Obstacle avoidance Heading Command: ");
+//			_hal->debug->println(headingCommand);
+//			_hal->debug->printf_P(
+//											PSTR("Front Distance, %f\n"),
+//											frontDistance);
 		}
 		if (_rangeFinderBack && _rangeFinderBack->distance < 5) {
 			airSpeedCommand = 0;

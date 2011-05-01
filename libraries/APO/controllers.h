@@ -131,6 +131,7 @@ public:
 				_hal->rc[CH_RIGHT]->setPosition(0);
 				_hal->rc[CH_FRONT]->setPosition(0);
 				_hal->rc[CH_BACK]->setPosition(0);
+				return;
 			}
 
 			// read and set pwm so they can be read as positions later
