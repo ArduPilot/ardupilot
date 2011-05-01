@@ -7,14 +7,14 @@
 // header file
 #include "AP_DCM_HIL.h"
 
-#include <FastSerial.h>
-#include <AP_Math.h>
+#include "../FastSerial/FastSerial.h"
+#include "../AP_Math/AP_Math.h"
 #include <inttypes.h>
 #include "WProgram.h"
-#include <AP_Compass.h>
-#include <AP_ADC.h>
-#include <AP_GPS.h>
-#include <AP_IMU.h>
+#include "../AP_Compass/AP_Compass.h"
+#include "../AP_ADC/AP_ADC.h"
+#include "../AP_GPS/AP_GPS.h"
+#include "../AP_IMU/AP_IMU.h"
 
 
 class AP_DCM

@@ -3,13 +3,21 @@
 /// @file	AP_RcChannel.h
 /// @brief	AP_RcChannel manager
 
-#ifndef AP_RcChannel_h
-#define AP_RcChannel_h
+#ifndef AP_RCCHANNEL_H
+#define AP_RCCHANNEL_H
 
 #include <stdint.h>
-#include <APM_RC.h>
-#include <AP_Common.h>
-#include <AP_Var.h>
+#include "../APM_RC/APM_RC.h"
+#include "../AP_Common/AP_Common.h"
+#include "../AP_Common/AP_Var.h"
+
+namespace apo {
+
+enum rcMode_t {
+	RC_MODE_IN,
+	RC_MODE_OUT,
+	RC_MODE_INOUT
+};
 
 /// @class	AP_RcChannel
 /// @brief	Object managing one RC channel
@@ -17,39 +25,32 @@ class AP_RcChannel : public AP_Var_group {
  
 public:	
 
+
 	/// Constructor
 	AP_RcChannel(AP_Var::Key key, const prog_char_t * name, APM_RC_Class & rc, const uint8_t & ch,
-			const float & scale=45.0, const float & center=0.0, 
-			const uint16_t & pwmMin=1200, 
-			const uint16_t & pwmNeutral=1500, const uint16_t & pwmMax=1800,
-			const uint16_t & pwmDeadZone=10,
-			const bool & filter=false, const bool & reverse=false);
+			const uint16_t & pwmMin,const uint16_t & pwmNeutral, const uint16_t & pwmMax,
+			const rcMode_t & rcMode=RC_MODE_INOUT, const bool & reverse=false);
 
 	// configuration
-	AP_Uint8 ch;
-	AP_Float scale;
-	AP_Float center;
-	AP_Uint16 pwmMin;
-	AP_Uint16 pwmNeutral;
-	AP_Uint16 pwmMax;
-	AP_Uint16 pwmDeadZone;
-	AP_Bool filter;
-	AP_Bool reverse;
+	AP_Uint8 _ch;
+	AP_Uint16 _pwmMin;
+	AP_Uint16 _pwmNeutral;
+	AP_Uint16 _pwmMax;
+	rcMode_t _rcMode;
+	AP_Bool _reverse;
+
 
 	// set
 	uint16_t readRadio();
 	void setPwm(uint16_t pwm);
 	void setPosition(float position);
-	void setNormalized(float normPosition);
-	void mixRadio(uint16_t infStart);
 
 	// get
 	uint16_t getPwm() { return _pwm; }
 	float getPosition() { return _pwmToPosition(_pwm); }
-	float getNormalized() { return getPosition()/scale; }
 
 	// did our read come in 50µs below the min?
-	bool failSafe() { _pwm < (pwmMin - 50); }
+	bool failSafe() { _pwm < (_pwmMin - 50); }
 
 private:
 
@@ -65,4 +66,6 @@ private:
 	float _pwmToPosition(const uint16_t & pwm);
 };
 
-#endif	
+} // apo
+
+#endif	// AP_RCCHANNEL_H

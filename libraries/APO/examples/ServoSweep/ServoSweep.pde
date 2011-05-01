@@ -7,6 +7,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <APO.h>
 #include <AP_RcChannel.h>   // ArduPilot Mega RC Library
 #include <APM_RC.h>
 #include <AP_Vector.h>
@@ -14,6 +15,8 @@
 FastSerialPort0(Serial); // make sure this proceeds variable declarations
 
 // test settings
+
+using namespace apo;
 
 class RadioTest
 {
@@ -36,14 +39,14 @@ private:
 public:
     RadioTest() :  testPosition(2), testSign(1)
     {
-        ch.push_back(new AP_RcChannel(rollKey,PSTR("ROLL"),APM_RC,1,45));
-        ch.push_back(new AP_RcChannel(pitchKey,PSTR("PITCH"),APM_RC,2,45));
-        ch.push_back(new AP_RcChannel(thrKey,PSTR("THR"),APM_RC,3,100));
-        ch.push_back(new AP_RcChannel(yawKey,PSTR("YAW"),APM_RC,4,45));
-        ch.push_back(new AP_RcChannel(ch5Key,PSTR("CH5"),APM_RC,5,1));
-        ch.push_back(new AP_RcChannel(ch6Key,PSTR("CH6"),APM_RC,6,1));
-        ch.push_back(new AP_RcChannel(ch7Key,PSTR("CH7"),APM_RC,7,1));
-        ch.push_back(new AP_RcChannel(ch8Key,PSTR("CH8"),APM_RC,8,1));
+        ch.push_back(new AP_RcChannel(rollKey,PSTR("ROLL"),APM_RC,1,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(pitchKey,PSTR("PITCH"),APM_RC,2,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(thrKey,PSTR("THR"),APM_RC,3,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(yawKey,PSTR("YAW"),APM_RC,4,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(ch5Key,PSTR("CH5"),APM_RC,5,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(ch6Key,PSTR("CH6"),APM_RC,6,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(ch7Key,PSTR("CH7"),APM_RC,7,1100,1500,1900));
+        ch.push_back(new AP_RcChannel(ch8Key,PSTR("CH8"),APM_RC,8,1100,1500,1900));
 
         Serial.begin(115200);
         delay(2000);
@@ -69,7 +72,7 @@ public:
         }
 
         // set channel positions
-        for (int i=0;i<ch.getSize();i++) ch[i]->setNormalized(testPosition);
+        for (int i=0;i<ch.getSize();i++) ch[i]->setPosition(testPosition);
 
         // print test position
         Serial.printf("\nnormalized position (%f)\n",testPosition);

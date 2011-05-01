@@ -6,8 +6,8 @@
 #ifndef AP_GPS_Auto_h
 #define AP_GPS_Auto_h
 
-#include <FastSerial.h>
-#include <GPS.h>
+#include "../FastSerial/FastSerial.h"
+#include "GPS.h"
 
 class AP_GPS_Auto : public GPS
 {
