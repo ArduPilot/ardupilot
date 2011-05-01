@@ -55,15 +55,11 @@ class AP_CommLink;
 
 /**
  * This class encapsulates the entire autopilot system
- * The constructor takes the serial streams available
- * and attaches them to the appropriate devices.
- * Also, since APM_RC is globally instantiated this
- * is also passed to the constructor so that we
- * can avoid and global instance calls for maximum
- * clarity.
+ * The constructor takes guide, navigator, and controller
+ * as well as the hardware abstraction layer.
  *
  * It inherits from loop to manage
- * the subloops and sets the overal
+ * the subloops and sets the overall
  * frequency for the autopilot.
  *
 

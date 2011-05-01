@@ -1,12 +1,5 @@
 /*
- * UgvTraxxasStampede.pde
- *
- *  Created on: Apr 30, 2011
- *      Author: jgoppert
- */
-
-/*
- * ArduPilotOne.pde
+ * AutopilotCar.pde
  *
  *  Created on: Apr 30, 2011
  *      Author: jgoppert
