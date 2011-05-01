@@ -167,7 +167,7 @@ void setup() {
 	 * initialize them and NULL will be assigned to those corresponding pointers.
 	 * On detecting NULL assigned to any ultrasonic sensor, its corresponding block of code
 	 * will not be executed by the navigator.
-	 * The coordinate system is assigned by the right hand screw rule with the thumb pointing down.
+	 * The coordinate system is assigned by the right hand rule with the thumb pointing down.
 	 * In set_orientation, it is defind as (front/back,left/right,down,up)
 	 */
 
@@ -220,28 +220,11 @@ void setup() {
 	}
 
 	/*
-	 * Navigator
+	 * Select guidance, navigation, control algorithms
 	 */
 	AP_Navigator * navigator = new DcmNavigator(hal);
-
-	/*
-	 * Guide
-	 */
 	AP_Guide * guide = new MavlinkGuide(k_guide,navigator,hal);
-
-	/*
-	 * Controller Initialization
-	 */
-	AP_Controller * controller = NULL;
-	switch(vehicle)
-	{
-	case VEHICLE_CAR:
-		controller = new CarController(k_cntrl,k_pidStr,k_pidThr,navigator,guide,hal);
-		break;
-	case VEHICLE_QUAD:
-		controller = new QuadController(navigator,guide,hal);
-		break;
-	}
+	AP_Controller * controller = new CarController(k_cntrl,k_pidStr,k_pidThr,navigator,guide,hal);
 
 	/*
 	 * CommLinks
@@ -254,7 +237,6 @@ void setup() {
 	 */
 	hal->debug->printf_P(PSTR("initializing ArduPilotOne\n"));
 	hal->debug->printf_P(PSTR("free ram: %d bytes\n"),freeMemory());
-
 	autoPilot = new apo::AP_Autopilot(navigator,guide,controller,hal);
 }
 
