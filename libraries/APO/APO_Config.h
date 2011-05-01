@@ -2,7 +2,6 @@
 #define APO_Config_H
 
 #include "AP_HardwareAbstractionLayer.h"
-#include "mikrokopter.h"
 #include "constants.h"
 
 // Serial 0: debug      /dev/ttyUSB0
