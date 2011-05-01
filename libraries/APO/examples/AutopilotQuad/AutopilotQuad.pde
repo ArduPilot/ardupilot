@@ -1,12 +1,5 @@
 /*
- * QuadArducopter.pde
- *
- *  Created on: Apr 30, 2011
- *      Author: jgoppert
- */
-
-/*
- * ArduPilotOne.pde
+ * AutopilotQuad.pde
  *
  *  Created on: Apr 30, 2011
  *      Author: jgoppert
