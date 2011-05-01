@@ -40,7 +40,6 @@
 #include "AP_Navigator.h"
 #include "AP_Guide.h"
 #include "AP_CommLink.h"
-#include "controllers.h"
 
 /**
  * ArduPilotOne namespace to protect varibles
