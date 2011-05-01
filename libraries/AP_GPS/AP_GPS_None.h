@@ -3,7 +3,7 @@
 #ifndef AP_GPS_None_h
 #define AP_GPS_None_h
 
-#include <GPS.h>
+#include "GPS.h"
 
 class AP_GPS_None : public GPS
 {

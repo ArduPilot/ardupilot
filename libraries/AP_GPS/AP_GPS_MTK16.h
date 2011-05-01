@@ -13,7 +13,7 @@
 #ifndef AP_GPS_MTK16_h
 #define AP_GPS_MTK16_h
 
-#include <GPS.h>
+#include "GPS.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK16 : public GPS {

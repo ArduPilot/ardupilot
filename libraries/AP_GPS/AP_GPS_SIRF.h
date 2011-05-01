@@ -11,7 +11,7 @@
 #ifndef AP_GPS_SIRF_h
 #define AP_GPS_SIRF_h
 
-#include <GPS.h>
+#include "GPS.h"
 
 #define SIRF_SET_BINARY	"$PSRF100,0,38400,8,1,0*3C"
 

@@ -2,8 +2,8 @@
 #define Compass_h
 
 #include <inttypes.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include "../AP_Common/AP_Common.h"
+#include "../AP_Math/AP_Math.h"
 
 // standard rotation matrices
 #define ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)

@@ -12,7 +12,7 @@
 #ifndef AP_GPS_HIL_h
 #define AP_GPS_HIL_h
 
-#include <GPS.h>
+#include "GPS.h"
 
 class AP_GPS_HIL : public GPS {
 public:

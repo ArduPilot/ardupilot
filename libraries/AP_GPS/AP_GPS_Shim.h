@@ -12,7 +12,7 @@
 #ifndef AP_GPS_Shim_h
 #define AP_GPS_Shim_h
 
-#include <GPS.h>
+#include "GPS.h"
 
 class AP_GPS_Shim : public GPS
 {

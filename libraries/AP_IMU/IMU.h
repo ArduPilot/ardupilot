@@ -7,7 +7,7 @@
 #ifndef IMU_h
 #define IMU_h
 
-#include <AP_Math.h>
+#include "../AP_Math/AP_Math.h"
 #include <inttypes.h>
 
 class IMU

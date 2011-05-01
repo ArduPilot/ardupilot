@@ -11,7 +11,7 @@
 #ifndef AP_GPS_UBLOX_h
 #define AP_GPS_UBLOX_h
 
-#include <GPS.h>
+#include "GPS.h"
 
 #define UBLOX_SET_BINARY	"$PUBX,41,1,0003,0001,38400,0*26"
 

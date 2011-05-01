@@ -7,9 +7,9 @@
 #define AP_IMU_Oilpan_h
 
 
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AP_ADC.h>
+#include "../AP_Common/AP_Common.h"
+#include "../AP_Math/AP_Math.h"
+#include "../AP_ADC/AP_ADC.h"
 #include <inttypes.h>
 
 #include "IMU.h"

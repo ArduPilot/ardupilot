@@ -3,7 +3,7 @@
 #ifndef AP_GPS_IMU_h
 #define AP_GPS_IMU_h
 
-#include <GPS.h>
+#include "GPS.h"
 #define MAXPAYLOAD 32
 
 class AP_GPS_IMU : public GPS {

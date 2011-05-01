@@ -13,7 +13,7 @@
 
 #include <Stream.h>
 #include <avr/pgmspace.h>
-#include <AP_Common.h>
+#include "../AP_Common/AP_Common.h"
 
 class BetterStream : public Stream {
 public:

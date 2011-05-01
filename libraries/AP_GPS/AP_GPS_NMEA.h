@@ -42,7 +42,7 @@
 #ifndef AP_GPS_NMEA_h
 #define AP_GPS_NMEA_h
 
-#include <GPS.h>
+#include "GPS.h"
 #include <avr/pgmspace.h>
 
 
