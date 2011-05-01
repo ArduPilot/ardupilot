@@ -675,6 +675,12 @@ public:
         return _value;
     }
 
+    /// Value getter
+    ///
+    const T& get() const {
+        return _value;
+    }
+
     /// Value setter
     ///
     void set(T v) {
