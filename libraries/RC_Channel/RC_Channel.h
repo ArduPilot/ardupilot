@@ -12,6 +12,9 @@
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel{
+  private:
+	AP_Var_group    _group;		// must be before all vars to keep ctor init order correct
+
   public:
 	/// Constructor
 	///
@@ -91,7 +94,6 @@ class RC_Channel{
 	float		scale_output;
 
   private:
-	AP_Var_group    _group;
 	bool		_filter;
 	int8_t 		_reverse;
 
