@@ -22,9 +22,9 @@ class AP_DCM
 public:
 	// Constructors
 	AP_DCM(IMU *imu, GPS *&gps, Compass *withCompass = NULL) :
-		_imu(imu),
-		_gps(gps),
 		_compass(withCompass),
+		_gps(gps),
+		_imu(imu),
 		_dcm_matrix(1, 0, 0,
 					0, 1, 0,
 					0, 0, 1),
