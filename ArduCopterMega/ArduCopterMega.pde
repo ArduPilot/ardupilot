@@ -456,9 +456,9 @@ void setup() {
 
 void loop()
 {
-	// We want this to execute at 100Hz
-	// --------------------------------
-	if (millis() - fast_loopTimer > 7) {
+	// We want this to execute fast
+	// ----------------------------
+	if (millis() - fast_loopTimer > 6) {
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
 		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
