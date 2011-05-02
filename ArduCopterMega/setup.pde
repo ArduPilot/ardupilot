@@ -51,7 +51,7 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
 	if(g.rc_1.radio_min >= 1300){
 		delay(1000);
-		Serial.printf_P(PSTR("\n!!!Warning, your radio is not configured!!!"));
+		Serial.printf_P(PSTR("\n!Warning, your radio is not configured!"));
 		delay(1000);
 		Serial.printf_P(PSTR("\n Type 'radio' to configure now.\n\n"));
 	}

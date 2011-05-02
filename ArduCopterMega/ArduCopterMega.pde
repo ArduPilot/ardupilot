@@ -324,7 +324,7 @@ boolean	land_complete;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
-byte 	yaw_tracking = TRACK_NONE;			// no tracking, point at next wp, or at a target
+byte 	yaw_tracking = TRACK_NEXT_WP;			// no tracking, point at next wp, or at a target
 
 // Loiter management
 // -----------------
