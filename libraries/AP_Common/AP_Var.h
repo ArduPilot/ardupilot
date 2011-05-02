@@ -423,8 +423,8 @@ public:
     /// @param  key             Storage key for the group.
     /// @param	name			An optional name prefix for members of the group.
     ///
-    AP_Var_group(Key key = k_key_none, const prog_char_t *name = NULL, Flags flags = k_flags_none) :
-        AP_Var(key, name, flags | k_flag_is_group)
+    AP_Var_group(Key with_key = k_key_none, const prog_char_t *name = NULL, Flags flags = k_flags_none) :
+        AP_Var(with_key, name, flags | k_flag_is_group)
     {
         _bytes_in_use += sizeof(*this);
     }
@@ -490,10 +490,10 @@ public:
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
     AP_VarT<T> (const T initial_value = 0,
-                Key key = k_key_none,
+                Key with_key = k_key_none,
                 const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
-        AP_Var(key, name, flags),
+        AP_Var(with_key, name, flags),
         _value(initial_value)
     {
         _bytes_in_use += sizeof(*this);
@@ -511,12 +511,12 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
-    AP_VarT<T> (AP_Var_group *group,  // XXX maybe make this a ref?
+    AP_VarT<T> (AP_Var_group *with_group,  // XXX maybe make this a ref?
                 Key index,
                 T initial_value,
                 const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
-        AP_Var(group, index, name, flags),
+        AP_Var(with_group, index, name, flags),
         _value(initial_value)
     {
         _bytes_in_use += sizeof(*this);
@@ -623,10 +623,10 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
-    AP_VarS<T> (Key key = k_key_none,
+    AP_VarS<T> (Key with_key = k_key_none,
                 const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
-        AP_Var(key, name, flags)
+        AP_Var(with_key, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
@@ -642,11 +642,11 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
-    AP_VarS<T> (AP_Var_group *group,  // XXX maybe make this a ref?
+    AP_VarS<T> (AP_Var_group *with_group,  // XXX maybe make this a ref?
                 Key index,
                 const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
-        AP_Var(group, index, name, flags)
+        AP_Var(with_group, index, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
@@ -739,10 +739,10 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
-    AP_VarA<T,N> (Key key = k_key_none,
+    AP_VarA<T,N> (Key with_key = k_key_none,
                   const prog_char_t *name = NULL,
                   Flags flags = k_flags_none) :
-        AP_Var(key, name, flags)
+        AP_Var(with_key, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
@@ -758,11 +758,11 @@ public:
     /// @param  name            An optional name by which the variable may be known.
     /// @param  flags           Optional flags that may affect the behavior of the variable.
     ///
-    AP_VarA<T,N> (AP_Var_group *group,  // XXX maybe make this a ref?
+    AP_VarA<T,N> (AP_Var_group *with_group,  // XXX maybe make this a ref?
                   Key index,
                   const prog_char_t *name = NULL,
                   Flags flags = k_flags_none) :
-        AP_Var(group, index, name, flags)
+        AP_Var(with_group, index, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
@@ -854,20 +854,20 @@ public:
     /// Constructors mimic AP_Float::AP_Float()
     ///
     AP_Float16(float initial_value = 0,
-               Key key = k_key_none,
+               Key with_key = k_key_none,
                const prog_char_t *name = NULL,
                Flags flags = k_flags_none) :
-        AP_Float(initial_value, key, name, flags)
+        AP_Float(initial_value, with_key, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
 
-    AP_Float16(AP_Var_group *group,
+    AP_Float16(AP_Var_group *with_group,
                Key index,
                float initial_value = 0,
                const prog_char_t *name = NULL,
                Flags flags = k_flags_none) :
-        AP_Float(group, index, initial_value, name, flags)
+        AP_Float(with_group, index, initial_value, name, flags)
     {
         _bytes_in_use += sizeof(*this);
     }
