@@ -48,7 +48,7 @@ void send_message(byte id)
 {
 	send_message(id,0l);
 }
-	
+
 void send_message(byte id, long param)
 {
 	switch(id) {
@@ -63,7 +63,7 @@ void send_message(byte id, long param)
 			break;
 		//case MSG_PERF_REPORT:
 		//	printPerfData();
-	}	
+	}
 }
 
 void print_current_waypoints()
@@ -93,13 +93,14 @@ void print_control_mode(void)
 
 void print_position(void)
 {
-	SendSer("!!!");
+	SendSer("!!");
+	SendSer("!");
 	SendSer("LAT:");
 	SendSer(current_loc.lat/10,DEC);
 	SendSer(",LON:");
 	SendSer(current_loc.lng/10,DEC); //wp_current_lat
 	SendSer(",SPD:");
-	SendSer(g_gps->ground_speed/100,DEC);		
+	SendSer(g_gps->ground_speed/100,DEC);
 	SendSer(",CRT:");
 	SendSer(climb_rate,DEC);
 	SendSer(",ALT:");

@@ -32,18 +32,18 @@ void send_message(byte id)
 {
 	send_message(id,0l);
 }
-	
+
 void send_message(byte id, long param)
 {
 	switch(id) {
 		case MSG_ATTITUDE:
 			print_attitude();
 			break;
-			
+
 		case MSG_LOCATION:								// ** Location/GPS message
 			print_location();
 			break;
-	}	
+	}
 }
 
 void send_message(byte severity, const char *str)
@@ -64,17 +64,17 @@ void print_control_mode(void)
 
 void print_attitude(void)
 {
-	//Serial.print("!!!VER:");
+	//Serial.print("!!VER:");
 	//Serial.print(SOFTWARE_VER);  //output the software version
 	//Serial.print(",");
-	
+
 // Analogs
 		Serial.print("AN0:");
-		Serial.print(read_adc(0)); //Reversing the sign. 
+		Serial.print(read_adc(0)); //Reversing the sign.
 		Serial.print(",AN1:");
 		Serial.print(read_adc(1));
 		Serial.print(",AN2:");
-		Serial.print(read_adc(2));  
+		Serial.print(read_adc(2));
 		Serial.print(",AN3:");
 		Serial.print(read_adc(3));
 		Serial.print (",AN4:");
@@ -82,7 +82,7 @@ void print_attitude(void)
 		Serial.print (",AN5:");
 		Serial.print(read_adc(5));
 		Serial.print (",");
-      
+
 // DCM
 		Serial.print ("EX0:");
 		Serial.print(convert_to_dec(DCM_Matrix[0][0]));
@@ -114,7 +114,7 @@ void print_attitude(void)
 		Serial.print(",IMUH:");
 		Serial.print(((int)imu_health>>8)&0xff);
 		Serial.print (",");
-      
+
 
 	/*
 	#if USE_MAGNETOMETER == 1
@@ -134,7 +134,7 @@ void print_attitude(void)
 		//Serial.print(temp_unfilt/20.0);      // Convert into degrees C
 		//alti();
 		//Serial.print(",Pressure: ");
-		//Serial.print(press);            
+		//Serial.print(press);
 		//Serial.print(",Alt: ");
 		//Serial.print(pressure_altitude/1000);  // Original floating point full solution in meters
 		//Serial.print (",");
@@ -155,9 +155,9 @@ void print_location(void)
 	Serial.print(g_gps->ground_speed);
 	Serial.print(",FIX:");
 	Serial.print((int)g_gps->fix);
-	Serial.print(",SAT:"); 
+	Serial.print(",SAT:");
 	Serial.print((int)g_gps->num_sats);
-	Serial.print (",");      
+	Serial.print (",");
 	Serial.print("TOW:");
 	Serial.print(g_gps->time);
 	Serial.println("***");
