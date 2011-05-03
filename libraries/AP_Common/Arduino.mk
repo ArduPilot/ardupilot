@@ -411,11 +411,11 @@ $(BUILDROOT)/libraries/%.o: $(ARDUINO)/libraries/%.S
 #
 $(BUILDROOT)/$(HARDWARE)/%.o: $(CORESRC_DIR)/%.cpp
 	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< -I$(CORESRC_DIR)
+	$(v)$(CXX) $(filter-out -W%,$(CXXFLAGS)) -c -o $@ $< -I$(CORESRC_DIR)
 
 $(BUILDROOT)/$(HARDWARE)/%.o: $(CORESRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< -I$(CORESRC_DIR)
+	$(v)$(CC) $(filter-out -W%,$(CFLAGS)) -c -o $@ $< -I$(CORESRC_DIR)
 
 $(BUILDROOT)/$(HARDWARE)/%.o: $(CORESRC_DIR)/%.S
 	$(RULEHDR)
