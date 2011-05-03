@@ -112,7 +112,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		// servo Yaw
-		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+		//APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 
 		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
 							g.rc_1.radio_in,
@@ -148,6 +148,8 @@ test_tri(uint8_t argc, const Menu::arg *argv)
 		Serial.printf_P(PSTR("input: %d\toutput%d\n"),
 							g.rc_4.control_in,
 							g.rc_4.radio_out);
+
+		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 
 		if(Serial.available() > 0){
 			return (0);
