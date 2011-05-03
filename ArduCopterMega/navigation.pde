@@ -154,6 +154,7 @@ void calc_rate_nav()
 	// change to rate error
 	// we want to be going 450cm/s
 	int error = WAYPOINT_SPEED - g_gps->ground_speed;
+	//int error = 450
 
 	// which direction are we moving?
 	long target_error 	= target_bearing - g_gps->ground_course;
@@ -163,8 +164,10 @@ void calc_rate_nav()
 	//error = (float)error * cos(radians((float)target_error/100));
 
 	// Scale response by kP
-	long nav_lat 	= g.pid_nav_wp.kP() * error;
-	int dampening	= g.pid_nav_wp.kD() * (g_gps->ground_speed - last_ground_speed);
+	//long nav_lat 	= g.pid_nav_wp.kP() * error;
+	//int dampening	= g.pid_nav_wp.kD() * (g_gps->ground_speed - last_ground_speed);
+	long nav_lat 	= NAV_WP_P * error;
+	int dampening	= NAV_WP_D * (g_gps->ground_speed - last_ground_speed);
 
 	// remember our old speed
 	last_ground_speed = g_gps->ground_speed;
