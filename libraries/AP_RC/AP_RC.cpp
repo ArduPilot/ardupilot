@@ -1,7 +1,7 @@
 /*
 	AP_RC.cpp - Radio library for Arduino
 	Code by Jason Short. DIYDrones.com
-	
+
 	This library is free software; you can redistribute it and / or
 		modify it under the terms of the GNU Lesser General Public
 		License as published by the Free Software Foundation; either
@@ -36,10 +36,10 @@ volatile int16_t timer4diff     = 1500 * 2;
 #define CH_4 3
 
 volatile int8_t		_rc_ch_read;
-volatile uint8_t	_timer_out;
-volatile uint8_t	_timer_ovf_a;
-volatile uint8_t	_timer_ovf_b;
-volatile uint8_t	_timer_ovf;
+volatile uint16_t	_timer_out;
+volatile uint16_t	_timer_ovf_a;
+volatile uint16_t	_timer_ovf_b;
+volatile uint16_t	_timer_ovf;
 
 
 AP_RC::AP_RC()
@@ -66,7 +66,7 @@ AP_RC::init()
 	PCMSK0 = _BV(PCINT3) | _BV(PCINT5);
 	// enable pin change interrupt on PD2,PD3 (digital pin 2,3)
 	PCMSK2 = _BV(PCINT18) | _BV(PCINT19);
-	
+
 	// Timer 1
 	TCCR1A = ((1 << WGM11) | (1 << COM1B1) | (1 << COM1A1));
 	TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
@@ -75,14 +75,14 @@ AP_RC::init()
 
 	// Throttle;
 	// Setting up the Timer 2 - 8 bit timer
-	TCCR2A  = 0x0;		  // Normal Mode					  
+	TCCR2A  = 0x0;		  // Normal Mode
 	TCCR2B  = _BV(CS21) |_BV(CS20); //prescaler 32, at 16mhz (32/16) = 2, the counter will increment 1 every 2us
-	
+
 	// enable throttle and Ch4 output
 	TIMSK1 |= _BV(ICIE1);   // Timer / Counter1, Input Capture Interrupt Enable // PB0 - output throttle
 	TIMSK2  = _BV(TOIE1) | _BV(OCIE2A) | _BV(OCIE2B);       // Timer / Counter2 Compare Match A
-	
-	/*	
+
+	/*
 	set_ch_pwm(0, 1500);
 	set_ch_pwm(1, 1500);
 	set_ch_pwm(2, 1500);
@@ -90,22 +90,22 @@ AP_RC::init()
 	*/
 }
 
-uint16_t 
+uint16_t
 AP_RC::input_ch(uint8_t ch)
 {
 	switch(ch){
 		case CH_1:
 			return timer1diff;
 			break;
-		
+
 		case CH_2:
 			return timer2diff;
 			break;
-		
+
 		case CH_3:
 			return timer3diff;
 			break;
-		
+
 		case CH_4:
 			return timer4diff;
 			break;
@@ -117,29 +117,35 @@ AP_RC::output_ch_pwm(uint8_t ch, uint16_t pwm)
 {
 	switch(ch){
 		case CH_1:
-			pwm <<= 1;
+			pwm <<= 1;								// multiplies by 2
 			OCR1A = pwm;
 			break;
-		
+
 		case CH_2:
 			pwm <<= 1;
-			OCR1B = pwm;
+			OCR1B = pwm;							// multiplies by 2
 			break;
-		
+
 		case CH_3:
-			_timer_out				= pwm % 512; 
+			_timer_out				= pwm % 512;
 			_timer_ovf_a			= pwm / 512;
-			_timer_out >>= 1;
-			OCR2A = _timer_out;
+			_timer_out >>= 1;						// divides by 2
+			//OCR2A = _timer_out;
+			if(OCR2A != _timer_out)
+				OCR2A = _timer_out;
+
 			break;
-		
+
 		case CH_4:
-			_timer_out				= pwm % 512; 
-			_timer_ovf_b		= pwm / 512;
-			_timer_out >>= 1;
-			OCR2B = _timer_out;
+			_timer_out				= pwm % 512;
+			_timer_ovf_b			= pwm / 512;
+			_timer_out >>= 1;						// divides by 2
+			//OCR2B = _timer_out;
+			if(OCR2B != _timer_out)
+				OCR2B = _timer_out;
+
 			break;
-	} 
+	}
 }
 
 
@@ -159,7 +165,7 @@ ISR(PCINT2_vect) {
 		else
 			timer1diff = (cnt - timer1count) >> 1;
 	}
-	
+
 	if(PIND & B00001000){	   // ch 2 (pin 3) is high
 		if ((_rc_ch_read & CH2_READ) != CH2_READ){
 			_rc_ch_read |= CH2_READ;
@@ -210,11 +216,11 @@ ISR(PCINT0_vect)
 // ------------------------
 ISR(TIMER1_CAPT_vect) // Timer/Counter1 Capture Event
 {
-	//This is a timer 1 interrupts, executed every 20us 
-	PORTB |= B00000001; //Putting the pin high!
-	PORTC |= B00010000; //Putting the pin high!     
-	TCNT2 = 0; //restarting the counter of timer 2
-	_timer_ovf = 0;
+	//This is a timer 1 interrupts, executed every 20us
+	PORTB 		|= B00000001; 	//Putting the pin high!
+	PORTC 		|= B00010000; 	//Putting the pin high!
+	TCNT2 		= 0; 			//restarting the counter of timer 2
+	_timer_ovf 	= 0;
 }
 
 ISR(TIMER2_OVF_vect)
@@ -234,4 +240,4 @@ ISR(TIMER2_COMPB_vect) // Timer/Counter2 Compare Match B Rudder Servo
 	if(_timer_ovf == _timer_ovf_b){
 		PORTC &= B11101111; //Putting the pin low!
 	}
-} 
+}
