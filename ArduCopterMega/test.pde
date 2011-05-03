@@ -7,6 +7,7 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
@@ -57,6 +58,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
+	{"tri",			test_tri},
 	{"current",		test_current},
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
@@ -109,6 +111,9 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
+		// servo Yaw
+		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+
 		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
 							g.rc_1.radio_in,
 							g.rc_2.radio_in,
@@ -118,6 +123,31 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 							g.rc_6.radio_in,
 							g.rc_7.radio_in,
 							g.rc_8.radio_in);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+
+static int8_t
+test_tri(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+
+	while(1){
+		delay(20);
+
+		// Filters radio input - adjust filters in the radio.pde file
+		// ----------------------------------------------------------
+		read_radio();
+		g.rc_4.servo_out = g.rc_4.control_in;
+		g.rc_4.calc_pwm();
+
+		Serial.printf_P(PSTR("input: %d\toutput%d\n"),
+							g.rc_4.control_in,
+							g.rc_4.radio_out);
 
 		if(Serial.available() > 0){
 			return (0);
