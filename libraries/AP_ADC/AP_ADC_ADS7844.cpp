@@ -1,6 +1,6 @@
 /*
 	AP_ADC_ADS7844.cpp - ADC ADS7844 Library for Ardupilot Mega
-	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+	Code by Jordi Muï¿½oz and Jose Julio. DIYDrones.com
 
 	Modified by John Ihlein 6/19/2010 to:
 	1)Prevent overflow of adc_counter when more than 8 samples collected between reads.  Probably
@@ -103,8 +103,6 @@ AP_ADC_ADS7844::AP_ADC_ADS7844()
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_ADC_ADS7844::Init(void)
 {
-  unsigned char tmp;
-
   pinMode(ADC_CHIP_SELECT,OUTPUT);
 
   digitalWrite(ADC_CHIP_SELECT,HIGH);                 // Disable device (Chip select is active low)

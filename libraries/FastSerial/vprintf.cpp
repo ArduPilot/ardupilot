@@ -374,7 +374,7 @@ BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                                 goto str_lpad;
 
                         case 'S':
-                        pgmstring:
+                        // pgmstring: // not yet used
                                 pnt = va_arg (ap, char *);
                                 size = strnlen_P (pnt, (flags & FL_PREC) ? prec : ~0);
                                 flags |= FL_PGMSTRING;

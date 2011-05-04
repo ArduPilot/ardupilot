@@ -23,7 +23,7 @@ public:
 	virtual bool read(void) {
 		bool updated = _updated;
 		_updated = false;
-		return _updated;
+		return updated;
 	}
 
 	/// Set-and-mark-updated macro for the public member variables; each instance

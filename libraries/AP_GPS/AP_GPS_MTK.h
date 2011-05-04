@@ -25,7 +25,7 @@ public:
 	virtual bool	read(void);
 
 private:
-#pragma pack(1)
+// XXX this is being ignored by the compiler #pragma pack(1)
 	struct diyd_mtk_msg {
 		int32_t		latitude;
 		int32_t		longitude;
@@ -36,7 +36,7 @@ private:
 		uint8_t		fix_type;
 		uint32_t	utc_time;
 	};
-#pragma pack(pop)
+// #pragma pack(pop)
 	enum diyd_mtk_fix_type {
 		FIX_NONE = 1,
 		FIX_2D = 2,

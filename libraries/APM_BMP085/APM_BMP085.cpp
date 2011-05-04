@@ -1,6 +1,6 @@
 /*
 	APM_BMP085.cpp - Arduino Library for BMP085 absolute pressure sensor
-	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
+	Code by Jordi Muï¿½oz and Jose Julio. DIYDrones.com
 
 	This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,13 +14,13 @@
 		RawTemp : Raw temperature data
 		RawPress : Raw pressure data
 
-		Temp : Calculated temperature (in 0.1ºC units)
+		Temp : Calculated temperature (in 0.1ï¿½C units)
 		Press : Calculated pressure   (in Pa units)
 	
 	Methods:
 		Init() : Initialization of I2C and read sensor calibration data
 		Read() : Read sensor data and calculate Temperature and Pressure
-		         This function is optimized so the main host don´t need to wait 
+		         This function is optimized so the main host donï¿½t need to wait 
 				 You can call this function in your main loop
 				 It returns a 1 if there are new data.
     
@@ -54,7 +54,6 @@ APM_BMP085_Class::APM_BMP085_Class()
 // Public Methods //////////////////////////////////////////////////////////////
 void APM_BMP085_Class::Init(int initialiseWireLib)
 {
-  unsigned char tmp;
   byte buff[22];
   int i=0;
 

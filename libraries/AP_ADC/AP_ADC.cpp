@@ -9,15 +9,3 @@
 */
 
 #include "AP_ADC.h"
-
-AP_ADC::AP_ADC()
-{
-}
-
-void AP_ADC::Init()
-{
-}
-
-int AP_ADC::Ch(unsigned char ch_num)
-{
-}

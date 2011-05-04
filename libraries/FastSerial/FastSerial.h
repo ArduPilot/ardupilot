@@ -156,9 +156,10 @@ private:
 	volatile uint8_t * const _ucsrb;
 
 	// register magic numbers
+	const uint8_t	_u2x;
 	const uint8_t	_portEnableBits;		///< rx, tx and rx interrupt enables
 	const uint8_t	_portTxBits;			///< tx data and completion interrupt enables
-	const uint8_t	_u2x;
+
 
 	// ring buffers
 	Buffer			* const _rxBuffer;
@@ -203,7 +204,7 @@ extern FastSerial::Buffer __FastSerial__txBuffer[];
 ISR(_RXVECTOR, ISR_BLOCK)                                               \
 {                                                                       \
         uint8_t c;                                                      \
-        int16_t i;                                                      \
+        uint16_t i;                                                      \
                                                                         \
         /* read the byte as quickly as possible */                      \
         c = _UDR;                                                       \
