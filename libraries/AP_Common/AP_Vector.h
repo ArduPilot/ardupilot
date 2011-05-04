@@ -38,8 +38,8 @@ private:
     dataType* data;
 public:
     // default constructor
-    Vector(const size_t & size=0, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
-        setSize(size);
+    Vector(const size_t & _size=0, const size_t & _extraAllocationSize=0) : size(0), extraAllocationSize(_extraAllocationSize), sizeAllocated(0), data(NULL) {
+        setSize(_size);
     }
     // 3 vector constructor
     Vector(const dataType & a, const dataType & b, const dataType & c) : size(3), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
@@ -50,8 +50,8 @@ public:
     }
 
     // construct from array
-    Vector(const dataType* array, const size_t & size, const size_t & extraAllocationSize=0) : size(0), extraAllocationSize(extraAllocationSize), sizeAllocated(0), data(NULL) {
-        setSize(size);
+    Vector(const dataType* array, const size_t & _size, const size_t & _extraAllocationSize=0) : size(0), extraAllocationSize(_extraAllocationSize), sizeAllocated(0), data(NULL) {
+        setSize(_size);
         for (size_t i=0; i<getSize(); i++)
             (*this)[i]=array[i];
     }
@@ -308,9 +308,9 @@ public:
         size_t end2;
         if (end==-1) end2=getSize()-1;
         else end2=end;
-        sumType sum = 0;
-        for (size_t i=start; i<=end2; i++) sum += (*this)(i);
-        return sum;
+        sumType _sum = 0;
+        for (size_t i=start; i<=end2; i++) _sum += (*this)(i);
+        return _sum;
     }
     void sumFletcher(uint8_t & CK_A, uint8_t & CK_B, const size_t & start=0,const int & end=-1) const {
         size_t end2;

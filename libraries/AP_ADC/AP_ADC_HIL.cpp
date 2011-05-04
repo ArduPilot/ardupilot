@@ -48,7 +48,7 @@ int AP_ADC_HIL::Ch(unsigned char ch_num)
 }
 
 // Set one channel value
-int AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
+void AP_ADC_HIL::setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
     int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress)
 {
     // gyros

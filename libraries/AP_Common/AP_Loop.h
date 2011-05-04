@@ -33,8 +33,8 @@ public:
     uint32_t frequency() {
         return 1.0e6/_period;
     }
-    void frequency(float frequency) {
-        _period = 1e6/frequency;
+    void frequency(float _frequency) {
+        _period = 1e6/_frequency;
     }
     uint32_t timeStamp() {
         return _timeStamp;

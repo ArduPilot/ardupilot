@@ -34,7 +34,6 @@
 // Public Methods //////////////////////////////////////////////////////////////
 bool AP_Compass_HMC5843::init()
 {
-  unsigned long currentTime = millis();  // record current time
   int numAttempts = 0;
   int success = 0;
 

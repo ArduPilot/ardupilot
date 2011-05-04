@@ -27,7 +27,6 @@ void setup()
 
 void loop()
 {
-    int i = 0;
     Serial.print("dist:");
     Serial.print(aRF.read());
     Serial.print("\traw:");

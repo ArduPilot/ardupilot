@@ -18,12 +18,12 @@
 
 #include "AP_Loop.h"
 
-Loop::Loop(float frequency, void (*fptr)(void *), void * data) :
+Loop::Loop(float _frequency, void (*fptr)(void *), void * data) :
     _fptr(fptr),
     _data(data),
-    _period(1.0e6/frequency),
-    _timeStamp(micros()),
+    _period(1.0e6/_frequency),
     _subLoops(),
+    _timeStamp(micros()),
     _load(0),
     _dt(0)
 {
@@ -40,7 +40,7 @@ void Loop::update()
     _dt = (_timeStamp - timeStamp0)/1.0e6;
 
     // update sub loops
-    for (int i=0; i<_subLoops.getSize(); i++) _subLoops[i]->update();
+    for (uint8_t i=0; i<_subLoops.getSize(); i++) _subLoops[i]->update();
 
     // callback function
     if (_fptr) _fptr(_data);

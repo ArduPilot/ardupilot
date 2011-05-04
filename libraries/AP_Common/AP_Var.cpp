@@ -37,9 +37,9 @@ uint16_t    AP_Var::_bytes_in_use;
 
 // Constructor for standalone variables
 //
-AP_Var::AP_Var(Key key, const prog_char_t *name, Flags flags) :
+AP_Var::AP_Var(Key p_key, const prog_char_t *name, Flags flags) :
         _group(NULL),
-        _key(key | k_key_not_located),
+        _key(p_key | k_key_not_located),
         _name(name),
         _flags(flags)
 {
@@ -54,8 +54,8 @@ AP_Var::AP_Var(Key key, const prog_char_t *name, Flags flags) :
 
 // Constructor for variables in a group
 //
-AP_Var::AP_Var(AP_Var_group *group, Key index, const prog_char_t *name, Flags flags) :
-        _group(group),
+AP_Var::AP_Var(AP_Var_group *pGroup, Key index, const prog_char_t *name, Flags flags) :
+        _group(pGroup),
         _key(index),
         _name(name),
         _flags(flags)

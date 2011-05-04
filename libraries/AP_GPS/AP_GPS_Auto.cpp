@@ -52,7 +52,7 @@ bool
 AP_GPS_Auto::read(void)
 {
 	GPS		*gps;
-	int		i;
+	uint8_t		i;
 	unsigned long then;
 
 	// Loop through possible baudrates trying to detect a GPS at one of them.
@@ -85,6 +85,7 @@ AP_GPS_Auto::read(void)
 			delete gps;
 		}
 	}
+	return false;
 }
 
 //

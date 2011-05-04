@@ -10,6 +10,6 @@ class AP_RangeFinder_MaxsonarLV : public RangeFinder
 {	
   public:
     AP_RangeFinder_MaxsonarLV();
-	int convert_raw_to_distance(int raw_value) { return raw_value * 2.54; }   // read value from analog port and return distance in cm
+	int convert_raw_to_distance(int _raw_value) { return _raw_value * 2.54; }   // read value from analog port and return distance in cm
 };
 #endif

@@ -120,7 +120,6 @@ void AP_GPS_NMEA::init(void)
 
 bool AP_GPS_NMEA::read(void)
 {
-	char data;
 	int numc;
 	bool parsed = false;
 
@@ -204,7 +203,6 @@ unsigned long AP_GPS_NMEA::_parse_degrees()
 	char *p, *q;
 	uint8_t deg = 0, min = 0;
 	unsigned int frac_min = 0;
-	unsigned long result;
 
 	// scan for decimal point or end of field
 	for (p = _term; isdigit(*p); p++)

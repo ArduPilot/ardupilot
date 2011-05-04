@@ -189,7 +189,7 @@ void FastSerial::flush(void)
 
 void FastSerial::write(uint8_t c)
 {
-	int16_t i;
+	uint16_t i;
 
 	if (!_open) // drop bytes if not open
 		return;

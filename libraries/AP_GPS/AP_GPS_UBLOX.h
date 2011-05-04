@@ -25,7 +25,7 @@ public:
 
 private:
 	// u-blox UBX protocol essentials
-#pragma pack(1)
+// XXX this is being ignored by the compiler #pragma pack(1)
 	struct ubx_nav_posllh {
 		uint32_t	time;				// GPS msToW
 		int32_t		longitude;
@@ -74,7 +74,7 @@ private:
 		uint32_t	speed_accuracy;
 		uint32_t	heading_accuracy;
 	};
-#pragma pack(pop)
+// // #pragma pack(pop)
 	enum ubs_protocol_bytes {
 		PREAMBLE1 = 0xb5,
 		PREAMBLE2 = 0x62,

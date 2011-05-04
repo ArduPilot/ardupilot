@@ -19,9 +19,9 @@
 class AP_ADC
 {
   public:
-	AP_ADC();  // Constructor
-	virtual void Init();
-	virtual int Ch(unsigned char ch_num);     
+	AP_ADC() {};  // Constructor
+	virtual void Init() {};
+	virtual int Ch(unsigned char ch_num) = 0;
   private:
 };
 

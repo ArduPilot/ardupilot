@@ -32,6 +32,8 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 	case MAVLINK_COMM_1:
 		mavlink_comm_1_port->write(ch);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -51,6 +53,8 @@ static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 	case MAVLINK_COMM_1:
 		data = mavlink_comm_1_port->read();
 		break;
+	default:
+		break;
 	}
     return data;
 }
@@ -68,6 +72,8 @@ static inline uint16_t comm_get_available(mavlink_channel_t chan)
 		break;
 	case MAVLINK_COMM_1:
 		bytes = mavlink_comm_1_port->available();
+		break;
+	default:
 		break;
 	}
     return bytes;
