@@ -14,14 +14,15 @@
 #include "WProgram.h"
 #include "RC_Channel.h"
 
-#define ANGLE 0
-#define RANGE 1
+#define RC_CHANNEL_ANGLE 0
+#define RC_CHANNEL_RANGE 1
+#define RC_CHANNEL_ANGLE_RAW 2
 
 // setup the control preferences
 void
 RC_Channel::set_range(int low, int high)
 {
-	_type 	= RANGE;
+	_type 	= RC_CHANNEL_RANGE;
 	_high 	= high;
 	_low 	= low;
 }
@@ -29,7 +30,7 @@ RC_Channel::set_range(int low, int high)
 void
 RC_Channel::set_angle(int angle)
 {
-	_type 	= ANGLE;
+	_type 	= RC_CHANNEL_ANGLE;
 	_high 	= angle;
 }
 
@@ -51,6 +52,11 @@ void
 RC_Channel::set_filter(bool filter)
 {
 	_filter = filter;
+}
+void
+RC_Channel::set_type(uint8_t t)
+{
+	_type = t;
 }
 
 // call after first read
@@ -75,7 +81,7 @@ RC_Channel::set_pwm(int pwm)
 		radio_in = pwm;
 	}
 
-	if(_type == RANGE){
+	if(_type == RC_CHANNEL_RANGE){
 		//Serial.print("range ");
 		control_in = pwm_to_range();
 		control_in = (control_in < dead_zone) ? 0 : control_in;
@@ -109,10 +115,14 @@ RC_Channel::get_failsafe(void)
 void
 RC_Channel::calc_pwm(void)
 {
-
-	if(_type == RANGE){
+	if(_type == RC_CHANNEL_RANGE){
 		pwm_out 	= range_to_pwm();
 		radio_out 	= pwm_out + radio_min;
+
+	}else if(_type == RC_CHANNEL_ANGLE_RAW){
+		pwm_out 	= (float)servo_out * .1;
+		radio_out 	= pwm_out + 1500;
+
 	}else{
 		pwm_out 	= angle_to_pwm();
 		radio_out 	= pwm_out + radio_trim;
