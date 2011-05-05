@@ -1,5 +1,5 @@
 /*
-	AP_RC_Channel.cpp - Radio library for Arduino
+	AP_RC_Channel.cpp - Radio library for Arduino Legacy Hardware
 	Code by Jason Short. DIYDrones.com
 
 	This library is free software; you can redistribute it and / or
