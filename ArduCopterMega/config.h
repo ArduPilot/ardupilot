@@ -384,13 +384,13 @@
 # define NAV_WP_P				4.0
 #endif
 #ifndef NAV_WP_I
-# define NAV_WP_I				0.0			// leave 0
+# define NAV_WP_I				0.15			// leave 0
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				0			// not sure about at all
+# define NAV_WP_D				10			// not sure about at all
 #endif
 #ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			30			// 20 degrees
+# define NAV_WP_IMAX			20			// 20 degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
