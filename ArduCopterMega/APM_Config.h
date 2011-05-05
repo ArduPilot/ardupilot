@@ -4,18 +4,6 @@
 
 // GPS is auto-selected
 
-#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_BACK
-
-//#define GPS_PROTOCOL GPS_PROTOCOL_MTK
-
-//#define GCS_PROTOCOL        GCS_PROTOCOL_NONE
-//#define GCS_PORT 0
-
-//#define SERIAL0_BAUD			38400
-
-#define STABILIZE_ROLL_P 		0.75
-#define STABILIZE_PITCH_P		0.75
-//#define STABILIZE_DAMPENER		0.1
 
 #define NAV_TEST 0	// 0 = traditional, 1 = rate controlled
 
