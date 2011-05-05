@@ -42,6 +42,7 @@ class RC_Channel{
 	void 		save_eeprom(void);
 	void 		save_trim(void);
 	void		set_filter(bool filter);
+	void		set_type(uint8_t t);
 
 	// setup the control preferences
 	void 		set_range(int low, int high);
