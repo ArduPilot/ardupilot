@@ -67,6 +67,11 @@
 #define CH_RUDDER CH_4
 #define CH_YAW CH_4
 
+
+#define RC_CHANNEL_ANGLE 0
+#define RC_CHANNEL_RANGE 1
+#define RC_CHANNEL_ANGLE_RAW 2
+
 // HIL enumerations
 #define HIL_PROTOCOL_XPLANE			1
 #define HIL_PROTOCOL_MAVLINK		2

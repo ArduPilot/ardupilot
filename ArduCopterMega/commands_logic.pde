@@ -257,6 +257,9 @@ void do_nav_wp()
 		// we don't need to worry about it
 		wp_verify_byte |= NAV_ALTITUDE;
 	}
+
+	// lets ignore this for today.
+	wp_verify_byte |= NAV_ALTITUDE;
 }
 
 void do_land()
