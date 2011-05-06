@@ -98,7 +98,7 @@ class RC_Channel{
 	bool		_filter;
 	int8_t 		_reverse;
 
-	bool 		_type;
+	uint8_t 	_type;
 	int16_t 	_high;
 	int16_t 	_low;
 };
