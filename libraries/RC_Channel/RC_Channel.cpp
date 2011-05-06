@@ -18,6 +18,7 @@
 #define RC_CHANNEL_RANGE 1
 #define RC_CHANNEL_ANGLE_RAW 2
 
+
 // setup the control preferences
 void
 RC_Channel::set_range(int low, int high)
@@ -53,10 +54,13 @@ RC_Channel::set_filter(bool filter)
 {
 	_filter = filter;
 }
+
 void
 RC_Channel::set_type(uint8_t t)
 {
 	_type = t;
+	//Serial.print("type1: ");
+	//Serial.println(t,DEC);
 }
 
 // call after first read
