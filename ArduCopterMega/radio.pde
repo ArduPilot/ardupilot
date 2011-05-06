@@ -7,8 +7,6 @@ byte failsafeCounter = 0;		// we wait a second to take over the throttle and sen
 
 void init_rc_in()
 {
-	//read_EEPROM_radio();		// read Radio limits
-
 	// set rc channel ranges
 	g.rc_1.set_angle(4500);
 	g.rc_2.set_angle(4500);
@@ -65,6 +63,10 @@ void init_rc_out()
     OCR5C = 0xFFFF;     // PL5, OUT2
     OCR4B = 0xFFFF;     // PH4, OUT6
     OCR4C = 0xFFFF;     // PH5, OUT5
+
+	// don't fuss if we are calibrating
+	if(g.esc_calibrate == 1)
+		return;
 
     if(g.rc_3.radio_min <= 1200){
         output_min();

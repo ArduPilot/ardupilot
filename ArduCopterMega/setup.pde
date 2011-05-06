@@ -13,6 +13,7 @@ static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu
@@ -24,6 +25,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"pid",				setup_pid},
 	{"radio",			setup_radio},
 	{"motors",			setup_motors},
+	{"esc",				setup_esc},
 	{"level",			setup_accel},
 	{"modes",			setup_flightmodes},
 	{"frame",			setup_frame},
@@ -196,19 +198,51 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
+setup_esc(uint8_t argc, const Menu::arg *argv)
+{
+	Serial.printf_P(PSTR("\nUnplug battery, calibrate as usual.\n Press Enter to cancel.\n"));
+
+	g.esc_calibrate.set_and_save(1);
+
+	while(1){
+		delay(20);
+
+		if(Serial.available() > 0){
+			g.esc_calibrate.set_and_save(0);
+			break;
+		}
+	}
+}
+
+void
+init_esc()
+{
+	Serial.printf_P(PSTR("\nCalibrate ESC\nRestart when done."));
+
+	g.esc_calibrate.set_and_save(0);
+
+	while(1){
+		read_radio();
+		delay(20);
+
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
+
+	}
+}
+
+static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
-	report_frame();
-
-	init_rc_in();
-
 	print_hit_enter();
-	delay(1000);
 
+	report_frame();
+	//init_rc_in();
+	//delay(1000);
 
 	int out_min = g.rc_3.radio_min + 70;
-
-
 
 	while(1){
 		delay(20);
@@ -315,6 +349,7 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 	report_imu();
 	return(0);
 }
+
 
 static int8_t
 setup_pid(uint8_t argc, const Menu::arg *argv)
