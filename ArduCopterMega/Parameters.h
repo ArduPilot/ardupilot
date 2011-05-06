@@ -91,6 +91,7 @@ public:
         k_param_throttle_cruise,
         k_param_flight_mode_channel,
         k_param_flight_modes,
+        k_param_esc_calibrate,
 
         //
         // 220: Waypoint data
@@ -180,7 +181,7 @@ public:
     AP_Int8		current_enabled;
     AP_Int16	milliamp_hours;
     AP_Int8		compass_enabled;
-
+	AP_Int8		esc_calibrate;
 
     // RC channels
 	RC_Channel	rc_1;
@@ -263,6 +264,9 @@ public:
         rc_8					(k_param_rc_8,		PSTR("RC8_")),
         rc_camera_pitch			(k_param_rc_9,		PSTR("RC9_")),
         rc_camera_roll			(k_param_rc_10,		PSTR("RC10_")),
+
+        esc_calibrate 			(0,         				k_param_esc_calibrate, 				PSTR("ESC")),
+
 
         // PID controller   group key						name				initial P			initial I			initial D			initial imax
         //--------------------------------------------------------------------------------------------------------------------------------------------------------------------

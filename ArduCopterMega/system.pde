@@ -186,15 +186,19 @@ void init_ardupilot()
 	// menu; they must reset in order to fly.
 	//
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
-		Serial.printf_P(PSTR("\n"
-							 "Entering interactive setup mode...\n"
-							 "\n"
-							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-							 "Visit the 'setup' menu for first-time configuration.\n\n"));
-		for (;;) {
-			//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-			main_menu.run();
+		if(g.esc_calibrate == 1){
+			init_esc();
+		}else{
+			digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
+			Serial.printf_P(PSTR("\n"
+								 "Entering interactive setup mode...\n"
+								 "\n"
+								 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
+								 "Visit the 'setup' menu for first-time configuration.\n\n"));
+			for (;;) {
+				//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
+				main_menu.run();
+			}
 		}
 	}
 
