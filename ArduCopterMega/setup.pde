@@ -215,19 +215,18 @@ setup_esc(uint8_t argc, const Menu::arg *argv)
 void
 init_esc()
 {
-	Serial.printf_P(PSTR("\nCalibrate ESC\nRestart when done."));
-
+	//Serial.printf_P(PSTR("\nCalibrate ESC"));
 	g.esc_calibrate.set_and_save(0);
-
 	while(1){
 		read_radio();
-		delay(20);
-
+		delay(100);
+		update_esc_light();
 		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
-
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_in);
 	}
 }
 

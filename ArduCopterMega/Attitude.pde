@@ -216,7 +216,7 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
-	if(yaw_tracking & TRACK_NEXT_WP){
+	if(yaw_tracking == MAV_ROI_LOCATION){
 		nav_yaw = target_bearing;
 	}
 
