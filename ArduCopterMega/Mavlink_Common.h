@@ -83,7 +83,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 
 		case MSG_ATTITUDE:
 		{
-			Vector3f omega = dcm.get_gyro();
+			//Vector3f omega = dcm.get_gyro();
 			mavlink_msg_attitude_send(
 					chan,
 					timeStamp,
@@ -277,3 +277,4 @@ void mavlink_acknowledge(mavlink_channel_t chan, uint8_t id, uint8_t sum1, uint8
 #endif // mavlink in use
 
 #endif // inclusion guard
+

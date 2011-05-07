@@ -370,7 +370,7 @@ bool verify_land()
 		//return true;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
-	Serial.printf("N_alt, %d\n", next_WP.alt);
+	Serial.printf("N_alt, %ld\n", next_WP.alt);
 
 	//update_crosstrack();
 	return false;

@@ -391,7 +391,7 @@ struct 	Location prev_WP;					// last waypoint
 struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
 struct 	Location target_WP;					// where do we want to you towards?
-struct 	Location tell_command;				// command for telemetry
+struct 	Location simple_WP;				// command for telemetry
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
 boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
@@ -965,16 +965,16 @@ void update_current_flight_mode(void)
 				if(flight_timer > 4){
 					flight_timer = 0;
 
-					tell_command.lat = 0;
-					tell_command.lng = 0;
+					simple_WP.lat = 0;
+					simple_WP.lng = 0;
 
 					next_WP.lng =   (float)g.rc_1.control_in *.4;  // X: 4500 / 2 = 2250 = 25 meteres
 					next_WP.lat = -((float)g.rc_2.control_in *.4); // Y: 4500 / 2 = 2250 = 25 meteres
 
 					// calc a new bearing
-					nav_bearing 	= get_bearing(&tell_command, &next_WP) + initial_simple_bearing;
+					nav_bearing 	= get_bearing(&simple_WP, &next_WP) + initial_simple_bearing;
 					nav_bearing 	= wrap_360(nav_bearing);
-					wp_distance 	= get_distance(&tell_command, &next_WP);
+					wp_distance 	= get_distance(&simple_WP, &next_WP);
 					calc_bearing_error();
 					/*
 					Serial.printf("lat: %ld lon:%ld, bear:%ld, dist:%ld, init:%ld, err:%ld ",
@@ -1183,10 +1183,10 @@ void update_alt()
 
 		// XXX temp removed fr debugging
 		//filter out bad sonar reads
-		int temp 		= sonar.read();
+		int temp_sonar 		= sonar.read();
 
-		if(abs(temp - sonar_alt) < 300){
-			sonar_alt = temp;
+		if(abs(temp_sonar - sonar_alt) < 300){
+			sonar_alt = temp_sonar;
 		}
 
 		//sonar_alt = sonar.read();

@@ -221,10 +221,8 @@ byte get_num_logs(void)
 
 void start_new_log(byte num_existing_logs)
 {
-	int page;
 	int start_pages[50] = {0,0,0};
 	int end_pages[50]	= {0,0,0};
-	byte data;
 
 	if (num_existing_logs > 0) {
 		for(int i=0;i<num_existing_logs;i++) {
