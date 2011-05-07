@@ -16,10 +16,6 @@ Command Structure in bytes
 11 0x0C	..
 11 0x0D	..
 
-Update:
-MAV_CMD_NAV_ORIENTATION_TARGET > MAV_CMD_DO_ORIENTATION
-Remove MAV_CMD_NAV_TARGET
-
 
 ***********************************
 Commands below MAV_CMD_NAV_LAST are commands that have a end criteria, eg "reached waypoint" or "reached altitude"
@@ -74,7 +70,4 @@ Command ID		Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
 				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
 
 // need to add command
-0xB7 / 185		MAV_CMD_DO_ORIENTATION		Yaw_Mode			altitude			lat					lon
-											TRACK_NONE 		1
-											TRACK_NEXT_WP 	2
-											TRACK_TARGET_WP 4
+0xB7 / 185		MAV_CMD_DO_SET_ROI			Yaw_Mode			altitude			lat					lon

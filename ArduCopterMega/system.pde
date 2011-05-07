@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ACM", main_menu_commands);
+MENU(main_menu, "AC 2.0 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -186,19 +186,19 @@ void init_ardupilot()
 	// menu; they must reset in order to fly.
 	//
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
+		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
+		Serial.printf_P(PSTR("\n"
+							 "Entering interactive setup mode...\n"
+							 "\n"
+							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
+							 "Visit the 'setup' menu for first-time configuration.\n\n"));
+		for (;;) {
+			//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
+			main_menu.run();
+		}
+	}else{
 		if(g.esc_calibrate == 1){
 			init_esc();
-		}else{
-			digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
-			Serial.printf_P(PSTR("\n"
-								 "Entering interactive setup mode...\n"
-								 "\n"
-								 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
-								 "Visit the 'setup' menu for first-time configuration.\n\n"));
-			for (;;) {
-				//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-				main_menu.run();
-			}
 		}
 	}
 
@@ -307,7 +307,7 @@ void set_mode(byte mode)
 
 
 	// clear our tracking behaviors
-	yaw_tracking = TRACK_NONE;
+	yaw_tracking = MAV_ROI_NONE;
 
 	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
 	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
@@ -422,12 +422,29 @@ void update_motor_light(void)
 	}
 }
 
-void update_sonar_light(bool light)
+void update_esc_light()
 {
-	if(light == true){
-		digitalWrite(B_LED_PIN, HIGH);
-	}else{
-		digitalWrite(B_LED_PIN, LOW);
+	static byte step;
+
+	if (step++ == 3)
+		step = 0;
+
+	switch(step)
+	{
+		case 0:
+			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(A_LED_PIN, HIGH);
+			break;
+
+		case 1:
+			digitalWrite(A_LED_PIN, LOW);
+			digitalWrite(B_LED_PIN, HIGH);
+			break;
+
+		case 2:
+			digitalWrite(B_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, HIGH);
+			break;
 	}
 }
 

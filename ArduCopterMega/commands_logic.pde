@@ -97,7 +97,7 @@ void handle_process_now()
 			do_repeat_relay();
 			break;
 
-		//case MAV_CMD_DO_ORIENTATION:
+		//case MAV_CMD_DO_SET_ROI:
 		//	do_target_yaw();
 	}
 }
@@ -257,16 +257,13 @@ void do_nav_wp()
 		// we don't need to worry about it
 		wp_verify_byte |= NAV_ALTITUDE;
 	}
-
-	// lets ignore this for today.
-	wp_verify_byte |= NAV_ALTITUDE;
 }
 
 void do_land()
 {
 	wp_control = LOITER_MODE;
 
-	Serial.println("dlnd ");
+	//Serial.println("dlnd ");
 
 	// not really used right now, might be good for debugging
 	land_complete		= false;
@@ -330,20 +327,20 @@ void do_loiter_time()
 
 bool verify_takeoff()
 {
-	Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
+	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	// wait until we are ready!
 	if(g.rc_3.control_in == 0)
 		return false;
 
 	if (current_loc.alt > next_WP.alt){
-		Serial.println("Y");
+		//Serial.println("Y");
 		takeoff_complete = true;
 		return true;
 
 	}else{
 
-		Serial.println("N");
+		//Serial.println("N");
 		return false;
 	}
 }
@@ -360,7 +357,7 @@ bool verify_land()
 		// decide which sensor we're using
 		if(sonar_alt < 40){
 			land_complete = true;
-			Serial.println("Y");
+			//Serial.println("Y");
 			//return true;
 		}
 	}
@@ -370,7 +367,7 @@ bool verify_land()
 		//return true;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
-	Serial.printf("N_alt, %ld\n", next_WP.alt);
+	//Serial.printf("N_alt, %ld\n", next_WP.alt);
 
 	//update_crosstrack();
 	return false;
@@ -394,8 +391,6 @@ bool verify_nav_wp()
 
 		// if we have a distance calc error, wp_distance may be less than 0
 		if(wp_distance > 0){
-
-			// XXX does this work?
 			wp_verify_byte |= NAV_LOCATION;
 
 			if(loiter_time == 0){
@@ -418,7 +413,8 @@ bool verify_nav_wp()
 		}
 	}
 
-	if(wp_verify_byte == 7){
+	//if(wp_verify_byte >= 7){
+	if(wp_verify_byte & NAV_LOCATION){
 		char message[30];
 		sprintf(message,"Reached Command #%i",command_must_index);
 		gcs.send_text(SEVERITY_LOW,message);
@@ -461,7 +457,7 @@ bool verify_RTL()
 
 void do_wait_delay()
 {
-	Serial.print("dwd ");
+	//Serial.print("dwd ");
 	condition_start = millis();
 	condition_value	 = next_command.lat * 1000; // convert to milliseconds
 	Serial.println(condition_value,DEC);
@@ -483,8 +479,8 @@ void do_within_distance()
 
 void do_yaw()
 {
-	Serial.println("dyaw ");
-	yaw_tracking = TRACK_NONE;
+	//Serial.println("dyaw ");
+	yaw_tracking = MAV_ROI_NONE;
 
 	// target angle in degrees
 	command_yaw_start		= nav_yaw; // current position
@@ -543,13 +539,13 @@ void do_yaw()
 
 bool verify_wait_delay()
 {
-	Serial.print("vwd");
+	//Serial.print("vwd");
 	if ((millis() - condition_start) > condition_value){
-		Serial.println("y");
+		//Serial.println("y");
 		condition_value		= 0;
 		return true;
 	}
-	Serial.println("n");
+	//Serial.println("n");
 	return false;
 }
 
@@ -582,13 +578,13 @@ bool verify_within_distance()
 
 bool verify_yaw()
 {
-	Serial.print("vyaw ");
+	//Serial.print("vyaw ");
 
 	if((millis() - command_yaw_start_time) > command_yaw_time){
 		// time out
 		// make sure we hold at the final desired yaw angle
 		nav_yaw = command_yaw_end;
-		Serial.println("Y");
+		//Serial.println("Y");
 		return true;
 
 	}else{
@@ -598,7 +594,7 @@ bool verify_yaw()
 
 		nav_yaw		= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
 		nav_yaw		= wrap_360(nav_yaw);
-		Serial.printf("ny %ld\n",nav_yaw);
+		//Serial.printf("ny %ld\n",nav_yaw);
 		return false;
 	}
 }
@@ -611,7 +607,7 @@ void do_target_yaw()
 {
 	yaw_tracking = next_command.p1;
 
-	if(yaw_tracking & TRACK_TARGET_WP){
+	if(yaw_tracking == MAV_ROI_LOCATION){
 		target_WP = next_command;
 	}
 }

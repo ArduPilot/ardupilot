@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
-ArduCopterMega Version 0.1.3 Experimental
+ArduCopter Version 2.0 Beta
 Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Jose Julio, Randy Mackay, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
@@ -324,7 +324,7 @@ boolean	land_complete;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
-byte 	yaw_tracking = TRACK_NEXT_WP;			// no tracking, point at next wp, or at a target
+byte 	yaw_tracking = MAV_ROI_WPNEXT;			// no tracking, point at next wp, or at a target
 
 // Loiter management
 // -----------------
@@ -1113,7 +1113,7 @@ void update_navigation()
 		limit_nav_pitch_roll(g.pitch_max.get());
 
 		// this tracks a location so the copter is always pointing towards it.
-		if(yaw_tracking & TRACK_TARGET_WP){
+		if(yaw_tracking == MAV_ROI_LOCATION){
 			nav_yaw = get_bearing(&current_loc, &target_WP);
 		}
 
@@ -1190,9 +1190,6 @@ void update_alt()
 		}
 
 		//sonar_alt = sonar.read();
-
-		// output a light to show sonar is working
-		update_sonar_light(sonar_alt > 100);
 
 		// decide if we're using sonar
 		if ((baro_alt < 1200) || sonar_alt < 300){
