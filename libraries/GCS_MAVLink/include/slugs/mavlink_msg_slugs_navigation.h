@@ -19,7 +19,10 @@ typedef struct __mavlink_slugs_navigation_t
 
 
 /**
- * @brief Send a slugs_navigation message
+ * @brief Pack a slugs_navigation message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param u_m Measured Airspeed prior to the Nav Filter
  * @param phi_c Commanded Roll
@@ -37,30 +40,87 @@ static inline uint16_t mavlink_msg_slugs_navigation_pack(uint8_t system_id, uint
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_SLUGS_NAVIGATION;
 
-	i += put_float_by_index(u_m, i, msg->payload); //Measured Airspeed prior to the Nav Filter
-	i += put_float_by_index(phi_c, i, msg->payload); //Commanded Roll
-	i += put_float_by_index(theta_c, i, msg->payload); //Commanded Pitch
-	i += put_float_by_index(psiDot_c, i, msg->payload); //Commanded Turn rate
-	i += put_float_by_index(ay_body, i, msg->payload); //Y component of the body acceleration
-	i += put_float_by_index(totalDist, i, msg->payload); //Total Distance to Run on this leg of Navigation
-	i += put_float_by_index(dist2Go, i, msg->payload); //Remaining distance to Run on this leg of Navigation
-	i += put_uint8_t_by_index(fromWP, i, msg->payload); //Origin WP
-	i += put_uint8_t_by_index(toWP, i, msg->payload); //Destination WP
+	i += put_float_by_index(u_m, i, msg->payload); // Measured Airspeed prior to the Nav Filter
+	i += put_float_by_index(phi_c, i, msg->payload); // Commanded Roll
+	i += put_float_by_index(theta_c, i, msg->payload); // Commanded Pitch
+	i += put_float_by_index(psiDot_c, i, msg->payload); // Commanded Turn rate
+	i += put_float_by_index(ay_body, i, msg->payload); // Y component of the body acceleration
+	i += put_float_by_index(totalDist, i, msg->payload); // Total Distance to Run on this leg of Navigation
+	i += put_float_by_index(dist2Go, i, msg->payload); // Remaining distance to Run on this leg of Navigation
+	i += put_uint8_t_by_index(fromWP, i, msg->payload); // Origin WP
+	i += put_uint8_t_by_index(toWP, i, msg->payload); // Destination WP
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a slugs_navigation message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param u_m Measured Airspeed prior to the Nav Filter
+ * @param phi_c Commanded Roll
+ * @param theta_c Commanded Pitch
+ * @param psiDot_c Commanded Turn rate
+ * @param ay_body Y component of the body acceleration
+ * @param totalDist Total Distance to Run on this leg of Navigation
+ * @param dist2Go Remaining distance to Run on this leg of Navigation
+ * @param fromWP Origin WP
+ * @param toWP Destination WP
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
+static inline uint16_t mavlink_msg_slugs_navigation_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float u_m, float phi_c, float theta_c, float psiDot_c, float ay_body, float totalDist, float dist2Go, uint8_t fromWP, uint8_t toWP)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_SLUGS_NAVIGATION;
+
+	i += put_float_by_index(u_m, i, msg->payload); // Measured Airspeed prior to the Nav Filter
+	i += put_float_by_index(phi_c, i, msg->payload); // Commanded Roll
+	i += put_float_by_index(theta_c, i, msg->payload); // Commanded Pitch
+	i += put_float_by_index(psiDot_c, i, msg->payload); // Commanded Turn rate
+	i += put_float_by_index(ay_body, i, msg->payload); // Y component of the body acceleration
+	i += put_float_by_index(totalDist, i, msg->payload); // Total Distance to Run on this leg of Navigation
+	i += put_float_by_index(dist2Go, i, msg->payload); // Remaining distance to Run on this leg of Navigation
+	i += put_uint8_t_by_index(fromWP, i, msg->payload); // Origin WP
+	i += put_uint8_t_by_index(toWP, i, msg->payload); // Destination WP
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
+/**
+ * @brief Encode a slugs_navigation struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param slugs_navigation C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_slugs_navigation_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_slugs_navigation_t* slugs_navigation)
 {
 	return mavlink_msg_slugs_navigation_pack(system_id, component_id, msg, slugs_navigation->u_m, slugs_navigation->phi_c, slugs_navigation->theta_c, slugs_navigation->psiDot_c, slugs_navigation->ay_body, slugs_navigation->totalDist, slugs_navigation->dist2Go, slugs_navigation->fromWP, slugs_navigation->toWP);
 }
 
+/**
+ * @brief Send a slugs_navigation message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param u_m Measured Airspeed prior to the Nav Filter
+ * @param phi_c Commanded Roll
+ * @param theta_c Commanded Pitch
+ * @param psiDot_c Commanded Turn rate
+ * @param ay_body Y component of the body acceleration
+ * @param totalDist Total Distance to Run on this leg of Navigation
+ * @param dist2Go Remaining distance to Run on this leg of Navigation
+ * @param fromWP Origin WP
+ * @param toWP Destination WP
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_slugs_navigation_send(mavlink_channel_t chan, float u_m, float phi_c, float theta_c, float psiDot_c, float ay_body, float totalDist, float dist2Go, uint8_t fromWP, uint8_t toWP)
 {
 	mavlink_message_t msg;
-	mavlink_msg_slugs_navigation_pack(mavlink_system.sysid, mavlink_system.compid, &msg, u_m, phi_c, theta_c, psiDot_c, ay_body, totalDist, dist2Go, fromWP, toWP);
+	mavlink_msg_slugs_navigation_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, u_m, phi_c, theta_c, psiDot_c, ay_body, totalDist, dist2Go, fromWP, toWP);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -192,6 +252,12 @@ static inline uint8_t mavlink_msg_slugs_navigation_get_toWP(const mavlink_messag
 	return (uint8_t)(msg->payload+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(uint8_t))[0];
 }
 
+/**
+ * @brief Decode a slugs_navigation message into a struct
+ *
+ * @param msg The message to decode
+ * @param slugs_navigation C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_slugs_navigation_decode(const mavlink_message_t* msg, mavlink_slugs_navigation_t* slugs_navigation)
 {
 	slugs_navigation->u_m = mavlink_msg_slugs_navigation_get_u_m(msg);

@@ -16,7 +16,10 @@ typedef struct __mavlink_diagnostic_t
 
 
 /**
- * @brief Send a diagnostic message
+ * @brief Pack a diagnostic message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param diagFl1 Diagnostic float 1
  * @param diagFl2 Diagnostic float 2
@@ -31,43 +34,75 @@ static inline uint16_t mavlink_msg_diagnostic_pack(uint8_t system_id, uint8_t co
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_DIAGNOSTIC;
 
-	i += put_float_by_index(diagFl1, i, msg->payload); //Diagnostic float 1
-	i += put_float_by_index(diagFl2, i, msg->payload); //Diagnostic float 2
-	i += put_float_by_index(diagFl3, i, msg->payload); //Diagnostic float 3
-	i += put_int16_t_by_index(diagSh1, i, msg->payload); //Diagnostic short 1
-	i += put_int16_t_by_index(diagSh2, i, msg->payload); //Diagnostic short 2
-	i += put_int16_t_by_index(diagSh3, i, msg->payload); //Diagnostic short 3
+	i += put_float_by_index(diagFl1, i, msg->payload); // Diagnostic float 1
+	i += put_float_by_index(diagFl2, i, msg->payload); // Diagnostic float 2
+	i += put_float_by_index(diagFl3, i, msg->payload); // Diagnostic float 3
+	i += put_int16_t_by_index(diagSh1, i, msg->payload); // Diagnostic short 1
+	i += put_int16_t_by_index(diagSh2, i, msg->payload); // Diagnostic short 2
+	i += put_int16_t_by_index(diagSh3, i, msg->payload); // Diagnostic short 3
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
-static inline uint16_t mavlink_msg_diagnostic_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, float diagFl1, float diagFl2, float diagFl3, int16_t diagSh1, int16_t diagSh2, int16_t diagSh3)
+/**
+ * @brief Pack a diagnostic message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param diagFl1 Diagnostic float 1
+ * @param diagFl2 Diagnostic float 2
+ * @param diagFl3 Diagnostic float 3
+ * @param diagSh1 Diagnostic short 1
+ * @param diagSh2 Diagnostic short 2
+ * @param diagSh3 Diagnostic short 3
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
+static inline uint16_t mavlink_msg_diagnostic_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float diagFl1, float diagFl2, float diagFl3, int16_t diagSh1, int16_t diagSh2, int16_t diagSh3)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_DIAGNOSTIC;
 
-	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the diagnostic
-	i += put_float_by_index(diagFl1, i, msg->payload); //Diagnostic float 1
-	i += put_float_by_index(diagFl2, i, msg->payload); //Diagnostic float 2
-	i += put_float_by_index(diagFl3, i, msg->payload); //Diagnostic float 3
-	i += put_int16_t_by_index(diagSh1, i, msg->payload); //Diagnostic short 1
-	i += put_int16_t_by_index(diagSh2, i, msg->payload); //Diagnostic short 2
-	i += put_int16_t_by_index(diagSh3, i, msg->payload); //Diagnostic short 3
+	i += put_float_by_index(diagFl1, i, msg->payload); // Diagnostic float 1
+	i += put_float_by_index(diagFl2, i, msg->payload); // Diagnostic float 2
+	i += put_float_by_index(diagFl3, i, msg->payload); // Diagnostic float 3
+	i += put_int16_t_by_index(diagSh1, i, msg->payload); // Diagnostic short 1
+	i += put_int16_t_by_index(diagSh2, i, msg->payload); // Diagnostic short 2
+	i += put_int16_t_by_index(diagSh3, i, msg->payload); // Diagnostic short 3
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a diagnostic struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param diagnostic C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_diagnostic_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_diagnostic_t* diagnostic)
 {
 	return mavlink_msg_diagnostic_pack(system_id, component_id, msg, diagnostic->diagFl1, diagnostic->diagFl2, diagnostic->diagFl3, diagnostic->diagSh1, diagnostic->diagSh2, diagnostic->diagSh3);
 }
 
+/**
+ * @brief Send a diagnostic message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param diagFl1 Diagnostic float 1
+ * @param diagFl2 Diagnostic float 2
+ * @param diagFl3 Diagnostic float 3
+ * @param diagSh1 Diagnostic short 1
+ * @param diagSh2 Diagnostic short 2
+ * @param diagSh3 Diagnostic short 3
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_diagnostic_send(mavlink_channel_t chan, float diagFl1, float diagFl2, float diagFl3, int16_t diagSh1, int16_t diagSh2, int16_t diagSh3)
 {
 	mavlink_message_t msg;
-	mavlink_msg_diagnostic_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, diagFl1, diagFl2, diagFl3, diagSh1, diagSh2, diagSh3);
+	mavlink_msg_diagnostic_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, diagFl1, diagFl2, diagFl3, diagSh1, diagSh2, diagSh3);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -158,6 +193,12 @@ static inline int16_t mavlink_msg_diagnostic_get_diagSh3(const mavlink_message_t
 	return (int16_t)r.s;
 }
 
+/**
+ * @brief Decode a diagnostic message into a struct
+ *
+ * @param msg The message to decode
+ * @param diagnostic C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_diagnostic_decode(const mavlink_message_t* msg, mavlink_diagnostic_t* diagnostic)
 {
 	diagnostic->diagFl1 = mavlink_msg_diagnostic_get_diagFl1(msg);
