@@ -842,8 +842,6 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
 {
-	//print_hit_enter();
-	//delay(1000);
 	//write out a basic mission to the EEPROM
 	Location t;
 /*{
@@ -911,7 +909,7 @@ void fake_out_gps()
 	g_gps->new_data 	= true;
 	g_gps->fix	 	= true;
 
-	int length = g.rc_6.control_in;
+	//int length = g.rc_6.control_in;
 	rads += .05;
 
 	if (rads > 6.28){

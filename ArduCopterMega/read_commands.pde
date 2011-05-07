@@ -5,32 +5,31 @@ char input_buffer[INPUT_BUF_LEN];
 
 void readCommands(void)
 {
-	static byte bufferPointer = 0;
 	static byte header[2];
 	const byte read_GS_header[] 	= {0x21, 0x21}; //!! Used to verify the payload msg header
 
 	if(Serial.available()){
 		//Serial.println("Serial.available");
 		byte bufferPointer;
-				
+
 		header[0] = Serial.read();
-		header[1] = Serial.read();		
-		
+		header[1] = Serial.read();
+
 		if((header[0] == read_GS_header[0]) && (header[1] == read_GS_header[1])){
-		
-			// Block until we read full command 
+
+			// Block until we read full command
 			// --------------------------------
 			delay(20);
 			byte incoming_val = 0;
 
-			// Ground Station communication 
+			// Ground Station communication
 			// ----------------------------
-			while(Serial.available() > 0) 
+			while(Serial.available() > 0)
 			{
-				incoming_val = Serial.read();		 
+				incoming_val = Serial.read();
 
-				if (incoming_val != 13 && incoming_val != 10 ) {	 
-					input_buffer[bufferPointer++] = incoming_val;	
+				if (incoming_val != 13 && incoming_val != 10 ) {
+					input_buffer[bufferPointer++] = incoming_val;
 				}
 
 				if(bufferPointer >= INPUT_BUF_LEN){
@@ -43,7 +42,7 @@ void readCommands(void)
 				}
 			}
 			parseCommand(input_buffer);
-			
+
 			// clear buffer of old data
 			// ------------------------
 			memset(input_buffer,0,sizeof(input_buffer));
@@ -61,14 +60,14 @@ void parseCommand(char *buffer)
 	Serial.println("got cmd ");
 	Serial.println(buffer);
 	char *token, *saveptr1, *saveptr2;
-	
+
 	for (int j = 1;; j++, buffer = NULL) {
 		token = strtok_r(buffer, "|", &saveptr1);
-		if (token == NULL) break;	
-		
+		if (token == NULL) break;
+
 		char * cmd 		= strtok_r(token, ":", &saveptr2);
 		long value		= strtol(strtok_r (NULL,":", &saveptr2), NULL,0);
-		
+
 		///*
 		Serial.print("cmd ");
 		Serial.print(cmd[0]);
@@ -94,7 +93,7 @@ void parseCommand(char *buffer)
 				//g.pid_stabilize_roll.kD((float)value / 1000);
 				//g.pid_stabilize_pitch.kD((float)value / 1000);
 				break;
-	
+
 			case 'X':
 				g.pid_stabilize_roll.imax(value * 100);
 				g.pid_stabilize_pitch.imax(value * 100);
@@ -106,7 +105,7 @@ void parseCommand(char *buffer)
 				break;
 		}
 		init_pids();
-		//*/	
+		//*/
 	}
 }
 

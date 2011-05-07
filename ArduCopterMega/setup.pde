@@ -67,7 +67,6 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
-	uint8_t		i;
 	// clear the area
 	print_blanks(8);
 
@@ -92,9 +91,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_factory(uint8_t argc, const Menu::arg *argv)
 {
-
-	uint8_t		i;
-	int			c;
+	int c;
 
 	Serial.printf_P(PSTR("\n'Y' + Enter to factory reset, any other key to abort:\n"));
 
@@ -200,7 +197,8 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_esc(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nUnplug battery, calibrate as usual.\n Press Enter to cancel.\n"));
+	Serial.printf_P(PSTR("\nUnplug, then plug-in battery; Calibrate ESCs.\n Press Enter to cancel.\n"));
+
 
 	g.esc_calibrate.set_and_save(1);
 
@@ -209,7 +207,7 @@ setup_esc(uint8_t argc, const Menu::arg *argv)
 
 		if(Serial.available() > 0){
 			g.esc_calibrate.set_and_save(0);
-			break;
+			return(0);
 		}
 	}
 }
@@ -409,7 +407,7 @@ setup_pid(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
-	byte switchPosition, oldSwitchPosition, mode;
+	byte switchPosition, _oldSwitchPosition, mode;
 
 	Serial.printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
 	print_hit_enter();
@@ -421,7 +419,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 
 
 		// look for control switch change
-		if (oldSwitchPosition != switchPosition){
+		if (_oldSwitchPosition != switchPosition){
 
 			mode = g.flight_modes[switchPosition];
 			mode = constrain(mode, 0, NUM_MODES-1);
@@ -430,7 +428,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			print_switch(switchPosition, mode);
 
 			// Remember switch position
-			oldSwitchPosition = switchPosition;
+			_oldSwitchPosition = switchPosition;
 		}
 
 		// look for stick input

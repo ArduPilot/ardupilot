@@ -119,7 +119,7 @@ void init_ardupilot()
 		}
 
 	}else{
-	    unsigned long before = micros();
+		// unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
 
@@ -263,7 +263,6 @@ void startup_ground(void)
 	// -------------------
 	init_commands();
 
-    byte counter = 4;
     GPS_enabled = false;
 
     // Read in the GPS
