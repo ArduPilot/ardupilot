@@ -5,7 +5,7 @@
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
+//static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
@@ -48,7 +48,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
 	{"failsafe",	test_failsafe},
-	{"stabilize",	test_stabilize},
+//	{"stabilize",	test_stabilize},
 	{"gps",			test_gps},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"adc", 		test_adc},
@@ -247,7 +247,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-static int8_t
+/*static int8_t
 test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
@@ -334,7 +334,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-
+*/
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
