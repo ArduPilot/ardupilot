@@ -6,7 +6,7 @@ ch2 = pitch
 ch3 = throttle
 ch4 = yaw
 ch5 = mode switch - use your 3 position switch
-ch6 = used for in-air tuning - not currently active, look for "debugging with Channel 6" in radio.pde to enable
+ch6 = used for in-air tuning - see AP_Config.h for options
 ch7 = use to set throttle hold value while hovering (quick toggle), hold to trim in air values - don't use your radio's trims!
 ch8 = NOT used!!! - this is the hardware manual - it's dangerous to use for quads BEWARE!!!
 
@@ -16,8 +16,8 @@ CLI interactive setup - You must go through each item and set the values to matc
 erase			- when installing ACM for the first time, run this to erases bad values from EEPROMS – just in case
 reset			- Performs factory reset and initialization of EEPROM values
 radio			- records the limits of ALL radio channels - very important!!!
-pid				- restores default PID values if you have changed them.
-frame			- sets your frame config: [x, +, tri, hexax, y6]
+pid				- restores default PID values - - only needed if you have changed them in flight with CGS, not for setup.
+frame			- sets your frame config: [x, +, tri, hexax, hexa+, y6]
 motors			- interactive setup of your ESC and motors, enter this mode, then plug-in battery,
 					point at motors to make them spin
 					throttle will output full range to each motor - this is good for esc calibration
@@ -32,7 +32,6 @@ show			- a formatted output of all the settings
 "test" menu:
 pwm				- outputs the pwm values of all 8 radio channels
 radio			- outputs the control values of all 8 radio channels in degrees * 100 or other value (see radio.pde)
-stabilize		- lets you test the stabilization with debugging output to the terminal – may spin the props – not recommended for flying.
 gps				- outputs GPS data
 rawgps			- outputs raw, unparsed GPS data
 adc				- outputs raw adc values
@@ -60,8 +59,7 @@ Options include:
 ACRO		- rate control only. not for beginners
 STABILIZE	- copter will hold -45 to 45° angle, throttle is manual.
 SIMPLE		- Remembers the orientation of the copter when first entering SIMPLE mode, allowing the user to fly more intuitivey. Manual Throttle.
-ALT_HOLD	- You need to set your throttle_cruise value by toggling ch_7 for less than 1 second. (Mine is 330 out of 1000),
-				altitude is controlled by the throttle lever. Middle is hold, high = rise, low = fall.
+ALT_HOLD	- altitude is controlled by the throttle lever. Middle is hold, high = rise, low = fall.
 LOITER 		- When selected, it will hold the current altitude, position and yaw. Yaw is user controllable. roll and pitch can be overridden temporarily with the radio.
 				altitude is controlled by the throttle lever. Middle is hold, high = rise, low = fall.
 RTL 		- Will try and fly back to home at the current altitude.
@@ -74,12 +72,3 @@ The props will NOT spin in stabilize when throttle is in the off position, even 
 Arming is Yaw right for 1 sec, disarm is yaw left for 1 sec. Just give it some juice to confirm arming.
 
 Auto modes will NOT engage until the throttle is above neutral. So if you put the control switch to positio hold while it's on the ground, it will no spin up. Or at leat it shouldn't ;)
-
-Good luck,
-Jason
-
-
-
-
-TODO:
-Move crosstrack navigation to full PID to limit the velocity towards a waypoint
