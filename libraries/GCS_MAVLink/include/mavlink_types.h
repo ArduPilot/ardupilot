@@ -59,6 +59,8 @@ enum MAV_ACTION
     MAV_ACTION_CHANGE_MODE = 38,
     MAV_ACTION_LOITER_MAX_TURNS = 39,
     MAV_ACTION_LOITER_MAX_TIME = 40,
+		MAV_ACTION_START_HILSIM = 41,
+		MAV_ACTION_STOP_HILSIM = 42,    
     MAV_ACTION_NB        ///< Number of MAV actions
 };
 
@@ -85,6 +87,7 @@ enum MAV_STATE
     MAV_STATE_ACTIVE,
     MAV_STATE_CRITICAL,
     MAV_STATE_EMERGENCY,
+    MAV_STATE_HILSIM,
     MAV_STATE_POWEROFF
 };
 
@@ -179,10 +182,21 @@ typedef enum {
     MAVLINK_COMM_0,
     MAVLINK_COMM_1,
     MAVLINK_COMM_2,
-    MAVLINK_COMM_3,
-    MAVLINK_COMM_NB,
-    MAVLINK_COMM_NB_HIGH = 16
-                       } mavlink_channel_t;
+    MAVLINK_COMM_3
+} mavlink_channel_t;
+
+/*
+ * applications can set MAVLINK_COMM_NUM_BUFFERS to the maximum number
+ * of buffers they will use. If more are used, then the result will be
+ * a stack overrun
+ */
+#ifndef MAVLINK_COMM_NUM_BUFFERS
+#if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
+# define MAVLINK_COMM_NUM_BUFFERS 16
+#else
+# define MAVLINK_COMM_NUM_BUFFERS 4
+#endif
+#endif
 
 typedef enum {
     MAVLINK_PARSE_STATE_UNINIT=0,

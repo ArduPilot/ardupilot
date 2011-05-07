@@ -13,7 +13,10 @@ typedef struct __mavlink_cpu_load_t
 
 
 /**
- * @brief Send a cpu_load message
+ * @brief Pack a cpu_load message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param sensLoad Sensor DSC Load
  * @param ctrlLoad Control DSC Load
@@ -25,37 +28,63 @@ static inline uint16_t mavlink_msg_cpu_load_pack(uint8_t system_id, uint8_t comp
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_CPU_LOAD;
 
-	i += put_uint8_t_by_index(sensLoad, i, msg->payload); //Sensor DSC Load
-	i += put_uint8_t_by_index(ctrlLoad, i, msg->payload); //Control DSC Load
-	i += put_uint16_t_by_index(batVolt, i, msg->payload); //Battery Voltage in millivolts
+	i += put_uint8_t_by_index(sensLoad, i, msg->payload); // Sensor DSC Load
+	i += put_uint8_t_by_index(ctrlLoad, i, msg->payload); // Control DSC Load
+	i += put_uint16_t_by_index(batVolt, i, msg->payload); // Battery Voltage in millivolts
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
-static inline uint16_t mavlink_msg_cpu_load_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint8_t sensLoad, uint8_t ctrlLoad, uint16_t batVolt)
+/**
+ * @brief Pack a cpu_load message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param sensLoad Sensor DSC Load
+ * @param ctrlLoad Control DSC Load
+ * @param batVolt Battery Voltage in millivolts
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
+static inline uint16_t mavlink_msg_cpu_load_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t sensLoad, uint8_t ctrlLoad, uint16_t batVolt)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_CPU_LOAD;
 
-	i += put_uint8_t_by_index(target, i, msg->payload); //The system reporting the CPU load
-	i += put_uint8_t_by_index(sensLoad, i, msg->payload); //Sensor DSC Load
-	i += put_uint8_t_by_index(ctrlLoad, i, msg->payload); //Control DSC Load
-	i += put_uint16_t_by_index(batVolt, i, msg->payload); //Battery Voltage in millivolts
+	i += put_uint8_t_by_index(sensLoad, i, msg->payload); // Sensor DSC Load
+	i += put_uint8_t_by_index(ctrlLoad, i, msg->payload); // Control DSC Load
+	i += put_uint16_t_by_index(batVolt, i, msg->payload); // Battery Voltage in millivolts
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
 
+/**
+ * @brief Encode a cpu_load struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param cpu_load C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_cpu_load_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_cpu_load_t* cpu_load)
 {
 	return mavlink_msg_cpu_load_pack(system_id, component_id, msg, cpu_load->sensLoad, cpu_load->ctrlLoad, cpu_load->batVolt);
 }
 
+/**
+ * @brief Send a cpu_load message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param sensLoad Sensor DSC Load
+ * @param ctrlLoad Control DSC Load
+ * @param batVolt Battery Voltage in millivolts
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_cpu_load_send(mavlink_channel_t chan, uint8_t sensLoad, uint8_t ctrlLoad, uint16_t batVolt)
 {
 	mavlink_message_t msg;
-	mavlink_msg_cpu_load_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, sensLoad, ctrlLoad, batVolt);
+	mavlink_msg_cpu_load_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, sensLoad, ctrlLoad, batVolt);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -95,6 +124,12 @@ static inline uint16_t mavlink_msg_cpu_load_get_batVolt(const mavlink_message_t*
 	return (uint16_t)r.s;
 }
 
+/**
+ * @brief Decode a cpu_load message into a struct
+ *
+ * @param msg The message to decode
+ * @param cpu_load C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_cpu_load_decode(const mavlink_message_t* msg, mavlink_cpu_load_t* cpu_load)
 {
 	cpu_load->sensLoad = mavlink_msg_cpu_load_get_sensLoad(msg);

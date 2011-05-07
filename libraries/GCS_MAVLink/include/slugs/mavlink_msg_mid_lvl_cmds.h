@@ -14,7 +14,10 @@ typedef struct __mavlink_mid_lvl_cmds_t
 
 
 /**
- * @brief Send a mid_lvl_cmds message
+ * @brief Pack a mid_lvl_cmds message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param target The system setting the commands
  * @param hCommand Commanded Airspeed
@@ -27,25 +30,67 @@ static inline uint16_t mavlink_msg_mid_lvl_cmds_pack(uint8_t system_id, uint8_t 
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_MID_LVL_CMDS;
 
-	i += put_uint8_t_by_index(target, i, msg->payload); //The system setting the commands
-	i += put_float_by_index(hCommand, i, msg->payload); //Commanded Airspeed
-	i += put_float_by_index(uCommand, i, msg->payload); //Log value 2 
-	i += put_float_by_index(rCommand, i, msg->payload); //Log value 3 
+	i += put_uint8_t_by_index(target, i, msg->payload); // The system setting the commands
+	i += put_float_by_index(hCommand, i, msg->payload); // Commanded Airspeed
+	i += put_float_by_index(uCommand, i, msg->payload); // Log value 2 
+	i += put_float_by_index(rCommand, i, msg->payload); // Log value 3 
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a mid_lvl_cmds message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param target The system setting the commands
+ * @param hCommand Commanded Airspeed
+ * @param uCommand Log value 2 
+ * @param rCommand Log value 3 
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
+static inline uint16_t mavlink_msg_mid_lvl_cmds_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, float hCommand, float uCommand, float rCommand)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_MID_LVL_CMDS;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); // The system setting the commands
+	i += put_float_by_index(hCommand, i, msg->payload); // Commanded Airspeed
+	i += put_float_by_index(uCommand, i, msg->payload); // Log value 2 
+	i += put_float_by_index(rCommand, i, msg->payload); // Log value 3 
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
+/**
+ * @brief Encode a mid_lvl_cmds struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param mid_lvl_cmds C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_mid_lvl_cmds_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_mid_lvl_cmds_t* mid_lvl_cmds)
 {
 	return mavlink_msg_mid_lvl_cmds_pack(system_id, component_id, msg, mid_lvl_cmds->target, mid_lvl_cmds->hCommand, mid_lvl_cmds->uCommand, mid_lvl_cmds->rCommand);
 }
 
+/**
+ * @brief Send a mid_lvl_cmds message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param target The system setting the commands
+ * @param hCommand Commanded Airspeed
+ * @param uCommand Log value 2 
+ * @param rCommand Log value 3 
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_mid_lvl_cmds_send(mavlink_channel_t chan, uint8_t target, float hCommand, float uCommand, float rCommand)
 {
 	mavlink_message_t msg;
-	mavlink_msg_mid_lvl_cmds_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, hCommand, uCommand, rCommand);
+	mavlink_msg_mid_lvl_cmds_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, hCommand, uCommand, rCommand);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -107,6 +152,12 @@ static inline float mavlink_msg_mid_lvl_cmds_get_rCommand(const mavlink_message_
 	return (float)r.f;
 }
 
+/**
+ * @brief Decode a mid_lvl_cmds message into a struct
+ *
+ * @param msg The message to decode
+ * @param mid_lvl_cmds C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_mid_lvl_cmds_decode(const mavlink_message_t* msg, mavlink_mid_lvl_cmds_t* mid_lvl_cmds)
 {
 	mid_lvl_cmds->target = mavlink_msg_mid_lvl_cmds_get_target(msg);

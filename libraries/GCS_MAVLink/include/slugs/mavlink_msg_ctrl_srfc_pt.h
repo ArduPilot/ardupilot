@@ -12,7 +12,10 @@ typedef struct __mavlink_ctrl_srfc_pt_t
 
 
 /**
- * @brief Send a ctrl_srfc_pt message
+ * @brief Pack a ctrl_srfc_pt message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
  *
  * @param target The system setting the commands
  * @param bitfieldPt Bitfield containing the PT configuration
@@ -23,23 +26,59 @@ static inline uint16_t mavlink_msg_ctrl_srfc_pt_pack(uint8_t system_id, uint8_t 
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_CTRL_SRFC_PT;
 
-	i += put_uint8_t_by_index(target, i, msg->payload); //The system setting the commands
-	i += put_uint16_t_by_index(bitfieldPt, i, msg->payload); //Bitfield containing the PT configuration
+	i += put_uint8_t_by_index(target, i, msg->payload); // The system setting the commands
+	i += put_uint16_t_by_index(bitfieldPt, i, msg->payload); // Bitfield containing the PT configuration
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
 
+/**
+ * @brief Pack a ctrl_srfc_pt message
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param chan The MAVLink channel this message was sent over
+ * @param msg The MAVLink message to compress the data into
+ * @param target The system setting the commands
+ * @param bitfieldPt Bitfield containing the PT configuration
+ * @return length of the message in bytes (excluding serial stream start sign)
+ */
+static inline uint16_t mavlink_msg_ctrl_srfc_pt_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target, uint16_t bitfieldPt)
+{
+	uint16_t i = 0;
+	msg->msgid = MAVLINK_MSG_ID_CTRL_SRFC_PT;
+
+	i += put_uint8_t_by_index(target, i, msg->payload); // The system setting the commands
+	i += put_uint16_t_by_index(bitfieldPt, i, msg->payload); // Bitfield containing the PT configuration
+
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+}
+
+/**
+ * @brief Encode a ctrl_srfc_pt struct into a message
+ *
+ * @param system_id ID of this system
+ * @param component_id ID of this component (e.g. 200 for IMU)
+ * @param msg The MAVLink message to compress the data into
+ * @param ctrl_srfc_pt C-struct to read the message contents from
+ */
 static inline uint16_t mavlink_msg_ctrl_srfc_pt_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_ctrl_srfc_pt_t* ctrl_srfc_pt)
 {
 	return mavlink_msg_ctrl_srfc_pt_pack(system_id, component_id, msg, ctrl_srfc_pt->target, ctrl_srfc_pt->bitfieldPt);
 }
 
+/**
+ * @brief Send a ctrl_srfc_pt message
+ * @param chan MAVLink channel to send the message
+ *
+ * @param target The system setting the commands
+ * @param bitfieldPt Bitfield containing the PT configuration
+ */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
 static inline void mavlink_msg_ctrl_srfc_pt_send(mavlink_channel_t chan, uint8_t target, uint16_t bitfieldPt)
 {
 	mavlink_message_t msg;
-	mavlink_msg_ctrl_srfc_pt_pack(mavlink_system.sysid, mavlink_system.compid, &msg, target, bitfieldPt);
+	mavlink_msg_ctrl_srfc_pt_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target, bitfieldPt);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -69,6 +108,12 @@ static inline uint16_t mavlink_msg_ctrl_srfc_pt_get_bitfieldPt(const mavlink_mes
 	return (uint16_t)r.s;
 }
 
+/**
+ * @brief Decode a ctrl_srfc_pt message into a struct
+ *
+ * @param msg The message to decode
+ * @param ctrl_srfc_pt C-struct to decode the message contents into
+ */
 static inline void mavlink_msg_ctrl_srfc_pt_decode(const mavlink_message_t* msg, mavlink_ctrl_srfc_pt_t* ctrl_srfc_pt)
 {
 	ctrl_srfc_pt->target = mavlink_msg_ctrl_srfc_pt_get_target(msg);

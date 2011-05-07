@@ -69,29 +69,6 @@
      <field name="diagSh2" type="int16_t">Diagnostic short 2</field>
      <field name="diagSh3" type="int16_t">Diagnostic short 3</field>
   </message>
-   
-  <message name="PILOT_CONSOLE" id="174">
-     Pilot console PWM messges.
-     <field name="dt" type="uint16_t">Pilot's console throttle command </field>
-     <field name="dla" type="uint16_t">Pilot's console left aileron command </field>
-     <field name="dra" type="uint16_t">Pilot's console right aileron command </field>
-     <field name="dr" type="uint16_t">Pilot's console rudder command </field>
-     <field name="de" type="uint16_t">Pilot's console elevator command </field>
-  </message>
-   
-   <message name="PWM_COMMANDS" id="175">
-     PWM Commands from the AP to the control surfaces.
-     <field name="dt_c" type="uint16_t">AutoPilot's throttle command </field>
-     <field name="dla_c" type="uint16_t">AutoPilot's left aileron command </field>
-     <field name="dra_c" type="uint16_t">AutoPilot's right aileron command </field>
-     <field name="dr_c" type="uint16_t">AutoPilot's rudder command </field>
-     <field name="dle_c" type="uint16_t">AutoPilot's left elevator command </field>
-     <field name="dre_c" type="uint16_t">AutoPilot's right elevator command </field>
-     <field name="dlf_c" type="uint16_t">AutoPilot's left  flap command </field>
-     <field name="drf_c" type="uint16_t">AutoPilot's right flap command </field>
-     <field name="aux1" type="uint16_t">AutoPilot's aux1 command </field>
-     <field name="aux2" type="uint16_t">AutoPilot's aux2 command </field>
-   </message>
 
   <message name="SLUGS_NAVIGATION" id="176">
      Data used in the navigation algorithm.
@@ -114,19 +91,6 @@
      <field name="fl_4" type="float">Log value 4 </field>
      <field name="fl_5" type="float">Log value 5 </field>
      <field name="fl_6" type="float">Log value 6 </field>
-  </message>
-
-  <message name="FILTERED_DATA" id="178">
-     Measured value from the IMU in units after sensor calibration and temperature compensation. Note that this IS NOT the output of the attitude filter, for that see messages 30 and 33.
-     <field name="aX" type="float">Accelerometer X value (m/s^2) </field>
-     <field name="aY" type="float">Accelerometer Y value (m/s^2)</field>
-     <field name="aZ" type="float">Accelerometer Z value (m/s^2)</field>
-     <field name="gX" type="float">Gyro X value (rad/s) </field>
-     <field name="gY" type="float">Gyro Y value (rad/s)</field>
-     <field name="gZ" type="float">Gyro Z value (rad/s)</field>
-     <field name="mX" type="float">Magnetometer X (normalized to 1) </field>
-     <field name="mY" type="float">Magnetometer Y (normalized to 1) </field>
-     <field name="mZ" type="float">Magnetometer Z (normalized to 1) </field>
   </message>
 
   <message name="GPS_DATE_TIME" id="179">
@@ -166,14 +130,6 @@ This message configures the Selective Passthrough mode. it allows to select whic
      <field name="bitfieldPt" type="uint16_t">Bitfield containing the PT configuration</field>
   </message>  
   
-  <message name="PID" id="182">
-     Configure a PID loop.
-     <field name="target" type="uint8_t">The system setting the PID values</field>
-     <field name="pVal" type="float">Proportional gain</field>
-     <field name="iVal" type="float">Integral gain</field>
-     <field name="dVal" type="float">Derivative gain</field>
-     <field name="idx" type="uint8_t">PID loop index</field>
-  </message>
   
   <message name="SLUGS_ACTION" id="183">
      Action messages focused on the SLUGS AP. 
