@@ -87,8 +87,8 @@ void read_trim_switch()
 
 				// this is a test for Max's tri-copter
 				if(g.frame_type == TRI_FRAME){
-					g.rc_4.trim();	// yaw
-					g.rc_4.save_eeprom();
+					//g.rc_4.trim();	// yaw
+					//g.rc_4.save_eeprom();
 				}
 			}
 			trim_flag = false;

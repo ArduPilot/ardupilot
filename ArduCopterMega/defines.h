@@ -302,7 +302,6 @@
 #define ONBOARD_PARAM_NAME_LENGTH 15
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
 
-/*
 #ifndef MAV_CMD_DO_ROI
 # define MAV_CMD_DO_ROI 201
 #endif
@@ -322,4 +321,4 @@
 # define MAV_ROI_TARGET 4
 #endif
 
-*/
+//*/

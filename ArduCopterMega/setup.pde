@@ -511,7 +511,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 		g.frame_type = HEXAP_FRAME;
 
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[+, x, tri, hexa, y6]\n"));
+		Serial.printf_P(PSTR("\nOptions:[+, x, tri, hexa+, hexax, y6]\n"));
 		report_frame();
 		return 0;
 	}
