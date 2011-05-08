@@ -559,7 +559,8 @@ void medium_loop()
 
 			if(g.compass_enabled){
 				compass.read();		 						// Read magnetometer
-				compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
+				compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
+				//compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
 				compass.null_offsets(dcm.get_dcm_matrix());
 			}
 
