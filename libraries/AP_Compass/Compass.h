@@ -58,6 +58,12 @@ public:
 	///
 	virtual void calculate(float roll, float pitch);
 
+	/// Calculate the tilt-compensated heading_ variables.
+	///
+	/// @param dcm_matrix			The current orientation rotation matrix
+	///
+	virtual void calculate(const Matrix3f &dcm_matrix);
+
 	/// Set the compass orientation matrix, used to correct for
 	/// various compass mounting positions.
 	///
