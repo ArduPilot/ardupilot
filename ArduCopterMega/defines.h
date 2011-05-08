@@ -301,25 +301,3 @@
 #define WP_SIZE 15
 #define ONBOARD_PARAM_NAME_LENGTH 15
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
-
-/*
-#ifndef MAV_CMD_DO_ROI
-# define MAV_CMD_DO_ROI 201
-#endif
-#ifndef MAV_ROI_NONE
-# define MAV_ROI_NONE 0
-#endif
-#ifndef MAV_ROI_WPNEXT
-# define MAV_ROI_WPNEXT 1
-#endif
-#ifndef MAV_ROI_WPINDEX
-# define MAV_ROI_WPINDEX 2
-#endif
-#ifndef MAV_ROI_LOCATION
-# define MAV_ROI_LOCATION 3
-#endif
-#ifndef MAV_ROI_TARGET
-# define MAV_ROI_TARGET 4
-#endif
-
-*/

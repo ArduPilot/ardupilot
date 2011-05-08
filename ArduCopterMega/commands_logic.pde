@@ -97,8 +97,8 @@ void handle_process_now()
 			do_repeat_relay();
 			break;
 
-		//case MAV_CMD_DO_SET_ROI:
-		//	do_target_yaw();
+		case MAV_CMD_DO_SET_ROI:
+			do_target_yaw();
 	}
 }
 
