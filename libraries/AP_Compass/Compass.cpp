@@ -63,26 +63,59 @@ Compass::get_declination()
 }
 
 
-
 void
 Compass::calculate(float roll, float pitch)
 {
+//  Note - This function implementation is deprecated
+//  The alternate implementation of this function using the dcm matrix is preferred
     float headX;
     float headY;
     float cos_roll;
     float sin_roll;
     float cos_pitch;
     float sin_pitch;
-
-    cos_roll = cos(roll);  // Optimizacion, se puede sacar esto de la matriz DCM?
-    sin_roll = 1  - (cos_roll * cos_roll);
+    cos_roll = cos(roll);  
+	sin_roll = sin(roll);
     cos_pitch = cos(pitch);
-    sin_pitch = 1  - (cos_pitch * cos_pitch);
+	sin_pitch = sin(pitch);
 
     // Tilt compensated magnetic field X component:
-    headX = mag_x*cos_pitch+mag_y*sin_roll*sin_pitch+mag_z*cos_roll*sin_pitch;
+    headX = mag_x*cos_pitch + mag_y*sin_roll*sin_pitch + mag_z*cos_roll*sin_pitch;
     // Tilt compensated magnetic field Y component:
-    headY = mag_y*cos_roll-mag_z*sin_roll;
+    headY = mag_y*cos_roll - mag_z*sin_roll;
+    // magnetic heading
+    heading = atan2(-headY,headX);
+
+    // Declination correction (if supplied)
+    if( fabs(_declination) > 0.0 )
+    {
+        heading = heading + _declination;
+        if (heading > M_PI)    // Angle normalization (-180 deg, 180 deg)
+            heading -= (2.0 * M_PI);
+        else if (heading < -M_PI)
+            heading += (2.0 * M_PI);
+    }
+
+    // Optimization for external DCM use. Calculate normalized components
+    heading_x = cos(heading);
+    heading_y = sin(heading);
+}
+
+
+void
+Compass::calculate(const Matrix3f &dcm_matrix)
+{
+    float headX;
+    float headY;
+    float cos_pitch = sqrt(1-(dcm_matrix.c.x*dcm_matrix.c.x));
+	// sin(pitch) = - dcm_matrix(3,1)
+	// cos(pitch)*sin(roll) = - dcm_matrix(3,2)
+	// cos(pitch)*cos(roll) = - dcm_matrix(3,3)
+
+    // Tilt compensated magnetic field X component:
+    headX = mag_x*cos_pitch - mag_y*dcm_matrix.c.y*dcm_matrix.c.x/cos_pitch - mag_z*dcm_matrix.c.z*dcm_matrix.c.x/cos_pitch;
+    // Tilt compensated magnetic field Y component:
+    headY = mag_y*dcm_matrix.c.z/cos_pitch - mag_z*dcm_matrix.c.y/cos_pitch;
     // magnetic heading
     heading = atan2(-headY,headX);
 
