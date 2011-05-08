@@ -124,6 +124,10 @@
 # define GCS_PROTOCOL			GCS_PROTOCOL_MAVLINK
 #endif
 
+#ifndef GCS_PORT
+# define GCS_PORT			3
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //
