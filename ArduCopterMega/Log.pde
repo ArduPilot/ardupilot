@@ -624,7 +624,6 @@ void Log_Read_Cmd()
 // Write an attitude packet. Total length : 10 bytes
 void Log_Write_Attitude()
 {
-, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_ATTITUDE_MSG);
