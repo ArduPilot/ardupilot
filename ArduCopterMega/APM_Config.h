@@ -4,6 +4,7 @@
 
 // GPS is auto-selected
 
+//#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 #define NAV_TEST 0	// 0 = traditional, 1 = rate controlled
 
@@ -37,7 +38,7 @@
 # define LOG_CTUN				ENABLED
 # define LOG_NTUN				ENABLED
 # define LOG_MODE				ENABLED
-# define LOG_RAW				DISABLED
+# define LOG_RAW				ENABLED
 # define LOG_CMD				ENABLED
 # define LOG_CURRENT			DISABLED
 

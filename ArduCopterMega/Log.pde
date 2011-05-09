@@ -362,6 +362,25 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(END_BYTE);
 }
 
+/*
+Matrix3f tempmat = dcm.get_dcm_matrix();
+
+DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);
+DataFlash.WriteInt((int)wp_distance);
+DataFlash.WriteInt((uint16_t)target_bearing);
+DataFlash.WriteInt((uint16_t)nav_bearing);
+DataFlash.WriteInt(altitude_error);
+DataFlash.WriteInt((int)airspeed);
+DataFlash.WriteInt((int)(nav_gain_scaler*1000));
+DataFlash.WriteInt((int)(wrap_360(ToDeg(compass.heading)*100)/100)); // Just a temp hack
+DataFlash.WriteLong(compass.last_update); // Just a temp hack
+DataFlash.WriteInt((int)(tempmat.b.x*1000)); // Just a temp hack
+DataFlash.WriteInt((int)(compass.heading_x*1000)); // Just a temp hack
+DataFlash.WriteInt((int)(tempmat.a.x*1000)); // Just a temp hack
+DataFlash.WriteInt((int)(compass.heading_y*1000)); // Just a temp hack
+*/
+
+
     //	1	2	3	4  5  6	 7	 8	   9	  10   11
 //NTUN, 236, 0, 132, 10, 0, 0, 29, 2963, 16545, 16682, 108
 
@@ -385,6 +404,7 @@ void Log_Read_Nav_Tuning()
 				DataFlash.ReadInt(),	//Next_alt
 				DataFlash.ReadInt());	//Alt Error
 }
+
 
 
 // Write a mode packet. Total length : 5 bytes

@@ -77,14 +77,16 @@
 #define HIL_MODE	HIL_MODE_DISABLED
 #endif
 
- #ifndef HIL_PROTOCOL
+#ifndef HIL_PROTOCOL
 #define HIL_PROTOCOL	HIL_PROTOCOL_MAVLINK
- #endif
+#endif
 
- #ifndef HIL_PORT
+#ifndef HIL_PORT
 #define HIL_PORT 0
- #endif
+#endif
+
 #if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
+
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
 
@@ -131,6 +133,10 @@
 # define GCS_PORT			3
 #endif
 
+#ifndef MAV_SYSTEM_ID
+# define MAV_SYSTEM_ID		1
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
 //
@@ -148,26 +154,22 @@
 #ifndef BATTERY_EVENT
 # define BATTERY_EVENT			DISABLED
 #endif
-#ifndef BATTERY_TYPE
-# define BATTERY_TYPE			0
-#endif
 #ifndef LOW_VOLTAGE
 # define LOW_VOLTAGE			9.6
 #endif
 #ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.0
+# define VOLT_DIV_RATIO			3.56
 #endif
 
-#ifndef CURR_VOLT_DIV_RATIO
-# define CURR_VOLT_DIV_RATIO	15.7
+#ifndef CURR_AMP_PER_VOLT
+# define CURR_AMP_PER_VOLT		27.32
 #endif
-#ifndef CURR_AMP_DIV_RATIO
-# define CURR_AMP_DIV_RATIO		30.35
+#ifndef CURR_AMPS_OFFSET
+# define CURR_AMPS_OFFSET		0.0
 #endif
-#ifndef CURR_AMP_HOURS
-# define CURR_AMP_HOURS		2000
+#ifndef HIGH_DISCHARGE
+# define HIGH_DISCHARGE		1760
 #endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE

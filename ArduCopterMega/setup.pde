@@ -9,7 +9,7 @@ static int8_t	setup_erase				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_pid				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_current			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
@@ -29,7 +29,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"level",			setup_accel},
 	{"modes",			setup_flightmodes},
 	{"frame",			setup_frame},
-	{"current",			setup_current},
+	{"battery",			setup_batt_monitor},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
 	{"declination",		setup_declination},
@@ -73,7 +73,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_version();
 	report_radio();
 	report_frame();
-	report_current();
+	report_batt_monitor();
 	report_sonar();
 	report_gains();
 	report_xtrack();
@@ -521,24 +521,16 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-setup_current(uint8_t argc, const Menu::arg *argv)
+setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 {
-	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		g.current_enabled.set_and_save(true);
+	if(argv[1].i >= 0 && argv[1].i <= 4){
+		g.battery_monitoring.set_and_save(argv[1].i);
 
-	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		g.current_enabled.set_and_save(false);
-
-	} else if(argv[1].i > 10){
-		g.milliamp_hours.set_and_save(argv[1].i);
-
-	}else{
-		Serial.printf_P(PSTR("\nOptions:[on, off, mAh]\n"));
-		report_current();
-		return 0;
+	} else {
+		Serial.printf_P(PSTR("\nOptions: 0-4"));
 	}
 
-	report_current();
+	report_batt_monitor();
 	return 0;
 }
 
@@ -674,13 +666,14 @@ default_frame()
 	g.frame_type.set_and_save(PLUS_FRAME);
 }
 
-void
+/*void
 default_current()
 {
 	g.milliamp_hours 		= 2000;
 	g.current_enabled.set(false);
 	save_EEPROM_current();
 }
+*/
 
 void
 default_flight_modes()
@@ -805,6 +798,19 @@ default_gains()
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/
+
+void report_batt_monitor()
+{
+	//print_blanks(2);
+	Serial.printf_P(PSTR("Batt Mointor\n"));
+	print_divider();
+	if(g.battery_monitoring == 0)	Serial.printf_P(PSTR("Batt mon. disabled"));
+	if(g.battery_monitoring == 1)	Serial.printf_P(PSTR("3 cells"));
+	if(g.battery_monitoring == 2)	Serial.printf_P(PSTR("4 cells"));
+	if(g.battery_monitoring == 3)	Serial.printf_P(PSTR("batt volts"));
+	if(g.battery_monitoring == 4)	Serial.printf_P(PSTR("volts and cur"));
+	print_blanks(2);
+}
 void report_wp(byte index = 255)
 {
 	if(index == 255){
@@ -830,6 +836,7 @@ void print_wp(struct Location *cmd, byte index)
 		cmd->lng);
 }
 
+/*
 void report_current()
 {
 	//read_EEPROM_current();
@@ -840,7 +847,7 @@ void report_current()
 	Serial.printf_P(PSTR("mah: %d"),(int)g.milliamp_hours.get());
 	print_blanks(2);
 }
-
+*/
 void report_gps()
 {
 	Serial.printf_P(PSTR("\nGPS\n"));
@@ -1242,10 +1249,10 @@ void save_EEPROM_PID(void)
 
 /********************************************************************************/
 
-void save_EEPROM_current(void)
+/*void save_EEPROM_current(void)
 {
 	g.current_enabled.save();
-	g.milliamp_hours.save();
+	//g.milliamp_hours.save();
 }
 
 void read_EEPROM_current(void)
@@ -1253,7 +1260,7 @@ void read_EEPROM_current(void)
 	g.current_enabled.load();
 	g.milliamp_hours.load();
 }
-
+*/
 /********************************************************************************/
 
 void read_EEPROM_radio(void)

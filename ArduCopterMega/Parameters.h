@@ -61,8 +61,8 @@ public:
         k_param_IMU_calibration = 140,
         k_param_ground_temperature,
         k_param_ground_pressure,
-		k_param_current,
-		k_param_milliamp_hours,
+		k_param_battery_monitoring,
+		k_param_pack_capacity,
 		k_param_compass_enabled,
 		k_param_compass,
 		k_param_sonar,
@@ -183,8 +183,8 @@ public:
     AP_Int8		frame_type;
 
     AP_Int8		sonar_enabled;
-    AP_Int8		current_enabled;
-    AP_Int16	milliamp_hours;
+    AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
+	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		compass_enabled;
 	AP_Int8		esc_calibrate;
 
@@ -229,8 +229,8 @@ public:
         frame_type  			(FRAME_CONFIG,				k_param_frame_type,						PSTR("FRAME_CONFIG")),
 
         sonar_enabled  			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
-        current_enabled  		(DISABLED,					k_param_current,						PSTR("CURRENT_ENABLE")),
-        milliamp_hours  		(CURR_AMP_HOURS,			k_param_milliamp_hours,					PSTR("MAH")),
+        battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
+        pack_capacity	 		(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
         compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
 
         waypoint_mode           (0,                         k_param_waypoint_mode,          		PSTR("WP_MODE")),
