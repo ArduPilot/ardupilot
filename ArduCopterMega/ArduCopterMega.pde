@@ -493,7 +493,9 @@ void loop()
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
+
 				gcs.send_message(MSG_PERF_REPORT);
+
 				if (g.log_bitmask & MASK_LOG_PM)
 					Log_Write_Performance();
 
@@ -632,7 +634,7 @@ void medium_loop()
 			medium_loopCounter++;
 
 			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-				Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
+				Log_Write_Attitude();
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 			if (g.log_bitmask & MASK_LOG_CTUN)
@@ -697,7 +699,7 @@ void medium_loop()
 	//calc_distance_error();
 
 	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-		Log_Write_Attitude((int)dcm.roll_sensor, (int)dcm.pitch_sensor, (uint16_t)dcm.yaw_sensor);
+		Log_Write_Attitude();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		if (g.log_bitmask & MASK_LOG_RAW)
