@@ -19,16 +19,14 @@ camera_stabilization()
 	g.rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6)); // I'm using CH 6 input here.
 
 	// allow control mixing
-	g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor / 2);
+	//g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor / 2);
 
 	// dont allow control mixing
-	//rc_camera_pitch.servo_out = dcm.pitch_sensor / 2;
-
+	rc_camera_pitch.servo_out = dcm.pitch_sensor / 2;
 	g.rc_camera_pitch.calc_pwm();
 	APM_RC.OutputCh(CH_5, g.rc_camera_pitch.radio_out);
 
-
-	g.rc_camera_roll.servo_out = dcm.roll_sensor * 1;
+	g.rc_camera_roll.servo_out = dcm.roll_sensor;
 	g.rc_camera_roll.calc_pwm();
 	APM_RC.OutputCh(CH_6, g.rc_camera_roll.radio_out);
 
