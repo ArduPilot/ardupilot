@@ -654,7 +654,7 @@ test_current(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 		read_battery();
 		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-						current_voltage,
+						battery_voltage,
 						current_amps,
 						current_total);
 

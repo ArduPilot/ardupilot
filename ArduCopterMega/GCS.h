@@ -66,6 +66,7 @@ public:
 	void		send_text(uint8_t severity, const char *str) {}
 
 #define send_text_P(severity, msg) send_text(severity, msg)
+
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
@@ -196,6 +197,9 @@ private:
 	AP_Int16 streamRateExtra1;
 	AP_Int16 streamRateExtra2;
 	AP_Int16 streamRateExtra3;
+
+
+
 };
 #endif // GCS_PROTOCOL_MAVLINK
 

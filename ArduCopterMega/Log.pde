@@ -340,6 +340,8 @@ void Log_Write_Cmd(byte num, struct Location *wp)
 
 void Log_Write_Nav_Tuning()
 {
+	Matrix3f tempmat = dcm.get_dcm_matrix();
+
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
@@ -359,35 +361,28 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)next_WP.alt);				// 11
 	DataFlash.WriteInt((int)altitude_error);			// 12
 
+	DataFlash.WriteInt((int)(wrap_360(ToDeg(compass.heading)*100)/100)); // Just a temp hack
+	DataFlash.WriteLong(compass.last_update); // Just a temp hack
+	DataFlash.WriteInt((int)(tempmat.b.x*1000)); // Just a temp hack
+	DataFlash.WriteInt((int)(compass.heading_x*1000)); // Just a temp hack
+	DataFlash.WriteInt((int)(tempmat.a.x*1000)); // Just a temp hack
+	DataFlash.WriteInt((int)(compass.heading_y*1000)); // Just a temp hack
+
 	DataFlash.WriteByte(END_BYTE);
 }
-
-/*
-Matrix3f tempmat = dcm.get_dcm_matrix();
-
-DataFlash.WriteInt((uint16_t)dcm.yaw_sensor);
-DataFlash.WriteInt((int)wp_distance);
-DataFlash.WriteInt((uint16_t)target_bearing);
-DataFlash.WriteInt((uint16_t)nav_bearing);
-DataFlash.WriteInt(altitude_error);
-DataFlash.WriteInt((int)airspeed);
-DataFlash.WriteInt((int)(nav_gain_scaler*1000));
-DataFlash.WriteInt((int)(wrap_360(ToDeg(compass.heading)*100)/100)); // Just a temp hack
-DataFlash.WriteLong(compass.last_update); // Just a temp hack
-DataFlash.WriteInt((int)(tempmat.b.x*1000)); // Just a temp hack
-DataFlash.WriteInt((int)(compass.heading_x*1000)); // Just a temp hack
-DataFlash.WriteInt((int)(tempmat.a.x*1000)); // Just a temp hack
-DataFlash.WriteInt((int)(compass.heading_y*1000)); // Just a temp hack
-*/
-
-
     //	1	2	3	4  5  6	 7	 8	   9	  10   11
 //NTUN, 236, 0, 132, 10, 0, 0, 29, 2963, 16545, 16682, 108
 
 void Log_Read_Nav_Tuning()
 {
 							 //	1	2	3	4	5	6	7	8	9	10  11
-	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, "
+								"%d, %d, "
+								"%d, %d, %d, %d, "
+								"%d, %d, %d "
+								"%d, %ld, %4.4f, %4.4f, %4.4f, %4.4f "
+
+								),
 				DataFlash.ReadInt(),	//yaw sensor
 				DataFlash.ReadInt(),	//distance
 				DataFlash.ReadByte(),	//bitmask
@@ -402,8 +397,16 @@ void Log_Read_Nav_Tuning()
 
 				DataFlash.ReadInt(),	//home.alt
 				DataFlash.ReadInt(),	//Next_alt
-				DataFlash.ReadInt());	//Alt Error
+				DataFlash.ReadInt(),	//Alt Error
+
+				DataFlash.ReadInt(),
+				DataFlash.ReadLong(),
+				(float)DataFlash.ReadInt()/1000,
+				(float)DataFlash.ReadInt()/1000,
+				(float)DataFlash.ReadInt()/1000,
+				(float)DataFlash.ReadInt()/1000);
 }
+
 
 
 
@@ -492,7 +495,7 @@ void Log_Write_Current()
 	DataFlash.WriteInt(g.rc_3.control_in);
 	DataFlash.WriteLong(throttle_integrator);
 
-	DataFlash.WriteInt((int)(current_voltage 	* 100.0));
+	DataFlash.WriteInt((int)(battery_voltage 	* 100.0));
 	DataFlash.WriteInt((int)(current_amps 		* 100.0));
 	DataFlash.WriteInt((int)current_total);
 
@@ -771,5 +774,6 @@ void Log_Read(int start_page, int end_page)
 	}
 	//Serial.printf_P(PSTR("# of packets read: %d\n"), packet_count);
 }
+
 
 

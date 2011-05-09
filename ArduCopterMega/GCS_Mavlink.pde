@@ -20,7 +20,9 @@ streamRatePosition			(&_group, 4, 0, PSTR("POSITION")),
 streamRateExtra1			(&_group, 5, 0, PSTR("EXTRA1")),
 streamRateExtra2			(&_group, 6, 0, PSTR("EXTRA2")),
 streamRateExtra3			(&_group, 7, 0, PSTR("EXTRA3"))
+
 {
+
 }
 
 void
@@ -49,12 +51,19 @@ GCS_MAVLINK::update(void)
     {
         uint8_t c = comm_receive_ch(chan);
 
+
+
         // Try to get a new message
         if(mavlink_parse_char(chan, c, &msg, &status)) handleMessage(&msg);
     }
 
     // Update packet drops counter
     packet_drops += status.packet_rx_drop_count;
+
+
+
+
+
 
     // send out queued params/ waypoints
     _queued_send();
@@ -84,7 +93,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
         send_message(MSG_GPS_STATUS);
         send_message(MSG_CURRENT_WAYPOINT);
         send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
-//			send_message(MSG_NAV_CONTROLLER_OUTPUT);
+			send_message(MSG_NAV_CONTROLLER_OUTPUT);
     }
 
 		if (freqLoopMatch(streamRatePosition,freqMin,freqMax)) {
@@ -215,10 +224,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_action_t packet;
             mavlink_msg_action_decode(msg, &packet);
             if (mavlink_check_target(packet.target,packet.target_component)) break;
+
             uint8_t result = 0;
 
             // do action
-            send_text_P(SEVERITY_LOW,PSTR("action received"));
+            send_text_P(SEVERITY_LOW,PSTR("action received: "));
+//Serial.println(packet.action);
 			switch(packet.action){
 
 				case MAV_ACTION_LAUNCH:
@@ -317,11 +328,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 				default: break;
 				}
+
                 mavlink_msg_action_ack_send(
                     chan,
                     packet.action,
                     result
                     );
+
             break;
         }
 
@@ -332,7 +345,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_waypoint_request_list_t packet;
             mavlink_msg_waypoint_request_list_decode(msg, &packet);
-
             if (mavlink_check_target(packet.target_system,packet.target_component))
             	break;
 
@@ -577,7 +589,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     tell_command.options = 1;
                     break;
                 }
-
             case MAV_FRAME_GLOBAL_RELATIVE_ALT: // absolute lat/lng, relative altitude
                 {
                     tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
@@ -888,7 +899,6 @@ GCS_MAVLINK::_find_parameter(uint16_t index)
 void
 GCS_MAVLINK::_queued_send()
 {
-
     // Check to see if we are sending parameters
     if (NULL != _queued_parameter && (requested_interface == chan) && mavdelay > 1) {
         AP_Var      *vp;
@@ -915,9 +925,6 @@ GCS_MAVLINK::_queued_send()
             _queued_parameter_index++;
         }
 		mavdelay = 0;
-
-
-
     }
 
     // this is called at 50hz, count runs to prevent flooding serialport and delayed to allow eeprom write
@@ -940,5 +947,4 @@ GCS_MAVLINK::_queued_send()
 }
 
 #endif
-
 

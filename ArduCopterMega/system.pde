@@ -155,7 +155,7 @@ void init_ardupilot()
 	#else
 		gcs.init(&Serial);
 	#endif
-	
+
 	// init the HIL
 #if HIL_MODE != HIL_MODE_DISABLED
 
@@ -469,10 +469,10 @@ void update_esc_light()
 void resetPerfData(void) {
 	mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
-	gyro_sat_count 		= 0;
-	adc_constraints 	= 0;
-	renorm_sqrt_count 	= 0;
-	renorm_blowup_count = 0;
+	//gyro_sat_count 		= 0;
+	//adc_constraints 	= 0;
+	//renorm_sqrt_count 	= 0;
+	//renorm_blowup_count = 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
 }
@@ -526,3 +526,4 @@ init_throttle_cruise()
 		}
 	}
 }
+

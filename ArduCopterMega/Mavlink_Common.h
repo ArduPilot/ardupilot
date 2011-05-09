@@ -7,9 +7,11 @@
 
 byte mavdelay = 0;
 
+
 // what does this do?
 static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 {
+//Serial.print("target = "); Serial.print(sysid, DEC); Serial.print("\tcomp = "); Serial.println(compid, DEC);
     if (sysid != mavlink_system.sysid){
         return 1;
 
@@ -21,6 +23,7 @@ static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
     	return 0; // no error
     }
 }
+
 
 void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, uint16_t packet_drops)
 {
@@ -67,6 +70,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 			}
 
 			uint8_t status 		= MAV_STATE_ACTIVE;
+			uint16_t battery_remaining = 10.0 * (float)(g.pack_capacity - current_total)/g.pack_capacity;	//Mavlink scaling 100% = 1000
 			uint8_t motor_block = false;
 
 			mavlink_msg_sys_status_send(
@@ -75,7 +79,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					nav_mode,
 					status,
 					load * 1000,
-					battery_voltage1 * 1000,
+					battery_voltage * 1000,
 					motor_block,
 					packet_drops);
 			break;
@@ -109,6 +113,23 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					g_gps->ground_speed * rot.c.x);
 			break;
 		}
+
+		case MSG_NAV_CONTROLLER_OUTPUT:
+        {
+            //if (control_mode != MANUAL) {
+                mavlink_msg_nav_controller_output_send(
+					chan,
+                    nav_roll / 1.0e2,
+                    nav_pitch / 1.0e2,
+                    nav_bearing / 1.0e2,
+                    target_bearing / 1.0e2,
+                    wp_distance,
+                    altitude_error / 1.0e2,
+                    0,
+                    crosstrack_error);
+            //}
+			break;
+        }
 
 		case MSG_LOCAL_LOCATION:
 		{
@@ -277,4 +298,3 @@ void mavlink_acknowledge(mavlink_channel_t chan, uint8_t id, uint8_t sum1, uint8
 #endif // mavlink in use
 
 #endif // inclusion guard
-
