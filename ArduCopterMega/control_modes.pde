@@ -67,8 +67,7 @@ void read_trim_switch()
 		}
 
 		trim_flag = true;
-		trim_accel();
-
+		//trim_accel();
 
 	}else{ // switch is disengaged
 
