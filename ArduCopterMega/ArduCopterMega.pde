@@ -43,9 +43,6 @@ version 2.1 of the License, or (at your option) any later version.
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
-
-
-
 // Configuration
 #include "config.h"
 
@@ -75,9 +72,11 @@ FastSerialPort3(Serial3);       // Telemetry port
 //
 Parameters      g;
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 void update_events(void);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sensors
@@ -175,6 +174,7 @@ GPS         *g_gps;
 ////////////////////////////////////////////////////////////////////////////////
 //
 #if   GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
+	//GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
 	GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
 #else
 	// If we are not using a GCS, we need a stub that does nothing.
@@ -300,7 +300,6 @@ float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 
 float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
 float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 
-float 	current_voltage 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 float	current_amps;
 float	current_total;
 
@@ -411,10 +410,6 @@ float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
 long 	perf_mon_timer;
 float 	imu_health; 						// Metric based on accel gain deweighting
 int 	G_Dt_max;							// Max main loop cycle time in milliseconds
-byte 	gyro_sat_count;
-byte 	adc_constraints;
-byte 	renorm_sqrt_count;
-byte 	renorm_blowup_count;
 int 	gps_fix_count;
 byte	gcs_messages_sent;
 
@@ -1285,3 +1280,4 @@ void tuning(){
 
 	#endif
 }
+

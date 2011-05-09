@@ -167,6 +167,7 @@
 #define MSG_VERSION 0x09
 #define MSG_EXTENDED_STATUS 0x0a
 #define MSG_CPU_LOAD 0x0b
+#define MSG_NAV_CONTROLLER_OUTPUT 0x0c
 
 #define MSG_COMMAND_REQUEST 0x20
 #define MSG_COMMAND_UPLOAD 0x21
@@ -297,5 +298,6 @@
 // parameters get the first 1KiB of EEPROM, remainder is for waypoints
 #define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
 #define WP_SIZE 15
+
 #define ONBOARD_PARAM_NAME_LENGTH 15
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
