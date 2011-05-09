@@ -669,8 +669,8 @@ void medium_loop()
 		case 4:
 			medium_loopCounter = 0;
 
-			if (g.current_enabled){
-				read_current();
+			if (g.battery_monitoring != 0){
+				read_battery();
 			}
 
 			// Accel trims 		= hold > 2 seconds

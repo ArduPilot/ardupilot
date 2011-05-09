@@ -652,18 +652,16 @@ test_current(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(100);
 		read_radio();
-		read_current();
+		read_battery();
 		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
 						current_voltage,
 						current_amps,
 						current_total);
 
-		//if(g.rc_3.control_in > 0){
-			APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
-			APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
-			APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-			APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
-		//}
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 
 		if(Serial.available() > 0){
 			return (0);

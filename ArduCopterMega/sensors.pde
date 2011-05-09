@@ -86,7 +86,6 @@ void zero_airspeed(void)
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
-#if BATTERY_EVENT == 1
 void read_battery(void)
 {
 	battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN1)) * .1 + battery_voltage1 * .9;
@@ -94,27 +93,21 @@ void read_battery(void)
 	battery_voltage3 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN3)) * .1 + battery_voltage3 * .9;
 	battery_voltage4 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN4)) * .1 + battery_voltage4 * .9;
 
-	#if BATTERY_TYPE == 0
-		if(battery_voltage3 < LOW_VOLTAGE)
-			low_battery_event();
+	if(g.battery_monitoring == 1)
 		battery_voltage = battery_voltage3; // set total battery voltage, for telemetry stream
-	#endif
+	if(g.battery_monitoring == 2)
+		battery_voltage = battery_voltage4;
+	if(g.battery_monitoring == 3 || g.battery_monitoring == 4)
+		battery_voltage = battery_voltage1;
+	if(g.battery_monitoring == 4) {
+		current_amps	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps * .9; //reads power sensor current pin
+		current_total	 += current_amps * (float)delta_ms_medium_loop * 0.000278;
+	}
 
-	#if BATTERY_TYPE == 1
-		if(battery_voltage4 < LOW_VOLTAGE)
-			low_battery_event();
-		battery_voltage = battery_voltage4; // set total battery voltage, for telemetry stream
+	#if BATTERY_EVENT == 1
+		if(battery_voltage < LOW_VOLTAGE)	low_battery_event();
+		if(g.battery_monitoring == 4 && current_total > g.pack_capacity)	low_battery_event();
 	#endif
 }
-#endif
-
-
-void read_current(void)
-{
-	current_voltage 	= CURRENT_VOLTAGE(analogRead(VOLTAGE_PIN_0)) * .1 	+ current_voltage * .9; //reads power sensor voltage pin
-	current_amps 		= CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 		+ current_amps * .9; //reads power sensor current pin
-	current_total		+= (current_amps * 0.27777) / delta_ms_medium_loop;
-}
-
 
 //v: 10.9453, a: 17.4023, mah: 8.2

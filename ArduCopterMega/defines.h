@@ -266,9 +266,7 @@
 
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
-
-#define CURRENT_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*CURR_VOLT_DIV_RATIO
-#define CURRENT_AMPS(x) (x*(INPUT_VOLTAGE/1024.0))*CURR_AMP_DIV_RATIO
+#define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
 
 #define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
 #define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
