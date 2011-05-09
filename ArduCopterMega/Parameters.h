@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 5;
+    static const uint16_t k_format_version = 6;
 
     //
     // Parameter identities.
@@ -49,6 +49,11 @@ public:
         //
         k_param_log_bitmask,
         k_param_frame_type,
+		
+		// 110: Telemetry control
+		//
+		k_param_streamrates_port0 = 110,
+		k_param_streamrates_port3,
 
         //
         // 140: Sensor parameters

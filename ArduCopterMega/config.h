@@ -73,18 +73,20 @@
 // HIL_MODE                                 OPTIONAL
 // HIL_PORT                                 OPTIONAL
 
-#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
-
- # undef GPS_PROTOCOL
- # define GPS_PROTOCOL GPS_PROTOCOL_NONE
+#ifndef HIL_MODE
+#define HIL_MODE	HIL_MODE_DISABLED
+#endif
 
  #ifndef HIL_PROTOCOL
- # error Must define HIL_PROTOCOL if HIL_MODE is not disabled
+#define HIL_PROTOCOL	HIL_PROTOCOL_MAVLINK
  #endif
 
  #ifndef HIL_PORT
- # error Must define HIL_PORT if HIL_PROTOCOL is set
+#define HIL_PORT 0
  #endif
+#if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
+ # undef GPS_PROTOCOL
+ # define GPS_PROTOCOL GPS_PROTOCOL_NONE
 
 #endif
 
@@ -125,9 +127,9 @@
 #endif
 
 //Chris: Commenting out assignment of GCS to port 3 because it kills MAVLink on Port 0
-// #ifndef GCS_PORT
-// # define GCS_PORT			3
-// #endif
+#ifndef GCS_PORT
+# define GCS_PORT			3
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.

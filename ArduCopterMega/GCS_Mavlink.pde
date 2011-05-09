@@ -4,22 +4,22 @@
 
 #include "Mavlink_Common.h"
 
-GCS_MAVLINK::GCS_MAVLINK() :
+GCS_MAVLINK::GCS_MAVLINK(AP_Var::Key key) :
 packet_drops(0),
 // parameters
 // note, all values not explicitly initialised here are zeroed
 waypoint_send_timeout(1000), // 1 second
 waypoint_receive_timeout(1000), // 1 second
 // stream rates
-streamRateRawSensors(0),
-streamRateExtendedStatus(0),
-streamRateRCChannels(0),
-streamRateRawController(0),
-//streamRateRawSensorFusion(0),
-streamRatePosition(0),
-streamRateExtra1(0),
-streamRateExtra2(0),
-streamRateExtra3(0)
+_group	(key, key == Parameters::k_param_streamrates_port0 ? PSTR("SR0_"): PSTR("SR3_")),
+streamRateRawSensors		(&_group, 0, 0, PSTR("RAW_SENS")),
+streamRateExtendedStatus	(&_group, 1, 0, PSTR("EXT_STAT")),
+streamRateRCChannels		(&_group, 2, 0, PSTR("RC_CHAN")),
+streamRateRawController		(&_group, 3, 0, PSTR("RAW_CTRL")),
+streamRatePosition			(&_group, 4, 0, PSTR("POSITION")),
+streamRateExtra1			(&_group, 5, 0, PSTR("EXTRA1")),
+streamRateExtra2			(&_group, 6, 0, PSTR("EXTRA2")),
+streamRateExtra3			(&_group, 7, 0, PSTR("EXTRA3"))
 {
 }
 
@@ -173,34 +173,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     streamRatePosition           = freq;
                     streamRateExtra1             = freq;
                     streamRateExtra2             = freq;
-                    streamRateExtra3             = freq;
+                    streamRateExtra3.set_and_save(freq);	// We just do set and save on the last as it takes care of the whole group.
 					break;
 				case MAV_DATA_STREAM_RAW_SENSORS:
-                    streamRateRawSensors = freq;
+                    streamRateRawSensors = freq;		// We do not set and save this one so that if HIL is shut down incorrectly
+														// we will not continue to broadcast raw sensor data at 50Hz.
 					break;
 				case MAV_DATA_STREAM_EXTENDED_STATUS:
-                    streamRateExtendedStatus = freq;
+                    streamRateExtendedStatus.set_and_save(freq);
 					break;
 				case MAV_DATA_STREAM_RC_CHANNELS:
-                    streamRateRCChannels = freq;
+                    streamRateRCChannels.set_and_save(freq);
 					break;
 				case MAV_DATA_STREAM_RAW_CONTROLLER:
-                    streamRateRawController = freq;
+                    streamRateRawController.set_and_save(freq);
 					break;
 					//case MAV_DATA_STREAM_RAW_SENSOR_FUSION:
-                    //    streamRateRawSensorFusion = freq;
+                    //    streamRateRawSensorFusion.set_and_save(freq);
 					//    break;
 				case MAV_DATA_STREAM_POSITION:
-                    streamRatePosition = freq;
+                    streamRatePosition.set_and_save(freq);
 					break;
 				case MAV_DATA_STREAM_EXTRA1:
-                    streamRateExtra1 = freq;
+                    streamRateExtra1.set_and_save(freq);
 					break;
 				case MAV_DATA_STREAM_EXTRA2:
-                    streamRateExtra2 = freq;
+                    streamRateExtra2.set_and_save(freq);
 					break;
 				case MAV_DATA_STREAM_EXTRA3:
-                    streamRateExtra3 = freq;
+                    streamRateExtra3.set_and_save(freq);
 					break;
 				default:
 					break;

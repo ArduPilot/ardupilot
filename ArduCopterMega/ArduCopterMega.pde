@@ -95,7 +95,7 @@ void update_events(void);
 // All GPS access should be through this pointer.
 GPS         *g_gps;
 
-#if HIL_MODE == HIL_MODE_NONE
+#if HIL_MODE == HIL_MODE_DISABLED
 
 	// real sensors
 	AP_ADC_ADS7844          adc;
@@ -145,14 +145,18 @@ GPS         *g_gps;
 	#error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-// HIL
 #if HIL_MODE != HIL_MODE_DISABLED
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
-		GCS_MAVLINK hil;
+		GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
 	#elif HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
 		HIL_XPLANE hil;
 	#endif // HIL PROTOCOL
 #endif // HIL_MODE
+
+//  We may have a hil object instantiated just for mission planning
+#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
+	GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
+#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	#if HIL_MODE != HIL_MODE_SENSORS
@@ -171,7 +175,7 @@ GPS         *g_gps;
 ////////////////////////////////////////////////////////////////////////////////
 //
 #if   GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-	GCS_MAVLINK         gcs;
+	GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
 #else
 	// If we are not using a GCS, we need a stub that does nothing.
 	GCS_Class           gcs;
