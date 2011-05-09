@@ -124,9 +124,10 @@
 # define GCS_PROTOCOL			GCS_PROTOCOL_MAVLINK
 #endif
 
-#ifndef GCS_PORT
-# define GCS_PORT			3
-#endif
+//Chris: Commenting out assignment of GCS to port 3 because it kills MAVLink on Port 0
+/ #ifndef GCS_PORT
+/ # define GCS_PORT			3
+/ #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
