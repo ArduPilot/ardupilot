@@ -136,7 +136,7 @@ protected:
 class GCS_MAVLINK : public GCS_Class
 {
 public:
-	GCS_MAVLINK();
+	GCS_MAVLINK(AP_Var::Key key);
 	void    update(void);
 	void	init(BetterStream *port);
 	void	send_message(uint8_t id, uint32_t param = 0);
@@ -171,12 +171,6 @@ private:
 
 	mavlink_channel_t chan;
     uint16_t packet_drops;
-    uint16_t rawSensorStreamRate;
-    uint16_t attitudeStreamRate;
-    uint16_t positionStreamRate;
-    uint16_t rawControllerStreamRate;
-    uint16_t rcStreamRate;
-    uint16_t extraStreamRate[3];
 
 	// waypoints
     uint16_t requested_interface; // request port to use
@@ -193,14 +187,15 @@ private:
 	float junk; //used to return a junk value for interface
 
 	// data stream rates
-	uint16_t streamRateRawSensors;
-	uint16_t streamRateExtendedStatus;
-	uint16_t streamRateRCChannels;
-	uint16_t streamRateRawController;
-	uint16_t streamRatePosition;
-	uint16_t streamRateExtra1;
-	uint16_t streamRateExtra2;
-	uint16_t streamRateExtra3;
+	AP_Var_group	    _group;
+	AP_Int16 streamRateRawSensors;
+	AP_Int16 streamRateExtendedStatus;
+	AP_Int16 streamRateRCChannels;
+	AP_Int16 streamRateRawController;
+	AP_Int16 streamRatePosition;
+	AP_Int16 streamRateExtra1;
+	AP_Int16 streamRateExtra2;
+	AP_Int16 streamRateExtra3;
 };
 #endif // GCS_PROTOCOL_MAVLINK
 

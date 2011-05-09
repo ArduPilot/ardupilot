@@ -155,6 +155,23 @@ void init_ardupilot()
 	#else
 		gcs.init(&Serial);
 	#endif
+	
+	// init the HIL
+#if HIL_MODE != HIL_MODE_DISABLED
+
+  #if HIL_PORT == 3
+	hil.init(&Serial3);
+  #elif HIL_PORT == 1
+	hil.init(&Serial1);
+  #else
+	hil.init(&Serial);
+  #endif
+#endif
+
+//  We may have a hil object instantiated just for mission planning
+#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
+	hil.init(&Serial);
+#endif
 
 	if(g.compass_enabled)
 		init_compass();
