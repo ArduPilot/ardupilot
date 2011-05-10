@@ -22,7 +22,7 @@ camera_stabilization()
 	//g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor / 2);
 
 	// dont allow control mixing
-	rc_camera_pitch.servo_out = dcm.pitch_sensor / 2;
+	g.rc_camera_pitch.servo_out = dcm.pitch_sensor / 2;
 	g.rc_camera_pitch.calc_pwm();
 	APM_RC.OutputCh(CH_5, g.rc_camera_pitch.radio_out);
 

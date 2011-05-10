@@ -174,7 +174,6 @@ GPS         *g_gps;
 ////////////////////////////////////////////////////////////////////////////////
 //
 #if   GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-	//GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
 	GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
 #else
 	// If we are not using a GCS, we need a stub that does nothing.
@@ -430,6 +429,9 @@ unsigned long 	medium_loopTimer;			// Time in miliseconds of navigation control 
 byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
 uint8_t			delta_ms_medium_loop;
 
+unsigned long	fiftyhz_loopTimer;
+uint8_t			delta_ms_fiftyhz;
+
 byte 			slow_loopCounter;
 int 			superslow_loopCounter;
 byte			flight_timer;				// for limiting the execution of flight mode thingys
@@ -478,12 +480,13 @@ void loop()
 		fast_loopTimeStamp = millis();
 	}
 
-	if (millis() - medium_loopTimer > 19) {
-		delta_ms_medium_loop 	= millis() - medium_loopTimer;
-		medium_loopTimer		= millis();
+	if (millis() - fiftyhz_loopTimer > 19) {
+		delta_ms_fiftyhz 		= millis() - fiftyhz_loopTimer;
+		fiftyhz_loopTimer		= millis();
 
 		medium_loop();
 
+		fifty_hz_loop();
 		counter_one_herz++;
 		if(counter_one_herz == 50){
 			super_slow_loop();
@@ -504,7 +507,7 @@ void loop()
 	}
 }
 
-// Main loop 50-100Hz
+// Main loop 160Hz
 void fast_loop()
 {
 	// IMU DCM Algorithm
@@ -527,10 +530,10 @@ void fast_loop()
 	// ------------------------------
 	throttle_integrator += g.rc_3.servo_out;
 
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
-	// HIL for a copter needs very fast update of the servo values
-	gcs.send_message(MSG_RADIO_OUT);
-#endif
+	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
+		// HIL for a copter needs very fast update of the servo values
+		gcs.send_message(MSG_RADIO_OUT);
+	#endif
 }
 
 void medium_loop()
@@ -551,20 +554,20 @@ void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-
 			if(GPS_enabled){
 				update_GPS();
 			}
 
 			//readCommands();
 
-			if(g.compass_enabled){
-				compass.read();		 						// Read magnetometer
-				compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
-				//compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
-				compass.null_offsets(dcm.get_dcm_matrix());
-			}
-
+			#if HIL_MODE != HIL_MODE_ATTITUDE
+				if(g.compass_enabled){
+					compass.read();		 						// Read magnetometer
+					compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
+					//compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
+					compass.null_offsets(dcm.get_dcm_matrix());
+				}
+			#endif
 			break;
 
 		// This case performs some navigation computations
@@ -632,21 +635,19 @@ void medium_loop()
 		case 3:
 			medium_loopCounter++;
 
-			if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
-				Log_Write_Attitude();
-
 			#if HIL_MODE != HIL_MODE_ATTITUDE
-			if (g.log_bitmask & MASK_LOG_CTUN)
-				Log_Write_Control_Tuning();
+				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
+					Log_Write_Attitude();
+
+				if (g.log_bitmask & MASK_LOG_CTUN)
+					Log_Write_Control_Tuning();
 			#endif
 
 			if (g.log_bitmask & MASK_LOG_NTUN)
 				Log_Write_Nav_Tuning();
 
 			if (g.log_bitmask & MASK_LOG_GPS){
-				//if(home_is_set){
-					Log_Write_GPS();
-				//}
+				Log_Write_GPS();
 			}
 
 			// XXX this should be a "GCS medium loop" interface
@@ -657,12 +658,18 @@ void medium_loop()
 			#else
 				gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
 			#endif
+
+			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+				hil.data_stream_send(5,45);
+			#endif
 			break;
 
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
 			medium_loopCounter = 0;
+			delta_ms_medium_loop	= millis() - medium_loopTimer;
+			medium_loopTimer    	= millis();
 
 			if (g.battery_monitoring != 0){
 				read_battery();
@@ -687,38 +694,57 @@ void medium_loop()
 			break;
 	}
 
-	// stuff that happens at 50 hz
-	// ---------------------------
+}
 
-
+// stuff that happens at 50 hz
+// ---------------------------
+void fifty_hz_loop()
+{
 	// use Yaw to find our bearing error
 	calc_bearing_error();
 
 	// guess how close we are - fixed observer calc
 	//calc_distance_error();
 
-	if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
-		Log_Write_Attitude();
+	# if HIL_MODE == HIL_MODE_DISABLED
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
+			Log_Write_Attitude();
 
-	#if HIL_MODE != HIL_MODE_ATTITUDE
 		if (g.log_bitmask & MASK_LOG_RAW)
 			Log_Write_Raw();
 	#endif
 
-	#if GCS_PROTOCOL == 6		// This is here for Benjamin Pelletier.	Please do not remove without checking with me.	Doug W
-		readgcsinput();
+	//#if ENABLE_CAM
+	camera_stabilization();
+	//#endif
+
+
+	// XXX is it appropriate to be doing the comms below on the fast loop?
+
+	#if HIL_MODE != HIL_MODE_DISABLED && HIL_PORT != GCS_PORT
+		// kick the HIL to process incoming sensor packets
+		hil.update();
+
+		#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
+			hil.data_stream_send(45,1000);
+		#else
+			hil.send_message(MSG_SERVO_OUT);
+		#endif
+	#elif HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE == HIL_MODE_DISABLED && HIL_PORT == 0
+		// Case for hil object on port 0 just for mission planning
+		hil.update();
+		hil.data_stream_send(45,1000);
 	#endif
 
-	#if ENABLE_CAM
-		camera_stabilization();
-	#endif
-
-    // kick the GCS to process uplink data
-    gcs.update();
+	// kick the GCS to process uplink data
+	gcs.update();
 	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 		gcs.data_stream_send(45,1000);
 	#endif
+	// XXX this should be absorbed into the above,
+	// or be a "GCS fast loop" interface
 }
+
 
 void slow_loop()
 {
@@ -768,6 +794,11 @@ void slow_loop()
 				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
+				gcs.send_message(MSG_CPU_LOAD, load*100);
+			#endif
+
+			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+				hil.data_stream_send(1,5);
 			#endif
 
 			#if CHANNEL_6_TUNING != CH6_NONE
@@ -795,7 +826,10 @@ void super_slow_loop()
 		Log_Write_Current();
 
     gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
-	// gcs.send_message(MSG_CPU_LOAD, load*100);
+
+	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+		hil.send_message(MSG_HEARTBEAT);
+	#endif
 
 	//if(gcs_simple.read()){
 	//	Serial.print("!");
@@ -1147,6 +1181,11 @@ void read_AHRS(void)
 {
 	// Perform IMU calculations and get attitude info
 	//-----------------------------------------------
+	#if HIL_MODE == HIL_MODE_SENSORS
+		// update hil before dcm update
+		hil.update();
+	#endif
+
 	dcm.update_DCM(G_Dt);
 	omega = dcm.get_gyro();
 }
