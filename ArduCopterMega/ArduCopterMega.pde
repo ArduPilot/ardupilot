@@ -530,7 +530,7 @@ void fast_loop()
 	// ------------------------------
 	throttle_integrator += g.rc_3.servo_out;
 
-	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
+	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
 		// HIL for a copter needs very fast update of the servo values
 		gcs.send_message(MSG_RADIO_OUT);
 	#endif
