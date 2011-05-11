@@ -18,29 +18,52 @@
 
 */
 
-#include <stdlib.h>
-#include <inttypes.h>
-#include <math.h>
-#include "WConstants.h"
+#include "WProgram.h"
+#include <AP_Math.h>
 
 // return value definition
 #define OPTICALFLOW_FAIL 0
 #define OPTICALFLOW_SUCCESS 1
 
+// standard rotation matrices
+#define AP_OPTICALFLOW_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_45             Matrix3f(0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_90             Matrix3f(0, -1, 0, 1, 0, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_135            Matrix3f(-0.70710678, -0.70710678, 0, 0.70710678, -0.70710678, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_180            Matrix3f(-1, 0, 0, 0, -1, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_225            Matrix3f(-0.70710678, 0.70710678, 0, -0.70710678, -0.70710678, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_270            Matrix3f(0, 1, 0, -1, 0, 0, 0, 0, 1)
+#define AP_OPTICALFLOW_ROTATION_YAW_315            Matrix3f(0.70710678, 0.70710678, 0, -0.70710678, 0.70710678, 0, 0, 0, 1)
+
 class AP_OpticalFlow
 {
-  public: 
-  	int x, y;    // total x,y position
-	int dx, dy;  // change in x and y position
+  public:
+	int raw_dx, raw_dy;   // raw sensor change in x and y position (i.e. unrotated)
 	int surface_quality;  // image quality (below 15 you really can't trust the x,y values returned)
+	int x,y;              // total x,y position
+	int dx,dy;            // rotated change in x and y position
+    unsigned long lng, lat;    // position	
+	unsigned long last_update;    // millis() time of last update
+	float field_of_view;  // field of view in Radians
+	float scaler;        // number returned from sensor when moved one pixel
+	int num_pixels;      // number of pixels of resolution in the sensor
   public:
 	AP_OpticalFlow();  // Constructor
-	virtual void init(boolean initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
-    virtual int read(); // read latest values from sensor and fill in x,y and totals
+	virtual bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	virtual byte read_register(byte address);
 	virtual void write_register(byte address, byte value);
+	virtual void set_orientation(const Matrix3f &rotation_matrix); // Rotation vector to transform sensor readings to the body frame.
+	virtual void set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };  // sets field of view of sensor
+    virtual int read(); // read latest values from sensor and fill in x,y and totals
+	virtual void get_position(float roll, float pitch, float yaw, float altitude);  // updates internal lon and lat with estimation based on optical flow
 	
-  private:
+protected:
+	Matrix3f   _orientation_matrix;
+	float conv_factor; // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
+    float radians_to_pixels;
+	float _last_roll, _last_pitch, _last_yaw, _last_altitude;
+	virtual void apply_orientation_matrix();  // rotate raw values to arrive at final x,y,dx and dy values
+	virtual void update_conversion_factors();
 };
 
 #include "AP_OpticalFlow_ADNS3080.h"
