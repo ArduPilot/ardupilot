@@ -1,5 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// For changing active command mid-mission
+//----------------------------------------
+void change_command(uint8_t index)
+{
+	struct Location temp = get_command_with_index(index);
+
+	if (next_command.id > MAV_CMD_NAV_LAST ){
+		gcs.send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
+	} else {
+		command_must_index 	= NO_COMMAND;
+		next_command.id 	= NO_COMMAND;
+		g.waypoint_index.set_and_save(index - 1);
+		update_commands();
+	}
+}
+
+
 // called by 10 Hz Medium loop
 // ---------------------------
 void update_commands(void)

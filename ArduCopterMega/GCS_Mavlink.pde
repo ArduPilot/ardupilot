@@ -6,10 +6,12 @@
 
 GCS_MAVLINK::GCS_MAVLINK(AP_Var::Key key) :
 packet_drops(0),
+
 // parameters
 // note, all values not explicitly initialised here are zeroed
 waypoint_send_timeout(1000), // 1 second
 waypoint_receive_timeout(1000), // 1 second
+
 // stream rates
 _group	(key, key == Parameters::k_param_streamrates_port0 ? PSTR("SR0_"): PSTR("SR3_")),
 streamRateRawSensors		(&_group, 0, 0, PSTR("RAW_SENS")),
@@ -385,6 +387,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else {
                 frame = MAV_FRAME_GLOBAL; // reference frame
             }
+
             float param1 = 0, param2 = 0 , param3 = 0, param4 = 0;
 
             // time that the mav should loiter in milliseconds
@@ -403,6 +406,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     z = tell_command.alt/1.0e2; // local (z), global/relative (altitude)
                 }
             }
+
 
 			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
 			case MAV_CMD_NAV_LOITER_TURNS:
@@ -515,14 +519,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_waypoint_set_current_decode(msg, &packet);
             if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
-            // set current waypoint
-            g.waypoint_index.set_and_save(packet.seq);
-
-            {
-                Location temp;  // XXX this is gross
-                temp = get_command_with_index(packet.seq);
-                set_next_WP(&temp);
-            }
+            // set current command
+            change_command(packet.seq);
 
             mavlink_msg_waypoint_current_send(chan, g.waypoint_index);
             break;

@@ -207,8 +207,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					motor_out[2],
 					motor_out[3],
 					motor_out[4],
-					motor_out[5],
-					motor_out[6],
+					g.rc_5.radio_out,
+					g.rc_6.radio_out,
 					motor_out[7]);
 			break;
 		}
@@ -220,7 +220,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					(float)airspeed / 100.0,
 					(float)g_gps->ground_speed / 100.0,
 					(dcm.yaw_sensor / 100) % 360,
-					nav_throttle,
+					(int)g.rc_3.servo_out,
 					current_loc.alt / 100.0,
 					climb_rate);
 			break;

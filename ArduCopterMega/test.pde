@@ -773,7 +773,8 @@ test_altitude(uint8_t argc, const Menu::arg *argv)
 			// decide which sensor we're usings
 			sonar_alt 		= sonar.read();
 		}
-		Serial.printf_P(PSTR("B_alt: %ld, S_alt: %ld\n"),
+
+		Serial.printf_P(PSTR("B_alt: %d, S_alt: %d\n"),
 					baro_alt,
 					sonar_alt);
 
