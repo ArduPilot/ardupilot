@@ -3,7 +3,7 @@
   Code by Randy Mackay. DIYDrones.com
 */
 
-#include <avr/interrupt.h>
+#include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
 #include <SPI.h>      // Arduino SPI library
 #include "AP_OpticalFlow.h" // ArduCopter OpticalFlow Library
 
@@ -17,6 +17,8 @@ void setup()
 	delay(1000);
 	
 	flowSensor.init();   // flowSensor initialization
+	flowSensor.set_orientation(AP_OPTICALFLOW_ADNS3080_PINS_FORWARD);
+	flowSensor.set_field_of_view(AP_OPTICALFLOW_ADNS3080_12_FOV);
 	
 	delay(1000);
 }
@@ -293,6 +295,7 @@ void display_motion()
 	
 	while( !Serial.available() ) {
 	    flowSensor.read();
+		flowSensor.get_position(0,0,0,100);
 
 		// x,y,squal
 		//if( flowSensor.motion() || first_time ) {
@@ -306,6 +309,10 @@ void display_motion()
 			Serial.print(flowSensor.dy,DEC);
 			Serial.print("\tsqual:");
 			Serial.print(flowSensor.surface_quality,DEC);
+			Serial.print("\tlat:");
+			Serial.print(flowSensor.lat,DEC);
+			Serial.print("\tlng:");
+			Serial.print(flowSensor.lng,DEC);			
 			Serial.println();
 			first_time = false;
 		//}

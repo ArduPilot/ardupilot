@@ -1,8 +1,27 @@
 #ifndef AP_OPTICALFLOW_ADNS3080_H
 #define AP_OPTICALFLOW_ADNS3080_H
 
+#include <AP_Math.h>
+#include <Stream.h>
 #include "AP_OpticalFlow.h"
-#include "HardwareSerial.h"
+
+// orientations for ADNS3080 sensor
+#define AP_OPTICALFLOW_ADNS3080_PINS_FORWARD AP_OPTICALFLOW_ROTATION_YAW_180
+#define AP_OPTICALFLOW_ADNS3080_PINS_FORWARD_RIGHT AP_OPTICALFLOW_ROTATION_YAW_135
+#define AP_OPTICALFLOW_ADNS3080_PINS_RIGHT AP_OPTICALFLOW_ROTATION_YAW_90
+#define AP_OPTICALFLOW_ADNS3080_PINS_BACK_RIGHT AP_OPTICALFLOW_ROTATION_YAW_45
+#define AP_OPTICALFLOW_ADNS3080_PINS_BACK AP_OPTICALFLOW_ROTATION_NONE
+#define AP_OPTICALFLOW_ADNS3080_PINS_BACK_LEFT AP_OPTICALFLOW_ROTATION_YAW_315
+#define AP_OPTICALFLOW_ADNS3080_PINS_LEFT AP_OPTICALFLOW_ROTATION_YAW_270
+#define AP_OPTICALFLOW_ADNS3080_PINS_FORWARD_LEFT AP_OPTICALFLOW_ROTATION_YAW_225
+
+// field of view of ADNS3080 sensor lenses
+#define AP_OPTICALFLOW_ADNS3080_04_FOV 80
+#define AP_OPTICALFLOW_ADNS3080_08_FOV 50
+#define AP_OPTICALFLOW_ADNS3080_12_FOV 20
+
+// scaler - value returned when sensor is moved equivalent of 1 pixel
+#define AP_OPTICALFLOW_ADNS3080_SCALER  10.5
 
 // We use Serial Port 2 in SPI Mode
 #define AP_SPI_DATAIN      50    // MISO  // PB3
@@ -71,27 +90,27 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	byte backup_spi_settings();
 	byte restore_spi_settings();
 	
-	boolean _motion;  	// true if there has been motion
+	bool _motion;  	// true if there has been motion
 	
   public:
 	AP_OpticalFlow_ADNS3080();  // Constructor
-	void init(boolean initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
+	bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	byte read_register(byte address);
 	void write_register(byte address, byte value);
 	void reset();         // reset sensor by holding a pin high (or is it low?) for 10us.
 	int read();           // read latest values from sensor and fill in x,y and totals, return OPTICALFLOW_SUCCESS on successful read
 	
 	// ADNS3080 specific features
-	boolean motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }			// return true if there has been motion since the last time this was called
+	bool motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }			// return true if there has been motion since the last time this was called
 	
-	boolean get_led_always_on();                    // returns true if LED is always on, false if only on when required
-	void set_led_always_on( boolean alwaysOn );     // set parameter to true if you want LED always on, otherwise false for only when required
+	bool get_led_always_on();                    // returns true if LED is always on, false if only on when required
+	void set_led_always_on( bool alwaysOn );     // set parameter to true if you want LED always on, otherwise false for only when required
 	
 	int get_resolution();							// returns resolution (either 400 or 1200 counts per inch)
 	void set_resolution(int resolution);            // set parameter to 400 or 1200 counts per inch
 	
-	boolean get_frame_rate_auto();                      // get_frame_rate_auto - return true if frame rate is set to "auto", false if manual
-	void set_frame_rate_auto(boolean auto_frame_rate);  // set_frame_rate_auto(boolean) - set frame rate to auto (true), or manual (false)
+	bool get_frame_rate_auto();                      // get_frame_rate_auto - return true if frame rate is set to "auto", false if manual
+	void set_frame_rate_auto(bool auto_frame_rate);  // set_frame_rate_auto(bool) - set frame rate to auto (true), or manual (false)
 
 	unsigned int get_frame_period();					// get_frame_period - 
 	void set_frame_period(unsigned int period);
@@ -99,15 +118,15 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	unsigned int get_frame_rate();
 	void set_frame_rate(unsigned int rate);
 	
-	boolean get_shutter_speed_auto();                   		// get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
-	void set_shutter_speed_auto(boolean auto_shutter_speed); 	// set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
+	bool get_shutter_speed_auto();                   		// get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
+	void set_shutter_speed_auto(bool auto_shutter_speed); 	// set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 
     unsigned int get_shutter_speed();
 	unsigned int set_shutter_speed(unsigned int shutter_speed);
 
 	void clear_motion();  // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
 	
-	int print_pixel_data(HardwareSerial *serPort); // dumps a 30x30 image to the Serial port
+	int print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
 };
 
 #endif

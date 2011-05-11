@@ -24,7 +24,7 @@
 */
 
 #include "AP_OpticalFlow_ADNS3080.h"
-#include <avr/interrupt.h>
+#include "WProgram.h"
 #include "../SPI/SPI.h"
 
 #define AP_SPI_TIMEOUT 1000
@@ -40,12 +40,16 @@ union NumericIntType
 // Constructors ////////////////////////////////////////////////////////////////
 AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
 {
+    num_pixels = ADNS3080_PIXELS_X;
+    field_of_view = AP_OPTICALFLOW_ADNS3080_12_FOV;
+	scaler = AP_OPTICALFLOW_ADNS3080_SCALER;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 // init - initialise sensor
 // initCommAPI parameter controls whether SPI interface is initialised (set to false if other devices are on the SPI bus and have already initialised the interface)
-void AP_OpticalFlow_ADNS3080::init(boolean initCommAPI)
+bool
+AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 {
 	pinMode(AP_SPI_DATAOUT,OUTPUT);
 	pinMode(AP_SPI_DATAIN,INPUT);
@@ -70,7 +74,8 @@ void AP_OpticalFlow_ADNS3080::init(boolean initCommAPI)
 //
 // backup_spi_settings - checks current SPI settings (clock speed, etc), sets values to what we need
 //
-byte AP_OpticalFlow_ADNS3080::backup_spi_settings()
+byte
+AP_OpticalFlow_ADNS3080::backup_spi_settings()
 {	
 	// store current spi values
 	orig_spi_settings_spcr = SPCR & (DORD | CPOL | CPHA);
@@ -85,7 +90,8 @@ byte AP_OpticalFlow_ADNS3080::backup_spi_settings()
 }
 
 // restore_spi_settings - restores SPI settings (clock speed, etc) to what their values were before the sensor used the bus
-byte AP_OpticalFlow_ADNS3080::restore_spi_settings()
+byte
+AP_OpticalFlow_ADNS3080::restore_spi_settings()
 {
     byte temp;
 	
@@ -105,7 +111,8 @@ byte AP_OpticalFlow_ADNS3080::restore_spi_settings()
 }
 
 // Read a register from the sensor
-byte AP_OpticalFlow_ADNS3080::read_register(byte address)        
+byte
+AP_OpticalFlow_ADNS3080::read_register(byte address)        
 {
     byte result = 0, junk = 0;
 
@@ -132,7 +139,8 @@ byte AP_OpticalFlow_ADNS3080::read_register(byte address)
 }
 
 // write a value to one of the sensor's registers
-void AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
+void
+AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 {
     byte junk = 0;
 
@@ -157,7 +165,8 @@ void AP_OpticalFlow_ADNS3080::write_register(byte address, byte value)
 }
 
 // reset sensor by holding a pin high (or is it low?) for 10us.
-void AP_OpticalFlow_ADNS3080::reset()
+void
+AP_OpticalFlow_ADNS3080::reset()
 {
     digitalWrite(ADNS3080_RESET,HIGH);                 // reset sensor
 	delayMicroseconds(10);
@@ -165,35 +174,40 @@ void AP_OpticalFlow_ADNS3080::reset()
 }
 
 // read latest values from sensor and fill in x,y and totals
-int AP_OpticalFlow_ADNS3080::read()
+int
+AP_OpticalFlow_ADNS3080::read()
 {
     surface_quality = (unsigned int)read_register(ADNS3080_SQUAL);
 	delayMicroseconds(50);  // small delay
 	
     // check for movement, update x,y values
 	if( (read_register(ADNS3080_MOTION) & 0x80) != 0 ) {
-		dx = ((char)read_register(ADNS3080_DELTA_X));
+		raw_dx = ((char)read_register(ADNS3080_DELTA_X));
 		delayMicroseconds(50);  // small delay
-		dy = ((char)read_register(ADNS3080_DELTA_Y));
-		x+=dx;
-		y+=dy;
+		raw_dy = ((char)read_register(ADNS3080_DELTA_Y));
 		_motion = true;
 	}else{
-	    dx = 0;
-		dy = 0;
+	    raw_dx = 0;
+		raw_dy = 0;
 	}
+	
+	last_update = millis();
+	
+	apply_orientation_matrix();
 	
 	return OPTICALFLOW_SUCCESS;
 }
 
 // get_led_always_on - returns true if LED is always on, false if only on when required
-boolean AP_OpticalFlow_ADNS3080::get_led_always_on()
+bool
+AP_OpticalFlow_ADNS3080::get_led_always_on()
 {
 	return ( (read_register(ADNS3080_CONFIGURATION_BITS) & 0x40) > 0 );
 }
 
 // set_led_always_on - set parameter to true if you want LED always on, otherwise false for only when required
-void AP_OpticalFlow_ADNS3080::set_led_always_on( boolean alwaysOn )
+void
+AP_OpticalFlow_ADNS3080::set_led_always_on( bool alwaysOn )
 {
     byte regVal = read_register(ADNS3080_CONFIGURATION_BITS);
     regVal = regVal & 0xBf | (alwaysOn << 6);
@@ -202,7 +216,8 @@ void AP_OpticalFlow_ADNS3080::set_led_always_on( boolean alwaysOn )
 }
 
 // returns resolution (either 400 or 1200 counts per inch)
-int AP_OpticalFlow_ADNS3080::get_resolution()
+int
+AP_OpticalFlow_ADNS3080::get_resolution()
 {
     if( (read_register(ADNS3080_CONFIGURATION_BITS) & 0x10) == 0 )
 	    return 400;
@@ -211,7 +226,8 @@ int AP_OpticalFlow_ADNS3080::get_resolution()
 }
 
 // set parameter to 400 or 1200 counts per inch
-void AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
+void
+AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 {
     byte regVal = read_register(ADNS3080_CONFIGURATION_BITS);
 	
@@ -226,7 +242,8 @@ void AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 }
 
 // get_frame_rate_auto - return whether frame rate is set to "auto" or manual
-boolean AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
+bool
+AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	if( regVal & 0x01 > 0 ) {
@@ -237,7 +254,8 @@ boolean AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
 }
 
 // set_frame_rate_auto - set frame rate to auto (true) or manual (false)
-void AP_OpticalFlow_ADNS3080::set_frame_rate_auto(boolean auto_frame_rate)
+void
+AP_OpticalFlow_ADNS3080::set_frame_rate_auto(bool auto_frame_rate)
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	delayMicroseconds(50);  // small delay
@@ -258,7 +276,8 @@ void AP_OpticalFlow_ADNS3080::set_frame_rate_auto(boolean auto_frame_rate)
 }
 
 // get frame period
-unsigned int AP_OpticalFlow_ADNS3080::get_frame_period()
+unsigned int
+AP_OpticalFlow_ADNS3080::get_frame_period()
 {
     NumericIntType aNum; 
 	aNum.byteValue[1] = read_register(ADNS3080_FRAME_PERIOD_UPPER);
@@ -268,7 +287,8 @@ unsigned int AP_OpticalFlow_ADNS3080::get_frame_period()
 }
 
 // set frame period
-void AP_OpticalFlow_ADNS3080::set_frame_period(unsigned int period)
+void
+AP_OpticalFlow_ADNS3080::set_frame_period(unsigned int period)
 {
     NumericIntType aNum;
 	aNum.uintValue = period;
@@ -284,14 +304,16 @@ void AP_OpticalFlow_ADNS3080::set_frame_period(unsigned int period)
 
 }
 
-unsigned int AP_OpticalFlow_ADNS3080::get_frame_rate()
+unsigned int
+AP_OpticalFlow_ADNS3080::get_frame_rate()
 {
     unsigned long clockSpeed = ADNS3080_CLOCK_SPEED;
 	unsigned int rate = clockSpeed / get_frame_period();
 	return rate;
 }
 
-void AP_OpticalFlow_ADNS3080::set_frame_rate(unsigned int rate)
+void
+AP_OpticalFlow_ADNS3080::set_frame_rate(unsigned int rate)
 {
     unsigned long clockSpeed = ADNS3080_CLOCK_SPEED;
     unsigned int period = (unsigned int)(clockSpeed / (unsigned long)rate);
@@ -300,7 +322,8 @@ void AP_OpticalFlow_ADNS3080::set_frame_rate(unsigned int rate)
 }
 
 // get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
-boolean AP_OpticalFlow_ADNS3080::get_shutter_speed_auto()
+bool
+AP_OpticalFlow_ADNS3080::get_shutter_speed_auto()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	if( (regVal & 0x02) > 0 ) {
@@ -311,7 +334,8 @@ boolean AP_OpticalFlow_ADNS3080::get_shutter_speed_auto()
 }
 
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
-void AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(boolean auto_shutter_speed)
+void
+AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(bool auto_shutter_speed)
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
 	delayMicroseconds(50);  // small delay
@@ -333,7 +357,8 @@ void AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(boolean auto_shutter_speed)
 }
 
 // get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
-unsigned int AP_OpticalFlow_ADNS3080::get_shutter_speed()
+unsigned int
+AP_OpticalFlow_ADNS3080::get_shutter_speed()
 {
     NumericIntType aNum; 
 	aNum.byteValue[1] = read_register(ADNS3080_SHUTTER_UPPER);
@@ -344,7 +369,8 @@ unsigned int AP_OpticalFlow_ADNS3080::get_shutter_speed()
     
 	
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
-unsigned int AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_speed)
+unsigned int
+AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_speed)
 {
     NumericIntType aNum;
 	aNum.uintValue = shutter_speed;
@@ -374,7 +400,8 @@ unsigned int AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_spe
 }
 
 // clear_motion - will cause the Delta_X, Delta_Y, and internal motion registers to be cleared
-void AP_OpticalFlow_ADNS3080::clear_motion()
+void
+AP_OpticalFlow_ADNS3080::clear_motion()
 {
     write_register(ADNS3080_MOTION_CLEAR,0xFF);  // writing anything to this register will clear the sensor's motion registers
 	x = 0;
@@ -385,10 +412,11 @@ void AP_OpticalFlow_ADNS3080::clear_motion()
 }
 
 // get_pixel_data - captures an image from the sensor and stores it to the pixe_data array
-int AP_OpticalFlow_ADNS3080::print_pixel_data(HardwareSerial *serPort)
+int
+AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
 {
     int i,j;
-	boolean isFirstPixel = true;
+	bool isFirstPixel = true;
 	byte regValue;
 	byte pixelValue;
 	
