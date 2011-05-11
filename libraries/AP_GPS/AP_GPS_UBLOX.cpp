@@ -179,6 +179,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 	case MSG_SOL:
 		fix			= (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.solution.fix_type == FIX_3D);
 		num_sats	= _buffer.solution.satellites;
+		hdop		= _buffer.solution.position_DOP;
 		break;
 	case MSG_VELNED:
 		speed_3d	= _buffer.velned.speed_3d;				// cm/s
