@@ -226,7 +226,11 @@ void do_takeoff()
 	Location temp		= current_loc;
 
 	// next_command.alt is a relative altitude!!!
-	temp.alt			= next_command.alt + home.alt;
+	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
+		temp.alt			= next_command.alt + home.alt;
+	} else {
+		temp.alt 			= next_command.alt;
+	}
 
 	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 
@@ -238,8 +242,9 @@ void do_nav_wp()
 {
 	wp_control = WP_MODE;
 
+	// no longer needed as get_command_with_index takes care of this
 	// next_command.alt is a relative altitude!!!
-	next_command.alt += home.alt;
+	// next_command.alt += home.alt;
 
 	set_next_WP(&next_command);
 
@@ -467,7 +472,11 @@ void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	condition_value = next_command.alt + home.alt;
+	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
+		condition_value		= next_command.alt + home.alt;
+	} else {
+		condition_value		= next_command.alt;
+	}
 	temp.alt		= condition_value;
 	set_next_WP(&temp);
 }

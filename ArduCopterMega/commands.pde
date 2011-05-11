@@ -70,6 +70,11 @@ struct Location get_command_with_index(int i)
 		temp.lng = (long)eeprom_read_dword((uint32_t*)mem); // lon is stored in decimal * 10,000,000
 	}
 
+	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
+	if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & WP_OPTION_ALT_RELATIVE){
+		temp.alt += home.alt;
+	}
+
 	if(temp.options & WP_OPTION_RELATIVE){
 		// If were relative, just offset from home
 		temp.lat	+=	home.lat;

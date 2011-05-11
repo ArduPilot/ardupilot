@@ -532,7 +532,7 @@ void fast_loop()
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
 		// HIL for a copter needs very fast update of the servo values
-		gcs.send_message(MSG_RADIO_OUT);
+		hil.send_message(MSG_RADIO_OUT);
 	#endif
 }
 
