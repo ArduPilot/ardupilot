@@ -220,7 +220,8 @@ set_servos_4()
 		motor_out[CH_3]		= constrain(motor_out[CH_3], 	out_min, g.rc_3.radio_max.get());
 		motor_out[CH_4] 	= constrain(motor_out[CH_4], 	out_min, g.rc_3.radio_max.get());
 
-		if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == Y6_FRAME)) {
+
+		if ((g.frame_type == HEXAX_FRAME) || (g.frame_type == HEXAP_FRAME) || (g.frame_type == Y6_FRAME)) {
 			motor_out[CH_7]		= constrain(motor_out[CH_7], 	out_min, g.rc_3.radio_max.get());
 			motor_out[CH_8]		= constrain(motor_out[CH_8], 	out_min, g.rc_3.radio_max.get());
 		}
