@@ -319,25 +319,6 @@ int find_last_log_page(int bottom_page)
 	return top_page;
 }
 
-
-
-// Write a command processing packet. Total length : 19 bytes
-//void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
-void Log_Write_Cmd(byte num, struct Location *wp)
-{
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_CMD_MSG);
-	DataFlash.WriteByte(num);
-	DataFlash.WriteByte(wp->id);
-	DataFlash.WriteByte(wp->p1);
-	DataFlash.WriteByte(wp->options);
-	DataFlash.WriteLong(wp->alt);
-	DataFlash.WriteLong(wp->lat);
-	DataFlash.WriteLong(wp->lng);
-	DataFlash.WriteByte(END_BYTE);
-}
-
 void Log_Write_Nav_Tuning()
 {
 	Matrix3f tempmat = dcm.get_dcm_matrix();
@@ -436,7 +417,7 @@ void Log_Write_GPS()
 	DataFlash.WriteLong(g_gps->altitude);					// 6
 	DataFlash.WriteLong(current_loc.alt);					// 7
 
-	DataFlash.WriteInt(g_gps->ground_speed);				// 8
+	DataFlash.WriteInt(g_gps->ground_speed/100);			// 8
 	DataFlash.WriteInt((int)(g_gps->ground_course/100));	// 9
 
 	DataFlash.WriteByte(END_BYTE);
@@ -444,22 +425,22 @@ void Log_Write_GPS()
 
 // Read a GPS packet
 void Log_Read_GPS()
-{						//	1		 2	3  4			5			 6		   7	   8       9
-					//GPS, 77361250, 1, 9, 40.0584750, -105.2034500, 166.2600, 2.8100, 0.0600, 266.0000
-							//	1   2   3   4      5		6	 7		 8		9
-	Serial.printf_P(PSTR("GPS, %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+{
+	Serial.printf_P(PSTR("GPS, %ld, %d, %d, "
+					  "%4.7f, %4.7f, %4.4f, %4.4f, "
+					  "%4.4f, %d\n"),
 
-			DataFlash.ReadLong(),					// 1 time
-			(int)DataFlash.ReadByte(),				// 2 fix
-			(int)DataFlash.ReadByte(),				// 3 sats
+						DataFlash.ReadLong(),					// 1 time
+						(int)DataFlash.ReadByte(),				// 2 fix
+						(int)DataFlash.ReadByte(),				// 3 sats
 
-			(float)DataFlash.ReadLong() / t7,		// 4 lat
-			(float)DataFlash.ReadLong() / t7,		// 5 lon
-			(float)DataFlash.ReadLong() / 100.0,	// 6 gps alt
-			(float)DataFlash.ReadLong() / 100.0,	// 7 sensor alt
+						(float)DataFlash.ReadLong() / t7,		// 4 lat
+						(float)DataFlash.ReadLong() / t7,		// 5 lon
+						(float)DataFlash.ReadLong() / 100.0,	// 6 gps alt
+						(float)DataFlash.ReadLong() / 100.0,	// 7 sensor alt
 
-			(float)DataFlash.ReadInt() / 100.0,		// 8 ground speed
-			(float)DataFlash.ReadInt());			// 9 ground course
+						DataFlash.ReadInt(),					// 8 ground speed
+						DataFlash.ReadInt());					// 9 ground course
 }
 
 
@@ -624,24 +605,47 @@ void Log_Read_Performance()
 	Serial.println(" ");
 }
 
+// Write a command processing packet.
+//void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
+void Log_Write_Cmd(byte num, struct Location *wp)
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_CMD_MSG);
+
+	DataFlash.WriteByte(g.waypoint_total);
+
+	DataFlash.WriteByte(num);
+	DataFlash.WriteByte(wp->id);
+	DataFlash.WriteByte(wp->p1);
+	DataFlash.WriteByte(wp->options);
+
+	DataFlash.WriteLong(wp->alt);
+	DataFlash.WriteLong(wp->lat);
+	DataFlash.WriteLong(wp->lng);
+
+	DataFlash.WriteByte(END_BYTE);
+}
+
+
 // Read a command processing packet
 void Log_Read_Cmd()
 {
-	byte logvarb;
-	long logvarl;
+	Serial.printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
 
-	Serial.printf_P(PSTR("CMD:"));
-	for(int i = 1; i <= 4; i++) {
-		logvarb = DataFlash.ReadByte();
-		Serial.print(logvarb, DEC);
-		Serial.print(comma);
-	}
-	for(int i = 1; i <= 3; i++) {
-		logvarl = DataFlash.ReadLong();
-		Serial.print(logvarl, DEC);
-		Serial.print(comma);
-	}
-	Serial.println(" ");
+				// WP total
+				DataFlash.ReadByte(),
+
+				// num, id, p1, options
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+
+				// Alt, lat long
+				DataFlash.ReadLong(),
+				DataFlash.ReadLong(),
+				DataFlash.ReadLong());
 }
 
 // Write an attitude packet. Total length : 10 bytes

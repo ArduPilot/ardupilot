@@ -6,7 +6,7 @@ void change_command(uint8_t index)
 {
 	struct Location temp = get_command_with_index(index);
 
-	if (next_command.id > MAV_CMD_NAV_LAST ){
+	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs.send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 	} else {
 		command_must_index 	= NO_COMMAND;

@@ -423,6 +423,7 @@ bool verify_nav_wp()
 		char message[30];
 		sprintf(message,"Reached Command #%i",command_must_index);
 		gcs.send_text(SEVERITY_LOW,message);
+		wp_verify_byte = 0;
 		return true;
 	}else{
 		return false;
