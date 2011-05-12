@@ -379,7 +379,7 @@ void Log_Read_Nav_Tuning()
 	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, "
 								"%d, %d, "
 								"%d, %d, %d, %d, "
-								"%d, %d, %d "
+								"%d, %d, %d, "
 								"%d, %ld, %4.4f, %4.4f, %4.4f, %4.4f "
 
 								),
