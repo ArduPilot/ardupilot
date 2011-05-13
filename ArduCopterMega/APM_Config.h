@@ -8,7 +8,7 @@
 
 #define NAV_TEST 0	// 0 = traditional, 1 = rate controlled
 
-#define CHANNEL_6_TUNING CH6_NONE
+#define CHANNEL_6_TUNING CH6_STABLIZE_KD
 //#define CHANNEL_6_TUNING CH6_PMAX
 
 	/*

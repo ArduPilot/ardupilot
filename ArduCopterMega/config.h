@@ -323,29 +323,29 @@
 // STABILZE Angle Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		0.6
+# define STABILIZE_ROLL_P 		0.54 // .48 = 4.0 NG, .54 = 4.5 NG
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.1		//
+# define STABILIZE_ROLL_I 		0.025		//
 #endif
 #ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.13
+# define STABILIZE_ROLL_D 		0.12
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	10		// 10 degrees
+# define STABILIZE_ROLL_IMAX 	.5		// degrees * 100
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		0.6
+# define STABILIZE_PITCH_P		0.48
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.1
+# define STABILIZE_PITCH_I		0.025
 #endif
 #ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.13
+# define STABILIZE_PITCH_D		0.12
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	10
+# define STABILIZE_PITCH_IMAX	.5		// degrees * 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

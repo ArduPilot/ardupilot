@@ -459,7 +459,7 @@ void loop()
 {
 	// We want this to execute fast
 	// ----------------------------
-	if (millis() - fast_loopTimer > 6) {
+	if (millis() - fast_loopTimer >= 5) {
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
 		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
@@ -528,7 +528,7 @@ void fast_loop()
 
 	// record throttle output
 	// ------------------------------
-	throttle_integrator += g.rc_3.servo_out;
+	//throttle_integrator += g.rc_3.servo_out;
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
 		// HIL for a copter needs very fast update of the servo values
@@ -738,6 +738,7 @@ void fifty_hz_loop()
 
 	// kick the GCS to process uplink data
 	gcs.update();
+
 	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 		gcs.data_stream_send(45,1000);
 	#endif
