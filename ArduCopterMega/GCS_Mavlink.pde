@@ -498,14 +498,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_waypoint_clear_all_t packet;
             mavlink_msg_waypoint_clear_all_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+            if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
             // clear all waypoints
             uint8_t type = 0; // ok (0), error(1)
             g.waypoint_total.set_and_save(0);
 
             // send acknowledgement 3 times to makes sure it is received
-            for (int i=0;i<3;i++) mavlink_msg_waypoint_ack_send(chan,msg->sysid,msg->compid,type);
+            for (int i=0;i<3;i++)
+            	mavlink_msg_waypoint_ack_send(chan, msg->sysid, msg->compid, type);
 
             break;
         }
@@ -540,6 +541,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 packet.count = MAX_WAYPOINTS;
             }
             g.waypoint_total.set_and_save(packet.count - 1);
+
             waypoint_timelast_receive = millis();
             waypoint_receiving   = true;
             waypoint_sending     = false;
@@ -934,6 +936,7 @@ GCS_MAVLINK::_queued_send()
         (requested_interface == chan) &&
         waypoint_request_i <= g.waypoint_total &&
 		mavdelay > 15) { // limits to 3.33 hz
+
 		mavlink_msg_waypoint_request_send(
 			chan,
             waypoint_dest_sysid,

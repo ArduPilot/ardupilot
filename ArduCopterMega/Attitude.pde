@@ -49,13 +49,13 @@ output_stabilize_roll()
 	error 		= constrain(error, -2500, 2500);
 
 	// only buildup I if we are trying to roll hard
-	if(abs(g.rc_1.servo_out) < 1000){
+	//if(abs(g.rc_1.servo_out) < 1000){
 		// smoother alternative to reset?
 		//if(g.pid_stabilize_roll.kI() != 0){
 		//	g.pid_stabilize_roll.kI(g.pid_stabilize_roll.kI() * .8);
 		//}
-		g.pid_stabilize_roll.reset_I();
-	}
+	//	g.pid_stabilize_roll.reset_I();
+	//}
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
 	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);		// 2500 * .7 = 1750
@@ -65,9 +65,13 @@ output_stabilize_roll()
 	// omega is the raw gyro reading
 
 	// Limit dampening to be equal to propotional term for symmetry
-	rate				= degrees(omega.x) * 100.0; 													// 6rad = 34377
-	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
-	g.rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
+	rate				= degrees(omega.x) * 100.0; 												// 6rad = 34377
+	dampener 			= rate * g.stabilize_dampener;												// 34377 * .175 = 6000
+	//g.rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
+
+	g.rc_1.servo_out	-= dampener;
+	g.rc_1.servo_out	= min(g.rc_1.servo_out, 2500);
+	g.rc_1.servo_out	= max(g.rc_1.servo_out, -2500);
 }
 
 void
@@ -82,9 +86,9 @@ output_stabilize_pitch()
 	error		= constrain(error, -2500, 2500);
 
 	// only buildup I if we are trying to roll hard
-	if(abs(g.rc_2.servo_out) < 1500){
-		g.pid_stabilize_pitch.reset_I();
-	}
+	//if(abs(g.rc_2.servo_out) < 1500){
+	//	g.pid_stabilize_pitch.reset_I();
+	//}
 
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
 	g.rc_2.servo_out 	= g.pid_stabilize_pitch.get_pid(error, 	delta_ms_fast_loop, 1.0);
@@ -96,7 +100,11 @@ output_stabilize_pitch()
 	// Limit dampening to be equal to propotional term for symmetry
 	rate				= degrees(omega.y) * 100.0; 													// 6rad = 34377
 	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
-	g.rc_2.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
+	//g.rc_2.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
+
+	g.rc_2.servo_out	-= dampener;
+	g.rc_2.servo_out	= min(g.rc_2.servo_out, 2500);
+	g.rc_2.servo_out	= max(g.rc_2.servo_out, -2500);
 }
 
 void
@@ -286,7 +294,7 @@ output_yaw_with_hold(boolean hold)
 		if(g.rc_4.control_in == 0){
 
 			// adaptive braking
-			g.rc_4.servo_out 	= (int)((-3000.0 * omega.z) / 1);
+			g.rc_4.servo_out 	= (int)(-800.0 * omega.z);
 
 			yaw_debug 			= YAW_BRAKE;  // 1
 

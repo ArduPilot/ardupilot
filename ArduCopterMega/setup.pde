@@ -313,15 +313,15 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 			}
 
 			g.rc_4.calc_pwm();
-			motor_out[CH_3] 	= g.rc_4.radio_out;
+			// servo Yaw
+			APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 		}
 
 		if(g.rc_3.control_in > 0){
 			APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
 			APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
 			APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-			if(g.frame_type != TRI_FRAME)
-				APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
+			APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 		}else{
 			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
 			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
