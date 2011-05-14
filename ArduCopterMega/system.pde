@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.3 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.4 Beta", main_menu_commands);
 
 void init_ardupilot()
 {

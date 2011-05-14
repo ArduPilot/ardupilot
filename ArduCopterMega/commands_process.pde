@@ -24,8 +24,7 @@ void update_commands(void)
 	// This function loads commands into three buffers
 	// when a new command is loaded, it is processed with process_XXX()
 
-	// If we have a command in the queue,
-	// nothing to do.
+	// If we have a command in the queue already
 	if(next_command.id != NO_COMMAND){
 		return;
 	}
@@ -55,7 +54,11 @@ void update_commands(void)
 		increment_WP_index();
 
 		// act on our new command
-		process_next_command();
+		if (process_next_command()){
+			// invalidate command queue so a new one is loaded
+			// -----------------------------------------------
+			clear_command_queue();
+		}
 
 	}
 }
@@ -73,7 +76,8 @@ void verify_commands(void)
 	}
 }
 
-void process_next_command()
+bool
+process_next_command()
 {
 	// these are Navigation/Must commands
 	// ---------------------------------
@@ -95,12 +99,13 @@ void process_next_command()
 
 			// Act on the new command
 			process_must();
+			return true;
 		}
 	}
 
 	// these are Condition/May commands
 	// ----------------------
-	if (command_may_index == 0){
+	if (command_may_index == NO_COMMAND){
 		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
 
 			// we remember the index of our mission here
@@ -115,6 +120,7 @@ void process_next_command()
 				Log_Write_Cmd(g.waypoint_index, &next_command);
 
 			process_may();
+			return true;
 		}
 
 		// these are Do/Now commands
@@ -126,8 +132,11 @@ void process_next_command()
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);
 			process_now();
+			return true;
 		}
 	}
+	// we did not need any new commands
+	return false;
 }
 
 /**************************************************/
@@ -150,9 +159,6 @@ void process_must()
 	// implements the Flight Logic
 	handle_process_must();
 
-	// invalidate command queue so a new one is loaded
-	// -----------------------------------------------
-	clear_command_queue();
 }
 
 void process_may()
@@ -163,19 +169,10 @@ void process_may()
 
 	command_may_ID = next_command.id;
 	handle_process_may();
-
-	// invalidate command queue so a new one is loaded
-	// -----------------------------------------------
-	clear_command_queue();
 }
 
 void process_now()
 {
 	Serial.print("pnow");
 	handle_process_now();
-
-	// invalidate command queue so a new one is loaded
-	// -----------------------------------------------
-	clear_command_queue();
 }
-

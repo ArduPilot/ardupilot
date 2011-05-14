@@ -35,7 +35,7 @@ void init_rc_in()
 		g.rc_6.set_range(0,300);
 
 	#elif CHANNEL_6_TUNING == CH6_BARO_KP
-		g.rc_6.set_range(0,500);
+		g.rc_6.set_range(0,800);
 
 	#elif CHANNEL_6_TUNING == CH6_BARO_KD
 		g.rc_6.set_range(0,500);

@@ -361,9 +361,7 @@ void Log_Read_Nav_Tuning()
 								"%d, %d, "
 								"%d, %d, %d, %d, "
 								"%d, %d, %d, "
-								"%d, %ld, %4.4f, %4.4f, %4.4f, %4.4f\n"
-
-								),
+								"%d, %ld, %4.4f, %4.4f, %4.4f, %4.4f\n"),
 				DataFlash.ReadInt(),	//yaw sensor
 				DataFlash.ReadInt(),	//distance
 				DataFlash.ReadByte(),	//bitmask

@@ -1139,6 +1139,9 @@ void update_navigation()
 			calc_loiter_nav();
 
 		} else {
+
+			update_crosstrack();
+
 			// calc a rate dampened pitch to the target
 			calc_rate_nav();
 
