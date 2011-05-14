@@ -374,14 +374,11 @@ bool verify_land()
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);
 
-	//update_crosstrack();
 	return false;
 }
 
 bool verify_nav_wp()
 {
-	update_crosstrack();
-
 	// Altitude checking
 	if(next_WP.options & WP_OPTION_ALT_REQUIRED){
 		// we desire a certain minimum altitude

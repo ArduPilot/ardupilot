@@ -175,10 +175,10 @@ void calc_nav_throttle()
 
 	if(altitude_sensor == BARO){
 		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .25
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -50, 120);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 140);
 	}else{
 		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .5
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -50, 150);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 150);
 	}
 
 	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;

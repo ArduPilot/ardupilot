@@ -2,6 +2,7 @@
 
 void init_commands()
 {
+	// zero is home, but we always load the next command (1), in the code.
     g.waypoint_index.set_and_save(0);
 
     // This are registers for the current may and must commands
@@ -15,10 +16,10 @@ void init_commands()
 
 void init_auto()
 {
-	if (g.waypoint_index == g.waypoint_total) {
-		Serial.println("ia_f");
-		do_RTL();
-	}
+	//if (g.waypoint_index == g.waypoint_total) {
+	//	Serial.println("ia_f");
+	//	do_RTL();
+	//}
 
 	// initialize commands
 	// -------------------
@@ -28,7 +29,7 @@ void init_auto()
 // forces the loading of a new command
 // queue is emptied after a new command is processed
 void clear_command_queue(){
-	next_command.id 	= CMD_BLANK;
+	next_command.id 	= NO_COMMAND;
 }
 
 // Getters

@@ -94,11 +94,13 @@ set_servos_4()
 			int roll_out 	 	= g.rc_1.pwm_out * .707;
 			int pitch_out 	 	= g.rc_2.pwm_out * .707;
 
-			motor_out[CH_3]	 	= g.rc_3.radio_out + roll_out + pitch_out;
-			motor_out[CH_2]	 	= g.rc_3.radio_out + roll_out - pitch_out;
+			// left
+			motor_out[CH_3]	 	= g.rc_3.radio_out + roll_out + pitch_out;	// FRONT
+			motor_out[CH_2]	 	= g.rc_3.radio_out + roll_out - pitch_out;	// BACK
 
-			motor_out[CH_1]		= g.rc_3.radio_out - roll_out + pitch_out;
-			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;
+			// right
+			motor_out[CH_1]		= g.rc_3.radio_out - roll_out + pitch_out;  // FRONT
+			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// BACK
 
 			//Serial.printf("\tb4: %d %d %d %d ", motor_out[CH_1], motor_out[CH_2], motor_out[CH_3], motor_out[CH_4]);
 
@@ -163,14 +165,14 @@ set_servos_4()
 			int pitch_out 		= (float)g.rc_2.pwm_out * .5;
 
 			//Back side
-			motor_out[CH_8]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CCW
-			motor_out[CH_1]		= g.rc_3.radio_out + roll_out - pitch_out;	// CW
-			motor_out[CH_3]          = g.rc_3.radio_out - roll_out - pitch_out;	// CW
+			motor_out[CH_8]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CCW	BACK
+			motor_out[CH_1]		= g.rc_3.radio_out + roll_out - pitch_out;	// CW, 	BACK LEFT
+			motor_out[CH_3]		= g.rc_3.radio_out - roll_out - pitch_out;	// CW	BACK RIGHT
 
 			//Front side
-			motor_out[CH_7]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// CW
-                        motor_out[CH_2] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW
-			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
+			motor_out[CH_7]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// CW	 FRONT
+			motor_out[CH_2] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	 FRONT LEFT
+			motor_out[CH_4] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	 FRONT RIGHT
 
 			motor_out[CH_8]		+= g.rc_4.pwm_out;	// CCW
 			motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
@@ -178,7 +180,7 @@ set_servos_4()
 
 			motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
 			motor_out[CH_7]		-= g.rc_4.pwm_out;	// CW
-			motor_out[CH_3]		-= g.rc_4.pwm_out;      // CW
+			motor_out[CH_3]		-= g.rc_4.pwm_out;  // CW
 
 		}else if (g.frame_type == Y6_FRAME) {
 			//Serial.println("Y6_FRAME");
