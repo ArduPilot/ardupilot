@@ -744,6 +744,12 @@ void fifty_hz_loop()
 	#endif
 	// XXX this should be absorbed into the above,
 	// or be a "GCS fast loop" interface
+
+	// Hack - had to move to 50hz loop to test a theory
+	if(g.frame_type == TRI_FRAME){
+		// servo Yaw
+		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+	}
 }
 
 
@@ -1250,8 +1256,6 @@ void update_alt()
 				baro_alt_offset = sonar_alt - baro_alt;
 			}
 		}
-
-
 
 		// calculate our altitude
 		if(altitude_sensor == BARO){

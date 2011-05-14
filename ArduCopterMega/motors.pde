@@ -131,9 +131,6 @@ set_servos_4()
 			// this is a compensation for the angle of the yaw motor. Its linear, but should work ok.
 			//motor_out[CH_4]		+= (float)(abs(g.rc_4.control_in)) * .013;
 
-			// servo Yaw
-			APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
-
 
 		}else if (g.frame_type == HEXAX_FRAME) {
 			//Serial.println("6_FRAME");
