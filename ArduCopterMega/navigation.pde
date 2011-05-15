@@ -129,7 +129,7 @@ void calc_nav_output()
 void calc_rate_nav()
 {
 	// calc distance error
-	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
+	nav_lat	= min((wp_distance * 100), 1800); // +- 20m max error
 
 	// Scale response by kP
 	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
@@ -159,17 +159,18 @@ void calc_rate_nav()
 
 	// change to rate error
 	// we want to be going 450cm/s
-	int error 			= WAYPOINT_SPEED - groundspeed;
+	int nav_lat 		= WAYPOINT_SPEED - groundspeed;
+	nav_lat 			= constrain(nav_lat, -1800, 1800);
 
 	// Scale response by kP
-	long nav_lat 		= g.pid_nav_wp.kP() * error;
+	long nav_lat 		= g.pid_nav_wp.kP() * nav_lat;
 	int dampening		= g.pid_nav_wp.kD() * (groundspeed - last_ground_speed);
 
 	// remember our old speed
 	last_ground_speed	= groundspeed;
 
 	// dampen our response
-	nav_lat -= constrain(dampening, 	-1800, 1800); // +- max error
+	nav_lat -= dampening; // +- max error
 
 	// limit our output
 	nav_lat	= constrain(nav_lat, 	-1800, 1800); // +- max error
