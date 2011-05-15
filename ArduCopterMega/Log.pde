@@ -758,7 +758,7 @@ void Log_Read(int start_page, int end_page)
 					log_step++;
 
 				}else if(data == LOG_STARTUP_MSG){
-					Log_Read_Startup();
+					//Log_Read_Startup();
 					log_step++;
 				}else {
 					if(data == LOG_GPS_MSG){
