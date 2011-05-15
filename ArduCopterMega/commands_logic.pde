@@ -245,10 +245,10 @@ void do_nav_wp()
 {
 	wp_control = WP_MODE;
 
-	// no longer needed as get_command_with_index takes care of this
 	// next_command.alt is a relative altitude!!!
-	// next_command.alt += home.alt;
-
+	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
+		next_command.alt	+= home.alt;
+	}
 	set_next_WP(&next_command);
 
 	// this is our bitmask to verify we have met all conditions to move on
