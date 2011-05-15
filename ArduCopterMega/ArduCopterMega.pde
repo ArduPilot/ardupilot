@@ -596,11 +596,11 @@ void medium_loop()
 				// ------------------------------------------------------
 				navigate();
 
+				// control mode specific updates to nav_bearing
+				// --------------------------------------------
+				update_navigation();
 			}
 
-			// control mode specific updates to nav_bearing
-			// --------------------------------------------
-			update_navigation();
 			break;
 
 		// command processing
