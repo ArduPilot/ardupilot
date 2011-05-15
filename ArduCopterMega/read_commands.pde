@@ -104,7 +104,6 @@ void parseCommand(char *buffer)
 				g.stabilize_dampener.set_and_save((float)value / 1000);
 				break;
 		}
-		init_pids();
 		//*/
 	}
 }

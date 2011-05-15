@@ -19,8 +19,10 @@ void change_command(uint8_t index)
 
 // called by 10 Hz Medium loop
 // ---------------------------
-void update_commands(void)
+void update_commands2(void)
 {
+	//Serial.println("Upd CMDs");
+
 	// This function loads commands into three buffers
 	// when a new command is loaded, it is processed with process_XXX()
 
@@ -32,26 +34,28 @@ void update_commands(void)
 	// fetch next command if the next command queue is empty
 	// -----------------------------------------------------
 	next_command = get_command_with_index(g.waypoint_index + 1);
+	Serial.printf("next CMD %d\n", next_command.id);
 
 	if(next_command.id == NO_COMMAND){
-
 		// if no commands were available from EEPROM
+		// And we have no nav commands
 		// --------------------------------------------
-		if (command_must_ID == NO_COMMAND)
+		if (command_must_ID == NO_COMMAND){
+			gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 			handle_no_commands();
-
-		gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+		}
 
 	} else {
-
 		// A command was loaded from EEPROM
 		// --------------------------------------------
-
-		// debug by outputing the Waypoint loaded
-		print_wp(&next_command, g.waypoint_index + 1);
-
 		// Set our current mission index + 1;
 		increment_WP_index();
+
+		Serial.printf("loaded cmd %d\n" , g.waypoint_index.get());
+
+		// debug by outputing the Waypoint loaded
+		print_wp(&next_command, g.waypoint_index);
+
 
 		// act on our new command
 		if (process_next_command()){
@@ -59,7 +63,53 @@ void update_commands(void)
 			// -----------------------------------------------
 			clear_command_queue();
 		}
+	}
+}
 
+// called by 10 Hz Medium loop
+// ---------------------------
+void update_commands(void)
+{
+	//Serial.println("Upd CMDs");
+
+	// fill command queue with a new command if available
+	if(next_command.id == NO_COMMAND){
+
+		// fetch next command if the next command queue is empty
+		// -----------------------------------------------------
+		if (g.waypoint_index < g.waypoint_total) {
+			// only if we have a cmd stored in EEPROM
+			next_command = get_command_with_index(g.waypoint_index + 1);
+			Serial.printf("queue CMD %d\n", next_command.id);
+		}
+	}
+
+	// Are we out of must commands and the queue is empty?
+	if(next_command.id == NO_COMMAND && command_must_index == NO_COMMAND){
+		// if no commands were available from EEPROM
+		// And we have no nav commands
+		// --------------------------------------------
+		if (command_must_ID == NO_COMMAND){
+			gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+			handle_no_commands();
+		}
+	}
+
+	// check to see if we need to act on our command queue
+	if (process_next_command()){
+		Serial.printf("did PNC: %d\n", next_command.id);
+
+		// We acted on the queue - let's debug that
+		// ----------------------------------------
+		print_wp(&next_command, g.waypoint_index);
+
+		// invalidate command queue so a new one is loaded
+		// -----------------------------------------------
+		clear_command_queue();
+
+		// make sure we load the next command index
+		// ----------------------------------------
+		increment_WP_index();
 	}
 }
 
@@ -67,10 +117,14 @@ void update_commands(void)
 void verify_commands(void)
 {
 	if(verify_must()){
+		Serial.printf("verified must cmd %d\n" , command_must_index);
 		command_must_index 	= NO_COMMAND;
+	}else{
+		Serial.printf("verified must false %d\n" , command_must_index);
 	}
 
 	if(verify_may()){
+		Serial.printf("verified may cmd %d\n" , command_may_index);
 		command_may_index 	= NO_COMMAND;
 		command_may_ID		= NO_COMMAND;
 	}
@@ -85,13 +139,7 @@ process_next_command()
 		if (next_command.id < MAV_CMD_NAV_LAST ){
 
 			// we remember the index of our mission here
-			command_must_index = g.waypoint_index;
-
-			// dubugging output
-			SendDebug("MSG <pnc> new c_must_id ");
-			SendDebug(next_command.id,DEC);
-			SendDebug(" index:");
-			SendDebugln(command_must_index,DEC);
+			command_must_index = g.waypoint_index + 1;
 
 			// Save CMD to Log
 			if (g.log_bitmask & MASK_LOG_CMD)
@@ -109,9 +157,10 @@ process_next_command()
 		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
 
 			// we remember the index of our mission here
-			command_may_index = g.waypoint_index;
-			SendDebug("MSG <pnc> new may ");
-			SendDebugln(next_command.id,DEC);
+			command_may_index = g.waypoint_index + 1;
+
+			//SendDebug("MSG <pnc> new may ");
+			//SendDebugln(next_command.id,DEC);
 			//Serial.print("new command_may_index ");
 			//Serial.println(command_may_index,DEC);
 
@@ -126,8 +175,8 @@ process_next_command()
 		// these are Do/Now commands
 		// ---------------------------
 		if (next_command.id > MAV_CMD_CONDITION_LAST){
-			SendDebug("MSG <pnc> new now ");
-			SendDebugln(next_command.id,DEC);
+			//SendDebug("MSG <pnc> new now ");
+			//SendDebugln(next_command.id,DEC);
 
 			if (g.log_bitmask & MASK_LOG_CMD)
 				Log_Write_Cmd(g.waypoint_index, &next_command);

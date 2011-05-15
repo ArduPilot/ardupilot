@@ -264,7 +264,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
-	motor_auto_safe 	= false;
+	motor_auto_armed 	= false;
 	motor_armed 		= true;
 
 	while(1){
@@ -696,8 +696,6 @@ static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
-	//read_EEPROM_waypoint_info();
-
 
 	// save the alitude above home option
 	Serial.printf_P(PSTR("Hold altitude "));
@@ -723,15 +721,10 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
  	while(1){
-		if (Serial3.available()){
-			digitalWrite(B_LED_PIN, HIGH); 		// Blink Yellow LED if we are sending data to GPS
-			Serial1.write(Serial3.read());
-			digitalWrite(B_LED_PIN, LOW);
-		}
 		if (Serial1.available()){
-			digitalWrite(C_LED_PIN, HIGH);		// Blink Red LED if we are receiving data from GPS
-			Serial3.write(Serial1.read());
-			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(B_LED_PIN, HIGH); 		// Blink Yellow LED if we are sending data to GPS
+			Serial.write(Serial1.read());
+			digitalWrite(B_LED_PIN, LOW);
 		}
 		if(Serial.available() > 0){
 			return (0);
@@ -851,13 +844,14 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	int32_t		lat;				///< param 3 - Lattitude * 10**7
 	int32_t		lng;				///< param 4 - Longitude * 10**7
 }*/
+	byte alt_rel = 1;
 
 	// clear home
 	{Location t = {0,   	0,      0, 		0, 		0, 			0};
 	set_command_with_index(t,0);}
 
-	// CMD										opt		pitch   alt/cm
-	{Location t = {MAV_CMD_NAV_TAKEOFF,   		0,      0, 		100, 		0, 			0};
+	// CMD										opt						pitch   	alt/cm
+	{Location t = {MAV_CMD_NAV_TAKEOFF,   		WP_OPTION_RELATIVE,      0, 		100, 		0, 			0};
 	set_command_with_index(t,1);}
 
 	if (!strcmp_P(argv[1].str, PSTR("wp"))) {
@@ -876,7 +870,7 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	} else {
 		//2250 = 25 meteres
 		// CMD										opt		p1		//alt		//NS		//WE
-		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      0,  	100, 		1100, 		0};
+		{Location t = {MAV_CMD_NAV_LOITER_TIME,   	0,      10,  	0, 			0,			0}; // 19
 		set_command_with_index(t,2);}
 
 		// CMD										opt		dir		angle/deg	deg/s	relative

@@ -17,8 +17,8 @@
 #define BARO 1
 
 // Frame types
-#define PLUS_FRAME 0
-#define X_FRAME 1
+#define QUADP_FRAME 0
+#define QUADX_FRAME 1
 #define TRI_FRAME 2
 #define HEXAX_FRAME 3
 #define Y6_FRAME 4

@@ -1,16 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 void
-init_pids()
-{
-	// create limits to how much dampening we'll allow
-	// this creates symmetry with the P gain value preventing oscillations
-
-	max_stabilize_dampener 	= g.pid_stabilize_roll.kP() * 2500;	// = 0.6 * 2500 = 1500 or 15°
-	//max_yaw_dampener		= g.pid_yaw.kP() * 6000;				// = .35 * 6000  = 2100
-}
-
-void
 control_nav_mixer()
 {
 	// control +- 45° is mixed with the navigation request by the Autopilot
@@ -67,7 +57,6 @@ output_stabilize_roll()
 	// Limit dampening to be equal to propotional term for symmetry
 	rate				= degrees(omega.x) * 100.0; 												// 6rad = 34377
 	dampener 			= rate * g.stabilize_dampener;												// 34377 * .175 = 6000
-	//g.rc_1.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 
 	g.rc_1.servo_out	-= dampener;
 	g.rc_1.servo_out	= min(g.rc_1.servo_out, 2500);
@@ -100,7 +89,6 @@ output_stabilize_pitch()
 	// Limit dampening to be equal to propotional term for symmetry
 	rate				= degrees(omega.y) * 100.0; 													// 6rad = 34377
 	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
-	//g.rc_2.servo_out	-= constrain(dampener,  -max_stabilize_dampener, max_stabilize_dampener);	// limit to 1500 based on kP
 
 	g.rc_2.servo_out	-= dampener;
 	g.rc_2.servo_out	= min(g.rc_2.servo_out, 2500);
@@ -224,9 +212,6 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
-	if(yaw_tracking == MAV_ROI_LOCATION){
-		nav_yaw = target_bearing;
-	}
 
 	output_yaw_with_hold(true); // hold yaw
 }

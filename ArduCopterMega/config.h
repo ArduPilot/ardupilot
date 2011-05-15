@@ -47,7 +47,7 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
-# define FRAME_CONFIG		PLUS_FRAME
+# define FRAME_CONFIG		QUADP_FRAME
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -412,7 +412,7 @@
 # define THROTTLE_BARO_I		0.1
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.01
+# define THROTTLE_BARO_D		0.03
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		50

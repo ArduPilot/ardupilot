@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 6;
+    static const uint16_t k_format_version = 7;
 
     //
     // Parameter identities.
@@ -48,8 +48,7 @@ public:
         // Misc
         //
         k_param_log_bitmask,
-        k_param_frame_type,
-		
+
 		// 110: Telemetry control
 		//
 		k_param_streamrates_port0 = 110,
@@ -94,7 +93,6 @@ public:
         k_param_throttle_fs_action,
         k_param_throttle_fs_value,
         k_param_throttle_cruise,
-        k_param_flight_mode_channel,
         k_param_flight_modes,
         k_param_esc_calibrate,
 
@@ -162,7 +160,6 @@ public:
 
     // Flight modes
     //
-    AP_Int8     flight_mode_channel;
     AP_VarA<uint8_t,6> flight_modes;
 
     // Radio settings
@@ -180,7 +177,6 @@ public:
     AP_Int16    ground_temperature;
     AP_Int16    ground_pressure;
     AP_Int16    RTL_altitude;
-    AP_Int8		frame_type;
 
     AP_Int8		sonar_enabled;
     AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
@@ -226,8 +222,6 @@ public:
         crosstrack_gain         (XTRACK_GAIN * 100,			k_param_crosstrack_gain,        		PSTR("XTRK_GAIN")),
         crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRACK_ANGLE")),
 
-        frame_type  			(FRAME_CONFIG,				k_param_frame_type,						PSTR("FRAME_CONFIG")),
-
         sonar_enabled  			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
         battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
         pack_capacity	 		(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
@@ -247,7 +241,6 @@ public:
         throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
         throttle_cruise         (100,						k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
 
-        flight_mode_channel     (FLIGHT_MODE_CHANNEL+1,       k_param_flight_mode_channel,   		PSTR("FLT_MODE_CH")),
         flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
 
         pitch_max         		(PITCH_MAX * 100,			k_param_pitch_max,		       			PSTR("PITCH_MAX")),
@@ -256,6 +249,7 @@ public:
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
         RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
+        esc_calibrate 			(0, 						k_param_esc_calibrate, 				PSTR("ESC")),
 
         // RC channel           group key                   name
         //----------------------------------------------------------------------
@@ -267,11 +261,8 @@ public:
         rc_6					(k_param_rc_6,		PSTR("RC6_")),
         rc_7					(k_param_rc_7,		PSTR("RC7_")),
         rc_8					(k_param_rc_8,		PSTR("RC8_")),
-        rc_camera_pitch			(k_param_rc_9,		PSTR("RC9_")),
-        rc_camera_roll			(k_param_rc_10,		PSTR("RC10_")),
-
-        esc_calibrate 			(0,         				k_param_esc_calibrate, 				PSTR("ESC")),
-
+        rc_camera_pitch			(k_param_rc_9,		NULL),
+        rc_camera_roll			(k_param_rc_10,		NULL),
 
         // PID controller   group key						name				initial P			initial I			initial D			initial imax
         //--------------------------------------------------------------------------------------------------------------------------------------------------------------------

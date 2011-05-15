@@ -226,7 +226,7 @@ Vector3f omega;
 boolean 	failsafe;						// did our throttle dip below the failsafe value?
 boolean 	ch3_failsafe;
 boolean		motor_armed;
-boolean		motor_auto_safe;
+boolean		motor_auto_armed;				// if true,
 
 // PIDs
 // ----
@@ -596,10 +596,11 @@ void medium_loop()
 				// ------------------------------------------------------
 				navigate();
 
-				// control mode specific updates to nav_bearing
-				// --------------------------------------------
-				update_navigation();
 			}
+
+			// control mode specific updates to nav_bearing
+			// --------------------------------------------
+			update_navigation();
 			break;
 
 		// command processing
@@ -623,10 +624,10 @@ void medium_loop()
 
 			// perform next command
 			// --------------------
-			if(control_mode == AUTO || control_mode == GCS_AUTO){
-				if(home_is_set){
+			if(control_mode == AUTO){
+				//if(home_is_set){
 					update_commands();
-				}
+				//}
 			}
 			break;
 
@@ -745,11 +746,11 @@ void fifty_hz_loop()
 	// XXX this should be absorbed into the above,
 	// or be a "GCS fast loop" interface
 
-	// Hack - had to move to 50hz loop to test a theory
-	if(g.frame_type == TRI_FRAME){
+	#if FRAME_CONFIG ==	TRI_FRAME
+		// Hack - had to move to 50hz loop to test a theory
 		// servo Yaw
 		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
-	}
+	#endif
 }
 
 
@@ -1137,7 +1138,7 @@ void update_navigation()
 	// ------------------------------------------------------------------------
 
 	// distance and bearing calcs only
-	if(control_mode == AUTO || control_mode == GCS_AUTO){
+	if(control_mode == AUTO){
 		verify_commands();
 
 		if(wp_control == LOITER_MODE){
@@ -1161,6 +1162,9 @@ void update_navigation()
 		// this tracks a location so the copter is always pointing towards it.
 		if(yaw_tracking == MAV_ROI_LOCATION){
 			nav_yaw = get_bearing(&current_loc, &target_WP);
+
+		}else if(yaw_tracking == MAV_ROI_WPNEXT){
+			nav_yaw = target_bearing;
 		}
 
 	}else{
@@ -1300,7 +1304,6 @@ void tuning(){
 	#if CHANNEL_6_TUNING == CH6_STABLIZE_KP
 		g.pid_stabilize_roll.kP((float)g.rc_6.control_in / 1000.0);
 		g.pid_stabilize_pitch.kP((float)g.rc_6.control_in / 1000.0);
-		init_pids();
 
 	#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
 		// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
