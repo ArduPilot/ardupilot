@@ -41,6 +41,8 @@ struct Location get_command_with_index(int i)
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
 	if (i > g.waypoint_total) {
+		Serial.println("XCD");
+
 		// we do not have a valid command to load
 		// return a WP with a "Blank" id
 		temp.id = CMD_BLANK;
@@ -49,6 +51,7 @@ struct Location get_command_with_index(int i)
 		return temp;
 
 	}else{
+		Serial.println("LD");
 		// we can load a command, we don't process it yet
 		// read WP position
 		long mem = (WP_START_BYTE) + (i * WP_SIZE);
@@ -73,8 +76,9 @@ struct Location get_command_with_index(int i)
 
 	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
 	if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & WP_OPTION_ALT_RELATIVE){
-		temp.alt += home.alt;
+		//temp.alt += home.alt;
 	}
+	Serial.println("ADD ALT");
 
 	if(temp.options & WP_OPTION_RELATIVE){
 		// If were relative, just offset from home

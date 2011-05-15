@@ -117,10 +117,11 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 static int8_t
 erase_logs(uint8_t argc, const Menu::arg *argv)
 {
-	for(int i = 10 ; i > 0; i--) {
-		Serial.printf_P(PSTR("ATTENTION - Erasing log in %d seconds.\n"), i);
-		delay(1000);
-	}
+	//for(int i = 10 ; i > 0; i--) {
+	//	Serial.printf_P(PSTR("ATTENTION - Erasing log in %d seconds.\n"), i);
+	//	delay(1000);
+	//}
+
 	Serial.printf_P(PSTR("\nErasing log...\n"));
 	for(int j = 1; j < 4096; j++)
 		DataFlash.PageErase(j);

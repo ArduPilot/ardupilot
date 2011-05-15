@@ -27,6 +27,7 @@ Command ID	Name								Parameter 1			Altitude			Latitude			Longitude
 0x14 / 20	MAV_CMD_NAV_RETURN_TO_LAUNCH		-					-					-					-
 0x15 / 21	MAV_CMD_NAV_LAND					-					-					-					-
 0x16 / 22	MAV_CMD_NAV_TAKEOFF					-					altitude			-					-
+0x19 / 22	MAV_CMD_NAV_LOITER_TIME				-					altitude			-					-
 
 			NOTE:  for command 0x16 the value takeoff pitch specifies the minimum pitch for the case with airspeed sensor and the target pitch for the case without.
 

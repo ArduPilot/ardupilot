@@ -27,7 +27,7 @@ void handle_process_must()
 			//do_loiter_turns();
 			break;
 
-		case MAV_CMD_NAV_LOITER_TIME:
+		case MAV_CMD_NAV_LOITER_TIME:  // 19
 			do_loiter_time();
 			break;
 
@@ -104,7 +104,7 @@ void handle_process_now()
 
 void handle_no_commands()
 {
-	// we don't want to RTL. Maybe this will change in the future. RTL is kinda dangerous.
+	// we don't want to RTL yet. Maybe this will change in the future. RTL is kinda dangerous.
 	// use landing commands
 	/*
 	switch (control_mode){
@@ -114,6 +114,7 @@ void handle_no_commands()
 	}
 	return;
 	*/
+	Serial.println("Handle No CMDs");
 }
 
 /********************************************************************************/
@@ -228,8 +229,10 @@ void do_takeoff()
 	// next_command.alt is a relative altitude!!!
 	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
 		temp.alt			= next_command.alt + home.alt;
+		//Serial.printf("rel alt: %ld",temp.alt);
 	} else {
 		temp.alt 			= next_command.alt;
+		//Serial.printf("abs alt: %ld",temp.alt);
 	}
 
 	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
@@ -313,17 +316,13 @@ void do_loiter_turns()
 
 void do_loiter_time()
 {
-	/*
+	///*
 	wp_control = LOITER_MODE;
-	if(next_command.lat == 0)
-		set_next_WP(&current_loc);
-	else
-		set_next_WP(&next_command);
-
+	set_next_WP(&current_loc);
 	loiter_time 	= millis();
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
 	Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
-	*/
+	//*/
 }
 
 /********************************************************************************/
@@ -332,11 +331,13 @@ void do_loiter_time()
 
 bool verify_takeoff()
 {
-	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	// wait until we are ready!
-	if(g.rc_3.control_in == 0)
+	if(g.rc_3.control_in == 0){
 		return false;
+	}
+
+	Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	if (current_loc.alt > next_WP.alt){
 		//Serial.println("Y");
@@ -353,7 +354,7 @@ bool verify_takeoff()
 bool verify_land()
 {
 	// land at 1 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 5);			// condition_value = our initial
+	next_WP.alt  = original_alt - ((millis() - land_start) / 20);			// condition_value = our initial
 
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
@@ -415,8 +416,8 @@ bool verify_nav_wp()
 		}
 	}
 
-	//if(wp_verify_byte >= 7){
-	if(wp_verify_byte & NAV_LOCATION){
+	if(wp_verify_byte >= 7){
+	//if(wp_verify_byte & NAV_LOCATION){
 		char message[30];
 		sprintf(message,"Reached Command #%i",command_must_index);
 		gcs.send_text(SEVERITY_LOW,message);
@@ -437,7 +438,7 @@ bool verify_loiter_time()
 	//Serial.printf("vlt %ld\n",(millis() - loiter_time));
 
 	if ((millis() - loiter_time) > loiter_time_max) {		// scale loiter_time_max from (sec*10) to milliseconds
-		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
+		//gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
 		//Serial.println("vlt done");
 		return true;
 	}
@@ -629,8 +630,8 @@ void do_jump()
 	struct Location temp;
 	if(next_command.lat > 0) {
 
-		command_must_index	= 0;
-		command_may_index	= 0;
+		command_must_index	= NO_COMMAND;
+		command_may_index	= NO_COMMAND;
 		temp				= get_command_with_index(g.waypoint_index);
 		temp.lat			= next_command.lat - 1;					// Decrement repeat counter
 

@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.4 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.5 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -225,7 +225,7 @@ void init_ardupilot()
 
 	// set the correct flight mode
 	// ---------------------------
-	reset_control_switch();
+	//reset_control_switch();
 
 	// Logging:
 	// --------
@@ -252,29 +252,24 @@ void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	setup_show(NULL,NULL);
-
-	// setup up PID value max
-	init_pids();
-
 	// Output waypoints for confirmation
 	// --------------------------------
 	for(int i = 1; i < g.waypoint_total + 1; i++) {
 		gcs.send_message(MSG_COMMAND_LIST, i);
 	}
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	// Warm up and read Gyro offsets
-	// -----------------------------
-	imu.init_gyro();
-	report_imu();
-#endif
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		// Warm up and read Gyro offsets
+		// -----------------------------
+		imu.init_gyro();
+		report_imu();
+	#endif
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	// read Baro pressure at ground
-	//-----------------------------
-	init_barometer();
-#endif
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		// read Baro pressure at ground
+		//-----------------------------
+		init_barometer();
+	#endif
 
 	// initialize commands
 	// -------------------
@@ -311,23 +306,19 @@ void set_mode(byte mode)
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 
-	// XXX temporary
-	//if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+	Log_Write_Mode(control_mode);
 
 	// used to stop fly_aways
-	if(g.rc_1.control_in == 0){
+	if(g.rc_3.control_in == 0){ // throttle is 0
 		// we are on the ground is this is true
-		// disarm motors temp
-		motor_auto_safe = false;
+		// disarm motors for Auto
+		motor_auto_armed = false;
 	}
 
-
-	// clear our tracking behaviors
-	yaw_tracking = MAV_ROI_NONE;
-
 	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
-	//Serial.printf("set mode: %d old: %d\n", (int)mode, (int)control_mode);
+	//Serial.printf("set mode: %d\n",control_mode);
+	Serial.println(flight_mode_strings[control_mode]);
+
 	switch(control_mode)
 	{
 		case ACRO:
@@ -469,10 +460,6 @@ void update_esc_light()
 void resetPerfData(void) {
 	mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
-	//gyro_sat_count 		= 0;
-	//adc_constraints 	= 0;
-	//renorm_sqrt_count 	= 0;
-	//renorm_blowup_count = 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
 }
@@ -481,7 +468,7 @@ void
 init_compass()
 {
 	dcm.set_compass(&compass);
-	bool junkbool = compass.init();
+	bool junkbool 		= compass.init();
 	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
 	Vector3f junkvector = compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
@@ -506,24 +493,15 @@ void
 init_simple_bearing()
 {
 	initial_simple_bearing = dcm.yaw_sensor;
-	//if(simple_bearing_is_set == false){
-		//if(g.rc_3.control_in == 0){
-			// we are on the ground
-	//		initial_simple_bearing = dcm.yaw_sensor;
-	//		simple_bearing_is_set = true;
-		//}
-	//}
 }
 
 void
 init_throttle_cruise()
 {
-	if(set_throttle_cruise_flag == false){
+	//if(set_throttle_cruise_flag == false){
 		if(g.rc_3.control_in > 200){
-			//set_throttle_cruise_flag = true;
 			g.throttle_cruise.set_and_save(g.rc_3.control_in);
-			//Serial.printf("throttle_cruise: %d\n", g.throttle_cruise.get());
 		}
-	}
+	//}
 }
 
