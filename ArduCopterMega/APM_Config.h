@@ -7,8 +7,10 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 #define NAV_TEST 0	// 0 = traditional, 1 = rate controlled
+#define FRAME_CONFIG QUADX_FRAME
 
-#define CHANNEL_6_TUNING CH6_STABLIZE_KD
+#define CHANNEL_6_TUNING CH6_NONE
+
 //#define CHANNEL_6_TUNING CH6_PMAX
 
 	/*
@@ -26,6 +28,8 @@
 // if you want full ACRO mode, set value to 0
 // if you want mostly stabilize with flips, set value to 4200
 
+//#define STABILIZE_ROLL_D 		0.11
+//#define STABILIZE_PITCH_D 		0.11
 
 
 // Logging
@@ -38,7 +42,7 @@
 # define LOG_CTUN				ENABLED
 # define LOG_NTUN				ENABLED
 # define LOG_MODE				ENABLED
-# define LOG_RAW				ENABLED
+# define LOG_RAW				DISABLED
 # define LOG_CMD				ENABLED
 # define LOG_CURRENT			DISABLED
 
