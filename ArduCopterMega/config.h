@@ -369,7 +369,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				45			// degrees
+# define PITCH_MAX				18			// degrees
 #endif
 
 
