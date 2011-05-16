@@ -11,12 +11,12 @@
 #define FRAME_CONFIG QUADX_FRAME
 	/*
 	options:
-	QUADP_FRAME
-	QUADX_FRAME
-	TRI_FRAME
-	HEXAX_FRAME
-	Y6_FRAME
-	HEXAP_FRAME
+	QUADP_FRAME		// the classic plus configuration
+	QUADX_FRAME		// the superior X configuration
+	TRI_FRAME		// three props with a servo on the tail for yaw
+	HEXAP_FRAME		// you have more motors than sense (6)
+	HEXAX_FRAME		// you like scaring children in the park
+	Y6_FRAME		// the motors are stacked on a Tri frame
 	*/
 
 #define CHANNEL_6_TUNING CH6_NONE
