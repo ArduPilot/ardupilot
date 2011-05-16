@@ -396,18 +396,6 @@ void Log_Read_Nav_Tuning()
 }
 
 
-
-
-// Write a mode packet. Total length : 5 bytes
-void Log_Write_Mode(byte mode)
-{
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_MODE_MSG);
-	DataFlash.WriteByte(mode);
-	DataFlash.WriteByte(END_BYTE);
-}
-
 // Write an GPS packet. Total length : 30 bytes
 void Log_Write_GPS()
 {
@@ -424,8 +412,8 @@ void Log_Write_GPS()
 	DataFlash.WriteLong(g_gps->altitude);					// 6
 	DataFlash.WriteLong(current_loc.alt);					// 7
 
-	DataFlash.WriteInt(g_gps->ground_speed/100);			// 8
-	DataFlash.WriteInt((int)(g_gps->ground_course/100));	// 9
+	DataFlash.WriteInt(g_gps->ground_speed);				// 8
+	DataFlash.WriteInt((uint16_t)g_gps->ground_course);				// 9
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -447,7 +435,7 @@ void Log_Read_GPS()
 						(float)DataFlash.ReadLong() / 100.0,	// 7 sensor alt
 
 						DataFlash.ReadInt(),					// 8 ground speed
-						DataFlash.ReadInt());					// 9 ground course
+						(uint16_t)DataFlash.ReadInt());					// 9 ground course
 }
 
 
@@ -586,6 +574,7 @@ void Log_Write_Performance()
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);
 	DataFlash.WriteByte(	gps_fix_count);
 	DataFlash.WriteInt(		(int)(dcm.get_health() * 1000));
+	//PM,	20005,	3742, 10,0,0,0,0,89,1000,
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -600,6 +589,7 @@ void Log_Read_Performance()
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
+
 	for (int y = 1; y < 9; y++) {
 		if(y < 3 || y > 7){
 			logvar = DataFlash.ReadInt();
@@ -674,6 +664,17 @@ void Log_Read_Attitude()
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt(),
 			(uint16_t)DataFlash.ReadInt());
+}
+
+
+// Write a mode packet. Total length : 5 bytes
+void Log_Write_Mode(byte mode)
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_MODE_MSG);
+	DataFlash.WriteByte(mode);
+	DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a mode packet
