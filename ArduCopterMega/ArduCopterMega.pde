@@ -436,10 +436,10 @@ byte 			slow_loopCounter;
 int 			superslow_loopCounter;
 byte			flight_timer;				// for limiting the execution of flight mode thingys
 
-//unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
+unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
-//unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
+unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
@@ -589,8 +589,8 @@ void medium_loop()
 				g_gps->new_data 	= false;
 
 				// we are not tracking I term on navigation, so this isn't needed
-				//dTnav 				= millis() - nav_loopTimer;
-				//nav_loopTimer 		= millis();
+				dTnav 				= millis() - nav_loopTimer;
+				nav_loopTimer 		= millis();
 
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
@@ -1145,8 +1145,12 @@ void update_navigation()
 			// calc a pitch to the target
 			calc_loiter_nav();
 
-		} else {
+			// rotate pitch and roll to the copter frame of reference
+			calc_loiter_output();
 
+		} else {
+			// how far are we from the ideal trajectory?
+			// this pushes us back on course
 			update_crosstrack();
 
 			// calc a rate dampened pitch to the target
@@ -1156,8 +1160,6 @@ void update_navigation()
 			calc_nav_output();
 		}
 
-		//limit our copter pitch - this will change if we go to a fully rate limited approach.
-		limit_nav_pitch_roll(g.pitch_max.get());
 
 		// this tracks a location so the copter is always pointing towards it.
 		if(yaw_tracking == MAV_ROI_LOCATION){

@@ -84,7 +84,6 @@ void output_motors_disarmed()
 	APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 }
 
-
 void output_motor_test()
 {
 	APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
