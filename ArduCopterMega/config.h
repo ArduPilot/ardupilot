@@ -390,16 +390,16 @@
 #endif
 
 #ifndef NAV_WP_P
-# define NAV_WP_P				4.0
+# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_WP_I
-# define NAV_WP_I				0.15			// leave 0
+# define NAV_WP_I				0.5			// this is a fast ramp up
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				10			// not sure about at all
+# define NAV_WP_D				.1			// slight dampening of a few degrees at most
 #endif
 #ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			20			// 20 degrees
+# define NAV_WP_IMAX			40			// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

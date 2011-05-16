@@ -67,13 +67,14 @@ void calc_loiter_nav()
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 
 	// Convert distance into ROLL X
-	//nav_lon		= long_error * g.pid_nav_lon.kP();						// 1800 * 2 = 3600 or 36°
 	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
 
 	// PITCH	Y
-	//nav_lat		= lat_error * g.pid_nav_lat.kP();						// 1800 * 2 = 3600 or 36°
 	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);			// invert lat (for pitch)
+}
 
+void calc_loiter_output()
+{
 	// rotate the vector
 	nav_roll 	=   (float)nav_lon * sin_yaw_y 	- (float)nav_lat * -cos_yaw_x;
 					// BAD
@@ -101,6 +102,12 @@ void calc_loiter_nav()
 					//EAST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back
 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
 
+	//limit our copter pitch - this will change if we go to a fully rate limited approach.
+
+	long pmax 	= g.pitch_max.get();
+	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
+	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
+	//limit_nav_pitch_roll(g.pitch_max.get());
 }
 
 void calc_simple_nav()
@@ -154,26 +161,18 @@ void calc_rate_nav()
 	long target_error 	= target_bearing - g_gps->ground_course;
 	target_error 		= wrap_180(target_error);
 
-	// calc the cos of the error to tell how fast we are moving towards the target
+	// calc the cos of the error to tell how fast we are moving towards the target in cm
 	int groundspeed 	= (float)g_gps->ground_speed * cos(radians((float)target_error/100));
 
 	// change to rate error
 	// we want to be going 450cm/s
-	int nav_lat 		= WAYPOINT_SPEED - groundspeed;
-	nav_lat 			= constrain(nav_lat, -1800, 1800);
+	int error 			= constrain(WAYPOINT_SPEED - groundspeed, -1000, 1000);
 
 	// Scale response by kP
-	long nav_lat 		= g.pid_nav_wp.kP() * nav_lat;
-	int dampening		= g.pid_nav_wp.kD() * (groundspeed - last_ground_speed);
-
-	// remember our old speed
-	last_ground_speed	= groundspeed;
-
-	// dampen our response
-	nav_lat -= dampening; // +- max error
+	long nav_lat 		= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
 
 	// limit our output
-	nav_lat	= constrain(nav_lat, 	-1800, 1800); // +- max error
+	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error
 }
 
 #endif
