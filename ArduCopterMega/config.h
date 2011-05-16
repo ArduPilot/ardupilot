@@ -396,7 +396,7 @@
 # define NAV_WP_I				0.5			// this is a fast ramp up
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				.1			// slight dampening of a few degrees at most
+# define NAV_WP_D				0			// slight dampening of a few degrees at most
 #endif
 #ifndef NAV_WP_IMAX
 # define NAV_WP_IMAX			40			// degrees
