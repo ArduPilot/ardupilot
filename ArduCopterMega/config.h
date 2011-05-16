@@ -389,17 +389,32 @@
 # define NAV_LOITER_IMAX		20			// 20°
 #endif
 
-#ifndef NAV_WP_P
-# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
-#endif
-#ifndef NAV_WP_I
-# define NAV_WP_I				0.5			// this is a fast ramp up
-#endif
-#ifndef NAV_WP_D
-# define NAV_WP_D				0			// slight dampening of a few degrees at most
-#endif
-#ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			40			// degrees
+#if NAV_TEST == 1	// 0 = traditional, 1 = rate controlled
+	#ifndef NAV_WP_P
+	# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
+	#endif
+	#ifndef NAV_WP_I
+	# define NAV_WP_I				0.5			// this is a fast ramp up
+	#endif
+	#ifndef NAV_WP_D
+	# define NAV_WP_D				0			// slight dampening of a few degrees at most
+	#endif
+	#ifndef NAV_WP_IMAX
+	# define NAV_WP_IMAX			40			// degrees
+	#endif
+#else
+	#ifndef NAV_WP_P
+	# define NAV_WP_P				4.0
+	#endif
+	#ifndef NAV_WP_I
+	# define NAV_WP_I				0.15			// leave 0
+	#endif
+	#ifndef NAV_WP_D
+	# define NAV_WP_D				10			// not sure about at all
+	#endif
+	#ifndef NAV_WP_IMAX
+	# define NAV_WP_IMAX			20			// 20 degrees
+	#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
