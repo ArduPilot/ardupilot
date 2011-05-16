@@ -51,6 +51,33 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 	return output;
 }
 
+
+long
+PID::get_pi(int32_t error, uint16_t dt, float scaler)
+{
+	float output		= 0;
+ 	float delta_time	= (float)dt / 1000.0;
+
+	// Compute proportional component
+	output += error * _kp;
+
+	// scale the P components
+	output *= scaler;
+
+	// Compute integral component if time has elapsed
+	if ((fabs(_ki) > 0) && (dt > 0)) {
+		_integrator 		+= (error * _ki) * scaler * delta_time;
+		if (_integrator < -_imax) {
+			_integrator = -_imax;
+		} else if (_integrator > _imax) {
+			_integrator = _imax;
+		}
+		output 				+= _integrator;
+	}
+
+	return output;
+}
+
 void
 PID::reset_I()
 {

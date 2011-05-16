@@ -85,6 +85,9 @@ public:
 	///
 	long 	get_pid(int32_t error, uint16_t dt, float scaler = 1.0);
 
+	long 	get_pi(int32_t error, uint16_t dt, float scaler = 1.0);
+
+
 	/// Reset the PID integrator
 	///
 	void	reset_I();
