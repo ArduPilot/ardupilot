@@ -167,9 +167,10 @@ void calc_rate_nav()
 	// change to rate error
 	// we want to be going 450cm/s
 	int error 			= constrain(WAYPOINT_SPEED - groundspeed, -1000, 1000);
-
 	// Scale response by kP
-	long nav_lat 		= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+	nav_lat 		= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+
+	Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
 
 	// limit our output
 	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error

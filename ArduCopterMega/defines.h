@@ -17,12 +17,13 @@
 #define BARO 1
 
 // Frame types
-#define QUADP_FRAME 0
-#define QUADX_FRAME 1
-#define TRI_FRAME 2
-#define HEXAX_FRAME 3
-#define Y6_FRAME 4
-#define HEXAP_FRAME 5
+#define QUAD_FRAME 0
+#define TRI_FRAME 1
+#define HEXA_FRAME 2
+#define Y6_FRAME 3
+
+#define PLUS_FRAME 0
+#define X_FRAME 1
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------

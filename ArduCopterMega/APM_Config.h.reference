@@ -188,9 +188,6 @@
 // switch to produce 1165, 1425, and 1815 microseconds and configure
 // FLIGHT_MODE 1 & 2, 3 & 4 and 5 & 6 to be the same.  This is the default.
 //
-// If you have FLIGHT_MODE_CHANNEL set to 8 (the default) and your control
-// channel connected to input channel 8, the hardware failsafe mode will
-// activate for any control input over 1750ms.
 //
 // For more modes (up to six), set your switch(es) to produce any of 1165,
 // 1295, 1425, 1555, 1685, and 1815 microseconds.

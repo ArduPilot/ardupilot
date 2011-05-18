@@ -230,8 +230,8 @@ boolean		motor_auto_armed;				// if true,
 
 // PIDs
 // ----
-int 	max_stabilize_dampener;				//
-int 	max_yaw_dampener;					//
+//int 	max_stabilize_dampener;				//
+//int 	max_yaw_dampener;					//
 boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
 byte 	yaw_debug;
 bool 	did_clear_yaw_control;
@@ -818,6 +818,11 @@ void slow_loop()
 			if(baro_alt_offset > 0) baro_alt_offset--;
 			if(baro_alt_offset < 0) baro_alt_offset++;
 
+
+			#if MOTOR_LEDS == 1
+				update_motor_light();
+			#endif
+
 			break;
 
 		default:
@@ -1310,7 +1315,8 @@ void tuning(){
 	#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
 		// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
 		// use test,radio to get the value to use in your config.
-		g.stabilize_dampener.set((float)g.rc_6.control_in / 1000.0);
+		g.pid_stabilize_pitch.kD((float)g.rc_6.control_in / 1000.0);
+		g.pid_stabilize_roll.kD((float)g.rc_6.control_in / 1000.0);
 
 	#elif CHANNEL_6_TUNING == CH6_BARO_KP
 		g.pid_baro_throttle.kP((float)g.rc_6.control_in / 1000.0);
