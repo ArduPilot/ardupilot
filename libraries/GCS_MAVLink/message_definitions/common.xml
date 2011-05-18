@@ -815,6 +815,20 @@ of the controller before actual flight and to assist with tuning controller para
      <field name="thrust_manual" type="uint8_t">thrust auto:0, manual:1</field>
    </message>
 
+   <message name="RC_CHANNELS_OVERRIDE" id="70">
+	 <description>The RAW values of the RC channels sent to the MAV to override info received from the RC radio. A value of -1 means no change to that channel. A value of 0 means control of that channel should be released back to the RC radio. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
+     <field name="target_system" type="uint8_t">System ID</field>
+     <field name="target_component" type="uint8_t">Component ID</field>
+     <field name="chan1_raw" type="uint16_t">RC channel 1 value, in microseconds</field>
+     <field name="chan2_raw" type="uint16_t">RC channel 2 value, in microseconds</field>
+     <field name="chan3_raw" type="uint16_t">RC channel 3 value, in microseconds</field>
+     <field name="chan4_raw" type="uint16_t">RC channel 4 value, in microseconds</field>
+     <field name="chan5_raw" type="uint16_t">RC channel 5 value, in microseconds</field>
+     <field name="chan6_raw" type="uint16_t">RC channel 6 value, in microseconds</field>
+     <field name="chan7_raw" type="uint16_t">RC channel 7 value, in microseconds</field>
+     <field name="chan8_raw" type="uint16_t">RC channel 8 value, in microseconds</field>
+   </message>
+
    <message name="GLOBAL_POSITION_INT" id="73">
      <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up)</description>
      <field name="lat"   type="int32_t">Latitude, expressed as * 1E7</field>

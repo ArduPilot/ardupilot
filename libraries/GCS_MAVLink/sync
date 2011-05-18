@@ -1,5 +1,5 @@
 #!/bin/sh
-branch="roi" 
+branch="dev" 
 # temporarily using roi branch instead of master
 # this branch will be deleted soon so switch it back
 # to master then
