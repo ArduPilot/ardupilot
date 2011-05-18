@@ -30,35 +30,21 @@ limit_nav_pitch_roll(long pmax)
 void
 output_stabilize_roll()
 {
-	float error, rate;
-	int dampener;
+	float error;//, rate;
+	//int dampener;
 
 	error 		= g.rc_1.servo_out - dcm.roll_sensor;
 
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -2500, 2500);
 
-	// only buildup I if we are trying to roll hard
-	//if(abs(g.rc_1.servo_out) < 1000){
-		// smoother alternative to reset?
-		//if(g.pid_stabilize_roll.kI() != 0){
-		//	g.pid_stabilize_roll.kI(g.pid_stabilize_roll.kI() * .8);
-		//}
-	//	g.pid_stabilize_roll.reset_I();
-	//}
-
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
-	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pid(error,  	delta_ms_fast_loop, 1.0);		// 2500 * .7 = 1750
+	g.rc_1.servo_out 	= g.pid_stabilize_roll.get_pi(error,  	delta_ms_fast_loop, 1.0);		// 2500 * .7 = 1750
 
 	// We adjust the output by the rate of rotation:
 	// Rate control through bias corrected gyro rates
 	// omega is the raw gyro reading
-
-	// Limit dampening to be equal to propotional term for symmetry
-	rate				= degrees(omega.x) * 100.0; 												// 6rad = 34377
-	dampener 			= rate * g.stabilize_dampener;												// 34377 * .175 = 6000
-
-	g.rc_1.servo_out	-= dampener;
+	g.rc_1.servo_out	-= degrees(omega.x) * 100.0 * g.pid_stabilize_roll.kD();
 	g.rc_1.servo_out	= min(g.rc_1.servo_out, 2500);
 	g.rc_1.servo_out	= max(g.rc_1.servo_out, -2500);
 }
@@ -74,23 +60,13 @@ output_stabilize_pitch()
 	// limit the error we're feeding to the PID
 	error		= constrain(error, -2500, 2500);
 
-	// only buildup I if we are trying to roll hard
-	//if(abs(g.rc_2.servo_out) < 1500){
-	//	g.pid_stabilize_pitch.reset_I();
-	//}
-
 	// write out angles back to servo out - this will be converted to PWM by RC_Channel
-	g.rc_2.servo_out 	= g.pid_stabilize_pitch.get_pid(error, 	delta_ms_fast_loop, 1.0);
+	g.rc_2.servo_out 	= g.pid_stabilize_pitch.get_pi(error, 	delta_ms_fast_loop, 1.0);
 
 	// We adjust the output by the rate of rotation:
 	// Rate control through bias corrected gyro rates
 	// omega is the raw gyro reading
-
-	// Limit dampening to be equal to propotional term for symmetry
-	rate				= degrees(omega.y) * 100.0; 													// 6rad = 34377
-	dampener 			= rate * g.stabilize_dampener;										// 34377 * .175 = 6000
-
-	g.rc_2.servo_out	-= dampener;
+	g.rc_2.servo_out	-= degrees(omega.y) * 100.0 * g.pid_stabilize_pitch.kD();
 	g.rc_2.servo_out	= min(g.rc_2.servo_out, 2500);
 	g.rc_2.servo_out	= max(g.rc_2.servo_out, -2500);
 }
@@ -125,8 +101,6 @@ void
 reset_I(void)
 {
 	// I removed these, they don't seem to be needed.
-	//g.pid_nav_lat.reset_I();
-	//g.pid_nav_lon.reset_I();
 }
 
 
@@ -212,7 +186,6 @@ void output_manual_yaw()
 
 void auto_yaw()
 {
-
 	output_yaw_with_hold(true); // hold yaw
 }
 
@@ -233,7 +206,7 @@ output_yaw_with_hold(boolean hold)
 	// rate control
 	long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 	rate			= constrain(rate, -36000, 36000);									// limit to something fun!
-	int dampener 	= rate * g.hold_yaw_dampener;											// 34377 * .175 = 6000
+	int dampener 	= rate * g.pid_yaw.kD();											// 34377 * .175 = 6000
 
 	if(hold){
 		// look to see if we have exited rate control properly - ie stopped turning

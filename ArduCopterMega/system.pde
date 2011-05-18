@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.5 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.6 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -188,6 +188,13 @@ void init_ardupilot()
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
+
+	#if MOTOR_LEDS == 1
+		pinMode(FR_LED, OUTPUT);			// GPS status LED
+		pinMode(RE_LED, OUTPUT);			// GPS status LED
+		pinMode(RI_LED, OUTPUT);			// GPS status LED
+		pinMode(LE_LED, OUTPUT);			// GPS status LED
+	#endif
 
 	// Logging:
 	// --------
@@ -382,6 +389,23 @@ void set_failsafe(boolean mode)
 		}
 	}
 }
+
+#if MOTOR_LEDS == 1
+void update_motor_light(void)
+{
+	// blink rear
+	static bool blink;
+
+	if (blink){
+		blink = false;
+		digitalWrite(RE_LED, LOW);
+
+	}else{
+		blink = true;
+		digitalWrite(RE_LED, HIGH);
+	}
+}
+#endif
 
 void update_GPS_light(void)
 {

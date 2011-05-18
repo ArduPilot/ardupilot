@@ -4,6 +4,7 @@
 static int8_t	setup_radio				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_motors			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_accel				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_frame				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_erase				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
@@ -21,6 +22,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"erase", 			setup_erase},
 	{"reset", 			setup_factory},
 	{"radio",			setup_radio},
+	{"frame",			setup_frame},
 	{"motors",			setup_motors},
 	{"esc",				setup_esc},
 	{"level",			setup_accel},
@@ -254,6 +256,22 @@ setup_accel(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
+static int8_t
+setup_frame(uint8_t argc, const Menu::arg *argv)
+{
+	if (!strcmp_P(argv[1].str, PSTR("x"))) {
+
+	} else if (!strcmp_P(argv[1].str, PSTR("p"))) {
+
+	}else{
+		Serial.printf_P(PSTR("\nOptions:[x,p]\n"));
+		report_frame();
+		return 0;
+	}
+
+	report_frame();
+	return 0;
+}
 
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
@@ -469,19 +487,20 @@ void report_frame()
 	Serial.printf_P(PSTR("Frame\n"));
 	print_divider();
 
-#if   FRAME_CONFIG == QUADX_FRAME
-	Serial.printf_P(PSTR("X frame\n"));
-#elif FRAME_CONFIG == QUADP_FRAME
-	Serial.printf_P(PSTR("Plus frame\n"));
+#if FRAME_CONFIG == QUAD_FRAME
+	Serial.printf_P(PSTR("Quad frame\n"));
 #elif FRAME_CONFIG == TRI_FRAME
 	Serial.printf_P(PSTR("TRI frame\n"));
-#elif FRAME_CONFIG == HEXAX_FRAME
-	Serial.printf_P(PSTR("HexaX frame\n"));
-#elif FRAME_CONFIG == HEXAP_FRAME
-	Serial.printf_P(PSTR("HexaP frame\n"));
+#elif FRAME_CONFIG == HEXA_FRAME
+	Serial.printf_P(PSTR("Hexa frame\n"));
 #elif FRAME_CONFIG == Y6_FRAME
 	Serial.printf_P(PSTR("Y6 frame\n"));
 #endif
+
+	if(g.frame_orientation == X_FRAME)
+		Serial.printf_P(PSTR("X mode\n"));
+	else if(g.frame_orientation == PLUS_FRAME)
+		Serial.printf_P(PSTR("+ mode\n"));
 
 	print_blanks(2);
 }
@@ -516,8 +535,8 @@ void report_gains()
 	Serial.printf_P(PSTR("yaw:\n"));
 	print_PID(&g.pid_yaw);
 
-	Serial.printf_P(PSTR("Stab D: %4.3f\n"), (float)g.stabilize_dampener);
-	Serial.printf_P(PSTR("Yaw D: %4.3f\n\n"), (float)g.hold_yaw_dampener);
+	//Serial.printf_P(PSTR("Stab D: %4.3f\n"), (float)g.stabilize_dampener);
+	//Serial.printf_P(PSTR("Yaw D: %4.3f\n\n"), (float)g.hold_yaw_dampener);
 
 	// Nav
 	Serial.printf_P(PSTR("Nav:\nlat:\n"));
@@ -622,7 +641,6 @@ print_PID(PID * pid)
 void
 print_radio_values()
 {
-
 	Serial.printf_P(PSTR("CH1: %d | %d\n"), (int)g.rc_1.radio_min, (int)g.rc_1.radio_max);
 	Serial.printf_P(PSTR("CH2: %d | %d\n"), (int)g.rc_2.radio_min, (int)g.rc_2.radio_max);
 	Serial.printf_P(PSTR("CH3: %d | %d\n"), (int)g.rc_3.radio_min, (int)g.rc_3.radio_max);

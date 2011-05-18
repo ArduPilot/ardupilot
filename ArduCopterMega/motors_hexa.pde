@@ -1,9 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if FRAME_CONFIG ==	HEXAX_FRAME
+#if FRAME_CONFIG ==	HEXA_FRAME
 
 void output_motors_armed()
 {
+	int roll_out, pitch_out;
 	int out_min = g.rc_3.radio_min;
 
 	// Throttle is 0 to 1000 only
@@ -17,18 +18,34 @@ void output_motors_armed()
 	g.rc_3.calc_pwm();
 	g.rc_4.calc_pwm();
 
-	int roll_out 		= (float)g.rc_1.pwm_out * .866;
-	int pitch_out 		= g.rc_2.pwm_out / 2;
+	if(g.frame_orientation == X_FRAME){
+		roll_out 	 	= (float)g.rc_1.pwm_out * .866;
+		pitch_out 	 	= g.rc_2.pwm_out / 2;
 
-	//left side
-	motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW
-	motor_out[CH_3]		= g.rc_3.radio_out + roll_out + pitch_out;	// CW
-	motor_out[CH_8]     = g.rc_3.radio_out + roll_out - pitch_out;	// CW
+		//left side
+		motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW Middle
+		motor_out[CH_3]		= g.rc_3.radio_out + roll_out + pitch_out;	// CW Front
+		motor_out[CH_8]     = g.rc_3.radio_out + roll_out - pitch_out;	// CW Back
 
-	//right side
-	motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW
-	motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW
-	motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW
+		//right side
+		motor_out[CH_1]		= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW Middle
+		motor_out[CH_7] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW Front
+		motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW Back
+
+	}else{
+		roll_out 		= g.rc_1.pwm_out;
+		pitch_out 	 	= g.rc_2.pwm_out / 2;
+
+		//Front side
+		motor_out[CH_1]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// CW	 FRONT
+		motor_out[CH_7] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	 FRONT LEFT
+		motor_out[CH_4] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	 FRONT RIGHT
+
+		//Back side
+		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CCW	BACK
+		motor_out[CH_3]		= g.rc_3.radio_out + roll_out - pitch_out;	// CW, 	BACK LEFT
+		motor_out[CH_8]		= g.rc_3.radio_out - roll_out - pitch_out;	// CW	BACK RIGHT
+	}
 
 	// Yaw
 	motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW

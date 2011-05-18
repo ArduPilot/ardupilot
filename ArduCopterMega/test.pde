@@ -13,6 +13,7 @@ static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -71,6 +72,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
 	{"mission",		test_mission},
+//	{"wp",			test_wp_nav},
 };
 
 // A Macro to create the Menu
@@ -197,6 +199,34 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+/*
+static int8_t
+test_wp_nav(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+
+	g.rc_6.set_range(0,900);
+	g.rc_4.set_angle(9000);
+	dTnav = 200;
+
+	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
+
+	while(1){
+		delay(20);
+		read_radio();
+		target_bearing = 0;
+		g_gps->ground_course = g.rc_4.control_in;
+		g_gps->ground_speed = g.rc_6.control_in;
+		calc_rate_nav();
+		Serial.printf("  gps_GC: %ld,  gps_GS: %d\n", g_gps->ground_course, g_gps->ground_speed);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+*/
 
 static int8_t
 test_failsafe(uint8_t argc, const Menu::arg *argv)

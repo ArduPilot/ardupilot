@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 7;
+    static const uint16_t k_format_version = 8;
 
     //
     // Parameter identities.
@@ -65,6 +65,7 @@ public:
 		k_param_compass_enabled,
 		k_param_compass,
 		k_param_sonar,
+		k_param_frame_orientation,
 
         //
         // 160: Navigation parameters
@@ -124,9 +125,6 @@ public:
 		k_param_pid_nav_wp,
 		k_param_pid_baro_throttle,
 		k_param_pid_sonar_throttle,
-		// special D term alternatives
-		k_param_stabilize_dampener,
-		k_param_hold_yaw_dampener,
 
 
         // 255: reserved
@@ -183,6 +181,7 @@ public:
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		compass_enabled;
 	AP_Int8		esc_calibrate;
+	AP_Int8		frame_orientation;
 
     // RC channels
 	RC_Channel	rc_1;
@@ -208,9 +207,6 @@ public:
 	PID			pid_nav_wp;
 	PID			pid_baro_throttle;
 	PID			pid_sonar_throttle;
-
-	AP_Float 	stabilize_dampener;
-	AP_Float 	hold_yaw_dampener;
 
     uint8_t     junk;
 
@@ -249,7 +245,9 @@ public:
         ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
         RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
-        esc_calibrate 			(0, 						k_param_esc_calibrate, 				PSTR("ESC")),
+        esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
+
+        frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 
         // RC channel           group key                   name
         //----------------------------------------------------------------------
@@ -270,9 +268,9 @@ public:
 		pid_acro_rate_pitch	(k_param_pid_acro_rate_pitch,	PSTR("ACR_PIT_"),	ACRO_RATE_PITCH_P,  ACRO_RATE_PITCH_I,	ACRO_RATE_PITCH_D,	ACRO_RATE_PITCH_IMAX * 100),
 		pid_acro_rate_yaw	(k_param_pid_acro_rate_yaw,		PSTR("ACR_YAW_"),	ACRO_RATE_YAW_P,    ACRO_RATE_YAW_I,	ACRO_RATE_YAW_D,	ACRO_RATE_YAW_IMAX * 100),
 
-		pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),	STABILIZE_ROLL_P,   STABILIZE_ROLL_I,	0,   				STABILIZE_ROLL_IMAX * 100),
-		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,  STABILIZE_PITCH_I,	0,  				STABILIZE_PITCH_IMAX * 100),
-		pid_yaw				(k_param_pid_yaw,				PSTR("STB_YAW_"),	YAW_P,      		YAW_I,				0,					YAW_IMAX * 100),
+		pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),	STABILIZE_ROLL_P,   STABILIZE_ROLL_I,	STABILIZE_ROLL_D,	STABILIZE_ROLL_IMAX * 100),
+		pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,  STABILIZE_PITCH_I,	STABILIZE_PITCH_D,  STABILIZE_PITCH_IMAX * 100),
+		pid_yaw				(k_param_pid_yaw,				PSTR("STB_YAW_"),	YAW_P,      		YAW_I,				YAW_D,				YAW_IMAX * 100),
 
 		pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_LOITER_P,		NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
 		pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_LOITER_P,      	NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
@@ -280,9 +278,6 @@ public:
 
 		pid_baro_throttle	(k_param_pid_baro_throttle,		PSTR("THR_BAR_"),	THROTTLE_BARO_P,    THROTTLE_BARO_I,	THROTTLE_BARO_D,	THROTTLE_BARO_IMAX),
 		pid_sonar_throttle	(k_param_pid_sonar_throttle,	PSTR("THR_SON_"),	THROTTLE_SONAR_P,   THROTTLE_SONAR_I,	THROTTLE_SONAR_D,	THROTTLE_SONAR_IMAX),
-
-		stabilize_dampener	(STABILIZE_ROLL_D,		k_param_stabilize_dampener, 	PSTR("STB_DAMP")),
-		hold_yaw_dampener	(YAW_D,				 	k_param_hold_yaw_dampener, 		PSTR("YAW_DAMP")),
 
         junk(0)     // XXX just so that we can add things without worrying about the trailing comma
     {

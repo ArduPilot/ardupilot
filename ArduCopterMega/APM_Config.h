@@ -6,18 +6,23 @@
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
-#define NAV_TEST 0	// 0 = traditional, 1 = rate controlled
+#define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
 
-#define FRAME_CONFIG QUADX_FRAME
+#define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
-	QUADP_FRAME		// the classic plus configuration
-	QUADX_FRAME		// the superior X configuration
-	TRI_FRAME		// three props with a servo on the tail for yaw
-	HEXAP_FRAME		// you have more motors than sense (6)
-	HEXAX_FRAME		// you like scaring children in the park
-	Y6_FRAME		// the motors are stacked on a Tri frame
+	QUAD_FRAME
+	TRI_FRAME
+	HEXA_FRAME
+	Y6_FRAME
 	*/
+
+#define FRAME_ORIENTATION X_FRAME
+	/*
+	PLUS_FRAME
+	X_FRAME
+	*/
+
 
 #define CHANNEL_6_TUNING CH6_NONE
 	/*
@@ -53,3 +58,11 @@
 # define LOG_CMD				ENABLED
 # define LOG_CURRENT			DISABLED
 
+
+
+#define MOTOR_LEDS 0	// 0 = off, 1 = on
+
+#define FR_LED AN12  // Mega PE4 pin, OUT7
+#define RE_LED AN14  // Mega PE5 pin, OUT6
+#define RI_LED AN10  // Mega PH4 pin, OUT5
+#define LE_LED AN8  // Mega PH5 pin, OUT4

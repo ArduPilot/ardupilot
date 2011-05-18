@@ -47,8 +47,12 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
-# define FRAME_CONFIG		QUADP_FRAME
+# define FRAME_CONFIG		QUAD_FRAME
 #endif
+#ifndef FRAME_ORIENTATION
+# define FRAME_ORIENTATION		PLUS_FRAME
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
@@ -117,7 +121,7 @@
 // setup may override the GPS configuration.
 //
 #ifndef GPS_PROTOCOL
-# define GPS_PROTOCOL GPS_PROTOCOL_AUTO
+# define GPS_PROTOCOL 		GPS_PROTOCOL_AUTO
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -197,16 +201,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
-// FLIGHT_MODE_CHANNEL
 //
-#ifndef FLIGHT_MODE_CHANNEL
-# define FLIGHT_MODE_CHANNEL	CH_5
-#endif
-#if (FLIGHT_MODE_CHANNEL != CH_5) && (FLIGHT_MODE_CHANNEL != CH_6) && (FLIGHT_MODE_CHANNEL != CH_7) && (FLIGHT_MODE_CHANNEL != CH_8)
-# error XXX
-# error XXX You must set FLIGHT_MODE_CHANNEL to 5, 6, 7 or 8
-# error XXX
-#endif
 
 #if !defined(FLIGHT_MODE_1)
 # define FLIGHT_MODE_1			STABILIZE
