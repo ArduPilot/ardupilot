@@ -260,9 +260,9 @@ static int8_t
 setup_frame(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("x"))) {
-		g.frame_orientation = X_FRAME;
+		g.frame_orientation.set_and_save(X_FRAME);
 	} else if (!strcmp_P(argv[1].str, PSTR("p"))) {
-		g.frame_orientation = PLUS_FRAME;
+		g.frame_orientation.set_and_save(PLUS_FRAME);
 	}else{
 		Serial.printf_P(PSTR("\nOptions:[x,p]\n"));
 		report_frame();
@@ -342,11 +342,11 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-		g.compass_enabled = true;
+		g.compass_enabled.set_and_save(true);
 		init_compass();
 
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
-		g.compass_enabled = false;
+		g.compass_enabled.set_and_save(false);
 
 	}else{
 		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
