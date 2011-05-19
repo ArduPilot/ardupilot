@@ -260,9 +260,9 @@ static int8_t
 setup_frame(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("x"))) {
-
+		g.frame_orientation = X_FRAME;
 	} else if (!strcmp_P(argv[1].str, PSTR("p"))) {
-
+		g.frame_orientation = PLUS_FRAME;
 	}else{
 		Serial.printf_P(PSTR("\nOptions:[x,p]\n"));
 		report_frame();
