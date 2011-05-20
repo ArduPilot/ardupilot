@@ -211,6 +211,33 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 	dTnav = 200;
 
 	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
+	while(1){
+		delay(20);
+		read_radio();
+		current_loc.lng = g.rc_1.control_in;
+		current_loc.lat = g.rc_2.control_in;
+
+		calc_loiter_nav();
+
+		Serial.printf("Lon_e: %ld, nLon, %ld, Lat_e %ld, nLat %ld\n", long_error, nav_lon, lat_error, nav_lat);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+//*/
+
+/*
+{
+	print_hit_enter();
+	delay(1000);
+
+	g.rc_6.set_range(0,900);
+	g.rc_4.set_angle(9000);
+	dTnav = 200;
+
+	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
 
 	while(1){
 		delay(20);
@@ -227,7 +254,6 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 	}
 }
 */
-
 static int8_t
 test_failsafe(uint8_t argc, const Menu::arg *argv)
 {

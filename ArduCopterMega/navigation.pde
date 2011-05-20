@@ -43,13 +43,13 @@ bool check_missed_wp()
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
-#define DIST_ERROR_MAX 1800
+#define DIST_ERROR_MAX 700
 void calc_loiter_nav()
 {
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
 	100 	= 1m
-	1000 	= 11m
+	1000 	= 11m	 = 36 feet
 	1800 	= 19.80m = 60 feet
 	3000 	= 33m
 	10000 	= 111m
@@ -62,15 +62,15 @@ void calc_loiter_nav()
 	// Y PITCH
 	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
 
-
 	long_error	= constrain(long_error, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
 
-	// Convert distance into ROLL X
-	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav2, 1.0);
+	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav, 1.0);		// X 700 * 2.5 = 1750,
+	nav_lat 	= g.pid_nav_lat.get_pid(lat_error,  dTnav, 1.0);		// Y invert lat (for pitch)
 
-	// PITCH	Y
-	nav_lat 	= g.pid_nav_lat.get_pid(lat_error, dTnav2, 1.0);			// invert lat (for pitch)
+	long pmax 	= g.pitch_max.get();
+	nav_lon 	= constrain(nav_lon, -pmax, pmax);
+	nav_lat 	= constrain(nav_lat, -pmax, pmax);
 }
 
 void calc_loiter_output()
@@ -104,9 +104,6 @@ void calc_loiter_output()
 
 	//limit our copter pitch - this will change if we go to a fully rate limited approach.
 
-	long pmax 	= g.pitch_max.get();
-	nav_roll 	= constrain(nav_roll,  -pmax, pmax);
-	nav_pitch 	= constrain(nav_pitch, -pmax, pmax);
 	//limit_nav_pitch_roll(g.pitch_max.get());
 }
 
