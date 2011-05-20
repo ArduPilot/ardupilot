@@ -350,13 +350,13 @@
 # define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
-# define YAW_I					0.01		// increased to .1 to try and get over user's steady state error caused by poor balance
+# define YAW_I					0.00		// increased to .1 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
 # define YAW_D					0.13		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
-# define YAW_IMAX				500			//	Always 0
+# define YAW_IMAX				0			//	Always 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
