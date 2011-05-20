@@ -95,7 +95,7 @@ void output_motors_disarmed()
 
 void output_motor_test()
 {
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 50);
 	delay(1000);
 
