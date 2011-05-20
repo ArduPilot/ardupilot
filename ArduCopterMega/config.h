@@ -375,7 +375,7 @@
 # define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.15		// upped a bit to deal with wind faster
+# define NAV_LOITER_I			0.05		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
 # define NAV_LOITER_D			0.00

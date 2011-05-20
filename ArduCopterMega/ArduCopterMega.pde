@@ -1136,6 +1136,29 @@ void update_current_flight_mode(void)
 	}
 }
 
+void update_nav_wp()
+{
+	if(wp_control == LOITER_MODE){
+		// calc a pitch to the target
+		calc_loiter_nav();
+
+		// rotate pitch and roll to the copter frame of reference
+		calc_loiter_output();
+
+	} else {
+		// how far are we from the ideal trajectory?
+		// this pushes us back on course
+		update_crosstrack();
+
+		// calc a rate dampened pitch to the target
+		calc_rate_nav();
+
+		// rotate that pitch to the copter frame of reference
+		calc_nav_output();
+	}
+
+}
+
 // called after a GPS read
 void update_navigation()
 {
@@ -1146,25 +1169,7 @@ void update_navigation()
 	if(control_mode == AUTO){
 		verify_commands();
 
-		if(wp_control == LOITER_MODE){
-			// calc a pitch to the target
-			calc_loiter_nav();
-
-			// rotate pitch and roll to the copter frame of reference
-			calc_loiter_output();
-
-		} else {
-			// how far are we from the ideal trajectory?
-			// this pushes us back on course
-			update_crosstrack();
-
-			// calc a rate dampened pitch to the target
-			calc_rate_nav();
-
-			// rotate that pitch to the copter frame of reference
-			calc_nav_output();
-		}
-
+		update_nav_wp();
 
 		// this tracks a location so the copter is always pointing towards it.
 		if(yaw_tracking == MAV_ROI_LOCATION){
@@ -1178,20 +1183,13 @@ void update_navigation()
 
 		switch(control_mode){
 			case LOITER:
-				// calc a pitch to the target
-				calc_loiter_nav();
-
-				// limit tilt
-				limit_nav_pitch_roll(g.pitch_max.get());
+				wp_control = LOITER_MODE;
+				update_nav_wp();
 				break;
 
 			case RTL:
-				// calc a pitch to the target
-				calc_loiter_nav();
-
-				// limit tilt
-				limit_nav_pitch_roll(g.pitch_max.get());
-				update_crosstrack();
+				wp_control = (wp_distance < 700) ? LOITER_MODE : WP_MODE;
+				update_nav_wp();
 				break;
 		}
 	}
