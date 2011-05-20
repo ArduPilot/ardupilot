@@ -190,7 +190,7 @@ byte get_num_logs(void)
 {
 	int page = 1;
 	byte data;
-	byte log_step;
+	byte log_step = 0;
 
 	DataFlash.StartRead(1);
 
@@ -269,7 +269,7 @@ void get_log_boundaries(byte num_logs, byte log_num, int & start_page, int & end
 {
 	int page 		= 1;
 	byte data;
-	byte log_step;
+	byte log_step = 0;
 
 	DataFlash.StartRead(1);
 	while (page == 1) {
