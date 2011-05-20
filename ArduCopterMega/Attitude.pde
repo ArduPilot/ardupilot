@@ -212,12 +212,11 @@ output_yaw_with_hold(boolean hold)
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
 			// we are still in motion from rate control
-			if(fabs(omega.z) < .2){
+			if(fabs(omega.z) < .4){
 				clear_yaw_control();
 				hold = true;			// just to be explicit
 				//Serial.print("C");
 			}else{
-
 				hold = false;			// return to rate control until we slow down.
 				//Serial.print("D");
 			}
