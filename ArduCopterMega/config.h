@@ -229,13 +229,13 @@
 // THROTTLE_FAILSAFE_ACTION
 //
 #ifndef THROTTLE_FAILSAFE
-# define THROTTLE_FAILSAFE		DISABLED
+# define THROTTLE_FAILSAFE			DISABLED
 #endif
 #ifndef THROTTE_FS_VALUE
-# define THROTTLE_FS_VALUE		975
+# define THROTTLE_FS_VALUE			975
 #endif
 #ifndef THROTTLE_FAILSAFE_ACTION
-# define THROTTLE_FAILSAFE_ACTION		2
+# define THROTTLE_FAILSAFE_ACTION	2
 #endif
 
 
@@ -353,7 +353,7 @@
 # define YAW_I					0.00		// increased to .1 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
-# define YAW_D					0.13		// Trying a lower value to prevent odd behavior
+# define YAW_D					0.05		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
 # define YAW_IMAX				0			//	Always 0
