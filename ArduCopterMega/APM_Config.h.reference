@@ -1,5 +1,5 @@
 //
-// Example and reference ArduPilot Mega configuration file
+// Example and reference Arducopter 2.0 configuration file
 // =======================================================
 //
 // This file contains documentation and examples for configuration options
@@ -76,32 +76,26 @@
 //////////////////////////////////////////////////////////////////////////////
 // GCS_PROTOCOL                             OPTIONAL
 // GCS_PORT                                 OPTIONAL
+// MAV_SYSTEM_ID							OPTIONAL
 //
 // The GCS_PROTOCOL option determines which (if any) ground control station
 // protocol will be used.  Must be one of:
 //
 // GCS_PROTOCOL_NONE        No GCS output
-// GCS_PROTOCOL_STANDARD    standard APM protocol
-// GCS_PROTOCOL_SPECIAL     special test protocol (?)
-// GCS_PROTOCOL_LEGACY      legacy ArduPilot protocol
-// GCS_PROTOCOL_XPLANE      HIL simulation ground station
-// GCS_PROTOCOL_IMU         ArdiPilot IMU output
-// GCS_PROTOCOL_JASON       Jason's special secret GCS protocol
+// GCS_PROTOCOL_MAVLINK     QGroundControl protocol
 //
 // The GCS_PORT option determines which serial port will be used by the
 // GCS protocol.   The usual values are 0 for the console/USB port,
 // or 3 for the telemetry port on the oilpan.  Note that some protocols
 // will ignore this value and always use the console port.
 //
-// The default GCS protocol is the standard ArduPilot Mega protocol.
+// The MAV_SYSTEM_ID is a unique identifier for this UAV.  The default value is 1.
+// If you will be flying multiple UAV's each should be assigned a different ID so
+// that ground stations can tell them apart.
 //
-// The default serial port is the telemetry port for GCS_PROTOCOL_STANDARD
-// and GCS_PROTOCOL_LEGACY.  For all other protocols, the default serial
-// port is the FTDI/console port.  GCS_PORT normally should not be set
-// in your configuration.
-//
-//#define GCS_PROTOCOL        GCS_PROTOCOL_STANDARD
-//#define GCS_PORT            3
+//#define GCS_PROTOCOL		GCS_PROTOCOL_MAVLINK
+//#define GCS_PORT			3
+//#define MAV_SYSTEM_ID		1
 //
 
 //////////////////////////////////////////////////////////////////////////////
@@ -109,16 +103,15 @@
 //
 // SERIAL0_BAUD                             OPTIONAL
 //
-// Baudrate for the console port.  Default is 38400bps.
+// Baudrate for the console port.  Default is 115200bps.
 //
 // SERIAL3_BAUD                             OPTIONAL
 //
-// Baudrate for the telemetry port.  Default is 115200bps.
+// Baudrate for the telemetry port.  Default is 57600bps.
 //
-//#define SERIAL0_BAUD        38400
-//#define SERIAL3_BAUD        115200
+//#define SERIAL0_BAUD        115200
+//#define SERIAL3_BAUD         57600
 //
-
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring                       OPTIONAL
 //
@@ -127,18 +120,12 @@
 //
 // BATTERY_EVENT                            OPTIONAL
 //
-// Set BATTERY_EVENT to ENABLED to enable battery monitoring.  The default is
-// DISABLED.
-//
-// BATTERY_TYPE                             OPTIONAL if BATTERY_EVENT is set
-//
-// Set to 0 for 3s LiPo, 1 for 4s LiPo.  The default is 0, selecting a 3s
-// battery.
+// Set BATTERY_EVENT to ENABLED to enable low voltage or high discharge warnings.
+// The default is DISABLED.
 //
 // LOW_VOLTAGE                              OPTIONAL if BATTERY_EVENT is set.
 //
-// Normally derived from BATTERY_TYPE, the automatic value can be overridden
-// here.  Value in volts at which ArduPilot Mega should consider the
+// Value in volts at which ArduPilot Mega should consider the
 // battery to be "low".
 //
 // VOLT_DIV_RATIO                           OPTIONAL
@@ -146,11 +133,25 @@
 // See the manual for details.  The default value corresponds to the resistors
 // recommended by the manual.
 //
-//#define BATTERY_EVENT       DISABLED
-//#define BATTERY_TYPE        0
-//#define LOW_VOLTAGE         11.4
-//#define VOLT_DIV_RATIO      3.0
+// CURR_AMPS_PER_VOLT						OPTIONAL
+// CURR_AMPS_OFFSET							OPTIONAL
 //
+// The sensitivity of the current sensor.  This must be scaled if a resistor is installed on APM
+// for a voltage divider on input 2 (not recommended).  The offset is used for current sensors with an offset
+//
+//
+// HIGH_DISCHARGE							OPTIONAL if BATTERY_EVENT is set.
+//
+// Value in milliamp-hours at which a warning should be triggered.  Recommended value = 80% of
+// battery capacity.
+//
+//#define BATTERY_EVENT			DISABLED
+//#define LOW_VOLTAGE			9.6
+//#define VOLT_DIV_RATIO		3.56
+//#define CURR_AMPS_PER_VOLT	27.32
+//#define CURR_AMPS_OFFSET		0.0
+//#define HIGH_DISCHARGE		1760
+
 
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE                            OPTIONAL
@@ -172,15 +173,11 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE								OPTIONAL
-// FLIGHT_MODE_CHANNEL			    		OPTIONAL
 //
 // Flight modes assigned to the control channel, and the input channel that
 // is read for the control mode.
 //
-// Use a servo tester, or the ArduPilotMega_demo test program to check your
-// switch settings.
-//
-// ATTENTION: Some ArduPilot Mega boards have radio channels marked 0-7, and
+// ATTENTION: Some APM boards have radio channels marked 0-7, and
 // others have them marked the standard 1-8.  The FLIGHT_MODE_CHANNEL option
 // uses channel numbers 1-8 (and defaults to 8).
 //
@@ -205,8 +202,6 @@
 //
 //  Name            | Description
 // -----------------+--------------------------------------------
-//                  |
-//  MANUAL          | Full manual control via the hardware multiplexer.
 //                  |
 //  STABILIZE       | Tries to maintain level flight, but can be overridden with radio control inputs.
 //                  |
@@ -268,19 +263,19 @@
 // position up so that you cannot engage the failsafe with a regular stick movement.
 //
 // Configure your receiver's failsafe setting for the throttle channel to the
-// absolute minimum, and use the ArduPilotMega_demo program to check that
+// absolute minimum, and use setup pwm program in the CLI to check that
 // you cannot reach that value with the throttle control.  Leave a margin of
 // at least 50 microseconds between the lowest throttle setting and
 // THROTTLE_FS_VALUE.
 //
-// The FAILSAFE_ACTION setting determines what APM will do when throttle failsafe
+// The FAILSAFE_ACTION setting determines what AC2 will do when throttle failsafe
 // mode is entered while flying in AUTO mode.  This is important in order to avoid
 // accidental failsafe behaviour when flying waypoints that take the aircraft
 // temporarily out of radio range.
 //
-// If FAILSAFE_ACTION is 1, when failsafe is entered in AUTO or LOITER modes,
+// If FAILSAFE_ACTION is 1, when failsafe is entered in AUTO modes,
 // the aircraft will head for home in RTL mode.  If the throttle channel moves
-// back up, it will return to AUTO or LOITER mode.
+// back up, it will return to AUTO mode.
 //
 // The default behaviour is to ignore throttle failsafe in AUTO and LOITER modes.
 //
@@ -310,50 +305,12 @@
 //#define GROUND_START_DELAY  0
 //
 
-//////////////////////////////////////////////////////////////////////////////
-// ENABLE_AIR_START                         OPTIONAL
-//
-// If air start is disabled then you will get a ground start (including IMU
-// calibration) every time the AP is powered up. This means that if you get
-// a power glitch or reboot for some reason in the air, you will probably
-// crash, but it prevents a lot of problems on the ground like unintentional
-// motor start-ups, etc.
-//
-// If air start is enabled then you will get an air start at power up and a
-// ground start will be performed if the speed is near zero when we get gps
-// lock.
-//
-// The default is to disable air start.
-//
-//#define ENABLE_AIR_START    0
-//
-
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT AND NAVIGATION CONTROL
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Altitude measurement and control.
-//
-// AOA                                      OPTIONAL
-//
-// The angle in 100ths of a degree that the nose of the aircraft should be
-// raised from horizontal in level flight.  The default is 1 degree.
-//
-//#define AOA                 100 // note, 100ths of a degree
-//
-// ALT_EST_GAIN                             OPTIONAL
-//
-// The gain of the altitude estimation function; a lower number results
-// in slower error correction and smoother output.  The default is a
-// reasonable starting point.
-//
-//#define ALT_EST_GAIN        0.01
-//
-
 
 //////////////////////////////////////////////////////////////////////////////
 // ENABLE_HIL                      	    OPTIONAL
@@ -370,9 +327,9 @@
 // PITCH_MAX                                OPTIONAL
 //
 // The maximum commanded pitch up angle.
-// The default is 45 degrees.
+// The default is 18 degrees.
 //
-//#define PITCH_MAX           45
+//#define PITCH_MAX           18
 
 //////////////////////////////////////////////////////////////////////////////
 // Attitude control gains
@@ -385,203 +342,10 @@
 // The I term is used to help control surfaces settle.  This value should
 // normally be kept low.
 //
-// The D term is used to control overshoot.  Avoid using or adjusting this
-// term if you are not familiar with tuning PID loops.  It should normally
-// be zero for most aircraft.
+// The D term is used to slow change to avoid overshoot.
 //
 // Note: When tuning these values, start with changes of no more than 25% at
 // a time.
-//
-// SERVO_ROLL_P                             OPTIONAL
-// SERVO_ROLL_I                             OPTIONAL
-// SERVO_ROLL_D                             OPTIONAL
-//
-// P, I and D terms for roll control.  Defaults are 0.4, 0, 0.
-//
-// SERVO_ROLL_INT_MAX                       OPTIONAL
-//
-// Maximum control offset due to the integral.  This prevents the control
-// output from being overdriven due to a persistent offset (e.g. crosstracking).
-// Default is 5 degrees.
-//
-// ROLL_SLEW_LIMIT                          EXPERIMENTAL
-//
-// Limits the slew rate of the roll control in degrees per second.  If zero,
-// slew rate is not limited.  Default is to not limit the roll control slew rate.
-// (This feature is currently not implemented.)
-//
-// SERVO_PITCH_P                            OPTIONAL
-// SERVO_PITCH_I                            OPTIONAL
-// SERVO_PITCH_D                            OPTIONAL
-//
-// P, I and D terms for the pitch control.  Defaults are 0.6, 0, 0.
-//
-// SERVO_PITCH_INT_MAX                      OPTIONAL
-//
-// Maximum control offset due to the integral.  This prevents the control
-// output from being overdriven due to a persistent offset (e.g. native flight
-// AoA).  If you find this value is insufficient, consider adjusting the AOA
-// parameter.
-// Default is 5 degrees.
-//
-// PITCH_COMP                               OPTIONAL
-//
-// Adds pitch input to compensate for the loss of lift due to roll control.
-// Default is 0.20 (20% of roll control also applied to pitch control).
-//
-// SERVO_YAW_P                              OPTIONAL
-// SERVO_YAW_I                              OPTIONAL
-// SERVO_YAW_D                              OPTIONAL
-//
-// P, I and D terms for the YAW control.  Defaults are 0.5, 0, 0.
-//
-// SERVO_YAW_INT_MAX                        OPTIONAL
-//
-// Maximum control offset due to the integral.  This prevents the control
-// output from being overdriven due to a persistent offset (e.g. crosstracking).
-// Default is 5 degrees.
-//
-// RUDDER_MIX                               OPTIONAL
-//
-// Roll to yaw mixing.  This allows for co-ordinated turns.
-// Default is 0.50 (50% of roll control also applied to yaw control.)
-//
-//#define SERVO_ROLL_P        0.4
-//#define SERVO_ROLL_I        0.0
-//#define SERVO_ROLL_D        0.0
-//#define SERVO_ROLL_INT_MAX  5
-//#define ROLL_SLEW_LIMIT     0
-//#define SERVO_PITCH_P       0.6
-//#define SERVO_PITCH_I       0.0
-//#define SERVO_PITCH_D       0.0
-//#define SERVO_PITCH_INT_MAX 5
-//#define PITCH_COMP          0.2
-//#define SERVO_YAW_P         0.5
-//#define SERVO_YAW_I         0.0
-//#define SERVO_YAW_D         0.0
-//#define SERVO_YAW_INT_MAX   5
-//#define RUDDER_MIX          0.5
-//
-
-//////////////////////////////////////////////////////////////////////////////
-// Navigation control gains
-//
-// Tuning values for the navigation control PID loops.
-//
-// The P term is the primary tuning value.  This determines how the control
-// deflection varies in proportion to the required correction.
-//
-// The I term is used to control drift.
-//
-// The D term is used to control overshoot.  Avoid adjusting this term if
-// you are not familiar with tuning PID loops.
-//
-// Note: When tuning these values, start with changes of no more than 25% at
-// a time.
-//
-// NAV_ROLL_P                               OPTIONAL
-// NAV_ROLL_I                               OPTIONAL
-// NAV_ROLL_D                               OPTIONAL
-//
-// P, I and D terms for navigation control over roll, normally used for
-// controlling the aircraft's course.  The P term controls how aggressively
-// the aircraft will bank to change or hold course.
-// Defaults are 0.7, 0.01, 0.02.
-//
-// NAV_ROLL_INT_MAX                         OPTIONAL
-//
-// Maximum control offset due to the integral.  This prevents the control
-// output from being overdriven due to a persistent offset (e.g. crosstracking).
-// Default is 5 degrees.
-//
-// NAV_PITCH_ASP_P                          OPTIONAL
-// NAV_PITCH_ASP_I                          OPTIONAL
-// NAV_PITCH_ASP_D                          OPTIONAL
-//
-// P, I and D terms for pitch adjustments made to maintain airspeed.
-// Defaults are 0.65, 0, 0.
-//
-// NAV_PITCH_ASP_INT_MAX                    OPTIONAL
-//
-// Maximum pitch offset due to the integral.  This limits the control
-// output from being overdriven due to a persistent offset (eg. inability
-// to maintain the programmed airspeed).
-// Default is 5 degrees.
-//
-// NAV_PITCH_ALT_P                          OPTIONAL
-// NAV_PITCH_ALT_I                          OPTIONAL
-// NAV_PITCH_ALT_D                          OPTIONAL
-//
-// P, I and D terms for pitch adjustments made to maintain altitude.
-// Defaults are 0.65, 0, 0.
-//
-// NAV_PITCH_ALT_INT_MAX                    OPTIONAL
-//
-// Maximum pitch offset due to the integral.  This limits the control
-// output from being overdriven due to a persistent offset (eg. inability
-// to maintain the programmed altitude).
-// Default is 5 degrees.
-//
-//#define NAV_ROLL_P          0.7
-//#define NAV_ROLL_I          0.01
-//#define NAV_ROLL_D          0.02
-//#define NAV_ROLL_INT_MAX    5
-//#define NAV_PITCH_ASP_P     0.65
-//#define NAV_PITCH_ASP_I     0.0
-//#define NAV_PITCH_ASP_D     0.0
-//#define NAV_PITCH_ASP_INT_MAX 5
-//#define NAV_PITCH_ALT_P     0.65
-//#define NAV_PITCH_ALT_I     0.0
-//#define NAV_PITCH_ALT_D     0.0
-//#define NAV_PITCH_ALT_INT_MAX 5
-//
-
-//////////////////////////////////////////////////////////////////////////////
-// Energy/Altitude control gains
-//
-// The Energy/altitude control system uses throttle input to control aircraft
-// altitude.
-//
-// The P term is the primary tuning value.  This determines how the throttle
-// setting varies in proportion to the required correction.
-//
-// The I term is used to compensate for small offsets.
-//
-// The D term is used to control overshoot.  Avoid adjusting this term if
-// you are not familiar with tuning PID loops.
-//
-// THROTTLE_TE_P                            OPTIONAL
-// THROTTLE_TE_I                            OPTIONAL
-// THROTTLE_TE_D                            OPTIONAL
-//
-// P, I and D terms for throttle adjustments made to control altitude.
-// Defaults are 0.5, 0, 0.
-//
-// THROTTLE_TE_INT_MAX                      OPTIONAL
-//
-// Maximum throttle input due to the integral term.  This limits the
-// throttle from being overdriven due to a persistent offset (e.g.
-// inability to maintain the programmed altitude).
-// Default is 20%.
-//
-// THROTTLE_SLEW_LIMIT                      OPTIONAL
-//
-// Limits the slew rate of the throttle, in percent per second.  Helps
-// avoid sudden throttle changes, which can destabilise the aircraft.
-// A setting of zero disables the feature.
-// Default is zero (disabled).
-//
-// P_TO_T                                   OPTIONAL
-//
-// Pitch to throttle feed-forward gain.  Used when AIRSPEED_SENSOR
-// is DISABLED.  Default is 2.5.
-//
-//#define THROTTLE_TE_P       0.50
-//#define THROTTLE_TE_I       0.0
-//#define THROTTLE_TE_D       0.0
-//#define THROTTLE_TE_INT_MAX 20
-//#define THROTTLE_SLEW_LIMIT 0
-//#define P_TO_T              2.5
 //
 
 //////////////////////////////////////////////////////////////////////////////
@@ -680,6 +444,7 @@
 //#define LOG_MODE            ENABLED
 //#define LOG_RAW             DISABLED
 //#define LOG_CMD             ENABLED
+//#define LOG_CURRENT         ENABLED
 //
 
 //////////////////////////////////////////////////////////////////////////////
