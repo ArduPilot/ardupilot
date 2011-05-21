@@ -132,20 +132,22 @@ void calc_nav_throttle()
 
 	if(error < 0){
 		// try and prevent rapid fall
-		scaler = (altitude_sensor == BARO) ? .9 : .9;
+		scaler = (altitude_sensor == BARO) ? .5 : .9;
 	}
 
 	if(altitude_sensor == BARO){
-		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .25
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 140);
+		nav_throttle = g.pid_baro_throttle.get_pid(error, dTnav2, scaler);	// .25
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -50, 100);
 	}else{
-		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_fast_loop, scaler);	// .5
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, dTnav2, scaler);	// .5
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 150);
 	}
 
-	nav_throttle = (nav_throttle + nav_throttle_old) >> 1;
-	nav_throttle_old = nav_throttle;
+	// simple filtering
+	nav_throttle 		= (nav_throttle + nav_throttle_old) >> 1;
+	nav_throttle_old 	= nav_throttle;
 
+	// clear the new data flag
 	invalid_throttle = false;
 
 	//Serial.printf("nav_thr %d, scaler %2.2f ", nav_throttle, scaler);
@@ -257,7 +259,8 @@ output_yaw_with_hold(boolean hold)
 
 		}else{
 			// RATE control
-			long error			= ((long)g.rc_4.control_in * 6) - rate;							// control is += 6000 * 6 = 36000
+																// Hein, 5/21/11
+			long error			= ((long)g.rc_4.control_in * 6) - (rate * 3);					// control is += 6000 * 6 = 36000
 			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
 			yaw_debug 			= YAW_RATE;  // 2
 		}
