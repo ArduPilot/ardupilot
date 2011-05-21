@@ -9,13 +9,21 @@ void failsafe_on_event()
 	// This is how to handle a failsafe.
 	switch(control_mode)
 	{
+		case AUTO:
+			if (g.throttle_fs_action == 1) {
+				set_mode(RTL);
+			}
+			// 2 = Stay in AUTO and ignore failsafe
 
+		default:
+			// not ready to enable yet w/o more testing
+			//set_mode(RTL);
+			break;
 	}
 }
 
 void failsafe_off_event()
 {
-	/*
 	if (g.throttle_fs_action == 2){
 		// We're back in radio contact
 		// return to AP
@@ -36,7 +44,6 @@ void failsafe_off_event()
 		// ------------------------------------------------------
 		set_mode(RTL);
 	}
-	*/
 }
 
 void low_battery_event(void)
