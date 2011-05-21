@@ -648,7 +648,7 @@ test_battery(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		read_battery();
 	}
-	Serial.printf_P(PSTR("Volts: 1:%2.2f, 2:%2.2f, 3:%2.2f, 4:%2.2f\n")
+	Serial.printf_P(PSTR("Volts: 1:%2.2f, 2:%2.2f, 3:%2.2f, 4:%2.2f\n"),
 			battery_voltage1,
 			battery_voltage2,
 			battery_voltage3,
