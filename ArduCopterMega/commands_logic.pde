@@ -195,9 +195,6 @@ bool verify_may()
 
 void do_RTL(void)
 {
-	// we need to change this.
-	wp_control 		= LOITER_MODE;
-	control_mode	= LOITER;
 	Location temp	= home;
 	temp.alt		= read_alt_to_hold();
 
@@ -210,9 +207,6 @@ void do_RTL(void)
 
 	// output control mode to the ground station
 	gcs.send_message(MSG_HEARTBEAT);
-
-	//if (g.log_bitmask & MASK_LOG_MODE)
-	//	Log_Write_Mode(control_mode);
 }
 
 /********************************************************************************/
