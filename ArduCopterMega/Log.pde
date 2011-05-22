@@ -78,10 +78,11 @@ print_log_menu(void)
 		Serial.printf_P(PSTR("\nNo logs\n"));
 	}else{
 		Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
+
 		for(int i = 1; i < last_log_num + 1; i++) {
 			get_log_boundaries(last_log_num, i, log_start, log_end);
-			Serial.printf_P(PSTR("Log # %d,    start %d,   end %d\n"),
-							i, log_start, log_end);
+			//Serial.printf_P(PSTR("last_num %d "), last_log_num);
+			Serial.printf_P(PSTR("Log # %d,    start %d,   end %d\n"), i, log_start, log_end);
 		}
 		Serial.println();
 	}
@@ -98,9 +99,11 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
+
 	last_log_num = get_num_logs();
-	if ((argc != 2) || (dump_log < 1) || (dump_log > last_log_num)) {
-		Serial.printf_P(PSTR("bad log number\n"));
+
+	if (/*(argc != 2) || */(dump_log < 1) || (dump_log > last_log_num)) {
+		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
 		return(-1);
 	}
 
@@ -186,11 +189,12 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 }
 
 
+// finds out how many logs are available
 byte get_num_logs(void)
 {
 	int page = 1;
 	byte data;
-	byte log_step = 0;
+	byte log_step;
 
 	DataFlash.StartRead(1);
 
@@ -211,11 +215,14 @@ byte get_num_logs(void)
 				break;
 
 			case 2:
-				if(data==LOG_INDEX_MSG){
+				if(data == LOG_INDEX_MSG){
 					byte num_logs = DataFlash.ReadByte();
+					//Serial.printf("num_logs, %d\n", num_logs);
+
 					return num_logs;
 				}else{
-						log_step=0;	 // Restart, we have a problem...
+					//Serial.printf("* %d\n", data);
+					log_step = 0;	 // Restart, we have a problem...
 				}
 				break;
 			}
@@ -225,10 +232,12 @@ byte get_num_logs(void)
 }
 
 // send the number of the last log?
-void start_new_log(byte num_existing_logs)
+void start_new_log()
 {
-	int start_pages[50] = {0, 0, 0};
-	int end_pages[50]	= {0, 0, 0};
+	byte num_existing_logs = get_num_logs();
+
+	int start_pages[50];
+	int end_pages[50];
 
 	if(num_existing_logs > 0){
 		for(int i = 0; i < num_existing_logs; i++) {
@@ -237,7 +246,8 @@ void start_new_log(byte num_existing_logs)
 		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
 	}
 
-	if(end_pages[num_existing_logs - 1] < 4095 && num_existing_logs < MAX_NUM_LOGS) {
+	if((end_pages[num_existing_logs - 1] < 4095) && (num_existing_logs < MAX_NUM_LOGS /*50*/)) {
+
 		if(num_existing_logs > 0)
 			start_pages[num_existing_logs] = end_pages[num_existing_logs - 1] + 1;
 		else
@@ -265,38 +275,46 @@ void start_new_log(byte num_existing_logs)
 	}
 }
 
-void get_log_boundaries(byte num_logs, byte log_num, int & start_page, int & end_page)
+// All log data is stored in page 1?
+void get_log_boundaries(byte num_logs, byte log_num, int &start_page, int &end_page)
 {
-	int page 		= 1;
+	int page = 1;
 	byte data;
-	byte log_step = 0;
+	byte log_step;
 
-	DataFlash.StartRead(1);
+	// start reading at page 1,
+	// XXX not 0?
+	DataFlash.StartRead(page);
+
 	while (page == 1) {
 		data = DataFlash.ReadByte();
-		switch(log_step)		 //This is a state machine to read the packets
-			{
+		switch(log_step){		 //This is a state machine to read the packets
 			case 0:
 				if(data==HEAD_BYTE1)	// Head byte 1
 					log_step++;
 				break;
+
 			case 1:
 				if(data==HEAD_BYTE2)	// Head byte 2
 					log_step++;
 				else
 					log_step = 0;
 				break;
+
 			case 2:
-				if(data==LOG_INDEX_MSG){
+				if(data == LOG_INDEX_MSG){
 
 					byte num_logs = DataFlash.ReadByte();
 
-					for(int i=0;i<log_num;i++) {
-						start_page = DataFlash.ReadInt();
-						end_page = DataFlash.ReadInt();
+					for(int i = 0; i < log_num; i++) {
+						start_page 	= DataFlash.ReadInt();
+						end_page 	= DataFlash.ReadInt();
+						//Serial.printf("log %d, start page:%d, end page:%d\n",i, start_page, end_page);
 					}
 
-					if(log_num==num_logs)
+					// what is this?
+					//
+					if(log_num == num_logs)
 						end_page = find_last_log_page(start_page);
 
 					return;		// This is the normal exit point
@@ -307,9 +325,14 @@ void get_log_boundaries(byte num_logs, byte log_num, int & start_page, int & end
 			}
 		page = DataFlash.GetPage();
 	}
+
+	if(page > 1){
+		Serial.printf("page er:%d\n", page);
+	}
 	//  Error condition if we reach here with page = 2   TO DO - report condition
 }
 
+//
 int find_last_log_page(int bottom_page)
 {
 	int top_page = 4096;
@@ -320,6 +343,9 @@ int find_last_log_page(int bottom_page)
 		look_page = (top_page + bottom_page) / 2;
 		DataFlash.StartRead(look_page);
 		check = DataFlash.ReadLong();
+
+		//Serial.printf("look page:%d, check:%d\n", look_page, check);
+
 		if(check == 0xFFFFFFFF)
 			top_page = look_page;
 		else
@@ -614,15 +640,15 @@ void Log_Write_Cmd(byte num, struct Location *wp)
 
 	DataFlash.WriteByte(num);
 	DataFlash.WriteByte(wp->id);
-	DataFlash.WriteByte(wp->p1);
 	DataFlash.WriteByte(wp->options);
-
+	DataFlash.WriteByte(wp->p1);
 	DataFlash.WriteLong(wp->alt);
 	DataFlash.WriteLong(wp->lat);
 	DataFlash.WriteLong(wp->lng);
 
 	DataFlash.WriteByte(END_BYTE);
 }
+//CMD, 3, 0, 16, 8, 1, 800, 340440192, -1180692736
 
 
 // Read a command processing packet

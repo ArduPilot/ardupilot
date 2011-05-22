@@ -56,7 +56,7 @@ void init_barometer(void)
 	ground_pressure = abs_pressure;
 
 	//Serial.printf("abs_pressure %ld\n", abs_pressure);
-	SendDebugln("barometer calibration complete.");
+	//SendDebugln("barometer calibration complete.");
 }
 
 long read_barometer(void)

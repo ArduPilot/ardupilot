@@ -365,6 +365,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+	// XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST:
         {
             //send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
@@ -375,13 +376,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // decode
             mavlink_waypoint_request_t packet;
             mavlink_msg_waypoint_request_decode(msg, &packet);
-            if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+ 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
 
             // send waypoint
             tell_command = get_command_with_index(packet.seq);
 
             // set frame of waypoint
             uint8_t frame;
+
             if (tell_command.options & WP_OPTION_ALT_RELATIVE) {
                 frame = MAV_FRAME_GLOBAL_RELATIVE_ALT; // reference frame
             } else {
@@ -392,8 +395,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // time that the mav should loiter in milliseconds
             uint8_t current = 0; // 1 (true), 0 (false)
-            if (packet.seq == g.waypoint_index) current = 1;
+
+            if (packet.seq == g.waypoint_index)
+            	current = 1;
+
             uint8_t autocontinue = 1; // 1 (true), 0 (false)
+
             float x = 0, y = 0, z = 0;
 
             if (tell_command.id < MAV_CMD_NAV_LAST) {
@@ -406,47 +413,66 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 
 			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
-			case MAV_CMD_NAV_LOITER_TURNS:
-			case MAV_CMD_NAV_TAKEOFF:
-			case MAV_CMD_CONDITION_CHANGE_ALT:
-			case MAV_CMD_DO_SET_HOME:
-				param1 = tell_command.p1;
-				break;
 
-			case MAV_CMD_NAV_LOITER_TIME:
-				param1 = tell_command.p1*10;	// APM loiter time is in ten second increments
-				break;
+				case MAV_CMD_NAV_LOITER_TURNS:
+				case MAV_CMD_CONDITION_CHANGE_ALT:
+				case MAV_CMD_DO_SET_HOME:
+					param1 = tell_command.p1;
+					break;
 
-			case MAV_CMD_CONDITION_DELAY:
-			case MAV_CMD_CONDITION_DISTANCE:
-				param1 = tell_command.lat;
-				break;
+				case MAV_CMD_NAV_TAKEOFF:
+					param1 = 0;
+					break;
 
-			case MAV_CMD_DO_JUMP:
-				param2 = tell_command.lat;
-				param1 = tell_command.p1;
-				break;
+				case MAV_CMD_NAV_LOITER_TIME:
+					param1 = tell_command.p1;	// APM loiter time is in ten second increments
+					break;
 
-			case MAV_CMD_DO_REPEAT_SERVO:
-				param4 = tell_command.lng;
-			case MAV_CMD_DO_REPEAT_RELAY:
-			case MAV_CMD_DO_CHANGE_SPEED:
-				param3 = tell_command.lat;
-				param2 = tell_command.alt;
-				param1 = tell_command.p1;
-				break;
+				case MAV_CMD_CONDITION_DELAY:
+				case MAV_CMD_CONDITION_DISTANCE:
+					param1 = tell_command.lat;
+					break;
 
-			case MAV_CMD_DO_SET_PARAMETER:
-			case MAV_CMD_DO_SET_RELAY:
-			case MAV_CMD_DO_SET_SERVO:
-				param2 = tell_command.alt;
-				param1 = tell_command.p1;
-				break;
+				case MAV_CMD_DO_JUMP:
+					param2 = tell_command.lat;
+					param1 = tell_command.p1;
+					break;
+
+				case MAV_CMD_DO_REPEAT_SERVO:
+					param4 = tell_command.lng;
+				case MAV_CMD_DO_REPEAT_RELAY:
+				case MAV_CMD_DO_CHANGE_SPEED:
+					param3 = tell_command.lat;
+					param2 = tell_command.alt;
+					param1 = tell_command.p1;
+					break;
+
+				case MAV_CMD_NAV_WAYPOINT:
+					param1 = tell_command.p1;
+					break;
+
+				case MAV_CMD_DO_SET_PARAMETER:
+				case MAV_CMD_DO_SET_RELAY:
+				case MAV_CMD_DO_SET_SERVO:
+					param2 = tell_command.alt;
+					param1 = tell_command.p1;
+					break;
 			}
 
             mavlink_msg_waypoint_send(chan,msg->sysid,
-            msg->compid,packet.seq,frame,tell_command.id,current,autocontinue,
-            param1,param2,param3,param4,x,y,z);
+							            msg->compid,
+							            packet.seq,
+							            frame,
+							            tell_command.id,
+							            current,
+							            autocontinue,
+							            param1,
+							            param2,
+							            param3,
+							            param4,
+							            x,
+							            y,
+							            z);
 
             // update last waypoint comm stamp
             waypoint_timelast_send = millis();
@@ -546,6 +572,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+	// XXX receive a WP from GCS and store in EEPROM
     case MAVLINK_MSG_ID_WAYPOINT:
         {
             // Check if receiving waypiont
@@ -565,80 +592,94 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // defaults
             tell_command.id = packet.command;
 
-            switch (packet.frame)
-            {
-            case MAV_FRAME_MISSION:
-            case MAV_FRAME_GLOBAL:
-                {
-                    tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
-                    tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
-                    tell_command.alt = packet.z*1.0e2; // in as m converted to cm
-                    tell_command.options = 0;
-                    break;
-                }
+            /*
+            switch (packet.frame){
 
-            case MAV_FRAME_LOCAL: // local (relative to home position)
-                {
-                    tell_command.lat = 1.0e7*ToDeg(packet.x/
-                    (radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
-                    tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
-                    tell_command.alt = packet.z*1.0e2;
-                    tell_command.options = 1;
-                    break;
-                }
-            case MAV_FRAME_GLOBAL_RELATIVE_ALT: // absolute lat/lng, relative altitude
-                {
-                    tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
-                    tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
-                    tell_command.alt = packet.z*1.0e2;
-                    tell_command.options = 1;
-                    break;
-                }
-            }
+				case MAV_FRAME_MISSION:
+				case MAV_FRAME_GLOBAL:
+					{
+						tell_command.lat = 1.0e7*packet.x; // in as DD converted to * t7
+						tell_command.lng = 1.0e7*packet.y; // in as DD converted to * t7
+						tell_command.alt = packet.z*1.0e2; // in as m converted to cm
+						tell_command.options = 0;
+						break;
+					}
+
+				case MAV_FRAME_LOCAL: // local (relative to home position)
+					{
+						tell_command.lat = 1.0e7*ToDeg(packet.x/
+						(radius_of_earth*cos(ToRad(home.lat/1.0e7)))) + home.lat;
+						tell_command.lng = 1.0e7*ToDeg(packet.y/radius_of_earth) + home.lng;
+						tell_command.alt = packet.z*1.0e2;
+						tell_command.options = 1;
+						break;
+					}
+				//case MAV_FRAME_GLOBAL_RELATIVE_ALT: // absolute lat/lng, relative altitude
+				default:
+					{
+						tell_command.lat = 1.0e7 * packet.x; // in as DD converted to * t7
+						tell_command.lng = 1.0e7 * packet.y; // in as DD converted to * t7
+						tell_command.alt = packet.z * 1.0e2;
+						tell_command.options = 1; // store altitude relative!! Always!!
+						break;
+					}
+			}
+			*/
+
+			// we only are supporting Abs position, relative Alt
+			tell_command.lat = 1.0e7 * packet.x; // in as DD converted to * t7
+			tell_command.lng = 1.0e7 * packet.y; // in as DD converted to * t7
+			tell_command.alt = packet.z * 1.0e2;
+			tell_command.options = 1; // store altitude relative!! Always!!
 
 			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
-			case MAV_CMD_NAV_LOITER_TURNS:
-			case MAV_CMD_NAV_TAKEOFF:
-			case MAV_CMD_DO_SET_HOME:
-				tell_command.p1 = packet.param1;
-				break;
+				case MAV_CMD_NAV_LOITER_TURNS:
+				case MAV_CMD_DO_SET_HOME:
+					tell_command.p1 = packet.param1;
+					break;
 
-			case MAV_CMD_CONDITION_CHANGE_ALT:
-				tell_command.p1 = packet.param1 * 100;
-				break;
+				case MAV_CMD_NAV_TAKEOFF:
+					tell_command.p1 = 0;
+					break;
 
-			case MAV_CMD_NAV_LOITER_TIME:
-				tell_command.p1 = packet.param1 / 10;	// APM loiter time is in ten second increments
-				break;
+				case MAV_CMD_CONDITION_CHANGE_ALT:
+					tell_command.p1 = packet.param1 * 100;
+					break;
 
-			case MAV_CMD_CONDITION_DELAY:
-			case MAV_CMD_CONDITION_DISTANCE:
-				tell_command.lat = packet.param1;
-				break;
+				case MAV_CMD_NAV_LOITER_TIME:
+					tell_command.p1 = packet.param1;	// APM loiter time is in ten second increments
+					break;
 
-			case MAV_CMD_DO_JUMP:
-				tell_command.lat = packet.param2;
-				tell_command.p1 = packet.param1;
-				break;
+				case MAV_CMD_CONDITION_DELAY:
+				case MAV_CMD_CONDITION_DISTANCE:
+					tell_command.lat = packet.param1;
+					break;
 
-			case MAV_CMD_DO_REPEAT_SERVO:
-				tell_command.lng = packet.param4;
-			case MAV_CMD_DO_REPEAT_RELAY:
-			case MAV_CMD_DO_CHANGE_SPEED:
-				tell_command.lat = packet.param3;
-				tell_command.alt = packet.param2;
-				tell_command.p1 = packet.param1;
-				break;
+				case MAV_CMD_DO_JUMP:
+					tell_command.lat = packet.param2;
+					tell_command.p1  = packet.param1;
+					break;
 
-			case MAV_CMD_DO_SET_PARAMETER:
-			case MAV_CMD_DO_SET_RELAY:
-			case MAV_CMD_DO_SET_SERVO:
-				tell_command.alt = packet.param2;
-				tell_command.p1 = packet.param1;
-				break;
+				case MAV_CMD_DO_REPEAT_SERVO:
+					tell_command.lng = packet.param4;
+				case MAV_CMD_DO_REPEAT_RELAY:
+				case MAV_CMD_DO_CHANGE_SPEED:
+					tell_command.lat = packet.param3;
+					tell_command.alt = packet.param2;
+					tell_command.p1 = packet.param1;
+					break;
+
+				case MAV_CMD_NAV_WAYPOINT:
+					tell_command.p1 = packet.param1;
+					break;
+
+				case MAV_CMD_DO_SET_PARAMETER:
+				case MAV_CMD_DO_SET_RELAY:
+				case MAV_CMD_DO_SET_SERVO:
+					tell_command.alt = packet.param2;
+					tell_command.p1 = packet.param1;
+					break;
 			}
-
-
 
             set_command_with_index(tell_command, packet.seq);
 
@@ -646,8 +687,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             waypoint_timelast_receive = millis();
             waypoint_request_i++;
 
-            if (waypoint_request_i > g.waypoint_total)
-            {
+            if (waypoint_request_i > g.waypoint_total){
                 uint8_t type = 0; // ok (0), error(1)
 
                 mavlink_msg_waypoint_ack_send(
