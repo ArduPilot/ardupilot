@@ -78,9 +78,11 @@ AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
     float diff_roll = roll - _last_roll;
     float diff_pitch = pitch - _last_pitch;
 	float avg_altitude = (altitude + _last_altitude)/2;
-    float exp_change_x, exp_change_y;
-    float change_x, change_y;
-	float x_cm, y_cm;
+    //float exp_change_x, exp_change_y;
+    //float change_x, change_y;
+	//float x_cm, y_cm;
+	float cos_yaw = cos(yaw);
+	float sin_yaw = sin(yaw);
     int i;
     
     // calculate expected x,y diff due to roll and pitch change
@@ -92,12 +94,12 @@ AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
 	change_y = dy - exp_change_y;
 
 	// convert raw change to horizontal movement in cm
-	x_cm = change_x * avg_altitude * conv_factor;
-	y_cm = change_y * avg_altitude * conv_factor;
+	x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
+	y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
 	
 	// use yaw to convert x and y into lon and lat
-    lng += y_cm * cos(yaw) + x_cm * sin(yaw);
-	lat += x_cm * cos(yaw) + y_cm * sin(yaw);
+    lat += -y_cm * cos_yaw + x_cm * sin_yaw;
+	lng += x_cm * cos_yaw + y_cm * sin_yaw;
 	
     // capture roll and pitch for next iteration
     _last_roll = roll;

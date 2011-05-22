@@ -42,11 +42,15 @@ class AP_OpticalFlow
 	int surface_quality;  // image quality (below 15 you really can't trust the x,y values returned)
 	int x,y;              // total x,y position
 	int dx,dy;            // rotated change in x and y position
-    unsigned long lng, lat;    // position	
+    float lng, lat;       // position as offsets from original position
 	unsigned long last_update;    // millis() time of last update
 	float field_of_view;  // field of view in Radians
 	float scaler;        // number returned from sensor when moved one pixel
 	int num_pixels;      // number of pixels of resolution in the sensor
+	// temp variables - delete me!
+    float exp_change_x, exp_change_y;
+    float change_x, change_y;
+	float x_cm, y_cm;	
   public:
 	AP_OpticalFlow();  // Constructor
 	virtual bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
@@ -57,7 +61,7 @@ class AP_OpticalFlow
     virtual int read(); // read latest values from sensor and fill in x,y and totals
 	virtual void get_position(float roll, float pitch, float yaw, float altitude);  // updates internal lon and lat with estimation based on optical flow
 	
-protected:
+//protected:
 	Matrix3f   _orientation_matrix;
 	float conv_factor; // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
     float radians_to_pixels;
