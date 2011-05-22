@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.7 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.8 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -239,8 +239,7 @@ void init_ardupilot()
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
-		byte last_log_num = get_num_logs();
-		start_new_log(last_log_num);
+		start_new_log();
 	}
 
 	if (g.log_bitmask & MASK_LOG_MODE)
@@ -354,7 +353,7 @@ void set_mode(byte mode)
 			break;
 
 		case RTL:
-			init_throttle_cruise();
+			//init_throttle_cruise();
 			do_RTL();
 			break;
 
