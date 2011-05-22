@@ -449,7 +449,7 @@ void Log_Read_GPS()
 {
 	Serial.printf_P(PSTR("GPS, %ld, %d, %d, "
 					  "%4.7f, %4.7f, %4.4f, %4.4f, "
-					  "%4.4f, %d\n"),
+					  "%d, %d\n"),
 
 						DataFlash.ReadLong(),					// 1 time
 						(int)DataFlash.ReadByte(),				// 2 fix
@@ -461,7 +461,7 @@ void Log_Read_GPS()
 						(float)DataFlash.ReadLong() / 100.0,	// 7 sensor alt
 
 						DataFlash.ReadInt(),					// 8 ground speed
-						(uint16_t)DataFlash.ReadInt());					// 9 ground course
+						(uint16_t)DataFlash.ReadInt());			// 9 ground course
 }
 
 
