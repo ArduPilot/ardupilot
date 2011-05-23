@@ -272,7 +272,7 @@ float cos_roll_x 	= 1;
 float cos_pitch_x 	= 1;
 float cos_yaw_x 	= 1;
 float sin_pitch_y, sin_yaw_y, sin_roll_y;
-float sin_nav_y, cos_nav_x;					// used in calc_waypoint_nav
+float sin_nav_y, cos_nav_x;					// used in calc_nav_output XXX move to local funciton
 bool simple_bearing_is_set = false;
 long initial_simple_bearing;				// used for Simple mode
 
@@ -922,19 +922,10 @@ void update_current_flight_mode(void)
 		}
 
 		switch(command_must_ID){
-			//case MAV_CMD_NAV_TAKEOFF:
-			//	break;
-
-			//case MAV_CMD_NAV_LAND:
-			//	break;
-
 			default:
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				auto_yaw();
-
-				//if(invalid_nav)
-					//calc_waypoint_nav();
 
 				// mix in user control
 				control_nav_mixer();
@@ -1107,6 +1098,13 @@ void update_current_flight_mode(void)
 
 				adjust_altitude();
 
+				#if AUTO_RESET_LOITER == 1
+				if((g.rc_2.control_in + g.rc_1.control_in) != 0){
+					// reset LOITER to current position
+					next_WP = current_loc;
+				}
+				#endif
+
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 
@@ -1136,65 +1134,50 @@ void update_current_flight_mode(void)
 	}
 }
 
-void update_nav_wp()
-{
-	if(wp_control == LOITER_MODE){
-		// calc a pitch to the target
-		calc_loiter_nav();
-
-		// rotate pitch and roll to the copter frame of reference
-		calc_loiter_output();
-
-	} else {
-		// how far are we from the ideal trajectory?
-		// this pushes us back on course
-		update_crosstrack();
-
-		// calc a rate dampened pitch to the target
-		calc_rate_nav();
-
-		// rotate that pitch to the copter frame of reference
-		calc_nav_output();
-	}
-
-}
-
 // called after a GPS read
 void update_navigation()
 {
 	// wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
 	// ------------------------------------------------------------------------
+	switch(control_mode){
+		case AUTO:
+			verify_commands();
 
-	// distance and bearing calcs only
-	if(control_mode == AUTO){
-		verify_commands();
+			// note: wp_control is handled by commands_logic
 
-		update_nav_wp();
+			// calculates desired Yaw
+			update_nav_yaw();
 
-		// this tracks a location so the copter is always pointing towards it.
-		if(yaw_tracking == MAV_ROI_LOCATION){
-			nav_yaw = get_bearing(&current_loc, &target_WP);
+			// calculates the desired Roll and Pitch
+			update_nav_wp();
+			break;
 
-		}else if(yaw_tracking == MAV_ROI_WPNEXT){
-			nav_yaw = target_bearing;
-		}
+		case LOITER:
+		case RTL:
+			// are we Traversing or Loitering?
+			wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
 
-	}else{
+			// calculates desired Yaw
+			update_nav_yaw();
 
-		switch(control_mode){
-			case LOITER:
-				wp_control = LOITER_MODE;
-				update_nav_wp();
-				break;
+			// calculates the desired Roll and Pitch
+			update_nav_wp();
+			break;
 
-			case RTL:
-				wp_control = (wp_distance < 700) ? LOITER_MODE : WP_MODE;
-				update_nav_wp();
-				break;
-		}
+		#if YAW_HACK == 1
+		case SIMPLE:
+			// calculates desired Yaw
+			// exprimental_hack
+			if(g.rc_6.control_in > 900)
+				update_nav_yaw();
+			if(g.rc_6.control_in < 100){
+				nav_yaw = dcm.yaw_sensor;
+			}
+			break;
+		#endif
+
 	}
 }
-
 
 void read_AHRS(void)
 {
@@ -1337,3 +1320,35 @@ void tuning(){
 	#endif
 }
 
+void update_nav_wp()
+{
+	if(wp_control == LOITER_MODE){
+		// calc a pitch to the target
+		calc_loiter_nav();
+
+		// rotate pitch and roll to the copter frame of reference
+		calc_loiter_output();
+
+	} else {
+		// how far are we from the ideal trajectory?
+		// this pushes us back on course
+		update_crosstrack();
+
+		// calc a rate dampened pitch to the target
+		calc_rate_nav();
+
+		// rotate that pitch to the copter frame of reference
+		calc_nav_output();
+	}
+}
+
+void update_nav_yaw()
+{
+	// this tracks a location so the copter is always pointing towards it.
+	if(yaw_tracking == MAV_ROI_LOCATION){
+		nav_yaw = get_bearing(&current_loc, &target_WP);
+
+	}else if(yaw_tracking == MAV_ROI_WPNEXT){
+		nav_yaw = target_bearing;
+	}
+}

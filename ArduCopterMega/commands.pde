@@ -227,6 +227,9 @@ void init_home()
 	home.alt 	= max(g_gps->altitude, 0);		// we sometimes get negatives from GPS, not valid
 	home_is_set = true;
 
+	// to point yaw towards home until we set it with Mavlink
+	target_WP 	= home;
+
 	//Serial.printf_P(PSTR("gps alt: %ld\n"), home.alt);
 
 	// Save Home to EEPROM
