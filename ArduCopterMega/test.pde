@@ -518,6 +518,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 					g_gps->longitude,
 					g_gps->altitude/100,
 					g_gps->num_sats);
+			g_gps->new_data = false;
 		}else{
 			Serial.print(".");
 		}

@@ -52,26 +52,21 @@ print_log_menu(void)
 	byte last_log_num = get_num_logs();
 
 	Serial.printf_P(PSTR("logs enabled: "));
+
 	if (0 == g.log_bitmask) {
 		Serial.printf_P(PSTR("none"));
 	}else{
-		// Macro to make the following code a bit easier on the eye.
-		// Pass it the capitalised name of the log option, as defined
-		// in defines.h but without the LOG_ prefix.  It will check for
-		// the bit being set and print the name of the log option to suit.
-		#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) Serial.printf_P(PSTR(" %S"), PSTR(#_s))
-		PLOG(ATTITUDE_FAST);
-		PLOG(ATTITUDE_MED);
-		PLOG(GPS);
-		PLOG(PM);
-		PLOG(CTUN);
-		PLOG(NTUN);
-		PLOG(MODE);
-		PLOG(RAW);
-		PLOG(CMD);
-		PLOG(CURRENT);
-		#undef PLOG
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)	Serial.printf_P(PSTR(" ATTITUDE_FAST"));
+		if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)	Serial.printf_P(PSTR(" ATTITUDE_MED"));
+		if (g.log_bitmask & MASK_LOG_GPS)			Serial.printf_P(PSTR(" GPS"));
+		if (g.log_bitmask & MASK_LOG_PM)			Serial.printf_P(PSTR(" PM"));
+		if (g.log_bitmask & MASK_LOG_CTUN)			Serial.printf_P(PSTR(" CTUN"));
+		if (g.log_bitmask & MASK_LOG_NTUN)			Serial.printf_P(PSTR(" NTUN"));
+		if (g.log_bitmask & MASK_LOG_RAW)			Serial.printf_P(PSTR(" RAW"));
+		if (g.log_bitmask & MASK_LOG_CMD)			Serial.printf_P(PSTR(" CMD"));
+		if (g.log_bitmask & MASK_LOG_CURRENT)		Serial.printf_P(PSTR(" CURRENT"));
 	}
+
 	Serial.println();
 
 	if (last_log_num == 0) {
@@ -108,13 +103,13 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	}
 
 	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
-	Serial.printf_P(PSTR("Dumping Log number %d,    start %d,   end %d\n"),
+	/*Serial.printf_P(PSTR("Dumping Log number %d,    start %d,   end %d\n"),
 				  dump_log,
 				  dump_log_start,
 				  dump_log_end);
-
+	*/
 	Log_Read(dump_log_start, dump_log_end);
-	Serial.printf_P(PSTR("Done\n"));
+	//Serial.printf_P(PSTR("Done\n"));
 }
 
 static int8_t
@@ -354,74 +349,6 @@ int find_last_log_page(int bottom_page)
 	return top_page;
 }
 
-void Log_Write_Nav_Tuning()
-{
-	Matrix3f tempmat = dcm.get_dcm_matrix();
-
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
-
-	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));		// 1
-	DataFlash.WriteInt((int)wp_distance);				// 2
-	DataFlash.WriteByte(wp_verify_byte);				// 3
-	DataFlash.WriteInt((int)(target_bearing/100));		// 4
-	DataFlash.WriteInt((int)(nav_bearing/100));			// 5
-
-	DataFlash.WriteInt((int)(g.rc_3.servo_out));		// 6
-	DataFlash.WriteByte(altitude_sensor);				// 7
-	DataFlash.WriteInt((int)sonar_alt);					// 8
-	DataFlash.WriteInt((int)baro_alt);					// 9
-
-	DataFlash.WriteInt((int)home.alt);					// 10
-	DataFlash.WriteInt((int)next_WP.alt);				// 11
-	DataFlash.WriteInt((int)altitude_error);			// 12
-
-	DataFlash.WriteInt((int)(wrap_360(ToDeg(compass.heading)*100)/100)); // Just a temp hack
-	DataFlash.WriteLong(compass.last_update); // Just a temp hack
-	DataFlash.WriteInt((int)(tempmat.b.x*1000)); // Just a temp hack
-	DataFlash.WriteInt((int)(compass.heading_x*1000)); // Just a temp hack
-	DataFlash.WriteInt((int)(tempmat.a.x*1000)); // Just a temp hack
-	DataFlash.WriteInt((int)(compass.heading_y*1000)); // Just a temp hack
-
-	DataFlash.WriteByte(END_BYTE);
-}
-    //	1	2	3	4  5  6	 7	 8	   9	  10   11
-//NTUN, 236, 0, 132, 10, 0, 0, 29, 2963, 16545, 16682, 108
-
-void Log_Read_Nav_Tuning()
-{
-							 //	1	2	3	4	5	6	7	8	9	10  11
-	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, "
-								"%d, %d, "
-								"%d, %d, %d, %d, "
-								"%d, %d, %d, "
-								"%d, %ld, %4.4f, %4.4f, %4.4f, %4.4f\n"),
-				DataFlash.ReadInt(),	//yaw sensor
-				DataFlash.ReadInt(),	//distance
-				DataFlash.ReadByte(),	//bitmask
-
-				DataFlash.ReadInt(),	//target bearing
-				DataFlash.ReadInt(),	//nav bearing
-
-				DataFlash.ReadInt(),	//throttle
-				DataFlash.ReadByte(),	//Alt sensor
-				DataFlash.ReadInt(),	//Sonar
-				DataFlash.ReadInt(),	//Baro
-
-				DataFlash.ReadInt(),	//home.alt
-				DataFlash.ReadInt(),	//Next_alt
-				DataFlash.ReadInt(),	//Alt Error
-
-				DataFlash.ReadInt(),
-				DataFlash.ReadLong(),
-				(float)DataFlash.ReadInt()/1000,
-				(float)DataFlash.ReadInt()/1000,
-				(float)DataFlash.ReadInt()/1000,
-				(float)DataFlash.ReadInt()/1000);
-}
-
-
 // Write an GPS packet. Total length : 30 bytes
 void Log_Write_GPS()
 {
@@ -516,6 +443,31 @@ void Log_Read_Current()
 			DataFlash.ReadInt());
 }
 
+void Log_Write_Nav_Tuning()
+{
+	Matrix3f tempmat = dcm.get_dcm_matrix();
+
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
+
+	DataFlash.WriteInt((int)wp_distance);				// 1
+	DataFlash.WriteByte(wp_verify_byte);				// 2
+	DataFlash.WriteInt((int)(target_bearing/100));		// 3
+	DataFlash.WriteInt((int)(nav_bearing/100));			// 4
+
+	DataFlash.WriteByte(END_BYTE);
+}
+
+void Log_Read_Nav_Tuning()
+{
+							 //	 1	 2	 3	 4
+	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d\n"),
+				DataFlash.ReadInt(),	//distance
+				DataFlash.ReadByte(),	//bitmask
+				DataFlash.ReadInt(),	//target bearing
+				DataFlash.ReadInt());	//nav bearing
+}
 
 // Write a control tuning packet. Total length : 22 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -526,29 +478,24 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
 	// Control
-	DataFlash.WriteInt((int)(g.rc_3.control_in));
-	DataFlash.WriteInt((int)(g.rc_3.servo_out));
 	DataFlash.WriteInt((int)(g.rc_4.control_in));
 	DataFlash.WriteInt((int)(g.rc_4.servo_out));
 
 	// yaw
 	DataFlash.WriteByte(yaw_debug);
-	DataFlash.WriteInt((int)yaw_error);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
+	DataFlash.WriteInt((int)(nav_yaw/100));
+	DataFlash.WriteInt((int)yaw_error);
 	DataFlash.WriteInt((int)(omega.z * 1000));
 
-	// Pitch/roll
-	DataFlash.WriteInt((int)(dcm.pitch_sensor/100));
-	DataFlash.WriteInt((int)(dcm.roll_sensor/100));
+	// Alt hold
+	DataFlash.WriteInt((int)(g.rc_3.servo_out));
+	DataFlash.WriteInt((int)sonar_alt);					//
+	DataFlash.WriteInt((int)baro_alt);					//
 
-	DataFlash.WriteInt((int)g.throttle_cruise);
+	DataFlash.WriteInt((int)next_WP.alt);				//
+	DataFlash.WriteInt((int)altitude_error);			//
 	DataFlash.WriteInt((int)g.pid_baro_throttle.get_integrator());
-	DataFlash.WriteInt((int)g.pid_sonar_throttle.get_integrator());
-
-	// Position
-	//DataFlash.WriteInt((int)dcm.pitch_sensor);
-	//DataFlash.WriteInt((int)dcm.roll_sensor);
-	//DataFlash.WriteInt((int)(dcm.yaw_sensor/10));
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -557,14 +504,11 @@ void Log_Write_Control_Tuning()
 // Read an control tuning packet
 void Log_Read_Control_Tuning()
 {
-	Serial.printf_P(PSTR(   "CTUN, %d, %d, %d, %d, "
-				"%d, %d, %d, %1.4f, "
-				"%d, %d, "
-				"%d, %d, %d\n"),
+	Serial.printf_P(PSTR(   "CTUN, %d, %d, "
+				"%d, %d, %d, %d, %1.4f, "
+				"%d, %d, %d, %d, %d, %d\n"),
 
 				// Control
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 
@@ -572,13 +516,14 @@ void Log_Read_Control_Tuning()
 				(int)DataFlash.ReadByte(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
 				(float)DataFlash.ReadInt() / 1000.0,// Gyro Rate
 
-				// Pitch/roll
+				// Alt Hold
+				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 
-				// Alt Hold
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt());
@@ -700,6 +645,7 @@ void Log_Write_Mode(byte mode)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_MODE_MSG);
 	DataFlash.WriteByte(mode);
+	DataFlash.WriteInt((int)g.throttle_cruise);
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -707,7 +653,8 @@ void Log_Write_Mode(byte mode)
 void Log_Read_Mode()
 {
 	Serial.printf_P(PSTR("MOD:"));
-	Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
+	Serial.print(flight_mode_strings[DataFlash.ReadByte()]);
+	Serial.printf_P(PSTR(", %d\n"),DataFlash.ReadInt());
 }
 
 // Read a raw accel/gyro packet
