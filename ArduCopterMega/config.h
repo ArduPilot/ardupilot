@@ -331,7 +331,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		0.48
+# define STABILIZE_PITCH_P		0.54
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.025
