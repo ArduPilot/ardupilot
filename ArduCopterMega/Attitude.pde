@@ -281,11 +281,14 @@ output_yaw_with_hold(boolean hold)
 	rate			= constrain(rate, -36000, 36000);									// limit to something fun!
 	int dampener 	= rate * g.pid_yaw.kD();											// 34377 * .175 = 6000
 
-	// set nav_yaw + or - the current location
-	nav_yaw 	= (long)g.rc_4.control_in + dcm.yaw_sensor;
+	// re-define nav_yaw if we have stick input
+	if(g.rc_4.control_in != 0){
+		// set nav_yaw + or - the current location
+		nav_yaw 	= (long)g.rc_4.control_in + dcm.yaw_sensor;
 
-	// we need to wrap our value so we can be 0 to 360 (*100)
-	nav_yaw 	= wrap_360(nav_yaw);
+		// we need to wrap our value so we can be 0 to 360 (*100)
+		nav_yaw 	= wrap_360(nav_yaw);
+	}
 
 	// how far off is nav_yaw from our current yaw?
 	yaw_error 	= nav_yaw - dcm.yaw_sensor;
