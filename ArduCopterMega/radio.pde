@@ -22,7 +22,7 @@ void init_rc_in()
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
 	g.rc_2.dead_zone = 60;
 	g.rc_3.dead_zone = 60;
-	g.rc_4.dead_zone = 1000;
+	g.rc_4.dead_zone = 500;
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
@@ -93,6 +93,12 @@ void output_min()
 
 	APM_RC.OutputCh(CH_7,   g.rc_3.radio_min);
     APM_RC.OutputCh(CH_8,   g.rc_3.radio_min);
+
+	#if FRAME_CONFIG ==	OCTA_FRAME
+	APM_RC.OutputCh(CH_10,   g.rc_3.radio_min);
+    APM_RC.OutputCh(CH_11,   g.rc_3.radio_min);
+	#endif
+
 }
 void read_radio()
 {

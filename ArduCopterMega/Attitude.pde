@@ -202,6 +202,7 @@ clear_yaw_control()
 	yaw_debug 			= YAW_HOLD; 		//0
 }
 
+#if YAW_OPTION == 0
 void
 output_yaw_with_hold(boolean hold)
 {
@@ -271,3 +272,35 @@ output_yaw_with_hold(boolean hold)
 
 	//Serial.printf("%d\n",g.rc_4.servo_out);
 }
+#elif YAW_OPTION == 1
+
+void
+output_yaw_with_hold(boolean hold)
+{
+	long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
+	rate			= constrain(rate, -36000, 36000);									// limit to something fun!
+	int dampener 	= rate * g.pid_yaw.kD();											// 34377 * .175 = 6000
+
+	// set nav_yaw + or - the current location
+	nav_yaw 	= (long)g.rc_4.control_in + dcm.yaw_sensor;
+
+	// we need to wrap our value so we can be 0 to 360 (*100)
+	nav_yaw 	= wrap_360(nav_yaw);
+
+	// how far off is nav_yaw from our current yaw?
+	yaw_error 	= nav_yaw - dcm.yaw_sensor;
+
+	// we need to wrap our value so we can be -180 to 180 (*100)
+	yaw_error 	= wrap_180(yaw_error);
+
+	// limit the error we're feeding to the PID
+	yaw_error				= constrain(yaw_error,	 -4000, 4000);						// limit error to 60 degees
+
+	// Apply PID and save the new angle back to RC_Channel
+	g.rc_4.servo_out 		= g.pid_yaw.get_pid(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
+
+	// add in yaw dampener
+	g.rc_4.servo_out		-= constrain(dampener, -1600, 1600);
+	yaw_debug 				= YAW_HOLD; //0
+}
+#endif

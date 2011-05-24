@@ -978,8 +978,8 @@ void fake_out_gps()
 
 void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n",
-				(motor_out[RIGHT] 	- g.rc_3.radio_min),
-				(motor_out[LEFT] 	- g.rc_3.radio_min),
-				(motor_out[FRONT] 	- g.rc_3.radio_min),
-				(motor_out[BACK] 	- g.rc_3.radio_min));
+				(motor_out[CH_1] 	- g.rc_3.radio_min),
+				(motor_out[CH_2] 	- g.rc_3.radio_min),
+				(motor_out[CH_3] 	- g.rc_3.radio_min),
+				(motor_out[CH_4] 	- g.rc_3.radio_min));
 }

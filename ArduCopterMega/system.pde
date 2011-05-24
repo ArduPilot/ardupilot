@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.9 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.10 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -234,6 +234,9 @@ void init_ardupilot()
 	// ---------------------------
 	//reset_control_switch();
 
+	// init the Yaw Hold output
+	clear_yaw_control();
+
 	// Logging:
 	// --------
 	if(g.log_bitmask != 0){
@@ -390,7 +393,7 @@ void set_failsafe(boolean mode)
 }
 
 #if MOTOR_LEDS == 1
-void update_motor_light(void)
+void update_motor_leds(void)
 {
 	// blink rear
 	static bool blink;
