@@ -1,16 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-// ACM:
-// Motors
-#define RIGHT CH_1
-#define LEFT CH_2
-#define FRONT CH_3
-#define BACK CH_4
-#define RIGHTFRONT CH_7
-#define LEFTBACK CH_8
-#define MAX_SERVO_OUTPUT 2700
-
 // active altitude sensor
 // ----------------------
 #define SONAR 0
@@ -21,6 +11,7 @@
 #define TRI_FRAME 1
 #define HEXA_FRAME 2
 #define Y6_FRAME 3
+#define OCTA_FRAME 4
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
@@ -61,6 +52,8 @@
 #define CH_6 5
 #define CH_7 6
 #define CH_8 7
+#define CH_10 9    //PB5
+#define CH_11 10   //PE3
 
 #define CH_ROLL CH_1
 #define CH_PITCH CH_2

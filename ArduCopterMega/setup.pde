@@ -232,6 +232,12 @@ init_esc()
 		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_7, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_8, g.rc_3.radio_in);
+
+		#if FRAME_CONFIG ==	OCTA_FRAME
+		APM_RC.OutputCh(CH_10,   g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_11,   g.rc_3.radio_in);
+		#endif
+
 	}
 }
 
@@ -495,6 +501,8 @@ void report_frame()
 	Serial.printf_P(PSTR("Hexa frame\n"));
 #elif FRAME_CONFIG == Y6_FRAME
 	Serial.printf_P(PSTR("Y6 frame\n"));
+#elif FRAME_CONFIG == OCTA_FRAME
+	Serial.printf_P(PSTR("Octa frame\n"));
 #endif
 
 	if(g.frame_orientation == X_FRAME)

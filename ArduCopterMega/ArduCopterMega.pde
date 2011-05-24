@@ -820,7 +820,7 @@ void slow_loop()
 
 
 			#if MOTOR_LEDS == 1
-				update_motor_light();
+				update_motor_leds();
 			#endif
 
 			break;
@@ -1101,7 +1101,9 @@ void update_current_flight_mode(void)
 				#if AUTO_RESET_LOITER == 1
 				if((g.rc_2.control_in + g.rc_1.control_in) != 0){
 					// reset LOITER to current position
+					long temp = next_WP.alt;
 					next_WP = current_loc;
+					next_WP.alt = temp;
 				}
 				#endif
 
@@ -1152,13 +1154,12 @@ void update_navigation()
 			update_nav_wp();
 			break;
 
-		case LOITER:
 		case RTL:
-			// are we Traversing or Loitering?
-			wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
-
 			// calculates desired Yaw
 			update_nav_yaw();
+		case LOITER:
+			// are we Traversing or Loitering?
+			wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();

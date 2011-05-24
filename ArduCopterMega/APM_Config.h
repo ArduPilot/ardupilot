@@ -7,6 +7,7 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 #define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
+#define YAW_OPTION 0	// hybrid rate approach, offset Yaw approach
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*
@@ -15,6 +16,7 @@
 	TRI_FRAME
 	HEXA_FRAME
 	Y6_FRAME
+	OCTA_FRAME
 	*/
 
 #define FRAME_ORIENTATION X_FRAME
