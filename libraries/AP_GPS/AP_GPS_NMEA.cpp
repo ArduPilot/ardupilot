@@ -60,7 +60,7 @@ const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
 //
 const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
 	"$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n"	// GGA & VTG once every fix
-	"$PMTK330,0*2E"										// datum = WGS84
+	"$PMTK330,0*2E\r\n"										// datum = WGS84
 	"$PMTK313,1*2E\r\n"									// SBAS on
 	"$PMTK301,2*2E\r\n"									// use SBAS data for DGPS
 	"";
@@ -254,8 +254,6 @@ bool AP_GPS_NMEA::_term_complete()
 					longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
 					ground_speed	= _new_speed;
 					ground_course	= _new_course;
-					num_sats		= _new_satellite_count;
-					hdop			= _new_hdop;
 					fix				= true;
 					break;
 				case _GPS_SENTENCE_GPGGA:
@@ -263,6 +261,8 @@ bool AP_GPS_NMEA::_term_complete()
 					time			= _new_time;
 					latitude		= _new_latitude * 100;	// degrees*10e5 -> 10e7
 					longitude		= _new_longitude * 100;	// degrees*10e5 -> 10e7
+					num_sats		= _new_satellite_count;
+					hdop			= _new_hdop;
 					fix				= true;
 					break;
 				case _GPS_SENTENCE_VTG:
