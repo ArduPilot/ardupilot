@@ -61,6 +61,7 @@
 # define SONAR_PIN		AP_RANGEFINDER_PITOT_TUBE
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
 // AIRSPEED_RATIO
@@ -71,6 +72,7 @@
 #ifndef AIRSPEED_RATIO
 # define AIRSPEED_RATIO			1.9936		// Note - this varies from the value in ArduPilot due to the difference in ADC resolution
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_PROTOCOL                             OPTIONAL
@@ -114,6 +116,7 @@
  #endif
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL
 //
@@ -123,6 +126,7 @@
 #ifndef GPS_PROTOCOL
 # define GPS_PROTOCOL 		GPS_PROTOCOL_AUTO
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // GCS_PROTOCOL
@@ -140,6 +144,7 @@
 #ifndef MAV_SYSTEM_ID
 # define MAV_SYSTEM_ID		1
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Serial port speeds.
@@ -175,12 +180,14 @@
 # define HIGH_DISCHARGE		1760
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
 // INPUT_VOLTAGE
 //
 #ifndef INPUT_VOLTAGE
 # define INPUT_VOLTAGE			5.0
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
@@ -280,7 +287,7 @@
 # define ACRO_RATE_ROLL_D         0.0
 #endif
 #ifndef ACRO_RATE_ROLL_IMAX
-# define ACRO_RATE_ROLL_IMAX	 20
+# define ACRO_RATE_ROLL_IMAX	 	20
 #endif
 
 #ifndef ACRO_RATE_PITCH_P
@@ -293,7 +300,7 @@
 # define ACRO_RATE_PITCH_D         0.0
 #endif
 #ifndef ACRO_RATE_PITCH_IMAX
-# define ACRO_RATE_PITCH_IMAX   20
+# define ACRO_RATE_PITCH_IMAX   	20
 #endif
 
 #ifndef ACRO_RATE_YAW_P
@@ -350,13 +357,13 @@
 # define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
-# define YAW_I					0.000		// set to .0001 to try and get over user's steady state error caused by poor balance
+# define YAW_I					0.0001		// set to .0001 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
 # define YAW_D					0.05		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
-# define YAW_IMAX				1			// degrees * 100
+# define YAW_IMAX				.5			// degrees * 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -375,7 +382,7 @@
 # define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.05		// upped a bit to deal with wind faster
+# define NAV_LOITER_I			0.10		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
 # define NAV_LOITER_D			0.00
@@ -412,14 +419,15 @@
 	#endif
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.3
+# define THROTTLE_BARO_P		0.25
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.005
+# define THROTTLE_BARO_I		0.0045
 #endif
 #ifndef THROTTLE_BARO_D
 # define THROTTLE_BARO_D		0.03
@@ -471,6 +479,7 @@
 #ifndef CHANNEL_6_TUNING
 # define CHANNEL_6_TUNING CH6_NONE
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control

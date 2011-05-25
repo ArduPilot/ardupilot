@@ -763,7 +763,7 @@ void slow_loop()
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
-			if(superslow_loopCounter > 1400){ // every 7 minutes
+			if(superslow_loopCounter > 800){ // every 4 minutes
 				#if HIL_MODE != HIL_MODE_ATTITUDE
 					if(g.rc_3.control_in == 0 && g.compass_enabled){
 						compass.save_offsets();
