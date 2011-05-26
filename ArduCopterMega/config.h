@@ -424,27 +424,27 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.25
+# define THROTTLE_BARO_P		0.2			// trying a lower val
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.01		//with 4m error, 12.5s windup
+# define THROTTLE_BARO_I		0.02		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.03
+# define THROTTLE_BARO_D		0.06		//
 #endif
 #ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX		50
+# define THROTTLE_BARO_IMAX		20
 #endif
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		0.8		// upped from .5
+# define THROTTLE_SONAR_P		0.5			//
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.01
+# define THROTTLE_SONAR_I		0.1
 #endif
 #ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.05
+# define THROTTLE_SONAR_D		0.06
 #endif
 #ifndef THROTTLE_SONAR_IMAX
 # define THROTTLE_SONAR_IMAX	60
