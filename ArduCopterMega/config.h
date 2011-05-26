@@ -357,13 +357,13 @@
 # define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
-# define YAW_I					0.0001		// set to .0001 to try and get over user's steady state error caused by poor balance
+# define YAW_I					0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
 # define YAW_D					0.05		// Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
-# define YAW_IMAX				.5			// degrees * 100
+# define YAW_IMAX				1			// degrees * 100
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -427,7 +427,7 @@
 # define THROTTLE_BARO_P		0.25
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.0045
+# define THROTTLE_BARO_I		0.01		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_BARO_D
 # define THROTTLE_BARO_D		0.03

@@ -518,6 +518,11 @@ void fast_loop()
 	if (delta_ms_fast_loop > G_Dt_max)
 		G_Dt_max = delta_ms_fast_loop;
 
+	// Read radio
+	// ----------
+	if (APM_RC.GetState() == 1)
+		read_radio();			// read the radio first
+
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_current_flight_mode();
@@ -538,9 +543,6 @@ void fast_loop()
 
 void medium_loop()
 {
-	// Read radio
-	// ----------
-	read_radio();			// read the radio first
 
 	// reads all of the necessary trig functions for cameras, throttle, etc.
 	update_trig();
@@ -984,6 +986,10 @@ void update_current_flight_mode(void)
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
+				// are we at rest? reset nav_yaw
+				if(g.rc_3.control_in == 0){
+					nav_yaw 	= dcm.yaw_sensor;
+				}
 
 				// Yaw control
 				output_manual_yaw();
@@ -1031,6 +1037,11 @@ void update_current_flight_mode(void)
 					limit_nav_pitch_roll(4500);
 				}
 
+				// are we at rest? reset nav_yaw
+				if(g.rc_3.control_in == 0){
+					nav_yaw 	= dcm.yaw_sensor;
+				}
+
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
 				// Yaw control
@@ -1052,6 +1063,7 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 
+				// allow interactive changing of atitude
 				adjust_altitude();
 
 				// Yaw control
@@ -1095,7 +1107,7 @@ void update_current_flight_mode(void)
 				break;
 
 			case LOITER:
-
+				// allow interactive changing of atitude
 				adjust_altitude();
 
 				#if AUTO_RESET_LOITER == 1
