@@ -90,16 +90,18 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	byte dump_log;
 	int dump_log_start;
 	int dump_log_end;
-	byte last_log_num;
+
+	byte last_log_num = get_num_logs();
+	//Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 
-	last_log_num = get_num_logs();
-
 	if (/*(argc != 2) || */(dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
-		return(-1);
+		//return(-1);
+		Log_Read(1, 4095);
+		return (0);
 	}
 
 	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
@@ -110,6 +112,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	*/
 	Log_Read(dump_log_start, dump_log_end);
 	//Serial.printf_P(PSTR("Done\n"));
+	return (0);
 }
 
 static int8_t
@@ -132,6 +135,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	DataFlash.WriteByte(END_BYTE);
 	DataFlash.FinishWrite();
 	Serial.printf_P(PSTR("\nLog erased.\n"));
+	return (0);
 }
 
 static int8_t
@@ -189,7 +193,7 @@ byte get_num_logs(void)
 {
 	int page = 1;
 	byte data;
-	byte log_step;
+	byte log_step = 0;
 
 	DataFlash.StartRead(1);
 
@@ -275,7 +279,7 @@ void get_log_boundaries(byte num_logs, byte log_num, int &start_page, int &end_p
 {
 	int page = 1;
 	byte data;
-	byte log_step;
+	byte log_step = 0;
 
 	// start reading at page 1,
 	// XXX not 0?
