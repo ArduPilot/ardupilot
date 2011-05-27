@@ -271,8 +271,10 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 		g.frame_orientation.set_and_save(X_FRAME);
 	} else if (!strcmp_P(argv[1].str, PSTR("p"))) {
 		g.frame_orientation.set_and_save(PLUS_FRAME);
+	} else if (!strcmp_P(argv[1].str, PSTR("+"))) {
+		g.frame_orientation.set_and_save(PLUS_FRAME);
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[x,p]\n"));
+		Serial.printf_P(PSTR("\nOptions:[x,+]\n"));
 		report_frame();
 		return 0;
 	}

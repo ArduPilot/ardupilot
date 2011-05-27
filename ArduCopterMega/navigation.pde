@@ -43,7 +43,7 @@ bool check_missed_wp()
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
-#define DIST_ERROR_MAX 700
+#define DIST_ERROR_MAX 1800
 void calc_loiter_nav()
 {
 	/*

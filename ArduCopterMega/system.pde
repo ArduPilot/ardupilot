@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.15 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.16 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -439,7 +439,7 @@ void update_GPS_light(void)
 
 void update_motor_light(void)
 {
-	if(motor_armed == true){
+	if(motor_armed == false){
 		motor_light = !motor_light;
 
 		// blink
