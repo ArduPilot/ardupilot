@@ -99,8 +99,8 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	if (/*(argc != 2) || */(dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
-		//return(-1);
-		Log_Read(1, 4095);
+		return(-1);
+		//Log_Read(1, 4095);
 		return (0);
 	}
 
@@ -380,7 +380,7 @@ void Log_Read_GPS()
 {
 	Serial.printf_P(PSTR("GPS, %ld, %d, %d, "
 					  "%4.7f, %4.7f, %4.4f, %4.4f, "
-					  "%d, %d\n"),
+					  "%d, %u\n"),
 
 						DataFlash.ReadLong(),					// 1 time
 						(int)DataFlash.ReadByte(),				// 2 fix
