@@ -136,11 +136,11 @@ void calc_nav_throttle()
 	}
 
 	if(altitude_sensor == BARO){
-		nav_throttle = g.pid_baro_throttle.get_pid(error, dTnav2, scaler);	// .25
+		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_medium_loop, scaler);	// .2
 		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -35, 80);
 	}else{
-		nav_throttle = g.pid_sonar_throttle.get_pid(error, dTnav2, scaler);	// .5
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 150);
+		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_medium_loop, scaler);	// .5
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 100);
 	}
 
 	// simple filtering
@@ -215,11 +215,12 @@ output_yaw_with_hold(boolean hold)
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
 			// we are still in motion from rate control
-			if(fabs(omega.z) < .4){
+			if(fabs(omega.z) < .2){
 				clear_yaw_control();
 				hold = true;			// just to be explicit
 				//Serial.print("C");
 			}else{
+
 				hold = false;			// return to rate control until we slow down.
 				//Serial.print("D");
 			}
