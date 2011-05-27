@@ -11,6 +11,7 @@ static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
@@ -30,6 +31,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"battery",			setup_batt_monitor},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
+	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
 	{"show",			setup_show}
 };
@@ -397,6 +399,64 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	report_sonar();
 	return 0;
 }
+
+static int8_t
+setup_mag_offset(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	init_compass();
+
+	float _min[3], _max[3];
+	Vector3f _offsets;
+	Vector3f compass_mag;
+
+	while(1){
+		static float min[3], _max[3], offset[3];
+		if (millis() - fast_loopTimer > 100) {
+			delta_ms_fast_loop 	= millis() - fast_loopTimer;
+			fast_loopTimer		= millis();
+			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
+
+
+			compass.read();
+			compass.calculate(0, 0);	// roll = 0, pitch = 0 for this example
+			compass_mag = compass.get_offsets();
+
+			// capture min
+			_min[0] = min(_min[0], compass_mag.x);
+			_min[1] = min(_min[1], compass_mag.y);
+			_min[2] = min(_min[2], compass_mag.z);
+
+			// capture max
+			_max[0] = max(_max[0], compass_mag.x);
+			_max[1] = max(_max[1], compass_mag.y);
+			_max[2] = max(_max[2], compass_mag.z);
+
+			// calculate offsets
+			_offsets.x = -(_max[0] + _min[0]) / 2;
+			_offsets.y = -(_max[1] + _min[1]) / 2;
+			_offsets.z = -(_max[2] + _min[2]) / 2;
+
+			// display all to user
+			Serial.printf_P(PSTR("Heading: %u, \t (%4.4f, %4.4f, %4.4f) (%4.4f, %4.4f, %4.4f)\n"),
+					(uint16_t)wrap_360(ToDeg(compass.heading)),
+					compass_mag.x,
+					compass_mag.y,
+					compass_mag.z,
+					_offsets.x,
+					_offsets.y,
+					_offsets.z);
+
+			if(Serial.available() > 0){
+				compass.set_offsets(_offsets);
+				//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
+				report_compass();
+				break;
+			}
+		}
+	}
+}
+
 
 /***************************************************************************/
 // CLI defaults
