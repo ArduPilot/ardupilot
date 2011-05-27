@@ -56,6 +56,14 @@ void output_motors_armed()
 	motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
 	motor_out[CH_8]		-= g.rc_4.pwm_out;  // CW
 
+	// limit output so motors don't stop
+	motor_out[CH_1]  = max(motor_out[CH_1],  out_min);
+	motor_out[CH_2]  = max(motor_out[CH_2],  out_min);
+	motor_out[CH_3]  = max(motor_out[CH_3],  out_min);
+	motor_out[CH_4]  = max(motor_out[CH_4],  out_min);
+	motor_out[CH_7]  = max(motor_out[CH_7],  out_min);
+	motor_out[CH_8]  = max(motor_out[CH_8],  out_min);
+
 	// Send commands to motors
 	if(g.rc_3.servo_out > 0){
 		APM_RC.OutputCh(CH_1, motor_out[CH_1]);

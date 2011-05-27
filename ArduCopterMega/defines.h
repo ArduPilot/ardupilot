@@ -39,6 +39,7 @@
 #define GPS_PROTOCOL_MTK	4
 #define GPS_PROTOCOL_HIL	5
 #define GPS_PROTOCOL_MTK16	6
+#define GPS_PROTOCOL_AUTO	7
 
 // Radio channels
 // Note channels are from 0!
