@@ -436,11 +436,9 @@ byte 			slow_loopCounter;
 int 			superslow_loopCounter;
 byte			flight_timer;				// for limiting the execution of flight mode thingys
 
-unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
-unsigned long 	nav2_loopTimer;				// used to track the elapsed ime for GPS nav
 
 unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
-unsigned long 	dTnav2;						// Delta Time in milliseconds for navigation computations
+unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 unsigned long 	elapsedTime;				// for doing custom events
 float 			load;						// % MCU cycles used
 
@@ -577,11 +575,6 @@ void medium_loop()
 		case 1:
 			medium_loopCounter++;
 
-			// calc pitch and roll to target
-			// -----------------------------
-			dTnav2 				= millis() - nav2_loopTimer;
-			nav2_loopTimer 		= millis();
-
 			// hack to stop navigation in Simple mode
 			if (control_mode == SIMPLE)
 				break;
@@ -671,6 +664,7 @@ void medium_loop()
 		//---------------------------------
 		case 4:
 			medium_loopCounter = 0;
+
 			delta_ms_medium_loop	= millis() - medium_loopTimer;
 			medium_loopTimer    	= millis();
 
@@ -1171,7 +1165,8 @@ void update_navigation()
 			update_nav_yaw();
 		case LOITER:
 			// are we Traversing or Loitering?
-			wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
+			//wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
+			wp_control = LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();

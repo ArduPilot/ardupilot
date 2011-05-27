@@ -7,7 +7,7 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 #define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
-#define YAW_OPTION 1	// 0 = hybrid rate approach, 1 = offset Yaw approach
+#define YAW_OPTION 0	// 0 = hybrid rate approach, 1 = offset Yaw approach
 #define AUTO_RESET_LOITER 1 // enables Loiter to reset it's current location based on stick input.
 
 #define FRAME_CONFIG QUAD_FRAME
@@ -63,7 +63,7 @@
 
 
 
-#define MOTOR_LEDS 0	// 0 = off, 1 = on
+#define MOTOR_LEDS 1	// 0 = off, 1 = on
 
 #define FR_LED AN12  // Mega PE4 pin, OUT7
 #define RE_LED AN14  // Mega PE5 pin, OUT6
