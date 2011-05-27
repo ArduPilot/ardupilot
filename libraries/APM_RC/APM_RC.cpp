@@ -195,11 +195,20 @@ void APM_RC_Class::Force_Out6_Out7(void)
 // allow HIL override of RC values
 // A value of -1 means no change
 // A value of 0 means no override, use the real RC values
-void APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
+bool APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
 {
+	uint8_t sum = 0;
 	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
 		if (v[i] != -1) {
 			_HIL_override[i] = v[i];
+		}
+		if (_HIL_override[i] != 0) {
+			sum++;
+		}
+		if (sum == 0) {
+			return 0;
+		} else {
+			return 1;
 		}
 	}
 	radio_status = 1;
