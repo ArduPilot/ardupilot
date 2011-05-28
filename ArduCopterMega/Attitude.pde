@@ -241,13 +241,14 @@ output_yaw_with_hold(boolean hold)
 		yaw_error 				= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
-		yaw_error				= constrain(yaw_error,	 -4000, 4000);						// limit error to 60 degees
+		yaw_error				= constrain(yaw_error,	 -4000, 4000);						// limit error to 40 degees
 
 		// Apply PID and save the new angle back to RC_Channel
 		g.rc_4.servo_out 		= g.pid_yaw.get_pi(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
 
 		// add in yaw dampener
-		g.rc_4.servo_out		-= constrain(dampener, -1600, 1600);
+		g.rc_4.servo_out		-= dampener;
+
 		yaw_debug 				= YAW_HOLD; //0
 
 	}else{
@@ -265,6 +266,7 @@ output_yaw_with_hold(boolean hold)
 			long error			= ((long)g.rc_4.control_in * 6) - (rate * 2);					// control is += 6000 * 6 = 36000
 			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
 			yaw_debug 			= YAW_RATE;  // 2
+			nav_yaw 			= dcm.yaw_sensor;	//
 		}
 	}
 

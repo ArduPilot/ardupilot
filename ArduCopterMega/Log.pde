@@ -489,7 +489,7 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(yaw_debug);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 	DataFlash.WriteInt((int)(nav_yaw/100));
-	DataFlash.WriteInt((int)yaw_error);
+	DataFlash.WriteInt((int)yaw_error/100);
 	DataFlash.WriteInt((int)(omega.z * 1000));
 
 	// Alt hold
