@@ -22,11 +22,14 @@ void arm_motors()
 			} else{
 				arming_counter++;
 			}
+
 		// full left
 		}else if (g.rc_4.control_in < -4000) {
 			if (arming_counter >= DISARM_DELAY){
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
+				compass.save_offsets();
+
 			}else{
 				arming_counter++;
 			}

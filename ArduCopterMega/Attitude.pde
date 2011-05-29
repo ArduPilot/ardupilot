@@ -209,7 +209,6 @@ output_yaw_with_hold(boolean hold)
 	// rate control
 	long rate		= degrees(omega.z) * 100; 											// 3rad = 17188 , 6rad = 34377
 	rate			= constrain(rate, -36000, 36000);									// limit to something fun!
-	int dampener 	= rate * g.pid_yaw.kD();											// 34377 * .175 = 6000
 
 	if(hold){
 		// look to see if we have exited rate control properly - ie stopped turning
@@ -218,11 +217,8 @@ output_yaw_with_hold(boolean hold)
 			if(fabs(omega.z) < .2){
 				clear_yaw_control();
 				hold = true;			// just to be explicit
-				//Serial.print("C");
 			}else{
-
 				hold = false;			// return to rate control until we slow down.
-				//Serial.print("D");
 			}
 		}
 
@@ -247,7 +243,7 @@ output_yaw_with_hold(boolean hold)
 		g.rc_4.servo_out 		= g.pid_yaw.get_pi(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
 
 		// add in yaw dampener
-		g.rc_4.servo_out		-= dampener;
+		g.rc_4.servo_out		-= rate * g.pid_yaw.kD();
 
 		yaw_debug 				= YAW_HOLD; //0
 
@@ -256,7 +252,7 @@ output_yaw_with_hold(boolean hold)
 		if(g.rc_4.control_in == 0){
 
 			// adaptive braking
-			g.rc_4.servo_out 	= (int)(-800.0 * omega.z);
+			g.rc_4.servo_out 	= (int)(-1000.0 * omega.z);
 
 			yaw_debug 			= YAW_BRAKE;  // 1
 
@@ -266,12 +262,13 @@ output_yaw_with_hold(boolean hold)
 			long error			= ((long)g.rc_4.control_in * 6) - (rate * 2);					// control is += 6000 * 6 = 36000
 			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
 			yaw_debug 			= YAW_RATE;  // 2
-			nav_yaw 			= dcm.yaw_sensor;	//
+
+			//nav_yaw 			= dcm.yaw_sensor;	// I think this caused the free rotation, dont know why.
 		}
 	}
 
 	// Limit Output
-	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2400, 2400);								// limit to 24°
+	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2500, 2500);								// limit to 24°
 
 	//Serial.printf("%d\n",g.rc_4.servo_out);
 }
@@ -303,6 +300,6 @@ output_yaw_with_hold(boolean hold)
 
 	// add in yaw dampener
 	g.rc_4.servo_out		-= degrees(omega.z) * 100 * g.pid_yaw.kD();
-	yaw_error				= constrain(yaw_error,	 -2500, 2500);						// limit error to 60 degees
+	g.rc_4.servo_out		 = constrain(g.rc_4.servo_out,	 -2500, 2500);						// limit error to 60 degees
 }
 #endif
