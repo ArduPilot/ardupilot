@@ -87,40 +87,42 @@ void
 GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 {
 	if (waypoint_sending == false && waypoint_receiving == false && _queued_parameter == NULL) {
-		if (freqLoopMatch(streamRateRawSensors,freqMin,freqMax))
-    	send_message(MSG_RAW_IMU);
 
-		if (freqLoopMatch(streamRateExtendedStatus,freqMin,freqMax)) {
-        send_message(MSG_EXTENDED_STATUS);
-        send_message(MSG_GPS_STATUS);
-        send_message(MSG_CURRENT_WAYPOINT);
-        send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
+		if (freqLoopMatch(streamRateRawSensors, freqMin, freqMax)){
+    		send_message(MSG_RAW_IMU);
+    	}
+
+		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
+	        send_message(MSG_EXTENDED_STATUS);
+	        send_message(MSG_GPS_STATUS);
+	        send_message(MSG_CURRENT_WAYPOINT);
+	        send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
 			send_message(MSG_NAV_CONTROLLER_OUTPUT);
-    }
+		}
 
-		if (freqLoopMatch(streamRatePosition,freqMin,freqMax)) {
-		send_message(MSG_LOCATION);
-	}
+		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
+			send_message(MSG_LOCATION);
+		}
 
-		if (freqLoopMatch(streamRateRawController,freqMin,freqMax)) {
-        // This is used for HIL.  Do not change without discussing with HIL maintainers
-        send_message(MSG_SERVO_OUT);
-    }
+		if (freqLoopMatch(streamRateRawController, freqMin, freqMax)) {
+			// This is used for HIL.  Do not change without discussing with HIL maintainers
+			send_message(MSG_SERVO_OUT);
+		}
 
-		if (freqLoopMatch(streamRateRCChannels,freqMin,freqMax)) {
-        send_message(MSG_RADIO_OUT);
-        send_message(MSG_RADIO_IN);
-    }
+		if (freqLoopMatch(streamRateRCChannels, freqMin, freqMax)) {
+			send_message(MSG_RADIO_OUT);
+			send_message(MSG_RADIO_IN);
+		}
 
-		if (freqLoopMatch(streamRateExtra1,freqMin,freqMax)){   // Use Extra 1 for AHRS info
-	    send_message(MSG_ATTITUDE);
-    }
+		if (freqLoopMatch(streamRateExtra1, freqMin, freqMax)){	 // Use Extra 1 for AHRS info
+			send_message(MSG_ATTITUDE);
+		}
 
-		if (freqLoopMatch(streamRateExtra2,freqMin,freqMax)){    // Use Extra 2 for additional HIL info
-    	send_message(MSG_VFR_HUD);
-    }
+		if (freqLoopMatch(streamRateExtra2, freqMin, freqMax)){		// Use Extra 2 for additional HIL info
+			send_message(MSG_VFR_HUD);
+		}
 
-		if (freqLoopMatch(streamRateExtra3,freqMin,freqMax)){
+		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
         // Available datastream
 		}
     }

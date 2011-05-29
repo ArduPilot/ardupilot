@@ -482,15 +482,15 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
 	// Control
-	DataFlash.WriteInt((int)(g.rc_4.control_in));
-	DataFlash.WriteInt((int)(g.rc_4.servo_out));
+	DataFlash.WriteInt((int)(g.rc_4.control_in/100));
+	DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
 
 	// yaw
 	DataFlash.WriteByte(yaw_debug);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 	DataFlash.WriteInt((int)(nav_yaw/100));
 	DataFlash.WriteInt((int)yaw_error/100);
-	DataFlash.WriteInt((int)(omega.z * 1000));
+	DataFlash.WriteInt((int)(omega.z * 100));
 
 	// Alt hold
 	DataFlash.WriteInt((int)(g.rc_3.servo_out));
@@ -499,7 +499,7 @@ void Log_Write_Control_Tuning()
 
 	DataFlash.WriteInt((int)next_WP.alt);				//
 	DataFlash.WriteInt((int)altitude_error);			//
-	DataFlash.WriteInt((int)g.pid_baro_throttle.get_integrator());
+	DataFlash.WriteInt((int)g.pid_sonar_throttle.get_integrator());
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -521,7 +521,7 @@ void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
-				(float)DataFlash.ReadInt() / 1000.0,// Gyro Rate
+				(float)DataFlash.ReadInt(),// Gyro Rate
 
 				// Alt Hold
 				DataFlash.ReadInt(),

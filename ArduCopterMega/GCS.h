@@ -110,8 +110,10 @@ public:
     // used by data_stream_send
     static bool freqLoopMatch(uint16_t freq, uint16_t freqMin, uint16_t freqMax)
     {
-        if (freq != 0 && freq >= freqMin && freq < freqMax) return true;
-        else return false;
+        if (freq != 0 && freq >= freqMin && freq < freqMax)
+        	return true;
+        else
+        	return false;
     }
 
     // send streams which match frequency range
