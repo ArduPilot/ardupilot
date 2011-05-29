@@ -315,8 +315,6 @@ void set_mode(byte mode)
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 
-	Log_Write_Mode(control_mode);
-
 	// used to stop fly_aways
 	if(g.rc_3.control_in == 0){ // throttle is 0
 		// we are on the ground is this is true
@@ -363,6 +361,8 @@ void set_mode(byte mode)
 		default:
 			break;
 	}
+
+	Log_Write_Mode(control_mode);
 
 	// output control mode to the ground station
 	gcs.send_message(MSG_MODE_CHANGE);
