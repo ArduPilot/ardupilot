@@ -405,56 +405,61 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
+	Vector3f _offsets;
+
+	if (!strcmp_P(argv[1].str, PSTR("c"))) {
+		compass.set_offsets(_offsets);
+		report_compass();
+		return (0);
+	}
+
 	print_hit_enter();
 	init_compass();
 
-	float _min[3], _max[3];
-	Vector3f _offsets;
-	Vector3f compass_mag;
+	int _min[3] = {0,0,0};
+	int _max[3] = {0,0,0};
+
+	compass.read();
+	compass.calculate(0,0);	// roll = 0, pitch = 0
 
 	while(1){
-		static float min[3], _max[3], offset[3];
-		if (millis() - fast_loopTimer > 100) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			fast_loopTimer		= millis();
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;
+		delay(50);
 
+		compass.read();
+		compass.calculate(0,0);	// roll = 0, pitch = 0
 
-			compass.read();
-			compass.calculate(0, 0);	// roll = 0, pitch = 0 for this example
-			compass_mag = compass.get_offsets();
+		if(compass.mag_x < _min[0])	_min[0] = compass.mag_x;
+		if(compass.mag_y < _min[1])	_min[1] = compass.mag_y;
+		if(compass.mag_z < _min[2])	_min[2] = compass.mag_z;
 
-			// capture min
-			_min[0] = min(_min[0], compass_mag.x);
-			_min[1] = min(_min[1], compass_mag.y);
-			_min[2] = min(_min[2], compass_mag.z);
+		// capture max
+		if(compass.mag_x > _max[0])	_max[0] = compass.mag_x;
+		if(compass.mag_y > _max[1])	_max[1] = compass.mag_y;
+		if(compass.mag_z > _max[2])	_max[2] = compass.mag_z;
 
-			// capture max
-			_max[0] = max(_max[0], compass_mag.x);
-			_max[1] = max(_max[1], compass_mag.y);
-			_max[2] = max(_max[2], compass_mag.z);
+		// calculate offsets
+		_offsets.x = (float)(_max[0] + _min[0]) / -2;
+		_offsets.y = (float)(_max[1] + _min[1]) / -2;
+		_offsets.z = (float)(_max[2] + _min[2]) / -2;
 
-			// calculate offsets
-			_offsets.x = -(_max[0] + _min[0]) / 2;
-			_offsets.y = -(_max[1] + _min[1]) / 2;
-			_offsets.z = -(_max[2] + _min[2]) / 2;
+		// display all to user
+		Serial.printf_P(PSTR("Heading: %u, \t (%d, %d, %d), (%4.4f, %4.4f, %4.4f)\n"),
 
-			// display all to user
-			Serial.printf_P(PSTR("Heading: %u, \t (%4.4f, %4.4f, %4.4f) (%4.4f, %4.4f, %4.4f)\n"),
-					(uint16_t)wrap_360(ToDeg(compass.heading)),
-					compass_mag.x,
-					compass_mag.y,
-					compass_mag.z,
-					_offsets.x,
-					_offsets.y,
-					_offsets.z);
+				(uint16_t)(wrap_360(ToDeg(compass.heading) * 100)) /100,
 
-			if(Serial.available() > 0){
-				compass.set_offsets(_offsets);
-				//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
-				report_compass();
-				break;
-			}
+				compass.mag_x,
+				compass.mag_y,
+				compass.mag_z,
+
+				_offsets.x,
+				_offsets.y,
+				_offsets.z);
+
+		if(Serial.available() > 1){
+			compass.set_offsets(_offsets);
+			//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
+			report_compass();
+			break;
 		}
 	}
 }

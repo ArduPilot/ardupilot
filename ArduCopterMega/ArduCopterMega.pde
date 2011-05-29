@@ -393,7 +393,7 @@ struct 	Location prev_WP;					// last waypoint
 struct 	Location current_loc;				// current location
 struct 	Location next_WP;					// next waypoint
 struct 	Location target_WP;					// where do we want to you towards?
-struct 	Location simple_WP;				// command for telemetry
+struct 	Location simple_WP;					//
 struct 	Location next_command;				// command preloaded
 long 	target_altitude;					// used for
 boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
@@ -1107,8 +1107,8 @@ void update_current_flight_mode(void)
 				#if AUTO_RESET_LOITER == 1
 				if((g.rc_2.control_in + g.rc_1.control_in) != 0){
 					// reset LOITER to current position
-					long temp = next_WP.alt;
-					next_WP = current_loc;
+					long temp 	= next_WP.alt;
+					next_WP 	= current_loc;
 					next_WP.alt = temp;
 				}
 				#endif
@@ -1172,7 +1172,7 @@ void update_navigation()
 			update_nav_wp();
 			break;
 
-		#if YAW_HACK == 1
+		/*#if YAW_HACK == 1
 		case SIMPLE:
 			// calculates desired Yaw
 			// exprimental_hack
@@ -1183,7 +1183,7 @@ void update_navigation()
 			}
 			break;
 		#endif
-
+		*/
 	}
 }
 

@@ -8,7 +8,7 @@
 
 #define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
 #define YAW_OPTION 0	// 0 = hybrid rate approach, 1 = offset Yaw approach
-#define AUTO_RESET_LOITER 1 // enables Loiter to reset it's current location based on stick input.
+#define AUTO_RESET_LOITER 0 // enables Loiter to reset it's current location based on stick input.
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*
