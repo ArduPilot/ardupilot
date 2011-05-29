@@ -132,15 +132,15 @@ void calc_nav_throttle()
 
 	if(error < 0){
 		// try and prevent rapid fall
-		//scaler = (altitude_sensor == BARO) ? 1 : 1;
+		scaler = (altitude_sensor == BARO) ? .8 : .8;
 	}
 
 	if(altitude_sensor == BARO){
 		nav_throttle = g.pid_baro_throttle.get_pid(error, delta_ms_medium_loop, scaler);	// .2
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -35, 80);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -30, 80);
 	}else{
 		nav_throttle = g.pid_sonar_throttle.get_pid(error, delta_ms_medium_loop, scaler);	// .5
-		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -70, 100);
+		nav_throttle = g.throttle_cruise + constrain(nav_throttle, -40, 100);
 	}
 
 	// simple filtering

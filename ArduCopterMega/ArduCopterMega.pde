@@ -642,7 +642,7 @@ void medium_loop()
 			if (g.log_bitmask & MASK_LOG_NTUN)
 				Log_Write_Nav_Tuning();
 
-			if (g.log_bitmask & MASK_LOG_GPS){
+			if (GPS_enabled && g.log_bitmask & MASK_LOG_GPS){
 				Log_Write_GPS();
 			}
 
@@ -1230,13 +1230,11 @@ void update_alt()
 		// filter out offset
 
 		// read barometer
-		baro_alt 		= read_barometer();
-
-		// XXX temp removed fr debugging
-		//filter out bad sonar reads
+		baro_alt 			= read_barometer();
 		int temp_sonar 		= sonar.read();
 
-		if(abs(temp_sonar - sonar_alt) < 300){
+		// spike filter
+		if((temp_sonar - sonar_alt) < 50){
 			sonar_alt = temp_sonar;
 		}
 

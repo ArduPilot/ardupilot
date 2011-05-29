@@ -409,6 +409,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 
 	if (!strcmp_P(argv[1].str, PSTR("c"))) {
 		compass.set_offsets(_offsets);
+		compass.save_offsets();
 		report_compass();
 		return (0);
 	}

@@ -360,7 +360,7 @@
 # define YAW_I					0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
-# define YAW_D					0.05		// Trying a lower value to prevent odd behavior
+# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
 #endif
 #ifndef  YAW_IMAX
 # define YAW_IMAX				1			// degrees * 100
@@ -438,16 +438,16 @@
 
 
 #ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		0.5			//
+# define THROTTLE_SONAR_P		0.35			// lowering P by .15
 #endif
 #ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.1
+# define THROTTLE_SONAR_I		0.05
 #endif
 #ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.06
+# define THROTTLE_SONAR_D		0.3				// increasing D by .5
 #endif
 #ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	60
+# define THROTTLE_SONAR_IMAX	20
 #endif
 
 
