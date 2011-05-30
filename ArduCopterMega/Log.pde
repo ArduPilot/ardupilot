@@ -379,8 +379,8 @@ void Log_Write_GPS()
 void Log_Read_GPS()
 {
 	Serial.printf_P(PSTR("GPS, %ld, %d, %d, "
-					  "%4.7f, %4.7f, %4.4f, %4.4f, "
-					  "%d, %u\n"),
+					  	"%4.7f, %4.7f, %4.4f, %4.4f, "
+					  	"%d, %u\n"),
 
 						DataFlash.ReadLong(),					// 1 time
 						(int)DataFlash.ReadByte(),				// 2 fix
@@ -460,16 +460,29 @@ void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)(target_bearing/100));		// 3
 	DataFlash.WriteInt((int)(nav_bearing/100));			// 4
 
+	DataFlash.WriteInt((int)long_error);				// 5
+	DataFlash.WriteInt((int)lat_error);					// 6
+	DataFlash.WriteInt((int)nav_lon);					// 7
+	DataFlash.WriteInt((int)nav_lat);					// 8
+
 	DataFlash.WriteByte(END_BYTE);
 }
+
 
 void Log_Read_Nav_Tuning()
 {
 							 //	 1	 2	 3	 4
-	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d\n"),
+	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, "
+							    "%d, %d, %d, %d\n"),
+
 				DataFlash.ReadInt(),	//distance
 				DataFlash.ReadByte(),	//bitmask
 				DataFlash.ReadInt(),	//target bearing
+				DataFlash.ReadInt(),
+
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
 				DataFlash.ReadInt());	//nav bearing
 }
 

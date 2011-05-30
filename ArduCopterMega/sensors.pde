@@ -52,7 +52,7 @@ void init_barometer(void)
 	// makes the filtering work later
 	abs_pressure  = barometer.Press;
 
-	// save home pressure - will be overwritten by init_home, no big deal
+	// save home pressure
 	ground_pressure = abs_pressure;
 
 	//Serial.printf("abs_pressure %ld\n", abs_pressure);

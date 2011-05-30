@@ -31,6 +31,7 @@ void output_motors_armed()
 		motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// BACK
 
 	}else{
+
 		roll_out 	 	= g.rc_1.pwm_out;
 		pitch_out 	 	= g.rc_2.pwm_out;
 
