@@ -72,7 +72,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
 	{"mission",		test_mission},
-//	{"wp",			test_wp_nav},
+	//{"wp",			test_wp_nav},
 };
 
 // A Macro to create the Menu
@@ -205,19 +205,24 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
-
-	g.rc_6.set_range(0,900);
-	g.rc_4.set_angle(9000);
 	dTnav = 200;
+	current_loc.lat = 32.9513090 * t7;
+	current_loc.lng = -117.2381700 * t7;
+
+	do_loiter_at_location();
+
+	wp_control = LOITER_MODE;
 
 	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
 	while(1){
-		delay(20);
 		read_radio();
-		current_loc.lng = g.rc_1.control_in;
-		current_loc.lat = g.rc_2.control_in;
+		delay(dTnav);
 
-		calc_loiter_nav();
+		current_loc.lng = (-117.2381700 * t7) 	+ g.rc_1.control_in / 2;
+		current_loc.lat = (32.9513090 * t7) 	+ g.rc_2.control_in / 2;
+
+		navigate();
+		update_nav_wp();
 
 		Serial.printf("Lon_e: %ld, nLon, %ld, Lat_e %ld, nLat %ld\n", long_error, nav_lon, lat_error, nav_lat);
 
@@ -226,6 +231,7 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+
 //*/
 
 /*

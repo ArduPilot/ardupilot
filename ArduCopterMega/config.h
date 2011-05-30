@@ -382,7 +382,7 @@
 # define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.10		// upped a bit to deal with wind faster
+# define NAV_LOITER_I			0.05		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
 # define NAV_LOITER_D			0.00
@@ -433,7 +433,7 @@
 # define THROTTLE_BARO_D		0.06		//
 #endif
 #ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX		20
+# define THROTTLE_BARO_IMAX		30
 #endif
 
 
@@ -447,7 +447,7 @@
 # define THROTTLE_SONAR_D		0.3				// increasing D by .5
 #endif
 #ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	20
+# define THROTTLE_SONAR_IMAX	30
 #endif
 
 
