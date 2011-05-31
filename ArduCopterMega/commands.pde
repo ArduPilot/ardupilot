@@ -51,7 +51,7 @@ struct Location get_command_with_index(int i)
 		return temp;
 
 	}else{
-		Serial.println("LD");
+		//Serial.println("LD");
 		// we can load a command, we don't process it yet
 		// read WP position
 		long mem = (WP_START_BYTE) + (i * WP_SIZE);
@@ -78,7 +78,7 @@ struct Location get_command_with_index(int i)
 	if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & WP_OPTION_ALT_RELATIVE){
 		//temp.alt += home.alt;
 	}
-	Serial.println("ADD ALT");
+	//Serial.println("ADD ALT");
 
 	if(temp.options & WP_OPTION_RELATIVE){
 		// If were relative, just offset from home

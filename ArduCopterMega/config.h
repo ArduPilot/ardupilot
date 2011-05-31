@@ -371,7 +371,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				18			// degrees
+# define PITCH_MAX				24			// degrees
 #endif
 
 
@@ -382,10 +382,10 @@
 # define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.05		// upped a bit to deal with wind faster
+# define NAV_LOITER_I			0.08		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			0.00
+# define NAV_LOITER_D			0.03		// Added some D 2.20, untested
 #endif
 #ifndef NAV_LOITER_IMAX
 # define NAV_LOITER_IMAX		20			// 20°
@@ -513,6 +513,12 @@
 #endif
 #ifndef LOG_CURRENT
 # define LOG_CURRENT			DISABLED
+#endif
+
+// if we are using fast, Disable Medium
+#if LOG_ATTITUDE_FAST == ENABLED
+	#undef LOG_ATTITUDE_MED
+	#define LOG_ATTITUDE_MED 		DISABLED
 #endif
 
 #ifndef DEBUG_PORT

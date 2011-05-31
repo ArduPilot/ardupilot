@@ -71,4 +71,4 @@ Command ID		Name						Parameter 1			Parameter 2			Parameter 3			Parameter 4
 				Note:  Max cycle time = 60 sec, A repeat relay or repeat servo command will cancel any current repeating event
 
 // need to add command
-0xB7 / 185		MAV_CMD_DO_SET_ROI			Yaw_Mode			altitude			lat					lon
+0xB7 / 201		MAV_CMD_DO_SET_ROI			Yaw_Mode			altitude			lat					lon

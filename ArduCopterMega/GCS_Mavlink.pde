@@ -637,6 +637,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
 				case MAV_CMD_NAV_LOITER_TURNS:
 				case MAV_CMD_DO_SET_HOME:
+				case MAV_CMD_DO_SET_ROI:
 					tell_command.p1 = packet.param1;
 					break;
 

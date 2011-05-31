@@ -97,6 +97,10 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 
+	if(dump_log == 99){
+		Log_Read(1, 4096);
+	}
+
 	if (/*(argc != 2) || */(dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
 		return(-1);
@@ -175,9 +179,11 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 
 	if (!strcasecmp_P(argv[0].str, PSTR("enable"))) {
 		g.log_bitmask.set_and_save(g.log_bitmask | bits);
+
 	}else{
 		g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
 	}
+
 	return(0);
 }
 

@@ -594,6 +594,9 @@ void medium_loop()
 				// control mode specific updates to nav_bearing
 				// --------------------------------------------
 				update_navigation();
+
+				if (g.log_bitmask & MASK_LOG_NTUN)
+					Log_Write_Nav_Tuning();
 			}
 
 			break;
@@ -632,19 +635,13 @@ void medium_loop()
 			medium_loopCounter++;
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED && !(g.log_bitmask & MASK_LOG_ATTITUDE_FAST))
+				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
 					Log_Write_Attitude();
 
 				if (g.log_bitmask & MASK_LOG_CTUN)
 					Log_Write_Control_Tuning();
 			#endif
 
-			if (g.log_bitmask & MASK_LOG_NTUN)
-				Log_Write_Nav_Tuning();
-
-			if (GPS_enabled && g.log_bitmask & MASK_LOG_GPS){
-				Log_Write_GPS();
-			}
 
 			// XXX this should be a "GCS medium loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
@@ -711,9 +708,9 @@ void fifty_hz_loop()
 			Log_Write_Raw();
 	#endif
 
-	//#if ENABLE_CAM
-	camera_stabilization();
-	//#endif
+	#if CAMERA_STABILIZER == ENABLED
+		camera_stabilization();
+	#endif
 
 
 	// XXX is it appropriate to be doing the comms below on the fast loop?
@@ -904,6 +901,10 @@ void update_GPS(void)
 
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
 		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
+
+		if (g.log_bitmask & MASK_LOG_GPS){
+			Log_Write_GPS();
+		}
 	}
 }
 
@@ -978,15 +979,12 @@ void update_current_flight_mode(void)
 				nav_pitch 		= 0;
 				nav_roll 		= 0;
 
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-				// are we at rest? reset nav_yaw
 				if(g.rc_3.control_in == 0){
-					nav_yaw 	= dcm.yaw_sensor;
+					clear_yaw_control();
+				}else{
+					// Yaw control
+					output_manual_yaw();
 				}
-
-				// Yaw control
-				output_manual_yaw();
 
 				// apply throttle control
 				output_manual_throttle();
@@ -1033,13 +1031,11 @@ void update_current_flight_mode(void)
 
 				// are we at rest? reset nav_yaw
 				if(g.rc_3.control_in == 0){
-					nav_yaw 	= dcm.yaw_sensor;
+					clear_yaw_control();
+				}else{
+					// Yaw control
+					output_manual_yaw();
 				}
-
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-				// Yaw control
-				output_manual_yaw();
 
 				// apply throttle control
 				output_manual_throttle();
@@ -1165,8 +1161,8 @@ void update_navigation()
 			update_nav_yaw();
 		case LOITER:
 			// are we Traversing or Loitering?
-			//wp_control = (wp_distance < 10) ? LOITER_MODE : WP_MODE;
-			wp_control = LOITER_MODE;
+			wp_control = (wp_distance < 50) ? LOITER_MODE : WP_MODE;
+			//wp_control = LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
@@ -1241,8 +1237,8 @@ void update_alt()
 		//sonar_alt = sonar.read();
 
 		// decide if we're using sonar
-		if ((baro_alt < 1200) || sonar_alt < 300){
-
+		//if ((baro_alt < 1200) || sonar_alt < 300){
+		if (baro_alt < 700){
 			// correct alt for angle of the sonar
 			float temp = cos_pitch_x * cos_roll_x;
 			temp = max(temp, 0.707);
@@ -1280,15 +1276,14 @@ adjust_altitude()
 		flight_timer = 0;
 
 		if(g.rc_3.control_in <= 200){
-			next_WP.alt -= 3;												// 1 meter per second
+			next_WP.alt -= 1;												// 1 meter per second
+			next_WP.alt = max(next_WP.alt, (current_loc.alt - 100));		// don't go more than 4 meters below current location
 			next_WP.alt = max(next_WP.alt, 100); 							// no lower than 1 meter?
-			next_WP.alt = max((current_loc.alt - 400), next_WP.alt);		// don't go more than 4 meters below current location
+
 		}else if (g.rc_3.control_in > 700){
-			next_WP.alt += 3;												// 1 meter per second
+			next_WP.alt += 2;												// 1 meter per second
 			//next_WP.alt = min((current_loc.alt + 400), next_WP.alt);		// don't go more than 4 meters below current location
-			if(next_WP.alt > (current_loc.alt + 400)){
-				next_WP.alt = current_loc.alt + 400;
-			}
+			next_WP.alt = min(next_WP.alt, (current_loc.alt + 200));		// don't go more than 4 meters below current location
 		}
 	}
 }

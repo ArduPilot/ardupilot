@@ -165,9 +165,10 @@ void calc_rate_nav()
 	// we want to be going 450cm/s
 	int error 			= constrain(WAYPOINT_SPEED - groundspeed, -1000, 1000);
 	// Scale response by kP
-	nav_lat 		= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+	nav_lat 		= nav_lat + g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+	nav_lat 		>>= 1; // divide by two
 
-	Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
+	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
 
 	// limit our output
 	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error
@@ -219,7 +220,7 @@ void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
-	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
+	if (cross_track_test() < 9000) {	 // If we are too far off or too close we don't do track following
 		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
 		nav_bearing += constrain(crosstrack_error * g.crosstrack_gain, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360(nav_bearing);

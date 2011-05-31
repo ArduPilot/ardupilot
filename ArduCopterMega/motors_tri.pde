@@ -69,17 +69,26 @@ void output_motors_disarmed()
 
 void output_motor_test()
 {
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 50);
-	delay(1000);
+	motor_out[CH_1] = g.rc_3.radio_min;
+	motor_out[CH_2] = g.rc_3.radio_min;
+	motor_out[CH_4] = g.rc_3.radio_min;
 
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 50);
-	delay(1000);
 
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 50);
-	delay(1000);
+	if(g.rc_1.control_in > 3000){	// right
+		motor_out[CH_1] += 50;
+	}
+
+	if(g.rc_1.control_in < -3000){	// left
+		motor_out[CH_2] += 50;
+	}
+
+	if(g.rc_2.control_in > 3000){	// back
+		motor_out[CH_4] += 50;
+	}
+
+	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
 }
 
 #endif
