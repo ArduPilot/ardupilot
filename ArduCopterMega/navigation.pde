@@ -168,6 +168,9 @@ void calc_rate_nav()
 	nav_lat 		= nav_lat + g.pid_nav_wp.get_pid(error, dTnav, 1.0);
 	nav_lat 		>>= 1; // divide by two
 
+	// unfiltered:
+	//nav_lat 		= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+
 	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
 
 	// limit our output
