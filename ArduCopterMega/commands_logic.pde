@@ -5,6 +5,9 @@
 /********************************************************************************/
 void handle_process_must()
 {
+	// clear nav_lat, this is how we pitch towards the target based on speed
+	nav_lat = 0;
+
 	switch(next_command.id){
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -38,6 +41,7 @@ void handle_process_must()
 		default:
 			break;
 	}
+
 }
 
 void handle_process_may()
@@ -494,9 +498,9 @@ void do_yaw()
 	command_yaw_speed		= next_command.lat * 100; // ms * 100
 
 
-	// if unspecified go 60° a second
+	// if unspecified go 30° a second
 	if(command_yaw_speed == 0)
-		command_yaw_speed = 6000;
+		command_yaw_speed = 3000;
 
 	// if unspecified go counterclockwise
 	if(command_yaw_dir == 0)

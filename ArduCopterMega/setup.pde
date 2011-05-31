@@ -247,6 +247,8 @@ static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
 	while(1){
+		delay(20);
+		read_radio();
 		output_motor_test();
 		if(Serial.available() > 0){
 			g.esc_calibrate.set_and_save(0);

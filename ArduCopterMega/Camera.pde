@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if CAMERA_STABILIZER == ENABLED
+
 void init_camera()
 {
 	g.rc_camera_pitch.set_angle(4500);
@@ -38,3 +40,4 @@ camera_stabilization()
 	//rc_camera_roll.calc_pwm();
 }
 
+#endif

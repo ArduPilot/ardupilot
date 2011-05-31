@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.19 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.20 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -137,7 +137,10 @@ void init_ardupilot()
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
-	init_camera();
+
+	#if CAMERA_STABILIZER == ENABLED
+		init_camera();
+	#endif
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 	adc.Init();	 		// APM ADC library initialization
@@ -331,8 +334,11 @@ void set_mode(byte mode)
 		case ACRO:
 			break;
 
+		case SIMPLE:
 		case STABILIZE:
 			do_loiter_at_location();
+			g.pid_baro_throttle.reset_I();
+			g.pid_sonar_throttle.reset_I();
 			break;
 
 		case ALT_HOLD:
@@ -343,9 +349,6 @@ void set_mode(byte mode)
 		case AUTO:
 			init_throttle_cruise();
 			init_auto();
-			break;
-
-		case SIMPLE:
 			break;
 
 		case LOITER:

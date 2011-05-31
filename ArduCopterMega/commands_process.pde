@@ -16,62 +16,10 @@ void change_command(uint8_t index)
 	}
 }
 
-
-// called by 10 Hz Medium loop
-// ---------------------------
-void update_commands2(void)
-{
-	//Serial.println("Upd CMDs");
-
-	// This function loads commands into three buffers
-	// when a new command is loaded, it is processed with process_XXX()
-
-	// If we have a command in the queue already
-	if(next_command.id != NO_COMMAND){
-		return;
-	}
-
-	// fetch next command if the next command queue is empty
-	// -----------------------------------------------------
-	next_command = get_command_with_index(g.waypoint_index + 1);
-	Serial.printf("next CMD %d\n", next_command.id);
-
-	if(next_command.id == NO_COMMAND){
-		// if no commands were available from EEPROM
-		// And we have no nav commands
-		// --------------------------------------------
-		if (command_must_ID == NO_COMMAND){
-			gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
-			handle_no_commands();
-		}
-
-	} else {
-		// A command was loaded from EEPROM
-		// --------------------------------------------
-		// Set our current mission index + 1;
-		increment_WP_index();
-
-		Serial.printf("loaded cmd %d\n" , g.waypoint_index.get());
-
-		// debug by outputing the Waypoint loaded
-		print_wp(&next_command, g.waypoint_index);
-
-
-		// act on our new command
-		if (process_next_command()){
-			// invalidate command queue so a new one is loaded
-			// -----------------------------------------------
-			clear_command_queue();
-		}
-	}
-}
-
 // called by 10 Hz Medium loop
 // ---------------------------
 void update_commands(void)
 {
-	//Serial.println("Upd CMDs");
-
 	// fill command queue with a new command if available
 	if(next_command.id == NO_COMMAND){
 

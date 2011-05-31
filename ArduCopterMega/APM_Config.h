@@ -7,8 +7,11 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 #define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
-#define YAW_OPTION 1	// 0 = hybrid rate approach, 1 = offset Yaw approach
-#define AUTO_RESET_LOITER 0 // enables Loiter to reset it's current location based on stick input.
+#define YAW_OPTION 0	// 0 = hybrid rate approach, 1 = offset Yaw approach
+#define AUTO_RESET_LOITER 1 // enables Loiter to reset it's current location based on stick input.
+
+// do we want to have camera stabilization?
+#define CAMERA_STABILIZER ENABLED
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*

@@ -237,7 +237,7 @@ public:
         throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
         throttle_cruise         (100,						k_param_throttle_cruise,    			PSTR("TRIM_THROTTLE")),
 
-        flight_modes            (k_param_flight_modes,                                     			PSTR("FLIGHT_MODES")),
+        flight_modes            (k_param_flight_modes,                                     			PSTR("FLTMODE")),
 
         pitch_max         		(PITCH_MAX * 100,			k_param_pitch_max,		       			PSTR("PITCH_MAX")),
 

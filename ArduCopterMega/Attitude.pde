@@ -144,6 +144,9 @@ void calc_nav_throttle()
 	}
 
 	// simple filtering
+	if(nav_throttle_old == 0)
+		nav_throttle_old = nav_throttle;
+
 	nav_throttle 		= (nav_throttle + nav_throttle_old) >> 1;
 	nav_throttle_old 	= nav_throttle;
 
@@ -166,23 +169,11 @@ yaw control
 
 void output_manual_yaw()
 {
-	if(g.rc_3.control_in == 0){
-		// we want to only call this once
-		if(did_clear_yaw_control == false){
-			clear_yaw_control();
-			did_clear_yaw_control = true;
-		}
-
-	}else{ // motors running
-
-		// Yaw control
-		if(g.rc_4.control_in == 0){
-			output_yaw_with_hold(true); // hold yaw
-		}else{
-			output_yaw_with_hold(false); // rate control yaw
-		}
-
-		did_clear_yaw_control = false;
+	// Yaw control
+	if(g.rc_4.control_in == 0){
+		output_yaw_with_hold(true); // hold yaw
+	}else{
+		output_yaw_with_hold(false); // rate control yaw
 	}
 }
 
