@@ -28,7 +28,7 @@
 	#define AP_SPI_DATAIN      50    // MISO  // PB3
 	#define AP_SPI_DATAOUT     51    // MOSI  // PB2
 	#define AP_SPI_CLOCK       52    // SCK   // PB1
-	#define ADNS3080_CHIP_SELECT 32  // PC5  // should be changed to be 34/PC3
+	#define ADNS3080_CHIP_SELECT 34  // PC3
 	#define ADNS3080_RESET       35  // PC2
 #else  // normal arduino SPI pins...these need to be checked
 	#define AP_SPI_DATAIN  12        //MISO 
