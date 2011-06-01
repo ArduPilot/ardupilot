@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.20 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.21 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -258,6 +258,9 @@ void init_ardupilot()
 void startup_ground(void)
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+
+	// make Motor light go dark
+	digitalWrite(A_LED_PIN, LOW);
 
 	#if(GROUND_START_DELAY > 0)
 		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));

@@ -779,6 +779,17 @@ void slow_loop()
 				read_battery();
 			#endif
 
+			#if AUTO_RESET_LOITER == 1
+			if(control_mode == LOITER){
+				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
+					// reset LOITER to current position
+					long temp 	= next_WP.alt;
+					next_WP 	= current_loc;
+					next_WP.alt = temp;
+				}
+			}
+			#endif
+
 			break;
 
 		case 2:
@@ -850,6 +861,7 @@ void super_slow_loop()
 		gcs_simple.ack();
 		*/
 	//}
+
 }
 
 void update_GPS(void)
@@ -1099,15 +1111,6 @@ void update_current_flight_mode(void)
 			case LOITER:
 				// allow interactive changing of atitude
 				adjust_altitude();
-
-				#if AUTO_RESET_LOITER == 1
-				if((g.rc_2.control_in + g.rc_1.control_in) != 0){
-					// reset LOITER to current position
-					long temp 	= next_WP.alt;
-					next_WP 	= current_loc;
-					next_WP.alt = temp;
-				}
-				#endif
 
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------

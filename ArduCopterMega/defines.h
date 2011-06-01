@@ -1,5 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+// Just so that it's completely clear...
+#define ENABLED			1
+#define DISABLED		0
 
 // active altitude sensor
 // ----------------------

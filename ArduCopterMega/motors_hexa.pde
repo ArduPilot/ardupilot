@@ -64,6 +64,9 @@ void output_motors_armed()
 	motor_out[CH_7]  = max(motor_out[CH_7],  out_min);
 	motor_out[CH_8]  = max(motor_out[CH_8],  out_min);
 
+
+
+	#if CUT_MOTORS == ENABLED
 	// Send commands to motors
 	if(g.rc_3.servo_out > 0){
 		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
@@ -85,6 +88,21 @@ void output_motors_armed()
 		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 		APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 	}
+
+	#else
+
+		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+		APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+		APM_RC.OutputCh(CH_8, motor_out[CH_8]);
+
+		// InstantPWM
+		APM_RC.Force_Out0_Out1();
+		APM_RC.Force_Out6_Out7();
+		APM_RC.Force_Out2_Out3();
+	#endif
 }
 
 void output_motors_disarmed()
@@ -198,4 +216,5 @@ void output_motor_test()
 	delay(1000);
 }
 */
+
 #endif

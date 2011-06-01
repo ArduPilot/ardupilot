@@ -6,9 +6,10 @@
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
-#define NAV_TEST 1	// 0 = traditional, 1 = rate controlled
-#define YAW_OPTION 0	// 0 = hybrid rate approach, 1 = offset Yaw approach
+#define NAV_TEST 1			// 0 = traditional, 1 = rate controlled
+#define YAW_OPTION 0		// 0 = hybrid rate approach, 1 = offset Yaw approach
 #define AUTO_RESET_LOITER 1 // enables Loiter to reset it's current location based on stick input.
+#define CUT_MOTORS 1		// do we cut the motors with no throttle?
 
 // do we want to have camera stabilization?
 #define CAMERA_STABILIZER ENABLED
