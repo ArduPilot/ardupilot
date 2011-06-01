@@ -358,6 +358,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 		init_compass();
 
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		clear_offsets();
 		g.compass_enabled.set_and_save(false);
 
 	}else{
@@ -404,14 +405,20 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 
+void clear_offsets()
+{
+	Vector3f _offsets;
+	compass.set_offsets(_offsets);
+	compass.save_offsets();
+}
+
 static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
 	Vector3f _offsets;
 
 	if (!strcmp_P(argv[1].str, PSTR("c"))) {
-		compass.set_offsets(_offsets);
-		compass.save_offsets();
+		clear_offsets();
 		report_compass();
 		return (0);
 	}

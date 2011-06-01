@@ -33,7 +33,7 @@ void output_motors_armed()
                 //Right side
 		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out; // CW	 RIGHT BACK
 		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out; // CCW	 RIGHT FRONT
-            
+
 		//Back side
 		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out;	 // CW	 BACK LEFT
 		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out;	 // CCW  BACK RIGHT
@@ -52,13 +52,13 @@ void output_motors_armed()
 
                 //Right side
 		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out;	        // CW	RIGHT
-            
+
 		//Back side
 		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CW	BACK
 		motor_out[CH_4]		= g.rc_3.radio_out - roll_out - pitch_out;	// CCW 	BACK RIGHT
 		motor_out[CH_8]		= g.rc_3.radio_out + roll_out - pitch_out;	// CCW	BACK LEFT
 	}
- 
+
 	// Yaw
 	motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
 	motor_out[CH_4]		+= g.rc_4.pwm_out;	// CCW
@@ -80,8 +80,33 @@ void output_motors_armed()
 	motor_out[CH_10]	= max(motor_out[CH_10], out_min);
 	motor_out[CH_11] 	= max(motor_out[CH_11], out_min);
 
-	// Send commands to motors
-	if(g.rc_3.servo_out > 0){
+	#if CUT_MOTORS == ENABLED
+		// Send commands to motors
+		if(g.rc_3.servo_out > 0){
+			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
+			APM_RC.OutputCh(CH_10, motor_out[CH_10]);
+			APM_RC.OutputCh(CH_11, motor_out[CH_11]);
+
+			// InstantPWM
+			APM_RC.Force_Out0_Out1();
+			APM_RC.Force_Out6_Out7();
+			APM_RC.Force_Out2_Out3();
+		}else{
+			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
+			APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
+		}
+	#else
 		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
 		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
 		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
@@ -95,16 +120,7 @@ void output_motors_armed()
 		APM_RC.Force_Out0_Out1();
 		APM_RC.Force_Out6_Out7();
 		APM_RC.Force_Out2_Out3();
-	}else{
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
-		APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
-	}
+	#endif
 }
 
 void output_motors_disarmed()
@@ -167,3 +183,4 @@ void output_motor_test()
 }
 
 #endif
+

@@ -27,14 +27,6 @@
 /// change in your local copy of APM_Config.h.
 ///
 #include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
-///
-/// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
-/// change in your local copy of APM_Config.h.
-///
-
-// Just so that it's completely clear...
-#define ENABLED			1
-#define DISABLED		0
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -256,7 +248,7 @@
 // GROUND_START_DELAY
 //
 #ifndef GROUND_START_DELAY
-# define GROUND_START_DELAY		0
+# define GROUND_START_DELAY		3
 #endif
 
 
@@ -566,6 +558,19 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
+
+#ifndef NAV_TEST
+# define NAV_TEST		1		// 0 = traditional, 1 = rate controlled
+#endif
+#ifndef YAW_OPTION
+# define YAW_OPTION		0		// 0 = hybrid rate approach, 1 = offset Yaw approach
+#endif
+#ifndef AUTO_RESET_LOITER
+# define AUTO_RESET_LOITER	1	// enables Loiter to reset it's current location based on stick input.
+#endif
+#ifndef CUT_MOTORS
+# define CUT_MOTORS		1		// do we cut the motors with no throttle?
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // RC override
