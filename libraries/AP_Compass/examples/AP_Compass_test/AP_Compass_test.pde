@@ -27,7 +27,7 @@ void setup()
   Wire.begin();
   compass.init();	 // Initialization
 
-  compass.set_orientation(AP_COMPASS_COMPONENTS_UP_PINS_FORWARD);  // set compass's orientation on aircraft
+  compass.set_orientation(AP_COMPASS_COMPONENTS_UP_PINS_FORWARD);  // set compass's orientation on aircraft.  If using HMC5883L, AP_COMPASS_HMC5883L_COMPONENTS_UP_PINS_FORWARD
   compass.set_offsets(0,0,0);  // set offsets to account for surrounding interference
   compass.set_declination(ToRad(0.0));  // set local difference between magnetic north and true north
 
