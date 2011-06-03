@@ -18,9 +18,9 @@ static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_altitude(uint8_t argc, 	const Menu::arg *argv);
+static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
-//static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -64,9 +64,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"relay",		test_relay},
 	{"waypoints",	test_wp},
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	{"altitude",	test_altitude},
+	{"altitude",	test_baro},
 #endif
-	//{"sonar",		test_sonar},
+	{"sonar",		test_sonar},
 	{"compass",		test_mag},
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
@@ -814,10 +814,9 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
-test_altitude(uint8_t argc, const Menu::arg *argv)
+test_baro(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-
 	init_barometer();
 
 	while(1){
@@ -825,14 +824,7 @@ test_altitude(uint8_t argc, const Menu::arg *argv)
 
 		baro_alt 		= read_barometer();
 
-		if(g.sonar_enabled){
-			// decide which sensor we're usings
-			sonar_alt 		= sonar.read();
-		}
-
-		Serial.printf_P(PSTR("B_alt: %d, S_alt: %d\n"),
-					baro_alt,
-					sonar_alt);
+		Serial.printf_P(PSTR("Baro: %dcm\n"), baro_alt);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -877,22 +869,21 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 /*
   test the sonar
  */
-/*static int8_t
+static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	delay(1000);
-
 	while(1) {
-		Serial.printf_P(PSTR("%d cm\n"), sonar.read());
 		delay(100);
+
+		Serial.printf_P(PSTR("Sonar: %d cm\n"), sonar.read());
+
 		if(Serial.available() > 0){
 			return (0);
 		}
 	}
 	return (0);
 }
-*/
 
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
