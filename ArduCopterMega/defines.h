@@ -267,12 +267,6 @@
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 #define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
 
-#define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
-#define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
-#define BATTERY_PIN2 1
-#define BATTERY_PIN3 2
-#define BATTERY_PIN4 3
-
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
 
@@ -306,6 +300,14 @@
 #define CURRENT_PIN_1 1 // and current
 
 #define RELAY_PIN 47
+
+#define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
+#define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
+#define BATTERY_PIN2 1
+#define BATTERY_PIN3 2
+#define BATTERY_PIN4 3
+#define PIEZO_PIN AN5           //Last pin on the back ADC connector
+
 
 
 // sonar

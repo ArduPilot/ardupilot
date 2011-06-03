@@ -508,10 +508,10 @@
 #endif
 
 // if we are using fast, Disable Medium
-#if LOG_ATTITUDE_FAST == ENABLED
-	#undef LOG_ATTITUDE_MED
-	#define LOG_ATTITUDE_MED 		DISABLED
-#endif
+//#if LOG_ATTITUDE_FAST == ENABLED
+//	#undef LOG_ATTITUDE_MED
+//	#define LOG_ATTITUDE_MED 		DISABLED
+//#endif
 
 #ifndef DEBUG_PORT
 # define DEBUG_PORT 0
