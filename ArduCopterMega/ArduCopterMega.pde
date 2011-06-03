@@ -576,8 +576,11 @@ void medium_loop()
 			medium_loopCounter++;
 
 			// hack to stop navigation in Simple mode
-			if (control_mode == SIMPLE)
+			if (control_mode == SIMPLE){
+				// clear GPS data
+				g_gps->new_data = false;
 				break;
+			}
 
 			// Auto control modes:
 			if(g_gps->new_data){
@@ -1240,15 +1243,15 @@ void update_alt()
 		//sonar_alt = sonar.read();
 
 		// decide if we're using sonar
-		//if ((baro_alt < 1200) || sonar_alt < 300){
-		if (baro_alt < 700){
+		if ((baro_alt < 1200) || sonar_alt < 300){
+		//if (baro_alt < 700){
 			// correct alt for angle of the sonar
 			float temp = cos_pitch_x * cos_roll_x;
 			temp = max(temp, 0.707);
 
 			sonar_alt = (float)sonar_alt * temp;
 
-			if(sonar_alt < 400){
+			if(sonar_alt < 450){
 				altitude_sensor = SONAR;
 				baro_alt_offset = sonar_alt - baro_alt;
 			}

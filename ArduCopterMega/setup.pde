@@ -375,11 +375,14 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 {
-	if(argv[1].i >= 0 && argv[1].i <= 4){
+	if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		g.battery_monitoring.set_and_save(0);
+
+	} else if(argv[1].i > 0 && argv[1].i <= 4){
 		g.battery_monitoring.set_and_save(argv[1].i);
 
 	} else {
-		Serial.printf_P(PSTR("\nOptions: 0-4"));
+		Serial.printf_P(PSTR("\nOptions: off, 1-4"));
 	}
 
 	report_batt_monitor();

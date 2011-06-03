@@ -8,16 +8,17 @@
 byte mavdelay = 0;
 
 
-// what does this do?
 static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 {
 //Serial.print("target = "); Serial.print(sysid, DEC); Serial.print("\tcomp = "); Serial.println(compid, DEC);
     if (sysid != mavlink_system.sysid){
         return 1;
 
-    }else if(compid != mavlink_system.compid){
-		gcs.send_text_P(SEVERITY_LOW,PSTR("component id mismatch"));
-        return 0; // XXX currently not receiving correct compid from gcs
+	// Currently we are not checking for correct compid since APM is not passing mavlink info to any subsystem
+	// If it is addressed to our system ID we assume it is for us
+    //}else if(compid != mavlink_system.compid){
+	//	gcs.send_text_P(SEVERITY_LOW,PSTR("component id mismatch"));
+    //    return 1; // XXX currently not receiving correct compid from gcs
 
     }else{
     	return 0; // no error
@@ -70,7 +71,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 			}
 
 			uint8_t status 		= MAV_STATE_ACTIVE;
-			uint16_t battery_remaining = 10.0 * (float)(g.pack_capacity - current_total)/g.pack_capacity;	//Mavlink scaling 100% = 1000
+			uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
 			uint8_t motor_block = false;
 
 			mavlink_msg_sys_status_send(
@@ -80,7 +81,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					status,
 					load * 1000,
 					battery_voltage * 1000,
-					motor_block,
+					battery_remaining,
 					packet_drops);
 			break;
 		}
