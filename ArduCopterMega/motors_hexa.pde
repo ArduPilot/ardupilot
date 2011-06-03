@@ -19,8 +19,8 @@ void output_motors_armed()
 	g.rc_4.calc_pwm();
 
 	if(g.frame_orientation == X_FRAME){
-		roll_out 	 	= (float)g.rc_1.pwm_out * .866;
-		pitch_out 	 	= g.rc_2.pwm_out / 2;
+		roll_out 	 	= g.rc_1.pwm_out / 2;
+		pitch_out 	 	= (float)g.rc_2.pwm_out * .866;
 
 		//left side
 		motor_out[CH_2]		= g.rc_3.radio_out + g.rc_1.pwm_out;		// CCW Middle
@@ -33,7 +33,7 @@ void output_motors_armed()
 		motor_out[CH_4] 	= g.rc_3.radio_out - roll_out - pitch_out;	// CCW Back
 
 	}else{
-		roll_out 		= g.rc_1.pwm_out;
+		roll_out 	 	= (float)g.rc_1.pwm_out * .866;
 		pitch_out 	 	= g.rc_2.pwm_out / 2;
 
 		//Front side
