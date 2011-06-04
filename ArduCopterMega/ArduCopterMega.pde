@@ -99,7 +99,14 @@ GPS         *g_gps;
 	// real sensors
 	AP_ADC_ADS7844          adc;
 	APM_BMP085_Class        barometer;
-	AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+	// MAG PROTOCOL
+  #if   MAG_PROTOCOL == MAG_PROTOCOL_5843
+    AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+  #elif MAG_PROTOCOL == MAG_PROTOCOL_5883L
+    AP_Compass_HMC5883L      compass(Parameters::k_param_compass);
+  #else
+    #error Unrecognised MAG_PROTOCOL setting.
+  #endif 
 
 	// real GPS selection
 	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
