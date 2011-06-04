@@ -9,6 +9,11 @@
 #define SONAR 0
 #define BARO 1
 
+//MAGNETOMETER
+// ----------------------
+#define MAG_PROTOCOL_5843		0
+#define MAG_PROTOCOL_5883L		1
+
 // Frame types
 #define QUAD_FRAME 0
 #define TRI_FRAME 1
