@@ -189,6 +189,9 @@
 #ifndef MAG_ORIENTATION
 # define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
+#ifndef MAG_PROTOCOL
+# define MAG_PROTOCOL  MAG_PROTOCOL_5843  // Default Setting
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
