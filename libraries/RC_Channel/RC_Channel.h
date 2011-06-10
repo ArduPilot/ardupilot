@@ -28,7 +28,7 @@ class RC_Channel{
         radio_max (&_group, 2, 1500, name ? PSTR("MAX") : 0),
 		_high(1),
 		_filter(true),
-		_reverse(1),
+		_reverse  (&_group, 3,    1, name ? PSTR("REV") : 0),
 		dead_zone(0),
 		scale_output(1.0)
 	{}
@@ -96,7 +96,7 @@ class RC_Channel{
 
   private:
 	bool		_filter;
-	int8_t 		_reverse;
+	AP_Int8 	_reverse;
 
 	uint8_t 	_type;
 	int16_t 	_high;
