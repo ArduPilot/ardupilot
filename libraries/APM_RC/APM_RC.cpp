@@ -214,6 +214,14 @@ bool APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
 	radio_status = 1;
 }
 
+void APM_RC_Class::clearOverride(void)
+{
+	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
+		_HIL_override[i] = 0;
+	}
+}
+
+
 // make one instance for the user to use
 APM_RC_Class APM_RC;
 
