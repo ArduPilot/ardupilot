@@ -20,6 +20,7 @@ class APM_RC_Class
 	void Force_Out2_Out3(void);
 	void Force_Out6_Out7(void);
 	bool setHIL(int16_t v[NUM_CHANNELS]);
+	void clearOverride(void);
 
   private:
 	int16_t _HIL_override[NUM_CHANNELS];
