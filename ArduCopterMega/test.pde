@@ -699,6 +699,22 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 
 		#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
 			Serial.printf_P(PSTR("Y6: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+			
+		#elif CHANNEL_6_TUNING == CH6_YAW_KP
+			// yaw heading
+			Serial.printf_P(PSTR("yaw kP: %1.3f\n"), ((float)g.rc_6.control_in / 200.0));  // range from 0 ~ 5.0
+			
+		#elif CHANNEL_6_TUNING == CH6_YAW_KD
+			// yaw heading
+			Serial.printf_P(PSTR("yaw kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+		
+		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
+			// yaw rate
+			Serial.printf_P(PSTR("yaw rate kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+			
+		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KD
+			// yaw rate
+			Serial.printf_P(PSTR("yaw rate kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
 		#endif
 		if(Serial.available() > 0){
 			return (0);

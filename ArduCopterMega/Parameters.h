@@ -97,6 +97,24 @@ public:
         k_param_flight_modes,
         k_param_esc_calibrate,
 
+		//
+		// 200: Heli
+		//
+		k_param_heli_servo_1 = 200,
+		k_param_heli_servo_2,
+		k_param_heli_servo_3,
+		k_param_heli_servo_4,
+		k_param_heli_servo1_pos ,
+		k_param_heli_servo2_pos,
+		k_param_heli_servo3_pos,
+		k_param_heli_roll_max,
+		k_param_heli_pitch_max,
+		k_param_heli_collective_min,
+		k_param_heli_collective_max,
+		k_param_heli_collective_mid,
+		k_param_heli_ext_gyro_enabled,
+		k_param_heli_ext_gyro_gain,  // 213
+
         //
         // 220: Waypoint data
         //
@@ -183,6 +201,14 @@ public:
 	AP_Int8		esc_calibrate;
 	AP_Int8		frame_orientation;
 
+	// Heli
+	RC_Channel	heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;  // servos for swash plate and tail
+	AP_Int16	heli_servo1_pos, heli_servo2_pos, heli_servo3_pos;       // servo positions (3 because we don't need pos for tail servo)
+	AP_Int16	heli_roll_max, heli_pitch_max;   // maximum allowed roll and pitch of swashplate
+	AP_Int16	heli_coll_min, heli_coll_max, heli_coll_mid;    // min and max collective.  mid = main blades at zero pitch
+	AP_Int8		heli_ext_gyro_enabled;   // 0 = no external tail gyro, 1 = external tail gyro
+	AP_Int16	heli_ext_gyro_gain;      // radio output 1000~2000 (value output on CH_7)
+	
     // RC channels
 	RC_Channel	rc_1;
 	RC_Channel	rc_2;
@@ -249,6 +275,21 @@ public:
 
         frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 
+		heli_servo_1			(k_param_heli_servo_1,		PSTR("HS1_")),
+		heli_servo_2			(k_param_heli_servo_2,		PSTR("HS2_")),
+		heli_servo_3			(k_param_heli_servo_3,		PSTR("HS3_")),
+		heli_servo_4			(k_param_heli_servo_4,		PSTR("HS4_")),
+		heli_servo1_pos			(-60,						k_param_heli_servo1_pos,				PSTR("SV1_POS_")),
+		heli_servo2_pos			(60,						k_param_heli_servo2_pos,				PSTR("SV2_POS_")),
+		heli_servo3_pos			(180,						k_param_heli_servo3_pos,				PSTR("SV3_POS_")),		
+		heli_roll_max			(4500,						k_param_heli_roll_max,					PSTR("ROL_MAX_")),
+		heli_pitch_max			(4500,						k_param_heli_pitch_max,					PSTR("PIT_MAX_")),
+		heli_coll_min			(1000,						k_param_heli_collective_min,			PSTR("COL_MIN_")),
+		heli_coll_max			(2000,						k_param_heli_collective_max,			PSTR("COL_MAX_")),
+		heli_coll_mid			(1500,						k_param_heli_collective_mid,			PSTR("COL_MID_")),
+		heli_ext_gyro_enabled	(0,							k_param_heli_ext_gyro_enabled,			PSTR("GYR_ENABLE_")),
+		heli_ext_gyro_gain		(1000,						k_param_heli_ext_gyro_gain,				PSTR("GYR_GAIN_")),
+		
         // RC channel           group key                   name
         //----------------------------------------------------------------------
         rc_1					(k_param_rc_1,		PSTR("RC1_")),
