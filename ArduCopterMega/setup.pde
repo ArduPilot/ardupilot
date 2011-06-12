@@ -15,6 +15,10 @@ static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
+#if FRAME_CONFIG == HELI_FRAME
+static int8_t	setup_heli				(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_gyro				(uint8_t argc, const Menu::arg *argv);
+#endif
 
 // Command/function table for the setup menu
 const struct Menu::command setup_menu_commands[] PROGMEM = {
@@ -33,6 +37,10 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"compass",			setup_compass},
 	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
+#if FRAME_CONFIG == HELI_FRAME	
+	{"heli",			setup_heli},
+	{"gyro",			setup_gyro},
+#endif
 	{"show",			setup_show}
 };
 
@@ -81,6 +89,10 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_flight_modes();
 	report_imu();
 	report_compass();
+#if FRAME_CONFIG == HELI_FRAME
+	report_heli();
+	report_gyro();
+#endif
 
 	AP_Var_menu_show(argc, argv);
 	return(0);
@@ -408,6 +420,232 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 
+#if FRAME_CONFIG == HELI_FRAME
+
+// Perform heli setup.
+// Called by the setup menu 'radio' command.
+static int8_t
+setup_heli(uint8_t argc, const Menu::arg *argv)
+{
+
+	uint8_t active_servo = 0;
+	int value = 0;
+	int temp;
+	int state = 0;   // 0 = set rev+pos, 1 = capture min/max
+	int max_roll, max_pitch, min_coll, max_coll, min_tail, max_tail;
+
+	// initialise swash plate
+	heli_init_swash();
+	
+	// source swash plate movements directly from 
+	heli_manual_override = true;
+	
+	// display initial settings
+	report_heli();
+	
+	// display help
+	Serial.printf_P(PSTR("Instructions:"));
+	print_divider();
+	Serial.printf_P(PSTR("\td\t\tdisplay settings\n"));
+	Serial.printf_P(PSTR("\t1~4\t\tselect servo\n"));
+	Serial.printf_P(PSTR("\ta or z\t\tmove mid up/down\n"));
+	Serial.printf_P(PSTR("\tc\t\tset coll when blade pitch zero\n"));
+	Serial.printf_P(PSTR("\tm\t\tset roll, pitch, coll min/max\n"));
+	Serial.printf_P(PSTR("\tp<angle>\tset pos (i.e. p0 = front, p90 = right)\n"));
+	Serial.printf_P(PSTR("\tr\t\treverse servo\n"));
+	Serial.printf_P(PSTR("\tt<angle>\tset trim (-500 ~ 500)\n"));
+	Serial.printf_P(PSTR("\tx\t\texit & save\n"));
+	
+	// start capturing
+	while( value != 'x' ) {
+	
+	    // read radio although we don't use it yet
+	    read_radio();
+		
+		// record min/max 
+		if( state == 1 ) {
+		    if( abs(g.rc_1.control_in) > max_roll )
+			    max_roll = abs(g.rc_1.control_in);
+			if( abs(g.rc_2.control_in) > max_pitch )
+			    max_pitch = abs(g.rc_2.control_in);
+			if( g.rc_3.radio_in < min_coll )
+			    min_coll = g.rc_3.radio_in;
+			if( g.rc_3.radio_in > max_coll )
+			    max_coll = g.rc_3.radio_in;
+			min_tail = min(g.rc_4.radio_in, min_tail);
+			max_tail = max(g.rc_4.radio_in, max_tail);
+			//Serial.printf_P(PSTR("4: ri:%d \tro:%d \tso:%d \n"), (int)g.rc_4.radio_in, (int)g.rc_4.radio_out, (int)g.rc_4.servo_out);
+		}
+	
+	    if( Serial.available() ) {
+		    value = Serial.read();
+			
+			// process the user's input
+			switch( value ) {
+				case '1':
+					active_servo = CH_1;
+					break;
+				case '2':
+					active_servo = CH_2;
+					break;
+				case '3':
+					active_servo = CH_3;
+					break;
+				case '4':
+					active_servo = CH_4;
+					break;
+				case 'a':					
+				case 'A':
+					heli_get_servo(active_servo)->radio_trim += 10;
+					break;
+				case 'c':
+				case 'C':
+				    if( g.rc_3.radio_in >= 900 && g.rc_3.radio_in <= 2100 ) {
+						g.heli_coll_mid = g.rc_3.radio_in;
+						Serial.printf_P(PSTR("Collective when blade pitch at zero: %d\n"),(int)g.heli_coll_mid);
+					}
+					break;
+				case 'd':
+				case 'D':
+					// display settings
+					report_heli();
+					break;
+				case 'm':
+				case 'M':
+				    if( state == 0 ) {
+					    state = 1;  // switch to capture min/max mode
+						Serial.printf_P(PSTR("Move coll, roll, pitch and tail to extremes, press 'm' when done\n"),active_servo+1, temp);
+						
+						// reset servo ranges
+						g.heli_roll_max = g.heli_pitch_max = 4500;
+						g.heli_coll_min = 1000;
+						g.heli_coll_max = 2000;
+						g.heli_servo_4.radio_min = 1000;
+						g.heli_servo_4.radio_max = 2000;
+						
+						// set sensible values in temp variables
+						max_roll = abs(g.rc_1.control_in);
+						max_pitch = abs(g.rc_2.control_in);
+						min_coll = 2000;
+						max_coll = 1000;
+						min_tail = max_tail = abs(g.rc_4.radio_in);
+					}else{
+					    state = 0;  // switch back to normal mode
+						// double check values aren't totally terrible
+						if( max_roll <= 1000 || max_pitch <= 1000 || (max_coll - min_coll < 200) || (max_tail - min_tail < 200) || min_tail < 1000 || max_tail > 2000 )
+						    Serial.printf_P(PSTR("Invalid min/max captured roll:%d,  pitch:%d,  collective min: %d max: %d,  tail min:%d max:%d\n"),max_roll,max_pitch,min_coll,max_coll,min_tail,max_tail);
+						else{
+						    g.heli_roll_max = max_roll;
+							g.heli_pitch_max = max_pitch;
+							g.heli_coll_min = min_coll;
+							g.heli_coll_max = max_coll;
+							g.heli_servo_4.radio_min = min_tail;
+							g.heli_servo_4.radio_max = max_tail;
+							
+							// reinitialise swash
+							heli_init_swash();
+							
+							// display settings
+							report_heli();
+						}
+					}
+					break;
+				case 'p':
+				case 'P':
+					temp = read_num_from_serial();
+					if( temp >= -360 && temp <= 360 ) {
+						if( active_servo == CH_1 )
+							g.heli_servo1_pos = temp;
+						if( active_servo == CH_2 )
+							g.heli_servo2_pos = temp;
+						if( active_servo == CH_3 )
+							g.heli_servo3_pos = temp;
+						heli_init_swash();
+						Serial.printf_P(PSTR("Servo %d\t\tpos:%d\n"),active_servo+1, temp); 
+					}
+					break;
+				case 'r':
+				case 'R':
+				    heli_get_servo(active_servo)->set_reverse(!heli_get_servo(active_servo)->get_reverse());
+					break;
+				case 't':
+				case 'T':
+					temp = read_num_from_serial();
+					if( temp > 1000 )
+					    temp -= 1500;
+					if( temp > -500 && temp < 500 ) {
+					    heli_get_servo(active_servo)->radio_trim = 1500 + temp;
+						heli_init_swash();
+						Serial.printf_P(PSTR("Servo %d\t\ttrim:%d\n"),active_servo+1, 1500 + temp); 
+					}
+					break;
+				case 'z':			
+				case 'Z':
+					heli_get_servo(active_servo)->radio_trim -= 10;
+					break;
+			}
+		}
+		
+		// allow swash plate to move
+		output_motors_armed();
+		
+		delay(20);
+	}
+
+	// display final settings
+	report_heli();
+	
+	// save to eeprom
+	g.heli_servo_1.save_eeprom();
+	g.heli_servo_2.save_eeprom();
+	g.heli_servo_3.save_eeprom();
+	g.heli_servo_4.save_eeprom();
+	g.heli_servo1_pos.save();
+	g.heli_servo2_pos.save();
+	g.heli_servo3_pos.save();
+	g.heli_roll_max.save();
+	g.heli_pitch_max.save();
+	g.heli_coll_min.save();
+	g.heli_coll_max.save();
+	g.heli_coll_mid.save();
+	
+	// return swash plate movements to attitude controller
+	heli_manual_override = false;
+
+	return(0);
+}
+
+// setup for external tail gyro (for heli only)
+static int8_t
+setup_gyro(uint8_t argc, const Menu::arg *argv)
+{
+	if (!strcmp_P(argv[1].str, PSTR("on"))) {
+		g.heli_ext_gyro_enabled.set_and_save(true);
+
+		// optionally capture the gain
+		if( argc >= 2 && argv[2].i >= 1000 && argv[2].i <= 2000 ) {
+		    g.heli_ext_gyro_gain = argv[2].i;
+			g.heli_ext_gyro_gain.save();
+		}
+		
+	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		g.heli_ext_gyro_enabled.set_and_save(false);
+
+    // capture gain if user simply provides a number
+	} else if( argv[1].i >= 1000 && argv[1].i <= 2000 ) {
+	    g.heli_ext_gyro_enabled.set_and_save(true);
+		g.heli_ext_gyro_gain = argv[1].i;
+		g.heli_ext_gyro_gain.save();
+
+	}else{
+		Serial.printf_P(PSTR("\nOptions:[on, off] gain\n"));
+	}
+
+	report_gyro();
+	return 0;
+}
+
+#endif // FRAME_CONFIG == HELI
 void clear_offsets()
 {
 	Vector3f _offsets;
@@ -583,12 +821,16 @@ void report_frame()
 	Serial.printf_P(PSTR("Y6 frame\n"));
 #elif FRAME_CONFIG == OCTA_FRAME
 	Serial.printf_P(PSTR("Octa frame\n"));
+#elif FRAME_CONFIG == HELI_FRAME
+	Serial.printf_P(PSTR("Heli frame\n"));
 #endif
 
+#if FRAME_CONFIG != HELI_FRAME
 	if(g.frame_orientation == X_FRAME)
 		Serial.printf_P(PSTR("X mode\n"));
 	else if(g.frame_orientation == PLUS_FRAME)
 		Serial.printf_P(PSTR("+ mode\n"));
+#endif
 
 	print_blanks(2);
 }
@@ -712,6 +954,41 @@ void report_flight_modes()
 	print_blanks(2);
 }
 
+#if FRAME_CONFIG == HELI_FRAME
+void report_heli()
+{
+	Serial.printf_P(PSTR("Heli\n"));
+	print_divider();
+	
+	// main servo settings
+	Serial.printf_P(PSTR("Servo \tpos \tmin \tmax \trev\n"));
+	Serial.printf_P(PSTR("1:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo1_pos, (int)g.heli_servo_1.radio_min, (int)g.heli_servo_1.radio_max, (int)g.heli_servo_1.get_reverse());
+	Serial.printf_P(PSTR("2:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo2_pos, (int)g.heli_servo_2.radio_min, (int)g.heli_servo_2.radio_max, (int)g.heli_servo_2.get_reverse());
+	Serial.printf_P(PSTR("3:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo3_pos, (int)g.heli_servo_3.radio_min, (int)g.heli_servo_3.radio_max, (int)g.heli_servo_3.get_reverse());
+	Serial.printf_P(PSTR("tail:\t\t%d \t%d \t%d\n"), (int)g.heli_servo_4.radio_min, (int)g.heli_servo_4.radio_max, (int)g.heli_servo_4.get_reverse());
+		
+	Serial.printf_P(PSTR("roll max: \t%d\n"), (int)g.heli_roll_max);
+	Serial.printf_P(PSTR("pitch max: \t%d\n"), (int)g.heli_pitch_max);
+	Serial.printf_P(PSTR("coll min:\t%d\t mid:%d\t max:%d\n"),(int)g.heli_coll_min, (int)g.heli_coll_mid, (int)g.heli_coll_max);
+		
+	print_blanks(2);
+}
+
+void report_gyro()
+{
+
+	Serial.printf_P(PSTR("External Gyro:\n"));
+	print_divider();
+
+	print_enabled( g.heli_ext_gyro_enabled );
+	if( g.heli_ext_gyro_enabled )
+	    Serial.printf_P(PSTR("gain: %d"),(int)g.heli_ext_gyro_gain);
+		
+	print_blanks(2);
+}
+
+#endif // FRAME_CONFIG == HELI_FRAME
+
 /***************************************************************************/
 // CLI utilities
 /***************************************************************************/
@@ -834,3 +1111,35 @@ print_gyro_offsets(void)
 						(float)imu.gz());
 }
 
+RC_Channel *
+heli_get_servo(int servo_num){
+	if( servo_num == CH_1 )
+	    return &g.heli_servo_1;
+	if( servo_num == CH_2 )
+	    return &g.heli_servo_2;
+	if( servo_num == CH_3 )
+	    return &g.heli_servo_3;
+	if( servo_num == CH_4 )
+	    return &g.heli_servo_4;
+	return NULL;
+}
+
+// Used to read integer values from the serial port
+int read_num_from_serial() {
+	byte index = 0;
+	byte timeout = 0;
+	char data[5] = "";
+
+	do {
+		if (Serial.available() == 0) {
+			delay(10);
+			timeout++;
+		}else{
+			data[index] = Serial.read();
+			timeout = 0;
+			index++;
+		}
+	}while (timeout < 5 && index < 5);
+	
+	return atoi(data);
+}

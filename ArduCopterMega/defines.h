@@ -20,6 +20,7 @@
 #define HEXA_FRAME 2
 #define Y6_FRAME 3
 #define OCTA_FRAME 4
+#define HELI_FRAME 5
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
@@ -120,6 +121,10 @@
 #define CH6_SONAR_KD 6
 #define CH6_Y6_SCALING 7
 #define CH6_PMAX 8
+#define	CH6_YAW_KP 9
+#define	CH6_YAW_KD 10
+#define	CH6_YAW_RATE_KP 11
+#define	CH6_YAW_RATE_KD 12
 
 // nav byte mask
 // -------------
@@ -313,10 +318,6 @@
 #define BATTERY_PIN4 3
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 
-
-
-// sonar
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // Hardware Parameters
 #define SLIDE_SWITCH_PIN 40

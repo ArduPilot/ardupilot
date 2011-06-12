@@ -29,6 +29,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
+#include <SPI.h>
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
@@ -227,6 +228,12 @@ const char* flight_mode_strings[] = {
 // -----
 int motor_out[8];
 Vector3f omega;
+
+// Heli
+// ----
+float heli_rollFactor[3], heli_pitchFactor[3];  // only required for 3 swashplate servos
+int heli_servo_min[3], heli_servo_max[3];       // same here.  for yaw servo we use heli_servo4_min/max parameter directly
+int heli_servo_out[4];
 
 // Failsafe
 // --------
@@ -1330,6 +1337,22 @@ void tuning(){
 
 	#elif CHANNEL_6_TUNING == CH6_PMAX
 		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
+		
+	#elif CHANNEL_6_TUNING == CH6_YAW_KP
+	    // yaw heading
+		g.pid_yaw.kP((float)g.rc_6.control_in / 200.0);  // range from 0.0 ~ 5.0
+		
+	#elif CHANNEL_6_TUNING == CH6_YAW_KD
+	    // yaw heading
+		g.pid_yaw.kD((float)g.rc_6.control_in / 1000.0);
+	
+	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
+	    // yaw rate
+		g.pid_acro_rate_yaw.kP((float)g.rc_6.control_in / 1000.0);
+		
+	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KD
+	    // yaw rate
+		g.pid_acro_rate_yaw.kD((float)g.rc_6.control_in / 1000.0);
 
 	#endif
 }

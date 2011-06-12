@@ -86,10 +86,14 @@ void init_rc_out()
 
 void output_min()
 {
-	APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
-	APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
+    #if FRAME_CONFIG ==	HELI_FRAME
+        heli_move_servos_to_mid();
+	#else
+	    APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
+	    APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
+	    APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
+	    APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
+	#endif
 
 	APM_RC.OutputCh(CH_7,   g.rc_3.radio_min);
     APM_RC.OutputCh(CH_8,   g.rc_3.radio_min);
@@ -111,9 +115,10 @@ void read_radio()
 	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
 	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
 
-
+#if FRAME_CONFIG != HELI_FRAME
 	// limit our input to 800 so we can still pitch and roll
 	g.rc_3.control_in = min(g.rc_3.control_in, 800);
+#endif
 
 	//throttle_failsafe(g.rc_3.radio_in);
 

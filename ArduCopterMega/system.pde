@@ -134,6 +134,10 @@ void init_ardupilot()
 		APM_RC.setHIL(rc_override);
 	}
 	#endif
+	
+    #if FRAME_CONFIG ==	HELI_FRAME 
+    heli_init_swash();  // heli initialisation
+	#endif	
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
