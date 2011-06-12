@@ -142,6 +142,13 @@ int FastSerial::available(void)
 	return ((_rxBuffer->head - _rxBuffer->tail) & _rxBuffer->mask);
 }
 
+int FastSerial::space(void)
+{
+	if (!_open)
+		return (-1);
+	return (((_rxBuffer->tail - _rxBuffer->head) & _rxBuffer->mask) - 1);
+}
+
 int FastSerial::read(void)
 {
 	uint8_t c;
