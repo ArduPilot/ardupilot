@@ -30,7 +30,10 @@ public:
 					0, 0, 1),
 		_course_over_ground_x(0),
 		_course_over_ground_y(1),
-		_health(1.)
+		_health(1.),
+		_kp_roll_pitch(0.05967),
+		_ki_roll_pitch(0.00001278),
+		_kp_yaw(0.8)
 	{}
 
 	// Accessors
@@ -60,7 +63,24 @@ public:
 	uint8_t 	renorm_sqrt_count;
 	uint8_t 	renorm_blowup_count;
 
+	float	kp_roll_pitch() 		{ return _kp_roll_pitch; }
+	void	kp_roll_pitch(float v) 	{ _kp_roll_pitch = v; }
+
+	float	ki_roll_pitch() 		{ return _ki_roll_pitch; }
+	void	ki_roll_pitch(float v) 	{ _ki_roll_pitch = v; }
+
+	float	kp_yaw() 				{ return _kp_yaw; }
+	void	kp_yaw(float v) 		{ _kp_yaw = v; }
+
+	static const float kDCM_kp_rp_high 		= 0.15;
+	static const float kDCM_kp_rp_medium	= 0.05967;
+	static const float kDCM_kp_rp_low		= 0.01;
+
+
 private:
+	float		_kp_roll_pitch;
+	float		_ki_roll_pitch;
+	float		_kp_yaw;
 	// Methods
 	void 		read_adc_raw(void);
 	void 		accel_adjust(void);
