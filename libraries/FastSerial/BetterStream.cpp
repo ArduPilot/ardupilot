@@ -12,6 +12,7 @@
 // Enhancements to the Arduino Stream class.
 //
 
+#include <limits.h>
 #include "BetterStream.h"
 
 // Stream extensions////////////////////////////////////////////////////////////
@@ -52,3 +53,9 @@ BetterStream::_printf_P(const prog_char *fmt, ...)
         va_end(ap);
 }
 
+int
+BetterStream::space(void)
+{
+        // by default claim that there is always space
+        return(INT_MAX);
+}
