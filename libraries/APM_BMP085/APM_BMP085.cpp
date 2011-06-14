@@ -199,8 +199,11 @@ void APM_BMP085_Class::ReadTemp()
 	tmp2 = Wire.receive();
 	while(!Wire.available());	// wait
 	tmp = Wire.receive();
-	RawTemp = tmp2 << 8 | tmp;
-	//RawTemp = RawTemp >> 1;
+	tmp2 = tmp2 << 8 | tmp;
+	if(RawTemp = 0)
+		RawTemp = tmp2;
+	RawTemp += tmp2;
+	RawTemp = RawTemp >> 1;
 }
 
 // Calculate Temperature and Pressure in real units.
