@@ -109,7 +109,7 @@ uint8_t APM_BMP085_Class::Read()
 			Command_ReadPress();
 		}
 	}else{
-		if (BMP085_State == 40){
+		if (BMP085_State == 5){
 			if (digitalRead(BMP085_EOC)){
 				ReadPress();
 				Calculate();
