@@ -14,7 +14,7 @@ void output_motors_armed()
 	g.rc_1.calc_pwm();
 	g.rc_2.calc_pwm();
 	g.rc_3.calc_pwm();
-	g.rc_4.calc_pwm();
+
 
 	int roll_out 		= (float)g.rc_1.pwm_out * .866;
 	int pitch_out 		= g.rc_2.pwm_out / 2;
@@ -57,9 +57,6 @@ void output_motors_armed()
 		APM_RC.Force_Out0_Out1();
 		APM_RC.Force_Out2_Out3();
 	#endif
-
-
-
 }
 
 void output_motors_disarmed()
