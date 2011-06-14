@@ -227,7 +227,7 @@ AP_DCM::drift_correction(void)
 
 	// Dynamic weighting of accelerometer info (reliability filter)
 	// Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-	accel_weight = constrain(1 - 2 * fabs(1 - accel_magnitude), 0, 1);	//
+	accel_weight = constrain(1 - 3 * fabs(1 - accel_magnitude), 0, 1);	// upped to (<0.66G = 0.0, 1G = 1.0 , >1.33G = 0.0)
 
 	//	We monitor the amount that the accelerometer based drift correction is deweighted for performance reporting
 	_health = constrain(_health+(0.02 * (accel_weight - .5)), 0, 1);
