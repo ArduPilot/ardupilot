@@ -512,11 +512,11 @@ public:
     /// @param  flags           Optional flags that may affect the behaviour of the variable.
     ///
     AP_VarT<T> (AP_Var_group *with_group,  // XXX maybe make this a ref?
-                Key index,
+                Key vindex,
                 T initial_value,
                 const prog_char_t *name = NULL,
                 Flags flags = k_flags_none) :
-        AP_Var(with_group, index, name, flags),
+        AP_Var(with_group, vindex, name, flags),
         _value(initial_value)
     {
         _bytes_in_use += sizeof(*this);
