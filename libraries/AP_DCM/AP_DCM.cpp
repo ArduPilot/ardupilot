@@ -124,8 +124,6 @@ void
 AP_DCM::accel_adjust(void)
 {
 	Vector3f veloc, temp;
-	float vel;
-
 	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
 
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
@@ -187,21 +185,21 @@ AP_DCM::normalize(void)
 Vector3f
 AP_DCM::renorm(Vector3f const &a, int &problem)
 {
-	float	renorm;
+	float	renorm_val;
 
-	renorm = a * a;
-
-	if (renorm < 1.5625f && renorm > 0.64f) {			// Check if we are OK to use Taylor expansion
-		renorm = 0.5 * (3 - renorm);					// eq.21
-	} else if (renorm < 100.0f && renorm > 0.01f) {
-		renorm = 1.0 / sqrt(renorm);
+	renorm_val = a * a;
+	
+	if (renorm_val < 1.5625f && renorm_val > 0.64f) {			// Check if we are OK to use Taylor expansion
+		renorm_val = 0.5 * (3 - renorm_val);					// eq.21
+	} else if (renorm_val < 100.0f && renorm_val > 0.01f) {
+		renorm_val = 1.0 / sqrt(renorm_val);
 		renorm_sqrt_count++;
 	} else {
 		problem = 1;
 		renorm_blowup_count++;
 	}
 
-	return(a * renorm);
+	return(a * renorm_val);
 }
 
 /**************************************************/
