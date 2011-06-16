@@ -17,7 +17,14 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 9;
+    static const uint16_t k_format_version = 101;
+
+	// The parameter software_type is set up solely for ground station use
+	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
+	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
+	// values within that range to identify different branches.
+	//
+    static const uint16_t k_software_type = 10;		// 0 for APM trunk
 
     //
     // Parameter identities.
@@ -43,6 +50,7 @@ public:
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
+		k_param_software_type,
 
 
         // Misc
@@ -53,13 +61,13 @@ public:
 		//
 		k_param_streamrates_port0 = 110,
 		k_param_streamrates_port3,
+		k_param_sysid_this_mav,
+		k_param_sysid_my_gcs,
 
         //
         // 140: Sensor parameters
         //
         k_param_IMU_calibration = 140,
-        k_param_ground_temperature,
-        k_param_ground_pressure,
 		k_param_battery_monitoring,
 		k_param_pack_capacity,
 		k_param_compass_enabled,
@@ -97,6 +105,7 @@ public:
         k_param_flight_modes,
         k_param_esc_calibrate,
 
+ 	   #if FRAME_CONFIG ==	HELI_FRAME
 		//
 		// 200: Heli
 		//
@@ -114,6 +123,7 @@ public:
 		k_param_heli_collective_mid,
 		k_param_heli_ext_gyro_enabled,
 		k_param_heli_ext_gyro_gain,  // 213
+		#endif
 
         //
         // 220: Waypoint data
@@ -149,6 +159,12 @@ public:
     };
 
     AP_Int16    format_version;
+	AP_Int8		software_type;
+
+	// Telemetry control
+	//
+	AP_Int16		sysid_this_mav;
+	AP_Int16		sysid_my_gcs;
 
 
     // Crosstrack navigation
@@ -190,8 +206,6 @@ public:
     // Misc
     //
     AP_Int16    log_bitmask;
-    AP_Int16    ground_temperature;
-    AP_Int16    ground_pressure;
     AP_Int16    RTL_altitude;
 
     AP_Int8		sonar_enabled;
@@ -201,6 +215,7 @@ public:
 	AP_Int8		esc_calibrate;
 	AP_Int8		frame_orientation;
 
+    #if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
 	RC_Channel	heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;  // servos for swash plate and tail
 	AP_Int16	heli_servo1_pos, heli_servo2_pos, heli_servo3_pos;       // servo positions (3 because we don't need pos for tail servo)
@@ -208,7 +223,8 @@ public:
 	AP_Int16	heli_coll_min, heli_coll_max, heli_coll_mid;    // min and max collective.  mid = main blades at zero pitch
 	AP_Int8		heli_ext_gyro_enabled;   // 0 = no external tail gyro, 1 = external tail gyro
 	AP_Int16	heli_ext_gyro_gain;      // radio output 1000~2000 (value output on CH_7)
-	
+	#endif
+
     // RC channels
 	RC_Channel	rc_1;
 	RC_Channel	rc_2;
@@ -236,10 +252,15 @@ public:
 
     uint8_t     junk;
 
+    // Note: keep initializers here in the same order as they are declared above.
     Parameters() :
         // variable             default                     key										name
         //-------------------------------------------------------------------------------------------------------------------
-        format_version          (k_format_version,          k_param_format_version,        			NULL),
+        format_version          (k_format_version,          k_param_format_version,         		PSTR("SYSID_SW_MREV")),
+        software_type			(k_software_type,			k_param_software_type,         			PSTR("SYSID_SW_TYPE")),
+
+        sysid_this_mav			(MAV_SYSTEM_ID,				k_param_sysid_this_mav,					PSTR("SYSID_THISMAV")),
+        sysid_my_gcs			(255,		                k_param_sysid_my_gcs,					PSTR("SYSID_MYGCS")),
 
         crosstrack_gain         (XTRACK_GAIN * 100,			k_param_crosstrack_gain,        		PSTR("XTRK_GAIN")),
         crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRACK_ANGLE")),
@@ -268,20 +289,19 @@ public:
         pitch_max         		(PITCH_MAX * 100,			k_param_pitch_max,		       			PSTR("PITCH_MAX")),
 
         log_bitmask             (MASK_LOG_SET_DEFAULTS,		k_param_log_bitmask,            		PSTR("LOG_BITMASK")),
-        ground_temperature      (0,                         k_param_ground_temperature,    			PSTR("GND_TEMP")),
-        ground_pressure         (0,                         k_param_ground_pressure,       			PSTR("GND_ABS_PRESS")),
         RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
         esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
 
         frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 
+	    #if FRAME_CONFIG ==	HELI_FRAME
 		heli_servo_1			(k_param_heli_servo_1,		PSTR("HS1_")),
 		heli_servo_2			(k_param_heli_servo_2,		PSTR("HS2_")),
 		heli_servo_3			(k_param_heli_servo_3,		PSTR("HS3_")),
 		heli_servo_4			(k_param_heli_servo_4,		PSTR("HS4_")),
 		heli_servo1_pos			(-60,						k_param_heli_servo1_pos,				PSTR("SV1_POS_")),
 		heli_servo2_pos			(60,						k_param_heli_servo2_pos,				PSTR("SV2_POS_")),
-		heli_servo3_pos			(180,						k_param_heli_servo3_pos,				PSTR("SV3_POS_")),		
+		heli_servo3_pos			(180,						k_param_heli_servo3_pos,				PSTR("SV3_POS_")),
 		heli_roll_max			(4500,						k_param_heli_roll_max,					PSTR("ROL_MAX_")),
 		heli_pitch_max			(4500,						k_param_heli_pitch_max,					PSTR("PIT_MAX_")),
 		heli_coll_min			(1000,						k_param_heli_collective_min,			PSTR("COL_MIN_")),
@@ -289,7 +309,8 @@ public:
 		heli_coll_mid			(1500,						k_param_heli_collective_mid,			PSTR("COL_MID_")),
 		heli_ext_gyro_enabled	(0,							k_param_heli_ext_gyro_enabled,			PSTR("GYR_ENABLE_")),
 		heli_ext_gyro_gain		(1000,						k_param_heli_ext_gyro_gain,				PSTR("GYR_GAIN_")),
-		
+		#endif
+
         // RC channel           group key                   name
         //----------------------------------------------------------------------
         rc_1					(k_param_rc_1,		PSTR("RC1_")),

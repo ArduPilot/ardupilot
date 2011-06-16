@@ -22,7 +22,7 @@ void init_rc_in()
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
 	g.rc_2.dead_zone = 60;
 	g.rc_3.dead_zone = 60;
-	g.rc_4.dead_zone = 300;
+	g.rc_4.dead_zone = 600;
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
@@ -106,29 +106,32 @@ void output_min()
 }
 void read_radio()
 {
-	g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
-	g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
-	g.rc_3.set_pwm(APM_RC.InputCh(CH_3));
-	g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
-	g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
-	g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
-	g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
-	g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
+	if (APM_RC.GetState() == 1){
 
-#if FRAME_CONFIG != HELI_FRAME
-	// limit our input to 800 so we can still pitch and roll
-	g.rc_3.control_in = min(g.rc_3.control_in, 800);
-#endif
+		g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
+		g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
+		g.rc_3.set_pwm(APM_RC.InputCh(CH_3));
+		g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
+		g.rc_5.set_pwm(APM_RC.InputCh(CH_5));
+		g.rc_6.set_pwm(APM_RC.InputCh(CH_6));
+		g.rc_7.set_pwm(APM_RC.InputCh(CH_7));
+		g.rc_8.set_pwm(APM_RC.InputCh(CH_8));
 
-	//throttle_failsafe(g.rc_3.radio_in);
+		#if FRAME_CONFIG != HELI_FRAME
+			// limit our input to 800 so we can still pitch and roll
+			g.rc_3.control_in = min(g.rc_3.control_in, 800);
+		#endif
 
-	/*
-	Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
-				g.rc_1.control_in,
-				g.rc_2.control_in,
-				g.rc_3.control_in,
-				g.rc_4.control_in);
-	*/
+		//throttle_failsafe(g.rc_3.radio_in);
+
+		/*
+		Serial.printf_P(PSTR("OUT 1: %d\t2: %d\t3: %d\t4: %d \n"),
+					g.rc_1.control_in,
+					g.rc_2.control_in,
+					g.rc_3.control_in,
+					g.rc_4.control_in);
+		*/
+	}
 }
 
 void throttle_failsafe(uint16_t pwm)

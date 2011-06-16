@@ -49,8 +49,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
 //
+
 #ifndef SONAR_PIN
 # define SONAR_PIN		AP_RANGEFINDER_PITOT_TUBE
+#endif
+
+#ifndef SONAR_TYPE
+# define SONAR_TYPE		MAX_SONAR_XL
 #endif
 
 
@@ -352,7 +357,7 @@
 # define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  YAW_I
-# define YAW_I					0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
+# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  YAW_D
 # define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
@@ -366,7 +371,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				24			// degrees
+# define PITCH_MAX				16			// degrees
 #endif
 
 
@@ -404,7 +409,7 @@
 	# define NAV_WP_P				4.0
 	#endif
 	#ifndef NAV_WP_I
-	# define NAV_WP_I				0.15			// leave 0
+	# define NAV_WP_I				0.15		//
 	#endif
 	#ifndef NAV_WP_D
 	# define NAV_WP_D				10			// not sure about at all
@@ -419,13 +424,13 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.2			// trying a lower val
+# define THROTTLE_BARO_P		0.35			// trying a lower val
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.02		//with 4m error, 12.5s windup
+# define THROTTLE_BARO_I		0.05		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.06		//
+# define THROTTLE_BARO_D		0.3		// upped with filter
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		30

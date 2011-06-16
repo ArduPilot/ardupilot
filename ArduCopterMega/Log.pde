@@ -3,9 +3,9 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-#define HEAD_BYTE1 0xA3    // Decimal 163
-#define HEAD_BYTE2 0x95    // Decimal 149
-#define END_BYTE 0xBA      // Decimal 186
+#define HEAD_BYTE1 	0xA3	// Decimal 163
+#define HEAD_BYTE2 	0x95	// Decimal 149
+#define END_BYTE	0xBA	// Decimal 186
 
 
 // These are function definitions so the Menu can be constructed before the functions
@@ -65,6 +65,7 @@ print_log_menu(void)
 		if (g.log_bitmask & MASK_LOG_RAW)			Serial.printf_P(PSTR(" RAW"));
 		if (g.log_bitmask & MASK_LOG_CMD)			Serial.printf_P(PSTR(" CMD"));
 		if (g.log_bitmask & MASK_LOG_CURRENT)		Serial.printf_P(PSTR(" CURRENT"));
+		if (g.log_bitmask & MASK_LOG_MOTORS)		Serial.printf_P(PSTR(" MOTORS"));
 	}
 
 	Serial.println();
@@ -101,11 +102,10 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 		Log_Read(1, 4096);
 	}
 
-	if (/*(argc != 2) || */(dump_log < 1) || (dump_log > last_log_num)) {
+	if (/*(argc != 2) || */ (dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
+		Log_Read(1, 4095);
 		return(-1);
-		//Log_Read(1, 4095);
-		return (0);
 	}
 
 	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
@@ -174,6 +174,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(RAW);
 		TARG(CMD);
 		TARG(CURRENT);
+		TARG(MOTORS);
 		#undef TARG
 	}
 
@@ -191,6 +192,7 @@ int8_t
 process_logs(uint8_t argc, const Menu::arg *argv)
 {
 	log_menu.run();
+	return 0;
 }
 
 
@@ -453,6 +455,30 @@ void Log_Read_Current()
 			DataFlash.ReadInt());
 }
 
+void Log_Write_Motors()
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_MOTORS_MSG);
+
+	DataFlash.WriteInt(motor_out[CH_1]);
+	DataFlash.WriteInt(motor_out[CH_2]);
+	DataFlash.WriteInt(motor_out[CH_3]);
+	DataFlash.WriteInt(motor_out[CH_4]);
+
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a Current packet
+void Log_Read_Motors()
+{
+	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d\n"),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt());
+}
+
 void Log_Write_Nav_Tuning()
 {
 	Matrix3f tempmat = dcm.get_dcm_matrix();
@@ -512,13 +538,13 @@ void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(omega.z * 100));
 
 	// Alt hold
-	DataFlash.WriteInt((int)(g.rc_3.servo_out));
-	DataFlash.WriteInt((int)sonar_alt);					//
-	DataFlash.WriteInt((int)baro_alt);					//
+	DataFlash.WriteInt(g.rc_3.servo_out);
+	DataFlash.WriteInt(sonar_alt);					//
+	DataFlash.WriteInt(baro_alt);					//
 
 	DataFlash.WriteInt((int)next_WP.alt);				//
 	DataFlash.WriteInt((int)altitude_error);			//
-	DataFlash.WriteInt((int)g.pid_sonar_throttle.get_integrator());
+	DataFlash.WriteInt((int)g.pid_baro_throttle.get_integrator());
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -559,6 +585,11 @@ void Log_Write_Performance()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
 
+	//DataFlash.WriteByte(	delta_ms_fast_loop);
+	//DataFlash.WriteByte(	loop_step);
+
+
+	//*
 	DataFlash.WriteLong(	millis()- perf_mon_timer);
 	DataFlash.WriteInt(		mainLoop_count);
 	DataFlash.WriteInt(		G_Dt_max);
@@ -568,6 +599,7 @@ void Log_Write_Performance()
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);
 	DataFlash.WriteByte(	gps_fix_count);
 	DataFlash.WriteInt(		(int)(dcm.get_health() * 1000));
+	//*/
 	//PM,	20005,	3742, 10,0,0,0,0,89,1000,
 
 	DataFlash.WriteByte(END_BYTE);
@@ -576,6 +608,7 @@ void Log_Write_Performance()
 // Read a performance packet
 void Log_Read_Performance()
 {
+	//*
 	long pm_time;
 	int logvar;
 
@@ -594,6 +627,13 @@ void Log_Read_Performance()
 		Serial.print(comma);
 	}
 	Serial.println(" ");
+	//*/
+
+	/*
+	Serial.printf_P(PSTR("PM, %d, %d\n"),
+			DataFlash.ReadByte(),
+			DataFlash.ReadByte());
+	//*/
 }
 
 // Write a command processing packet.
@@ -668,7 +708,7 @@ void Log_Write_Mode(byte mode)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_MODE_MSG);
 	DataFlash.WriteByte(mode);
-	DataFlash.WriteInt((int)g.throttle_cruise);
+	DataFlash.WriteInt(g.throttle_cruise);
 	DataFlash.WriteByte(END_BYTE);
 }
 
@@ -692,6 +732,22 @@ void Log_Read_Raw()
 	}
 	Serial.println(" ");
 }
+
+
+void Log_Write_Startup()
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_STARTUP_MSG);
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a mode packet
+void Log_Read_Startup()
+{
+	Serial.printf_P(PSTR("START UP\n"));
+}
+
 
 // Read the DataFlash log memory : Packet Parser
 void Log_Read(int start_page, int end_page)
@@ -722,64 +778,56 @@ void Log_Read(int start_page, int end_page)
 				break;
 
 			case 2:
-				if(data == LOG_ATTITUDE_MSG){
-					Log_Read_Attitude();
-					log_step++;
+				log_step = 0;
+				switch(data){
+					case LOG_ATTITUDE_MSG:
+						Log_Read_Attitude();
+						break;
 
-				}else if(data == LOG_MODE_MSG){
-					Log_Read_Mode();
-					log_step++;
+					case LOG_MODE_MSG:
+						Log_Read_Mode();
+						break;
 
-				}else if(data == LOG_CONTROL_TUNING_MSG){
-					Log_Read_Control_Tuning();
-					log_step++;
+					case LOG_CONTROL_TUNING_MSG:
+						Log_Read_Control_Tuning();
+						break;
 
-				}else if(data == LOG_NAV_TUNING_MSG){
-					Log_Read_Nav_Tuning();
-					log_step++;
+					case LOG_NAV_TUNING_MSG:
+						Log_Read_Nav_Tuning();
+						break;
 
-				}else if(data == LOG_PERFORMANCE_MSG){
-					Log_Read_Performance();
-					log_step++;
+					case LOG_PERFORMANCE_MSG:
+						Log_Read_Performance();
+						break;
 
-				}else if(data == LOG_RAW_MSG){
-					Log_Read_Raw();
-					log_step++;
+					case LOG_RAW_MSG:
+						Log_Read_Raw();
+						break;
 
-				}else if(data == LOG_CMD_MSG){
-					Log_Read_Cmd();
-					log_step++;
+					case LOG_CMD_MSG:
+						Log_Read_Cmd();
+						break;
 
-				}else if(data == LOG_CURRENT_MSG){
-					Log_Read_Current();
-					log_step++;
+					case LOG_CURRENT_MSG:
+						Log_Read_Current();
+						break;
 
-				}else if(data == LOG_STARTUP_MSG){
-					//Log_Read_Startup();
-					log_step++;
-				}else {
-					if(data == LOG_GPS_MSG){
+					case LOG_STARTUP_MSG:
+						Log_Read_Startup();
+						break;
+
+					case LOG_MOTORS_MSG:
+						Log_Read_Motors();
+						break;
+
+					case LOG_GPS_MSG:
 						Log_Read_GPS();
-						log_step++;
-					}else{
-						Serial.printf_P(PSTR("Error Reading Packet: %d\n"),packet_count);
-						log_step = 0;	 // Restart, we have a problem...
-					}
+						break;
 				}
-				break;
-			case 3:
-				if(data == END_BYTE){
-					 packet_count++;
-				}else{
-					Serial.printf_P(PSTR("Error EB: %d\n"),data);
-				}
-				log_step = 0;			// Restart sequence: new packet...
 				break;
 		}
-
 		page = DataFlash.GetPage();
 	}
-	//Serial.printf_P(PSTR("# of packets read: %d\n"), packet_count);
 }
 
 

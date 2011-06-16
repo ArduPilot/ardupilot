@@ -1,17 +1,27 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY 10
-#define DISARM_DELAY 10
+#define ARM_DELAY 10	// one secon
+#define DISARM_DELAY 10	// one secon
+#define LEVEL_DELAY 120 // twelve seconds
+#define AUTO_LEVEL_DELAY 250 // twentyfive seconds
 
+
+// called at 10hz
 void arm_motors()
 {
-	static byte arming_counter;
+	static int arming_counter;
 
 	// Arm motor output : Throttle down and full yaw right for more than 2 seconds
 	if (g.rc_3.control_in == 0){
+
 		// full right
 		if (g.rc_4.control_in > 4000) {
-			if (arming_counter >= ARM_DELAY) {
+
+			if (arming_counter > AUTO_LEVEL_DELAY){
+				auto_level_counter = 255;
+				arming_counter = 0;
+
+			}else if (arming_counter == ARM_DELAY){
 				motor_armed 	= true;
 				arming_counter 	= ARM_DELAY;
 
@@ -19,16 +29,24 @@ void arm_motors()
 				// ---------------------------
 				init_simple_bearing();
 
+				arming_counter++;
 			} else{
 				arming_counter++;
 			}
 
 		// full left
 		}else if (g.rc_4.control_in < -4000) {
-			if (arming_counter >= DISARM_DELAY){
+			//Serial.print(arming_counter, DEC);
+			if (arming_counter > LEVEL_DELAY){
+				//Serial.print("init");
+				imu.init_accel();
+				arming_counter = 0;
+
+			}else if (arming_counter == DISARM_DELAY){
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
 				compass.save_offsets();
+				arming_counter++;
 
 			}else{
 				arming_counter++;

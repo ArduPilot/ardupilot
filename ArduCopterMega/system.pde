@@ -37,7 +37,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.23 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.24 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -87,6 +87,23 @@ void init_ardupilot()
 	//
 	report_version();
 
+
+	// setup IO pins
+	pinMode(C_LED_PIN, OUTPUT);				// GPS status LED
+	pinMode(A_LED_PIN, OUTPUT);				// GPS status LED
+	pinMode(B_LED_PIN, OUTPUT);				// GPS status LED
+	pinMode(SLIDE_SWITCH_PIN, INPUT);		// To enter interactive mode
+	pinMode(PUSHBUTTON_PIN, INPUT);			// unused
+	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
+
+	#if MOTOR_LEDS == 1
+		pinMode(FR_LED, OUTPUT);			// GPS status LED
+		pinMode(RE_LED, OUTPUT);			// GPS status LED
+		pinMode(RI_LED, OUTPUT);			// GPS status LED
+		pinMode(LE_LED, OUTPUT);			// GPS status LED
+	#endif
+
+
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
 		//Serial.printf_P(PSTR("\n\nForcing complete parameter reset..."));
@@ -134,10 +151,10 @@ void init_ardupilot()
 		APM_RC.setHIL(rc_override);
 	}
 	#endif
-	
-    #if FRAME_CONFIG ==	HELI_FRAME 
-    heli_init_swash();  // heli initialisation
-	#endif	
+
+    #if FRAME_CONFIG ==	HELI_FRAME
+		heli_init_swash();  // heli initialisation
+	#endif
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
@@ -147,8 +164,8 @@ void init_ardupilot()
 	#endif
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
-	adc.Init();	 		// APM ADC library initialization
-	barometer.Init();	// APM Abs Pressure sensor initialization
+		adc.Init();	 		// APM ADC library initialization
+		barometer.Init();	// APM Abs Pressure sensor initialization
 	#endif
 
 	// Do GPS init
@@ -164,21 +181,20 @@ void init_ardupilot()
 	#endif
 
 	// init the HIL
-#if HIL_MODE != HIL_MODE_DISABLED
+	#if HIL_MODE != HIL_MODE_DISABLED
+		#if HIL_PORT == 3
+			hil.init(&Serial3);
+		#elif HIL_PORT == 1
+			hil.init(&Serial1);
+		#else
+			hil.init(&Serial);
+		#endif
+	#endif
 
-  #if HIL_PORT == 3
-	hil.init(&Serial3);
-  #elif HIL_PORT == 1
-	hil.init(&Serial1);
-  #else
-	hil.init(&Serial);
-  #endif
-#endif
-
-//  We may have a hil object instantiated just for mission planning
-#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
-	hil.init(&Serial);
-#endif
+	//  We may have a hil object instantiated just for mission planning
+	#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
+		hil.init(&Serial);
+	#endif
 
 	if(g.compass_enabled)
 		init_compass();
@@ -189,23 +205,15 @@ void init_ardupilot()
 	}
 	#endif
 
-	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
-	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
-	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
-	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
-
-	#if MOTOR_LEDS == 1
-		pinMode(FR_LED, OUTPUT);			// GPS status LED
-		pinMode(RE_LED, OUTPUT);			// GPS status LED
-		pinMode(RI_LED, OUTPUT);			// GPS status LED
-		pinMode(LE_LED, OUTPUT);			// GPS status LED
-	#endif
+	// setup DCM for copters:
+	dcm.kp_roll_pitch(0.12);		// higher for quads
+	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate
 
 	// Logging:
 	// --------
-	DataFlash.Init(); 	// DataFlash log initialization
+	// DataFlash log initialization
+	DataFlash.Init();
+
 	// setup the log bitmask
 	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS)
 		default_log_bitmask();
@@ -216,7 +224,7 @@ void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
+	if (check_startup_for_CLI()) {
 		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\n"
 							 "Entering interactive setup mode...\n"
@@ -233,6 +241,17 @@ void init_ardupilot()
 		}
 	}
 
+	// Logging:
+	// --------
+	if(g.log_bitmask != 0){
+		//	TODO - Here we will check  on the length of the last log
+		//  We don't want to create a bunch of little logs due to powering on and off
+		start_new_log();
+	}
+
+	//if (g.log_bitmask & MASK_LOG_MODE)
+	//	Log_Write_Mode(control_mode);
+
 	// All of the Gyro calibrations
 	// ----------------------------
 	startup_ground();
@@ -244,16 +263,9 @@ void init_ardupilot()
 	// init the Yaw Hold output
 	clear_yaw_control();
 
-	// Logging:
-	// --------
-	if(g.log_bitmask != 0){
-		//	TODO - Here we will check  on the length of the last log
-		//  We don't want to create a bunch of little logs due to powering on and off
-		start_new_log();
-	}
 
-	if (g.log_bitmask & MASK_LOG_MODE)
-		Log_Write_Mode(control_mode);
+	delay(100);
+
 }
 
 //********************************************************************************
@@ -263,8 +275,6 @@ void startup_ground(void)
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
-	// make Motor light go dark
-	digitalWrite(A_LED_PIN, LOW);
 
 	#if(GROUND_START_DELAY > 0)
 		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
@@ -310,7 +320,13 @@ void startup_ground(void)
 	    }
 	}
 
+	clear_leds();
+
 	report_gps();
+	g_gps->idleTimeout = 20000;
+
+	Log_Write_Startup();
+
 	SendDebug("\nReady to FLY ");
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
@@ -335,6 +351,8 @@ void set_mode(byte mode)
 	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
 	//Serial.printf("set mode: %d\n",control_mode);
 	Serial.println(flight_mode_strings[control_mode]);
+
+	led_mode = NORMAL_LEDS;
 
 	switch(control_mode)
 	{
@@ -402,95 +420,6 @@ void set_failsafe(boolean mode)
 	}
 }
 
-#if MOTOR_LEDS == 1
-void update_motor_leds(void)
-{
-	// blink rear
-	static bool blink;
-
-	if (blink){
-		blink = false;
-		digitalWrite(RE_LED, LOW);
-
-	}else{
-		blink = true;
-		digitalWrite(RE_LED, HIGH);
-	}
-}
-#endif
-
-void update_GPS_light(void)
-{
-	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
-	// ---------------------------------------------------------------------
-	switch (g_gps->status()){
-
-		case(2):
-			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
-			break;
-
-		case(1):
-			if (g_gps->valid_read == true){
-				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
-				if (GPS_light){
-					digitalWrite(C_LED_PIN, LOW);
-				}else{
-					digitalWrite(C_LED_PIN, HIGH);
-				}
-				g_gps->valid_read = false;
-			}
-			break;
-
-		default:
-			digitalWrite(C_LED_PIN, LOW);
-			break;
-	}
-}
-
-void update_motor_light(void)
-{
-	if(motor_armed == false){
-		motor_light = !motor_light;
-
-		// blink
-		if(motor_light){
-			digitalWrite(A_LED_PIN, HIGH);
-		}else{
-			digitalWrite(A_LED_PIN, LOW);
-		}
-	}else{
-		if(!motor_light){
-			motor_light = true;
-			digitalWrite(A_LED_PIN, HIGH);
-		}
-	}
-}
-
-void update_esc_light()
-{
-	static byte step;
-
-	if (step++ == 3)
-		step = 0;
-
-	switch(step)
-	{
-		case 0:
-			digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, HIGH);
-			break;
-
-		case 1:
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(B_LED_PIN, HIGH);
-			break;
-
-		case 2:
-			digitalWrite(B_LED_PIN, LOW);
-			digitalWrite(C_LED_PIN, HIGH);
-			break;
-	}
-}
 
 
 void resetPerfData(void) {
@@ -540,4 +469,28 @@ init_throttle_cruise()
 		}
 	//}
 }
+
+#if BROKEN_SLIDER == 1
+
+boolean
+check_startup_for_CLI()
+{
+	if(abs(g.rc_4.control_in) > 3000){
+		// startup to fly
+		return true;
+	}else{
+		// CLI mode
+		return false;
+	}
+}
+
+#else
+
+boolean
+check_startup_for_CLI()
+{
+	return (digitalRead(SLIDE_SWITCH_PIN) == 0);
+}
+
+#endif
 

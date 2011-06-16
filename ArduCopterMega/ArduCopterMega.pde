@@ -107,7 +107,7 @@ GPS         *g_gps;
     AP_Compass_HMC5883L      compass(Parameters::k_param_compass);
   #else
     #error Unrecognised MAG_PROTOCOL setting.
-  #endif 
+  #endif
 
 	// real GPS selection
 	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -191,7 +191,15 @@ GPS         *g_gps;
 //#include <GCS_SIMPLE.h>
 //GCS_SIMPLE    gcs_simple(&Serial);
 
-AP_RangeFinder_MaxsonarXL sonar;
+////////////////////////////////////////////////////////////////////////////////
+// SONAR selection
+////////////////////////////////////////////////////////////////////////////////
+//
+#if SONAR_TYPE == MAX_SONAR_XL
+	AP_RangeFinder_MaxsonarXL sonar;//(SONAR_PORT, &adc);
+#elif SONAR_TYPE == MAX_SONAR_LV
+	AP_RangeFinder_MaxsonarLV sonar;//(SONAR_PORT, &adc);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -255,6 +263,7 @@ bool 	did_clear_yaw_control;
 boolean motor_light;						// status of the Motor safety
 boolean GPS_light;							// status of the GPS light
 boolean timer_light;						// status of the Motor safety
+byte	led_mode = NORMAL_LEDS;
 
 // GPS variables
 // -------------
@@ -321,9 +330,11 @@ float	current_total;
 
 // Barometer Sensor variables
 // --------------------------
-unsigned long 	abs_pressure;
-unsigned long 	ground_pressure;
+long 			abs_pressure;
+long 			ground_pressure;
 int 			ground_temperature;
+int32_t 		baro_filter[BARO_FILTER_SIZE];
+byte			baro_filter_index;
 
 // Altitude Sensor variables
 // ----------------------
@@ -340,13 +351,14 @@ boolean	land_complete;
 int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
-byte 	yaw_tracking = MAV_ROI_WPNEXT;			// no tracking, point at next wp, or at a target
+byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
+byte	brake_timer;
 
 // Loiter management
 // -----------------
 long 	saved_target_bearing;				// deg * 100
-long 	loiter_time;						// millis : when we started LOITER mode
-long 	loiter_time_max;					// millis : how long to stay in LOITER mode
+unsigned long 	loiter_time;				// millis : when we started LOITER mode
+unsigned long 	loiter_time_max;			// millis : how long to stay in LOITER mode
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
@@ -364,13 +376,15 @@ bool 	invalid_nav;						// used to control when we calculate nav_throttle
 bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
 long 	command_yaw_start;					// what angle were we to begin with
-long 	command_yaw_start_time;				// when did we start turning
-int		command_yaw_time;					// how long we are turning
+unsigned long 	command_yaw_start_time;				// when did we start turning
+unsigned int	command_yaw_time;					// how long we are turning
 long 	command_yaw_end;					// what angle are we trying to be
 long 	command_yaw_delta;					// how many degrees will we turn
 int		command_yaw_speed;					// how fast to turn
 byte	command_yaw_dir;
 byte	command_yaw_relative;
+
+int 	auto_level_counter;
 
 // Waypoints
 // ---------
@@ -381,8 +395,8 @@ byte	next_wp_index;						// Current active command index
 // repeating event control
 // -----------------------
 byte 	event_id; 							// what to do - see defines
-long 	event_timer; 						// when the event was asked for in ms
-int 	event_delay; 						// how long to delay the next firing of event in millis
+unsigned long 	event_timer; 						// when the event was asked for in ms
+unsigned int 	event_delay; 						// how long to delay the next firing of event in millis
 int 	event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
 int 	event_value; 						// per command value, such as PWM for servos
 int 	event_undo_value;					// the value used to undo commands
@@ -458,6 +472,7 @@ float 			load;						// % MCU cycles used
 
 byte			counter_one_herz;
 bool			GPS_enabled 	= false;
+byte			loop_step;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -477,6 +492,9 @@ void loop()
 		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
+
+		//if (delta_ms_fast_loop > 6)
+		//	Log_Write_Performance();
 
 		/*
 		if(delta_ms_fast_loop > 11){
@@ -500,6 +518,7 @@ void loop()
 
 		fifty_hz_loop();
 		counter_one_herz++;
+
 		if(counter_one_herz == 50){
 			super_slow_loop();
 			counter_one_herz = 0;
@@ -519,7 +538,7 @@ void loop()
 	}
 }
 
-// Main loop 160Hz
+// Main loop
 void fast_loop()
 {
 	// IMU DCM Algorithm
@@ -532,8 +551,7 @@ void fast_loop()
 
 	// Read radio
 	// ----------
-	if (APM_RC.GetState() == 1)
-		read_radio();			// read the radio first
+	read_radio();			// read the radio first
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -566,6 +584,8 @@ void medium_loop()
 		// This case deals with the GPS and Compass
 		//-----------------------------------------
 		case 0:
+			loop_step = 1;
+
 			medium_loopCounter++;
 
 			if(GPS_enabled){
@@ -582,11 +602,15 @@ void medium_loop()
 					compass.null_offsets(dcm.get_dcm_matrix());
 				}
 			#endif
+
+			// auto_trim, uses an auto_level algorithm
+			auto_trim();
 			break;
 
 		// This case performs some navigation computations
 		//------------------------------------------------
 		case 1:
+			loop_step = 2;
 			medium_loopCounter++;
 
 			// hack to stop navigation in Simple mode
@@ -597,7 +621,10 @@ void medium_loop()
 			}
 
 			// Auto control modes:
-			if(g_gps->new_data){
+			if(g_gps->new_data && g_gps->fix){
+				loop_step = 11;
+
+				// invalidate GPS data
 				g_gps->new_data 	= false;
 
 				// we are not tracking I term on navigation, so this isn't needed
@@ -621,6 +648,7 @@ void medium_loop()
 		// command processing
 		//-------------------
 		case 2:
+			loop_step = 3;
 			medium_loopCounter++;
 
 			// Read altitude from sensors
@@ -636,6 +664,13 @@ void medium_loop()
 			// invalidate the throttle hold value
 			// ----------------------------------
 			invalid_throttle = true;
+			break;
+
+		// This case deals with sending high rate telemetry
+		//-------------------------------------------------
+		case 3:
+			loop_step = 4;
+			medium_loopCounter++;
 
 			// perform next command
 			// --------------------
@@ -644,12 +679,6 @@ void medium_loop()
 					update_commands();
 				//}
 			}
-			break;
-
-		// This case deals with sending high rate telemetry
-		//-------------------------------------------------
-		case 3:
-			medium_loopCounter++;
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
@@ -672,11 +701,17 @@ void medium_loop()
 			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
 				hil.data_stream_send(5,45);
 			#endif
+
+			if (g.log_bitmask & MASK_LOG_MOTORS)
+				Log_Write_Motors();
+
+
 			break;
 
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
+			loop_step = 5;
 			medium_loopCounter = 0;
 
 			delta_ms_medium_loop	= millis() - medium_loopTimer;
@@ -694,6 +729,10 @@ void medium_loop()
 			// Check for engine arming
 			// -----------------------
 			arm_motors();
+
+			// should we be in DCM Fast recovery?
+			// ----------------------------------
+			check_DCM();
 
 			slow_loop();
 			break;
@@ -756,9 +795,10 @@ void fifty_hz_loop()
 	// XXX this should be absorbed into the above,
 	// or be a "GCS fast loop" interface
 
-	#if FRAME_CONFIG ==	TRI_FRAME
+	#if FRAME_CONFIG == TRI_FRAME
 		// Hack - had to move to 50hz loop to test a theory
 		// servo Yaw
+		g.rc_4.calc_pwm();
 		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
 	#endif
 }
@@ -770,6 +810,7 @@ void slow_loop()
 	//----------------------------------------
 	switch (slow_loopCounter){
 		case 0:
+			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
@@ -784,6 +825,7 @@ void slow_loop()
 			break;
 
 		case 1:
+			loop_step = 7;
 			slow_loopCounter++;
 
 			// Read 3-position switch on radio
@@ -810,11 +852,12 @@ void slow_loop()
 			break;
 
 		case 2:
+			loop_step = 8;
 			slow_loopCounter = 0;
 			update_events();
 
 			// blink if we are armed
-			update_motor_light();
+			update_lights();
 
 			// XXX this should be a "GCS slow loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
@@ -836,8 +879,8 @@ void slow_loop()
 
 
 			// filter out the baro offset.
-			if(baro_alt_offset > 0) baro_alt_offset--;
-			if(baro_alt_offset < 0) baro_alt_offset++;
+			//if(baro_alt_offset > 0) baro_alt_offset--;
+			//if(baro_alt_offset < 0) baro_alt_offset++;
 
 
 			#if MOTOR_LEDS == 1
@@ -856,6 +899,7 @@ void slow_loop()
 // 1Hz loop
 void super_slow_loop()
 {
+	loop_step = 9;
 	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
 
@@ -883,6 +927,7 @@ void super_slow_loop()
 
 void update_GPS(void)
 {
+	loop_step = 10;
 	g_gps->update();
 	update_GPS_light();
 
@@ -1234,14 +1279,51 @@ void update_trig(void){
 	sin_roll_y 		= temp.c.y / cos_pitch_x;
 }
 
-
+// updated at 10hz
 void update_alt()
 {
 	altitude_sensor = BARO;
 
-#if HIL_MODE == HIL_MODE_ATTITUDE
+	#if HIL_MODE == HIL_MODE_ATTITUDE
 	current_loc.alt = g_gps->altitude;
-#else
+	#else
+
+	if(g.sonar_enabled){
+		// filter out offset
+		float scale;
+
+		// read barometer
+		baro_alt 			= read_barometer();
+		int temp_sonar 		= sonar.read();
+
+		// spike filter
+		//if((temp_sonar - sonar_alt) < 50){
+			sonar_alt = temp_sonar;
+		//}
+
+		scale = (sonar_alt - 300) / 300;
+		scale = constrain(scale, 0, 1);
+
+		current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+
+	}else{
+		baro_alt 		= read_barometer();
+		// no sonar altitude
+		current_loc.alt = baro_alt + home.alt;
+	}
+
+	#endif
+}
+
+// updated at 10hz
+void update_alt2()
+{
+	altitude_sensor = BARO;
+
+	#if HIL_MODE == HIL_MODE_ATTITUDE
+	current_loc.alt = g_gps->altitude;
+	#else
+
 	if(g.sonar_enabled){
 		// filter out offset
 
@@ -1254,11 +1336,8 @@ void update_alt()
 			sonar_alt = temp_sonar;
 		}
 
-		//sonar_alt = sonar.read();
-
 		// decide if we're using sonar
 		if ((baro_alt < 1200) || sonar_alt < 300){
-		//if (baro_alt < 700){
 			// correct alt for angle of the sonar
 			float temp = cos_pitch_x * cos_roll_x;
 			temp = max(temp, 0.707);
@@ -1285,7 +1364,7 @@ void update_alt()
 	}
 
 	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
-#endif
+	#endif
 }
 
 void
@@ -1337,19 +1416,25 @@ void tuning(){
 
 	#elif CHANNEL_6_TUNING == CH6_PMAX
 		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
-		
+
+	#elif CHANNEL_6_TUNING == CH6_DCM_RP
+		dcm.kp_roll_pitch((float)g.rc_6.control_in / 5000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_DCM_Y
+		dcm.kp_yaw((float)g.rc_6.control_in / 1000.0);
+
 	#elif CHANNEL_6_TUNING == CH6_YAW_KP
 	    // yaw heading
 		g.pid_yaw.kP((float)g.rc_6.control_in / 200.0);  // range from 0.0 ~ 5.0
-		
+
 	#elif CHANNEL_6_TUNING == CH6_YAW_KD
 	    // yaw heading
 		g.pid_yaw.kD((float)g.rc_6.control_in / 1000.0);
-	
+
 	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
 	    // yaw rate
 		g.pid_acro_rate_yaw.kP((float)g.rc_6.control_in / 1000.0);
-		
+
 	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KD
 	    // yaw rate
 		g.pid_acro_rate_yaw.kD((float)g.rc_6.control_in / 1000.0);
@@ -1389,3 +1474,20 @@ void update_nav_yaw()
 		nav_yaw = target_bearing;
 	}
 }
+
+void check_DCM()
+{
+	#if DYNAMIC_DRIFT == 1
+	if(g.rc_1.control_in == 0 && g.rc_2.control_in == 0){
+		if(g.rc_3.control_in < (g.throttle_cruise + 20)){
+			//dcm.kp_roll_pitch(dcm.kDCM_kp_rp_high);
+			dcm.kp_roll_pitch(0.15);
+		}
+	}else{
+		dcm.kp_roll_pitch(0.05967);
+	}
+	#endif
+}
+
+
+

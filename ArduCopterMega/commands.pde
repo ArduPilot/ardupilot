@@ -224,7 +224,8 @@ void init_home()
 	home.id 	= MAV_CMD_NAV_WAYPOINT;
 	home.lng 	= g_gps->longitude;				// Lon * 10**7
 	home.lat 	= g_gps->latitude;				// Lat * 10**7
-	home.alt 	= max(g_gps->altitude, 0);		// we sometimes get negatives from GPS, not valid
+	//home.alt 	= max(g_gps->altitude, 0);		// we sometimes get negatives from GPS, not valid
+	home.alt 	= 0;							// this is a test
 	home_is_set = true;
 
 	// to point yaw towards home until we set it with Mavlink
