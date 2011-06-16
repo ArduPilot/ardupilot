@@ -113,18 +113,18 @@ void AP_ADC_ADS7844::Init(void)
 
 	digitalWrite(ADC_CHIP_SELECT, HIGH);								 // Disable device (Chip select is active low)
 
-  // Setup Serial Port2 in SPI mode
+	// Setup Serial Port2 in SPI mode
 	UBRR2 = 0;
 	DDRH |= (1 << PH2);																	 // SPI clock XCK2 (PH2) as output. This enable SPI Master mode
-  // Set MSPI mode of operation and SPI data mode 0.
+	// Set MSPI mode of operation and SPI data mode 0.
 	UCSR2C = (1 << UMSEL21) | (1 << UMSEL20);								 // |(0 << UCPHA2) | (0 << UCPOL2);
-  // Enable receiver and transmitter.
+	// Enable receiver and transmitter.
 	UCSR2B = (1 << RXEN2) | (1 << TXEN2);
-  // Set Baud rate
+	// Set Baud rate
 	UBRR2 = 2;																					// SPI clock running at 2.6MHz
 
 
-  // Enable Timer2 Overflow interrupt to capture ADC data
+	// Enable Timer2 Overflow interrupt to capture ADC data
 	TIMSK2 = 0;																				 // Disable interrupts
 	TCCR2A = 0;																				 // normal counting mode
 	TCCR2B = _BV(CS21) | _BV(CS22);											 // Set prescaler of 256
