@@ -46,12 +46,12 @@ public:
 	/// GPS time epoch codes
 	///
 	enum	GPS_Time_Epoch {
-			TIME_OF_DAY 	= 0,		///< 
+			TIME_OF_DAY 	= 0,		///<
 			TIME_OF_WEEK 	= 1,		///< Ublox
 			TIME_OF_YEAR 	= 2,		///< MTK, NMEA
 			UNIX_EPOCH	 	= 3			///< If available
-	};									///< SIFR?  
-	
+	};									///< SIFR?
+
 
 	/// Query GPS time epoch
 	///
@@ -91,10 +91,18 @@ public:
 
 	// Debug support
 	bool	print_errors; 	///< deprecated
-	
+
 	// HIL support
 	virtual void setHIL(long time, float latitude, float longitude, float altitude,
             float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
+
+	/// Time in milliseconds after which we will assume the GPS is no longer
+	/// sending us updates and attempt a re-init.
+	///
+	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
+	/// rate.
+	///
+	unsigned long	idleTimeout;
 
 protected:
 	Stream	*_port;			///< port the GPS is attached to
@@ -142,19 +150,12 @@ protected:
 	///       printf vs. the potential benefits
 	///
 	void			_error(const char *msg);
-	
+
 	/// Time epoch code for the gps in use
 	GPS_Time_Epoch				_epoch;
 
 private:
 
-	/// Time in milliseconds after which we will assume the GPS is no longer
-	/// sending us updates and attempt a re-init.
-	///
-	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
-	/// rate.
-	///
-	static const unsigned long	_idleTimeout = 1200;
 
 	/// Last time that the GPS driver got a good packet from the GPS
 	///
@@ -162,7 +163,7 @@ private:
 
 	/// Our current status
 	GPS_Status					_status;
-	
+
 };
 
 inline long
