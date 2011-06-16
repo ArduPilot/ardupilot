@@ -15,9 +15,10 @@ static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
+
 #if FRAME_CONFIG == HELI_FRAME
-static int8_t	setup_heli				(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_gyro				(uint8_t argc, const Menu::arg *argv);
+	static int8_t	setup_heli				(uint8_t argc, const Menu::arg *argv);
+	static int8_t	setup_gyro				(uint8_t argc, const Menu::arg *argv);
 #endif
 
 // Command/function table for the setup menu
@@ -37,7 +38,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"compass",			setup_compass},
 	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
-#if FRAME_CONFIG == HELI_FRAME	
+#if FRAME_CONFIG == HELI_FRAME
 	{"heli",			setup_heli},
 	{"gyro",			setup_gyro},
 #endif
@@ -239,7 +240,7 @@ init_esc()
 	while(1){
 		read_radio();
 		delay(100);
-		update_esc_light();
+		dancing_light();
 		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
 		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
@@ -300,7 +301,9 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
-	byte switchPosition, _oldSwitchPosition, mode;
+	byte _switchPosition = 0;
+	byte _oldSwitchPosition = 0;
+	byte mode = 0;
 
 	Serial.printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
 	print_hit_enter();
@@ -308,20 +311,20 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(20);
 		read_radio();
-		switchPosition = readSwitch();
+		_switchPosition = readSwitch();
 
 
 		// look for control switch change
-		if (_oldSwitchPosition != switchPosition){
+		if (_oldSwitchPosition != _switchPosition){
 
-			mode = g.flight_modes[switchPosition];
+			mode = g.flight_modes[_switchPosition];
 			mode = constrain(mode, 0, NUM_MODES-1);
 
 			// update the user
-			print_switch(switchPosition, mode);
+			print_switch(_switchPosition, mode);
 
 			// Remember switch position
-			_oldSwitchPosition = switchPosition;
+			_oldSwitchPosition = _switchPosition;
 		}
 
 		// look for stick input
@@ -331,10 +334,10 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode = 0;
 
 			// save new mode
-			g.flight_modes[switchPosition] = mode;
+			g.flight_modes[_switchPosition] = mode;
 
 			// print new mode
-			print_switch(switchPosition, mode);
+			print_switch(_switchPosition, mode);
 		}
 
 		// escape hatch
@@ -352,6 +355,7 @@ setup_declination(uint8_t argc, const Menu::arg *argv)
 {
 	compass.set_declination(radians(argv[1].f));
 	report_compass();
+	return 0;
 }
 
 
@@ -436,13 +440,13 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 
 	// initialise swash plate
 	heli_init_swash();
-	
-	// source swash plate movements directly from 
+
+	// source swash plate movements directly from
 	heli_manual_override = true;
-	
+
 	// display initial settings
 	report_heli();
-	
+
 	// display help
 	Serial.printf_P(PSTR("Instructions:"));
 	print_divider();
@@ -455,14 +459,14 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\tr\t\treverse servo\n"));
 	Serial.printf_P(PSTR("\tt<angle>\tset trim (-500 ~ 500)\n"));
 	Serial.printf_P(PSTR("\tx\t\texit & save\n"));
-	
+
 	// start capturing
 	while( value != 'x' ) {
-	
+
 	    // read radio although we don't use it yet
 	    read_radio();
-		
-		// record min/max 
+
+		// record min/max
 		if( state == 1 ) {
 		    if( abs(g.rc_1.control_in) > max_roll )
 			    max_roll = abs(g.rc_1.control_in);
@@ -476,10 +480,10 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 			max_tail = max(g.rc_4.radio_in, max_tail);
 			//Serial.printf_P(PSTR("4: ri:%d \tro:%d \tso:%d \n"), (int)g.rc_4.radio_in, (int)g.rc_4.radio_out, (int)g.rc_4.servo_out);
 		}
-	
+
 	    if( Serial.available() ) {
 		    value = Serial.read();
-			
+
 			// process the user's input
 			switch( value ) {
 				case '1':
@@ -494,7 +498,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 				case '4':
 					active_servo = CH_4;
 					break;
-				case 'a':					
+				case 'a':
 				case 'A':
 					heli_get_servo(active_servo)->radio_trim += 10;
 					break;
@@ -515,14 +519,14 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 				    if( state == 0 ) {
 					    state = 1;  // switch to capture min/max mode
 						Serial.printf_P(PSTR("Move coll, roll, pitch and tail to extremes, press 'm' when done\n"),active_servo+1, temp);
-						
+
 						// reset servo ranges
 						g.heli_roll_max = g.heli_pitch_max = 4500;
 						g.heli_coll_min = 1000;
 						g.heli_coll_max = 2000;
 						g.heli_servo_4.radio_min = 1000;
 						g.heli_servo_4.radio_max = 2000;
-						
+
 						// set sensible values in temp variables
 						max_roll = abs(g.rc_1.control_in);
 						max_pitch = abs(g.rc_2.control_in);
@@ -541,10 +545,10 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 							g.heli_coll_max = max_coll;
 							g.heli_servo_4.radio_min = min_tail;
 							g.heli_servo_4.radio_max = max_tail;
-							
+
 							// reinitialise swash
 							heli_init_swash();
-							
+
 							// display settings
 							report_heli();
 						}
@@ -561,7 +565,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 						if( active_servo == CH_3 )
 							g.heli_servo3_pos = temp;
 						heli_init_swash();
-						Serial.printf_P(PSTR("Servo %d\t\tpos:%d\n"),active_servo+1, temp); 
+						Serial.printf_P(PSTR("Servo %d\t\tpos:%d\n"),active_servo+1, temp);
 					}
 					break;
 				case 'r':
@@ -576,25 +580,25 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 					if( temp > -500 && temp < 500 ) {
 					    heli_get_servo(active_servo)->radio_trim = 1500 + temp;
 						heli_init_swash();
-						Serial.printf_P(PSTR("Servo %d\t\ttrim:%d\n"),active_servo+1, 1500 + temp); 
+						Serial.printf_P(PSTR("Servo %d\t\ttrim:%d\n"),active_servo+1, 1500 + temp);
 					}
 					break;
-				case 'z':			
+				case 'z':
 				case 'Z':
 					heli_get_servo(active_servo)->radio_trim -= 10;
 					break;
 			}
 		}
-		
+
 		// allow swash plate to move
 		output_motors_armed();
-		
+
 		delay(20);
 	}
 
 	// display final settings
 	report_heli();
-	
+
 	// save to eeprom
 	g.heli_servo_1.save_eeprom();
 	g.heli_servo_2.save_eeprom();
@@ -608,7 +612,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	g.heli_coll_min.save();
 	g.heli_coll_max.save();
 	g.heli_coll_mid.save();
-	
+
 	// return swash plate movements to attitude controller
 	heli_manual_override = false;
 
@@ -627,7 +631,7 @@ setup_gyro(uint8_t argc, const Menu::arg *argv)
 		    g.heli_ext_gyro_gain = argv[2].i;
 			g.heli_ext_gyro_gain.save();
 		}
-		
+
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.heli_ext_gyro_enabled.set_and_save(false);
 
@@ -646,6 +650,7 @@ setup_gyro(uint8_t argc, const Menu::arg *argv)
 }
 
 #endif // FRAME_CONFIG == HELI
+
 void clear_offsets()
 {
 	Vector3f _offsets;
@@ -710,7 +715,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 			compass.set_offsets(_offsets);
 			//compass.set_offsets(mag_offset_x, mag_offset_y, mag_offset_z);
 			report_compass();
-			break;
+			return 0;
 		}
 	}
 }
@@ -959,18 +964,18 @@ void report_heli()
 {
 	Serial.printf_P(PSTR("Heli\n"));
 	print_divider();
-	
+
 	// main servo settings
 	Serial.printf_P(PSTR("Servo \tpos \tmin \tmax \trev\n"));
 	Serial.printf_P(PSTR("1:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo1_pos, (int)g.heli_servo_1.radio_min, (int)g.heli_servo_1.radio_max, (int)g.heli_servo_1.get_reverse());
 	Serial.printf_P(PSTR("2:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo2_pos, (int)g.heli_servo_2.radio_min, (int)g.heli_servo_2.radio_max, (int)g.heli_servo_2.get_reverse());
 	Serial.printf_P(PSTR("3:\t%d \t%d \t%d \t%d\n"),(int)g.heli_servo3_pos, (int)g.heli_servo_3.radio_min, (int)g.heli_servo_3.radio_max, (int)g.heli_servo_3.get_reverse());
 	Serial.printf_P(PSTR("tail:\t\t%d \t%d \t%d\n"), (int)g.heli_servo_4.radio_min, (int)g.heli_servo_4.radio_max, (int)g.heli_servo_4.get_reverse());
-		
+
 	Serial.printf_P(PSTR("roll max: \t%d\n"), (int)g.heli_roll_max);
 	Serial.printf_P(PSTR("pitch max: \t%d\n"), (int)g.heli_pitch_max);
 	Serial.printf_P(PSTR("coll min:\t%d\t mid:%d\t max:%d\n"),(int)g.heli_coll_min, (int)g.heli_coll_mid, (int)g.heli_coll_max);
-		
+
 	print_blanks(2);
 }
 
@@ -983,7 +988,7 @@ void report_gyro()
 	print_enabled( g.heli_ext_gyro_enabled );
 	if( g.heli_ext_gyro_enabled )
 	    Serial.printf_P(PSTR("gain: %d"),(int)g.heli_ext_gyro_gain);
-		
+
 	print_blanks(2);
 }
 
@@ -1076,11 +1081,14 @@ radio_input_switch(void)
 
 void zero_eeprom(void)
 {
-	byte b;
+	byte b = 0;
+
 	Serial.printf_P(PSTR("\nErasing EEPROM\n"));
+
 	for (int i = 0; i < EEPROM_MAX_ADDR; i++) {
 		eeprom_write_byte((uint8_t *) i, b);
 	}
+
 	Serial.printf_P(PSTR("done\n"));
 }
 
@@ -1111,6 +1119,8 @@ print_gyro_offsets(void)
 						(float)imu.gz());
 }
 
+#if FRAME_CONFIG == HELI_FRAME
+
 RC_Channel *
 heli_get_servo(int servo_num){
 	if( servo_num == CH_1 )
@@ -1140,6 +1150,7 @@ int read_num_from_serial() {
 			index++;
 		}
 	}while (timeout < 5 && index < 5);
-	
+
 	return atoi(data);
 }
+#endif

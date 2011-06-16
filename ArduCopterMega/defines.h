@@ -25,6 +25,11 @@
 #define PLUS_FRAME 0
 #define X_FRAME 1
 
+
+// LED output
+#define NORMAL_LEDS 0
+#define AUTO_TRIM_LEDS 1
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -49,6 +54,11 @@
 #define GPS_PROTOCOL_HIL	5
 #define GPS_PROTOCOL_MTK16	6
 #define GPS_PROTOCOL_AUTO	7
+
+// SONAR types:
+
+#define MAX_SONAR_XL 0
+#define MAX_SONAR_LV 1
 
 // Radio channels
 // Note channels are from 0!
@@ -121,10 +131,12 @@
 #define CH6_SONAR_KD 6
 #define CH6_Y6_SCALING 7
 #define CH6_PMAX 8
-#define	CH6_YAW_KP 9
-#define	CH6_YAW_KD 10
-#define	CH6_YAW_RATE_KP 11
-#define	CH6_YAW_RATE_KD 12
+#define CH6_DCM_RP 9
+#define CH6_DCM_Y 10
+#define	CH6_YAW_KP 11
+#define	CH6_YAW_KD 12
+#define	CH6_YAW_RATE_KP 13
+#define	CH6_YAW_RATE_KD 14
 
 // nav byte mask
 // -------------
@@ -225,7 +237,8 @@
 #define SEVERITY_CRITICAL 4
 
 //  Logging parameters
-#define LOG_INDEX_MSG			0xF0
+#define TYPE_AIRSTART_MSG		0x00
+#define TYPE_GROUNDSTART_MSG	0x01
 #define LOG_ATTITUDE_MSG		0x01
 #define LOG_GPS_MSG				0x02
 #define LOG_MODE_MSG			0X03
@@ -236,8 +249,8 @@
 #define LOG_CMD_MSG				0x08
 #define LOG_CURRENT_MSG 		0x09
 #define LOG_STARTUP_MSG 		0x0A
-#define TYPE_AIRSTART_MSG		0x00
-#define TYPE_GROUNDSTART_MSG	0x01
+#define LOG_MOTORS_MSG 			0x0B
+#define LOG_INDEX_MSG			0xF0
 #define MAX_NUM_LOGS			50
 
 #define MASK_LOG_ATTITUDE_FAST 	(1<<0)
@@ -250,6 +263,7 @@
 #define MASK_LOG_RAW			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CURRENT		(1<<9)
+#define MASK_LOG_MOTORS			(1<<10)
 #define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
@@ -276,6 +290,7 @@
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 #define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
+#define BARO_FILTER_SIZE 6
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
@@ -318,6 +333,11 @@
 #define BATTERY_PIN4 3
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 
+
+#define SONAR_PORT AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL
+
+// sonar
+#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // Hardware Parameters
 #define SLIDE_SWITCH_PIN 40

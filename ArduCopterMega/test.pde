@@ -402,14 +402,12 @@ static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	adc.Init();
-	delay(1000);
 	Serial.printf_P(PSTR("ADC\n"));
 	delay(1000);
 
 	while(1){
 		for(int i = 0; i < 9; i++){
-			Serial.printf_P(PSTR("i:%d\t"),adc.Ch(i));
+			Serial.printf_P(PSTR("%d,"),adc.Ch(i));
 		}
 		Serial.println();
 		delay(20);
@@ -433,29 +431,14 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	//float cos_roll, sin_roll, cos_pitch, sin_pitch, cos_yaw, sin_yaw;
-
+	fast_loopTimer = millis();
 
 	while(1){
-		delay(20);
-		if (millis() - fast_loopTimer > 19) {
+		//delay(20);
+		if (millis() - fast_loopTimer >= 5) {
 			delta_ms_fast_loop 	= millis() - fast_loopTimer;
 			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 			fast_loopTimer		= millis();
-			/*
-			Matrix3f temp 	= dcm.get_dcm_matrix();
-
-			sin_pitch 		= -temp.c.x;
-			cos_pitch 		= sqrt(1 - (temp.c.x * temp.c.x));
-
-			cos_roll 		= temp.c.z / cos_pitch;
-			sin_roll 		= temp.c.y / cos_pitch;
-
-			yawvector.x 	= temp.a.x; // sin
-			yawvector.y 	= temp.b.x;	// cos
-			yawvector.normalize();
-			cos_yaw 		= yawvector.y;	// 0 x = north
-			sin_yaw 		= yawvector.x;	// 1 y
-			*/
 
 			// IMU
 			// ---
@@ -464,12 +447,33 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			Vector3f accels 	= imu.get_accel();
 			Vector3f gyros 		= imu.get_gyro();
 
-			if(g.compass_enabled){
-				medium_loopCounter++;
-				if(medium_loopCounter == 5){
+			medium_loopCounter++;
+			if(medium_loopCounter == 4){
+				update_trig();
+			}
+
+			if(medium_loopCounter == 20){
+				read_radio();
+				medium_loopCounter = 0;
+				//tuning();
+				//dcm.kp_roll_pitch((float)g.rc_6.control_in / 2000.0);
+
+				/*
+				Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld, kp:%1.4f, kp:%1.4f \n"),
+								dcm.roll_sensor,
+								dcm.pitch_sensor,
+								dcm.yaw_sensor,
+								dcm.kp_roll_pitch(),
+								(float)g.rc_6.control_in / 2000.0);
+				*/
+				Serial.printf_P(PSTR("%ld, %ld, %ld\n"),
+								dcm.roll_sensor,
+								dcm.pitch_sensor,
+								dcm.yaw_sensor);
+
+				if(g.compass_enabled){
 					compass.read();		 				// Read magnetometer
 					compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
-					medium_loopCounter = 0;
 				}
 			}
 
@@ -481,12 +485,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
 			*/
-			Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld\n"),
-								dcm.roll_sensor,
-								dcm.pitch_sensor,
-								dcm.yaw_sensor);
 			/*
-			update_trig();
 			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
 								cos_pitch_x,
 								sin_pitch_y,
@@ -699,23 +698,30 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 
 		#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
 			Serial.printf_P(PSTR("Y6: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-			
+
+		#elif CHANNEL_6_TUNING == CH6_DCM_RP
+			Serial.printf_P(PSTR("DCM RP: %1.4f\n"), ((float)g.rc_6.control_in / 5000.0));
+
+		#elif CHANNEL_6_TUNING == CH6_DCM_Y
+			Serial.printf_P(PSTR("DCM Y: %1.4f\n"), ((float)g.rc_6.control_in / 1000.0));
+
 		#elif CHANNEL_6_TUNING == CH6_YAW_KP
 			// yaw heading
 			Serial.printf_P(PSTR("yaw kP: %1.3f\n"), ((float)g.rc_6.control_in / 200.0));  // range from 0 ~ 5.0
-			
+
 		#elif CHANNEL_6_TUNING == CH6_YAW_KD
 			// yaw heading
 			Serial.printf_P(PSTR("yaw kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-		
+
 		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
 			// yaw rate
 			Serial.printf_P(PSTR("yaw rate kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-			
+
 		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KD
 			// yaw rate
 			Serial.printf_P(PSTR("yaw rate kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
 		#endif
+
 		if(Serial.available() > 0){
 			return (0);
 		}
@@ -796,23 +802,18 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_rawgps(uint8_t argc, const Menu::arg *argv)
 {
-  print_hit_enter();
-  delay(1000);
+	print_hit_enter();
+	delay(1000);
 
-  while(1){
-          if (Serial3.available()){
-                  digitalWrite(B_LED_PIN, HIGH); // Blink Yellow LED if we are sending data to GPS
-                  Serial1.write(Serial3.read());
-                  digitalWrite(B_LED_PIN, LOW);
-          }
-          if (Serial1.available()){
-                  digitalWrite(C_LED_PIN, HIGH); // Blink Red LED if we are receiving data from GPS
-                  Serial3.write(Serial1.read());
-                  digitalWrite(C_LED_PIN, LOW);
-          }
-          if(Serial.available() > 0){
-                  return (0);
-    }
+ 	while(1){
+		if (Serial1.available()){
+			digitalWrite(B_LED_PIN, HIGH); 		// Blink Yellow LED if we are sending data to GPS
+			Serial.write(Serial1.read());
+			digitalWrite(B_LED_PIN, LOW);
+		}
+		if(Serial.available() > 0){
+			return (0);
+		}
   }
 }
 
@@ -893,6 +894,11 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
+	if(g.sonar_enabled == false){
+		Serial.printf_P(PSTR("Sonar disabled\n"));
+		return (0);
+	}
+
 	print_hit_enter();
 	while(1) {
 		delay(100);
@@ -903,6 +909,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+
 	return (0);
 }
 
@@ -910,7 +917,7 @@ static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
 {
 	//write out a basic mission to the EEPROM
-	Location t;
+
 /*{
 	uint8_t		id;					///< command id
 	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
@@ -919,7 +926,6 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	int32_t		lat;				///< param 3 - Lattitude * 10**7
 	int32_t		lng;				///< param 4 - Longitude * 10**7
 }*/
-	byte alt_rel = 1;
 
 	// clear home
 	{Location t = {0,   	0,      0, 		0, 		0, 			0};
@@ -963,7 +969,7 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	g.waypoint_radius.set_and_save(3);
 
 	test_wp(NULL, NULL);
-
+	return (0);
 }
 
 void print_hit_enter()

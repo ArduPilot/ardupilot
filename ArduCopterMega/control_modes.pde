@@ -51,37 +51,45 @@ void read_trim_switch()
 {
 	// switch is engaged
 	if (g.rc_7.control_in > 800){
-		if(trim_flag == false){
-			// called once
-			trim_timer = millis();
-		}
-
 		trim_flag = true;
-		//trim_accel();
 
 	}else{ // switch is disengaged
 
 		if(trim_flag){
-			// switch was just released
-			if((millis() - trim_timer) > 2000){
-				#if HIL_MODE != HIL_MODE_ATTITUDE
-				imu.save();
-				#endif
-			}else{
-				// set the throttle nominal
-				if(g.rc_3.control_in > 150){
-					g.throttle_cruise.set_and_save(g.rc_3.control_in);
+			// set the throttle nominal
+			if(g.rc_3.control_in > 150){
+				g.throttle_cruise.set_and_save(g.rc_3.control_in);
 					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
-				}
 			}
 			trim_flag = false;
 		}
 	}
 }
 
+void auto_trim()
+{
+	if(auto_level_counter > 0){
+		auto_level_counter--;
+		trim_accel();
+		led_mode = AUTO_TRIM_LEDS;
+
+		if(auto_level_counter == 1){
+			led_mode = NORMAL_LEDS;
+			clear_leds();
+			imu.save();
+			Serial.println("Done");
+			auto_level_counter = 0;
+		}
+	}
+}
+
+
 
 void trim_accel()
 {
+	g.pid_stabilize_roll.reset_I();
+	g.pid_stabilize_pitch.reset_I();
+
 	if(g.rc_1.control_in > 0){
 		imu.ay(imu.ay() + 1);
 	}else if (g.rc_1.control_in < 0){
@@ -94,11 +102,13 @@ void trim_accel()
 		imu.ax(imu.ax() - 1);
 	}
 
-	/*Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"),
+	/*
+	Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"),
 							dcm.roll_sensor,
 							dcm.pitch_sensor,
-							(double)imu.ax(),
-							(double)imu.ay(),
-							(double)imu.az());*/
+							(float)imu.ax(),
+							(float)imu.ay(),
+							(float)imu.az());
+	//*/
 }
 

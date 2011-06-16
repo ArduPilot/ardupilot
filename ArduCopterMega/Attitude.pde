@@ -30,8 +30,7 @@ limit_nav_pitch_roll(long pmax)
 void
 output_stabilize_roll()
 {
-	float error;//, rate;
-	//int dampener;
+	float error;
 
 	error 		= g.rc_1.servo_out - dcm.roll_sensor;
 
@@ -52,8 +51,7 @@ output_stabilize_roll()
 void
 output_stabilize_pitch()
 {
-	float error, rate;
-	int dampener;
+	float error;
 
 	error		= g.rc_2.servo_out - dcm.pitch_sensor;
 
@@ -113,6 +111,7 @@ throttle control
 void output_manual_throttle()
 {
 	g.rc_3.servo_out = (float)g.rc_3.control_in * angle_boost();
+	g.rc_3.servo_out = max(g.rc_3.servo_out, 0);
 }
 
 // Autopilot
@@ -125,6 +124,25 @@ void output_auto_throttle()
 }
 
 void calc_nav_throttle()
+{
+	// limit error
+	nav_throttle = g.pid_baro_throttle.get_pid(altitude_error, delta_ms_medium_loop, 1.0);
+	nav_throttle = g.throttle_cruise + constrain(nav_throttle, -60, 60);
+
+	// simple filtering
+	if(nav_throttle_old == 0)
+		nav_throttle_old = nav_throttle;
+
+	nav_throttle 		= (nav_throttle + nav_throttle_old) >> 1;
+	nav_throttle_old 	= nav_throttle;
+
+	// clear the new data flag
+	invalid_throttle = false;
+
+	//Serial.printf("nav_thr %d, scaler %2.2f ", nav_throttle, scaler);
+}
+
+void calc_nav_throttle2()
 {
 	// limit error
 	long error = constrain(altitude_error, -400, 400);
@@ -155,7 +173,6 @@ void calc_nav_throttle()
 
 	//Serial.printf("nav_thr %d, scaler %2.2f ", nav_throttle, scaler);
 }
-
 float angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
@@ -205,7 +222,7 @@ output_yaw_with_hold(boolean hold)
 		// look to see if we have exited rate control properly - ie stopped turning
 		if(rate_yaw_flag){
 			// we are still in motion from rate control
-			if(fabs(omega.z) < .2){
+			if((fabs(omega.z) < .25) || (brake_timer < 2)){
 				clear_yaw_control();
 				hold = true;			// just to be explicit
 			}else{
@@ -223,12 +240,15 @@ output_yaw_with_hold(boolean hold)
 	}
 
 	if(hold){
+		brake_timer 			= 0;
 		// try and hold the current nav_yaw setting
 		yaw_error				= nav_yaw - dcm.yaw_sensor; 									// +- 60°
+
+		// we need to wrap our value so we can be -180 to 180 (*100)
 		yaw_error 				= wrap_180(yaw_error);
 
 		// limit the error we're feeding to the PID
-		yaw_error				= constrain(yaw_error,	 -4000, 4000);						// limit error to 40 degees
+		yaw_error				= constrain(yaw_error,	 -9000, 9000);						// limit error to 40 degees
 
 		// Apply PID and save the new angle back to RC_Channel
 		g.rc_4.servo_out 		= g.pid_yaw.get_pi(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
@@ -241,25 +261,23 @@ output_yaw_with_hold(boolean hold)
 	}else{
 
 		if(g.rc_4.control_in == 0){
-
+			brake_timer--;
 			// adaptive braking
-			g.rc_4.servo_out 	= (int)(-1000.0 * omega.z);
+			g.rc_4.servo_out 	= (int)(-1200.0 * omega.z);
 
 			yaw_debug 			= YAW_BRAKE;  // 1
 
 		}else{
 			// RATE control
-																// Hein, 5/21/11
-			long error			= ((long)g.rc_4.control_in * 6) - (rate * 2);					// control is += 6000 * 6 = 36000
-			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
+			brake_timer 		= 100;
 			yaw_debug 			= YAW_RATE;  // 2
-
-			//nav_yaw 			= dcm.yaw_sensor;	// I think this caused the free rotation, dont know why.
+			long error			= ((long)g.rc_4.control_in * 6) - (degrees(omega.z) * 100);		// control is += 4500 * 6 = 36000
+			g.rc_4.servo_out 	= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
 		}
 	}
 
 	// Limit Output
-	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2500, 2500);								// limit to 24°
+	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -3200, 3200);								// limit to 32°
 
 	//Serial.printf("%d\n",g.rc_4.servo_out);
 }
@@ -271,7 +289,8 @@ output_yaw_with_hold(boolean hold)
 	// re-define nav_yaw if we have stick input
 	if(g.rc_4.control_in != 0){
 		// set nav_yaw + or - the current location
-		nav_yaw 	= (long)g.rc_4.control_in + dcm.yaw_sensor;
+		//nav_yaw 	= (long)g.rc_4.control_in + dcm.yaw_sensor;
+		nav_yaw 	+= (long)(g.rc_4.control_in / 90);
 	}
 
 	// we need to wrap our value so we can be 0 to 360 (*100)
@@ -290,7 +309,40 @@ output_yaw_with_hold(boolean hold)
 	g.rc_4.servo_out 		= g.pid_yaw.get_pi(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
 
 	// add in yaw dampener
-	g.rc_4.servo_out		-= degrees(omega.z) * 100 * g.pid_yaw.kD();
+	g.rc_4.servo_out		-= (degrees(omega.z) * 100) * g.pid_yaw.kD();
 	g.rc_4.servo_out		 = constrain(g.rc_4.servo_out,	 -2500, 2500);						// limit error to 60 degees
 }
+
+#elif YAW_OPTION == 2
+
+void
+output_yaw_with_hold(boolean hold)
+{
+	if(hold){
+		// try and hold the current nav_yaw setting
+		yaw_error				= nav_yaw - dcm.yaw_sensor; 									// +- 60°
+
+		// we need to wrap our value so we can be -180 to 180 (*100)
+		yaw_error 	= wrap_180(yaw_error);
+
+		// limit the error we're feeding to the PID
+		yaw_error				= constrain(yaw_error,	 -3500, 3500);						// limit error to 40 degees
+
+		// Apply PID and save the new angle back to RC_Channel
+		g.rc_4.servo_out 		= g.pid_yaw.get_pi(yaw_error, delta_ms_fast_loop, 1.0); 		// .4 * 4000 = 1600
+
+		// add in yaw dampener
+		g.rc_4.servo_out		-= (degrees(omega.z) * 100) * g.pid_yaw.kD();
+
+	}else{
+		// RATE control
+		long error				= ((long)g.rc_4.control_in * 6) - (degrees(omega.z) * 100);		// control is += 4500 * 6 = 36000
+		g.rc_4.servo_out 		= g.pid_acro_rate_yaw.get_pid(error, delta_ms_fast_loop, 1.0);	// kP .07 * 36000 = 2520
+		nav_yaw 				= dcm.yaw_sensor;	// save our Yaw
+	}
+
+	// Limit Output
+	g.rc_4.servo_out 	= constrain(g.rc_4.servo_out, -2500, 2500);								// limit to 24°
+}
+
 #endif
