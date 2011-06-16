@@ -44,6 +44,8 @@ const struct Menu::command log_menu_commands[] PROGMEM = {
 // A Macro to create the Menu
 MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
 
+static void get_log_boundaries(byte log_num, int & start_page, int & end_page);
+
 static bool
 print_log_menu(void)
 {
@@ -76,7 +78,7 @@ print_log_menu(void)
 		Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
 
 		for(int i = 1; i < last_log_num + 1; i++) {
-			get_log_boundaries(last_log_num, i, log_start, log_end);
+			get_log_boundaries(i, log_start, log_end);
 			//Serial.printf_P(PSTR("last_num %d "), last_log_num);
 			Serial.printf_P(PSTR("Log # %d,    start %d,   end %d\n"), i, log_start, log_end);
 		}
@@ -108,7 +110,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 		return(-1);
 	}
 
-	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
+	get_log_boundaries(dump_log, dump_log_start, dump_log_end);
 	/*Serial.printf_P(PSTR("Dumping Log number %d,    start %d,   end %d\n"),
 				  dump_log,
 				  dump_log_start,
@@ -248,7 +250,7 @@ void start_new_log()
 
 	if(num_existing_logs > 0){
 		for(int i = 0; i < num_existing_logs; i++) {
-			get_log_boundaries(num_existing_logs, i + 1, start_pages[i], end_pages[i]);
+			get_log_boundaries(i + 1, start_pages[i], end_pages[i]);
 		}
 		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
 	}
@@ -283,58 +285,44 @@ void start_new_log()
 }
 
 // All log data is stored in page 1?
-void get_log_boundaries(byte num_logs, byte log_num, int &start_page, int &end_page)
+static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 {
-	int page = 1;
+	int page 		= 1;
 	byte data;
-	byte log_step = 0;
+	byte log_step	= 0;
 
-	// start reading at page 1,
-	// XXX not 0?
-	DataFlash.StartRead(page);
-
+	DataFlash.StartRead(1);
 	while (page == 1) {
 		data = DataFlash.ReadByte();
-		switch(log_step){		 //This is a state machine to read the packets
+		switch(log_step)		 //This is a state machine to read the packets
+			{
 			case 0:
 				if(data==HEAD_BYTE1)	// Head byte 1
 					log_step++;
 				break;
-
 			case 1:
 				if(data==HEAD_BYTE2)	// Head byte 2
 					log_step++;
 				else
 					log_step = 0;
 				break;
-
 			case 2:
-				if(data == LOG_INDEX_MSG){
-
+				if(data==LOG_INDEX_MSG){
 					byte num_logs = DataFlash.ReadByte();
-
-					for(int i = 0; i < log_num; i++) {
-						start_page 	= DataFlash.ReadInt();
-						end_page 	= DataFlash.ReadInt();
-						//Serial.printf("log %d, start page:%d, end page:%d\n",i, start_page, end_page);
+					for(int i=0;i<log_num;i++) {
+						start_page = DataFlash.ReadInt();
+						end_page = DataFlash.ReadInt();
 					}
-
-					// what is this?
-					//
-					if(log_num == num_logs)
+					if(log_num==num_logs)
 						end_page = find_last_log_page(start_page);
 
 					return;		// This is the normal exit point
 				}else{
-					log_step=0;	 // Restart, we have a problem...
+						log_step=0;	 // Restart, we have a problem...
 				}
 				break;
 			}
 		page = DataFlash.GetPage();
-	}
-
-	if(page > 1){
-		Serial.printf("page er:%d\n", page);
 	}
 	//  Error condition if we reach here with page = 2   TO DO - report condition
 }
@@ -353,7 +341,7 @@ int find_last_log_page(int bottom_page)
 
 		//Serial.printf("look page:%d, check:%d\n", look_page, check);
 
-		if(check == 0xFFFFFFFF)
+		if(check == (long)0xFFFFFFFF)
 			top_page = look_page;
 		else
 			bottom_page = look_page;
