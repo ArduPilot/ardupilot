@@ -13,7 +13,7 @@ GPS::update(void)
 
 	// if we did not get a message, and the idle timer has expired, re-init
 	if (!result) {
-		if ((millis() - _idleTimer) > _idleTimeout) {
+		if ((millis() - _idleTimer) > idleTimeout) {
 			_status = NO_GPS;
 			init();
 
@@ -32,7 +32,7 @@ GPS::update(void)
 	}
 }
 
-void 
+void
 GPS::setHIL(long _time, float _latitude, float _longitude, float _altitude,
             float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
