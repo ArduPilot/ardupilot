@@ -177,71 +177,68 @@ void APM_BMP085_Class::ReadPress()
 // Send Command to Read Temperature
 void APM_BMP085_Class::Command_ReadTemp()
 {
-  Wire.beginTransmission(BMP085_ADDRESS);
-  Wire.send(0xF4);
-  Wire.send(0x2E);
-  Wire.endTransmission();
+	Wire.beginTransmission(BMP085_ADDRESS);
+	Wire.send(0xF4);
+	Wire.send(0x2E);
+	Wire.endTransmission();
 }
 
 // Read Raw Temperature values
 void APM_BMP085_Class::ReadTemp()
 {
 	byte tmp;
-	int16_t tmp2;
-
 	Wire.beginTransmission(BMP085_ADDRESS);
 	Wire.send(0xF6);
 	Wire.endTransmission();
 
 	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.requestFrom(BMP085_ADDRESS, 2);
+	Wire.requestFrom(BMP085_ADDRESS,2);
+
 	while(!Wire.available());	// wait
-	tmp2 = Wire.receive();
+	RawTemp = Wire.receive();
+
 	while(!Wire.available());	// wait
-	tmp = Wire.receive();
-	tmp2 = tmp2 << 8 | tmp;
-	if(RawTemp = 0)
-		RawTemp = tmp2;
-	RawTemp += tmp2;
-	RawTemp = RawTemp >> 1;
+	tmp 	= Wire.receive();
+
+	RawTemp = RawTemp << 8 | tmp;
 }
 
 // Calculate Temperature and Pressure in real units.
 void APM_BMP085_Class::Calculate()
 {
-  long x1, x2, x3, b3, b5, b6, p;
-  unsigned long b4, b7;
-  int32_t tmp;
+	long x1, x2, x3, b3, b5, b6, p;
+	unsigned long b4, b7;
+	int32_t tmp;
 
-  // See Datasheet page 13 for this formulas
-  // Based also on Jee Labs BMP085 example code. Thanks for share.
-  // Temperature calculations
-  x1 = ((long)RawTemp - ac6) * ac5 >> 15;
-  x2 = ((long) mc << 11) / (x1 + md);
-  b5 = x1 + x2;
-  Temp = (b5 + 8) >> 4;
+	// See Datasheet page 13 for this formulas
+	// Based also on Jee Labs BMP085 example code. Thanks for share.
+	// Temperature calculations
+	x1 = ((long)RawTemp - ac6) * ac5 >> 15;
+	x2 = ((long) mc << 11) / (x1 + md);
+	b5 = x1 + x2;
+	Temp = (b5 + 8) >> 4;
 
-  // Pressure calculations
-  b6 = b5 - 4000;
-  x1 = (b2 * (b6 * b6 >> 12)) >> 11;
-  x2 = ac2 * b6 >> 11;
-  x3 = x1 + x2;
-  //b3 = (((int32_t) ac1 * 4 + x3)<<oss + 2) >> 2; // BAD
-  //b3 = ((int32_t) ac1 * 4 + x3 + 2) >> 2;  //OK for oss=0
-  tmp = ac1;
-  tmp = (tmp*4 + x3)<<oss;
-  b3 = (tmp+2)/4;
-  x1 = ac3 * b6 >> 13;
-  x2 = (b1 * (b6 * b6 >> 12)) >> 16;
-  x3 = ((x1 + x2) + 2) >> 2;
-  b4 = (ac4 * (uint32_t) (x3 + 32768)) >> 15;
-  b7 = ((uint32_t) RawPress - b3) * (50000 >> oss);
-  p = b7 < 0x80000000 ? (b7 * 2) / b4 : (b7 / b4) * 2;
+	// Pressure calculations
+	b6 = b5 - 4000;
+	x1 = (b2 * (b6 * b6 >> 12)) >> 11;
+	x2 = ac2 * b6 >> 11;
+	x3 = x1 + x2;
+	//b3 = (((int32_t) ac1 * 4 + x3)<<oss + 2) >> 2; // BAD
+	//b3 = ((int32_t) ac1 * 4 + x3 + 2) >> 2;  //OK for oss=0
+	tmp = ac1;
+	tmp = (tmp*4 + x3)<<oss;
+	b3 = (tmp+2)/4;
+	x1 = ac3 * b6 >> 13;
+	x2 = (b1 * (b6 * b6 >> 12)) >> 16;
+	x3 = ((x1 + x2) + 2) >> 2;
+	b4 = (ac4 * (uint32_t) (x3 + 32768)) >> 15;
+	b7 = ((uint32_t) RawPress - b3) * (50000 >> oss);
+	p = b7 < 0x80000000 ? (b7 * 2) / b4 : (b7 / b4) * 2;
 
-  x1 = (p >> 8) * (p >> 8);
-  x1 = (x1 * 3038) >> 16;
-  x2 = (-7357 * p) >> 16;
-  Press = p + ((x1 + x2 + 3791) >> 4);
+	x1 = (p >> 8) * (p >> 8);
+	x1 = (x1 * 3038) >> 16;
+	x2 = (-7357 * p) >> 16;
+	Press = p + ((x1 + x2 + 3791) >> 4);
 }
 
 // Constructors ////////////////////////////////////////////////////////////////
