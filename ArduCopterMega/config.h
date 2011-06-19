@@ -246,6 +246,10 @@
 #endif
 
 
+#ifndef MINIMUM_THROTTLE
+# define MINIMUM_THROTTLE	130
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // STARTUP BEHAVIOUR
@@ -424,13 +428,13 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.35			// trying a lower val
+# define THROTTLE_BARO_P		0.3			// trying a lower val
 #endif
 #ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.05		//with 4m error, 12.5s windup
+# define THROTTLE_BARO_I		0.04		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.3		// upped with filter
+# define THROTTLE_BARO_D		0.35		// upped with filter
 #endif
 #ifndef THROTTLE_BARO_IMAX
 # define THROTTLE_BARO_IMAX		30
