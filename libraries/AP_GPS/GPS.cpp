@@ -15,8 +15,8 @@ GPS::update(void)
 	if (!result) {
 		if ((millis() - _idleTimer) > idleTimeout) {
 			_status = NO_GPS;
+			
 			init();
-
 			// reset the idle timer
 			_idleTimer = millis();
 		}
