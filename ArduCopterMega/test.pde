@@ -799,23 +799,25 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-static int8_t
-test_rawgps(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-
- 	while(1){
-		if (Serial1.available()){
-			digitalWrite(B_LED_PIN, HIGH); 		// Blink Yellow LED if we are sending data to GPS
-			Serial.write(Serial1.read());
-			digitalWrite(B_LED_PIN, LOW);
-		}
-		if(Serial.available() > 0){
-			return (0);
-		}
-  }
-}
+static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
+   print_hit_enter();
+   delay(1000);
+    while(1){
+           if (Serial3.available()){
+                   digitalWrite(B_LED_PIN, HIGH); // Blink Yellow LED if we are sending data to GPS
+                   Serial1.write(Serial3.read());
+                   digitalWrite(B_LED_PIN, LOW);
+           }
+           if (Serial1.available()){
+                   digitalWrite(C_LED_PIN, HIGH); // Blink Red LED if we are receiving data from GPS
+                   Serial3.write(Serial1.read());
+                   digitalWrite(C_LED_PIN, LOW);
+           }
+           if(Serial.available() > 0){
+                   return (0);
+     }
+   }
+ } 
 
 static int8_t
 test_xbee(uint8_t argc, const Menu::arg *argv)
