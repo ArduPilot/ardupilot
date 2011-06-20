@@ -10,6 +10,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 extern int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
 extern int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 extern int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
+extern int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde  
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -20,7 +21,8 @@ static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 						 "  logs\n"
 						 "  setup\n"
 						 "  test\n"
-						 "\n"
+ 						 "  planner\n"
+ 						 "\n"
 						 "Move the slide switch and reset to FLY.\n"
 						 "\n"));
 	return(0);
@@ -33,7 +35,8 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 	{"logs",		process_logs},
 	{"setup",		setup_mode},
 	{"test",		test_mode},
-	{"help",		main_menu_help}
+	{"help",		main_menu_help},
+	{"planner",		planner_mode}
 };
 
 // Create the top-level menu object.
