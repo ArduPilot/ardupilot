@@ -36,7 +36,6 @@ AP_GPS_Auto::AP_GPS_Auto(FastSerial *s, GPS **gps)  :
 void
 AP_GPS_Auto::init(void)
 {
-	idleTimeout = 1200;
 }
 
 // Called the first time that a client tries to kick the GPS to update.

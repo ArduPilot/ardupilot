@@ -40,7 +40,6 @@ AP_GPS_SIRF::init(void)
 
 	// send SiRF binary setup messages
 	_port->write(init_messages, sizeof(init_messages));
-	idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
