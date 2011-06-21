@@ -163,7 +163,7 @@ private:
 	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
 	/// rate.
 	///
-	static unsigned long	_idleTimeout;
+	unsigned long	_idleTimeout;
 
 
 	/// Our current status
