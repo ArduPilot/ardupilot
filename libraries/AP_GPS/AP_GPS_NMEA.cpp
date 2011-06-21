@@ -116,6 +116,8 @@ void AP_GPS_NMEA::init(void)
 
 	// send the ublox init strings
 	bs->print_P((const prog_char_t *)_ublox_init_string);
+	
+	idleTimeout = 1200;
 }
 
 bool AP_GPS_NMEA::read(void)

@@ -33,6 +33,8 @@ AP_GPS_MTK::init(void)
 	
 	// set initial epoch code
 	_epoch = TIME_OF_DAY;
+	
+	idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
