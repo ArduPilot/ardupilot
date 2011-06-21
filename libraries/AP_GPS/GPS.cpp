@@ -13,7 +13,7 @@ GPS::update(void)
 
 	// if we did not get a message, and the idle timer has expired, re-init
 	if (!result) {
-		if ((millis() - _idleTimer) > idleTimeout) {
+		if ((millis() - _idleTimer) > _idleTimeout) {
 			_status = NO_GPS;
 			
 			init();

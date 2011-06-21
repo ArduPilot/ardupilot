@@ -85,6 +85,10 @@ public:
 	/// already seen.
 	bool	new_data;
 
+	/// Update the idle timeout value
+	///
+	void setIdleTimeout(unsigned long ms) { _idleTimeout = ms; }
+	
 	// Deprecated properties
 	bool	fix;			///< true if we have a position fix (use ::status instead)
 	bool	valid_read;		///< true if we have seen data from the GPS (use ::status instead)
@@ -95,14 +99,6 @@ public:
 	// HIL support
 	virtual void setHIL(long time, float latitude, float longitude, float altitude,
             float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
-
-	/// Time in milliseconds after which we will assume the GPS is no longer
-	/// sending us updates and attempt a re-init.
-	///
-	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
-	/// rate.
-	///
-	unsigned long	idleTimeout;
 
 protected:
 	Stream	*_port;			///< port the GPS is attached to
@@ -160,6 +156,15 @@ private:
 	/// Last time that the GPS driver got a good packet from the GPS
 	///
 	unsigned long 				_idleTimer;
+	
+	/// Time in milliseconds after which we will assume the GPS is no longer
+	/// sending us updates and attempt a re-init.
+	///
+	/// 1200ms allows a small amount of slack over the worst-case 1Hz update
+	/// rate.
+	///
+	static unsigned long	_idleTimeout;
+
 
 	/// Our current status
 	GPS_Status					_status;

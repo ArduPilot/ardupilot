@@ -36,7 +36,6 @@ AP_GPS_MTK16::init(void)
 	_epoch = TIME_OF_DAY;
 	_time_offset = 0;
 	_offset_calculated = false;
-	idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
