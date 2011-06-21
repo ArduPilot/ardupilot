@@ -29,6 +29,7 @@ AP_GPS_UBLOX::init(void)
 	_port->flush();
 	
 	_epoch = TIME_OF_WEEK;
+	idleTimeout = 1200;	
 }
 
 // Process bytes available from the stream
