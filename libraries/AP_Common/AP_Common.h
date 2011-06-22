@@ -59,7 +59,7 @@ typedef struct {
 // these slide, we force them to become errors so that the
 // developer has to find a safer alternative.
 //
-#pragma GCC diagnostic error "-Wfloat-equal"
+//#pragma GCC diagnostic error "-Wfloat-equal"
 
 // The following is strictly for type-checking arguments to printf_P calls
 // in conjunction with a suitably modified Arduino IDE; never define for

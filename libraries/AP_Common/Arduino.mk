@@ -170,7 +170,7 @@ ASOPTS			=	-assembler-with-cpp
 CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections
+LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 
 LIBS			=	-lm
 
@@ -302,6 +302,9 @@ SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
 
 # EEP file
 SKETCHEEP		=	$(BUILDROOT)/$(SKETCH).eep
+
+# Map file
+SKETCHMAP		=	$(BUILDROOT)/$(SKETCH).map
 
 # The core library
 CORELIB			=	$(BUILDROOT)/$(HARDWARE)/core.a
