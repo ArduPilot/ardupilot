@@ -78,7 +78,11 @@ BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
 #
 # The Makefile calling us must specify BOARD
 #
-include $(TMPDIR)/config.mk
+include $(SKETCHBOOK)/config.mk
+ifeq ($(PORT),)
+$(error ERROR: could not locate $(SKETCHBOOK)/config.mk, please run 'make configure' first)
+endif
+
 HARDWARE		?=	arduino
 ifeq ($(BOARD),)
 $(error ERROR: must set BOARD before including this file)
@@ -276,6 +280,9 @@ endif
 MCU			:=	$(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
 F_CPU			:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
 HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
+UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
+UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+
 ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
 endif
@@ -324,6 +331,12 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
 upload:
+	avrdude -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
+
+debug:
+	avarice --mkII --capture --jtag usb :4242 & \
+	gnome-terminal -x avr-gdb $(SKETCHELF) \
+	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
 
 clean:
 	@rm -fr $(BUILDROOT)
