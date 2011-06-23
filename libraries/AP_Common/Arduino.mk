@@ -28,16 +28,6 @@
 #
 
 ################################################################################
-# Config options
-#
-# The Makefile calling us must specify BOARD
-#
-HARDWARE		?=	arduino
-ifeq ($(BOARD),)
-$(error ERROR: must set BOARD before including this file)
-endif
-
-################################################################################
 # Paths
 #
 
@@ -81,6 +71,18 @@ SKETCH			:=	$(lastword $(subst /, ,$(SRCROOT)))
 #
 TMPDIR			?=	/tmp
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
+
+
+################################################################################
+# Config options
+#
+# The Makefile calling us must specify BOARD
+#
+include $(TMPDIR)/config.mk
+HARDWARE		?=	arduino
+ifeq ($(BOARD),)
+$(error ERROR: must set BOARD before including this file)
+endif
 
 #
 # Find Arduino, if not explicitly specified
