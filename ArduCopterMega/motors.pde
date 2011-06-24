@@ -17,21 +17,24 @@ void arm_motors()
 		// full right
 		if (g.rc_4.control_in > 4000) {
 
-			if (arming_counter > AUTO_LEVEL_DELAY){
-				auto_level_counter = 255;
-				arming_counter = 0;
+			if (control_mode < ALT_HOLD){
 
-			}else if (arming_counter == ARM_DELAY){
-				motor_armed 	= true;
-				arming_counter 	= ARM_DELAY;
+				if (arming_counter > AUTO_LEVEL_DELAY){
+					auto_level_counter = 255;
+					arming_counter = 0;
 
-				// Remember Orientation
-				// ---------------------------
-				init_simple_bearing();
+				}else if (arming_counter == ARM_DELAY){
+					motor_armed 	= true;
+					arming_counter 	= ARM_DELAY;
 
-				arming_counter++;
-			} else{
-				arming_counter++;
+					// Remember Orientation
+					// ---------------------------
+					init_simple_bearing();
+
+					arming_counter++;
+				} else{
+					arming_counter++;
+				}
 			}
 
 		// full left

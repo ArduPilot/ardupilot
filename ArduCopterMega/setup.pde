@@ -653,7 +653,7 @@ setup_gyro(uint8_t argc, const Menu::arg *argv)
 
 void clear_offsets()
 {
-	Vector3f _offsets;
+	Vector3f _offsets(0.0,0.0,0.0);
 	compass.set_offsets(_offsets);
 	compass.save_offsets();
 }

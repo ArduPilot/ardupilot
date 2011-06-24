@@ -9,7 +9,6 @@ void init_camera()
 	g.rc_camera_pitch.radio_trim 	= 1500;
 	g.rc_camera_pitch.radio_max 	= 2000;
 
-
 	g.rc_camera_roll.set_angle(4500);
 	g.rc_camera_roll.radio_min 		= 1000;
 	g.rc_camera_roll.radio_trim 	= 1500;

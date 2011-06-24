@@ -726,7 +726,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             // find the requested parameter
             vp = AP_Var::find(key);
-            if ((NULL != vp) &&                             // exists
+            if ((NULL != vp) &&                             	// exists
                     !isnan(packet.param_value) &&               // not nan
                     !isinf(packet.param_value)) {               // not inf
 
