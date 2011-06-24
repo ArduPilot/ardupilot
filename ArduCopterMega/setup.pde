@@ -288,8 +288,10 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 		g.frame_orientation.set_and_save(PLUS_FRAME);
 	} else if (!strcmp_P(argv[1].str, PSTR("+"))) {
 		g.frame_orientation.set_and_save(PLUS_FRAME);
+	} else if (!strcmp_P(argv[1].str, PSTR("v"))) {
+		g.frame_orientation.set_and_save(V_FRAME);
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[x,+]\n"));
+		Serial.printf_P(PSTR("\nOptions:[x,+,v]\n"));
 		report_frame();
 		return 0;
 	}
@@ -835,6 +837,8 @@ void report_frame()
 		Serial.printf_P(PSTR("X mode\n"));
 	else if(g.frame_orientation == PLUS_FRAME)
 		Serial.printf_P(PSTR("+ mode\n"));
+	else if(g.frame_orientation == V_FRAME)
+		Serial.printf_P(PSTR("V mode\n"));
 #endif
 
 	print_blanks(2);
