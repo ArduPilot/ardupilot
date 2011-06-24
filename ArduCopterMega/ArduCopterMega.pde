@@ -45,10 +45,10 @@ version 2.1 of the License, or (at your option) any later version.
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
 // Configuration
+#include "defines.h"
 #include "config.h"
 
 // Local modules
-#include "defines.h"
 #include "Parameters.h"
 #include "GCS.h"
 #include "HIL.h"
@@ -496,13 +496,6 @@ void loop()
 		//if (delta_ms_fast_loop > 6)
 		//	Log_Write_Performance();
 
-		/*
-		if(delta_ms_fast_loop > 11){
-			update_timer_light(true);
-			//Serial.println(delta_ms_fast_loop,DEC);
-		}else{
-			update_timer_light(false);
-		}*/
 
 		// Execute the fast loop
 		// ---------------------

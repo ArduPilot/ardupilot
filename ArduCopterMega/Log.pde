@@ -579,14 +579,14 @@ void Log_Write_Performance()
 
 	//*
 	DataFlash.WriteLong(	millis()- perf_mon_timer);
-	DataFlash.WriteInt(		mainLoop_count);
-	DataFlash.WriteInt(		G_Dt_max);
+	DataFlash.WriteInt (	mainLoop_count);
+	DataFlash.WriteInt (	G_Dt_max);
 	DataFlash.WriteByte(	dcm.gyro_sat_count);
 	DataFlash.WriteByte(	imu.adc_constraints);
 	DataFlash.WriteByte(	dcm.renorm_sqrt_count);
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);
 	DataFlash.WriteByte(	gps_fix_count);
-	DataFlash.WriteInt(		(int)(dcm.get_health() * 1000));
+	DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));
 	//*/
 	//PM,	20005,	3742, 10,0,0,0,0,89,1000,
 

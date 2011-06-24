@@ -36,9 +36,9 @@ void output_motors_armed()
 
 		//Back side
 		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out;	 // CW	 BACK LEFT
-		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out;	 // CCW  BACK RIGHT
+		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out;	 // CCW	BACK RIGHT
 
-	}else{
+	}if(g.frame_orientation == PLUS_FRAME){
 		roll_out 		= (float)g.rc_1.pwm_out * 0.71;
 		pitch_out 	 	= (float)g.rc_2.pwm_out * 0.71;
 
@@ -47,16 +47,48 @@ void output_motors_armed()
 		motor_out[CH_2] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	FRONT RIGHT
 		motor_out[CH_11] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	FRONT LEFT
 
-                //Left side
-		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out;	        // CW	LEFT
+				//Left side
+		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out;					// CW	LEFT
 
-                //Right side
-		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out;	        // CW	RIGHT
+				//Right side
+		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out;					// CW	RIGHT
 
 		//Back side
 		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CW	BACK
 		motor_out[CH_4]		= g.rc_3.radio_out - roll_out - pitch_out;	// CCW 	BACK RIGHT
 		motor_out[CH_8]		= g.rc_3.radio_out + roll_out - pitch_out;	// CCW	BACK LEFT
+
+	}else{
+
+		int roll_out2, pitch_out2;
+		int roll_out3, pitch_out3;
+		int roll_out4, pitch_out4;
+
+		roll_out 	 	= g.rc_1.pwm_out;
+		pitch_out 	 	= g.rc_2.pwm_out;
+		roll_out2 	 	= (float)g.rc_1.pwm_out * 0.833;
+		pitch_out2 	 	= (float)g.rc_2.pwm_out * 0.34;
+		roll_out3 	 	= (float)g.rc_1.pwm_out * 0.666;
+		pitch_out3 	 	= (float)g.rc_2.pwm_out * 0.32;
+		roll_out4 	 	= (float)g.rc_1.pwm_out * 0.5;
+		pitch_out4 	 	= (float)g.rc_2.pwm_out * 0.98;
+
+		//Front side
+		motor_out[CH_1]		= g.rc_3.radio_out + g.rc_2.pwm_out - roll_out;		// CW	 FRONT RIGHT
+		motor_out[CH_11] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;		// CCW FRONT LEFT
+
+		//Left side
+		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out2; // CW	 LEFT FRONT
+		motor_out[CH_8] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out3; // CCW LEFT BACK
+
+		//Right side
+		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out3; // CW	 RIGHT BACK
+		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out2; // CCW RIGHT FRONT
+
+		//Back side
+		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW	 BACK LEFT
+		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
+
 	}
 
 	// Yaw
@@ -67,8 +99,8 @@ void output_motors_armed()
 
 	motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
 	motor_out[CH_7]		-= g.rc_4.pwm_out;	// CW
-	motor_out[CH_10]	-= g.rc_4.pwm_out;      // CW
-	motor_out[CH_3]		-= g.rc_4.pwm_out;      // CW
+	motor_out[CH_10]	-= g.rc_4.pwm_out;			// CW
+	motor_out[CH_3]		-= g.rc_4.pwm_out;			// CW
 
 	// limit output so motors don't stop
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);

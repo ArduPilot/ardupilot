@@ -44,18 +44,6 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 			uint8_t nav_mode = MAV_NAV_VECTOR;
 
 			switch(control_mode) {
-				case ACRO:
-					mode 		= MAV_MODE_MANUAL;
-					break;
-				case STABILIZE:
-					mode 		= MAV_MODE_GUIDED;
-					break;
-				case SIMPLE:
-					mode 		= MAV_MODE_TEST1;
-					break;
-				case ALT_HOLD:
-					mode 		= MAV_MODE_TEST2;
-					break;
 				case LOITER:
 					mode 		= MAV_MODE_AUTO;
 					nav_mode 	= MAV_NAV_HOLD;
@@ -68,6 +56,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					mode 		= MAV_MODE_AUTO;
 					nav_mode 	= MAV_NAV_RETURNING;
 					break;
+				default:
+					mode 		= control_mode + 100;
+
 			}
 
 			uint8_t status 		= MAV_STATE_ACTIVE;
