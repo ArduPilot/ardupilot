@@ -11,6 +11,26 @@ This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
+
+Special Thanks for Contributors:
+
+Hein Hollander 		:Octo Support
+Dani Saez 			:V Ocoto Support
+Max Levine			:Tri Support, Graphics
+Jose Julio			:Stabilization Control laws
+Randy MacKay		:Heli Support
+Jani Hiriven		:Testing feedback
+Andrew Tridgell		:Mavlink Support
+James Goppert		:Mavlink Support
+Doug Weibel			:Libraries
+Mike Smith			:Libraries, Coding support
+HappyKillmore		:Mavlink GCS
+Micheal Oborne		:Mavlink GCS
+Jack Dunkle			:Alpha testing
+Christof Schmid		:Alpha testing
+
+And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
+
 */
 
 ////////////////////////////////////////////////////////////////////////////////
