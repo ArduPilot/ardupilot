@@ -18,7 +18,7 @@ MENU(planner_menu, "planner", planner_menu_commands);
 int8_t
 planner_mode(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("Planner Mode\n\Not intended for manual use\n\n"));
+	Serial.printf_P(PSTR("Planner Mode\nNot intended for manual use\n\n"));
 	planner_menu.run();
 	return (0);
 }
