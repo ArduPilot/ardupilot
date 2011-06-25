@@ -99,6 +99,10 @@ void init_ardupilot()
 	pinMode(PUSHBUTTON_PIN, INPUT);			// unused
 	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
 
+	// XXX set Analog out 14 to output
+	//		 76543210
+//	DDRK |= B01010000;
+
 	#if MOTOR_LEDS == 1
 		pinMode(FR_LED, OUTPUT);			// GPS status LED
 		pinMode(RE_LED, OUTPUT);			// GPS status LED

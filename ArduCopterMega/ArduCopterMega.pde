@@ -28,6 +28,7 @@ HappyKillmore		:Mavlink GCS
 Micheal Oborne		:Mavlink GCS
 Jack Dunkle			:Alpha testing
 Christof Schmid		:Alpha testing
+Guntars				:Arming safety suggestion
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 
@@ -507,6 +508,7 @@ void loop()
 	// We want this to execute fast
 	// ----------------------------
 	if (millis() - fast_loopTimer >= 5) {
+		//PORTK |= B00010000;
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
 		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
@@ -549,6 +551,7 @@ void loop()
             }
         }
 	}
+	//PORTK &= B11101111;
 }
 
 // Main loop
@@ -610,8 +613,7 @@ void medium_loop()
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if(g.compass_enabled){
 					compass.read();		 						// Read magnetometer
-					compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
-					//compass.calculate(dcm.roll, dcm.pitch);		// Calculate heading
+					compass.calculate(dcm.get_dcm_matrix());  	// Calculate heading
 					compass.null_offsets(dcm.get_dcm_matrix());
 				}
 			#endif
@@ -701,7 +703,6 @@ void medium_loop()
 					Log_Write_Control_Tuning();
 			#endif
 
-
 			// XXX this should be a "GCS medium loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				gcs.data_stream_send(5,45);
@@ -711,13 +712,12 @@ void medium_loop()
 				gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
 			#endif
 
-			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				hil.data_stream_send(5,45);
-			#endif
+			//#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+			//	hil.data_stream_send(5,45);
+			//#endif
 
 			if (g.log_bitmask & MASK_LOG_MOTORS)
 				Log_Write_Motors();
-
 
 			break;
 
@@ -882,14 +882,14 @@ void slow_loop()
 				gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
-			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				hil.data_stream_send(1,5);
-			#endif
+			// XXX This was taking 14ms for no reason!!!
+			//#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+				//hil.data_stream_send(1,5);
+			//#endif
 
 			#if CHANNEL_6_TUNING != CH6_NONE
 				tuning();
 			#endif
-
 
 			// filter out the baro offset.
 			//if(baro_alt_offset > 0) baro_alt_offset--;
@@ -1310,9 +1310,16 @@ void update_alt()
 		int temp_sonar 		= sonar.read();
 
 		// spike filter
-		//if((temp_sonar - sonar_alt) < 50){
+		if((temp_sonar - sonar_alt) < 50){
 			sonar_alt = temp_sonar;
-		//}
+		}
+
+		/*
+		doesn't really seem to be a need for this using EZ0:
+		float temp = cos_pitch_x * cos_roll_x;
+		temp = max(temp, 0.707);
+		sonar_alt = (float)sonar_alt * temp;
+		*/
 
 		scale = (sonar_alt - 300) / 300;
 		scale = constrain(scale, 0, 1);
@@ -1325,58 +1332,6 @@ void update_alt()
 		current_loc.alt = baro_alt + home.alt;
 	}
 
-	#endif
-}
-
-// updated at 10hz
-void update_alt2()
-{
-	altitude_sensor = BARO;
-
-	#if HIL_MODE == HIL_MODE_ATTITUDE
-	current_loc.alt = g_gps->altitude;
-	#else
-
-	if(g.sonar_enabled){
-		// filter out offset
-
-		// read barometer
-		baro_alt 			= read_barometer();
-		int temp_sonar 		= sonar.read();
-
-		// spike filter
-		if((temp_sonar - sonar_alt) < 50){
-			sonar_alt = temp_sonar;
-		}
-
-		// decide if we're using sonar
-		if ((baro_alt < 1200) || sonar_alt < 300){
-			// correct alt for angle of the sonar
-			float temp = cos_pitch_x * cos_roll_x;
-			temp = max(temp, 0.707);
-
-			sonar_alt = (float)sonar_alt * temp;
-
-			if(sonar_alt < 450){
-				altitude_sensor = SONAR;
-				baro_alt_offset = sonar_alt - baro_alt;
-			}
-		}
-
-		// calculate our altitude
-		if(altitude_sensor == BARO){
-			current_loc.alt = baro_alt + baro_alt_offset + home.alt;
-		}else{
-			current_loc.alt = sonar_alt + home.alt;
-		}
-
-	}else{
-		baro_alt 		= read_barometer();
-		// no sonar altitude
-		current_loc.alt = baro_alt + home.alt;
-	}
-
-	//Serial.printf("b_alt: %ld, home: %ld ", baro_alt, home.alt);
 	#endif
 }
 
@@ -1407,8 +1362,6 @@ void tuning(){
 		g.pid_stabilize_pitch.kP((float)g.rc_6.control_in / 1000.0);
 
 	#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
-		// uncomment me out to try in flight dampening, 0 = unflyable, .2 = unfun, .13 worked for me.
-		// use test,radio to get the value to use in your config.
 		g.pid_stabilize_pitch.kD((float)g.rc_6.control_in / 1000.0);
 		g.pid_stabilize_roll.kD((float)g.rc_6.control_in / 1000.0);
 
