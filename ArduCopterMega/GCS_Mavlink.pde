@@ -22,7 +22,6 @@ streamRatePosition			(&_group, 4, 0, PSTR("POSITION")),
 streamRateExtra1			(&_group, 5, 0, PSTR("EXTRA1")),
 streamRateExtra2			(&_group, 6, 0, PSTR("EXTRA2")),
 streamRateExtra3			(&_group, 7, 0, PSTR("EXTRA3"))
-
 {
 
 }
@@ -172,9 +171,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             int freq = 0; // packet frequency
 
-            if (packet.start_stop == 0) freq = 0; // stop sending
-            else if (packet.start_stop == 1) freq = packet.req_message_rate; // start sending
-            else break;
+            if (packet.start_stop == 0)
+            	freq = 0; // stop sending
+            else if (packet.start_stop == 1)
+            	freq = packet.req_message_rate; // start sending
+            else
+            	break;
 
 			switch(packet.req_stream_id){
 
@@ -188,6 +190,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     streamRateExtra2             = freq;
                     streamRateExtra3.set_and_save(freq);	// We just do set and save on the last as it takes care of the whole group.
 					break;
+
 				case MAV_DATA_STREAM_RAW_SENSORS:
                     streamRateRawSensors = freq;		// We do not set and save this one so that if HIL is shut down incorrectly
 														// we will not continue to broadcast raw sensor data at 50Hz.
@@ -195,9 +198,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_DATA_STREAM_EXTENDED_STATUS:
                     streamRateExtendedStatus.set_and_save(freq);
 					break;
+
 				case MAV_DATA_STREAM_RC_CHANNELS:
                     streamRateRCChannels.set_and_save(freq);
 					break;
+
 				case MAV_DATA_STREAM_RAW_CONTROLLER:
                     streamRateRawController.set_and_save(freq);
 					break;
@@ -207,15 +212,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_DATA_STREAM_POSITION:
                     streamRatePosition.set_and_save(freq);
 					break;
+
 				case MAV_DATA_STREAM_EXTRA1:
                     streamRateExtra1.set_and_save(freq);
 					break;
+
 				case MAV_DATA_STREAM_EXTRA2:
                     streamRateExtra2.set_and_save(freq);
 					break;
+
 				case MAV_DATA_STREAM_EXTRA3:
                     streamRateExtra3.set_and_save(freq);
 					break;
+
 				default:
 					break;
 			}
