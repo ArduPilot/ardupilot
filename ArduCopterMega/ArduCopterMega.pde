@@ -234,8 +234,8 @@ const char *comma = ",";
 const char* flight_mode_strings[] = {
 	"STABILIZE",
 	"ACRO",
-	"ALT_HOLD",
 	"SIMPLE",
+	"ALT_HOLD",
 	"AUTO",
 	"GCS_AUTO",
 	"LOITER",
@@ -830,7 +830,6 @@ void slow_loop()
 			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
-//			Serial.printf("sc: %4.4f \n", imu._sensor_compensation(0,50));
 
 			if(superslow_loopCounter > 800){ // every 4 minutes
 				#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -925,6 +924,9 @@ void super_slow_loop()
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
 		hil.send_message(MSG_HEARTBEAT);
 	#endif
+
+	//Serial.printf("r:%d p:%d\n",dcm.roll_sensor, dcm.pitch_sensor);
+
 
 	//if(gcs_simple.read()){
 	//	Serial.print("!");
@@ -1458,6 +1460,7 @@ void check_DCM()
 	}
 	#endif
 }
+
 
 
 
