@@ -48,8 +48,13 @@ AP_DCM::update_DCM(float _G_Dt)
 	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
 
 	matrix_update(_G_Dt); 	// Integrate the DCM matrix
-	normalize();			// Normalize the DCM matrix
-	drift_correction();		// Perform drift correction
+
+	//if(_toggle){
+		normalize();			// Normalize the DCM matrix
+	//}else{
+		drift_correction();		// Perform drift correction
+	//}
+	//_toggle = !_toggle;
 
 	euler_angles();			// Calculate pitch, roll, yaw for stabilization and navigation
 }
@@ -78,7 +83,7 @@ AP_DCM::matrix_update(float _G_Dt)
 	Matrix3f	temp_matrix;
 
 	//Record when you saturate any of the gyros.
-	if((fabs(_gyro_vector.x) >= radians(300)) ||
+	if( (fabs(_gyro_vector.x) >= radians(300)) ||
 		(fabs(_gyro_vector.y) >= radians(300)) ||
 		(fabs(_gyro_vector.z) >= radians(300))){
 		gyro_sat_count++;
@@ -92,14 +97,20 @@ AP_DCM::matrix_update(float _G_Dt)
 	}
 
  #if OUTPUTMODE == 1
+ 	float tmp = _G_Dt * _omega.x;
+	update_matrix.b.z = -tmp; 		// -delta Theta x
+	update_matrix.c.y =  tmp; 		// delta Theta x
+
+ 	tmp = _G_Dt * _omega.y;
+	update_matrix.c.x = -tmp; 		// -delta Theta y
+	update_matrix.a.z =  tmp; 		// delta Theta y
+
+ 	tmp = _G_Dt * _omega.z;
+	update_matrix.b.x =  tmp; 		// delta Theta z
+	update_matrix.a.y = -tmp; 		// -delta Theta z
+
 	update_matrix.a.x = 0;
-	update_matrix.a.y = -_G_Dt * _omega.z; 		// -delta Theta z
-	update_matrix.a.z =  _G_Dt * _omega.y; 		// delta Theta y
-	update_matrix.b.x =  _G_Dt * _omega.z; 		// delta Theta z
 	update_matrix.b.y = 0;
-	update_matrix.b.z = -_G_Dt * _omega.x; 		// -delta Theta x
-	update_matrix.c.x = -_G_Dt * _omega.y; 		// -delta Theta y
-	update_matrix.c.y =  _G_Dt * _omega.x; 		// delta Theta x
 	update_matrix.c.z = 0;
  #else										// Uncorrected data (no drift correction)
 	update_matrix.a.x = 0;
@@ -115,7 +126,6 @@ AP_DCM::matrix_update(float _G_Dt)
 
 	temp_matrix = _dcm_matrix * update_matrix;
 	_dcm_matrix = _dcm_matrix + temp_matrix;		// Equation 17
-
 }
 
 
@@ -188,7 +198,7 @@ AP_DCM::renorm(Vector3f const &a, int &problem)
 	float	renorm_val;
 
 	renorm_val = a * a;
-	
+
 	if (renorm_val < 1.5625f && renorm_val > 0.64f) {			// Check if we are OK to use Taylor expansion
 		renorm_val = 0.5 * (3 - renorm_val);					// eq.21
 	} else if (renorm_val < 100.0f && renorm_val > 0.01f) {
