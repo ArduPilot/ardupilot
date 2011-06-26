@@ -222,12 +222,12 @@ AP_IMU_Oilpan::_sensor_compensation(uint8_t channel, int temperature) const
     // do gyro temperature compensation
     if (channel < 3) {
 
-		//return 1658;
-       //*
+		return 1658;
+       /*
         return  _gyro_temp_curve[channel][0] +
                 _gyro_temp_curve[channel][1] * temperature +
                 _gyro_temp_curve[channel][2] * temperature * temperature;
-       // */
+       //*/
     }
 
     // do fixed-offset accelerometer compensation
