@@ -40,7 +40,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.26 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.27 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -100,8 +100,8 @@ void init_ardupilot()
 	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
 
 	// XXX set Analog out 14 to output
-	//		 76543210
-//	DDRK |= B01010000;
+	//  	   76543210
+	//DDRK |= B01010000;
 
 	#if MOTOR_LEDS == 1
 		pinMode(FR_LED, OUTPUT);			// GPS status LED
