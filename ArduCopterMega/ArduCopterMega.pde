@@ -528,10 +528,17 @@ void loop()
 	if (millis() - fiftyhz_loopTimer > 19) {
 		delta_ms_fiftyhz 		= millis() - fiftyhz_loopTimer;
 		fiftyhz_loopTimer		= millis();
+		//PORTK |= B01000000;
+
+		// reads all of the necessary trig functions for cameras, throttle, etc.
+		update_trig();
 
 		medium_loop();
 
+
+		// Stuff to run at full 50hz, but after the loops
 		fifty_hz_loop();
+
 		counter_one_herz++;
 
 		if(counter_one_herz == 50){
@@ -550,10 +557,13 @@ void loop()
                 resetPerfData();
             }
         }
+		//PORTK &= B10111111;
 	}
 	//PORTK &= B11101111;
 }
-
+//  PORTK |= B01000000;
+//	PORTK &= B10111111;
+//
 // Main loop
 void fast_loop()
 {
@@ -589,10 +599,6 @@ void fast_loop()
 
 void medium_loop()
 {
-
-	// reads all of the necessary trig functions for cameras, throttle, etc.
-	update_trig();
-
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
@@ -690,9 +696,7 @@ void medium_loop()
 			// perform next command
 			// --------------------
 			if(control_mode == AUTO){
-				//if(home_is_set){
-					update_commands();
-				//}
+				update_commands();
 			}
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -712,9 +716,9 @@ void medium_loop()
 				gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
 			#endif
 
-			//#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-			//	hil.data_stream_send(5,45);
-			//#endif
+			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+				hil.data_stream_send(5,45);
+			#endif
 
 			if (g.log_bitmask & MASK_LOG_MOTORS)
 				Log_Write_Motors();
@@ -826,6 +830,7 @@ void slow_loop()
 			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
+			Serial.printf("sc: %4.4f \n", imu._sensor_compensation(0,50));
 
 			if(superslow_loopCounter > 800){ // every 4 minutes
 				#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -882,10 +887,9 @@ void slow_loop()
 				gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
-			// XXX This was taking 14ms for no reason!!!
-			//#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				//hil.data_stream_send(1,5);
-			//#endif
+			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+				hil.data_stream_send(1,5);
+			#endif
 
 			#if CHANNEL_6_TUNING != CH6_NONE
 				tuning();

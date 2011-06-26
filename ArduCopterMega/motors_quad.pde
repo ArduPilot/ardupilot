@@ -64,9 +64,6 @@ void output_motors_armed()
 			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
 			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
 			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-			// InstantPWM
-			APM_RC.Force_Out0_Out1();
-			APM_RC.Force_Out2_Out3();
 		}else{
 			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
 			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
@@ -78,10 +75,10 @@ void output_motors_armed()
 		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
 		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
 		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-		// InstantPWM
-		APM_RC.Force_Out0_Out1();
-		APM_RC.Force_Out2_Out3();
 	#endif
+	// InstantPWM
+	APM_RC.Force_Out0_Out1();
+	APM_RC.Force_Out2_Out3();
 }
 
 void output_motors_disarmed()
@@ -102,6 +99,10 @@ void output_motors_disarmed()
 	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+
+	// InstantPWM
+	APM_RC.Force_Out0_Out1();
+	APM_RC.Force_Out2_Out3();
 }
 
 void output_motor_test()
