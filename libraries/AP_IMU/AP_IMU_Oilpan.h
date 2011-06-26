@@ -95,14 +95,14 @@ private:
 	// Maximum possible value returned by an offset-corrected sensor channel
 	//
 	static const float      _adc_constraint = 900;
-	
+
 	// Gyro and Accelerometer calibration criterial
 	//
 	static const float		_gyro_total_cal_change = 4.0;		// Experimentally derived - allows for some minor motion
-	static const float		_gyro_max_cal_offset = 320.0;		
+	static const float		_gyro_max_cal_offset = 320.0;
 	static const float		_accel_total_cal_change = 4.0;
 	static const float		_accel_max_cal_offset = 250.0;
-	
+
 };
 
 #endif
