@@ -830,7 +830,7 @@ void slow_loop()
 			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
-			Serial.printf("sc: %4.4f \n", imu._sensor_compensation(0,50));
+//			Serial.printf("sc: %4.4f \n", imu._sensor_compensation(0,50));
 
 			if(superslow_loopCounter > 800){ // every 4 minutes
 				#if HIL_MODE != HIL_MODE_ATTITUDE
