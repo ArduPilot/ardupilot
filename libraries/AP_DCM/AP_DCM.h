@@ -33,7 +33,8 @@ public:
 		_health(1.),
 		_kp_roll_pitch(0.05967),
 		_ki_roll_pitch(0.00001278),
-		_kp_yaw(0.8)
+		_kp_yaw(0.8),
+		_toggle(0)
 	{}
 
 	// Accessors
@@ -115,6 +116,7 @@ private:
 	float 		_course_over_ground_y; 		// Course overground Y axis
 	float		_health;
 	bool		_centripetal;
+	bool		_toggle;
 };
 
 #endif
