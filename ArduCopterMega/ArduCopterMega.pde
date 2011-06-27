@@ -219,7 +219,9 @@ GPS         *g_gps;
 #if SONAR_TYPE == MAX_SONAR_XL
 	AP_RangeFinder_MaxsonarXL sonar;//(SONAR_PORT, &adc);
 #elif SONAR_TYPE == MAX_SONAR_LV
-	AP_RangeFinder_MaxsonarLV sonar;//(SONAR_PORT, &adc);
+	// XXX honestly I think these output the same values
+	// If someone knows, can they confirm it?
+	AP_RangeFinder_MaxsonarXL sonar;//(SONAR_PORT, &adc);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -316,7 +318,6 @@ float cos_roll_x 	= 1;
 float cos_pitch_x 	= 1;
 float cos_yaw_x 	= 1;
 float sin_pitch_y, sin_yaw_y, sin_roll_y;
-float sin_nav_y, cos_nav_x;					// used in calc_nav_output XXX move to local funciton
 bool simple_bearing_is_set = false;
 long initial_simple_bearing;				// used for Simple mode
 
@@ -707,7 +708,6 @@ void medium_loop()
 					Log_Write_Control_Tuning();
 			#endif
 
-			// XXX this should be a "GCS medium loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				gcs.data_stream_send(5,45);
 				// send all requested output streams with rates requested
@@ -786,8 +786,6 @@ void fifty_hz_loop()
 	#endif
 
 
-	// XXX is it appropriate to be doing the comms below on the fast loop?
-
 	#if HIL_MODE != HIL_MODE_DISABLED && HIL_PORT != GCS_PORT
 		// kick the HIL to process incoming sensor packets
 		hil.update();
@@ -809,8 +807,6 @@ void fifty_hz_loop()
 	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 		gcs.data_stream_send(45,1000);
 	#endif
-	// XXX this should be absorbed into the above,
-	// or be a "GCS fast loop" interface
 
 	#if FRAME_CONFIG == TRI_FRAME
 		// Hack - had to move to 50hz loop to test a theory
@@ -876,7 +872,6 @@ void slow_loop()
 			// blink if we are armed
 			update_lights();
 
-			// XXX this should be a "GCS slow loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				gcs.data_stream_send(1,5);
 				// send all requested output streams with rates requested
@@ -919,7 +914,7 @@ void super_slow_loop()
 	if (g.log_bitmask & MASK_LOG_CURRENT)
 		Log_Write_Current();
 
-    gcs.send_message(MSG_HEARTBEAT); // XXX This is running at 3 1/3 Hz instead of 1 Hz
+    gcs.send_message(MSG_HEARTBEAT);
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
 		hil.send_message(MSG_HEARTBEAT);
@@ -1122,13 +1117,27 @@ void update_current_flight_mode(void)
 					limit_nav_pitch_roll(4500);
 				}
 
-				// are we at rest? reset nav_yaw
-				if(g.rc_3.control_in == 0){
-					clear_yaw_control();
-				}else{
-					// Yaw control
-					output_manual_yaw();
-				}
+
+				#if SIMPLE_LOOK_AT_HOME == 0
+					// This is typical yaw behavior
+
+					// are we at rest? reset nav_yaw
+					if(g.rc_3.control_in == 0){
+						clear_yaw_control();
+					}else{
+						// Yaw control
+						output_manual_yaw();
+					}
+				#else
+					// This is experimental,
+					// copter will always point at home
+					if(home_is_set)
+						point_at_home_yaw();
+
+					// Output Pitch, Roll, Yaw and Throttle
+					// ------------------------------------
+					auto_yaw();
+				#endif
 
 				// apply throttle control
 				output_manual_throttle();
@@ -1445,6 +1454,11 @@ void update_nav_yaw()
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
 		nav_yaw = target_bearing;
 	}
+}
+
+void point_at_home_yaw()
+{
+	nav_yaw = get_bearing(&current_loc, &home);
 }
 
 void check_DCM()

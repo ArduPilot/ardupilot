@@ -118,8 +118,8 @@ void calc_simple_nav()
 void calc_nav_output()
 {
 	// get the sin and cos of the bearing error - rotated 90°
-	sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
-	cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
+	float sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
+	float cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
 
 	// rotate the vector
 	nav_roll 	=  (float)nav_lat * cos_nav_x;

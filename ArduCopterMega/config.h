@@ -357,19 +357,33 @@
 //////////////////////////////////////////////////////////////////////////////
 // YAW Control
 //
-#ifndef  YAW_P
-# define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+#if YAW_OPTION == 1	// 0 = hybrid rate approach, 1 = offset Yaw approach
+	#ifndef  YAW_P
+	# define YAW_P					0.6			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+	#endif
+	#ifndef  YAW_I
+	# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
+	#endif
+	#ifndef  YAW_D
+	# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
+	#endif
+	#ifndef  YAW_IMAX
+	# define YAW_IMAX				1			// degrees * 100
+	#endif
+#else
+	#ifndef  YAW_P
+	# define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+	#endif
+	#ifndef  YAW_I
+	# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
+	#endif
+	#ifndef  YAW_D
+	# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
+	#endif
+	#ifndef  YAW_IMAX
+	# define YAW_IMAX				1			// degrees * 100
+	#endif
 #endif
-#ifndef  YAW_I
-# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
-#endif
-#ifndef  YAW_D
-# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
-#endif
-#ifndef  YAW_IMAX
-# define YAW_IMAX				1			// degrees * 100
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits
 //

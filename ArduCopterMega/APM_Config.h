@@ -79,3 +79,9 @@
 #define RE_LED AN14  // Mega PE5 pin, OUT6
 #define RI_LED AN10  // Mega PH4 pin, OUT5
 #define LE_LED AN8  // Mega PH5 pin, OUT4
+
+
+// experimental!!
+// Yaw is controled by targeting home. you will not have Yaw override.
+// flying too close to home may induce spins.
+#define SIMPLE_LOOK_AT_HOME 0
