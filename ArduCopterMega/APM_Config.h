@@ -14,7 +14,7 @@
 #define DYNAMIC_DRIFT 0 	// careful!!! 0 = off, 1 = on
 
 // do we want to have camera stabilization?
-#define CAMERA_STABILIZER ENABLED
+#define CAMERA_STABILIZER 1
 
 #define BROKEN_SLIDER 0
 
