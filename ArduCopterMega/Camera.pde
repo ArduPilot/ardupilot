@@ -32,7 +32,6 @@ camera_stabilization()
 	g.rc_camera_roll.calc_pwm();
 	APM_RC.OutputCh(CH_6, g.rc_camera_roll.radio_out);
 
-
 	//If you want to do control mixing use this function.
 	// set servo_out to the control input from radio
 	//rc_camera_roll 	= g.rc_2.control_mix(dcm.pitch_sensor);

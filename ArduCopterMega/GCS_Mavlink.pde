@@ -49,7 +49,6 @@ GCS_MAVLINK::init(BetterStream * port)
 	streamRateExtra1.set_and_save(0);
 	streamRateExtra2.set_and_save(0);
 	streamRateExtra3.set_and_save(0);
-
 }
 
 void
@@ -72,11 +71,6 @@ GCS_MAVLINK::update(void)
 
 	// Update packet drops counter
 	packet_drops += status.packet_rx_drop_count;
-
-
-
-
-
 
 	// send out queued params/ waypoints
 	_queued_send();
@@ -200,7 +194,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			// decode
 			mavlink_request_data_stream_t packet;
 			mavlink_msg_request_data_stream_decode(msg, &packet);
-			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+
+			if (mavlink_check_target(packet.target_system,packet.target_component))
+				break;
 
 			int freq = 0; // packet frequency
 
@@ -214,15 +210,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			switch(packet.req_stream_id){
 
 				case MAV_DATA_STREAM_ALL:
-					streamRateRawSensors		 = freq;
-					streamRateExtendedStatus	 = freq;
-					streamRateRCChannels		 = freq;
-					streamRateRawController	  = freq;
-					streamRatePosition		   = freq;
-					streamRateExtra1			 = freq;
-					streamRateExtra2			 = freq;
+					streamRateRawSensors		= freq;
+					streamRateExtendedStatus	= freq;
+					streamRateRCChannels		= freq;
+					streamRateRawController		= freq;
+					streamRatePosition			= freq;
+					streamRateExtra1			= freq;
+					streamRateExtra2			= freq;
 					//streamRateExtra3.set_and_save(freq);	// We just do set and save on the last as it takes care of the whole group.
-					streamRateExtra3			 = freq;	// Don't save!!
+					streamRateExtra3			= freq;	// Don't save!!
 
 					break;
 
@@ -404,12 +400,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				msg->compid,
 				g.waypoint_total + 1); // + home
 
-			waypoint_timelast_send   = millis();
-			waypoint_sending		 = true;
-			waypoint_receiving	   = false;
-			waypoint_dest_sysid	  = msg->sysid;
-			waypoint_dest_compid	 = msg->compid;
-			requested_interface	  = chan;
+			waypoint_timelast_send		= millis();
+			waypoint_sending			= true;
+			waypoint_receiving			= false;
+			waypoint_dest_sysid			= msg->sysid;
+			waypoint_dest_compid		= msg->compid;
+			requested_interface			= chan;
 			break;
 		}
 
@@ -419,13 +415,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
 
 			// Check if sending waypiont
-			if (!waypoint_sending) break;
+			if (!waypoint_sending)
+				break;
 
 			// decode
 			mavlink_waypoint_request_t packet;
 			mavlink_msg_waypoint_request_decode(msg, &packet);
 
- 			if (mavlink_check_target(packet.target_system,packet.target_component)) break;
+ 			if (mavlink_check_target(packet.target_system,packet.target_component))
+ 				break;
 
 			// send waypoint
 			tell_command = get_command_with_index(packet.seq);
@@ -772,7 +770,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			// find the requested parameter
 			vp = AP_Var::find(key);
-			if ((NULL != vp) &&							 	// exists
+			if ((NULL != vp) &&							 		// exists
 					!isnan(packet.param_value) &&			   // not nan
 					!isinf(packet.param_value)) {			   // not inf
 
