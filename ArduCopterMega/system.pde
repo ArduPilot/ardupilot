@@ -40,7 +40,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.29 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.30 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -336,6 +336,9 @@ void startup_ground(void)
 
 	SendDebug("\nReady to FLY ");
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+
+	// output control mode to the ground station
+	gcs.send_message(MSG_HEARTBEAT);
 }
 
 void set_mode(byte mode)

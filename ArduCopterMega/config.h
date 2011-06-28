@@ -357,6 +357,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // YAW Control
 //
+#ifndef YAW_OPTION
+# define YAW_OPTION		1		// 0 = hybrid rate approach, 1 = offset Yaw approach
+#endif
+
 #if YAW_OPTION == 1	// 0 = hybrid rate approach, 1 = offset Yaw approach
 	#ifndef  YAW_P
 	# define YAW_P					0.6			// increase for more aggressive Yaw Hold, decrease if it's bouncy
@@ -409,34 +413,25 @@
 # define NAV_LOITER_IMAX		20			// 20°
 #endif
 
-#if NAV_TEST == 1	// 0 = traditional, 1 = rate controlled
-	#ifndef NAV_WP_P
-	# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
-	#endif
-	#ifndef NAV_WP_I
-	# define NAV_WP_I				0.5			// this is a fast ramp up
-	#endif
-	#ifndef NAV_WP_D
-	# define NAV_WP_D				0			// slight dampening of a few degrees at most
-	#endif
-	#ifndef NAV_WP_IMAX
-	# define NAV_WP_IMAX			40			// degrees
-	#endif
-#else
-	#ifndef NAV_WP_P
-	# define NAV_WP_P				4.0
-	#endif
-	#ifndef NAV_WP_I
-	# define NAV_WP_I				0.15		//
-	#endif
-	#ifndef NAV_WP_D
-	# define NAV_WP_D				10			// not sure about at all
-	#endif
-	#ifndef NAV_WP_IMAX
-	# define NAV_WP_IMAX			20			// 20 degrees
-	#endif
+
+
+#ifndef NAV_WP_P
+# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
+#endif
+#ifndef NAV_WP_I
+# define NAV_WP_I				0.5			// this is a fast ramp up
+#endif
+#ifndef NAV_WP_D
+# define NAV_WP_D				0			// slight dampening of a few degrees at most
+#endif
+#ifndef NAV_WP_IMAX
+# define NAV_WP_IMAX			40			// degrees
 #endif
 
+
+#ifndef WAYPOINT_SPEED
+# define WAYPOINT_SPEED				450			// for 4.5 ms error = 13.5 pitch
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
@@ -506,7 +501,7 @@
 # define LOG_ATTITUDE_FAST		DISABLED
 #endif
 #ifndef LOG_ATTITUDE_MED
-# define LOG_ATTITUDE_MED 		ENABLED
+# define LOG_ATTITUDE_MED 		DISABLED
 #endif
 #ifndef LOG_GPS
 # define LOG_GPS 				ENABLED
@@ -515,10 +510,10 @@
 # define LOG_PM 				ENABLED
 #endif
 #ifndef LOG_CTUN
-# define LOG_CTUN				DISABLED
+# define LOG_CTUN				ENABLED
 #endif
 #ifndef LOG_NTUN
-# define LOG_NTUN				DISABLED
+# define LOG_NTUN				ENABLED
 #endif
 #ifndef LOG_MODE
 # define LOG_MODE				ENABLED
@@ -585,18 +580,25 @@
 #endif
 
 
-#ifndef NAV_TEST
-# define NAV_TEST		1		// 0 = traditional, 1 = rate controlled
-#endif
-#ifndef YAW_OPTION
-# define YAW_OPTION		0		// 0 = hybrid rate approach, 1 = offset Yaw approach
-#endif
 #ifndef AUTO_RESET_LOITER
 # define AUTO_RESET_LOITER	1	// enables Loiter to reset it's current location based on stick input.
 #endif
 #ifndef CUT_MOTORS
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
 #endif
+
+#ifndef CAMERA_STABILIZER
+# define CAMERA_STABILIZER		1		// do we cut the motors with no throttle?
+#endif
+
+#ifndef BROKEN_SLIDER
+# define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
+#endif
+
+#ifndef MOTOR_LEDS
+# define MOTOR_LEDS		1		// 0 = off, 1 = on
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // RC override
