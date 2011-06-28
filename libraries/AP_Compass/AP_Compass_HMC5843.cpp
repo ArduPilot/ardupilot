@@ -37,18 +37,18 @@ AP_Compass_HMC5843::init()
 {
   int numAttempts = 0;
   int success = 0;
-  byte temp_value, new_value;  // used to test compass type
+  byte orig_value, new_value;  // used to test compass type
 
   delay(10);
 
   // determine if we are using 5843 or 5883L
-  temp_value = read_register(ConfigRegA);  // read config register A
-  new_value = temp_value | 0x60;           // turn on sample averaging turned on (only avaiable in 5883L)
+  orig_value = read_register(ConfigRegA);  // read config register A
+  new_value = orig_value | 0x60;           // turn on sample averaging turned on (only avaiable in 5883L)
   write_register(ConfigRegA, new_value);   // write config register A
-  temp_value = read_register(ConfigRegA);  // re-read config register A
-  if( temp_value == new_value )            // if we've successfully updated it then it's a 5883L
+  if( read_register(ConfigRegA) == new_value ) {  // if we've successfully updated it then it's a 5883L
       product_id = AP_COMPASS_TYPE_HMC5883L;
-  else
+	  write_register(ConfigRegA, orig_value);   // restore config register A to it's original state
+  }else
       product_id = AP_COMPASS_TYPE_HMC5843;
   
   // calibration initialisation
