@@ -1,22 +1,10 @@
-// Example config file. Use APM_Config.h.reference and the wiki to find additional defines to setup your plane.
-// Once you upload the code, run the factory "reset" to save all config values to EEPROM.
-// After reset, use the setup mode to set your radio limits for CH1-4, and to set your flight modes.
+// Example config file. Take a look at confi.h. Any term define there can be overridden by defining it here.
 
 // GPS is auto-selected
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
-#define NAV_TEST 1			// 0 = traditional, 1 = rate controlled
-#define YAW_OPTION 1		// 0 = hybrid rate approach, 1 = offset Yaw approach, 2 = simple hybrid
-#define AUTO_RESET_LOITER 1 // enables Loiter to reset it's current location based on stick input.
-#define CUT_MOTORS 1		// do we cut the motors with no throttle?
 
-#define DYNAMIC_DRIFT 0 	// careful!!! 0 = off, 1 = on
-
-// do we want to have camera stabilization?
-#define CAMERA_STABILIZER 1
-
-#define BROKEN_SLIDER 0
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*
@@ -57,31 +45,8 @@
 //#define STABILIZE_PITCH_D 		0.11
 
 
-// Logging
-//#define LOG_CURRENT ENABLED
-
-# define LOG_ATTITUDE_FAST		DISABLED
-# define LOG_ATTITUDE_MED 		DISABLED
-# define LOG_GPS 				ENABLED
-# define LOG_PM 				ENABLED
-# define LOG_CTUN				ENABLED
-# define LOG_NTUN				ENABLED
-# define LOG_MODE				ENABLED
-# define LOG_RAW				DISABLED
-# define LOG_CMD				ENABLED
-# define LOG_CURRENT			DISABLED
-
-
-
-#define MOTOR_LEDS 1	// 0 = off, 1 = on
-
-#define FR_LED AN12  // Mega PE4 pin, OUT7
-#define RE_LED AN14  // Mega PE5 pin, OUT6
-#define RI_LED AN10  // Mega PH4 pin, OUT5
-#define LE_LED AN8  // Mega PH5 pin, OUT4
-
-
 // experimental!!
 // Yaw is controled by targeting home. you will not have Yaw override.
 // flying too close to home may induce spins.
 #define SIMPLE_LOOK_AT_HOME 0
+#define DYNAMIC_DRIFT 0 	// careful!!! 0 = off, 1 = on

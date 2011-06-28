@@ -126,31 +126,6 @@ void calc_nav_output()
 	nav_pitch 	= -(float)nav_lat * sin_nav_y;
 }
 
-#define WAYPOINT_SPEED 450
-
-#if NAV_TEST == 0
-
-void calc_rate_nav()
-{
-	// calc distance error
-	nav_lat	= min((wp_distance * 100), 1800); // +- 20m max error
-
-	// Scale response by kP
-	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
-
-	// Scale response by kP
-	//long output 	= g.pid_nav_wp.kP() * error;
-	int dampening	= g.pid_nav_wp.kD() * (g_gps->ground_speed - last_ground_speed);
-
-	// remember our old speed
-	last_ground_speed = g_gps->ground_speed;
-
-	// dampen our response
-	nav_lat -= constrain(dampening, 	-1800, 1800); // +- 20m max error
-}
-
-#else
-
 // called after we get GPS read
 void calc_rate_nav()
 {
@@ -176,8 +151,6 @@ void calc_rate_nav()
 	// limit our output
 	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error
 }
-
-#endif
 
 void calc_bearing_error()
 {
