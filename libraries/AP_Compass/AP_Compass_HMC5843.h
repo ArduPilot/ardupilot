@@ -50,5 +50,9 @@ class AP_Compass_HMC5843 : public Compass
 	AP_Compass_HMC5843(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}
 	virtual bool init();
 	virtual void read();
+	virtual void set_orientation(const Matrix3f &rotation_matrix);
+	virtual byte read_register(int address);
+	virtual void write_register(int address, byte value);
+
 };
 #endif

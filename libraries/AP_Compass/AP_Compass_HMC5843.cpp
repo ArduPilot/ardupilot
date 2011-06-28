@@ -32,13 +32,25 @@
 #define SingleConversion     0x01
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Compass_HMC5843::init()
+bool 
+AP_Compass_HMC5843::init()
 {
   int numAttempts = 0;
   int success = 0;
+  byte temp_value, new_value;  // used to test compass type
 
   delay(10);
 
+  // determine if we are using 5843 or 5883L
+  temp_value = read_register(ConfigRegA);  // read config register A
+  new_value = temp_value | 0x60;           // turn on sample averaging turned on (only avaiable in 5883L)
+  write_register(ConfigRegA, new_value);   // write config register A
+  temp_value = read_register(ConfigRegA);  // re-read config register A
+  if( temp_value == new_value )            // if we've successfully updated it then it's a 5883L
+      product_id = AP_COMPASS_TYPE_HMC5883L;
+  else
+      product_id = AP_COMPASS_TYPE_HMC5843;
+  
   // calibration initialisation
   calibration[0] = 1.0;
   calibration[1] = 1.0;
@@ -102,7 +114,8 @@ bool AP_Compass_HMC5843::init()
 }
 
 // Read Sensor data
-void AP_Compass_HMC5843::read()
+void 
+AP_Compass_HMC5843::read()
 {
   int i = 0;
   byte buff[6];
@@ -125,8 +138,13 @@ void AP_Compass_HMC5843::read()
   {
     // MSB byte first, then LSB, X,Y,Z
     mag_x = -((((int)buff[0]) << 8) | buff[1]) * calibration[0];    // X axis
-    mag_y = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
-    mag_z = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
+	if( product_id == AP_COMPASS_TYPE_HMC5883L ) {
+		mag_y = ((((int)buff[4]) << 8) | buff[5]) * calibration[1];    // Y axis
+		mag_z = -((((int)buff[2]) << 8) | buff[3]) * calibration[2];    // Z axis
+	}else{
+		mag_y = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
+		mag_z = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
+	}	
     last_update = millis();  // record time of update
 	// rotate and offset the magnetometer values
     // XXX this could well be done in common code...
@@ -138,3 +156,42 @@ void AP_Compass_HMC5843::read()
   }
 }
 
+// set orientation
+void
+AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
+{
+    if( product_id == AP_COMPASS_TYPE_HMC5883L ) {
+        _orientation_matrix.set_and_save(rotation_matrix * Matrix3f(ROTATION_YAW_90));
+	}else{
+	    _orientation_matrix.set_and_save(rotation_matrix);
+	}
+}
+
+// read_register - read a register value
+byte 
+AP_Compass_HMC5843::read_register(int address)
+{
+  byte result;
+  byte buff[1];
+  Wire.beginTransmission(COMPASS_ADDRESS);
+  Wire.send(address);     //sends address to read from
+  Wire.endTransmission(); //end transmission
+
+  Wire.requestFrom(COMPASS_ADDRESS, 1);    // request 1 byte from device
+  if( Wire.available() )
+      result = Wire.receive();  // receive one byte
+  Wire.endTransmission(); //end transmission
+  
+  return result;
+}
+
+// write_register - update a register value
+void 
+AP_Compass_HMC5843::write_register(int address, byte value)
+{
+  Wire.beginTransmission(COMPASS_ADDRESS);
+  Wire.send(address);
+  Wire.send(value);
+  Wire.endTransmission();
+  delay(10);
+}

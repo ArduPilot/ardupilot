@@ -9,7 +9,8 @@ Compass::Compass(AP_Var::Key key) :
     _orientation_matrix	(&_group, 0),
     _offset				(&_group, 1),
     _declination		(&_group, 2, 0.0, PSTR("DEC")),
-    _null_init_done(false)
+    _null_init_done(false),
+	product_id(AP_COMPASS_TYPE_UNKNOWN)
 {
     // Default the orientation matrix to none - will be overridden at group load time
     // if an orientation has previously been saved.
