@@ -29,7 +29,7 @@ class AP_Compass_HMC5883L : public Compass
   private:
 	float calibration[3];
   public:
-	AP_Compass_HMC5883L(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}
+	AP_Compass_HMC5883L(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) { product_id = AP_COMPASS_TYPE_HMC5883L; }
 	virtual bool init();
 	virtual void read();
 };

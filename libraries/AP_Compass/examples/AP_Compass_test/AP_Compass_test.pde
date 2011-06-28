@@ -22,8 +22,8 @@ unsigned long timer;
 
 void setup()
 {
-  Serial.begin(38400);
-  Serial.println("Compass library test (HMC5843)");
+  Serial.begin(115200);
+  Serial.println("Compass library test (HMC5843 and HMC5883L)");
   Wire.begin();
   compass.init();	 // Initialization
 

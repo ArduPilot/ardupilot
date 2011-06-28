@@ -5,6 +5,12 @@
 #include "../AP_Common/AP_Common.h"
 #include "../AP_Math/AP_Math.h"
 
+// compass product id
+#define AP_COMPASS_TYPE_UNKNOWN  0x00
+#define AP_COMPASS_TYPE_HIL      0x01
+#define AP_COMPASS_TYPE_HMC5843  0x02
+#define AP_COMPASS_TYPE_HMC5883L 0x03
+
 // standard rotation matrices
 #define ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
 #define ROTATION_YAW_45             Matrix3f(0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1)
@@ -26,6 +32,7 @@
 class Compass
 {
 public:
+	int				product_id;     /// product id
 	int             mag_x;          ///< magnetic field strength along the X axis
 	int             mag_y;          ///< magnetic field strength along the Y axis
 	int             mag_z;          ///< magnetic field strength along the Z axis
@@ -46,7 +53,7 @@ public:
 	///             found or is not functioning.
 	///
 	virtual bool init();
-
+	
 	/// Read the compass and update the mag_ variables.
 	///
 	virtual void read() = 0;
