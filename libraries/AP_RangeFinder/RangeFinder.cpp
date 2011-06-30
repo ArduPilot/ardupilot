@@ -68,6 +68,46 @@ int RangeFinder::read()
 	int i;
 
 	// read from the analog port or pitot tube
+	if( _analogPort == AP_RANGEFINDER_PITOT_TUBE ) {
+	    if( _ap_adc != NULL )
+	        raw_value = _ap_adc->Ch(AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL) >> 2;  // values from ADC are twice as big as you'd expect
+	    else
+		    raw_value = 0;
+	}else{
+        // read raw sensor value and convert to distance
+        raw_value = analogRead(_analogPort);
+	}
+
+	// convert analog value to distance in cm (using child implementation most likely)
+	temp_dist = convert_raw_to_distance(raw_value);
+
+	// ensure distance is within min and max
+	distance = constrain(temp_dist, min_distance, max_distance);
+
+	// filter the results
+	if( _num_averages > 1 )
+	{
+        _history_ptr = (_history_ptr + 1) % _num_averages;
+        _history[_history_ptr] = distance;
+	    for(i=0; i<_num_averages; i++ )
+	        total += _history[i];
+        distance = total / _num_averages;
+    }
+
+	// return distance
+	return distance;
+}
+
+/*
+// Read Sensor data - only the raw_value is filled in by this parent class
+int RangeFinder::read()
+{
+    // local variables
+	int temp_dist;
+	int total = 0;
+	int i;
+
+	// read from the analog port or pitot tube
 	if(_analogPort == AP_RANGEFINDER_PITOT_TUBE){
 		if(_ap_adc != NULL){
 			raw_value = _ap_adc->Ch(AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL) >> 2;  // values from ADC are twice as big as you'd expect
@@ -109,3 +149,4 @@ int RangeFinder::read()
 }
 
 
+*/
