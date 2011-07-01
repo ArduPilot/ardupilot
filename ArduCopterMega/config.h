@@ -388,6 +388,8 @@
 	# define YAW_IMAX				1			// degrees * 100
 	#endif
 #endif
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Autopilot control limits
 //
@@ -407,7 +409,7 @@
 # define NAV_LOITER_I			0.08		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			0.03		// Added some D 2.20, untested
+# define NAV_LOITER_D			0.15		//
 #endif
 #ifndef NAV_LOITER_IMAX
 # define NAV_LOITER_IMAX		20			// 20°
@@ -422,7 +424,7 @@
 # define NAV_WP_I				0.5			// this is a fast ramp up
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				0			// slight dampening of a few degrees at most
+# define NAV_WP_D				.3			//
 #endif
 #ifndef NAV_WP_IMAX
 # define NAV_WP_IMAX			40			// degrees
@@ -430,7 +432,7 @@
 
 
 #ifndef WAYPOINT_SPEED
-# define WAYPOINT_SPEED				450			// for 4.5 ms error = 13.5 pitch
+# define WAYPOINT_SPEED			600			// for 6m/s error = 13mph
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -468,10 +470,10 @@
 // Crosstrack compensation
 //
 #ifndef XTRACK_GAIN
-# define XTRACK_GAIN          5 // deg/m
+# define XTRACK_GAIN          2 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   40 // deg
+# define XTRACK_ENTRY_ANGLE   8 // deg
 #endif
 
 

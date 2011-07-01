@@ -1336,10 +1336,15 @@ void update_alt()
 		sonar_alt = (float)sonar_alt * temp;
 		*/
 
-		scale = (sonar_alt - 300) / 300;
-		scale = constrain(scale, 0, 1);
+		if(baro_alt < 800){
+			scale = (sonar_alt - 300) / 300;
+			scale = constrain(scale, 0, 1);
 
-		current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+
+		}else{
+			current_loc.alt = baro_alt + home.alt;
+		}
 
 	}else{
 		baro_alt 		= read_barometer();
