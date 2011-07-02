@@ -51,11 +51,6 @@ AP_Compass_HMC5843::init()
   }else
       product_id = AP_COMPASS_TYPE_HMC5843;
   
-  // calibration initialisation
-  calibration[0] = 1.0;
-  calibration[1] = 1.0;
-  calibration[2] = 1.0;
-
   while( success == 0 && numAttempts < 5 )
   {
       // record number of attempts at initialisation
@@ -82,12 +77,17 @@ AP_Compass_HMC5843::init()
 	  Wire.endTransmission();
 	  delay(10);
 
+	  // calibration initialisation
+	  calibration[0] = 1.0;
+	  calibration[1] = 1.0;
+	  calibration[2] = 1.0;
+
 	  // read values from the compass
 	  read();
 	  delay(10);
 
 	  // calibrate
-	  if( abs(mag_x) > 500 && abs(mag_x) < 1000 && abs(mag_y) > 500 && abs(mag_y) < 1000 && abs(mag_z) > 500 && abs(mag_z) < 1000)
+	  if( abs(mag_x) > 500 && abs(mag_x) < 2000 && abs(mag_y) > 500 && abs(mag_y) < 2000 && abs(mag_z) > 500 && abs(mag_z) < 2000)
 	  {
 		  calibration[0] = fabs(715.0 / mag_x);
 		  calibration[1] = fabs(715.0 / mag_y);
