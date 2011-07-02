@@ -73,7 +73,7 @@ print_log_menu(void)
 	Serial.println();
 
 	if (last_log_num == 0) {
-		Serial.printf_P(PSTR("\nNo logs\n"));
+		Serial.printf_P(PSTR("\nNo logs\nType 'dump 0'.\n\n"));
 	}else{
 		Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
 
@@ -107,6 +107,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	if (/*(argc != 2) || */ (dump_log < 1) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
 		Log_Read(1, 4095);
+		erase_logs(NULL, NULL);
 		return(-1);
 	}
 

@@ -5,6 +5,7 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 
 
+#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*

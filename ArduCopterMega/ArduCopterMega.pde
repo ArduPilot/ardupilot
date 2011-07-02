@@ -227,10 +227,6 @@ GPS         *g_gps;
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
-
-byte 	control_mode		= STABILIZE;
-byte 	oldSwitchPosition;					// for remembering the control mode switch
-
 const char *comma = ",";
 
 const char* flight_mode_strings[] = {
@@ -239,7 +235,7 @@ const char* flight_mode_strings[] = {
 	"SIMPLE",
 	"ALT_HOLD",
 	"AUTO",
-	"GCS_AUTO",
+	"GUIDED",
 	"LOITER",
 	"RTL"};
 
@@ -257,8 +253,9 @@ const char* flight_mode_strings[] = {
 
 // Radio
 // -----
-int motor_out[8];
-Vector3f omega;
+byte 		control_mode		= STABILIZE;
+byte 		oldSwitchPosition;					// for remembering the control mode switch
+int 		motor_out[8];
 
 // Heli
 // ----
@@ -280,6 +277,7 @@ boolean		motor_auto_armed;				// if true,
 boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
 byte 	yaw_debug;
 bool 	did_clear_yaw_control;
+Vector3f omega;
 
 // LED output
 // ----------
@@ -335,7 +333,7 @@ float	crosstrack_error;					// meters we are off trackline
 long 	distance_error;						// distance to the WP
 long 	yaw_error;							// how off are we pointed
 long	long_error, lat_error;				// temp for debugging
-
+int		loiter_error_max;
 // Battery Sensors
 // ---------------
 float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
@@ -445,6 +443,7 @@ struct 	Location next_WP;					// next waypoint
 struct 	Location target_WP;					// where do we want to you towards?
 struct 	Location simple_WP;					//
 struct 	Location next_command;				// command preloaded
+struct  Location guided_WP;					// guided mode waypoint
 long 	target_altitude;					// used for
 boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
@@ -1094,14 +1093,17 @@ void update_current_flight_mode(void)
 					simple_WP.lat = 0;
 					simple_WP.lng = 0;
 
-					next_WP.lng =   (float)g.rc_1.control_in *.4;  // X: 4500 / 2 = 2250 = 25 meteres
-					next_WP.lat = -((float)g.rc_2.control_in *.4); // Y: 4500 / 2 = 2250 = 25 meteres
+					next_WP.lng =  (float)g.rc_1.control_in * .9;  // X: 4500 * .7 = 2250 = 25 meteres
+					next_WP.lat = -(float)g.rc_2.control_in * .9; // Y: 4500 * .7 = 2250 = 25 meteres
+					//next_WP.lng =  g.rc_1.control_in;  // X: 4500 * .7 = 2250 = 25 meteres
+					//next_WP.lat = -g.rc_2.control_in; // Y: 4500 * .7 = 2250 = 25 meteres
 
 					// calc a new bearing
 					nav_bearing 	= get_bearing(&simple_WP, &next_WP) + initial_simple_bearing;
 					nav_bearing 	= wrap_360(nav_bearing);
 					wp_distance 	= get_distance(&simple_WP, &next_WP);
 					calc_bearing_error();
+
 					/*
 					Serial.printf("lat: %ld lon:%ld, bear:%ld, dist:%ld, init:%ld, err:%ld ",
 							next_WP.lat,
@@ -1179,6 +1181,7 @@ void update_current_flight_mode(void)
 				output_stabilize_pitch();
 				break;
 
+			case GUIDED:
 			case RTL:
 				// Output Pitch, Roll, Yaw and Throttle
 				// ------------------------------------
@@ -1252,6 +1255,10 @@ void update_navigation()
 		case RTL:
 			// calculates desired Yaw
 			update_nav_yaw();
+
+		case GUIDED:
+			update_nav_yaw();
+			// switch passthrough to LOITER
 		case LOITER:
 			// are we Traversing or Loitering?
 			wp_control = (wp_distance < 50) ? LOITER_MODE : WP_MODE;
@@ -1325,9 +1332,11 @@ void update_alt()
 		int temp_sonar 		= sonar.read();
 
 		// spike filter
-		if((temp_sonar - sonar_alt) < 50){
-			sonar_alt = temp_sonar;
-		}
+		//if((temp_sonar - sonar_alt) < 50){
+		//	sonar_alt = temp_sonar;
+		//}
+
+		sonar_alt = temp_sonar;
 
 		/*
 		doesn't really seem to be a need for this using EZ0:
@@ -1337,7 +1346,7 @@ void update_alt()
 		*/
 
 		if(baro_alt < 800){
-			scale = (sonar_alt - 300) / 300;
+			scale = (sonar_alt - 400) / 200;
 			scale = constrain(scale, 0, 1);
 
 			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
@@ -1430,6 +1439,7 @@ void tuning(){
 
 void update_nav_wp()
 {
+	// XXX Guided mode!!!
 	if(wp_control == LOITER_MODE){
 		// calc a pitch to the target
 		calc_loiter_nav();

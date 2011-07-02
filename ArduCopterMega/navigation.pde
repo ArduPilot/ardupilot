@@ -62,15 +62,16 @@ void calc_loiter_nav()
 	// Y PITCH
 	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
 
-	long_error	= constrain(long_error, -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
-	lat_error	= constrain(lat_error,  -DIST_ERROR_MAX, DIST_ERROR_MAX); // +- 20m max error
+	// constrain input, not output to let I term ramp up and do it's job again wind
+	long_error	= constrain(long_error, -loiter_error_max, loiter_error_max); // +- 20m max error
+	lat_error	= constrain(lat_error,  -loiter_error_max, loiter_error_max); // +- 20m max error
 
 	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav, 1.0);		// X 700 * 2.5 = 1750,
 	nav_lat 	= g.pid_nav_lat.get_pid(lat_error,  dTnav, 1.0);		// Y invert lat (for pitch)
 
-	long pmax 	= g.pitch_max.get();
-	nav_lon 	= constrain(nav_lon, -pmax, pmax);
-	nav_lat 	= constrain(nav_lat, -pmax, pmax);
+	//long pmax 	= g.pitch_max.get();
+	//nav_lon 	= constrain(nav_lon, -pmax, pmax);
+	//nav_lat 	= constrain(nav_lat, -pmax, pmax);
 }
 
 void calc_loiter_output()
@@ -110,9 +111,9 @@ void calc_loiter_output()
 void calc_simple_nav()
 {
 	// no dampening here in SIMPLE mode
-	nav_lat	= constrain((wp_distance * 100), -1800, 1800); // +- 20m max error
+	nav_lat	= constrain((wp_distance * 100), -4500, 4500); // +- 20m max error
 	// Scale response by kP
-	nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+	//nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
 }
 
 void calc_nav_output()

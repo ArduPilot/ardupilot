@@ -57,14 +57,14 @@ Set these up in 'setup'/'modes'. Use your three position switch (channel 5) to s
 All of the modes allow the user to control the copter with the normal controls. You can get yourself out of a jam sometimes by simply nudging the copter while in AUTO or LOITER modes.
 Options include:
 ACRO		- rate control only. not for beginners
-STABILIZE	- copter will hold -45 to 45° angle, throttle is manual.
-SIMPLE		- Remembers the orientation of the copter when first entering SIMPLE mode, allowing the user to fly more intuitivey. Manual Throttle.
+STABILIZE	- copter will hold any angle from -45 to 45° based on roll and pitch stick input. Manual throttle.
+SIMPLE		- Remembers the yaw orientation of the copter when first entering SIMPLE mode, allowing the user to fly more intuitivey. Manual throttle.
 ALT_HOLD	- altitude is controlled by the throttle lever. Middle is hold, high = rise, low = fall.
 LOITER 		- When selected, it will hold the current altitude, position and yaw. Yaw is user controllable. roll and pitch can be overridden temporarily with the radio.
 				altitude is controlled by the throttle lever. Middle is hold, high = rise, low = fall.
 RTL 		- Will try and fly back to home at the current altitude.
 AUTO 		- Will fly the mission loaded by the Waypoint writer
-GCS_AUTO	- A future mode where the copter can be flown interactively from the GCS
+GUIDED	- A future mode where the copter can be flown interactively from the GCS
 
 
 Special note:
