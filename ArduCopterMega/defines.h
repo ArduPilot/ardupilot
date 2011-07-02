@@ -115,7 +115,7 @@
 #define SIMPLE 2			//
 #define ALT_HOLD 3			// AUTO control
 #define AUTO 4				// AUTO control
-#define GCS_AUTO 5			// AUTO control
+#define GUIDED 5			// AUTO control
 #define LOITER 6			// Hold a single location
 #define RTL 7				// AUTO control
 #define NUM_MODES 8

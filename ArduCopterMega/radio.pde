@@ -19,9 +19,10 @@ void init_rc_in()
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
 
 	// set rc dead zones
-	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
-	g.rc_2.dead_zone = 60;
+	g.rc_1.dead_zone = 0;		// 60 = .6 degrees
+	g.rc_2.dead_zone = 0;
 	g.rc_3.dead_zone = 60;
+
 	#if YAW_OPTION == 1
 	g.rc_4.dead_zone = 500;// 1 = offset Yaw approach
 	#else

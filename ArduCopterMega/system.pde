@@ -40,7 +40,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.31 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.32 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -332,6 +332,10 @@ void startup_ground(void)
 	report_gps();
 	g_gps->idleTimeout = 20000;
 
+	// used to limit the input of error for loiter
+	loiter_error_max = (float)g.pitch_max.get() / (float)g.pid_nav_lat.kP();
+	//Serial.printf_P(PSTR("\nloiter: %d\n"), loiter_error_max);
+
 	Log_Write_Startup();
 
 	SendDebug("\nReady to FLY ");
@@ -389,6 +393,10 @@ void set_mode(byte mode)
 		case LOITER:
 			init_throttle_cruise();
 			do_loiter_at_location();
+			break;
+
+		case GUIDED:
+			set_next_WP(&guided_WP);
 			break;
 
 		case RTL:
@@ -485,11 +493,17 @@ init_throttle_cruise()
 boolean
 check_startup_for_CLI()
 {
-	if(abs(g.rc_4.control_in) > 3000){
-		// startup to fly
-		return true;
-	}else{
+	//return true;
+	if((g.rc_4.radio_max) < 1600){
 		// CLI mode
+		return true;
+
+	}else if(abs(g.rc_4.control_in) > 3000){
+		// CLI mode
+		return true;
+
+	}else{
+		// startup to fly
 		return false;
 	}
 }

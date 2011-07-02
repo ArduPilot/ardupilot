@@ -329,26 +329,26 @@
 // STABILZE Angle Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		0.54 // .48 = 4.0 NG, .54 = 4.5 NG
+# define STABILIZE_ROLL_P 		0.48 // .48 = 4.0 NG, .54 = 4.5 NG
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.025		//
 #endif
 #ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.12
+# define STABILIZE_ROLL_D 		0.18
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	.5		// degrees * 100
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		0.54
+# define STABILIZE_PITCH_P		0.48
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.025
 #endif
 #ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.12
+# define STABILIZE_PITCH_D		0.18
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	.5		// degrees * 100
@@ -403,16 +403,16 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			2.5			// upped to be a bit more aggressive
+# define NAV_LOITER_P			1.2			// upped to be a bit more aggressive
 #endif
 #ifndef NAV_LOITER_I
 # define NAV_LOITER_I			0.08		// upped a bit to deal with wind faster
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			0.15		//
+# define NAV_LOITER_D			0.8		//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		20			// 20°
+# define NAV_LOITER_IMAX		15			// 20°
 #endif
 
 

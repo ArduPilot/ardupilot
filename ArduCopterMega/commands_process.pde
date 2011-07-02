@@ -94,7 +94,7 @@ process_next_command()
 
 			// Save CMD to Log
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
+				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
 
 			// Act on the new command
 			process_must();
@@ -117,7 +117,7 @@ process_next_command()
 
 			// Save CMD to Log
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
+				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
 
 			process_may();
 			return true;
@@ -130,7 +130,7 @@ process_next_command()
 			//SendDebugln(next_command.id,DEC);
 
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
+				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
 			process_now();
 			return true;
 		}

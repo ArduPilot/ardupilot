@@ -56,6 +56,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					mode 		= MAV_MODE_AUTO;
 					nav_mode 	= MAV_NAV_RETURNING;
 					break;
+				case GUIDED:
+					mode 		= MAV_MODE_GUIDED;
+					break;
 				default:
 					mode 		= control_mode + 100;
 
@@ -63,7 +66,6 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 
 			uint8_t status 		= MAV_STATE_ACTIVE;
 			uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
-			uint8_t motor_block = false;
 
 			mavlink_msg_sys_status_send(
 					chan,
@@ -199,9 +201,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					motor_out[2],
 					motor_out[3],
 					motor_out[4],
-					g.rc_5.radio_out,
-					g.rc_6.radio_out,
-					motor_out[7]);
+					motor_out[7],
+					motor_out[8],
+					0);
 			break;
 		}
 
@@ -238,13 +240,14 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					compass.mag_y,
 					compass.mag_z);
 
-			mavlink_msg_raw_pressure_send(
+			/*  This message is not working.  Why?
+			mavlink_msg_scaled_pressure_send(
 					chan,
 					timeStamp,
-					adc.Ch(AIRSPEED_CH),
-					barometer.RawPress,
-					0,
-					0);
+					(float)barometer.Press/100.,
+					(float)adc.Ch(AIRSPEED_CH),		// We don't calculate the differential pressure value anywhere, so use raw
+					(int)(barometer.Temp*100));
+			*/
 			break;
 		}
 		#endif // HIL_PROTOCOL != HIL_PROTOCOL_ATTITUDE

@@ -164,8 +164,8 @@ It precalculates all the necessary stuff.
 
 void set_next_WP(struct Location *wp)
 {
-	SendDebug("MSG <set_next_wp> wp_index: ");
-	SendDebugln(g.waypoint_index, DEC);
+	//SendDebug("MSG <set_next_wp> wp_index: ");
+	//SendDebugln(g.waypoint_index, DEC);
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
@@ -180,11 +180,6 @@ void set_next_WP(struct Location *wp)
 	// -----------------------------------------------------------------
 	target_altitude = current_loc.alt;
 
-	// zero out our loiter vals to watch for missed waypoints
-	//loiter_delta 		= 0;
-	//loiter_sum 			= 0;
-	//loiter_total 		= 0;
-
 	// this is used to offset the shrinking longitude as we go towards the poles
 	float rads 			= (abs(next_WP.lat)/t7) * 0.0174532925;
 	scaleLongDown 		= cos(rads);
@@ -192,8 +187,6 @@ void set_next_WP(struct Location *wp)
 
 	// this is handy for the groundstation
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
-
-	// this makes the data not log for a GPS read
 	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
 	nav_bearing 		= target_bearing;
@@ -208,6 +201,7 @@ void set_next_WP(struct Location *wp)
 
 	gcs.print_current_waypoints();
 }
+
 
 // run this at setup on the ground
 // -------------------------------

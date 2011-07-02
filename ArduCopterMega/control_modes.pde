@@ -56,6 +56,7 @@ void read_trim_switch()
 	}else{ // switch is disengaged
 
 		if(trim_flag){
+
 			// set the throttle nominal
 			if(g.rc_3.control_in > 150){
 				g.throttle_cruise.set_and_save(g.rc_3.control_in);
@@ -69,11 +70,16 @@ void read_trim_switch()
 void auto_trim()
 {
 	if(auto_level_counter > 0){
+		g.rc_1.dead_zone = 60;		// 60 = .6 degrees
+		g.rc_2.dead_zone = 60;
+
 		auto_level_counter--;
 		trim_accel();
 		led_mode = AUTO_TRIM_LEDS;
 
 		if(auto_level_counter == 1){
+			g.rc_1.dead_zone = 0;		// 60 = .6 degrees
+			g.rc_2.dead_zone = 0;
 			led_mode = NORMAL_LEDS;
 			clear_leds();
 			imu.save();
