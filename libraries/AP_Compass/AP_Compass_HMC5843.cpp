@@ -120,7 +120,11 @@ AP_Compass_HMC5843::init()
 	  // leave test mode
 	  Wire.beginTransmission(COMPASS_ADDRESS);
 	  Wire.send(ConfigRegA);
-	  Wire.send(NormalOperation);
+	  if (product_id == AP_COMPASS_TYPE_HMC5843) {
+		 Wire.send(NormalOperation);
+	  } else {
+		 Wire.send(SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation);
+	  }
 	  Wire.endTransmission();
 	  delay(50);
 
