@@ -233,7 +233,7 @@ void init_home()
 	print_wp(&home, 0);
 
 	// Save prev loc this makes the calcs look better before commands are loaded
-	next_WP = prev_WP = home;
+	prev_WP = home;
 }
 
 

@@ -262,8 +262,8 @@ public:
         sysid_this_mav			(MAV_SYSTEM_ID,				k_param_sysid_this_mav,					PSTR("SYSID_THISMAV")),
         sysid_my_gcs			(255,		                k_param_sysid_my_gcs,					PSTR("SYSID_MYGCS")),
 
-        crosstrack_gain         (XTRACK_GAIN * 100,			k_param_crosstrack_gain,        		PSTR("XTRK_GAIN")),
-        crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRACK_ANGLE")),
+        crosstrack_gain         (XTRACK_GAIN * 100,			k_param_crosstrack_gain,        		PSTR("XTRK_GAIN_SC")),
+        crosstrack_entry_angle  (XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRK_ANGLE_CD")),
 
         sonar_enabled  			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
         battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
@@ -275,7 +275,7 @@ public:
         waypoint_index          (0,                         k_param_waypoint_index,         		PSTR("WP_INDEX")),
         command_must_index      (0,                         k_param_command_must_index,     		PSTR("WP_MUST_INDEX")),
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        		PSTR("WP_RADIUS")),
-        loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          		PSTR("LOITER_RADIUS")),
+        loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          		PSTR("WP_LOITER_RAD")),
 
         throttle_min            (0,             			k_param_throttle_min,					PSTR("THR_MIN")),
         throttle_max            (1000, 			            k_param_throttle_max,					PSTR("THR_MAX")),
@@ -291,7 +291,6 @@ public:
         log_bitmask             (MASK_LOG_SET_DEFAULTS,		k_param_log_bitmask,            		PSTR("LOG_BITMASK")),
         RTL_altitude            (ALT_HOLD_HOME * 100,		k_param_RTL_altitude,          			PSTR("ALT_HOLD_RTL")),
         esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
-
         frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 
 	    #if FRAME_CONFIG ==	HELI_FRAME
