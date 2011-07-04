@@ -403,16 +403,16 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			1.2			// upped to be a bit more aggressive
+# define NAV_LOITER_P			1.4			//
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.08		// upped a bit to deal with wind faster
+# define NAV_LOITER_I			0.1			//
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			0.8		//
+# define NAV_LOITER_D			0.4			//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		15			// 20°
+# define NAV_LOITER_IMAX		15			// degrees°
 #endif
 
 

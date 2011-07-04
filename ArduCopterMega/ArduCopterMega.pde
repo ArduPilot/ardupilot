@@ -852,11 +852,11 @@ void slow_loop()
 
 			#if AUTO_RESET_LOITER == 1
 			if(control_mode == LOITER){
-				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
+				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1500){
 					// reset LOITER to current position
-					long temp 	= next_WP.alt;
+					//long temp 	= next_WP.alt;
 					next_WP 	= current_loc;
-					next_WP.alt = temp;
+					//next_WP.alt = temp;
 				}
 			}
 			#endif
@@ -981,13 +981,14 @@ void update_GPS(void)
 				init_home();
 
 				// init altitude
-				current_loc.alt = home.alt;
+				// commented out because we aren't using absolute altitude
+				// current_loc.alt = home.alt;
 				ground_start_count = 0;
 			}
 		}
 
 		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
-		current_loc.lat = g_gps->latitude;		// Lat * 10 * *7
+		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
 
 		if (g.log_bitmask & MASK_LOG_GPS){
 			Log_Write_GPS();

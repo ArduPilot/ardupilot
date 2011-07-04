@@ -214,7 +214,7 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					(float)airspeed / 100.0,
 					(float)g_gps->ground_speed / 100.0,
 					(dcm.yaw_sensor / 100) % 360,
-					g.rc_3.servo_out,
+					g.rc_3.servo_out/10,
 					current_loc.alt / 100.0,
 					climb_rate);
 			break;
