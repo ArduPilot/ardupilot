@@ -473,7 +473,7 @@
 # define XTRACK_GAIN          2 // deg/m
 #endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   8 // deg
+# define XTRACK_ENTRY_ANGLE   20 // deg
 #endif
 
 
