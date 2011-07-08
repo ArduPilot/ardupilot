@@ -33,7 +33,8 @@ public:
 		_health(1.),
 		_kp_roll_pitch(0.05967),
 		_ki_roll_pitch(0.00001278),
-		_kp_yaw(0.8),
+		_kp_yaw(0.8), // .8
+		_ki_yaw(0.00004), // 0.00004
 		_toggle(0)
 	{}
 
@@ -73,6 +74,9 @@ public:
 	float	kp_yaw() 				{ return _kp_yaw; }
 	void	kp_yaw(float v) 		{ _kp_yaw = v; }
 
+	float	ki_yaw() 				{ return _ki_yaw; }
+	void	ki_yaw(float v) 		{ _ki_yaw = v; }
+
 	static const float kDCM_kp_rp_high 		= 0.15;
 	static const float kDCM_kp_rp_medium	= 0.05967;
 	static const float kDCM_kp_rp_low		= 0.01;
@@ -82,6 +86,8 @@ private:
 	float		_kp_roll_pitch;
 	float		_ki_roll_pitch;
 	float		_kp_yaw;
+	float		_ki_yaw;
+
 	// Methods
 	void 		read_adc_raw(void);
 	void 		accel_adjust(void);
