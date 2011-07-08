@@ -27,7 +27,7 @@
 //#define Ki_ROLLPITCH 0.0			// 0.0000003 * 418/9.81 Pitch&Roll Drift Correction Integrator Gain
 
 //#define Kp_YAW 0.8		 		// Yaw Drift Correction Porportional Gain
-#define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
+//#define Ki_YAW 0.00004 				// Yaw Drift CorrectionIntegrator Gain
 
 #define SPEEDFILT 300				// centimeters/second
 #define ADC_CONSTRAINT 900
@@ -302,7 +302,7 @@ AP_DCM::drift_correction(void)
 	_error_yaw = _dcm_matrix.c * error_course;	// Equation 24, Applys the yaw correction to the XYZ rotation of the aircraft, depeding the position.
 
 	_omega_P += _error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
-	_omega_I += _error_yaw * Ki_YAW;			// adding yaw correction to integrator correction vector.
+	_omega_I += _error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
 
 	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed half the saturation limit of the gyros
 	integrator_magnitude = _omega_I.length();
