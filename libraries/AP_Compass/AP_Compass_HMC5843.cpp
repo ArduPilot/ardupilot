@@ -46,56 +46,91 @@
 #define DataOutputRate_30HZ   0x05
 #define DataOutputRate_75HZ   0x06
 
+// read_register - read a register value
+static bool
+read_register(int address, byte *value)
+{
+  bool ret = false;
+
+  *value = 0;
+
+  Wire.beginTransmission(COMPASS_ADDRESS);
+  Wire.send(address);     //sends address to read from
+  if (0 != Wire.endTransmission())
+	 return false;
+
+  Wire.requestFrom(COMPASS_ADDRESS, 1);    // request 1 byte from device
+  if( Wire.available() ) {
+      *value = Wire.receive();  // receive one byte
+	  ret = true;
+  }
+  if (0 != Wire.endTransmission())
+	 return false;
+  
+  return ret;
+}
+
+// write_register - update a register value
+static bool
+write_register(int address, byte value)
+{
+  Wire.beginTransmission(COMPASS_ADDRESS);
+  Wire.send(address);
+  Wire.send(value);
+  if (0 != Wire.endTransmission())
+	 return false;
+  delay(10);
+  return true;
+}
+
 
 // Public Methods //////////////////////////////////////////////////////////////
 bool 
 AP_Compass_HMC5843::init()
 {
   int numAttempts = 0;
-  int success = 0;
-  byte orig_value, new_value;  // used to test compass type
+  bool success = false;
+  byte base_config;  // used to test compass type
+  byte calibration_gain = 0x20;
+  uint16_t expected_xy = 715;
+  uint16_t expected_z = 715;
 
   delay(10);
 
   // determine if we are using 5843 or 5883L
-  orig_value = read_register(ConfigRegA);  // read config register A
-  new_value = orig_value | 0x60;           // turn on sample averaging turned on (only avaiable in 5883L)
-  write_register(ConfigRegA, new_value);   // write config register A
-  if( read_register(ConfigRegA) == new_value ) {  // if we've successfully updated it then it's a 5883L
+  if (! write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
+	  ! read_register(ConfigRegA, &base_config)) {
+	 return false;
+  }
+  if ( base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
+	 // a 5883L supports the sample averaging config
       product_id = AP_COMPASS_TYPE_HMC5883L;
-	  write_register(ConfigRegA, orig_value);   // restore config register A to it's original state
-  }else
+	  calibration_gain = 0x60;
+	  expected_xy = 766;
+	  expected_z  = 713;
+  } else if (base_config == PositiveBiasConfig) {
       product_id = AP_COMPASS_TYPE_HMC5843;
+  } else {
+	 // not behaving like either supported compass type
+	 return false;
+  }
   
   while( success == 0 && numAttempts < 5 )
   {
+	 unsigned long update_stamp = last_update;
+
       // record number of attempts at initialisation
 	  numAttempts++;
 
 	  // force positiveBias (compass should return 715 for all channels)
-	  Wire.beginTransmission(COMPASS_ADDRESS);
-	  Wire.send(ConfigRegA);
-	  if (product_id == AP_COMPASS_TYPE_HMC5843) {
-		 Wire.send(PositiveBiasConfig);
-	  } else {
-		 Wire.send(SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | PositiveBiasConfig);
-	  }
-	  if (0 != Wire.endTransmission())
-		 continue;			// compass not responding on the bus
+	  if (! write_register(ConfigRegA, PositiveBiasConfig))
+		 continue; // compass not responding on the bus
 	  delay(50);
 
 	  // set gains
-	  Wire.beginTransmission(COMPASS_ADDRESS);
-	  Wire.send(ConfigRegB);
-	  Wire.send(magGain);
-	  Wire.endTransmission();
-	  delay(10);
-
-	  Wire.beginTransmission(COMPASS_ADDRESS);
-	  Wire.send(ModeRegister);
-	  Wire.send(SingleConversion);
-	  Wire.endTransmission();
-	  delay(10);
+	  if (! write_register(ConfigRegB, calibration_gain) ||
+		  ! write_register(ModeRegister, SingleConversion))
+		 continue;
 
 	  // calibration initialisation
 	  calibration[0] = 1.0;
@@ -104,37 +139,33 @@ AP_Compass_HMC5843::init()
 
 	  // read values from the compass
 	  read();
+	  if (last_update == update_stamp) 
+		 continue; // we didn't read valid values
+
 	  delay(10);
 
 	  // calibrate
 	  if( abs(mag_x) > 500 && abs(mag_x) < 2000 && abs(mag_y) > 500 && abs(mag_y) < 2000 && abs(mag_z) > 500 && abs(mag_z) < 2000)
 	  {
-		  calibration[0] = fabs(715.0 / mag_x);
-		  calibration[1] = fabs(715.0 / mag_y);
-		  calibration[2] = fabs(715.0 / mag_z);
+		 calibration[0] = fabs(expected_xy / (float)mag_x);
+		 calibration[1] = fabs(expected_xy / (float)mag_y);
+		 calibration[2] = fabs(expected_z / (float)mag_z);
 
-		  // mark success
-		  success = 1;
+		 // mark success
+		 success = true;
 	  }
-
-	  // leave test mode
-	  Wire.beginTransmission(COMPASS_ADDRESS);
-	  Wire.send(ConfigRegA);
-	  if (product_id == AP_COMPASS_TYPE_HMC5843) {
-		 Wire.send(NormalOperation);
-	  } else {
-		 Wire.send(SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation);
-	  }
-	  Wire.endTransmission();
-	  delay(50);
-
-	  Wire.beginTransmission(COMPASS_ADDRESS);
-	  Wire.send(ModeRegister);
-	  Wire.send(ContinuousConversion);        // Set continuous mode (default to 10Hz)
-	  Wire.endTransmission();                 // End transmission
-	  delay(50);
   }
-  return(success);
+
+  // leave test mode
+  if (! write_register(ConfigRegA, base_config))
+	 return false;
+  delay(50);
+  if (! write_register(ConfigRegB, magGain) ||
+	  ! write_register(ModeRegister, ContinuousConversion))
+	 return false;
+  delay(50);
+
+  return success;
 }
 
 // Read Sensor data
@@ -147,7 +178,8 @@ AP_Compass_HMC5843::read()
 
   Wire.beginTransmission(COMPASS_ADDRESS);
   Wire.send(0x03);        //sends address to read from
-  Wire.endTransmission(); //end transmission
+  if (0 != Wire.endTransmission())
+	 return;
 
   //Wire.beginTransmission(COMPASS_ADDRESS);
   Wire.requestFrom(COMPASS_ADDRESS, 6);    // request 6 bytes from device
@@ -156,27 +188,37 @@ AP_Compass_HMC5843::read()
     buff[i] = Wire.receive();  // receive one byte
     i++;
   }
-  Wire.endTransmission(); //end transmission
+  if (0 != Wire.endTransmission())
+	 return;
 
   if (i==6)  // All bytes received?
   {
-    // MSB byte first, then LSB, X,Y,Z
-    mag_x = -((((int)buff[0]) << 8) | buff[1]) * calibration[0];    // X axis
-	if( product_id == AP_COMPASS_TYPE_HMC5883L ) {
-		mag_y = ((((int)buff[4]) << 8) | buff[5]) * calibration[1];    // Y axis
-		mag_z = -((((int)buff[2]) << 8) | buff[3]) * calibration[2];    // Z axis
-	}else{
-		mag_y = ((((int)buff[2]) << 8) | buff[3]) * calibration[1];    // Y axis
-		mag_z = -((((int)buff[4]) << 8) | buff[5]) * calibration[2];    // Z axis
-	}	
-    last_update = millis();  // record time of update
-	// rotate and offset the magnetometer values
-    // XXX this could well be done in common code...
-	rot_mag = _orientation_matrix.get() * Vector3f(mag_x,mag_y,mag_z);
-	rot_mag = rot_mag + _offset.get();
-	mag_x = rot_mag.x;
-	mag_y = rot_mag.y;
-	mag_z = rot_mag.z;
+	 int16_t rx, ry, rz;
+	 rx = (int16_t)(buff[0] << 8) | buff[1];
+	 if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+		rz = (int16_t)(buff[2] << 8) | buff[3];
+		ry = (int16_t)(buff[4] << 8) | buff[5];
+	 } else {
+		ry = (int16_t)(buff[2] << 8) | buff[3];
+		rz = (int16_t)(buff[4] << 8) | buff[5];
+	 }
+	 if (rx == -4096 || ry == -4096 || rz == -4096) {
+		// no valid data available, last_update is not updated
+		return;
+	 }
+
+	 mag_x = -rx * calibration[0];
+	 mag_y =  ry * calibration[1];
+	 mag_z = -rz * calibration[2];
+
+	 last_update = millis();  // record time of update
+	 // rotate and offset the magnetometer values
+	 // XXX this could well be done in common code...
+	 rot_mag = _orientation_matrix.get() * Vector3f(mag_x,mag_y,mag_z);
+	 rot_mag = rot_mag + _offset.get();
+	 mag_x = rot_mag.x;
+	 mag_y = rot_mag.y;
+	 mag_z = rot_mag.z;
   }
 }
 
@@ -189,33 +231,4 @@ AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
 	}else{
 	    _orientation_matrix.set_and_save(rotation_matrix);
 	}
-}
-
-// read_register - read a register value
-byte 
-AP_Compass_HMC5843::read_register(int address)
-{
-  byte result;
-  byte buff[1];
-  Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.send(address);     //sends address to read from
-  Wire.endTransmission(); //end transmission
-
-  Wire.requestFrom(COMPASS_ADDRESS, 1);    // request 1 byte from device
-  if( Wire.available() )
-      result = Wire.receive();  // receive one byte
-  Wire.endTransmission(); //end transmission
-  
-  return result;
-}
-
-// write_register - update a register value
-void 
-AP_Compass_HMC5843::write_register(int address, byte value)
-{
-  Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.send(address);
-  Wire.send(value);
-  Wire.endTransmission();
-  delay(10);
 }
