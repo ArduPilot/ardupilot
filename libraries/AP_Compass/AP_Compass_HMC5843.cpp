@@ -108,7 +108,7 @@ AP_Compass_HMC5843::init()
 	  calibration_gain = 0x60;
 	  expected_xy = 766;
 	  expected_z  = 713;
-  } else if (base_config == PositiveBiasConfig) {
+  } else if (base_config == NormalOperation | DataOutputRate_75HZ<<2) {
       product_id = AP_COMPASS_TYPE_HMC5843;
   } else {
 	 // not behaving like either supported compass type
