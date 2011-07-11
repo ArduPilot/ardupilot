@@ -21,6 +21,7 @@
 #define Y6_FRAME 3
 #define OCTA_FRAME 4
 #define HELI_FRAME 5
+#define OCTA_QUAD_FRAME 6
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
@@ -126,23 +127,27 @@
 #define YAW_BRAKE 1
 #define YAW_RATE 2
 
+
 // CH_6 Tuning
 // -----------
 #define CH6_NONE 0
-#define CH6_STABLIZE_KP 1
-#define CH6_STABLIZE_KD 2
-#define CH6_BARO_KP 3
-#define CH6_BARO_KD 4
-#define CH6_SONAR_KP 5
-#define CH6_SONAR_KD 6
-#define CH6_Y6_SCALING 7
-#define CH6_PMAX 8
-#define CH6_DCM_RP 9
-#define CH6_DCM_Y 10
-#define	CH6_YAW_KP 11
-#define	CH6_YAW_KD 12
-#define	CH6_YAW_RATE_KP 13
-#define	CH6_YAW_RATE_KD 14
+// Attitude
+#define CH6_STABILIZE_KP 1
+#define CH6_STABILIZE_KI 2
+#define	CH6_YAW_KP 3
+#define	CH6_YAW_KD 4
+// Rate
+#define CH6_RATE_KP 5
+#define CH6_RATE_KI 6
+#define	CH6_YAW_RATE_KP 7
+#define	CH6_YAW_RATE_KD 8
+// Altitude
+#define CH6_THROTTLE_KP 9
+#define CH6_THROTTLE_KD 10
+// Extras
+#define CH6_TOP_BOTTOM_RATIO 11
+#define CH6_PMAX 12
+
 
 // nav byte mask
 // -------------
@@ -340,7 +345,6 @@
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 
 
-#define SONAR_PORT AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL
 
 // sonar
 #define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters

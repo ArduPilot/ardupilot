@@ -99,12 +99,19 @@ void update_motor_leds(void)
 
 	if (blink){
 		blink = false;
-		digitalWrite(RE_LED, LOW);
+		digitalWrite(RE_LED, HIGH);
+		digitalWrite(FR_LED, HIGH);
+		digitalWrite(RI_LED, LOW);
+		digitalWrite(LE_LED, LOW);
 
 	}else{
 		blink = true;
-		digitalWrite(RE_LED, HIGH);
+		digitalWrite(RE_LED, LOW);
+		digitalWrite(FR_LED, LOW);
+		digitalWrite(RI_LED, HIGH);
+		digitalWrite(LE_LED, HIGH);
 	}
 }
 #endif
+
 

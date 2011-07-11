@@ -33,8 +33,8 @@ void reset_control_switch()
 {
 	oldSwitchPosition = -1;
 	read_control_switch();
-	SendDebug("MSG: reset_control_switch ");
-	SendDebugln(oldSwitchPosition , DEC);
+	//SendDebug("MSG: reset_control_switch ");
+	//SendDebugln(oldSwitchPosition , DEC);
 }
 
 void update_servo_switches()
