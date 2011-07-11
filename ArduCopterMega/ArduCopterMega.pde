@@ -251,6 +251,11 @@ const char* flight_mode_strings[] = {
 			8	TBD
 */
 
+// test
+//Vector3f accels_rot;
+//float	accel_gain = 20;
+
+
 // Radio
 // -----
 byte 		control_mode		= STABILIZE;
@@ -304,6 +309,8 @@ int		climb_rate;							// m/s * 100  - For future implementation of controlled a
 float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 
 int 	last_ground_speed;					// used to dampen navigation
+int		waypoint_speed;
+
 byte	wp_control;							// used to control - navgation or loiter
 
 byte	command_must_index;					// current command memory location
@@ -319,8 +326,6 @@ float sin_pitch_y, sin_yaw_y, sin_roll_y;
 bool simple_bearing_is_set = false;
 long initial_simple_bearing;				// used for Simple mode
 
-float Y6_scaling = Y6_MOTOR_SCALER;
-
 // Airspeed
 // --------
 int		airspeed;							// m/s * 100
@@ -334,6 +339,7 @@ long 	distance_error;						// distance to the WP
 long 	yaw_error;							// how off are we pointed
 long	long_error, lat_error;				// temp for debugging
 int		loiter_error_max;
+
 // Battery Sensors
 // ---------------
 float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
@@ -350,11 +356,11 @@ float	current_total;
 
 // Barometer Sensor variables
 // --------------------------
-long 			abs_pressure;
-long 			ground_pressure;
-int 			ground_temperature;
-int32_t 		baro_filter[BARO_FILTER_SIZE];
-byte			baro_filter_index;
+long 	abs_pressure;
+long 	ground_pressure;
+int 	ground_temperature;
+int32_t baro_filter[BARO_FILTER_SIZE];
+byte	baro_filter_index;
 
 // Altitude Sensor variables
 // ----------------------
@@ -362,6 +368,7 @@ int		sonar_alt;
 int		baro_alt;
 int		baro_alt_offset;
 byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
+
 
 // flight mode specific
 // --------------------
@@ -372,7 +379,7 @@ int		landing_distance;					// meters;
 long 	old_alt;							// used for managing altitude rates
 int		velocity_land;
 byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
-byte	brake_timer;
+int		throttle_slew;						// used to smooth throttle tranistions
 
 // Loiter management
 // -----------------
@@ -388,11 +395,9 @@ long	nav_yaw;							// deg * 100 : target yaw angle
 long	nav_lat;							// for error calcs
 long	nav_lon;							// for error calcs
 int		nav_throttle;						// 0-1000 for throttle control
-int		nav_throttle_old;					// for filtering
 
-long 	throttle_integrator;					// used to control when we calculate nav_throttle
+long 	throttle_integrator;				// used to control when we calculate nav_throttle
 bool 	invalid_throttle;					// used to control when we calculate nav_throttle
-bool 	invalid_nav;						// used to control when we calculate nav_throttle
 bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
 long 	command_yaw_start;					// what angle were we to begin with
@@ -535,7 +540,6 @@ void loop()
 
 		medium_loop();
 
-
 		// Stuff to run at full 50hz, but after the loops
 		fifty_hz_loop();
 
@@ -563,7 +567,7 @@ void loop()
 }
 //  PORTK |= B01000000;
 //	PORTK &= B10111111;
-//
+
 // Main loop
 void fast_loop()
 {
@@ -589,7 +593,7 @@ void fast_loop()
 
 	// record throttle output
 	// ------------------------------
-	//throttle_integrator += g.rc_3.servo_out;
+	throttle_integrator += g.rc_3.servo_out;
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
 		// HIL for a copter needs very fast update of the servo values
@@ -746,9 +750,6 @@ void medium_loop()
 			// -----------------------
 			arm_motors();
 
-			// should we be in DCM Fast recovery?
-			// ----------------------------------
-			check_DCM();
 
 			slow_loop();
 			break;
@@ -769,8 +770,10 @@ void fifty_hz_loop()
 	// use Yaw to find our bearing error
 	calc_bearing_error();
 
-	// guess how close we are - fixed observer calc
-	//calc_distance_error();
+	if (throttle_slew < 0)
+		throttle_slew++;
+	else if (throttle_slew > 0)
+		throttle_slew--;
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
@@ -1008,22 +1011,23 @@ void update_current_flight_mode(void)
 
 		switch(command_must_ID){
 			default:
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-				auto_yaw();
+				// mix in user control with Nav control
+				g.rc_1.servo_out = g.rc_1.control_mix(nav_roll);
+				g.rc_2.servo_out = g.rc_2.control_mix(nav_pitch);
 
-				// mix in user control
-				control_nav_mixer();
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
 
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 
-				if(invalid_throttle)
-					calc_nav_throttle();
+				// Throttle control
+				if(invalid_throttle){
+					auto_throttle();
+				}
 
-				// apply throttle control
-				output_auto_throttle();
+				// Yaw control
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				break;
 		}
 
@@ -1031,58 +1035,37 @@ void update_current_flight_mode(void)
 
 		switch(control_mode){
 			case ACRO:
-				// clear any AP naviagtion values
-				nav_pitch 		= 0;
-				nav_roll 		= 0;
+				// Roll control
+				g.rc_1.servo_out = get_rate_roll(g.rc_1.control_in);
+
+				// Pitch control
+				g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
+
+				// Throttle control
+				g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
 
 				// Yaw control
-				output_manual_yaw();
+				g.rc_4.servo_out = get_rate_yaw(g.rc_4.control_in);
 
-				// apply throttle control
-				output_manual_throttle();
-
-				// mix in user control
-				control_nav_mixer();
-
-				// perform rate or stabilzation
-				// ----------------------------
-
-				// Roll control
-				if(abs(g.rc_1.control_in) >= ACRO_RATE_TRIGGER){
-					output_rate_roll(); // rate control yaw
-				}else{
-					output_stabilize_roll(); // hold yaw
-				}
-
-				// Roll control
-				if(abs(g.rc_2.control_in) >= ACRO_RATE_TRIGGER){
-					output_rate_pitch(); // rate control yaw
-				}else{
-					output_stabilize_pitch(); // hold yaw
-				}
 				break;
 
 			case STABILIZE:
-				// clear any AP naviagtion values
-				nav_pitch 		= 0;
-				nav_roll 		= 0;
+				// calcualte new nav_yaw offset
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
 
-				if(g.rc_3.control_in == 0){
-					clear_yaw_control();
-				}else{
-					// Yaw control
-					output_manual_yaw();
-				}
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
 
-				// apply throttle control
-				output_manual_throttle();
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 
-				// mix in user control
-				control_nav_mixer();
+				// Throttle control
+				g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
 
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				// Yaw control
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+
+				//Serial.printf("%u\t%d\n", nav_yaw, g.rc_4.servo_out);
 				break;
 
 			case SIMPLE:
@@ -1091,11 +1074,12 @@ void update_current_flight_mode(void)
 				if(flight_timer > 4){
 					flight_timer = 0;
 
+					// make sure this is always 0
 					simple_WP.lat = 0;
 					simple_WP.lng = 0;
 
 					next_WP.lng =  (float)g.rc_1.control_in * .9;  // X: 4500 * .7 = 2250 = 25 meteres
-					next_WP.lat = -(float)g.rc_2.control_in * .9; // Y: 4500 * .7 = 2250 = 25 meteres
+					next_WP.lat = -(float)g.rc_2.control_in * .9;  // Y: 4500 * .7 = 2250 = 25 meteres
 					//next_WP.lng =  g.rc_1.control_in;  // X: 4500 * .7 = 2250 = 25 meteres
 					//next_WP.lat = -g.rc_2.control_in; // Y: 4500 * .7 = 2250 = 25 meteres
 
@@ -1103,6 +1087,7 @@ void update_current_flight_mode(void)
 					nav_bearing 	= get_bearing(&simple_WP, &next_WP) + initial_simple_bearing;
 					nav_bearing 	= wrap_360(nav_bearing);
 					wp_distance 	= get_distance(&simple_WP, &next_WP);
+
 					calc_bearing_error();
 
 					/*
@@ -1117,10 +1102,9 @@ void update_current_flight_mode(void)
 					// get nav_pitch and nav_roll
 					calc_simple_nav();
 					calc_nav_output();
-					limit_nav_pitch_roll(4500);
 				}
 
-
+				/*
 				#if SIMPLE_LOOK_AT_HOME == 0
 					// This is typical yaw behavior
 
@@ -1141,96 +1125,98 @@ void update_current_flight_mode(void)
 					// ------------------------------------
 					auto_yaw();
 				#endif
+				*/
 
-				// apply throttle control
-				output_manual_throttle();
+				// calcualte new nav_yaw offset
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
 
-				// apply nav_pitch and nav_roll to output
-				simple_mixer();
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(nav_roll);
 
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(nav_pitch);
+
+				// Throttle control
+				g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
+
+				// Yaw control
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				//Serial.printf("%d \t %d\n", g.rc_3.servo_out, throttle_slew);
+
 			break;
 
 			case ALT_HOLD:
-				// clear any AP naviagtion values
-				nav_pitch 		= 0;
-				nav_roll 		= 0;
-
 				// allow interactive changing of atitude
 				adjust_altitude();
 
+				// calcualte new nav_yaw offset
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+
+				// Throttle control
+				if(invalid_throttle){
+					auto_throttle();
+				}
+
 				// Yaw control
-				// -----------
-				output_manual_yaw();
-
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-
-				if(invalid_throttle)
-					calc_nav_throttle();
-
-				// apply throttle control
-				output_auto_throttle();
-
-				// mix in user control
-				control_nav_mixer();
-
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				break;
 
 			case GUIDED:
 			case RTL:
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
-				auto_yaw();
-
-				if(invalid_throttle)
-					calc_nav_throttle();
-
-				// apply throttle control
-				output_auto_throttle();
-
 				// mix in user control with Nav control
-				control_nav_mixer();
+				g.rc_1.servo_out = g.rc_1.control_mix(nav_roll);
+				g.rc_2.servo_out = g.rc_2.control_mix(nav_pitch);
 
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.servo_out);
+
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.servo_out);
+
+				// Throttle control
+				if(invalid_throttle){
+					auto_throttle();
+				}
+
+				// Yaw control
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				break;
 
 			case LOITER:
+				// calcualte new nav_yaw offset
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+
 				// allow interactive changing of atitude
 				adjust_altitude();
 
-				// Output Pitch, Roll, Yaw and Throttle
-				// ------------------------------------
+				// mix in user control with Nav control
+				g.rc_1.servo_out = g.rc_1.control_mix(nav_roll);
+				g.rc_2.servo_out = g.rc_2.control_mix(nav_pitch);
+
+				// Roll control
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.servo_out);
+
+				// Pitch control
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.servo_out);
+
+				// Throttle control
+				if(invalid_throttle){
+					auto_throttle();
+				}
 
 				// Yaw control
-				// -----------
-				output_manual_yaw();
-
-				if(invalid_throttle)
-					calc_nav_throttle();
-
-				// apply throttle control
-				output_auto_throttle();
-
-				// mix in user control with Nav control
-				control_nav_mixer();
-
-				// perform stabilzation
-				output_stabilize_roll();
-				output_stabilize_pitch();
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				break;
 
 			default:
 				//Serial.print("$");
 				break;
-
 		}
 	}
 }
@@ -1313,6 +1299,9 @@ void update_trig(void){
 
 	cos_roll_x 		= temp.c.z / cos_pitch_x;
 	sin_roll_y 		= temp.c.y / cos_pitch_x;
+
+	//Vector3f accel_filt	= imu.get_accel_filtered();
+	//accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
 }
 
 // updated at 10hz
@@ -1333,9 +1322,9 @@ void update_alt()
 		int temp_sonar 		= sonar.read();
 
 		// spike filter
-		//if((temp_sonar - sonar_alt) < 50){
-		//	sonar_alt = temp_sonar;
-		//}
+		if((temp_sonar - sonar_alt) < 50){
+			sonar_alt = temp_sonar;
+		}
 
 		sonar_alt = temp_sonar;
 
@@ -1346,7 +1335,7 @@ void update_alt()
 		sonar_alt = (float)sonar_alt * temp;
 		*/
 
-		if(baro_alt < 800){
+		if(baro_alt < 1500){
 			scale = (sonar_alt - 400) / 200;
 			scale = constrain(scale, 0, 1);
 
@@ -1373,67 +1362,65 @@ adjust_altitude()
 		flight_timer = 0;
 
 		if(g.rc_3.control_in <= 200){
-			next_WP.alt -= 1;												// 1 meter per second
-			next_WP.alt = max(next_WP.alt, (current_loc.alt - 100));		// don't go more than 4 meters below current location
-			next_WP.alt = max(next_WP.alt, 100); 							// no lower than 1 meter?
+			next_WP.alt -= 3;												// 1 meter per second
+			next_WP.alt = max(next_WP.alt, (current_loc.alt - 600));		// don't go more than 4 meters below current location
 
 		}else if (g.rc_3.control_in > 700){
-			next_WP.alt += 2;												// 1 meter per second
+			next_WP.alt += 4;												// 1 meter per second
 			//next_WP.alt = min((current_loc.alt + 400), next_WP.alt);		// don't go more than 4 meters below current location
-			next_WP.alt = min(next_WP.alt, (current_loc.alt + 200));		// don't go more than 4 meters below current location
+			next_WP.alt = min(next_WP.alt, (current_loc.alt + 600));		// don't go more than 4 meters below current location
 		}
+		next_WP.alt = max(next_WP.alt, 100);		// don't go more than 4 meters below current location
 	}
 }
 
 void tuning(){
 
-	#if CHANNEL_6_TUNING == CH6_STABLIZE_KP
+	//Outer Loop : Attitude
+	#if CHANNEL_6_TUNING == CH6_STABILIZE_KP
 		g.pid_stabilize_roll.kP((float)g.rc_6.control_in / 1000.0);
 		g.pid_stabilize_pitch.kP((float)g.rc_6.control_in / 1000.0);
 
-	#elif CHANNEL_6_TUNING == CH6_STABLIZE_KD
-		g.pid_stabilize_pitch.kD((float)g.rc_6.control_in / 1000.0);
-		g.pid_stabilize_roll.kD((float)g.rc_6.control_in / 1000.0);
+	#elif CHANNEL_6_TUNING == CH6_STABILIZE_KI
+		g.pid_stabilize_roll.kI((float)g.rc_6.control_in / 1000.0);
+		g.pid_stabilize_pitch.kI((float)g.rc_6.control_in / 1000.0);
 
-	#elif CHANNEL_6_TUNING == CH6_BARO_KP
-		g.pid_baro_throttle.kP((float)g.rc_6.control_in / 1000.0);
+	#elif CHANNEL_6_TUNING == CH6_YAW_KP
+		g.pid_stabilize_yaw.kP((float)g.rc_6.control_in / 1000.0);  // range from 0.0 ~ 5.0
 
-	#elif CHANNEL_6_TUNING == CH6_BARO_KD
-		g.pid_baro_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
+	#elif CHANNEL_6_TUNING == CH6_YAW_KI
+		g.pid_stabilize_yaw.kI((float)g.rc_6.control_in / 1000.0);
 
-	#elif CHANNEL_6_TUNING == CH6_SONAR_KP
-		g.pid_sonar_throttle.kP((float)g.rc_6.control_in / 1000.0);
 
-	#elif CHANNEL_6_TUNING == CH6_SONAR_KD
-		g.pid_sonar_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
+	//Inner Loop : Rate
+	#elif CHANNEL_6_TUNING == CH6_RATE_KP
+		g.pid_rate_roll.kP((float)g.rc_6.control_in / 1000.0);
+		g.pid_rate_pitch.kP((float)g.rc_6.control_in / 1000.0);
 
-	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
-		Y6_scaling = (float)g.rc_6.control_in / 1000.0;
+	#elif CHANNEL_6_TUNING == CH6_RATE_KI
+		g.pid_rate_roll.kI((float)g.rc_6.control_in / 1000.0);
+		g.pid_rate_pitch.kI((float)g.rc_6.control_in / 1000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
+		g.pid_rate_yaw.kP((float)g.rc_6.control_in / 1000.0);
+
+	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KI
+		g.pid_rate_yaw.kI((float)g.rc_6.control_in / 1000.0);
+
+
+	//Altitude Hold
+	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KP
+		g.pid_throttle.kP((float)g.rc_6.control_in / 1000.0); //  0 to 1
+
+	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KD
+		g.pid_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
+
+	//Extras
+	#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
+		g.top_bottom_ratio = (float)g.rc_6.control_in / 1000.0;
 
 	#elif CHANNEL_6_TUNING == CH6_PMAX
 		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
-
-	#elif CHANNEL_6_TUNING == CH6_DCM_RP
-		dcm.kp_roll_pitch((float)g.rc_6.control_in / 5000.0);
-
-	#elif CHANNEL_6_TUNING == CH6_DCM_Y
-		dcm.kp_yaw((float)g.rc_6.control_in / 1000.0);
-
-	#elif CHANNEL_6_TUNING == CH6_YAW_KP
-	    // yaw heading
-		g.pid_yaw.kP((float)g.rc_6.control_in / 200.0);  // range from 0.0 ~ 5.0
-
-	#elif CHANNEL_6_TUNING == CH6_YAW_KD
-	    // yaw heading
-		g.pid_yaw.kD((float)g.rc_6.control_in / 1000.0);
-
-	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
-	    // yaw rate
-		g.pid_acro_rate_yaw.kP((float)g.rc_6.control_in / 1000.0);
-
-	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KD
-	    // yaw rate
-		g.pid_acro_rate_yaw.kD((float)g.rc_6.control_in / 1000.0);
 
 	#endif
 }
@@ -1477,20 +1464,19 @@ void point_at_home_yaw()
 	nav_yaw = get_bearing(&current_loc, &home);
 }
 
-void check_DCM()
+void auto_throttle()
 {
-	#if DYNAMIC_DRIFT == 1
-	if(g.rc_1.control_in == 0 && g.rc_2.control_in == 0){
-		if(g.rc_3.control_in < (g.throttle_cruise + 20)){
-			//dcm.kp_roll_pitch(dcm.kDCM_kp_rp_high);
-			dcm.kp_roll_pitch(0.15);
-		}
-	}else{
-		dcm.kp_roll_pitch(0.05967);
-	}
-	#endif
+	// get the AP throttle
+	nav_throttle = get_nav_throttle(altitude_error);
+
+	// apply throttle control
+	g.rc_3.servo_out = get_throttle(nav_throttle - throttle_slew);
+
+	// remember throttle offset
+	throttle_slew = g.rc_3.servo_out - g.rc_3.control_in;
+
+	// clear the new data flag
+	invalid_throttle = false;
+
+	//Serial.printf("wp:%d, \te:%d \tt%d \t%d\n", (int)next_WP.alt, (int)altitude_error, nav_throttle, g.rc_3.servo_out);
 }
-
-
-
-

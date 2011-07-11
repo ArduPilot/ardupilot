@@ -207,8 +207,6 @@ void set_next_WP(struct Location *wp)
 // -------------------------------
 void init_home()
 {
-	SendDebugln("MSG: <init_home> init home");
-
 	// block until we get a good fix
 	// -----------------------------
 	while (!g_gps->new_data || !g_gps->fix) {

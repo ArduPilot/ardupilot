@@ -400,8 +400,12 @@ void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
 	Vector3f accel = imu.get_accel();
+	//Vector3f accel_filt	= imu.get_accel_filtered();
+
 	gyro *= t7;								// Scale up for storage as long integers
 	accel *= t7;
+	//accel_filt *= t7;
+
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_RAW_MSG);
@@ -409,6 +413,12 @@ void Log_Write_Raw()
 	DataFlash.WriteLong((long)gyro.x);
 	DataFlash.WriteLong((long)gyro.y);
 	DataFlash.WriteLong((long)gyro.z);
+
+
+	//DataFlash.WriteLong((long)(accels_rot.x * t7));
+	//DataFlash.WriteLong((long)(accels_rot.y * t7));
+	//DataFlash.WriteLong((long)(accels_rot.z * t7));
+
 	DataFlash.WriteLong((long)accel.x);
 	DataFlash.WriteLong((long)accel.y);
 	DataFlash.WriteLong((long)accel.z);
@@ -416,6 +426,19 @@ void Log_Write_Raw()
 	DataFlash.WriteByte(END_BYTE);
 }
 #endif
+
+// Read a raw accel/gyro packet
+void Log_Read_Raw()
+{
+	float logvar;
+	Serial.printf_P(PSTR("RAW,"));
+	for (int y = 0; y < 6; y++) {
+		logvar = (float)DataFlash.ReadLong() / t7;
+		Serial.print(logvar);
+		Serial.print(comma);
+	}
+	Serial.println(" ");
+}
 
 void Log_Write_Current()
 {
@@ -534,7 +557,7 @@ void Log_Write_Control_Tuning()
 
 	DataFlash.WriteInt((int)next_WP.alt);				//
 	DataFlash.WriteInt((int)altitude_error);			//
-	DataFlash.WriteInt((int)g.pid_baro_throttle.get_integrator());
+	DataFlash.WriteInt((int)g.pid_throttle.get_integrator());
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -709,20 +732,6 @@ void Log_Read_Mode()
 	Serial.print(flight_mode_strings[DataFlash.ReadByte()]);
 	Serial.printf_P(PSTR(", %d\n"),DataFlash.ReadInt());
 }
-
-// Read a raw accel/gyro packet
-void Log_Read_Raw()
-{
-	float logvar;
-	Serial.printf_P(PSTR("RAW,"));
-	for (int y = 0; y < 6; y++) {
-		logvar = (float)DataFlash.ReadLong() / t7;
-		Serial.print(logvar);
-		Serial.print(comma);
-	}
-	Serial.println(" ");
-}
-
 
 void Log_Write_Startup()
 {

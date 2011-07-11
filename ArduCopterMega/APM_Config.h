@@ -29,25 +29,21 @@
 #define CHANNEL_6_TUNING CH6_NONE
 	/*
 	CH6_NONE
-	CH6_STABLIZE_KP
-	CH6_STABLIZE_KD
-	CH6_BARO_KP
-	CH6_BARO_KD
-	CH6_SONAR_KP
-	CH6_SONAR_KD
-	CH6_Y6_SCALING
+	CH6_STABILIZE_KP
+	CH6_STABILIZE_KI
+	CH6_RATE_KP
+	CH6_RATE_KI
+	CH6_THROTTLE_KP
+	CH6_THROTTLE_KD
+	CH6_YAW_KP
+	CH6_YAW_KI
+	CH6_YAW_RATE_KP
+	CH6_YAW_RATE_KI
+	CH6_TOP_BOTTOM_RATIO
+	CH6_PMAX
 	*/
-
-//#define ACRO_RATE_TRIGGER 4200
-// if you want full ACRO mode, set value to 0
-// if you want mostly stabilize with flips, set value to 4200
-
-//#define STABILIZE_ROLL_D 		0.11
-//#define STABILIZE_PITCH_D 		0.11
-
 
 // experimental!!
 // Yaw is controled by targeting home. you will not have Yaw override.
 // flying too close to home may induce spins.
 #define SIMPLE_LOOK_AT_HOME 0
-#define DYNAMIC_DRIFT 0 	// careful!!! 0 = off, 1 = on

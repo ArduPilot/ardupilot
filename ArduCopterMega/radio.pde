@@ -19,15 +19,10 @@ void init_rc_in()
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
 
 	// set rc dead zones
-	g.rc_1.dead_zone = 0;		// 60 = .6 degrees
-	g.rc_2.dead_zone = 0;
+	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
+	g.rc_2.dead_zone = 60;
 	g.rc_3.dead_zone = 60;
-
-	#if YAW_OPTION == 1
-	g.rc_4.dead_zone = 500;// 1 = offset Yaw approach
-	#else
-	g.rc_4.dead_zone = 800;// 0 = hybrid rate approach
-	#endif
+	g.rc_4.dead_zone = 500;// 0 = hybrid rate approach
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
@@ -36,20 +31,27 @@ void init_rc_in()
 	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
 
-	#if CHANNEL_6_TUNING == CH6_STABLIZE_KD
-		g.rc_6.set_range(0,300);
+	#if CHANNEL_6_TUNING == CH6_RATE_KP
+		g.rc_6.set_range(0,300); // 0 t0 .3
 
-	#elif CHANNEL_6_TUNING == CH6_BARO_KP
-		g.rc_6.set_range(0,800);
+	#elif CHANNEL_6_TUNING == CH6_RATE_KI
+		g.rc_6.set_range(0,300); // 0 t0 .3
 
-	#elif CHANNEL_6_TUNING == CH6_BARO_KD
-		g.rc_6.set_range(0,500);
+	#elif CHANNEL_6_TUNING == CH6_STABILIZE_KP
+		g.rc_6.set_range(0,8000); // 0 t0 .3
 
-	#elif CHANNEL_6_TUNING == CH6_Y6_SCALING
-		g.rc_6.set_range(800,1000);
+	#elif CHANNEL_6_TUNING == CH6_STABILIZE_KI
+		g.rc_6.set_range(0,300); // 0 t0 .3
+
+	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KP
+		g.rc_6.set_range(0,800); // 0 to .8
+
+	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KD
+		g.rc_6.set_range(0,500);	// 0 to .5
+
+	#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
+		g.rc_6.set_range(800,1000); // .8 to 1
 	#endif
-
-	//catch bad RC_3 min values
 }
 
 void init_rc_out()

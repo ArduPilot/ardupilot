@@ -50,8 +50,8 @@
 // Sonar
 //
 
-#ifndef SONAR_PIN
-# define SONAR_PIN		AP_RANGEFINDER_PITOT_TUBE
+#ifndef SONAR_PORT
+# define SONAR_PORT		AP_RANGEFINDER_PITOT_TUBE
 #endif
 
 #ifndef SONAR_TYPE
@@ -274,119 +274,79 @@
 //////////////////////////////////////////////////////////////////////////////
 // Y6 Support
 
-#ifndef Y6_MOTOR_SCALER
-# define Y6_MOTOR_SCALER	0.92
+#ifndef TOP_BOTTOM_RATIO
+# define TOP_BOTTOM_RATIO	0.92
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// ACRO Rate Control
-
-#ifndef ACRO_RATE_ROLL_P
-# define ACRO_RATE_ROLL_P         .190
-#endif
-#ifndef ACRO_RATE_ROLL_I
-# define ACRO_RATE_ROLL_I         0.0
-#endif
-#ifndef ACRO_RATE_ROLL_D
-# define ACRO_RATE_ROLL_D         0.0
-#endif
-#ifndef ACRO_RATE_ROLL_IMAX
-# define ACRO_RATE_ROLL_IMAX	 	20
-#endif
-
-#ifndef ACRO_RATE_PITCH_P
-# define ACRO_RATE_PITCH_P         .190
-#endif
-#ifndef ACRO_RATE_PITCH_I
-# define ACRO_RATE_PITCH_I         0.0
-#endif
-#ifndef ACRO_RATE_PITCH_D
-# define ACRO_RATE_PITCH_D         0.0
-#endif
-#ifndef ACRO_RATE_PITCH_IMAX
-# define ACRO_RATE_PITCH_IMAX   	20
-#endif
-
-#ifndef ACRO_RATE_YAW_P
-# define ACRO_RATE_YAW_P         .13			// used to control response in turning
-#endif
-#ifndef ACRO_RATE_YAW_I
-# define ACRO_RATE_YAW_I         0.0
-#endif
-#ifndef ACRO_RATE_YAW_D
-# define ACRO_RATE_YAW_D         0.00		//
-#endif
-#ifndef ACRO_RATE_YAW_IMAX
-# define ACRO_RATE_YAW_IMAX   0
-#endif
-
-#ifndef ACRO_RATE_TRIGGER
-# define ACRO_RATE_TRIGGER   0
-#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
-// STABILZE Angle Control
+// Roll Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		0.48 // .48 = 4.0 NG, .54 = 4.5 NG
+# define STABILIZE_ROLL_P 		4.5
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.025		//
-#endif
-#ifndef STABILIZE_ROLL_D
-# define STABILIZE_ROLL_D 		0.18
+# define STABILIZE_ROLL_I 		0.025
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	.5		// degrees * 100
+# define STABILIZE_ROLL_IMAX 	.5		// degrees
 #endif
 
+#ifndef RATE_ROLL_P
+# define RATE_ROLL_P         .12
+#endif
+#ifndef RATE_ROLL_I
+# define RATE_ROLL_I         0.0
+#endif
+#ifndef RATE_ROLL_IMAX
+# define RATE_ROLL_IMAX	 	15			// degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Pitch Control
+//
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		0.48
+# define STABILIZE_PITCH_P		4.5
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.025
 #endif
-#ifndef STABILIZE_PITCH_D
-# define STABILIZE_PITCH_D		0.18
-#endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	.5		// degrees * 100
+# define STABILIZE_PITCH_IMAX	.5		// degrees
+#endif
+
+#ifndef RATE_PITCH_P
+# define RATE_PITCH_P       0.12
+#endif
+#ifndef RATE_PITCH_I
+# define RATE_PITCH_I		0.0
+#endif
+#ifndef RATE_PITCH_IMAX
+# define RATE_PITCH_IMAX   	15			// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // YAW Control
 //
-#ifndef YAW_OPTION
-# define YAW_OPTION		1		// 0 = hybrid rate approach, 1 = offset Yaw approach
+#ifndef  STABILIZE_YAW_P
+# define STABILIZE_YAW_P		4.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+#endif
+#ifndef  STABILIZE_YAW_I
+# define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
+#endif
+#ifndef  STABILIZE_YAW_IMAX
+# define STABILIZE_YAW_IMAX		15			// degrees * 100
 #endif
 
-#if YAW_OPTION == 1	// 0 = hybrid rate approach, 1 = offset Yaw approach
-	#ifndef  YAW_P
-	# define YAW_P					0.6			// increase for more aggressive Yaw Hold, decrease if it's bouncy
-	#endif
-	#ifndef  YAW_I
-	# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
-	#endif
-	#ifndef  YAW_D
-	# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
-	#endif
-	#ifndef  YAW_IMAX
-	# define YAW_IMAX				1			// degrees * 100
-	#endif
-#else
-	#ifndef  YAW_P
-	# define YAW_P					0.4			// increase for more aggressive Yaw Hold, decrease if it's bouncy
-	#endif
-	#ifndef  YAW_I
-	# define YAW_I					0.005		// set to .0001 to try and get over user's steady state error caused by poor balance
-	#endif
-	#ifndef  YAW_D
-	# define YAW_D					0.08		// .7 = almost no yaw	Trying a lower value to prevent odd behavior
-	#endif
-	#ifndef  YAW_IMAX
-	# define YAW_IMAX				1			// degrees * 100
-	#endif
+#ifndef RATE_YAW_P
+# define RATE_YAW_P     .15			// used to control response in turning
+#endif
+#ifndef RATE_YAW_I
+# define RATE_YAW_I     0.0
+#endif
+#ifndef RATE_YAW_IMAX
+# define RATE_YAW_IMAX   50
 #endif
 
 
@@ -395,7 +355,7 @@
 //
 // how much to we pitch towards the target
 #ifndef PITCH_MAX
-# define PITCH_MAX				16			// degrees
+# define PITCH_MAX				22			// degrees
 #endif
 
 
@@ -403,16 +363,16 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			1.4			//
+# define NAV_LOITER_P			1.3			//
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.1			//
+# define NAV_LOITER_I			0.01			//
 #endif
 #ifndef NAV_LOITER_D
 # define NAV_LOITER_D			0.4			//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		15			// degrees°
+# define NAV_LOITER_IMAX		10			// degrees°
 #endif
 
 
@@ -431,50 +391,47 @@
 #endif
 
 
-#ifndef WAYPOINT_SPEED
-# define WAYPOINT_SPEED			600			// for 6m/s error = 13mph
+#ifndef WAYPOINT_SPEED_MAX
+# define WAYPOINT_SPEED_MAX			600			// for 6m/s error = 13mph
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
-#ifndef THROTTLE_BARO_P
-# define THROTTLE_BARO_P		0.3			// trying a lower val
+#ifndef THROTTLE_P
+# define THROTTLE_P		0.4			// trying a lower val
 #endif
-#ifndef THROTTLE_BARO_I
-# define THROTTLE_BARO_I		0.04		//with 4m error, 12.5s windup
+#ifndef THROTTLE_I
+# define THROTTLE_I		0.01		//with 4m error, 12.5s windup
 #endif
-#ifndef THROTTLE_BARO_D
-# define THROTTLE_BARO_D		0.35		// upped with filter
+#ifndef THROTTLE_D
+# define THROTTLE_D		0.35		// upped with filter
 #endif
-#ifndef THROTTLE_BARO_IMAX
-# define THROTTLE_BARO_IMAX		30
-#endif
-
-
-#ifndef THROTTLE_SONAR_P
-# define THROTTLE_SONAR_P		0.35			// lowering P by .15
-#endif
-#ifndef THROTTLE_SONAR_I
-# define THROTTLE_SONAR_I		0.05
-#endif
-#ifndef THROTTLE_SONAR_D
-# define THROTTLE_SONAR_D		0.3				// increasing D by .5
-#endif
-#ifndef THROTTLE_SONAR_IMAX
-# define THROTTLE_SONAR_IMAX	30
+#ifndef THROTTLE_IMAX
+# define THROTTLE_IMAX		30
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Crosstrack compensation
 //
-#ifndef XTRACK_GAIN
-# define XTRACK_GAIN          2 // deg/m
-#endif
 #ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   20 // deg
+# define XTRACK_ENTRY_ANGLE   30 // deg
 #endif
+
+#ifndef XTRACK_P
+# define XTRACK_P		2			// trying a lower val
+#endif
+#ifndef XTRACK_I
+# define XTRACK_I		0.00		//with 4m error, 12.5s windup
+#endif
+#ifndef XTRACK_D
+# define XTRACK_D		0.00		// upped with filter
+#endif
+#ifndef XTRACK_IMAX
+# define XTRACK_IMAX		10
+#endif
+
 
 
 //////////////////////////////////////////////////////////////////////////////

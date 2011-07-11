@@ -11,7 +11,7 @@ static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
+//static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
@@ -36,7 +36,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"battery",			setup_batt_monitor},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
-	{"offsets",			setup_mag_offset},
+//	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
 #if FRAME_CONFIG == HELI_FRAME
 	{"heli",			setup_heli},
@@ -84,9 +84,9 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_frame();
 	report_batt_monitor();
 	report_sonar();
-	report_gains();
-	report_xtrack();
-	report_throttle();
+	//report_gains();
+	//report_xtrack();
+	//report_throttle();
 	report_flight_modes();
 	report_imu();
 	report_compass();
@@ -660,7 +660,7 @@ void clear_offsets()
 	compass.save_offsets();
 }
 
-static int8_t
+/*static int8_t
 setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 {
 	Vector3f _offsets;
@@ -720,7 +720,9 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 			return 0;
 		}
 	}
+	return 0;
 }
+*/
 
 
 /***************************************************************************/
@@ -853,18 +855,19 @@ void report_radio()
 	print_blanks(2);
 }
 
+/*
 void report_gains()
 {
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
 
-	// Acro
-	Serial.printf_P(PSTR("Acro:\nroll:\n"));
-	print_PID(&g.pid_acro_rate_roll);
+	// Rate
+	Serial.printf_P(PSTR("Rate:\nroll:\n"));
+	print_PID(&g.pid_rate_roll);
 	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&g.pid_acro_rate_pitch);
+	print_PID(&g.pid_rate_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&g.pid_acro_rate_yaw);
+	print_PID(&g.pid_rate_yaw);
 
 	// Stabilize
 	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
@@ -872,7 +875,7 @@ void report_gains()
 	Serial.printf_P(PSTR("pitch:\n"));
 	print_PID(&g.pid_stabilize_pitch);
 	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&g.pid_yaw);
+	print_PID(&g.pid_stabilize_yaw);
 
 	//Serial.printf_P(PSTR("Stab D: %4.3f\n"), (float)g.stabilize_dampener);
 	//Serial.printf_P(PSTR("Yaw D: %4.3f\n\n"), (float)g.hold_yaw_dampener);
@@ -882,14 +885,13 @@ void report_gains()
 	print_PID(&g.pid_nav_lat);
 	Serial.printf_P(PSTR("long:\n"));
 	print_PID(&g.pid_nav_lon);
-	Serial.printf_P(PSTR("baro throttle:\n"));
-	print_PID(&g.pid_baro_throttle);
-	Serial.printf_P(PSTR("sonar throttle:\n"));
-	print_PID(&g.pid_sonar_throttle);
+	Serial.printf_P(PSTR("throttle:\n"));
+	print_PID(&g.pid_throttle);
 	print_blanks(2);
 }
+*/
 
-void report_xtrack()
+/*void report_xtrack()
 {
 	Serial.printf_P(PSTR("XTrack\n"));
 	print_divider();
@@ -902,8 +904,9 @@ void report_xtrack()
 						 (long)g.pitch_max);
 	print_blanks(2);
 }
+*/
 
-void report_throttle()
+/*void report_throttle()
 {
 	Serial.printf_P(PSTR("Throttle\n"));
 	print_divider();
@@ -919,7 +922,7 @@ void report_throttle()
 						 (int)g.throttle_fs_enabled,
 						 (int)g.throttle_fs_value);
 	print_blanks(2);
-}
+}*/
 
 void report_imu()
 {
@@ -1002,7 +1005,7 @@ void report_gyro()
 // CLI utilities
 /***************************************************************************/
 
-void
+/*void
 print_PID(PID * pid)
 {
 	Serial.printf_P(PSTR("P: %4.2f, I:%4.2f, D:%4.2f, IMAX:%ld\n"),
@@ -1011,6 +1014,7 @@ print_PID(PID * pid)
 						pid->kD(),
 						(long)pid->imax());
 }
+*/
 
 void
 print_radio_values()

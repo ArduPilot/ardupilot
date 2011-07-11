@@ -28,8 +28,18 @@ void arm_motors()
 					arming_counter 	= ARM_DELAY;
 
 					// Remember Orientation
-					// ---------------------------
+					// --------------------
 					init_simple_bearing();
+
+					// Reset home position
+					// ----------------------
+					if(home_is_set)
+						init_home();
+
+					// tune down compass
+					// -----------------
+					//dcm.kp_yaw(0.02);
+					//dcm.ki_yaw(0);
 
 					arming_counter++;
 				} else{

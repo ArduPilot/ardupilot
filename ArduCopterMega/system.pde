@@ -40,7 +40,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.33 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.34 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -208,13 +208,9 @@ void init_ardupilot()
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 	if(g.sonar_enabled){
-		sonar.init(SONAR_PIN, &adc);
+		sonar.init(SONAR_PORT, &adc);
 	}
 	#endif
-
-	// setup DCM for copters:
-	dcm.kp_roll_pitch(0.12);		// higher for quads
-	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate
 
 	// Logging:
 	// --------
@@ -256,23 +252,15 @@ void init_ardupilot()
 		start_new_log();
 	}
 
-	//if (g.log_bitmask & MASK_LOG_MODE)
-	//	Log_Write_Mode(control_mode);
-
 	// All of the Gyro calibrations
 	// ----------------------------
 	startup_ground();
 
 	// set the correct flight mode
 	// ---------------------------
-	//reset_control_switch();
-
-	// init the Yaw Hold output
-	clear_yaw_control();
-
+	reset_control_switch();
 
 	delay(100);
-
 }
 
 //********************************************************************************
@@ -313,6 +301,7 @@ void startup_ground(void)
 
     GPS_enabled = false;
 
+	//*
     // Read in the GPS
 	for (byte counter = 0; ; counter++) {
 		g_gps->update();
@@ -326,10 +315,20 @@ void startup_ground(void)
 			break;
 	    }
 	}
+	//*/
+
+	// setup DCM for copters:
+	dcm.kp_roll_pitch(0.12);		// higher for quads
+	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate
+	//dcm.kp_yaw(0.02);
+	//dcm.ki_yaw(0);
 
 	clear_leds();
 
+	// print the GPS status
 	report_gps();
+
+	// lenthen the idle timeout for gps Auto_detect
 	g_gps->idleTimeout = 20000;
 
 	// used to limit the input of error for loiter
@@ -376,8 +375,7 @@ void set_mode(byte mode)
 		case SIMPLE:
 		case STABILIZE:
 			do_loiter_at_location();
-			g.pid_baro_throttle.reset_I();
-			g.pid_sonar_throttle.reset_I();
+			g.pid_throttle.reset_I();
 			break;
 
 		case ALT_HOLD:
