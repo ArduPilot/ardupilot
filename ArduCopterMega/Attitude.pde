@@ -50,7 +50,7 @@ get_stabilize_pitch(long target_angle)
 }
 
 int
-get_stabilize_yaw(long target_angle)
+get_stabilize_yaw(long target_angle, float scaler)
 {
 	long error;
 	long rate;
@@ -62,7 +62,7 @@ get_stabilize_yaw(long target_angle)
 	error 		= constrain(error, -4500, 4500);
 
 	// desired Rate:
-	rate 		= g.pid_stabilize_yaw.get_pi((float)error, delta_ms_fast_loop, 1.0);
+	rate 		= g.pid_stabilize_yaw.get_pi((float)error, delta_ms_fast_loop, scaler);
 	//Serial.printf("%u\t%d\t%d\t", (int)target_angle, (int)error, (int)rate);
 
 	// Rate P:

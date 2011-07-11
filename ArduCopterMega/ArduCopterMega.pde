@@ -1027,7 +1027,7 @@ void update_current_flight_mode(void)
 				}
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, .5);
 				break;
 		}
 
@@ -1063,7 +1063,7 @@ void update_current_flight_mode(void)
 				g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
 
 				//Serial.printf("%u\t%d\n", nav_yaw, g.rc_4.servo_out);
 				break;
@@ -1140,7 +1140,7 @@ void update_current_flight_mode(void)
 				g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
 				//Serial.printf("%d \t %d\n", g.rc_3.servo_out, throttle_slew);
 
 			break;
@@ -1164,7 +1164,7 @@ void update_current_flight_mode(void)
 				}
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
 				break;
 
 			case GUIDED:
@@ -1185,7 +1185,7 @@ void update_current_flight_mode(void)
 				}
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 0.5);
 				break;
 
 			case LOITER:
@@ -1211,7 +1211,7 @@ void update_current_flight_mode(void)
 				}
 
 				// Yaw control
-				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
+				g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
 				break;
 
 			default:
