@@ -104,6 +104,9 @@ public:
 	k_param_throttle_cruise,
 	k_param_flight_modes,
 	k_param_esc_calibrate,
+	k_param_cam_pitch_reverse,
+	k_param_cam_roll_reverse,
+
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	//
@@ -239,6 +242,9 @@ public:
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
 
+	AP_Int8		cam_pitch_reverse;
+	AP_Int8		cam_roll_reverse;
+
 		// PID controllers
 	PID			pid_rate_roll;
 	PID			pid_rate_pitch;
@@ -326,6 +332,10 @@ public:
 	rc_8					(k_param_rc_8,		PSTR("RC8_")),
 	rc_camera_pitch			(k_param_rc_9,		NULL),
 	rc_camera_roll			(k_param_rc_10,		NULL),
+
+	cam_pitch_reverse		(0, 						k_param_cam_pitch_reverse,		PSTR("CAM_P_REV")),
+	cam_roll_reverse		(0, 						k_param_cam_roll_reverse,		PSTR("CAM_R_REV")),
+
 
 	// PID controller	group key						name				initial P			initial I			initial D			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------

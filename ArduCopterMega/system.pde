@@ -40,7 +40,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.34 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.35 Beta", main_menu_commands);
 
 void init_ardupilot()
 {
@@ -350,6 +350,7 @@ void set_mode(byte mode)
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
+	old_control_mode = control_mode;
 
 	control_mode = mode;
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
@@ -394,11 +395,12 @@ void set_mode(byte mode)
 			break;
 
 		case GUIDED:
+			init_throttle_cruise();
 			set_next_WP(&guided_WP);
 			break;
 
 		case RTL:
-			//init_throttle_cruise();
+			init_throttle_cruise();
 			do_RTL();
 			break;
 
@@ -479,11 +481,10 @@ init_simple_bearing()
 void
 init_throttle_cruise()
 {
-	//if(set_throttle_cruise_flag == false){
-		if(g.rc_3.control_in > 200){
-			g.throttle_cruise.set_and_save(g.rc_3.control_in);
-		}
-	//}
+	// are we moving from manual throttle to auto_throttle?
+	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > 150)){
+		g.throttle_cruise.set_and_save(g.rc_3.control_in);
+	}
 }
 
 #if BROKEN_SLIDER == 1
