@@ -259,6 +259,7 @@ const char* flight_mode_strings[] = {
 // Radio
 // -----
 byte 		control_mode		= STABILIZE;
+byte 		old_control_mode	= STABILIZE;
 byte 		oldSwitchPosition;					// for remembering the control mode switch
 int 		motor_out[8];
 

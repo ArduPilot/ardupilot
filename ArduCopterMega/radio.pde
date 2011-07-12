@@ -14,6 +14,10 @@ void init_rc_in()
 	g.rc_3.scale_output = .9;
 	g.rc_4.set_angle(4500);
 
+	// reverse: CW = left
+	// normal:  CW = left???
+
+
 	g.rc_1.set_type(RC_CHANNEL_ANGLE_RAW);
 	g.rc_2.set_type(RC_CHANNEL_ANGLE_RAW);
 	g.rc_4.set_type(RC_CHANNEL_ANGLE_RAW);
@@ -22,7 +26,7 @@ void init_rc_in()
 	g.rc_1.dead_zone = 60;		// 60 = .6 degrees
 	g.rc_2.dead_zone = 60;
 	g.rc_3.dead_zone = 60;
-	g.rc_4.dead_zone = 500;// 0 = hybrid rate approach
+	g.rc_4.dead_zone = 600;// 0 = hybrid rate approach
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);

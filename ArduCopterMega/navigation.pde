@@ -144,12 +144,12 @@ void calc_rate_nav()
 	int groundspeed 	= (float)g_gps->ground_speed * cos(radians((float)target_error/100));
 
 	// Reduce speed on RTL
-	if(control_mode == RTL){
-		waypoint_speed 		= min((wp_distance * 100), 600);
-		waypoint_speed		= max(g.waypoint_speed_max.get(), 30);
-	}else{
-		waypoint_speed 		= g.waypoint_speed_max.get();
-	}
+	//if(control_mode == RTL){
+		waypoint_speed 		= min((wp_distance * 100), g.waypoint_speed_max.get());
+		waypoint_speed		= max(waypoint_speed, 80);
+	//}else{
+	//	waypoint_speed 		= g.waypoint_speed_max.get();
+	//}
 
 	int error 		= constrain(waypoint_speed - groundspeed, -1000, 1000);
 	// Scale response by kP
