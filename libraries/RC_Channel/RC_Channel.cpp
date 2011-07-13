@@ -92,7 +92,6 @@ RC_Channel::set_pwm(int pwm)
 		if (fabs(scale_output) > 0){
 			control_in *= scale_output;
 		}
-
 	}else{
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
@@ -168,34 +167,20 @@ RC_Channel::update_min_max()
 int16_t
 RC_Channel::pwm_to_angle()
 {
-	if(radio_in < radio_trim)
-		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_trim - radio_min);
-	else
+	if(radio_in > radio_trim)
 		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_max  - radio_trim);
-
-		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim));
-		//return _reverse * _high * ((float)(radio_in - radio_trim) / (float)(radio_trim - radio_min));
+	else
+		return _reverse * ((long)_high * (long)(radio_in - radio_trim)) / (long)(radio_trim - radio_min);
 }
 
 
 int16_t
 RC_Channel::angle_to_pwm()
 {
-	if(_reverse == -1)
-	{
-		if(servo_out < 0)
-			return ( -1 * ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high);
-		else
-			return ( -1 * ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high);
-	} else {
-		if(servo_out > 0)
-			return ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high;
-		else
-			return ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
-	}
-
-		//return (((float)servo_out / (float)_high) * (float)(radio_max - radio_trim));
-		//return (((float)servo_out / (float)_high) * (float)(radio_trim - radio_min));
+	if((servo_out * _reverse) > 0)
+		return _reverse * ((long)servo_out * (long)(radio_max - radio_trim)) / (long)_high;
+	else
+		return _reverse * ((long)servo_out * (long)(radio_trim - radio_min)) / (long)_high;
 }
 
 // ------------------------------------------
