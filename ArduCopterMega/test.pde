@@ -14,6 +14,7 @@ static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -72,6 +73,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
 	{"mission",		test_mission},
+	//{"reverse",		test_reverse},
 	//{"wp",			test_wp_nav},
 };
 
@@ -81,7 +83,7 @@ MENU(test_menu, "test", test_menu_commands);
 int8_t
 test_mode(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("Test Mode\n\n"));
+	//Serial.printf_P(PSTR("Test Mode\n\n"));
 	test_menu.run();
 }
 
@@ -899,6 +901,45 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 		return (0);
 	}
 }
+/*
+static int8_t
+test_reverse(uint8_t argc, 		const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+
+	while(1){
+		delay(20);
+
+		// Filters radio input - adjust filters in the radio.pde file
+		// ----------------------------------------------------------
+		g.rc_4.set_reverse(0);
+		g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
+		g.rc_4.servo_out = g.rc_4.control_in;
+		g.rc_4.calc_pwm();
+		Serial.printf_P(PSTR("PWM:%d input: %d\toutput%d "),
+							APM_RC.InputCh(CH_4),
+							g.rc_4.control_in,
+							g.rc_4.radio_out);
+		APM_RC.OutputCh(CH_6, g.rc_4.radio_out);
+
+
+		g.rc_4.set_reverse(1);
+		g.rc_4.set_pwm(APM_RC.InputCh(CH_4));
+		g.rc_4.servo_out = g.rc_4.control_in;
+		g.rc_4.calc_pwm();
+		Serial.printf_P(PSTR("\trev input: %d\toutput%d\n"),
+							g.rc_4.control_in,
+							g.rc_4.radio_out);
+
+		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+
+		if(Serial.available() > 0){
+			g.rc_4.set_reverse(0);
+			return (0);
+		}
+	}
+}*/
 
 /*
   test the sonar
