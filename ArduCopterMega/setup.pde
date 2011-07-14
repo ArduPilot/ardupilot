@@ -218,7 +218,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_esc(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nUnplug, then plug-in battery; Calibrate ESCs.\n Press Enter to cancel.\n"));
+	Serial.printf_P(PSTR("\nESC Calibration:\n-1 Unplug USB and battery\n-2 Move CLI/FLY switch to FLY mode\n-3 Move throttle to max, connect battery\n-4 After two long beeps, throttle to 0, then test\n\n Press Enter to cancel.\n"));
 
 
 	g.esc_calibrate.set_and_save(1);
