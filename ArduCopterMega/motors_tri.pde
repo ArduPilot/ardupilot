@@ -4,6 +4,7 @@
 void output_motors_armed()
 {
 	int out_min = g.rc_3.radio_min;
+	int out_max = g.rc_3.radio_max;
 
 	// Throttle is 0 to 1000 only
 	g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);
@@ -32,6 +33,10 @@ void output_motors_armed()
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);
 	motor_out[CH_2]		= max(motor_out[CH_2], 	out_min);
 	motor_out[CH_4] 	= max(motor_out[CH_4], 	out_min);
+
+	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
+	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
+	motor_out[CH_4] 	= min(motor_out[CH_4], 	out_max);
 
 	#if CUT_MOTORS == ENABLED
 			// Send commands to motors
