@@ -1017,10 +1017,10 @@ void update_current_flight_mode(void)
 				g.rc_2.servo_out = g.rc_2.control_mix(nav_pitch);
 
 				// Roll control
-				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.servo_out);
 
 				// Pitch control
-				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.servo_out);
 
 				// Throttle control
 				if(invalid_throttle){
