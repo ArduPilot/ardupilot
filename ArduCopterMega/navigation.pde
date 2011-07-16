@@ -149,8 +149,9 @@ void calc_rate_nav()
 
 	// Reduce speed on RTL
 	//if(control_mode == RTL){
-		waypoint_speed 		= min((wp_distance * 100), g.waypoint_speed_max.get());
-		waypoint_speed		= max(waypoint_speed, 80);
+	int tmp 			= min(wp_distance, 50) * 100;
+	waypoint_speed 		= min(tmp, g.waypoint_speed_max.get());
+	waypoint_speed		= max(waypoint_speed, 80);
 	//}else{
 	//	waypoint_speed 		= g.waypoint_speed_max.get();
 	//}
