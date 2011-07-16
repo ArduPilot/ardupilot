@@ -21,7 +21,7 @@ void navigate()
 	wp_distance = get_distance(&current_loc, &next_WP);
 
 	if (wp_distance < 0){
-		gcs.send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
+		//gcs.send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
 		//Serial.println(wp_distance,DEC);
 		//print_current_waypoints();
 		return;
@@ -48,9 +48,13 @@ get_nav_throttle(long error)
 {
 	int throttle;
 
-	// limit error
+	// limit error to 4 meters to prevent I term run up
+	error = constrain(error, -400,400);
+
 	throttle = g.pid_throttle.get_pid(error, delta_ms_medium_loop, 1.0);
 	throttle = g.throttle_cruise + constrain(throttle, -80, 80);
+
+	// failed experiment
 	//int tem = alt_hold_velocity();
 	//throttle -= tem;
 
