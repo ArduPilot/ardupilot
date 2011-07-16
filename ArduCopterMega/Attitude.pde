@@ -137,11 +137,11 @@ get_throttle(int throttle_input)
 }
 
 long
-get_nav_yaw_offset(int yaw_input, int throttle_input)
+get_nav_yaw_offset(int yaw_input, int reset)
 {
 	long _yaw;
 
-	if(throttle_input == 0){
+	if(reset == 0){
 		// we are on the ground
 		return dcm.yaw_sensor;
 
