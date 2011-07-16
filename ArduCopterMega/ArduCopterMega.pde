@@ -1151,7 +1151,7 @@ void update_current_flight_mode(void)
 				adjust_altitude();
 
 				// calcualte new nav_yaw offset
-				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, 1); // send 1 instead of throttle to get nav control with low throttle
 
 				// Roll control
 				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
@@ -1191,7 +1191,7 @@ void update_current_flight_mode(void)
 
 			case LOITER:
 				// calcualte new nav_yaw offset
-				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, 1); // send 1 instead of throttle to get nav control with low throttle
 
 				// allow interactive changing of atitude
 				adjust_altitude();
@@ -1240,34 +1240,34 @@ void update_navigation()
 			update_nav_wp();
 			break;
 
-		case RTL:
-			// calculates desired Yaw
-			update_nav_yaw();
-
 		case GUIDED:
-			update_nav_yaw();
-			// switch passthrough to LOITER
-		case LOITER:
+		case RTL:
+			if(wp_distance > 20){
+				// calculates desired Yaw
+				update_nav_yaw();
+
+			}else{
+				// Don't Yaw anymore
+				// hack to elmininate crosstrack effect
+				crosstrack_bearing 	= target_bearing;
+			}
+
 			// are we Traversing or Loitering?
-			wp_control = (wp_distance < 50) ? LOITER_MODE : WP_MODE;
-			//wp_control = LOITER_MODE;
+			wp_control = (wp_distance < 4 ) ? LOITER_MODE : WP_MODE;
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
 
-		/*#if YAW_HACK == 1
-		case SIMPLE:
-			// calculates desired Yaw
-			// exprimental_hack
-			if(g.rc_6.control_in > 900)
-				update_nav_yaw();
-			if(g.rc_6.control_in < 100){
-				nav_yaw = dcm.yaw_sensor;
-			}
+			// switch passthrough to LOITER
+		case LOITER:
+			// are we Traversing or Loitering?
+			//wp_control = (wp_distance < 20) ? LOITER_MODE : WP_MODE;
+			wp_control = LOITER_MODE;
+
+			// calculates the desired Roll and Pitch
+			update_nav_wp();
 			break;
-		#endif
-		*/
 	}
 }
 
