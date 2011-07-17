@@ -7,7 +7,7 @@ void read_control_switch()
 
 	if (oldSwitchPosition != switchPosition){
 
-		set_mode(g.flight_modes[switchPosition]);
+		set_mode(flight_modes[switchPosition]);
 
 		oldSwitchPosition = switchPosition;
 		prev_WP = current_loc;

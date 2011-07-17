@@ -116,6 +116,9 @@ void update_events(void);
 // All GPS access should be through this pointer.
 GPS         *g_gps;
 
+// flight modes convenience array
+AP_Int8                *flight_modes = &g.flight_mode1;
+
 #if HIL_MODE == HIL_MODE_DISABLED
 
 	// real sensors
