@@ -1315,6 +1315,7 @@ static void update_alt()
 
 	#if HIL_MODE == HIL_MODE_ATTITUDE
 	current_loc.alt = g_gps->altitude;
+	return;
 	#else
 
 	if(g.sonar_enabled){
