@@ -314,8 +314,10 @@ static void startup_ground(void)
 	//*/
 
 	// setup DCM for copters:
+#if HIL_MODE != HIL_MODE_ATTITUDE
 	dcm.kp_roll_pitch(0.12);		// higher for quads
 	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate
+#endif
 	//dcm.kp_yaw(0.02);
 	//dcm.ki_yaw(0);
 
