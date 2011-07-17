@@ -69,6 +69,7 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
 	setup_menu.run();
+    return 0;
 }
 
 // Print the current configuration.

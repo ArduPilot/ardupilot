@@ -85,6 +85,7 @@ test_mode(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Test Mode\n\n"));
 	test_menu.run();
+    return 0;
 }
 
 static int8_t

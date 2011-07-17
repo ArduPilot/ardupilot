@@ -1041,7 +1041,7 @@ void
 GCS_MAVLINK::_queued_send()
 {
 	// Check to see if we are sending parameters
-	if (NULL != _queued_parameter && (requested_interface == chan) && mavdelay > 1) {
+	if (NULL != _queued_parameter && (requested_interface == (unsigned)chan) && mavdelay > 1) {
 		AP_Var	  *vp;
 		float	   value;
 
@@ -1074,8 +1074,8 @@ GCS_MAVLINK::_queued_send()
 	// request waypoints one by one
 	// XXX note that this is pan-interface
 	if (waypoint_receiving &&
-		(requested_interface == chan) &&
-		waypoint_request_i <= g.waypoint_total &&
+		(requested_interface == (unsigned)chan) &&
+		waypoint_request_i <= (unsigned)g.waypoint_total &&
 		mavdelay > 15) { // limits to 3.33 hz
 
 		mavlink_msg_waypoint_request_send(
