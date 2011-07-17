@@ -960,6 +960,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 		delay(100);
 
 		Serial.printf_P(PSTR("Sonar: %d cm\n"), sonar.read());
+		//Serial.printf_P(PSTR("Sonar, %d, %d\n"), sonar.read(), sonar.raw_value);
 
 		if(Serial.available() > 0){
 			return (0);

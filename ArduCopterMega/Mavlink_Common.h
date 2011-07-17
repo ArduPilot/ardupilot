@@ -201,9 +201,9 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					motor_out[2],
 					motor_out[3],
 					motor_out[4],
+					motor_out[5],
 					motor_out[6],
-					motor_out[7],
-					0);
+					motor_out[7]);
 			break;
 		}
 
