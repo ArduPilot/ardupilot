@@ -861,33 +861,64 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			break;
 		} // end case
-/*
-	case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
-		{
-			// allow override of RC channel values for HIL
-			// or for complete GCS control of switch position
-			// and RC PWM values.
+
+    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
+        {
+            // allow override of RC channel values for HIL
+            // or for complete GCS control of switch position
+            // and RC PWM values.
 			if(msg->sysid != g.sysid_my_gcs) break;		// Only accept control from our gcs
-			mavlink_rc_channels_override_t packet;
-			int16_t v[8];
-			mavlink_msg_rc_channels_override_decode(msg, &packet);
+            mavlink_rc_channels_override_t packet;
+            int16_t v[8];
+            mavlink_msg_rc_channels_override_decode(msg, &packet);
 
 			if (mavlink_check_target(packet.target_system,packet.target_component))
 				break;
 
-			v[0] = packet.chan1_raw;
-			v[1] = packet.chan2_raw;
-			v[2] = packet.chan3_raw;
-			v[3] = packet.chan4_raw;
-			v[4] = packet.chan5_raw;
-			v[5] = packet.chan6_raw;
-			v[6] = packet.chan7_raw;
-			v[7] = packet.chan8_raw;
-			rc_override_active = APM_RC.setHIL(v);
-			rc_override_fs_timer = millis();
-			break;
-		}
+            v[0] = packet.chan1_raw;
+            v[1] = packet.chan2_raw;
+            v[2] = packet.chan3_raw;
+            v[3] = packet.chan4_raw;
+            v[4] = packet.chan5_raw;
+            v[5] = packet.chan6_raw;
+            v[6] = packet.chan7_raw;
+            v[7] = packet.chan8_raw;
+            APM_RC.setHIL(v);
+            break;
+        }
 
+#if HIL_MODE != HIL_MODE_DISABLED
+        // This is used both as a sensor and to pass the location
+        // in HIL_ATTITUDE mode.
+	case MAVLINK_MSG_ID_GPS_RAW:
+        {
+            // decode
+            mavlink_gps_raw_t packet;
+            mavlink_msg_gps_raw_decode(msg, &packet);
+
+            // set gps hil sensor
+            g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
+            packet.v,packet.hdg,0,0);
+            current_loc.lng = packet.lon * T7;
+            current_loc.lat = packet.lat * T7;
+            current_loc.alt = packet.alt * 10;
+            break;
+        }
+#if HIL_MODE == HIL_MODE_ATTITUDE
+    case MAVLINK_MSG_ID_ATTITUDE:
+        {
+            // decode
+            mavlink_attitude_t packet;
+            mavlink_msg_attitude_decode(msg, &packet);
+
+            // set dcm hil sensor
+            dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
+            packet.pitchspeed,packet.yawspeed);
+            break;
+        }
+#endif
+#endif
+/*
 	case MAVLINK_MSG_ID_HEARTBEAT:
 		{
 			// We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
