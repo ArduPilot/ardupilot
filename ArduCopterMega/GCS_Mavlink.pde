@@ -99,7 +99,9 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 
 		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
 			// sent with GPS read
-			//send_message(MSG_LOCATION);
+#if HIL_MODE == HIL_MODE_ATTITUDE
+			send_message(MSG_LOCATION);
+#endif
 			//Serial.printf("mav3 %d\n", (int)streamRatePosition.get());
 		}
 
