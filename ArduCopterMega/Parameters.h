@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 103;
+	static const uint16_t k_format_version = 104;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -102,7 +102,6 @@ public:
 	k_param_throttle_fs_action,
 	k_param_throttle_fs_value,
 	k_param_throttle_cruise,
-	k_param_flight_modes,
 	k_param_esc_calibrate,
 
 
@@ -125,6 +124,18 @@ public:
 	k_param_heli_ext_gyro_enabled,
 	k_param_heli_ext_gyro_gain,	// 213
 	#endif
+
+
+    //
+    // 210: flight modes
+    //
+    k_param_flight_mode1,
+    k_param_flight_mode2,
+    k_param_flight_mode3,
+    k_param_flight_mode4,
+    k_param_flight_mode5,
+    k_param_flight_mode6,
+
 
 	//
 	// 220: Waypoint data
@@ -194,7 +205,12 @@ public:
 
 	// Flight modes
 	//
-	AP_VarA<uint8_t,6> flight_modes;
+    AP_Int8     flight_mode1;
+    AP_Int8     flight_mode2;
+    AP_Int8     flight_mode3;
+    AP_Int8     flight_mode4;
+    AP_Int8     flight_mode5;
+    AP_Int8     flight_mode6;
 
 	// Radio settings
 	//
@@ -288,7 +304,12 @@ public:
 	throttle_fs_value 		(THROTTLE_FS_VALUE,			k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
 	throttle_cruise			(100,						k_param_throttle_cruise,				PSTR("TRIM_THROTTLE")),
 
-	flight_modes			(k_param_flight_modes,												PSTR("FLTMODE")),
+    flight_mode1            (FLIGHT_MODE_1,             k_param_flight_mode1,					PSTR("FLTMODE1")),
+    flight_mode2            (FLIGHT_MODE_2,             k_param_flight_mode2,					PSTR("FLTMODE2")),
+    flight_mode3            (FLIGHT_MODE_3,             k_param_flight_mode3,					PSTR("FLTMODE3")),
+    flight_mode4            (FLIGHT_MODE_4,             k_param_flight_mode4,					PSTR("FLTMODE4")),
+    flight_mode5            (FLIGHT_MODE_5,             k_param_flight_mode5,					PSTR("FLTMODE5")),
+    flight_mode6            (FLIGHT_MODE_6,             k_param_flight_mode6,					PSTR("FLTMODE6")),
 
 	pitch_max				(PITCH_MAX * 100,			k_param_pitch_max,						PSTR("PITCH_MAX")),
 

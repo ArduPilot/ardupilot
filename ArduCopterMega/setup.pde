@@ -320,7 +320,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		// look for control switch change
 		if (_oldSwitchPosition != _switchPosition){
 
-			mode = g.flight_modes[_switchPosition];
+			mode = flight_modes[_switchPosition];
 			mode = constrain(mode, 0, NUM_MODES-1);
 
 			// update the user
@@ -337,7 +337,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode = 0;
 
 			// save new mode
-			g.flight_modes[_switchPosition] = mode;
+			flight_modes[_switchPosition] = mode;
 
 			// print new mode
 			print_switch(_switchPosition, mode);
@@ -345,7 +345,8 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 
 		// escape hatch
 		if(Serial.available() > 0){
-			g.flight_modes.save();
+            for (mode=0; mode<6; mode++)
+                flight_modes[mode].save();
 			print_done();
 			report_flight_modes();
 			return (0);
@@ -962,7 +963,7 @@ void report_flight_modes()
 	print_divider();
 
 	for(int i = 0; i < 6; i++ ){
-		print_switch(i, g.flight_modes[i]);
+		print_switch(i, flight_modes[i]);
 	}
 	print_blanks(2);
 }
