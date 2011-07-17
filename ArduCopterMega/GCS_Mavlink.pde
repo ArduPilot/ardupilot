@@ -317,8 +317,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 				case MAV_ACTION_CALIBRATE_GYRO:
 				case MAV_ACTION_CALIBRATE_MAG:
-				case MAV_ACTION_CALIBRATE_ACC:
 				case MAV_ACTION_CALIBRATE_PRESSURE:
+					break;
+				
+				case MAV_ACTION_CALIBRATE_ACC:
+					imu.init_accel();
+					result=1;
+					break;
+				
+				
 				//case MAV_ACTION_REBOOT:  // this is a rough interpretation
 					//startup_IMU_ground();
 					//result=1;
