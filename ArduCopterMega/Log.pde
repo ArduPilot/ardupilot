@@ -10,7 +10,7 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-static int8_t	print_log_menu(uint8_t argc, 	const Menu::arg *argv);
+static bool     print_log_menu(void);
 static int8_t	dump_log(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	erase_logs(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
@@ -27,6 +27,7 @@ static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 						 "  enable <name> | all\n"
 						 "  disable <name> | all\n"
 						 "\n"));
+    return 0;
 }
 
 // Creates a constant array of structs representing menu options
@@ -164,7 +165,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	// bits accordingly.
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
-		bits = ~(bits = 0);
+		bits = ~0;
 		bits = bits ^ MASK_LOG_SET_DEFAULTS;
 	} else {
 		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
@@ -753,7 +754,6 @@ void Log_Read(int start_page, int end_page)
 {
 	byte data;
 	byte log_step 		= 0;
-	int packet_count 	= 0;
 	int page 			= start_page;
 
 	DataFlash.StartRead(start_page);

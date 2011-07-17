@@ -546,7 +546,7 @@ void do_yaw()
 bool verify_wait_delay()
 {
 	//Serial.print("vwd");
-	if ((millis() - condition_start) > condition_value){
+	if ((unsigned)(millis() - condition_start) > condition_value){
 		//Serial.println("y");
 		condition_value		= 0;
 		return true;

@@ -152,7 +152,7 @@ void throttle_failsafe(uint16_t pwm)
 
 	//check for failsafe and debounce funky reads
 	// ------------------------------------------
-	if (pwm < g.throttle_fs_value){
+	if (pwm < (unsigned)g.throttle_fs_value){
 		// we detect a failsafe from radio
 		// throttle has dropped below the mark
 		failsafeCounter++;
