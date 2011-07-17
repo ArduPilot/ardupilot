@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // XXX TODO: convert these PI rate controlers to a Class
-int
+static int
 get_stabilize_roll(long target_angle)
 {
 	long error;
@@ -25,7 +25,7 @@ get_stabilize_roll(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-int
+static int
 get_stabilize_pitch(long target_angle)
 {
 	long error;
@@ -49,7 +49,7 @@ get_stabilize_pitch(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-int
+static int
 get_stabilize_yaw(long target_angle, float scaler)
 {
 	long error;
@@ -74,7 +74,7 @@ get_stabilize_yaw(long target_angle, float scaler)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-int
+static int
 get_rate_roll(long target_rate)
 {
 	long error;
@@ -87,7 +87,7 @@ get_rate_roll(long target_rate)
 	return (int)constrain(target_rate, -2500, 2500);
 }
 
-int
+static int
 get_rate_pitch(long target_rate)
 {
 	long error;
@@ -100,7 +100,7 @@ get_rate_pitch(long target_rate)
 	return (int)constrain(target_rate, -2500, 2500);
 }
 
-int
+static int
 get_rate_yaw(long target_rate)
 {
 	long error;
@@ -115,7 +115,7 @@ get_rate_yaw(long target_rate)
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-void
+static void
 reset_I(void)
 {
 	// I removed these, they don't seem to be needed.
@@ -128,7 +128,7 @@ throttle control
 
 // user input:
 // -----------
-int
+static int
 get_throttle(int throttle_input)
 {
 	throttle_input = (float)throttle_input * angle_boost();
@@ -136,7 +136,7 @@ get_throttle(int throttle_input)
 	return  max(throttle_input, 0);
 }
 
-long
+static long
 get_nav_yaw_offset(int yaw_input, int reset)
 {
 	long _yaw;
@@ -158,7 +158,7 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 /*
-int alt_hold_velocity()
+static int alt_hold_velocity()
 {
 	// subtract filtered Accel
 	float error	= abs(next_WP.alt - current_loc.alt);
@@ -167,7 +167,7 @@ int alt_hold_velocity()
 	return (accels_rot.z + 9.81) * accel_gain * error;
 }*/
 
-float angle_boost()
+static float angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 2.0 - constrain(temp, .5, 1.0);

@@ -49,7 +49,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 MENU(setup_menu, "setup", setup_menu_commands);
 
 // Called from the top-level menu to run the setup menu.
-int8_t
+static int8_t
 setup_mode(uint8_t argc, const Menu::arg *argv)
 {
 	// Give the user some guidance
@@ -233,7 +233,7 @@ setup_esc(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-void
+static void
 init_esc()
 {
 	g.esc_calibrate.set_and_save(0);
@@ -654,7 +654,7 @@ setup_gyro(uint8_t argc, const Menu::arg *argv)
 
 #endif // FRAME_CONFIG == HELI
 
-void clear_offsets()
+static void clear_offsets()
 {
 	Vector3f _offsets(0.0,0.0,0.0);
 	compass.set_offsets(_offsets);
@@ -730,7 +730,7 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 // CLI reports
 /***************************************************************************/
 
-void report_batt_monitor()
+static void report_batt_monitor()
 {
 	Serial.printf_P(PSTR("\nBatt Mointor\n"));
 	print_divider();
@@ -742,7 +742,7 @@ void report_batt_monitor()
 	print_blanks(2);
 }
 
-void report_wp(byte index = 255)
+static void report_wp(byte index = 255)
 {
 	if(index == 255){
 		for(byte i = 0; i <= g.waypoint_total; i++){
@@ -755,7 +755,7 @@ void report_wp(byte index = 255)
 	}
 }
 
-void print_wp(struct Location *cmd, byte index)
+static void print_wp(struct Location *cmd, byte index)
 {
 	Serial.printf_P(PSTR("command #: %d id:%d op:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
 		(int)index,
@@ -767,7 +767,7 @@ void print_wp(struct Location *cmd, byte index)
 		cmd->lng);
 }
 
-void report_gps()
+static void report_gps()
 {
 	Serial.printf_P(PSTR("\nGPS\n"));
 	print_divider();
@@ -775,7 +775,7 @@ void report_gps()
 	print_blanks(2);
 }
 
-void report_sonar()
+static void report_sonar()
 {
 	g.sonar_enabled.load();
 	Serial.printf_P(PSTR("Sonar\n"));
@@ -784,14 +784,14 @@ void report_sonar()
 	print_blanks(2);
 }
 
-void report_version()
+static void report_version()
 {
 	Serial.printf_P(PSTR("FW Version %d\n"),(int)g.format_version.get());
 	print_divider();
 	print_blanks(2);
 }
 
-void report_frame()
+static void report_frame()
 {
 	Serial.printf_P(PSTR("Frame\n"));
 	print_divider();
@@ -822,7 +822,7 @@ void report_frame()
 	print_blanks(2);
 }
 
-void report_radio()
+static void report_radio()
 {
 	Serial.printf_P(PSTR("Radio\n"));
 	print_divider();
@@ -832,7 +832,7 @@ void report_radio()
 }
 
 /*
-void report_gains()
+static void report_gains()
 {
 	Serial.printf_P(PSTR("Gains\n"));
 	print_divider();
@@ -867,7 +867,7 @@ void report_gains()
 }
 */
 
-/*void report_xtrack()
+/*static void report_xtrack()
 {
 	Serial.printf_P(PSTR("XTrack\n"));
 	print_divider();
@@ -882,7 +882,7 @@ void report_gains()
 }
 */
 
-/*void report_throttle()
+/*static void report_throttle()
 {
 	Serial.printf_P(PSTR("Throttle\n"));
 	print_divider();
@@ -900,7 +900,7 @@ void report_gains()
 	print_blanks(2);
 }*/
 
-void report_imu()
+static void report_imu()
 {
 	Serial.printf_P(PSTR("IMU\n"));
 	print_divider();
@@ -910,7 +910,7 @@ void report_imu()
 	print_blanks(2);
 }
 
-void report_compass()
+static void report_compass()
 {
 	Serial.printf_P(PSTR("Compass\n"));
 	print_divider();
@@ -931,7 +931,7 @@ void report_compass()
 	print_blanks(2);
 }
 
-void report_flight_modes()
+static void report_flight_modes()
 {
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
@@ -943,7 +943,7 @@ void report_flight_modes()
 }
 
 #if FRAME_CONFIG == HELI_FRAME
-void report_heli()
+static void report_heli()
 {
 	Serial.printf_P(PSTR("Heli\n"));
 	print_divider();
@@ -962,7 +962,7 @@ void report_heli()
 	print_blanks(2);
 }
 
-void report_gyro()
+static void report_gyro()
 {
 
 	Serial.printf_P(PSTR("External Gyro:\n"));
@@ -981,7 +981,7 @@ void report_gyro()
 // CLI utilities
 /***************************************************************************/
 
-/*void
+/*static void
 print_PID(PID * pid)
 {
 	Serial.printf_P(PSTR("P: %4.2f, I:%4.2f, D:%4.2f, IMAX:%ld\n"),
@@ -992,7 +992,7 @@ print_PID(PID * pid)
 }
 */
 
-void
+static void
 print_radio_values()
 {
 	Serial.printf_P(PSTR("CH1: %d | %d\n"), (int)g.rc_1.radio_min, (int)g.rc_1.radio_max);
@@ -1005,20 +1005,20 @@ print_radio_values()
 	//Serial.printf_P(PSTR("CH8: %d | %d\n"), (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
 }
 
-void
+static void
 print_switch(byte p, byte m)
 {
 	Serial.printf_P(PSTR("Pos %d: "),p);
 	Serial.println(flight_mode_strings[m]);
 }
 
-void
+static void
 print_done()
 {
 	Serial.printf_P(PSTR("\nSaved Settings\n\n"));
 }
 
-void
+static void
 print_blanks(int num)
 {
 	while(num > 0){
@@ -1027,7 +1027,7 @@ print_blanks(int num)
 	}
 }
 
-void
+static void
 print_divider(void)
 {
 	for (int i = 0; i < 40; i++) {
@@ -1037,7 +1037,7 @@ print_divider(void)
 }
 
 // read at 50Hz
-bool
+static bool
 radio_input_switch(void)
 {
 	static int8_t bouncer = 0;
@@ -1063,7 +1063,7 @@ radio_input_switch(void)
 }
 
 
-void zero_eeprom(void)
+static void zero_eeprom(void)
 {
 	byte b = 0;
 
@@ -1076,7 +1076,7 @@ void zero_eeprom(void)
 	Serial.printf_P(PSTR("done\n"));
 }
 
-void print_enabled(boolean b)
+static void print_enabled(boolean b)
 {
 	if(b)
 		Serial.printf_P(PSTR("en"));
@@ -1085,7 +1085,7 @@ void print_enabled(boolean b)
 	Serial.printf_P(PSTR("abled\n"));
 }
 
-void
+static void
 print_accel_offsets(void)
 {
 	Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
@@ -1094,7 +1094,7 @@ print_accel_offsets(void)
 						(float)imu.az());
 }
 
-void
+static void
 print_gyro_offsets(void)
 {
 	Serial.printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
@@ -1105,7 +1105,7 @@ print_gyro_offsets(void)
 
 #if FRAME_CONFIG == HELI_FRAME
 
-RC_Channel *
+static RC_Channel *
 heli_get_servo(int servo_num){
 	if( servo_num == CH_1 )
 	    return &g.heli_servo_1;
@@ -1119,7 +1119,7 @@ heli_get_servo(int servo_num){
 }
 
 // Used to read integer values from the serial port
-int read_num_from_serial() {
+static int read_num_from_serial() {
 	byte index = 0;
 	byte timeout = 0;
 	char data[5] = "";

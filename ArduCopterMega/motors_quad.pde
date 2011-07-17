@@ -2,7 +2,7 @@
 
 #if FRAME_CONFIG ==	QUAD_FRAME
 
-void output_motors_armed()
+static void output_motors_armed()
 {
 	int roll_out, pitch_out;
 	int out_min = g.rc_3.radio_min;
@@ -87,7 +87,7 @@ void output_motors_armed()
 	APM_RC.Force_Out2_Out3();
 }
 
-void output_motors_disarmed()
+static void output_motors_disarmed()
 {
 	if(g.rc_3.control_in > 0){
 		// we have pushed up the throttle
@@ -111,7 +111,7 @@ void output_motors_disarmed()
 	APM_RC.Force_Out2_Out3();
 }
 
-void output_motor_test()
+static void output_motor_test()
 {
 	motor_out[CH_1] = g.rc_3.radio_min;
 	motor_out[CH_2] = g.rc_3.radio_min;

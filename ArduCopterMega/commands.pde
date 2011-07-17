@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-void init_commands()
+static void init_commands()
 {
 	// zero is home, but we always load the next command (1), in the code.
     g.waypoint_index.set_and_save(0);
@@ -14,7 +14,7 @@ void init_commands()
 	clear_command_queue();
 }
 
-void init_auto()
+static void init_auto()
 {
 	//if (g.waypoint_index == g.waypoint_total) {
 	//	Serial.println("ia_f");
@@ -28,13 +28,13 @@ void init_auto()
 
 // forces the loading of a new command
 // queue is emptied after a new command is processed
-void clear_command_queue(){
+static void clear_command_queue(){
 	next_command.id 	= NO_COMMAND;
 }
 
 // Getters
 // -------
-struct Location get_command_with_index(int i)
+static struct Location get_command_with_index(int i)
 {
 	struct Location temp;
 
@@ -91,7 +91,7 @@ struct Location get_command_with_index(int i)
 
 // Setters
 // -------
-void set_command_with_index(struct Location temp, int i)
+static void set_command_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.waypoint_total.get());
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
@@ -114,7 +114,7 @@ void set_command_with_index(struct Location temp, int i)
 	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
 }
 
-void increment_WP_index()
+static void increment_WP_index()
 {
     if (g.waypoint_index < g.waypoint_total) {
         g.waypoint_index.set_and_save(g.waypoint_index + 1);
@@ -124,14 +124,14 @@ void increment_WP_index()
     SendDebugln(g.waypoint_index,DEC);
 }
 
-void decrement_WP_index()
+static void decrement_WP_index()
 {
     if (g.waypoint_index > 0) {
         g.waypoint_index.set_and_save(g.waypoint_index - 1);
     }
 }
 
-long read_alt_to_hold()
+static long read_alt_to_hold()
 {
 	if(g.RTL_altitude < 0)
 		return current_loc.alt;
@@ -145,7 +145,7 @@ long read_alt_to_hold()
 // It's not currently used
 //********************************************************************************
 
-Location get_LOITER_home_wp()
+static Location get_LOITER_home_wp()
 {
 	//so we know where we are navigating from
 	next_WP = current_loc;
@@ -162,7 +162,7 @@ This function sets the next waypoint command
 It precalculates all the necessary stuff.
 */
 
-void set_next_WP(struct Location *wp)
+static void set_next_WP(struct Location *wp)
 {
 	//SendDebug("MSG <set_next_wp> wp_index: ");
 	//SendDebugln(g.waypoint_index, DEC);
@@ -205,7 +205,7 @@ void set_next_WP(struct Location *wp)
 
 // run this at setup on the ground
 // -------------------------------
-void init_home()
+static void init_home()
 {
 	// block until we get a good fix
 	// -----------------------------

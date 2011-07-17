@@ -2,7 +2,7 @@
 
 #if FRAME_CONFIG ==	OCTA_FRAME
 
-void output_motors_armed()
+static void output_motors_armed()
 {
 	int roll_out, pitch_out;
 	int out_min = g.rc_3.radio_min;
@@ -166,7 +166,7 @@ void output_motors_armed()
 	#endif
 }
 
-void output_motors_disarmed()
+static void output_motors_disarmed()
 {
 	if(g.rc_3.control_in > 0){
 		// we have pushed up the throttle
@@ -190,7 +190,7 @@ void output_motors_disarmed()
 	APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
 }
 
-void output_motor_test()
+static void output_motor_test()
 {
 	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 50);

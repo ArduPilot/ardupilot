@@ -7,7 +7,7 @@
 
 
 // called at 10hz
-void arm_motors()
+static void arm_motors()
 {
 	static int arming_counter;
 
@@ -77,7 +77,7 @@ void arm_motors()
 /*****************************************
  * Set the flight control servos based on the current calculated values
  *****************************************/
-void
+static void
 set_servos_4()
 {
 	if (motor_armed == true && motor_auto_armed == true) {

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-void read_control_switch()
+static void read_control_switch()
 {
 	byte switchPosition = readSwitch();
 	//motor_armed = (switchPosition < 5);
@@ -18,7 +18,7 @@ void read_control_switch()
 	}
 }
 
-byte readSwitch(void){
+static byte readSwitch(void){
 	int pulsewidth = g.rc_5.radio_in;			// default for Arducopter
 
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
@@ -29,7 +29,7 @@ byte readSwitch(void){
 	return 0;
 }
 
-void reset_control_switch()
+static void reset_control_switch()
 {
 	oldSwitchPosition = -1;
 	read_control_switch();
@@ -37,17 +37,17 @@ void reset_control_switch()
 	//SendDebugln(oldSwitchPosition , DEC);
 }
 
-void update_servo_switches()
+static void update_servo_switches()
 {
 
 }
 
-boolean trim_flag;
-unsigned long trim_timer;
+static boolean trim_flag;
+static unsigned long trim_timer;
 
 // read at 10 hz
 // set this to your trainer switch
-void read_trim_switch()
+static void read_trim_switch()
 {
 	// switch is engaged
 	if (g.rc_7.control_in > 800){
@@ -67,7 +67,7 @@ void read_trim_switch()
 	}
 }
 
-void auto_trim()
+static void auto_trim()
 {
 	if(auto_level_counter > 0){
 		g.rc_1.dead_zone = 60;		// 60 = .6 degrees
@@ -91,7 +91,7 @@ void auto_trim()
 
 
 
-void trim_accel()
+static void trim_accel()
 {
 	g.pid_stabilize_roll.reset_I();
 	g.pid_stabilize_pitch.reset_I();

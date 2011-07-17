@@ -3,7 +3,7 @@
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
-void navigate()
+static void navigate()
 {
 	// do not navigate with corrupt data
 	// ---------------------------------
@@ -36,14 +36,14 @@ void navigate()
 	nav_bearing = target_bearing;
 }
 
-bool check_missed_wp()
+static bool check_missed_wp()
 {
 	long temp 	= target_bearing - saved_target_bearing;
 	temp 		= wrap_180(temp);
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
-int
+static int
 get_nav_throttle(long error)
 {
 	int throttle;
@@ -62,7 +62,7 @@ get_nav_throttle(long error)
 }
 
 #define DIST_ERROR_MAX 1800
-void calc_loiter_nav()
+static void calc_loiter_nav()
 {
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
@@ -88,7 +88,7 @@ void calc_loiter_nav()
 	nav_lat 	= g.pid_nav_lat.get_pid(lat_error,  dTnav, 1.0);		// Y invert lat (for pitch)
 }
 
-void calc_loiter_output()
+static void calc_loiter_output()
 {
 	// rotate the vector
 	nav_roll 	=   (float)nav_lon * sin_yaw_y 	- (float)nav_lat * -cos_yaw_x;
@@ -118,7 +118,7 @@ void calc_loiter_output()
 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
 }
 
-void calc_simple_nav()
+static void calc_simple_nav()
 {
 	// no dampening here in SIMPLE mode
 	nav_lat	= constrain((wp_distance * 100), -4500, 4500); // +- 20m max error
@@ -126,7 +126,7 @@ void calc_simple_nav()
 	//nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
 }
 
-void calc_nav_output()
+static void calc_nav_output()
 {
 	// get the sin and cos of the bearing error - rotated 90°
 	float sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
@@ -138,7 +138,7 @@ void calc_nav_output()
 }
 
 // called after we get GPS read
-void calc_rate_nav()
+static void calc_rate_nav()
 {
 	// which direction are we moving?
 	long target_error 	= target_bearing - g_gps->ground_course;
@@ -167,18 +167,18 @@ void calc_rate_nav()
 	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error
 }
 
-void calc_bearing_error()
+static void calc_bearing_error()
 {
 	bearing_error 	= nav_bearing - dcm.yaw_sensor;
 	bearing_error 	= wrap_180(bearing_error);
 }
 
-void calc_altitude_error()
+static void calc_altitude_error()
 {
 	altitude_error 	= next_WP.alt - current_loc.alt;
 }
 
-void calc_altitude_smoothing_error()
+static void calc_altitude_smoothing_error()
 {
 	// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
 	target_altitude = next_WP.alt - ((wp_distance * (next_WP.alt - prev_WP.alt)) / (wp_totalDistance - g.waypoint_radius));
@@ -193,21 +193,21 @@ void calc_altitude_smoothing_error()
 	altitude_error 	= target_altitude - current_loc.alt;
 }
 
-long wrap_360(long error)
+static long wrap_360(long error)
 {
 	if (error > 36000)	error -= 36000;
 	if (error < 0)		error += 36000;
 	return error;
 }
 
-long wrap_180(long error)
+static long wrap_180(long error)
 {
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
 	return error;
 }
 
-void update_crosstrack(void)
+static void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
@@ -219,19 +219,19 @@ void update_crosstrack(void)
 	}
 }
 
-long cross_track_test()
+static long cross_track_test()
 {
 	long temp 	= target_bearing - crosstrack_bearing;
 	temp 		= wrap_180(temp);
 	return abs(temp);
 }
 
-void reset_crosstrack()
+static void reset_crosstrack()
 {
 	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
 
-long get_altitude_above_home(void)
+static long get_altitude_above_home(void)
 {
 	// This is the altitude above the home location
 	// The GPS gives us altitude at Sea Level
@@ -241,7 +241,7 @@ long get_altitude_above_home(void)
 }
 
 // distance is returned in meters
-long get_distance(struct Location *loc1, struct Location *loc2)
+static long get_distance(struct Location *loc1, struct Location *loc2)
 {
 	//if(loc1->lat == 0 || loc1->lng == 0)
 	//	return -1;
@@ -252,12 +252,12 @@ long get_distance(struct Location *loc1, struct Location *loc2)
 	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
 }
 
-long get_alt_distance(struct Location *loc1, struct Location *loc2)
+static long get_alt_distance(struct Location *loc1, struct Location *loc2)
 {
 	return abs(loc1->alt - loc2->alt);
 }
 
-long get_bearing(struct Location *loc1, struct Location *loc2)
+static long get_bearing(struct Location *loc1, struct Location *loc2)
 {
 	long off_x = loc2->lng - loc1->lng;
 	long off_y = (loc2->lat - loc1->lat) * scaleLongUp;

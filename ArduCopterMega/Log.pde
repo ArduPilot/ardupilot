@@ -194,7 +194,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-int8_t
+static int8_t
 process_logs(uint8_t argc, const Menu::arg *argv)
 {
 	log_menu.run();
@@ -203,7 +203,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 
 // finds out how many logs are available
-byte get_num_logs(void)
+static byte get_num_logs(void)
 {
 	int page = 1;
 	byte data;
@@ -245,7 +245,7 @@ byte get_num_logs(void)
 }
 
 // send the number of the last log?
-void start_new_log()
+static void start_new_log()
 {
 	byte num_existing_logs = get_num_logs();
 
@@ -332,7 +332,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 }
 
 //
-int find_last_log_page(int bottom_page)
+static int find_last_log_page(int bottom_page)
 {
 	int top_page = 4096;
 	int look_page;
@@ -354,7 +354,7 @@ int find_last_log_page(int bottom_page)
 }
 
 // Write an GPS packet. Total length : 30 bytes
-void Log_Write_GPS()
+static void Log_Write_GPS()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -376,7 +376,7 @@ void Log_Write_GPS()
 }
 
 // Read a GPS packet
-void Log_Read_GPS()
+static void Log_Read_GPS()
 {
 	Serial.printf_P(PSTR("GPS, %ld, %d, %d, "
 					  	"%4.7f, %4.7f, %4.4f, %4.4f, "
@@ -398,7 +398,7 @@ void Log_Read_GPS()
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
-void Log_Write_Raw()
+static void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
 	Vector3f accel = imu.get_accel();
@@ -430,7 +430,7 @@ void Log_Write_Raw()
 #endif
 
 // Read a raw accel/gyro packet
-void Log_Read_Raw()
+static void Log_Read_Raw()
 {
 	float logvar;
 	Serial.printf_P(PSTR("RAW,"));
@@ -442,7 +442,7 @@ void Log_Read_Raw()
 	Serial.println(" ");
 }
 
-void Log_Write_Current()
+static void Log_Write_Current()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -459,7 +459,7 @@ void Log_Write_Current()
 }
 
 // Read a Current packet
-void Log_Read_Current()
+static void Log_Read_Current()
 {
 	Serial.printf_P(PSTR("CURR: %d, %ld, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
@@ -470,7 +470,7 @@ void Log_Read_Current()
 			DataFlash.ReadInt());
 }
 
-void Log_Write_Motors()
+static void Log_Write_Motors()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -485,7 +485,7 @@ void Log_Write_Motors()
 }
 
 // Read a Current packet
-void Log_Read_Motors()
+static void Log_Read_Motors()
 {
 	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d\n"),
 			DataFlash.ReadInt(),
@@ -494,7 +494,7 @@ void Log_Read_Motors()
 			DataFlash.ReadInt());
 }
 
-void Log_Write_Nav_Tuning()
+static void Log_Write_Nav_Tuning()
 {
 	Matrix3f tempmat = dcm.get_dcm_matrix();
 
@@ -516,7 +516,7 @@ void Log_Write_Nav_Tuning()
 }
 
 
-void Log_Read_Nav_Tuning()
+static void Log_Read_Nav_Tuning()
 {
 							 //	 1	 2	 3	 4
 	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, "
@@ -535,7 +535,7 @@ void Log_Read_Nav_Tuning()
 
 // Write a control tuning packet. Total length : 22 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
-void Log_Write_Control_Tuning()
+static void Log_Write_Control_Tuning()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -566,7 +566,7 @@ void Log_Write_Control_Tuning()
 #endif
 
 // Read an control tuning packet
-void Log_Read_Control_Tuning()
+static void Log_Read_Control_Tuning()
 {
 	Serial.printf_P(PSTR(   "CTUN, %d, %d, "
 				"%d, %d, %d, %d, %1.4f, "
@@ -594,7 +594,7 @@ void Log_Read_Control_Tuning()
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
-void Log_Write_Performance()
+static void Log_Write_Performance()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -621,7 +621,7 @@ void Log_Write_Performance()
 }
 
 // Read a performance packet
-void Log_Read_Performance()
+static void Log_Read_Performance()
 {
 	//*
 	long pm_time;
@@ -653,7 +653,7 @@ void Log_Read_Performance()
 
 // Write a command processing packet.
 //void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
-void Log_Write_Cmd(byte num, struct Location *wp)
+static void Log_Write_Cmd(byte num, struct Location *wp)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -675,7 +675,7 @@ void Log_Write_Cmd(byte num, struct Location *wp)
 
 
 // Read a command processing packet
-void Log_Read_Cmd()
+static void Log_Read_Cmd()
 {
 	Serial.printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
 
@@ -695,7 +695,7 @@ void Log_Read_Cmd()
 }
 
 // Write an attitude packet. Total length : 10 bytes
-void Log_Write_Attitude()
+static void Log_Write_Attitude()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -707,7 +707,7 @@ void Log_Write_Attitude()
 }
 
 // Read an attitude packet
-void Log_Read_Attitude()
+static void Log_Read_Attitude()
 {
 	Serial.printf_P(PSTR("ATT, %d, %d, %u\n"),
 			DataFlash.ReadInt(),
@@ -717,7 +717,7 @@ void Log_Read_Attitude()
 
 
 // Write a mode packet. Total length : 5 bytes
-void Log_Write_Mode(byte mode)
+static void Log_Write_Mode(byte mode)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -728,14 +728,14 @@ void Log_Write_Mode(byte mode)
 }
 
 // Read a mode packet
-void Log_Read_Mode()
+static void Log_Read_Mode()
 {
 	Serial.printf_P(PSTR("MOD:"));
 	Serial.print(flight_mode_strings[DataFlash.ReadByte()]);
 	Serial.printf_P(PSTR(", %d\n"),DataFlash.ReadInt());
 }
 
-void Log_Write_Startup()
+static void Log_Write_Startup()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -744,14 +744,14 @@ void Log_Write_Startup()
 }
 
 // Read a mode packet
-void Log_Read_Startup()
+static void Log_Read_Startup()
 {
 	Serial.printf_P(PSTR("START UP\n"));
 }
 
 
 // Read the DataFlash log memory : Packet Parser
-void Log_Read(int start_page, int end_page)
+static void Log_Read(int start_page, int end_page)
 {
 	byte data;
 	byte log_step 		= 0;
@@ -832,20 +832,20 @@ void Log_Read(int start_page, int end_page)
 
 #else // LOGGING_ENABLED
 
-void Log_Write_Startup() {}
-void Log_Read_Startup() {}
-void Log_Read(int start_page, int end_page) {}
-void Log_Write_Cmd(byte num, struct Location *wp) {}
-void Log_Write_Mode(byte mode) {}
-void start_new_log() {}
-void Log_Write_Raw() {}
-void Log_Write_GPS() {}
-void Log_Write_Current() {}
-void Log_Write_Attitude() {}
-void Log_Write_Nav_Tuning() {}
-void Log_Write_Control_Tuning() {}
-void Log_Write_Motors() {}
-void Log_Write_Performance() {}
-int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+static void Log_Write_Startup() {}
+static void Log_Read_Startup() {}
+static void Log_Read(int start_page, int end_page) {}
+static void Log_Write_Cmd(byte num, struct Location *wp) {}
+static void Log_Write_Mode(byte mode) {}
+static void start_new_log() {}
+static void Log_Write_Raw() {}
+static void Log_Write_GPS() {}
+static void Log_Write_Current() {}
+static void Log_Write_Attitude() {}
+static void Log_Write_Nav_Tuning() {}
+static void Log_Write_Control_Tuning() {}
+static void Log_Write_Motors() {}
+static void Log_Write_Performance() {}
+static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
 #endif // LOGGING_ENABLED

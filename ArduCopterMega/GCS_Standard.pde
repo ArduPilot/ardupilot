@@ -11,7 +11,7 @@
 
 // The functions included in this file are for use with the standard binary communication protocol and standard Ground Control Station
 
-void acknowledge(byte id, byte check1, byte check2) {
+static void acknowledge(byte id, byte check1, byte check2) {
 	byte mess_buffer[6];
 	byte mess_ck_a = 0;
 	byte mess_ck_b = 0;
@@ -38,11 +38,11 @@ void acknowledge(byte id, byte check1, byte check2) {
 	SendSer(mess_ck_b);
 }
 
-void send_message(byte id) {
+static void send_message(byte id) {
 	send_message(id, 0l);
 }
 	
-void send_message(byte id, long param) {
+static void send_message(byte id, long param) {
 	byte mess_buffer[54];
 	byte mess_ck_a = 0;
 	byte mess_ck_b = 0;
@@ -294,7 +294,7 @@ void send_message(byte id, long param) {
 	gcs_messages_sent++;
 }
 
-void send_message(byte severity, const char *str)		// This is the instance of send_message for message MSG_STATUS_TEXT
+static void send_message(byte severity, const char *str)		// This is the instance of send_message for message MSG_STATUS_TEXT
 {
 	if(severity >= DEBUG_LEVEL){	
 		byte length = strlen(str) + 1;
@@ -328,11 +328,11 @@ void send_message(byte severity, const char *str)		// This is the instance of se
 	}
 }
 
-void print_current_waypoints()
+static void print_current_waypoints()
 {
 }
 
-void print_waypoint(struct Location *cmd, byte index)
+static void print_waypoint(struct Location *cmd, byte index)
 {
 	Serial.print("command #: ");
 	Serial.print(index, DEC);
@@ -348,7 +348,7 @@ void print_waypoint(struct Location *cmd, byte index)
 	Serial.println(cmd->lng, DEC);
 }
 
-void print_waypoints()
+static void print_waypoints()
 {
 }
 
@@ -357,13 +357,13 @@ void print_waypoints()
 
 
 #if GCS_PROTOCOL == GCS_PROTOCOL_NONE
-void acknowledge(byte id, byte check1, byte check2) {}
-void send_message(byte id) {}
-void send_message(byte id, long param) {}
-void send_message(byte severity, const char *str) {
+static void acknowledge(byte id, byte check1, byte check2) {}
+static void send_message(byte id) {}
+static void send_message(byte id, long param) {}
+static void send_message(byte severity, const char *str) {
 	Serial.println(str);
 }
-void print_current_waypoints(){}
-void print_waypoint(struct Location *cmd, byte index){}
-void print_waypoints(){}
+static void print_current_waypoints(){}
+static void print_waypoint(struct Location *cmd, byte index){}
+static void print_waypoints(){}
 #endif

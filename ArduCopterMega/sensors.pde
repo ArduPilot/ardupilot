@@ -3,9 +3,9 @@
 // Sensors are not available in HIL_MODE_ATTITUDE
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
-void ReadSCP1000(void) {}
+static void ReadSCP1000(void) {}
 
-void init_barometer(void)
+static void init_barometer(void)
 {
 	#if HIL_MODE == HIL_MODE_SENSORS
 		hil.update();					// look for inbound hil packets for initialization
@@ -32,7 +32,7 @@ void init_barometer(void)
 	//SendDebugln("barometer calibration complete.");
 }
 
-long read_baro_filtered(void)
+static long read_baro_filtered(void)
 {
 	long pressure = 0;
 
@@ -58,7 +58,7 @@ long read_baro_filtered(void)
 	return pressure /= BARO_FILTER_SIZE;
 }
 
-long read_barometer(void)
+static long read_barometer(void)
 {
  	float x, scaling, temp;
 
@@ -73,19 +73,19 @@ long read_barometer(void)
 }
 
 // in M/S * 100
-void read_airspeed(void)
+static void read_airspeed(void)
 {
 
 }
 
-void zero_airspeed(void)
+static void zero_airspeed(void)
 {
 
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
-void read_battery(void)
+static void read_battery(void)
 {
 	battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN1)) * .1 + battery_voltage1 * .9;
 	battery_voltage2 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN2)) * .1 + battery_voltage2 * .9;

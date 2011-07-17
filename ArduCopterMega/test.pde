@@ -80,7 +80,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
-int8_t
+static int8_t
 test_mode(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Test Mode\n\n"));
@@ -1026,12 +1026,12 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-void print_hit_enter()
+static void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
-void fake_out_gps()
+static void fake_out_gps()
 {
 	static float rads;
 	g_gps->new_data 	= true;
@@ -1054,7 +1054,7 @@ void fake_out_gps()
 
 
 
-void print_motor_out(){
+static void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n",
 				(motor_out[CH_1] 	- g.rc_3.radio_min),
 				(motor_out[CH_2] 	- g.rc_3.radio_min),

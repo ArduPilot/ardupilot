@@ -3,7 +3,7 @@
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-void handle_process_must()
+static void handle_process_must()
 {
 	// clear nav_lat, this is how we pitch towards the target based on speed
 	nav_lat = 0;
@@ -44,7 +44,7 @@ void handle_process_must()
 
 }
 
-void handle_process_may()
+static void handle_process_may()
 {
 	switch(next_command.id){
 
@@ -69,7 +69,7 @@ void handle_process_may()
 	}
 }
 
-void handle_process_now()
+static void handle_process_now()
 {
 	switch(next_command.id){
 
@@ -106,7 +106,7 @@ void handle_process_now()
 	}
 }
 
-void handle_no_commands()
+static void handle_no_commands()
 {
 	// we don't want to RTL yet. Maybe this will change in the future. RTL is kinda dangerous.
 	// use landing commands
@@ -125,7 +125,7 @@ void handle_no_commands()
 // Verify command Handlers
 /********************************************************************************/
 
-bool verify_must()
+static bool verify_must()
 {
 	//Serial.printf("vmust: %d\n", command_must_ID);
 
@@ -166,7 +166,7 @@ bool verify_must()
 	}
 }
 
-bool verify_may()
+static bool verify_may()
 {
 	switch(command_may_ID) {
 
@@ -197,7 +197,7 @@ bool verify_may()
 //
 /********************************************************************************/
 
-void do_RTL(void)
+static void do_RTL(void)
 {
 	Location temp	= home;
 	temp.alt		= read_alt_to_hold();
@@ -217,7 +217,7 @@ void do_RTL(void)
 //	Nav (Must) commands
 /********************************************************************************/
 
-void do_takeoff()
+static void do_takeoff()
 {
 	wp_control 			= LOITER_MODE;
 
@@ -239,7 +239,7 @@ void do_takeoff()
 	set_next_WP(&temp);
 }
 
-void do_nav_wp()
+static void do_nav_wp()
 {
 	wp_control = WP_MODE;
 
@@ -265,7 +265,7 @@ void do_nav_wp()
 	}
 }
 
-void do_land()
+static void do_land()
 {
 	wp_control = LOITER_MODE;
 
@@ -287,7 +287,7 @@ void do_land()
 	set_next_WP(&current_loc);
 }
 
-void do_loiter_unlimited()
+static void do_loiter_unlimited()
 {
 	wp_control = LOITER_MODE;
 
@@ -298,7 +298,7 @@ void do_loiter_unlimited()
 		set_next_WP(&next_command);
 }
 
-void do_loiter_turns()
+static void do_loiter_turns()
 {
 /*
 	wp_control = LOITER_MODE;
@@ -312,7 +312,7 @@ void do_loiter_turns()
 */
 }
 
-void do_loiter_time()
+static void do_loiter_time()
 {
 	///*
 	wp_control = LOITER_MODE;
@@ -327,7 +327,7 @@ void do_loiter_time()
 //	Verify Nav (Must) commands
 /********************************************************************************/
 
-bool verify_takeoff()
+static bool verify_takeoff()
 {
 
 	// wait until we are ready!
@@ -349,7 +349,7 @@ bool verify_takeoff()
 	}
 }
 
-bool verify_land()
+static bool verify_land()
 {
 	// land at 1 meter per second
 	next_WP.alt  = original_alt - ((millis() - land_start) / 20);			// condition_value = our initial
@@ -376,7 +376,7 @@ bool verify_land()
 	return false;
 }
 
-bool verify_nav_wp()
+static bool verify_nav_wp()
 {
 	// Altitude checking
 	if(next_WP.options & WP_OPTION_ALT_REQUIRED){
@@ -426,12 +426,12 @@ bool verify_nav_wp()
 	}
 }
 
-bool verify_loiter_unlim()
+static bool verify_loiter_unlim()
 {
 	return false;
 }
 
-bool verify_loiter_time()
+static bool verify_loiter_time()
 {
 	//Serial.printf("vlt %ld\n",(millis() - loiter_time));
 
@@ -443,7 +443,7 @@ bool verify_loiter_time()
 	return false;
 }
 
-bool verify_RTL()
+static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
 		gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
@@ -457,7 +457,7 @@ bool verify_RTL()
 //	Condition (May) commands
 /********************************************************************************/
 
-void do_wait_delay()
+static void do_wait_delay()
 {
 	//Serial.print("dwd ");
 	condition_start = millis();
@@ -465,7 +465,7 @@ void do_wait_delay()
 	Serial.println(condition_value,DEC);
 }
 
-void do_change_alt()
+static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
@@ -478,12 +478,12 @@ void do_change_alt()
 	set_next_WP(&temp);
 }
 
-void do_within_distance()
+static void do_within_distance()
 {
 	condition_value	 = next_command.lat;
 }
 
-void do_yaw()
+static void do_yaw()
 {
 	//Serial.println("dyaw ");
 	yaw_tracking = MAV_ROI_NONE;
@@ -543,7 +543,7 @@ void do_yaw()
 // Verify Condition (May) commands
 /********************************************************************************/
 
-bool verify_wait_delay()
+static bool verify_wait_delay()
 {
 	//Serial.print("vwd");
 	if ((unsigned)(millis() - condition_start) > condition_value){
@@ -555,7 +555,7 @@ bool verify_wait_delay()
 	return false;
 }
 
-bool verify_change_alt()
+static bool verify_change_alt()
 {
 	if (condition_start < next_WP.alt){
 		// we are going higer
@@ -573,7 +573,7 @@ bool verify_change_alt()
 	return false;
 }
 
-bool verify_within_distance()
+static bool verify_within_distance()
 {
 	if (wp_distance < condition_value){
 		condition_value = 0;
@@ -582,7 +582,7 @@ bool verify_within_distance()
 	return false;
 }
 
-bool verify_yaw()
+static bool verify_yaw()
 {
 	//Serial.print("vyaw ");
 
@@ -609,7 +609,7 @@ bool verify_yaw()
 //	Do (Now) commands
 /********************************************************************************/
 
-void do_target_yaw()
+static void do_target_yaw()
 {
 	yaw_tracking = next_command.p1;
 
@@ -618,12 +618,12 @@ void do_target_yaw()
 	}
 }
 
-void do_loiter_at_location()
+static void do_loiter_at_location()
 {
 	next_WP = current_loc;
 }
 
-void do_jump()
+static void do_jump()
 {
 	struct Location temp;
 	if(next_command.lat > 0) {
@@ -638,7 +638,7 @@ void do_jump()
 	}
 }
 
-void do_set_home()
+static void do_set_home()
 {
 	if(next_command.p1 == 1) {
 		init_home();
@@ -651,12 +651,12 @@ void do_set_home()
 	}
 }
 
-void do_set_servo()
+static void do_set_servo()
 {
 	APM_RC.OutputCh(next_command.p1 - 1, next_command.alt);
 }
 
-void do_set_relay()
+static void do_set_relay()
 {
 	if (next_command.p1 == 1) {
 		relay_on();
@@ -667,7 +667,7 @@ void do_set_relay()
 	}
 }
 
-void do_repeat_servo()
+static void do_repeat_servo()
 {
 	event_id = next_command.p1 - 1;
 
@@ -696,7 +696,7 @@ void do_repeat_servo()
 	}
 }
 
-void do_repeat_relay()
+static void do_repeat_relay()
 {
 	event_id		= RELAY_TOGGLE;
 	event_timer		= 0;

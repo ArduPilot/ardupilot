@@ -2,10 +2,10 @@
 
 #if FRAME_CONFIG ==	HELI_FRAME
 
-int heli_manual_override = false;
-float rollPitch_impact_on_collective = 0;
+static int heli_manual_override = false;
+static float rollPitch_impact_on_collective = 0;
 
-void heli_init_swash()
+static void heli_init_swash()
 {
     int i;
 	int tilt_max[CH_3+1];
@@ -50,7 +50,7 @@ void heli_init_swash()
 	g.heli_servo_3.radio_max = g.heli_coll_max + tilt_max[CH_3];
 }
 
-void heli_move_servos_to_mid()
+static void heli_move_servos_to_mid()
 {
 	heli_move_swash(0,0,1500,0);
 }
@@ -63,7 +63,7 @@ void heli_move_servos_to_mid()
 //                       collective: 1000 ~ 2000
 //                       yaw:   -4500 ~ 4500??
 //
-void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
+static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
 {
     // ensure values are acceptable:
 	roll_out = constrain(roll_out, (int)-g.heli_roll_max, (int)g.heli_roll_max);
@@ -117,7 +117,7 @@ void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
 }
 
 // these are not really motors, they're servos but we don't rename the function because it fits with the rest of the code better
-void output_motors_armed()
+static void output_motors_armed()
 {
     //static int counter = 0;
 	g.rc_1.calc_pwm();
@@ -157,13 +157,13 @@ void output_motors_armed()
 }
 
 // for helis - armed or disarmed we allow servos to move
-void output_motors_disarmed()
+static void output_motors_disarmed()
 {
 	//heli_move_servos_to_mid();
 	output_motors_armed();
 }
 
-void output_motor_test()
+static void output_motor_test()
 {
 }
 

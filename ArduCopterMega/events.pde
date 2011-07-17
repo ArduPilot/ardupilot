@@ -4,7 +4,7 @@
 	This event will be called when the failsafe changes
 	boolean failsafe reflects the current state
 */
-void failsafe_on_event()
+static void failsafe_on_event()
 {
 	// This is how to handle a failsafe.
 	switch(control_mode)
@@ -22,7 +22,7 @@ void failsafe_on_event()
 	}
 }
 
-void failsafe_off_event()
+static void failsafe_off_event()
 {
 	if (g.throttle_fs_action == 2){
 		// We're back in radio contact
@@ -46,14 +46,14 @@ void failsafe_off_event()
 	}
 }
 
-void low_battery_event(void)
+static void low_battery_event(void)
 {
 	gcs.send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	set_mode(RTL);
 }
 
 
-void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
+static void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {
 	if(event_repeat == 0 || (millis() - event_timer) < event_delay)
 		return;
@@ -79,17 +79,17 @@ void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_R
 	}
 }
 
-void relay_on()
+static void relay_on()
 {
 	PORTL |= B00000100;
 }
 
-void relay_off()
+static void relay_off()
 {
 	PORTL &= ~B00000100;
 }
 
-void relay_toggle()
+static void relay_toggle()
 {
 	PORTL ^= B00000100;
 }

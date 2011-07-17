@@ -7,10 +7,10 @@ The init_ardupilot function processes everything we need for an in - air restart
 *****************************************************************************/
 
 // Functions called from the top-level menu
-extern int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
-extern int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
-extern int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
-extern int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde
+static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
+static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
+static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
+static int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -42,7 +42,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 // Create the top-level menu object.
 MENU(main_menu, "AC 2.0.36 Beta", main_menu_commands);
 
-void init_ardupilot()
+static void init_ardupilot()
 {
 	// Console serial port
 	//
@@ -262,7 +262,7 @@ void init_ardupilot()
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //********************************************************************************
-void startup_ground(void)
+static void startup_ground(void)
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
@@ -340,7 +340,7 @@ void startup_ground(void)
 	gcs.send_message(MSG_HEARTBEAT);
 }
 
-void set_mode(byte mode)
+static void set_mode(byte mode)
 {
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
@@ -410,7 +410,7 @@ void set_mode(byte mode)
 	gcs.send_message(MSG_MODE_CHANGE);
 }
 
-void set_failsafe(boolean mode)
+static void set_failsafe(boolean mode)
 {
 	// only act on changes
 	// -------------------
@@ -436,14 +436,14 @@ void set_failsafe(boolean mode)
 
 
 
-void resetPerfData(void) {
+static void resetPerfData(void) {
 	mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
 }
 
-void
+static void
 init_compass()
 {
 	dcm.set_compass(&compass);
@@ -459,7 +459,7 @@ init_compass()
 * be larger than HP or you'll be in big trouble! The smaller the gap, the more
 * careful you need to be. Julian Gall 6 - Feb - 2009.
 */
-unsigned long freeRAM() {
+static unsigned long freeRAM() {
 	uint8_t * heapptr, * stackptr;
 	stackptr = (uint8_t *)malloc(4); // use stackptr temporarily
 	heapptr = stackptr; // save value of heap pointer
@@ -468,13 +468,13 @@ unsigned long freeRAM() {
 	return stackptr - heapptr;
 }
 
-void
+static void
 init_simple_bearing()
 {
 	initial_simple_bearing = dcm.yaw_sensor;
 }
 
-void
+static void
 init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
@@ -485,7 +485,7 @@ init_throttle_cruise()
 
 #if BROKEN_SLIDER == 1
 
-boolean
+static boolean
 check_startup_for_CLI()
 {
 	//return true;
@@ -505,7 +505,7 @@ check_startup_for_CLI()
 
 #else
 
-boolean
+static boolean
 check_startup_for_CLI()
 {
 	return (digitalRead(SLIDE_SWITCH_PIN) == 0);

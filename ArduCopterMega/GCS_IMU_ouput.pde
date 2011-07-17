@@ -24,16 +24,16 @@ void send_message(byte id, long param) {}
 void send_message(byte severity, const char *str) {}
 */
 
-void acknowledge(byte id, byte check1, byte check2)
+static void acknowledge(byte id, byte check1, byte check2)
 {
 }
 
-void send_message(byte id)
+static void send_message(byte id)
 {
 	send_message(id,0l);
 }
 
-void send_message(byte id, long param)
+static void send_message(byte id, long param)
 {
 	switch(id) {
 		case MSG_ATTITUDE:
@@ -46,7 +46,7 @@ void send_message(byte id, long param)
 	}
 }
 
-void send_message(byte severity, const char *str)
+static void send_message(byte severity, const char *str)
 {
 	if(severity >= DEBUG_LEVEL){
 		Serial.print("MSG: ");
@@ -54,15 +54,15 @@ void send_message(byte severity, const char *str)
 	}
 }
 
-void print_current_waypoints()
+static void print_current_waypoints()
 {
 }
 
-void print_control_mode(void)
+static void print_control_mode(void)
 {
 }
 
-void print_attitude(void)
+static void print_attitude(void)
 {
 	//Serial.print("!!VER:");
 	//Serial.print(SOFTWARE_VER);  //output the software version
@@ -163,11 +163,11 @@ void print_location(void)
 	Serial.println("***");
 }
 
-void print_waypoints()
+static void print_waypoints()
 {
 }
 
-void print_waypoint(struct Location *cmd,byte index)
+static void print_waypoint(struct Location *cmd,byte index)
 {
 	Serial.print("command #: ");
 	Serial.print(index, DEC);
@@ -184,7 +184,7 @@ void print_waypoint(struct Location *cmd,byte index)
 
 }
 
-long convert_to_dec(float x)
+static long convert_to_dec(float x)
 {
   return x*10000000;
 }

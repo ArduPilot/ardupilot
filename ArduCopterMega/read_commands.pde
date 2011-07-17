@@ -4,7 +4,7 @@
 #define INPUT_BUF_LEN 40
 char input_buffer[INPUT_BUF_LEN];
 
-void readCommands(void)
+static void readCommands(void)
 {
 	static byte header[2];
 	const byte read_GS_header[] 	= {0x21, 0x21}; //!! Used to verify the payload msg header
@@ -56,7 +56,7 @@ void readCommands(void)
 
 // Commands can be sent as !!a:100|b:200|c:1
 // -----------------------------------------
-void parseCommand(char *buffer)
+static void parseCommand(char *buffer)
 {
 	Serial.println("got cmd ");
 	Serial.println(buffer);
