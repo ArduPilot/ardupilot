@@ -6,6 +6,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 
 *****************************************************************************/
 
+#if CLI_ENABLED == ENABLED
 // Functions called from the top-level menu
 static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
@@ -41,6 +42,8 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 
 // Create the top-level menu object.
 MENU(main_menu, "AC 2.0.36 Beta", main_menu_commands);
+
+#endif // CLI_ENABLED
 
 static void init_ardupilot()
 {
@@ -217,6 +220,7 @@ static void init_ardupilot()
 	// DataFlash log initialization
 	DataFlash.Init();
 
+#if CLI_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
@@ -234,11 +238,12 @@ static void init_ardupilot()
 			//Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
 			main_menu.run();
 		}
-	}else{
-		if(g.esc_calibrate == 1){
-			init_esc();
-		}
 	}
+#endif // CLI_ENABLED
+
+    if(g.esc_calibrate == 1){
+        init_esc();
+    }
 
 	// Logging:
 	// --------

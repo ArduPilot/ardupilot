@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if CLI_ENABLED == ENABLED
+
 // Functions called from the setup menu
 static int8_t	setup_radio				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_motors			(uint8_t argc, const Menu::arg *argv);
@@ -230,29 +232,6 @@ setup_esc(uint8_t argc, const Menu::arg *argv)
 			g.esc_calibrate.set_and_save(0);
 			return(0);
 		}
-	}
-}
-
-static void
-init_esc()
-{
-	g.esc_calibrate.set_and_save(0);
-	while(1){
-		read_radio();
-		delay(100);
-		dancing_light();
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_7, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_8, g.rc_3.radio_in);
-
-		#if FRAME_CONFIG ==	OCTA_FRAME
-		APM_RC.OutputCh(CH_10,   g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_11,   g.rc_3.radio_in);
-		#endif
-
 	}
 }
 
@@ -755,39 +734,12 @@ static void report_wp(byte index = 255)
 	}
 }
 
-static void print_wp(struct Location *cmd, byte index)
-{
-	Serial.printf_P(PSTR("command #: %d id:%d op:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
-		(int)index,
-		(int)cmd->id,
-		(int)cmd->options,
-		(int)cmd->p1,
-		cmd->alt,
-		cmd->lat,
-		cmd->lng);
-}
-
-static void report_gps()
-{
-	Serial.printf_P(PSTR("\nGPS\n"));
-	print_divider();
-	print_enabled(GPS_enabled);
-	print_blanks(2);
-}
-
 static void report_sonar()
 {
 	g.sonar_enabled.load();
 	Serial.printf_P(PSTR("Sonar\n"));
 	print_divider();
 	print_enabled(g.sonar_enabled.get());
-	print_blanks(2);
-}
-
-static void report_version()
-{
-	Serial.printf_P(PSTR("FW Version %d\n"),(int)g.format_version.get());
-	print_divider();
 	print_blanks(2);
 }
 
@@ -1018,24 +970,6 @@ print_done()
 	Serial.printf_P(PSTR("\nSaved Settings\n\n"));
 }
 
-static void
-print_blanks(int num)
-{
-	while(num > 0){
-		num--;
-		Serial.println("");
-	}
-}
-
-static void
-print_divider(void)
-{
-	for (int i = 0; i < 40; i++) {
-		Serial.print("-");
-	}
-	Serial.println("");
-}
-
 // read at 50Hz
 static bool
 radio_input_switch(void)
@@ -1074,15 +1008,6 @@ static void zero_eeprom(void)
 	}
 
 	Serial.printf_P(PSTR("done\n"));
-}
-
-static void print_enabled(boolean b)
-{
-	if(b)
-		Serial.printf_P(PSTR("en"));
-	else
-		Serial.printf_P(PSTR("dis"));
-	Serial.printf_P(PSTR("abled\n"));
 }
 
 static void
@@ -1138,3 +1063,84 @@ static int read_num_from_serial() {
 	return atoi(data);
 }
 #endif
+
+#endif // CLI_ENABLED
+
+static void
+print_blanks(int num)
+{
+	while(num > 0){
+		num--;
+		Serial.println("");
+	}
+}
+
+static void
+print_divider(void)
+{
+	for (int i = 0; i < 40; i++) {
+		Serial.print("-");
+	}
+	Serial.println("");
+}
+
+static void print_enabled(boolean b)
+{
+	if(b)
+		Serial.printf_P(PSTR("en"));
+	else
+		Serial.printf_P(PSTR("dis"));
+	Serial.printf_P(PSTR("abled\n"));
+}
+
+
+static void
+init_esc()
+{
+	g.esc_calibrate.set_and_save(0);
+	while(1){
+		read_radio();
+		delay(100);
+		dancing_light();
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_in);
+
+		#if FRAME_CONFIG ==	OCTA_FRAME
+		APM_RC.OutputCh(CH_10,   g.rc_3.radio_in);
+		APM_RC.OutputCh(CH_11,   g.rc_3.radio_in);
+		#endif
+
+	}
+}
+
+static void print_wp(struct Location *cmd, byte index)
+{
+	Serial.printf_P(PSTR("command #: %d id:%d op:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+		(int)index,
+		(int)cmd->id,
+		(int)cmd->options,
+		(int)cmd->p1,
+		cmd->alt,
+		cmd->lat,
+		cmd->lng);
+}
+
+static void report_gps()
+{
+	Serial.printf_P(PSTR("\nGPS\n"));
+	print_divider();
+	print_enabled(GPS_enabled);
+	print_blanks(2);
+}
+
+static void report_version()
+{
+	Serial.printf_P(PSTR("FW Version %d\n"),(int)g.format_version.get());
+	print_divider();
+	print_blanks(2);
+}
+
