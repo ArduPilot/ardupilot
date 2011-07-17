@@ -2,7 +2,7 @@
 
 // For changing active command mid-mission
 //----------------------------------------
-void change_command(uint8_t index)
+static void change_command(uint8_t index)
 {
 	struct Location temp = get_command_with_index(index);
 
@@ -18,7 +18,7 @@ void change_command(uint8_t index)
 
 // called by 10 Hz Medium loop
 // ---------------------------
-void update_commands(void)
+static void update_commands(void)
 {
 	// fill command queue with a new command if available
 	if(next_command.id == NO_COMMAND){
@@ -62,7 +62,7 @@ void update_commands(void)
 }
 
 // called with GPS navigation update - not constantly
-void verify_commands(void)
+static void verify_commands(void)
 {
 	if(verify_must()){
 		Serial.printf("verified must cmd %d\n" , command_must_index);
@@ -81,7 +81,7 @@ void verify_commands(void)
 	}
 }
 
-bool
+static bool
 process_next_command()
 {
 	// these are Navigation/Must commands
@@ -142,7 +142,7 @@ process_next_command()
 /**************************************************/
 //  These functions implement the commands.
 /**************************************************/
-void process_must()
+static void process_must()
 {
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
@@ -161,7 +161,7 @@ void process_must()
 
 }
 
-void process_may()
+static void process_may()
 {
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
@@ -171,7 +171,7 @@ void process_may()
 	handle_process_may();
 }
 
-void process_now()
+static void process_now()
 {
 	Serial.print("pnow");
 	handle_process_now();

@@ -1,4 +1,4 @@
-void update_lights()
+static void update_lights()
 {
 	switch(led_mode){
 		case NORMAL_LEDS:
@@ -12,7 +12,7 @@ void update_lights()
 	}
 }
 
-void update_GPS_light(void)
+static void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
@@ -40,7 +40,7 @@ void update_GPS_light(void)
 	}
 }
 
-void update_motor_light(void)
+static void update_motor_light(void)
 {
 	if(motor_armed == false){
 		motor_light = !motor_light;
@@ -59,7 +59,7 @@ void update_motor_light(void)
 	}
 }
 
-void dancing_light()
+static void dancing_light()
 {
 	static byte step;
 
@@ -84,7 +84,7 @@ void dancing_light()
 			break;
 	}
 }
-void clear_leds()
+static void clear_leds()
 {
 	digitalWrite(A_LED_PIN, LOW);
 	digitalWrite(B_LED_PIN, LOW);
@@ -92,7 +92,7 @@ void clear_leds()
 }
 
 #if MOTOR_LEDS == 1
-void update_motor_leds(void)
+static void update_motor_leds(void)
 {
 	// blink rear
 	static bool blink;

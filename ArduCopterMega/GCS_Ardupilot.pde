@@ -26,17 +26,17 @@ Message Suffix
 */
 
 /*
-void acknowledge(byte id, byte check1, byte check2) {}
-void send_message(byte id) {}
-void send_message(byte id, long param) {}
-void send_message(byte severity, const char *str) {}
+void static acknowledge(byte id, byte check1, byte check2) {}
+void static send_message(byte id) {}
+void static send_message(byte id, long param) {}
+void static send_message(byte severity, const char *str) {}
 */
 
-void acknowledge(byte id, byte check1, byte check2)
+static void acknowledge(byte id, byte check1, byte check2)
 {
 }
 
-void send_message(byte severity, const char *str)		// This is the instance of send_message for message 0x05
+static void send_message(byte severity, const char *str)		// This is the instance of send_message for message 0x05
 {
 	if(severity >= DEBUG_LEVEL){
 		SendSer("MSG: ");
@@ -44,12 +44,12 @@ void send_message(byte severity, const char *str)		// This is the instance of se
 	}
 }
 
-void send_message(byte id)
+static void send_message(byte id)
 {
 	send_message(id,0l);
 }
 
-void send_message(byte id, long param)
+static void send_message(byte id, long param)
 {
 	switch(id) {
 		case MSG_ATTITUDE:								// ** Attitude message
@@ -66,11 +66,11 @@ void send_message(byte id, long param)
 	}
 }
 
-void print_current_waypoints()
+static void print_current_waypoints()
 {
 }
 
-void print_attitude(void)
+static void print_attitude(void)
 {
 	SendSer("+++");
 	SendSer("ASP:");
@@ -84,14 +84,14 @@ void print_attitude(void)
 	SendSerln(",***");
 }
 
-void print_control_mode(void)
+static void print_control_mode(void)
 {
 	SendSer("###");
 	SendSer(flight_mode_strings[control_mode]);
 	SendSerln("***");
 }
 
-void print_position(void)
+static void print_position(void)
 {
 	SendSer("!!");
 	SendSer("!");
@@ -124,7 +124,7 @@ void print_position(void)
 	SendSerln(",***");
 }
 
-void print_waypoint(struct Location *cmd,byte index)
+static void print_waypoint(struct Location *cmd,byte index)
 {
 	SendSer("command #: ");
 	SendSer(index, DEC);
@@ -140,7 +140,7 @@ void print_waypoint(struct Location *cmd,byte index)
 	SendSerln(cmd->lng,DEC);
 }
 
-void print_waypoints()
+static void print_waypoints()
 {
 }
 

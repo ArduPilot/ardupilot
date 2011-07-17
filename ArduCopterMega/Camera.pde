@@ -2,7 +2,7 @@
 
 #if CAMERA_STABILIZER == ENABLED
 
-void init_camera()
+static void init_camera()
 {
 	g.rc_camera_pitch.set_angle(4500);
 	g.rc_camera_pitch.radio_min 	= 1000;
@@ -15,7 +15,7 @@ void init_camera()
 	g.rc_camera_roll.radio_max 		= 2000;
 }
 
-void
+static void
 camera_stabilization()
 {
 	// PITCH

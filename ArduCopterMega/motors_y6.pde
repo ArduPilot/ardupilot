@@ -2,7 +2,7 @@
 
 #if FRAME_CONFIG ==	Y6_FRAME
 
-void output_motors_armed()
+static void output_motors_armed()
 {
 	int out_min = g.rc_3.radio_min;
 	int out_max = g.rc_3.radio_max;
@@ -94,7 +94,7 @@ void output_motors_armed()
 	#endif
 }
 
-void output_motors_disarmed()
+static void output_motors_disarmed()
 {
 	if(g.rc_3.control_in > 0){
 		// we have pushed up the throttle
@@ -116,7 +116,7 @@ void output_motors_disarmed()
 	APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
 }
 
-void output_motor_test()
+static void output_motor_test()
 {
 	motor_out[CH_1] = g.rc_3.radio_min;
 	motor_out[CH_2] = g.rc_3.radio_min;

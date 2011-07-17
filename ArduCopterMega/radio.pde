@@ -2,10 +2,10 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 
-void init_rc_in()
+static void init_rc_in()
 {
 	// set rc channel ranges
 	g.rc_1.set_angle(4500);
@@ -58,7 +58,7 @@ void init_rc_in()
 	#endif
 }
 
-void init_rc_out()
+static void init_rc_out()
 {
 	#if ARM_AT_STARTUP == 1
 		motor_armed = 1;
@@ -115,7 +115,7 @@ void output_min()
 	#endif
 
 }
-void read_radio()
+static void read_radio()
 {
 	if (APM_RC.GetState() == 1){
 
@@ -145,7 +145,7 @@ void read_radio()
 	}
 }
 
-void throttle_failsafe(uint16_t pwm)
+static void throttle_failsafe(uint16_t pwm)
 {
 	if(g.throttle_fs_enabled == 0)
 		return;
@@ -187,7 +187,7 @@ void throttle_failsafe(uint16_t pwm)
 	}
 }
 
-void trim_radio()
+static void trim_radio()
 {
 	for (byte i = 0; i < 30; i++){
 		read_radio();
@@ -202,7 +202,7 @@ void trim_radio()
 	g.rc_4.save_eeprom();
 }
 
-void trim_yaw()
+static void trim_yaw()
 {
 	for (byte i = 0; i < 30; i++){
 		read_radio();

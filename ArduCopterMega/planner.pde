@@ -15,7 +15,7 @@ const struct Menu::command planner_menu_commands[] PROGMEM = {
 // A Macro to create the Menu
 MENU(planner_menu, "planner", planner_menu_commands);
 
-int8_t
+static int8_t
 planner_mode(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("Planner Mode\nNot intended for manual use\n\n"));
