@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if LOGGING_ENABLED == ENABLED
+
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
@@ -829,5 +831,22 @@ void Log_Read(int start_page, int end_page)
 	}
 }
 
+#else // LOGGING_ENABLED
 
+void Log_Write_Startup() {}
+void Log_Read_Startup() {}
+void Log_Read(int start_page, int end_page) {}
+void Log_Write_Cmd(byte num, struct Location *wp) {}
+void Log_Write_Mode(byte mode) {}
+void start_new_log() {}
+void Log_Write_Raw() {}
+void Log_Write_GPS() {}
+void Log_Write_Current() {}
+void Log_Write_Attitude() {}
+void Log_Write_Nav_Tuning() {}
+void Log_Write_Control_Tuning() {}
+void Log_Write_Motors() {}
+void Log_Write_Performance() {}
+int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 
+#endif // LOGGING_ENABLED
