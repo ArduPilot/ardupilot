@@ -275,7 +275,6 @@
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CURRENT		(1<<9)
 #define MASK_LOG_MOTORS			(1<<10)
-#define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
 // ----------------

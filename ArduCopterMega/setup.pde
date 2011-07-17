@@ -120,7 +120,6 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\nFACTORY RESET complete - reboot APM"));
 
 	delay(1000);
-	//default_log_bitmask();
 	//default_gains();
 
 	for (;;) {
@@ -726,31 +725,6 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 }
 */
 
-
-/***************************************************************************/
-// CLI defaults
-/***************************************************************************/
-
-void default_log_bitmask()
-{
-	// convenience macro for testing LOG_* and setting LOGBIT_*
-	#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
-
-	g.log_bitmask =
-		LOGBIT(ATTITUDE_FAST)	|
-		LOGBIT(ATTITUDE_MED)	|
-		LOGBIT(GPS)				|
-		LOGBIT(PM)				|
-		LOGBIT(CTUN)			|
-		LOGBIT(NTUN)			|
-		LOGBIT(MODE)			|
-		LOGBIT(RAW)				|
-		LOGBIT(CMD)				|
-		LOGBIT(CURRENT);
-	#undef LOGBIT
-
-	g.log_bitmask.save();
-}
 
 /***************************************************************************/
 // CLI reports

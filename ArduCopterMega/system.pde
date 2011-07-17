@@ -217,10 +217,6 @@ void init_ardupilot()
 	// DataFlash log initialization
 	DataFlash.Init();
 
-	// setup the log bitmask
-	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS)
-		default_log_bitmask();
-
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
