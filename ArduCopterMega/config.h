@@ -585,3 +585,12 @@
 #ifndef ALLOW_RC_OVERRIDE
 # define ALLOW_RC_OVERRIDE DISABLED
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Developer Items
+//
+
+// use this to completely disable the CLI
+#ifndef CLI_ENABLED
+# define CLI_ENABLED ENABLED
+#endif

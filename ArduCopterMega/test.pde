@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#if CLI_ENABLED == ENABLED
+
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
@@ -1061,3 +1063,5 @@ static void print_motor_out(){
 				(motor_out[CH_3] 	- g.rc_3.radio_min),
 				(motor_out[CH_4] 	- g.rc_3.radio_min));
 }
+
+#endif // CLI_ENABLED
