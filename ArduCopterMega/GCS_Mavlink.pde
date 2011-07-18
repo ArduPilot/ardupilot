@@ -899,9 +899,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set gps hil sensor
             g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
             packet.v,packet.hdg,0,0);
+            if (gps_base_alt == 0) {
+                gps_base_alt = packet.alt*100;
+            }
             current_loc.lng = packet.lon * T7;
             current_loc.lat = packet.lat * T7;
-            current_loc.alt = packet.alt * 10;
+            current_loc.alt = g_gps->altitude - gps_base_alt;
+            if (!home_is_set) {
+                init_home();
+            }
             break;
         }
 #if HIL_MODE == HIL_MODE_ATTITUDE
