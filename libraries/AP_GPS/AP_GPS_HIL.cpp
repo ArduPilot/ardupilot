@@ -45,6 +45,7 @@ void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _al
     speed_3d 		= _speed_3d*1.0e2;
     num_sats 		= _num_sats;
     fix 			= true;
+	new_data		= true;
 	_updated		= true;
 }
 
