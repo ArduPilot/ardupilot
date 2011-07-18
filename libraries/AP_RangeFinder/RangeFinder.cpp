@@ -88,9 +88,9 @@ int RangeFinder::read()
 
 	// slew rate
 	if(raw_value > distance){
-		temp_dist = min(distance + 10, raw_value);
+		temp_dist = min(distance + 20, raw_value);
 	}else{
-		temp_dist = max(distance - 10, raw_value);
+		temp_dist = max(distance - 20, raw_value);
 	}
 
 	if(_num_averages > 0){
