@@ -10,6 +10,8 @@
 
 #include "AP_OpticalFlow.h"
 
+#define FORTYFIVE_DEGREES 0.78539816
+
 AP_OpticalFlow::AP_OpticalFlow() : raw_dx(0),raw_dy(0),x(0),y(0),surface_quality(0),dx(0),dy(0),last_update(0),field_of_view(1),scaler(0),num_pixels(0)
 {
 }
@@ -85,21 +87,24 @@ AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
 	float sin_yaw = sin(yaw);
     int i;
     
-    // calculate expected x,y diff due to roll and pitch change
-    exp_change_x = diff_roll * radians_to_pixels;
-    exp_change_y = diff_pitch * radians_to_pixels;
-        
-	// real estimated raw change from mouse
-	change_x = dx - exp_change_x;
-	change_y = dy - exp_change_y;
+	// only update position if surface quality is good and angle is not over 45 degrees
+	if( surface_quality >= 20 && fabs(roll) <= FORTYFIVE_DEGREES && fabs(pitch) <= FORTYFIVE_DEGREES ) {
+		// calculate expected x,y diff due to roll and pitch change
+		exp_change_x = diff_roll * radians_to_pixels;
+		exp_change_y = diff_pitch * radians_to_pixels;
+			
+		// real estimated raw change from mouse
+		change_x = dx - exp_change_x;
+		change_y = dy - exp_change_y;
 
-	// convert raw change to horizontal movement in cm
-	x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
-	y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
-	
-	// use yaw to convert x and y into lon and lat
-    lat += -y_cm * cos_yaw + x_cm * sin_yaw;
-	lng += x_cm * cos_yaw + y_cm * sin_yaw;
+		// convert raw change to horizontal movement in cm
+		x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
+		y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
+		
+		// use yaw to convert x and y into lon and lat
+		lat += y_cm * cos_yaw - x_cm * sin_yaw;
+		lng += x_cm * cos_yaw + y_cm * sin_yaw;
+	}
 	
     // capture roll and pitch for next iteration
     _last_roll = roll;
