@@ -508,7 +508,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			//*/
 
 			//
+#if HIL_MODE != HIL_MODE_ATTITUDE
 			Log_Write_Raw();
+#endif
 		}
 
 		if(Serial.available() > 0){
