@@ -3,6 +3,8 @@
 	Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
 */
 
+// Libraries
+#include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>
 
 #define HEAD_BYTE1 0xA3
