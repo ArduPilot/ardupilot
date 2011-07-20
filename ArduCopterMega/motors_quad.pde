@@ -52,16 +52,25 @@ static void output_motors_armed()
 	motor_out[CH_3]		-=  g.rc_4.pwm_out; 	// CW
 	motor_out[CH_4] 	-=  g.rc_4.pwm_out; 	// CW
 
+    /* We need to clip motor output at out_max. When cipping a motors
+     * output we also need to compensate for the instability by
+     * lowering the opposite motor by the same proportion. This
+     * ensures that we retain control when one or more of the motors
+     * is at its maximum output
+     */
+    for (int i=CH_1; i<=CH_4; i++) {
+        if (motor_out[i] > out_max && motor_out[i] > out_min) {
+            /* note that i^1 is the 'opposite' motor for a quad */
+            motor_out[i^1] *= ((float)out_max - out_min) / (motor_out[i] - out_min);
+            motor_out[i] = out_max;
+        }
+    }
+
 	// limit output so motors don't stop
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);
 	motor_out[CH_2]		= max(motor_out[CH_2], 	out_min);
 	motor_out[CH_3]		= max(motor_out[CH_3], 	out_min);
 	motor_out[CH_4] 	= max(motor_out[CH_4], 	out_min);
-
-	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
-	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
-	motor_out[CH_3]		= min(motor_out[CH_3], 	out_max);
-	motor_out[CH_4] 	= min(motor_out[CH_4], 	out_max);
 
 	#if CUT_MOTORS == ENABLED
 		// Send commands to motors
