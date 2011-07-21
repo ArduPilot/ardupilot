@@ -61,6 +61,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
+#include <AP_OpticalFlow.h> // Optical Flow library
 
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
@@ -131,6 +132,9 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
     AP_Compass_HMC5883L      compass(Parameters::k_param_compass);
   #else
     #error Unrecognised MAG_PROTOCOL setting.
+  #endif
+  #ifdef OPTFLOW_ENABLED
+    AP_OpticalFlow_ADNS3080 optflow;
   #endif
 
 	// real GPS selection
@@ -452,9 +456,11 @@ static struct 	Location next_WP;					// next waypoint
 static struct 	Location target_WP;					// where do we want to you towards?
 static struct 	Location simple_WP;					//
 static struct 	Location next_command;				// command preloaded
-static struct  Location guided_WP;					// guided mode waypoint
+static struct   Location guided_WP;					// guided mode waypoint
 static long 	target_altitude;					// used for
 static boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
+static struct	Location optflow_offset;			// optical flow base position
+static boolean  new_location;						// flag to tell us if location has been updated 
 
 
 // IMU variables
@@ -1003,7 +1009,88 @@ static void update_GPS(void)
 	}
 }
 
-static void update_current_flight_mode(void)
+#ifdef OPTFLOW_ENABLED
+// blend gps and optical flow location
+void update_location(void)
+{
+    //static int count = 0;
+    // get GPS position
+	if(GPS_enabled){
+		update_GPS();
+	}
+
+	if( g.optflow_enabled ) {
+	    int32_t	temp_lat, temp_lng, diff_lat, diff_lng;
+		
+		// get optical flow position
+		optflow.read();
+		optflow.get_position(dcm.roll, dcm.pitch, dcm.yaw, current_loc.alt-home.alt);
+		
+		// write to log
+		if (g.log_bitmask & MASK_LOG_OPTFLOW){
+			Log_Write_Optflow();
+		}
+		
+		temp_lat = optflow_offset.lat + optflow.lat;
+		temp_lng = optflow_offset.lng + optflow.lng;
+		
+		// if we have good GPS values, don't let optical flow position stray too far
+		if( GPS_enabled && g_gps->fix ) {
+			// ensure current location is within 3m of gps location
+			diff_lat = g_gps->latitude - temp_lat;
+			diff_lng = g_gps->longitude - temp_lng;
+			if( diff_lat > 300 ) {
+				optflow_offset.lat += diff_lat - 300;
+				//Serial.println("lat inc!");
+			}
+			if( diff_lat < -300 ) {
+				optflow_offset.lat += diff_lat + 300;
+				//Serial.println("lat dec!");
+			}
+			if( diff_lng > 300 ) {
+				optflow_offset.lng += diff_lng - 300;
+				//Serial.println("lng inc!");
+			}
+			if( diff_lng < -300 ) {
+				optflow_offset.lng += diff_lng + 300;
+				//Serial.println("lng dec!");
+			}
+		}
+		
+		// update the current position
+		current_loc.lat = optflow_offset.lat + optflow.lat;
+		current_loc.lng = optflow_offset.lng + optflow.lng;
+		
+		/*count++;
+		if( count >= 20 ) {
+		    count = 0;
+			Serial.println();
+			Serial.print("lat:");
+			Serial.print(current_loc.lat);
+			Serial.print("\tlng:");
+			Serial.print(current_loc.lng);
+			Serial.print("\tr:");
+			Serial.print(nav_roll);
+			Serial.print("\tp:");
+			Serial.print(nav_pitch);
+			Serial.println();
+		}*/
+		
+		// indicate we have a new position for nav functions
+		new_location = true;
+
+	}else{
+	    // get current position from gps
+		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
+		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
+		
+		new_location = g_gps->new_data;
+	}
+}
+#endif
+
+
+void update_current_flight_mode(void)
 {
 	if(control_mode == AUTO){
 

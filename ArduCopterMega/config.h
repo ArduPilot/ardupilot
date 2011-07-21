@@ -200,6 +200,21 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
+//  OPTICAL_FLOW
+#if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
+  #define OPTFLOW_ENABLED
+#endif
+
+#ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
+# define OPTFLOW				DISABLED
+#endif
+#ifndef OPTFLOW_ORIENTATION
+# define OPTFLOW_ORIENTATION 	AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
+#endif
+#ifndef OPTFLOW_FOV
+# define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_12_FOV
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////

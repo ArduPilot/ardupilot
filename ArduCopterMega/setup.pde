@@ -16,6 +16,9 @@ static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
+#ifdef OPTFLOW_ENABLED
+static int8_t	setup_optflow			(uint8_t argc, const Menu::arg *argv);
+#endif
 static int8_t	setup_show				(uint8_t argc, const Menu::arg *argv);
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -40,6 +43,9 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"compass",			setup_compass},
 //	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
+#ifdef OPTFLOW_ENABLED
+	{"optflow",			setup_optflow},
+#endif
 #if FRAME_CONFIG == HELI_FRAME
 	{"heli",			setup_heli},
 	{"gyro",			setup_gyro},
@@ -93,6 +99,9 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_flight_modes();
 	report_imu();
 	report_compass();
+#ifdef OPTFLOW_ENABLED
+	report_optflow();
+#endif
 #if FRAME_CONFIG == HELI_FRAME
 	report_heli();
 	report_gyro();
@@ -704,6 +713,32 @@ setup_mag_offset(uint8_t argc, const Menu::arg *argv)
 }
 */
 
+#ifdef OPTFLOW_ENABLED
+static int8_t
+setup_optflow(uint8_t argc, const Menu::arg *argv)
+{
+	if (!strcmp_P(argv[1].str, PSTR("on"))) {
+		g.optflow_enabled = true;
+		init_optflow();
+
+	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
+		g.optflow_enabled = false;
+
+	//} else if(argv[1].i > 10){
+	//	g.optflow_fov.set_and_save(argv[1].i);
+	//	optflow.set_field_of_view(g.optflow_fov.get());
+
+	}else{
+		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
+		report_optflow();
+		return 0;
+	}
+
+	g.optflow_enabled.save();
+	report_optflow();
+	return 0;
+}
+#endif
 
 /***************************************************************************/
 // CLI reports
@@ -893,6 +928,22 @@ static void report_flight_modes()
 	}
 	print_blanks(2);
 }
+
+#ifdef OPTFLOW_ENABLED
+void report_optflow()
+{
+	Serial.printf_P(PSTR("OptFlow\n"));
+	print_divider();
+
+	print_enabled(g.optflow_enabled);
+
+	// field of view
+	//Serial.printf_P(PSTR("FOV: %4.0f\n"),
+	//						degrees(g.optflow_fov));
+
+	print_blanks(2);
+}
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
 static void report_heli()

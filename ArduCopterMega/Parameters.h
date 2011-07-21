@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 104;
+	static const uint16_t k_format_version = 105;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -75,6 +75,7 @@ public:
 	k_param_sonar,
 	k_param_frame_orientation,
 	k_param_top_bottom_ratio,
+	k_param_optflow_enabled,
 
 	//
 	// 160: Navigation parameters
@@ -233,6 +234,7 @@ public:
 	AP_Int8		esc_calibrate;
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
+    AP_Int8		optflow_enabled;
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -288,6 +290,7 @@ public:
 	battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
 	pack_capacity			(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
 	compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
+	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
 
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
 	waypoint_total			(0,							k_param_waypoint_total,					PSTR("WP_TOTAL")),

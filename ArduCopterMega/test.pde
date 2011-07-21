@@ -24,6 +24,9 @@ static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
+#ifdef OPTFLOW_ENABLED
+static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
+#endif
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -71,6 +74,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	{"sonar",		test_sonar},
 	{"compass",		test_mag},
+#ifdef OPTFLOW_ENABLED
+	{"optflow",		test_optflow},
+#endif
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
@@ -971,6 +977,37 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
 	return (0);
 }
+
+#ifdef OPTFLOW_ENABLED
+static int8_t
+test_optflow(uint8_t argc, const Menu::arg *argv)
+{
+	if(g.optflow_enabled) {
+		Serial.printf_P(PSTR("man id: %d\t"),optflow.read_register(ADNS3080_PRODUCT_ID));
+		print_hit_enter();
+
+		while(1){
+			delay(200);
+			optflow.read();
+			Log_Write_Optflow();
+			Serial.printf_P(PSTR("x/dx: %d/%d\t y/dy %d/%d\t squal:%d\n"),
+						optflow.x,
+						optflow.dx,
+						optflow.y,
+						optflow.dy,
+						optflow.surface_quality);
+
+			if(Serial.available() > 0){
+				return (0);
+			}
+		}
+	} else {
+		Serial.printf_P(PSTR("OptFlow: "));
+		print_enabled(false);
+		return (0);
+	}
+}
+#endif
 
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)

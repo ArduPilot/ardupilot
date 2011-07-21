@@ -71,6 +71,7 @@ print_log_menu(void)
 		if (g.log_bitmask & MASK_LOG_CMD)			Serial.printf_P(PSTR(" CMD"));
 		if (g.log_bitmask & MASK_LOG_CURRENT)		Serial.printf_P(PSTR(" CURRENT"));
 		if (g.log_bitmask & MASK_LOG_MOTORS)		Serial.printf_P(PSTR(" MOTORS"));
+		if (g.log_bitmask & MASK_LOG_OPTFLOW)		Serial.printf_P(PSTR(" OPTFLOW"));
 	}
 
 	Serial.println();
@@ -181,6 +182,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(CMD);
 		TARG(CURRENT);
 		TARG(MOTORS);
+		TARG(OPTFLOW);
 		#undef TARG
 	}
 
@@ -492,6 +494,34 @@ static void Log_Read_Motors()
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt());
+}
+
+#ifdef OPTFLOW_ENABLED
+// Write an optical flow packet. Total length : 18 bytes
+static void Log_Write_Optflow()
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_OPTFLOW_MSG);
+	DataFlash.WriteInt((int)optflow.dx);
+	DataFlash.WriteInt((int)optflow.dy);
+	DataFlash.WriteInt((int)optflow.surface_quality);
+	DataFlash.WriteLong(optflow.lat);//optflow_offset.lat + optflow.lat);
+	DataFlash.WriteLong(optflow.lng);//optflow_offset.lng + optflow.lng);
+	DataFlash.WriteByte(END_BYTE);
+}
+#endif
+
+// Read an attitude packet
+static void Log_Read_Optflow()
+{
+	Serial.printf_P(PSTR("OF, %d, %d, %d, %4.7f, %4.7f\n"),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+			(float)DataFlash.ReadLong(),// / t7,
+			(float)DataFlash.ReadLong() // / t7
+			);
 }
 
 static void Log_Write_Nav_Tuning()
@@ -820,6 +850,10 @@ static void Log_Read(int start_page, int end_page)
 						Log_Read_Motors();
 						break;
 
+					case LOG_OPTFLOW_MSG:
+						Log_Read_Optflow();
+						break;
+
 					case LOG_GPS_MSG:
 						Log_Read_GPS();
 						break;
@@ -842,6 +876,9 @@ static void Log_Write_Raw() {}
 static void Log_Write_GPS() {}
 static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
+#ifdef OPTFLOW_ENABLED
+static void Log_Write_Optflow() {}
+#endif
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Motors() {}
