@@ -181,7 +181,7 @@ static void calc_altitude_error()
 static void calc_altitude_smoothing_error()
 {
 	// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
-	target_altitude = next_WP.alt - ((wp_distance * (next_WP.alt - prev_WP.alt)) / (wp_totalDistance - g.waypoint_radius));
+	target_altitude = next_WP.alt - ((float)(wp_distance * (next_WP.alt - prev_WP.alt)) / (float)(wp_totalDistance - g.waypoint_radius));
 
 	// stay within a certain range
 	if(prev_WP.alt > next_WP.alt){
@@ -212,7 +212,7 @@ static void update_crosstrack(void)
 	// Crosstrack Error
 	// ----------------
 	if (cross_track_test() < 9000) {	 // If we are too far off or too close we don't do track following
-		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
+		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;	 // Meters we are off track line
 		long xtrack = g.pid_crosstrack.get_pid(crosstrack_error, dTnav, 1.0) * 100;
 		nav_bearing += constrain(xtrack, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 		nav_bearing = wrap_360(nav_bearing);
