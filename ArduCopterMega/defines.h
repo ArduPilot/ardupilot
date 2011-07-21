@@ -261,6 +261,7 @@
 #define LOG_CURRENT_MSG 		0x09
 #define LOG_STARTUP_MSG 		0x0A
 #define LOG_MOTORS_MSG 			0x0B
+#define LOG_OPTFLOW_MSG 		0x0C
 #define LOG_INDEX_MSG			0xF0
 #define MAX_NUM_LOGS			50
 
@@ -275,6 +276,7 @@
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CURRENT		(1<<9)
 #define MASK_LOG_MOTORS			(1<<10)
+#define MASK_LOG_OPTFLOW		(1<<11)
 
 // Waypoint Modes
 // ----------------

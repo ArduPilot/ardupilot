@@ -215,6 +215,13 @@ static void init_ardupilot()
 	}
 	#endif
 
+#ifdef OPTFLOW_ENABLED
+	// init the optical flow sensor
+	if(g.optflow_enabled) {
+		init_optflow();
+	}
+#endif
+	
 	// Logging:
 	// --------
 	// DataFlash log initialization
@@ -459,6 +466,15 @@ init_compass()
 	Vector3f junkvector = compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
 
+#ifdef OPTFLOW_ENABLED
+static void
+init_optflow()
+{
+	bool junkbool = optflow.init();
+	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
+	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
+}
+#endif
 
 /* This function gets the current value of the heap and stack pointers.
 * The stack pointer starts at the top of RAM and grows downwards. The heap pointer
