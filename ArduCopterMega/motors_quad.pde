@@ -59,9 +59,9 @@ static void output_motors_armed()
      * is at its maximum output
      */
     for (int i=CH_1; i<=CH_4; i++) {
-        if (motor_out[i] > out_max && motor_out[i] > out_min) {
-            /* note that i^1 is the 'opposite' motor for a quad */
-            motor_out[i^1] *= ((float)out_max - out_min) / (motor_out[i] - out_min);
+        if (motor_out[i] > out_max) {
+            // note that i^1 is the opposite motor
+            motor_out[i^1] -= motor_out[i] - out_max;
             motor_out[i] = out_max;
         }
     }
