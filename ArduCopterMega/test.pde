@@ -743,6 +743,9 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 		#elif CHANNEL_6_TUNING == CH6_PMAX
 			Serial.printf_P(PSTR("Y6: %d\n"), (g.rc_6.control_in * 2));
 
+		#elif CHANNEL_6_TUNING == CH6_RELAY
+			Serial.printf_P(PSTR(" %d\n"), (g.rc_6.control_in ));
+
 		#endif
 
 		if(Serial.available() > 0){

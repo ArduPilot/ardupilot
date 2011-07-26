@@ -18,15 +18,15 @@
 	HELI_FRAME
 	*/
 
-//#define FRAME_ORIENTATION X_FRAME
+//#define FRAME_ORIENTATION PLUS_FRAME
 	/*
 	PLUS_FRAME
 	X_FRAME
-    V_FRAME
+        V_FRAME
 	*/
 
 
-//#define CHANNEL_6_TUNING CH6_NONE
+//#define CHANNEL_6_TUNING  CH6_RELAY
 	/*
 	CH6_NONE
 	CH6_STABILIZE_KP
@@ -41,6 +41,7 @@
 	CH6_YAW_RATE_KI
 	CH6_TOP_BOTTOM_RATIO
 	CH6_PMAX
+        CH6_RELAY
 	*/
 
 // experimental!!

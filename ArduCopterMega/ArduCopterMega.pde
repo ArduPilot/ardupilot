@@ -1514,7 +1514,14 @@ static void tuning(){
 	#elif CHANNEL_6_TUNING == CH6_PMAX
 		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
 
+        // Simple relay control
+        #elif CHANNEL_6_TUNING == CH6_RELAY
+              if(g.rc_6.control_in <= 600) relay_on(); 
+              if(g.rc_6.control_in >= 400) relay_off();
+
 	#endif
+
+
 }
 
 static void update_nav_wp()

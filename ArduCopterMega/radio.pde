@@ -55,6 +55,9 @@ static void init_rc_in()
 
 	#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
 		g.rc_6.set_range(800,1000); // .8 to 1
+
+/*        #elif CHANNEL_6_TUNING == CH6_RELAY
+                g.rc_6.set_range(0,1000);   // 0 to 1  */
 	#endif
 }
 

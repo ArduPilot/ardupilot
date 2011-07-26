@@ -147,6 +147,7 @@
 // Extras
 #define CH6_TOP_BOTTOM_RATIO 11
 #define CH6_PMAX 12
+#define CH6_RELAY 13
 
 
 // nav byte mask
