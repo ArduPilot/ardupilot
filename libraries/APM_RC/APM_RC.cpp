@@ -206,12 +206,12 @@ bool APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
 			sum++;
 		}
 	}
-		if (sum == 0) {
-			return 0;
-		} else {
-			return 1;
-		}
 	radio_status = 1;
+	if (sum == 0) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 void APM_RC_Class::clearOverride(void)
