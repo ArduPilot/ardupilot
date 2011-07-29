@@ -18,17 +18,30 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 
 	// Compute derivative component if time has elapsed
 	if ((fabs(_kd) > 0) && (dt > 0)) {
-		float derivative = (error - _last_error) / delta_time;
+		float derivative;
+		// add in
+		_filter[_filter_index] = (error - _last_error) / delta_time;
+		_filter_index++;
+
+		if(_filter_index >= PID_FILTER_SIZE)
+			_filter_index = 0;
+
+		// sum our filter
+		for(uint8_t i = 0; i < PID_FILTER_SIZE; i++){
+			derivative += _filter[i];
+		}
+
+		// grab result
+		derivative /= PID_FILTER_SIZE;
 
 		// discrete low pass filter, cuts out the
 		// high frequency noise that can drive the controller crazy
-		float RC = 1/(2*M_PI*_fCut);
-		derivative = _last_derivative +
-		        (delta_time / (RC + delta_time)) * (derivative - _last_derivative);
+		//float RC = 1/(2*M_PI*_fCut);
+		//derivative = _last_derivative + (delta_time / (RC + delta_time)) * (derivative - _last_derivative);
 
 		// update state
 		_last_error 		= error;
-		_last_derivative    = derivative;
+		//_last_derivative    = derivative;
 
 		// add in derivative component
 		output 				+= _kd * derivative;
@@ -83,7 +96,7 @@ PID::reset_I()
 {
 	_integrator = 0;
 	_last_error = 0;
-	_last_derivative = 0;
+	//_last_derivative = 0;
 }
 
 void
