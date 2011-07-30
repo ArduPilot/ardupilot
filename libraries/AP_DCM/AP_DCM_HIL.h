@@ -26,7 +26,7 @@ public:
 	Vector3f	get_accel(void) { return _accel_vector; }
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
-	
+
 	void		set_centripetal(bool b) {}
 	void		set_compass(Compass *compass) {}
 
@@ -47,11 +47,25 @@ public:
 	uint8_t 	renorm_sqrt_count;
 	uint8_t 	renorm_blowup_count;
 
+
+	float	kp_roll_pitch() 		{ return 0; }
+	void	kp_roll_pitch(float v) 	{  }
+
+	float	ki_roll_pitch() 		{ return 0; }
+	void	ki_roll_pitch(float v) 	{  }
+
+	float	kp_yaw() 				{ return 0; }
+	void	kp_yaw(float v) 		{  }
+
+	float	ki_yaw() 				{ return 0; }
+	void	ki_yaw(float v) 		{  }
+
+
 	void 		setHil(float roll, float pitch, float yaw,
 					float rollRate, float pitchRate, float yawRate);
 private:
 	// Methods
-		Matrix3f	_dcm_matrix;
+	Matrix3f	_dcm_matrix;
 	Vector3f 	_omega_integ_corr;
 	Vector3f 	_accel_vector;
 };
