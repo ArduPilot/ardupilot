@@ -175,6 +175,9 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_GPS_HIL              g_gps_driver(NULL);
 	AP_Compass_HIL          compass; // never used
 	AP_IMU_Shim             imu; // never used
+	#ifdef OPTFLOW_ENABLED
+		AP_OpticalFlow_ADNS3080 optflow;
+	#endif
     static int32_t          gps_base_alt;
 #else
 	#error Unrecognised HIL_MODE setting.
