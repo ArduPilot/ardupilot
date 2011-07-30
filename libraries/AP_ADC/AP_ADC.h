@@ -22,6 +22,7 @@ class AP_ADC
 	AP_ADC() {};  // Constructor
 	virtual void Init() {};
 	virtual int Ch(unsigned char ch_num) = 0;
+	virtual int Ch_raw(unsigned char ch_num) = 0;
   private:
 };
 

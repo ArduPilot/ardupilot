@@ -12,12 +12,12 @@
 	version 2.1 of the License, or (at your option) any later version.
 */
 
-const uint8_t AP_ADC_HIL::sensors[6] = {1,2,0,4,5,6};		
+const uint8_t AP_ADC_HIL::sensors[6] = {1,2,0,4,5,6};
 const int8_t AP_ADC_HIL::sensorSign[6]	= { 1, -1, -1,-1,  1,  1};
 const float AP_ADC_HIL::gyroBias[3]	= {1665,1665,1665};
 const float AP_ADC_HIL::accelBias[3]	= {2025,2025,2025};
 // gyroScale = 1/[GyroGain*pi/180]   GyroGains (0.4,0.41,0.41)
-const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746}; 
+const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746};
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
 
 AP_ADC_HIL::AP_ADC_HIL()
@@ -42,7 +42,12 @@ void AP_ADC_HIL::Init(void)
 }
 
 // Read one channel value
-int AP_ADC_HIL::Ch(unsigned char ch_num)         
+int AP_ADC_HIL::Ch(unsigned char ch_num)
+{
+  return adcValue[ch_num];
+}
+// Read one channel value
+int AP_ADC_HIL::Ch_raw(unsigned char ch_num)
 {
   return adcValue[ch_num];
 }
