@@ -119,7 +119,8 @@
 #define GUIDED 5			// AUTO control
 #define LOITER 6			// Hold a single location
 #define RTL 7				// AUTO control
-#define NUM_MODES 8
+#define CIRCLE 8				// AUTO control
+#define NUM_MODES 9
 
 // YAW debug
 // ---------
@@ -275,9 +276,10 @@
 #define MASK_LOG_MODE			(1<<6)
 #define MASK_LOG_RAW			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
-#define MASK_LOG_CURRENT		(1<<9)
+#define MASK_LOG_CUR			(1<<9)
 #define MASK_LOG_MOTORS			(1<<10)
 #define MASK_LOG_OPTFLOW		(1<<11)
+#define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
 // ----------------

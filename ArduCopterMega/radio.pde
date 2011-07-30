@@ -78,6 +78,10 @@ static void init_rc_out()
     OCR4B = 0xFFFF;     // PH4, OUT6
     OCR4C = 0xFFFF;     // PH5, OUT5
 
+	// this is the camera pitch5 and roll6
+	APM_RC.OutputCh(CH_5, 1500);
+	APM_RC.OutputCh(CH_6, 1500);
+
 	// don't fuss if we are calibrating
 	if(g.esc_calibrate == 1)
 		return;

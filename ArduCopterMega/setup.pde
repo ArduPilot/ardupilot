@@ -229,7 +229,12 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_esc(uint8_t argc, const Menu::arg *argv)
 {
-	Serial.printf_P(PSTR("\nESC Calibration:\n-1 Unplug USB and battery\n-2 Move CLI/FLY switch to FLY mode\n-3 Move throttle to max, connect battery\n-4 After two long beeps, throttle to 0, then test\n\n Press Enter to cancel.\n"));
+	Serial.printf_P(PSTR("\nESC Calibration:\n"
+						"-1 Unplug USB and battery\n"
+						"-2 Move CLI/FLY switch to FLY mode\n"
+						"-3 Move throttle to max, connect battery\n"
+						"-4 After two long beeps, throttle to 0, then test\n\n"
+						" Press Enter to cancel.\n"));
 
 
 	g.esc_calibrate.set_and_save(1);
@@ -739,6 +744,32 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 	return 0;
 }
 #endif
+
+
+
+void
+default_log_bitmask()
+{
+	// convenience macro for testing LOG_* and setting LOGBIT_*
+	#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
+
+	g.log_bitmask =
+		LOGBIT(ATTITUDE_FAST)	|
+		LOGBIT(ATTITUDE_MED)	|
+		LOGBIT(GPS)				|
+		LOGBIT(PM)				|
+		LOGBIT(CTUN)			|
+		LOGBIT(NTUN)			|
+		LOGBIT(MODE)			|
+		LOGBIT(RAW)				|
+		LOGBIT(CMD)				|
+		LOGBIT(CUR)				|
+		LOGBIT(MOTORS)			|
+		LOGBIT(OPTFLOW);
+	#undef LOGBIT
+
+	g.log_bitmask.save();
+}
 
 /***************************************************************************/
 // CLI reports

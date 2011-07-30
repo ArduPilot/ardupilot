@@ -95,22 +95,25 @@ static void clear_leds()
 static void update_motor_leds(void)
 {
 	// blink rear
-	static bool blink;
+	static bool blink = false;
 
 	if (blink){
-		blink = false;
 		digitalWrite(RE_LED, HIGH);
 		digitalWrite(FR_LED, HIGH);
 		digitalWrite(RI_LED, LOW);
 		digitalWrite(LE_LED, LOW);
-
 	}else{
-		blink = true;
 		digitalWrite(RE_LED, LOW);
 		digitalWrite(FR_LED, LOW);
 		digitalWrite(RI_LED, HIGH);
 		digitalWrite(LE_LED, HIGH);
 	}
+
+	blink = !blink;
+
+	// the variable low_batt is here to let people know the voltage is low or the pack capacity is finished
+	// I don't know what folks want here.
+	// low_batt
 }
 #endif
 

@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.37 Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.38 Beta", main_menu_commands);
 
 #endif // CLI_ENABLED
 
@@ -146,14 +146,13 @@ static void init_ardupilot()
 		}
 
 	}else{
-		// unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
-
-	  //  Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
-	  //  Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
 	}
 
+	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS) {
+		default_log_bitmask();
+	}
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
@@ -168,10 +167,7 @@ static void init_ardupilot()
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
-
-	#if CAMERA_STABILIZER == ENABLED
-		init_camera();
-	#endif
+	init_camera();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		adc.Init();	 		// APM ADC library initialization
@@ -179,7 +175,6 @@ static void init_ardupilot()
 	#endif
 
 	// Do GPS init
-	//g_gps = &GPS;
 	g_gps = &g_gps_driver;
 	g_gps->init();			// GPS Initialization
 
@@ -209,19 +204,13 @@ static void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-	if(g.sonar_enabled){
-		sonar.init(SONAR_PORT, &adc);
-	}
-	#endif
-
 #ifdef OPTFLOW_ENABLED
 	// init the optical flow sensor
 	if(g.optflow_enabled) {
 		init_optflow();
 	}
 #endif
-	
+
 	// Logging:
 	// --------
 	// DataFlash log initialization
@@ -260,52 +249,10 @@ static void init_ardupilot()
 		start_new_log();
 	}
 
-	// All of the Gyro calibrations
-	// ----------------------------
-	startup_ground();
-
-	// set the correct flight mode
-	// ---------------------------
-	reset_control_switch();
-
-	delay(100);
-}
-
-//********************************************************************************
-//This function does all the calibrations, etc. that we need during a ground start
-//********************************************************************************
-static void startup_ground(void)
-{
-	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
-
-
-	#if(GROUND_START_DELAY > 0)
+	//#if(GROUND_START_DELAY > 0)
 		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
-		delay(GROUND_START_DELAY * 1000);
-	#endif
-
-	// Output waypoints for confirmation
-	// --------------------------------
-	for(int i = 1; i < g.waypoint_total + 1; i++) {
-		gcs.send_message(MSG_COMMAND_LIST, i);
-	}
-
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-		// Warm up and read Gyro offsets
-		// -----------------------------
-		imu.init_gyro();
-		report_imu();
-	#endif
-
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-		// read Baro pressure at ground
-		//-----------------------------
-		init_barometer();
-	#endif
-
-	// initialize commands
-	// -------------------
-	init_commands();
+	//	delay(GROUND_START_DELAY * 1000);
+	//#endif
 
     GPS_enabled = false;
 
@@ -325,33 +272,77 @@ static void startup_ground(void)
 	}
 	//*/
 
-	// setup DCM for copters:
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	dcm.kp_roll_pitch(0.12);		// higher for quads
-	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate
-#endif
-	//dcm.kp_yaw(0.02);
-	//dcm.ki_yaw(0);
-
-	clear_leds();
-
-	// print the GPS status
-	report_gps();
-
-	// lenthen the idle timeout for gps Auto_detect
+	// lengthen the idle timeout for gps Auto_detect
+	// ---------------------------------------------
 	g_gps->idleTimeout = 20000;
 
-	// used to limit the input of error for loiter
-	loiter_error_max = (float)g.pitch_max.get() / (float)g.pid_nav_lat.kP();
-	//Serial.printf_P(PSTR("\nloiter: %d\n"), loiter_error_max);
+	// print the GPS status
+	// --------------------
+	report_gps();
 
+	// used to limit the input of error for loiter
+	// -------------------------------------------
+	loiter_error_max = (float)g.pitch_max.get() / (float)g.pid_nav_lat.kP();
+
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+	// read Baro pressure at ground
+	//-----------------------------
+	init_barometer();
+	#endif
+
+	// initialize commands
+	// -------------------
+	init_commands();
+
+	// Output waypoints for confirmation
+	// XXX do we need this?
+	// --------------------------------
+	//for(int i = 1; i < g.waypoint_total + 1; i++) {
+	//	gcs.send_message(MSG_COMMAND_LIST, i);
+	//}
+
+	// set the correct flight mode
+	// ---------------------------
+	reset_control_switch();
+
+	//delay(100);
+
+	//Serial.printf_P(PSTR("\nloiter: %d\n"), loiter_error_max);
 	Log_Write_Startup();
 
 	SendDebug("\nReady to FLY ");
-	//gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+}
 
-	// output control mode to the ground station
-	gcs.send_message(MSG_HEARTBEAT);
+//********************************************************************************
+//This function does all the calibrations, etc. that we need during a ground start
+//********************************************************************************
+static void startup_ground(void)
+{
+	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		// Warm up and read Gyro offsets
+		// -----------------------------
+		imu.init_gyro();
+		report_imu();
+	#endif
+
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		// read Baro pressure at ground -
+		// this resets Baro for more accuracy
+		//-----------------------------------
+		init_barometer();
+	#endif
+
+	// setup DCM for copters:
+#if HIL_MODE != HIL_MODE_ATTITUDE
+	dcm.kp_roll_pitch(0.12);		// higher for quads
+	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate for 200 hz loop
+#endif
+
+	// reset the leds
+	// ---------------------------
+	clear_leds();
 }
 
 static void set_mode(byte mode)
@@ -360,6 +351,14 @@ static void set_mode(byte mode)
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
+
+	// XXX
+	Serial.printf_P(PSTR("\nRAM: %lu\n"), freeRAM());
+
+	// reset the Nav_WP I term
+	g.pid_nav_wp.reset_I();
+
+
 	old_control_mode = control_mode;
 
 	control_mode = mode;
@@ -381,6 +380,7 @@ static void set_mode(byte mode)
 	switch(control_mode)
 	{
 		case ACRO:
+			g.pid_throttle.reset_I();
 			break;
 
 		case SIMPLE:
@@ -399,6 +399,7 @@ static void set_mode(byte mode)
 			init_auto();
 			break;
 
+		case CIRCLE:
 		case LOITER:
 			init_throttle_cruise();
 			do_loiter_at_location();
@@ -502,6 +503,7 @@ init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > 150)){
+		g.pid_throttle.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}
 }

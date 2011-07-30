@@ -202,7 +202,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
-  #define OPTFLOW_ENABLED
+  //#define OPTFLOW_ENABLED
 #endif
 
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
@@ -299,13 +299,13 @@
 // Roll Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.5
+# define STABILIZE_ROLL_P 		4.2
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.025
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	.5		// degrees
+# define STABILIZE_ROLL_IMAX 	15		// degrees
 #endif
 
 #ifndef RATE_ROLL_P
@@ -315,7 +315,7 @@
 # define RATE_ROLL_I         0.0
 #endif
 #ifndef RATE_ROLL_IMAX
-# define RATE_ROLL_IMAX	 	15			// degrees
+# define RATE_ROLL_IMAX	 	5			// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -328,7 +328,7 @@
 # define STABILIZE_PITCH_I		0.025
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	.5		// degrees
+# define STABILIZE_PITCH_IMAX	15		// degrees
 #endif
 
 #ifndef RATE_PITCH_P
@@ -338,7 +338,7 @@
 # define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_IMAX
-# define RATE_PITCH_IMAX   	15			// degrees
+# define RATE_PITCH_IMAX   	5			// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -378,31 +378,31 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			1.3			//
+# define NAV_LOITER_P			1.4			//
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.01			//
+# define NAV_LOITER_I			0.015		//
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			0.4			//
+# define NAV_LOITER_D			1.4			//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		10			// degrees°
+# define NAV_LOITER_IMAX		12			// degrees°
 #endif
 
 
 
 #ifndef NAV_WP_P
-# define NAV_WP_P				3.0			// for 4.5 ms error = 13.5 pitch
+# define NAV_WP_P				2.2			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_WP_I
-# define NAV_WP_I				0.5			// this is a fast ramp up
+# define NAV_WP_I				0.06		// this
 #endif
 #ifndef NAV_WP_D
-# define NAV_WP_D				.3			//
+# define NAV_WP_D				.5			//
 #endif
 #ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			40			// degrees
+# define NAV_WP_IMAX			20			// degrees
 #endif
 
 
@@ -414,13 +414,13 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.3		// trying a lower val
+# define THROTTLE_P		0.35		// trying a lower val
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.04		//with 4m error, 12.5s windup
+# define THROTTLE_I		0.01		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_D
-# define THROTTLE_D		0.35		// upped with filter
+# define THROTTLE_D		0.4		// upped with filter
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		30
@@ -503,24 +503,18 @@
 #ifndef LOG_CMD
 # define LOG_CMD				ENABLED
 #endif
-#ifndef LOG_CURRENT
-# define LOG_CURRENT			DISABLED
+// current
+#ifndef LOG_CUR
+# define LOG_CUR				DISABLED
 #endif
-
-// calculate the default log_bitmask
-#define LOGBIT(_s)     (LOG_##_s ? MASK_LOG_##_s : 0)
-
-#define DEFAULT_LOG_BITMASK \
-               LOGBIT(ATTITUDE_FAST)   | \
-               LOGBIT(ATTITUDE_MED)    | \
-               LOGBIT(GPS)                             | \
-               LOGBIT(PM)                              | \
-               LOGBIT(CTUN)                    | \
-               LOGBIT(NTUN)                    | \
-               LOGBIT(MODE)                    | \
-               LOGBIT(RAW)                             | \
-               LOGBIT(CMD)                             | \
-               LOGBIT(CURRENT)
+// quad motor PWMs
+#ifndef LOG_MOTORS
+# define LOG_MOTORS				DISABLED
+#endif
+// guess!
+#ifndef LOG_OPTFLOW
+# define LOG_OPTFLOW				DISABLED
+#endif
 
 // if we are using fast, Disable Medium
 //#if LOG_ATTITUDE_FAST == ENABLED
@@ -579,10 +573,6 @@
 #endif
 #ifndef CUT_MOTORS
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
-#endif
-
-#ifndef CAMERA_STABILIZER
-# define CAMERA_STABILIZER		1		// do we cut the motors with no throttle?
 #endif
 
 #ifndef BROKEN_SLIDER

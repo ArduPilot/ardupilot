@@ -319,7 +319,7 @@ static void do_loiter_time()
 	set_next_WP(&current_loc);
 	loiter_time 	= millis();
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
-	Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
+	//Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
 	//*/
 }
 
@@ -335,7 +335,7 @@ static bool verify_takeoff()
 		return false;
 	}
 
-	Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
+	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	if (current_loc.alt > next_WP.alt){
 		//Serial.println("Y");

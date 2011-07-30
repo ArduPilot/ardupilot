@@ -69,7 +69,7 @@ print_log_menu(void)
 		if (g.log_bitmask & MASK_LOG_NTUN)			Serial.printf_P(PSTR(" NTUN"));
 		if (g.log_bitmask & MASK_LOG_RAW)			Serial.printf_P(PSTR(" RAW"));
 		if (g.log_bitmask & MASK_LOG_CMD)			Serial.printf_P(PSTR(" CMD"));
-		if (g.log_bitmask & MASK_LOG_CURRENT)		Serial.printf_P(PSTR(" CURRENT"));
+		if (g.log_bitmask & MASK_LOG_CUR)			Serial.printf_P(PSTR(" CURRENT"));
 		if (g.log_bitmask & MASK_LOG_MOTORS)		Serial.printf_P(PSTR(" MOTORS"));
 		if (g.log_bitmask & MASK_LOG_OPTFLOW)		Serial.printf_P(PSTR(" OPTFLOW"));
 	}
@@ -138,6 +138,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	Serial.printf_P(PSTR("\nErasing log...\n"));
 	for(int j = 1; j < 4096; j++)
 		DataFlash.PageErase(j);
+
 	DataFlash.StartWrite(1);
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -169,6 +170,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
 		bits = ~0;
+		bits = bits ^ MASK_LOG_SET_DEFAULTS;
 	} else {
 		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
@@ -180,7 +182,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(MODE);
 		TARG(RAW);
 		TARG(CMD);
-		TARG(CURRENT);
+		TARG(CUR);
 		TARG(MOTORS);
 		TARG(OPTFLOW);
 		#undef TARG
@@ -188,7 +190,6 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 
 	if (!strcasecmp_P(argv[0].str, PSTR("enable"))) {
 		g.log_bitmask.set_and_save(g.log_bitmask | bits);
-
 	}else{
 		g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
 	}
@@ -251,8 +252,8 @@ static void start_new_log()
 {
 	byte num_existing_logs = get_num_logs();
 
-	int start_pages[50];
-	int end_pages[50];
+	int start_pages[50] = {0,0,0};
+	int end_pages[50]	= {0,0,0};
 
 	if(num_existing_logs > 0){
 		for(int i = 0; i < num_existing_logs; i++) {
@@ -286,7 +287,7 @@ static void start_new_log()
 		DataFlash.StartWrite(start_pages[num_existing_logs - 1]);
 
 	}else{
-		gcs.send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full"));
+		gcs.send_text_P(SEVERITY_LOW,PSTR("Logs full"));
 	}
 }
 
@@ -576,7 +577,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
 
 	// yaw
-	DataFlash.WriteByte(yaw_debug);
+	//DataFlash.WriteByte(yaw_debug);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 	DataFlash.WriteInt((int)(nav_yaw/100));
 	DataFlash.WriteInt((int)yaw_error/100);
@@ -599,7 +600,7 @@ static void Log_Write_Control_Tuning()
 static void Log_Read_Control_Tuning()
 {
 	Serial.printf_P(PSTR(   "CTUN, %d, %d, "
-				"%d, %d, %d, %d, %1.4f, "
+				"%d, %d, %d, %1.4f, "
 				"%d, %d, %d, %d, %d, %d\n"),
 
 				// Control
@@ -607,7 +608,7 @@ static void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),
 
 				// yaw
-				(int)DataFlash.ReadByte(),
+				//(int)DataFlash.ReadByte(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),

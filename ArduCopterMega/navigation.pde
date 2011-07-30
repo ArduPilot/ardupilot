@@ -49,7 +49,7 @@ get_nav_throttle(long error)
 	int throttle;
 
 	// limit error to 4 meters to prevent I term run up
-	error = constrain(error, -400,400);
+	error = constrain(error, -800,800);
 
 	throttle = g.pid_throttle.get_pid(error, delta_ms_medium_loop, 1.0);
 	throttle = g.throttle_cruise + constrain(throttle, -80, 80);
@@ -138,28 +138,31 @@ static void calc_nav_output()
 }
 
 // called after we get GPS read
-static void calc_rate_nav()
+static void calc_rate_nav(int speed)
 {
 	// which direction are we moving?
-	long target_error 	= target_bearing - g_gps->ground_course;
+	long target_error 	= nav_bearing - g_gps->ground_course;
 	target_error 		= wrap_180(target_error);
 
 	// calc the cos of the error to tell how fast we are moving towards the target in cm
 	int groundspeed 	= (float)g_gps->ground_speed * cos(radians((float)target_error/100));
 
 	// Reduce speed on RTL
-	//if(control_mode == RTL){
-	int tmp 			= min(wp_distance, 50) * 100;
-	waypoint_speed 		= min(tmp, g.waypoint_speed_max.get());
-	waypoint_speed		= max(waypoint_speed, 80);
-	//}else{
-	//	waypoint_speed 		= g.waypoint_speed_max.get();
-	//}
+	if(control_mode == RTL){
+		int tmp 			= min(wp_distance, 80) * 50;
+		waypoint_speed 		= min(tmp, speed);
+		waypoint_speed		= max(waypoint_speed, 50);
+	}else{
+		int tmp 			= min(wp_distance, 200) * 90;
+		waypoint_speed 		= min(tmp, speed);
+		waypoint_speed		= max(waypoint_speed, 50);
+		//waypoint_speed 		= g.waypoint_speed_max.get();
+	}
 
 	int error 		= constrain(waypoint_speed - groundspeed, -1000, 1000);
 	// Scale response by kP
-	nav_lat 		= nav_lat + g.pid_nav_wp.get_pid(error, dTnav, 1.0);
-	nav_lat 		>>= 1; // divide by two
+	nav_lat 		+= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+	nav_lat 		>>= 1; // divide by two for smooting
 
 	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
 
@@ -169,6 +172,7 @@ static void calc_rate_nav()
 
 static void calc_bearing_error()
 {
+	//				  83			99 Yaw  = -16
 	bearing_error 	= nav_bearing - dcm.yaw_sensor;
 	bearing_error 	= wrap_180(bearing_error);
 }
@@ -192,6 +196,28 @@ static void calc_altitude_smoothing_error()
 
 	altitude_error 	= target_altitude - current_loc.alt;
 }
+
+static void update_loiter()
+{
+	float power;
+
+	if(wp_distance <= g.loiter_radius){
+		power = float(wp_distance) / float(g.loiter_radius);
+		power = constrain(power, 0.5, 1);
+		nav_bearing += (int)(9000.0 * (2.0 + power));
+	}else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
+		power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
+		power = constrain(power, 0.5, 1);			//power = constrain(power, 0, 1);
+		nav_bearing -= power * 9000;
+
+	}else{
+		update_crosstrack();
+		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
+
+	}
+	nav_bearing = wrap_360(nav_bearing);
+}
+
 
 static long wrap_360(long error)
 {
