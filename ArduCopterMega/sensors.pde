@@ -11,10 +11,11 @@ static void init_barometer(void)
 		hil.update();					// look for inbound hil packets for initialization
 	#endif
 
+	ground_temperature = barometer.Temp;
 
 	// We take some readings...
-	for(int i = 0; i < 200; i++){
-		delay(25);
+	for(int i = 0; i < 20; i++){
+		delay(20);
 
 		#if HIL_MODE == HIL_MODE_SENSORS
 			hil.update(); 				// look for inbound hil packets
@@ -23,12 +24,11 @@ static void init_barometer(void)
 		// Get initial data from absolute pressure sensor
 		ground_pressure 	= read_baro_filtered();
 		ground_temperature	= (ground_temperature * 9 + barometer.Temp) / 10;
-
 	}
-	abs_pressure  		= ground_pressure;
-	ground_temperature 	= barometer.Temp;
 
-	//Serial.printf("abs_pressure %ld\n", ground_temperature);
+	abs_pressure  		= ground_pressure;
+
+	//Serial.printf("init %ld\n", abs_pressure);
 	//SendDebugln("barometer calibration complete.");
 }
 
@@ -39,12 +39,13 @@ static long read_baro_filtered(void)
 	// get new data from absolute pressure sensor
 	barometer.Read();
 
+
 	// add new data into our filter
 	baro_filter[baro_filter_index] = barometer.Press;
 	baro_filter_index++;
 
 	// loop our filter
-	if(baro_filter_index == BARO_FILTER_SIZE)
+	if(baro_filter_index >= BARO_FILTER_SIZE)
 		baro_filter_index = 0;
 
 	// zero out our accumulator
@@ -53,6 +54,7 @@ static long read_baro_filtered(void)
 	for(byte i = 0; i < BARO_FILTER_SIZE; i++){
 		pressure += baro_filter[i];
 	}
+
 
 	// average our sampels
 	return pressure /= BARO_FILTER_SIZE;
@@ -104,8 +106,11 @@ static void read_battery(void)
 	}
 
 	#if BATTERY_EVENT == 1
-		if(battery_voltage < LOW_VOLTAGE)	low_battery_event();
-		if(g.battery_monitoring == 4 && current_total > g.pack_capacity)	low_battery_event();
+	if(battery_voltage < LOW_VOLTAGE)
+		low_battery_event();
+
+	if(g.battery_monitoring == 4 && current_total > g.pack_capacity)
+		low_battery_event();
 	#endif
 }
 

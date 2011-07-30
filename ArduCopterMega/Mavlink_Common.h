@@ -101,7 +101,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					chan,
 					current_loc.lat,
 					current_loc.lng,
-					current_loc.alt * 10,
+					/*current_loc.alt * 10,*/ // changed to absolute altitude
+					g_gps->altitude,
 					g_gps->ground_speed * rot.a.x,
 					g_gps->ground_speed * rot.b.x,
 					g_gps->ground_speed * rot.c.x);
@@ -215,7 +216,8 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					(float)g_gps->ground_speed / 100.0,
 					(dcm.yaw_sensor / 100) % 360,
 					g.rc_3.servo_out/10,
-					current_loc.alt / 100.0,
+					/*current_loc.alt / 100.0,*/ // changed to absolute altitude
+					g_gps->altitude/100.0,
 					climb_rate);
 			break;
 		}

@@ -28,7 +28,7 @@ static void update_commands(void)
 		if (g.waypoint_index < g.waypoint_total) {
 			// only if we have a cmd stored in EEPROM
 			next_command = get_command_with_index(g.waypoint_index + 1);
-			Serial.printf("queue CMD %d\n", next_command.id);
+			//Serial.printf("queue CMD %d\n", next_command.id);
 		}
 	}
 
@@ -45,7 +45,7 @@ static void update_commands(void)
 
 	// check to see if we need to act on our command queue
 	if (process_next_command()){
-		Serial.printf("did PNC: %d\n", next_command.id);
+		//Serial.printf("did PNC: %d\n", next_command.id);
 
 		// We acted on the queue - let's debug that
 		// ----------------------------------------
@@ -65,17 +65,17 @@ static void update_commands(void)
 static void verify_commands(void)
 {
 	if(verify_must()){
-		Serial.printf("verified must cmd %d\n" , command_must_index);
+		//Serial.printf("verified must cmd %d\n" , command_must_index);
 		command_must_index 	= NO_COMMAND;
 		// reset rate controlled nav
 		g.pid_nav_wp.reset_I();
 
 	}else{
-		Serial.printf("verified must false %d\n" , command_must_index);
+		//Serial.printf("verified must false %d\n" , command_must_index);
 	}
 
 	if(verify_may()){
-		Serial.printf("verified may cmd %d\n" , command_may_index);
+		//Serial.printf("verified may cmd %d\n" , command_may_index);
 		command_may_index 	= NO_COMMAND;
 		command_may_ID		= NO_COMMAND;
 	}

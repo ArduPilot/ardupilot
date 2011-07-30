@@ -152,7 +152,9 @@ get_nav_yaw_offset(int yaw_input, int reset)
 			_yaw 	= (long)yaw_input + dcm.yaw_sensor;
 			// we need to wrap our value so we can be 0 to 360 (*100)
 			return wrap_360(_yaw);
+
 		}else{
+			// no stick input, lets not change nav_yaw
 			return nav_yaw;
 		}
 	}

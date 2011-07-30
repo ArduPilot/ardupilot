@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if CAMERA_STABILIZER == ENABLED
+//#if CAMERA_STABILIZER == ENABLED
 
 static void init_camera()
 {
@@ -8,11 +8,15 @@ static void init_camera()
 	g.rc_camera_pitch.radio_min 	= 1000;
 	g.rc_camera_pitch.radio_trim 	= 1500;
 	g.rc_camera_pitch.radio_max 	= 2000;
+	//g.rc_camera_pitch.set_reverse(1);
 
 	g.rc_camera_roll.set_angle(4500);
 	g.rc_camera_roll.radio_min 		= 1000;
 	g.rc_camera_roll.radio_trim 	= 1500;
 	g.rc_camera_roll.radio_max 		= 2000;
+
+	g.rc_camera_roll.set_type(RC_CHANNEL_ANGLE_RAW);
+	g.rc_camera_pitch.set_type(RC_CHANNEL_ANGLE_RAW);
 }
 
 static void
@@ -50,6 +54,7 @@ camera_stabilization()
 
 	APM_RC.OutputCh(CH_5, g.rc_camera_pitch.radio_out);
 	APM_RC.OutputCh(CH_6, g.rc_camera_roll.radio_out);
+	//Serial.printf("c:%d\n",  g.rc_camera_pitch.radio_out);
 }
 
-#endif
+//#endif

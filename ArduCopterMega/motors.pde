@@ -17,15 +17,20 @@ static void arm_motors()
 		// full right
 		if (g.rc_4.control_in > 4000) {
 
+			// don't allow arming in anything but manual
 			if (control_mode < ALT_HOLD){
 
 				if (arming_counter > AUTO_LEVEL_DELAY){
-					auto_level_counter = 255;
+					auto_level_counter = 155;
 					arming_counter = 0;
 
 				}else if (arming_counter == ARM_DELAY){
 					motor_armed 	= true;
 					arming_counter 	= ARM_DELAY;
+
+					// Clear throttle slew
+					// -------------------
+					throttle_slew = 0;
 
 					// Remember Orientation
 					// --------------------
@@ -36,10 +41,15 @@ static void arm_motors()
 					if(home_is_set)
 						init_home();
 
+					if(did_ground_start == false){
+						did_ground_start = true;
+						startup_ground();
+					}
+
 					// tune down compass
 					// -----------------
-					//dcm.kp_yaw(0.02);
-					//dcm.ki_yaw(0);
+					dcm.kp_yaw(0.08);
+					dcm.ki_yaw(0);
 
 					arming_counter++;
 				} else{
@@ -59,6 +69,16 @@ static void arm_motors()
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
 				compass.save_offsets();
+
+				// tune up compass
+				// -----------------
+				dcm.kp_yaw(0.8);
+				dcm.ki_yaw(0.00004);
+
+				// Clear throttle slew
+				// -------------------
+				throttle_slew = 0;
+
 				arming_counter++;
 
 			}else{
