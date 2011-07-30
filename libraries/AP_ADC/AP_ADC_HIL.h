@@ -32,7 +32,10 @@ class AP_ADC_HIL : public AP_ADC
 
 	///
 	// Read the sensor, part of public AP_ADC interface
-	int Ch(unsigned char ch_num);     
+	int Ch(unsigned char ch_num);
+	///
+	// Read the sensor, part of public AP_ADC interface
+	int Ch_raw(unsigned char ch_num);
 
 	///
 	// Set the adc raw values given the current rotations rates,
@@ -50,10 +53,10 @@ class AP_ADC_HIL : public AP_ADC
 	// sensor constants
 	// constants declared in cpp file
 	// @see AP_ADC_HIL.cpp
-    static const uint8_t sensors[6];		
-    static const float gyroBias[3];		
+    static const uint8_t sensors[6];
+    static const float gyroBias[3];
     static const float gyroScale[3];
-	static const float accelBias[3];		
+	static const float accelBias[3];
     static const float accelScale[3];
     static const int8_t sensorSign[6];
 
@@ -78,7 +81,7 @@ class AP_ADC_HIL : public AP_ADC
 	///
 	// Sets the differential pressure adc channel
 	// TODO: implement
-	void setPressure(int16_t val) {} 
+	void setPressure(int16_t val) {}
 
 	///
 	// Sets the gyro temp adc channel

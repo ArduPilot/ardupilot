@@ -19,7 +19,8 @@ class AP_ADC_ADS7844 : public AP_ADC
 	public:
 	AP_ADC_ADS7844();  // Constructor
 	void 	Init();
-	int		Ch(unsigned char ch_num);
+	int 	Ch(unsigned char ch_num);
+	int 	Ch_raw(unsigned char ch_num);
 
 	private:
 };

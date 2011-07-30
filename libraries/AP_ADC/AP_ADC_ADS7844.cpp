@@ -156,3 +156,9 @@ int AP_ADC_ADS7844::Ch(unsigned char ch_num)
 
 	return(result);
 }
+
+// Read one channel value
+int AP_ADC_ADS7844::Ch_raw(unsigned char ch_num)
+{
+	return _filter[ch_num][_filter_index]; // close enough
+}
