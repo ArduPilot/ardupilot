@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	Example of GPS 406 library.
 	Code by Jordi Munoz and Jose Julio. DIYDrones.com
@@ -6,7 +7,7 @@
 */
 
 #include <FastSerial.h>
-#include <AP_GPS_406.h>
+#include <AP_GPS.h>
 #include <stdio.h>
 
 FastSerialPort0(Serial);

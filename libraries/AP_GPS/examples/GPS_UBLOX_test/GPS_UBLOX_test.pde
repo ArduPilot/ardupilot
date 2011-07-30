@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 /*
 	Example of GPS UBlox library.
 	Code by Jordi Munoz and Jose Julio. DIYDrones.com
@@ -6,8 +7,8 @@
 */
 
 #include <FastSerial.h>
-#include <AP_GPS_UBLOX.h>
-#include <stdio.h>
+#include <AP_Common.h>
+#include <AP_GPS.h>
 
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);

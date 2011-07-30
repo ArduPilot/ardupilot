@@ -5,7 +5,7 @@
 
 #include <FastSerial.h>
 #include <AP_Common.h>
-#include <AP_GPS_NMEA.h>
+#include <AP_GPS.h>
 #include <stdio.h>
 
 FastSerialPort0(Serial);
