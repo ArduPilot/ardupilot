@@ -16,7 +16,9 @@ void setup()
 
 	delay(1000);
 	
-	flowSensor.init();   // flowSensor initialization
+	// flowSensor initialization
+	if( flowSensor.init() == false )
+	    Serial.println("Failed to initialise ADNS3080");
 	flowSensor.set_orientation(AP_OPTICALFLOW_ADNS3080_PINS_FORWARD);
 	flowSensor.set_field_of_view(AP_OPTICALFLOW_ADNS3080_12_FOV);
 	
