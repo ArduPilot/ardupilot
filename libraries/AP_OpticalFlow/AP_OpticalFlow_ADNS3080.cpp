@@ -51,6 +51,8 @@ AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
 bool
 AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 {
+    int retry = 0;
+	
 	pinMode(AP_SPI_DATAOUT,OUTPUT);
 	pinMode(AP_SPI_DATAIN,INPUT);
 	pinMode(AP_SPI_CLOCK,OUTPUT);
@@ -65,10 +67,16 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 	// start the SPI library:
 	if( initCommAPI ) {
         SPI.begin();
-        //SPI.setBitOrder(MSBFIRST);
-        //SPI.setDataMode(SPI_MODE3);
-        //SPI.setClockDivider(SPI_CLOCK_DIV8);  // sensor running at 2Mhz.  this is it's maximum speed
 	}
+	
+	// check the sensor is functioning
+	if( retry < 3 ) {
+	    if( read_register(ADNS3080_PRODUCT_ID) == 0x17 )
+	        return true;
+		else
+		    retry++;
+	}else
+	    return false;
 }
 
 //
