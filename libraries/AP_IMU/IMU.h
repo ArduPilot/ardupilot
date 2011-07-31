@@ -35,21 +35,21 @@ public:
 	///
 	/// @param style	The initialisation startup style.
 	///
-	virtual void	init(Start_style style) = 0;
+	virtual void	init(Start_style style, void (*callback)(unsigned long t)) = 0;
 
 	/// Perform cold startup initialisation for just the accelerometers.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work.
 	///
-	virtual void	init_accel() = 0;
+	virtual void	init_accel(void (*callback)(unsigned long t)) = 0;
 
 	/// Perform cold-start initialisation for just the gyros.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work
 	///
-	virtual void	init_gyro() = 0;
+	virtual void	init_gyro(void (*callback)(unsigned long t)) = 0;
 
 	/// Give the IMU some cycles to perform/fetch an update from its
 	/// sensors.

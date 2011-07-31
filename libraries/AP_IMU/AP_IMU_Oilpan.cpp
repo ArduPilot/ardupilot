@@ -42,7 +42,7 @@ const float   AP_IMU_Oilpan::_gyro_temp_curve[3][3] = {
 };
 
 void
-AP_IMU_Oilpan::init(Start_style style)
+AP_IMU_Oilpan::init(Start_style style, void (*callback)(unsigned long t))
 {
     // if we are warm-starting, load the calibration data from EEPROM and go
     //
@@ -51,8 +51,8 @@ AP_IMU_Oilpan::init(Start_style style)
     } else {
 
         // do cold-start calibration for both accel and gyro
-        _init_gyro();
-        _init_accel();
+        _init_gyro(callback);
+        _init_accel(callback);
 
         // save calibration
         _sensor_cal.save();
@@ -62,14 +62,14 @@ AP_IMU_Oilpan::init(Start_style style)
 /**************************************************/
 
 void
-AP_IMU_Oilpan::init_gyro()
+AP_IMU_Oilpan::init_gyro(void (*callback)(unsigned long t))
 {
-    _init_gyro();
+    _init_gyro(callback);
     _sensor_cal.save();
 }
 
 void
-AP_IMU_Oilpan::_init_gyro()
+AP_IMU_Oilpan::_init_gyro(void (*callback)(unsigned long t))
 {
 	int flashcount = 0;
 	int tc_temp;
@@ -80,20 +80,20 @@ AP_IMU_Oilpan::_init_gyro()
 
 	// cold start
 	tc_temp = _adc->Ch(_gyro_temp_ch);
- 	delay(500);
+ 	callback(500);
 	Serial.printf_P(PSTR("Init Gyro"));
 
 	for(int c = 0; c < 25; c++){				// Mostly we are just flashing the LED's here to tell the user to keep the IMU still
 		digitalWrite(A_LED_PIN, LOW);
 		digitalWrite(C_LED_PIN, HIGH);
-		delay(20);
+		callback(20);
 
 		for (int i = 0; i < 6; i++)
 			adc_in = _adc->Ch(_sensors[i]);
 
 		digitalWrite(A_LED_PIN, HIGH);
 		digitalWrite(C_LED_PIN, LOW);
-		delay(20);
+		callback(20);
 	}
 
 	for (int j = 0; j <= 2; j++)
@@ -116,7 +116,7 @@ AP_IMU_Oilpan::_init_gyro()
 				_sensor_cal[j] = _sensor_cal[j] * 0.9 + adc_in * 0.1;
 			}
 
-			delay(20);
+			callback(20);
 			if(flashcount == 5) {
 				Serial.printf_P(PSTR("*"));
 				digitalWrite(A_LED_PIN, LOW);
@@ -134,7 +134,7 @@ AP_IMU_Oilpan::_init_gyro()
 		total_change    = fabs(prev[0] - _sensor_cal[0]) + fabs(prev[1] - _sensor_cal[1]) +fabs(prev[2] - _sensor_cal[2]);
 		max_offset      = (_sensor_cal[0] > _sensor_cal[1]) ? _sensor_cal[0] : _sensor_cal[1];
 		max_offset      = (max_offset > _sensor_cal[2]) ? max_offset : _sensor_cal[2];
-		delay(500);
+		callback(500);
 	} while (  total_change > _gyro_total_cal_change || max_offset > _gyro_max_cal_offset);
 }
 
@@ -145,14 +145,14 @@ AP_IMU_Oilpan::save()
 }
 
 void
-AP_IMU_Oilpan::init_accel()
+AP_IMU_Oilpan::init_accel(void (*callback)(unsigned long t))
 {
-    _init_accel();
+    _init_accel(callback);
     _sensor_cal.save();
 }
 
 void
-AP_IMU_Oilpan::_init_accel()
+AP_IMU_Oilpan::_init_accel(void (*callback)(unsigned long t))
 {
 	int flashcount = 0;
 	float adc_in;
@@ -161,7 +161,7 @@ AP_IMU_Oilpan::_init_accel()
 	float max_offset;
 
 	// cold start
- 	delay(500);
+ 	callback(500);
 
 	Serial.printf_P(PSTR("Init Accel"));
 
@@ -177,7 +177,7 @@ AP_IMU_Oilpan::_init_accel()
 
 		for(int i = 0; i < 50; i++){		// We take some readings...
 
-			delay(20);
+			callback(20);
 
 			for (int j = 3; j < 6; j++){
 				adc_in 	    	= _adc->Ch(_sensors[j]);
@@ -206,7 +206,7 @@ AP_IMU_Oilpan::_init_accel()
 		max_offset = (_sensor_cal[3] > _sensor_cal[4]) ? _sensor_cal[3] : _sensor_cal[4];
 		max_offset = (max_offset > _sensor_cal[5]) ? max_offset : _sensor_cal[5];
 
-		delay(500);
+		callback(500);
 	} while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
 
 	Serial.printf_P(PSTR(" "));
