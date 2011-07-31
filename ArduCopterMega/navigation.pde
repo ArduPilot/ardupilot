@@ -168,7 +168,7 @@ static void calc_rate_nav(int speed)
 	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  groundspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
 
 	// limit our output
-	nav_lat	= constrain(nav_lat, 	-4000, 4000); // +- max error
+	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
 }
 
 static void calc_bearing_error()
