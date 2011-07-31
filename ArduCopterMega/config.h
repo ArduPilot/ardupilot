@@ -299,7 +299,7 @@
 // Roll Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.2
+# define STABILIZE_ROLL_P 		4.0
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.025
@@ -322,7 +322,7 @@
 // Pitch Control
 //
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.5
+# define STABILIZE_PITCH_P		4.0
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.025
