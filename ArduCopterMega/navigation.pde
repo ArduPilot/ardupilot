@@ -146,6 +146,7 @@ static void calc_rate_nav(int speed)
 
 	// calc the cos of the error to tell how fast we are moving towards the target in cm
 	int groundspeed 	= (float)g_gps->ground_speed * cos(radians((float)target_error/100));
+	groundspeed			= max(groundspeed, 0);
 
 	// Reduce speed on RTL
 	if(control_mode == RTL){
