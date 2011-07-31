@@ -41,11 +41,11 @@ public:
 	///                 COLD_START performs calibration of both the accelerometer and gyro.
 	///                 WARM_START loads accelerometer and gyro calibration from a previous cold start.
 	///
-	virtual void		init(Start_style style = COLD_START);
+	virtual void		init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay);
 
 	virtual void		save();
-	virtual void		init_accel();
-	virtual void		init_gyro();
+	virtual void		init_accel(void (*callback)(unsigned long t) = delay);
+	virtual void		init_gyro(void (*callback)(unsigned long t) = delay);
 	virtual bool		update(void);
 
 	// for jason
@@ -65,8 +65,8 @@ private:
     AP_ADC              *_adc;          ///< ADC that we use for reading sensors
     AP_VarA<float,6>    _sensor_cal;    ///< Calibrated sensor offsets
 
-    virtual void        _init_accel();  ///< no-save implementation
-    virtual void        _init_gyro();   ///< no-save implementation
+    virtual void        _init_accel(void (*callback)(unsigned long t));  ///< no-save implementation
+    virtual void        _init_gyro(void (*callback)(unsigned long t));   ///< no-save implementation
 
     float 		        _sensor_compensation(uint8_t channel, int temp) const;
 	float		        _sensor_in(uint8_t channel, int temperature);
