@@ -37,6 +37,7 @@ void
 AP_GPS_Auto::init(void)
 {
 	idleTimeout = 1200;
+	if (callback == NULL) callback = delay;
 }
 
 // Called the first time that a client tries to kick the GPS to update.
@@ -116,6 +117,7 @@ AP_GPS_Auto::_detect(void)
 		_port->flush();
 		then = millis();
 		do {
+			callback(1);
 			if (_port->available()) {
 				then = millis();
 				_port->read();
@@ -129,6 +131,7 @@ AP_GPS_Auto::_detect(void)
 		// This will normally only be the case where there is no GPS attached.
 		//
 		while (_port->available() < 4) {
+			callback(1);
 			if ((millis() - then) > 1200) {
 				Serial.print('!');
 				return NULL;
@@ -193,7 +196,7 @@ AP_GPS_Auto::_detect(void)
 			_fs->println_P((const prog_char_t *)_sirf_set_binary);
 
 			// give the GPS time to react to the settings
-			delay(100);
+			callback(100);
 			continue;
 		} else {
 			Serial.print('?');
