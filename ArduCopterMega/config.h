@@ -296,7 +296,7 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Roll Control
+// Attitude Control
 //
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.0
@@ -305,22 +305,9 @@
 # define STABILIZE_ROLL_I 		0.025
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	15		// degrees
+# define STABILIZE_ROLL_IMAX 	10		// degrees
 #endif
 
-#ifndef RATE_ROLL_P
-# define RATE_ROLL_P         .12
-#endif
-#ifndef RATE_ROLL_I
-# define RATE_ROLL_I         0.0
-#endif
-#ifndef RATE_ROLL_IMAX
-# define RATE_ROLL_IMAX	 	5			// degrees
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Pitch Control
-//
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		4.0
 #endif
@@ -328,7 +315,20 @@
 # define STABILIZE_PITCH_I		0.025
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	15		// degrees
+# define STABILIZE_PITCH_IMAX	10		// degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Rate Control
+//
+#ifndef RATE_ROLL_P
+# define RATE_ROLL_P         .12
+#endif
+#ifndef RATE_ROLL_I
+# define RATE_ROLL_I         0.0
+#endif
+#ifndef RATE_ROLL_IMAX
+# define RATE_ROLL_IMAX	 	15			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
@@ -338,7 +338,7 @@
 # define RATE_PITCH_I		0.0
 #endif
 #ifndef RATE_PITCH_IMAX
-# define RATE_PITCH_IMAX   	5			// degrees
+# define RATE_PITCH_IMAX   	15			// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
