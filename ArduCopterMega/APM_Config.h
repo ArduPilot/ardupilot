@@ -9,7 +9,7 @@
 
 //#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
 
-#define FRAME_CONFIG QUAD_FRAME
+//#define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
 	QUAD_FRAME
@@ -20,7 +20,7 @@
 	HELI_FRAME
 	*/
 
-#define FRAME_ORIENTATION X_FRAME
+//#define FRAME_ORIENTATION X_FRAME
 	/*
 	PLUS_FRAME
 	X_FRAME
@@ -28,7 +28,7 @@
 	*/
 
 
-#define CHANNEL_6_TUNING CH6_NONE
+//#define CHANNEL_6_TUNING CH6_NONE
 	/*
 	CH6_NONE
 	CH6_STABILIZE_KP
