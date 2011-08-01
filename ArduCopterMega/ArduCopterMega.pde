@@ -794,6 +794,8 @@ static void fifty_hz_loop()
 	else if (throttle_slew > 0)
 		throttle_slew--;
 
+	throttle_slew = min((800 - throttle), throttle_slew);
+
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
 			Log_Write_Attitude();
@@ -1562,8 +1564,13 @@ static void auto_throttle()
 	// apply throttle control
 	g.rc_3.servo_out = get_throttle(nav_throttle - throttle_slew);
 
-	// remember throttle offset
-	throttle_slew = g.rc_3.servo_out - g.rc_3.control_in;
+	if(motor_armed){
+		// remember throttle offset
+		throttle_slew = g.rc_3.servo_out - g.rc_3.control_in;
+	}else{
+		// don't allow
+		throttle_slew = 0;
+	}
 
 	// clear the new data flag
 	invalid_throttle = false;
