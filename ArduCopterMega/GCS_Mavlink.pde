@@ -1129,7 +1129,7 @@ GCS_MAVLINK::_queued_send()
 
 #endif // GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK || HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 
-static void send_rate(uint8_t low, uint8_t high) {
+static void send_rate(uint16_t low, uint16_t high) {
 #if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
     gcs.data_stream_send(low, high);
 #endif
@@ -1158,15 +1158,15 @@ static void mavlink_delay(unsigned long t)
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.send_message(MSG_HEARTBEAT);
 #endif
-            hil.data_stream_send(1,3);
+            send_rate(1, 3);
         }
         if (tnow - last_3hz > 333) {
             last_3hz = tnow;
-            hil.data_stream_send(3,5);
+            send_rate(3, 5);
         }
         if (tnow - last_10hz > 100) {
             last_10hz = tnow;
-            hil.data_stream_send(5,45);
+            send_rate(5, 45);
         }
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
@@ -1174,7 +1174,7 @@ static void mavlink_delay(unsigned long t)
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.update();
 #endif
-            hil.data_stream_send(45,1000);
+            send_rate(45, 1000);
         }
         delay(1);
     } while (millis() - tstart < t);
