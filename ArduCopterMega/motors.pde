@@ -62,7 +62,7 @@ static void arm_motors()
 			//Serial.print(arming_counter, DEC);
 			if (arming_counter > LEVEL_DELAY){
 				//Serial.print("init");
-				imu.init_accel();
+				imu.init_accel(mavlink_delay);
 				arming_counter = 0;
 
 			}else if (arming_counter == DISARM_DELAY){

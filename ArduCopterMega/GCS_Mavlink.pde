@@ -323,7 +323,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 				
 				case MAV_ACTION_CALIBRATE_ACC:
-					imu.init_accel();
+					imu.init_accel(mavlink_delay);
 					result=1;
 					break;
 				
@@ -1127,5 +1127,55 @@ GCS_MAVLINK::_queued_send()
 	}
 }
 
-#endif
+#endif // GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK || HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 
+static void send_rate(uint8_t low, uint8_t high) {
+#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
+    gcs.data_stream_send(low, high);
+#endif
+#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+    hil.data_stream_send(low,high);
+#endif
+}
+
+/*
+ a delay() callback that processes MAVLink packets. We set this as the
+ callback in long running library initialisation routines to allow
+ MAVLink to process packets while waiting for the initialisation to
+ complete
+*/
+static void mavlink_delay(unsigned long t)
+{
+    unsigned long tstart;
+    static unsigned long last_1hz, last_3hz, last_10hz, last_50hz;
+
+    tstart = millis();
+    do {
+        unsigned long tnow = millis();
+        if (tnow - last_1hz > 1000) {
+            last_1hz = tnow;
+            gcs.send_message(MSG_HEARTBEAT);
+#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+            hil.send_message(MSG_HEARTBEAT);
+#endif
+            hil.data_stream_send(1,3);
+        }
+        if (tnow - last_3hz > 333) {
+            last_3hz = tnow;
+            hil.data_stream_send(3,5);
+        }
+        if (tnow - last_10hz > 100) {
+            last_10hz = tnow;
+            hil.data_stream_send(5,45);
+        }
+        if (tnow - last_50hz > 20) {
+            last_50hz = tnow;
+            gcs.update();
+#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+            hil.update();
+#endif
+            hil.data_stream_send(45,1000);
+        }
+        delay(1);
+    } while (millis() - tstart < t);
+}

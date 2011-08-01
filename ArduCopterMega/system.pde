@@ -177,6 +177,7 @@ static void init_ardupilot()
 	// Do GPS init
 	g_gps = &g_gps_driver;
 	g_gps->init();			// GPS Initialization
+    g_gps->callback = mavlink_delay;
 
 	// init the GCS
 	#if GCS_PORT == 3
@@ -317,7 +318,7 @@ static void startup_ground(void)
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// Warm up and read Gyro offsets
 		// -----------------------------
-		imu.init_gyro();
+		imu.init_gyro(mavlink_delay);
 		report_imu();
 	#endif
 
