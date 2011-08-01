@@ -132,7 +132,7 @@ static int
 get_throttle(int throttle_input)
 {
 	throttle_input = (float)throttle_input * angle_boost();
-	throttle_input += throttle_slew;
+	throttle_input = max(throttle_slew, throttle_input);
 	return  max(throttle_input, 0);
 }
 
