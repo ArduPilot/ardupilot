@@ -63,6 +63,7 @@ public:
 	k_param_streamrates_port3,
 	k_param_sysid_this_mav,
 	k_param_sysid_my_gcs,
+    k_param_serial3_baud,
 
 	//
 	// 140: Sensor parameters
@@ -179,6 +180,7 @@ public:
 	//
 	AP_Int16	sysid_this_mav;
 	AP_Int16	sysid_my_gcs;
+    AP_Int8			serial3_baud;
 
 
 	// Crosstrack navigation
@@ -282,6 +284,7 @@ public:
 
 	sysid_this_mav			(MAV_SYSTEM_ID,				k_param_sysid_this_mav,					PSTR("SYSID_THISMAV")),
 	sysid_my_gcs			(255,						k_param_sysid_my_gcs,					PSTR("SYSID_MYGCS")),
+    serial3_baud			(SERIAL3_BAUD/1000,         k_param_serial3_baud,					PSTR("SERIAL3_BAUD")),
 
 	//crosstrack_gain			(XTRACK_GAIN * 100,			k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
 	crosstrack_entry_angle	(XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRK_ANGLE_CD")),

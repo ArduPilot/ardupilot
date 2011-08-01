@@ -73,16 +73,6 @@ static void init_ardupilot()
 	Serial1.begin(38400, 128, 16);
 	#endif
 
-	// Telemetry port.
-	//
-	// Not used if telemetry is going to the console.
-	//
-	// XXX for unidirectional protocols, we could (should) minimize
-	// the receive buffer, and the transmit buffer could also be
-	// shrunk for protocols that don't send large messages.
-	//
-	Serial3.begin(SERIAL3_BAUD, 128, 128);
-
 	Serial.printf_P(PSTR("\n\nInit ACM"
 						 "\n\nRAM: %lu\n"),
 						 freeRAM());
@@ -149,6 +139,17 @@ static void init_ardupilot()
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();
 	}
+
+	// Telemetry port.
+	//
+	// Not used if telemetry is going to the console.
+	//
+	// XXX for unidirectional protocols, we could (should) minimize
+	// the receive buffer, and the transmit buffer could also be
+	// shrunk for protocols that don't send large messages.
+	//
+	Serial3.begin(map_baudrate(g.serial3_baud,SERIAL3_BAUD), 128, 128);
+
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
@@ -529,3 +530,20 @@ check_startup_for_CLI()
 
 #endif
 
+
+/*
+  map from a 8 bit EEPROM baud rate to a real baud rate
+ */
+static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
+{
+    switch (rate) {
+    case 9:    return 9600;
+    case 19:   return 19200;
+    case 38:   return 38400;
+    case 57:   return 57600;
+    case 111:  return 111100;
+    case 115:  return 115200;
+    }
+    Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
+    return default_baud;
+}
