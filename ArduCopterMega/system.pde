@@ -294,13 +294,6 @@ static void init_ardupilot()
 	// -------------------
 	init_commands();
 
-	// Output waypoints for confirmation
-	// XXX do we need this?
-	// --------------------------------
-	//for(int i = 1; i < g.waypoint_total + 1; i++) {
-	//	gcs.send_message(MSG_COMMAND_LIST, i);
-	//}
-
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
@@ -381,13 +374,13 @@ static void set_mode(byte mode)
 	switch(control_mode)
 	{
 		case ACRO:
-			g.pid_throttle.reset_I();
+			reset_nav_I();
 			break;
 
 		case SIMPLE:
 		case STABILIZE:
 			do_loiter_at_location();
-			g.pid_throttle.reset_I();
+			reset_nav_I();
 			break;
 
 		case ALT_HOLD:

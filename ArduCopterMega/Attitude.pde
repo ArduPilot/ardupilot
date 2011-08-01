@@ -116,8 +116,13 @@ get_rate_yaw(long target_rate)
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
 static void
-reset_I(void)
+reset_nav_I(void)
 {
+	g.pid_nav_lat.reset_I();
+	g.pid_nav_lon.reset_I();
+	g.pid_nav_wp.reset_I();
+	g.pid_crosstrack.reset_I();
+	g.pid_throttle.reset_I();
 	// I removed these, they don't seem to be needed.
 }
 
