@@ -280,9 +280,11 @@ static int 		motor_out[8];
 
 // Heli
 // ----
+#if FRAME_CONFIG ==	HELI_FRAME
 static float heli_rollFactor[3], heli_pitchFactor[3];  // only required for 3 swashplate servos
 static int heli_servo_min[3], heli_servo_max[3];       // same here.  for yaw servo we use heli_servo4_min/max parameter directly
 static int heli_servo_out[4];
+#endif
 
 // Failsafe
 // --------
@@ -1321,16 +1323,20 @@ static void update_navigation()
 			break;
 
 		case GUIDED:
+		case RTL:
 			if(wp_distance > 20){
 				// calculates desired Yaw
+				// XXX this is an experiment
+				#if FRAME_CONFIG ==	HELI_FRAME
 				update_nav_yaw();
+				#endif
 
 			}else{
 				// Don't Yaw anymore
 				// hack to elmininate crosstrack effect
 				crosstrack_bearing 	= target_bearing;
 			}
-		case RTL:
+
 			// are we Traversing or Loitering?
 			wp_control = (wp_distance < 4 ) ? LOITER_MODE : WP_MODE;
 
