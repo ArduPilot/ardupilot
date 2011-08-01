@@ -516,6 +516,23 @@
 # define LOG_OPTFLOW				DISABLED
 #endif
 
+// calculate the default log_bitmask
+#define LOGBIT(_s)     (LOG_##_s ? MASK_LOG_##_s : 0)
+
+#define DEFAULT_LOG_BITMASK \
+               LOGBIT(ATTITUDE_FAST)   | \
+               LOGBIT(ATTITUDE_MED)    | \
+               LOGBIT(GPS)                             | \
+               LOGBIT(PM)                              | \
+               LOGBIT(CTUN)                    | \
+               LOGBIT(NTUN)                    | \
+               LOGBIT(MODE)                    | \
+               LOGBIT(RAW)                             | \
+               LOGBIT(CMD)                             | \
+               LOGBIT(CUR)						| \
+               LOGBIT(MOTORS)					| \
+               LOGBIT(OPTFLOW)
+
 // if we are using fast, Disable Medium
 //#if LOG_ATTITUDE_FAST == ENABLED
 //	#undef LOG_ATTITUDE_MED

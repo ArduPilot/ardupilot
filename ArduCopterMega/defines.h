@@ -279,7 +279,6 @@
 #define MASK_LOG_CUR			(1<<9)
 #define MASK_LOG_MOTORS			(1<<10)
 #define MASK_LOG_OPTFLOW		(1<<11)
-#define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
 // ----------------

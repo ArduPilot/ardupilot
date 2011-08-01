@@ -316,7 +316,7 @@ public:
 
 	pitch_max				(PITCH_MAX * 100,			k_param_pitch_max,						PSTR("PITCH_MAX")),
 
-	log_bitmask				(MASK_LOG_SET_DEFAULTS,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
+	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
 	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
 	esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
 	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),

@@ -746,31 +746,6 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 #endif
 
 
-
-void
-default_log_bitmask()
-{
-	// convenience macro for testing LOG_* and setting LOGBIT_*
-	#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
-
-	g.log_bitmask =
-		LOGBIT(ATTITUDE_FAST)	|
-		LOGBIT(ATTITUDE_MED)	|
-		LOGBIT(GPS)				|
-		LOGBIT(PM)				|
-		LOGBIT(CTUN)			|
-		LOGBIT(NTUN)			|
-		LOGBIT(MODE)			|
-		LOGBIT(RAW)				|
-		LOGBIT(CMD)				|
-		LOGBIT(CUR)				|
-		LOGBIT(MOTORS)			|
-		LOGBIT(OPTFLOW);
-	#undef LOGBIT
-
-	g.log_bitmask.save();
-}
-
 /***************************************************************************/
 // CLI reports
 /***************************************************************************/

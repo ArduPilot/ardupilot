@@ -170,7 +170,6 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
 		bits = ~0;
-		bits = bits ^ MASK_LOG_SET_DEFAULTS;
 	} else {
 		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
