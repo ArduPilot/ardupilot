@@ -306,6 +306,7 @@ static void init_ardupilot()
 	reset_control_switch();
 
 	//delay(100);
+	startup_ground();
 
 	//Serial.printf_P(PSTR("\nloiter: %d\n"), loiter_error_max);
 	Log_Write_Startup();
