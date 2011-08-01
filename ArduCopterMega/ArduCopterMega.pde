@@ -794,7 +794,7 @@ static void fifty_hz_loop()
 	else if (throttle_slew > 0)
 		throttle_slew--;
 
-	throttle_slew = min((800 - throttle), throttle_slew);
+	throttle_slew = min((800 - g.rc_3.control_in), throttle_slew);
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
@@ -1577,4 +1577,5 @@ static void auto_throttle()
 
 	//Serial.printf("wp:%d, \te:%d \tt%d \t%d\n", (int)next_WP.alt, (int)altitude_error, nav_throttle, g.rc_3.servo_out);
 }
+
 
