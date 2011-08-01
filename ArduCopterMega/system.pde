@@ -150,10 +150,6 @@ static void init_ardupilot()
 	    AP_Var::load_all();
 	}
 
-	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS) {
-		default_log_bitmask();
-	}
-
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
 		int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;
