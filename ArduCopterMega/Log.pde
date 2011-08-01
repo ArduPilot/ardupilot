@@ -576,7 +576,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
 
 	// yaw
-	//DataFlash.WriteByte(yaw_debug);
+	DataFlash.WriteByte(yaw_debug);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 	DataFlash.WriteInt((int)(nav_yaw/100));
 	DataFlash.WriteInt((int)yaw_error/100);
@@ -607,7 +607,7 @@ static void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),
 
 				// yaw
-				//(int)DataFlash.ReadByte(),
+				(int)DataFlash.ReadByte(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
