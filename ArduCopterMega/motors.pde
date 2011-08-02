@@ -25,6 +25,9 @@ static void arm_motors()
 					arming_counter = 0;
 
 				}else if (arming_counter == ARM_DELAY){
+#if HIL_MODE != HIL_MODE_DISABLED
+                    gcs.send_text_P(SEVERITY_HIGH, "ARMING MOTORS");
+#endif
 					motor_armed 	= true;
 					arming_counter 	= ARM_DELAY;
 
@@ -66,6 +69,9 @@ static void arm_motors()
 				arming_counter = 0;
 
 			}else if (arming_counter == DISARM_DELAY){
+#if HIL_MODE != HIL_MODE_DISABLED
+                gcs.send_text_P(SEVERITY_HIGH, "DISARMING MOTORS");
+#endif
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
 				compass.save_offsets();
