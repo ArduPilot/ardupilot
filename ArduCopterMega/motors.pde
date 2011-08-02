@@ -26,7 +26,7 @@ static void arm_motors()
 
 				}else if (arming_counter == ARM_DELAY){
 #if HIL_MODE != HIL_MODE_DISABLED
-                    gcs.send_text_P(SEVERITY_HIGH, "ARMING MOTORS");
+                    hil.send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 #endif
 					motor_armed 	= true;
 					arming_counter 	= ARM_DELAY;
@@ -70,7 +70,7 @@ static void arm_motors()
 
 			}else if (arming_counter == DISARM_DELAY){
 #if HIL_MODE != HIL_MODE_DISABLED
-                gcs.send_text_P(SEVERITY_HIGH, "DISARMING MOTORS");
+                hil.send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
