@@ -73,24 +73,20 @@ static void output_motors_armed()
 	motor_out[CH_4] 	= max(motor_out[CH_4], 	out_min);
 
 	#if CUT_MOTORS == ENABLED
-		// Send commands to motors
-		if(g.rc_3.servo_out > 0){
-			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-		}else{
-			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-		}
-	#else
-		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+	// if we are not sending a throttle output, we cut the motors
+	if(g.rc_3.servo_out == 0){
+		motor_out[CH_1]		= g.rc_3.radio_min;
+		motor_out[CH_2]		= g.rc_3.radio_min;
+		motor_out[CH_3]		= g.rc_3.radio_min;
+		motor_out[CH_4] 	= g.rc_3.radio_min;
+	}
 	#endif
+
+	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+	APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+
 	// InstantPWM
 	APM_RC.Force_Out0_Out1();
 	APM_RC.Force_Out2_Out3();
@@ -119,6 +115,17 @@ static void output_motors_disarmed()
 	APM_RC.Force_Out0_Out1();
 	APM_RC.Force_Out2_Out3();
 }
+
+/*
+static void debug_motors()
+{
+	Serial.printf("1:%d\t2:%d\t3:%d\t4:%d\n",
+				motor_out[CH_1],
+				motor_out[CH_2],
+				motor_out[CH_3],
+				motor_out[CH_4]);
+}
+*/
 
 static void output_motor_test()
 {
