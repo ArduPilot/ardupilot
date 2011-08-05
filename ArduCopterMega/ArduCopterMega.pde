@@ -345,6 +345,11 @@ static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static bool simple_bearing_is_set = false;
 static long initial_simple_bearing;				// used for Simple mode
 
+// Acro
+#if CH7_OPTION == DO_FLIP
+static bool do_flip = false;
+#endif
+
 // Airspeed
 // --------
 static int		airspeed;							// m/s * 100
@@ -1086,6 +1091,13 @@ void update_location(void)
 
 void update_current_flight_mode(void)
 {
+	#if CH7_OPTION == DO_FLIP
+	if (do_flip){
+		roll_flip();
+		return;
+	}
+	#endif
+
 	if(control_mode == AUTO){
 
 		// this is a hack to prevent run up of the throttle I term for alt hold
