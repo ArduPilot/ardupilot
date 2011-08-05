@@ -14,6 +14,10 @@
 #define MAG_PROTOCOL_5843		0
 #define MAG_PROTOCOL_5883L		1
 
+// CH 7 control
+#define DO_SET_HOVER 0
+#define DO_FLIP 1
+
 // Frame types
 #define QUAD_FRAME 0
 #define TRI_FRAME 1
