@@ -28,8 +28,8 @@ static void output_motors_armed()
 	    motor_out[CH_8]	   =  g.rc_3.radio_out + roll_out + pitch_out;			        // CW
 
         // Front Right
-		motor_out[CH_10]		= ((g.rc_3.radio_out * g.top_bottom_ratio) - roll_out + pitch_out);	// CCW TOP
-	    motor_out[CH_11]		=  g.rc_3.radio_out - roll_out + pitch_out;			        // CW
+		motor_out[CH_10]	= ((g.rc_3.radio_out * g.top_bottom_ratio) - roll_out + pitch_out);	// CCW TOP
+	    motor_out[CH_11]	=  g.rc_3.radio_out - roll_out + pitch_out;			        // CW
 
 		// Back Left
 		motor_out[CH_3]		= ((g.rc_3.radio_out * g.top_bottom_ratio) + roll_out - pitch_out);	// CCW TOP
@@ -74,6 +74,16 @@ static void output_motors_armed()
 	motor_out[CH_8]	    -= g.rc_4.pwm_out;	// CW
 	motor_out[CH_11]    -= g.rc_4.pwm_out;	// CW
 
+	// TODO add stability patch
+	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
+	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
+	motor_out[CH_3]		= min(motor_out[CH_3], 	out_max);
+	motor_out[CH_4]		= min(motor_out[CH_4], 	out_max);
+	motor_out[CH_7]		= min(motor_out[CH_7],  out_max);
+	motor_out[CH_8]		= min(motor_out[CH_8],  out_max);
+	motor_out[CH_10]	= min(motor_out[CH_10], out_max);
+	motor_out[CH_11] 	= min(motor_out[CH_11], out_max);
+
 	// limit output so motors don't stop
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);
 	motor_out[CH_2]		= max(motor_out[CH_2], 	out_min);
@@ -84,57 +94,33 @@ static void output_motors_armed()
 	motor_out[CH_10]	= max(motor_out[CH_10], out_min);
 	motor_out[CH_11] 	= max(motor_out[CH_11], out_min);
 
-
-	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
-	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
-	motor_out[CH_3]		= min(motor_out[CH_3], 	out_max);
-	motor_out[CH_4]		= min(motor_out[CH_4], 	out_max);
-	motor_out[CH_7]		= min(motor_out[CH_7],  out_max);
-	motor_out[CH_8]		= min(motor_out[CH_8],  out_max);
-	motor_out[CH_10]	= min(motor_out[CH_10], out_max);
-	motor_out[CH_11] 	= min(motor_out[CH_11], out_max);
-
 	#if CUT_MOTORS == ENABLED
-		// Send commands to motors
-		if(g.rc_3.servo_out > 0){
-			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
-			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
-			APM_RC.OutputCh(CH_10, motor_out[CH_10]);
-			APM_RC.OutputCh(CH_11, motor_out[CH_11]);
-
-			// InstantPWM
-			APM_RC.Force_Out0_Out1();
-			APM_RC.Force_Out6_Out7();
-			APM_RC.Force_Out2_Out3();
-		}else{
-			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
-		}
-	#else
-		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-		APM_RC.OutputCh(CH_7, motor_out[CH_7]);
-		APM_RC.OutputCh(CH_8, motor_out[CH_8]);
-		APM_RC.OutputCh(CH_10, motor_out[CH_10]);
-		APM_RC.OutputCh(CH_11, motor_out[CH_11]);
-
-		// InstantPWM
-		APM_RC.Force_Out0_Out1();
-		APM_RC.Force_Out6_Out7();
-		APM_RC.Force_Out2_Out3();
+	// if we are not sending a throttle output, we cut the motors
+	if(g.rc_3.servo_out == 0){
+		motor_out[CH_1]		= g.rc_3.radio_min;
+		motor_out[CH_2]		= g.rc_3.radio_min;
+		motor_out[CH_3]		= g.rc_3.radio_min;
+		motor_out[CH_4] 	= g.rc_3.radio_min;
+		motor_out[CH_7] 	= g.rc_3.radio_min;
+		motor_out[CH_8] 	= g.rc_3.radio_min;
+		motor_out[CH_10] 	= g.rc_3.radio_min;
+		motor_out[CH_11] 	= g.rc_3.radio_min;
+	}
 	#endif
+
+	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+	APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+	APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+	APM_RC.OutputCh(CH_8, motor_out[CH_8]);
+	APM_RC.OutputCh(CH_10, motor_out[CH_10]);
+	APM_RC.OutputCh(CH_11, motor_out[CH_11]);
+
+	// InstantPWM
+	APM_RC.Force_Out0_Out1();
+	APM_RC.Force_Out6_Out7();
+	APM_RC.Force_Out2_Out3();
 }
 
 static void output_motors_disarmed()
