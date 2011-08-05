@@ -16,7 +16,6 @@ static void output_motors_armed()
 	g.rc_2.calc_pwm();
 	g.rc_3.calc_pwm();
 
-
 	int roll_out 		= (float)g.rc_1.pwm_out * .866;
 	int pitch_out 		= g.rc_2.pwm_out / 2;
 
@@ -29,39 +28,45 @@ static void output_motors_armed()
 
 	//motor_out[CH_4]		+= (float)(abs(g.rc_4.control_in)) * .013;
 
+	// Tridge's stability patch
+	if (motor_out[CH_1] > out_max) {
+		motor_out[CH_2] -= (motor_out[CH_1] - out_max) >> 1;
+		motor_out[CH_4] -= (motor_out[CH_1] - out_max) >> 1;
+		motor_out[CH_1] = out_max;
+	}
+
+	if (motor_out[CH_2] > out_max) {
+		motor_out[CH_1] -= (motor_out[CH_2] - out_max) >> 1;
+		motor_out[CH_4] -= (motor_out[CH_2] - out_max) >> 1;
+		motor_out[CH_2] = out_max;
+	}
+
+	if (motor_out[CH_4] > out_max) {
+		motor_out[CH_1] -= (motor_out[CH_4] - out_max) >> 1;
+		motor_out[CH_2] -= (motor_out[CH_4] - out_max) >> 1;
+		motor_out[CH_4] = out_max;
+	}
+
 	// limit output so motors don't stop
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);
 	motor_out[CH_2]		= max(motor_out[CH_2], 	out_min);
 	motor_out[CH_4] 	= max(motor_out[CH_4], 	out_min);
 
-	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
-	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
-	motor_out[CH_4] 	= min(motor_out[CH_4], 	out_max);
-
 	#if CUT_MOTORS == ENABLED
-			// Send commands to motors
-		if(g.rc_3.servo_out > 0){
-			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-			// InstantPWM
-			APM_RC.Force_Out0_Out1();
-			APM_RC.Force_Out2_Out3();
-		}else{
-			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-		}
-
-	#else
-
-		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-		// InstantPWM
-		APM_RC.Force_Out0_Out1();
-		APM_RC.Force_Out2_Out3();
+	// if we are not sending a throttle output, we cut the motors
+	if(g.rc_3.servo_out == 0){
+		motor_out[CH_1]		= g.rc_3.radio_min;
+		motor_out[CH_2]		= g.rc_3.radio_min;
+		motor_out[CH_4] 	= g.rc_3.radio_min;
+	}
 	#endif
+
+	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+	// InstantPWM
+	APM_RC.Force_Out0_Out1();
+	APM_RC.Force_Out2_Out3();
 }
 
 static void output_motors_disarmed()
