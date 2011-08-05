@@ -6,6 +6,7 @@
 //    Some states are fixed commands (for a fixed time)
 //    Some states are fixed commands (until some IMU condition)
 //    Some states include controls inside
+#if CH7_OPTION == DO_FLIP
 void roll_flip()
 {
 	#define AAP_THR_INC 180
@@ -76,3 +77,4 @@ void roll_flip()
 			break;
 	}
 }
+#endif
