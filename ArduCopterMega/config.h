@@ -58,6 +58,14 @@
 # define SONAR_TYPE		MAX_SONAR_XL
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Acrobatics
+//
+
+#ifndef CH7_OPTION
+# define CH7_OPTION		DO_SET_HOVER
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
@@ -378,16 +386,16 @@
 // Navigation control gains
 //
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			1.4			//
+# define NAV_LOITER_P			2.4		//1.4			//
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.015		//
+# define NAV_LOITER_I			0.01	//
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			1.4			//
+# define NAV_LOITER_D			1.0 	//1.4			//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		12			// degrees°
+# define NAV_LOITER_IMAX		12		// degrees°
 #endif
 
 
@@ -420,7 +428,7 @@
 # define THROTTLE_I		0.01		//with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_D
-# define THROTTLE_D		0.4		// upped with filter
+# define THROTTLE_D		0.4			// upped with filter
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		30
