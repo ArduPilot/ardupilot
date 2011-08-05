@@ -13,6 +13,9 @@ typedef struct __mavlink_image_triggered_t
 	float lat; ///< GPS X coordinate
 	float lon; ///< GPS Y coordinate
 	float alt; ///< Global frame altitude
+	float ground_x; ///< Ground truth X
+	float ground_y; ///< Ground truth Y
+	float ground_z; ///< Ground truth Z
 
 } mavlink_image_triggered_t;
 
@@ -33,9 +36,12 @@ typedef struct __mavlink_image_triggered_t
  * @param lat GPS X coordinate
  * @param lon GPS Y coordinate
  * @param alt Global frame altitude
+ * @param ground_x Ground truth X
+ * @param ground_y Ground truth Y
+ * @param ground_z Ground truth Z
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_image_triggered_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt)
+static inline uint16_t mavlink_msg_image_triggered_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt, float ground_x, float ground_y, float ground_z)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_IMAGE_TRIGGERED;
@@ -49,6 +55,9 @@ static inline uint16_t mavlink_msg_image_triggered_pack(uint8_t system_id, uint8
 	i += put_float_by_index(lat, i, msg->payload); // GPS X coordinate
 	i += put_float_by_index(lon, i, msg->payload); // GPS Y coordinate
 	i += put_float_by_index(alt, i, msg->payload); // Global frame altitude
+	i += put_float_by_index(ground_x, i, msg->payload); // Ground truth X
+	i += put_float_by_index(ground_y, i, msg->payload); // Ground truth Y
+	i += put_float_by_index(ground_z, i, msg->payload); // Ground truth Z
 
 	return mavlink_finalize_message(msg, system_id, component_id, i);
 }
@@ -68,9 +77,12 @@ static inline uint16_t mavlink_msg_image_triggered_pack(uint8_t system_id, uint8
  * @param lat GPS X coordinate
  * @param lon GPS Y coordinate
  * @param alt Global frame altitude
+ * @param ground_x Ground truth X
+ * @param ground_y Ground truth Y
+ * @param ground_z Ground truth Z
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_image_triggered_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt)
+static inline uint16_t mavlink_msg_image_triggered_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt, float ground_x, float ground_y, float ground_z)
 {
 	uint16_t i = 0;
 	msg->msgid = MAVLINK_MSG_ID_IMAGE_TRIGGERED;
@@ -84,6 +96,9 @@ static inline uint16_t mavlink_msg_image_triggered_pack_chan(uint8_t system_id, 
 	i += put_float_by_index(lat, i, msg->payload); // GPS X coordinate
 	i += put_float_by_index(lon, i, msg->payload); // GPS Y coordinate
 	i += put_float_by_index(alt, i, msg->payload); // Global frame altitude
+	i += put_float_by_index(ground_x, i, msg->payload); // Ground truth X
+	i += put_float_by_index(ground_y, i, msg->payload); // Ground truth Y
+	i += put_float_by_index(ground_z, i, msg->payload); // Ground truth Z
 
 	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
 }
@@ -98,7 +113,7 @@ static inline uint16_t mavlink_msg_image_triggered_pack_chan(uint8_t system_id, 
  */
 static inline uint16_t mavlink_msg_image_triggered_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_image_triggered_t* image_triggered)
 {
-	return mavlink_msg_image_triggered_pack(system_id, component_id, msg, image_triggered->timestamp, image_triggered->seq, image_triggered->roll, image_triggered->pitch, image_triggered->yaw, image_triggered->local_z, image_triggered->lat, image_triggered->lon, image_triggered->alt);
+	return mavlink_msg_image_triggered_pack(system_id, component_id, msg, image_triggered->timestamp, image_triggered->seq, image_triggered->roll, image_triggered->pitch, image_triggered->yaw, image_triggered->local_z, image_triggered->lat, image_triggered->lon, image_triggered->alt, image_triggered->ground_x, image_triggered->ground_y, image_triggered->ground_z);
 }
 
 /**
@@ -114,13 +129,16 @@ static inline uint16_t mavlink_msg_image_triggered_encode(uint8_t system_id, uin
  * @param lat GPS X coordinate
  * @param lon GPS Y coordinate
  * @param alt Global frame altitude
+ * @param ground_x Ground truth X
+ * @param ground_y Ground truth Y
+ * @param ground_z Ground truth Z
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_image_triggered_send(mavlink_channel_t chan, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt)
+static inline void mavlink_msg_image_triggered_send(mavlink_channel_t chan, uint64_t timestamp, uint32_t seq, float roll, float pitch, float yaw, float local_z, float lat, float lon, float alt, float ground_x, float ground_y, float ground_z)
 {
 	mavlink_message_t msg;
-	mavlink_msg_image_triggered_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, timestamp, seq, roll, pitch, yaw, local_z, lat, lon, alt);
+	mavlink_msg_image_triggered_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, timestamp, seq, roll, pitch, yaw, local_z, lat, lon, alt, ground_x, ground_y, ground_z);
 	mavlink_send_uart(chan, &msg);
 }
 
@@ -267,6 +285,51 @@ static inline float mavlink_msg_image_triggered_get_alt(const mavlink_message_t*
 }
 
 /**
+ * @brief Get field ground_x from image_triggered message
+ *
+ * @return Ground truth X
+ */
+static inline float mavlink_msg_image_triggered_get_ground_x(const mavlink_message_t* msg)
+{
+	generic_32bit r;
+	r.b[3] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[0];
+	r.b[2] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[2];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[3];
+	return (float)r.f;
+}
+
+/**
+ * @brief Get field ground_y from image_triggered message
+ *
+ * @return Ground truth Y
+ */
+static inline float mavlink_msg_image_triggered_get_ground_y(const mavlink_message_t* msg)
+{
+	generic_32bit r;
+	r.b[3] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[0];
+	r.b[2] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[2];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[3];
+	return (float)r.f;
+}
+
+/**
+ * @brief Get field ground_z from image_triggered message
+ *
+ * @return Ground truth Z
+ */
+static inline float mavlink_msg_image_triggered_get_ground_z(const mavlink_message_t* msg)
+{
+	generic_32bit r;
+	r.b[3] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[0];
+	r.b[2] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[1];
+	r.b[1] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[2];
+	r.b[0] = (msg->payload+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float)+sizeof(float))[3];
+	return (float)r.f;
+}
+
+/**
  * @brief Decode a image_triggered message into a struct
  *
  * @param msg The message to decode
@@ -283,4 +346,7 @@ static inline void mavlink_msg_image_triggered_decode(const mavlink_message_t* m
 	image_triggered->lat = mavlink_msg_image_triggered_get_lat(msg);
 	image_triggered->lon = mavlink_msg_image_triggered_get_lon(msg);
 	image_triggered->alt = mavlink_msg_image_triggered_get_alt(msg);
+	image_triggered->ground_x = mavlink_msg_image_triggered_get_ground_x(msg);
+	image_triggered->ground_y = mavlink_msg_image_triggered_get_ground_y(msg);
+	image_triggered->ground_z = mavlink_msg_image_triggered_get_ground_z(msg);
 }

@@ -13,6 +13,7 @@ enum MAV_CLASS
 	MAV_CLASS_GENERIC_MISSION_WAYPOINTS_ONLY = 5,  ///< Generic autopilot only supporting simple waypoints
 	MAV_CLASS_GENERIC_MISSION_NAVIGATION_ONLY = 6, ///< Generic autopilot supporting waypoints and other simple navigation commands
 	MAV_CLASS_GENERIC_MISSION_FULL = 7,            ///< Generic autopilot supporting the full mission command set
+	MAV_CLASS_NONE = 8,           ///< No valid autopilot
 	MAV_CLASS_NB                  ///< Number of autopilot classes
 };
 
@@ -101,7 +102,8 @@ enum MAV_NAV
     MAV_NAV_RETURNING,
     MAV_NAV_LANDING,
     MAV_NAV_LOST,
-    MAV_NAV_LOITER
+    MAV_NAV_LOITER,
+	MAV_NAV_FREE_DRIFT
 };
 
 enum MAV_TYPE
@@ -112,7 +114,12 @@ enum MAV_TYPE
     MAV_COAXIAL = 3,
     MAV_HELICOPTER = 4,
     MAV_GROUND = 5,
-    OCU = 6
+    OCU = 6,
+	MAV_AIRSHIP = 7,
+	MAV_FREE_BALLOON = 8,
+	MAV_ROCKET = 9,
+	UGV_GROUND_ROVER = 10,
+	UGV_SURFACE_SHIP = 11
 };
 
 enum MAV_AUTOPILOT_TYPE
@@ -120,7 +127,8 @@ enum MAV_AUTOPILOT_TYPE
     MAV_AUTOPILOT_GENERIC = 0,
     MAV_AUTOPILOT_PIXHAWK = 1,
     MAV_AUTOPILOT_SLUGS = 2,
-    MAV_AUTOPILOT_ARDUPILOTMEGA = 3
+    MAV_AUTOPILOT_ARDUPILOTMEGA = 3,
+	MAV_AUTOPILOT_NONE = 4
 };
 
 enum MAV_COMPONENT
@@ -133,6 +141,8 @@ enum MAV_COMPONENT
     MAV_COMP_ID_MAPPER,
     MAV_COMP_ID_CAMERA,
     MAV_COMP_ID_IMU = 200,
+	MAV_COMP_ID_IMU_2 = 201,
+	MAV_COMP_ID_IMU_3 = 202,
     MAV_COMP_ID_UDP_BRIDGE = 240,
     MAV_COMP_ID_UART_BRIDGE = 241,
     MAV_COMP_ID_SYSTEM_CONTROL = 250
@@ -143,7 +153,19 @@ enum MAV_FRAME
     MAV_FRAME_GLOBAL = 0,
     MAV_FRAME_LOCAL = 1,
     MAV_FRAME_MISSION = 2,
-	MAV_FRAME_GLOBAL_RELATIVE_ALT = 3
+	MAV_FRAME_GLOBAL_RELATIVE_ALT = 3,
+        MAV_FRAME_LOCAL_ENU = 4
+};
+
+enum MAVLINK_DATA_STREAM_TYPE
+{
+    MAVLINK_DATA_STREAM_IMG_JPEG,
+	MAVLINK_DATA_STREAM_IMG_BMP,
+	MAVLINK_DATA_STREAM_IMG_RAW8U,
+	MAVLINK_DATA_STREAM_IMG_RAW32U,
+	MAVLINK_DATA_STREAM_IMG_PGM,
+	MAVLINK_DATA_STREAM_IMG_PNG
+	
 };
 
 #define MAVLINK_STX 0x55 ///< Packet start sign
@@ -165,6 +187,7 @@ typedef struct __mavlink_system {
     uint8_t type;    ///< Unused, can be used by user to store the system's type
     uint8_t state;   ///< Unused, can be used by user to store the system's state
     uint8_t mode;    ///< Unused, can be used by user to store the system's mode
+	uint8_t nav_mode;    ///< Unused, can be used by user to store the system's navigation mode
 } mavlink_system_t;
 
 typedef struct __mavlink_message {
