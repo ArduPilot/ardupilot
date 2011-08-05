@@ -49,6 +49,12 @@ static unsigned long trim_timer;
 // set this to your trainer switch
 static void read_trim_switch()
 {
+#if CH7_OPTION == DO_FLIP
+	if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
+		do_flip = true;
+	}
+
+#elif CH7_OPTION == DO_SET_HOVER
 	// switch is engaged
 	if (g.rc_7.control_in > 800){
 		trim_flag = true;
@@ -63,8 +69,10 @@ static void read_trim_switch()
 					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
 			}
 			trim_flag = false;
+
 		}
 	}
+#endif
 }
 
 static void auto_trim()
