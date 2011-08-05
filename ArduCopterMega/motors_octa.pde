@@ -25,41 +25,41 @@ static void output_motors_armed()
 
 		//Front side
 		motor_out[CH_1]		= g.rc_3.radio_out + g.rc_2.pwm_out - roll_out;	 // CW	 FRONT RIGHT
-		motor_out[CH_11] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;	 // CCW	 FRONT LEFT
+		motor_out[CH_7] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;	 // CCW	 FRONT LEFT
 
-                //Left side
+		//Back side
+		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out;	 // CW	 BACK LEFT
+		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out;	 // CCW  BACK RIGHT
+
+		//Left side
 		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out; // CW	 LEFT FRONT
 		motor_out[CH_8] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out; // CCW	 LEFT BACK
 
-                //Right side
-		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out; // CW	 RIGHT BACK
-		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out; // CCW	 RIGHT FRONT
+		//Right side
+		motor_out[CH_11] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out; // CW	 RIGHT BACK
+		motor_out[CH_3]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out; // CCW	 RIGHT FRONT
 
-		//Back side
-		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out;	 // CW	 BACK LEFT
-		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out;	 // CCW	BACK RIGHT
-
-	}if(g.frame_orientation == PLUS_FRAME){
+	}else if(g.frame_orientation == PLUS_FRAME){
 		roll_out 		= (float)g.rc_1.pwm_out * 0.71;
 		pitch_out 	 	= (float)g.rc_2.pwm_out * 0.71;
 
 		//Front side
 		motor_out[CH_1]		= g.rc_3.radio_out + g.rc_2.pwm_out;		// CW	FRONT
-		motor_out[CH_2] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	FRONT RIGHT
-		motor_out[CH_11] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	FRONT LEFT
+		motor_out[CH_3] 	= g.rc_3.radio_out - roll_out + pitch_out;	// CCW	FRONT RIGHT
+		motor_out[CH_7] 	= g.rc_3.radio_out + roll_out + pitch_out;	// CCW	FRONT LEFT
 
-				//Left side
-		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out;					// CW	LEFT
+		//Left side
+		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out;		// CW	LEFT
 
-				//Right side
-		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out;					// CW	RIGHT
+		//Right side
+		motor_out[CH_11] 	= g.rc_3.radio_out - g.rc_1.pwm_out;		// CW	RIGHT
 
 		//Back side
-		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CW	BACK
+		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_2.pwm_out;		// CW	BACK
 		motor_out[CH_4]		= g.rc_3.radio_out - roll_out - pitch_out;	// CCW 	BACK RIGHT
 		motor_out[CH_8]		= g.rc_3.radio_out + roll_out - pitch_out;	// CCW	BACK LEFT
 
-	}else{
+	}else if(g.frame_orientation == V_FRAME){
 
 		int roll_out2, pitch_out2;
 		int roll_out3, pitch_out3;
@@ -71,37 +71,49 @@ static void output_motors_armed()
 		pitch_out2 	 	= (float)g.rc_2.pwm_out * 0.34;
 		roll_out3 	 	= (float)g.rc_1.pwm_out * 0.666;
 		pitch_out3 	 	= (float)g.rc_2.pwm_out * 0.32;
-		roll_out4 	 	= (float)g.rc_1.pwm_out * 0.5;
+		roll_out4 	 	= g.rc_1.pwm_out / 2;
 		pitch_out4 	 	= (float)g.rc_2.pwm_out * 0.98;
 
 		//Front side
-		motor_out[CH_1]		= g.rc_3.radio_out + g.rc_2.pwm_out - roll_out;		// CW	 FRONT RIGHT
-		motor_out[CH_11] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;		// CCW FRONT LEFT
+		motor_out[CH_10]	= g.rc_3.radio_out + g.rc_2.pwm_out - roll_out;		// CW  FRONT RIGHT
+		motor_out[CH_7] 	= g.rc_3.radio_out + g.rc_2.pwm_out + roll_out;		// CCW FRONT LEFT
 
 		//Left side
-		motor_out[CH_10] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out2; // CW	 LEFT FRONT
-		motor_out[CH_8] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out3; // CCW LEFT BACK
+		motor_out[CH_1] 	= g.rc_3.radio_out + g.rc_1.pwm_out + pitch_out2; 	// CW  LEFT FRONT
+		motor_out[CH_3] 	= g.rc_3.radio_out + g.rc_1.pwm_out - pitch_out3;	// CCW LEFT BACK
 
 		//Right side
-		motor_out[CH_3] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out3; // CW	 RIGHT BACK
-		motor_out[CH_2]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out2; // CCW RIGHT FRONT
+		motor_out[CH_2] 	= g.rc_3.radio_out - g.rc_1.pwm_out - pitch_out3;	// CW  RIGHT BACK
+		motor_out[CH_8]		= g.rc_3.radio_out - g.rc_1.pwm_out + pitch_out2;	// CCW RIGHT FRONT
 
 		//Back side
-		motor_out[CH_7]		= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW	 BACK LEFT
+		motor_out[CH_11]	= g.rc_3.radio_out - g.rc_2.pwm_out + roll_out4;	// CW  BACK LEFT
 		motor_out[CH_4]		= g.rc_3.radio_out - g.rc_2.pwm_out - roll_out4;	// CCW BACK RIGHT
 
 	}
 
 	// Yaw
-	motor_out[CH_2]		+= g.rc_4.pwm_out;	// CCW
+	motor_out[CH_3]		+= g.rc_4.pwm_out;	// CCW
 	motor_out[CH_4]		+= g.rc_4.pwm_out;	// CCW
-	motor_out[CH_11] 	+= g.rc_4.pwm_out;	// CCW
+	motor_out[CH_7] 	+= g.rc_4.pwm_out;	// CCW
 	motor_out[CH_8] 	+= g.rc_4.pwm_out;	// CCW
 
 	motor_out[CH_1]		-= g.rc_4.pwm_out;	// CW
-	motor_out[CH_7]		-= g.rc_4.pwm_out;	// CW
-	motor_out[CH_10]	-= g.rc_4.pwm_out;			// CW
-	motor_out[CH_3]		-= g.rc_4.pwm_out;			// CW
+	motor_out[CH_2]		-= g.rc_4.pwm_out;	// CW
+	motor_out[CH_10]	-= g.rc_4.pwm_out;	// CW
+	motor_out[CH_11]	-= g.rc_4.pwm_out;	// CW
+
+
+	// TODO add stability patch
+	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
+	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
+	motor_out[CH_3]		= min(motor_out[CH_3], 	out_max);
+	motor_out[CH_4]		= min(motor_out[CH_4], 	out_max);
+	motor_out[CH_7]		= min(motor_out[CH_7],  out_max);
+	motor_out[CH_8]		= min(motor_out[CH_8],  out_max);
+	motor_out[CH_10]	= min(motor_out[CH_10], out_max);
+	motor_out[CH_11] 	= min(motor_out[CH_11], out_max);
+
 
 	// limit output so motors don't stop
 	motor_out[CH_1]		= max(motor_out[CH_1], 	out_min);
@@ -113,57 +125,34 @@ static void output_motors_armed()
 	motor_out[CH_10]	= max(motor_out[CH_10], out_min);
 	motor_out[CH_11] 	= max(motor_out[CH_11], out_min);
 
-	motor_out[CH_1]		= min(motor_out[CH_1], 	out_max);
-	motor_out[CH_2]		= min(motor_out[CH_2], 	out_max);
-	motor_out[CH_3]		= min(motor_out[CH_3], 	out_max);
-	motor_out[CH_4]		= min(motor_out[CH_4], 	out_max);
-	motor_out[CH_7]		= min(motor_out[CH_7],  out_max);
-	motor_out[CH_8]		= min(motor_out[CH_8],  out_max);
-	motor_out[CH_10]	= min(motor_out[CH_10], out_max);
-	motor_out[CH_11] 	= min(motor_out[CH_11], out_max);
-
 
 	#if CUT_MOTORS == ENABLED
-		// Send commands to motors
-		if(g.rc_3.servo_out > 0){
-			APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-			APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-			APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-			APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-			APM_RC.OutputCh(CH_7, motor_out[CH_7]);
-			APM_RC.OutputCh(CH_8, motor_out[CH_8]);
-			APM_RC.OutputCh(CH_10, motor_out[CH_10]);
-			APM_RC.OutputCh(CH_11, motor_out[CH_11]);
-
-			// InstantPWM
-			APM_RC.Force_Out0_Out1();
-			APM_RC.Force_Out6_Out7();
-			APM_RC.Force_Out2_Out3();
-		}else{
-			APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
-			APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
-		}
-	#else
-		APM_RC.OutputCh(CH_1, motor_out[CH_1]);
-		APM_RC.OutputCh(CH_2, motor_out[CH_2]);
-		APM_RC.OutputCh(CH_3, motor_out[CH_3]);
-		APM_RC.OutputCh(CH_4, motor_out[CH_4]);
-		APM_RC.OutputCh(CH_7, motor_out[CH_7]);
-		APM_RC.OutputCh(CH_8, motor_out[CH_8]);
-		APM_RC.OutputCh(CH_10, motor_out[CH_10]);
-		APM_RC.OutputCh(CH_11, motor_out[CH_11]);
-
-		// InstantPWM
-		APM_RC.Force_Out0_Out1();
-		APM_RC.Force_Out6_Out7();
-		APM_RC.Force_Out2_Out3();
+	// if we are not sending a throttle output, we cut the motors
+	if(g.rc_3.servo_out == 0){
+		motor_out[CH_1]		= g.rc_3.radio_min;
+		motor_out[CH_2]		= g.rc_3.radio_min;
+		motor_out[CH_3]		= g.rc_3.radio_min;
+		motor_out[CH_4] 	= g.rc_3.radio_min;
+		motor_out[CH_7] 	= g.rc_3.radio_min;
+		motor_out[CH_8] 	= g.rc_3.radio_min;
+		motor_out[CH_10] 	= g.rc_3.radio_min;
+		motor_out[CH_11] 	= g.rc_3.radio_min;
+	}
 	#endif
+
+	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
+	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
+	APM_RC.OutputCh(CH_3, motor_out[CH_3]);
+	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+	APM_RC.OutputCh(CH_7, motor_out[CH_7]);
+	APM_RC.OutputCh(CH_8, motor_out[CH_8]);
+	APM_RC.OutputCh(CH_10, motor_out[CH_10]);
+	APM_RC.OutputCh(CH_11, motor_out[CH_11]);
+
+	// InstantPWM
+	APM_RC.Force_Out0_Out1();
+	APM_RC.Force_Out6_Out7();
+	APM_RC.Force_Out2_Out3();
 }
 
 static void output_motors_disarmed()
@@ -182,33 +171,38 @@ static void output_motors_disarmed()
 	// Send commands to motors
 	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
+
+	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
 }
 
 static void output_motor_test()
 {
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 50);
-	delay(1000);
-
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 50);
-	delay(1000);
-
 	APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 50);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 50);
+	delay(1000);
+
+	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_11, g.rc_3.radio_min + 50);
+	delay(1000);
+
+	APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 50);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 50);
+	delay(1000);
+
+	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 50);
 	delay(1000);
 
@@ -217,11 +211,7 @@ static void output_motor_test()
 	delay(1000);
 
 	APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_11, g.rc_3.radio_min + 50);
-	delay(1000);
-
-	APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 50);
 	delay(1000);
 }
 
