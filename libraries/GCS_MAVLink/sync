@@ -1,8 +1,5 @@
 #!/bin/sh
-branch="dev" 
-# temporarily using roi branch instead of master
-# this branch will be deleted soon so switch it back
-# to master then
+branch="master" 
 trap exit ERR
 rm -rf _tmp
 git clone git://github.com/pixhawk/mavlink.git -b $branch _tmp

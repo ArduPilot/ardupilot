@@ -1,0 +1,13 @@
+<?xml version='1.0'?>
+<mavlink>
+    <version>2</version>
+    <enums/>
+    <messages>
+        <message id="0" name="HEARTBEAT">
+            <description>The heartbeat message shows that a system is present and responding. The type of the MAV and Autopilot hardware allow the receiving system to treat further messages from this system appropriate (e.g. by laying out the user interface based on the autopilot).</description>
+            <field type="uint8_t" name="type">Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)</field>
+            <field type="uint8_t" name="autopilot">Type of the Autopilot: 0: Generic, 1: PIXHAWK, 2: SLUGS, 3: Ardupilot (up to 15 types), defined in MAV_AUTOPILOT_TYPE ENUM</field>
+            <field type="uint8_t_mavlink_version" name="mavlink_version">MAVLink version</field>
+        </message>
+    </messages>
+</mavlink>

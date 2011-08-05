@@ -6,6 +6,6 @@
 #ifndef MAVLINK_H
 #define MAVLINK_H
 
-#include "slugs.h"
+#include "minimal.h"
 
 #endif
