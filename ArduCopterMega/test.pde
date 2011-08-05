@@ -30,7 +30,7 @@ static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_mission(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_mission(uint8_t argc, 		const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -80,7 +80,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
-	{"mission",		test_mission},
+//	{"mission",		test_mission},
 	//{"reverse",		test_reverse},
 	//{"wp",			test_wp_nav},
 };
@@ -271,9 +271,12 @@ test_wp_nav(uint8_t argc, const Menu::arg *argv)
 	}
 }
 */
+
 static int8_t
 test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
+
+	#if THROTTLE_FAILSAFE
 	byte fail_test;
 	print_hit_enter();
 	for(int i = 0; i < 50; i++){
@@ -318,6 +321,9 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+	#else
+		return (0);
+	#endif
 }
 
 /*static int8_t
@@ -458,8 +464,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			// ---
 			read_AHRS();
 
-			Vector3f accels 	= imu.get_accel();
-			Vector3f gyros 		= imu.get_gyro();
+			//Vector3f accels 	= imu.get_accel();
+			//Vector3f gyros 		= imu.get_gyro();
 			//Vector3f accel_filt	= imu.get_accel_filtered();
 			//accels_rot 	= dcm.get_dcm_matrix() * accel_filt;
 
@@ -512,13 +518,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								cos_yaw_x,	// x
 								sin_yaw_y);	// y
 			//*/
-
-			//
-#if HIL_MODE != HIL_MODE_ATTITUDE
-			Log_Write_Raw();
-#endif
+			//Log_Write_Raw();
 		}
-
 		if(Serial.available() > 0){
 			return (0);
 		}
@@ -809,15 +810,15 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	// save the alitude above home option
-	Serial.printf_P(PSTR("Hold altitude "));
+	Serial.printf_P(PSTR("Hold alt "));
 	if(g.RTL_altitude < 0){
 		Serial.printf_P(PSTR("\n"));
 	}else{
 		Serial.printf_P(PSTR("of %dm\n"), (int)g.RTL_altitude / 100);
 	}
 
-	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.waypoint_total);
-	Serial.printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
+	Serial.printf_P(PSTR("%d wp\n"), (int)g.waypoint_total);
+	Serial.printf_P(PSTR("Hit rad: %d\n"), (int)g.waypoint_radius);
 	//Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
 	report_wp();
@@ -871,11 +872,8 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		delay(100);
-
 		baro_alt 		= read_barometer();
-
 		Serial.printf_P(PSTR("Baro: %dcm\n"), baro_alt);
-
 		if(Serial.available() > 0){
 			return (0);
 		}
@@ -896,14 +894,11 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			compass.read();
 			compass.calculate(dcm.get_dcm_matrix());
 			Vector3f maggy = compass.get_offsets();
-			Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+			Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d\n"),
 						(wrap_360(ToDeg(compass.heading) * 100)) /100,
 						compass.mag_x,
 						compass.mag_y,
-						compass.mag_z,
-						maggy.x,
-						maggy.y,
-						maggy.z);
+						compass.mag_z);
 
 			if(Serial.available() > 0){
 				return (0);
@@ -1012,19 +1007,20 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
+/*
 static int8_t
 test_mission(uint8_t argc, const Menu::arg *argv)
 {
 	//write out a basic mission to the EEPROM
 
-/*{
-	uint8_t		id;					///< command id
-	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
-	uint8_t		p1;					///< param 1
-	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
-	int32_t		lat;				///< param 3 - Lattitude * 10**7
-	int32_t		lng;				///< param 4 - Longitude * 10**7
-}*/
+//{
+//	uint8_t		id;					///< command id
+//	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
+//	uint8_t		p1;					///< param 1
+//	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
+//	int32_t		lat;				///< param 3 - Lattitude * 10**7
+//	int32_t		lng;				///< param 4 - Longitude * 10**7
+//}
 
 	// clear home
 	{Location t = {0,   	0,      0, 		0, 		0, 			0};
@@ -1070,12 +1066,12 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	test_wp(NULL, NULL);
 	return (0);
 }
-
+*/
 static void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
-
+/*
 static void fake_out_gps()
 {
 	static float rads;
@@ -1097,7 +1093,7 @@ static void fake_out_gps()
 	//next_WP.lat 	= home.lat + length * cos(rads);   // Y
 }
 
-
+*/
 
 static void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n",
