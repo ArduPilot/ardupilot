@@ -16,12 +16,10 @@
 #define AP_OPTICALFLOW_ADNS3080_PINS_FORWARD_LEFT AP_OPTICALFLOW_ROTATION_YAW_225
 
 // field of view of ADNS3080 sensor lenses
-#define AP_OPTICALFLOW_ADNS3080_04_FOV 1.396263 // 80 degrees
-#define AP_OPTICALFLOW_ADNS3080_08_FOV 0.872665 // 50 degrees
-#define AP_OPTICALFLOW_ADNS3080_12_FOV 0.349066 // 20 degrees
+#define AP_OPTICALFLOW_ADNS3080_08_FOV 0.202458  // 11.6 degrees
 
 // scaler - value returned when sensor is moved equivalent of 1 pixel
-#define AP_OPTICALFLOW_ADNS3080_SCALER  3.4   // was 10.5
+#define AP_OPTICALFLOW_ADNS3080_SCALER  1.1
 
 // We use Serial Port 2 in SPI Mode
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -29,7 +27,7 @@
 	#define AP_SPI_DATAOUT     51    // MOSI  // PB2
 	#define AP_SPI_CLOCK       52    // SCK   // PB1
 	#define ADNS3080_CHIP_SELECT 34  // PC3
-	#define ADNS3080_RESET       35  // PC2
+	#define ADNS3080_RESET       40  // PG1  was 35 / PC2
 #else  // normal arduino SPI pins...these need to be checked
 	#define AP_SPI_DATAIN  12        //MISO 
 	#define AP_SPI_DATAOUT 11        //MOSI

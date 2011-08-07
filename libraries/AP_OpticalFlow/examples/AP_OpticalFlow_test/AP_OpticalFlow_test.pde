@@ -20,7 +20,7 @@ void setup()
 	if( flowSensor.init() == false )
 	    Serial.println("Failed to initialise ADNS3080");
 	flowSensor.set_orientation(AP_OPTICALFLOW_ADNS3080_PINS_FORWARD);
-	flowSensor.set_field_of_view(AP_OPTICALFLOW_ADNS3080_12_FOV);
+	flowSensor.set_field_of_view(AP_OPTICALFLOW_ADNS3080_08_FOV);
 	
 	delay(1000);
 }
@@ -310,11 +310,7 @@ void display_motion()
 			Serial.print("/");
 			Serial.print(flowSensor.dy,DEC);
 			Serial.print("\tsqual:");
-			Serial.print(flowSensor.surface_quality,DEC);
-			Serial.print("\tlat:");
-			Serial.print(flowSensor.lat,DEC);
-			Serial.print("\tlng:");
-			Serial.print(flowSensor.lng,DEC);			
+			Serial.print(flowSensor.surface_quality,DEC);		
 			Serial.println();
 			first_time = false;
 		//}

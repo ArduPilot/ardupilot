@@ -41,7 +41,7 @@ union NumericIntType
 AP_OpticalFlow_ADNS3080::AP_OpticalFlow_ADNS3080()
 {
     num_pixels = ADNS3080_PIXELS_X;
-    field_of_view = AP_OPTICALFLOW_ADNS3080_12_FOV;
+    field_of_view = AP_OPTICALFLOW_ADNS3080_08_FOV;
 	scaler = AP_OPTICALFLOW_ADNS3080_SCALER;
 }
 
