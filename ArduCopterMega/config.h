@@ -220,7 +220,7 @@
 # define OPTFLOW_ORIENTATION 	AP_OPTICALFLOW_ADNS3080_PINS_FORWARD
 #endif
 #ifndef OPTFLOW_FOV
-# define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_12_FOV
+# define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_08_FOV
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
