@@ -88,10 +88,10 @@ AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
     int i;
     
 	// only update position if surface quality is good and angle is not over 45 degrees
-	if( surface_quality >= 20 && fabs(roll) <= FORTYFIVE_DEGREES && fabs(pitch) <= FORTYFIVE_DEGREES ) {
+	if( surface_quality >= 10 && fabs(roll) <= FORTYFIVE_DEGREES && fabs(pitch) <= FORTYFIVE_DEGREES ) {
 		// calculate expected x,y diff due to roll and pitch change
 		exp_change_x = diff_roll * radians_to_pixels;
-		exp_change_y = diff_pitch * radians_to_pixels;
+		exp_change_y = -diff_pitch * radians_to_pixels;
 			
 		// real estimated raw change from mouse
 		change_x = dx - exp_change_x;
