@@ -1336,24 +1336,36 @@ static void update_navigation()
 
 		case GUIDED:
 		case RTL:
-			if(wp_distance > 20){
+			if(wp_distance > 5){
 				// calculates desired Yaw
 				// XXX this is an experiment
 				#if FRAME_CONFIG ==	HELI_FRAME
 				update_nav_yaw();
 				#endif
 
-			}else{
-				// Don't Yaw anymore
-				// hack to elmininate crosstrack effect
-				crosstrack_bearing 	= target_bearing;
 			}
 
+			//if(wp_distance < 4){
+				// clears crosstrack
+				crosstrack_bearing 	= target_bearing;
+				//wp_control = WP_MODE;
+			//}else{
+				//wp_control = LOITER_MODE;
+			//}
+
+			wp_control = WP_MODE;
+
 			// are we Traversing or Loitering?
-			wp_control = (wp_distance < 4 ) ? LOITER_MODE : WP_MODE;
+			//wp_control = (wp_distance < 4 ) ? LOITER_MODE : WP_MODE;
 
 			// calculates the desired Roll and Pitch
-			update_nav_wp();
+			//update_nav_wp();
+
+			// calc a rate dampened pitch to the target
+			calc_rate_nav(g.waypoint_speed_max.get());
+
+			// rotate that pitch to the copter frame of reference
+			calc_nav_output();
 			break;
 
 			// switch passthrough to LOITER
@@ -1378,11 +1390,10 @@ static void update_navigation()
 			update_loiter();
 
 			// calc a rate dampened pitch to the target
-			calc_rate_nav(200);
+			calc_rate_nav(400);
 
 			// rotate that pitch to the copter frame of reference
 			calc_nav_output();
-
 			break;
 
 	}
