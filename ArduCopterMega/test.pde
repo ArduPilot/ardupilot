@@ -444,7 +444,8 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	//dcm.ki_yaw(0);
 
 	report_imu();
-	imu.init_gyro();
+	//imu.init_gyro();
+	imu.init_gyro(mavlink_delay);
 	report_imu();
 
 	print_hit_enter();
