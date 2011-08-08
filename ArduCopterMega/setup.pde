@@ -266,7 +266,7 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
-	imu.init_accel();
+	imu.init_accel(mavlink_delay);
 	print_accel_offsets();
 	report_imu();
 	return(0);
