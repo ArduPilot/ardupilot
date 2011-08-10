@@ -138,6 +138,7 @@ AP_Compass_HMC5843::init()
 	  calibration[2] = 1.0;
 
 	  // read values from the compass
+	  delay(50);
 	  read();
 	  if (last_update == update_stamp) 
 		 continue; // we didn't read valid values
