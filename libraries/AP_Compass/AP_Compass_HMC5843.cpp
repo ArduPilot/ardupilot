@@ -104,16 +104,27 @@ AP_Compass_HMC5843::init()
   }
   if ( base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
 	 // a 5883L supports the sample averaging config
-      product_id = AP_COMPASS_TYPE_HMC5883L;
-	  calibration_gain = 0x60;
-	  expected_xy = 766;
-	  expected_z  = 713;
+	 int old_product_id = product_id;
+
+	 product_id = AP_COMPASS_TYPE_HMC5883L;
+	 calibration_gain = 0x60;
+	 expected_xy = 766;
+	 expected_z  = 713;
+
+	 if (old_product_id != product_id) {
+		/* now we know the compass type we need to rotate the
+		 * orientation matrix that we were given
+		 */
+		Matrix3f rot_mat = _orientation_matrix.get();
+		_orientation_matrix.set_and_save(rot_mat * Matrix3f(ROTATION_YAW_90));
+	 }
   } else if (base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
       product_id = AP_COMPASS_TYPE_HMC5843;
   } else {
 	 // not behaving like either supported compass type
 	 return false;
   }
+
   
   while( success == 0 && numAttempts < 5 )
   {
