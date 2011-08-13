@@ -9,11 +9,6 @@
 #define SONAR 0
 #define BARO 1
 
-//MAGNETOMETER
-// ----------------------
-#define MAG_PROTOCOL_5843		0
-#define MAG_PROTOCOL_5883L		1
-
 // CH 7 control
 #define DO_SET_HOVER 0
 #define DO_FLIP 1
