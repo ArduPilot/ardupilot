@@ -83,17 +83,73 @@ write_register(int address, byte value)
   return true;
 }
 
+/*
+  the 5883L has a different orientation to the 5843. This allows us to
+  use a single MAG_ORIENTATION for both
+ */
+static void rotate_for_5883L(AP_VarS<Matrix3f> *_orientation_matrix)
+{
+		_orientation_matrix->set_and_save(_orientation_matrix->get() * Matrix3f(ROTATION_YAW_90));
+}
+
+
+// Read Sensor data
+bool AP_Compass_HMC5843::read_raw()
+{
+   int i = 0;
+   byte buff[6];
+
+   Wire.beginTransmission(COMPASS_ADDRESS);
+   Wire.send(0x03);        //sends address to read from
+   if (0 != Wire.endTransmission())
+	  return false;
+
+   Wire.requestFrom(COMPASS_ADDRESS, 6);    // request 6 bytes from device
+   while (Wire.available()) {
+	  buff[i] = Wire.receive();  // receive one byte
+	  i++;
+   }
+
+   if (0 != Wire.endTransmission())
+	  return false;
+
+   if (i != 6) {
+	  /* we didn't get enough bytes */
+	  return false;
+   }
+
+   int16_t rx, ry, rz;
+   rx = (int16_t)(buff[0] << 8) | buff[1];
+   if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+	  rz = (int16_t)(buff[2] << 8) | buff[3];
+	  ry = (int16_t)(buff[4] << 8) | buff[5];
+   } else {
+	  ry = (int16_t)(buff[2] << 8) | buff[3];
+	  rz = (int16_t)(buff[4] << 8) | buff[5];
+   }
+   if (rx == -4096 || ry == -4096 || rz == -4096) {
+	  // no valid data available
+	  return false;
+   }
+
+   mag_x = -rx;
+   mag_y = ry;
+   mag_z = -rz;
+   
+   return true;
+}
+
 
 // Public Methods //////////////////////////////////////////////////////////////
 bool 
 AP_Compass_HMC5843::init()
 {
-  int numAttempts = 0;
+  int numAttempts = 0, good_count = 0;
   bool success = false;
   byte base_config;  // used to test compass type
   byte calibration_gain = 0x20;
-  uint16_t expected_xy = 715;
-  uint16_t expected_z = 715;
+  uint16_t expected_x = 715;
+  uint16_t expected_yz = 715;
 
   delay(10);
 
@@ -108,15 +164,14 @@ AP_Compass_HMC5843::init()
 
 	 product_id = AP_COMPASS_TYPE_HMC5883L;
 	 calibration_gain = 0x60;
-	 expected_xy = 766;
-	 expected_z  = 713;
+	 expected_x = 766;
+	 expected_yz  = 713;
 
 	 if (old_product_id != product_id) {
 		/* now we know the compass type we need to rotate the
 		 * orientation matrix that we were given
 		 */
-		Matrix3f rot_mat = _orientation_matrix.get();
-		_orientation_matrix.set_and_save(rot_mat * Matrix3f(ROTATION_YAW_90));
+		rotate_for_5883L(&_orientation_matrix);
 	 }
   } else if (base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
       product_id = AP_COMPASS_TYPE_HMC5843;
@@ -125,11 +180,12 @@ AP_Compass_HMC5843::init()
 	 return false;
   }
 
+  calibration[0] = 0;
+  calibration[1] = 0;
+  calibration[2] = 0;
   
-  while( success == 0 && numAttempts < 5 )
+  while ( success == 0 && numAttempts < 20 && good_count < 5)
   {
-	 unsigned long update_stamp = last_update;
-
       // record number of attempts at initialisation
 	  numAttempts++;
 
@@ -143,29 +199,55 @@ AP_Compass_HMC5843::init()
 		  ! write_register(ModeRegister, SingleConversion))
 		 continue;
 
-	  // calibration initialisation
-	  calibration[0] = 1.0;
-	  calibration[1] = 1.0;
-	  calibration[2] = 1.0;
-
 	  // read values from the compass
 	  delay(50);
-	  read();
-	  if (last_update == update_stamp) 
+	  if (!read_raw())
 		 continue; // we didn't read valid values
 
 	  delay(10);
 
-	  // calibrate
-	  if( abs(mag_x) > 500 && abs(mag_x) < 2000 && abs(mag_y) > 500 && abs(mag_y) < 2000 && abs(mag_z) > 500 && abs(mag_z) < 2000)
-	  {
-		 calibration[0] = fabs(expected_xy / (float)mag_x);
-		 calibration[1] = fabs(expected_xy / (float)mag_y);
-		 calibration[2] = fabs(expected_z / (float)mag_z);
+	  float cal[3];
 
-		 // mark success
-		 success = true;
+	  cal[0] = fabs(expected_x / (float)mag_x);
+	  cal[1] = fabs(expected_yz / (float)mag_y);
+	  cal[2] = fabs(expected_yz / (float)mag_z);
+
+	  if (cal[0] > 0.7 && cal[0] < 1.3 && 
+		  cal[1] > 0.7 && cal[1] < 1.3 && 
+		  cal[2] > 0.7 && cal[2] < 1.3) {
+		 good_count++;
+		 calibration[0] += cal[0];
+		 calibration[1] += cal[1];
+		 calibration[2] += cal[2];
 	  }
+
+#if 0
+	  /* useful for debugging */
+	  Serial.print("mag_x: ");
+	  Serial.print(mag_x);
+	  Serial.print(" mag_y: ");
+	  Serial.print(mag_y);
+	  Serial.print(" mag_z: ");
+	  Serial.println(mag_z);
+	  Serial.print("CalX: ");
+	  Serial.print(calibration[0]/good_count);
+	  Serial.print(" CalY: ");
+	  Serial.print(calibration[1]/good_count);
+	  Serial.print(" CalZ: ");
+	  Serial.println(calibration[2]/good_count);
+#endif
+  }
+
+  if (good_count >= 5) {
+	 calibration[0] /= good_count;
+	 calibration[1] /= good_count;
+	 calibration[2] /= good_count;
+	 success = true;
+  } else {
+	 /* best guess */
+	 calibration[0] = 1.0;
+	 calibration[1] = 1.0;
+	 calibration[2] = 1.0;
   }
 
   // leave test mode
@@ -184,63 +266,31 @@ AP_Compass_HMC5843::init()
 void 
 AP_Compass_HMC5843::read()
 {
-  int i = 0;
-  byte buff[6];
-  Vector3f rot_mag;
+   if (!read_raw()) {
+	  return;
+   }
 
-  Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.send(0x03);        //sends address to read from
-  if (0 != Wire.endTransmission())
-	 return;
+   mag_x *= calibration[0];
+   mag_y *= calibration[1];
+   mag_z *= calibration[2];
 
-  //Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.requestFrom(COMPASS_ADDRESS, 6);    // request 6 bytes from device
-  while(Wire.available())
-  {
-    buff[i] = Wire.receive();  // receive one byte
-    i++;
-  }
-  if (0 != Wire.endTransmission())
-	 return;
+   last_update = millis();  // record time of update
+   // rotate and offset the magnetometer values
+   // XXX this could well be done in common code...
 
-  if (i==6)  // All bytes received?
-  {
-	 int16_t rx, ry, rz;
-	 rx = (int16_t)(buff[0] << 8) | buff[1];
-	 if (product_id == AP_COMPASS_TYPE_HMC5883L) {
-		rz = (int16_t)(buff[2] << 8) | buff[3];
-		ry = (int16_t)(buff[4] << 8) | buff[5];
-	 } else {
-		ry = (int16_t)(buff[2] << 8) | buff[3];
-		rz = (int16_t)(buff[4] << 8) | buff[5];
-	 }
-	 if (rx == -4096 || ry == -4096 || rz == -4096) {
-		// no valid data available, last_update is not updated
-		return;
-	 }
-
-	 mag_x = -rx * calibration[0];
-	 mag_y =  ry * calibration[1];
-	 mag_z = -rz * calibration[2];
-
-	 last_update = millis();  // record time of update
-	 // rotate and offset the magnetometer values
-	 // XXX this could well be done in common code...
-	 rot_mag = _orientation_matrix.get() * Vector3f(mag_x,mag_y,mag_z);
-	 rot_mag = rot_mag + _offset.get();
-	 mag_x = rot_mag.x;
-	 mag_y = rot_mag.y;
-	 mag_z = rot_mag.z;
-  }
+   Vector3f rot_mag = _orientation_matrix.get() * Vector3f(mag_x,mag_y,mag_z);
+   rot_mag = rot_mag + _offset.get();
+   mag_x = rot_mag.x;
+   mag_y = rot_mag.y;
+   mag_z = rot_mag.z;
 }
 
 // set orientation
 void
 AP_Compass_HMC5843::set_orientation(const Matrix3f &rotation_matrix)
 {
-    if( product_id == AP_COMPASS_TYPE_HMC5883L ) {
-        _orientation_matrix.set_and_save(rotation_matrix * Matrix3f(ROTATION_YAW_90));
-	}else{
-	    _orientation_matrix.set_and_save(rotation_matrix);
+   _orientation_matrix.set_and_save(rotation_matrix);
+    if (product_id == AP_COMPASS_TYPE_HMC5883L) {
+		rotate_for_5883L(&_orientation_matrix);
 	}
 }
