@@ -136,7 +136,7 @@ static long read_alt_to_hold()
 	if(g.RTL_altitude < 0)
 		return current_loc.alt;
 	else
-		return g.RTL_altitude + home.alt;
+		return g.RTL_altitude;// + home.alt;
 }
 
 
@@ -227,6 +227,7 @@ static void init_home()
 
 	// Save Home to EEPROM
 	// -------------------
+	// no need to save this to EPROM
 	set_command_with_index(home, 0);
 	print_wp(&home, 0);
 
