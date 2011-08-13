@@ -18,7 +18,7 @@ PID::get_pid(int32_t error, uint16_t dt, float scaler)
 
 	// Compute derivative component if time has elapsed
 	if ((fabs(_kd) > 0) && (dt > 0)) {
-		float derivative;
+		float derivative = 0;
 		// add in
 		_filter[_filter_index] = (error - _last_error) / delta_time;
 		_filter_index++;
