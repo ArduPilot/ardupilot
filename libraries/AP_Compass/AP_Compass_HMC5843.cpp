@@ -150,6 +150,7 @@ AP_Compass_HMC5843::init()
   byte calibration_gain = 0x20;
   uint16_t expected_x = 715;
   uint16_t expected_yz = 715;
+  float gain_multiple = 1.0;
 
   delay(10);
 
@@ -166,6 +167,7 @@ AP_Compass_HMC5843::init()
 	 calibration_gain = 0x60;
 	 expected_x = 766;
 	 expected_yz  = 713;
+	 gain_multiple = 660.0 / 1090; // adjustment for runtime vs calibration gain
 
 	 if (old_product_id != product_id) {
 		/* now we know the compass type we need to rotate the
@@ -239,9 +241,9 @@ AP_Compass_HMC5843::init()
   }
 
   if (good_count >= 5) {
-	 calibration[0] /= good_count;
-	 calibration[1] /= good_count;
-	 calibration[2] /= good_count;
+	 calibration[0] = calibration[0] * gain_multiple / good_count;
+	 calibration[1] = calibration[1] * gain_multiple / good_count;
+	 calibration[2] = calibration[2] * gain_multiple / good_count;
 	 success = true;
   } else {
 	 /* best guess */
