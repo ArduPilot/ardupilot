@@ -126,14 +126,8 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	// real sensors
 	AP_ADC_ADS7844          adc;
 	APM_BMP085_Class        barometer;
-	// MAG PROTOCOL
-  #if   MAG_PROTOCOL == MAG_PROTOCOL_5843
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
-  #elif MAG_PROTOCOL == MAG_PROTOCOL_5883L
-    AP_Compass_HMC5883L      compass(Parameters::k_param_compass);
-  #else
-    #error Unrecognised MAG_PROTOCOL setting.
-  #endif
+
   #ifdef OPTFLOW_ENABLED
     AP_OpticalFlow_ADNS3080 optflow;
   #endif
