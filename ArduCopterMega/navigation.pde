@@ -48,8 +48,8 @@ get_nav_throttle(long error)
 {
 	int throttle;
 
-	// limit error to 4 meters to prevent I term run up
-	error = constrain(error, -800,800);
+	// limit error to prevent I term run up
+	error = constrain(error, -600,600);
 
 	throttle = g.pid_throttle.get_pid(error, delta_ms_medium_loop, 1.0);
 	throttle = g.throttle_cruise + constrain(throttle, -80, 80);
@@ -157,7 +157,7 @@ static void calc_rate_nav(int speed)
 	if(control_mode == RTL){
 		int tmp 			= min(wp_distance, 80) * 50;
 		waypoint_speed 		= min(tmp, speed);
-		waypoint_speed		= max(waypoint_speed, 50);
+		//waypoint_speed		= max(waypoint_speed, 50);
 	}else{
 		int tmp 			= min(wp_distance, 200) * 90;
 		waypoint_speed 		= min(tmp, speed);
