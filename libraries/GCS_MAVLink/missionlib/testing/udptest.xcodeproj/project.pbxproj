@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		34E8AFDB13F5064C001100AA /* waypoints.c in Sources */ = {isa = PBXBuildFile; fileRef = 34E8AFDA13F5064C001100AA /* waypoints.c */; };
 		8DD76FAC0486AB0100D96B5E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 08FB7796FE84155DC02AAC07 /* main.c */; settings = {ATTRIBUTES = (); }; };
 		8DD76FB00486AB0100D96B5E /* udptest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6A0FF2C0290799A04C91782 /* udptest.1 */; };
 /* End PBXBuildFile section */
@@ -26,6 +27,8 @@
 
 /* Begin PBXFileReference section */
 		08FB7796FE84155DC02AAC07 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		34E8AFDA13F5064C001100AA /* waypoints.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = waypoints.c; path = ../waypoints.c; sourceTree = SOURCE_ROOT; };
+		34E8AFDC13F50659001100AA /* waypoints.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = waypoints.h; path = ../waypoints.h; sourceTree = SOURCE_ROOT; };
 		8DD76FB20486AB0100D96B5E /* udptest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = udptest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C6A0FF2C0290799A04C91782 /* udptest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = udptest.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -44,6 +47,7 @@
 		08FB7794FE84155DC02AAC07 /* udptest */ = {
 			isa = PBXGroup;
 			children = (
+				34E8AFDC13F50659001100AA /* waypoints.h */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
@@ -54,6 +58,7 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				34E8AFDA13F5064C001100AA /* waypoints.c */,
 				08FB7796FE84155DC02AAC07 /* main.c */,
 			);
 			name = Source;
@@ -126,6 +131,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DD76FAC0486AB0100D96B5E /* main.c in Sources */,
+				34E8AFDB13F5064C001100AA /* waypoints.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

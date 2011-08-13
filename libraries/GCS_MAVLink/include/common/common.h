@@ -1,7 +1,7 @@
 /** @file
  *	@brief MAVLink comm protocol.
  *	@see http://qgroundcontrol.org/mavlink/
- *	 Generated on Friday, August 5 2011, 08:13 UTC
+ *	 Generated on Saturday, August 13 2011, 04:23 UTC
  */
 #ifndef COMMON_H
 #define COMMON_H
@@ -28,7 +28,7 @@ extern "C" {
 
 // ENUM DEFINITIONS
 
-/** @brief  Commands to be executed by the MAV. They can be executed on user request,                 or as part of a mission script. If the action is used in a mission, the parameter mapping                 to the waypoint/mission message is as follows:                 Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what                 ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data.              */
+/** @brief  Commands to be executed by the MAV. They can be executed on user request,       or as part of a mission script. If the action is used in a mission, the parameter mapping       to the waypoint/mission message is as follows:       Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what       ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data. */
 enum MAV_CMD
 {
 	MAV_CMD_NAV_WAYPOINT=16, /* Navigate to waypoint. | Hold time in decimal seconds. (ignored by fixed wing, time to stay at waypoint for rotary wing) | Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached) | 0 to pass through the WP, if > 0 radius in meters to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control. | Desired yaw angle at waypoint (rotary wing) | Latitude | Longitude | Altitude | */
@@ -63,7 +63,7 @@ enum MAV_CMD
 	MAV_CMD_ENUM_END
 };
 
-/** @brief  Data stream IDs. A data stream is not a fixed set of messages, but rather a                 recommendation to the autopilot software. Individual autopilots may or may not obey                 the recommended messages.              */
+/** @brief  Data stream IDs. A data stream is not a fixed set of messages, but rather a      recommendation to the autopilot software. Individual autopilots may or may not obey      the recommended messages.       */
 enum MAV_DATA_STREAM
 {
 	MAV_DATA_STREAM_ALL=0, /* Enable all data streams | */
@@ -138,16 +138,17 @@ enum MAV_ROI
 #include "./mavlink_msg_control_status.h"
 #include "./mavlink_msg_safety_set_allowed_area.h"
 #include "./mavlink_msg_safety_allowed_area.h"
-#include "./mavlink_msg_set_roll_pitch_yaw.h"
-#include "./mavlink_msg_set_roll_pitch_yaw_speed.h"
-#include "./mavlink_msg_attitude_controller_output.h"
-#include "./mavlink_msg_position_controller_output.h"
+#include "./mavlink_msg_set_roll_pitch_yaw_thrust.h"
+#include "./mavlink_msg_set_roll_pitch_yaw_speed_thrust.h"
+#include "./mavlink_msg_roll_pitch_yaw_thrust_setpoint.h"
+#include "./mavlink_msg_roll_pitch_yaw_speed_thrust_setpoint.h"
 #include "./mavlink_msg_nav_controller_output.h"
 #include "./mavlink_msg_position_target.h"
 #include "./mavlink_msg_state_correction.h"
 #include "./mavlink_msg_set_altitude.h"
 #include "./mavlink_msg_request_data_stream.h"
-#include "./mavlink_msg_full_state.h"
+#include "./mavlink_msg_hil_state.h"
+#include "./mavlink_msg_hil_controls.h"
 #include "./mavlink_msg_manual_control.h"
 #include "./mavlink_msg_rc_channels_override.h"
 #include "./mavlink_msg_global_position_int.h"
@@ -164,7 +165,7 @@ enum MAV_ROI
 // MESSAGE LENGTHS
 
 #undef MAVLINK_MESSAGE_LENGTHS
-#define MAVLINK_MESSAGE_LENGTHS { 3, 4, 8, 14, 8, 28, 3, 32, 0, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 19, 2, 23, 21, 0, 37, 26, 101, 26, 16, 32, 32, 37, 32, 11, 17, 17, 16, 18, 36, 4, 4, 2, 2, 4, 2, 2, 3, 14, 12, 18, 16, 8, 27, 25, 14, 14, 0, 0, 0, 5, 5, 26, 16, 36, 5, 6, 56, 0, 21, 18, 0, 0, 18, 20, 20, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 14, 14, 51 }
+#define MAVLINK_MESSAGE_LENGTHS { 3, 4, 8, 14, 8, 28, 3, 32, 0, 2, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 19, 2, 23, 21, 0, 37, 26, 101, 26, 16, 32, 32, 37, 32, 11, 17, 17, 16, 18, 36, 4, 4, 2, 2, 4, 2, 2, 3, 14, 12, 18, 16, 8, 27, 25, 18, 18, 20, 20, 0, 0, 0, 26, 16, 36, 5, 6, 56, 26, 21, 18, 0, 0, 18, 20, 20, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 14, 14, 51 }
 
 #ifdef __cplusplus
 }
