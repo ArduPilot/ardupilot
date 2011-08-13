@@ -57,14 +57,14 @@ void ModeFilter::isort()
 
 //Mode function, returning the mode or median.
 int ModeFilter::mode(){
-	int mode 		= 0;
+	int fmode 		= 0;
 	byte i 			= 0;
 	byte count 		= 0;
 	byte maxCount 	= 0;
 	byte bimodal 	= 0;
 
 	while(count > maxCount){
-		mode 		= _samples[i];
+		fmode 		= _samples[i];
 		maxCount 	= count;
 		bimodal 	= 0;
 	}
@@ -75,9 +75,9 @@ int ModeFilter::mode(){
 		bimodal = 1;
 	}
 
-	if(mode == 0 || bimodal == 1){ //Return the median if there is no mode.
-		mode = _samples[(MOD_FILTER_SIZE / 2)];
+	if(fmode == 0 || bimodal == 1){ //Return the median if there is no mode.
+		fmode = _samples[(MOD_FILTER_SIZE / 2)];
 	}
 
-	return mode;
+	return fmode;
 }
