@@ -16,13 +16,16 @@ get_stabilize_roll(long target_angle)
 	rate 		= g.pid_stabilize_roll.get_pi((float)error, delta_ms_fast_loop, 1.0);
 	//Serial.printf("%d\t%d\t%d ", (int)target_angle, (int)error, (int)rate);
 
+#if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
 	// Rate P:
 	error 		= rate - (long)(degrees(omega.x) * 100.0);
 	rate 		= g.pid_rate_roll.get_pi((float)error, delta_ms_fast_loop, 1.0);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
+#endif
 
 	// output control:
-	return (int)constrain(rate, -2500, 2500);
+	return (int)constrain(rate, -2500, 2500);	
+	
 }
 
 static int
@@ -40,10 +43,12 @@ get_stabilize_pitch(long target_angle)
 	rate 		= g.pid_stabilize_pitch.get_pi((float)error, delta_ms_fast_loop, 1.0);
 	//Serial.printf("%d\t%d\t%d ", (int)target_angle, (int)error, (int)rate);
 
+#if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
 	// Rate P:
 	error 		= rate - (long)(degrees(omega.y) * 100.0);
 	rate 		= g.pid_rate_pitch.get_pi((float)error, delta_ms_fast_loop, 1.0);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
+#endif
 
 	// output control:
 	return (int)constrain(rate, -2500, 2500);
@@ -65,10 +70,18 @@ get_stabilize_yaw(long target_angle, float scaler)
 	rate 		= g.pid_stabilize_yaw.get_pi((float)error, delta_ms_fast_loop, scaler);
 	//Serial.printf("%u\t%d\t%d\t", (int)target_angle, (int)error, (int)rate);
 
+#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
+	if( ! g.heli_ext_gyro_enabled ) {
+		// Rate P:
+		error 		= rate - (long)(degrees(omega.z) * 100.0);
+		rate 		= g.pid_rate_yaw.get_pi((float)error, delta_ms_fast_loop, 1.0);
+	}
+#else
 	// Rate P:
 	error 		= rate - (long)(degrees(omega.z) * 100.0);
 	rate 		= g.pid_rate_yaw.get_pi((float)error, delta_ms_fast_loop, 1.0);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
+#endif
 
 	// output control:
 	return (int)constrain(rate, -2500, 2500);
