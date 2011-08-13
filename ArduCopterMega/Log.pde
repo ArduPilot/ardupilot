@@ -599,7 +599,7 @@ static void Log_Write_Control_Tuning()
 static void Log_Read_Control_Tuning()
 {
 	Serial.printf_P(PSTR(   "CTUN, %d, %d, "
-				"%d, %d, %d, %1.4f, "
+				"%d, %d, %d, %d, %1.4f, "
 				"%d, %d, %d, %d, %d, %d\n"),
 
 				// Control
