@@ -52,32 +52,23 @@
 #include <arpa/inet.h>
 #endif
 
-#include <math.h>
-
+/* 0: Include MAVLink types */
 #include <../mavlink_types.h>
 
+/* 1: Define mavlink system storage */
 mavlink_system_t mavlink_system;
 
-/* This assumes you have the mavlink headers on your include path
- or in the same folder as this source file */
+/* 2: Include actual protocol, REQUIRES mavlink_system */
 #include <mavlink.h>
 
+/* 3: Define waypoint helper functions */
+void mavlink_wpm_send_message(mavlink_message_t* msg);
+void mavlink_wpm_send_gcs_string(const char* string);
+uint64_t mavlink_wpm_get_system_timestamp();
 
-/* Provide the interface functions for the waypoint manager */
-
-/*
- *  @brief Sends a MAVLink message over UDP
- */
-void mavlink_wpm_send_message(mavlink_message_t* msg)
-{
-	uint16_t len = mavlink_msg_to_send_buffer(buf, msg);
-	uint16_t bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof (struct sockaddr_in));
-	
-	printf("SENT %d bytes", bytes_sent);
-}
-
-
-#include <waypoints.h>
+/* 4: Include waypoint protocol */
+#include "waypoints.h"
+mavlink_wpm_storage wpm;
 
 
 #define BUFFER_LENGTH 2041 // minimum buffer size that can be used with qnx (I don't know why)
@@ -101,6 +92,36 @@ int i = 0;
 unsigned int temp = 0;
 
 uint64_t microsSinceEpoch();
+
+
+
+
+/* Provide the interface functions for the waypoint manager */
+
+/*
+ *  @brief Sends a MAVLink message over UDP
+ */
+void mavlink_wpm_send_message(mavlink_message_t* msg)
+{
+	uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+	uint16_t len = mavlink_msg_to_send_buffer(buf, msg);
+	uint16_t bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof (struct sockaddr_in));
+	
+	printf("SENT %d bytes", bytes_sent);
+}
+
+void mavlink_wpm_send_gcs_string(const char* string)
+{
+	printf("%s",string);
+}
+
+uint64_t mavlink_wpm_get_system_timestamp()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
+}
+
 
 
 int main(int argc, char* argv[])
@@ -171,7 +192,7 @@ int main(int argc, char* argv[])
     {
 		
 		/*Send Heartbeat */
-		mavlink_msg_heartbeat_pack(mavlink_system.sysid, 200, &msg, MAV_TYPE_HELICOPTER, MAV_CLASS_GENERIC);
+		mavlink_msg_heartbeat_pack(mavlink_system.sysid, 200, &msg, MAV_HELICOPTER, MAV_CLASS_GENERIC);
 		len = mavlink_msg_to_send_buffer(buf, &msg);
 		bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr_in));
 		
@@ -220,7 +241,7 @@ int main(int argc, char* argv[])
 			printf("\n");
 		}
 		memset(buf, 0, BUFFER_LENGTH);
-		sleep(1); // Sleep one second
+		usleep(50000); // Sleep one second
     }
 }
 
