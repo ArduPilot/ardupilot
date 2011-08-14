@@ -6,7 +6,6 @@
 #ifndef Trig_LUT_h
 #define Trig_LUT_h
 
-#include <AP_Common.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 
