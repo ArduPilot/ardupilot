@@ -8,7 +8,7 @@
 
 #include <AP_Common.h>
 #include <math.h>		// for fabs()
-#define PID_FILTER_SIZE	4
+#define PID_FILTER_SIZE	6
 
 /// @class	PID
 /// @brief	Object managing one PID control
@@ -131,7 +131,6 @@ private:
 	AP_Float16			_ki;
 	AP_Float16			_kd;
 	AP_Int16			_imax;
-	//uint8_t				_filter_size;
 	float				_filter[PID_FILTER_SIZE];
 	uint8_t				_filter_index;
 
