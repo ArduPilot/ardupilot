@@ -884,9 +884,7 @@ static void slow_loop()
 			if(control_mode == LOITER){
 				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1500){
 					// reset LOITER to current position
-					//long temp 	= next_WP.alt;
-					next_WP 	= current_loc;
-					//next_WP.alt = temp;
+					//next_WP 	= current_loc;
 				}
 			}
 			#endif
@@ -1342,33 +1340,27 @@ static void update_navigation()
 				#if FRAME_CONFIG ==	HELI_FRAME
 				update_nav_yaw();
 				#endif
-
 			}
 
-			//if(wp_distance < 4){
-				// clears crosstrack
-				crosstrack_bearing 	= target_bearing;
-				//wp_control = WP_MODE;
-			//}else{
-				//wp_control = LOITER_MODE;
-			//}
-
-			wp_control = WP_MODE;
-
-			// are we Traversing or Loitering?
-			//wp_control = (wp_distance < 4 ) ? LOITER_MODE : WP_MODE;
-
-			// calculates the desired Roll and Pitch
-			//update_nav_wp();
-
+			#if LOITER_TEST == 0
 			// calc a rate dampened pitch to the target
 			calc_rate_nav(g.waypoint_speed_max.get());
 
 			// rotate that pitch to the copter frame of reference
 			calc_nav_output();
 
-			//if(wp_distance < 4 )
-			//	set_mode(LOITER);
+			#else
+
+			// rate based test
+			// calc error to target
+			calc_loiter_nav2();
+
+			// use error as a rate towards the target
+			calc_rate_nav2(long_error/2, lat_error/2);
+
+			// rotate pitch and roll to the copter frame of reference
+			calc_loiter_output();
+			#endif
 
 			break;
 
@@ -1553,11 +1545,24 @@ static void update_nav_wp()
 {
 	// XXX Guided mode!!!
 	if(wp_control == LOITER_MODE){
+
+		#if LOITER_TEST == 0
 		// calc a pitch to the target
 		calc_loiter_nav();
 
 		// rotate pitch and roll to the copter frame of reference
 		calc_loiter_output();
+
+		#else
+		// calc error to target
+		calc_loiter_nav2();
+
+		// use error as a rate towards the target
+		calc_rate_nav2(long_error/2, lat_error/2);
+
+		// rotate pitch and roll to the copter frame of reference
+		calc_loiter_output();
+		#endif
 
 	} else {
 		// how far are we from the ideal trajectory?
