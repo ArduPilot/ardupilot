@@ -89,6 +89,7 @@ static void clear_leds()
 	digitalWrite(A_LED_PIN, LOW);
 	digitalWrite(B_LED_PIN, LOW);
 	digitalWrite(C_LED_PIN, LOW);
+	led_mode = NORMAL_LEDS;
 }
 
 #if MOTOR_LEDS == 1
