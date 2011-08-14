@@ -61,7 +61,62 @@ get_nav_throttle(long error)
 	return throttle;
 }
 
-#define DIST_ERROR_MAX 1800
+// ------------------------------
+
+// long_error, lat_error
+static void calc_loiter_nav2()
+{
+	/*
+	Becuase we are using lat and lon to do our distance errors here's a quick chart:
+	100 	= 1m
+	1000 	= 11m	 = 36 feet
+	1800 	= 19.80m = 60 feet
+	3000 	= 33m
+	10000 	= 111m
+	pitch_max = 22° (2200)
+	*/
+
+	// X ROLL
+	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
+
+	// Y PITCH
+	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
+
+	// constrain input, not output to let I term ramp up and do it's job again wind
+	long_error	= constrain(long_error, -loiter_error_max, loiter_error_max); // +- 20m max error
+	lat_error	= constrain(lat_error,  -loiter_error_max, loiter_error_max); // +- 20m max error
+}
+
+// sets nav_lon, nav_lat
+static void calc_rate_nav2(int target_x_speed, int target_y_speed)
+{
+	// find the rates:
+	// calc the cos of the error to tell how fast we are moving towards the target in cm
+	int y_speed 	= (float)g_gps->ground_speed * cos(radians((float)g_gps->ground_course/100.0));
+	int y_error 	= constrain(target_y_speed - y_speed, -1000, 1000);
+
+	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
+	int x_speed 	= (float)g_gps->ground_speed  * sin(radians((float)g_gps->ground_course/100.0));
+	int x_error 	= constrain(target_x_speed - x_speed, -1000, 1000);
+
+	// how fast should we be going?
+	nav_lat 		+= g.pid_nav_lat.get_pid(y_error, dTnav, 1.0);
+	nav_lat 		>>= 1; // divide by two for smooting
+
+	nav_lon 		+= g.pid_nav_lon.get_pid(x_error, dTnav, 1.0);
+	nav_lon			>>= 1; // divide by two for smooting
+
+	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  targetspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
+
+	// limit our output
+	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
+	nav_lon	= constrain(nav_lon, 	-3500, 3500); // +- max error
+}
+
+
+// ------------------------------
+
+//nav_lon, nav_lat
 static void calc_loiter_nav()
 {
 	/*
@@ -88,6 +143,60 @@ static void calc_loiter_nav()
 	nav_lat 	= g.pid_nav_lat.get_pid(lat_error,  dTnav, 1.0);		// Y invert lat (for pitch)
 }
 
+//nav_lat
+static void calc_simple_nav()
+{
+	// no dampening here in SIMPLE mode
+	nav_lat	= constrain((wp_distance * 100), -4500, 4500); // +- 20m max error
+	// Scale response by kP
+	//nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
+}
+
+// sets nav_lon, nav_lat
+static void calc_rate_nav(int speed)
+{
+	// which direction are we moving?
+	long heading_error 	= nav_bearing - g_gps->ground_course;
+	heading_error 		= wrap_180(heading_error);
+
+	// calc the cos of the error to tell how fast we are moving towards the target in cm
+	int targetspeed 	= (float)g_gps->ground_speed * cos(radians((float)heading_error/100));
+
+	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
+	int lateralspeed 	= (float)g_gps->ground_speed  * sin(radians((float)heading_error/100));
+	//targetspeed			= max(targetspeed, 0);
+
+	// Reduce speed on RTL
+	if(control_mode == RTL){
+		int tmp 			= min(wp_distance, 80) * 50;
+		waypoint_speed 		= min(tmp, speed);
+		//waypoint_speed		= max(waypoint_speed, 50);
+	}else{
+		int tmp 			= min(wp_distance, 200) * 90;
+		waypoint_speed 		= min(tmp, speed);
+		waypoint_speed		= max(waypoint_speed, 50);
+		//waypoint_speed 		= g.waypoint_speed_max.get();
+	}
+
+	int error 		= constrain(waypoint_speed - targetspeed, -1000, 1000);
+
+	nav_lat 		+= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
+	nav_lat 		>>= 1; // divide by two for smooting
+
+	nav_lon			+= lateralspeed * 2; // 2 is our fake PID gain
+	nav_lon			>>= 1; // divide by two for smooting
+
+	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  targetspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
+
+	// limit our output
+	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
+}
+
+
+// output pitch and roll
+// ------------------------------
+
+// nav_roll, nav_pitch
 static void calc_loiter_output()
 {
 	// rotate the vector
@@ -118,14 +227,7 @@ static void calc_loiter_output()
 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
 }
 
-static void calc_simple_nav()
-{
-	// no dampening here in SIMPLE mode
-	nav_lat	= constrain((wp_distance * 100), -4500, 4500); // +- 20m max error
-	// Scale response by kP
-	//nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
-}
-
+// nav_roll, nav_pitch
 static void calc_nav_output()
 {
 	// get the sin and cos of the bearing error - rotated 90°
@@ -139,46 +241,7 @@ static void calc_nav_output()
 	nav_pitch 	=	(float)nav_lon * cos_nav_x 	- (float)nav_lat * sin_nav_y;
 }
 
-// called after we get GPS read
-static void calc_rate_nav(int speed)
-{
-	// which direction are we moving?
-	long heading_error 	= nav_bearing - g_gps->ground_course;
-	heading_error 		= wrap_180(heading_error);
-
-	// calc the cos of the error to tell how fast we are moving towards the target in cm
-	int targetspeed 	= (float)g_gps->ground_speed * cos(radians((float)heading_error/100));
-
-	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
-	int lateralspeed 	= (float)g_gps->ground_speed  * sin(radians((float)heading_error/100));
-	//targetspeed			= max(targetspeed, 0);
-
-	// Reduce speed on RTL
-	if(control_mode == RTL){
-		int tmp 			= min(wp_distance, 80) * 50;
-		waypoint_speed 		= min(tmp, speed);
-		//waypoint_speed		= max(waypoint_speed, 50);
-	}else{
-		int tmp 			= min(wp_distance, 200) * 90;
-		waypoint_speed 		= min(tmp, speed);
-		waypoint_speed		= max(waypoint_speed, 50);
-		//waypoint_speed 		= g.waypoint_speed_max.get();
-	}
-
-	int error 		= constrain(waypoint_speed - targetspeed, -1000, 1000);
-	// Scale response by kP
-	nav_lat 		+= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
-	nav_lat 		>>= 1; // divide by two for smooting
-
-	nav_lon			+= lateralspeed * 2; // 2 is our fake PID gain
-	nav_lon			>>= 1;
-
-	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  targetspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
-
-	// limit our output
-	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
-}
-
+// ------------------------------
 static void calc_bearing_error()
 {
 	//				  83			99 Yaw  = -16
