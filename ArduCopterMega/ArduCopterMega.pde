@@ -398,7 +398,7 @@ static int		landing_distance;					// meters;
 static long 	old_alt;							// used for managing altitude rates
 static int		velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
-static int		throttle_slew;						// used to smooth throttle tranistions
+//static int		throttle_slew;						// used to smooth throttle tranistions
 
 // Loiter management
 // -----------------
@@ -782,6 +782,12 @@ static void fifty_hz_loop()
 	// ------------------------------
 	throttle_integrator += g.rc_3.servo_out;
 
+	// Read Sonar
+	// ----------
+	if(g.sonar_enabled){
+		sonar_alt 			= sonar.read();
+	}
+
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
 		// HIL for a copter needs very fast update of the servo values
 		hil.send_message(MSG_RADIO_OUT);
@@ -790,12 +796,12 @@ static void fifty_hz_loop()
 	// use Yaw to find our bearing error
 	calc_bearing_error();
 
-	if (throttle_slew < 0)
-		throttle_slew++;
-	else if (throttle_slew > 0)
-		throttle_slew--;
+	//if (throttle_slew < 0)
+	//	throttle_slew++;
+	//else if (throttle_slew > 0)
+	//	throttle_slew--;
 
-	throttle_slew = min((800 - g.rc_3.control_in), throttle_slew);
+	//throttle_slew = min((800 - g.rc_3.control_in), throttle_slew);
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
@@ -1360,6 +1366,10 @@ static void update_navigation()
 
 			// rotate that pitch to the copter frame of reference
 			calc_nav_output();
+
+			//if(wp_distance < 4 )
+			//	set_mode(LOITER);
+
 			break;
 
 			// switch passthrough to LOITER
@@ -1443,7 +1453,6 @@ static void update_alt()
 
 		// read barometer
 		baro_alt 			= read_barometer();
-		sonar_alt 			= sonar.read();
 
 		if(baro_alt < 1000){
 			scale = (sonar_alt - 400) / 200;
@@ -1585,15 +1594,16 @@ static void auto_throttle()
 	nav_throttle = get_nav_throttle(altitude_error);
 
 	// apply throttle control
-	g.rc_3.servo_out = get_throttle(nav_throttle - throttle_slew);
+	//g.rc_3.servo_out = get_throttle(nav_throttle - throttle_slew);
+	g.rc_3.servo_out = get_throttle(nav_throttle);
 
-	if(motor_armed){
+	//if(motor_armed){
 		// remember throttle offset
-		throttle_slew = g.rc_3.servo_out - g.rc_3.control_in;
-	}else{
+		//throttle_slew = g.rc_3.servo_out - g.rc_3.control_in;
+	//}else{
 		// don't allow
-		throttle_slew = 0;
-	}
+		//throttle_slew = 0;
+	//}
 
 	// clear the new data flag
 	invalid_throttle = false;

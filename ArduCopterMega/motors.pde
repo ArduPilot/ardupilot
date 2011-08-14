@@ -33,7 +33,7 @@ static void arm_motors()
 
 					// Clear throttle slew
 					// -------------------
-					throttle_slew = 0;
+					//throttle_slew = 0;
 
 					// Remember Orientation
 					// --------------------
@@ -83,7 +83,7 @@ static void arm_motors()
 
 				// Clear throttle slew
 				// -------------------
-				throttle_slew = 0;
+				//throttle_slew = 0;
 
 				arming_counter++;
 
