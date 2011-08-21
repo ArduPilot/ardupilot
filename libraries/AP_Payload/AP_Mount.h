@@ -49,7 +49,6 @@ public:
 	};
 	
 	//Accessors
-	//used with dcm matrix to calculate target vector
 	void SetPitchYaw();
 	void SetPitchRoll();
 	void SetPitchRollYaw();
