@@ -41,9 +41,18 @@ public:
 		landing = 5,
 		none = 6
 	};
+
+	enum MountType{
+		pitch_yaw = 0,
+		pitch_roll = 1, //note the correct english spelling :)
+		pitch_roll_yaw = 2,
+	};
 	
 	//Accessors
 	//used with dcm matrix to calculate target vector
+	void SetPitchYaw();
+	void SetPitchRoll();
+	void SetPitchRollYaw();
 	void SetGPSTarget(Location targetGPSLocation); 		//used to tell the mount to track GPS location
 	void SetAssisted(int roll, int pitch, int yaw);
 	void SetAntenna(Location grndStation);
