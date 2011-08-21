@@ -1,21 +1,22 @@
-/****************************************************************	          
-    * AP_mount -- library to control a 2 or 3 axis mount.		*   
-    *															*   
-    * Author:  Joe Holdsworth;									*
-	*		   Ritchie Wilson;									*
-	*			Amiclair Lucus;									*   
-    *															*   
-    * Purpose:  Move a 2 or 3 axis mount attached to vehicle,	*
-	*			Used for mount to track targets or stabilise	*
-	*			camera plus	other modes.						*   
-    *															*   
-    * Usage:													*   
-    *			Use in main code to control	mounts attached to	*
-	*			vehicle.										*
-	*															*
-	*Comments:  All angles in degrees * 100, distances in meters*
-	*			unless otherwise stated.						*
- ***************************************************************/ 
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
+
+/************************************************************	          
+* AP_mount -- library to control a 2 or 3 axis mount.		*   
+*															*   
+* Author:  Joe Holdsworth;									*
+*		   Ritchie Wilson;									*
+*			Amiclair Lucus;									*   
+*															*   
+* Purpose:  Move a 2 or 3 axis mount attached to vehicle,	*
+*			Used for mount to track targets or stabilise	*
+*			camera plus	other modes.						*   
+*															*   
+* Usage:	Use in main code to control	mounts attached to	*
+*			vehicle.										*
+*															*
+*Comments:  All angles in degrees * 100, distances in meters*
+*			unless otherwise stated.						*
+ ************************************************************/ 
 #ifndef AP_Mount_H
 #define AP_Mount_H
 
@@ -24,7 +25,6 @@
 #include <AP_GPS.h>
 #include <AP_DCM.h>
 
-//all angles in degrees * 100
 class AP_Mount
 {
 public:
