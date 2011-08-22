@@ -35,11 +35,10 @@ public:
 	enum MountMode{
 		gps = 0,
 		stabilise = 1, //note the correct english spelling :)
-		fpv = 2,
+		roam = 2,
 		assisted = 3,
-		antenna = 4,
-		landing = 5,
-		none = 6
+		landing = 4,
+		none = 5
 	};
 
 	enum MountType{
@@ -49,16 +48,15 @@ public:
 	};
 	
 	//Accessors
-	void SetPitchYaw();
-	void SetPitchRoll();
-	void SetPitchRollYaw();
+	void SetPitchYaw(int pitchCh, int yawCh);
+	void SetPitchRoll(int pitchCh, int rollCh);
+	void SetPitchRollYaw(int pitchCh, int rollCh, int yawCh);
+
 	void SetGPSTarget(Location targetGPSLocation); 		//used to tell the mount to track GPS location
 	void SetAssisted(int roll, int pitch, int yaw);
-	void SetAntenna(Location grndStation);
-	
-	//action
-	void SetMountFPV(int roll, int pitch, int yaw);		//used in the FPV,   
-	void SetMountLanding(int roll, int pitch, int yaw); //set mount landing position
+	void SetMountFreeRoam(int roll, int pitch, int yaw);//used in the FPV for example,   
+	void SetMountLanding(int roll, int pitch, int yaw); //set mount landing position	
+	void SetNone();
 	
 	//methods
 	void UpDateMount();
@@ -66,21 +64,28 @@ public:
 	
 	int pitchAngle; //degrees*100
 	int rollAngle;	//degrees*100
+	int yawAngle;	//degrees*100
 protected:
 	//methods
 	void CalcGPSTargetVector(struct Location *target);
 	//void CalculateDCM(int roll, int pitch, int yaw);
 	//members
-	AP_DCM			*_dcm;
+	AP_DCM		*_dcm;
 	GPS 		*_gps;
 
 	MountMode _mountmode;
-	struct Location _grndStation;
+	MountType _mountType;
+
 	struct Location _targetGPSLocation;
-	Vector3f _targetVector;				//target vector calculated stored in meters
-	Vector3i _mountFPVVector;			//used for FPV mode vector.x = roll vector.y = pitch, vector.z=yaw	
-	Vector3i _mountLanding;				//landing position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
+	Vector3f _GPSVector;			//target vector calculated stored in meters
+	
+	Vector3i _RoamAngles;			//used for roam mode vector.x = roll vector.y = pitch, vector.z=yaw	
+	Vector3i _LandingAngles;		//landing position for mount, vector.x = roll vector.y = pitch, vector.z=yaw
 
+	Vector3i _AssistAngles;			//used to keep angles that user has supplied from assisted targetting
+	Vector3f _AssistVector;			//used to keep vector calculated from _AssistAngles
 
+	Matrix3f _m;					//holds 3 x 3 matrix, var is used as temp in calcs
+	Vector3f _targ;					//holds target vector, var is used as temp in calcs
 };
 #endif
