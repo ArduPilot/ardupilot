@@ -40,6 +40,17 @@ SYSTYPE			:=	$(shell uname)
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  # Workaround a $(realpath ) bug on cygwin
+  ifeq ($(SRCROOT),)
+    SRCROOT	:=	$(subst /cygdrive/c,c:,$(CURDIR))
+    $(warning your realpath function is not working)
+    $(warning > setting SRCROOT to $(SRCROOT))
+  endif
+  # Correct the directory backslashes on cygwin
+  SKETCHBOOK	:=	$(subst \,/,$(SKETCHBOOK))
+  ARDUINO		:=	$(subst \,/,$(ARDUINO))
+endif
 
 #
 # We need to know the location of the sketchbook.  If it hasn't been overridden,
@@ -65,12 +76,25 @@ endif
 # Work out the sketch name from the name of the source directory.
 #
 SKETCH			:=	$(lastword $(subst /, ,$(SRCROOT)))
+# Workaround a $(lastword ) bug on cygwin
+ifeq ($(SKETCH),)
+  WORDLIST		:=	$(subst /, ,$(SRCROOT))
+  SKETCH		:=	$(word $(words $(WORDLIST)),$(WORDLIST))
+endif
 
 #
 # Work out where we are going to be building things
 #
 TMPDIR			?=	/tmp
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+  # Workaround a $(abspath ) bug on cygwin
+  ifeq ($(BUILDROOT),)
+    BUILDROOT	:=	C:$(TMPDIR)/$(SKETCH).build
+    $(warning your abspath function is not working)
+    $(warning > setting BUILDROOT to $(BUILDROOT))
+  endif
+endif
 
 
 ################################################################################
@@ -106,7 +130,7 @@ ifeq ($(ARDUINO),)
   endif
 
   ifeq ($(SYSTYPE),Linux)
-    ARDUINO_SEARCHPATH	=	/usr/share/arduino /usr/local/share/arduino
+    ARDUINO_SEARCHPATH	=	/usr/share/arduino /usr/local/share/arduino /usr/bin/arduino
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
   endif
 
@@ -143,8 +167,15 @@ ifeq ($(SYSTYPE),Linux)
   # expect that tools are on the path
   TOOLPATH		:=	$(subst :, ,$(PATH))
 endif
+ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN) 
+  TOOLPATH		:=	$(ARDUINO)/hardware/tools/avr/bin
+endif
 
+ifeq ($(findstring CYGWIN, $(SYSTYPE)),) 
 FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
+else
+FIND_TOOL		=	$(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+endif
 CXX			:=	$(call FIND_TOOL,avr-g++)
 CC			:=	$(call FIND_TOOL,avr-gcc)
 AS			:=	$(call FIND_TOOL,avr-gcc)
@@ -194,7 +225,7 @@ endif
 #
 
 # Sketch source files
-SKETCHPDESRCS		:=	$(wildcard $(SRCROOT)/*.pde)
+SKETCHPDESRCS	:=	$(wildcard $(SRCROOT)/*.pde)
 SKETCHSRCS		:=	$(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
 SKETCHPDE		:=	$(wildcard $(SRCROOT)/$(SKETCH).pde)
 SKETCHCPP		:=	$(BUILDROOT)/$(SKETCH).cpp
@@ -226,7 +257,12 @@ SKETCHCPP_SRC		:=	$(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)
 # make.
 #
 SEXPR			=	's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
-LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+  # Workaround a cygwin issue
+  LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
+else
+  LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
+endif
 
 #
 # Find sketchbook libraries referenced by the sketch.
@@ -267,13 +303,13 @@ ARDUINO_VERS		:=	$(shell expr `head -1 $(ARDUINO)/revisions.txt | cut -d ' ' -f 
 HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
 							$(ARDUINO)/hardware/$(HARDWARE)))
 ifeq ($(HARDWARE_DIR),)
-$(error ERROR: hardware directory for $(HARDWARE) not found
+$(error ERROR: hardware directory for $(HARDWARE) not found)
 endif
 
 # Find the boards.txt that we are using
 BOARDFILE		:=	$(wildcard $(HARDWARE_DIR)/boards.txt)
 ifeq ($(BOARDFILE),)
-$(error ERROR: could not locate boards.txt for hardware $(HARDWARE)
+$(error ERROR: could not locate boards.txt for hardware $(HARDWARE))
 endif
 
 # Extract needed build parameters from the boardfile
@@ -281,7 +317,9 @@ MCU			:=	$(shell grep $(BOARD).build.mcu $(BOARDFILE) | cut -d = -f 2)
 F_CPU			:=	$(shell grep $(BOARD).build.f_cpu $(BOARDFILE) | cut -d = -f 2)
 HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
-UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+# This simply does not work, so hardcode it to the correct value
+#UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+UPLOAD_PROTOCOL		:=	arduino
 
 ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
@@ -330,7 +368,8 @@ ALLDEPS			=	$(ALLOBJS:%.o=%.d)
 
 all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
-upload:
+.PHONY: upload
+upload: $(SKETCHHEX)
 	avrdude -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
 
 debug:
