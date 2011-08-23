@@ -4,8 +4,12 @@
 
 #include "Mavlink_Common.h"
 
+// use this to prevent recursion during sensor init
+static bool in_mavlink_delay;
+
 GCS_MAVLINK::GCS_MAVLINK(AP_Var::Key key) :
 packet_drops(0),
+
 
 // parameters
 // note, all values not explicitly initialised here are zeroed
@@ -252,6 +256,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			mavlink_action_t packet;
 			mavlink_msg_action_decode(msg, &packet);
 			if (mavlink_check_target(packet.target,packet.target_component)) break;
+            
+            if (in_mavlink_delay) {
+                // don't execute action commands while in sensor
+                // initialisation
+                break;
+            }
 
 			uint8_t result = 0;
 
@@ -1148,14 +1158,15 @@ static void mavlink_delay(unsigned long t)
 {
     unsigned long tstart;
     static unsigned long last_1hz, last_3hz, last_10hz, last_50hz;
-	static bool recursing;
 	
-	if (recursing) {
+	if (in_mavlink_delay) {
+        // this should never happen, but let's not tempt fate by
+        // letting the stack grow too much
 		delay(t);
 		return;
 	}
 	
-	recursing = true;
+	in_mavlink_delay = true;
 
     tstart = millis();
     do {
@@ -1187,5 +1198,5 @@ static void mavlink_delay(unsigned long t)
         delay(1);
     } while (millis() - tstart < t);
 	
-	recursing = false;
+	in_mavlink_delay = false;
 }
