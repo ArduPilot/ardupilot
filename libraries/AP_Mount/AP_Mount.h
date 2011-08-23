@@ -13,6 +13,8 @@
 *															*   
 * Usage:	Use in main code to control	mounts attached to	*
 *			vehicle.										*
+*			1. initialise class								*
+*			2. setMounttype 								*				*
 *															*
 *Comments:  All angles in degrees * 100, distances in meters*
 *			unless otherwise stated.						*
@@ -27,9 +29,12 @@
 
 class AP_Mount
 {
+protected:
+	AP_Var_group    _group;	// must be before all vars to keep ctor init order correct
+
 public:
 	//Constructors
-	AP_Mount(GPS *gps, AP_DCM *dcm);
+	AP_Mount(GPS *gps, AP_DCM *dcm, AP_Var::Key key, const prog_char_t *name);
 
 	//enums
 	enum MountMode{
@@ -43,14 +48,15 @@ public:
 
 	enum MountType{
 		pitch_yaw = 0,
-		pitch_roll = 1, //note the correct english spelling :)
+		pitch_roll = 1, 
 		pitch_roll_yaw = 2,
+		none = 3;
 	};
 	
 	//Accessors
-	void SetPitchYaw(int pitchCh, int yawCh);
-	void SetPitchRoll(int pitchCh, int rollCh);
-	void SetPitchRollYaw(int pitchCh, int rollCh, int yawCh);
+	//void SetPitchYaw(int pitchCh, int yawCh);
+	//void SetPitchRoll(int pitchCh, int rollCh);
+	//void SetPitchRollYaw(int pitchCh, int rollCh, int yawCh);
 
 	void SetGPSTarget(Location targetGPSLocation); 		//used to tell the mount to track GPS location
 	void SetAssisted(int roll, int pitch, int yaw);
@@ -65,15 +71,17 @@ public:
 	int pitchAngle; //degrees*100
 	int rollAngle;	//degrees*100
 	int yawAngle;	//degrees*100
-protected:
+
+private:	
 	//methods
 	void CalcGPSTargetVector(struct Location *target);
+	void CalcMountAnglesFromVector(Vector3f *targ);
 	//void CalculateDCM(int roll, int pitch, int yaw);
 	//members
 	AP_DCM		*_dcm;
 	GPS 		*_gps;
 
-	MountMode _mountmode;
+	MountMode _mountMode;
 	MountType _mountType;
 
 	struct Location _targetGPSLocation;
