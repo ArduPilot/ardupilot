@@ -1148,6 +1148,14 @@ static void mavlink_delay(unsigned long t)
 {
     unsigned long tstart;
     static unsigned long last_1hz, last_3hz, last_10hz, last_50hz;
+	static bool recursing;
+	
+	if (recursing) {
+		delay(t);
+		return;
+	}
+	
+	recursing = true;
 
     tstart = millis();
     do {
@@ -1178,4 +1186,6 @@ static void mavlink_delay(unsigned long t)
         }
         delay(1);
     } while (millis() - tstart < t);
+	
+	recursing = false;
 }
