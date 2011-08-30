@@ -25,7 +25,7 @@ James Goppert		:Mavlink Support
 Doug Weibel			:Libraries
 Mike Smith			:Libraries, Coding support
 HappyKillmore		:Mavlink GCS
-Micheal Oborne		:Mavlink GCS
+Michael Oborne		:Mavlink GCS
 Jack Dunkle			:Alpha testing
 Christof Schmid		:Alpha testing
 Guntars				:Arming safety suggestion
