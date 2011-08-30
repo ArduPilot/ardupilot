@@ -374,7 +374,7 @@ upload: $(SKETCHHEX)
 
 debug:
 	avarice --mkII --capture --jtag usb :4242 & \
-	gnome-terminal -x avr-gdb $(SKETCHELF) \
+	gnome-terminal -x avr-gdb $(SKETCHELF) & \
 	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
 
 clean:
