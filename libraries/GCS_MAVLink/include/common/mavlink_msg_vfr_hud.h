@@ -2,17 +2,32 @@
 
 #define MAVLINK_MSG_ID_VFR_HUD 74
 
-typedef struct __mavlink_vfr_hud_t 
+typedef struct __mavlink_vfr_hud_t
 {
-	float airspeed; ///< Current airspeed in m/s
-	float groundspeed; ///< Current ground speed in m/s
-	int16_t heading; ///< Current heading in degrees, in compass units (0..360, 0=north)
-	uint16_t throttle; ///< Current throttle setting in integer percent, 0 to 100
-	float alt; ///< Current altitude (MSL), in meters
-	float climb; ///< Current climb rate in meters/second
-
+ float airspeed; ///< Current airspeed in m/s
+ float groundspeed; ///< Current ground speed in m/s
+ int16_t heading; ///< Current heading in degrees, in compass units (0..360, 0=north)
+ uint16_t throttle; ///< Current throttle setting in integer percent, 0 to 100
+ float alt; ///< Current altitude (MSL), in meters
+ float climb; ///< Current climb rate in meters/second
 } mavlink_vfr_hud_t;
 
+#define MAVLINK_MSG_ID_VFR_HUD_LEN 20
+#define MAVLINK_MSG_ID_74_LEN 20
+
+
+
+#define MAVLINK_MESSAGE_INFO_VFR_HUD { \
+	"VFR_HUD", \
+	6, \
+	{  { "airspeed", MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_vfr_hud_t, airspeed) }, \
+         { "groundspeed", MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_vfr_hud_t, groundspeed) }, \
+         { "heading", MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_vfr_hud_t, heading) }, \
+         { "throttle", MAVLINK_TYPE_UINT16_T, 0, 10, offsetof(mavlink_vfr_hud_t, throttle) }, \
+         { "alt", MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_vfr_hud_t, alt) }, \
+         { "climb", MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_vfr_hud_t, climb) }, \
+         } \
+}
 
 
 /**
@@ -29,23 +44,37 @@ typedef struct __mavlink_vfr_hud_t
  * @param climb Current climb rate in meters/second
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_vfr_hud_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, float airspeed, float groundspeed, int16_t heading, uint16_t throttle, float alt, float climb)
+static inline uint16_t mavlink_msg_vfr_hud_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
+						       float airspeed, float groundspeed, int16_t heading, uint16_t throttle, float alt, float climb)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[20];
+	_mav_put_float(buf, 0, airspeed);
+	_mav_put_float(buf, 4, groundspeed);
+	_mav_put_int16_t(buf, 8, heading);
+	_mav_put_uint16_t(buf, 10, throttle);
+	_mav_put_float(buf, 12, alt);
+	_mav_put_float(buf, 16, climb);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 20);
+#else
+	mavlink_vfr_hud_t packet;
+	packet.airspeed = airspeed;
+	packet.groundspeed = groundspeed;
+	packet.heading = heading;
+	packet.throttle = throttle;
+	packet.alt = alt;
+	packet.climb = climb;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 20);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_VFR_HUD;
-
-	i += put_float_by_index(airspeed, i, msg->payload); // Current airspeed in m/s
-	i += put_float_by_index(groundspeed, i, msg->payload); // Current ground speed in m/s
-	i += put_int16_t_by_index(heading, i, msg->payload); // Current heading in degrees, in compass units (0..360, 0=north)
-	i += put_uint16_t_by_index(throttle, i, msg->payload); // Current throttle setting in integer percent, 0 to 100
-	i += put_float_by_index(alt, i, msg->payload); // Current altitude (MSL), in meters
-	i += put_float_by_index(climb, i, msg->payload); // Current climb rate in meters/second
-
-	return mavlink_finalize_message(msg, system_id, component_id, i);
+	return mavlink_finalize_message(msg, system_id, component_id, 20);
 }
 
 /**
- * @brief Pack a vfr_hud message
+ * @brief Pack a vfr_hud message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
@@ -58,19 +87,34 @@ static inline uint16_t mavlink_msg_vfr_hud_pack(uint8_t system_id, uint8_t compo
  * @param climb Current climb rate in meters/second
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_vfr_hud_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, float airspeed, float groundspeed, int16_t heading, uint16_t throttle, float alt, float climb)
+static inline uint16_t mavlink_msg_vfr_hud_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
+							   mavlink_message_t* msg,
+						           float airspeed,float groundspeed,int16_t heading,uint16_t throttle,float alt,float climb)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[20];
+	_mav_put_float(buf, 0, airspeed);
+	_mav_put_float(buf, 4, groundspeed);
+	_mav_put_int16_t(buf, 8, heading);
+	_mav_put_uint16_t(buf, 10, throttle);
+	_mav_put_float(buf, 12, alt);
+	_mav_put_float(buf, 16, climb);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 20);
+#else
+	mavlink_vfr_hud_t packet;
+	packet.airspeed = airspeed;
+	packet.groundspeed = groundspeed;
+	packet.heading = heading;
+	packet.throttle = throttle;
+	packet.alt = alt;
+	packet.climb = climb;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 20);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_VFR_HUD;
-
-	i += put_float_by_index(airspeed, i, msg->payload); // Current airspeed in m/s
-	i += put_float_by_index(groundspeed, i, msg->payload); // Current ground speed in m/s
-	i += put_int16_t_by_index(heading, i, msg->payload); // Current heading in degrees, in compass units (0..360, 0=north)
-	i += put_uint16_t_by_index(throttle, i, msg->payload); // Current throttle setting in integer percent, 0 to 100
-	i += put_float_by_index(alt, i, msg->payload); // Current altitude (MSL), in meters
-	i += put_float_by_index(climb, i, msg->payload); // Current climb rate in meters/second
-
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 20);
 }
 
 /**
@@ -101,13 +145,33 @@ static inline uint16_t mavlink_msg_vfr_hud_encode(uint8_t system_id, uint8_t com
 
 static inline void mavlink_msg_vfr_hud_send(mavlink_channel_t chan, float airspeed, float groundspeed, int16_t heading, uint16_t throttle, float alt, float climb)
 {
-	mavlink_message_t msg;
-	mavlink_msg_vfr_hud_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, airspeed, groundspeed, heading, throttle, alt, climb);
-	mavlink_send_uart(chan, &msg);
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[20];
+	_mav_put_float(buf, 0, airspeed);
+	_mav_put_float(buf, 4, groundspeed);
+	_mav_put_int16_t(buf, 8, heading);
+	_mav_put_uint16_t(buf, 10, throttle);
+	_mav_put_float(buf, 12, alt);
+	_mav_put_float(buf, 16, climb);
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_VFR_HUD, buf, 20);
+#else
+	mavlink_vfr_hud_t packet;
+	packet.airspeed = airspeed;
+	packet.groundspeed = groundspeed;
+	packet.heading = heading;
+	packet.throttle = throttle;
+	packet.alt = alt;
+	packet.climb = climb;
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_VFR_HUD, (const char *)&packet, 20);
+#endif
 }
 
 #endif
+
 // MESSAGE VFR_HUD UNPACKING
+
 
 /**
  * @brief Get field airspeed from vfr_hud message
@@ -116,12 +180,7 @@ static inline void mavlink_msg_vfr_hud_send(mavlink_channel_t chan, float airspe
  */
 static inline float mavlink_msg_vfr_hud_get_airspeed(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload)[0];
-	r.b[2] = (msg->payload)[1];
-	r.b[1] = (msg->payload)[2];
-	r.b[0] = (msg->payload)[3];
-	return (float)r.f;
+	return _MAV_RETURN_float(msg,  0);
 }
 
 /**
@@ -131,12 +190,7 @@ static inline float mavlink_msg_vfr_hud_get_airspeed(const mavlink_message_t* ms
  */
 static inline float mavlink_msg_vfr_hud_get_groundspeed(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(float))[0];
-	r.b[2] = (msg->payload+sizeof(float))[1];
-	r.b[1] = (msg->payload+sizeof(float))[2];
-	r.b[0] = (msg->payload+sizeof(float))[3];
-	return (float)r.f;
+	return _MAV_RETURN_float(msg,  4);
 }
 
 /**
@@ -146,10 +200,7 @@ static inline float mavlink_msg_vfr_hud_get_groundspeed(const mavlink_message_t*
  */
 static inline int16_t mavlink_msg_vfr_hud_get_heading(const mavlink_message_t* msg)
 {
-	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(float)+sizeof(float))[0];
-	r.b[0] = (msg->payload+sizeof(float)+sizeof(float))[1];
-	return (int16_t)r.s;
+	return _MAV_RETURN_int16_t(msg,  8);
 }
 
 /**
@@ -159,10 +210,7 @@ static inline int16_t mavlink_msg_vfr_hud_get_heading(const mavlink_message_t* m
  */
 static inline uint16_t mavlink_msg_vfr_hud_get_throttle(const mavlink_message_t* msg)
 {
-	generic_16bit r;
-	r.b[1] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t))[0];
-	r.b[0] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t))[1];
-	return (uint16_t)r.s;
+	return _MAV_RETURN_uint16_t(msg,  10);
 }
 
 /**
@@ -172,12 +220,7 @@ static inline uint16_t mavlink_msg_vfr_hud_get_throttle(const mavlink_message_t*
  */
 static inline float mavlink_msg_vfr_hud_get_alt(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t))[0];
-	r.b[2] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t))[1];
-	r.b[1] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t))[2];
-	r.b[0] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t))[3];
-	return (float)r.f;
+	return _MAV_RETURN_float(msg,  12);
 }
 
 /**
@@ -187,12 +230,7 @@ static inline float mavlink_msg_vfr_hud_get_alt(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_vfr_hud_get_climb(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float))[0];
-	r.b[2] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float))[1];
-	r.b[1] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float))[2];
-	r.b[0] = (msg->payload+sizeof(float)+sizeof(float)+sizeof(int16_t)+sizeof(uint16_t)+sizeof(float))[3];
-	return (float)r.f;
+	return _MAV_RETURN_float(msg,  16);
 }
 
 /**
@@ -203,10 +241,14 @@ static inline float mavlink_msg_vfr_hud_get_climb(const mavlink_message_t* msg)
  */
 static inline void mavlink_msg_vfr_hud_decode(const mavlink_message_t* msg, mavlink_vfr_hud_t* vfr_hud)
 {
+#if MAVLINK_NEED_BYTE_SWAP
 	vfr_hud->airspeed = mavlink_msg_vfr_hud_get_airspeed(msg);
 	vfr_hud->groundspeed = mavlink_msg_vfr_hud_get_groundspeed(msg);
 	vfr_hud->heading = mavlink_msg_vfr_hud_get_heading(msg);
 	vfr_hud->throttle = mavlink_msg_vfr_hud_get_throttle(msg);
 	vfr_hud->alt = mavlink_msg_vfr_hud_get_alt(msg);
 	vfr_hud->climb = mavlink_msg_vfr_hud_get_climb(msg);
+#else
+	memcpy(vfr_hud, _MAV_PAYLOAD(msg), 20);
+#endif
 }

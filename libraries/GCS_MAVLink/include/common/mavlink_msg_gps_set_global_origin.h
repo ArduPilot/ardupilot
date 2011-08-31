@@ -2,16 +2,30 @@
 
 #define MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN 48
 
-typedef struct __mavlink_gps_set_global_origin_t 
+typedef struct __mavlink_gps_set_global_origin_t
 {
-	uint8_t target_system; ///< System ID
-	uint8_t target_component; ///< Component ID
-	int32_t latitude; ///< global position * 1E7
-	int32_t longitude; ///< global position * 1E7
-	int32_t altitude; ///< global position * 1000
-
+ uint8_t target_system; ///< System ID
+ uint8_t target_component; ///< Component ID
+ int32_t latitude; ///< global position * 1E7
+ int32_t longitude; ///< global position * 1E7
+ int32_t altitude; ///< global position * 1000
 } mavlink_gps_set_global_origin_t;
 
+#define MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN_LEN 14
+#define MAVLINK_MSG_ID_48_LEN 14
+
+
+
+#define MAVLINK_MESSAGE_INFO_GPS_SET_GLOBAL_ORIGIN { \
+	"GPS_SET_GLOBAL_ORIGIN", \
+	5, \
+	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_gps_set_global_origin_t, target_system) }, \
+         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_gps_set_global_origin_t, target_component) }, \
+         { "latitude", MAVLINK_TYPE_INT32_T, 0, 2, offsetof(mavlink_gps_set_global_origin_t, latitude) }, \
+         { "longitude", MAVLINK_TYPE_INT32_T, 0, 6, offsetof(mavlink_gps_set_global_origin_t, longitude) }, \
+         { "altitude", MAVLINK_TYPE_INT32_T, 0, 10, offsetof(mavlink_gps_set_global_origin_t, altitude) }, \
+         } \
+}
 
 
 /**
@@ -27,22 +41,35 @@ typedef struct __mavlink_gps_set_global_origin_t
  * @param altitude global position * 1000
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_gps_set_global_origin_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, int32_t latitude, int32_t longitude, int32_t altitude)
+static inline uint16_t mavlink_msg_gps_set_global_origin_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
+						       uint8_t target_system, uint8_t target_component, int32_t latitude, int32_t longitude, int32_t altitude)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[14];
+	_mav_put_uint8_t(buf, 0, target_system);
+	_mav_put_uint8_t(buf, 1, target_component);
+	_mav_put_int32_t(buf, 2, latitude);
+	_mav_put_int32_t(buf, 6, longitude);
+	_mav_put_int32_t(buf, 10, altitude);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 14);
+#else
+	mavlink_gps_set_global_origin_t packet;
+	packet.target_system = target_system;
+	packet.target_component = target_component;
+	packet.latitude = latitude;
+	packet.longitude = longitude;
+	packet.altitude = altitude;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 14);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN;
-
-	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
-	i += put_int32_t_by_index(latitude, i, msg->payload); // global position * 1E7
-	i += put_int32_t_by_index(longitude, i, msg->payload); // global position * 1E7
-	i += put_int32_t_by_index(altitude, i, msg->payload); // global position * 1000
-
-	return mavlink_finalize_message(msg, system_id, component_id, i);
+	return mavlink_finalize_message(msg, system_id, component_id, 14);
 }
 
 /**
- * @brief Pack a gps_set_global_origin message
+ * @brief Pack a gps_set_global_origin message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
@@ -54,18 +81,32 @@ static inline uint16_t mavlink_msg_gps_set_global_origin_pack(uint8_t system_id,
  * @param altitude global position * 1000
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_gps_set_global_origin_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint8_t target_system, uint8_t target_component, int32_t latitude, int32_t longitude, int32_t altitude)
+static inline uint16_t mavlink_msg_gps_set_global_origin_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
+							   mavlink_message_t* msg,
+						           uint8_t target_system,uint8_t target_component,int32_t latitude,int32_t longitude,int32_t altitude)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[14];
+	_mav_put_uint8_t(buf, 0, target_system);
+	_mav_put_uint8_t(buf, 1, target_component);
+	_mav_put_int32_t(buf, 2, latitude);
+	_mav_put_int32_t(buf, 6, longitude);
+	_mav_put_int32_t(buf, 10, altitude);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 14);
+#else
+	mavlink_gps_set_global_origin_t packet;
+	packet.target_system = target_system;
+	packet.target_component = target_component;
+	packet.latitude = latitude;
+	packet.longitude = longitude;
+	packet.altitude = altitude;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 14);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN;
-
-	i += put_uint8_t_by_index(target_system, i, msg->payload); // System ID
-	i += put_uint8_t_by_index(target_component, i, msg->payload); // Component ID
-	i += put_int32_t_by_index(latitude, i, msg->payload); // global position * 1E7
-	i += put_int32_t_by_index(longitude, i, msg->payload); // global position * 1E7
-	i += put_int32_t_by_index(altitude, i, msg->payload); // global position * 1000
-
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 14);
 }
 
 /**
@@ -95,13 +136,31 @@ static inline uint16_t mavlink_msg_gps_set_global_origin_encode(uint8_t system_i
 
 static inline void mavlink_msg_gps_set_global_origin_send(mavlink_channel_t chan, uint8_t target_system, uint8_t target_component, int32_t latitude, int32_t longitude, int32_t altitude)
 {
-	mavlink_message_t msg;
-	mavlink_msg_gps_set_global_origin_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, target_system, target_component, latitude, longitude, altitude);
-	mavlink_send_uart(chan, &msg);
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[14];
+	_mav_put_uint8_t(buf, 0, target_system);
+	_mav_put_uint8_t(buf, 1, target_component);
+	_mav_put_int32_t(buf, 2, latitude);
+	_mav_put_int32_t(buf, 6, longitude);
+	_mav_put_int32_t(buf, 10, altitude);
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN, buf, 14);
+#else
+	mavlink_gps_set_global_origin_t packet;
+	packet.target_system = target_system;
+	packet.target_component = target_component;
+	packet.latitude = latitude;
+	packet.longitude = longitude;
+	packet.altitude = altitude;
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN, (const char *)&packet, 14);
+#endif
 }
 
 #endif
+
 // MESSAGE GPS_SET_GLOBAL_ORIGIN UNPACKING
+
 
 /**
  * @brief Get field target_system from gps_set_global_origin message
@@ -110,7 +169,7 @@ static inline void mavlink_msg_gps_set_global_origin_send(mavlink_channel_t chan
  */
 static inline uint8_t mavlink_msg_gps_set_global_origin_get_target_system(const mavlink_message_t* msg)
 {
-	return (uint8_t)(msg->payload)[0];
+	return _MAV_RETURN_uint8_t(msg,  0);
 }
 
 /**
@@ -120,7 +179,7 @@ static inline uint8_t mavlink_msg_gps_set_global_origin_get_target_system(const 
  */
 static inline uint8_t mavlink_msg_gps_set_global_origin_get_target_component(const mavlink_message_t* msg)
 {
-	return (uint8_t)(msg->payload+sizeof(uint8_t))[0];
+	return _MAV_RETURN_uint8_t(msg,  1);
 }
 
 /**
@@ -130,12 +189,7 @@ static inline uint8_t mavlink_msg_gps_set_global_origin_get_target_component(con
  */
 static inline int32_t mavlink_msg_gps_set_global_origin_get_latitude(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t))[0];
-	r.b[2] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t))[1];
-	r.b[1] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t))[2];
-	r.b[0] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t))[3];
-	return (int32_t)r.i;
+	return _MAV_RETURN_int32_t(msg,  2);
 }
 
 /**
@@ -145,12 +199,7 @@ static inline int32_t mavlink_msg_gps_set_global_origin_get_latitude(const mavli
  */
 static inline int32_t mavlink_msg_gps_set_global_origin_get_longitude(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t))[0];
-	r.b[2] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t))[1];
-	r.b[1] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t))[2];
-	r.b[0] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t))[3];
-	return (int32_t)r.i;
+	return _MAV_RETURN_int32_t(msg,  6);
 }
 
 /**
@@ -160,12 +209,7 @@ static inline int32_t mavlink_msg_gps_set_global_origin_get_longitude(const mavl
  */
 static inline int32_t mavlink_msg_gps_set_global_origin_get_altitude(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t)+sizeof(int32_t))[0];
-	r.b[2] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t)+sizeof(int32_t))[1];
-	r.b[1] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t)+sizeof(int32_t))[2];
-	r.b[0] = (msg->payload+sizeof(uint8_t)+sizeof(uint8_t)+sizeof(int32_t)+sizeof(int32_t))[3];
-	return (int32_t)r.i;
+	return _MAV_RETURN_int32_t(msg,  10);
 }
 
 /**
@@ -176,9 +220,13 @@ static inline int32_t mavlink_msg_gps_set_global_origin_get_altitude(const mavli
  */
 static inline void mavlink_msg_gps_set_global_origin_decode(const mavlink_message_t* msg, mavlink_gps_set_global_origin_t* gps_set_global_origin)
 {
+#if MAVLINK_NEED_BYTE_SWAP
 	gps_set_global_origin->target_system = mavlink_msg_gps_set_global_origin_get_target_system(msg);
 	gps_set_global_origin->target_component = mavlink_msg_gps_set_global_origin_get_target_component(msg);
 	gps_set_global_origin->latitude = mavlink_msg_gps_set_global_origin_get_latitude(msg);
 	gps_set_global_origin->longitude = mavlink_msg_gps_set_global_origin_get_longitude(msg);
 	gps_set_global_origin->altitude = mavlink_msg_gps_set_global_origin_get_altitude(msg);
+#else
+	memcpy(gps_set_global_origin, _MAV_PAYLOAD(msg), 14);
+#endif
 }

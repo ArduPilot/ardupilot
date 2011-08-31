@@ -2,12 +2,22 @@
 
 #define MAVLINK_MSG_ID_BOOT 1
 
-typedef struct __mavlink_boot_t 
+typedef struct __mavlink_boot_t
 {
-	uint32_t version; ///< The onboard software version
-
+ uint32_t version; ///< The onboard software version
 } mavlink_boot_t;
 
+#define MAVLINK_MSG_ID_BOOT_LEN 4
+#define MAVLINK_MSG_ID_1_LEN 4
+
+
+
+#define MAVLINK_MESSAGE_INFO_BOOT { \
+	"BOOT", \
+	1, \
+	{  { "version", MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_boot_t, version) }, \
+         } \
+}
 
 
 /**
@@ -19,18 +29,27 @@ typedef struct __mavlink_boot_t
  * @param version The onboard software version
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_boot_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint32_t version)
+static inline uint16_t mavlink_msg_boot_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
+						       uint32_t version)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[4];
+	_mav_put_uint32_t(buf, 0, version);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 4);
+#else
+	mavlink_boot_t packet;
+	packet.version = version;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 4);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_BOOT;
-
-	i += put_uint32_t_by_index(version, i, msg->payload); // The onboard software version
-
-	return mavlink_finalize_message(msg, system_id, component_id, i);
+	return mavlink_finalize_message(msg, system_id, component_id, 4);
 }
 
 /**
- * @brief Pack a boot message
+ * @brief Pack a boot message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
@@ -38,14 +57,24 @@ static inline uint16_t mavlink_msg_boot_pack(uint8_t system_id, uint8_t componen
  * @param version The onboard software version
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_boot_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint32_t version)
+static inline uint16_t mavlink_msg_boot_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
+							   mavlink_message_t* msg,
+						           uint32_t version)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[4];
+	_mav_put_uint32_t(buf, 0, version);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 4);
+#else
+	mavlink_boot_t packet;
+	packet.version = version;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 4);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_BOOT;
-
-	i += put_uint32_t_by_index(version, i, msg->payload); // The onboard software version
-
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 4);
 }
 
 /**
@@ -71,13 +100,23 @@ static inline uint16_t mavlink_msg_boot_encode(uint8_t system_id, uint8_t compon
 
 static inline void mavlink_msg_boot_send(mavlink_channel_t chan, uint32_t version)
 {
-	mavlink_message_t msg;
-	mavlink_msg_boot_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, version);
-	mavlink_send_uart(chan, &msg);
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[4];
+	_mav_put_uint32_t(buf, 0, version);
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BOOT, buf, 4);
+#else
+	mavlink_boot_t packet;
+	packet.version = version;
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BOOT, (const char *)&packet, 4);
+#endif
 }
 
 #endif
+
 // MESSAGE BOOT UNPACKING
+
 
 /**
  * @brief Get field version from boot message
@@ -86,12 +125,7 @@ static inline void mavlink_msg_boot_send(mavlink_channel_t chan, uint32_t versio
  */
 static inline uint32_t mavlink_msg_boot_get_version(const mavlink_message_t* msg)
 {
-	generic_32bit r;
-	r.b[3] = (msg->payload)[0];
-	r.b[2] = (msg->payload)[1];
-	r.b[1] = (msg->payload)[2];
-	r.b[0] = (msg->payload)[3];
-	return (uint32_t)r.i;
+	return _MAV_RETURN_uint32_t(msg,  0);
 }
 
 /**
@@ -102,5 +136,9 @@ static inline uint32_t mavlink_msg_boot_get_version(const mavlink_message_t* msg
  */
 static inline void mavlink_msg_boot_decode(const mavlink_message_t* msg, mavlink_boot_t* boot)
 {
+#if MAVLINK_NEED_BYTE_SWAP
 	boot->version = mavlink_msg_boot_get_version(msg);
+#else
+	memcpy(boot, _MAV_PAYLOAD(msg), 4);
+#endif
 }

@@ -2,12 +2,22 @@
 
 #define MAVLINK_MSG_ID_WAYPOINT_CURRENT 42
 
-typedef struct __mavlink_waypoint_current_t 
+typedef struct __mavlink_waypoint_current_t
 {
-	uint16_t seq; ///< Sequence
-
+ uint16_t seq; ///< Sequence
 } mavlink_waypoint_current_t;
 
+#define MAVLINK_MSG_ID_WAYPOINT_CURRENT_LEN 2
+#define MAVLINK_MSG_ID_42_LEN 2
+
+
+
+#define MAVLINK_MESSAGE_INFO_WAYPOINT_CURRENT { \
+	"WAYPOINT_CURRENT", \
+	1, \
+	{  { "seq", MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_waypoint_current_t, seq) }, \
+         } \
+}
 
 
 /**
@@ -19,18 +29,27 @@ typedef struct __mavlink_waypoint_current_t
  * @param seq Sequence
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_waypoint_current_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, uint16_t seq)
+static inline uint16_t mavlink_msg_waypoint_current_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
+						       uint16_t seq)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[2];
+	_mav_put_uint16_t(buf, 0, seq);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 2);
+#else
+	mavlink_waypoint_current_t packet;
+	packet.seq = seq;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 2);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_CURRENT;
-
-	i += put_uint16_t_by_index(seq, i, msg->payload); // Sequence
-
-	return mavlink_finalize_message(msg, system_id, component_id, i);
+	return mavlink_finalize_message(msg, system_id, component_id, 2);
 }
 
 /**
- * @brief Pack a waypoint_current message
+ * @brief Pack a waypoint_current message on a channel
  * @param system_id ID of this system
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message was sent over
@@ -38,14 +57,24 @@ static inline uint16_t mavlink_msg_waypoint_current_pack(uint8_t system_id, uint
  * @param seq Sequence
  * @return length of the message in bytes (excluding serial stream start sign)
  */
-static inline uint16_t mavlink_msg_waypoint_current_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, uint16_t seq)
+static inline uint16_t mavlink_msg_waypoint_current_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
+							   mavlink_message_t* msg,
+						           uint16_t seq)
 {
-	uint16_t i = 0;
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[2];
+	_mav_put_uint16_t(buf, 0, seq);
+
+        memcpy(_MAV_PAYLOAD(msg), buf, 2);
+#else
+	mavlink_waypoint_current_t packet;
+	packet.seq = seq;
+
+        memcpy(_MAV_PAYLOAD(msg), &packet, 2);
+#endif
+
 	msg->msgid = MAVLINK_MSG_ID_WAYPOINT_CURRENT;
-
-	i += put_uint16_t_by_index(seq, i, msg->payload); // Sequence
-
-	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, i);
+	return mavlink_finalize_message_chan(msg, system_id, component_id, chan, 2);
 }
 
 /**
@@ -71,13 +100,23 @@ static inline uint16_t mavlink_msg_waypoint_current_encode(uint8_t system_id, ui
 
 static inline void mavlink_msg_waypoint_current_send(mavlink_channel_t chan, uint16_t seq)
 {
-	mavlink_message_t msg;
-	mavlink_msg_waypoint_current_pack_chan(mavlink_system.sysid, mavlink_system.compid, chan, &msg, seq);
-	mavlink_send_uart(chan, &msg);
+#if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
+	char buf[2];
+	_mav_put_uint16_t(buf, 0, seq);
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WAYPOINT_CURRENT, buf, 2);
+#else
+	mavlink_waypoint_current_t packet;
+	packet.seq = seq;
+
+	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_WAYPOINT_CURRENT, (const char *)&packet, 2);
+#endif
 }
 
 #endif
+
 // MESSAGE WAYPOINT_CURRENT UNPACKING
+
 
 /**
  * @brief Get field seq from waypoint_current message
@@ -86,10 +125,7 @@ static inline void mavlink_msg_waypoint_current_send(mavlink_channel_t chan, uin
  */
 static inline uint16_t mavlink_msg_waypoint_current_get_seq(const mavlink_message_t* msg)
 {
-	generic_16bit r;
-	r.b[1] = (msg->payload)[0];
-	r.b[0] = (msg->payload)[1];
-	return (uint16_t)r.s;
+	return _MAV_RETURN_uint16_t(msg,  0);
 }
 
 /**
@@ -100,5 +136,9 @@ static inline uint16_t mavlink_msg_waypoint_current_get_seq(const mavlink_messag
  */
 static inline void mavlink_msg_waypoint_current_decode(const mavlink_message_t* msg, mavlink_waypoint_current_t* waypoint_current)
 {
+#if MAVLINK_NEED_BYTE_SWAP
 	waypoint_current->seq = mavlink_msg_waypoint_current_get_seq(msg);
+#else
+	memcpy(waypoint_current, _MAV_PAYLOAD(msg), 2);
+#endif
 }
