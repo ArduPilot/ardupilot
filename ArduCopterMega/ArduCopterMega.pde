@@ -63,8 +63,6 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <ModeFilter.h>
-
-#define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 
 // Configuration
