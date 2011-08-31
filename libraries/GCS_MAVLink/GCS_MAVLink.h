@@ -7,6 +7,8 @@
 #define GCS_MAVLink_h
 
 #include <Stream.h>
+
+#define MAVLINK_COMM_NUM_BUFFERS 2
 #include "include/mavlink_types.h"
 
 /// MAVLink stream used for HIL interaction
