@@ -234,7 +234,7 @@ typedef struct __mavlink_field_info {
 typedef struct __mavlink_message_info {
 	const char *name;                                      // name of the message
 	unsigned num_fields;                                   // how many fields in this message
-	const mavlink_field_info_t fields[MAVLINK_MAX_FIELDS]; // field information
+	mavlink_field_info_t fields[MAVLINK_MAX_FIELDS];       // field information
 } mavlink_message_info_t;
 
 #define _MAV_PAYLOAD(msg) ((char *)(&(msg)->payload64[0]))
