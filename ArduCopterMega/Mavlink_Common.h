@@ -76,6 +76,11 @@ void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint32_t param, ui
 					battery_voltage * 1000,
 					battery_remaining,
 					packet_drops);
+
+#ifdef MAVLINK_MSG_ID_MEMINFO
+            extern unsigned __brkval;
+            mavlink_msg_meminfo_send(chan, __brkval, memcheck_available_memory());
+#endif
 			break;
 		}
 

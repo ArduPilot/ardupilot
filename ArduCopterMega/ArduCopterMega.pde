@@ -64,6 +64,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <ModeFilter.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <memcheck.h>
 
 // Configuration
 #include "defines.h"
@@ -524,6 +525,7 @@ static byte			loop_step;
 ////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
+	memcheck_init();
 	init_ardupilot();
 }
 
