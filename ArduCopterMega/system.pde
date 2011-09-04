@@ -455,15 +455,15 @@ init_compass()
 {
 	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
 	dcm.set_compass(&compass);
-	bool junkbool 		= compass.init();
-	Vector3f junkvector = compass.get_offsets();					// load offsets to account for airframe magnetic interference
+	compass.init();
+	compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
 
 #ifdef OPTFLOW_ENABLED
 static void
 init_optflow()
 {
-	bool junkbool = optflow.init();
+	optflow.init();
 	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
 	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
 }
