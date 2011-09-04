@@ -28,7 +28,7 @@ public:
         void            _printf_P(const prog_char *, ...);
                 __attribute__ ((format(__printf__, 2, 3)));
 
-        virtual int     space(void);
+        virtual int     txspace(void);
 
 #define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
 
