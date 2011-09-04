@@ -21,13 +21,13 @@ typedef struct __mavlink_hil_controls_t
 #define MAVLINK_MESSAGE_INFO_HIL_CONTROLS { \
 	"HIL_CONTROLS", \
 	7, \
-	{  { "time_us", MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_hil_controls_t, time_us) }, \
-         { "roll_ailerons", MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_hil_controls_t, roll_ailerons) }, \
-         { "pitch_elevator", MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_hil_controls_t, pitch_elevator) }, \
-         { "yaw_rudder", MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_hil_controls_t, yaw_rudder) }, \
-         { "throttle", MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_hil_controls_t, throttle) }, \
-         { "mode", MAVLINK_TYPE_UINT8_T, 0, 24, offsetof(mavlink_hil_controls_t, mode) }, \
-         { "nav_mode", MAVLINK_TYPE_UINT8_T, 0, 25, offsetof(mavlink_hil_controls_t, nav_mode) }, \
+	{  { "time_us", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_hil_controls_t, time_us) }, \
+         { "roll_ailerons", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_hil_controls_t, roll_ailerons) }, \
+         { "pitch_elevator", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_hil_controls_t, pitch_elevator) }, \
+         { "yaw_rudder", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_hil_controls_t, yaw_rudder) }, \
+         { "throttle", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_hil_controls_t, throttle) }, \
+         { "mode", NULL, MAVLINK_TYPE_UINT8_T, 0, 24, offsetof(mavlink_hil_controls_t, mode) }, \
+         { "nav_mode", NULL, MAVLINK_TYPE_UINT8_T, 0, 25, offsetof(mavlink_hil_controls_t, nav_mode) }, \
          } \
 }
 

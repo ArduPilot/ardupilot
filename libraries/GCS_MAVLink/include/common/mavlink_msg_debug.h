@@ -16,8 +16,8 @@ typedef struct __mavlink_debug_t
 #define MAVLINK_MESSAGE_INFO_DEBUG { \
 	"DEBUG", \
 	2, \
-	{  { "ind", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_debug_t, ind) }, \
-         { "value", MAVLINK_TYPE_FLOAT, 0, 1, offsetof(mavlink_debug_t, value) }, \
+	{  { "ind", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_debug_t, ind) }, \
+         { "value", NULL, MAVLINK_TYPE_FLOAT, 0, 1, offsetof(mavlink_debug_t, value) }, \
          } \
 }
 

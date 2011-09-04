@@ -15,7 +15,7 @@ typedef struct __mavlink_auth_key_t
 #define MAVLINK_MESSAGE_INFO_AUTH_KEY { \
 	"AUTH_KEY", \
 	1, \
-	{  { "key", MAVLINK_TYPE_CHAR, 32, 0, offsetof(mavlink_auth_key_t, key) }, \
+	{  { "key", NULL, MAVLINK_TYPE_CHAR, 32, 0, offsetof(mavlink_auth_key_t, key) }, \
          } \
 }
 

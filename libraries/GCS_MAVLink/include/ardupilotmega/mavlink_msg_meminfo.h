@@ -16,8 +16,8 @@ typedef struct __mavlink_meminfo_t
 #define MAVLINK_MESSAGE_INFO_MEMINFO { \
 	"MEMINFO", \
 	2, \
-	{  { "brkval", MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_meminfo_t, brkval) }, \
-         { "freemem", MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_meminfo_t, freemem) }, \
+	{  { "brkval", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_meminfo_t, brkval) }, \
+         { "freemem", NULL, MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_meminfo_t, freemem) }, \
          } \
 }
 

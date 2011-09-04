@@ -15,7 +15,7 @@ typedef struct __mavlink_waypoint_current_t
 #define MAVLINK_MESSAGE_INFO_WAYPOINT_CURRENT { \
 	"WAYPOINT_CURRENT", \
 	1, \
-	{  { "seq", MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_waypoint_current_t, seq) }, \
+	{  { "seq", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_waypoint_current_t, seq) }, \
          } \
 }
 

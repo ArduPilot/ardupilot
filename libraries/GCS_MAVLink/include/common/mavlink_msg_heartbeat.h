@@ -17,9 +17,9 @@ typedef struct __mavlink_heartbeat_t
 #define MAVLINK_MESSAGE_INFO_HEARTBEAT { \
 	"HEARTBEAT", \
 	3, \
-	{  { "type", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_heartbeat_t, type) }, \
-         { "autopilot", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_heartbeat_t, autopilot) }, \
-         { "mavlink_version", MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_heartbeat_t, mavlink_version) }, \
+	{  { "type", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_heartbeat_t, type) }, \
+         { "autopilot", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_heartbeat_t, autopilot) }, \
+         { "mavlink_version", NULL, MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_heartbeat_t, mavlink_version) }, \
          } \
 }
 

@@ -16,8 +16,8 @@ typedef struct __mavlink_command_ack_t
 #define MAVLINK_MESSAGE_INFO_COMMAND_ACK { \
 	"COMMAND_ACK", \
 	2, \
-	{  { "command", MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_command_ack_t, command) }, \
-         { "result", MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_command_ack_t, result) }, \
+	{  { "command", NULL, MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_command_ack_t, command) }, \
+         { "result", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_command_ack_t, result) }, \
          } \
 }
 

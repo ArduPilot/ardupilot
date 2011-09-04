@@ -23,15 +23,15 @@ typedef struct __mavlink_gps_raw_t
 #define MAVLINK_MESSAGE_INFO_GPS_RAW { \
 	"GPS_RAW", \
 	9, \
-	{  { "usec", MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_gps_raw_t, usec) }, \
-         { "fix_type", MAVLINK_TYPE_UINT8_T, 0, 8, offsetof(mavlink_gps_raw_t, fix_type) }, \
-         { "lat", MAVLINK_TYPE_FLOAT, 0, 9, offsetof(mavlink_gps_raw_t, lat) }, \
-         { "lon", MAVLINK_TYPE_FLOAT, 0, 13, offsetof(mavlink_gps_raw_t, lon) }, \
-         { "alt", MAVLINK_TYPE_FLOAT, 0, 17, offsetof(mavlink_gps_raw_t, alt) }, \
-         { "eph", MAVLINK_TYPE_FLOAT, 0, 21, offsetof(mavlink_gps_raw_t, eph) }, \
-         { "epv", MAVLINK_TYPE_FLOAT, 0, 25, offsetof(mavlink_gps_raw_t, epv) }, \
-         { "v", MAVLINK_TYPE_FLOAT, 0, 29, offsetof(mavlink_gps_raw_t, v) }, \
-         { "hdg", MAVLINK_TYPE_FLOAT, 0, 33, offsetof(mavlink_gps_raw_t, hdg) }, \
+	{  { "usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_gps_raw_t, usec) }, \
+         { "fix_type", NULL, MAVLINK_TYPE_UINT8_T, 0, 8, offsetof(mavlink_gps_raw_t, fix_type) }, \
+         { "lat", NULL, MAVLINK_TYPE_FLOAT, 0, 9, offsetof(mavlink_gps_raw_t, lat) }, \
+         { "lon", NULL, MAVLINK_TYPE_FLOAT, 0, 13, offsetof(mavlink_gps_raw_t, lon) }, \
+         { "alt", NULL, MAVLINK_TYPE_FLOAT, 0, 17, offsetof(mavlink_gps_raw_t, alt) }, \
+         { "eph", NULL, MAVLINK_TYPE_FLOAT, 0, 21, offsetof(mavlink_gps_raw_t, eph) }, \
+         { "epv", NULL, MAVLINK_TYPE_FLOAT, 0, 25, offsetof(mavlink_gps_raw_t, epv) }, \
+         { "v", NULL, MAVLINK_TYPE_FLOAT, 0, 29, offsetof(mavlink_gps_raw_t, v) }, \
+         { "hdg", NULL, MAVLINK_TYPE_FLOAT, 0, 33, offsetof(mavlink_gps_raw_t, hdg) }, \
          } \
 }
 

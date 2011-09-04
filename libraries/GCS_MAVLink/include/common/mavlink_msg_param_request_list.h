@@ -16,8 +16,8 @@ typedef struct __mavlink_param_request_list_t
 #define MAVLINK_MESSAGE_INFO_PARAM_REQUEST_LIST { \
 	"PARAM_REQUEST_LIST", \
 	2, \
-	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_request_list_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_request_list_t, target_component) }, \
+	{  { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_request_list_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_request_list_t, target_component) }, \
          } \
 }
 

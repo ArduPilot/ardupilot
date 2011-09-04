@@ -18,10 +18,10 @@ typedef struct __mavlink_scaled_pressure_t
 #define MAVLINK_MESSAGE_INFO_SCALED_PRESSURE { \
 	"SCALED_PRESSURE", \
 	4, \
-	{  { "usec", MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_scaled_pressure_t, usec) }, \
-         { "press_abs", MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_scaled_pressure_t, press_abs) }, \
-         { "press_diff", MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_scaled_pressure_t, press_diff) }, \
-         { "temperature", MAVLINK_TYPE_INT16_T, 0, 16, offsetof(mavlink_scaled_pressure_t, temperature) }, \
+	{  { "usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_scaled_pressure_t, usec) }, \
+         { "press_abs", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_scaled_pressure_t, press_abs) }, \
+         { "press_diff", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_scaled_pressure_t, press_diff) }, \
+         { "temperature", NULL, MAVLINK_TYPE_INT16_T, 0, 16, offsetof(mavlink_scaled_pressure_t, temperature) }, \
          } \
 }
 

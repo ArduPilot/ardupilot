@@ -23,15 +23,15 @@ typedef struct __mavlink_manual_control_t
 #define MAVLINK_MESSAGE_INFO_MANUAL_CONTROL { \
 	"MANUAL_CONTROL", \
 	9, \
-	{  { "target", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_manual_control_t, target) }, \
-         { "roll", MAVLINK_TYPE_FLOAT, 0, 1, offsetof(mavlink_manual_control_t, roll) }, \
-         { "pitch", MAVLINK_TYPE_FLOAT, 0, 5, offsetof(mavlink_manual_control_t, pitch) }, \
-         { "yaw", MAVLINK_TYPE_FLOAT, 0, 9, offsetof(mavlink_manual_control_t, yaw) }, \
-         { "thrust", MAVLINK_TYPE_FLOAT, 0, 13, offsetof(mavlink_manual_control_t, thrust) }, \
-         { "roll_manual", MAVLINK_TYPE_UINT8_T, 0, 17, offsetof(mavlink_manual_control_t, roll_manual) }, \
-         { "pitch_manual", MAVLINK_TYPE_UINT8_T, 0, 18, offsetof(mavlink_manual_control_t, pitch_manual) }, \
-         { "yaw_manual", MAVLINK_TYPE_UINT8_T, 0, 19, offsetof(mavlink_manual_control_t, yaw_manual) }, \
-         { "thrust_manual", MAVLINK_TYPE_UINT8_T, 0, 20, offsetof(mavlink_manual_control_t, thrust_manual) }, \
+	{  { "target", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_manual_control_t, target) }, \
+         { "roll", NULL, MAVLINK_TYPE_FLOAT, 0, 1, offsetof(mavlink_manual_control_t, roll) }, \
+         { "pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 5, offsetof(mavlink_manual_control_t, pitch) }, \
+         { "yaw", NULL, MAVLINK_TYPE_FLOAT, 0, 9, offsetof(mavlink_manual_control_t, yaw) }, \
+         { "thrust", NULL, MAVLINK_TYPE_FLOAT, 0, 13, offsetof(mavlink_manual_control_t, thrust) }, \
+         { "roll_manual", NULL, MAVLINK_TYPE_UINT8_T, 0, 17, offsetof(mavlink_manual_control_t, roll_manual) }, \
+         { "pitch_manual", NULL, MAVLINK_TYPE_UINT8_T, 0, 18, offsetof(mavlink_manual_control_t, pitch_manual) }, \
+         { "yaw_manual", NULL, MAVLINK_TYPE_UINT8_T, 0, 19, offsetof(mavlink_manual_control_t, yaw_manual) }, \
+         { "thrust_manual", NULL, MAVLINK_TYPE_UINT8_T, 0, 20, offsetof(mavlink_manual_control_t, thrust_manual) }, \
          } \
 }
 

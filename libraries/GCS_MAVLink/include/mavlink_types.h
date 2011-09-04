@@ -167,7 +167,10 @@ enum MAVLINK_DATA_STREAM_TYPE
     MAVLINK_DATA_STREAM_IMG_PNG
 };
 
+#ifndef MAVLINK_MAX_PAYLOAD_LEN
+// it is possible to override this, but be careful!
 #define MAVLINK_MAX_PAYLOAD_LEN 255 ///< Maximum payload length
+#endif
 
 #define MAVLINK_CORE_HEADER_LEN 5 ///< Length of core header (of the comm. layer): message length (1 byte) + message sequence (1 byte) + message system id (1 byte) + message component id (1 byte) + message type id (1 byte)
 #define MAVLINK_NUM_HEADER_BYTES (MAVLINK_CORE_HEADER_LEN + 1) ///< Length of all header bytes, including core and checksum
@@ -177,7 +180,7 @@ enum MAVLINK_DATA_STREAM_TYPE
 #define MAVLINK_MAX_PACKET_LEN (MAVLINK_MAX_PAYLOAD_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) ///< Maximum packet length
 
 typedef struct param_union {
-	struct {
+	union {
     float param_float;
     int32_t param_int32;
     uint32_t param_uint32;
@@ -223,6 +226,7 @@ typedef enum {
 
 typedef struct __mavlink_field_info {
 	const char *name;             // name of this field
+	const char *print_format;     // printing format hint, or NULL
 	mavlink_message_type_t type;  // type of this field
 	unsigned array_length;        // if non-zero, field is an array
 	unsigned wire_offset;         // offset of each field in the payload

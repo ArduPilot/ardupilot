@@ -18,10 +18,10 @@ typedef struct __mavlink_ping_t
 #define MAVLINK_MESSAGE_INFO_PING { \
 	"PING", \
 	4, \
-	{  { "seq", MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_ping_t, seq) }, \
-         { "target_system", MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_ping_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_ping_t, target_component) }, \
-         { "time", MAVLINK_TYPE_UINT64_T, 0, 6, offsetof(mavlink_ping_t, time) }, \
+	{  { "seq", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_ping_t, seq) }, \
+         { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_ping_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_ping_t, target_component) }, \
+         { "time", NULL, MAVLINK_TYPE_UINT64_T, 0, 6, offsetof(mavlink_ping_t, time) }, \
          } \
 }
 

@@ -23,15 +23,15 @@ typedef struct __mavlink_rc_channels_scaled_t
 #define MAVLINK_MESSAGE_INFO_RC_CHANNELS_SCALED { \
 	"RC_CHANNELS_SCALED", \
 	9, \
-	{  { "chan1_scaled", MAVLINK_TYPE_INT16_T, 0, 0, offsetof(mavlink_rc_channels_scaled_t, chan1_scaled) }, \
-         { "chan2_scaled", MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_rc_channels_scaled_t, chan2_scaled) }, \
-         { "chan3_scaled", MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_rc_channels_scaled_t, chan3_scaled) }, \
-         { "chan4_scaled", MAVLINK_TYPE_INT16_T, 0, 6, offsetof(mavlink_rc_channels_scaled_t, chan4_scaled) }, \
-         { "chan5_scaled", MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_rc_channels_scaled_t, chan5_scaled) }, \
-         { "chan6_scaled", MAVLINK_TYPE_INT16_T, 0, 10, offsetof(mavlink_rc_channels_scaled_t, chan6_scaled) }, \
-         { "chan7_scaled", MAVLINK_TYPE_INT16_T, 0, 12, offsetof(mavlink_rc_channels_scaled_t, chan7_scaled) }, \
-         { "chan8_scaled", MAVLINK_TYPE_INT16_T, 0, 14, offsetof(mavlink_rc_channels_scaled_t, chan8_scaled) }, \
-         { "rssi", MAVLINK_TYPE_UINT8_T, 0, 16, offsetof(mavlink_rc_channels_scaled_t, rssi) }, \
+	{  { "chan1_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 0, offsetof(mavlink_rc_channels_scaled_t, chan1_scaled) }, \
+         { "chan2_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_rc_channels_scaled_t, chan2_scaled) }, \
+         { "chan3_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_rc_channels_scaled_t, chan3_scaled) }, \
+         { "chan4_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 6, offsetof(mavlink_rc_channels_scaled_t, chan4_scaled) }, \
+         { "chan5_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_rc_channels_scaled_t, chan5_scaled) }, \
+         { "chan6_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 10, offsetof(mavlink_rc_channels_scaled_t, chan6_scaled) }, \
+         { "chan7_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 12, offsetof(mavlink_rc_channels_scaled_t, chan7_scaled) }, \
+         { "chan8_scaled", NULL, MAVLINK_TYPE_INT16_T, 0, 14, offsetof(mavlink_rc_channels_scaled_t, chan8_scaled) }, \
+         { "rssi", NULL, MAVLINK_TYPE_UINT8_T, 0, 16, offsetof(mavlink_rc_channels_scaled_t, rssi) }, \
          } \
 }
 

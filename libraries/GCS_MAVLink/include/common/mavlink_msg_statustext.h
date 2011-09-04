@@ -16,8 +16,8 @@ typedef struct __mavlink_statustext_t
 #define MAVLINK_MESSAGE_INFO_STATUSTEXT { \
 	"STATUSTEXT", \
 	2, \
-	{  { "severity", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_statustext_t, severity) }, \
-         { "text", MAVLINK_TYPE_INT8_T, 50, 1, offsetof(mavlink_statustext_t, text) }, \
+	{  { "severity", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_statustext_t, severity) }, \
+         { "text", NULL, MAVLINK_TYPE_INT8_T, 50, 1, offsetof(mavlink_statustext_t, text) }, \
          } \
 }
 

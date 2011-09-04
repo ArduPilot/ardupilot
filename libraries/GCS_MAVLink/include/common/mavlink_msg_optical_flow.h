@@ -20,12 +20,12 @@ typedef struct __mavlink_optical_flow_t
 #define MAVLINK_MESSAGE_INFO_OPTICAL_FLOW { \
 	"OPTICAL_FLOW", \
 	6, \
-	{  { "time", MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_optical_flow_t, time) }, \
-         { "sensor_id", MAVLINK_TYPE_UINT8_T, 0, 8, offsetof(mavlink_optical_flow_t, sensor_id) }, \
-         { "flow_x", MAVLINK_TYPE_INT16_T, 0, 9, offsetof(mavlink_optical_flow_t, flow_x) }, \
-         { "flow_y", MAVLINK_TYPE_INT16_T, 0, 11, offsetof(mavlink_optical_flow_t, flow_y) }, \
-         { "quality", MAVLINK_TYPE_UINT8_T, 0, 13, offsetof(mavlink_optical_flow_t, quality) }, \
-         { "ground_distance", MAVLINK_TYPE_FLOAT, 0, 14, offsetof(mavlink_optical_flow_t, ground_distance) }, \
+	{  { "time", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_optical_flow_t, time) }, \
+         { "sensor_id", NULL, MAVLINK_TYPE_UINT8_T, 0, 8, offsetof(mavlink_optical_flow_t, sensor_id) }, \
+         { "flow_x", NULL, MAVLINK_TYPE_INT16_T, 0, 9, offsetof(mavlink_optical_flow_t, flow_x) }, \
+         { "flow_y", NULL, MAVLINK_TYPE_INT16_T, 0, 11, offsetof(mavlink_optical_flow_t, flow_y) }, \
+         { "quality", NULL, MAVLINK_TYPE_UINT8_T, 0, 13, offsetof(mavlink_optical_flow_t, quality) }, \
+         { "ground_distance", NULL, MAVLINK_TYPE_FLOAT, 0, 14, offsetof(mavlink_optical_flow_t, ground_distance) }, \
          } \
 }
 

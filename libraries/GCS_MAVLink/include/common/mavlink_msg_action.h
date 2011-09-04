@@ -17,9 +17,9 @@ typedef struct __mavlink_action_t
 #define MAVLINK_MESSAGE_INFO_ACTION { \
 	"ACTION", \
 	3, \
-	{  { "target", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_action_t, target) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_action_t, target_component) }, \
-         { "action", MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_action_t, action) }, \
+	{  { "target", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_action_t, target) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_action_t, target_component) }, \
+         { "action", NULL, MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_action_t, action) }, \
          } \
 }
 

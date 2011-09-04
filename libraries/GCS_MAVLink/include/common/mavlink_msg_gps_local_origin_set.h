@@ -17,9 +17,9 @@ typedef struct __mavlink_gps_local_origin_set_t
 #define MAVLINK_MESSAGE_INFO_GPS_LOCAL_ORIGIN_SET { \
 	"GPS_LOCAL_ORIGIN_SET", \
 	3, \
-	{  { "latitude", MAVLINK_TYPE_INT32_T, 0, 0, offsetof(mavlink_gps_local_origin_set_t, latitude) }, \
-         { "longitude", MAVLINK_TYPE_INT32_T, 0, 4, offsetof(mavlink_gps_local_origin_set_t, longitude) }, \
-         { "altitude", MAVLINK_TYPE_INT32_T, 0, 8, offsetof(mavlink_gps_local_origin_set_t, altitude) }, \
+	{  { "latitude", NULL, MAVLINK_TYPE_INT32_T, 0, 0, offsetof(mavlink_gps_local_origin_set_t, latitude) }, \
+         { "longitude", NULL, MAVLINK_TYPE_INT32_T, 0, 4, offsetof(mavlink_gps_local_origin_set_t, longitude) }, \
+         { "altitude", NULL, MAVLINK_TYPE_INT32_T, 0, 8, offsetof(mavlink_gps_local_origin_set_t, altitude) }, \
          } \
 }
 

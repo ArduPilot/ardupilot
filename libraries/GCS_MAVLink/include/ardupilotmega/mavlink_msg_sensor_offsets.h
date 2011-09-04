@@ -26,18 +26,18 @@ typedef struct __mavlink_sensor_offsets_t
 #define MAVLINK_MESSAGE_INFO_SENSOR_OFFSETS { \
 	"SENSOR_OFFSETS", \
 	12, \
-	{  { "mag_ofs_x", MAVLINK_TYPE_INT16_T, 0, 0, offsetof(mavlink_sensor_offsets_t, mag_ofs_x) }, \
-         { "mag_ofs_y", MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_sensor_offsets_t, mag_ofs_y) }, \
-         { "mag_ofs_z", MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_sensor_offsets_t, mag_ofs_z) }, \
-         { "mag_declination", MAVLINK_TYPE_FLOAT, 0, 6, offsetof(mavlink_sensor_offsets_t, mag_declination) }, \
-         { "raw_press", MAVLINK_TYPE_INT32_T, 0, 10, offsetof(mavlink_sensor_offsets_t, raw_press) }, \
-         { "raw_temp", MAVLINK_TYPE_INT32_T, 0, 14, offsetof(mavlink_sensor_offsets_t, raw_temp) }, \
-         { "gyro_cal_x", MAVLINK_TYPE_FLOAT, 0, 18, offsetof(mavlink_sensor_offsets_t, gyro_cal_x) }, \
-         { "gyro_cal_y", MAVLINK_TYPE_FLOAT, 0, 22, offsetof(mavlink_sensor_offsets_t, gyro_cal_y) }, \
-         { "gyro_cal_z", MAVLINK_TYPE_FLOAT, 0, 26, offsetof(mavlink_sensor_offsets_t, gyro_cal_z) }, \
-         { "accel_cal_x", MAVLINK_TYPE_FLOAT, 0, 30, offsetof(mavlink_sensor_offsets_t, accel_cal_x) }, \
-         { "accel_cal_y", MAVLINK_TYPE_FLOAT, 0, 34, offsetof(mavlink_sensor_offsets_t, accel_cal_y) }, \
-         { "accel_cal_z", MAVLINK_TYPE_FLOAT, 0, 38, offsetof(mavlink_sensor_offsets_t, accel_cal_z) }, \
+	{  { "mag_ofs_x", NULL, MAVLINK_TYPE_INT16_T, 0, 0, offsetof(mavlink_sensor_offsets_t, mag_ofs_x) }, \
+         { "mag_ofs_y", NULL, MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_sensor_offsets_t, mag_ofs_y) }, \
+         { "mag_ofs_z", NULL, MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_sensor_offsets_t, mag_ofs_z) }, \
+         { "mag_declination", NULL, MAVLINK_TYPE_FLOAT, 0, 6, offsetof(mavlink_sensor_offsets_t, mag_declination) }, \
+         { "raw_press", NULL, MAVLINK_TYPE_INT32_T, 0, 10, offsetof(mavlink_sensor_offsets_t, raw_press) }, \
+         { "raw_temp", NULL, MAVLINK_TYPE_INT32_T, 0, 14, offsetof(mavlink_sensor_offsets_t, raw_temp) }, \
+         { "gyro_cal_x", NULL, MAVLINK_TYPE_FLOAT, 0, 18, offsetof(mavlink_sensor_offsets_t, gyro_cal_x) }, \
+         { "gyro_cal_y", NULL, MAVLINK_TYPE_FLOAT, 0, 22, offsetof(mavlink_sensor_offsets_t, gyro_cal_y) }, \
+         { "gyro_cal_z", NULL, MAVLINK_TYPE_FLOAT, 0, 26, offsetof(mavlink_sensor_offsets_t, gyro_cal_z) }, \
+         { "accel_cal_x", NULL, MAVLINK_TYPE_FLOAT, 0, 30, offsetof(mavlink_sensor_offsets_t, accel_cal_x) }, \
+         { "accel_cal_y", NULL, MAVLINK_TYPE_FLOAT, 0, 34, offsetof(mavlink_sensor_offsets_t, accel_cal_y) }, \
+         { "accel_cal_z", NULL, MAVLINK_TYPE_FLOAT, 0, 38, offsetof(mavlink_sensor_offsets_t, accel_cal_z) }, \
          } \
 }
 
