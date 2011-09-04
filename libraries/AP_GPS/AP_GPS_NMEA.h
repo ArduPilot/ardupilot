@@ -68,10 +68,10 @@ public:
 
 private:
 	/// Coding for the GPS sentences that the parser handles
-    enum _sentence_types {
-    	_GPS_SENTENCE_GPRMC = 10,
-    	_GPS_SENTENCE_GPGGA = 20,
-    	_GPS_SENTENCE_VTG   = 30,
+    enum _sentence_types {	//there are some more than 10 fields in some sentences , thus we have to increase these value.
+    	_GPS_SENTENCE_GPRMC = 32,		
+    	_GPS_SENTENCE_GPGGA = 64,
+    	_GPS_SENTENCE_GPVTG = 96,
     	_GPS_SENTENCE_OTHER = 0
     };
 
