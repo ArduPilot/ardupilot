@@ -21,7 +21,6 @@
 		int min_distance : minimum measurable distance (in cm)
 
 	Methods:
-		init(int analogPort) : Initialization of sensor
 		read() : read value from analog port and returns the distance (in cm)
 
 */
@@ -31,9 +30,6 @@
 #include "AP_RangeFinder_MaxsonarXL.h"
 
 // Constructor //////////////////////////////////////////////////////////////
-//AP_GPS_MTK16::AP_GPS_MTK16(Stream *s) : GPS(s)
-//{
-//}
 
 AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_ADC *adc, ModeFilter *filter) :
 	RangeFinder(adc, filter)

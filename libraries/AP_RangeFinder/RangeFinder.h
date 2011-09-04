@@ -34,10 +34,6 @@ class RangeFinder
 	{}
   public:
 
-	//int _history[AP_RANGEFINDER_NUM_AVERAGES]; // history of recent distances used for filtering
-	//int _num_averages; // filter will return average of this many historic values (must be < AP_RANGEFINDER_NUM_AVERAGES)
-	//int _history_ptr;  // pointer to the most recent entry in the history table
-
 	int raw_value;     // raw value from the sensor
 	int distance;      // distance in cm
 	int max_distance;  // maximum measurable distance (in cm) - should be set in child's constructor
@@ -46,7 +42,6 @@ class RangeFinder
 
 	virtual void set_analog_port(int analogPort);
     virtual void set_orientation(int x, int y, int z);
-	//virtual void set_filter(int num_averages) { _num_averages = num_averages; } // allows control of amount of filtering done
 	virtual int convert_raw_to_distance(int _raw_value) { return _raw_value; }  // function that each child class should override to convert voltage to distance
 	virtual int read();   // read value from sensor and return distance in cm
 
