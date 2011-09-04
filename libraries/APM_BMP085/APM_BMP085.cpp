@@ -47,9 +47,9 @@ extern "C" {
 #define BMP085_EOC 30        // End of conversion pin PC7
 
 // Constructors ////////////////////////////////////////////////////////////////
-APM_BMP085_Class::APM_BMP085_Class()
-{
-}
+//APM_BMP085_Class::APM_BMP085_Class()
+//{
+//}
 
 // Public Methods //////////////////////////////////////////////////////////////
 void APM_BMP085_Class::Init(int initialiseWireLib)
@@ -172,6 +172,29 @@ void APM_BMP085_Class::ReadPress()
 
 	xlsb = Wire.receive();
 	RawPress = (((long)msb << 16) | ((long)lsb << 8) | ((long)xlsb)) >> (8 - oss);
+
+	if(_offset_press == 0){
+		_offset_press = RawPress;
+		RawPress = 0;
+	}else{
+		RawPress -= _offset_press;
+	}
+	// filter
+	_press_filter[_press_index++] = RawPress;
+
+	if(_press_index >= PRESS_FILTER_SIZE)
+		_press_index = 0;
+
+	RawPress = 0;
+	// sum our filter
+	for(uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
+		RawPress += _press_filter[i];
+	}
+
+	// grab result
+	//RawPress /= PRESS_FILTER_SIZE;
+	RawPress >>= 3;
+	RawPress += _offset_press;
 }
 
 // Send Command to Read Temperature
@@ -201,6 +224,29 @@ void APM_BMP085_Class::ReadTemp()
 	tmp 	= Wire.receive();
 
 	RawTemp = RawTemp << 8 | tmp;
+
+	if(_offset_temp == 0){
+		_offset_temp = RawTemp;
+		RawTemp = 0;
+	}else{
+		RawTemp -= _offset_temp;
+	}
+
+	// filter
+	_temp_filter[_temp_index++] = RawTemp;
+
+	if(_temp_index >= TEMP_FILTER_SIZE)
+		_temp_index = 0;
+
+	RawTemp = 0;
+	// sum our filter
+	for(uint8_t i = 0; i < TEMP_FILTER_SIZE; i++){
+		RawTemp += _temp_filter[i];
+	}
+
+	// grab result
+	RawTemp >>= 4;
+	RawTemp += _offset_temp;
 }
 
 // Calculate Temperature and Pressure in real units.
