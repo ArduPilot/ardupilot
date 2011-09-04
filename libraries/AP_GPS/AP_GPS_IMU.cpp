@@ -41,7 +41,8 @@ AP_GPS_IMU::AP_GPS_IMU(Stream *s) : GPS(s)
 void 
 AP_GPS_IMU::init(void)
 {
-        // we expect the stream to already be open at the corret bitrate
+	// we expect the stream to already be open at the corret bitrate
+	idleTimeout = 1200;
 }
 
 // optimization : This code doesn't wait for data. It only proccess the data available.

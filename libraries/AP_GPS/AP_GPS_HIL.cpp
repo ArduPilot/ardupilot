@@ -22,6 +22,7 @@ AP_GPS_HIL::AP_GPS_HIL(Stream *s) : GPS(s)
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_HIL::init(void)
 {	
+	idleTimeout = 1200;
 }
 
 bool AP_GPS_HIL::read(void)
