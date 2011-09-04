@@ -196,9 +196,10 @@
 #define MSG_MODE_CHANGE 0x07 //This is different than HEARTBEAT because it occurs only when the mode is actually changed
 #define MSG_VERSION_REQUEST 0x08
 #define MSG_VERSION 0x09
-#define MSG_EXTENDED_STATUS 0x0a
-#define MSG_CPU_LOAD 0x0b
-#define MSG_NAV_CONTROLLER_OUTPUT 0x0c
+#define MSG_EXTENDED_STATUS1 0x0a
+#define MSG_EXTENDED_STATUS2 0x0b
+#define MSG_CPU_LOAD 0x0c
+#define MSG_NAV_CONTROLLER_OUTPUT 0x0d
 
 #define MSG_COMMAND_REQUEST 0x20
 #define MSG_COMMAND_UPLOAD 0x21
@@ -221,9 +222,11 @@
 #define MSG_RADIO_OUT 0x53
 #define MSG_RADIO_IN  0x54
 
-#define MSG_RAW_IMU 0x60
-#define MSG_GPS_STATUS 0x61
-#define MSG_GPS_RAW 0x62
+#define MSG_RAW_IMU1 0x60
+#define MSG_RAW_IMU2 0x61
+#define MSG_RAW_IMU3 0x62
+#define MSG_GPS_STATUS 0x63
+#define MSG_GPS_RAW 0x64
 
 #define MSG_SERVO_OUT 0x70
 
@@ -241,6 +244,7 @@
 #define MSG_POSITION_SET 0xb2
 #define MSG_ATTITUDE_SET 0xb3
 #define MSG_LOCAL_LOCATION 0xb4
+#define MSG_RETRY_DEFERRED 0xff
 
 #define SEVERITY_LOW 1
 #define SEVERITY_MEDIUM 2

@@ -88,12 +88,15 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 	if (waypoint_sending == false && waypoint_receiving == false && _queued_parameter == NULL) {
 
 		if (freqLoopMatch(streamRateRawSensors, freqMin, freqMax)){
-			send_message(MSG_RAW_IMU);
+			send_message(MSG_RAW_IMU1);
+			send_message(MSG_RAW_IMU2);
+			send_message(MSG_RAW_IMU3);
 			//Serial.printf("mav1 %d\n", (int)streamRateRawSensors.get());
 		}
 
 		if (freqLoopMatch(streamRateExtendedStatus, freqMin, freqMax)) {
-			send_message(MSG_EXTENDED_STATUS);
+			send_message(MSG_EXTENDED_STATUS1);
+			send_message(MSG_EXTENDED_STATUS2);
 			send_message(MSG_GPS_STATUS);
 			send_message(MSG_CURRENT_WAYPOINT);
 			send_message(MSG_GPS_RAW);			// TODO - remove this message after location message is working
@@ -141,7 +144,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 void
 GCS_MAVLINK::send_message(uint8_t id, uint32_t param)
 {
-	mavlink_send_message(chan,id,param,packet_drops);
+	mavlink_send_message(chan,id,packet_drops);
 }
 
 void
