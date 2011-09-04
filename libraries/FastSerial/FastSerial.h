@@ -110,7 +110,6 @@ public:
 	virtual void begin(long baud);
 	virtual void end(void);
 	virtual int available(void);
-	virtual int space(void);
 	virtual int txspace(void);
 	virtual int read(void);
 	virtual int peek(void);

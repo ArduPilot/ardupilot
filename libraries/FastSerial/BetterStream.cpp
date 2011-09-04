@@ -54,8 +54,8 @@ BetterStream::_printf_P(const prog_char *fmt, ...)
 }
 
 int
-BetterStream::space(void)
+BetterStream::txspace(void)
 {
-        // by default claim that there is always space
+        // by default claim that there is always space in transmit buffer
         return(INT_MAX);
 }
