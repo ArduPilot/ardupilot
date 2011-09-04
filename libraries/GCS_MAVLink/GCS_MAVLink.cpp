@@ -5,8 +5,8 @@
 
 #include "GCS_MAVLink.h"
 
-FastSerial	*mavlink_comm_0_port;
-FastSerial	*mavlink_comm_1_port;
+BetterStream	*mavlink_comm_0_port;
+BetterStream	*mavlink_comm_1_port;
 
 // this might need to move to the flight software
 mavlink_system_t mavlink_system = {7,1,0,0};
