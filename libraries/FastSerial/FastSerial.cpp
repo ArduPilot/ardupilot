@@ -149,6 +149,13 @@ int FastSerial::space(void)
 	return (((_rxBuffer->tail - _rxBuffer->head) & _rxBuffer->mask) - 1);
 }
 
+int FastSerial::txspace(void)
+{
+	if (!_open)
+		return (-1);
+	return ((_txBuffer->mask+1) - ((_txBuffer->head - _txBuffer->tail) & _txBuffer->mask));
+}
+
 int FastSerial::read(void)
 {
 	uint8_t c;
