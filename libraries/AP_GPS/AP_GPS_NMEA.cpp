@@ -267,7 +267,7 @@ bool AP_GPS_NMEA::_term_complete()
 					hdop			= _new_hdop;
 					fix				= true;
 					break;
-				case _GPS_SENTENCE_VTG:
+				case _GPS_SENTENCE_GPVTG:
 					ground_speed	= _new_speed;
 					ground_course	= _new_course;
 					// VTG has no fix indicator, can't change fix status
@@ -296,7 +296,7 @@ bool AP_GPS_NMEA::_term_complete()
 		} else if (!strcmp_P(_term, _gpgga_string)) {
 			_sentence_type = _GPS_SENTENCE_GPGGA;
 		} else if (!strcmp_P(_term, _gpvtg_string)) {
-			_sentence_type = _GPS_SENTENCE_VTG;
+			_sentence_type = _GPS_SENTENCE_GPVTG;
 			// VTG may not contain a data qualifier, presume the solution is good
 			// unless it tells us otherwise.
 			_gps_data_good = true;
@@ -306,71 +306,69 @@ bool AP_GPS_NMEA::_term_complete()
 		return false;
 	}
 
-	// 10 = RMC, 20 = GGA, 30 = VTG
+	// 32 = RMC, 64 = GGA, 96 = VTG
 	if (_sentence_type != _GPS_SENTENCE_OTHER && _term[0]) {
 		switch (_sentence_type + _term_number) {
 		// operational status
 		//
-		case 12: // validity (RMC)
+		case _GPS_SENTENCE_GPRMC + 2: // validity (RMC)
 			_gps_data_good = _term[0] == 'A';
 			break;
-		case 26: // Fix data (GGA)
+		case _GPS_SENTENCE_GPGGA + 6: // Fix data (GGA)
 			_gps_data_good = _term[0] > '0';
 			break;
-		case 39: // validity (VTG) (we may not see this field)
+		case _GPS_SENTENCE_GPVTG + 9: // validity (VTG) (we may not see this field)
 			_gps_data_good = _term[0] != 'N';
 			break;
-		case 27: // satellite count (GGA)
+		case _GPS_SENTENCE_GPGGA + 7: // satellite count (GGA)
 			_new_satellite_count = atol(_term);
 			break;
-		case 28: // HDOP (GGA)
+		case _GPS_SENTENCE_GPGGA + 8: // HDOP (GGA)
 			_new_hdop = _parse_decimal();
 			break;
 
 			// time and date
 			//
-		case 11: // Time (RMC)
-		case 21: // Time (GGA)
+		case _GPS_SENTENCE_GPRMC + 1: // Time (RMC)
+		case _GPS_SENTENCE_GPGGA + 1: // Time (GGA)
 			_new_time = _parse_decimal();
 			break;
-		case 19: // Date (GPRMC)
+		case _GPS_SENTENCE_GPRMC + 9: // Date (GPRMC)
 			_new_date = atol(_term);
 			break;
 
 			// location
 			//
-		case 13: // Latitude
-		case 22:
+		case _GPS_SENTENCE_GPRMC + 3: // Latitude
+		case _GPS_SENTENCE_GPGGA + 2:
 			_new_latitude = _parse_degrees();
 			break;
-		case 14: // N/S
-		case 23:
+		case _GPS_SENTENCE_GPRMC + 4: // N/S
+		case _GPS_SENTENCE_GPGGA + 3:
 			if (_term[0] == 'S')
 				_new_latitude = -_new_latitude;
 			break;
-		case 15: // Longitude
-		case 24:
+		case _GPS_SENTENCE_GPRMC + 5: // Longitude
+		case _GPS_SENTENCE_GPGGA + 4:
 			_new_longitude = _parse_degrees();
 			break;
-		case 16: // E/W
-		case 25:
+		case _GPS_SENTENCE_GPRMC + 6: // E/W
+		case _GPS_SENTENCE_GPGGA + 5:
 			if (_term[0] == 'W')
 				_new_longitude = -_new_longitude;
 			break;
-		case 29: // Altitude (GPGGA)
+		case _GPS_SENTENCE_GPGGA + 9: // Altitude (GPGGA)
 			_new_altitude = _parse_decimal();
 			break;
 
 			// course and speed
 			//
-		case 17: // Speed (GPRMC)
+		case _GPS_SENTENCE_GPRMC + 7: // Speed (GPRMC)
+		case _GPS_SENTENCE_GPVTG + 5: // Speed (VTG)
 			_new_speed = (_parse_decimal() * 514) / 1000; 	// knots-> m/sec, approximiates * 0.514
 			break;
-		case 37: // Speed (VTG)
-			_new_speed = _parse_decimal();
-			break;
-		case 18: // Course (GPRMC)
-		case 31: // Course (VTG)
+		case _GPS_SENTENCE_GPRMC + 8: // Course (GPRMC)
+		case _GPS_SENTENCE_GPVTG + 1: // Course (VTG)
 			_new_course = _parse_decimal();
 			break;
 		}
