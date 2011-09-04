@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 105;
+	static const uint16_t k_format_version = 106;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -170,7 +170,7 @@ public:
 	k_param_pid_crosstrack,
 
 
-	// 255: reserved
+    // 254,255: reserved
 	};
 
 	AP_Int16	format_version;
