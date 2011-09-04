@@ -56,8 +56,6 @@ DataFlash_Class::DataFlash_Class()
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_Class::Init(void)
 {
-  byte tmp;
-  
   pinMode(DF_DATAOUT, OUTPUT);
   pinMode(DF_DATAIN, INPUT);
   pinMode(DF_SPICLOCK,OUTPUT);
@@ -87,8 +85,6 @@ void DataFlash_Class::Init(void)
 // This function is mainly to test the device
 void DataFlash_Class::ReadManufacturerID()
 {
-  byte tmp;
-
   dataflash_CS_active();     // activate dataflash command decoder
  
   // Read manufacturer and ID command...
@@ -97,7 +93,7 @@ void DataFlash_Class::ReadManufacturerID()
   df_manufacturer = SPI.transfer(0xff);
   df_device_0 = SPI.transfer(0xff);
   df_device_1 = SPI.transfer(0xff);
-  tmp = SPI.transfer(0xff);
+  SPI.transfer(0xff);
   
   dataflash_CS_inactive();    // Reset dataflash command decoder  
 }
