@@ -6,7 +6,7 @@
 #ifndef GCS_MAVLink_h
 #define GCS_MAVLink_h
 
-#include <FastSerial.h>
+#include <BetterStream.h>
 
 #include "include/ardupilotmega/version.h"
 
@@ -17,10 +17,10 @@
 #include "include/mavlink_types.h"
 
 /// MAVLink stream used for HIL interaction
-extern FastSerial	*mavlink_comm_0_port;
+extern BetterStream	*mavlink_comm_0_port;
 
 /// MAVLink stream used for ground control communication
-extern FastSerial	*mavlink_comm_1_port;
+extern BetterStream	*mavlink_comm_1_port;
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
