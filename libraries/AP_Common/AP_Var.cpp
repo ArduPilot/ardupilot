@@ -593,6 +593,8 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // sentinel.
     //
     if (0 == _tail_sentinel) {
+        uint8_t pad_size;
+
         debug("writing header");
         EEPROM_header   ee_header;
 
@@ -601,8 +603,17 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         ee_header.spare = 0;
 
         eeprom_write_block(&ee_header, (void *)0, sizeof(ee_header));
-
+ 
         _tail_sentinel = sizeof(ee_header);
+
+        // Write a variable-sized pad header with a reserved key value
+        // to help wear-level the EEPROM a bit.
+        pad_size = (((uint8_t)micros()) % k_size_max) + 1;     // should be fairly random
+        var_header.key = k_key_pad;
+        var_header.size = pad_size - 1;
+
+        eeprom_write_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
+        _tail_sentinel += sizeof(var_header) + pad_size;
     }
 
     // Save the location we are going to insert at, and compute the new
