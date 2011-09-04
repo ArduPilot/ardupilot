@@ -207,7 +207,23 @@ bool AP_Var::save(void)
     // if it fit in the buffer, save it to EEPROM
     if (size <= sizeof(vbuf)) {
         debug("saving %u to %u", size, _key);
-        eeprom_write_block(vbuf, (void *)_key, size);
+        // XXX this should use eeprom_update_block if/when Arduino moves to
+        // avr-libc >= 1.7
+        uint8_t *ep = (uint8_t *)_key;
+        for (size_t i = 0; i < size; i++, ep++) {
+            uint8_t newv;
+            // if value needs to change, change it
+            if (eeprom_read_byte(ep) != vbuf[i])
+                eeprom_write_byte(ep, vbuf[i]);
+
+            // now read it back
+            newv = eeprom_read_byte(ep);
+            if (newv != vbuf[i]) {
+                debug("readback failed at offset %p: got %u, expected %u",
+                      ep, newv, vbuf[i]);
+                return false;
+            }
+        }
         return true;
     }
     return false;
