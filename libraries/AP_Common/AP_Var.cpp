@@ -338,7 +338,7 @@ AP_Var::key(void)
     if (_group) {                   // group members don't have keys
         return k_key_none;
     }
-    if (_key && k_key_not_located) {    // if not located, key is in memory
+    if (_key & k_key_not_located) {    // if not located, key is in memory
         return _key & k_key_mask;
     }
 
