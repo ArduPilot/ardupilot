@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
-  note that we use a 32 bit sentinal to reduce the chance
+  note that we use a 32 bit sentinel to reduce the chance
   of false positives with uninitialised stack variables
  */
 
@@ -11,7 +11,7 @@ static const uint32_t *stack_low;
 extern unsigned __brkval;
 
 #define STACK_OFFSET 2
-#define SENTINAL 0x28021967
+#define SENTINEL 0x28021967
 
 /*
   return the current stack pointer
@@ -23,7 +23,7 @@ static __attribute__((noinline)) const uint32_t *current_stackptr(void)
 
 /*
   this can be added in deeply nested code to ensure we catch 
-  deep stack usage. It should be caught by the sentinal, but this
+  deep stack usage. It should be caught by the sentinel, but this
   is an added protection
  */
 void memcheck_update_stackptr(void)
@@ -35,7 +35,7 @@ void memcheck_update_stackptr(void)
 }
 
 /*
-  initialise memcheck, setting up the sentinals
+  initialise memcheck, setting up the sentinels
  */
 void memcheck_init(void)
 {
@@ -44,18 +44,18 @@ void memcheck_init(void)
     stack_low = current_stackptr();
     memcheck_update_stackptr();
     for (p=(uint32_t *)(stack_low-1); p>(uint32_t *)__brkval; p--) {
-        *p = SENTINAL;
+        *p = SENTINEL;
     }
 }
 
 /*
   this returns the real amount of free memory by looking for
-  overwrites of the stack sentinal values
+  overwrites of the stack sentinel values
  */
 unsigned memcheck_available_memory(void)
 {
     memcheck_update_stackptr();
-    while (*stack_low != SENTINAL && stack_low > (const uint32_t *)__brkval) {
+    while (*stack_low != SENTINEL && stack_low > (const uint32_t *)__brkval) {
         stack_low--;
     }
     return (unsigned)(stack_low) - __brkval;
