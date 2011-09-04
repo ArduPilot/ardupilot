@@ -28,20 +28,20 @@ typedef struct __mavlink_waypoint_t
 #define MAVLINK_MESSAGE_INFO_WAYPOINT { \
 	"WAYPOINT", \
 	14, \
-	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_waypoint_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_waypoint_t, target_component) }, \
-         { "seq", MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_waypoint_t, seq) }, \
-         { "frame", MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_waypoint_t, frame) }, \
-         { "command", MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_waypoint_t, command) }, \
-         { "current", MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_waypoint_t, current) }, \
-         { "autocontinue", MAVLINK_TYPE_UINT8_T, 0, 7, offsetof(mavlink_waypoint_t, autocontinue) }, \
-         { "param1", MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_waypoint_t, param1) }, \
-         { "param2", MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_waypoint_t, param2) }, \
-         { "param3", MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_waypoint_t, param3) }, \
-         { "param4", MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_waypoint_t, param4) }, \
-         { "x", MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_waypoint_t, x) }, \
-         { "y", MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_waypoint_t, y) }, \
-         { "z", MAVLINK_TYPE_FLOAT, 0, 32, offsetof(mavlink_waypoint_t, z) }, \
+	{  { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_waypoint_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_waypoint_t, target_component) }, \
+         { "seq", NULL, MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_waypoint_t, seq) }, \
+         { "frame", NULL, MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_waypoint_t, frame) }, \
+         { "command", NULL, MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_waypoint_t, command) }, \
+         { "current", NULL, MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_waypoint_t, current) }, \
+         { "autocontinue", NULL, MAVLINK_TYPE_UINT8_T, 0, 7, offsetof(mavlink_waypoint_t, autocontinue) }, \
+         { "param1", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_waypoint_t, param1) }, \
+         { "param2", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_waypoint_t, param2) }, \
+         { "param3", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_waypoint_t, param3) }, \
+         { "param4", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_waypoint_t, param4) }, \
+         { "x", NULL, MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_waypoint_t, x) }, \
+         { "y", NULL, MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_waypoint_t, y) }, \
+         { "z", NULL, MAVLINK_TYPE_FLOAT, 0, 32, offsetof(mavlink_waypoint_t, z) }, \
          } \
 }
 

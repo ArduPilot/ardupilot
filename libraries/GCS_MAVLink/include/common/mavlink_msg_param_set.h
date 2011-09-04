@@ -18,10 +18,10 @@ typedef struct __mavlink_param_set_t
 #define MAVLINK_MESSAGE_INFO_PARAM_SET { \
 	"PARAM_SET", \
 	4, \
-	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_set_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_set_t, target_component) }, \
-         { "param_id", MAVLINK_TYPE_INT8_T, 15, 2, offsetof(mavlink_param_set_t, param_id) }, \
-         { "param_value", MAVLINK_TYPE_FLOAT, 0, 17, offsetof(mavlink_param_set_t, param_value) }, \
+	{  { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_set_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_set_t, target_component) }, \
+         { "param_id", NULL, MAVLINK_TYPE_INT8_T, 15, 2, offsetof(mavlink_param_set_t, param_id) }, \
+         { "param_value", NULL, MAVLINK_TYPE_FLOAT, 0, 17, offsetof(mavlink_param_set_t, param_value) }, \
          } \
 }
 

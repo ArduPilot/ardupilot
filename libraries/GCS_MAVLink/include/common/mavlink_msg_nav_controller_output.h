@@ -22,14 +22,14 @@ typedef struct __mavlink_nav_controller_output_t
 #define MAVLINK_MESSAGE_INFO_NAV_CONTROLLER_OUTPUT { \
 	"NAV_CONTROLLER_OUTPUT", \
 	8, \
-	{  { "nav_roll", MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_nav_controller_output_t, nav_roll) }, \
-         { "nav_pitch", MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_nav_controller_output_t, nav_pitch) }, \
-         { "nav_bearing", MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_nav_controller_output_t, nav_bearing) }, \
-         { "target_bearing", MAVLINK_TYPE_INT16_T, 0, 10, offsetof(mavlink_nav_controller_output_t, target_bearing) }, \
-         { "wp_dist", MAVLINK_TYPE_UINT16_T, 0, 12, offsetof(mavlink_nav_controller_output_t, wp_dist) }, \
-         { "alt_error", MAVLINK_TYPE_FLOAT, 0, 14, offsetof(mavlink_nav_controller_output_t, alt_error) }, \
-         { "aspd_error", MAVLINK_TYPE_FLOAT, 0, 18, offsetof(mavlink_nav_controller_output_t, aspd_error) }, \
-         { "xtrack_error", MAVLINK_TYPE_FLOAT, 0, 22, offsetof(mavlink_nav_controller_output_t, xtrack_error) }, \
+	{  { "nav_roll", NULL, MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_nav_controller_output_t, nav_roll) }, \
+         { "nav_pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_nav_controller_output_t, nav_pitch) }, \
+         { "nav_bearing", NULL, MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_nav_controller_output_t, nav_bearing) }, \
+         { "target_bearing", NULL, MAVLINK_TYPE_INT16_T, 0, 10, offsetof(mavlink_nav_controller_output_t, target_bearing) }, \
+         { "wp_dist", NULL, MAVLINK_TYPE_UINT16_T, 0, 12, offsetof(mavlink_nav_controller_output_t, wp_dist) }, \
+         { "alt_error", NULL, MAVLINK_TYPE_FLOAT, 0, 14, offsetof(mavlink_nav_controller_output_t, alt_error) }, \
+         { "aspd_error", NULL, MAVLINK_TYPE_FLOAT, 0, 18, offsetof(mavlink_nav_controller_output_t, aspd_error) }, \
+         { "xtrack_error", NULL, MAVLINK_TYPE_FLOAT, 0, 22, offsetof(mavlink_nav_controller_output_t, xtrack_error) }, \
          } \
 }
 

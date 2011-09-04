@@ -18,10 +18,10 @@ typedef struct __mavlink_param_request_read_t
 #define MAVLINK_MESSAGE_INFO_PARAM_REQUEST_READ { \
 	"PARAM_REQUEST_READ", \
 	4, \
-	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_request_read_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_request_read_t, target_component) }, \
-         { "param_id", MAVLINK_TYPE_INT8_T, 15, 2, offsetof(mavlink_param_request_read_t, param_id) }, \
-         { "param_index", MAVLINK_TYPE_INT16_T, 0, 17, offsetof(mavlink_param_request_read_t, param_index) }, \
+	{  { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_param_request_read_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_param_request_read_t, target_component) }, \
+         { "param_id", NULL, MAVLINK_TYPE_INT8_T, 15, 2, offsetof(mavlink_param_request_read_t, param_id) }, \
+         { "param_index", NULL, MAVLINK_TYPE_INT16_T, 0, 17, offsetof(mavlink_param_request_read_t, param_index) }, \
          } \
 }
 

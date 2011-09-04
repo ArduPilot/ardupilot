@@ -16,8 +16,8 @@ typedef struct __mavlink_set_mode_t
 #define MAVLINK_MESSAGE_INFO_SET_MODE { \
 	"SET_MODE", \
 	2, \
-	{  { "target", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_set_mode_t, target) }, \
-         { "mode", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_set_mode_t, mode) }, \
+	{  { "target", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_set_mode_t, target) }, \
+         { "mode", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_set_mode_t, mode) }, \
          } \
 }
 

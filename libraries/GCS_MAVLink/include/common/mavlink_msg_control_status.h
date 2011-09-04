@@ -22,14 +22,14 @@ typedef struct __mavlink_control_status_t
 #define MAVLINK_MESSAGE_INFO_CONTROL_STATUS { \
 	"CONTROL_STATUS", \
 	8, \
-	{  { "position_fix", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_control_status_t, position_fix) }, \
-         { "vision_fix", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_control_status_t, vision_fix) }, \
-         { "gps_fix", MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_control_status_t, gps_fix) }, \
-         { "ahrs_health", MAVLINK_TYPE_UINT8_T, 0, 3, offsetof(mavlink_control_status_t, ahrs_health) }, \
-         { "control_att", MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_control_status_t, control_att) }, \
-         { "control_pos_xy", MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_control_status_t, control_pos_xy) }, \
-         { "control_pos_z", MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_control_status_t, control_pos_z) }, \
-         { "control_pos_yaw", MAVLINK_TYPE_UINT8_T, 0, 7, offsetof(mavlink_control_status_t, control_pos_yaw) }, \
+	{  { "position_fix", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_control_status_t, position_fix) }, \
+         { "vision_fix", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_control_status_t, vision_fix) }, \
+         { "gps_fix", NULL, MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_control_status_t, gps_fix) }, \
+         { "ahrs_health", NULL, MAVLINK_TYPE_UINT8_T, 0, 3, offsetof(mavlink_control_status_t, ahrs_health) }, \
+         { "control_att", NULL, MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_control_status_t, control_att) }, \
+         { "control_pos_xy", NULL, MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_control_status_t, control_pos_xy) }, \
+         { "control_pos_z", NULL, MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_control_status_t, control_pos_z) }, \
+         { "control_pos_yaw", NULL, MAVLINK_TYPE_UINT8_T, 0, 7, offsetof(mavlink_control_status_t, control_pos_yaw) }, \
          } \
 }
 

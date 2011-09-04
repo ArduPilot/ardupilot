@@ -22,14 +22,14 @@ typedef struct __mavlink_servo_output_raw_t
 #define MAVLINK_MESSAGE_INFO_SERVO_OUTPUT_RAW { \
 	"SERVO_OUTPUT_RAW", \
 	8, \
-	{  { "servo1_raw", MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_servo_output_raw_t, servo1_raw) }, \
-         { "servo2_raw", MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_servo_output_raw_t, servo2_raw) }, \
-         { "servo3_raw", MAVLINK_TYPE_UINT16_T, 0, 4, offsetof(mavlink_servo_output_raw_t, servo3_raw) }, \
-         { "servo4_raw", MAVLINK_TYPE_UINT16_T, 0, 6, offsetof(mavlink_servo_output_raw_t, servo4_raw) }, \
-         { "servo5_raw", MAVLINK_TYPE_UINT16_T, 0, 8, offsetof(mavlink_servo_output_raw_t, servo5_raw) }, \
-         { "servo6_raw", MAVLINK_TYPE_UINT16_T, 0, 10, offsetof(mavlink_servo_output_raw_t, servo6_raw) }, \
-         { "servo7_raw", MAVLINK_TYPE_UINT16_T, 0, 12, offsetof(mavlink_servo_output_raw_t, servo7_raw) }, \
-         { "servo8_raw", MAVLINK_TYPE_UINT16_T, 0, 14, offsetof(mavlink_servo_output_raw_t, servo8_raw) }, \
+	{  { "servo1_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_servo_output_raw_t, servo1_raw) }, \
+         { "servo2_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 2, offsetof(mavlink_servo_output_raw_t, servo2_raw) }, \
+         { "servo3_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 4, offsetof(mavlink_servo_output_raw_t, servo3_raw) }, \
+         { "servo4_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 6, offsetof(mavlink_servo_output_raw_t, servo4_raw) }, \
+         { "servo5_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 8, offsetof(mavlink_servo_output_raw_t, servo5_raw) }, \
+         { "servo6_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 10, offsetof(mavlink_servo_output_raw_t, servo6_raw) }, \
+         { "servo7_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 12, offsetof(mavlink_servo_output_raw_t, servo7_raw) }, \
+         { "servo8_raw", NULL, MAVLINK_TYPE_UINT16_T, 0, 14, offsetof(mavlink_servo_output_raw_t, servo8_raw) }, \
          } \
 }
 

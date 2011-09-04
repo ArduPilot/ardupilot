@@ -19,11 +19,11 @@ typedef struct __mavlink_request_data_stream_t
 #define MAVLINK_MESSAGE_INFO_REQUEST_DATA_STREAM { \
 	"REQUEST_DATA_STREAM", \
 	5, \
-	{  { "target_system", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_request_data_stream_t, target_system) }, \
-         { "target_component", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_request_data_stream_t, target_component) }, \
-         { "req_stream_id", MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_request_data_stream_t, req_stream_id) }, \
-         { "req_message_rate", MAVLINK_TYPE_UINT16_T, 0, 3, offsetof(mavlink_request_data_stream_t, req_message_rate) }, \
-         { "start_stop", MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_request_data_stream_t, start_stop) }, \
+	{  { "target_system", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_request_data_stream_t, target_system) }, \
+         { "target_component", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_request_data_stream_t, target_component) }, \
+         { "req_stream_id", NULL, MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_request_data_stream_t, req_stream_id) }, \
+         { "req_message_rate", NULL, MAVLINK_TYPE_UINT16_T, 0, 3, offsetof(mavlink_request_data_stream_t, req_message_rate) }, \
+         { "start_stop", NULL, MAVLINK_TYPE_UINT8_T, 0, 5, offsetof(mavlink_request_data_stream_t, start_stop) }, \
          } \
 }
 

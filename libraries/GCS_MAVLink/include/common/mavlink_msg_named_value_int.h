@@ -16,8 +16,8 @@ typedef struct __mavlink_named_value_int_t
 #define MAVLINK_MESSAGE_INFO_NAMED_VALUE_INT { \
 	"NAMED_VALUE_INT", \
 	2, \
-	{  { "name", MAVLINK_TYPE_CHAR, 10, 0, offsetof(mavlink_named_value_int_t, name) }, \
-         { "value", MAVLINK_TYPE_INT32_T, 0, 10, offsetof(mavlink_named_value_int_t, value) }, \
+	{  { "name", NULL, MAVLINK_TYPE_CHAR, 10, 0, offsetof(mavlink_named_value_int_t, name) }, \
+         { "value", NULL, MAVLINK_TYPE_INT32_T, 0, 10, offsetof(mavlink_named_value_int_t, value) }, \
          } \
 }
 

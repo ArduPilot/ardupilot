@@ -16,8 +16,8 @@ typedef struct __mavlink_system_time_utc_t
 #define MAVLINK_MESSAGE_INFO_SYSTEM_TIME_UTC { \
 	"SYSTEM_TIME_UTC", \
 	2, \
-	{  { "utc_date", MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_system_time_utc_t, utc_date) }, \
-         { "utc_time", MAVLINK_TYPE_UINT32_T, 0, 4, offsetof(mavlink_system_time_utc_t, utc_time) }, \
+	{  { "utc_date", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_system_time_utc_t, utc_date) }, \
+         { "utc_time", NULL, MAVLINK_TYPE_UINT32_T, 0, 4, offsetof(mavlink_system_time_utc_t, utc_time) }, \
          } \
 }
 

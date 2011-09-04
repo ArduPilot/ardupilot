@@ -20,12 +20,12 @@ typedef struct __mavlink_vfr_hud_t
 #define MAVLINK_MESSAGE_INFO_VFR_HUD { \
 	"VFR_HUD", \
 	6, \
-	{  { "airspeed", MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_vfr_hud_t, airspeed) }, \
-         { "groundspeed", MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_vfr_hud_t, groundspeed) }, \
-         { "heading", MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_vfr_hud_t, heading) }, \
-         { "throttle", MAVLINK_TYPE_UINT16_T, 0, 10, offsetof(mavlink_vfr_hud_t, throttle) }, \
-         { "alt", MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_vfr_hud_t, alt) }, \
-         { "climb", MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_vfr_hud_t, climb) }, \
+	{  { "airspeed", NULL, MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_vfr_hud_t, airspeed) }, \
+         { "groundspeed", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_vfr_hud_t, groundspeed) }, \
+         { "heading", NULL, MAVLINK_TYPE_INT16_T, 0, 8, offsetof(mavlink_vfr_hud_t, heading) }, \
+         { "throttle", NULL, MAVLINK_TYPE_UINT16_T, 0, 10, offsetof(mavlink_vfr_hud_t, throttle) }, \
+         { "alt", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_vfr_hud_t, alt) }, \
+         { "climb", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_vfr_hud_t, climb) }, \
          } \
 }
 

@@ -16,8 +16,8 @@ typedef struct __mavlink_action_ack_t
 #define MAVLINK_MESSAGE_INFO_ACTION_ACK { \
 	"ACTION_ACK", \
 	2, \
-	{  { "action", MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_action_ack_t, action) }, \
-         { "result", MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_action_ack_t, result) }, \
+	{  { "action", NULL, MAVLINK_TYPE_UINT8_T, 0, 0, offsetof(mavlink_action_ack_t, action) }, \
+         { "result", NULL, MAVLINK_TYPE_UINT8_T, 0, 1, offsetof(mavlink_action_ack_t, result) }, \
          } \
 }
 

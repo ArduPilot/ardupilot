@@ -21,13 +21,13 @@ typedef struct __mavlink_object_detection_event_t
 #define MAVLINK_MESSAGE_INFO_OBJECT_DETECTION_EVENT { \
 	"OBJECT_DETECTION_EVENT", \
 	7, \
-	{  { "time", MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_object_detection_event_t, time) }, \
-         { "object_id", MAVLINK_TYPE_UINT16_T, 0, 4, offsetof(mavlink_object_detection_event_t, object_id) }, \
-         { "type", MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_object_detection_event_t, type) }, \
-         { "name", MAVLINK_TYPE_CHAR, 20, 7, offsetof(mavlink_object_detection_event_t, name) }, \
-         { "quality", MAVLINK_TYPE_UINT8_T, 0, 27, offsetof(mavlink_object_detection_event_t, quality) }, \
-         { "bearing", MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_object_detection_event_t, bearing) }, \
-         { "distance", MAVLINK_TYPE_FLOAT, 0, 32, offsetof(mavlink_object_detection_event_t, distance) }, \
+	{  { "time", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_object_detection_event_t, time) }, \
+         { "object_id", NULL, MAVLINK_TYPE_UINT16_T, 0, 4, offsetof(mavlink_object_detection_event_t, object_id) }, \
+         { "type", NULL, MAVLINK_TYPE_UINT8_T, 0, 6, offsetof(mavlink_object_detection_event_t, type) }, \
+         { "name", NULL, MAVLINK_TYPE_CHAR, 20, 7, offsetof(mavlink_object_detection_event_t, name) }, \
+         { "quality", NULL, MAVLINK_TYPE_UINT8_T, 0, 27, offsetof(mavlink_object_detection_event_t, quality) }, \
+         { "bearing", NULL, MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_object_detection_event_t, bearing) }, \
+         { "distance", NULL, MAVLINK_TYPE_FLOAT, 0, 32, offsetof(mavlink_object_detection_event_t, distance) }, \
          } \
 }
 
