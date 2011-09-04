@@ -8,6 +8,11 @@
 
 #include <Stream.h>
 
+#include "include/ardupilotmega/version.h"
+
+// this allows us to make mavlink_message_t much smaller
+#define MAVLINK_MAX_PAYLOAD_LEN MAVLINK_MAX_DIALECT_PAYLOAD_SIZE
+
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #include "include/mavlink_types.h"
 
