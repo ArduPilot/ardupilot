@@ -102,7 +102,9 @@ HIL_XPLANE::send_message(uint8_t id, uint32_t param)
         break;
     case MSG_RADIO_OUT:
         break;
-    case MSG_RAW_IMU:
+    case MSG_RAW_IMU1:
+    case MSG_RAW_IMU2:
+    case MSG_RAW_IMU3:
         break;
     case MSG_GPS_STATUS:
         break;

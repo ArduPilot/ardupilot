@@ -601,6 +601,13 @@ static void fast_loop()
 	// ----------
 	read_radio();
 
+    // try to send any deferred messages if the serial port now has
+    // some space available    
+    gcs.send_message(MSG_RETRY_DEFERRED);
+#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
+    hil.send_message(MSG_RETRY_DEFERRED);
+#endif
+
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_current_flight_mode();
