@@ -112,6 +112,10 @@ public:
     ///
     static const Key k_key_sentinel = 0xff;
 
+    /// Key assigned to the wear-balancing pad entry in EEPROM.
+    ///
+    static const Key k_key_pad = 0xfe;
+
     /// A bitmask that removes any control bits from a key giving just the
     /// value.
     ///
