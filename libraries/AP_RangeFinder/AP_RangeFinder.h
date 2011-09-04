@@ -5,4 +5,3 @@
 
 #include "AP_RangeFinder_SharpGP2Y.h"
 #include "AP_RangeFinder_MaxsonarXL.h"
-#include "AP_RangeFinder_MaxsonarLV.h"

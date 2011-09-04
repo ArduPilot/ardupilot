@@ -21,7 +21,6 @@
 		int min_distance : minimum measurable distance (in cm)
 
 	Methods:
-		init(int analogPort) : Initialization of sensor
 		read() : read value from analog port
 
 */
@@ -31,13 +30,7 @@
 #include "AP_RangeFinder_SharpGP2Y.h"
 
 // Constructor //////////////////////////////////////////////////////////////
-/*
-AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y()
-{
-	max_distance = AP_RANGEFINDER_SHARPEGP2Y_MAX_DISTANCE;
-	min_distance = AP_RANGEFINDER_SHARPEGP2Y_MIN_DISTANCE;
-}
-*/
+
 AP_RangeFinder_SharpGP2Y::AP_RangeFinder_SharpGP2Y(AP_ADC *adc, ModeFilter *filter) :
 	RangeFinder(adc, filter)
 {
