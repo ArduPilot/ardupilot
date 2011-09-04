@@ -8,7 +8,6 @@
 
 #include <AP_Common.h>
 #include <math.h>		// for fabs()
-#define PID_FILTER_SIZE	6
 
 /// @class	PID
 /// @brief	Object managing one PID control
@@ -86,9 +85,6 @@ public:
 	///
 	long 	get_pid(int32_t error, uint16_t dt, float scaler = 1.0);
 
-	long 	get_pi(int32_t error, uint16_t dt, float scaler = 1.0);
-
-
 	/// Reset the PID integrator
 	///
 	void	reset_I();
@@ -121,7 +117,6 @@ public:
 	void	kI(const float v)		{ _ki.set(v); }
 	void	kD(const float v)		{ _kd.set(v); }
 	void	imax(const int16_t v)	{ _imax.set(abs(v)); }
-	//void	filter_size(uint8_t v)	{ _filter_size = min(v, PID_FILTER_SIZE); }
 
 	float	get_integrator() const	{ return _integrator; }
 
@@ -131,12 +126,10 @@ private:
 	AP_Float16			_ki;
 	AP_Float16			_kd;
 	AP_Int16			_imax;
-	float				_filter[PID_FILTER_SIZE];
-	uint8_t				_filter_index;
 
 	float				_integrator;		///< integrator value
 	int32_t				_last_error;		///< last error for derivative
-	//float				_last_derivative; 	///< last derivative for low-pass filter
+	float				_last_derivative; 	///< last derivative for low-pass filter
 
 	/// Low pass filter cut frequency for derivative calculation.
 	///
