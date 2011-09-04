@@ -304,6 +304,7 @@ void
 AP_Var::erase_all()
 {
     AP_Var  *vp;
+    uint16_t i;
 
     debug("erase EEPROM");
 
@@ -316,9 +317,12 @@ AP_Var::erase_all()
         vp = vp->_link;
     }
 
-    // overwrite the first byte of the header, invalidating the EEPROM
-    //
-    eeprom_write_byte(0, 0xff);
+    // wipe the whole EEPROM, including waypoints, as we call this
+    // on firmware revison changes, which may include a change to the
+    // waypoint format
+    for (i = 0; i < k_EEPROM_size; i++) {
+        eeprom_write_byte((uint8_t *)i, 0xff);
+    }
 
     // revert to ignorance about the state of the EEPROM
     _tail_sentinel = 0;
