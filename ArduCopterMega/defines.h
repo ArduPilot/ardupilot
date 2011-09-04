@@ -62,9 +62,8 @@
 #define GPS_PROTOCOL_AUTO	7
 
 // SONAR types:
-
-#define MAX_SONAR_XL 0
-#define MAX_SONAR_LV 1
+#define MAX_SONAR_UNKNOWN	0
+#define MAX_SONAR_XL		1
 
 // Radio channels
 // Note channels are from 0!
