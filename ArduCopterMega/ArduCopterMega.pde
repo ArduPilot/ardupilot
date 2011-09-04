@@ -225,10 +225,8 @@ ModeFilter sonar_mode_filter;
 
 #if SONAR_TYPE == MAX_SONAR_XL
 	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
-#elif SONAR_TYPE == MAX_SONAR_LV
-	// XXX honestly I think these output the same values
-	// If someone knows, can they confirm it?
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+#else
+    #error Unrecognised SONAR_TYPE setting.
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
