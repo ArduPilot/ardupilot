@@ -373,7 +373,7 @@ public:
 	pi_nav_lat			(k_param_pi_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 	pi_nav_lon			(k_param_pi_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 
-	pi_throttle			(k_param_pi_throttle,			PSTR("THR_BAR_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
+	pi_throttle			(k_param_pi_throttle,			PSTR("THR_HOLD_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
 	pi_crosstrack		(k_param_pi_crosstrack,			PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_IMAX),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma

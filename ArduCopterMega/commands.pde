@@ -124,12 +124,13 @@ static void increment_WP_index()
     SendDebugln(g.waypoint_index,DEC);
 }
 
+/*
 static void decrement_WP_index()
 {
     if (g.waypoint_index > 0) {
         g.waypoint_index.set_and_save(g.waypoint_index - 1);
     }
-}
+}*/
 
 static long read_alt_to_hold()
 {

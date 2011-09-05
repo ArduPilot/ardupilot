@@ -522,7 +522,7 @@
 //# define THROTTLE_D		0.6			// upped with filter
 //#endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX		40
+# define THROTTLE_IMAX		50
 #endif
 
 

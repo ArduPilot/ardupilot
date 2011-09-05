@@ -271,9 +271,9 @@ int x_rate_error;
 
 // Radio
 // -----
-static byte 		control_mode		= STABILIZE;
-static byte 		old_control_mode	= STABILIZE;
-static byte 		oldSwitchPosition;					// for remembering the control mode switch
+static byte 	control_mode		= STABILIZE;
+static byte 	old_control_mode	= STABILIZE;
+static byte 	oldSwitchPosition;					// for remembering the control mode switch
 static int 		motor_out[8];
 
 // Heli
@@ -286,8 +286,8 @@ static int heli_servo_out[4];
 
 // Failsafe
 // --------
-static boolean 	failsafe;						// did our throttle dip below the failsafe value?
-static boolean 	ch3_failsafe;
+static boolean 		failsafe;						// did our throttle dip below the failsafe value?
+static boolean 		ch3_failsafe;
 static boolean		motor_armed;
 static boolean		motor_auto_armed;				// if true,
 
@@ -295,14 +295,12 @@ static boolean		motor_auto_armed;				// if true,
 // ----
 //int 	max_stabilize_dampener;				//
 //int 	max_yaw_dampener;					//
-static boolean rate_yaw_flag;						// used to transition yaw control from Rate control to Yaw hold
 static Vector3f omega;
 
 // LED output
 // ----------
 static boolean motor_light;						// status of the Motor safety
 static boolean GPS_light;							// status of the GPS light
-static boolean timer_light;						// status of the Motor safety
 static byte	led_mode = NORMAL_LEDS;
 
 // GPS variables
@@ -323,10 +321,6 @@ static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane 
 static bool		xtrack_enabled = false;
 static long		crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
 static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
-static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
-
-static int 	last_ground_speed;					// used to dampen navigation
-static int	waypoint_speed;
 
 static byte	wp_control;							// used to control - navgation or loiter
 
@@ -338,9 +332,8 @@ static byte wp_verify_byte;						// used for tracking state of navigating waypoi
 
 static float cos_roll_x 	= 1;
 static float cos_pitch_x 	= 1;
-static float cos_yaw_x 	= 1;
+static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
-static bool simple_bearing_is_set = false;
 static long initial_simple_bearing;				// used for Simple mode
 
 
@@ -358,7 +351,6 @@ static int		airspeed;							// m/s * 100
 static long		bearing_error;						// deg * 100 : 0 to 36000
 static long		altitude_error;						// meters * 100 we are off in altitude
 static long 	old_altitude;
-static long 	distance_error;						// distance to the WP
 static long 	yaw_error;							// how off are we pointed
 static long		long_error, lat_error;				// temp for debugging
 
@@ -384,7 +376,7 @@ static int 		ground_temperature;
 // ----------------------
 static int		sonar_alt;
 static int		baro_alt;
-static int		baro_alt_offset;
+//static int		baro_alt_offset;
 static byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 static int		altitude_rate;
 
@@ -396,7 +388,7 @@ static byte		throttle_mode;
 
 static boolean	takeoff_complete;					// Flag for using take-off controls
 static boolean	land_complete;
-static int		landing_distance;					// meters;
+//static int		landing_distance;					// meters;
 static long 	old_alt;							// used for managing altitude rates
 static int		velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
@@ -419,7 +411,7 @@ static int		nav_throttle;						// 0-1000 for throttle control
 
 static long 	throttle_integrator;				// used to integrate throttle output to predict battery life
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
-static bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
+//static bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
 static long 	command_yaw_start;					// what angle were we to begin with
 static unsigned long 	command_yaw_start_time;				// when did we start turning
@@ -436,7 +428,7 @@ static int 	auto_level_counter;
 // ---------
 static long	wp_distance;						// meters - distance between plane and next waypoint
 static long	wp_totalDistance;					// meters - distance between old and next waypoint
-static byte	next_wp_index;						// Current active command index
+//static byte	next_wp_index;						// Current active command index
 
 // repeating event control
 // -----------------------
@@ -446,7 +438,7 @@ static unsigned int 	event_delay; 						// how long to delay the next firing of 
 static int 		event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
 static int 		event_value; 						// per command value, such as PWM for servos
 static int 		event_undo_value;					// the value used to undo commands
-static byte 	repeat_forever;
+//static byte 	repeat_forever;
 static byte 	undo_event;							// counter for timing the undo
 
 // delay command
@@ -484,15 +476,14 @@ static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm
 // Performance monitoring
 // ----------------------
 static long 			perf_mon_timer;
-static float 			imu_health; 						// Metric based on accel gain deweighting
+//static float 			imu_health; 						// Metric based on accel gain deweighting
 static int 				G_Dt_max;							// Max main loop cycle time in milliseconds
 static int 				gps_fix_count;
-static byte				gcs_messages_sent;
 
 // GCS
 // ---
-static char 			GCS_buffer[53];
-static char 			display_PID = -1;						// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
+//static char 			GCS_buffer[53];
+//static char 			display_PID = -1;						// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
 
 // System Timers
 // --------------
@@ -516,7 +507,6 @@ static byte				simple_timer;				// for limiting the execution of flight mode thi
 
 static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
-static unsigned long 	elapsedTime;				// for doing custom events
 static float 			load;						// % MCU cycles used
 
 static byte				counter_one_herz;
@@ -607,7 +597,7 @@ static void fast_loop()
 	read_radio();
 
     // try to send any deferred messages if the serial port now has
-    // some space available    
+    // some space available
     gcs.send_message(MSG_RETRY_DEFERRED);
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
     hil.send_message(MSG_RETRY_DEFERRED);
@@ -709,6 +699,8 @@ static void medium_loop()
 
 			altitude_error = get_altitude_error();
 
+			camera_stabilization();
+
 			// invalidate the throttle hold value
 			// ----------------------------------
 			invalid_throttle = true;
@@ -797,7 +789,7 @@ static void fifty_hz_loop()
 	// Read Sonar
 	// ----------
 	if(g.sonar_enabled){
-		sonar_alt 			= sonar.read();
+		sonar_alt = sonar.read();
 	}
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE != HIL_MODE_DISABLED
@@ -822,11 +814,6 @@ static void fifty_hz_loop()
 		if (g.log_bitmask & MASK_LOG_RAW)
 			Log_Write_Raw();
 	#endif
-
-	//#if CAMERA_STABILIZER == ENABLED
-		camera_stabilization();
-	//#endif
-
 
 	#if HIL_MODE != HIL_MODE_DISABLED && HIL_PORT != GCS_PORT
 		// kick the HIL to process incoming sensor packets
