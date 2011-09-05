@@ -202,6 +202,7 @@ static long get_crosstrack_correction(void)
 		// constrain answer to 30° to avoid overshoot
 		return constrain(_crosstrack_correction, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 	}
+    return 0;
 }
 
 
