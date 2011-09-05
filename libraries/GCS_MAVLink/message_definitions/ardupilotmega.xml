@@ -35,5 +35,11 @@
                <field type="int16_t" name="mag_ofs_z">magnetometer Z offset</field>
           </message>
 
+          <message id="152" name="MEMINFO">
+               <description>state of APM memory</description>
+               <field type="uint16_t" name="brkval">heap top</field>
+               <field type="uint16_t" name="freemem">free memory</field>
+          </message>
+
      </messages>
 </mavlink>
