@@ -367,8 +367,8 @@ public:
 	pi_stabilize_pitch	(k_param_pi_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
 	pi_stabilize_yaw	(k_param_pi_stabilize_yaw,		PSTR("STB_YAW_"),	STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
 
-	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("LOITER_LAT_"),LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
-	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("LOITER_LON_"),LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("HLD_LAT_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("HLD_LON_"),	LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
 
 	pi_nav_lat			(k_param_pi_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 	pi_nav_lon			(k_param_pi_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
