@@ -715,3 +715,8 @@
 #ifndef CLI_ENABLED
 # define CLI_ENABLED ENABLED
 #endif
+
+// delay to prevent Xbee bricking, in milliseconds
+#ifndef MAVLINK_TELEMETRY_PORT_DELAY
+# define MAVLINK_TELEMETRY_PORT_DELAY 2000
+#endif
