@@ -475,17 +475,17 @@
 # define LOITER_I			0.01	//
 #endif
 #ifndef LOITER_IMAX
-# define LOITER_IMAX		8		// degrees°
+# define LOITER_IMAX		12		// degrees°
 #endif
 
 #ifndef NAV_P
-# define NAV_P				2.4			// for 4.5 ms error = 13.5 pitch
+# define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.03		// this
+# define NAV_I				0.1		// this
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			8			// degrees
+# define NAV_IMAX			16			// degrees
 #endif
 
 /*
@@ -505,7 +505,7 @@
 
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			300			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
 #endif
 
 
