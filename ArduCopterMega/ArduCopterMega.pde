@@ -722,7 +722,7 @@ static void medium_loop()
 				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
 					Log_Write_Attitude();
 
-				if (g.log_bitmask & MASK_LOG_CTUN)
+				if (g.log_bitmask & MASK_LOG_CTUN && motor_armed)
 					Log_Write_Control_Tuning();
 			#endif
 
