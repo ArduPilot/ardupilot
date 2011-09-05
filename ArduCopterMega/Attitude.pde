@@ -147,16 +147,21 @@ get_rate_yaw(long target_rate)
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-static void reset_nav_I(void)
+static void reset_hold_I(void)
 {
 	g.pi_loiter_lat.reset_I();
 	g.pi_loiter_lat.reset_I();
 
-	g.pi_nav_lat.reset_I();
-	g.pi_nav_lon.reset_I();
-
 	g.pi_crosstrack.reset_I();
 	g.pi_throttle.reset_I();
+}
+
+// Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
+// Keeps outdated data out of our calculations
+static void reset_nav_I(void)
+{
+	g.pi_nav_lat.reset_I();
+	g.pi_nav_lon.reset_I();
 }
 
 

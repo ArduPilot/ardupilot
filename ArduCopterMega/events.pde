@@ -33,9 +33,6 @@ static void failsafe_off_event()
 		// --------------------------------------------------------
 		reset_control_switch();
 
-		// Reset control integrators
-		// ---------------------
-		//reset_nav_I();
 
 	}else if (g.throttle_fs_action == 1){
 		// We're back in radio contact
