@@ -192,8 +192,8 @@ void APM_BMP085_Class::ReadPress()
 	}
 
 	// grab result
-	//RawPress /= PRESS_FILTER_SIZE;
-	RawPress >>= 3;
+	RawPress /= PRESS_FILTER_SIZE;
+	//RawPress >>= 3;
 	RawPress += _offset_press;
 }
 
@@ -245,7 +245,8 @@ void APM_BMP085_Class::ReadTemp()
 	}
 
 	// grab result
-	RawTemp >>= 4;
+	RawTemp /= TEMP_FILTER_SIZE;
+	//RawTemp >>= 4;
 	RawTemp += _offset_temp;
 }
 

@@ -41,7 +41,6 @@ class APM_BMP085_Class
 	void ReadPress();
 	void ReadTemp();
 	void Calculate();
-
 };
 
 class APM_BMP085_HIL_Class
