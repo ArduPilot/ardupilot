@@ -33,7 +33,7 @@ static void navigate()
 
 	// nav_bearing will include xtrac correction
 	// -----------------------------------------
-	xtrack_enabled = false;
+	//xtrack_enabled = false;
 	if(xtrack_enabled){
 		nav_bearing = wrap_360(target_bearing + get_crosstrack_correction());
 	}else{
