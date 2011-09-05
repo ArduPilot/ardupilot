@@ -1142,7 +1142,7 @@ void update_roll_pitch_mode(void)
 	}
 	#endif
 
-	int control_roll, control_pitch;
+	int control_roll = 0, control_pitch = 0;
 
 
 	switch(roll_pitch_mode){
