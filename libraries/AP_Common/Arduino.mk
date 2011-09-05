@@ -96,6 +96,8 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
+# Jump over the next makefile sections when runing a "make configure"
+ifneq ($(MAKECMDGOALS),configure)
 
 ################################################################################
 # Config options
@@ -130,7 +132,7 @@ ifeq ($(ARDUINO),)
   endif
 
   ifeq ($(SYSTYPE),Linux)
-    ARDUINO_SEARCHPATH	=	/usr/share/arduino /usr/local/share/arduino /usr/bin/arduino
+    ARDUINO_SEARCHPATH	=	/usr/share/arduino* /usr/local/share/arduino*
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
   endif
 
@@ -257,12 +259,7 @@ SKETCHCPP_SRC		:=	$(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)
 # make.
 #
 SEXPR			=	's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
-  # Workaround a cygwin issue
-  LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
-else
-  LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
-endif
+LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
 
 #
 # Find sketchbook libraries referenced by the sketch.
@@ -361,6 +358,7 @@ ALLOBJS			=	$(SKETCHOBJS) $(LIBOBJS) $(CORELIBOBJS)
 
 # All of the dependency files that may be generated
 ALLDEPS			=	$(ALLOBJS:%.o=%.d)
+endif
 
 ################################################################################
 # Targets
@@ -371,6 +369,12 @@ all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 .PHONY: upload
 upload: $(SKETCHHEX)
 	avrdude -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
+
+configure:
+	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
+	$(warning Please edit the file to match your system configuration, if you use a different board or port)
+	@echo BOARD=mega     >  $(SKETCHBOOK)/config.mk
+	@echo PORT=/dev/null >> $(SKETCHBOOK)/config.mk
 
 debug:
 	avarice --mkII --capture --jtag usb :4242 & \
