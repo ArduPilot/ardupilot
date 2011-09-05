@@ -618,21 +618,18 @@ static void Log_Read_Control_Tuning()
 {
 	Serial.printf_P(PSTR(   "CTUN, "
 							"%d, %d, "
-							"%d, %d, %ld, "
-							"%d, %d, %ld, "
-							"%d, %d, %ld\n"),
+							"%d, %d, %d, "
+							"%d, %d, %d, "
+							"%d, %d, %d\n"),
 
 				// Control
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 
 				// yaw
-				(int)DataFlash.ReadByte(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
-				//(float)DataFlash.ReadInt(),// Gyro Rate
-				DataFlash.ReadLong(),
 
 				// Alt Hold
 				DataFlash.ReadInt(),
