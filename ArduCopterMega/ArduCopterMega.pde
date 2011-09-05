@@ -1201,7 +1201,7 @@ void update_throttle_mode(void)
 		case THROTTLE_AUTO:
 			if(invalid_throttle){
 				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error, 150); //150 =  target speed of 1.5m/s
+				nav_throttle = get_nav_throttle(altitude_error, 200); //150 =  target speed of 1.5m/s
 
 				// apply throttle control
 				g.rc_3.servo_out = get_throttle(nav_throttle);
