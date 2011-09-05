@@ -98,7 +98,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	int dump_log_start;
 	int dump_log_end;
 
-	byte last_log_num = get_num_logs();
+	//byte last_log_num = get_num_logs();
 	//Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
 
 	// check that the requested log number can be read

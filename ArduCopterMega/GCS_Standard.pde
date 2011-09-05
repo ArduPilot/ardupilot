@@ -3,6 +3,8 @@
 
 #if GCS_PROTOCOL == GCS_PROTOCOL_STANDARD
 
+static byte				gcs_messages_sent;
+
 #if GCS_PORT == 3
 # define SendSer		Serial3.print
 #else

@@ -37,7 +37,6 @@ static void reset_control_switch()
 }
 
 static boolean trim_flag;
-static unsigned long trim_timer;
 
 // read at 10 hz
 // set this to your trainer switch
@@ -72,16 +71,16 @@ static void read_trim_switch()
 static void auto_trim()
 {
 	if(auto_level_counter > 0){
-		g.rc_1.dead_zone = 60;		// 60 = .6 degrees
-		g.rc_2.dead_zone = 60;
+		//g.rc_1.dead_zone = 60;		// 60 = .6 degrees
+		//g.rc_2.dead_zone = 60;
 
 		auto_level_counter--;
 		trim_accel();
 		led_mode = AUTO_TRIM_LEDS;
 
 		if(auto_level_counter == 1){
-			g.rc_1.dead_zone = 0;		// 60 = .6 degrees
-			g.rc_2.dead_zone = 0;
+			//g.rc_1.dead_zone = 0;		// 60 = .6 degrees
+			//g.rc_2.dead_zone = 0;
 			led_mode = NORMAL_LEDS;
 			clear_leds();
 			imu.save();
