@@ -5,9 +5,6 @@
 /********************************************************************************/
 static void handle_process_must()
 {
-	// clear nav_lat, this is how we pitch towards the target based on speed
-	nav_lat = 0;
-
 	switch(next_command.id){
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -203,6 +200,7 @@ static void do_RTL(void)
 	temp.alt		= read_alt_to_hold();
 
 	//so we know where we are navigating from
+	// --------------------------------------
 	next_WP = current_loc;
 
 	// Loads WP from Memory
@@ -210,6 +208,7 @@ static void do_RTL(void)
 	set_next_WP(&temp);
 
 	// output control mode to the ground station
+	// -----------------------------------------
 	gcs.send_message(MSG_HEARTBEAT);
 }
 

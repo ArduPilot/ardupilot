@@ -824,75 +824,6 @@ static void report_radio()
 	print_blanks(2);
 }
 
-/*
-static void report_gains()
-{
-	Serial.printf_P(PSTR("Gains\n"));
-	print_divider();
-
-	// Rate
-	Serial.printf_P(PSTR("Rate:\nroll:\n"));
-	print_PID(&g.pid_rate_roll);
-	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&g.pid_rate_pitch);
-	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&g.pid_rate_yaw);
-
-	// Stabilize
-	Serial.printf_P(PSTR("\nStabilize:\nroll:\n"));
-	print_PID(&g.pid_stabilize_roll);
-	Serial.printf_P(PSTR("pitch:\n"));
-	print_PID(&g.pid_stabilize_pitch);
-	Serial.printf_P(PSTR("yaw:\n"));
-	print_PID(&g.pid_stabilize_yaw);
-
-	//Serial.printf_P(PSTR("Stab D: %4.3f\n"), (float)g.stabilize_dampener);
-	//Serial.printf_P(PSTR("Yaw D: %4.3f\n\n"), (float)g.hold_yaw_dampener);
-
-	// Nav
-	Serial.printf_P(PSTR("Nav:\nlat:\n"));
-	print_PID(&g.pid_nav_lat);
-	Serial.printf_P(PSTR("long:\n"));
-	print_PID(&g.pid_nav_lon);
-	Serial.printf_P(PSTR("throttle:\n"));
-	print_PID(&g.pid_throttle);
-	print_blanks(2);
-}
-*/
-
-/*static void report_xtrack()
-{
-	Serial.printf_P(PSTR("XTrack\n"));
-	print_divider();
-	// radio
-	Serial.printf_P(PSTR("XTRACK: %4.2f\n"
-						 "XTRACK angle: %d\n"
-						 "PITCH_MAX: %ld"),
-						 (float)g.crosstrack_gain,
-						 (int)g.crosstrack_entry_angle,
-						 (long)g.pitch_max);
-	print_blanks(2);
-}
-*/
-
-/*static void report_throttle()
-{
-	Serial.printf_P(PSTR("Throttle\n"));
-	print_divider();
-
-	Serial.printf_P(PSTR("min: %d\n"
-						 "max: %d\n"
-						 "cruise: %d\n"
-						 "failsafe_enabled: %d\n"
-						 "failsafe_value: %d"),
-						 (int)g.throttle_min,
-						 (int)g.throttle_max,
-						 (int)g.throttle_cruise,
-						 (int)g.throttle_fs_enabled,
-						 (int)g.throttle_fs_value);
-	print_blanks(2);
-}*/
-
 static void report_imu()
 {
 	Serial.printf_P(PSTR("IMU\n"));
@@ -991,12 +922,11 @@ static void report_gyro()
 /***************************************************************************/
 
 /*static void
-print_PID(PID * pid)
+print_PID(PI * pid)
 {
-	Serial.printf_P(PSTR("P: %4.2f, I:%4.2f, D:%4.2f, IMAX:%ld\n"),
+	Serial.printf_P(PSTR("P: %4.2f, I:%4.2f, IMAX:%ld\n"),
 						pid->kP(),
 						pid->kI(),
-						pid->kD(),
 						(long)pid->imax());
 }
 */

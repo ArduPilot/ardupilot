@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "AC 2.0.39b Beta", main_menu_commands);
+MENU(main_menu, "AC 2.0.40 Beta", main_menu_commands);
 
 #endif // CLI_ENABLED
 
@@ -256,7 +256,6 @@ static void init_ardupilot()
 
     GPS_enabled = false;
 
-	//*
     // Read in the GPS
 	for (byte counter = 0; ; counter++) {
 		g_gps->update();
@@ -270,7 +269,6 @@ static void init_ardupilot()
 			break;
 	    }
 	}
-	//*/
 
 	// lengthen the idle timeout for gps Auto_detect
 	// ---------------------------------------------
@@ -279,10 +277,6 @@ static void init_ardupilot()
 	// print the GPS status
 	// --------------------
 	report_gps();
-
-	// used to limit the input of error for loiter
-	// -------------------------------------------
-	loiter_error_max = (float)g.pitch_max.get() / (float)g.pid_nav_lat.kP();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 	// read Baro pressure at ground
@@ -301,7 +295,7 @@ static void init_ardupilot()
 	//delay(100);
 	startup_ground();
 
-	//Serial.printf_P(PSTR("\nloiter: %d\n"), loiter_error_max);
+	//Serial.printf_P(PSTR("\nloiter: %d\n"), location_error_max);
 	Log_Write_Startup();
 
 	SendDebug("\nReady to FLY ");
@@ -321,23 +315,27 @@ static void startup_ground(void)
 		report_imu();
 	#endif
 
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-		// read Baro pressure at ground -
-		// this resets Baro for more accuracy
-		//-----------------------------------
-		init_barometer();
-	#endif
-
-	// setup DCM for copters:
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	dcm.kp_roll_pitch(0.12);		// higher for quads
-	dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate for 200 hz loop
-#endif
-
 	// reset the leds
 	// ---------------------------
 	clear_leds();
 }
+
+/*
+#define YAW_HOLD 			0
+#define YAW_ACRO 			1
+#define YAW_AUTO 			2
+#define YAW_LOOK_AT_HOME 	3
+
+#define ROLL_PITCH_STABLE 	0
+#define ROLL_PITCH_ACRO 	1
+#define ROLL_PITCH_SIMPLE	2
+#define ROLL_PITCH_AUTO		3
+
+#define THROTTLE_MANUAL 	0
+#define THROTTLE_HOLD 		1
+#define THROTTLE_AUTO		2
+
+*/
 
 static void set_mode(byte mode)
 {
@@ -345,13 +343,6 @@ static void set_mode(byte mode)
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
-
-	// XXX
-	Serial.printf_P(PSTR("\nRAM: %lu\n"), freeRAM());
-
-	// reset the Nav_WP I term
-	g.pid_nav_wp.reset_I();
-
 
 	old_control_mode = control_mode;
 
@@ -365,46 +356,94 @@ static void set_mode(byte mode)
 		motor_auto_armed = false;
 	}
 
-	//send_text_P(SEVERITY_LOW,PSTR("control mode"));
-	//Serial.printf("set mode: %d\n",control_mode);
 	Serial.println(flight_mode_strings[control_mode]);
 
+	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
+
+	// most modes do not calculate crosstrack correction
+	xtrack_enabled = false;
 
 	switch(control_mode)
 	{
 		case ACRO:
+			yaw_mode 		= YAW_ACRO;
+			roll_pitch_mode = ROLL_PITCH_ACRO;
+			throttle_mode 	= THROTTLE_MANUAL;
+			reset_nav_I();
+			break;
+
+		case STABILIZE:
+			yaw_mode 		= YAW_HOLD;
+			roll_pitch_mode = ROLL_PITCH_STABLE;
+			throttle_mode 	= THROTTLE_MANUAL;
 			reset_nav_I();
 			break;
 
 		case SIMPLE:
-		case STABILIZE:
-			do_loiter_at_location();
+			yaw_mode 		= SIMPLE_YAW;
+			roll_pitch_mode = SIMPLE_RP;
+			throttle_mode 	= SIMPLE_THR;
 			reset_nav_I();
 			break;
 
 		case ALT_HOLD:
+			yaw_mode 		= ALT_HOLD_YAW;
+			roll_pitch_mode = ALT_HOLD_RP;
+			throttle_mode 	= ALT_HOLD_THR;
+
 			init_throttle_cruise();
-			do_loiter_at_location();
 			break;
 
 		case AUTO:
+			reset_nav_I();
+			yaw_mode 		= AUTO_YAW;
+			roll_pitch_mode = AUTO_RP;
+			throttle_mode 	= AUTO_THR;
+
 			init_throttle_cruise();
+
+			// loads the commands from where we left off
 			init_auto();
+
+			// do crosstrack correction
+			xtrack_enabled = true;
 			break;
 
 		case CIRCLE:
-		case LOITER:
+			yaw_mode 		= CIRCLE_YAW;
+			roll_pitch_mode = CIRCLE_RP;
+			throttle_mode 	= CIRCLE_THR;
+
 			init_throttle_cruise();
-			do_loiter_at_location();
+			next_WP = current_loc;
+			break;
+
+		case LOITER:
+			yaw_mode 		= LOITER_YAW;
+			roll_pitch_mode = LOITER_RP;
+			throttle_mode 	= LOITER_THR;
+
+			init_throttle_cruise();
+			next_WP = current_loc;
 			break;
 
 		case GUIDED:
+			yaw_mode 		= YAW_AUTO;
+			roll_pitch_mode = ROLL_PITCH_AUTO;
+			throttle_mode 	= THROTTLE_AUTO;
+
+			xtrack_enabled = true;
 			init_throttle_cruise();
-			set_next_WP(&guided_WP);
+			next_WP = current_loc;
 			break;
 
 		case RTL:
+			yaw_mode 		= RTL_YAW;
+			roll_pitch_mode = RTL_RP;
+			throttle_mode 	= RTL_THR;
+
+			xtrack_enabled = true;
 			init_throttle_cruise();
 			do_RTL();
 			break;
@@ -497,7 +536,7 @@ init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > 150)){
-		g.pid_throttle.reset_I();
+		g.pi_throttle.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}
 }

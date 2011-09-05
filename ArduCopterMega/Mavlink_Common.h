@@ -147,7 +147,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
                     wp_distance,
                     altitude_error / 1.0e2,
                     0,
-                    crosstrack_error);
+                   	0);
             //}
 			break;
         }

@@ -233,6 +233,7 @@ static void init_home()
 
 	// Save prev loc this makes the calcs look better before commands are loaded
 	prev_WP = home;
+	next_WP = home;
 }
 
 

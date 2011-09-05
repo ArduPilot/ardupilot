@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 106;
+	static const uint16_t k_format_version = 107;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -151,23 +151,20 @@ public:
 	k_param_waypoint_speed_max,
 
 	//
-	// 240: PID Controllers
+	// 240: PI/D Controllers
 	//
-	// Heading-to-roll PID:
-	// heading error from commnd to roll command deviation from trim
-	// (bank to turn strategy)
-	//
-	k_param_pid_rate_roll = 240,
-	k_param_pid_rate_pitch,
-	k_param_pid_rate_yaw,
-	k_param_pid_stabilize_roll,
-	k_param_pid_stabilize_pitch,
-	k_param_pid_stabilize_yaw,
-	k_param_pid_nav_lat,
-	k_param_pid_nav_lon,
-	k_param_pid_nav_wp,
-	k_param_pid_throttle,
-	k_param_pid_crosstrack,
+	k_param_pi_rate_roll = 240,
+	k_param_pi_rate_pitch,
+	k_param_pi_rate_yaw,
+	k_param_pi_stabilize_roll,
+	k_param_pi_stabilize_pitch,
+	k_param_pi_stabilize_yaw,
+	k_param_pi_loiter_lat,
+	k_param_pi_loiter_lon,
+	k_param_pi_nav_lat,
+	k_param_pi_nav_lon,
+	k_param_pi_throttle,
+	k_param_pi_crosstrack,
 
 
     // 254,255: reserved
@@ -248,7 +245,7 @@ public:
 	AP_Int16	heli_ext_gyro_gain;			// radio output 1000~2000 (value output on CH_7)
 	#endif
 
-		// RC channels
+	// RC channels
 	RC_Channel	rc_1;
 	RC_Channel	rc_2;
 	RC_Channel	rc_3;
@@ -260,18 +257,23 @@ public:
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
 
-		// PID controllers
-	PID			pid_rate_roll;
-	PID			pid_rate_pitch;
-	PID			pid_rate_yaw;
-	PID			pid_stabilize_roll;
-	PID			pid_stabilize_pitch;
-	PID			pid_stabilize_yaw;
-	PID			pid_nav_lat;
-	PID			pid_nav_lon;
-	PID			pid_nav_wp;
-	PID			pid_throttle;
-	PID			pid_crosstrack;
+	// PI/D controllers
+	APM_PI		pi_rate_roll;
+	APM_PI		pi_rate_pitch;
+	APM_PI		pi_rate_yaw;
+
+	APM_PI		pi_stabilize_roll;
+	APM_PI		pi_stabilize_pitch;
+	APM_PI		pi_stabilize_yaw;
+
+	APM_PI		pi_loiter_lat;
+	APM_PI		pi_loiter_lon;
+
+	APM_PI		pi_nav_lat;
+	APM_PI		pi_nav_lon;
+
+	APM_PI		pi_throttle;
+	APM_PI		pi_crosstrack;
 
 	uint8_t		junk;
 
@@ -355,23 +357,24 @@ public:
 	rc_camera_pitch			(k_param_rc_9,		PSTR("RC_CP_")),
 	rc_camera_roll			(k_param_rc_10,		PSTR("RC_CR_")),
 
-	// PID controller	group key						name				initial P			initial I			initial D			initial imax
+	// PI controller	group key						name				initial P			initial I			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	pid_rate_roll		(k_param_pid_rate_roll,			PSTR("RATE_RLL_"),	RATE_ROLL_P,		RATE_ROLL_I,		0,					RATE_ROLL_IMAX * 100),
-	pid_rate_pitch		(k_param_pid_rate_pitch,		PSTR("RATE_PIT_"),	RATE_PITCH_P,		RATE_PITCH_I,		0,					RATE_PITCH_IMAX * 100),
-	pid_rate_yaw		(k_param_pid_rate_yaw,			PSTR("RATE_YAW_"),	RATE_YAW_P,			RATE_YAW_I,			0,					RATE_YAW_IMAX * 100),
+	pi_rate_roll		(k_param_pi_rate_roll,			PSTR("RATE_RLL_"),	RATE_ROLL_P,		RATE_ROLL_I,		RATE_ROLL_IMAX * 100),
+	pi_rate_pitch		(k_param_pi_rate_pitch,			PSTR("RATE_PIT_"),	RATE_PITCH_P,		RATE_PITCH_I,		RATE_PITCH_IMAX * 100),
+	pi_rate_yaw			(k_param_pi_rate_yaw,			PSTR("RATE_YAW_"),	RATE_YAW_P,			RATE_YAW_I,			RATE_YAW_IMAX * 100),
 
-	pid_stabilize_roll	(k_param_pid_stabilize_roll,	PSTR("STB_RLL_"),	STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	0,					STABILIZE_ROLL_IMAX * 100),
-	pid_stabilize_pitch	(k_param_pid_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	0,					STABILIZE_PITCH_IMAX * 100),
-	pid_stabilize_yaw	(k_param_pid_stabilize_yaw,		PSTR("STB_YAW_"),	STABILIZE_YAW_P,	STABILIZE_YAW_I,	0,					STABILIZE_YAW_IMAX * 100),
+	pi_stabilize_roll	(k_param_pi_stabilize_roll,		PSTR("STB_RLL_"),	STABILIZE_ROLL_P,	STABILIZE_ROLL_I,	STABILIZE_ROLL_IMAX * 100),
+	pi_stabilize_pitch	(k_param_pi_stabilize_pitch,	PSTR("STB_PIT_"),	STABILIZE_PITCH_P,	STABILIZE_PITCH_I,	STABILIZE_PITCH_IMAX * 100),
+	pi_stabilize_yaw	(k_param_pi_stabilize_yaw,		PSTR("STB_YAW_"),	STABILIZE_YAW_P,	STABILIZE_YAW_I,	STABILIZE_YAW_IMAX * 100),
 
-	pid_nav_lat			(k_param_pid_nav_lat,			PSTR("NAV_LAT_"),	NAV_LOITER_P,		NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
-	pid_nav_lon			(k_param_pid_nav_lon,			PSTR("NAV_LON_"),	NAV_LOITER_P,		NAV_LOITER_I,		NAV_LOITER_D,		NAV_LOITER_IMAX * 100),
-	pid_nav_wp			(k_param_pid_nav_wp,			PSTR("NAV_WP_"),	NAV_WP_P,			NAV_WP_I,			NAV_WP_D,			NAV_WP_IMAX * 100),
+	pi_loiter_lat		(k_param_pi_loiter_lat,			PSTR("LOITER_LAT_"),LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
+	pi_loiter_lon		(k_param_pi_loiter_lon,			PSTR("LOITER_LON_"),LOITER_P,			LOITER_I,			LOITER_IMAX * 100),
 
-	pid_throttle		(k_param_pid_throttle,			PSTR("THR_BAR_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_D,			THROTTLE_IMAX),
-	pid_crosstrack		(k_param_pid_crosstrack,		PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_D,			XTRACK_IMAX),
+	pi_nav_lat			(k_param_pi_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
+	pi_nav_lon			(k_param_pi_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 
+	pi_throttle			(k_param_pi_throttle,			PSTR("THR_BAR_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
+	pi_crosstrack		(k_param_pi_crosstrack,			PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_IMAX),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
 	{

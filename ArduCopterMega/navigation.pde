@@ -31,9 +31,14 @@ static void navigate()
 	// --------------------------------------------
 	target_bearing 	= get_bearing(&current_loc, &next_WP);
 
-	// nav_bearing will includes xtrac correction
-	// ------------------------------------------
-	nav_bearing = target_bearing;
+	// nav_bearing will include xtrac correction
+	// -----------------------------------------
+	xtrack_enabled = false;
+	if(xtrack_enabled){
+		nav_bearing = wrap_360(target_bearing + get_crosstrack_correction());
+	}else{
+		nav_bearing = target_bearing;
+	}
 }
 
 static bool check_missed_wp()
@@ -43,28 +48,10 @@ static bool check_missed_wp()
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
-static int
-get_nav_throttle(long error)
-{
-	int throttle;
-
-	// limit error to prevent I term run up
-	error = constrain(error, -600,600);
-
-	throttle = g.pid_throttle.get_pid(error, delta_ms_medium_loop, 1.0);
-	throttle = g.throttle_cruise + constrain(throttle, -80, 80);
-
-	// failed experiment
-	//int tem = alt_hold_velocity();
-	//throttle -= tem;
-
-	return throttle;
-}
-
 // ------------------------------
 
 // long_error, lat_error
-static void calc_loiter_nav2()
+static void calc_location_error()
 {
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
@@ -80,180 +67,77 @@ static void calc_loiter_nav2()
 	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
 
 	// Y PITCH
-	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
-
-	// constrain input, not output to let I term ramp up and do it's job again wind
-	long_error	= constrain(long_error, -loiter_error_max, loiter_error_max); // +- 20m max error
-	lat_error	= constrain(lat_error,  -loiter_error_max, loiter_error_max); // +- 20m max error
+	lat_error	= next_WP.lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
 }
 
-// sets nav_lon, nav_lat
-static void calc_rate_nav2(int target_x_speed, int target_y_speed)
+#define NAV_ERR_MAX 400
+static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed)
 {
-	// find the rates:
-	// calc the cos of the error to tell how fast we are moving towards the target in cm
-	int y_speed 	= (float)g_gps->ground_speed * cos(radians((float)g_gps->ground_course/100.0));
-	int y_error 	= constrain(target_y_speed - y_speed, -1000, 1000);
+	// moved to globals for logging
+	//int x_actual_speed, y_actual_speed;
+	//int x_rate_error, y_rate_error;
+	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
-	int x_speed 	= (float)g_gps->ground_speed  * sin(radians((float)g_gps->ground_course/100.0));
-	int x_error 	= constrain(target_x_speed - x_speed, -1000, 1000);
+	float scaler = (float)max_speed/(float)NAV_ERR_MAX;
+	g.pi_loiter_lat.kP(scaler);
+	g.pi_loiter_lon.kP(scaler);
 
-	// how fast should we be going?
-	nav_lat 		+= g.pid_nav_lat.get_pid(y_error, dTnav, 1.0);
-	nav_lat 		>>= 1; // divide by two for smooting
+	int x_target_speed = g.pi_loiter_lon.get_pi(x_error, dTnav);
+	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
 
-	nav_lon 		+= g.pid_nav_lon.get_pid(x_error, dTnav, 1.0);
-	nav_lon			>>= 1; // divide by two for smooting
+	//Serial.printf("scaler: %1.3f, y_target_speed %d",scaler,y_target_speed);
 
-	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  targetspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
-
-	// limit our output
-	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
-	nav_lon	= constrain(nav_lon, 	-3500, 3500); // +- max error
-}
-
-
-// ------------------------------
-
-//nav_lon, nav_lat
-static void calc_loiter_nav()
-{
-	/*
-	Becuase we are using lat and lon to do our distance errors here's a quick chart:
-	100 	= 1m
-	1000 	= 11m	 = 36 feet
-	1800 	= 19.80m = 60 feet
-	3000 	= 33m
-	10000 	= 111m
-	pitch_max = 22° (2200)
-	*/
-
-	// X ROLL
-	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
-
-	// Y PITCH
-	lat_error	= current_loc.lat - next_WP.lat;							// 0 - 500 = -500 pitch NORTH
-
-	// constrain input, not output to let I term ramp up and do it's job again wind
-	long_error	= constrain(long_error, -loiter_error_max, loiter_error_max); // +- 20m max error
-	lat_error	= constrain(lat_error,  -loiter_error_max, loiter_error_max); // +- 20m max error
-
-	nav_lon		= g.pid_nav_lon.get_pid(long_error, dTnav, 1.0);		// X 700 * 2.5 = 1750,
-	nav_lat 	= g.pid_nav_lat.get_pid(lat_error,  dTnav, 1.0);		// Y invert lat (for pitch)
-}
-
-//nav_lat
-static void calc_simple_nav()
-{
-	// no dampening here in SIMPLE mode
-	nav_lat	= constrain((wp_distance * 100), -4500, 4500); // +- 20m max error
-	// Scale response by kP
-	//nav_lat	*= g.pid_nav_lat.kP();	// 1800 * 2 = 3600 or 36°
-}
-
-// sets nav_lon, nav_lat
-static void calc_rate_nav(int speed)
-{
-	// which direction are we moving?
-	long heading_error 	= nav_bearing - g_gps->ground_course;
-	heading_error 		= wrap_180(heading_error);
-
-	// calc the cos of the error to tell how fast we are moving towards the target in cm
-	int targetspeed 	= (float)g_gps->ground_speed * cos(radians((float)heading_error/100));
-
-	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
-	int lateralspeed 	= (float)g_gps->ground_speed  * sin(radians((float)heading_error/100));
-	//targetspeed			= max(targetspeed, 0);
-
-	// Reduce speed on RTL
-	if(control_mode == RTL){
-		int tmp 			= min(wp_distance, 80) * 50;
-		waypoint_speed 		= min(tmp, speed);
-		//waypoint_speed		= max(waypoint_speed, 50);
+	if(x_target_speed > 0){
+		x_target_speed	= max(x_target_speed, min_speed);
 	}else{
-		int tmp 			= min(wp_distance, 200) * 90;
-		waypoint_speed 		= min(tmp, speed);
-		waypoint_speed		= max(waypoint_speed, 50);
-		//waypoint_speed 		= g.waypoint_speed_max.get();
+		x_target_speed	= min(x_target_speed, -min_speed);
 	}
 
-	int error 		= constrain(waypoint_speed - targetspeed, -1000, 1000);
+	if(y_target_speed > 0){
+		y_target_speed	= max(y_target_speed, min_speed);
+	}else{
+		y_target_speed	= min(y_target_speed, -min_speed);
+	}
 
-	nav_lat 		+= g.pid_nav_wp.get_pid(error, dTnav, 1.0);
-	nav_lat 		>>= 1; // divide by two for smooting
+	// find the rates:
+	// calc the cos of the error to tell how fast we are moving towards the target in cm
+	y_actual_speed 	= (float)g_gps->ground_speed * cos(radians((float)g_gps->ground_course/100.0));
+	y_rate_error 	= y_target_speed - y_actual_speed; // 413
+	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
 
-	nav_lon			+= lateralspeed * 2; // 2 is our fake PID gain
-	nav_lon			>>= 1; // divide by two for smooting
+	//Serial.printf("yr: %d, nav_lat: %d, int:%d \n",y_rate_error, nav_lat, g.pi_nav_lat.get_integrator());
 
-	//Serial.printf("dTnav: %ld, gs: %d, err: %d, int: %d, pitch: %ld", dTnav,  targetspeed, error, (int)g.pid_nav_wp.get_integrator(), (long)nav_lat);
-
-	// limit our output
-	nav_lat	= constrain(nav_lat, 	-3500, 3500); // +- max error
-}
-
-
-// output pitch and roll
-// ------------------------------
-
-// nav_roll, nav_pitch
-static void calc_loiter_output()
-{
-	// rotate the vector
-	nav_roll 	=   (float)nav_lon * sin_yaw_y 	- (float)nav_lat * -cos_yaw_x;
-					// BAD
-					//NORTH  -1000 *  1			- 1000 *  0 	= -1000	// roll left
-					//WEST   -1000 *  0			- 1000 * -1 	=  1000	// roll right  - Backwards
-					//EAST   -1000 *  0			- 1000 *  1		= -1000	// roll left   - Backwards
-					//SOUTH  -1000 * -1			- 1000 *  0 	=  1000	// roll right
-
-					// GOOD
-					//NORTH  -1000 *  1			- 1000 *  0 	= -1000	// roll left
-					//WEST   -1000 *  0			- 1000 *  1 	= -1000	// roll right
-					//EAST   -1000 *  0			- 1000 * -1		=  1000	// roll left
-					//SOUTH  -1000 * -1			- 1000 *  0 	=  1000	// roll right
-
-	nav_pitch 	=  ((float)nav_lon * -cos_yaw_x + (float)nav_lat * sin_yaw_y);
-					// BAD
-					//NORTH  -1000 *  0			+ 1000 *  1 	=  1000	// pitch back
-					//WEST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back     - Backwards
-					//EAST   -1000 *  1			+ 1000 *  0 	= -1000	// pitch forward  - Backwards
- 					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
-
-					// GOOD
-					//NORTH  -1000 *  0			+ 1000 *  1 	=  1000	// pitch back
-					//WEST   -1000 *  1			+ 1000 *  0 	= -1000	// pitch forward
-					//EAST   -1000 * -1			+ 1000 *  0 	=  1000	// pitch back
-					//SOUTH  -1000 *  0			+ 1000 * -1 	= -1000	// pitch forward
+	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
+	x_actual_speed 	= (float)g_gps->ground_speed  * sin(radians((float)g_gps->ground_course/100.0));
+	x_rate_error 	= x_target_speed - x_actual_speed;
+	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 
 // nav_roll, nav_pitch
-static void calc_nav_output()
+static void calc_nav_pitch_roll()
 {
-	// get the sin and cos of the bearing error - rotated 90°
-	float sin_nav_y 	= sin(radians((float)(9000 - bearing_error) / 100));
-	float cos_nav_x 	= cos(radians((float)(bearing_error - 9000) / 100));
-
 	// rotate the vector
-	//nav_roll 	=  (float)nav_lat * cos_nav_x;
-	//nav_pitch = -(float)nav_lat * sin_nav_y;
-	nav_roll 	=	(float)nav_lon * sin_nav_y	- (float)nav_lat * -cos_nav_x;
-	nav_pitch 	=	(float)nav_lon * cos_nav_x 	- (float)nav_lat * sin_nav_y;
+	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+
+	// flip pitch because forward is negative
+	nav_pitch = -nav_pitch;
 }
 
 // ------------------------------
 static void calc_bearing_error()
 {
-	//				  83			99 Yaw  = -16
 	bearing_error 	= nav_bearing - dcm.yaw_sensor;
 	bearing_error 	= wrap_180(bearing_error);
 }
 
-static void calc_altitude_error()
+static long get_altitude_error()
 {
-	altitude_error 	= next_WP.alt - current_loc.alt;
+	return next_WP.alt - current_loc.alt;
 }
 
+/*
 static void calc_altitude_smoothing_error()
 {
 	// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
@@ -268,26 +152,24 @@ static void calc_altitude_smoothing_error()
 
 	altitude_error 	= target_altitude - current_loc.alt;
 }
+*/
 
-static void update_loiter()
+static int get_loiter_angle()
 {
 	float power;
+	int angle;
 
 	if(wp_distance <= g.loiter_radius){
 		power = float(wp_distance) / float(g.loiter_radius);
 		power = constrain(power, 0.5, 1);
-		nav_bearing += (int)(9000.0 * (2.0 + power));
+		angle = 90.0 * (2.0 + power);
 	}else if(wp_distance < (g.loiter_radius + LOITER_RANGE)){
 		power = -((float)(wp_distance - g.loiter_radius - LOITER_RANGE) / LOITER_RANGE);
 		power = constrain(power, 0.5, 1);			//power = constrain(power, 0, 1);
-		nav_bearing -= power * 9000;
-
-	}else{
-		update_crosstrack();
-		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
-
+		angle = power * 90;
 	}
-	nav_bearing = wrap_360(nav_bearing);
+
+	return angle;
 }
 
 
@@ -305,25 +187,27 @@ static long wrap_180(long error)
 	return error;
 }
 
-static void update_crosstrack(void)
+static long get_crosstrack_correction(void)
 {
 	// Crosstrack Error
 	// ----------------
 	if (cross_track_test() < 9000) {	 // If we are too far off or too close we don't do track following
+
 		// Meters we are off track line
-		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;
+		float error = sin(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;
 
 		// take meters * 100 to get adjustment to nav_bearing
-		long xtrack = g.pid_crosstrack.get_pid(crosstrack_error, dTnav, 1.0) * 100;
-		nav_bearing += constrain(xtrack, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
-		nav_bearing = wrap_360(nav_bearing);
+		long _crosstrack_correction = g.pi_crosstrack.get_pi(error, dTnav) * 100;
+
+		// constrain answer to 30° to avoid overshoot
+		return constrain(_crosstrack_correction, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 	}
 }
 
+
 static long cross_track_test()
 {
-	long temp 	= target_bearing - crosstrack_bearing;
-	temp 		= wrap_180(temp);
+	long temp = wrap_180(target_bearing - crosstrack_bearing);
 	return abs(temp);
 }
 
