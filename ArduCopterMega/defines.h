@@ -4,6 +4,24 @@
 #define ENABLED			1
 #define DISABLED		0
 
+
+// Flight modes
+// ------------
+#define YAW_HOLD 			0
+#define YAW_ACRO 			1
+#define YAW_AUTO 			2
+#define YAW_LOOK_AT_HOME 	3
+
+#define ROLL_PITCH_STABLE 	0
+#define ROLL_PITCH_ACRO 	1
+#define ROLL_PITCH_SIMPLE	2
+#define ROLL_PITCH_AUTO		3
+
+#define THROTTLE_MANUAL 	0
+#define THROTTLE_HOLD 		1
+#define THROTTLE_AUTO		2
+
+
 // active altitude sensor
 // ----------------------
 #define SONAR 0
@@ -147,7 +165,7 @@
 #define CH6_TOP_BOTTOM_RATIO 11
 #define CH6_PMAX 12
 #define CH6_RELAY 13
-
+#define CH6_TRAVERSE_SPEED 14
 
 // nav byte mask
 // -------------
@@ -306,7 +324,7 @@
 
 #define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
 #define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
-#define BARO_FILTER_SIZE 6
+//#define BARO_FILTER_SIZE 8
 
 /* ************************************************************** */
 /* Expansion PIN's that people can use for various things. */
@@ -352,7 +370,7 @@
 
 
 // sonar
-#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
+//#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // Hardware Parameters
 #define SLIDE_SWITCH_PIN 40

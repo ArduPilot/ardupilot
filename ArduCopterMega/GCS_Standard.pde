@@ -16,7 +16,7 @@ static void acknowledge(byte id, byte check1, byte check2) {
 	byte mess_ck_a = 0;
 	byte mess_ck_b = 0;
 	int ck;
-			
+
 	SendSer("4D");  // This is the message preamble
 	mess_buffer[0] = 0x03;
 	ck = 3;
@@ -26,13 +26,13 @@ static void acknowledge(byte id, byte check1, byte check2) {
 	mess_buffer[3] = id;
 	mess_buffer[4] = check1;
 	mess_buffer[5] = check2;
-			
+
 
 	for (int i = 0; i < ck + 3; i++) SendSer (mess_buffer[i]);
-		
+
 	for (int i = 0; i < ck + 3; i++) {
 		mess_ck_a += mess_buffer[i];	// Calculates checksums
-		mess_ck_b += mess_ck_a;			 
+		mess_ck_b += mess_ck_a;
 	}
 	SendSer(mess_ck_a);
 	SendSer(mess_ck_b);
@@ -41,7 +41,7 @@ static void acknowledge(byte id, byte check1, byte check2) {
 static void send_message(byte id) {
 	send_message(id, 0l);
 }
-	
+
 static void send_message(byte id, long param) {
 	byte mess_buffer[54];
 	byte mess_ck_a = 0;
@@ -49,9 +49,9 @@ static void send_message(byte id, long param) {
 	int tempint;
 	int ck;
 	long templong;
-			
+
 	SendSer("4D");  // This is the message preamble
-		
+
 	switch(id) {
 		case MSG_HEARTBEAT:						// ** System Status message
 		mess_buffer[0] = 0x07;
@@ -67,7 +67,7 @@ static void send_message(byte id, long param) {
 		mess_buffer[8] = tempint & 0xff;
 		mess_buffer[9] = (tempint >> 8) & 0xff;
 		break;
-		
+
 		case MSG_ATTITUDE:								// ** Attitude message
 		mess_buffer[0] = 0x06;
 		ck = 6;
@@ -81,7 +81,7 @@ static void send_message(byte id, long param) {
 		mess_buffer[7] = tempint & 0xff;
 		mess_buffer[8] = (tempint >> 8) & 0xff;
 		break;
-		
+
 		case MSG_LOCATION:								// ** Location / GPS message
 		mess_buffer[0] = 0x12;
 		ck = 18;
@@ -90,32 +90,32 @@ static void send_message(byte id, long param) {
 		mess_buffer[4] = (templong >> 8) & 0xff;
 		mess_buffer[5] = (templong >> 16) & 0xff;
 		mess_buffer[6] = (templong >> 24) & 0xff;
-			
+
 		templong = current_loc.lng; 			// Longitude *10 * *7 in 4 bytes
 		mess_buffer[7] = templong & 0xff;
 		mess_buffer[8] = (templong >> 8) & 0xff;
 		mess_buffer[9] = (templong >> 16) & 0xff;
 		mess_buffer[10] = (templong >> 24) & 0xff;
-			
+
 		tempint = g_gps->altitude / 100;			 		// Altitude MSL in meters * 10 in 2 bytes
 		mess_buffer[11] = tempint & 0xff;
 		mess_buffer[12] = (tempint >> 8) & 0xff;
-			
+
 		tempint = g_gps->ground_speed;	 			// Speed in M / S * 100 in 2 bytes
 		mess_buffer[13] = tempint & 0xff;
 		mess_buffer[14] = (tempint >> 8) & 0xff;
-				
+
 		tempint = dcm.yaw_sensor;					// Ground Course in degreees * 100 in 2 bytes
 		mess_buffer[15] = tempint & 0xff;
 		mess_buffer[16] = (tempint >> 8) & 0xff;
-				
+
 		templong = g_gps->time;						// Time of Week (milliseconds) in 4 bytes
 		mess_buffer[17] = templong & 0xff;
 		mess_buffer[18] = (templong >> 8) & 0xff;
 		mess_buffer[19] = (templong >> 16) & 0xff;
 		mess_buffer[20] = (templong >> 24) & 0xff;
 		break;
-		
+
 		case MSG_PRESSURE:								// ** Pressure message
 		mess_buffer[0] = 0x04;
 		ck = 4;
@@ -126,14 +126,14 @@ static void send_message(byte id, long param) {
 		mess_buffer[5] 	= tempint & 0xff;
 		mess_buffer[6] 	= (tempint >> 8) & 0xff;
 		break;
-		
+
 //		case 0xMSG_STATUS_TEXT:								// ** Status Text message
 //		mess_buffer[0]=sizeof(status_message[0])+1;
 //		ck=mess_buffer[0];
 //		mess_buffer[2] = param&0xff;
 //		for (int i=3;i<ck+2;i++) mess_buffer[i] = status_message[i-3];
 //		break;
-		
+
 		case MSG_PERF_REPORT:								// ** Performance Monitoring message
 		mess_buffer[0] = 0x10;
 		ck = 16;
@@ -158,7 +158,7 @@ static void send_message(byte id, long param) {
 		mess_buffer[17] = tempint & 0xff;
 		mess_buffer[18] = (tempint >> 8) & 0xff;
 		break;
-		
+
 		case MSG_VALUE:								// ** Requested Value message
 		mess_buffer[0] = 0x06;
 		ck = 6;
@@ -179,7 +179,7 @@ static void send_message(byte id, long param) {
 			case 0x21:		templong = nav_bearing;				break;
 			case 0x22:		templong = bearing_error;			break;
 			case 0x23:		templong = crosstrack_bearing;		break;
-			case 0x24:		templong = crosstrack_error;		break;
+			case 0x24:		templong = crosstrack_correction;	break;
 			case 0x25:		templong = altitude_error;			break;
 			case 0x26:		templong = wp_radius;				break;
 			case 0x27:		templong = loiter_radius;			break;
@@ -192,7 +192,7 @@ static void send_message(byte id, long param) {
 		mess_buffer[7] = (templong >> 16) & 0xff;
 		mess_buffer[8] = (templong >> 24) & 0xff;
 		break;
-		
+
 		case MSG_COMMAND:						// Command list item message
 		mess_buffer[0] = 0x10;
 		ck = 16;
@@ -223,33 +223,33 @@ static void send_message(byte id, long param) {
 		case MSG_TRIMS:								// Radio Trims message
 		//mess_buffer[0] = 0x10;
 		//ck = 16;
-		//for(int i = 0; i < 8; i++) {	
+		//for(int i = 0; i < 8; i++) {
 		//	tempint = radio_trim[i];			 	// trim values
 		//	mess_buffer[3 + 2 * i] = tempint & 0xff;
 		//	mess_buffer[4 + 2 * i] = (tempint >> 8) & 0xff;
 		//}
 		break;
-		
+
 		case MSG_MINS:								// Radio Mins message
 		/*mess_buffer[0] = 0x10;
 		ck = 16;
-		for(int i = 0; i < 8; i++) {	
+		for(int i = 0; i < 8; i++) {
 			tempint = radio_min[i];			 		// min values
 			mess_buffer[3 + 2 * i] = tempint & 0xff;
 			mess_buffer[4 + 2 * i] = (tempint >> 8) & 0xff;
 		}*/
 		break;
-		
+
 		case MSG_MAXS:								// Radio Maxs message
 		/*mess_buffer[0] = 0x10;
 		ck = 16;
-		for(int i = 0; i < 8; i++) {	
+		for(int i = 0; i < 8; i++) {
 			tempint = radio_max[i];				 	// max values
 			mess_buffer[3 + 2 * i] = tempint & 0xff;
 			mess_buffer[4 + 2 * i] = (tempint >> 8) & 0xff;
 		}*/
 		break;
-		
+
 		case MSG_PID:								// PID Gains message
 		/*
 		mess_buffer[0] 	= 0x0f;
@@ -276,16 +276,16 @@ static void send_message(byte id, long param) {
 		*/
 		break;
 	}
-	
+
 	//mess_buffer[0] = length; 			// Message length
 	mess_buffer[1] = id; 			// Message ID
-	mess_buffer[2] = 0x01;			// Message version		 
+	mess_buffer[2] = 0x01;			// Message version
 
 	for (int i = 0; i < ck + 3; i++) SendSer (mess_buffer[i]);
-		
+
 	for (int i = 0; i < ck + 3; i++) {
 		mess_ck_a += mess_buffer[i];	// Calculates checksums
-		mess_ck_b += mess_ck_a;			 
+		mess_ck_b += mess_ck_a;
 	}
 
 	SendSer(mess_ck_a);
@@ -296,32 +296,32 @@ static void send_message(byte id, long param) {
 
 static void send_message(byte severity, const char *str)		// This is the instance of send_message for message MSG_STATUS_TEXT
 {
-	if(severity >= DEBUG_LEVEL){	
+	if(severity >= DEBUG_LEVEL){
 		byte length = strlen(str) + 1;
-	
+
 		byte mess_buffer[54];
 		byte mess_ck_a = 0;
 		byte mess_ck_b = 0;
 		int ck;
-			
+
 		SendSer("4D");  			// This is the message preamble
 		if(length > 50) length = 50;
 			mess_buffer[0] = length;
 		ck = length;
 		mess_buffer[1] = 0x05;	 	// Message ID
 		mess_buffer[2] = 0x01;		// Message version
-	
+
 		mess_buffer[3] = severity;
-		
+
 		for (int i = 3; i < ck + 2; i++)
-			mess_buffer[i] = str[i - 3];		// places the text into mess_buffer at locations 3+			
-	
+			mess_buffer[i] = str[i - 3];		// places the text into mess_buffer at locations 3+
+
 		for (int i = 0; i < ck + 3; i++)
 			SendSer(mess_buffer[i]);
-			
+
 		for (int i = 0; i < ck + 3; i++) {
 			mess_ck_a += mess_buffer[i];	// Calculates checksums
-			mess_ck_b += mess_ck_a;			 
+			mess_ck_b += mess_ck_a;
 		}
 		SendSer(mess_ck_a);
 		SendSer(mess_ck_b);

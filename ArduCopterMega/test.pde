@@ -210,68 +210,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-/*
-static int8_t
-test_wp_nav(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-	delay(1000);
-	dTnav = 200;
-	current_loc.lat = 32.9513090 * t7;
-	current_loc.lng = -117.2381700 * t7;
-
-	do_loiter_at_location();
-
-	wp_control = LOITER_MODE;
-
-	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
-	while(1){
-		read_radio();
-		delay(dTnav);
-
-		current_loc.lng = (-117.2381700 * t7) 	+ g.rc_1.control_in / 2;
-		current_loc.lat = (32.9513090 * t7) 	+ g.rc_2.control_in / 2;
-
-		navigate();
-		update_nav_wp();
-
-		Serial.printf("Lon_e: %ld, nLon, %ld, Lat_e %ld, nLat %ld\n", long_error, nav_lon, lat_error, nav_lat);
-
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-
-//*/
-
-/*
-{
-	print_hit_enter();
-	delay(1000);
-
-	g.rc_6.set_range(0,900);
-	g.rc_4.set_angle(9000);
-	dTnav = 200;
-
-	//dTnav: 0, gs: 305, err: 145, int: 0, pitch: 28508160  gps_GC: 0,  gps_GS: 305
-
-	while(1){
-		delay(20);
-		read_radio();
-		target_bearing = 0;
-		g_gps->ground_course = g.rc_4.control_in;
-		g_gps->ground_speed = g.rc_6.control_in;
-		calc_rate_nav();
-		Serial.printf("  gps_GC: %ld,  gps_GS: %d\n", g_gps->ground_course, g_gps->ground_speed);
-
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
-*/
-
 static int8_t
 test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
@@ -340,7 +278,7 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	init_rc_in();
 
 	control_mode = STABILIZE;
-	Serial.printf_P(PSTR("g.pid_stabilize_roll.kP: %4.4f\n"), g.pid_stabilize_roll.kP());
+	Serial.printf_P(PSTR("g.pi_stabilize_roll.kP: %4.4f\n"), g.pi_stabilize_roll.kP());
 	Serial.printf_P(PSTR("max_stabilize_dampener:%d\n\n "), max_stabilize_dampener);
 
 	motor_auto_armed 	= false;
@@ -509,7 +447,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
 			*/
-			/*
+			///*
 			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
 								cos_pitch_x,
 								sin_pitch_y,
@@ -736,6 +674,9 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 		#elif CHANNEL_6_TUNING == CH6_THROTTLE_KD
 			Serial.printf_P(PSTR("baro kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
 
+		#elif CHANNEL_6_TUNING == CH6_TRAVERSE_SPEED
+			Serial.printf_P(PSTR("traverse: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
+
 
 		//Extras
 		#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
@@ -874,6 +815,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 		delay(100);
 		baro_alt 		= read_barometer();
 		Serial.printf_P(PSTR("Baro: %dcm\n"), baro_alt);
+		//Serial.printf_P(PSTR("Baro, %d, %ld, %ld, %ld, %ld\n"), baro_alt, barometer.RawTemp, barometer.RawTemp2, barometer.RawPress, barometer.RawPress2);
 		if(Serial.available() > 0){
 			return (0);
 		}

@@ -31,9 +31,17 @@ static void arm_motors()
 					motor_armed 	= true;
 					arming_counter 	= ARM_DELAY;
 
-					// Clear throttle slew
+					// Tune down DCM
 					// -------------------
-					//throttle_slew = 0;
+					#if HIL_MODE != HIL_MODE_ATTITUDE
+					dcm.kp_roll_pitch(0.030000);
+					dcm.ki_roll_pitch(0.000006);
+					#endif
+
+					// tune down compass
+					// -----------------
+					dcm.kp_yaw(0.08);
+					dcm.ki_yaw(0);
 
 					// Remember Orientation
 					// --------------------
@@ -49,14 +57,16 @@ static void arm_motors()
 						startup_ground();
 					}
 
+					#if HIL_MODE != HIL_MODE_ATTITUDE
+						// read Baro pressure at ground -
+						// this resets Baro for more accuracy
+						//-----------------------------------
+						init_barometer();
+					#endif
+
 					// temp hack
 					motor_light = true;
 					digitalWrite(A_LED_PIN, HIGH);
-
-					// tune down compass
-					// -----------------
-					dcm.kp_yaw(0.08);
-					dcm.ki_yaw(0);
 
 					arming_counter++;
 				} else{
@@ -73,12 +83,21 @@ static void arm_motors()
 				arming_counter = 0;
 
 			}else if (arming_counter == DISARM_DELAY){
-#if HIL_MODE != HIL_MODE_DISABLED
+				#if HIL_MODE != HIL_MODE_DISABLED
                 hil.send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
-#endif
+				#endif
+
 				motor_armed 	= false;
 				arming_counter 	= DISARM_DELAY;
 				compass.save_offsets();
+
+
+				// Tune down DCM
+				// -------------------
+				#if HIL_MODE != HIL_MODE_ATTITUDE
+				dcm.kp_roll_pitch(0.12);		// higher for quads
+				dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate for 200 hz loop
+				#endif
 
 				// tune up compass
 				// -----------------
@@ -117,92 +136,3 @@ set_servos_4()
 		output_motors_disarmed();
 	}
 }
-
-/*****************************************
- * Set the flight control servos based on the current calculated values
- *****************************************/
-
-
-
-
-
-		//if (num++ > 25){
-		//	num = 0;
-
-			//Serial.print("kP: ");
-			//Serial.println(g.pid_stabilize_roll.kP(),3);
-			//*/
-
-
-			/*
-			Serial.printf("yaw: %d, lat_e: %ld, lng_e: %ld, \tnlat: %ld, nlng: %ld,\tnrll: %ld, nptc: %ld, \tcx: %.2f, sy: %.2f, \ttber: %ld, \tnber: %ld\n",
-					(int)(dcm.yaw_sensor / 100),
-					lat_error,
-					long_error,
-					nav_lat,
-					nav_lon,
-					nav_roll,
-					nav_pitch,
-					cos_yaw_x,
-					sin_yaw_y,
-					target_bearing,
-					nav_bearing);
-			//*/
-
-			/*
-
-			gcs_simple.write_byte(control_mode);
-			//gcs_simple.write_int(motor_out[CH_1]);
-			//gcs_simple.write_int(motor_out[CH_2]);
-			//gcs_simple.write_int(motor_out[CH_3]);
-			//gcs_simple.write_int(motor_out[CH_4]);
-
-			gcs_simple.write_int(g.rc_3.servo_out);
-
-			gcs_simple.write_int((int)(dcm.yaw_sensor 	/ 100));
-
-			gcs_simple.write_int((int)nav_lat);
-			gcs_simple.write_int((int)nav_lon);
-			gcs_simple.write_int((int)nav_roll);
-			gcs_simple.write_int((int)nav_pitch);
-
-			//gcs_simple.write_int((int)(cos_yaw_x * 100));
-			//gcs_simple.write_int((int)(sin_yaw_y * 100));
-
-			gcs_simple.write_long(current_loc.lat);	//28
-			gcs_simple.write_long(current_loc.lng);	//32
-			gcs_simple.write_int((int)current_loc.alt);	//34
-
-			gcs_simple.write_long(next_WP.lat);
-			gcs_simple.write_long(next_WP.lng);
-			gcs_simple.write_int((int)next_WP.alt);		//44
-
-			gcs_simple.write_int((int)(target_bearing 	/ 100));
-			gcs_simple.write_int((int)(nav_bearing 		/ 100));
-			gcs_simple.write_int((int)(nav_yaw 			/ 100));
-
-			if(altitude_sensor == BARO){
-				gcs_simple.write_int((int)g.pid_baro_throttle.get_integrator());
-			}else{
-				gcs_simple.write_int((int)g.pid_sonar_throttle.get_integrator());
-			}
-
-			gcs_simple.write_int(g.throttle_cruise);
-			gcs_simple.write_int(g.throttle_cruise);
-
-			//24
-			gcs_simple.flush(10); // Message ID
-
-			//*/
-			//Serial.printf("\n tb  %d\n", (int)(target_bearing 	/ 100));
-			//Serial.printf("\n nb  %d\n", (int)(nav_bearing 	/ 100));
-			//Serial.printf("\n dcm %d\n", (int)(dcm.yaw_sensor 	/ 100));
-
-			/*Serial.printf("a %ld, e %ld, i %d, t %d, b %4.2f\n",
-					current_loc.alt,
-					altitude_error,
-					(int)g.pid_baro_throttle.get_integrator(),
-					nav_throttle,
-					angle_boost());
-			*/
-		//}

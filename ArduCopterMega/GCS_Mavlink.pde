@@ -259,7 +259,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			mavlink_action_t packet;
 			mavlink_msg_action_decode(msg, &packet);
 			if (mavlink_check_target(packet.target,packet.target_component)) break;
-            
+
             if (in_mavlink_delay) {
                 // don't execute action commands while in sensor
                 // initialisation
@@ -334,13 +334,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				case MAV_ACTION_CALIBRATE_MAG:
 				case MAV_ACTION_CALIBRATE_PRESSURE:
 					break;
-				
+
 				case MAV_ACTION_CALIBRATE_ACC:
 					imu.init_accel(mavlink_delay);
 					result=1;
 					break;
-				
-				
+
+
 				//case MAV_ACTION_REBOOT:  // this is a rough interpretation
 					//startup_IMU_ground();
 					//result=1;
@@ -1161,14 +1161,14 @@ static void mavlink_delay(unsigned long t)
 {
     unsigned long tstart;
     static unsigned long last_1hz, last_3hz, last_10hz, last_50hz;
-	
+
 	if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
         // letting the stack grow too much
 		delay(t);
 		return;
 	}
-	
+
 	in_mavlink_delay = true;
 
     tstart = millis();
@@ -1200,6 +1200,6 @@ static void mavlink_delay(unsigned long t)
         }
         delay(1);
     } while (millis() - tstart < t);
-	
+
 	in_mavlink_delay = false;
 }

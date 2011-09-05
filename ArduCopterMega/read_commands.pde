@@ -79,26 +79,26 @@ static void parseCommand(char *buffer)
 		///*
 		switch(cmd[0]){
 			case 'P':
-				g.pid_stabilize_roll.kP((float)value / 1000);
-				g.pid_stabilize_pitch.kP((float)value / 1000);
-				g.pid_stabilize_pitch.save_gains();
+				g.pi_stabilize_roll.kP((float)value / 1000);
+				g.pi_stabilize_pitch.kP((float)value / 1000);
+				g.pi_stabilize_pitch.save_gains();
 				break;
 
 			case 'I':
-				g.pid_stabilize_roll.kI((float)value / 1000);
-				g.pid_stabilize_pitch.kI((float)value / 1000);
-				g.pid_stabilize_pitch.save_gains();
+				g.pi_stabilize_roll.kI((float)value / 1000);
+				g.pi_stabilize_pitch.kI((float)value / 1000);
+				g.pi_stabilize_pitch.save_gains();
 				break;
 
 			case 'D':
-				//g.pid_stabilize_roll.kD((float)value / 1000);
-				//g.pid_stabilize_pitch.kD((float)value / 1000);
+				//g.pi_stabilize_roll.kD((float)value / 1000);
+				//g.pi_stabilize_pitch.kD((float)value / 1000);
 				break;
 
 			case 'X':
-				g.pid_stabilize_roll.imax(value * 100);
-				g.pid_stabilize_pitch.imax(value * 100);
-				g.pid_stabilize_pitch.save_gains();
+				g.pi_stabilize_roll.imax(value * 100);
+				g.pi_stabilize_pitch.imax(value * 100);
+				g.pi_stabilize_pitch.save_gains();
 				break;
 
 			case 'R':

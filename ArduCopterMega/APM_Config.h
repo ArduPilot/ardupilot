@@ -3,14 +3,12 @@
 // GPS is auto-selected
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-
-//#define HIL_MODE	HIL_MODE_ATTITUDE
-
-//#define LOITER_TEST 1
+//#define GCS_PROTOCOL			GCS_PROTOCOL_NONE
+//#define HIL_MODE				HIL_MODE_ATTITUDE
 
 //#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
 
-//#define FRAME_CONFIG QUAD_FRAME
+#define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
 	QUAD_FRAME
@@ -21,7 +19,7 @@
 	HELI_FRAME
 	*/
 
-//#define FRAME_ORIENTATION X_FRAME
+#define FRAME_ORIENTATION X_FRAME
 	/*
 	PLUS_FRAME
 	X_FRAME
@@ -29,7 +27,7 @@
 	*/
 
 
-//#define CHANNEL_6_TUNING CH6_NONE
+#define CHANNEL_6_TUNING CH6_NONE
 	/*
 	CH6_NONE
 	CH6_STABILIZE_KP
@@ -45,9 +43,14 @@
 	CH6_TOP_BOTTOM_RATIO
 	CH6_PMAX
     CH6_RELAY
+    CH6_TRAVERSE_SPEED
 	*/
 
-// experimental!!
-// Yaw is controled by targeting home. you will not have Yaw override.
-// flying too close to home may induce spins.
-//#define SIMPLE_LOOK_AT_HOME 0
+// See the config.h and defines.h files for how to set this up!
+//
+// lets use SIMPLE mode for Roll and Pitch during Alt Hold
+#define ALT_HOLD_RP 		ROLL_PITCH_SIMPLE
+
+// lets use Manual throttle during Loiter
+//#define LOITER_THR			THROTTLE_MANUAL
+# define RTL_YAW 			YAW_HOLD

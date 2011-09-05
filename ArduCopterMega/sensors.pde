@@ -12,9 +12,19 @@ static void init_barometer(void)
 	#endif
 
 	ground_temperature = barometer.Temp;
+	int i;
 
 	// We take some readings...
-	for(int i = 0; i < 20; i++){
+	for(i = 0; i < 60; i++){
+		delay(20);
+		//read_baro_filtered();
+		// get new data from absolute pressure sensor
+		barometer.Read();
+
+		Serial.printf("init %ld, %d, -, %ld, %ld\n", barometer.RawTemp, barometer.Temp, barometer.RawPress,  barometer.Press);
+	}
+
+	for(i = 0; i < 20; i++){
 		delay(20);
 
 		#if HIL_MODE == HIL_MODE_SENSORS
@@ -22,8 +32,13 @@ static void init_barometer(void)
 		#endif
 
 		// Get initial data from absolute pressure sensor
-		ground_pressure 	= read_baro_filtered();
+		//ground_pressure 	= read_baro_filtered();
+		// get new data from absolute pressure sensor
+
+		barometer.Read();
+		ground_pressure = barometer.Press;
 		ground_temperature	= (ground_temperature * 9 + barometer.Temp) / 10;
+		Serial.printf("init %ld, %d, -, %ld, %ld, -, %d, %ld\n", barometer.RawTemp, barometer.Temp, barometer.RawPress,  barometer.Press, ground_temperature, ground_pressure);
 	}
 
 	abs_pressure  		= ground_pressure;
@@ -34,12 +49,14 @@ static void init_barometer(void)
 
 static long read_baro_filtered(void)
 {
-	long pressure = 0;
 
 	// get new data from absolute pressure sensor
 	barometer.Read();
 
+	return barometer.Press;
 
+	/*
+	long pressure = 0;
 	// add new data into our filter
 	baro_filter[baro_filter_index] = barometer.Press;
 	baro_filter_index++;
@@ -58,6 +75,7 @@ static long read_baro_filtered(void)
 
 	// average our sampels
 	return pressure /= BARO_FILTER_SIZE;
+	//*/
 }
 
 static long read_barometer(void)

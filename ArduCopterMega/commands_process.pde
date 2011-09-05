@@ -67,9 +67,6 @@ static void verify_commands(void)
 	if(verify_must()){
 		//Serial.printf("verified must cmd %d\n" , command_must_index);
 		command_must_index 	= NO_COMMAND;
-		// reset rate controlled nav
-		g.pid_nav_wp.reset_I();
-
 	}else{
 		//Serial.printf("verified must false %d\n" , command_must_index);
 	}

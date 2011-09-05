@@ -2,19 +2,20 @@
 
 static void read_control_switch()
 {
+	static bool switch_debouncer = false;
 	byte switchPosition = readSwitch();
-	//motor_armed = (switchPosition < 5);
 
 	if (oldSwitchPosition != switchPosition){
+		if(switch_debouncer){
+			// remember the prev location for GS
+			prev_WP 			= current_loc;
+			oldSwitchPosition 	= switchPosition;
+			switch_debouncer 	= false;
 
-		set_mode(flight_modes[switchPosition]);
-
-		oldSwitchPosition = switchPosition;
-		prev_WP = current_loc;
-
-		// reset navigation integrators
-		// -------------------------
-		//reset_I();
+			set_mode(flight_modes[switchPosition]);
+		}else{
+			switch_debouncer 	= true;
+		}
 	}
 }
 
@@ -33,13 +34,6 @@ static void reset_control_switch()
 {
 	oldSwitchPosition = -1;
 	read_control_switch();
-	//SendDebug("MSG: reset_control_switch ");
-	//SendDebugln(oldSwitchPosition , DEC);
-}
-
-static void update_servo_switches()
-{
-
 }
 
 static boolean trim_flag;
@@ -101,8 +95,8 @@ static void auto_trim()
 
 static void trim_accel()
 {
-	g.pid_stabilize_roll.reset_I();
-	g.pid_stabilize_pitch.reset_I();
+	g.pi_stabilize_roll.reset_I();
+	g.pi_stabilize_pitch.reset_I();
 
 	if(g.rc_1.control_in > 0){
 		imu.ay(imu.ay() + 1);

@@ -303,31 +303,117 @@
 //////////////////////////////////////////////////////////////////////////////
 // Attitude Control
 //
+
+// SIMPLE Mode
+#ifndef SIMPLE_YAW
+# define SIMPLE_YAW 		YAW_HOLD
+#endif
+
+#ifndef SIMPLE_RP
+# define SIMPLE_RP 			ROLL_PITCH_SIMPLE
+#endif
+
+#ifndef SIMPLE_THR
+# define SIMPLE_THR 		THROTTLE_MANUAL
+#endif
+
+// Alt Hold Mode
+#ifndef ALT_HOLD_YAW
+# define ALT_HOLD_YAW 		YAW_HOLD
+#endif
+
+#ifndef ALT_HOLD_RP
+# define ALT_HOLD_RP 		ROLL_PITCH_STABLE
+#endif
+
+#ifndef ALT_HOLD_THR
+# define ALT_HOLD_THR		THROTTLE_HOLD
+#endif
+
+// AUTO Mode
+#ifndef AUTO_YAW
+# define AUTO_YAW 			YAW_AUTO
+#endif
+
+#ifndef AUTO_RP
+# define AUTO_RP 			ROLL_PITCH_AUTO
+#endif
+
+#ifndef AUTO_THR
+# define AUTO_THR			THROTTLE_AUTO
+#endif
+
+// CIRCLE Mode
+#ifndef CIRCLE_YAW
+# define CIRCLE_YAW 		YAW_HOLD
+#endif
+
+#ifndef CIRCLE_RP
+# define CIRCLE_RP 			ROLL_PITCH_AUTO
+#endif
+
+#ifndef CIRCLE_THR
+# define CIRCLE_THR			THROTTLE_HOLD
+#endif
+
+// LOITER Mode
+#ifndef LOITER_YAW
+# define LOITER_YAW 		YAW_HOLD
+#endif
+
+#ifndef LOITER_RP
+# define LOITER_RP 			ROLL_PITCH_AUTO
+#endif
+
+#ifndef LOITER_THR
+# define LOITER_THR			THROTTLE_HOLD
+#endif
+
+
+// RTL Mode
+#ifndef RTL_YAW
+# define RTL_YAW 			YAW_AUTO
+#endif
+
+#ifndef RTL_RP
+# define RTL_RP 			ROLL_PITCH_AUTO
+#endif
+
+#ifndef RTL_THR
+# define RTL_THR			THROTTLE_AUTO
+#endif
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Attitude Control
+//
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.0
+# define STABILIZE_ROLL_P 		3.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.025
+# define STABILIZE_ROLL_I 		0.02
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	10		// degrees
+# define STABILIZE_ROLL_IMAX 	1.5		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.0
+# define STABILIZE_PITCH_P		3.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.025
+# define STABILIZE_PITCH_I		0.02
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	10		// degrees
+# define STABILIZE_PITCH_IMAX	1.5		// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         .12
+# define RATE_ROLL_P         .13
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -337,7 +423,7 @@
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.12
+# define RATE_PITCH_P       0.13
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0.0
@@ -350,17 +436,17 @@
 // YAW Control
 //
 #ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		4.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define STABILIZE_YAW_P		7			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
 # define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
 #endif
 #ifndef  STABILIZE_YAW_IMAX
-# define STABILIZE_YAW_IMAX		15			// degrees * 100
+# define STABILIZE_YAW_IMAX		8			// degrees * 100
 #endif
 
 #ifndef RATE_YAW_P
-# define RATE_YAW_P     .15			// used to control response in turning
+# define RATE_YAW_P     .13			// used to control response in turning
 #endif
 #ifndef RATE_YAW_I
 # define RATE_YAW_I     0.0
@@ -382,53 +468,61 @@
 //////////////////////////////////////////////////////////////////////////////
 // Navigation control gains
 //
+#ifndef LOITER_P
+# define LOITER_P			.4		//
+#endif
+#ifndef LOITER_I
+# define LOITER_I			0.01	//
+#endif
+#ifndef LOITER_IMAX
+# define LOITER_IMAX		8		// degrees°
+#endif
+
+#ifndef NAV_P
+# define NAV_P				2.4			// for 4.5 ms error = 13.5 pitch
+#endif
+#ifndef NAV_I
+# define NAV_I				0.03		// this
+#endif
+#ifndef NAV_IMAX
+# define NAV_IMAX			8			// degrees
+#endif
+
+/*
 #ifndef NAV_LOITER_P
-# define NAV_LOITER_P			2.4		//1.4			//
+# define NAV_LOITER_P			.4		//1.4			//
 #endif
 #ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.01	//
+# define NAV_LOITER_I			0.05	//
 #endif
 #ifndef NAV_LOITER_D
-# define NAV_LOITER_D			1.0 	//1.4			//
+# define NAV_LOITER_D			2 	//
 #endif
 #ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		12		// degrees°
+# define NAV_LOITER_IMAX		8		// degrees°
 #endif
-
-
-
-#ifndef NAV_WP_P
-# define NAV_WP_P				2.2			// for 4.5 ms error = 13.5 pitch
-#endif
-#ifndef NAV_WP_I
-# define NAV_WP_I				0.06		// this
-#endif
-#ifndef NAV_WP_D
-# define NAV_WP_D				.5			//
-#endif
-#ifndef NAV_WP_IMAX
-# define NAV_WP_IMAX			20			// degrees
-#endif
+*/
 
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			600			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			300			// for 6m/s error = 13mph
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.35		// trying a lower val
+# define THROTTLE_P		0.4		// trying a lower val
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.01		//with 4m error, 12.5s windup
+# define THROTTLE_I		0.10		//with 4m error, 12.5s windup
 #endif
-#ifndef THROTTLE_D
-# define THROTTLE_D		0.4			// upped with filter
-#endif
+//#ifndef THROTTLE_D
+//# define THROTTLE_D		0.6			// upped with filter
+//#endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX		30
+# define THROTTLE_IMAX		40
 #endif
 
 

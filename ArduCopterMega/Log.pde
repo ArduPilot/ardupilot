@@ -104,13 +104,9 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 
-	if(dump_log == 99){
-		Log_Read(1, 4096);
-	}
-
-	if (/*(argc != 2) || */ (dump_log < 1) || (dump_log > last_log_num)) {
+	if (/*(argc != 2) || */ (dump_log < 1)) {
 		Serial.printf_P(PSTR("bad log # %d\n"), dump_log);
-		Log_Read(1, 4095);
+		Log_Read(0, 4095);
 		erase_logs(NULL, NULL);
 		return(-1);
 	}
@@ -139,6 +135,14 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	for(int j = 1; j < 4096; j++)
 		DataFlash.PageErase(j);
 
+	clear_header();
+
+	Serial.printf_P(PSTR("\nLog erased.\n"));
+	return (0);
+}
+
+static void clear_header()
+{
 	DataFlash.StartWrite(1);
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -146,8 +150,6 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	DataFlash.WriteByte(0);
 	DataFlash.WriteByte(END_BYTE);
 	DataFlash.FinishWrite();
-	Serial.printf_P(PSTR("\nLog erased.\n"));
-	return (0);
 }
 
 static int8_t
@@ -537,10 +539,18 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)(target_bearing/100));		// 3
 	DataFlash.WriteInt((int)(nav_bearing/100));			// 4
 
+	DataFlash.WriteInt(y_actual_speed);			// 4
+	DataFlash.WriteInt(y_rate_error);			// 4
+	DataFlash.WriteInt(x_actual_speed);			// 4
+	DataFlash.WriteInt(x_rate_error);			// 4
+
 	DataFlash.WriteInt((int)long_error);				// 5
 	DataFlash.WriteInt((int)lat_error);					// 6
 	DataFlash.WriteInt((int)nav_lon);					// 7
 	DataFlash.WriteInt((int)nav_lat);					// 8
+
+	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());					// 7
+	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());					// 8
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -550,7 +560,9 @@ static void Log_Read_Nav_Tuning()
 {
 							 //	 1	 2	 3	 4
 	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, "
-							    "%d, %d, %d, %d\n"),
+								"%d, %d, %d, %d, "
+							    "%d, %d, %d, %d, "
+							    "%d, %d\n"),
 
 				DataFlash.ReadInt(),	//distance
 				DataFlash.ReadByte(),	//bitmask
@@ -559,6 +571,14 @@ static void Log_Read_Nav_Tuning()
 
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
+
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt());	//nav bearing
 }
@@ -576,11 +596,9 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
 
 	// yaw
-	DataFlash.WriteByte(yaw_debug);
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
 	DataFlash.WriteInt((int)(nav_yaw/100));
 	DataFlash.WriteInt((int)yaw_error/100);
-	DataFlash.WriteInt((int)(omega.z * 100));
 
 	// Alt hold
 	DataFlash.WriteInt(g.rc_3.servo_out);
@@ -589,7 +607,7 @@ static void Log_Write_Control_Tuning()
 
 	DataFlash.WriteInt((int)next_WP.alt);				//
 	DataFlash.WriteInt((int)altitude_error);			//
-	DataFlash.WriteInt((int)g.pid_throttle.get_integrator());
+	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -598,9 +616,11 @@ static void Log_Write_Control_Tuning()
 // Read an control tuning packet
 static void Log_Read_Control_Tuning()
 {
-	Serial.printf_P(PSTR(   "CTUN, %d, %d, "
-				"%d, %d, %d, %d, %1.4f, "
-				"%d, %d, %d, %d, %d, %d\n"),
+	Serial.printf_P(PSTR(   "CTUN, "
+							"%d, %d, "
+							"%d, %d, %ld, "
+							"%d, %d, %ld, "
+							"%d, %d, %ld\n"),
 
 				// Control
 				DataFlash.ReadInt(),
@@ -611,7 +631,8 @@ static void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt(),
-				(float)DataFlash.ReadInt(),// Gyro Rate
+				//(float)DataFlash.ReadInt(),// Gyro Rate
+				DataFlash.ReadLong(),
 
 				// Alt Hold
 				DataFlash.ReadInt(),
