@@ -363,6 +363,7 @@ static void set_mode(byte mode)
 
 	// most modes do not calculate crosstrack correction
 	xtrack_enabled = false;
+	reset_nav_I();
 
 	switch(control_mode)
 	{
@@ -370,21 +371,21 @@ static void set_mode(byte mode)
 			yaw_mode 		= YAW_ACRO;
 			roll_pitch_mode = ROLL_PITCH_ACRO;
 			throttle_mode 	= THROTTLE_MANUAL;
-			reset_nav_I();
+			reset_hold_I();
 			break;
 
 		case STABILIZE:
 			yaw_mode 		= YAW_HOLD;
 			roll_pitch_mode = ROLL_PITCH_STABLE;
 			throttle_mode 	= THROTTLE_MANUAL;
-			reset_nav_I();
+			reset_hold_I();
 			break;
 
 		case SIMPLE:
 			yaw_mode 		= SIMPLE_YAW;
 			roll_pitch_mode = SIMPLE_RP;
 			throttle_mode 	= SIMPLE_THR;
-			reset_nav_I();
+			reset_hold_I();
 			break;
 
 		case ALT_HOLD:
@@ -396,7 +397,7 @@ static void set_mode(byte mode)
 			break;
 
 		case AUTO:
-			reset_nav_I();
+			reset_hold_I();
 			yaw_mode 		= AUTO_YAW;
 			roll_pitch_mode = AUTO_RP;
 			throttle_mode 	= AUTO_THR;
