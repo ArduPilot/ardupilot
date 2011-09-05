@@ -394,6 +394,7 @@ static void set_mode(byte mode)
 			throttle_mode 	= ALT_HOLD_THR;
 
 			init_throttle_cruise();
+			next_WP.alt = current_loc.alt;
 			break;
 
 		case AUTO:
@@ -408,6 +409,7 @@ static void set_mode(byte mode)
 			init_auto();
 
 			// do crosstrack correction
+			// XXX move to flight commands
 			xtrack_enabled = true;
 			break;
 
