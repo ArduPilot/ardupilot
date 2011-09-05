@@ -33,7 +33,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_## id ##_LEN) return false
 
-    if (chan == MAVLINK_COMM_1 && millis() < 1000) {
+    if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
         // defer any messages on the telemetry port for 1 second after
         // bootup, to try to prevent bricking of Xbees
         return false;
@@ -399,7 +399,7 @@ static void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint16_t pa
 
 void mavlink_send_text(mavlink_channel_t chan, uint8_t severity, const char *str)
 {
-    if (chan == MAVLINK_COMM_0 && millis() < 1000) {
+    if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
         // don't send status MAVLink messages for 1 second after
         // bootup, to try to prevent Xbee bricking
         return;
