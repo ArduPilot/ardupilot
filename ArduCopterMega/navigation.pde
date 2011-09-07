@@ -104,6 +104,7 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	// calc the cos of the error to tell how fast we are moving towards the target in cm
 	y_actual_speed 	= (float)g_gps->ground_speed * cos(radians((float)g_gps->ground_course/100.0));
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
+	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
 
 	//Serial.printf("yr: %d, nav_lat: %d, int:%d \n",y_rate_error, nav_lat, g.pi_nav_lat.get_integrator());
@@ -111,6 +112,7 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
 	x_actual_speed 	= (float)g_gps->ground_speed  * sin(radians((float)g_gps->ground_course/100.0));
 	x_rate_error 	= x_target_speed - x_actual_speed;
+	x_rate_error 	= constrain(x_rate_error, -250, 250);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 

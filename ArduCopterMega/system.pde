@@ -392,6 +392,7 @@ static void set_mode(byte mode)
 			yaw_mode 		= ALT_HOLD_YAW;
 			roll_pitch_mode = ALT_HOLD_RP;
 			throttle_mode 	= ALT_HOLD_THR;
+			reset_hold_I();
 
 			init_throttle_cruise();
 			next_WP.alt = current_loc.alt;
@@ -538,7 +539,7 @@ static void
 init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
-	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > 150)){
+	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}

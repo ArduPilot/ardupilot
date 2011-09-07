@@ -657,7 +657,6 @@ static void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),
 
 				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
 				DataFlash.ReadInt());
 }
 
@@ -706,6 +705,7 @@ static void Log_Read_Performance()
 
 				DataFlash.ReadByte(),
 				DataFlash.ReadByte(),
+
 				DataFlash.ReadByte(),
 				DataFlash.ReadByte(),
 				DataFlash.ReadByte(),

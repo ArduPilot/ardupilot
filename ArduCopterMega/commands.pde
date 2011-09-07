@@ -22,13 +22,6 @@ static void clear_command_queue(){
 
 static void init_auto()
 {
-	#if HIL_MODE != HIL_MODE_ATTITUDE
-		// read Baro pressure at ground -
-		// this resets Baro for more accuracy
-		//-----------------------------------
-		init_barometer();
-	#endif
-
 	//if (g.waypoint_index == g.waypoint_total) {
 	//	Serial.println("ia_f");
 	//	do_RTL();
