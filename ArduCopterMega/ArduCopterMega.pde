@@ -1199,7 +1199,7 @@ void update_throttle_mode(void)
 			// fall through
 
 		case THROTTLE_AUTO:
-			if(invalid_throttle){
+			if(invalid_throttle && motor_auto_armed == true){
 				// get the AP throttle
 				nav_throttle = get_nav_throttle(altitude_error, 200); //150 =  target speed of 1.5m/s
 

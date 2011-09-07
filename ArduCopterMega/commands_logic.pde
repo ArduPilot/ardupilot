@@ -218,21 +218,22 @@ static void do_RTL(void)
 
 static void do_takeoff()
 {
-	wp_control 			= LOITER_MODE;
+	wp_control = LOITER_MODE;
 
 	// Start with current location
-	Location temp		= current_loc;
+	Location temp = current_loc;
 
 	// next_command.alt is a relative altitude!!!
 	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-		temp.alt			= next_command.alt + home.alt;
+		temp.alt = next_command.alt + home.alt;
 		//Serial.printf("rel alt: %ld",temp.alt);
 	} else {
-		temp.alt 			= next_command.alt;
+		temp.alt = next_command.alt;
 		//Serial.printf("abs alt: %ld",temp.alt);
 	}
 
-	takeoff_complete	= false;			// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
+	takeoff_complete = false;
+	// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
 
 	// Set our waypoint
 	set_next_WP(&temp);
@@ -333,8 +334,6 @@ static bool verify_takeoff()
 	if(g.rc_3.control_in == 0){
 		return false;
 	}
-
-	//Serial.printf("vt c_alt:%ld, n_alt:%ld\n", current_loc.alt, next_WP.alt);
 
 	if (current_loc.alt > next_WP.alt){
 		//Serial.println("Y");

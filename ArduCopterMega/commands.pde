@@ -14,8 +14,21 @@ static void init_commands()
 	clear_command_queue();
 }
 
+// forces the loading of a new command
+// queue is emptied after a new command is processed
+static void clear_command_queue(){
+	next_command.id 	= NO_COMMAND;
+}
+
 static void init_auto()
 {
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		// read Baro pressure at ground -
+		// this resets Baro for more accuracy
+		//-----------------------------------
+		init_barometer();
+	#endif
+
 	//if (g.waypoint_index == g.waypoint_total) {
 	//	Serial.println("ia_f");
 	//	do_RTL();
@@ -24,12 +37,6 @@ static void init_auto()
 	// initialize commands
 	// -------------------
 	init_commands();
-}
-
-// forces the loading of a new command
-// queue is emptied after a new command is processed
-static void clear_command_queue(){
-	next_command.id 	= NO_COMMAND;
 }
 
 // Getters
