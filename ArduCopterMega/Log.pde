@@ -370,8 +370,8 @@ static void Log_Write_GPS()
 
 	DataFlash.WriteLong(current_loc.lat);					// 4
 	DataFlash.WriteLong(current_loc.lng);					// 5
-	DataFlash.WriteLong(g_gps->altitude);					// 6
 	DataFlash.WriteLong(current_loc.alt);					// 7
+	DataFlash.WriteLong(g_gps->altitude);					// 6
 
 	DataFlash.WriteInt(g_gps->ground_speed);				// 8
 	DataFlash.WriteInt((uint16_t)g_gps->ground_course);				// 9
@@ -528,36 +528,52 @@ static void Log_Read_Optflow()
 
 static void Log_Write_Nav_Tuning()
 {
-	Matrix3f tempmat = dcm.get_dcm_matrix();
+	//Matrix3f tempmat = dcm.get_dcm_matrix();
 
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
-	DataFlash.WriteInt((int)wp_distance);				// 1
-	DataFlash.WriteByte(wp_verify_byte);				// 2
-	DataFlash.WriteInt((int)(target_bearing/100));		// 3
-	DataFlash.WriteInt((int)(nav_bearing/100));			// 4
+	DataFlash.WriteInt((int)wp_distance);					// 1
+	DataFlash.WriteByte(wp_verify_byte);					// 2
+	DataFlash.WriteInt((int)(target_bearing/100));			// 3
+	DataFlash.WriteInt((int)(nav_bearing/100));				// 4
+	DataFlash.WriteInt((int)long_error);					// 5
+	DataFlash.WriteInt((int)lat_error);						// 6
 
-	DataFlash.WriteInt(y_actual_speed);			// 4
-	DataFlash.WriteInt(y_rate_error);			// 4
-	DataFlash.WriteInt(x_actual_speed);			// 4
-	DataFlash.WriteInt(x_rate_error);			// 4
 
-	DataFlash.WriteInt((int)long_error);				// 5
-	DataFlash.WriteInt((int)lat_error);					// 6
-	DataFlash.WriteInt((int)nav_lon);					// 7
-	DataFlash.WriteInt((int)nav_lat);					// 8
+/*
+	DataFlash.WriteInt((int)long_error);					// 5
+	DataFlash.WriteInt((int)lat_error);						// 6
 
-	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());					// 7
-	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());					// 8
+	DataFlash.WriteInt(x_rate_error);						// 4
+	DataFlash.WriteInt(y_rate_error);						// 4
 
+	DataFlash.WriteInt((int)nav_lon);						// 7
+	DataFlash.WriteInt((int)nav_lat);						// 8
+
+	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());	// 7
+	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());	// 8
+	DataFlash.WriteInt((int)g.pi_loiter_lon.get_integrator());	// 7
+	DataFlash.WriteInt((int)g.pi_loiter_lat.get_integrator());	// 8
+
+	*/
 	DataFlash.WriteByte(END_BYTE);
 }
 
 
 static void Log_Read_Nav_Tuning()
 {
+	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, %d, %d\n",
+				DataFlash.ReadInt(),	// distance
+				DataFlash.ReadByte(),	// wp_verify_byte
+				DataFlash.ReadInt(),	// target_bearing
+				DataFlash.ReadInt(),	// nav_bearing
+
+				DataFlash.ReadInt(),	// long_error
+				DataFlash.ReadInt());	// lat_error
+
+/*
 							 //	 1	 2	 3	 4
 	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, "
 								"%d, %d, %d, %d, "
@@ -581,7 +597,11 @@ static void Log_Read_Nav_Tuning()
 
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt());	//nav bearing
+*/
+
+
 }
+
 
 // Write a control tuning packet. Total length : 22 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -592,8 +612,8 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
 	// Control
-	DataFlash.WriteInt((int)(g.rc_4.control_in/100));
-	DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
+	//DataFlash.WriteInt((int)(g.rc_4.control_in/100));
+	//DataFlash.WriteInt((int)(g.rc_4.servo_out/100));
 
 	// yaw
 	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));
@@ -606,7 +626,7 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(baro_alt);					//
 
 	DataFlash.WriteInt((int)next_WP.alt);				//
-	DataFlash.WriteInt((int)altitude_error);			//
+	//DataFlash.WriteInt((int)altitude_error);			//
 	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());
 
 	DataFlash.WriteByte(END_BYTE);
@@ -617,7 +637,7 @@ static void Log_Write_Control_Tuning()
 static void Log_Read_Control_Tuning()
 {
 	Serial.printf_P(PSTR(   "CTUN, "
-							"%d, %d, "
+							//"%d, %d, "
 							"%d, %d, %d, "
 							"%d, %d, %d, "
 							"%d, %d, %d\n"),
@@ -656,12 +676,16 @@ static void Log_Write_Performance()
 	DataFlash.WriteLong(	millis()- perf_mon_timer);
 	DataFlash.WriteInt (	mainLoop_count);
 	DataFlash.WriteInt (	G_Dt_max);
+
 	DataFlash.WriteByte(	dcm.gyro_sat_count);
 	DataFlash.WriteByte(	imu.adc_constraints);
 	DataFlash.WriteByte(	dcm.renorm_sqrt_count);
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);
 	DataFlash.WriteByte(	gps_fix_count);
+
 	DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));
+	DataFlash.WriteLong (	throttle_integrator);
+
 	//*/
 	//PM,	20005,	3742, 10,0,0,0,0,89,1000,
 
@@ -671,36 +695,26 @@ static void Log_Write_Performance()
 // Read a performance packet
 static void Log_Read_Performance()
 {
-	//*
-	long pm_time;
-	int logvar;
+	Serial.printf_P(PSTR(   "PM, %ld, %d, %d, "
+							"%d, %d, %d, %d, %d, "
+							"%d, %ld\n"),
 
-	Serial.printf_P(PSTR("PM,"));
-	pm_time = DataFlash.ReadLong();
-	Serial.print(pm_time);
-	Serial.print(comma);
+				// Control
+				DataFlash.ReadLong(),
+				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),
 
-	for (int y = 1; y < 9; y++) {
-		if(y < 3 || y > 7){
-			logvar = DataFlash.ReadInt();
-		}else{
-			logvar = DataFlash.ReadByte();
-		}
-		Serial.print(logvar);
-		Serial.print(comma);
-	}
-	Serial.println(" ");
-	//*/
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
+				DataFlash.ReadByte(),
 
-	/*
-	Serial.printf_P(PSTR("PM, %d, %d\n"),
-			DataFlash.ReadByte(),
-			DataFlash.ReadByte());
-	//*/
+				DataFlash.ReadInt(),
+				DataFlash.ReadLong());
 }
 
 // Write a command processing packet.
-//void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
 static void Log_Write_Cmd(byte num, struct Location *wp)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -762,7 +776,6 @@ static void Log_Read_Attitude()
 			DataFlash.ReadInt(),
 			(uint16_t)DataFlash.ReadInt());
 }
-
 
 // Write a mode packet. Total length : 5 bytes
 static void Log_Write_Mode(byte mode)
