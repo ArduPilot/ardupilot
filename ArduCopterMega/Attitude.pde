@@ -99,7 +99,7 @@ get_nav_throttle(long z_error, int target_speed)
 	target_speed 	= z_error * scaler;
 
 	rate_error 		= target_speed - altitude_rate;
-	rate_error 		= constrain(rate_error, -90, 90);
+	rate_error 		= constrain(rate_error, -110, 110);
 
 	throttle 		= g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
 	return  		  g.throttle_cruise + rate_error;
@@ -151,9 +151,7 @@ static void reset_hold_I(void)
 {
 	g.pi_loiter_lat.reset_I();
 	g.pi_loiter_lat.reset_I();
-
 	g.pi_crosstrack.reset_I();
-	g.pi_throttle.reset_I();
 }
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
@@ -174,7 +172,6 @@ throttle control
 static int get_throttle(int throttle_input)
 {
 	throttle_input = (float)throttle_input * angle_boost();
-	//throttle_input = max(throttle_slew, throttle_input);
 	return  max(throttle_input, 0);
 }
 
@@ -216,7 +213,7 @@ static int alt_hold_velocity()
 static float angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
-	temp = 2.0 - constrain(temp, .5, 1.0);
+	temp = 2.0 - constrain(temp, .6, 1.0);
 	return temp;
 }
 
