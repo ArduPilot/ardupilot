@@ -564,7 +564,7 @@ static void Log_Write_Nav_Tuning()
 
 static void Log_Read_Nav_Tuning()
 {
-	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, %d, %d\n",
+	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d\n"),
 				DataFlash.ReadInt(),	// distance
 				DataFlash.ReadByte(),	// wp_verify_byte
 				DataFlash.ReadInt(),	// target_bearing
