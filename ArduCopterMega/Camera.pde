@@ -8,7 +8,7 @@ static void init_camera()
 	g.rc_camera_pitch.radio_min 	= 1200;
 	g.rc_camera_pitch.radio_trim 	= 1500;
 	g.rc_camera_pitch.radio_max 	= 1900;
-	g.rc_camera_pitch.set_reverse(1);
+	//g.rc_camera_pitch.set_reverse(1);
 
 	// ch 6 high right is down.
 
@@ -29,7 +29,7 @@ camera_stabilization()
 	// -----
 	// allow control mixing
 	g.rc_camera_pitch.set_pwm(APM_RC.InputCh(CH_6)); // I'm using CH 6 input here.
-	g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(-dcm.pitch_sensor);
+	g.rc_camera_pitch.servo_out = g.rc_camera_pitch.control_mix(dcm.pitch_sensor);
 	// limit
 	g.rc_camera_pitch.servo_out = constrain(g.rc_camera_pitch.servo_out, -4500, 4500);
 
