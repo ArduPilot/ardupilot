@@ -699,7 +699,7 @@ static void medium_loop()
 
 			altitude_error = get_altitude_error();
 
-			camera_stabilization();
+			//camera_stabilization();
 
 			// invalidate the throttle hold value
 			// ----------------------------------
@@ -804,6 +804,9 @@ static void fifty_hz_loop()
 	//	throttle_slew++;
 	//else if (throttle_slew > 0)
 	//	throttle_slew--;
+
+	camera_stabilization();
+
 
 	//throttle_slew = min((800 - g.rc_3.control_in), throttle_slew);
 
