@@ -80,7 +80,7 @@ RC_Channel::set_pwm(int pwm)
 		if(radio_in == 0)
 			radio_in = pwm;
 		else
-			radio_in = ((pwm + radio_in) >> 1);		// Small filtering
+			radio_in = (pwm + radio_in) >> 1;		// Small filtering
 	}else{
 		radio_in = pwm;
 	}
@@ -124,7 +124,7 @@ RC_Channel::calc_pwm(void)
 
 	}else if(_type == RC_CHANNEL_ANGLE_RAW){
 		pwm_out 	= (float)servo_out * .1;
-		radio_out 	= pwm_out + 1500;
+		radio_out 	= (pwm_out * _reverse) + 1500;
 
 	}else{
 		pwm_out 	= angle_to_pwm();
