@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPilotMega V2.23"
+#define THISFIRMWARE "ArduPlane V2.24"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short
 Thanks to:  Chris Anderson, HappyKillMore, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi
