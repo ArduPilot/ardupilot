@@ -1,0 +1,257 @@
+#
+# Parameter database specification
+#
+# This file describes the global parameters used by the ArduPilot Mega software.
+# Definitions here are used to produce the param_table.h, param_table.c and 
+# param_init.pde files.
+#
+# Process this file with "awk -f paramgen.awk paramgen.in"
+#
+
+#
+# Parameters are grouped by type, with the software expecting that the types
+# will be presented in the order float, uint8, uint16, int16, uint32.
+#
+# The following line formats are recognised
+#
+# type <type-name>
+#
+#    Announces the start of the section of the file conatining parameters
+#    of the type <type-name>. 
+#
+# <parameter-name>
+#
+#    Defines a parameter with the name <parameter-name>. This will result in 
+#    the generation of an enumeration named PARAM_<parameter-name>, and the 
+#    creation of an entry in the global param_nametab array indexed by the 
+#    enumeration, pointing to a PROGMEM string containing <parameter-name>.
+#
+# <parameter-name> <default-value>
+#
+#    As above, but additionally an entry will be added to the param_init()
+#    function that will reset the parameter to <default_value>.
+#
+#
+# ------------------------------------------------------------------
+#
+# !!! CHANGE THE FIRMWARE VERSION IF YOU MODIFY THIS FILE !!!
+#
+# If the firmware version in ROM and the firmware version
+# in this file do not match it is assumed that the EEProm is 
+# in an unknown state and a factory reset is forced.
+# This is to prevent the user from reading EEProm values that
+# have been remapped to different locations in memory.
+# 
+
+# ======================================================================
+type float
+
+	# ------------------------------------------------------------------
+	# Gains 
+	
+	# ------------------------------------------------------------------
+	# Roll Control 
+
+	# heading error from commnd to roll command deviation from trim
+	# (bank to turn strategy)
+	HDNG2RLL_P 					NAV_ROLL_P
+	HDNG2RLL_I 					NAV_ROLL_I
+	HDNG2RLL_D 					NAV_ROLL_D
+	HDNG2RLL_IMAX 				NAV_ROLL_INT_MAX
+
+	# roll error from command to roll servo deviation from trim
+	# (tracks commanded bank angle)
+	RLL2SRV_P 					SERVO_ROLL_P
+	RLL2SRV_I 					SERVO_ROLL_I
+	RLL2SRV_D 					SERVO_ROLL_D
+	RLL2SRV_IMAX 				SERVO_ROLL_INT_MAX
+	
+	# ------------------------------------------------------------------
+	# Pitch Control 
+
+	# pitch error from command to pitch servo deviation from trim
+	#  (front-side strategy)
+	PTCH2SRV_P 					SERVO_PITCH_P
+	PTCH2SRV_I 					SERVO_PITCH_I
+	PTCH2SRV_D 					SERVO_PITCH_D
+	PTCH2SRV_IMAX 				SERVO_PITCH_INT_MAX
+	
+	# airspeed error from commnd to pitch servo deviation from trim
+	# (back-side strategy)
+	ARSPD2PTCH_P 				NAV_PITCH_ASP_P
+	ARSPD2PTCH_I 				NAV_PITCH_ASP_I
+	ARSPD2PTCH_D 				NAV_PITCH_ASP_D
+	ARSPD2PTCH_IMAX 			NAV_PITCH_ASP_INT_MAX
+
+	# ------------------------------------------------------------------
+	# Yaw Control 
+
+	# yaw rate error from commnd to yaw servo deviation from trim
+	# (stabilizes dutch roll)
+	YW2SRV_P 					SERVO_YAW_P
+	YW2SRV_I 					SERVO_YAW_I
+	YW2SRV_D 					SERVO_YAW_D
+	YW2SRV_IMAX 				SERVO_YAW_INT_MAX
+
+	
+	# ------------------------------------------------------------------
+	# Throttle Control
+
+	# altitude error from commnd to throttle servo deviation from trim
+	# (throttle back-side strategy)
+	ALT2THR_P 					THROTTLE_ALT_P
+	ALT2THR_I 					THROTTLE_ALT_I
+	ALT2THR_D 					THROTTLE_ALT_D
+	ALT2THR_IMAX 				THROTTLE_ALT_INT_MAX
+
+	# total energy error from commnd to throttle servo deviation from trim
+	# (throttle back-side strategy alternative)
+	ENRGY2THR_P 				THROTTLE_TE_P
+	ENRGY2THR_I 				THROTTLE_TE_I
+	ENRGY2THR_D 				THROTTLE_TE_D
+	ENRGY2THR_IMAX 				THROTTLE_TE_INT_MAX
+
+	# altitude error from commnd to pitch servo deviation from trim
+	# (throttle front-side strategy alternative)
+	ALT2PTCH_P 					NAV_PITCH_ALT_P
+	ALT2PTCH_I 					NAV_PITCH_ALT_I
+	ALT2PTCH_D 					NAV_PITCH_ALT_D
+	ALT2PTCH_IMAX 				NAV_PITCH_ALT_INT_MAX
+
+
+	# feed forward gains
+	KFF_PTCHCOMP 				PITCH_COMP
+	KFF_RDDRMIX 				RUDDER_MIX
+	KFF_PTCH2THR 				P_TO_T
+
+	# misc
+	GND_ALT 					0
+	TRIM_AIRSPEED				AIRSPEED_CRUISE
+	XTRACK_ANGLE 				XTRACK_ENTRY_ANGLE
+
+	# limits	
+	LIM_ROLL 					HEAD_MAX
+	LIM_PITCH_MAX 				PITCH_MAX
+	LIM_PITCH_MIN 				PITCH_MIN
+
+	# estimation
+	ALT_MIX 					ALTITUDE_MIX
+	ALT_HOLD_HOME 				0
+	ARSPD_RATIO 				AIRSPEED_RATIO
+
+	# ------------------------------------------------------------------
+	# IMU Calibration 
+
+	IMU_OFFSET_0 				0
+	IMU_OFFSET_1 				0
+	IMU_OFFSET_2 				0
+	IMU_OFFSET_3 				0
+	IMU_OFFSET_4 				0
+	IMU_OFFSET_5 				0
+
+# ======================================================================
+type uint8
+
+	# not used currently
+	YAW_MODE 					0
+
+	# waypoints
+	WP_MODE						0
+	WP_TOTAL 					WP_SIZE
+	WP_INDEX 					0
+	WP_RADIUS 					WP_RADIUS_DEFAULT
+	LOITER_RADIUS 				LOITER_RADIUS_DEFAULT
+
+	# fly by wire
+	ARSPD_FBW_MIN 				AIRSPEED_FBW_MIN
+	ARSPD_FBW_MAX 				AIRSPEED_FBW_MAX
+
+	# throttle
+	THR_MIN 					THROTTLE_MIN
+	THR_MAX 					THROTTLE_MAX
+	THR_FAILSAFE 				THROTTLE_FAILSAFE
+	THR_FS_ACTION 				THROTTLE_FAILSAFE_ACTION
+	TRIM_THROTTLE				THROTTLE_CRUISE
+
+	# misc
+	CONFIG						0
+	TRIM_AUTO 					AUTO_TRIM
+	SWITCH_ENABLE 				REVERSE_SWITCH
+	
+	# flight modes
+	FLIGHT_MODE_CH				FLIGHT_MODE_CHANNEL
+	FLIGHT_MODE_1 				FLIGHT_MODE_1
+	FLIGHT_MODE_2 				FLIGHT_MODE_2
+	FLIGHT_MODE_3 				FLIGHT_MODE_3
+	FLIGHT_MODE_4 				FLIGHT_MODE_4
+	FLIGHT_MODE_5 				FLIGHT_MODE_5
+	FLIGHT_MODE_6 				FLIGHT_MODE_6
+
+# ======================================================================
+type uint16
+	
+	FIRMWARE_VER				FIRMWARE_VERSION
+
+	# ------------------------------------------------------------------
+	# Radio Settings 
+	#
+	# all radio settings are uint16_t and represent the period of the 
+	# pulse width modulated signal. Typically 1000 ms is the lower limit,
+	# 1500 is neutral, and 2000 is the upper limit
+	
+	# trim (neutral setting)
+	RADIOTRIM_CH1 				1500
+	RADIOTRIM_CH2 				1500
+	RADIOTRIM_CH3 				1500
+	RADIOTRIM_CH4 				1500
+	RADIOTRIM_CH5 				1500
+	RADIOTRIM_CH6 				1500
+	RADIOTRIM_CH7 				1500
+	RADIOTRIM_CH8 				1500
+		
+	# min (maps to 0%)
+	RADIOMIN_CH1 				1000
+	RADIOMIN_CH2 				1000
+	RADIOMIN_CH3 				1000
+	RADIOMIN_CH4 				1000
+	RADIOMIN_CH5 				CH5_MIN
+	RADIOMIN_CH6 				CH6_MIN
+	RADIOMIN_CH7 				CH7_MIN
+	RADIOMIN_CH8 				CH8_MIN
+
+	# max (maps to 100%)
+	RADIOMAX_CH1 				2000
+	RADIOMAX_CH2 				2000
+	RADIOMAX_CH3 				2000
+	RADIOMAX_CH4 				2000
+	RADIOMAX_CH5 				CH5_MAX
+	RADIOMAX_CH6 				CH6_MAX
+	RADIOMAX_CH7 				CH7_MAX
+	RADIOMAX_CH8 				CH8_MAX
+
+	# ------------------------------------------------------------------
+	# Misc 
+
+	LOG_BITMASK 				0
+	TRIM_ELEVON 				1500
+	THR_FS_VALUE 				THROTTLE_FS_VALUE
+
+# ======================================================================
+type int16
+
+	# ------------------------------------------------------------------
+	# Misc 
+	
+	XTRACK_GAIN 				XTRACK_GAIN
+	GND_TEMP 					0
+	AP_OFFSET 					0
+	TRIM_PITCH 					0
+
+
+# ======================================================================
+type uint32
+
+	# ------------------------------------------------------------------
+	# Misc 
+	
+	GND_ABS_PRESS 				0	
