@@ -8,7 +8,7 @@
 
 # if HIL_MODE != HIL_MODE_DISABLED
 
-#include <FastSerial.h>
+#include <BetterStream.h>
 #include <AP_Common.h>
 #include <GPS.h>
 #include <Stream.h>
@@ -41,7 +41,7 @@ public:
 	///
 	/// @param	port		The stream over which messages are exchanged.
 	///
-	void		init(FastSerial *port) { _port = port; }
+	void		init(BetterStream *port) { _port = port; }
 
 	/// Update HIL state.
 	///
@@ -83,7 +83,7 @@ public:
 
 protected:
 	/// The stream we are communicating over
-	FastSerial			*_port;
+	BetterStream			*_port;
 };
 
 //
@@ -111,7 +111,7 @@ class HIL_XPLANE : public HIL_Class
 public:
 	HIL_XPLANE();
 	void    update(void);
-	void	init(FastSerial *port);
+	void	init(BetterStream *port);
 	void	send_message(uint8_t id, uint32_t param = 0);
 	void	send_text(uint8_t severity, const char *str);
 	void	send_text(uint8_t severity, const prog_char_t *str);

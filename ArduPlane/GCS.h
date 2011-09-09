@@ -6,7 +6,7 @@
 #ifndef __GCS_H
 #define __GCS_H
 
-#include <FastSerial.h>
+#include <BetterStream.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 #include <GPS.h>
@@ -40,7 +40,7 @@ public:
 	///
 	/// @param	port		The stream over which messages are exchanged.
 	///
-	void		init(FastSerial *port) { _port = port; }
+	void		init(BetterStream *port) { _port = port; }
 
 	/// Update GCS state.
 	///
@@ -119,7 +119,7 @@ public:
 
 protected:
 	/// The stream we are communicating over
-	FastSerial			*_port;
+	BetterStream			*_port;
 };
 
 //
@@ -139,7 +139,7 @@ class GCS_MAVLINK : public GCS_Class
 public:
 	GCS_MAVLINK(AP_Var::Key key);
 	void    update(void);
-	void	init(FastSerial *port);
+	void	init(BetterStream *port);
 	void	send_message(uint8_t id, uint32_t param = 0);
 	void	send_text(uint8_t severity, const char *str);
 	void	send_text(uint8_t severity, const prog_char_t *str);

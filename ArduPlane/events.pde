@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-static void failsafe_short_on_event()
+void failsafe_short_on_event()
 {
 	// This is how to handle a short loss of control signal failsafe.
 	failsafe = FAILSAFE_SHORT;
@@ -18,7 +18,7 @@ static void failsafe_short_on_event()
 
 		case AUTO: 
 		case LOITER: 
-			if(g.short_fs_action == 1) {
+			if(g.short_fs_action != 1) {
 				set_mode(RTL);
 			}
 			break;
@@ -32,11 +32,10 @@ static void failsafe_short_on_event()
 				SendDebugln(control_mode, DEC);
 }
 
-static void failsafe_long_on_event()
+void failsafe_long_on_event()
 {
-	// This is how to handle a long loss of control signal failsafe.
+	// This is how to handle a short loss of control signal failsafe.
 	SendDebug_P("Failsafe - Long event on");
-	APM_RC.clearOverride();		//  If the GCS is locked up we allow control to revert to RC
 	switch(control_mode)
 	{
 		case MANUAL: 
@@ -49,7 +48,7 @@ static void failsafe_long_on_event()
 		case AUTO: 
 		case LOITER: 
 		case CIRCLE: 
-			if(g.long_fs_action == 1) {
+			if(g.long_fs_action != 1) {
 				set_mode(RTL);
 			}
 			break;
@@ -60,7 +59,7 @@ static void failsafe_long_on_event()
 	}
 }
 
-static void failsafe_short_off_event()
+void failsafe_short_off_event()
 {
 	// We're back in radio contact
 	SendDebug_P("Failsafe - Short event off");
@@ -75,16 +74,15 @@ static void failsafe_short_off_event()
 	reset_I();
 }
 
-#if BATTERY_EVENT == ENABLED
-static void low_battery_event(void)
+void low_battery_event(void)
 {
 	gcs.send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	set_mode(RTL);
 	g.throttle_cruise = THROTTLE_CRUISE;
 }
-#endif
 
-static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
+
+void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_REPEAT_RELAY
 {
 	if(event_repeat == 0 || (millis() - event_timer) < event_delay)
 		return;
@@ -110,17 +108,17 @@ static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 	}
 }
 
-static void relay_on()
+void relay_on()
 {
 	PORTL |= B00000100;
 }
 
-static void relay_off()
+void relay_off()
 {
 	PORTL &= ~B00000100;
 }
 
-static void relay_toggle()
+void relay_toggle()
 {
 	PORTL ^= B00000100;
 }

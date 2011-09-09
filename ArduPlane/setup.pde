@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if CLI_ENABLED == ENABLED
-
 // Functions called from the setup menu
 static int8_t	setup_radio			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
@@ -13,7 +11,7 @@ static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_batt_monitor			(uint8_t argc, const Menu::arg *argv);
 
 // Command/function table for the setup menu
-static const struct Menu::command setup_menu_commands[] PROGMEM = {
+const struct Menu::command setup_menu_commands[] PROGMEM = {
 	// command			function called
 	// =======        	===============
 	{"reset", 			setup_factory},
@@ -30,7 +28,7 @@ static const struct Menu::command setup_menu_commands[] PROGMEM = {
 MENU(setup_menu, "setup", setup_menu_commands);
 
 // Called from the top-level menu to run the setup menu.
-static int8_t
+int8_t
 setup_mode(uint8_t argc, const Menu::arg *argv)
 {
 	// Give the user some guidance
@@ -43,7 +41,6 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
 	setup_menu.run();
-    return 0;
 }
 
 // Print the current configuration.
@@ -51,6 +48,7 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_show(uint8_t argc, const Menu::arg *argv)
 {
+	uint8_t		i;
 	// clear the area
 	print_blanks(8);
 
@@ -75,6 +73,8 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_factory(uint8_t argc, const Menu::arg *argv)
 {
+
+	uint8_t		i;
 	int			c;
 
 	Serial.printf_P(PSTR("\nType 'Y' and hit Enter to perform factory reset, any other key to abort: "));
@@ -185,7 +185,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
-	byte switchPosition, mode = 0;
+	byte switchPosition, oldSwitchPosition, mode;
 
 	Serial.printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
 	print_hit_enter();
@@ -201,10 +201,10 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		if (oldSwitchPosition != switchPosition){
 			// force position 5 to MANUAL
 			if (switchPosition > 4) {
-				flight_modes[switchPosition] = MANUAL;
+				g.flight_modes[switchPosition] = MANUAL;
 			}
 			// update our current mode
-			mode = flight_modes[switchPosition];
+			mode = g.flight_modes[switchPosition];
 
 			// update the user
 			print_switch(switchPosition, mode);
@@ -228,11 +228,13 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode != FLY_BY_WIRE_B &&
 				mode != AUTO &&
 				mode != RTL &&
-				mode != LOITER)
+				mode != LOITER &&
+				mode != TAKEOFF &&
+				mode != LAND)
 			{
 				if (mode < MANUAL)
-					mode = LOITER;
-				else if (mode >LOITER)
+					mode = LAND;
+				else if (mode >LAND)
 					mode = MANUAL;
 				else
 					mode += radioInputSwitch;
@@ -243,7 +245,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 				mode = MANUAL;
 
 			// save new mode
-			flight_modes[switchPosition] = mode;
+			g.flight_modes[switchPosition] = mode;
 
 			// print new mode
 			print_switch(switchPosition, mode);
@@ -252,8 +254,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		// escape hatch
 		if(Serial.available() > 0){
 		    // save changes
-            for (mode=0; mode<6; mode++)
-                flight_modes[mode].save();
+		    g.flight_modes.save();
 			report_flight_modes();
 			print_done();
 			return (0);
@@ -266,13 +267,13 @@ setup_declination(uint8_t argc, const Menu::arg *argv)
 {
 	compass.set_declination(radians(argv[1].f));
 	report_compass();
-    return 0;
 }
 
 
 static int8_t
 setup_erase(uint8_t argc, const Menu::arg *argv)
 {
+	uint8_t		i;
 	int			c;
 
 	Serial.printf_P(PSTR("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: "));
@@ -291,13 +292,9 @@ static int8_t
 setup_compass(uint8_t argc, const Menu::arg *argv)
 {
 	if (!strcmp_P(argv[1].str, PSTR("on"))) {
-        compass.set_orientation(MAG_ORIENTATION);	// set compass's orientation on aircraft
-		if (!compass.init()) {
-            Serial.println_P(PSTR("Compass initialisation failed!"));
-            g.compass_enabled = false;
-        } else {
-            g.compass_enabled = true;
-        }
+		g.compass_enabled = true;
+		bool junkbool = compass.init();
+
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.compass_enabled = false;
 
@@ -327,10 +324,49 @@ setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 }
 
 /***************************************************************************/
+// CLI defaults
+/***************************************************************************/
+
+void
+default_flight_modes()
+{
+	g.flight_modes[0] 			= FLIGHT_MODE_1;
+	g.flight_modes[1] 			= FLIGHT_MODE_2;
+	g.flight_modes[2] 			= FLIGHT_MODE_3;
+	g.flight_modes[3] 			= FLIGHT_MODE_4;
+	g.flight_modes[4] 			= FLIGHT_MODE_5;
+	g.flight_modes[5] 			= FLIGHT_MODE_6;
+	g.flight_modes.save();
+}
+
+void
+default_log_bitmask()
+{
+
+	// convenience macro for testing LOG_* and setting LOGBIT_*
+	#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
+
+	g.log_bitmask =
+		LOGBIT(ATTITUDE_FAST)	|
+		LOGBIT(ATTITUDE_MED)	|
+		LOGBIT(GPS)				|
+		LOGBIT(PM)				|
+		LOGBIT(CTUN)			|
+		LOGBIT(NTUN)			|
+		LOGBIT(MODE)			|
+		LOGBIT(RAW)				|
+		LOGBIT(CMD)				|
+		LOGBIT(CUR);
+	#undef LOGBIT
+
+	g.log_bitmask.save();
+}
+
+/***************************************************************************/
 // CLI reports
 /***************************************************************************/
 
-static void report_batt_monitor()
+void report_batt_monitor()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Batt Mointor\n"));
@@ -342,7 +378,7 @@ static void report_batt_monitor()
 	if(g.battery_monitoring == 4)	Serial.printf_P(PSTR("Monitoring volts and current"));
 	print_blanks(2);
 }
-static void report_radio()
+void report_radio()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Radio\n"));
@@ -352,7 +388,7 @@ static void report_radio()
 	print_blanks(2);
 }
 
-static void report_gains()
+void report_gains()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Gains\n"));
@@ -370,7 +406,7 @@ static void report_gains()
 	Serial.printf_P(PSTR("nav roll:\n"));
 	print_PID(&g.pidNavRoll);
 
-	Serial.printf_P(PSTR("nav pitch airspeed:\n"));
+	Serial.printf_P(PSTR("nav pitch airpseed:\n"));
 	print_PID(&g.pidNavPitchAirspeed);
 
 	Serial.printf_P(PSTR("energry throttle:\n"));
@@ -382,7 +418,7 @@ static void report_gains()
 	print_blanks(2);
 }
 
-static void report_xtrack()
+void report_xtrack()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Crosstrack\n"));
@@ -395,7 +431,7 @@ static void report_xtrack()
 	print_blanks(2);
 }
 
-static void report_throttle()
+void report_throttle()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Throttle\n"));
@@ -414,7 +450,7 @@ static void report_throttle()
 	print_blanks(2);
 }
 
-static void report_imu()
+void report_imu()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("IMU\n"));
@@ -425,32 +461,16 @@ static void report_imu()
 	print_blanks(2);
 }
 
-static void report_compass()
+void report_compass()
 {
 	//print_blanks(2);
-	Serial.printf_P(PSTR("Compass: "));
-
-    switch (compass.product_id) {
-    case AP_COMPASS_TYPE_HMC5883L:
-        Serial.println_P(PSTR("HMC5883L"));
-        break;
-    case AP_COMPASS_TYPE_HMC5843:
-        Serial.println_P(PSTR("HMC5843"));
-        break;
-    case AP_COMPASS_TYPE_HIL:
-        Serial.println_P(PSTR("HIL"));
-        break;
-    default:
-        Serial.println_P(PSTR("??"));
-        break;
-    }
-
+	Serial.printf_P(PSTR("Compass\n"));
 	print_divider();
 
 	print_enabled(g.compass_enabled);
 
 	// mag declination
-	Serial.printf_P(PSTR("Mag Declination: %4.4f\n"),
+	Serial.printf_P(PSTR("Mag Delination: %4.4f\n"),
 							degrees(compass.get_declination()));
 
 	Vector3f offsets = compass.get_offsets();
@@ -463,14 +483,14 @@ static void report_compass()
 	print_blanks(2);
 }
 
-static void report_flight_modes()
+void report_flight_modes()
 {
 	//print_blanks(2);
 	Serial.printf_P(PSTR("Flight modes\n"));
 	print_divider();
 
 	for(int i = 0; i < 6; i++ ){
-		print_switch(i, flight_modes[i]);
+		print_switch(i, g.flight_modes[i]);
 	}
 	print_blanks(2);
 }
@@ -479,7 +499,7 @@ static void report_flight_modes()
 // CLI utilities
 /***************************************************************************/
 
-static void
+void
 print_PID(PID * pid)
 {
 	Serial.printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"),
@@ -489,7 +509,7 @@ print_PID(PID * pid)
 					(long)pid->imax());
 }
 
-static void
+void
 print_radio_values()
 {
 	Serial.printf_P(PSTR("CH1: %d | %d | %d\n"), (int)g.channel_roll.radio_min, (int)g.channel_roll.radio_trim, (int)g.channel_roll.radio_max);
@@ -503,20 +523,20 @@ print_radio_values()
 
 }
 
-static void
+void
 print_switch(byte p, byte m)
 {
 	Serial.printf_P(PSTR("Pos %d: "),p);
 	Serial.println(flight_mode_strings[m]);
 }
 
-static void
+void
 print_done()
 {
 	Serial.printf_P(PSTR("\nSaved Settings\n\n"));
 }
 
-static void
+void
 print_blanks(int num)
 {
 	while(num > 0){
@@ -525,7 +545,7 @@ print_blanks(int num)
 	}
 }
 
-static void
+void
 print_divider(void)
 {
 	for (int i = 0; i < 40; i++) {
@@ -534,7 +554,7 @@ print_divider(void)
 	Serial.println("");
 }
 
-static int8_t
+int8_t
 radio_input_switch(void)
 {
 	static int8_t bouncer = 0;
@@ -561,9 +581,9 @@ radio_input_switch(void)
 }
 
 
-static void zero_eeprom(void)
+void zero_eeprom(void)
 {
-	byte b = 0;
+	byte b;
 	Serial.printf_P(PSTR("\nErasing EEPROM\n"));
 	for (int i = 0; i < EEPROM_MAX_ADDR; i++) {
 		eeprom_write_byte((uint8_t *) i, b);
@@ -571,7 +591,7 @@ static void zero_eeprom(void)
 	Serial.printf_P(PSTR("done\n"));
 }
 
-static void print_enabled(bool b)
+void print_enabled(bool b)
 {
 	if(b)
 		Serial.printf_P(PSTR("en"));
@@ -580,7 +600,7 @@ static void print_enabled(bool b)
 	Serial.printf_P(PSTR("abled\n"));
 }
 
-static void
+void
 print_accel_offsets(void)
 {
 	Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
@@ -589,7 +609,7 @@ print_accel_offsets(void)
 						(float)imu.az());
 }
 
-static void
+void
 print_gyro_offsets(void)
 {
 	Serial.printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
@@ -599,4 +619,3 @@ print_gyro_offsets(void)
 }
 
 
-#endif // CLI_ENABLED

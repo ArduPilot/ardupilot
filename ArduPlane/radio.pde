@@ -2,18 +2,21 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 
-static void init_rc_in()
+void init_rc_in()
 {
 	// set rc reversing
 	update_servo_switches();
+	g.channel_roll.set_reverse(reverse_roll);
+	g.channel_pitch.set_reverse(reverse_pitch);
+	g.channel_rudder.set_reverse(reverse_rudder);
 
 	// set rc channel ranges
-	g.channel_roll.set_angle(SERVO_MAX);
-	g.channel_pitch.set_angle(SERVO_MAX);
-	g.channel_rudder.set_angle(SERVO_MAX);
+	g.channel_roll.set_angle(ROLL_SERVO_MAX);
+	g.channel_pitch.set_angle(PITCH_SERVO_MAX);
+	g.channel_rudder.set_angle(RUDDER_SERVO_MAX);
 	g.channel_throttle.set_range(0, 100);
 
 	// set rc dead zones
@@ -23,27 +26,13 @@ static void init_rc_in()
 	g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
-	if (g.rc_5_funct == RC_5_FUNCT_AILERON) {
-		g.rc_5.set_angle(SERVO_MAX);
-	} else if (g.rc_5_funct == RC_5_FUNCT_FLAP_AUTO || g.rc_5_funct == RC_5_FUNCT_FLAPERON) {
-		g.rc_5.set_range(0,100);
-	} else {
-		g.rc_5.set_range(0,1000);		// Insert proper init for camera mount, etc., here
-	}
-	
-	if (g.rc_6_funct == RC_6_FUNCT_AILERON) {
-		g.rc_6.set_angle(SERVO_MAX);
-	} else if (g.rc_6_funct == RC_6_FUNCT_FLAP_AUTO || g.rc_6_funct == RC_6_FUNCT_FLAPERON) {
-		g.rc_6.set_range(0,100);
-	} else {
-		g.rc_6.set_range(0,1000);		// Insert proper init for camera mount, etc., here
-	}
-
-	g.rc_7.set_range(0,1000);			// Insert proper init for camera mount, etc., here
+	g.rc_5.set_range(0,1000);
+	g.rc_6.set_range(0,1000);
+	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
 }
 
-static void init_rc_out()
+void init_rc_out()
 {
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
@@ -68,17 +57,17 @@ static void init_rc_out()
     APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
 }
 
-static void read_radio()
+void read_radio()
 {
 	ch1_temp = APM_RC.InputCh(CH_ROLL);
 	ch2_temp = APM_RC.InputCh(CH_PITCH);
 
-	if(g.mix_mode == 0){
+	if(mix_mode == 0){
 		g.channel_roll.set_pwm(ch1_temp);
 		g.channel_pitch.set_pwm(ch2_temp);
 	}else{
-		g.channel_roll.set_pwm(BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
-		g.channel_pitch.set_pwm((BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
+		g.channel_roll.set_pwm(reverse_elevons * (reverse_ch2_elevon * int(ch2_temp - elevon2_trim) - reverse_ch1_elevon * int(ch1_temp - elevon1_trim)) / 2 + 1500);
+		g.channel_pitch.set_pwm((reverse_ch2_elevon * int(ch2_temp - elevon2_trim) + reverse_ch1_elevon * int(ch1_temp - elevon1_trim)) / 2 + 1500);
 	}
 
 	g.channel_throttle.set_pwm(APM_RC.InputCh(CH_3));
@@ -98,7 +87,7 @@ static void read_radio()
 	g.channel_throttle.servo_out = g.channel_throttle.control_in;
 
 	if (g.channel_throttle.servo_out > 50) {
-		if(g.airspeed_enabled == true) {
+		if(airspeed_enabled == true) {
 			airspeed_nudge = (g.flybywire_airspeed_max * 100 - g.airspeed_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
         } else {
 			throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((g.channel_throttle.norm_input()-0.5) / 0.5);
@@ -117,7 +106,7 @@ static void read_radio()
 	*/
 }
 
-static void control_failsafe(uint16_t pwm)
+void control_failsafe(uint16_t pwm)
 {
 	if(g.throttle_fs_enabled == 0)
 		return;
@@ -132,7 +121,7 @@ static void control_failsafe(uint16_t pwm)
 		
 	//Check for failsafe and debounce funky reads
 	} else if (g.throttle_fs_enabled) {
-		if (pwm < (unsigned)g.throttle_fs_value){
+		if (pwm < g.throttle_fs_value){
 			// we detect a failsafe from radio
 			// throttle has dropped below the mark
 			failsafeCounter++;
@@ -164,18 +153,15 @@ static void control_failsafe(uint16_t pwm)
 	}
 }
 
-static void trim_control_surfaces()
+void trim_control_surfaces()
 {
 	read_radio();
 	// Store control surface trim values
 	// ---------------------------------
-	if(g.mix_mode == 0){
+	if(mix_mode == 0){
 		g.channel_roll.radio_trim = g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
-		if (g.rc_5_funct == RC_5_FUNCT_AILERON) g.rc_5.radio_trim = g.rc_5.radio_in;			// Second aileron channel
-		if (g.rc_6_funct == RC_6_FUNCT_AILERON) g.rc_6.radio_trim = g.rc_6.radio_in;			// Second aileron channel
-		
 	}else{
 		elevon1_trim = ch1_temp;
 		elevon2_trim = ch2_temp;
@@ -191,11 +177,9 @@ static void trim_control_surfaces()
 	g.channel_pitch.save_eeprom();
 	g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g.rc_5_funct == RC_5_FUNCT_AILERON)  g.rc_5.save_eeprom();
-	if (g.rc_6_funct == RC_6_FUNCT_AILERON)  g.rc_6.save_eeprom();
 }
 
-static void trim_radio()
+void trim_radio()
 {
 	for (int y = 0; y < 30; y++) {
 		read_radio();
@@ -203,13 +187,11 @@ static void trim_radio()
 
 	// Store the trim values
 	// ---------------------
-	if(g.mix_mode == 0){
+	if(mix_mode == 0){
 		g.channel_roll.radio_trim 		= g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
 		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
-		if (g.rc_5_funct == RC_5_FUNCT_AILERON) g.rc_5.radio_trim = g.rc_5.radio_in;			// Second aileron channel
-		if (g.rc_6_funct == RC_6_FUNCT_AILERON) g.rc_6.radio_trim = g.rc_6.radio_in;			// Second aileron channel
 
 	} else {
 		elevon1_trim = ch1_temp;
@@ -225,7 +207,5 @@ static void trim_radio()
 	g.channel_pitch.save_eeprom();
 	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g.rc_5_funct == RC_5_FUNCT_AILERON)  g.rc_5.save_eeprom();
-	if (g.rc_6_funct == RC_6_FUNCT_AILERON)  g.rc_6.save_eeprom();
 }
 

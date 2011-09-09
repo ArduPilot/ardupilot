@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPilotMega V2.23"
+#define THISFIRMWARE "ArduPilotMega 2.2.0"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short
 Thanks to:  Chris Anderson, HappyKillMore, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi
@@ -29,7 +29,6 @@ version 2.1 of the License, or (at your option) any later version.
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
-#include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
@@ -39,10 +38,10 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
-#include <AP_RangeFinder.h>	// Range finder library
-#include <ModeFilter.h>
+//#include <AP_RangeFinder.h>	// Range finder library
+
+#define MAVLINK_COMM_NUM_BUFFERS 2
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
-#include <memcheck.h>
 
 // Configuration
 #include "config.h"
@@ -71,12 +70,12 @@ FastSerialPort3(Serial3);       // Telemetry port
 //
 // Global parameters are all contained within the 'g' class.
 //
-static Parameters      g;
+Parameters      g;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
-static void update_events(void);
+void update_events(void);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,17 +92,23 @@ static void update_events(void);
 //
 
 // All GPS access should be through this pointer.
-static GPS         *g_gps;
-
-// flight modes convenience array
-static AP_Int8		*flight_modes = &g.flight_mode1;
+GPS         *g_gps;
 
 #if HIL_MODE == HIL_MODE_DISABLED
 
 // real sensors
-static AP_ADC_ADS7844          adc;
-static APM_BMP085_Class        barometer;
-static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+AP_ADC_ADS7844          adc;
+APM_BMP085_Class        barometer;
+// MAG PROTOCOL
+#if   MAG_PROTOCOL == MAG_PROTOCOL_5843
+AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+
+#elif MAG_PROTOCOL == MAG_PROTOCOL_5883L
+AP_Compass_HMC5883L      compass(Parameters::k_param_compass);
+
+#else
+ #error Unrecognised MAG_PROTOCOL setting.
+#endif // MAG PROTOCOL
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -139,7 +144,6 @@ AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
-AP_ADC_HIL              adc;
 AP_DCM_HIL              dcm;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
@@ -185,31 +189,18 @@ AP_IMU_Shim             imu; // never used
 	GCS_Class           gcs;
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
-////////////////////////////////////////////////////////////////////////////////
-//
-ModeFilter sonar_mode_filter;
-
-#if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
-#elif SONAR_TYPE == MAX_SONAR_LV
-	// XXX honestly I think these output the same values
-	// If someone knows, can they confirm it?
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
-#endif
+//AP_RangeFinder_MaxsonarXL sonar;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-byte    control_mode        = INITIALISING;
+byte    control_mode        = MANUAL;
 byte    oldSwitchPosition;              // for remembering the control mode switch
-bool    inverted_flight     = false;
 
-static const char *comma = ",";
+const char *comma = ",";
 
-static const char* flight_mode_strings[] = {
+const char* flight_mode_strings[] = {
 	"Manual",
 	"Circle",
 	"Stabilize",
@@ -241,179 +232,214 @@ static const char* flight_mode_strings[] = {
 
 // Failsafe
 // --------
-static int 	failsafe;					// track which type of failsafe is being processed
-static bool 	ch3_failsafe;
-static byte    crash_timer;
+int 	failsafe;					// track which type of failsafe is being processed
+bool 	ch3_failsafe;
+byte    crash_timer;
 
 // Radio
 // -----
-static uint16_t elevon1_trim  = 1500; 	// TODO: handle in EEProm
-static uint16_t elevon2_trim  = 1500;
-static uint16_t ch1_temp      = 1500;     // Used for elevon mixing
-static uint16_t ch2_temp  	= 1500;
-static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
-static bool rc_override_active = false;
-static uint32_t rc_override_fs_timer = 0;
-static uint32_t ch3_failsafe_timer = 0;
+uint16_t elevon1_trim  = 1500; 	// TODO: handle in EEProm
+uint16_t elevon2_trim  = 1500;
+uint16_t ch1_temp      = 1500;     // Used for elevon mixing
+uint16_t ch2_temp  	= 1500;
+int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+bool rc_override_active = false;
+uint32_t rc_override_fs_timer = 0;
+uint32_t ch3_failsafe_timer = 0;
 
+bool 	reverse_roll;
+bool 	reverse_pitch;
+bool 	reverse_rudder;
+byte 	mix_mode; 			// 0 = normal , 1 = elevons
+
+// TODO: switch these reverses to true/false, after they are handled by RC_Channel
+int 	reverse_elevons = 1;
+int 	reverse_ch1_elevon = 1;
+int 	reverse_ch2_elevon = 1;
 // for elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
 
 // LED output
 // ----------
-static bool GPS_light;							// status of the GPS light
+bool GPS_light;							// status of the GPS light
 
 // GPS variables
 // -------------
-static const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
-static float 	scaleLongUp			= 1;			// used to reverse longitude scaling
-static float 	scaleLongDown 		= 1;			// used to reverse longitude scaling
-static byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
-static int     ground_start_avg;					// 5 samples to avg speed for ground start
-static bool	GPS_enabled 	= false;			// used to quit "looking" for gps with auto-detect if none present
+const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
+float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
+float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
+byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
+int     ground_start_avg;					// 5 samples to avg speed for ground start
+bool ground_start;    					// have we started on the ground?
+bool	GPS_enabled 	= false;			// used to quit "looking" for gps with auto-detect if none present
 
 // Location & Navigation
 // ---------------------
 const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
-static long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
-static long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
-static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
-static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
-static long    hold_course       	 	= -1;		// deg * 100 dir of plane
+long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
+long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
+long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
+int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
+float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
+long    hold_course       	 	= -1;		// deg * 100 dir of plane
 
-static byte	command_must_index;					// current command memory location
-static byte	command_may_index;					// current command memory location
-static byte	command_must_ID;					// current command ID
-static byte	command_may_ID;						// current command ID
+byte	command_must_index;					// current command memory location
+byte	command_may_index;					// current command memory location
+byte	command_must_ID;					// current command ID
+byte	command_may_ID;						// current command ID
 
 // Airspeed
 // --------
-static int		airspeed;							// m/s * 100
-static int     airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
-static float   airspeed_error;						// m/s * 100
-static long    energy_error;                       // energy state error (kinetic + potential) for altitude hold
-static long    airspeed_energy_error;              // kinetic portion of energy error
+int		airspeed;							// m/s * 100
+int     airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
+float   airspeed_error;						// m/s * 100
+long    energy_error;                       // energy state error (kinetic + potential) for altitude hold
+long    airspeed_energy_error;              // kinetic portion of energy error
+bool airspeed_enabled = false;
 
 // Location Errors
 // ---------------
-static long	bearing_error;						// deg * 100 : 0 to 36000
-static long	altitude_error;						// meters * 100 we are off in altitude
-static float	crosstrack_error;					// meters we are off trackline
+long	bearing_error;						// deg * 100 : 0 to 36000
+long	altitude_error;						// meters * 100 we are off in altitude
+float	crosstrack_error;					// meters we are off trackline
 
 // Battery Sensors
 // ---------------
-static float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cell 1, initialized above threshold for filter
-static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2, initialized above threshold for filter
-static float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
-static float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
+float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
+float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cell 1, initialized above threshold for filter
+float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2, initialized above threshold for filter
+float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
+float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
 
-static float	current_amps;
-static float	current_total;
+float	current_amps;
+float	current_total;
 
 // Airspeed Sensors
 // ----------------
-static float   airspeed_raw;                       // Airspeed Sensor - is a float to better handle filtering
-static int     airspeed_pressure;					// airspeed as a pressure value
+float   airspeed_raw;                       // Airspeed Sensor - is a float to better handle filtering
+int     airspeed_offset;					// analog air pressure sensor while still
+int     airspeed_pressure;					// airspeed as a pressure value
 
 // Barometer Sensor variables
 // --------------------------
-static unsigned long 	abs_pressure;
+unsigned long 	abs_pressure;
 
 // Altitude Sensor variables
 // ----------------------
-static int		sonar_alt;
+//byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 
 // flight mode specific
 // --------------------
-static bool takeoff_complete    = true;         // Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command processes.
-static bool	land_complete;
-static long	takeoff_altitude;
-// static int			landing_distance;					// meters;
-static int			landing_pitch;						// pitch for landing set by commands
-static int			takeoff_pitch;
+bool takeoff_complete    = true;         // Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command processes.
+bool	land_complete;
+long	takeoff_altitude;
+int			landing_distance;					// meters;
+int			landing_pitch;						// pitch for landing set by commands
+int			takeoff_pitch;
 
 // Loiter management
 // -----------------
-static long 	old_target_bearing;					// deg * 100
-static int		loiter_total; 						// deg : how many times to loiter * 360
-static int 	loiter_delta;						// deg : how far we just turned
-static int		loiter_sum;							// deg : how far we have turned around a waypoint
-static long 	loiter_time;						// millis : when we started LOITER mode
-static int 	loiter_time_max;					// millis : how long to stay in LOITER mode
+long 	old_target_bearing;					// deg * 100
+int		loiter_total; 						// deg : how many times to loiter * 360
+int 	loiter_delta;						// deg : how far we just turned
+int		loiter_sum;							// deg : how far we have turned around a waypoint
+long 	loiter_time;						// millis : when we started LOITER mode
+int 	loiter_time_max;					// millis : how long to stay in LOITER mode
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
-static long	nav_roll;							// deg * 100 : target roll angle
-static long	nav_pitch;							// deg * 100 : target pitch angle
-static int     throttle_nudge = 0;                 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
+long	nav_roll;							// deg * 100 : target roll angle
+long	nav_pitch;							// deg * 100 : target pitch angle
+int     throttle_nudge = 0;                 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
 
 // Waypoints
 // ---------
-static long	wp_distance;						// meters - distance between plane and next waypoint
-static long	wp_totalDistance;					// meters - distance between old and next waypoint
+long	wp_distance;						// meters - distance between plane and next waypoint
+long	wp_totalDistance;					// meters - distance between old and next waypoint
+byte	next_wp_index;						// Current active command index
 
 // repeating event control
 // -----------------------
-static byte 		event_id; 							// what to do - see defines
-static long 		event_timer; 						// when the event was asked for in ms
-static uint16_t 	event_delay; 						// how long to delay the next firing of event in millis
-static int 		event_repeat = 0;					// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-static int 		event_value; 						// per command value, such as PWM for servos
-static int 		event_undo_value;					// the value used to cycle events (alternate value to event_value)
+byte 		event_id; 							// what to do - see defines
+long 		event_timer; 						// when the event was asked for in ms
+uint16_t 	event_delay; 						// how long to delay the next firing of event in millis
+int 		event_repeat = 0;					// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
+int 		event_value; 						// per command value, such as PWM for servos
+int 		event_undo_value;					// the value used to cycle events (alternate value to event_value)
 
 // delay command
 // --------------
-static long 	condition_value;						// used in condition commands (eg delay, change alt, etc.)
-static long 	condition_start;
-static int 	condition_rate;
+long 	condition_value;						// used in condition commands (eg delay, change alt, etc.)
+long 	condition_start;
+int 	condition_rate;
 
 // 3D Location vectors
 // -------------------
-static struct 	Location home;						// home location
-static struct 	Location prev_WP;					// last waypoint
-static struct 	Location current_loc;				// current location
-static struct 	Location next_WP;					// next waypoint
-static struct 	Location next_command;				// command preloaded
-static struct  Location guided_WP;					// guided mode waypoint
-static long 	target_altitude;					// used for altitude management between waypoints
-static long 	offset_altitude;					// used for altitude management between waypoints
-static bool	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
+struct 	Location home;						// home location
+struct 	Location prev_WP;					// last waypoint
+struct 	Location current_loc;				// current location
+struct 	Location next_WP;					// next waypoint
+struct 	Location next_command;				// command preloaded
+long 	target_altitude;					// used for altitude management between waypoints
+long 	offset_altitude;					// used for altitude management between waypoints
+bool	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
 
 // IMU variables
 // -------------
-static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
+float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
 
 
 // Performance monitoring
 // ----------------------
-static long 	perf_mon_timer;						// Metric based on accel gain deweighting
-static int 	G_Dt_max = 0;						// Max main loop cycle time in milliseconds
-static int 	gps_fix_count = 0;
-static int		pmTest1 = 0;
+long 	perf_mon_timer;					// Metric based on accel gain deweighting
+int 	G_Dt_max;							// Max main loop cycle time in milliseconds
+int 	gps_fix_count;
+byte	gcs_messages_sent;
 
+
+// GCS
+// ---
+char GCS_buffer[53];
+char display_PID = -1;						// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
 
 // System Timers
 // --------------
-static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
-static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
-static uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
-static int 			mainLoop_count;
+unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
+unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
+uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
+int 			mainLoop_count;
 
-static unsigned long 	medium_loopTimer;			// Time in miliseconds of medium loop
-static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-static uint8_t			delta_ms_medium_loop;
+unsigned long 	medium_loopTimer;			// Time in miliseconds of medium loop
+byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
+uint8_t			delta_ms_medium_loop;
 
-static byte 			slow_loopCounter;
-static byte 			superslow_loopCounter;
-static byte			counter_one_herz;
+byte 			slow_loopCounter;
+byte 			superslow_loopCounter;
+byte			counter_one_herz;
 
-static unsigned long 	nav_loopTimer;				// used to track the elapsed time for GPS nav
+unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 
-static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
-static float 			load;						// % MCU cycles used
+unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
+unsigned long 	elapsedTime;				// for doing custom events
+float 			load;						// % MCU cycles used
+
+//Camera tracking and stabilisation stuff
+// --------------------------------------
+byte			camera_mode	= 1;			//0 is do nothing, 1 is stabilize, 2 is track target
+byte			gimbal_mode	= 0;			// 0 - pitch & roll, 1 - pitch and yaw (pan & tilt), 2 - pitch, roll and yaw (to be added)
+struct			Location camera_target;			//point of iterest for the camera to track
+Vector3<float>	target_vector(0,0,1);				//x, y, z to target before rotating to planes axis, values are in meters
+float cam_pitch;
+float cam_roll;
+float cam_tilt;
+float cam_pan;
+
+struct			Location GPS_mark;	// GPS POI for position based triggering
+int picture_time	= 0;			// waypoint trigger variable
+int thr_pic		= 0;			// timer variable for throttle_pic
+int camtrig		= 83;			// PK6 chosen as it not near anything so safer for soldering
+pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -421,7 +447,6 @@ static float 			load;						// % MCU cycles used
 ////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
-	memcheck_init();
 	init_ardupilot();
 }
 
@@ -466,7 +491,7 @@ void loop()
 }
 
 // Main loop 50Hz
-static void fast_loop()
+void fast_loop()
 {
 	// This is the fast loop - we want it to execute at 50Hz if possible
 	// -----------------------------------------------------------------
@@ -477,22 +502,15 @@ static void fast_loop()
 	// ----------
 	read_radio();
 
-    // try to send any deferred messages if the serial port now has
-    // some space available    
-    gcs.send_message(MSG_RETRY_DEFERRED);
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-    hil.send_message(MSG_RETRY_DEFERRED);
-#endif
-
 	// check for loss of control signal failsafe condition
 	// ------------------------------------
 	check_short_failsafe();
 	
 		// Read Airspeed
 		// -------------
-	if (g.airspeed_enabled == true && HIL_MODE != HIL_MODE_ATTITUDE) {
+	if (airspeed_enabled == true && HIL_MODE != HIL_MODE_ATTITUDE) {
 		read_airspeed();
-	} else if (g.airspeed_enabled == true && HIL_MODE == HIL_MODE_ATTITUDE) {
+	} else if (airspeed_enabled == true && HIL_MODE == HIL_MODE_ATTITUDE) {
 		calc_airspeed_errors();
 	}
 
@@ -532,7 +550,7 @@ static void fast_loop()
 
 	// write out the servo PWM values
 	// ------------------------------
-	set_servos();
+	set_servos_4();
 
 
 	// XXX is it appropriate to be doing the comms below on the fast loop?
@@ -561,8 +579,9 @@ static void fast_loop()
 	// or be a "GCS fast loop" interface
 }
 
-static void medium_loop()
+void medium_loop()
 {
+	camera();
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
@@ -595,6 +614,7 @@ Serial.println(tempaccel.z, DEC);
 		// This case performs some navigation computations
 		//------------------------------------------------
 		case 1:
+ 
 			medium_loopCounter++;
 
 
@@ -618,7 +638,6 @@ Serial.println(tempaccel.z, DEC);
 			// Read altitude from sensors
 			// ------------------
 			update_alt();
-			if(g.sonar_enabled) sonar_alt = sonar.read();
 
 			// altitude smoothing
 			// ------------------
@@ -679,7 +698,7 @@ Serial.println(tempaccel.z, DEC);
 	}
 }
 
-static void slow_loop()
+void slow_loop()
 {
 	// This is the slow (3 1/3 Hz) loop pieces
 	//----------------------------------------
@@ -708,7 +727,9 @@ static void slow_loop()
 
 			// Read Control Surfaces/Mix switches
 			// ----------------------------------
-			update_servo_switches();
+			if (g.switch_enable) {
+				update_servo_switches();
+			}
 
 			break;
 
@@ -716,18 +737,19 @@ static void slow_loop()
 			slow_loopCounter = 0;
 			update_events();
 
+			// XXX this should be a "GCS slow loop" interface
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
 				mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-				gcs.data_stream_send(3,5);
+				gcs.data_stream_send(1,5);
 				// send all requested output streams with rates requested
-				// between 3 and 5 Hz
+				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
 				gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
 			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				hil.data_stream_send(3,5);
+				hil.data_stream_send(1,5);
 			#endif
 
 
@@ -735,26 +757,20 @@ static void slow_loop()
 	}
 }
 
-static void one_second_loop()
+void one_second_loop()
 {
 	if (g.log_bitmask & MASK_LOG_CUR)
 		Log_Write_Current();
 
 	// send a heartbeat
 	gcs.send_message(MSG_HEARTBEAT);
-	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-				gcs.data_stream_send(1,3);
-				// send all requested output streams with rates requested
-				// between 1 and 3 Hz
-	#endif		
 
 	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
 		hil.send_message(MSG_HEARTBEAT);
-		hil.data_stream_send(1,3);
 	#endif
 }
 
-static void update_GPS(void)
+void update_GPS(void)
 {
 	g_gps->update();
 	update_GPS_light();
@@ -806,7 +822,7 @@ static void update_GPS(void)
 	}
 }
 
-static void update_current_flight_mode(void)
+void update_current_flight_mode(void)
 {
 	if(control_mode == AUTO){
 		crash_checker();
@@ -819,7 +835,7 @@ static void update_current_flight_mode(void)
 					nav_roll = 0;
 				}
 
-				if (g.airspeed_enabled == true)
+				if (airspeed_enabled == true)
                                 {
 					calc_nav_pitch();
 					if (nav_pitch < (long)takeoff_pitch) nav_pitch = (long)takeoff_pitch;
@@ -837,7 +853,7 @@ static void update_current_flight_mode(void)
 			case MAV_CMD_NAV_LAND:
 				calc_nav_roll();
 
-				if (g.airspeed_enabled == true){
+				if (airspeed_enabled == true){
 					calc_nav_pitch();
 					calc_throttle();
 				}else{
@@ -862,7 +878,6 @@ static void update_current_flight_mode(void)
 		switch(control_mode){
 			case RTL:
 			case LOITER:
-			case GUIDED:
 				hold_course = -1;
 				crash_checker();
 				calc_nav_roll();
@@ -876,7 +891,6 @@ static void update_current_flight_mode(void)
 				nav_pitch = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min;
 				// We use pitch_min above because it is usually greater magnitude then pitch_max.  -1 is to compensate for its sign.
 				nav_pitch = constrain(nav_pitch, -3000, 3000);	// trying to give more pitch authority
-				if (inverted_flight) nav_pitch = -nav_pitch;
 				break;
 
 			case FLY_BY_WIRE_B:
@@ -886,7 +900,7 @@ static void update_current_flight_mode(void)
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 
-				if (g.airspeed_enabled == true)
+				if (airspeed_enabled == true)
 									{
 					airspeed_error = ((int)(g.flybywire_airspeed_max -
 							g.flybywire_airspeed_min) *
@@ -935,7 +949,7 @@ static void update_current_flight_mode(void)
 	}
 }
 
-static void update_navigation()
+void update_navigation()
 {
 	// wp_distance is in ACTUAL meters, not the *100 meters we get from the GPS
 	// ------------------------------------------------------------------------
@@ -947,18 +961,23 @@ static void update_navigation()
 
 		switch(control_mode){
 			case LOITER:
-			case RTL:
-			case GUIDED:
 				update_loiter();
 				calc_bearing_error();
 				break;
 
+			case RTL:
+				if(wp_distance <= ( g.loiter_radius + LOITER_RANGE) ) {
+					do_RTL();
+				}else{
+					update_crosstrack();
+				}
+				break;
 		}
 	}
 }
 
 
-static void update_alt()
+void update_alt()
 {
 	#if HIL_MODE == HIL_MODE_ATTITUDE
 		current_loc.alt = g_gps->altitude;
@@ -971,6 +990,6 @@ static void update_alt()
 	#endif
 
 		// Calculate new climb rate
-		//if(medium_loopCounter == 0 && slow_loopCounter == 0)
-		//	add_altitude_data(millis() / 100, g_gps->altitude / 10);
+		if(medium_loopCounter == 0 && slow_loopCounter == 0)
+			add_altitude_data(millis() / 100, g_gps->altitude / 10);
 }
