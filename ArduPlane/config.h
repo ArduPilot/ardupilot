@@ -46,12 +46,30 @@
 // AIRSPEED_SENSOR
 // AIRSPEED_RATIO
 //
-//#ifndef AIRSPEED_SENSOR
-//# define AIRSPEED_SENSOR		DISABLED
-//#endif
+#ifndef AIRSPEED_SENSOR
+# define AIRSPEED_SENSOR		DISABLED
+#endif
+
 #ifndef AIRSPEED_RATIO
 # define AIRSPEED_RATIO			1.9936		// Note - this varies from the value in ArduPilot due to the difference in ADC resolution
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Sonar
+//
+
+#ifndef SONAR_ENABLED
+# define SONAR_ENABLED         	DISABLED
+#endif
+
+#ifndef SONAR_PIN
+# define SONAR_PIN              AN4				// AN5,  AP_RANGEFINDER_PITOT_TUBE
+#endif
+
+#ifndef SONAR_TYPE
+# define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_PROTOCOL                             OPTIONAL
@@ -169,9 +187,6 @@
 #ifndef MAG_ORIENTATION
 # define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 #endif
-#ifndef MAG_PROTOCOL
-# define MAG_PROTOCOL		MAG_PROTOCOL_5843
-#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -184,8 +199,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Radio channel limits
 //
-// Note that these are not called out in APM_Config.h.example as there
-// is currently no configured behaviour for these channels.
+// Note that these are not called out in APM_Config.h.reference.
 //
 #ifndef CH5_MIN
 # define CH5_MIN	1000
@@ -213,6 +227,18 @@
 #endif
 
 
+#ifndef FLAP_1_PERCENT
+# define FLAP_1_PERCENT 0
+#endif
+#ifndef FLAP_1_SPEED
+# define FLAP_1_SPEED 255
+#endif
+#ifndef FLAP_2_PERCENT
+# define FLAP_2_PERCENT 0
+#endif
+#ifndef FLAP_2_SPEED
+# define FLAP_2_SPEED 255
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
 // FLIGHT_MODE_CHANNEL
@@ -256,14 +282,14 @@
 #ifndef THROTTLE_FAILSAFE
 # define THROTTLE_FAILSAFE		ENABLED
 #endif
-#ifndef THROTTE_FS_VALUE
+#ifndef THROTTLE_FS_VALUE
 # define THROTTLE_FS_VALUE		950
 #endif
 #ifndef SHORT_FAILSAFE_ACTION
-# define SHORT_FAILSAFE_ACTION		2
+# define SHORT_FAILSAFE_ACTION		0
 #endif
 #ifndef LONG_FAILSAFE_ACTION
-# define LONG_FAILSAFE_ACTION		2
+# define LONG_FAILSAFE_ACTION		0
 #endif
 #ifndef GCS_HEARTBEAT_FAILSAFE
 # define GCS_HEARTBEAT_FAILSAFE		DISABLED
@@ -328,6 +354,22 @@
 //
 #ifndef REVERSE_SWITCH
 # define REVERSE_SWITCH		ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// ENABLE ELEVON_MIXING
+//
+#ifndef ELEVON_MIXING
+# define ELEVON_MIXING		DISABLED
+#endif
+#ifndef ELEVON_REVERSE
+# define ELEVON_REVERSE	    DISABLED
+#endif
+#ifndef ELEVON_CH1_REVERSE
+# define ELEVON_CH1_REVERSE	DISABLED
+#endif
+#ifndef ELEVON_CH2_REVERSE
+# define ELEVON_CH2_REVERSE	DISABLED
 #endif
 
 
@@ -556,6 +598,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
+
+#ifndef LOGGING_ENABLED
+# define LOGGING_ENABLED		ENABLED
+#endif
+
+
 #ifndef LOG_ATTITUDE_FAST
 # define LOG_ATTITUDE_FAST		DISABLED
 #endif
@@ -586,6 +634,22 @@
 #ifndef LOG_CUR
 # define LOG_CUR			DISABLED
 #endif
+
+// calculate the default log_bitmask
+#define LOGBIT(_s)	(LOG_##_s ? MASK_LOG_##_s : 0)
+
+#define DEFAULT_LOG_BITMASK \
+		LOGBIT(ATTITUDE_FAST)	| \
+		LOGBIT(ATTITUDE_MED)	| \
+		LOGBIT(GPS)				| \
+		LOGBIT(PM)				| \
+		LOGBIT(CTUN)			| \
+		LOGBIT(NTUN)			| \
+		LOGBIT(MODE)			| \
+		LOGBIT(RAW)				| \
+		LOGBIT(CMD)				| \
+		LOGBIT(CUR)
+
 
 #ifndef DEBUG_PORT
 # define DEBUG_PORT 0
@@ -633,6 +697,10 @@
 # define USE_CURRENT_ALT FALSE
 #endif
 
+#ifndef INVERTED_FLIGHT_PWM
+# define INVERTED_FLIGHT_PWM 1750
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
@@ -643,3 +711,17 @@
 #endif
 #define STANDARD_THROTTLE_SQUARED (THROTTLE_CRUISE * THROTTLE_CRUISE)
 
+// use this to enable servos in HIL mode
+#ifndef HIL_SERVOS
+# define HIL_SERVOS DISABLED
+#endif
+
+// use this to completely disable the CLI
+#ifndef CLI_ENABLED
+# define CLI_ENABLED ENABLED
+#endif
+
+// delay to prevent Xbee bricking, in milliseconds
+#ifndef MAVLINK_TELEMETRY_PORT_DELAY
+# define MAVLINK_TELEMETRY_PORT_DELAY 2000
+#endif

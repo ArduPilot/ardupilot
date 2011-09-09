@@ -3,7 +3,7 @@
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-void
+static void
 handle_process_must()
 {
 	// reset navigation integrators
@@ -39,13 +39,13 @@ handle_process_must()
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
 			do_RTL();
 			break;
-         
+
 		default:
 			break;
 	}
 }
 
-void
+static void
 handle_process_may()
 {
 	switch(next_command.id){
@@ -82,7 +82,7 @@ handle_process_may()
 	}
 }
 
-void handle_process_now()
+static void handle_process_now()
 {
 	switch(next_command.id){
 
@@ -116,27 +116,18 @@ void handle_process_now()
 	}
 }
 
-void handle_no_commands()
+static void handle_no_commands()
 {
-	if (command_must_ID)
-		return;
-
-	switch (control_mode){
-		case LAND:
-			// don't get a new command
-			break;
-
-		default:
-			set_mode(RTL);
-			break;
-	}
+	next_command = home;
+	next_command.alt = read_alt_to_hold();
+	next_command.id = MAV_CMD_NAV_LOITER_UNLIM;
 }
 
 /********************************************************************************/
 // Verify command Handlers
 /********************************************************************************/
 
-bool verify_must()
+static bool verify_must()
 {
 	switch(command_must_ID) {
 
@@ -175,7 +166,7 @@ bool verify_must()
 	}
 }
 
-bool verify_may()
+static bool verify_may()
 {
 	switch(command_may_ID) {
     case NO_COMMAND:
@@ -195,18 +186,18 @@ bool verify_may()
 
     default:
         gcs.send_text_P(SEVERITY_HIGH,PSTR("verify_may: Invalid or no current Condition cmd"));
-        return false;
         break;
 	}
+    return false;
 }
 
 /********************************************************************************/
 //  Nav (Must) commands
 /********************************************************************************/
 
-void do_RTL(void)
+static void do_RTL(void)
 {
-	control_mode 	= LOITER;
+	control_mode 	= RTL;
 	crash_timer 	= 0;
 	next_WP 		= home;
 
@@ -222,7 +213,7 @@ void do_RTL(void)
 		Log_Write_Mode(control_mode);
 }
 
-void do_takeoff()
+static void do_takeoff()
 {
 	set_next_WP(&next_command);
 	// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
@@ -236,28 +227,28 @@ void do_takeoff()
 	takeoff_complete 	= false;			// set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
 }
 
-void do_nav_wp()
+static void do_nav_wp()
 {
 	set_next_WP(&next_command);
 }
 
-void do_land()
+static void do_land()
 {
 	set_next_WP(&next_command);
 }
 
-void do_loiter_unlimited()
+static void do_loiter_unlimited()
 {
 	set_next_WP(&next_command);
 }
 
-void do_loiter_turns()
+static void do_loiter_turns()
 {
 	set_next_WP(&next_command);
 	loiter_total = next_command.p1 * 360;
 }
 
-void do_loiter_time()
+static void do_loiter_time()
 {
 	set_next_WP(&next_command);
 	loiter_time = millis();
@@ -267,7 +258,7 @@ void do_loiter_time()
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
-bool verify_takeoff()
+static bool verify_takeoff()
 {
 	if (g_gps->ground_speed > 300){
 		if(hold_course == -1){
@@ -296,7 +287,7 @@ bool verify_takeoff()
 	}
 }
 
-bool verify_land()
+static bool verify_land()
 {
 	// we don't verify landing - we never go to a new Must command after Land
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
@@ -323,7 +314,7 @@ bool verify_land()
 	return false;
 }
 
-bool verify_nav_wp()
+static bool verify_nav_wp()
 {
 	hold_course = -1;
 	update_crosstrack();
@@ -344,25 +335,25 @@ bool verify_nav_wp()
 	return false;
 }
 
-bool verify_loiter_unlim()
+static bool verify_loiter_unlim()
 {
 	update_loiter();
 	calc_bearing_error();
 	return false;
 }
 
-bool verify_loiter_time()
+static bool verify_loiter_time()
 {
 	update_loiter();
 	calc_bearing_error();
-	if ((millis() - loiter_time) > (long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
+	if ((millis() - loiter_time) > (unsigned long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
 		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
 		return true;
 	}
 	return false;
 }
 
-bool verify_loiter_turns()
+static bool verify_loiter_turns()
 {
 	update_loiter();
 	calc_bearing_error();
@@ -375,7 +366,7 @@ bool verify_loiter_turns()
 	return false;
 }
 
-bool verify_RTL()
+static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
 		gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
@@ -389,22 +380,22 @@ bool verify_RTL()
 //  Condition (May) commands
 /********************************************************************************/
 
-void do_wait_delay()
+static void do_wait_delay()
 {
 	condition_start = millis();
 	condition_value  = next_command.lat * 1000;	// convert to milliseconds
 }
 
-void do_change_alt()
+static void do_change_alt()
 {
-	condition_rate		= next_command.p1;
+	condition_rate		= next_command.lat;
 	condition_value 	= next_command.alt;
 	target_altitude		= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
 	next_WP.alt 		= condition_value;								// For future nav calculations
 	offset_altitude 	= 0;											// For future nav calculations
 }
 
-void do_within_distance()
+static void do_within_distance()
 {
 	condition_value  = next_command.lat;
 }
@@ -413,23 +404,18 @@ void do_within_distance()
 // Verify Condition (May) commands
 /********************************************************************************/
 
-bool verify_wait_delay()
+static bool verify_wait_delay()
 {
-	if ((millis() - condition_start) > condition_value){
+	if ((unsigned)(millis() - condition_start) > condition_value){
 		condition_value 	= 0;
 		return true;
 	}
 	return false;
 }
 
-bool verify_change_alt()
+static bool verify_change_alt()
 {
-	//XXX this doesn't look right. How do you descend?
-	if(current_loc.alt >= condition_value) {
-		//Serial.printf_P(PSTR("alt, top:"));
-		//Serial.print(current_loc.alt, DEC);
-		//Serial.printf_P(PSTR("\t"));
-		//Serial.println(condition_value, DEC);
+	if( (condition_rate>=0 && current_loc.alt >= condition_value) || (condition_rate<=0 && current_loc.alt <= condition_value)) {
 		condition_value = 0;
 		return true;
 	}
@@ -437,7 +423,7 @@ bool verify_change_alt()
 	return false;
 }
 
-bool verify_within_distance()
+static bool verify_within_distance()
 {
 	if (wp_distance < condition_value){
 		condition_value = 0;
@@ -450,12 +436,12 @@ bool verify_within_distance()
 //  Do (Now) commands
 /********************************************************************************/
 
-void do_loiter_at_location()
+static void do_loiter_at_location()
 {
 	next_WP = current_loc;
 }
 
-void do_jump()
+static void do_jump()
 {
 	struct Location temp;
 	if(next_command.lat > 0) {
@@ -467,20 +453,22 @@ void do_jump()
 
 		set_wp_with_index(temp, g.waypoint_index);
 		g.waypoint_index.set_and_save(next_command.p1 - 1);
+	} else if (next_command.lat == -1) {
+	    g.waypoint_index.set_and_save(next_command.p1 - 1);
 	}
 }
 
-void do_change_speed()
+static void do_change_speed()
 {
 	// Note: we have no implementation for commanded ground speed, only air speed and throttle
 	if(next_command.alt > 0)
 		g.airspeed_cruise.set_and_save(next_command.alt * 100);
 
 	if(next_command.lat > 0)
-		g.throttle_cruise.set_and_save(next_command.lat * 100);
+		g.throttle_cruise.set_and_save(next_command.lat);
 }
 
-void do_set_home()
+static void do_set_home()
 {
 	if(next_command.p1 == 1 && GPS_enabled) {
 		init_home();
@@ -493,12 +481,12 @@ void do_set_home()
 	}
 }
 
-void do_set_servo()
+static void do_set_servo()
 {
 	APM_RC.OutputCh(next_command.p1 - 1, next_command.alt);
 }
 
-void do_set_relay()
+static void do_set_relay()
 {
 	if (next_command.p1 == 1) {
 		relay_on();
@@ -509,7 +497,7 @@ void do_set_relay()
 	}
 }
 
-void do_repeat_servo()
+static void do_repeat_servo()
 {
 	event_id = next_command.p1 - 1;
 
@@ -538,7 +526,7 @@ void do_repeat_servo()
 	}
 }
 
-void do_repeat_relay()
+static void do_repeat_relay()
 {
 	event_id 		= RELAY_TOGGLE;
 	event_timer 	= 0;

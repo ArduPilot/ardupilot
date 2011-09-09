@@ -4,15 +4,14 @@
 // Function that controls aileron/rudder, elevator, rudder (if 4 channel control) and throttle to produce desired attitude and airspeed.
 //****************************************************************
 
-void stabilize()
+static void stabilize()
 {
-	static byte temp = 0;
 	float ch1_inf = 1.0;
 	float ch2_inf = 1.0;
 	float ch4_inf = 1.0;
 	float speed_scaler;
 
-	if (airspeed_enabled == true){
+	if (g.airspeed_enabled == true){
 		if(airspeed > 0)
 			speed_scaler = (STANDARD_SPEED * 100) / airspeed;
 		else
@@ -20,7 +19,7 @@ void stabilize()
 			speed_scaler = constrain(speed_scaler, 0.5, 2.0);
 	} else {
 		if (g.channel_throttle.servo_out > 0){
-			speed_scaler = 0.5 + (THROTTLE_CRUISE / g.channel_throttle.servo_out / 2.0);	// First order taylor expansion of square root
+			speed_scaler = 0.5 + ((float)THROTTLE_CRUISE / g.channel_throttle.servo_out / 2.0);	// First order taylor expansion of square root
 																				// Should maybe be to the 2/7 power, but we aren't goint to implement that...
 		}else{
 			speed_scaler = 1.67;
@@ -31,6 +30,16 @@ void stabilize()
 	if(crash_timer > 0){
 		nav_roll = 0;
 	}
+
+    if (inverted_flight) {
+        // we want to fly upside down. We need to cope with wrap of
+        // the roll_sensor interfering with wrap of nav_roll, which
+        // would really confuse the PID code. The easiest way to
+        // handle this is to ensure both go in the same direction from
+        // zero
+        nav_roll += 18000;
+        if (dcm.roll_sensor < 0) nav_roll -= 36000;
+    }
 
 	// For Testing Only
 	// roll_sensor = (radio_in[CH_RUDDER] - radio_trim[CH_RUDDER]) * 10;
@@ -44,6 +53,10 @@ void stabilize()
 	        fabs(dcm.roll_sensor * g.kff_pitch_compensation) +
 	        (g.channel_throttle.servo_out * g.kff_throttle_to_pitch) -
 	        (dcm.pitch_sensor - g.pitch_trim);
+    if (inverted_flight) {
+        // when flying upside down the elevator control is inverted
+        tempcalc = -tempcalc;
+    }
 	g.channel_pitch.servo_out = g.pidServoPitch.get_pid(tempcalc, delta_ms_fast_loop, speed_scaler);
 
 	// Mix Stick input to allow users to override control surfaces
@@ -99,7 +112,7 @@ void stabilize()
 	//#endif
 }
 
-void crash_checker()
+static void crash_checker()
 {
 	if(dcm.pitch_sensor < -4500){
 		crash_timer = 255;
@@ -109,9 +122,9 @@ void crash_checker()
 }
 
 
-void calc_throttle()
+static void calc_throttle()
 {
-  if (airspeed_enabled == false) {
+  if (g.airspeed_enabled == false) {
 	int throttle_target = g.throttle_cruise + throttle_nudge;
 
 		// no airspeed sensor, we use nav pitch to determine the proper throttle output
@@ -145,7 +158,7 @@ void calc_throttle()
 
 //  Yaw is separated into a function for future implementation of heading hold on rolling take-off
 // ----------------------------------------------------------------------------------------
-void calc_nav_yaw(float speed_scaler)
+static void calc_nav_yaw(float speed_scaler)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	Vector3f temp = imu.get_accel();
@@ -160,11 +173,11 @@ void calc_nav_yaw(float speed_scaler)
 }
 
 
-void calc_nav_pitch()
+static void calc_nav_pitch()
 {
 	// Calculate the Pitch of the plane
 	// --------------------------------
-	if (airspeed_enabled == true) {
+	if (g.airspeed_enabled == true) {
 		nav_pitch = -g.pidNavPitchAirspeed.get_pid(airspeed_error, dTnav);
 	} else {
 		nav_pitch = g.pidNavPitchAltitude.get_pid(altitude_error, dTnav);
@@ -175,7 +188,7 @@ void calc_nav_pitch()
 
 #define YAW_DAMPENER 0
 
-void calc_nav_roll()
+static void calc_nav_roll()
 {
 
 	// Adjust gain based on ground speed - We need lower nav gain going in to a headwind, etc.
@@ -219,18 +232,22 @@ float roll_slew_limit(float servo)
 /*****************************************
  * Throttle slew limit
  *****************************************/
-/*float throttle_slew_limit(float throttle)
+static void throttle_slew_limit()
 {
-	static float last;
-	float temp = constrain(throttle, last-THROTTLE_SLEW_LIMIT * delta_ms_fast_loop/1000.f, last + THROTTLE_SLEW_LIMIT * delta_ms_fast_loop/1000.f);
-	last = throttle;
-	return temp;
+	static int last = 1000;
+	if(g.throttle_slewrate) {		// if slew limit rate is set to zero then do not slew limit
+	
+		float temp = g.throttle_slewrate * G_Dt * 10.f;		//  * 10 to scale % to pwm range of 1000 to 2000
+Serial.print("radio ");	Serial.print(g.channel_throttle.radio_out); Serial.print("   temp "); Serial.print(temp); Serial.print("   last "); Serial.println(last);
+		g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
+		last = g.channel_throttle.radio_out;
+	}
 }
-*/
+
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-void reset_I(void)
+static void reset_I(void)
 {
 	g.pidNavRoll.reset_I();
 	g.pidNavPitchAirspeed.reset_I();
@@ -242,11 +259,13 @@ void reset_I(void)
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
-void set_servos_4(void)
+static void set_servos(void)
 {
+	int flapSpeedSource = 0;
+	
 	if(control_mode == MANUAL){
 		// do a direct pass through of radio values
-		if (mix_mode == 0){
+		if (g.mix_mode == 0){
 			g.channel_roll.radio_out 		= g.channel_roll.radio_in;
 			g.channel_pitch.radio_out 		= g.channel_pitch.radio_in;
 		} else {
@@ -255,21 +274,26 @@ void set_servos_4(void)
 		}
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_out 		= g.channel_rudder.radio_in;
+		if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->radio_out = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
 
 	} else {
-		if (mix_mode == 0){
+		if (g.mix_mode == 0) {
 			g.channel_roll.calc_pwm();
 			g.channel_pitch.calc_pwm();
 			g.channel_rudder.calc_pwm();
+			if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) {
+				g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
+				g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
+			}
 
 		}else{
 			/*Elevon mode*/
 			float ch1;
 			float ch2;
-			ch1 = reverse_elevons * (g.channel_pitch.servo_out - g.channel_roll.servo_out);
+			ch1 = BOOL_TO_SIGN(g.reverse_elevons) * (g.channel_pitch.servo_out - g.channel_roll.servo_out);
 			ch2 = g.channel_pitch.servo_out + g.channel_roll.servo_out;
-			g.channel_roll.radio_out =	elevon1_trim + (reverse_ch1_elevon * (ch1 * 500.0/ ROLL_SERVO_MAX));
-			g.channel_pitch.radio_out =	elevon2_trim + (reverse_ch2_elevon * (ch2 * 500.0/ PITCH_SERVO_MAX));
+			g.channel_roll.radio_out =	elevon1_trim + (BOOL_TO_SIGN(g.reverse_ch1_elevon) * (ch1 * 500.0/ SERVO_MAX));
+			g.channel_pitch.radio_out =	elevon2_trim + (BOOL_TO_SIGN(g.reverse_ch2_elevon) * (ch2 * 500.0/ SERVO_MAX));
 		}
 
 		#if THROTTLE_OUT == 0
@@ -281,55 +305,60 @@ void set_servos_4(void)
 
 		g.channel_throttle.calc_pwm();
 
-		//Radio_in: 1763	PWM output: 2000	Throttle: 78.7695999145	PWM Min: 1110	PWM Max: 1938
-
 		/*  TO DO - fix this for RC_Channel library
 		#if THROTTLE_REVERSE == 1
 			radio_out[CH_THROTTLE] = radio_max(CH_THROTTLE) + radio_min(CH_THROTTLE) - radio_out[CH_THROTTLE];
 		#endif
 		*/
+		
+		throttle_slew_limit();
 	}
-
-
+	
+	if(control_mode <= FLY_BY_WIRE_B) {
+		if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
+	} else if (control_mode >= FLY_BY_WIRE_C) {	
+		if (g.airspeed_enabled == true) {  
+			flapSpeedSource = g.airspeed_cruise;
+		} else {
+			flapSpeedSource = g.throttle_cruise;
+		}
+		if ( flapSpeedSource > g.flap_1_speed) {
+			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
+		} else if (flapSpeedSource > g.flap_2_speed) {
+			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
+		} else {
+			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
+		}
+	}
+	
+#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 	// send values to the PWM timers for output
 	// ----------------------------------------
 	APM_RC.OutputCh(CH_1, g.channel_roll.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_2, g.channel_pitch.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_3, g.channel_throttle.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_4, g.channel_rudder.radio_out); // send to Servos
+	// Route configurable aux. functions to their respective servos
+	aux_servo_out(&g.rc_5, CH_5);
+	aux_servo_out(&g.rc_6, CH_6);
+	aux_servo_out(&g.rc_7, CH_7);
+	aux_servo_out(&g.rc_8, CH_8);
+#endif
  }
 
-void demo_servos(byte i) {
+static void demo_servos(byte i) {
 
 	while(i > 0){
 		gcs.send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+#if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 		APM_RC.OutputCh(1, 1400);
-		delay(400);
+		mavlink_delay(400);
 		APM_RC.OutputCh(1, 1600);
-		delay(200);
+		mavlink_delay(200);
 		APM_RC.OutputCh(1, 1500);
-		delay(400);
+#endif
+		mavlink_delay(400);
 		i--;
 	}
 }
 
-int readOutputCh(unsigned char ch)
-{
- int pwm;
- switch(ch)
-	{
-		case 0:	pwm = OCR5B; break;	// ch0
-		case 1:	pwm = OCR5C; break;	// ch1
-		case 2:	pwm = OCR1B; break;	// ch2
-		case 3:	pwm = OCR1C; break;	// ch3
-		case 4:	pwm = OCR4C; break;	// ch4
-		case 5:	pwm = OCR4B; break;	// ch5
-		case 6:	pwm = OCR3C; break;	// ch6
-		case 7:	pwm = OCR3B; break;	// ch7
-		case 8:	pwm = OCR5A; break;	// ch8,	PL3
-		case 9:	pwm = OCR1A; break;	// ch9,	PB5
-		case 10: pwm = OCR3A; break;	// ch10, PE3
-	}
-	pwm >>= 1;	 // pwm / 2;
-	return pwm;
-}

@@ -210,7 +210,7 @@
 // INPUT_VOLTAGE                            OPTIONAL
 //
 // In order to have accurate pressure and battery voltage readings, this
-// value should be set to the voltage measured on the 5V rail on the oilpan.
+// value should be set to the voltage measured at the processor.
 //
 // See the manual for more details.  The default value should be close if you are applying 5 volts to the servo rail.
 //
@@ -305,6 +305,19 @@
 //
 
 //////////////////////////////////////////////////////////////////////////////
+// For automatic flap operation based on speed setpoint.  If the speed setpoint is above flap_1_speed
+// then the flap position shall be 0%.  If the speed setpoint is between flap_1_speed and flap_2_speed
+// then the flap position shall be flap_1_percent.  If the speed setpoint is below flap_2_speed
+// then the flap position shall be flap_2_percent.  Speed setpoint is the current value of 
+// airspeed_cruise (if airspeed sensor enabled) or throttle_cruise (if no airspeed sensor)
+
+// FLAP_1_PERCENT							OPTIONAL
+// FLAP_1_SPEED								OPTIONAL
+// FLAP_2_PERCENT							OPTIONAL
+// FLAP_2_SPEED								OPTIONAL
+
+
+//////////////////////////////////////////////////////////////////////////////
 // THROTTLE_FAILSAFE                        OPTIONAL
 // THROTTLE_FS_VALUE                        OPTIONAL
 //
@@ -361,7 +374,7 @@
 // the aircraft will head for home in RTL mode.  If the failsafe condition is
 // resolved the aircraft will not be returned to AUTO or LOITER mode, but will continue home
 
-// If XX_FAILSAFE_ACTION is 2 and the applicable failsafe occurs while in AUTO or LOITER
+// If XX_FAILSAFE_ACTION is 0 and the applicable failsafe occurs while in AUTO or LOITER
 // mode the aircraft will continue in that mode ignoring the failsafe condition.
 
 // Note that for Manual, Stabilize, and Fly-By-Wire (A and B) modes the aircraft will always
@@ -372,8 +385,8 @@
 // The default behaviour is to ignore failsafes in AUTO and LOITER modes.
 //
 //#define GCS_HEARTBEAT_FAILSAFE	DISABLED
-//#define SHORT_FAILSAFE_ACTION 	2
-//#define LONG_FAILSAFE_ACTION 		2
+//#define SHORT_FAILSAFE_ACTION 	0
+//#define LONG_FAILSAFE_ACTION 		0
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -774,7 +787,7 @@
 //
 // Limits the slew rate of the throttle, in percent per second.  Helps
 // avoid sudden throttle changes, which can destabilise the aircraft.
-// A setting of zero disables the feature.
+// A setting of zero disables the feature.  Range 1 to 100.
 // Default is zero (disabled).
 //
 // P_TO_T                                   OPTIONAL
