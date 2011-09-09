@@ -10,11 +10,9 @@
 
 #define DEBUG 0
 #define LOITER_RANGE 60 // for calculating power outside of loiter radius
-#define ROLL_SERVO_MAX 4500
-#define PITCH_SERVO_MAX 4500
-#define RUDDER_SERVO_MAX 4500
+#define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// failsafe 
+// failsafe
 // ----------------------
 #define FAILSAFE_NONE	0
 #define FAILSAFE_SHORT	1
@@ -31,10 +29,6 @@
 
 #define T6 1000000
 #define T7 10000000
-
-//MAGNETOMETER
-#define MAG_PROTOCOL_5843		0
-#define MAG_PROTOCOL_5883L		1
 
 // GPS type codes - use the names, not the numbers
 #define GPS_PROTOCOL_NONE	-1
@@ -90,12 +84,15 @@
 
 #define FLY_BY_WIRE_A 5		// Fly By Wire A has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical = manual throttle
 #define FLY_BY_WIRE_B 6		// Fly By Wire B has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical => desired airspeed
-							// Fly By Wire B = Fly By Wire A if you have AIRSPEED_SENSOR 0
+#define FLY_BY_WIRE_C 7		// Fly By Wire C has left stick horizontal => desired roll angle, left stick vertical => desired climb rate, right stick vertical => desired airspeed
+							// Fly By Wire B and Fly By Wire C require airspeed sensor 
 #define AUTO 10
 #define RTL 11
 #define LOITER 12
-#define TAKEOFF 13
-#define LAND 14
+//#define TAKEOFF 13			// This is not used by APM.  It appears here for consistency with ACM
+//#define LAND 14			// This is not used by APM.  It appears here for consistency with ACM
+#define GUIDED 15
+#define INITIALISING 16     // in startup routines
 
 
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
@@ -118,6 +115,10 @@
 #define MAV_CMD_CONDITION_YAW 23
 
 //  GCS Message ID's
+/// NOTE: to ensure we never block on sending MAVLink messages
+/// please keep each MSG_ to a single MAVLink message. If need be
+/// create new MSG_ IDs for additional messages on the same
+/// stream 
 #define MSG_ACKNOWLEDGE 0x00
 #define MSG_HEARTBEAT 0x01
 #define MSG_ATTITUDE 0x02
@@ -128,9 +129,10 @@
 #define MSG_MODE_CHANGE 0x07 //This is different than HEARTBEAT because it occurs only when the mode is actually changed
 #define MSG_VERSION_REQUEST 0x08
 #define MSG_VERSION 0x09
-#define MSG_EXTENDED_STATUS 0x0a
-#define MSG_CPU_LOAD 0x0b
-#define MSG_NAV_CONTROLLER_OUTPUT 0x0c
+#define MSG_EXTENDED_STATUS1 0x0a
+#define MSG_EXTENDED_STATUS2 0x0b
+#define MSG_CPU_LOAD 0x0c
+#define MSG_NAV_CONTROLLER_OUTPUT 0x0d
 
 #define MSG_COMMAND_REQUEST 0x20
 #define MSG_COMMAND_UPLOAD 0x21
@@ -153,9 +155,11 @@
 #define MSG_RADIO_OUT 0x53
 #define MSG_RADIO_IN  0x54
 
-#define MSG_RAW_IMU 0x60
-#define MSG_GPS_STATUS 0x61
-#define MSG_GPS_RAW 0x62
+#define MSG_RAW_IMU1 0x60
+#define MSG_RAW_IMU2 0x61
+#define MSG_RAW_IMU3 0x62
+#define MSG_GPS_STATUS 0x63
+#define MSG_GPS_RAW 0x64
 
 #define MSG_SERVO_OUT 0x70
 
@@ -173,6 +177,7 @@
 #define MSG_POSITION_SET 0xb2
 #define MSG_ATTITUDE_SET 0xb3
 #define MSG_LOCAL_LOCATION 0xb4
+#define MSG_RETRY_DEFERRED 0xff
 
 #define SEVERITY_LOW 1
 #define SEVERITY_MEDIUM 2
@@ -205,7 +210,6 @@
 #define MASK_LOG_RAW			(1<<7)
 #define MASK_LOG_CMD			(1<<8)
 #define MASK_LOG_CUR			(1<<9)
-#define MASK_LOG_SET_DEFAULTS	(1<<15)
 
 // Waypoint Modes
 // ----------------
@@ -246,7 +250,11 @@
 
 
 // sonar
+#define MAX_SONAR_XL 0
+#define MAX_SONAR_LV 1
 #define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
+#define AN4			4
+#define AN5			5
 
 // Hardware Parameters
 #define SLIDE_SWITCH_PIN 40
@@ -267,3 +275,6 @@
 
 #define ONBOARD_PARAM_NAME_LENGTH 15
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+
+// convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
+#define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)

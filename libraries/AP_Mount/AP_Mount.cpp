@@ -1,184 +1,197 @@
-#include "AP_Mount.h"
+#include <AP_Mount.h>
+#include <RC_Channel.h>
 
-AP_Mount::AP_Mount(GPS *gps, AP_DCM *dcm, AP_Var::Key key, const prog_char_t *name):
-_group(key, name),
-_mountMode(&_group, 0, 0, name ? PSTR("MODE")         : 0), // suppress name if group has no name
-_mountType(&_group, 0, 0, name ? PSTR("TYPE")         : 0),
-_dcm(dcm);
-_gps(gps);
+extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
+
+AP_Mount::AP_Mount(GPS *gps, AP_DCM *dcm)
 {
-
+	_dcm=dcm;
+	_gps=gps;
 }
 
-void AP_Mount::SetPitchYaw(Location targetGPSLocation)
+void AP_Mount::set_pitch_yaw(int pitchCh, int yawCh)
 {
-	_targetGPSLocation=targetGPSLocation;
+}
+
+void AP_Mount::set_GPS_target(Location targetGPSLocation)
+{
+	_target_GPS_location=targetGPSLocation;
 	
 	//set mode
-	_mountMode=gps;
+	_mount_mode=k_gps_target;
 
 	//update mount position
-	UpDateMount();
+	update_mount();
 }
 
-void AP_Mount::SetGPSTarget(Location targetGPSLocation)
+void AP_Mount::set_assisted(int roll, int pitch, int yaw)
 {
-	_targetGPSLocation=targetGPSLocation;
-	
-	//set mode
-	_mountMode=gps;
-
-	//update mount position
-	UpDateMount();
-}
-
-void AP_Mount::SetAssisted(int roll, int pitch, int yaw)
-{
-	_AssistAngles.x = roll;
-	_AssistAngles.y = pitch;
-	_AssistAngles.z = yaw;
+	_assist_angles.x = roll;
+	_assist_angles.y = pitch;
+	_assist_angles.z = yaw;
 
 	//set mode
-	_mountMode=assisted;
+	_mount_mode=k_assisted;
 
 	//update mount position
-	UpDateMount();
+	update_mount();
 }
 
 //sets the servo angles for FPV, note angles are * 100
-void AP_Mount::SetMountFreeRoam(int roll, int pitch, int yaw)
+void AP_Mount::set_mount_free_roam(int roll, int pitch, int yaw)
 {
-	_RoamAngles.x=roll;
-	_RoamAngles.y=pitch;
-	_RoamAngles.z=yaw;
+	_roam_angles.x=roll;
+	_roam_angles.y=pitch;
+	_roam_angles.z=yaw;
 
 	//set mode
-	_mountMode=roam;
+	_mount_mode=k_roam;
 
 	//now update mount position
-	UpDateMount();
+	update_mount();
 }
 
 //sets the servo angles for landing, note angles are * 100
-void AP_Mount::SetMountLanding(int roll, int pitch, int yaw)
+void AP_Mount::set_mount_landing(int roll, int pitch, int yaw)
 {
-	_LandingAngles.x=roll;
-	_LandingAngles.y=pitch;
-	_LandingAngles.z=yaw;
+	_landing_angles.x=roll;
+	_landing_angles.y=pitch;
+	_landing_angles.z=yaw;
 
 	//set mode
-	_mountMode=landing;
+	_mount_mode=k_landing;
 
 	//now update mount position
-	UpDateMount();
+	update_mount();
 }
 
-void AP_Mount::SetNone()
+void AP_Mount::set_none()
 {
 	//set mode
-	_mountMode=none;
+	_mount_mode=k_none;
 
 	//now update mount position
-	UpDateMount();
+	update_mount();
 }
 
-void AP_Mount::UpDateMount()
+void AP_Mount::update_mount()
 {
-	switch(_mountMode)
+	Matrix3f m;					//holds 3 x 3 matrix, var is used as temp in calcs
+	Vector3f targ;				//holds target vector, var is used as temp in calcs
+
+	switch(_mount_mode)
 	{
-		case gps:
+		case k_gps_target:
 			{
 				if(_gps->fix) 
 				{
-					CalcGPSTargetVector(&_targetGPSLocation);
+					calc_GPS_target_vector(&_target_GPS_location);
 				}
 				m = _dcm->get_dcm_transposed();
-				targ = m*_GPSVector;
-				this->CalcMountAnglesFromVector(*targ)
+				targ = m*_GPS_vector;
+				roll_angle =   degrees(atan2(targ.y,targ.z))*100;	//roll
+				pitch_angle =  degrees(atan2(-targ.x,targ.z))*100;	//pitch 
 				break;
 			}
-		case stabilise:
+		case k_stabilise:
 			{
-				//to do
+				// TODO replace this simplified implementation with a proper one
+				roll_angle  = -_dcm->roll_sensor;
+				pitch_angle = -_dcm->pitch_sensor;
+				yaw_angle   = -_dcm->yaw_sensor;
 				break;
 			}
-		case roam:
+		case k_roam:
 			{
-				pitchAngle=100*_RoamAngles.y;
-				rollAngle=100*_RoamAngles.x;
-				yawAngle=100*_RoamAngles.z;
+				roll_angle=100*_roam_angles.x;
+				pitch_angle=100*_roam_angles.y;
+				yaw_angle=100*_roam_angles.z;
 				break;
 			}
-		case assisted:
+		case k_assisted:
 			{
 				m = _dcm->get_dcm_transposed();    
-				targ = m*_AssistVector;
-				this->CalcMountAnglesFromVector(*targ)
+				//rotate vector
+				targ = m*_assist_vector;
+				roll_angle =   degrees(atan2(targ.y,targ.z))*100;	//roll
+				pitch_angle =  degrees(atan2(-targ.x,targ.z))*100;	//pitch 
 				break;
 			}
-		case landing:
+		case k_landing:
 			{
-				pitchAngle=100*_RoamAngles.y;
-				rollAngle=100*_RoamAngles.x;
-				yawAngle=100*_RoamAngles.z;
+				roll_angle=100*_roam_angles.x;
+				pitch_angle=100*_roam_angles.y;
+				yaw_angle=100*_roam_angles.z;
 				break;
 			}
-		case none:
+		case k_none:
 			{
 				//do nothing
 				break;
 			}
+		case k_manual:	// radio manual control
+			if (g_rc_function[RC_Channel_aux::k_mount_roll])
+				roll_angle = map(g_rc_function[RC_Channel_aux::k_mount_roll]->radio_in,
+						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_min,
+						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_max,
+						g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min,
+						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_max);
+			if (g_rc_function[RC_Channel_aux::k_mount_pitch])
+				pitch_angle = map(g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_in,
+						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_min,
+						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_max,
+						g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_min,
+						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_max);
+			if (g_rc_function[RC_Channel_aux::k_mount_yaw])
+				yaw_angle = map(g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_in,
+						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_min,
+						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_max,
+						g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min,
+						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_max);
+			break;
 		default:
 			{
 				//do nothing
 				break;
 			}			
 	}
+
+	// write the results to the servos
+	// Change scaling to 0.1 degrees in order to avoid overflows in the angle arithmetic
+	if (g_rc_function[RC_Channel_aux::k_mount_roll])
+		g_rc_function[RC_Channel_aux::k_mount_roll]->closest_limit(roll_angle/10);
+	if (g_rc_function[RC_Channel_aux::k_mount_pitch])
+		g_rc_function[RC_Channel_aux::k_mount_pitch]->closest_limit(pitch_angle/10);
+	if (g_rc_function[RC_Channel_aux::k_mount_yaw])
+		g_rc_function[RC_Channel_aux::k_mount_yaw]->closest_limit(yaw_angle/10);
 }	
 
-void AP_Mount::SetMode(MountMode mode)
+void AP_Mount::set_mode(MountMode mode)
 {
-	_mountMode=mode;
+	_mount_mode=mode;
 }
 
-void AP_Mount::CalcGPSTargetVector(struct Location *target)
+void AP_Mount::calc_GPS_target_vector(struct Location *target)
 {
-	_targetVector.x = (target->lng-_gps->longitude) * cos((_gps->latitude+target->lat)/2)*.01113195;
-	_targetVector.y = (target->lat-_gps->latitude)*.01113195;
-	_targetVector.z = (_gps->altitude-target->alt);
+	_GPS_vector.x = (target->lng-_gps->longitude) * cos((_gps->latitude+target->lat)/2)*.01113195;
+	_GPS_vector.y = (target->lat-_gps->latitude)*.01113195;
+	_GPS_vector.z = (_gps->altitude-target->alt);
 }
 
-void AP_Mount::CalcMountAnglesFromVector(Vector3f *targ)
+void
+AP_Mount::update_mount_type()
 {
-	switch(_mountType)
+	// Auto-detect the mount gimbal type depending on the functions assigned to the servos
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] == NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
 	{
-		case pitch_yaw:
-			{
-				//need to tidy up maths for below
-				pitchAngle = atan2((sqrt(sq(targ.y) + sq(targ.x)) * .01113195), targ.z) * -1;
-				yawAngle = 9000 + atan2(-targ.y, targ.x) * 5729.57795;
-				break;
-			}
-		case pitch_roll:
-			{
-				pitchAngle =  degrees(atan2(-targ.x,targ.z))*100;	//pitch 
-				rollAngle =   degrees(atan2(targ.y,targ.z))*100;	//roll
-				break;
-			}			
-		case pitch_roll_yaw:
-			{
-				//to do
-				break;
-			}			
-		case none:
-			{
-				//do nothing
-				break;
-			}
-		default:
-			{
-				//do nothing
-				break;
-			}
+		_mount_type = k_pan_tilt;
+	}
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] == NULL))
+	{
+		_mount_type = k_tilt_roll;
+	}
+	if ((g_rc_function[RC_Channel_aux::k_mount_roll] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_pitch] != NULL) && (g_rc_function[RC_Channel_aux::k_mount_yaw] != NULL))
+	{
+		_mount_type = k_pan_tilt_roll;
 	}
 }

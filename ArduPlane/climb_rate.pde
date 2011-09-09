@@ -1,10 +1,12 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 struct DataPoint {
 	unsigned long	x;
 	long			y;
 };
 
 DataPoint		history[ALTITUDE_HISTORY_LENGTH]; // Collection of (x,y) points to regress a rate of change from
-unsigned char	index; // Index in history for the current data point
+unsigned char	hindex; // Index in history for the current data point
 
 unsigned long	xoffset;
 unsigned char	n;
@@ -15,12 +17,9 @@ long			yi;
 long			xiyi;
 unsigned long	xi2;
 
-
-void add_altitude_data(unsigned long xl, long y)
+#if 0 // currently unused
+static void add_altitude_data(unsigned long xl, long y)
 {
-	unsigned char i;
-	int dx;
-
 	//Reset the regression if our X variable overflowed
 	if (xl < xoffset)
 		n = 0;
@@ -30,10 +29,10 @@ void add_altitude_data(unsigned long xl, long y)
 		n = 0;
 
 	if (n == ALTITUDE_HISTORY_LENGTH) {
-		xi -= history[index].x;
-		yi -= history[index].y;
-		xiyi -= (long)history[index].x * history[index].y;
-		xi2 -= history[index].x * history[index].x;
+		xi -= history[hindex].x;
+		yi -= history[hindex].y;
+		xiyi -= (long)history[hindex].x * history[hindex].y;
+		xi2 -= history[hindex].x * history[hindex].x;
 	} else {
 		if (n == 0) {
 			xoffset = xl;
@@ -45,31 +44,33 @@ void add_altitude_data(unsigned long xl, long y)
 		n++;
 	}
 
-	history[index].x = xl - xoffset;
-	history[index].y = y;
+	history[hindex].x = xl - xoffset;
+	history[hindex].y = y;
 
-	xi += history[index].x;
-	yi += history[index].y;
-	xiyi += (long)history[index].x * history[index].y;
-	xi2 += history[index].x * history[index].x;
+	xi += history[hindex].x;
+	yi += history[hindex].y;
+	xiyi += (long)history[hindex].x * history[hindex].y;
+	xi2 += history[hindex].x * history[hindex].x;
 
-	if (++index >= ALTITUDE_HISTORY_LENGTH)
-		index = 0;
+	if (++hindex >= ALTITUDE_HISTORY_LENGTH)
+		hindex = 0;
 }
+#endif
 
-void recalc_climb_rate()
+#if 0 // unused
+static void recalc_climb_rate()
 {
 	float slope = ((float)xi*(float)yi - ALTITUDE_HISTORY_LENGTH*(float)xiyi) / ((float)xi*(float)xi - ALTITUDE_HISTORY_LENGTH*(float)xi2);
 	climb_rate = (int)(slope*100);
 }
 
-void print_climb_debug_info()
+static void print_climb_debug_info()
 {
 	unsigned char i, j;
 	recalc_climb_rate();
 	//SendDebugln_P("Climb rate:");
 	for (i=0; i<ALTITUDE_HISTORY_LENGTH; i++) {
-		j = i + index;
+		j = i + hindex;
 		if (j >= ALTITUDE_HISTORY_LENGTH) j -= ALTITUDE_HISTORY_LENGTH;
 		//SendDebug_P("  ");
 		//SendDebug(j,DEC);
@@ -90,3 +91,4 @@ void print_climb_debug_info()
 	//SendDebug((float)climb_rate/100,2);
 	//SendDebugln_P(" m/s");
 }
+#endif

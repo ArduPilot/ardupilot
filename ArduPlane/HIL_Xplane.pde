@@ -55,7 +55,7 @@ HIL_XPLANE::HIL_XPLANE() :
 }
 
 void
-HIL_XPLANE::init(BetterStream * port)
+HIL_XPLANE::init(FastSerial * port)
 {
     HIL_Class::init(port);
 	hilPacketDecoder = new AP_GPS_IMU(port);

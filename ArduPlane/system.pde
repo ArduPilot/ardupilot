@@ -6,11 +6,13 @@ The init_ardupilot function processes everything we need for an in - air restart
 
 *****************************************************************************/
 
+#if CLI_ENABLED == ENABLED
+
 // Functions called from the top-level menu
-extern int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
-extern int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
-extern int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
-extern int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde
+static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
+static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
+static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
+static int8_t	planner_mode(uint8_t argc, const Menu::arg *argv);	// in planner.pde
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -28,7 +30,7 @@ static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 }
 
 // Command/function table for the top-level menu.
-const struct Menu::command main_menu_commands[] PROGMEM = {
+static const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
 	{"logs",		process_logs},
@@ -39,9 +41,11 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ArduPilotMega", main_menu_commands);
+MENU(main_menu, "APM trunk", main_menu_commands);
 
-void init_ardupilot()
+#endif // CLI_ENABLED
+
+static void init_ardupilot()
 {
 	// Console serial port
 	//
@@ -73,16 +77,6 @@ void init_ardupilot()
 		Serial1.begin(38400, 128, 16);
 	#endif
 
-	// Telemetry port.
-	//
-	// Not used if telemetry is going to the console.
-	//
-	// XXX for unidirectional protocols, we could (should) minimize
-	// the receive buffer, and the transmit buffer could also be
-	// shrunk for protocols that don't send large messages.
-	//
-	Serial3.begin(SERIAL3_BAUD, 128, 128);
-
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %lu\n"),
 						 freeRAM());
@@ -92,7 +86,10 @@ void init_ardupilot()
 	//
 	if (!g.format_version.load()) {
 
-        Serial.println("\n\nEEPROM blank - all parameters are reset to default values.\n");
+        Serial.println_P(PSTR("\nEEPROM blank - resetting all parameters to defaults...\n"));
+        delay(100); // wait for serial msg to flush
+
+		AP_Var::erase_all();
 
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
@@ -102,6 +99,7 @@ void init_ardupilot()
 		Serial.printf_P(PSTR("\n\nEEPROM format version %d not compatible with this firmware (requires %d)"
 		                     "\n\nForcing complete parameter reset..."),
 		                     g.format_version.get(), Parameters::k_format_version);
+		delay(100); // wait for serial msg to flush
 
 		// erase all parameters
 		AP_Var::erase_all();
@@ -116,45 +114,48 @@ void init_ardupilot()
 	    AP_Var::load_all();
 
 	    Serial.printf_P(PSTR("load_all took %luus\n"), micros() - before);
-	    Serial.printf_P(PSTR("using %u bytes of memory\n"), AP_Var::get_memory_use());
+	    Serial.printf_P(PSTR("using %u bytes of memory (%u resets)\n"), 
+                        AP_Var::get_memory_use(), (unsigned)g.num_resets);
 	}
 
-	if (!g.flight_modes.load()) {
-		default_flight_modes();
-	}
-	if (g.log_bitmask & MASK_LOG_SET_DEFAULTS) {
-		default_log_bitmask();
-	}
+    // keep a record of how many resets have happened. This can be
+    // used to detect in-flight resets
+    g.num_resets.set_and_save(g.num_resets+1);
+
+	// Telemetry port.
+	//
+	// Not used if telemetry is going to the console.
+	//
+	// XXX for unidirectional protocols, we could (should) minimize
+	// the receive buffer, and the transmit buffer could also be
+	// shrunk for protocols that don't send large messages.
+	//
+	Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
-#if CAMERA == ENABLED
-	init_camera();
-#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	adc.Init();	 		// APM ADC library initialization
 	barometer.Init();	// APM Abs Pressure sensor initialization
 
-	// Autodetect airspeed sensor
-        if ((adc.Ch(AIRSPEED_CH) > 2000)&&(adc.Ch(AIRSPEED_CH) < 2900))
-          {
-           airspeed_enabled = false;
-          }
-        else 
-         {
-          airspeed_enabled = true;
-         }
-         
 	if (g.compass_enabled==true) {
-		dcm.set_compass(&compass);
-		bool junkbool = compass.init();
-		compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
-		Vector3f junkvector = compass.get_offsets();						// load offsets to account for airframe magnetic interference
-		//compass.set_declination(ToRad(get(PARAM_DECLINATION)));			// TODO fix this to have a UI	// set local difference between magnetic north and true north
+        compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
+		if (!compass.init()) {
+            Serial.println_P(PSTR("Compass initialisation failed!"));
+            g.compass_enabled = false;
+        } else {
+            dcm.set_compass(&compass);
+            compass.get_offsets();						// load offsets to account for airframe magnetic interference
+        }
 	}
-#else
-	airspeed_enabled = true;
+	/*
+	Init is depricated - Jason
+	if(g.sonar_enabled){
+		sonar.init(SONAR_PIN, &adc);
+		Serial.print("Sonar init: ");	Serial.println(SONAR_PIN, DEC);
+	}
+	*/
 #endif
 
 	DataFlash.Init(); 	// DataFlash log initialization
@@ -162,6 +163,7 @@ void init_ardupilot()
 	// Do GPS init
 	g_gps = &g_gps_driver;
 	g_gps->init();			// GPS Initialization
+    g_gps->callback = mavlink_delay;
 
 	// init the GCS
 #if GCS_PORT == 3
@@ -208,6 +210,7 @@ void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
+#if CLI_ENABLED == ENABLED
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
 		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\n"
@@ -221,6 +224,7 @@ void init_ardupilot()
 			main_menu.run();
 		}
 	}
+#endif // CLI_ENABLED
 
 
 	if(g.log_bitmask != 0){
@@ -268,6 +272,8 @@ void init_ardupilot()
 			Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 	}
 
+    set_mode(MANUAL);
+
 	// set the correct flight mode
 	// ---------------------------
 	reset_control_switch();
@@ -276,8 +282,10 @@ void init_ardupilot()
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //********************************************************************************
-void startup_ground(void)
+static void startup_ground(void)
 {
+    set_mode(INITIALISING);
+
 	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
 
 	#if(GROUND_START_DELAY > 0)
@@ -306,7 +314,7 @@ void startup_ground(void)
 	trim_radio();		// This was commented out as a HACK.  Why?  I don't find a problem.
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-if (airspeed_enabled == true)
+if (g.airspeed_enabled == true)
    {
 	// initialize airspeed sensor
 	// --------------------------
@@ -349,7 +357,7 @@ else
 	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
-void set_mode(byte mode)
+static void set_mode(byte mode)
 {
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
@@ -363,18 +371,11 @@ void set_mode(byte mode)
 
 	switch(control_mode)
 	{
+		case INITIALISING:
 		case MANUAL:
-			break;
-
 		case CIRCLE:
-			break;
-
 		case STABILIZE:
-			break;
-
 		case FLY_BY_WIRE_A:
-			break;
-
 		case FLY_BY_WIRE_B:
 			break;
 
@@ -390,10 +391,8 @@ void set_mode(byte mode)
 			do_loiter_at_location();
 			break;
 
-		case TAKEOFF:
-			break;
-
-		case LAND:
+		case GUIDED:
+			set_guided_WP();
 			break;
 
 		default:
@@ -408,7 +407,7 @@ void set_mode(byte mode)
 		Log_Write_Mode(control_mode);
 }
 
-void check_long_failsafe()
+static void check_long_failsafe()
 {
 	// only act on changes
 	// -------------------
@@ -433,7 +432,7 @@ void check_long_failsafe()
 	}
 }
 
-void check_short_failsafe()
+static void check_short_failsafe()
 {
 	// only act on changes
 	// -------------------
@@ -442,7 +441,7 @@ void check_short_failsafe()
 			failsafe_short_on_event();
 		}
 	}
-	
+
 	if(failsafe == FAILSAFE_SHORT){
 		if(!ch3_failsafe) {
 			failsafe_short_off_event();
@@ -451,20 +450,19 @@ void check_short_failsafe()
 }
 
 
-void startup_IMU_ground(void)
+static void startup_IMU_ground(void)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	uint16_t store = 0;
-	SendDebugln("<startup_IMU_ground> Warming up ADC...");
- 	delay(500);
+    gcs.send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
+ 	mavlink_delay(500);
 
 	// Makes the servos wiggle twice - about to begin IMU calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
 	demo_servos(2);
-	SendDebugln("<startup_IMU_ground> Beginning IMU calibration; do not move plane");
-	delay(1000);
+    gcs.send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
+	mavlink_delay(1000);
 
-	imu.init(IMU::COLD_START);
+	imu.init(IMU::COLD_START, mavlink_delay);
 	dcm.set_centripetal(1);
 
 	// read Baro pressure at ground
@@ -479,7 +477,7 @@ void startup_IMU_ground(void)
 }
 
 
-void update_GPS_light(void)
+static void update_GPS_light(void)
 {
 	// GPS LED on if we have a fix or Blink GPS LED if we are receiving data
 	// ---------------------------------------------------------------------
@@ -507,15 +505,16 @@ void update_GPS_light(void)
 }
 
 
-void resetPerfData(void) {
-	mainLoop_count 		= 0;
-	G_Dt_max 			= 0;
+static void resetPerfData(void) {
+	mainLoop_count 			= 0;
+	G_Dt_max 				= 0;
 	dcm.gyro_sat_count 		= 0;
 	imu.adc_constraints 	= 0;
 	dcm.renorm_sqrt_count 	= 0;
 	dcm.renorm_blowup_count = 0;
-	gps_fix_count 		= 0;
-	perf_mon_timer 		= millis();
+	gps_fix_count 			= 0;
+	pmTest1					= 0;
+	perf_mon_timer 			= millis();
 }
 
 
@@ -526,7 +525,7 @@ void resetPerfData(void) {
  * be larger than HP or you'll be in big trouble! The smaller the gap, the more
  * careful you need to be. Julian Gall 6 - Feb - 2009.
  */
-unsigned long freeRAM() {
+static unsigned long freeRAM() {
 	uint8_t * heapptr, * stackptr;
 	stackptr = (uint8_t *)malloc(4); // use stackptr temporarily
 	heapptr = stackptr; // save value of heap pointer
@@ -535,3 +534,20 @@ unsigned long freeRAM() {
 	return stackptr - heapptr;
 }
 
+
+/*
+  map from a 8 bit EEPROM baud rate to a real baud rate
+ */
+static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
+{
+    switch (rate) {
+    case 9:    return 9600;
+    case 19:   return 19200;
+    case 38:   return 38400;
+    case 57:   return 57600;
+    case 111:  return 111100;
+    case 115:  return 115200;
+    }
+    Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
+    return default_baud;
+}

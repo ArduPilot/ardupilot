@@ -23,35 +23,13 @@
 #define GCS_PORT            3
 */
 
-#define MAGNETOMETER ENABLED
 
 // ----- Camera definitions ------
 // ------------------------------
 #define CAMERA ENABLED
 #define CAM_DEBUG DISABLED
-// Comment out servos that you do not have
-//#define CAM_SERVO		8		// Camera servo channel
-#define CAM_ANGLE		30		// Set angle in degrees
-//#define CAM_CLICK		45		// This is the position of the servo arm when it actually clicks
-//#define OPEN_SERVO		5		// Retraction servo channel - my camera retracts yours might not.
 
-// Camera yaw (left-right)
-#define YAW_SERVO		7		// Pan servo channel (can be pitch in stabilization)
-#define YAW_REV			1		// output is normal = 1 output is reversed = -1
-#define YAW_CENTER		0		// Camera center bearing with relation to airframe forward motion - deg
-#define YAW_RANGE		90		// Pan Servo sweep in degrees
-#define YAW_RATIO		10.31	// match this to the swing of your pan servo
-
-// Camera pitch (up-down)
-#define PITCH_SERVO		6		// Tilt servo channel (can be roll in stabilization)
-#define PITCH_REV		1		// output is normal = 1 output is reversed = -1
-#define PITCH_CENTER		0		// Camera center bearing with relation to airframe forward motion - deg
-#define PITCH_RANGE		90		// Tilt Servo sweep in degrees
-#define PITCH_RATIO		10.31	// match this to the swing of your tilt servo
-
-// Camera roll (up-down)
-#define ROLL_SERVO		6		// Tilt servo channel (can be roll in stabilization)
-#define ROLL_REV		1		// output is normal = 1 output is reversed = -1
-#define ROLL_CENTER		0		// Camera center bearing with relation to airframe forward motion - deg
-#define ROLL_RANGE		90		// Tilt Servo sweep in degrees
-#define ROLL_RATIO		10.31	// match this to the swing of your tilt servo
+// - Options to reduce code size -
+// -------------------------------
+// Disable text based terminal configuration
+#define CLI_ENABLED DISABLED
