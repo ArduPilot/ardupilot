@@ -1,0 +1,2582 @@
+﻿using System;
+using System.Collections.Generic; // Lists
+using System.Text; // stringbuilder
+using System.Drawing; // pens etc
+using System.IO; // file io
+using System.IO.Ports; // serial
+using System.Windows.Forms; // Forms
+using System.Collections; // hashs
+using System.Text.RegularExpressions; // regex
+using System.Xml; // GE xml alt reader
+using System.Net; // dns, ip address
+using System.Net.Sockets; // tcplistner
+using GMap.NET;
+using GMap.NET.WindowsForms;
+using System.Globalization; // language
+using GMap.NET.WindowsForms.Markers;
+using System.Resources;
+using System.Reflection;
+using System.ComponentModel;
+using System.Threading;
+
+
+namespace ArdupilotMega.GCSViews
+{
+    partial class FlightPlanner : MyUserControl
+    {
+        int selectedrow = 0;
+        int t7 = 10000000;
+        bool quickadd = false;
+        bool isonline = true;
+        bool sethome = false;
+        Hashtable param = new Hashtable();
+        public static Hashtable hashdefines = new Hashtable();
+        public static List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
+        static public Object thisLock = new Object();
+        private TextBox textBox1;
+        private ComponentResourceManager rm = new ComponentResourceManager(typeof(FlightPlanner));
+
+        private Dictionary<MAVLink.MAV_CMD, string> cmdNames = new Dictionary<MAVLink.MAV_CMD, string>();
+        private Dictionary<MAVLink.MAV_CMD, string[]> cmdParamNames = new Dictionary<MAVLink.MAV_CMD, string[]>();
+
+
+        /// <summary>
+        /// Reads defines.h for all valid commands and eeprom positions
+        /// </summary>
+        /// <param name="file">File Path</param>
+        /// <returns></returns>
+        public bool readdefines(string file)
+        {
+            if (!File.Exists(file))
+            {
+                return false;
+            }
+            try
+            {
+                StreamReader sr = new StreamReader(file); //"defines.h"
+                while (!sr.EndOfStream)
+                {
+                    string line = sr.ReadLine();
+                    Regex regex2 = new Regex(@"define\s+([^\s]+)\s+([^\s]+)", RegexOptions.IgnoreCase);
+                    if (regex2.IsMatch(line))
+                    {
+                        MatchCollection matchs = regex2.Matches(line);
+                        for (int i = 0; i < matchs.Count; i++)
+                        {
+                            int num = 0;
+                            if (matchs[i].Groups[2].Value.ToString().ToLower().Contains("0x"))
+                            {
+                                try
+                                {
+                                    num = Convert.ToInt32(matchs[i].Groups[2].Value.ToString(), 16);
+                                }
+                                catch (Exception) { System.Diagnostics.Debug.WriteLine("BAD hex " + matchs[i].Groups[1].Value.ToString()); }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    num = Convert.ToInt32(matchs[i].Groups[2].Value.ToString(), 10);
+                                }
+                                catch (Exception) { System.Diagnostics.Debug.WriteLine("BAD dec " + matchs[i].Groups[1].Value.ToString()); }
+                            }
+                            System.Diagnostics.Debug.WriteLine(matchs[i].Groups[1].Value.ToString() + " = " + matchs[i].Groups[2].Value.ToString() + " = " + num.ToString());
+                            try
+                            {
+                                hashdefines.Add(matchs[i].Groups[1].Value.ToString(), num);
+                            }
+                            catch (Exception) { }
+                        }
+                    }
+                }
+
+                sr.Close();
+
+
+                if (!hashdefines.ContainsKey("WP_START_BYTE"))
+                {
+                    MessageBox.Show("Your Ardupilot Mega project defines.h is Invalid");
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Can't open file!");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Read from waypoint writter *.h file
+        /// </summary>
+        /// <param name="file">File Path</param>
+        /// <returns></returns>
+        bool readwaypointwritterfile(string file)
+        {
+
+            byte wp_rad = 30;
+            byte loit_rad = 45;
+            int alt_hold = 100;
+            byte wp_count = 0;
+            bool error = false;
+            List<Locationwp> cmds = new List<Locationwp>();
+
+            cmds.Add(new Locationwp());
+
+            try
+            {
+                StreamReader sr = new StreamReader(file); //"defines.h"
+                while (!error && !sr.EndOfStream)
+                {
+                    string line = sr.ReadLine();
+                    // defines
+                    Regex regex2 = new Regex(@"define\s+([^\s]+)\s+([^\s]+)", RegexOptions.IgnoreCase);
+                    if (regex2.IsMatch(line))
+                    {
+                        MatchCollection matchs = regex2.Matches(line);
+                        for (int i = 0; i < matchs.Count; i++)
+                        {
+                            if (matchs[i].Groups[1].Value.ToString().Equals("WP_RADIUS"))
+                                wp_rad = (byte)double.Parse(matchs[i].Groups[2].Value.ToString());
+                            if (matchs[i].Groups[1].Value.ToString().Equals("LOITER_RADIUS"))
+                                loit_rad = (byte)double.Parse(matchs[i].Groups[2].Value.ToString());
+                            if (matchs[i].Groups[1].Value.ToString().Equals("ALT_TO_HOLD"))
+                                alt_hold = (int)double.Parse(matchs[i].Groups[2].Value.ToString());
+                        }
+                    }
+                    // waypoints
+                    regex2 = new Regex(@"([^,{]+),([^,]+),([^,]+),([^,]+),([^,}]+)", RegexOptions.IgnoreCase);
+                    if (regex2.IsMatch(line))
+                    {
+                        MatchCollection matchs = regex2.Matches(line);
+                        for (int i = 0; i < matchs.Count; i++)
+                        {
+                            Locationwp temp = new Locationwp();
+                            temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), matchs[i].Groups[1].Value.ToString().Replace("NAV_", ""), false);
+                            temp.p1 = byte.Parse(matchs[i].Groups[2].Value.ToString());
+
+                            if (temp.id < (byte)MAVLink.MAV_CMD.LAST)
+                            {
+                                temp.alt = (int)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 100);
+                                temp.lat = (int)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 10000000);
+                                temp.lng = (int)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 10000000);
+                            }
+                            else
+                            {
+                                temp.alt = (int)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lat = (int)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lng = (int)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                            }
+                            cmds.Add(temp);
+
+                            wp_count++;
+                            if (wp_count == byte.MaxValue)
+                                break;
+                        }
+                        if (wp_count == byte.MaxValue)
+                        {
+                            MessageBox.Show("To many Waypoints!!!");
+                            break;
+                        }
+                    }
+                }
+
+                sr.Close();
+
+                TXT_DefaultAlt.Text = (alt_hold).ToString();
+                TXT_WPRad.Text = (wp_rad).ToString();
+                TXT_loiterrad.Text = (loit_rad).ToString();
+
+                processToScreen(cmds);
+
+                writeKML();
+
+                MainMap.ZoomAndCenterMarkers("objects");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can't open file! " + ex.ToString());
+                return false;
+            }
+            return true;
+
+        }
+
+        /// <summary>
+        /// used to adjust existing point in the datagrid including "Home"
+        /// </summary>
+        /// <param name="pointno"></param>
+        /// <param name="lat"></param>
+        /// <param name="lng"></param>
+        /// <param name="alt"></param>
+        public void callMeDrag(string pointno, double lat, double lng, int alt)
+        {
+            if (pointno == "")
+            {
+                return;
+            }
+
+            // dragging a WP
+            if (pointno == "Home")
+            {
+                if (isonline && CHK_geheight.Checked)
+                {
+                    TXT_homealt.Text = getGEAlt(lat, lng).ToString();
+                }
+                else
+                {
+                    // no change
+                    //TXT_homealt.Text = alt.ToString();
+                }
+                TXT_homelat.Text = lat.ToString();
+                TXT_homelng.Text = lng.ToString();
+                return;
+            }
+
+            try
+            {
+                selectedrow = int.Parse(pointno) - 1;
+                Commands.CurrentCell = Commands[1, selectedrow];
+            }
+            catch
+            {
+                return;
+            }
+
+            setfromGE(lat, lng, alt);
+        }
+        /// <summary>
+        /// Actualy Sets the values into the datagrid and verifys height if turned on
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lng"></param>
+        /// <param name="alt"></param>
+        void setfromGE(double lat, double lng, int alt)
+        {
+            if (selectedrow > Commands.RowCount)
+            {
+                MessageBox.Show("Invalid coord, How did you do this?");
+                return;
+            }
+            DataGridViewTextBoxCell cell;
+            if (Commands.Columns[Param3.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][2]/*"Lat"*/))
+            {
+                cell = Commands.Rows[selectedrow].Cells[3] as DataGridViewTextBoxCell;
+                cell.Value = lat.ToString("0.0000000");
+                cell.DataGridView.EndEdit();
+            }
+            if (Commands.Columns[Param4.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][3]/*"Long"*/))
+            {
+                cell = Commands.Rows[selectedrow].Cells[4] as DataGridViewTextBoxCell;
+                cell.Value = lng.ToString("0.0000000");
+                cell.DataGridView.EndEdit();
+            }
+            if (Commands.Columns[Param1.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][0]/*"Delay"*/))
+            {
+                cell = Commands.Rows[selectedrow].Cells[1] as DataGridViewTextBoxCell;
+                cell.Value = 0;
+            }
+            if (Commands.Columns[Param2.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][1]/*"Alt"*/))
+            {
+                cell = Commands.Rows[selectedrow].Cells[2] as DataGridViewTextBoxCell;
+
+                cell.Value = TXT_DefaultAlt.Text;
+
+                float result;
+                float.TryParse(TXT_homealt.Text, out result);
+
+                if (result == 0)
+                {
+                    MessageBox.Show("You must have a home altitude");
+                }
+
+                float ans;
+                if (float.TryParse(TXT_homealt.Text, out result) && float.TryParse(cell.Value.ToString(), out ans))
+                {
+                    ans = (int)ans;
+                    if (alt != 0)
+                        cell.Value = alt.ToString();
+                    // is  absolute             online          verify height
+                    if (CHK_altmode.Checked && isonline && CHK_geheight.Checked)
+                    {
+                        cell.Value = ((int)getGEAlt(lat, lng) + int.Parse(TXT_DefaultAlt.Text)).ToString();
+                    }
+                    else
+                    {
+                        // is absolute but no verify
+                        if (CHK_altmode.Checked)
+                        {
+                            cell.Value = (float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text)).ToString();
+                        } // is relative and check height
+                        else if (float.TryParse(TXT_homealt.Text, out result) && isonline && CHK_geheight.Checked)
+                        {
+                            alt = (int)getGEAlt(lat, lng);
+
+                            if (float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text) < alt) // calced height is less that GE ground height
+                            {
+                                MessageBox.Show("Altitude appears to be low!! (you will fly into a hill)\nGoogle Ground height: " + alt + " Meters\nYour height: " + ((float.Parse(TXT_homealt.Text) + int.Parse(TXT_DefaultAlt.Text))) + " Meters");
+                                cell.Style.BackColor = Color.Red;
+                            }
+                            else
+                            {
+                                cell.Style.BackColor = Color.LightGreen;
+                            }
+                        }
+
+                    }
+                    cell.DataGridView.EndEdit();
+                }
+                else
+                {
+                    MessageBox.Show("Invalid Home or wp Alt");
+                    cell.Style.BackColor = Color.Red;
+                }
+
+            }
+            writeKML();
+            Commands.EndEdit();
+        }
+        /// <summary>
+        /// Used for current mouse position
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lng"></param>
+        /// <param name="alt"></param>
+        public void callMeDisplay(double lat, double lng, int alt)
+        {
+            TXT_mouselat.Text = lat.ToString();
+            TXT_mouselong.Text = lng.ToString();
+            TXT_mousealt.Text = alt.ToString();
+
+            try
+            {
+                double lastdist = MainMap.Manager.GetDistance(polygon.Points[polygon.Points.Count - 1], currentMarker.Position);
+
+                lbl_prevdist.Text = rm.GetString("lbl_prevdist.Text") + ": " + FormatDistance(lastdist, true);
+
+                double homedist = MainMap.Manager.GetDistance(currentMarker.Position, polygon.Points[0]);
+
+                lbl_homedist.Text = rm.GetString("lbl_homedist.Text") + ": " + FormatDistance(homedist, true);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Used to create a new WP
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lng"></param>
+        /// <param name="alt"></param>
+        public void callMe(double lat, double lng, int alt)
+        {
+
+            if (sethome)
+            {
+                sethome = false;
+                callMeDrag("Home", lat, lng, alt);
+                return;
+            }
+            // creating a WP
+
+            Commands.Rows.Add();
+            selectedrow = Commands.RowCount - 1;
+            Commands.CurrentCell = Commands.Rows[selectedrow].Cells[Param1.Index];
+
+            setfromGE(lat, lng, alt);
+        }
+
+        public FlightPlanner()
+        {
+            InitializeComponent();
+
+            // config map             
+            //MainMap.MapType = MapType.GoogleSatellite;
+            MainMap.MinZoom = 1;
+            MainMap.CacheLocation = Path.GetDirectoryName(Application.ExecutablePath) + "/gmapcache/";
+
+            //MainMap.Manager.ImageCacheLocal.PutImageToCache(,MapType.None,new GPoint(),17);
+
+            // map events
+            MainMap.OnCurrentPositionChanged += new CurrentPositionChanged(MainMap_OnCurrentPositionChanged);
+            MainMap.OnTileLoadStart += new TileLoadStart(MainMap_OnTileLoadStart);
+            MainMap.OnTileLoadComplete += new TileLoadComplete(MainMap_OnTileLoadComplete);
+            MainMap.OnMarkerClick += new MarkerClick(MainMap_OnMarkerClick);
+            MainMap.OnMapZoomChanged += new MapZoomChanged(MainMap_OnMapZoomChanged);
+            MainMap.OnMapTypeChanged += new MapTypeChanged(MainMap_OnMapTypeChanged);
+            MainMap.MouseMove += new MouseEventHandler(MainMap_MouseMove);
+            MainMap.MouseDown += new MouseEventHandler(MainMap_MouseDown);
+            MainMap.MouseUp += new MouseEventHandler(MainMap_MouseUp);
+            MainMap.OnMarkerEnter += new MarkerEnter(MainMap_OnMarkerEnter);
+            MainMap.OnMarkerLeave += new MarkerLeave(MainMap_OnMarkerLeave);
+
+            MainMap.MapScaleInfoEnabled = false;
+            MainMap.ScalePen = new Pen(Color.Red);
+
+            MainMap.ForceDoubleBuffer = false;
+
+            WebRequest.DefaultWebProxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+
+            // get map type
+            comboBoxMapType.DataSource = Enum.GetValues(typeof(MapType));
+            comboBoxMapType.SelectedItem = MainMap.MapType;
+
+            comboBoxMapType.SelectedValueChanged += new System.EventHandler(this.comboBoxMapType_SelectedValueChanged);
+            /*
+            // acccess mode
+            comboBoxMode.DataSource = Enum.GetValues(typeof(AccessMode));
+            comboBoxMode.SelectedItem = GMaps.Instance.Mode;
+
+            // get position
+            textBoxLat.Text = MainMap.Position.Lat.ToString(CultureInfo.InvariantCulture);
+            textBoxLng.Text = MainMap.Position.Lng.ToString(CultureInfo.InvariantCulture);
+             */
+
+            MainMap.RoutesEnabled = true;
+
+            //MainMap.MaxZoom = 18;
+
+            // get zoom  
+            trackBar1.Minimum = MainMap.MinZoom;
+            trackBar1.Maximum = MainMap.MaxZoom + 0.99;
+
+            routes = new GMapOverlay(MainMap, "routes");
+            MainMap.Overlays.Add(routes);
+
+            polygons = new GMapOverlay(MainMap, "polygons");
+            MainMap.Overlays.Add(polygons);
+
+            objects = new GMapOverlay(MainMap, "objects");
+            MainMap.Overlays.Add(objects);
+
+            drawnpolygons = new GMapOverlay(MainMap, "drawnpolygons");
+            MainMap.Overlays.Add(drawnpolygons);
+
+            top = new GMapOverlay(MainMap, "top");
+            //MainMap.Overlays.Add(top);
+
+            objects.Markers.Clear();
+
+            // set current marker
+            currentMarker = new GMapMarkerGoogleRed(MainMap.Position);
+            //top.Markers.Add(currentMarker);
+
+            // map center
+            center = new GMapMarkerCross(MainMap.Position);
+            //top.Markers.Add(center);
+
+            MainMap.Zoom = 3;
+
+            //set home
+            try
+            {
+                MainMap.Position = new PointLatLng(double.Parse(TXT_homelat.Text), double.Parse(TXT_homelng.Text));
+                MainMap.Zoom = 13;
+
+            }
+            catch (Exception) { }
+
+            RegeneratePolygon();
+
+            if (MainV2.getConfig("MapType") != "")
+            {
+                try
+                {
+                    comboBoxMapType.SelectedItem = Enum.Parse(typeof(MapType), MainV2.getConfig("MapType"));
+                }
+                catch { }
+            }
+
+
+            // add first to keep order
+            foreach (object cmd in Enum.GetValues(typeof(MAVLink.MAV_CMD)))
+            {
+                string str = cmd.ToString();
+                if (!str.EndsWith("LAST") && !str.EndsWith("END"))
+                {
+                    cmdNames[(MAVLink.MAV_CMD)cmd] = str;
+                    cmdParamNames[(MAVLink.MAV_CMD)cmd] = new string[] { "setme", "setme", "setme", "setme" };
+                }
+            }
+
+            // replace with localizied text
+            // the command name and param names are stored in TXT_MAV_CMD, one comand per line, in following format:
+            // COMMAND_TYPE;COMMAND_NAME;PARAM_1_HEAD;PARAM_2_HEAD;PARAM_3_HEAD;PARAM_4_HEAD;
+
+            string[] cmds = rm.GetString("MAVCmd").Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            rm.ReleaseAllResources();
+
+            foreach (string cmd in cmds)
+            {
+                string[] field = cmd.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (field.Length >= 2)
+                {
+                    MAVLink.MAV_CMD type = (MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), field[0]);
+                    cmdNames[type] = field[1];
+                    if (field.Length == 6)
+                    {
+                        string[] param = new string[4];
+                        Array.Copy(field, 2, param, 0, 4);
+                        cmdParamNames[type] = param;
+                    }
+                }
+            }
+
+            Command.DataSource = new List<KeyValuePair<MAVLink.MAV_CMD, string>>(cmdNames as ICollection<KeyValuePair<MAVLink.MAV_CMD, string>>)/*)*/;
+            Command.ValueMember = "Key";
+            Command.DisplayMember = "Value";
+
+            Up.Image = global::ArdupilotMega.Properties.Resources.up;
+            Down.Image = global::ArdupilotMega.Properties.Resources.down;
+
+            hashdefines.Clear();
+            if (File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "defines.h"))
+            {
+                readdefines(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "defines.h");
+            }
+        }
+
+        void Commands_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            Console.WriteLine(e.Exception.ToString() + " " + e.Context + " col " + e.ColumnIndex);
+            e.Cancel = false;
+            e.ThrowException = false;
+            //throw new NotImplementedException();
+        }
+        /// <summary>
+        /// Adds a new row to the datagrid
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BUT_Add_Click(object sender, EventArgs e)
+        {
+            if (Commands.CurrentRow == null)
+            {
+                selectedrow = 0;
+            }
+            else
+            {
+                selectedrow = Commands.CurrentRow.Index;
+            }
+
+            if (Commands.RowCount <= 1)
+            {
+                Commands.Rows.Add();
+            }
+            else
+            {
+                if (Commands.RowCount == selectedrow + 1)
+                {
+                    DataGridViewRow temp = Commands.Rows[selectedrow];
+                    Commands.Rows.Add();
+                }
+                else
+                {
+                    Commands.Rows.Insert(selectedrow + 1, 1);
+                }
+            }
+            writeKML();
+        }
+
+        private void Planner_Load(object sender, EventArgs e)
+        {
+            quickadd = true;
+
+            config(false);
+
+            quickadd = false;
+
+            trackBar1.Value = (int)MainMap.Zoom;
+
+            // check for net and set offline if needed
+            try
+            {
+                IPAddress[] addresslist = Dns.GetHostAddresses("www.google.com");
+            }
+            catch (Exception)
+            { // here if dns failed
+                isonline = false;
+            }
+
+            writeKML();
+        }
+
+        private void ChangeColumnHeader(MAVLink.MAV_CMD command)
+        {
+            try
+            {
+                if (cmdParamNames.ContainsKey(command))
+                    for (int i = 1; i <= 4; i++)
+                        Commands.Columns[i].HeaderText = cmdParamNames[command][i - 1];
+                else
+                    for (int i = 1; i <= 4; i++)
+                        Commands.Columns[i].HeaderText = "setme";
+                switch (command)
+                {
+                    case MAVLink.MAV_CMD.WAYPOINT:
+                        if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+                            Commands.Columns[1].HeaderText = "N/A";
+                        break;
+                    case MAVLink.MAV_CMD.LAND:
+                        Commands.Columns[1].HeaderText = "N/A";
+                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPilotMega)
+                            Commands.Columns[2].HeaderText = "N/A";
+                        break;
+                    case MAVLink.MAV_CMD.TAKEOFF:
+                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPilotMega)
+                            Commands.Columns[1].HeaderText = "N/A";
+                        break;
+                }
+
+            }
+            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+        }
+
+        /// <summary>
+        /// Used to update column headers
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Commands_RowEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (quickadd)
+                return;
+            try
+            {
+                selectedrow = e.RowIndex;
+                /*string option = Commands[Command.Index, selectedrow].EditedFormattedValue.ToString();*/
+                MAVLink.MAV_CMD cmd = (MAVLink.MAV_CMD)Commands[0, selectedrow].Value;
+                ChangeColumnHeader(cmd);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+        }
+
+        private void Commands_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            DataGridViewComboBoxCell cell = Commands.Rows[e.RowIndex].Cells[Command.Index] as DataGridViewComboBoxCell;
+            if (cell.Value == null)
+            {
+                cell.Value = MAVLink.MAV_CMD.WAYPOINT/*"WAYPOINT"*/;
+                Commands.Rows[e.RowIndex].Cells[Delete.Index].Value = "X";
+                if (!quickadd)
+                {
+                    Commands_RowEnter(sender, new DataGridViewCellEventArgs(0, e.RowIndex - 0)); // do header labels
+                    Commands_RowValidating(sender, new DataGridViewCellCancelEventArgs(0, e.RowIndex)); // do default values
+                }
+            }
+
+            if (quickadd)
+                return;
+
+            try
+            {
+                Commands.CurrentCell = Commands.Rows[e.RowIndex].Cells[0];
+
+                if ((MAVLink.MAV_CMD)Commands.Rows[e.RowIndex - 1].Cells[Command.Index].Value/*.ToString()*/ == MAVLink.MAV_CMD.WAYPOINT/*"WAYPOINT"*/)
+                {
+                    Commands.Rows[e.RowIndex].Selected = true; // highlight row
+                }
+                else
+                {
+                    Commands.CurrentCell = Commands[1, e.RowIndex - 1];
+                    //Commands_RowEnter(sender, new DataGridViewCellEventArgs(0, e.RowIndex-1));
+                }
+            }
+            catch (Exception) { }
+            // Commands.EndEdit();
+        }
+        private void Commands_RowValidating(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            selectedrow = e.RowIndex;
+            Commands_RowEnter(sender, new DataGridViewCellEventArgs(0, e.RowIndex - 0)); // do header labels - encure we dont 0 out valid colums
+            int cols = Commands.Columns.Count;
+            for (int a = 1; a < cols; a++)
+            {
+                DataGridViewTextBoxCell cell;
+                cell = Commands.Rows[selectedrow].Cells[a] as DataGridViewTextBoxCell;
+                if (Commands.Columns[a].HeaderText.Equals("N/A"))
+                {
+                    cell.Value = "0";
+                }
+                else
+                {
+                    if (cell != null && (cell.Value == null || cell.Value.ToString() == ""))
+                    {
+                        cell.Value = "I need Data";
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+
+            DataGridViewTextBoxCell cell1;
+            cell1 = Commands.Rows[selectedrow].Cells[1] as DataGridViewTextBoxCell;
+
+            byte res;
+            if (byte.TryParse(cell1.Value.ToString(), out res))
+            {
+
+            }
+            else
+            {
+                try
+                {
+                    cell1.Value = (byte)(int)hashdefines[cell1.Value.ToString().ToUpper().Trim()];
+                }
+                catch { }
+            }
+
+        }
+        /// <summary>
+        /// copy of ardupilot code for getting distance between WP's
+        /// </summary>
+        /// <param name="loc1"></param>
+        /// <param name="loc2"></param>
+        /// <returns></returns>
+        double getDistance(Locationwp loc1, Locationwp loc2)
+        {
+            if (loc1.lat == 0 || loc1.lng == 0)
+                return -1;
+            if (loc2.lat == 0 || loc2.lng == 0)
+                return -1;
+
+            // this is used to offset the shrinking longitude as we go towards the poles	
+            double rads = (double)((Math.Abs(loc2.lat) / t7) * 0.0174532925);
+            //377,173,810 / 10,000,000 = 37.717381 * 0.0174532925 = 0.658292482926943		
+            double scaleLongDown = Math.Cos(rads);
+            double scaleLongUp = 1.0f / Math.Cos(rads);
+
+
+            float dlat = (float)(loc2.lat - loc1.lat);
+            float dlong = (float)(((float)(loc2.lng - loc1.lng)) * scaleLongDown);
+            return Math.Sqrt(Math.Pow(dlat, 2) + Math.Pow(dlong, 2)) * .01113195;
+        }
+
+        /// <summary>
+        /// used to add a marker to the map display
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <param name="lng"></param>
+        /// <param name="lat"></param>
+        /// <param name="alt"></param>
+        private void addpolygonmarker(string tag, double lng, double lat, int alt)
+        {
+            try
+            {
+                PointLatLng point = new PointLatLng(lat, lng);
+                GMapMarkerGoogleGreen m = new GMapMarkerGoogleGreen(point);
+                m.ToolTipMode = MarkerTooltipMode.Always;
+                m.ToolTipText = tag;
+                m.Tag = tag;
+
+                //ArdupilotMega.GMapMarkerRectWPRad mBorders = new ArdupilotMega.GMapMarkerRectWPRad(point, (int)float.Parse(TXT_WPRad.Text), MainMap);
+                GMapMarkerRect mBorders = new GMapMarkerRect(point);
+                {
+                    mBorders.InnerMarker = m;
+                    mBorders.wprad = (int)float.Parse(TXT_WPRad.Text);
+                    mBorders.MainMap = MainMap;
+                }
+
+                objects.Markers.Add(m);
+                objects.Markers.Add(mBorders);
+            }
+            catch (Exception) { }
+        }
+
+        private void addpolygonmarkergrid(string tag, double lng, double lat, int alt)
+        {
+            try
+            {
+                PointLatLng point = new PointLatLng(lat, lng);
+                GMapMarkerGoogleRed m = new GMapMarkerGoogleRed(point);
+                m.ToolTipMode = MarkerTooltipMode.Never;
+                m.ToolTipText = "grid" + tag;
+                m.Tag = "grid" + tag;
+
+                //ArdupilotMega.GMapMarkerRectWPRad mBorders = new ArdupilotMega.GMapMarkerRectWPRad(point, (int)float.Parse(TXT_WPRad.Text), MainMap);
+                GMapMarkerRect mBorders = new GMapMarkerRect(point);
+                {
+                    mBorders.InnerMarker = m;
+                }
+
+                drawnpolygons.Markers.Add(m);
+                drawnpolygons.Markers.Add(mBorders);
+            }
+            catch (Exception) { }
+        }
+
+        /// <summary>
+        /// used to write a KML, update the Map view polygon, and update the row headers
+        /// </summary>
+        private void writeKML()
+        {
+            if (quickadd)
+                return;
+
+            pointlist = new List<PointLatLngAlt>();
+
+            System.Diagnostics.Debug.WriteLine(DateTime.Now);
+            try
+            {
+                if (objects != null) // hasnt been created yet
+                {
+                    objects.Markers.Clear();
+                }
+
+                string home;
+                if (TXT_homealt.Text != "" && TXT_homelat.Text != "" && TXT_homelng.Text != "")
+                {
+                    home = string.Format("{0},{1},{2}\r\n", TXT_homelng.Text, TXT_homelat.Text, TXT_DefaultAlt.Text);
+                    if (objects != null) // during startup
+                    {
+                        pointlist.Add(new PointLatLngAlt(double.Parse(TXT_homelat.Text), double.Parse(TXT_homelng.Text), (int)double.Parse(TXT_homealt.Text), "Home"));
+                        addpolygonmarker("Home", double.Parse(TXT_homelng.Text), double.Parse(TXT_homelat.Text), 0);
+                    }
+                }
+                else
+                {
+                    home = "";
+                }
+
+                double avglat = 0;
+                double avglong = 0;
+                double maxlat = -180;
+                double maxlong = -180;
+                double minlat = 180;
+                double minlong = 180;
+                double homealt = 0;
+                try
+                {
+                    homealt = (int)double.Parse(TXT_homealt.Text);
+                }
+                catch { }
+                if (CHK_altmode.Checked)
+                {
+                    homealt = 0; // for absolute we dont need to add homealt
+                }
+
+                int usable = 0;
+
+                System.Threading.Thread t1 = new System.Threading.Thread(delegate()
+                {
+                    // thread for updateing row numbers
+                    for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                    {
+                        try
+                        {
+                            if (Commands.Rows[a].HeaderCell.Value == null)
+                            {
+                                if (ArdupilotMega.MainV2.MAC)
+                                {
+                                    Commands.Rows[a].HeaderCell.Value = "    " + (a + 1).ToString(); // mac doesnt auto center header text
+                                }
+                                else
+                                {
+                                    Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
+                                }
+                            }
+                            // skip rows with the correct number
+                            string rowno = Commands.Rows[a].HeaderCell.Value.ToString();
+                            if (!rowno.Equals((a + 1).ToString()))
+                            {
+                                // this code is where the delay is when deleting.
+                                Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
+                            }
+                        }
+                        catch (Exception) { }
+                    }
+                });
+                t1.Name = "Row number updater";
+                t1.IsBackground = true;
+                t1.Start();
+                MainV2.threads.Add(t1);
+
+                long temp = System.Diagnostics.Stopwatch.GetTimestamp();
+
+                string lookat = "";
+                for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                {
+                    try
+                    {
+                        //int command = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
+                        int command = (byte)(MAVLink.MAV_CMD)Commands.Rows[a].Cells[0].Value;
+                        if (command < (byte)MAVLink.MAV_CMD.LAST && command != (byte)MAVLink.MAV_CMD.TAKEOFF)
+                        {
+                            string cell2 = Commands.Rows[a].Cells[Param2.Index].Value.ToString(); // alt
+                            string cell3 = Commands.Rows[a].Cells[Param3.Index].Value.ToString(); // lat
+                            string cell4 = Commands.Rows[a].Cells[Param4.Index].Value.ToString(); // lng
+
+                            if (cell4 == "0" || cell3 == "0")
+                                continue;
+                            if (cell4 == "I need Data" || cell3 == "I need Data")
+                                continue;
+
+                            pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()));
+                            addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2));
+
+                            avglong += double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString());
+                            avglat += double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString());
+                            usable++;
+
+                            maxlong = Math.Max(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()), maxlong);
+                            maxlat = Math.Max(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()), maxlat);
+                            minlong = Math.Min(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()), minlong);
+                            minlat = Math.Min(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()), minlat);
+
+                            System.Diagnostics.Debug.WriteLine(temp - System.Diagnostics.Stopwatch.GetTimestamp());
+                        }
+                    }
+                    catch (Exception e) { Console.WriteLine("writekml - bad wp data " + e.ToString()); }
+                }
+
+                if (usable > 0)
+                {
+                    avglat = avglat / usable;
+                    avglong = avglong / usable;
+                    double latdiff = maxlat - minlat;
+                    double longdiff = maxlong - minlong;
+                    float range = 4000;
+
+                    Locationwp loc1 = new Locationwp();
+                    loc1.lat = (int)(minlat * t7);
+                    loc1.lng = (int)(minlong * t7);
+                    Locationwp loc2 = new Locationwp();
+                    loc2.lat = (int)(maxlat * t7);
+                    loc2.lng = (int)(maxlong * t7);
+
+                    //double distance = getDistance(loc1, loc2);  // same code as ardupilot
+                    double distance = 2000;
+
+                    if (usable > 1)
+                    {
+                        range = (float)(distance * 2);
+                    }
+                    else
+                    {
+                        range = 4000;
+                    }
+
+                    if (avglong != 0 && usable < 3)
+                    {
+                        // no autozoom
+                        lookat = "<LookAt>     <longitude>" + (minlong + longdiff / 2).ToString(new System.Globalization.CultureInfo("en-US")) + "</longitude>     <latitude>" + (minlat + latdiff / 2).ToString(new System.Globalization.CultureInfo("en-US")) + "</latitude> <range>" + range + "</range> </LookAt>";
+                        //MainMap.ZoomAndCenterMarkers("objects");
+                        //MainMap.Zoom -= 1;
+                        //MainMap_OnMapZoomChanged();
+                    }
+                }
+                else if (home.Length > 5 && usable == 0)
+                {
+                    lookat = "<LookAt>     <longitude>" + TXT_homelng.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</longitude>     <latitude>" + TXT_homelat.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</latitude> <range>4000</range> </LookAt>";
+                    MainMap.ZoomAndCenterMarkers("objects");
+                    MainMap.Zoom -= 2;
+                    MainMap_OnMapZoomChanged();
+                }
+
+                RegeneratePolygon();
+
+                if (polygon != null && polygon.Points.Count > 0)
+                {
+                    double homedist = 0;
+
+                    if (home.Length > 5)
+                    {
+                        pointlist.Add(new PointLatLngAlt(double.Parse(TXT_homelat.Text), double.Parse(TXT_homelng.Text), (int)double.Parse(TXT_homealt.Text), "Home"));
+
+                        homedist = MainMap.Manager.GetDistance(polygon.Points[polygon.Points.Count - 1], polygon.Points[0]);
+
+                        lbl_homedist.Text = rm.GetString("lbl_homedist.Text") + ": " + FormatDistance(homedist, true);
+                    }
+                    lbl_distance.Text = rm.GetString("lbl_distance.Text") + ": " + FormatDistance(polygon.Distance + homedist, false);
+                }
+
+
+                config(true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+            System.Diagnostics.Debug.WriteLine(DateTime.Now);
+        }
+        /// <summary>
+        /// Saves a waypoint writer file
+        /// </summary>
+        private void savewaypoints()
+        {
+            SaveFileDialog fd = new SaveFileDialog();
+            fd.Filter = "Ardupilot Mission (*.h)|*.*";
+            fd.DefaultExt = ".h";
+            DialogResult result = fd.ShowDialog();
+            string file = fd.FileName;
+            if (file != "")
+            {
+                try
+                {
+                    StreamWriter sw = new StreamWriter(file);
+                    sw.WriteLine("#define WP_RADIUS " + TXT_WPRad.Text.ToString() + " // What is the minimum distance to reach a waypoint?");
+                    sw.WriteLine("#define LOITER_RADIUS " + TXT_loiterrad.Text.ToString() + " 	// How close to Loiter?");
+                    sw.WriteLine("#define HOLD_CURRENT_ALT 0	// 1 = hold the current altitude, 0 = use the defined altitude to for RTL");
+                    sw.WriteLine("#define ALT_TO_HOLD " + TXT_DefaultAlt.Text);
+                    sw.WriteLine("");
+                    sw.WriteLine("float mission[][5] = {");
+                    for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                    {
+                        sw.Write("{" + Commands.Rows[a].Cells[0].Value.ToString() + ",");
+                        sw.Write(Commands.Rows[a].Cells[1].Value.ToString() + ",");
+                        sw.Write(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + ",");
+                        sw.Write(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + ",");
+                        sw.Write(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + "}");
+                        //if (a < Commands.Rows.Count - 2)
+                        //{
+                        sw.Write(",");
+                        //}
+                        sw.WriteLine("");
+                    }
+                    sw.WriteLine("};");
+                    sw.Close();
+                }
+                catch (Exception) { MessageBox.Show("Error writing file"); }
+            }
+        }
+
+        private void SaveFile_Click(object sender, EventArgs e)
+        {
+            savewaypoints();
+            writeKML();
+        }
+
+        /// <summary>
+        /// Reads the EEPROM from a com port
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        internal void BUT_read_Click(object sender, EventArgs e)
+        {
+
+            List<Locationwp> cmds = new List<Locationwp>();
+            int error = 0;
+
+            System.Threading.Thread t12 = new System.Threading.Thread(delegate()
+            {
+                try
+                {
+                    MAVLink port = MainV2.comPort;
+
+                    if (!port.BaseStream.IsOpen)
+                    {
+                        throw new Exception("Please Connect First!");
+                    }
+
+                    MainV2.givecomport = true;
+
+                    param = port.param;
+
+                    Console.WriteLine("Getting WP #");
+                    int cmdcount = port.getWPCount();
+
+                    for (ushort a = 0; a < cmdcount; a++)
+                    {
+                        Console.WriteLine("Getting WP" + a);
+                        cmds.Add(port.getWP(a));
+                    }
+
+                    port.setWPACK();
+
+                    Console.WriteLine("Done");
+                }
+                catch (Exception ex) { error = 1; MessageBox.Show("Error : " + ex.ToString()); }
+                try
+                {
+                    this.BeginInvoke((System.Threading.ThreadStart)delegate()
+                    {
+                        if (error == 0)
+                        {
+                            try
+                            {
+                                processToScreen(cmds);
+                            }
+                            catch (Exception exx) { Console.WriteLine(exx.ToString()); }
+                        }
+
+                        MainV2.givecomport = false;
+
+                        BUT_read.Enabled = true;
+
+                        writeKML();
+
+                    });
+                }
+                catch (Exception exx) { Console.WriteLine(exx.ToString()); }
+
+                BUT_read.Enabled = true;
+            });
+            t12.IsBackground = true;
+            t12.Name = "Read wps";
+            t12.Start();
+            MainV2.threads.Add(t12);
+
+            BUT_read.Enabled = false;
+        }
+
+        /// <summary>
+        /// Writes the mission from the datagrid and values to the EEPROM
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BUT_write_Click(object sender, EventArgs e)
+        {
+            if (CHK_altmode.Checked)
+            {
+                if (DialogResult.No == MessageBox.Show("Absolute Alt is ticked are you sure?", "Alt Mode", MessageBoxButtons.YesNo))
+                {
+                    CHK_altmode.Checked = false;
+                }
+            }
+
+            // check for invalid grid data
+            for (int a = 0; a < Commands.Rows.Count - 0; a++)
+            {
+                for (int b = 0; b < Commands.ColumnCount - 0; b++)
+                {
+                    double answer;
+                    if (b >= 1 && b <= 4)
+                    {
+                        if (!double.TryParse(Commands[b, a].Value.ToString(), out answer))
+                        {
+                            MessageBox.Show("There are errors in your mission");
+                            return;
+                        }
+                    }
+                }
+            }
+
+            System.Threading.Thread t12 = new System.Threading.Thread(delegate()
+            {
+                try
+                {
+                    MAVLink port = MainV2.comPort;
+
+                    if (!port.BaseStream.IsOpen)
+                    {
+                        throw new Exception("Please Connect First!");
+                    }
+
+                    MainV2.givecomport = true;
+
+                    Locationwp home = new Locationwp();
+
+                    try
+                    {
+                        home.lat = (int)(float.Parse(TXT_homelat.Text) * 10000000);
+                        home.lng = (int)(float.Parse(TXT_homelng.Text) * 10000000);
+                        home.alt = (int)(float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist * 100); // use saved home
+                    }
+                    catch { throw new Exception("Your home location is invalid"); }
+
+                    port.setWPTotal((ushort)(Commands.Rows.Count + 1)); // + home
+
+                    port.setWP(home, (ushort)0, MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL, 0);
+
+                    MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+
+                    // process grid to memory eeprom
+                    for (int a = 0; a < Commands.Rows.Count - 0; a++)
+                    {
+                        Locationwp temp = new Locationwp();
+                        temp.id = (byte)(MAVLink.MAV_CMD)Commands.Rows[a].Cells[0].Value;// (int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[0].Value.ToString(), false);
+                        temp.p1 = byte.Parse(Commands.Rows[a].Cells[1].Value.ToString());
+                        if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
+                        {
+                            if (CHK_altmode.Checked)
+                            {
+                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL;
+                            }
+                            else
+                            {
+                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                            }
+
+                            temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()) / MainV2.cs.multiplierdist * 100);
+                            temp.lat = (int)(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()) * 10000000);
+                            temp.lng = (int)(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()) * 10000000);
+                        }
+                        else
+                        {
+                            frame = MAVLink.MAV_FRAME.MAV_FRAME_MISSION;
+                            
+                            temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()));
+                            temp.lat = (int)(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()));
+                            temp.lng = (int)(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()));
+
+                            if (temp.id == (byte)MAVLink.MAV_CMD.CONDITION_CHANGE_ALT && !CHK_altmode.Checked)
+                            {
+                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
+                                temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()) / MainV2.cs.multiplierdist);
+                            }
+                        }
+
+                        port.setWP(temp, (ushort)(a + 1), frame, 0);
+                    }
+
+                    port.setWPACK();
+
+
+                    if (CHK_holdalt.Checked)
+                    {
+                        port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist * 100);
+                    }
+                    else
+                    {
+                        port.setParam("ALT_HOLD_RTL", -1);
+                    }
+
+                    port.setParam("WP_RADIUS", (byte)int.Parse(TXT_WPRad.Text) / MainV2.cs.multiplierdist);
+
+                    try
+                    {
+                        port.setParam("WP_LOITER_RAD", (byte)(int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist));
+                    }
+                    catch
+                    {
+                        port.setParam("LOITER_RAD", (byte)int.Parse(TXT_loiterrad.Text) / MainV2.cs.multiplierdist);
+                    }
+
+                }
+                catch (Exception ex) { MessageBox.Show("Error : " + ex.ToString()); }
+                try
+                {
+                    this.BeginInvoke((System.Threading.ThreadStart)delegate()
+                    {
+                        MainV2.givecomport = false;
+                        BUT_write.Enabled = true;
+                    });
+                }
+                catch { }
+
+            });
+            t12.IsBackground = true;
+            t12.Name = "Write wps";
+            t12.Start();
+            MainV2.threads.Add(t12);
+
+            MainMap.Focus();
+
+            BUT_write.Enabled = false;
+        }
+
+        /// <summary>
+        /// Processes a loaded EEPROM to the map and datagrid
+        /// </summary>
+        void processToScreen(List<Locationwp> cmds)
+        {
+            quickadd = true;
+            Commands.Rows.Clear();
+
+            int i = -1;
+            foreach (Locationwp temp in cmds)
+            {
+                i++;
+                /*if (temp.id == 0 && i != 0) // 0 and not home
+                    break;
+                if (temp.id == 255 && i != 0) // bad record - never loaded any WP's - but have started the board up.
+                    break;*/
+                if (i + 1 >= Commands.Rows.Count)
+                {
+                    Commands.Rows.Add();
+                }
+                if (i == 0 && temp.alt == 0) // skip 0 home
+                    continue;
+                DataGridViewTextBoxCell cell;
+                DataGridViewComboBoxCell cellcmd;
+                cellcmd = Commands.Rows[i].Cells[Command.Index] as DataGridViewComboBoxCell;
+                cellcmd.Value = temp.id == 0 ? MAVLink.MAV_CMD.WAYPOINT : (MAVLink.MAV_CMD)temp.id; // treat home as a waypoint to avoid data error.
+                /*foreach (object value in Enum.GetValues(typeof(MAVLink.MAV_CMD)))
+                {
+                    if ((int)value == temp.id)
+                    {
+                        cellcmd.Value = value.ToString();
+                        break;
+                    }
+                }*/
+                if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
+                {
+                    int alt = temp.alt;
+
+                    if ((temp.options & 0x1) == 0 && i != 0) // home is always abs
+                    {
+                        CHK_altmode.Checked = true;
+                    }
+                    else
+                    {
+                        CHK_altmode.Checked = false;
+                    }
+
+                    cell = Commands.Rows[i].Cells[Param1.Index] as DataGridViewTextBoxCell;
+                    cell.Value = temp.p1;
+                    cell = Commands.Rows[i].Cells[Param2.Index] as DataGridViewTextBoxCell;
+                    cell.Value = (int)((double)alt * MainV2.cs.multiplierdist / 100);
+                    cell = Commands.Rows[i].Cells[Param3.Index] as DataGridViewTextBoxCell;
+                    cell.Value = (double)temp.lat / 10000000;
+                    cell = Commands.Rows[i].Cells[Param4.Index] as DataGridViewTextBoxCell;
+                    cell.Value = (double)temp.lng / 10000000;
+                }
+                else
+                {
+                    cell = Commands.Rows[i].Cells[Param1.Index] as DataGridViewTextBoxCell;
+                    cell.Value = temp.p1;
+                    cell = Commands.Rows[i].Cells[Param2.Index] as DataGridViewTextBoxCell;
+                    cell.Value = temp.alt;
+                    cell = Commands.Rows[i].Cells[Param3.Index] as DataGridViewTextBoxCell;
+                    cell.Value = temp.lat;
+                    cell = Commands.Rows[i].Cells[Param4.Index] as DataGridViewTextBoxCell;
+                    cell.Value = temp.lng;
+                }
+            }
+            try
+            {
+                DataGridViewTextBoxCell cellhome;
+                cellhome = Commands.Rows[0].Cells[Param3.Index] as DataGridViewTextBoxCell;
+                if (cellhome.Value != null)
+                {
+                    if (cellhome.Value.ToString() != TXT_homelat.Text)
+                    {
+                        DialogResult dr = MessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
+
+                        if (dr == DialogResult.Yes)
+                        {
+                            TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                            cellhome = Commands.Rows[0].Cells[Param4.Index] as DataGridViewTextBoxCell;
+                            TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
+                            cellhome = Commands.Rows[0].Cells[Param2.Index] as DataGridViewTextBoxCell;
+                            TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.cs.multiplierdist).ToString();
+                        }
+                    }
+                }
+
+                TXT_DefaultAlt.Text = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist / 100).ToString("0");
+                TXT_WPRad.Text = ((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
+                try
+                {
+                    TXT_loiterrad.Text = ((float)param["LOITER_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
+                }
+                catch
+                {
+                    TXT_loiterrad.Text = ((float)param["WP_LOITER_RAD"] * MainV2.cs.multiplierdist).ToString("0");
+                }
+                CHK_holdalt.Checked = Convert.ToBoolean((float)param["ALT_HOLD_RTL"] > 0);
+
+            }
+            catch (Exception) { } // if there is no valid home
+
+            if (Commands.RowCount > 0)
+            {
+                Commands.Rows.Remove(Commands.Rows[0]); // remove home row
+            }
+
+            quickadd = false;
+
+            writeKML();
+
+            MainMap.ZoomAndCenterMarkers("objects");
+
+            MainMap_OnMapZoomChanged();
+        }
+
+
+
+        /// <summary>
+        /// Saves this forms config to MAIN, where it is written in a global config
+        /// </summary>
+        /// <param name="write">true/false</param>
+        private void config(bool write)
+        {
+            if (write)
+            {
+                ArdupilotMega.MainV2.config["TXT_homelat"] = TXT_homelat.Text;
+                ArdupilotMega.MainV2.config["TXT_homelng"] = TXT_homelng.Text;
+                ArdupilotMega.MainV2.config["TXT_homealt"] = TXT_homealt.Text;
+
+
+                ArdupilotMega.MainV2.config["TXT_WPRad"] = TXT_WPRad.Text;
+
+                ArdupilotMega.MainV2.config["TXT_loiterrad"] = TXT_loiterrad.Text;
+
+                ArdupilotMega.MainV2.config["TXT_DefaultAlt"] = TXT_DefaultAlt.Text;
+
+                ArdupilotMega.MainV2.config["CHK_altmode"] = CHK_altmode.Checked;
+
+            }
+            else
+            {
+                Hashtable temp = new Hashtable((Hashtable)ArdupilotMega.MainV2.config.Clone());
+
+                foreach (string key in temp.Keys)
+                {
+                    switch (key)
+                    {
+                        case "TXT_homelat":
+                            TXT_homelat.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "TXT_homelng":
+                            TXT_homelng.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "TXT_homealt":
+                            TXT_homealt.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "TXT_WPRad":
+                            TXT_WPRad.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "TXT_loiterrad":
+                            TXT_loiterrad.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "TXT_DefaultAlt":
+                            TXT_DefaultAlt.Text = ArdupilotMega.MainV2.config[key].ToString();
+                            break;
+                        case "CHK_altmode":
+                            CHK_altmode.Checked = false;//bool.Parse(ArdupilotMega.MainV2.config[key].ToString());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+            }
+        }
+
+        private void TXT_WPRad_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            int isNumber = 0;
+            if (e.KeyChar.ToString() == "\b")
+                return;
+            e.Handled = !int.TryParse(e.KeyChar.ToString(), out isNumber);
+        }
+
+        private void TXT_WPRad_Leave(object sender, EventArgs e)
+        {
+            int isNumber = 0;
+            if (!int.TryParse(TXT_WPRad.Text, out isNumber))
+            {
+                TXT_WPRad.Text = "30";
+            }
+            if (isNumber > 127)
+            {
+                MessageBox.Show("The value can only be between 0 and 127");
+                TXT_WPRad.Text = "127";
+            }
+            writeKML();
+        }
+
+        private void TXT_loiterrad_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            int isNumber = 0;
+            if (e.KeyChar.ToString() == "\b")
+                return;
+            e.Handled = !int.TryParse(e.KeyChar.ToString(), out isNumber);
+        }
+
+        private void TXT_loiterrad_Leave(object sender, EventArgs e)
+        {
+            int isNumber = 0;
+            if (!int.TryParse(TXT_loiterrad.Text, out isNumber))
+            {
+                TXT_loiterrad.Text = "45";
+            }
+            if (isNumber > 127)
+            {
+                MessageBox.Show("The value can only be between 0 and 127");
+                TXT_loiterrad.Text = "127";
+            }
+        }
+
+        private void TXT_DefaultAlt_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            int isNumber = 0;
+            if (e.KeyChar.ToString() == "\b")
+                return;
+            e.Handled = !int.TryParse(e.KeyChar.ToString(), out isNumber);
+        }
+
+        private void TXT_DefaultAlt_Leave(object sender, EventArgs e)
+        {
+            int isNumber = 0;
+            if (!int.TryParse(TXT_DefaultAlt.Text, out isNumber))
+            {
+                TXT_DefaultAlt.Text = "100";
+            }
+        }
+
+
+        /// <summary>
+        /// used to control buttons in the datagrid
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Commands_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                if (e.RowIndex < 0)
+                    return;
+                if (e.ColumnIndex == Delete.Index && (e.RowIndex + 0) < Commands.RowCount) // delete
+                {
+                    quickadd = true;
+                    Commands.Rows.RemoveAt(e.RowIndex);
+                    quickadd = false;
+                    writeKML();
+                }
+                if (e.ColumnIndex == Up.Index && e.RowIndex != 0) // up
+                {
+                    DataGridViewRow myrow = Commands.CurrentRow;
+                    Commands.Rows.Remove(myrow);
+                    Commands.Rows.Insert(e.RowIndex - 1, myrow);
+                    writeKML();
+                }
+                if (e.ColumnIndex == Down.Index && e.RowIndex < Commands.RowCount - 1) // down
+                {
+                    DataGridViewRow myrow = Commands.CurrentRow;
+                    Commands.Rows.Remove(myrow);
+                    Commands.Rows.Insert(e.RowIndex + 1, myrow);
+                    writeKML();
+                }
+            }
+            catch (Exception) { MessageBox.Show("Row error"); }
+        }
+
+        private void Commands_DefaultValuesNeeded(object sender, DataGridViewRowEventArgs e)
+        {
+            e.Row.Cells[Delete.Index].Value = "X";
+            e.Row.Cells[Up.Index].Value = global::ArdupilotMega.Properties.Resources.up;
+            e.Row.Cells[Down.Index].Value = global::ArdupilotMega.Properties.Resources.down;
+        }
+
+        private void TXT_homelat_TextChanged(object sender, EventArgs e)
+        {
+            sethome = false;
+            writeKML();
+        }
+
+        private void TXT_homelng_TextChanged(object sender, EventArgs e)
+        {
+            sethome = false;
+            writeKML();
+        }
+
+        private void TXT_homealt_TextChanged(object sender, EventArgs e)
+        {
+            sethome = false;
+            writeKML();
+        }
+
+        private void Planner_FormClosing(object sender, FormClosingEventArgs e)
+        {
+        }
+
+        private void BUT_loadwpfile_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.Filter = "Ardupilot Mission (*.h)|*.*";
+            fd.DefaultExt = ".h";
+            DialogResult result = fd.ShowDialog();
+            string file = fd.FileName;
+            if (file != "")
+            {
+                readwaypointwritterfile(file);
+            }
+        }
+
+        private void trackBar1_ValueChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                lock (thisLock)
+                {
+                    MainMap.Zoom = trackBar1.Value;
+                }
+            }
+            catch { }
+        }
+
+        // marker
+        GMapMarker currentMarker;
+        GMapMarker center = new GMapMarkerCross(new PointLatLng(0.0, 0.0));
+
+        // polygons
+        GMapPolygon polygon;
+        GMapPolygon drawnpolygon;
+        //static GMapRoute route;
+
+        // layers
+        GMapOverlay top;
+        internal GMapOverlay objects;
+        static GMapOverlay routes;// static so can update from gcs
+        static GMapOverlay polygons;
+        GMapOverlay drawnpolygons;
+
+        // etc
+        readonly Random rnd = new Random();
+        string mobileGpsLog = string.Empty;
+        GMapMarkerRect CurentRectMarker = null;
+        bool isMouseDown = false;
+        bool isMouseDraging = false;
+        PointLatLng start;
+        PointLatLng end;
+
+        //public long ElapsedMilliseconds;
+
+        #region -- map events --
+        void MainMap_OnMarkerLeave(GMapMarker item)
+        {
+            if (!isMouseDown)
+            {
+                if (item is GMapMarkerRect)
+                {
+                    CurentRectMarker = null;
+
+                    GMapMarkerRect rc = item as GMapMarkerRect;
+                    rc.Pen.Color = Color.Blue;
+                    MainMap.Invalidate(false);
+                }
+            }
+        }
+
+        void MainMap_OnMarkerEnter(GMapMarker item)
+        {
+            if (!isMouseDown)
+            {
+                if (item is GMapMarkerRect)
+                {
+                    GMapMarkerRect rc = item as GMapMarkerRect;
+                    rc.Pen.Color = Color.Red;
+                    MainMap.Invalidate(false);
+
+                    CurentRectMarker = rc;
+                }
+            }
+        }
+
+        void MainMap_OnMapTypeChanged(MapType type)
+        {
+            comboBoxMapType.SelectedItem = MainMap.MapType;
+
+            trackBar1.Minimum = MainMap.MinZoom;
+            trackBar1.Maximum = MainMap.MaxZoom + 0.99;
+
+            MainMap.ZoomAndCenterMarkers("objects");
+
+        }
+
+        void MainMap_MouseUp(object sender, MouseEventArgs e)
+        {
+            end = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+            if (e.Button == MouseButtons.Right) // ignore right clicks
+            {
+                return;
+            }
+
+            if (isMouseDown) // mouse down on some other object and dragged to here.
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    isMouseDown = false;
+                }
+                if (!isMouseDraging)
+                {
+                    if (CurentRectMarker != null)
+                    {
+                        // cant add WP in existing rect
+                    }
+                    else
+                    {
+                        callMe(currentMarker.Position.Lat, currentMarker.Position.Lng, 0);
+                    }
+                }
+                else
+                {
+                    if (CurentRectMarker != null)
+                    {
+                        if (CurentRectMarker.InnerMarker.Tag.ToString().Contains("grid"))
+                        {
+                            drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid","")) - 1] = new PointLatLng(end.Lat,end.Lng);
+                            MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+                        }
+                        else
+                        {
+                            callMeDrag(CurentRectMarker.InnerMarker.Tag.ToString(), currentMarker.Position.Lat, currentMarker.Position.Lng, 0);
+                        }
+                        CurentRectMarker = null;
+                    }
+                }
+            }
+
+            isMouseDraging = false;
+        }
+
+        void MainMap_MouseDown(object sender, MouseEventArgs e)
+        {
+            start = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+            if (e.Button == MouseButtons.Left && Control.ModifierKeys != Keys.Alt)
+            {
+                isMouseDown = true;
+                isMouseDraging = false;
+
+                if (currentMarker.IsVisible)
+                {
+                    currentMarker.Position = MainMap.FromLocalToLatLng(e.X, e.Y);
+                }
+            }
+        }
+
+        // move current marker with left holding
+        void MainMap_MouseMove(object sender, MouseEventArgs e)
+        {
+            PointLatLng point = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+            currentMarker.Position = point;
+
+            if (!isMouseDown)
+            {
+                callMeDisplay(point.Lat, point.Lng, 0);
+            }
+
+            //draging
+            if (e.Button == MouseButtons.Left && isMouseDown)
+            {
+                isMouseDraging = true;
+                if (CurentRectMarker == null) // left click pan
+                {
+                    double latdif = start.Lat - point.Lat;
+                    double lngdif = start.Lng - point.Lng;
+
+                    try
+                    {
+                        lock (thisLock)
+                        {
+                            MainMap.Position = new PointLatLng(center.Position.Lat + latdif, center.Position.Lng + lngdif);
+                        }
+                    }
+                    catch { }
+                }
+                else // move rect marker
+                {
+                    try
+                    {
+                        if (CurentRectMarker.InnerMarker.Tag.ToString().Contains("grid"))
+                        {
+                            drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(point.Lat, point.Lng);
+                            MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+                        }
+                    }
+                    catch { }
+
+                    PointLatLng pnew = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+                    int? pIndex = (int?)CurentRectMarker.Tag;
+                    if (pIndex.HasValue)
+                    {
+                        if (pIndex < polygon.Points.Count)
+                        {
+                            polygon.Points[pIndex.Value] = pnew;
+                            lock (thisLock)
+                            {
+                                MainMap.UpdatePolygonLocalPosition(polygon);
+                            }
+                        }
+                    }
+
+                    if (currentMarker.IsVisible)
+                    {
+                        currentMarker.Position = pnew;
+                    }
+                    CurentRectMarker.Position = pnew;
+
+                    if (CurentRectMarker.InnerMarker != null)
+                    {
+                        CurentRectMarker.InnerMarker.Position = pnew;
+                    }
+                }
+            }
+
+        }
+
+        // MapZoomChanged
+        void MainMap_OnMapZoomChanged()
+        {
+            if (MainMap.Zoom > 0)
+            {
+                trackBar1.Value = (int)(MainMap.Zoom);
+                //textBoxZoomCurrent.Text = MainMap.Zoom.ToString();
+                center.Position = MainMap.Position;
+            }
+        }
+
+        // click on some marker
+        void MainMap_OnMarkerClick(GMapMarker item, MouseEventArgs e)
+        {
+            int answer;
+            try // when dragging item can sometimes be null
+            {
+                if (int.TryParse(item.Tag.ToString(), out answer))
+                {
+
+                    Commands.CurrentCell = Commands[0, answer - 1];
+
+                }
+            }
+            catch { }
+            return;
+        }
+
+        // loader start loading tiles
+        void MainMap_OnTileLoadStart()
+        {
+            MethodInvoker m = delegate()
+            {
+                lbl_status.Text = "Status: loading tiles...";
+            };
+            try
+            {
+                BeginInvoke(m);
+            }
+            catch
+            {
+            }
+        }
+
+        // loader end loading tiles
+        void MainMap_OnTileLoadComplete(long ElapsedMilliseconds)
+        {
+
+            //MainMap.ElapsedMilliseconds = ElapsedMilliseconds;
+
+            MethodInvoker m = delegate()
+            {
+                lbl_status.Text = "Status: loaded tiles";
+
+                //panelMenu.Text = "Menu, last load in " + MainMap.ElapsedMilliseconds + "ms";
+
+                //textBoxMemory.Text = string.Format(CultureInfo.InvariantCulture, "{0:0.00}MB of {1:0.00}MB", MainMap.Manager.MemoryCacheSize, MainMap.Manager.MemoryCacheCapacity);
+            };
+            try
+            {
+                BeginInvoke(m);
+            }
+            catch
+            {
+            }
+
+        }
+
+        // current point changed
+        void MainMap_OnCurrentPositionChanged(PointLatLng point)
+        {
+            if (point.Lat > 90) { point.Lat = 90; }
+            if (point.Lat < -90) { point.Lat = -90; }
+            if (point.Lng > 180) { point.Lng = 180; }
+            if (point.Lng < -180) { point.Lng = -180; }
+            center.Position = point;
+            TXT_mouselat.Text = point.Lat.ToString(CultureInfo.InvariantCulture);
+            TXT_mouselong.Text = point.Lng.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // center markers on start
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            if (objects.Markers.Count > 0)
+            {
+                MainMap.ZoomAndCenterMarkers(null);
+            }
+            trackBar1.Value = (int)MainMap.Zoom;
+        }
+
+        // ensure focus on map, trackbar can have it too
+        private void MainMap_MouseEnter(object sender, EventArgs e)
+        {
+            // MainMap.Focus();
+        }
+        #endregion
+
+        /// <summary>
+        /// used to redraw the polygon
+        /// </summary>
+        void RegeneratePolygon()
+        {
+            List<PointLatLng> polygonPoints = new List<PointLatLng>();
+
+            if (objects == null)
+                return;
+
+            foreach (GMapMarker m in objects.Markers)
+            {
+                if (m is GMapMarkerRect)
+                {
+                    m.Tag = polygonPoints.Count;
+                    polygonPoints.Add(m.Position);
+                }
+            }
+
+            if (polygon == null)
+            {
+                polygon = new GMapPolygon(polygonPoints, "polygon test");
+                polygons.Polygons.Add(polygon);
+            }
+            else
+            {
+                polygon.Points.Clear();
+                polygon.Points.AddRange(polygonPoints);
+
+                polygon.Stroke = new Pen(Color.Yellow, 4);
+
+                if (polygons.Polygons.Count == 0)
+                {
+                    polygons.Polygons.Add(polygon);
+                }
+                else
+                {
+                    lock (thisLock)
+                    {
+                        MainMap.UpdatePolygonLocalPosition(polygon);
+                    }
+                }
+            }
+        }
+
+        private void comboBoxMapType_SelectedValueChanged(object sender, EventArgs e)
+        {
+            MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
+            FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
+            MainV2.config["MapType"] = comboBoxMapType.Text;
+        }
+
+        private void Commands_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
+        {
+            if (e.Control.GetType() == typeof(DataGridViewComboBoxEditingControl))
+            {
+                var temp = ((ComboBox)e.Control);
+                ((ComboBox)e.Control).SelectionChangeCommitted -= new EventHandler(Commands_SelectionChangeCommitted);
+                ((ComboBox)e.Control).SelectionChangeCommitted += new EventHandler(Commands_SelectionChangeCommitted);
+                ((ComboBox)e.Control).ForeColor = Color.White;
+                ((ComboBox)e.Control).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                System.Diagnostics.Debug.WriteLine("Setting event handle");
+            }
+        }
+
+        void Commands_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            // update row headers
+            ((ComboBox)sender).ForeColor = Color.White;
+            ChangeColumnHeader((MAVLink.MAV_CMD)((ComboBox)sender).SelectedValue);
+        }
+        /// <summary>
+        /// Get the Google earth ALT for a given coord
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lng"></param>
+        /// <returns>Altitude</returns>
+        double getGEAlt(double lat, double lng)
+        {
+            double alt = 0;
+            //http://maps.google.com/maps/api/elevation/xml
+
+            try
+            {
+                using (XmlTextReader xmlreader = new XmlTextReader("http://maps.google.com/maps/api/elevation/xml?locations=" + lat.ToString(new System.Globalization.CultureInfo("en-US")) + "," + lng.ToString(new System.Globalization.CultureInfo("en-US")) + "&sensor=true"))
+                {
+                    while (xmlreader.Read())
+                    {
+                        xmlreader.MoveToElement();
+                        switch (xmlreader.Name)
+                        {
+                            case "elevation":
+                                alt = double.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return alt * MainV2.cs.multiplierdist;
+        }
+
+        private void TXT_homelat_Enter(object sender, EventArgs e)
+        {
+            sethome = true;
+            MessageBox.Show("Click on the Map to set Home ");
+        }
+
+        private void Planner_Resize(object sender, EventArgs e)
+        {
+            MainMap.Zoom = trackBar1.Value;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            writeKML();
+            double homealt;
+            double.TryParse(TXT_homealt.Text, out homealt);
+            Form temp = new ElevationProfile(pointlist, homealt);
+            MainV2.fixtheme(temp);
+            temp.ShowDialog();
+        }
+
+        private void CHK_altmode_CheckedChanged(object sender, EventArgs e)
+        {
+            if (Commands.RowCount > 0 && !quickadd)
+                MessageBox.Show("You will need to change your altitudes");
+        }
+
+        protected override void OnPaint(PaintEventArgs pe)
+        {
+            try
+            {
+                base.OnPaint(pe);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        private void Commands_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            Commands_RowEnter(null, new DataGridViewCellEventArgs(Commands.CurrentCell.ColumnIndex, Commands.CurrentCell.RowIndex));
+        }
+
+        private void MainMap_Resize(object sender, EventArgs e)
+        {
+            MainMap.Zoom = MainMap.Zoom + 0.01;
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            try
+            {
+                lock (thisLock)
+                {
+                    MainMap.Zoom = trackBar1.Value;
+                }
+            }
+            catch { }
+        }
+
+        private void panel4_PanelCollapsing(object sender, BSE.Windows.Forms.XPanderStateChangeEventArgs e)
+        {
+
+        }
+
+        private void BUT_Prefetch_Click(object sender, EventArgs e)
+        {
+            RectLatLng area = MainMap.SelectedArea;
+            if (!area.IsEmpty)
+            {
+                for (int i = (int)MainMap.Zoom; i <= MainMap.MaxZoom; i++)
+                {
+                    DialogResult res = MessageBox.Show("Ready ripp at Zoom = " + i + " ?", "GMap.NET", MessageBoxButtons.YesNoCancel);
+
+                    if (res == DialogResult.Yes)
+                    {
+                        TilePrefetcher obj = new TilePrefetcher();
+                        obj.ShowCompleteMessage = false;
+                        obj.Start(area, MainMap.Projection, i, MainMap.MapType, 100);
+                    }
+                    else if (res == DialogResult.No)
+                    {
+                        continue;
+                    }
+                    else if (res == DialogResult.Cancel)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Select map area holding ALT", "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        /// <summary>
+        /// from http://stackoverflow.com/questions/1119451/how-to-tell-if-a-line-intersects-a-polygon-in-c
+        /// </summary>
+        /// <param name="start1"></param>
+        /// <param name="end1"></param>
+        /// <param name="start2"></param>
+        /// <param name="end2"></param>
+        /// <returns></returns>
+        public PointLatLng FindLineIntersection(PointLatLng start1, PointLatLng end1, PointLatLng start2, PointLatLng end2)
+        {
+            double denom = ((end1.Lng - start1.Lng) * (end2.Lat - start2.Lat)) - ((end1.Lat - start1.Lat) * (end2.Lng - start2.Lng));
+            //  AB & CD are parallel         
+            if (denom == 0) 
+                return PointLatLng.Zero;
+            double numer = ((start1.Lat - start2.Lat) * (end2.Lng - start2.Lng)) - ((start1.Lng - start2.Lng) * (end2.Lat - start2.Lat));
+            double r = numer / denom; 
+            double numer2 = ((start1.Lat - start2.Lat) * (end1.Lng - start1.Lng)) - ((start1.Lng - start2.Lng) * (end1.Lat - start1.Lat));
+            double s = numer2 / denom; 
+            if ((r < 0 || r > 1) || (s < 0 || s > 1)) 
+                return PointLatLng.Zero;   
+            // Find intersection point      
+            PointLatLng result = new PointLatLng();
+            result.Lng = start1.Lng + (r * (end1.Lng - start1.Lng));
+            result.Lat = start1.Lat + (r * (end1.Lat - start1.Lat));     
+            return result; 
+        }
+
+        RectLatLng getPolyMinMax(GMapPolygon poly)
+        {
+            if (poly.Points.Count == 0)
+                return new RectLatLng();
+
+            double minx, miny, maxx, maxy;
+
+            minx = maxx = poly.Points[0].Lng;
+            miny = maxy = poly.Points[0].Lat;
+
+            foreach (PointLatLng pnt in poly.Points)
+            {
+                //Console.WriteLine(pnt.ToString());
+                minx = Math.Min(minx, pnt.Lng);
+                maxx = Math.Max(maxx, pnt.Lng);
+
+                miny = Math.Min(miny, pnt.Lat);
+                maxy = Math.Max(maxy, pnt.Lat);
+            }
+
+            return new RectLatLng(maxy, minx, Math.Abs(maxx - minx), Math.Abs(miny - maxy));
+        }
+
+        const float rad2deg = (float)(180 / Math.PI);
+        const float deg2rad = (float)(1.0 / rad2deg);
+
+        private void BUT_grid_Click(object sender, EventArgs e)
+        {
+            if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
+            {
+                MessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+            GMapPolygon area = drawnpolygon;
+            area.Points.Add(area.Points[0]); // make a full loop
+            RectLatLng arearect = getPolyMinMax(area);
+            if (area.Distance > 0)
+            {
+
+                PointLatLng topright = new PointLatLng(arearect.LocationTopLeft.Lat, arearect.LocationRightBottom.Lng);
+                PointLatLng bottomleft = new PointLatLng(arearect.LocationRightBottom.Lat, arearect.LocationTopLeft.Lng);
+
+                double diagdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, arearect.LocationRightBottom) * 1000;
+                double heightdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, bottomleft) * 1000;
+                double widthdist = MainMap.Manager.GetDistance(arearect.LocationTopLeft, topright) * 1000;
+
+
+
+                string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Altitude", "Relative Altitude", ref alt);
+
+
+                string distance = (50 * MainV2.cs.multiplierdist).ToString("0");
+                Common.InputBox("Distance", "Distance between lines", ref distance);
+
+                //string overshoot = (30 * MainV2.cs.multiplierdist).ToString("0");
+                //Common.InputBox("Overshoot", "Enter of line overshoot amount", ref overshoot);
+
+                string angle = (90).ToString("0");
+                Common.InputBox("Angle", "Enter the line direction (0-180)", ref angle);
+
+#if DEBUG
+                //Commands.Rows.Clear();
+#endif
+                // get x y components
+                double x1 = Math.Cos((double.Parse(angle)) * deg2rad);
+                double y1 = Math.Sin((double.Parse(angle)) * deg2rad);
+
+                // get x y step amount in lat lng from m
+                double latdiff = arearect.HeightLat / ((heightdist / (double.Parse(distance) * (y1) / MainV2.cs.multiplierdist)));
+                double lngdiff = arearect.WidthLng / ((widthdist / (double.Parse(distance) * (x1) / MainV2.cs.multiplierdist)));
+
+                double latlngdiff = Math.Sqrt(latdiff * latdiff + lngdiff * lngdiff);
+
+                double fulllatdiff = arearect.HeightLat * x1 * 2;
+                double fulllngdiff = arearect.WidthLng * y1 * 2;
+
+                // lat - up down
+                // lng - left right
+
+                int overshootdist = 0;// (int)(double.Parse(overshoot) / MainV2.cs.multiplierdist);
+
+                int altitude = (int)(double.Parse(alt) / MainV2.cs.multiplierdist);
+
+                double overshootdistlng = arearect.WidthLng / widthdist * overshootdist;
+
+                bool dir = false;
+
+                int count = 0;
+
+                double x = bottomleft.Lat - Math.Abs(fulllatdiff);
+                double y = bottomleft.Lng - Math.Abs(fulllngdiff);
+
+                Console.WriteLine("{0} < {1} {2} < {3}", x , (topright.Lat) ,y , (topright.Lng));
+
+                while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
+                {
+                    if (double.Parse(angle) < 45)
+                    {
+                        x = bottomleft.Lat;
+                        y += latlngdiff;
+                    }
+                    else if (double.Parse(angle) > 135)
+                    {
+                        x = arearect.LocationTopLeft.Lat; //arearect.LocationTopLeft.Lat;
+                        y += latlngdiff;
+                    }
+                    else if (double.Parse(angle) > 90)
+                    {
+                        y = bottomleft.Lng; //arearect.LocationTopLeft.Lat;
+                        x += latlngdiff;
+                    }
+                    else
+                    {
+                        y = bottomleft.Lng;
+                        x += latlngdiff;
+                    }
+
+                    //callMe(x , y, 0);
+                    //callMe(x + (fulllatdiff), y + (fulllngdiff), 0);
+
+                    //continue;
+
+                    PointLatLng closestlatlong = PointLatLng.Zero;
+                    PointLatLng farestlatlong = PointLatLng.Zero;
+
+                    double noc = double.MaxValue;
+                    double nof = double.MinValue;
+
+                    if (dir)
+                    {
+                        double ax = x;
+                        double ay = y;
+
+                        double bx = x + fulllatdiff;
+                        double by = y + fulllngdiff;
+                        int a = -1;
+                        PointLatLng newlatlong = PointLatLng.Zero;
+                        foreach (PointLatLng pnt in area.Points)
+                        {
+                            a++;
+                            if (a == 0)
+                            {
+                                continue;
+                            }
+                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
+                            if (!newlatlong.IsZero)
+                            {
+                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    closestlatlong.Lat = newlatlong.Lat;
+                                    closestlatlong.Lng = newlatlong.Lng;
+                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    farestlatlong.Lat = newlatlong.Lat;
+                                    farestlatlong.Lng = newlatlong.Lng;
+                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                            }
+                        }
+                        
+                        if (!farestlatlong.IsZero)
+                            callMe(farestlatlong.Lat, farestlatlong.Lng, altitude);
+                        if (!closestlatlong.IsZero)
+                            callMe(closestlatlong.Lat, closestlatlong.Lng - overshootdistlng, altitude);
+                         
+                        //callMe(x, topright.Lng, altitude);
+                        //callMe(x, bottomleft.Lng - overshootdistlng, altitude);
+                    }
+                    else
+                    {
+                        double ax = x;
+                        double ay = y;
+
+                        double bx = x + fulllatdiff;
+                        double by = y + fulllngdiff;
+                        int a = -1;
+                        PointLatLng newlatlong = PointLatLng.Zero;
+                        foreach (PointLatLng pnt in area.Points)
+                        {
+                            a++;
+                            if (a == 0)
+                            {
+                                continue;
+                            }
+                            newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
+                            if (!newlatlong.IsZero)
+                            {
+                                if (noc >  MainMap.Manager.GetDistance(new PointLatLng(ax, ay),newlatlong))
+                                {
+                                    closestlatlong.Lat = newlatlong.Lat;
+                                    closestlatlong.Lng = newlatlong.Lng;
+                                    noc = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                                if (nof < MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
+                                {
+                                    farestlatlong.Lat = newlatlong.Lat;
+                                    farestlatlong.Lng = newlatlong.Lng;
+                                    nof = MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong);
+                                }
+                            }
+                        }
+                        if (!closestlatlong.IsZero)
+                            callMe(closestlatlong.Lat, closestlatlong.Lng, altitude);
+                        if (!farestlatlong.IsZero)
+                            callMe(farestlatlong.Lat, farestlatlong.Lng + overshootdistlng, altitude);
+                        //callMe(x, bottomleft.Lng, altitude);
+                        //callMe(x, topright.Lng + overshootdistlng, altitude);
+                    }
+
+                    dir = !dir;
+
+                    count++;
+
+                    if (Commands.RowCount > 150)
+                    {
+                        MessageBox.Show("Stopping at 150 WP's");
+                        break;
+                    }
+                }
+
+                drawnpolygon.Points.Clear();
+                drawnpolygons.Markers.Clear();
+                MainMap.Refresh();
+
+            }
+        }
+
+        private void label4_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (MainV2.cs.lat != 0)
+            {
+                TXT_homealt.Text = (MainV2.cs.alt).ToString("0");
+                TXT_homelat.Text = MainV2.cs.lat.ToString();
+                TXT_homelng.Text = MainV2.cs.lng.ToString();
+            }
+            else
+            {
+                MessageBox.Show("Please Connect/wait for lock, and click here to set your home to your current location");
+            }
+        }
+
+
+        /// <summary>
+        /// Format distance according to prefer distance unit
+        /// </summary>
+        /// <param name="distInKM">distance in kilometers</param>
+        /// <param name="toMeterOrFeet">convert distance to meter or feet if true, covert to km or miles if false</param>
+        /// <returns>formatted distance with unit</returns>
+        private string FormatDistance(double distInKM, bool toMeterOrFeet)
+        {
+            string sunits = MainV2.getConfig("distunits");
+            Common.distances units = Common.distances.Meters;
+
+            if (sunits != "")
+                try
+                {
+                    units = (Common.distances)Enum.Parse(typeof(Common.distances), sunits);
+                }
+                catch (Exception) { }
+
+            switch (units)
+            {
+                case Common.distances.Feet:
+                    return toMeterOrFeet ? string.Format((distInKM * 3280.8399).ToString("0.00 ft")) :
+                        string.Format((distInKM * 0.621371).ToString("0.0000 miles"));
+                case Common.distances.Meters:
+                default:
+                    return toMeterOrFeet ? string.Format((distInKM * 1000).ToString("0.00 m")) :
+                        string.Format(distInKM.ToString("0.0000 km"));
+            }
+        }
+
+        PointLatLng startmeasure = new PointLatLng();
+
+        private void ContextMeasure_Click(object sender, EventArgs e)
+        {
+            if (startmeasure.IsZero)
+            {
+                startmeasure = start;
+                polygons.Markers.Add( new GMapMarkerGoogleRed(start));
+                MainMap.Invalidate();
+            }
+            else
+            {
+                List<PointLatLng> polygonPoints = new List<PointLatLng>();
+                polygonPoints.Add(startmeasure);
+                polygonPoints.Add(start);
+
+                GMapPolygon line = new GMapPolygon(polygonPoints,"measure dist");
+                line.Stroke.Color = Color.Green;
+
+                polygons.Polygons.Add(line);
+
+                polygons.Markers.Add(new GMapMarkerGoogleRed(start));
+                MainMap.Invalidate();
+                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start), true));
+                polygons.Polygons.Remove(line);
+                polygons.Markers.Clear();
+                startmeasure = new PointLatLng();
+            }
+        }
+
+        private void rotateMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string heading = "0";
+            Common.InputBox("Rotate map to heading","Enter new UP heading",ref heading);
+            float ans = 0;
+            if (float.TryParse(heading,out ans)) {
+                MainMap.Bearing = ans;
+            }
+        }
+
+        private void addPolygonPointToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            List < PointLatLng > polygonPoints = new List<PointLatLng>();
+            if (drawnpolygons.Polygons.Count == 0)
+            {
+                drawnpolygon = new GMapPolygon(polygonPoints, "drawnpoly");
+                drawnpolygon.Stroke = new Pen(Color.Red,2);
+                drawnpolygons.Polygons.Add(drawnpolygon);
+            }
+            drawnpolygon.Points.Add(new PointLatLng(start.Lat,start.Lng));
+
+            addpolygonmarkergrid(drawnpolygon.Points.Count.ToString(), start.Lng, start.Lat, 0);
+
+            MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+
+            MainMap.Invalidate();
+
+        }
+
+        private void clearPolygonToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (drawnpolygon == null)
+                return;
+            drawnpolygon.Points.Clear();
+            drawnpolygons.Markers.Clear();
+            MainMap.Invalidate();
+        }
+
+        private void clearMissionToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Commands.Rows.Clear();
+            writeKML();
+        }
+
+        private void loiterForeverToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_UNLIM;
+
+            setfromGE(end.Lat,end.Lng,(int)float.Parse(TXT_DefaultAlt.Text));
+        }
+
+        private void jumpstartToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string repeat = "5";
+            Common.InputBox("Jump repeat", "Number of times to Repeat", ref repeat);
+
+            int row = Commands.Rows.Add();
+
+            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP;
+
+            Commands.Rows[row].Cells[Param1.Index].Value = 1;
+
+            Commands.Rows[row].Cells[Param3.Index].Value = repeat;
+        }
+
+        private void jumpwPToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string wp = "1";
+            Common.InputBox("WP No", "Jump to WP no?",ref wp);
+            string repeat = "5";
+            Common.InputBox("Jump repeat", "Number of times to Repeat", ref repeat);
+
+            int row = Commands.Rows.Add();
+
+            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP;
+
+            Commands.Rows[row].Cells[Param1.Index].Value = wp;
+
+            Commands.Rows[row].Cells[Param3.Index].Value = repeat;
+        }
+
+        private void deleteWPToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int no = 0;
+            if (CurentRectMarker != null)
+            {
+                if (int.TryParse(CurentRectMarker.InnerMarker.Tag.ToString(), out no))
+                {
+                    Commands.Rows.RemoveAt(no - 1); // home is 0
+                }
+                else if (int.TryParse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", ""), out no))
+                {
+                    drawnpolygon.Points.RemoveAt(no - 1);
+                    drawnpolygons.Markers.Clear();
+
+                    int a = 1;
+                    foreach (PointLatLng pnt in drawnpolygon.Points)
+                    {
+                        addpolygonmarkergrid(a.ToString(), pnt.Lng, pnt.Lat, 0);
+                        a++;
+                    }
+
+                    MainMap.UpdatePolygonLocalPosition(drawnpolygon);
+
+                    MainMap.Invalidate();
+
+                }
+            }
+
+            CurentRectMarker = null;
+
+            writeKML();
+        }
+
+        private void loitertimeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string time = "5";
+            Common.InputBox("Loiter Time", "Loiter Time", ref time);
+
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TIME;
+
+            Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
+
+            setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+        }
+
+        private void loitercirclesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string turns = "3";
+            Common.InputBox("Loiter Turns", "Loiter Turns", ref turns);
+
+            selectedrow = Commands.Rows.Add();
+
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TURNS;
+
+            Commands.Rows[selectedrow].Cells[Param1.Index].Value = turns;
+
+            setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+        }
+    }
+}

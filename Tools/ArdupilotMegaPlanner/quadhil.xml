@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<!-- quadcopter HIL protocol definition
+     Andrew Tridgell
+     July 2011
+-->
+
+<PropertyList>
+ <generic>
+
+   <!-- inputs, sent from quad_hil.py to FlightGear -->
+   <input>
+     <binary_mode>true</binary_mode>
+<!--     <binary_footer>magic,0xc465414d</binary_footer>-->
+
+     <!-- motors, in range 0.0 to 1.0 -->
+     <chunk>
+       <name>throttle0</name>
+       <type>double</type>
+       <node>/controls/engines/engine[0]/throttle</node>
+     </chunk> 
+     <chunk>
+       <name>throttle1</name>
+       <type>double</type>
+       <node>/controls/engines/engine[1]/throttle</node>
+     </chunk> 
+     <chunk>
+       <name>throttle2</name>
+       <type>double</type>
+       <node>/controls/engines/engine[2]/throttle</node>
+     </chunk> 
+     <chunk>
+       <name>throttle3</name>
+       <type>double</type>
+       <node>/controls/engines/engine[3]/throttle</node>
+     </chunk> 
+
+     <!-- Position -->
+     <chunk>
+       <name>latitude-deg</name>
+       <type>double</type>
+       <node>/position/latitude-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>longitude-deg</name>
+       <type>double</type>
+       <node>/position/longitude-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>altitude-ft</name>
+       <type>double</type>
+       <node>/position/altitude-ft</node>
+     </chunk>
+
+     <chunk>
+       <name>altitude-agl-ft</name>
+       <type>double</type>
+       <node>/position/altitude-agl-ft</node>
+     </chunk>
+     
+     <!-- Attitude -->
+     <chunk>
+       <name>roll-deg</name>
+       <type>double</type>
+       <node>/orientation/roll-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>pitch-deg</name>
+       <type>double</type>
+       <node>/orientation/pitch-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>heading-deg</name>
+       <type>double</type>
+       <node>/orientation/heading-deg</node>
+     </chunk>
+     
+   </input>
+   
+   <!-- outputs, sent from FlightGear to quad_hil.py -->
+   <output>
+     <binary_mode>true</binary_mode>
+     <binary_footer>magic,0xc465414e</binary_footer>
+
+     <!-- we need to know the ground level so we know when
+	  to crash! -->
+     <chunk>
+       <name>ground-elev-m</name>
+       <type>double</type>
+       <node>/position/ground-elev-m</node>
+     </chunk>
+     
+     <!-- the rest we only need once at startup, to know where 
+	  we are taking off from -->
+     <chunk>
+       <name>latitude-deg</name>
+       <type>double</type>
+       <node>/position/latitude-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>longitude-deg</name>
+       <type>double</type>
+       <node>/position/longitude-deg</node>
+     </chunk>
+     
+     <chunk>
+       <name>heading-deg</name>
+       <type>double</type>
+       <node>/orientation/heading-deg</node>
+     </chunk>
+
+   </output>
+
+ </generic>
+
+</PropertyList>

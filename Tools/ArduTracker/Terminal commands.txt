@@ -1,0 +1,118 @@
+<PID> = {servoroll|servopitch|servorudder|navroll|navpitchasp|navpitchalt|throttlete|throttlealt}
+show
+	heartbeat
+	attitude
+	location
+	command
+	severity <N>
+hide
+	heartbeat
+	attitude
+	location
+	command
+	all
+copy cmd <src> <target>
+echo <text>
+groundstart
+inithome
+k -?
+print
+	altitude
+	altmaxcruiseerr
+	aspmaxcruiseerr
+	attitude
+	commands
+	ctrlmode
+	curwaypts
+	flightmodes
+	holdalt
+	imax <PID>
+	kp <PID>
+	ki <PID>
+	kd <PID>
+	kff {pitchcomp|ruddermix|pitchtothrottle}
+	kpitchcruise
+	location
+	navrolllimit
+	navsettings
+	pitchmax
+	pitchmin
+	pitchtarget
+	pressure
+	rlocation [home]
+	speed
+	targetaxis1
+	targetaxis2
+	targetneutral
+	throttlecruise
+	throttlemax
+	throttlemin
+	tuning
+release
+	all
+	ctrlmode
+	rcin
+reset commands
+rtl
+set
+	altmaxcruiseerr <X>
+	aspmaxcruiseerr <X>
+	cmd <commandindex> <commandtype> <param1> {here|{<alt> <lat> <lng>}}
+		commandtype = {waypoint|takeoff|land|landoptions|loiter|loiternturns|loitertime|delay|resetindex|airspeedcruise|throttlecruise|resethome|index|rtl|relay|servo}
+	cmdcount <N>
+	cmdindex <N>
+	cruise <X>
+	ctrlmode {manual|circle|stabilize|fbwa|fbwb|auto|rtl|loiter|takeoff|land|radio}
+	holdalt <X>
+	imax <PID>
+	kp <PID>
+	ki <PID>
+	kd <PID>
+	kff {pitchcomp|ruddermix|pitchtothrottle} <X>
+	kpitchcruise <X>
+	loiterradius <X>
+	navrolllimit <X>
+	pitchmax <X>
+	pitchmin <X>
+	pitchtarget <X>
+	rcin<N> <X>
+	rcout<N> <X>
+	target alt <X>
+	target here
+	targetaxis1 <X> <Y> <Z>
+	targetaxis2 <X> <Y> <Z>
+	targetmode <N>
+	targetneutral <X> <Y> <Z>
+	target <X> <Y> <Z>
+	throttlecruise <X>
+	throttlefailsafe <N>
+	throttlefailsafeaction <N>
+	throttlemax <X>
+	throttlemin <X>
+	wpradius <X>
+	xtrackentryangle <X>
+	xtrackgain <X>
+status
+	climb
+	control
+	cruise
+	gps
+	landing
+	loiter
+	mixing
+	navigation
+	navpitch
+	navroll
+	pid <PID>
+	rc
+	rcinputch
+	rcin
+	rcout
+	rcpwm
+	rctrim
+	system
+	takeoff
+	telemetry
+	throttle
+	waypoints
+	

@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<!-- TAGS ARE CASE SENSATIVE -->
+<LOGFORMAT>
+<AC2>
+  <GPS>
+    <F1>Time</F1>
+    <F2>Fix</F2>
+    <F3>Sats</F3>
+    <F4>Lat</F4>
+    <F5>Long</F5>
+    <F6>Mix Alt</F6>
+    <F7>GPSAlt</F7>
+    <F8>GR Speed</F8>
+    <F9>CRS</F9>
+  </GPS>
+  <ATT>
+    <F1>Roll</F1>
+    <F2>Pitch</F2>
+    <F3>Yaw</F3>
+  </ATT>
+  <NTUN>
+    <F1>WP Dist</F1>
+    <F2>WP Verify</F2>
+    <F3>Target Bear</F3>
+    <F4>Nav Bear</F4>
+    <F5>Long Err</F5>
+    <F6>Lat Err</F6>
+  </NTUN>
+  <CTUN>
+    <F1>Yaw Sensor</F1>
+    <F2>Nav Yaw</F2>
+    <F3>Yaw Error</F3>
+    <F4>Throttle Out</F4>
+    <F5>Sonar Alt</F5>
+    <F6>Baro Alt</F6>
+    <F7>Next WP Alt</F7>
+    <F8>Throttle I</F8>
+  </CTUN>
+  <PM>
+    <F1>loop time</F1>
+    <F2>Main count</F2>
+    <F3>G_Dt_max</F3>
+    <F4>Gyro Sat</F4>
+    <F5>adc constr</F5>
+    <F6>renorm_sqrt</F6>
+    <F7>renorm_blowup</F7>
+    <F8>gps_fix count</F8>
+    <F9>imu_health</F9>
+    <F10>Throttle Sum</F10>
+  </PM>
+  <RAW>
+    <F1>Gyro X</F1>
+    <F2>Gyro Y</F2>
+    <F3>Gyro Z</F3>
+    <F4>Accel X</F4>
+    <F5>Accel Y</F5>
+    <F6>Accel Z</F6>
+  </RAW>
+</AC2>
+<!-- -->
+<APM>
+  <GPS>
+    <F1>Time</F1>
+    <F2>Fix</F2>
+    <F3>Sats</F3>
+    <F4>Lat</F4>
+    <F5>Long</F5>
+    <F6>Mix Alt</F6>
+    <F7>GPSAlt</F7>
+    <F8>GR Speed</F8>
+    <F9>CRS</F9>
+  </GPS>
+  <ATT>
+    <F1>Roll</F1>
+    <F2>Pitch</F2>
+    <F3>Yaw</F3>
+  </ATT>
+  <NTUN>
+    <F1>Yaw</F1>
+    <F2>WP dist</F2>
+    <F3>Target Bear</F3>
+    <F4>Nav Bear</F4>
+    <F5>Alt Err</F5>
+    <F6>AS</F6>
+    <F7>NavGScaler</F7>
+    <F8></F8>
+    <F9></F9>
+  </NTUN>
+  <CTUN>
+    <F1>Servo Roll</F1>
+    <F2>nav_roll</F2>
+    <F3>roll_sensor</F3>
+    <F4>Servo Pitch</F4>
+    <F5>nav_pitch</F5>
+    <F6>pitch_sensor</F6>
+    <F7>Servo Throttle</F7>
+    <F8>Servo Rudder</F8>
+    <F9>AN 4</F9>
+  </CTUN>
+  <PM>
+    <F1>loop time</F1>
+    <F2>Main count</F2>
+    <F3>G_Dt_max</F3>
+    <F4>Gyro Sat</F4>
+    <F5>adc constr</F5>
+    <F6>renorm_sqrt</F6>
+    <F7>renorm_blowup</F7>
+    <F8>gps_fix count</F8>
+    <F9>imu_health</F9>
+  </PM>
+  <RAW>
+    <F1>Gyro X</F1>
+    <F2>Gyro Y</F2>
+    <F3>Gyro Z</F3>
+    <F4>Accel X</F4>
+    <F5>Accel Y</F5>
+    <F6>Accel Z</F6>
+  </RAW>
+</APM>
+</LOGFORMAT>

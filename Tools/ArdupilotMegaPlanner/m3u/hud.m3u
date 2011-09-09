@@ -1,0 +1,3 @@
+#EXTM3U
+#EXTVLCOPT:http-caching=0
+http://127.0.0.1:56781/hud.jpg

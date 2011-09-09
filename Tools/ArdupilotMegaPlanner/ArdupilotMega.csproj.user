@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PublishUrlHistory>publish/|ftp://vps.oborne.me/ardupilotmegaplanner/|ftp://vps.oborne.me/|ftp://www.vps.oborne.me/ardupilotmegaplanner/|http://www.vps.oborne.me/dav/ardupilotmegaplanner/</PublishUrlHistory>
+    <InstallUrlHistory>http://www.vps.oborne.me/ardupilotmegaplanner/|http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/publish/</InstallUrlHistory>
+    <SupportUrlHistory>http://www.diydrones.com/</SupportUrlHistory>
+    <UpdateUrlHistory>http://www.vps.oborne.me/ardupilotmegaplanner/|http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/publish/|http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/Publish/</UpdateUrlHistory>
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>en-US</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
+  </PropertyGroup>
+</Project>
