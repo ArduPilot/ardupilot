@@ -51,7 +51,7 @@ static bool check_missed_wp()
 // ------------------------------
 
 // long_error, lat_error
-static void calc_location_error()
+static void calc_location_error(struct Location *next_loc)
 {
 	/*
 	Becuase we are using lat and lon to do our distance errors here's a quick chart:
@@ -64,10 +64,10 @@ static void calc_location_error()
 	*/
 
 	// X ROLL
-	long_error	= (float)(next_WP.lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
+	long_error	= (float)(next_loc->lng - current_loc.lng) * scaleLongDown;   // 500 - 0 = 500 roll EAST
 
 	// Y PITCH
-	lat_error	= next_WP.lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
+	lat_error	= next_loc->lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
 }
 
 #define NAV_ERR_MAX 400
