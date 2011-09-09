@@ -321,7 +321,7 @@ static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane 
 static bool		xtrack_enabled = false;
 static long		crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
 static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
-
+static long 	circle_angle = 0;
 static byte	wp_control;							// used to control - navgation or loiter
 
 static byte	command_must_index;					// current command memory location
@@ -1267,37 +1267,23 @@ static void update_navigation()
 
 			// calculates desired Yaw
 			update_auto_yaw();
+			{
+				circle_angle += dTnav; //1000 * (dTnav/1000);
+
+				if (circle_angle >= 36000)
+					circle_angle -= 36000;
+
+				target_WP.lng = next_WP.lng + g.loiter_radius * cos(radians(90 - circle_angle));
+				target_WP.lat = next_WP.lat + g.loiter_radius * sin(radians(90 - circle_angle));
+			}
+
 
 			// calc the lat and long error to the target
-			calc_location_error();
+			calc_location_error(&target_WP);
 
 			// use error as the desired rate towards the target
 			// nav_lon, nav_lat is calculated
-			calc_nav_rate(long_error, lat_error, 200, 0); // move at 3m/s, minimum 2m/s
-
-			// rotate nav_lat and nav_long by nav_bearing so we circle the target
-			{
-				// rotate the desired direction based on the distance to
-				// create a vector field
-				int angle = get_loiter_angle();
-
-				// pre-calc rotation (stored in real degrees)
-				// roll
-				float cos_x = cos(radians(90 - angle));
-				// pitch
-				float sin_y = sin(radians(90 - angle));
-
-				// Rotate input by the initial bearing
-				// roll
-				long temp_roll		= nav_lon * sin_y - nav_lat * cos_x;
-				// pitch
-				long temp_pitch 	= nav_lon * cos_x + nav_lat * sin_y;
-
-				// we used temp values to not change the equations
-				// in mid-rotation
-				nav_lon = temp_roll;
-				nav_lat = temp_pitch;
-			}
+			calc_nav_rate(long_error, lat_error, 200, 0);
 
 			// rotate pitch and roll to the copter frame of reference
 			calc_nav_pitch_roll();
@@ -1475,7 +1461,7 @@ static void update_nav_wp()
 	if(wp_control == LOITER_MODE){
 
 		// calc a pitch to the target
-		calc_location_error();
+		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
@@ -1490,7 +1476,7 @@ static void update_nav_wp()
 		g.pi_loiter_lat.reset_I();
 
 		// calc the lat and long error to the target
-		calc_location_error();
+		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 100);
