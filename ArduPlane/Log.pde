@@ -1,7 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if LOGGING_ENABLED == ENABLED
-
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
@@ -12,6 +10,7 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
+static int8_t	print_log_menu(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	dump_log(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	erase_logs(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
@@ -28,14 +27,13 @@ static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 						 "  enable <name>|all    enable logging <name> or everything\n"
 						 "  disable <name>|all   disable logging <name> or everything\n"
 						 "\n"));
-    return 0;
 }
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] PROGMEM = {
+const struct Menu::command log_menu_commands[] PROGMEM = {
 	{"dump",	dump_log},
 	{"erase",	erase_logs},
 	{"enable",	select_logs},
@@ -45,8 +43,6 @@ static const struct Menu::command log_menu_commands[] PROGMEM = {
 
 // A Macro to create the Menu
 MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
-
-static void get_log_boundaries(byte log_num, int & start_page, int & end_page);
 
 static bool
 print_log_menu(void)
@@ -84,7 +80,7 @@ print_log_menu(void)
 
 		Serial.printf_P(PSTR("\n%d logs available for download\n"), last_log_num);
 		for(int i=1;i<last_log_num+1;i++) {
-			get_log_boundaries(i, log_start, log_end);
+			get_log_boundaries(last_log_num, i, log_start, log_end);
 			Serial.printf_P(PSTR("Log number %d,    start page %d,   end page %d\n"),
 							i, log_start, log_end);
 		}
@@ -109,7 +105,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 		return(-1);
 	}
 
-	get_log_boundaries(dump_log, dump_log_start, dump_log_end);
+	get_log_boundaries(last_log_num, dump_log, dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Dumping Log number %d,    start page %d,   end page %d\n"),
 				  dump_log,
 				  dump_log_start,
@@ -117,7 +113,6 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	Log_Read(dump_log_start, dump_log_end);
 	Serial.printf_P(PSTR("Log read complete\n"));
-    return 0;
 }
 
 static int8_t
@@ -138,7 +133,6 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	DataFlash.WriteByte(END_BYTE);
 	DataFlash.FinishWrite();
 	Serial.printf_P(PSTR("\nLog erased.\n"));
-    return 0;
 }
 
 static int8_t
@@ -160,7 +154,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	// bits accordingly.
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
-		bits = ~0;
+		bits = ~(bits = 0);
 	} else {
 		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
@@ -184,15 +178,14 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-static int8_t
+int8_t
 process_logs(uint8_t argc, const Menu::arg *argv)
 {
 	log_menu.run();
-    return 0;
 }
 
 
-static byte get_num_logs(void)
+byte get_num_logs(void)
 {
 	int page = 1;
 	byte data;
@@ -231,14 +224,14 @@ static byte get_num_logs(void)
 }
 
 // send the number of the last log?
-static void start_new_log(byte num_existing_logs)
+void start_new_log(byte num_existing_logs)
 {
 	int start_pages[50] = {0,0,0};
 	int end_pages[50]	= {0,0,0};
 
 	if(num_existing_logs > 0) {
 		for(int i=0;i<num_existing_logs;i++) {
-			get_log_boundaries(i+1,start_pages[i],end_pages[i]);
+			get_log_boundaries(num_existing_logs, i+1,start_pages[i],end_pages[i]);
 		}
 		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
 	}
@@ -266,7 +259,7 @@ static void start_new_log(byte num_existing_logs)
 	}
 }
 
-static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
+void get_log_boundaries(byte num_logs, byte log_num, int & start_page, int & end_page)
 {
 	int page 		= 1;
 	byte data;
@@ -308,7 +301,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 	//  Error condition if we reach here with page = 2   TO DO - report condition
 }
 
-static int find_last_log_page(int bottom_page)
+int find_last_log_page(int bottom_page)
 {
 	int top_page = 4096;
 	int look_page;
@@ -318,7 +311,7 @@ static int find_last_log_page(int bottom_page)
 		look_page = (top_page + bottom_page) / 2;
 		DataFlash.StartRead(look_page);
 		check = DataFlash.ReadLong();
-		if(check == (long)0xFFFFFFFF)
+		if(check == 0xFFFFFFFF)
 			top_page = look_page;
 		else
 			bottom_page = look_page;
@@ -328,7 +321,7 @@ static int find_last_log_page(int bottom_page)
 
 
 // Write an attitude packet. Total length : 10 bytes
-static void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw)
+void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -340,7 +333,7 @@ static void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw)
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
-static void Log_Write_Performance()
+void Log_Write_Performance()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -354,13 +347,12 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(dcm.renorm_blowup_count);
 	DataFlash.WriteByte(gps_fix_count);
 	DataFlash.WriteInt((int)(dcm.get_health() * 1000));
-	DataFlash.WriteInt(pmTest1);
 	DataFlash.WriteByte(END_BYTE);
 }
 
 // Write a command processing packet. Total length : 19 bytes
 //void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
-static void Log_Write_Cmd(byte num, struct Location *wp)
+void Log_Write_Cmd(byte num, struct Location *wp)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -374,7 +366,7 @@ static void Log_Write_Cmd(byte num, struct Location *wp)
 	DataFlash.WriteByte(END_BYTE);
 }
 
-static void Log_Write_Startup(byte type)
+void Log_Write_Startup(byte type)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -396,7 +388,7 @@ static void Log_Write_Startup(byte type)
 
 // Write a control tuning packet. Total length : 22 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
-static void Log_Write_Control_Tuning()
+void Log_Write_Control_Tuning()
 {
 	Vector3f accel = imu.get_accel();
 
@@ -417,7 +409,7 @@ static void Log_Write_Control_Tuning()
 #endif
 
 // Write a navigation tuning packet. Total length : 18 bytes
-static void Log_Write_Nav_Tuning()
+void Log_Write_Nav_Tuning()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -433,7 +425,7 @@ static void Log_Write_Nav_Tuning()
 }
 
 // Write a mode packet. Total length : 5 bytes
-static void Log_Write_Mode(byte mode)
+void Log_Write_Mode(byte mode)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -443,8 +435,8 @@ static void Log_Write_Mode(byte mode)
 }
 
 // Write an GPS packet. Total length : 30 bytes
-static void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long log_gps_alt, long log_mix_alt,
-                            long log_Ground_Speed, long log_Ground_Course, byte log_Fix, byte log_NumSats)
+void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long log_gps_alt, long log_mix_alt,
+					long log_Ground_Speed, long log_Ground_Course, byte log_Fix, byte log_NumSats)
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -454,7 +446,6 @@ static void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude
 	DataFlash.WriteByte(log_NumSats);
 	DataFlash.WriteLong(log_Lattitude);
 	DataFlash.WriteLong(log_Longitude);
-	DataFlash.WriteInt(sonar_alt);				// This one is just temporary for testing out sonar in fixed wing
 	DataFlash.WriteLong(log_mix_alt);
 	DataFlash.WriteLong(log_gps_alt);
 	DataFlash.WriteLong(log_Ground_Speed);
@@ -464,7 +455,7 @@ static void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
-static void Log_Write_Raw()
+void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
 	Vector3f accel = imu.get_accel();
@@ -485,7 +476,7 @@ static void Log_Write_Raw()
 }
 #endif
 
-static void Log_Write_Current()
+void Log_Write_Current()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
@@ -498,7 +489,7 @@ static void Log_Write_Current()
 }
 
 // Read a Current packet
-static void Log_Read_Current()
+void Log_Read_Current()
 {
 	Serial.printf_P(PSTR("CURR: %d, %4.4f, %4.4f, %d\n"),
 			DataFlash.ReadInt(),
@@ -508,7 +499,7 @@ static void Log_Read_Current()
 }
 
 // Read an control tuning packet
-static void Log_Read_Control_Tuning()
+void Log_Read_Control_Tuning()
 {
 	float logvar;
 
@@ -524,7 +515,7 @@ static void Log_Read_Control_Tuning()
 }
 
 // Read a nav tuning packet
-static void Log_Read_Nav_Tuning()
+void Log_Read_Nav_Tuning()
 {
 	Serial.printf_P(PSTR("NTUN: %4.4f, %d, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f,\n"),		// \n
 				(float)((uint16_t)DataFlash.ReadInt())/100.0,
@@ -537,7 +528,7 @@ static void Log_Read_Nav_Tuning()
 }
 
 // Read a performance packet
-static void Log_Read_Performance()
+void Log_Read_Performance()
 {
 	long pm_time;
 	int logvar;
@@ -546,7 +537,7 @@ static void Log_Read_Performance()
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
-	for (int y = 1; y <= 9; y++) {
+	for (int y = 1; y < 9; y++) {
 		if(y < 3 || y > 7){
 			logvar = DataFlash.ReadInt();
 		}else{
@@ -559,7 +550,7 @@ static void Log_Read_Performance()
 }
 
 // Read a command processing packet
-static void Log_Read_Cmd()
+void Log_Read_Cmd()
 {
 	byte logvarb;
 	long logvarl;
@@ -578,7 +569,7 @@ static void Log_Read_Cmd()
 	Serial.println(" ");
 }
 
-static void Log_Read_Startup()
+void Log_Read_Startup()
 {
 	byte logbyte = DataFlash.ReadByte();
 
@@ -593,7 +584,7 @@ static void Log_Read_Startup()
 }
 
 // Read an attitude packet
-static void Log_Read_Attitude()
+void Log_Read_Attitude()
 {
 	Serial.printf_P(PSTR("ATT: %d, %d, %u\n"),
 			DataFlash.ReadInt(),
@@ -602,22 +593,21 @@ static void Log_Read_Attitude()
 }
 
 // Read a mode packet
-static void Log_Read_Mode()
+void Log_Read_Mode()
 {
 	Serial.printf_P(PSTR("MOD:"));
 	Serial.println(flight_mode_strings[DataFlash.ReadByte()]);
 }
 
 // Read a GPS packet
-static void Log_Read_GPS()
+void Log_Read_GPS()
 {
-	Serial.printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+	Serial.printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
 			DataFlash.ReadLong(),
 			(int)DataFlash.ReadByte(),
 			(int)DataFlash.ReadByte(),
 			(float)DataFlash.ReadLong() / t7,
 			(float)DataFlash.ReadLong() / t7,
-			(float)DataFlash.ReadInt(),				// This one is just temporary for testing out sonar in fixed wing
 			(float)DataFlash.ReadLong() / 100.0,
 			(float)DataFlash.ReadLong() / 100.0,
 			(float)DataFlash.ReadLong() / 100.0,
@@ -626,7 +616,7 @@ static void Log_Read_GPS()
 }
 
 // Read a raw accel/gyro packet
-static void Log_Read_Raw()
+void Log_Read_Raw()
 {
 	float logvar;
 	Serial.printf_P(PSTR("RAW:"));
@@ -639,19 +629,13 @@ static void Log_Read_Raw()
 }
 
 // Read the DataFlash log memory : Packet Parser
-static void Log_Read(int start_page, int end_page)
+void Log_Read(int start_page, int end_page)
 {
 	byte data;
 	byte log_step = 0;
 	int packet_count = 0;
 	int page = start_page;
 
-	#ifdef AIRFRAME_NAME
-		Serial.printf_P(PSTR((AIRFRAME_NAME)
-	#endif
-	Serial.printf_P(PSTR("\n" THISFIRMWARE
-						 "\nFree RAM: %lu\n"),
-						 freeRAM());
 
 	DataFlash.StartRead(start_page);
 	while (page < end_page && page != -1){
@@ -728,23 +712,4 @@ static void Log_Read(int start_page, int end_page)
 	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
 }
 
-#else // LOGGING_ENABLED
 
-// dummy functions
-static void Log_Write_Mode(byte mode) {}
-static void Log_Write_Startup(byte type) {}
-static void Log_Write_Cmd(byte num, struct Location *wp) {}
-static void Log_Write_Current() {}
-static void Log_Write_Nav_Tuning() {}
-static void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude, long log_gps_alt, long log_mix_alt,
-                            long log_Ground_Speed, long log_Ground_Course, byte log_Fix, byte log_NumSats) {}
-static void Log_Write_Performance() {}
-static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-static byte get_num_logs(void) { return 0; }
-static void start_new_log(byte num_existing_logs) {}
-static void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw) {}
-static void Log_Write_Control_Tuning() {}
-static void Log_Write_Raw() {}
-
-
-#endif // LOGGING_ENABLED

@@ -2,15 +2,15 @@
 
 // For changing active command mid-mission
 //----------------------------------------
-static void change_command(uint8_t cmd_index)
+void change_command(uint8_t index)
 { 
-	struct Location temp = get_wp_with_index(cmd_index);
+	struct Location temp = get_wp_with_index(index);
 	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs.send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
 	} else {
 		command_must_index 	= NO_COMMAND;
 		next_command.id = NO_COMMAND;
-		g.waypoint_index.set_and_save(cmd_index - 1);
+		g.waypoint_index.set_and_save(index - 1);
 		load_next_command_from_EEPROM();
 		process_next_command();
 	}
@@ -19,7 +19,7 @@ static void change_command(uint8_t cmd_index)
 
 // called by 10 Hz loop
 // --------------------
-static void update_commands(void)
+void update_commands(void)
 {
 	// This function loads commands into three buffers
 	// when a new command is loaded, it is processed with process_XXX()
@@ -34,7 +34,7 @@ static void update_commands(void)
 	}									// Other (eg GCS_Auto) modes may be implemented here
 }
 
-static void verify_commands(void)
+void verify_commands(void)
 {
 	if(verify_must()){
 		command_must_index 	= NO_COMMAND;
@@ -46,7 +46,7 @@ static void verify_commands(void)
 	}
 }
 
-static void load_next_command_from_EEPROM()
+void load_next_command_from_EEPROM()
 {
 	// fetch next command if the next command queue is empty
 	// -----------------------------------------------------
@@ -64,7 +64,7 @@ static void load_next_command_from_EEPROM()
 	}
 }
 
-static void process_next_command()
+void process_next_command()
 {
 	// these are Navigation/Must commands
 	// ---------------------------------
@@ -115,7 +115,7 @@ static void process_next_command()
 /**************************************************/
 //  These functions implement the commands.
 /**************************************************/
-static void process_must()
+void process_must()
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
@@ -132,7 +132,7 @@ static void process_must()
 	next_command.id		= NO_COMMAND;
 }
 
-static void process_may()
+void process_may()
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
@@ -145,7 +145,7 @@ static void process_may()
 	next_command.id = NO_COMMAND;
 }
 
-static void process_now()
+void process_now()
 {
 	handle_process_now();
 

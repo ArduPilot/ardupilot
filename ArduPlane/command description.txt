@@ -45,7 +45,7 @@ May Commands - these commands are optional to finish
 Command ID		Name								Parameter 1			Parameter 2			Parameter 3			Parameter 4
 0x70 / 112		MAV_CMD_CONDITION_DELAY				-					-					time (seconds) -
 
-0x71 / 113		MAV_CMD_CONDITION_CHANGE_ALT 		-           		alt (finish)		rate (cm/sec)					-
+0x71 / 113		MAV_CMD_CONDITION_CHANGE_ALT 		rate (cm/sec)		alt (finish)		-					-
 													Note: rate must be > 10 cm/sec due to integer math
 
 MAV_CMD_NAV_LAND_OPTIONS			(NOT CURRENTLY IN MAVLINK PROTOCOL OR IMPLEMENTED IN APM)

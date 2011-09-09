@@ -1,6 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#if CLI_ENABLED == ENABLED
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
@@ -28,7 +26,7 @@ static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
-static const struct Menu::command test_menu_commands[] PROGMEM = {
+const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
 	{"failsafe",	test_failsafe},
@@ -66,15 +64,14 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
-static int8_t
+int8_t
 test_mode(uint8_t argc, const Menu::arg *argv)
 {
 	Serial.printf_P(PSTR("Test Mode\n\n"));
 	test_menu.run();
-    return 0;
 }
 
-static void print_hit_enter()
+void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
@@ -107,7 +104,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		Serial.printf_P(PSTR("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
+		Serial.printf_P(PSTR("IN: 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
 							g.channel_roll.radio_in,
 							g.channel_pitch.radio_in,
 							g.channel_throttle.radio_in,
@@ -150,7 +147,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 
 		// write out the servo PWM values
 		// ------------------------------
-		set_servos();
+		set_servos_4();
 
 		Serial.printf_P(PSTR("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n"),
 							g.channel_roll.control_in,
@@ -258,7 +255,7 @@ if (g.battery_monitoring == 4) {
 
 		// write out the servo PWM values
 		// ------------------------------
-		set_servos();
+		set_servos_4();
 
 		if(Serial.available() > 0){
 			return (0);
@@ -318,11 +315,11 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-static void
-test_wp_print(struct Location *cmd, byte wp_index)
+void
+test_wp_print(struct Location *cmd, byte index)
 {
 	Serial.printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
-		(int)wp_index,
+		(int)index,
 		(int)cmd->id,
 		(int)cmd->options,
 		(int)cmd->p1,
@@ -379,24 +376,20 @@ test_dipswitches(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-    if (!g.switch_enable) {
-        Serial.println_P(PSTR("dip switches disabled, using EEPROM"));
-    }
-
 	while(1){
 		delay(100);
 		update_servo_switches();
 
-		if (g.mix_mode == 0) {
+		if (mix_mode == 0) {
 			Serial.printf_P(PSTR("Mix:standard \trev roll:%d, rev pitch:%d, rev rudder:%d\n"),
-				(int)g.channel_roll.get_reverse(),
-				(int)g.channel_pitch.get_reverse(),
-				(int)g.channel_rudder.get_reverse());
+				(int)reverse_roll,
+				(int)reverse_pitch,
+				(int)reverse_rudder);
 		} else {
 			Serial.printf_P(PSTR("Mix:elevons \trev elev:%d, rev ch1:%d, rev ch2:%d\n"),
-				(int)g.reverse_elevons,
-				(int)g.reverse_ch1_elevon,
-				(int)g.reverse_ch2_elevon);
+				(int)reverse_elevons,
+				(int)reverse_ch1_elevon,
+				(int)reverse_ch2_elevon);
 		}
 		if(Serial.available() > 0){
 			return (0);
@@ -532,29 +525,13 @@ test_gyro(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
-	if (!g.compass_enabled) {
-        Serial.printf_P(PSTR("Compass: "));
-		print_enabled(false);
-		return (0);
-    }
-
-    compass.set_orientation(MAG_ORIENTATION);
-    if (!compass.init()) {
-        Serial.println_P(PSTR("Compass initialisation failed!"));
-        return 0;
-    }
-    dcm.set_compass(&compass);
-    report_compass();
-
-    // we need the DCM initialised for this test
-	imu.init(IMU::COLD_START);
-
 	int counter = 0;
+	if(g.compass_enabled) {
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
 
-    print_hit_enter();
+		print_hit_enter();
 
-    while(1) {
+		while(1){
 		delay(20);
 		if (millis() - fast_loopTimer > 19) {
 			delta_ms_fast_loop 	= millis() - fast_loopTimer;
@@ -565,38 +542,40 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 			// ---
 			dcm.update_DCM(G_Dt);
 
-            medium_loopCounter++;
-            if(medium_loopCounter == 5){
-                compass.read();		 				// Read magnetometer
-                compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
-                compass.null_offsets(dcm.get_dcm_matrix());
-                medium_loopCounter = 0;
-            }
+			if(g.compass_enabled) {
+				medium_loopCounter++;
+				if(medium_loopCounter == 5){
+					compass.read();		 				// Read magnetometer
+					compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+					compass.null_offsets(dcm.get_dcm_matrix());
+					medium_loopCounter = 0;
+				}
+			}
 
 			counter++;
 			if (counter>20) {
-                Vector3f maggy = compass.get_offsets();
-                Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                (wrap_360(ToDeg(compass.heading) * 100)) /100,
-                                compass.mag_x,
-                                compass.mag_y,
-                                compass.mag_z,
-                                maggy.x,
-                                maggy.y,
-                                maggy.z);
-                counter=0;
-            }
-		}
-        if (Serial.available() > 0) {
-            break;
-        }
-    }
+			Vector3f maggy = compass.get_offsets();
+			Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+							(wrap_360(ToDeg(compass.heading) * 100)) /100,
+							compass.mag_x,
+							compass.mag_y,
+							compass.mag_z,
+							maggy.x,
+							maggy.y,
+							maggy.z);
+			counter=0;
+}
 
-    // save offsets. This allows you to get sane offset values using
-    // the CLI before you go flying.    
-    Serial.println_P(PSTR("saving offsets"));
-    compass.save_offsets();
-    return (0);
+		}
+    		if(Serial.available() > 0){
+				return (0);
+			}
+		}
+	} else {
+		Serial.printf_P(PSTR("Compass: "));
+		print_enabled(false);
+		return (0);
+	}
 }
 
 #endif // HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
@@ -609,11 +588,14 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    unsigned airspeed_ch = adc.Ch(AIRSPEED_CH);
 	// Serial.println(adc.Ch(AIRSPEED_CH));
-    Serial.printf_P(PSTR("airspeed_ch: %u\n"), airspeed_ch);
+	if ((adc.Ch(AIRSPEED_CH) > 2000) && (adc.Ch(AIRSPEED_CH) < 2900)){
+		 airspeed_enabled = false;
+	}else{
+		 airspeed_enabled = true;
+	}
 
-	if (g.airspeed_enabled == false){
+	if (airspeed_enabled == false){
 		Serial.printf_P(PSTR("airspeed: "));
 		print_enabled(false);
 		return (0);
@@ -632,8 +614,11 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 			if(Serial.available() > 0){
 				return (0);
 			}
+		if(Serial.available() > 0){
+			return (0);
 		}
 	}
+ }
 }
 
 
@@ -684,5 +669,3 @@ test_rawgps(uint8_t argc, const Menu::arg *argv)
   }
 }
 #endif // HIL_MODE == HIL_MODE_DISABLED
-
-#endif // CLI_ENABLED

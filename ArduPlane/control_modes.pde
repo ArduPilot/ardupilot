@@ -1,11 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-static void read_control_switch()
+void read_control_switch()
 {
 	byte switchPosition = readSwitch();
 	if (oldSwitchPosition != switchPosition){
 
-		set_mode(flight_modes[switchPosition]);
+		set_mode(g.flight_modes[switchPosition]);
 
 		oldSwitchPosition = switchPosition;
 		prev_WP = current_loc;
@@ -14,15 +12,9 @@ static void read_control_switch()
 		// -------------------------
 		reset_I();
 	}
-
-    if (g.inverted_flight_ch != 0) {
-        // if the user has configured an inverted flight channel, then
-        // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
-        inverted_flight = (control_mode != MANUAL && APM_RC.InputCh(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
-    }
 }
 
-static byte readSwitch(void){
+byte readSwitch(void){
 	uint16_t pulsewidth = APM_RC.InputCh(g.flight_mode_channel - 1);
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
 	if (pulsewidth > 1360 && pulsewidth <= 1490) 	return 2;
@@ -32,7 +24,7 @@ static byte readSwitch(void){
 	return 0;
 }
 
-static void reset_control_switch()
+void reset_control_switch()
 {
 	oldSwitchPosition = 0;
 	read_control_switch();
@@ -40,23 +32,52 @@ static void reset_control_switch()
 	SendDebugln(oldSwitchPosition , DEC);
 }
 
-static void update_servo_switches()
+void update_servo_switches()
 {
-	if (!g.switch_enable) {
-        // switches are disabled in EEPROM (see SWITCH_ENABLE option)
-        // this means the EEPROM control of all channel reversal is enabled
-		return;
-	}
 	// up is reverse
 	// up is elevon
-	g.mix_mode 		= (PINL & 128) ? 1 : 0; // 1 for elevon mode
-	if (g.mix_mode == 0) {
-		g.channel_roll.set_reverse((PINE & 128) ? true : false);
-		g.channel_pitch.set_reverse((PINE & 64) ? true : false);
-		g.channel_rudder.set_reverse((PINL & 64) ? true : false);
+	mix_mode 		= (PINL & 128) ? 1 : 0;
+	if (mix_mode == 0) {
+		reverse_roll 	= (PINE & 128) ? true : false;
+		reverse_pitch 	= (PINE & 64) ? true : false;
+		reverse_rudder 	= (PINL & 64) ? true : false;
 	} else {
-		g.reverse_elevons 	= (PINE & 128) ? true : false;
-		g.reverse_ch1_elevon = (PINE & 64) ? true : false;
-		g.reverse_ch2_elevon = (PINL & 64) ? true : false;
+		reverse_elevons 	= (PINE & 128) ? -1 : 1;
+		reverse_ch1_elevon 	= (PINE & 64) ? -1 : 1;
+		reverse_ch2_elevon 	= (PINL & 64) ? -1 : 1;
+	}
+}
+
+
+bool trim_flag;
+unsigned long trim_timer;
+
+// read at 10 hz
+// set this to your trainer switch
+void read_trim_switch()
+{
+	// switch is engaged
+	if (g.rc_7.control_in > 800){
+		if(trim_flag == false){
+			// called once
+			trim_timer = millis();
+		}
+		trim_flag = true;
+
+	}else{ // switch is disengaged
+
+		if(trim_flag){
+			// switch was just released
+			if((millis() - trim_timer) > 2000){
+
+				g.throttle_cruise.set_and_save(g.channel_throttle.control_in);
+				g.angle_of_attack.set_and_save(dcm.pitch_sensor);
+				g.airspeed_cruise.set_and_save(airspeed);
+
+			} else {
+
+			}
+			trim_flag = false;
+		}
 	}
 }
