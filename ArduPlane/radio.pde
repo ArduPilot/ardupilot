@@ -252,6 +252,7 @@ static void trim_radio()
 // expects the changes to take effect instantly
 static void update_aux_servo_function()
 {
+	// positions 0..3 of this array never get used, but this is a stack array, so the entire array gets freed at the end of the function
 	RC_Channel_aux::Aux_servo_function_t aux_servo_function[NUM_CHANNELS];			// the function of the aux. servos
 	aux_servo_function[CH_5] = (RC_Channel_aux::Aux_servo_function_t)g.rc_5.function.get();
 	aux_servo_function[CH_6] = (RC_Channel_aux::Aux_servo_function_t)g.rc_6.function.get();
