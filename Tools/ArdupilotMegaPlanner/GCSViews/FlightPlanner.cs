@@ -616,16 +616,16 @@ namespace ArdupilotMega.GCSViews
                 switch (command)
                 {
                     case MAVLink.MAV_CMD.WAYPOINT:
-                        if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+                        if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
                             Commands.Columns[1].HeaderText = "N/A";
                         break;
                     case MAVLink.MAV_CMD.LAND:
                         Commands.Columns[1].HeaderText = "N/A";
-                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPilotMega)
+                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
                             Commands.Columns[2].HeaderText = "N/A";
                         break;
                     case MAVLink.MAV_CMD.TAKEOFF:
-                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPilotMega)
+                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
                             Commands.Columns[1].HeaderText = "N/A";
                         break;
                 }
@@ -1248,11 +1248,13 @@ namespace ArdupilotMega.GCSViews
 
                 }
                 catch (Exception ex) { MessageBox.Show("Error : " + ex.ToString()); }
+
+                MainV2.givecomport = false;
+
                 try
                 {
                     this.BeginInvoke((System.Threading.ThreadStart)delegate()
                     {
-                        MainV2.givecomport = false;
                         BUT_write.Enabled = true;
                     });
                 }

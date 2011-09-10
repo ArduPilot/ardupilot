@@ -250,7 +250,7 @@ namespace ArdupilotMega.GCSViews
         {
             if (keyData == (Keys.Control | Keys.B))
             {
-                findfirmware("APM-trunk");
+                findfirmware("AP-trunk");
                 return true;
             }
             if (keyData == (Keys.Control | Keys.A))
@@ -272,8 +272,6 @@ namespace ArdupilotMega.GCSViews
             public string desc;
             public int k_format_version;
         }
-
-        FRAMETYPES currentframe = FRAMETYPES.NONE;
 
         public enum FRAMETYPES
         {
@@ -306,7 +304,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
 
-                using (XmlTextReader xmlreader = new XmlTextReader("http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/Firmware/firmware2.xml"))
+                using (XmlTextReader xmlreader = new XmlTextReader("http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/firmware2.xml"))
                 {
                     while (xmlreader.Read())
                     {
@@ -378,49 +376,41 @@ namespace ArdupilotMega.GCSViews
 
         private void pictureBoxAPM_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.APM;
-            findfirmware("APM2-");
+            findfirmware("firmware/AP-");
         }
 
         private void pictureBoxAPMHIL_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.APMHIL;
-            findfirmware("APM2HIL-");
+            findfirmware("firmware/APHIL-");
         }
 
         private void pictureBoxQuad_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.QUAD;
             findfirmware("AC2-Quad-");
         }
 
         private void pictureBoxHexa_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.HEXA;
             findfirmware("AC2-Hexa-");
         }
 
         private void pictureBoxTri_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.TRI;
             findfirmware("AC2-Tri-");
         }
 
         private void pictureBoxY6_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.Y6;
             findfirmware("AC2-Y6-");
         }
 
         private void pictureBoxHeli_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.HELI;
             findfirmware("AC2-Heli-");
         }
 
         private void pictureBoxQuadHil_Click(object sender, EventArgs e)
         {
-            currentframe = FRAMETYPES.QUAD;
             findfirmware("AC2-QUADHIL");
         }
 
@@ -502,15 +492,19 @@ namespace ArdupilotMega.GCSViews
 
                 this.Refresh();
 
-                while (dataStream.CanRead && bytes > 0)
+                dataStream.ReadTimeout = 30000;
+
+                while (dataStream.CanRead)
                 {
                     try
                     {
-                        progress.Value = (int)(((float)(response.ContentLength - bytes) / (float)response.ContentLength) * 100);
+                        progress.Value = 50;// (int)(((float)(response.ContentLength - bytes) / (float)response.ContentLength) * 100);
                         this.progress.Refresh();
                     }
                     catch { }
                     int len = dataStream.Read(buf1, 0, 1024);
+                    if (len == 0)
+                        break;
                     bytes -= len;
                     fs.Write(buf1, 0, len);
                 }
@@ -701,420 +695,6 @@ namespace ArdupilotMega.GCSViews
             {
                 e.Cancel = true;
                 MessageBox.Show("Cant exit while updating");
-            }
-        }
-
-        private void ACSetup_Click(object sender, EventArgs e)
-        {
-            MainV2.givecomport = true;
-
-            MessageBox.Show("Please make sure you are in CLI/Setup mode");
-
-            ICommsSerial comPortT = MainV2.comPort.BaseStream;
-
-            if (comPortT.IsOpen)
-                comPortT.Close();
-
-            comPortT.DtrEnable = true;
-            if (MainV2.comportname == null)
-            {
-                MessageBox.Show("Please select a valid comport! look in the Options menu");
-                MainV2.givecomport = false;
-                return;
-            }
-            try
-            {
-                comPortT.Open();
-
-            }
-            catch (Exception ex) { MainV2.givecomport = false; MessageBox.Show("Invalid Comport Settings : " + ex.Message); return; }
-
-            lbl_status.Text = "Comport Opened";
-            this.Refresh();
-
-            comPortT.DtrEnable = false;
-            System.Threading.Thread.Sleep(100);
-            comPortT.DtrEnable = true;
-            System.Threading.Thread.Sleep(3000);
-            comPortT.DtrEnable = false;
-            System.Threading.Thread.Sleep(100);
-            comPortT.DtrEnable = true;
-
-            string data = "";
-
-            DateTime timeout = DateTime.Now;
-            ///////////////////////// FIX ME////////////////////////////////////////////////////////
-            int step = 0;
-            //System.Threading.Thread.Sleep(2000);
-            //comPortT.Write("IMU\r");
-
-            comPortT.ReadTimeout = -1;
-
-            while (comPortT.IsOpen)
-            {
-                string line;
-                try
-                {
-                    line = comPortT.ReadLine();
-                }
-                catch
-                {
-                    try { line = comPortT.ReadExisting(); }
-                    catch { MessageBox.Show("Can not read from serial port - existing"); return; }
-                }
-                this.Refresh();
-                Console.Write(line + "\n");
-                switch (step)
-                {
-                    case 0:
-                        if (line.Contains("interactive"))
-                        {
-                            lbl_status.Text = "Erasing EEPROM.. (20 seconds)";
-                            this.Refresh();
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("erase\r");
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("y\r");
-                            step = 0;
-                        }
-                        if (line.Contains("done"))
-                        {
-                            lbl_status.Text = "Rebooting APM..";
-                            this.Refresh();
-
-                            comPortT.DtrEnable = false;
-                            System.Threading.Thread.Sleep(100);
-                            comPortT.DtrEnable = true;
-                            System.Threading.Thread.Sleep(3000);
-                            comPortT.DtrEnable = false;
-                            Console.WriteLine(comPortT.ReadExisting());
-                            System.Threading.Thread.Sleep(100);
-                            comPortT.DtrEnable = true;
-                            step = 1;
-                        }
-                        break;
-                    case 1:
-                        if (line.Contains("interactive")) // becuase we rebooted
-                        {
-                            lbl_status.Text = "Setup Radio..";
-                            this.Refresh();
-
-                            Console.WriteLine(comPortT.ReadExisting());
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-                            System.Threading.Thread.Sleep(200);
-                            MessageBox.Show("Ensure that your RC transmitter is on, and that you have your ArduCopter battery plugged in or are otherwise powering APM's RC pins (USB power does NOT power the RC receiver)", "Radio Setup");
-                            comPortT.Write("radio\r");
-                            MessageBox.Show("Move all your radio controls to each extreme. Hit OK when done.", "Radio Setup");
-                            //comPortT.DiscardInBuffer();
-                            comPortT.Write("\r\r");
-                            step = 2;
-                        }
-                        break;
-                    case 2:
-                        if (data.Contains("----"))
-                            data = "";
-                        data += line;
-
-                        if (line.Contains("CH7")) // 
-                        {
-                            MessageBox.Show("Here are the detected radio options\nNOTE Channels not connected are displayed as 1500\nNormal values are around 1100 | 1900\nChannel:Min | Max \n" + data, "Radio");
-
-                            lbl_status.Text = "Setup Accel Offsets..";
-                            this.Refresh();
-
-                            MessageBox.Show("Ensure your quad is level, and click OK to continue", "Offset Setup");
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("level\r");
-                            System.Threading.Thread.Sleep(1000);
-                            step = 3;
-                        }
-                        break;
-                    case 3:
-                        if (line.Contains("IMU")) // 
-                        {
-                            lbl_status.Text = "Setup Options";
-                            this.Refresh();
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-
-                            DialogResult dr;
-                            /*
-                            dr = MessageBox.Show("Do you have a Current sensor attached?","Current Sensor",MessageBoxButtons.YesNo);
-                            if (dr == System.Windows.Forms.DialogResult.Yes)
-                            {
-                                comPortT.Write("current on\r");
-                                System.Threading.Thread.Sleep(100);
-                            }*/
-                            dr = MessageBox.Show("Do you have a Sonar sensor attached?", "Sonar Sensor", MessageBoxButtons.YesNo);
-                            if (dr == System.Windows.Forms.DialogResult.Yes)
-                            {
-                                comPortT.Write("sonar on\r");
-                                System.Threading.Thread.Sleep(100);
-                            }
-                            dr = MessageBox.Show("Do you have a Compass sensor attached?", "Compass Sensor", MessageBoxButtons.YesNo);
-                            if (dr == System.Windows.Forms.DialogResult.Yes)
-                            {
-                                comPortT.Write("compass on\r");
-                                System.Threading.Thread.Sleep(100);
-
-                                MessageBox.Show("Next a webpage will appear to get your magnetic declination,\nenter it in the box that appears next", "Mag Dec");
-
-                                try
-                                {
-                                    //System.Diagnostics.Process.Start("http://www.ngdc.noaa.gov/geomagmodels/Declination.jsp");
-                                    System.Diagnostics.Process.Start("http://www.magnetic-declination.com/");
-                                }
-                                catch { MessageBox.Show("Webpage open failed... do you have a virus?\nhttp://www.magnetic-declination.com/"); }
-                                //This can be taken from 
-
-                                try
-                                {
-                                    string declination = "0";
-                                    Common.InputBox("Declination", "Magnetic Declination (-20.0 to 20.0) eg 2° 3' W is -2.3", ref declination);
-                                    float dec = 0.0f;
-                                    float.TryParse(declination, out dec);
-                                    float deg = (float)((int)dec);
-                                    float mins = (dec - deg);
-                                    if (dec > 0)
-                                    {
-                                        dec += ((mins) / 60.0f);
-                                    }
-                                    else
-                                    {
-                                        dec -= ((mins) / 60.0f);
-                                    }
-                                    comPortT.Write("exit\rsetup\rdeclination " + dec.ToString("0.00") + "\r");
-                                }
-                                catch { MessageBox.Show("Invalid input!"); }
-                            }
-
-                            if (currentframe == FRAMETYPES.Y6 || currentframe == FRAMETYPES.Y6)
-                            {
-
-                            }
-                            else
-                            {
-
-                                string frame = "+";
-                                Common.InputBox("Frame", "Enter Frame type (options +, x)", ref frame);
-                                System.Text.ASCIIEncoding encoding = new System.Text.ASCIIEncoding();
-                                byte[] data2 = encoding.GetBytes("exit\rsetup\rframe " + frame.ToLower() + "\r");
-                                comPortT.Write(data2, 0, data2.Length);
-                            }
-                            Console.WriteLine(comPortT.ReadExisting());
-
-                            MessageBox.Show("NOTE: this setup has defaulted all modes to stabilize.\n To change your flight modes, please use the CLI menu via the Terminal tab");
-
-                            comPortT.Close();
-                            MainV2.givecomport = false;
-                            return;
-                            //step = 4;
-                        }
-                        break;
-                    //
-                }
-            }
-
-        }
-
-        private void APMSetup_Click(object sender, EventArgs e)
-        {
-            MainV2.givecomport = true;
-
-            MessageBox.Show("Please make sure you are in CLI/Setup mode");
-
-            ICommsSerial comPortT = MainV2.comPort.BaseStream;
-
-            if (comPortT.IsOpen)
-                comPortT.Close();
-
-            comPortT.DtrEnable = true;
-            if (MainV2.comportname == null)
-            {
-                MessageBox.Show("Please select a valid comport! look in the Options menu");
-                MainV2.givecomport = false;
-                return;
-            }
-            try
-            {
-                comPortT.Open();
-
-            }
-            catch (Exception ex) { MainV2.givecomport = false; MessageBox.Show("Invalid Comport Settings : " + ex.Message); return; }
-
-            lbl_status.Text = "Comport Opened";
-            this.Refresh();
-
-            comPortT.DtrEnable = false;
-            System.Threading.Thread.Sleep(100);
-            comPortT.DtrEnable = true;
-            System.Threading.Thread.Sleep(3000);
-            comPortT.DtrEnable = false;
-            System.Threading.Thread.Sleep(100);
-            comPortT.DtrEnable = true;
-
-            string data = "";
-
-            DateTime timeout = DateTime.Now;
-            ///////////////////////// FIX ME////////////////////////////////////////////////////////
-            int step = 0;
-            //System.Threading.Thread.Sleep(2000);
-            //comPortT.Write("CH7\r");
-
-            comPortT.ReadTimeout = -1;
-
-            while (comPortT.IsOpen)
-            {
-                string line;
-                try
-                {
-                    line = comPortT.ReadLine();
-                }
-                catch
-                {
-                    try { line = comPortT.ReadExisting(); }
-                    catch { MessageBox.Show("Can not read from serial port - existing"); return; }
-                }
-                this.Refresh();
-                Console.Write(line + "\n");
-                switch (step)
-                {
-                    case 0:
-                        if (line.Contains("interactive"))
-                        {
-                            lbl_status.Text = "Erasing EEPROM.. (20 seconds)";
-                            this.Refresh();
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("erase\r");
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("y\r");
-                            step = 0;
-                        }
-                        if (line.Contains("done"))
-                        {
-                            lbl_status.Text = "Rebooting APM..";
-                            this.Refresh();
-
-                            comPortT.DtrEnable = false;
-                            System.Threading.Thread.Sleep(100);
-                            comPortT.DtrEnable = true;
-                            System.Threading.Thread.Sleep(3000);
-                            comPortT.DtrEnable = false;
-                            System.Threading.Thread.Sleep(100);
-                            comPortT.DtrEnable = true;
-                            step = 1;
-                        }
-                        break;
-                    case 1:
-                        if (line.Contains("interactive")) // becuase we rebooted
-                        {
-                            lbl_status.Text = "Setup Radio..";
-                            this.Refresh();
-
-                            System.Threading.Thread.Sleep(1000);
-                            Console.WriteLine(comPortT.ReadExisting());
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("setup\r");
-                            System.Threading.Thread.Sleep(200);
-                            MessageBox.Show("Ensure that your RC transmitter is on, and that you have your ArduPilot battery plugged in or are otherwise powering APM's RC pins (USB power does NOT power the RC receiver)", "Radio Setup");
-                            comPortT.Write("radio\r");
-                            Console.WriteLine(comPortT.ReadExisting());
-                            MessageBox.Show("Move all your radio controls to each extreme. Hit OK when done.", "Radio Setup");
-                            comPortT.Write("\r\r");
-                            step = 2;
-                        }
-                        break;
-                    case 2:
-                        if (data.Contains("----"))
-                            data = "";
-                        data += line;
-
-                        if (line.Contains("CH7")) // 
-                        {
-                            MessageBox.Show("Here are the detected radio options\nNOTE Channels not connected are displayed as 1500\nNormal values are around 1100 | 1900\nChannel:Min | Max \n" + data, "Radio");
-
-                            lbl_status.Text = "Clearing Log Dataflash (this may take a minute)";
-                            this.Refresh();
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("exit\rlogs\rerase\r");
-                            System.Threading.Thread.Sleep(200);
-                            Console.WriteLine(comPortT.ReadExisting());
-                            step = 3;
-                        }
-                        break;
-                    case 3:
-                        if (line.Contains("Log erased"))
-                        {
-                            lbl_status.Text = "Setup Options";
-                            this.Refresh();
-
-                            Console.WriteLine(comPortT.ReadExisting());
-
-                            System.Threading.Thread.Sleep(50);
-                            comPortT.Write("exit\rsetup\r");
-
-                            DialogResult dr;
-                            dr = MessageBox.Show("Do you have a Compass sensor attached?", "Compass Sensor", MessageBoxButtons.YesNo);
-                            if (dr == System.Windows.Forms.DialogResult.Yes)
-                            {
-                                comPortT.Write("compass on\r");
-                                System.Threading.Thread.Sleep(100);
-
-                                MessageBox.Show("Next a webpage will appear to get your magnetic declination,\nenter it in the box that appears next", "Mag Dec");
-
-                                try
-                                {
-                                    //System.Diagnostics.Process.Start("http://www.ngdc.noaa.gov/geomagmodels/Declination.jsp");
-                                    System.Diagnostics.Process.Start("http://www.magnetic-declination.com/");
-                                }
-                                catch { MessageBox.Show("Webpage open failed... do you have a virus?\nhttp://www.magnetic-declination.com/"); }
-                                //This can be taken from 
-
-                                string declination = "0";
-                                Common.InputBox("Declination", "Magnetic Declination (-20.0 to 20.0) eg 2° 3' W is -2.3", ref declination);
-                                float dec = 0.0f;
-                                float.TryParse(declination, out dec);
-                                float deg = (float)((int)dec);
-                                float mins = (dec - deg);
-                                if (dec > 0)
-                                {
-                                    dec += ((mins) / 60.0f);
-                                }
-                                else
-                                {
-                                    dec -= ((mins) / 60.0f);
-                                }
-                                comPortT.Write("exit\rsetup\rdeclination " + dec.ToString() + "\r");
-                            }
-
-                            MessageBox.Show("NOTE: this setup has defaulted all modes to there default.\n As you are new these are the safest.\n To change this option please use the modes option in the CLI");
-
-                            Console.WriteLine(comPortT.ReadExisting());
-
-                            comPortT.Close();
-                            MainV2.givecomport = false;
-                            lbl_status.Text = "Setup Done";
-                            this.Refresh();
-                            return;
-                            //step = 4;
-                        }
-                        break;
-                    //
-                }
             }
         }
 

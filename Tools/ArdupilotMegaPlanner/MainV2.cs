@@ -36,7 +36,7 @@ namespace ArdupilotMega
         public static string comportname = "";
         public static Hashtable config = new Hashtable();
         public static bool givecomport = false;
-        public static Firmwares APMFirmware = Firmwares.ArduPilotMega;
+        public static Firmwares APMFirmware = Firmwares.ArduPlane;
         public static bool MAC = false;
 
         public static bool speechenable = false;
@@ -60,7 +60,7 @@ namespace ArdupilotMega
 
         public enum Firmwares
         {
-            ArduPilotMega,
+            ArduPlane,
             ArduCopter2,
         }
 
@@ -595,7 +595,7 @@ namespace ArdupilotMega
                         }
                         else if (float.Parse(comPort.param["SYSID_SW_TYPE"].ToString()) == 0)
                         {
-                            TOOL_APMFirmware.SelectedIndex = TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduPilotMega);
+                            TOOL_APMFirmware.SelectedIndex = TOOL_APMFirmware.Items.IndexOf(Firmwares.ArduPlane);
                         }
                     }
 
@@ -1224,7 +1224,7 @@ namespace ArdupilotMega
         {
             try
             {
-                string baseurl = "http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/bin/Release/";
+                string baseurl = "http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/bin/Release/";
                 bool update = updatecheck(loadinglabel, baseurl, "");
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 if (MAC)
@@ -1266,6 +1266,7 @@ namespace ArdupilotMega
             List<string> files = new List<string>();
 
             // Create a request using a URL that can receive a post. 
+            Console.WriteLine(baseurl);
             WebRequest request = WebRequest.Create(baseurl);
             request.Timeout = 10000;
             // Set the Method property of the request to POST.
@@ -1308,6 +1309,10 @@ namespace ArdupilotMega
                 Directory.CreateDirectory(dir);
             foreach (string file in files)
             {
+                if (file.Equals("/"))
+                {
+                    continue;
+                }
                 if (file.EndsWith("/"))
                 {
                     update = updatecheck(loadinglabel, baseurl + file, file) && update;
@@ -1336,10 +1341,10 @@ namespace ArdupilotMega
                 {
                     FileInfo fi = new FileInfo(path);
 
-                    if (fi.Length != response.ContentLength || fi.LastWriteTimeUtc < DateTime.Parse(response.Headers["Last-Modified"].ToString()))
+                    if (fi.Length != response.ContentLength)
                     {
                         getfile = true;
-                        Console.WriteLine("NEW FILE " + file + " " + fi.LastWriteTime + " < " + DateTime.Parse(response.Headers["Last-Modified"].ToString()));
+                        Console.WriteLine("NEW FILE " + file);
                     }
                 }
                 else
@@ -1390,7 +1395,9 @@ namespace ArdupilotMega
 
                     DateTime dt = DateTime.Now;
 
-                    while (dataStream.CanRead && bytes > 0)
+                    dataStream.ReadTimeout = 30000;
+
+                    while (dataStream.CanRead)
                     {
                         Application.DoEvents();
                         try
@@ -1398,13 +1405,15 @@ namespace ArdupilotMega
                             if (dt.Second != DateTime.Now.Second)
                             {
                                 if (loadinglabel != null)
-                                    loadinglabel.Text = "Getting " + file + ":" + (((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
+                                    loadinglabel.Text = "Getting " + file + ": " + Math.Abs(bytes) + " bytes";//(((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
                                 dt = DateTime.Now;
                             }
                         }
                         catch { }
                         Console.WriteLine(file + " " + bytes);
                         int len = dataStream.Read(buf1, 0, 1024);
+                        if (len == 0)
+                            break;
                         bytes -= len;
                         fs.Write(buf1, 0, len);
                     }

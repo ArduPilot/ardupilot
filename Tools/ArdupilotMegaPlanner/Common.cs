@@ -384,7 +384,7 @@ namespace ArdupilotMega
 
         public static Type getModes()
         {
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega)
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
             {
                 return typeof(apmmodes);
             }
