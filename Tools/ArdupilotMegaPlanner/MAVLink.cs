@@ -1021,7 +1021,7 @@ namespace ArdupilotMega
                                     break;
 
                                 case (byte)MAV_CMD.LOITER_TIME:
-                                    if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+                                    if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
                                     {
                                         loc.p1 = (byte)(wp.param1 / 10);	// APM loiter time is in ten second increments
                                     }

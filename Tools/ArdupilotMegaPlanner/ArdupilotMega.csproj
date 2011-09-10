@@ -346,6 +346,7 @@
     </Compile>
     <EmbeddedResource Include="AGauge.resx">
       <DependentUpon>AGauge.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Log.zh-Hans.resx">
       <DependentUpon>Log.cs</DependentUpon>

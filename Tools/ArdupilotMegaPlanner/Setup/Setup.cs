@@ -48,7 +48,7 @@ namespace ArdupilotMega.Setup
 
             float pwm = 0;
 
-            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega) // APM 
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM 
             {
                 pwm = MainV2.cs.ch8in;
                 LBL_flightmodepwm.Text = "8: " + MainV2.cs.ch8in.ToString();
@@ -251,7 +251,7 @@ namespace ArdupilotMega.Setup
         {
             if (tabControl1.SelectedTab == tabModes)
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega) // APM
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
                 {
                     CMB_fmode1.Items.Clear();
                     CMB_fmode2.Items.Clear();
@@ -339,7 +339,7 @@ namespace ArdupilotMega.Setup
 
             if (tabControl1.SelectedTab == tabArducopter)
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega)
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
                     tabArducopter.Enabled = false;
                     return;
@@ -394,7 +394,7 @@ namespace ArdupilotMega.Setup
         {
             try
             {
-                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega) // APM
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
                 {
                     MainV2.comPort.setParam("FLTMODE1", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode1.Text));
                     MainV2.comPort.setParam("FLTMODE2", (float)(int)Enum.Parse(typeof(Common.apmmodes), CMB_fmode2.Text));

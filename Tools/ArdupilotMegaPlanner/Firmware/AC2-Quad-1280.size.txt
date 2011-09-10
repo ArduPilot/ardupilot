@@ -97,6 +97,7 @@
 00000004 b sin_pitch_y
 00000004 b wp_distance
 00000004 b abs_pressure
+00000004 b circle_angle
 00000004 b current_amps
 00000004 b old_altitude
 00000004 b original_alt
@@ -329,7 +330,6 @@
 0000000e V Parameters::Parameters()::__c
 0000000f b current_loc
 0000000f b next_command
-0000000f r __menu_name__main_menu
 0000000f b home
 0000000f b next_WP
 0000000f b prev_WP
@@ -383,6 +383,7 @@
 00000016 r init_ardupilot()::__c
 00000016 r GCS_MAVLINK::update()::__c
 00000016 B sonar
+00000017 r __menu_name__main_menu
 00000018 t setup_accel(unsigned char, Menu::arg const*)
 00000018 W AP_VarT<int>::serialize(void*, unsigned int) const
 00000018 b mavlink_get_channel_status::m_mavlink_status
@@ -608,4 +609,4 @@
 000008e4 t process_next_command()
 000011d8 T GCS_MAVLINK::handleMessage(__mavlink_message*)
 000017d0 t mavlink_try_send_message(mavlink_channel_t, unsigned char, unsigned int)
-00001ff8 T loop
+00001ece T loop

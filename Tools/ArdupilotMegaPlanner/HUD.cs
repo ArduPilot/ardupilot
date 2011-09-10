@@ -167,28 +167,34 @@ System.ComponentModel.Category("Values")]
             if (this.DesignMode) 
                 return;
 
-            GraphicsMode test = this.GraphicsMode;
-            Console.WriteLine(test.ToString());
-            Console.WriteLine("Vendor: "+GL.GetString(StringName.Vendor));
-            Console.WriteLine("Version: " + GL.GetString(StringName.Version));
-            Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
-            //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
+            try
+            {
 
-            int[] viewPort = new int[4]; 
-            
-            GL.GetInteger(GetPName.Viewport, viewPort);  
-            
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
-            GL.Ortho(0, Width, Height, 0, -1, 1);
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadIdentity();
+                GraphicsMode test = this.GraphicsMode;
+                Console.WriteLine(test.ToString());
+                Console.WriteLine("Vendor: " + GL.GetString(StringName.Vendor));
+                Console.WriteLine("Version: " + GL.GetString(StringName.Version));
+                Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
+                //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
 
-            GL.PushAttrib(AttribMask.DepthBufferBit);
-            GL.Disable(EnableCap.DepthTest); 
-            //GL.Enable(EnableCap.Texture2D); 
-            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            GL.Enable(EnableCap.Blend);
+                int[] viewPort = new int[4];
+
+                GL.GetInteger(GetPName.Viewport, viewPort);
+
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
+                GL.Ortho(0, Width, Height, 0, -1, 1);
+                GL.MatrixMode(MatrixMode.Modelview);
+                GL.LoadIdentity();
+
+                GL.PushAttrib(AttribMask.DepthBufferBit);
+                GL.Disable(EnableCap.DepthTest);
+                //GL.Enable(EnableCap.Texture2D); 
+                GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+                GL.Enable(EnableCap.Blend);
+
+            }
+            catch (Exception ex) { Console.WriteLine("HUD opengl onload "+ex.ToString()); }
 
             try
             {

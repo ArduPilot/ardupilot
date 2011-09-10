@@ -52,7 +52,7 @@ namespace ArdupilotMega.GCSViews
 
 
             // enable disable relevbant hardware tabs
-            if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+            if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
             {
                 ConfigTabs.SelectedIndex = 0;
                 TabAPM2.Enabled = true;
@@ -524,7 +524,7 @@ namespace ArdupilotMega.GCSViews
             {
                 StreamWriter sw = new StreamWriter(sfd.OpenFile());
                 string input = DateTime.Now + " Frame : + | Arducopter Kit | Kit motors";
-                if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+                if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
                 {
                     input = DateTime.Now + " Plane: Skywalker";
                 }
