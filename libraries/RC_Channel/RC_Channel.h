@@ -106,6 +106,7 @@ class RC_Channel{
 
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
+/// 	    Also contains physical min,max angular deflection, to allow calibrating open-loop servo movements
 class RC_Channel_aux : public RC_Channel{
 public:
 	/// Constructor
@@ -137,6 +138,8 @@ public:
 		k_nr_aux_servo_functions // This must be the last enum value (only add new values _before_ this one)
 	} Aux_servo_function_t;
 
+	// TODO It would be great if the "packed" attribute could be added to this somehow
+	// It would probably save some memory. But it can only be added to enums and not to typedefs :(
 	AP_VARDEF(Aux_servo_function_t, Aux_srv_func);    // defines AP_Aux_srv_func
 
 	AP_Aux_srv_func 	function;	// 0=disabled, 1=mount yaw (pan), 2=mount pitch (tilt), 3=mount roll, 4=camera trigger, 5=camera open, 6=flap, 7=flap auto, 8=aileron, 9=flaperon, 10=egg drop, 11=manual
