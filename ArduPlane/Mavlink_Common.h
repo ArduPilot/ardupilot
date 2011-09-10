@@ -344,6 +344,20 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 			break;
 		}
 
+
+		case MSG_RAW_ADC:
+        {
+            CHECK_PAYLOAD_SIZE(AP_ADC);
+            mavlink_msg_ap_adc_send(chan, 
+                                    analogRead(BATTERY_PIN1),
+                                    analogRead(BATTERY_PIN2),
+                                    analogRead(BATTERY_PIN3),
+                                    analogRead(BATTERY_PIN4),
+                                    analogRead(AN4),
+                                    analogRead(AN5));
+            break;
+        }
+        
 		default:
 			break;
 	}
@@ -351,7 +365,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 }
 
 
-#define MAX_DEFERRED_MESSAGES 17 // should be at least equal to number of
+#define MAX_DEFERRED_MESSAGES 18 // should be at least equal to number of
                                  // switch types in mavlink_try_send_message()
 static struct mavlink_queue {
     uint8_t deferred_messages[MAX_DEFERRED_MESSAGES];

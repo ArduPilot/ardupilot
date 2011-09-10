@@ -176,6 +176,7 @@
 #define MSG_GPS_RAW 0x64
 
 #define MSG_SERVO_OUT 0x70
+#define MSG_RAW_ADC   0x71
 
 #define MSG_PIN_REQUEST 0x80
 #define MSG_PIN_SET 0x81
