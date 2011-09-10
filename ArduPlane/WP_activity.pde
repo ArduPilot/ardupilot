@@ -32,10 +32,10 @@ void egg_waypoint()
 
 		if(g.waypoint_index == 3){
 			if(wp_distance < egg_dist){
-				g_rc_function[RC_Channel_aux::k_egg_drop]->servo_out = 1500 + (-45*10.31);
+				g_rc_function[RC_Channel_aux::k_egg_drop]->servo_out = 100;
 			}
 		}else{
-			g_rc_function[RC_Channel_aux::k_egg_drop]->servo_out = 1500 + (45*10.31);
+			g_rc_function[RC_Channel_aux::k_egg_drop]->servo_out = 0;
 		}
 	}
 }
