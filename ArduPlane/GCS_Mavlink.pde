@@ -131,7 +131,8 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 		}
 
 		if (freqLoopMatch(streamRateExtra3, freqMin, freqMax)){
-			send_message(MSG_RAW_ADC);
+			// Available datastream
+			//Serial.printf("mav8 %d\n", (int)streamRateExtra3.get());
 		}
 	}
 }
