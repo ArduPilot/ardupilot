@@ -138,13 +138,6 @@
 #define CIRCLE 8				// AUTO control
 #define NUM_MODES 9
 
-// YAW debug
-// ---------
-#define YAW_HOLD 0
-#define YAW_BRAKE 1
-#define YAW_RATE 2
-
-
 // CH_6 Tuning
 // -----------
 #define CH6_NONE 0
@@ -152,20 +145,16 @@
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
 #define	CH6_YAW_KP 3
-#define	CH6_YAW_KD 4
 // Rate
 #define CH6_RATE_KP 5
 #define CH6_RATE_KI 6
 #define	CH6_YAW_RATE_KP 7
-#define	CH6_YAW_RATE_KD 8
 // Altitude
-#define CH6_THROTTLE_KP 9
-#define CH6_THROTTLE_KD 10
+#define CH6_THROTTLE_KP 8
 // Extras
-#define CH6_TOP_BOTTOM_RATIO 11
-#define CH6_PMAX 12
-#define CH6_RELAY 13
-#define CH6_TRAVERSE_SPEED 14
+#define CH6_TOP_BOTTOM_RATIO 9
+#define CH6_RELAY 10
+#define CH6_TRAVERSE_SPEED 11
 
 // nav byte mask
 // -------------

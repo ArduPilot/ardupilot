@@ -102,7 +102,7 @@ get_nav_throttle(long z_error, int target_speed)
 	rate_error 		= constrain(rate_error, -110, 110);
 
 	throttle 		= g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
-	return  		  g.throttle_cruise + rate_error;
+	return  		  g.throttle_cruise + throttle;
 }
 
 

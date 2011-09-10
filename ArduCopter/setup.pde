@@ -13,6 +13,7 @@ static int8_t	setup_flightmodes		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_batt_monitor		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_sonar				(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
+static int8_t	setup_tune				(uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
@@ -41,6 +42,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"battery",			setup_batt_monitor},
 	{"sonar",			setup_sonar},
 	{"compass",			setup_compass},
+	{"tune",			setup_tune},
 //	{"offsets",			setup_mag_offset},
 	{"declination",		setup_declination},
 #ifdef OPTFLOW_ENABLED
@@ -353,6 +355,15 @@ setup_declination(uint8_t argc, const Menu::arg *argv)
 	report_compass();
 	return 0;
 }
+
+static int8_t
+setup_tune(uint8_t argc, const Menu::arg *argv)
+{
+	g.radio_tuning.set_and_save(argv[1].i);
+	report_tuning();
+	return 0;
+}
+
 
 
 static int8_t
@@ -1131,3 +1142,15 @@ static void report_version()
 	print_blanks(2);
 }
 
+
+static void report_tuning()
+{
+	Serial.printf_P(PSTR("\nTUNE:\n"));
+	print_divider();
+	if (g.radio_tuning == 0){
+		print_enabled(g.radio_tuning.get());
+	}else{
+		Serial.printf_P(PSTR(" %d\n"),(int)g.radio_tuning.get());
+	}
+	print_blanks(2);
+}
