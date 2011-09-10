@@ -1,9 +1,0 @@
-AP_Mount         KEYWORD1
-SetGPSTarget     KEYWORD2
-SetAssisted 	 KEYWORD2
-SetAntenna	 KEYWORD2
-SetMountFPV	 KEYWORD2
-SetMountLanding  KEYWORD2
-UpDateMount      KEYWORD2
-SetMode          KEYWORD2
-
