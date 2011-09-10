@@ -267,8 +267,4 @@ static void update_aux_servo_function()
 	g_rc_function[aux_servo_function[CH_6]] = &g.rc_6;
 	g_rc_function[aux_servo_function[CH_7]] = &g.rc_7;
 	g_rc_function[aux_servo_function[CH_8]] = &g.rc_8;
-
-#if CAMERA == ENABLED
-	camera_mount.update_mount_type();
-#endif
 }

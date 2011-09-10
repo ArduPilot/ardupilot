@@ -730,6 +730,9 @@ static void slow_loop()
 
 			update_aux_servo_function();
 
+#if CAMERA == ENABLED
+			camera_mount.update_mount_type();
+#endif
 			break;
 
 		case 2:
