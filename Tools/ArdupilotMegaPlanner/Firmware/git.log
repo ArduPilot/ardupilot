@@ -1,1 +1,75 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   431bdb4..22593cc  APM_Camera -> origin/APM_Camera
+   9a7bcd1..40001f4  master     -> origin/master
+Updating 9a7bcd1..40001f4
+Fast-forward
+ ArduCopter/ArduCopter.pde                          |  108 +-
+ ArduCopter/Attitude.pde                            |    2 +-
+ ArduCopter/Mavlink_Common.h                        |   12 +-
+ ArduCopter/Parameters.h                            |    4 +
+ ArduCopter/config.h                                |    4 +-
+ ArduCopter/defines.h                               |   19 +-
+ ArduCopter/radio.pde                               |   24 -
+ ArduCopter/setup.pde                               |   23 +
+ ArduCopter/system.pde                              |    2 +-
+ ArduCopter/test.pde                                |   57 +-
+ Tools/ArdupilotMegaPlanner/.gitignore              |    4 +
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj    |    1 +
+ .../ArdupilotMegaPlanner/ArdupilotMega.csproj.user |   13 -
+ Tools/ArdupilotMegaPlanner/Common.cs               |    2 +-
+ Tools/ArdupilotMegaPlanner/CurrentState.cs         |    2 +-
+ .../ArdupilotMegaPlanner/GCSViews/Configuration.cs |    4 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |  440 +----
+ Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |    2 +-
+ .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |   10 +-
+ Tools/ArdupilotMegaPlanner/HUD.cs                  |   50 +-
+ Tools/ArdupilotMegaPlanner/LogBrowse.cs            |    4 +-
+ Tools/ArdupilotMegaPlanner/MAVLink.cs              |    2 +-
+ Tools/ArdupilotMegaPlanner/MainV2.cs               |   25 +-
+ .../Properties/AssemblyInfo.cs                     |    2 +-
+ Tools/ArdupilotMegaPlanner/Setup/Setup.cs          |    8 +-
+ Tools/ArdupilotMegaPlanner/bin/Release/.gitignore  |    3 +
+ .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2052096 -> 2045440 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 13312 -> 13312 bytes
+ .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 397312 -> 397312 bytes
+ Tools/PPMEncoder/ap_ppm_encoder.aps                |    1 +
+ Tools/PPMEncoder/ap_ppm_encoder.aws                |    1 +
+ Tools/PPMEncoder/ap_ppm_encoder.c                  | 1287 ++++++++++
+ Tools/PPMEncoder/default/Makefile                  |   77 +
+ Tools/PPMEncoder/default/ap_ppm_encoder.eep        |    5 +
+ Tools/PPMEncoder/default/ap_ppm_encoder.elf        |  Bin 0 -> 16459 bytes
+ Tools/PPMEncoder/default/ap_ppm_encoder.hex        |  197 ++
+ Tools/PPMEncoder/default/ap_ppm_encoder.lss        | 2636 ++++++++++++++++++++
+ Tools/PPMEncoder/default/ap_ppm_encoder.map        |  419 ++++
+ Tools/PPMEncoder/default/dep/ap_ppm_encoder.o.d    |   46 +
+ Tools/PPMEncoder/default/ppm_enconder_at328.bat    |   17 +
+ Tools/PPMEncoder/servo2ppm_settings.h              |  128 +
+ images/GIT2.PNG                                    |  Bin 29001 -> 0 bytes
+ libraries/AP_Camera/Camera.cpp                     |  277 --
+ libraries/AP_Camera/Camera.h                       |   71 -
+ libraries/AP_Mount/AP_Mount.cpp                    |  184 --
+ libraries/AP_Mount/AP_Mount.h                      |   99 -
+ libraries/AP_Mount/keywords.txt                    |    9 -
+ 48 files changed, 4995 insertions(+), 1286 deletions(-)
+ create mode 100644 Tools/ArdupilotMegaPlanner/.gitignore
+ delete mode 100644 Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj.user
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/.gitignore
+ create mode 100644 Tools/PPMEncoder/ap_ppm_encoder.aps
+ create mode 100644 Tools/PPMEncoder/ap_ppm_encoder.aws
+ create mode 100644 Tools/PPMEncoder/ap_ppm_encoder.c
+ create mode 100644 Tools/PPMEncoder/default/Makefile
+ create mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.eep
+ create mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.elf
+ create mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.hex
+ create mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.lss
+ create mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.map
+ create mode 100644 Tools/PPMEncoder/default/dep/ap_ppm_encoder.o.d
+ create mode 100644 Tools/PPMEncoder/default/ppm_enconder_at328.bat
+ create mode 100644 Tools/PPMEncoder/servo2ppm_settings.h
+ delete mode 100644 images/GIT2.PNG
+ delete mode 100644 libraries/AP_Camera/Camera.cpp
+ delete mode 100644 libraries/AP_Camera/Camera.h
+ delete mode 100644 libraries/AP_Mount/AP_Mount.cpp
+ delete mode 100644 libraries/AP_Mount/AP_Mount.h
+ delete mode 100644 libraries/AP_Mount/keywords.txt
