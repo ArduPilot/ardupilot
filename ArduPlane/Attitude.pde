@@ -339,10 +339,10 @@ static void set_servos(void)
 	APM_RC.OutputCh(CH_3, g.channel_throttle.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_4, g.channel_rudder.radio_out); // send to Servos
 	// Route configurable aux. functions to their respective servos
-	aux_servo_out(&g.rc_5, CH_5);
-	aux_servo_out(&g.rc_6, CH_6);
-	aux_servo_out(&g.rc_7, CH_7);
-	aux_servo_out(&g.rc_8, CH_8);
+	g.rc_5.output_ch(CH_5);
+	g.rc_6.output_ch(CH_6);
+	g.rc_7.output_ch(CH_7);
+	g.rc_8.output_ch(CH_8);
 #endif
  }
 

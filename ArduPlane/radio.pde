@@ -247,34 +247,6 @@ static void trim_radio()
 	if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
 }
 
-// map a function to a servo channel
-static void aux_servo_out(RC_Channel_aux* ch, unsigned char ch_nr)
-{
-	switch(ch->function)
-	{
-	case RC_Channel_aux::k_none: // disabled
-		return;
-		break;
-	case RC_Channel_aux::k_mount_yaw:	// mount yaw (pan)
-	case RC_Channel_aux::k_mount_pitch:	// mount pitch (tilt)
-	case RC_Channel_aux::k_mount_roll:	// mount roll
-	case RC_Channel_aux::k_cam_trigger:	// camera trigger
-	case RC_Channel_aux::k_cam_open:	// camera open
-	case RC_Channel_aux::k_flap:		// flaps
-	case RC_Channel_aux::k_flap_auto:	// flaps automated
-	case RC_Channel_aux::k_aileron:		// aileron
-	case RC_Channel_aux::k_flaperon:	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
-	case RC_Channel_aux::k_egg_drop:	// egg drop
-	case RC_Channel_aux::k_nr_aux_servo_functions: // dummy, just to avoid a compiler warning
-		break;
-	case RC_Channel_aux::k_manual:		// manual
-		ch->radio_out = ch->radio_in;
-		break;
-	}
-
-	APM_RC.OutputCh(ch_nr, ch->radio_out);
-}
-
 // update the g_rc_function array from pointers to rc_x channels
 static void update_aux_servo_function()
 {
