@@ -368,7 +368,7 @@ namespace ArdupilotMega.GCSViews
                                 PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
 
 
-                                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPilotMega)
+                                if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
                                     routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing,MainV2.cs.target_bearing));
                                 }
