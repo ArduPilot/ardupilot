@@ -146,15 +146,15 @@
 #define CH6_STABILIZE_KI 2
 #define	CH6_YAW_KP 3
 // Rate
-#define CH6_RATE_KP 5
-#define CH6_RATE_KI 6
-#define	CH6_YAW_RATE_KP 7
+#define CH6_RATE_KP 4
+#define CH6_RATE_KI 5
+#define	CH6_YAW_RATE_KP 6
 // Altitude
-#define CH6_THROTTLE_KP 8
+#define CH6_THROTTLE_KP 7
 // Extras
-#define CH6_TOP_BOTTOM_RATIO 9
-#define CH6_RELAY 10
-#define CH6_TRAVERSE_SPEED 11
+#define CH6_TOP_BOTTOM_RATIO 8
+#define CH6_RELAY 9
+#define CH6_TRAVERSE_SPEED 10
 
 // nav byte mask
 // -------------
