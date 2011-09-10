@@ -38,8 +38,6 @@ namespace ArdupilotMega
 
             openFileDialog1.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "logs";
 
-            Common.getFilefromNet("url", Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "dataflashlog.xml");
-
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 try
@@ -156,7 +154,7 @@ namespace ArdupilotMega
                 {
                     reader.Read();
                     reader.ReadStartElement("LOGFORMAT");
-                    if (MainV2.APMFirmware == MainV2.Firmwares.ArduPilotMega)
+                    if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
                     {
                         reader.ReadToFollowing("APM");
                     }

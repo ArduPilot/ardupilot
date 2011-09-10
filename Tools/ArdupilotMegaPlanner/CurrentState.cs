@@ -145,7 +145,7 @@ namespace ArdupilotMega
         public ushort rcoverridech4 { get; set; }
 
         // current firmware
-        public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPilotMega;
+        public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
         public float freemem { get; set; }
         public float brklevel { get; set; }
 
