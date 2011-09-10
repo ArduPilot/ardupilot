@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <avr/eeprom.h>
+#include <APM_RC.h>
 #include "WProgram.h"
 #include "RC_Channel.h"
 
@@ -252,4 +253,33 @@ RC_Channel_aux::closest_limit(int16_t angle)
 	calc_pwm();
 
 	return angle;
+}
+
+// map a function to a servo channel and output it
+void
+RC_Channel_aux::output_ch(unsigned char ch_nr)
+{
+	switch(function)
+	{
+	case k_none: 		// disabled
+		return;
+		break;
+	case k_mount_yaw:	// mount yaw (pan)
+	case k_mount_pitch:	// mount pitch (tilt)
+	case k_mount_roll:	// mount roll
+	case k_cam_trigger:	// camera trigger
+	case k_cam_open:	// camera open
+	case k_flap:		// flaps
+	case k_flap_auto:	// flaps automated
+	case k_aileron:		// aileron
+	case k_flaperon:	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
+	case k_egg_drop:	// egg drop
+	case k_nr_aux_servo_functions: // dummy, just to avoid a compiler warning
+		break;
+	case k_manual:		// manual
+		radio_out = radio_in;
+		break;
+	}
+
+	APM_RC.OutputCh(ch_nr, radio_out);
 }

@@ -144,6 +144,9 @@ public:
 	AP_Int16 	angle_max;	// max angle limit of actuated surface in 0.01 degree units
 
 	int16_t closest_limit(int16_t angle);	// saturate to the closest angle limit if outside of min max angle interval
+
+	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
+
 };
 
 #endif
