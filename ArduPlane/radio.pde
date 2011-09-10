@@ -248,6 +248,8 @@ static void trim_radio()
 }
 
 // update the g_rc_function array from pointers to rc_x channels
+// This should be done periodically because the user might change the configuration and
+// expects the changes to take effect instantly
 static void update_aux_servo_function()
 {
 	RC_Channel_aux::Aux_servo_function_t aux_servo_function[NUM_CHANNELS];			// the function of the aux. servos
