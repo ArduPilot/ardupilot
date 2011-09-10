@@ -41,5 +41,15 @@
                <field type="uint16_t" name="freemem">free memory</field>
           </message>
 
+          <message id="153" name="AP_ADC">
+               <description>raw ADC output</description>
+               <field type="uint16_t" name="adc1">ADC output 1</field>
+               <field type="uint16_t" name="adc2">ADC output 2</field>
+               <field type="uint16_t" name="adc3">ADC output 3</field>
+               <field type="uint16_t" name="adc4">ADC output 4</field>
+               <field type="uint16_t" name="adc5">ADC output 5</field>
+               <field type="uint16_t" name="adc6">ADC output 6</field>
+          </message>
+
      </messages>
 </mavlink>
