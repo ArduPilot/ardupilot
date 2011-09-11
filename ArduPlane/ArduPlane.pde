@@ -735,7 +735,7 @@ static void slow_loop()
 			// ----------------------------------
 			update_servo_switches();
 
-			update_aux_servo_function();
+			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 
 #if CAMERA == ENABLED
 			camera_mount.update_mount_type();
