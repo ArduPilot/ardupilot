@@ -296,6 +296,7 @@ static boolean		motor_auto_armed;				// if true,
 //int 	max_stabilize_dampener;				//
 //int 	max_yaw_dampener;					//
 static Vector3f omega;
+float tuning_value;
 
 // LED output
 // ----------
@@ -507,7 +508,7 @@ static byte				simple_timer;				// for limiting the execution of flight mode thi
 
 static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
-static float 			load;						// % MCU cycles used
+//static float 			load;						// % MCU cycles used
 
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
@@ -530,7 +531,7 @@ void loop()
 		//PORTK |= B00010000;
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
-		load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
+		//load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 		mainLoop_count++;
 
@@ -907,16 +908,15 @@ static void slow_loop()
 				// between 1 and 5 Hz
 			#else
 				gcs.send_message(MSG_LOCATION);
-				gcs.send_message(MSG_CPU_LOAD, load*100);
+				//gcs.send_message(MSG_CPU_LOAD, load*100);
 			#endif
 
 			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
 				hil.data_stream_send(1,5);
 			#endif
 
-			#if CHANNEL_6_TUNING != CH6_NONE
+			if(g.radio_tuning > 0)
 				tuning();
-			#endif
 
 			// filter out the baro offset.
 			//if(baro_alt_offset > 0) baro_alt_offset--;
@@ -1301,7 +1301,7 @@ static void read_AHRS(void)
 		hil.update();
 	#endif
 
-	dcm.update_DCM(G_Dt);
+	dcm.update_DCM(G_Dt);//, _tog);
 	omega = dcm.get_gyro();
 }
 
@@ -1396,63 +1396,71 @@ adjust_altitude()
 }
 
 static void tuning(){
+	tuning_value = (float)g.rc_6.control_in / 1000.0;
 
-	//Outer Loop : Attitude
-	#if CHANNEL_6_TUNING == CH6_STABILIZE_KP
-		g.pi_stabilize_roll.kP((float)g.rc_6.control_in / 1000.0);
-		g.pi_stabilize_pitch.kP((float)g.rc_6.control_in / 1000.0);
+	switch(g.radio_tuning){
+		case CH6_STABILIZE_KP:
+			g.rc_6.set_range(0,8000); 		// 0 to 8
+			g.pi_stabilize_roll.kP(tuning_value);
+			g.pi_stabilize_pitch.kP(tuning_value);
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_STABILIZE_KI
-		g.pi_stabilize_roll.kI((float)g.rc_6.control_in / 1000.0);
-		g.pi_stabilize_pitch.kI((float)g.rc_6.control_in / 1000.0);
+		case CH6_STABILIZE_KI:
+			g.rc_6.set_range(0,300); 		// 0 to .3
+			tuning_value = (float)g.rc_6.control_in / 1000.0;
+			g.pi_stabilize_roll.kI(tuning_value);
+			g.pi_stabilize_pitch.kI(tuning_value);
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_YAW_KP
-		g.pi_stabilize_yaw.kP((float)g.rc_6.control_in / 1000.0);  // range from 0.0 ~ 5.0
+		case CH6_RATE_KP:
+			g.rc_6.set_range(0,300);		 // 0 to .3
+			g.pi_rate_roll.kP(tuning_value);
+			g.pi_rate_pitch.kP(tuning_value);
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_YAW_KI
-		g.pi_stabilize_yaw.kI((float)g.rc_6.control_in / 1000.0);
+		case CH6_RATE_KI:
+			g.rc_6.set_range(0,300);		 // 0 to .3
+			g.pi_rate_roll.kI(tuning_value);
+			g.pi_rate_pitch.kI(tuning_value);
+			break;
 
+		case CH6_YAW_KP:
+			g.rc_6.set_range(0,1000);
+			g.pi_stabilize_yaw.kP(tuning_value);
+			break;
 
-	//Inner Loop : Rate
-	#elif CHANNEL_6_TUNING == CH6_RATE_KP
-		g.pi_rate_roll.kP((float)g.rc_6.control_in / 1000.0);
-		g.pi_rate_pitch.kP((float)g.rc_6.control_in / 1000.0);
+		case CH6_YAW_RATE_KP:
+			g.rc_6.set_range(0,1000);
+			g.pi_rate_yaw.kP(tuning_value);
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_RATE_KI
-		g.pi_rate_roll.kI((float)g.rc_6.control_in / 1000.0);
-		g.pi_rate_pitch.kI((float)g.rc_6.control_in / 1000.0);
+		case CH6_THROTTLE_KP:
+			g.rc_6.set_range(0,1000);
+			g.pi_throttle.kP(tuning_value);
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
-		g.pi_rate_yaw.kP((float)g.rc_6.control_in / 1000.0);
+		case CH6_TOP_BOTTOM_RATIO:
+			g.rc_6.set_range(800,1000); 	// .8 to 1
+			g.top_bottom_ratio = tuning_value;
+			break;
 
-	#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KI
-		g.pi_rate_yaw.kI((float)g.rc_6.control_in / 1000.0);
+		case CH6_RELAY:
+			g.rc_6.set_range(0,1000);
+		  	if (g.rc_6.control_in <= 600) relay_on();
+		  	if (g.rc_6.control_in >= 400) relay_off();
+			break;
 
+		case CH6_TRAVERSE_SPEED:
+			g.rc_6.set_range(0,1000);
+			g.waypoint_speed_max = g.rc_6.control_in;
+			break;
 
-	//Altitude Hold
-	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KP
-		g.pi_throttle.kP((float)g.rc_6.control_in / 1000.0); //  0 to 1
-
-	#elif CHANNEL_6_TUNING == CH6_THROTTLE_KD
-		g.pi_throttle.kD((float)g.rc_6.control_in / 1000.0); //  0 to 1
-
-	//Extras
-	#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
-		g.top_bottom_ratio = (float)g.rc_6.control_in / 1000.0;
-
-	#elif CHANNEL_6_TUNING == CH6_TRAVERSE_SPEED
-		g.waypoint_speed_max = (float)g.rc_6.control_in / 1000.0;
-
-
-	#elif CHANNEL_6_TUNING == CH6_PMAX
-		g.pitch_max.set(g.rc_6.control_in * 2);  // 0 to 2000
-
-        // Simple relay control
-        #elif CHANNEL_6_TUNING == CH6_RELAY
-              if(g.rc_6.control_in <= 600) relay_on();
-              if(g.rc_6.control_in >= 400) relay_off();
-
-	#endif
+		case CH6_NAV_P:
+			g.rc_6.set_range(0,6000);
+			g.pi_nav_lat.kP(tuning_value);
+			g.pi_nav_lon.kP(tuning_value);
+			break;
+	}
 }
 
 static void update_nav_wp()

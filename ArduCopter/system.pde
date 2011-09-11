@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ArduCopter 2.0.40 Beta", main_menu_commands);
+MENU(main_menu, "ArduCopter 2.0.41 Beta", main_menu_commands);
 
 #endif // CLI_ENABLED
 

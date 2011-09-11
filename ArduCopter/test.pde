@@ -636,59 +636,8 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(200);
 		read_radio();
-
-		//Outer Loop : Attitude
-		#if CHANNEL_6_TUNING == CH6_NONE
-			Serial.printf_P(PSTR("disabled\n"));
-
-		#elif CHANNEL_6_TUNING == CH6_STABILIZE_KP
-			Serial.printf_P(PSTR("stab kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_STABILIZE_KI
-			Serial.printf_P(PSTR("stab kI: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_YAW_KP
-			Serial.printf_P(PSTR("yaw Hold kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));  // range from 0 ~ 5.0
-
-		#elif CHANNEL_6_TUNING == CH6_YAW_KI
-			Serial.printf_P(PSTR("yaw Hold kI: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		//Inner Loop : Rate
-		#elif CHANNEL_6_TUNING == CH6_RATE_KP
-			Serial.printf_P(PSTR("rate kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_RATE_KI
-			Serial.printf_P(PSTR("rate kI: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KP
-			Serial.printf_P(PSTR("yaw rate kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_YAW_RATE_KI
-			Serial.printf_P(PSTR("yaw rate kI: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-
-		//Altitude Hold
-		#elif CHANNEL_6_TUNING == CH6_THROTTLE_KP
-			Serial.printf_P(PSTR("throttle kP: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_THROTTLE_KD
-			Serial.printf_P(PSTR("baro kD: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_TRAVERSE_SPEED
-			Serial.printf_P(PSTR("traverse: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-
-		//Extras
-		#elif CHANNEL_6_TUNING == CH6_TOP_BOTTOM_RATIO
-			Serial.printf_P(PSTR("Y6: %1.3f\n"), ((float)g.rc_6.control_in / 1000.0));
-
-		#elif CHANNEL_6_TUNING == CH6_PMAX
-			Serial.printf_P(PSTR("Y6: %d\n"), (g.rc_6.control_in * 2));
-
-		#elif CHANNEL_6_TUNING == CH6_RELAY
-			Serial.printf_P(PSTR(" %d\n"), (g.rc_6.control_in ));
-
-		#endif
+		tuning();
+		Serial.printf_P(PSTR("tune: %1.3f\n"), tuning_value);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -1009,10 +958,12 @@ test_mission(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 */
+
 static void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
+
 /*
 static void fake_out_gps()
 {

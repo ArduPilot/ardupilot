@@ -513,7 +513,7 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.35		//
+# define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
@@ -522,7 +522,7 @@
 //# define THROTTLE_D		0.6			// upped with filter
 //#endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX		150
+# define THROTTLE_IMAX		300
 #endif
 
 

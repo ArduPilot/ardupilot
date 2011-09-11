@@ -87,7 +87,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 					mode,
 					nav_mode,
 					status,
-					load * 1000,
+					0,
 					battery_voltage * 1000,
 					battery_remaining,
 					packet_drops);
@@ -294,14 +294,14 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
             CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
             Vector3f mag_offsets = compass.get_offsets();
 
-            mavlink_msg_sensor_offsets_send(chan, 
+            mavlink_msg_sensor_offsets_send(chan,
                                             mag_offsets.x,
                                             mag_offsets.y,
                                             mag_offsets.z,
                                             compass.get_declination(),
-                                            barometer.RawPress, 
+                                            barometer.RawPress,
                                             barometer.RawTemp,
-                                            imu.gx(), imu.gy(), imu.gz(), 
+                                            imu.gx(), imu.gy(), imu.gz(),
                                             imu.ax(), imu.ay(), imu.az());
 			break;
 		}
@@ -353,8 +353,8 @@ static void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint16_t pa
 
     // see if we can send the deferred messages, if any
     while (q->num_deferred_messages != 0) {
-        if (!mavlink_try_send_message(chan, 
-                                      q->deferred_messages[q->next_deferred_message], 
+        if (!mavlink_try_send_message(chan,
+                                      q->deferred_messages[q->next_deferred_message],
                                       packet_drops)) {
             break;
         }
