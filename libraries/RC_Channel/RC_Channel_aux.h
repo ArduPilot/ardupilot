@@ -9,6 +9,9 @@
 
 #include "RC_Channel.h"
 
+// Macro to simplify accessing the auxiliary servos
+#define G_RC_AUX(_t)   if (g_rc_function[RC_Channel_aux::_t]) g_rc_function[RC_Channel_aux::_t]
+
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
 /// 	    Also contains physical min,max angular deflection, to allow calibrating open-loop servo movements

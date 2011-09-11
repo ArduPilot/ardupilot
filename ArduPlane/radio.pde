@@ -23,46 +23,26 @@ static void init_rc_in()
 	g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
-	if (g_rc_function[RC_Channel_aux::k_flap]) {
-		g_rc_function[RC_Channel_aux::k_flap]->set_range(0,100);
-	}
-	if (g_rc_function[RC_Channel_aux::k_flap_auto]) {
-		g_rc_function[RC_Channel_aux::k_flap_auto]->set_range(0,100);
-	}
-	if (g_rc_function[RC_Channel_aux::k_aileron]) {
-		g_rc_function[RC_Channel_aux::k_aileron]->set_angle(SERVO_MAX);
-	}
-	if (g_rc_function[RC_Channel_aux::k_flaperon]) {
-		g_rc_function[RC_Channel_aux::k_flaperon]->set_range(0,100);
-	}
+	G_RC_AUX(k_flap)->set_range(0,100);
+	G_RC_AUX(k_flap_auto)->set_range(0,100);
+	G_RC_AUX(k_aileron)->set_angle(SERVO_MAX);
+	G_RC_AUX(k_flaperon)->set_range(0,100);
 #if CAMERA == ENABLED
-	if (g_rc_function[RC_Channel_aux::k_mount_yaw]) {
-		g_rc_function[RC_Channel_aux::k_mount_yaw]->set_range(
+	G_RC_AUX(k_mount_yaw)->set_range(
 				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_max / 10);
-	}
-	if (g_rc_function[RC_Channel_aux::k_mount_pitch]) {
-		g_rc_function[RC_Channel_aux::k_mount_pitch]->set_range(
+	G_RC_AUX(k_mount_pitch)->set_range(
 				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_max / 10);
-	}
-	if (g_rc_function[RC_Channel_aux::k_mount_roll]) {
-		g_rc_function[RC_Channel_aux::k_mount_roll]->set_range(
+	G_RC_AUX(k_mount_roll)->set_range(
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max / 10);
-	}
-	if (g_rc_function[RC_Channel_aux::k_cam_trigger]) {
-		g_rc_function[RC_Channel_aux::k_cam_trigger]->set_range(
+	G_RC_AUX(k_cam_trigger)->set_range(
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_min / 10,
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
-	}
-	if (g_rc_function[RC_Channel_aux::k_cam_open]) {
-		g_rc_function[RC_Channel_aux::k_cam_open]->set_range(0,100);
-	}
+	G_RC_AUX(k_cam_open)->set_range(0,100);
 #endif
-	if (g_rc_function[RC_Channel_aux::k_egg_drop]) {
-		g_rc_function[RC_Channel_aux::k_egg_drop]->set_range(0,100);
-	}
+	G_RC_AUX(k_egg_drop)->set_range(0,100);
 }
 
 static void init_rc_out()
@@ -195,7 +175,7 @@ static void trim_control_surfaces()
 		g.channel_roll.radio_trim = g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
-		if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 		
 	}else{
 		elevon1_trim = ch1_temp;
@@ -212,7 +192,7 @@ static void trim_control_surfaces()
 	g.channel_pitch.save_eeprom();
 	g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
+	G_RC_AUX(k_aileron)->save_eeprom();
 }
 
 static void trim_radio()
@@ -228,7 +208,7 @@ static void trim_radio()
 		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
 		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
-		if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 
 	} else {
 		elevon1_trim = ch1_temp;
@@ -244,5 +224,5 @@ static void trim_radio()
 	g.channel_pitch.save_eeprom();
 	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
+	G_RC_AUX(k_aileron)->save_eeprom();
 }

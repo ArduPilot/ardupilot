@@ -98,10 +98,7 @@ AP_Camera::trigger_pic_cleanup()
 		case 0:
 		case 2:
 		case 3:
-			if (g_rc_function[RC_Channel_aux::k_cam_trigger])
-			{
-				g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_out = g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_min;
-			}
+			G_RC_AUX(k_cam_trigger)->radio_out = g_rc_function[RC_Channel_aux::k_cam_trigger]->radio_min;
 			break;
 		case 1:
 			// TODO for some strange reason the function call bellow gives a linker error

@@ -102,6 +102,7 @@ class RC_Channel{
 	int16_t 	_low;
 };
 
+// This is ugly, but it fixes compilation on arduino
 #include "RC_Channel_aux.h"
 
 #endif

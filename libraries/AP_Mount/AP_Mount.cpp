@@ -156,12 +156,9 @@ void AP_Mount::update_mount()
 
 	// write the results to the servos
 	// Change scaling to 0.1 degrees in order to avoid overflows in the angle arithmetic
-	if (g_rc_function[RC_Channel_aux::k_mount_roll])
-		g_rc_function[RC_Channel_aux::k_mount_roll]->closest_limit(roll_angle/10);
-	if (g_rc_function[RC_Channel_aux::k_mount_pitch])
-		g_rc_function[RC_Channel_aux::k_mount_pitch]->closest_limit(pitch_angle/10);
-	if (g_rc_function[RC_Channel_aux::k_mount_yaw])
-		g_rc_function[RC_Channel_aux::k_mount_yaw]->closest_limit(yaw_angle/10);
+	G_RC_AUX(k_mount_roll)->closest_limit(roll_angle/10);
+	G_RC_AUX(k_mount_pitch)->closest_limit(pitch_angle/10);
+	G_RC_AUX(k_mount_yaw)->closest_limit(yaw_angle/10);
 }	
 
 void AP_Mount::set_mode(MountMode mode)
