@@ -140,9 +140,10 @@ public:
 
 	// TODO It would be great if the "packed" attribute could be added to this somehow
 	// It would probably save some memory. But it can only be added to enums and not to typedefs :(
-	AP_VARDEF(Aux_servo_function_t, Aux_srv_func);    // defines AP_Aux_srv_func
+	/*AP_VARDEF(Aux_servo_function_t, Aux_srv_func);    // defines AP_Aux_srv_func
 
-	AP_Aux_srv_func 	function;	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
+	AP_Aux_srv_func 	function;*/	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
+	AP_Int8 	function;	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
 	AP_Int16 	angle_min;	// min angle limit of actuated surface in 0.01 degree units
 	AP_Int16 	angle_max;	// max angle limit of actuated surface in 0.01 degree units
 
