@@ -23,6 +23,19 @@ static void init_rc_in()
 	g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
+	if (g_rc_function[RC_Channel_aux::k_flap]) {
+		g_rc_function[RC_Channel_aux::k_flap]->set_range(0,100);
+	}
+	if (g_rc_function[RC_Channel_aux::k_flap_auto]) {
+		g_rc_function[RC_Channel_aux::k_flap_auto]->set_range(0,100);
+	}
+	if (g_rc_function[RC_Channel_aux::k_aileron]) {
+		g_rc_function[RC_Channel_aux::k_aileron]->set_angle(SERVO_MAX);
+	}
+	if (g_rc_function[RC_Channel_aux::k_flaperon]) {
+		g_rc_function[RC_Channel_aux::k_flaperon]->set_range(0,100);
+	}
+#if CAMERA == ENABLED
 	if (g_rc_function[RC_Channel_aux::k_mount_yaw]) {
 		g_rc_function[RC_Channel_aux::k_mount_yaw]->set_range(
 				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min / 10,
@@ -44,22 +57,9 @@ static void init_rc_in()
 				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
 	}
 	if (g_rc_function[RC_Channel_aux::k_cam_open]) {
-		g_rc_function[RC_Channel_aux::k_cam_open]->set_range(
-				g_rc_function[RC_Channel_aux::k_cam_open]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_cam_open]->angle_max / 10);
+		g_rc_function[RC_Channel_aux::k_cam_open]->set_range(0,100);
 	}
-	if (g_rc_function[RC_Channel_aux::k_flap]) {
-		g_rc_function[RC_Channel_aux::k_flap]->set_range(0,100);
-	}
-	if (g_rc_function[RC_Channel_aux::k_flap_auto]) {
-		g_rc_function[RC_Channel_aux::k_flap_auto]->set_range(0,100);
-	}
-	if (g_rc_function[RC_Channel_aux::k_aileron]) {
-		g_rc_function[RC_Channel_aux::k_aileron]->set_angle(SERVO_MAX);
-	}
-	if (g_rc_function[RC_Channel_aux::k_flaperon]) {
-		g_rc_function[RC_Channel_aux::k_flaperon]->set_range(0,100);
-	}
+#endif
 	if (g_rc_function[RC_Channel_aux::k_egg_drop]) {
 		g_rc_function[RC_Channel_aux::k_egg_drop]->set_range(0,100);
 	}
