@@ -124,31 +124,27 @@ void AP_Mount::update_mount()
 				yaw_angle=100*_roam_angles.z;
 				break;
 			}
-		case k_none:
-			{
-				//do nothing
-				break;
-			}
 		case k_manual:	// radio manual control
 			if (g_rc_function[RC_Channel_aux::k_mount_roll])
 				roll_angle = map(g_rc_function[RC_Channel_aux::k_mount_roll]->radio_in,
 						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_min,
 						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_max,
 						g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min,
-						g_rc_function[RC_Channel_aux::k_mount_roll]->radio_max);
+						g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max);
 			if (g_rc_function[RC_Channel_aux::k_mount_pitch])
 				pitch_angle = map(g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_in,
 						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_min,
 						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_max,
 						g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_min,
-						g_rc_function[RC_Channel_aux::k_mount_pitch]->radio_max);
+						g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_max);
 			if (g_rc_function[RC_Channel_aux::k_mount_yaw])
 				yaw_angle = map(g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_in,
 						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_min,
 						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_max,
 						g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min,
-						g_rc_function[RC_Channel_aux::k_mount_yaw]->radio_max);
+						g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_max);
 			break;
+		case k_none:
 		default:
 			{
 				//do nothing
