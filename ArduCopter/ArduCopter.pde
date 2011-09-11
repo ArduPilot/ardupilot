@@ -1454,6 +1454,12 @@ static void tuning(){
 			g.rc_6.set_range(0,1000);
 			g.waypoint_speed_max = g.rc_6.control_in;
 			break;
+
+		case CH6_NAV_P:
+			g.rc_6.set_range(0,6000);
+			g.pi_nav_lat.kP(tuning_value);
+			g.pi_nav_lon.kP(tuning_value);
+			break;
 	}
 }
 

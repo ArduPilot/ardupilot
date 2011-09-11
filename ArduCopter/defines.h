@@ -156,6 +156,8 @@
 #define CH6_RELAY 9
 #define CH6_TRAVERSE_SPEED 10
 
+#define CH6_NAV_P 11
+
 // nav byte mask
 // -------------
 #define NAV_LOCATION 1
