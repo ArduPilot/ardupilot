@@ -278,6 +278,7 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 	case k_cam_open:	// camera open
 	case k_egg_drop:	// egg drop
 	case k_nr_aux_servo_functions: // dummy, just to avoid a compiler warning
+	default:
 		break;
 	}
 
