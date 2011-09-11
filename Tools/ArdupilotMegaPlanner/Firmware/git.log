@@ -1,1 +1,6 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   4e3e372..ebb25b6  master     -> origin/master
+Updating 4e3e372..ebb25b6
+Fast-forward
+ ArduCopter/defines.h |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
