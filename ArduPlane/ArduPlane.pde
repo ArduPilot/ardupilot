@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPilotMega V2.24"
+#define THISFIRMWARE "ArduPilotMega V2.23"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short
 Thanks to:  Chris Anderson, HappyKillMore, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi
@@ -581,7 +581,7 @@ static void medium_loop()
 
 	// For now point the camera manually via the RC inputs (later remove these two lines)
 	// for simple dcm tests, replace k_manual with k_stabilise
-	camera_mount.set_mode(AP_Mount::k_stabilise);
+	camera_mount.set_mode(AP_Mount::k_manual);
 	camera_mount.update_mount();
 
 	g.camera.trigger_pic_cleanup();

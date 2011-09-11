@@ -1,2 +1,0 @@
-#!/bin/bash
-avrdude -c arduino -p m1280 -P /dev/ttyUSB1 -b57600 -U /tmp/ArduPlane.build/ArduPlane.hex
