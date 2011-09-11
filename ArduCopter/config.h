@@ -345,7 +345,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
-# define CIRCLE_YAW 		YAW_HOLD
+# define CIRCLE_YAW 		YAW_AUTO
 #endif
 
 #ifndef CIRCLE_RP
