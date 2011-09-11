@@ -305,19 +305,6 @@
 //
 
 //////////////////////////////////////////////////////////////////////////////
-// RC_5_FUNCT								OPTIONAL
-// RC_6_FUNCT								OPTIONAL
-// RC_7_FUNCT								OPTIONAL
-// RC_8_FUNCT								OPTIONAL
-//
-// The channel 5 through 8 function assignments allow configuration of those 
-// channels for use with differential ailerons, flaps, flaperons, or camera
-// or intrument mounts
-//
-//#define RC_5_FUNCT   RC_5_FUNCT_NONE		
-//etc.
-
-//////////////////////////////////////////////////////////////////////////////
 // For automatic flap operation based on speed setpoint.  If the speed setpoint is above flap_1_speed
 // then the flap position shall be 0%.  If the speed setpoint is between flap_1_speed and flap_2_speed
 // then the flap position shall be flap_1_percent.  If the speed setpoint is below flap_2_speed
