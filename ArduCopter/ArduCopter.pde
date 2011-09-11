@@ -527,7 +527,7 @@ void loop()
 {
 	// We want this to execute fast
 	// ----------------------------
-	if (millis() - fast_loopTimer >= 5) {
+	if (millis() - fast_loopTimer >= 4) {
 		//PORTK |= B00010000;
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
@@ -543,6 +543,7 @@ void loop()
 		fast_loop();
 		fast_loopTimeStamp = millis();
 	}
+	//PORTK &= B11101111;
 
 	if (millis() - fiftyhz_loopTimer > 19) {
 		delta_ms_fiftyhz 		= millis() - fiftyhz_loopTimer;
@@ -577,7 +578,6 @@ void loop()
         }
 		//PORTK &= B10111111;
 	}
-	//PORTK &= B11101111;
 }
 //  PORTK |= B01000000;
 //	PORTK &= B10111111;
@@ -1268,15 +1268,12 @@ static void update_navigation()
 			// calculates desired Yaw
 			update_auto_yaw();
 			{
-				circle_angle += dTnav; //1000 * (dTnav/1000);
-
-				if (circle_angle >= 36000)
-					circle_angle -= 36000;
+				//circle_angle += dTnav; //1000 * (dTnav/1000);
+				circle_angle = wrap_360(target_bearing + 2000 + 18000);
 
 				target_WP.lng = next_WP.lng + g.loiter_radius * cos(radians(90 - circle_angle));
 				target_WP.lat = next_WP.lat + g.loiter_radius * sin(radians(90 - circle_angle));
 			}
-
 
 			// calc the lat and long error to the target
 			calc_location_error(&target_WP);
@@ -1301,7 +1298,7 @@ static void read_AHRS(void)
 		hil.update();
 	#endif
 
-	dcm.update_DCM(G_Dt);//, _tog);
+	dcm.update_DCM_fast(G_Dt);//, _tog);
 	omega = dcm.get_gyro();
 }
 
