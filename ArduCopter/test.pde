@@ -447,7 +447,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 								accels.x, accels.y, accels.z,
 								gyros.x,  gyros.y,  gyros.z);
 			*/
-			///*
+			/*
 			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
 								cos_pitch_x,
 								sin_pitch_y,
