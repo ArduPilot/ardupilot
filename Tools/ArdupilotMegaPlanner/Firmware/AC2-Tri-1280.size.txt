@@ -233,6 +233,7 @@
 00000008 V Parameters::Parameters()::__c
 00000008 V Parameters::Parameters()::__c
 00000008 V Parameters::Parameters()::__c
+00000008 V Parameters::Parameters()::__c
 00000008 r GCS_MAVLINK::GCS_MAVLINK(unsigned int)::__c
 00000009 r print_switch(unsigned char, unsigned char)::__c
 00000009 r print_log_menu()::__c
@@ -600,18 +601,18 @@
 00000220 t test_wp(unsigned char, Menu::arg const*)
 00000228 t setup_radio(unsigned char, Menu::arg const*)
 00000286 t test_imu(unsigned char, Menu::arg const*)
-000002a8 t tuning()
-0000031e t read_battery()
+000002ea t tuning()
 00000330 t calc_nav_rate(int, int, int, int)
 00000358 T update_throttle_mode()
 00000384 t print_log_menu()
+000003be t read_battery()
 000003dc T update_yaw_mode()
 000004b2 t mavlink_parse_char
 000005ea T update_roll_pitch_mode()
 0000062e t init_ardupilot()
-000007a0 t __static_initialization_and_destruction_0(int, int)
-000007cd b g
-000007e8 W Parameters::Parameters()
+000007a8 t __static_initialization_and_destruction_0(int, int)
+000007dc b g
+0000083c W Parameters::Parameters()
 000008e4 t process_next_command()
 000011d8 T GCS_MAVLINK::handleMessage(__mavlink_message*)
 000017ac t mavlink_try_send_message(mavlink_channel_t, unsigned char, unsigned int)
