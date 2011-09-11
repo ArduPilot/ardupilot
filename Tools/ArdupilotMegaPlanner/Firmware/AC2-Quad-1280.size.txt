@@ -597,7 +597,7 @@
 000001ca t arm_motors()
 000001ca t mavlink_delay(unsigned long)
 000001ce t start_new_log()
-00000200 t set_mode(unsigned char)
+00000202 t set_mode(unsigned char)
 00000220 t test_wp(unsigned char, Menu::arg const*)
 00000228 t setup_radio(unsigned char, Menu::arg const*)
 000002ea t tuning()
