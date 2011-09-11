@@ -195,7 +195,7 @@ static void trim_control_surfaces()
 		g.channel_roll.radio_trim = g.channel_roll.radio_in;
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
-		if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+		if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 		
 	}else{
 		elevon1_trim = ch1_temp;
@@ -212,7 +212,7 @@ static void trim_control_surfaces()
 	g.channel_pitch.save_eeprom();
 	g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
+	if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
 }
 
 static void trim_radio()
@@ -228,7 +228,7 @@ static void trim_radio()
 		g.channel_pitch.radio_trim 		= g.channel_pitch.radio_in;
 		//g.channel_throttle.radio_trim 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_trim 	= g.channel_rudder.radio_in;
-		if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
+		if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
 
 	} else {
 		elevon1_trim = ch1_temp;
@@ -244,30 +244,5 @@ static void trim_radio()
 	g.channel_pitch.save_eeprom();
 	//g.channel_throttle.save_eeprom();
 	g.channel_rudder.save_eeprom();
-	if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
-}
-
-// update the g_rc_function array from pointers to rc_x channels
-// This should be done periodically because the user might change the configuration and
-// expects the changes to take effect instantly
-static void update_aux_servo_function()
-{
-	// positions 0..3 of this array never get used, but this is a stack array, so the entire array gets freed at the end of the function
-	RC_Channel_aux::Aux_servo_function_t aux_servo_function[NUM_CHANNELS];			// the function of the aux. servos
-	aux_servo_function[CH_5] = (RC_Channel_aux::Aux_servo_function_t)g.rc_5.function.get();
-	aux_servo_function[CH_6] = (RC_Channel_aux::Aux_servo_function_t)g.rc_6.function.get();
-	aux_servo_function[CH_7] = (RC_Channel_aux::Aux_servo_function_t)g.rc_7.function.get();
-	aux_servo_function[CH_8] = (RC_Channel_aux::Aux_servo_function_t)g.rc_8.function.get();
-
-	// Assume that no auxiliary function is used
-	for (int i = 0; i < RC_Channel_aux::k_nr_aux_servo_functions ; i++)
-	{
-		g_rc_function[i] = NULL;
-	}
-
-	// assign the RC channel to each function
-	g_rc_function[aux_servo_function[CH_5]] = &g.rc_5;
-	g_rc_function[aux_servo_function[CH_6]] = &g.rc_6;
-	g_rc_function[aux_servo_function[CH_7]] = &g.rc_7;
-	g_rc_function[aux_servo_function[CH_8]] = &g.rc_8;
+	if (g_rc_function[RC_Channel_aux::k_aileron]) g_rc_function[RC_Channel_aux::k_aileron]->save_eeprom();
 }

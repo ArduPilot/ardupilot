@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 /// @file	RC_Channel_aux.h
-/// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
+/// @brief	RC_Channel manager for Channels 5..8, with EEPROM-backed storage of constants.
 /// @author Amilcar Lucas
 
 #ifndef RC_CHANNEL_AUX_H_
@@ -52,5 +52,7 @@ public:
 	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
 
 };
+
+void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Channel_aux* rc_7, RC_Channel_aux* rc_8);
 
 #endif /* RC_CHANNEL_AUX_H_ */
