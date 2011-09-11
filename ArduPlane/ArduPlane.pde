@@ -577,7 +577,13 @@ static void medium_loop()
 {
 #if CAMERA == ENABLED
 	// TODO replace home with a POI coming from a MavLink message or command
-	camera_mount.set_GPS_target(home);
+	//camera_mount.set_GPS_target(home);
+
+	// For now point the camera manually via the RC inputs (later remove these two lines)
+	// for simple dcm tests, replace k_manual with k_stabilise
+	camera_mount.set_mode(AP_Mount::k_manual);
+	camera_mount.update_mount();
+
 	g.camera.trigger_pic_cleanup();
 #endif
 
