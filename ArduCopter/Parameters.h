@@ -77,6 +77,7 @@ public:
 	k_param_frame_orientation,
 	k_param_top_bottom_ratio,
 	k_param_optflow_enabled,
+	k_param_input_voltage,
 
 	//
 	// 160: Navigation parameters
@@ -105,6 +106,7 @@ public:
 	k_param_throttle_fs_value,
 	k_param_throttle_cruise,
 	k_param_esc_calibrate,
+	k_param_radio_tuning,
 
 
 	#if FRAME_CONFIG ==	HELI_FRAME
@@ -231,9 +233,12 @@ public:
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
 	AP_Int8		compass_enabled;
 	AP_Int8		esc_calibrate;
+	AP_Int8		radio_tuning;
+
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
     AP_Int8		optflow_enabled;
+    AP_Float	input_voltage;
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -296,6 +301,7 @@ public:
 	pack_capacity			(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
 	compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
 	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
+	input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,					PSTR("IN_VOLT")),
 
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
 	waypoint_total			(0,							k_param_waypoint_total,					PSTR("WP_TOTAL")),
@@ -324,6 +330,7 @@ public:
 	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
 	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
 	esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
+	radio_tuning 			(0, 						k_param_radio_tuning, 					PSTR("TUNE")),
 	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 	top_bottom_ratio 		(TOP_BOTTOM_RATIO, 			k_param_top_bottom_ratio, 				PSTR("TB_RATIO")),
 
