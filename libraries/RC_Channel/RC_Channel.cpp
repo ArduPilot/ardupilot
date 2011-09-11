@@ -264,20 +264,20 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 	case k_none: 		// disabled
 		return;
 		break;
+	case k_manual:		// manual
+		radio_out = radio_in;
+		break;
+	case k_flap:		// flaps
+	case k_flap_auto:	// flaps automated
+	case k_aileron:		// aileron
+	case k_flaperon:	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
 	case k_mount_yaw:	// mount yaw (pan)
 	case k_mount_pitch:	// mount pitch (tilt)
 	case k_mount_roll:	// mount roll
 	case k_cam_trigger:	// camera trigger
 	case k_cam_open:	// camera open
-	case k_flap:		// flaps
-	case k_flap_auto:	// flaps automated
-	case k_aileron:		// aileron
-	case k_flaperon:	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
 	case k_egg_drop:	// egg drop
 	case k_nr_aux_servo_functions: // dummy, just to avoid a compiler warning
-		break;
-	case k_manual:		// manual
-		radio_out = radio_in;
 		break;
 	}
 

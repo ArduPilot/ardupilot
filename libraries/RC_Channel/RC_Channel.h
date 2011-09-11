@@ -123,18 +123,18 @@ public:
 
 	typedef enum
 	{
-		k_none			= 0,	// 0=disabled
-		k_mount_yaw		= 1,	// 1=mount yaw (pan)
-		k_mount_pitch	= 2,	// 2=mount pitch (tilt)
-		k_mount_roll	= 3,	// 3=mount roll
-		k_cam_trigger	= 4,	// 4=camera trigger
-		k_cam_open		= 5,	// 5=camera open
-		k_flap			= 6,	// 6=flap
-		k_flap_auto		= 7,	// 7=flap automated
-		k_aileron		= 8,	// 8=aileron
-		k_flaperon		= 9,	// 9=flaperon (flaps and aileron combined, needs two independent servos one for each wing)
-		k_egg_drop		= 10,	// 10=egg drop
-		k_manual		= 11,	// 11=manual, just pass-thru the RC in signal
+		k_none			= 0,	// disabled
+		k_manual		= 1,	// manual, just pass-thru the RC in signal
+		k_flap			= 2,	// flap
+		k_flap_auto		= 3,	// flap automated
+		k_aileron		= 4,	// aileron
+		k_flaperon		= 5,	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
+		k_mount_yaw		= 6,	// mount yaw (pan)
+		k_mount_pitch	= 7,	// mount pitch (tilt)
+		k_mount_roll	= 8,	// mount roll
+		k_cam_trigger	= 9,	// camera trigger
+		k_cam_open		= 10,	// camera open
+		k_egg_drop		= 11,	// egg drop
 		k_nr_aux_servo_functions // This must be the last enum value (only add new values _before_ this one)
 	} Aux_servo_function_t;
 
@@ -142,7 +142,7 @@ public:
 	// It would probably save some memory. But it can only be added to enums and not to typedefs :(
 	AP_VARDEF(Aux_servo_function_t, Aux_srv_func);    // defines AP_Aux_srv_func
 
-	AP_Aux_srv_func 	function;	// 0=disabled, 1=mount yaw (pan), 2=mount pitch (tilt), 3=mount roll, 4=camera trigger, 5=camera open, 6=flap, 7=flap auto, 8=aileron, 9=flaperon, 10=egg drop, 11=manual
+	AP_Aux_srv_func 	function;	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
 	AP_Int16 	angle_min;	// min angle limit of actuated surface in 0.01 degree units
 	AP_Int16 	angle_max;	// max angle limit of actuated surface in 0.01 degree units
 
