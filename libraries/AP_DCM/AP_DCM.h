@@ -50,6 +50,7 @@ public:
 
 	// Methods
 	void 		update_DCM(float _G_Dt);
+	void 		update_DCM_fast(float _G_Dt);
 
 	float		get_health(void);
 
@@ -98,6 +99,10 @@ private:
 	void 		drift_correction(void);
 	void 		euler_angles(void);
 
+	void 		euler_rp(void);
+	void 		euler_yaw(void);
+
+
 	// members
 	Compass 	* _compass;
 
@@ -122,7 +127,7 @@ private:
 	float 		_course_over_ground_y; 		// Course overground Y axis
 	float		_health;
 	bool		_centripetal;
-	bool		_toggle;
+	uint8_t		_toggle;
 };
 
 #endif
