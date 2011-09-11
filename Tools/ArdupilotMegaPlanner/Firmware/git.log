@@ -1,6 +1,9 @@
 From https://code.google.com/p/ardupilot-mega
-   4e3e372..ebb25b6  master     -> origin/master
-Updating 4e3e372..ebb25b6
+   22593cc..5e95582  APM_Camera -> origin/APM_Camera
+   0448983..dc0031c  master     -> origin/master
+Updating 0448983..dc0031c
 Fast-forward
- ArduCopter/defines.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ ArduCopter/ArduCopter.pde |    6 ++++++
+ ArduCopter/Parameters.h   |    3 +++
+ ArduCopter/defines.h      |    6 ++++--
+ 3 files changed, 13 insertions(+), 2 deletions(-)
