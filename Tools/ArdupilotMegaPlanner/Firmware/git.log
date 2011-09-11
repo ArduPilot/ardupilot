@@ -1,9 +1,12 @@
 From https://code.google.com/p/ardupilot-mega
-   22593cc..5e95582  APM_Camera -> origin/APM_Camera
-   0448983..dc0031c  master     -> origin/master
-Updating 0448983..dc0031c
+   5e95582..28bb6fd  APM_Camera -> origin/APM_Camera
+   5e48582..45a85df  master     -> origin/master
+Updating 5e48582..45a85df
 Fast-forward
- ArduCopter/ArduCopter.pde |    6 ++++++
- ArduCopter/Parameters.h   |    3 +++
- ArduCopter/defines.h      |    6 ++++--
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ ArduCopter/ArduCopter.pde   |   13 +++-----
+ ArduCopter/motors.pde       |    9 +++--
+ ArduCopter/system.pde       |    2 +-
+ ArduCopter/test.pde         |    2 +-
+ libraries/AP_DCM/AP_DCM.cpp |   71 ++++++++++++++++++++++++++++++++++++++-----
+ libraries/AP_DCM/AP_DCM.h   |    7 ++++-
+ 6 files changed, 81 insertions(+), 23 deletions(-)
