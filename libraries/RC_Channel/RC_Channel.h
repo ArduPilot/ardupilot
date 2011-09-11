@@ -102,4 +102,6 @@ class RC_Channel{
 	int16_t 	_low;
 };
 
+#include "RC_Channel_aux.h"
+
 #endif
