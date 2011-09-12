@@ -39,7 +39,6 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
 #include <RC_Channel.h>     // RC Channel Library
-//#include <RC_Channel/RC_Channel_aux.h> // Auxiliary RC Channel Library (Channels 5..8)
 #include <AP_RangeFinder.h>	// Range finder library
 #include <ModeFilter.h>
 #include <AP_Camera.h>		// Photo or video camera

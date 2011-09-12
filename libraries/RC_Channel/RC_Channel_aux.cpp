@@ -21,6 +21,7 @@ RC_Channel_aux::closest_limit(int16_t angle)
 	while (min >= 1800) min -= 3600;
 	while (max < -1800) max += 3600;
 	while (max >= 1800) max -= 3600;
+	// This is done every time because the user might change the min, max values on the fly
 	set_range(min, max);
 
 	// If the angle is outside servo limits, saturate the angle to the closest limit
@@ -44,6 +45,7 @@ RC_Channel_aux::closest_limit(int16_t angle)
 void
 RC_Channel_aux::output_ch(unsigned char ch_nr)
 {
+	// take care or two corner cases
 	switch(function)
 	{
 	case k_none: 		// disabled
@@ -52,26 +54,14 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 	case k_manual:		// manual
 		radio_out = radio_in;
 		break;
-	case k_flap:		// flaps
-	case k_flap_auto:	// flaps automated
-	case k_aileron:		// aileron
-	case k_flaperon:	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
-	case k_mount_yaw:	// mount yaw (pan)
-	case k_mount_pitch:	// mount pitch (tilt)
-	case k_mount_roll:	// mount roll
-	case k_cam_trigger:	// camera trigger
-	case k_cam_open:	// camera open
-	case k_egg_drop:	// egg drop
-	case k_nr_aux_servo_functions: // dummy, just to avoid a compiler warning
-	default:
-		break;
 	}
 
 	APM_RC.OutputCh(ch_nr, radio_out);
 }
 
-// update the g_rc_function array from pointers to rc_x channels
-// This should be done periodically because the user might change the configuration and
+// Update the g_rc_function array of pointers to rc_x channels
+// This is to be done before rc_init so that the channels get correctly initialized.
+// It also should be called periodically because the user might change the configuration and
 // expects the changes to take effect instantly
 void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Channel_aux* rc_7, RC_Channel_aux* rc_8)
 {
