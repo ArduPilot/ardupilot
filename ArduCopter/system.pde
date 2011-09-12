@@ -407,7 +407,8 @@ static void set_mode(byte mode)
 			init_throttle_cruise();
 
 			// loads the commands from where we left off
-			init_auto();
+			//init_auto();
+			init_commands();
 
 			// do crosstrack correction
 			// XXX move to flight commands
@@ -440,6 +441,7 @@ static void set_mode(byte mode)
 			//xtrack_enabled = true;
 			init_throttle_cruise();
 			next_WP = current_loc;
+			set_next_WP(&guided_WP);
 			break;
 
 		case RTL:
