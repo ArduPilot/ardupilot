@@ -197,7 +197,7 @@ static void set_next_WP(struct Location *wp)
 
 	// set a new crosstrack bearing
 	// ----------------------------
-	crosstrack_bearing 	= target_bearing;	// Used for track following
+	//crosstrack_bearing 	= target_bearing;	// Used for track following
 
 	gcs.print_current_waypoints();
 }

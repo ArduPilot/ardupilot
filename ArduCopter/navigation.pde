@@ -211,18 +211,19 @@ static long get_crosstrack_correction(void)
     return 0;
 }
 */
-
+/*
 static long cross_track_test()
 {
 	long temp = wrap_180(target_bearing - crosstrack_bearing);
 	return abs(temp);
 }
-
+*/
+/*
 static void reset_crosstrack()
 {
 	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
-
+*/
 static long get_altitude_above_home(void)
 {
 	// This is the altitude above the home location

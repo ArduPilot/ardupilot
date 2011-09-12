@@ -316,11 +316,13 @@ static bool 	did_ground_start	= false;		// have we ground started after first ar
 // ---------------------
 static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
-static long		nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
+//static long		nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
 static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 
-static bool		xtrack_enabled = false;
-static long		crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
+//static bool		xtrack_enabled = false;
+//static long		crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
+//static long		crosstrack_correction;				// deg * 100 : 0 to 360 desired angle of plane to target
+
 static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
 static long 	circle_angle = 0;
 static byte	wp_control;							// used to control - navgation or loiter
@@ -349,7 +351,7 @@ static int		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-static long		bearing_error;						// deg * 100 : 0 to 36000
+//static long		bearing_error;						// deg * 100 : 0 to 36000
 static long		altitude_error;						// meters * 100 we are off in altitude
 static long 	old_altitude;
 static long 	yaw_error;							// how off are we pointed
@@ -674,8 +676,8 @@ static void medium_loop()
 				// ------------------------------------------------------
 				navigate();
 
-				// control mode specific updates to nav_bearing
-				// --------------------------------------------
+				// control mode specific updates
+				// -----------------------------
 				update_navigation();
 
 				if (g.log_bitmask & MASK_LOG_NTUN)
@@ -799,7 +801,7 @@ static void fifty_hz_loop()
 	#endif
 
 	// use Yaw to find our bearing error
-	calc_bearing_error();
+	//calc_bearing_error();
 
 	//if (throttle_slew < 0)
 	//	throttle_slew++;
@@ -1246,7 +1248,7 @@ static void update_navigation()
 				wp_control = WP_MODE;
 			}else{
 				set_mode(LOITER);
-				xtrack_enabled = false;
+				//xtrack_enabled = false;
 			}
 
 
