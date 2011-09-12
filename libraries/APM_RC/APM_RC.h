@@ -5,17 +5,6 @@
 #define MIN_PULSEWIDTH 900
 #define MAX_PULSEWIDTH 2100
 
-// Radio channels
-// Note channels are from 0!
-#define CH_1 0
-#define CH_2 1
-#define CH_3 2
-#define CH_4 3
-#define CH_5 4
-#define CH_6 5
-#define CH_7 6
-#define CH_8 7
-
 #include <inttypes.h>
 
 class APM_RC_Class

@@ -1,4 +1,5 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+ 
+ // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // This file is just a placeholder for your configuration file.  If you wish to change any of the setup parameters from
 // their default values, place the appropriate #define statements here.
@@ -22,14 +23,3 @@
 #define GCS_PROTOCOL        GCS_PROTOCOL_MAVLINK
 #define GCS_PORT            3
 */
-
-
-// ----- Camera definitions ------
-// ------------------------------
-#define CAMERA ENABLED
-#define CAM_DEBUG DISABLED
-
-// - Options to reduce code size -
-// -------------------------------
-// Disable text based terminal configuration
-#define CLI_ENABLED DISABLED

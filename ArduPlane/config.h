@@ -226,6 +226,19 @@
 # define CH8_MAX	2000
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+#ifndef RC_5_FUNCT
+# define RC_5_FUNCT	RC_5_FUNCT_NONE
+#endif
+#ifndef RC_6_FUNCT
+# define RC_6_FUNCT	RC_6_FUNCT_NONE
+#endif
+#ifndef RC_7_FUNCT
+# define RC_7_FUNCT	RC_7_FUNCT_NONE
+#endif
+#ifndef RC_8_FUNCT
+# define RC_8_FUNCT	RC_8_FUNCT_NONE
+#endif
 
 #ifndef FLAP_1_PERCENT
 # define FLAP_1_PERCENT 0

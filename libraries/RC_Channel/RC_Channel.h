@@ -7,11 +7,12 @@
 #define RC_Channel_h
 
 #include <AP_Common.h>
+#include <stdint.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel{
-  protected:
+  private:
 	AP_Var_group    _group;		// must be before all vars to keep ctor init order correct
 
   public:
@@ -102,7 +103,8 @@ class RC_Channel{
 	int16_t 	_low;
 };
 
-// This is ugly, but it fixes compilation on arduino
-#include "RC_Channel_aux.h"
-
 #endif
+
+
+
+

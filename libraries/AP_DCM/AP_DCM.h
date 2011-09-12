@@ -1,7 +1,7 @@
 #ifndef AP_DCM_h
 #define AP_DCM_h
 
-// temporarily include all other classes here
+// teporarily include all other classes here
 // since this naming is a bit off from the
 // convention and the AP_DCM should be the top
 // header file

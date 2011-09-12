@@ -28,22 +28,6 @@ static void init_rc_in()
 	G_RC_AUX(k_flap_auto)->set_range(0,100);
 	G_RC_AUX(k_aileron)->set_angle(SERVO_MAX);
 	G_RC_AUX(k_flaperon)->set_range(0,100);
-#if CAMERA == ENABLED
-	G_RC_AUX(k_mount_yaw)->set_range(
-				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_mount_yaw]->angle_max / 10);
-	G_RC_AUX(k_mount_pitch)->set_range(
-				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_mount_pitch]->angle_max / 10);
-	G_RC_AUX(k_mount_roll)->set_range(
-				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_mount_roll]->angle_max / 10);
-	G_RC_AUX(k_cam_trigger)->set_range(
-				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_min / 10,
-				g_rc_function[RC_Channel_aux::k_cam_trigger]->angle_max / 10);
-	G_RC_AUX(k_cam_open)->set_range(0,100);
-#endif
-	G_RC_AUX(k_egg_drop)->set_range(0,100);
 }
 
 static void init_rc_out()
@@ -56,7 +40,7 @@ static void init_rc_out()
 	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
 	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
 	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-    APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+	APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
 
 	APM_RC.Init();		// APM Radio initialization
 
