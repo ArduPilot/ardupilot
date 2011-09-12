@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPilotMega V2.24"
+#define THISFIRMWARE "ArduPlane V2.24"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short
 Thanks to:  Chris Anderson, HappyKillMore, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi
@@ -41,9 +41,6 @@ version 2.1 of the License, or (at your option) any later version.
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <ModeFilter.h>
-#include <AP_Camera.h>		// Photo or video camera
-#include <AP_Mount.h>		// Camera mount
-
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
@@ -418,15 +415,6 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed time for GP
 static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 static float 			load;						// % MCU cycles used
 
-RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
-
-//Camera tracking and stabilisation stuff
-// --------------------------------------
-#if CAMERA == ENABLED
-AP_Mount camera_mount(g_gps, &dcm);
-
-//pinMode(camtrig, OUTPUT);			// these are free pins PE3(5), PH3(15), PH6(18), PB4(23), PB5(24), PL1(36), PL3(38), PA6(72), PA7(71), PK0(89), PK1(88), PK2(87), PK3(86), PK4(83), PK5(84), PK6(83), PK7(82)
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -575,18 +563,6 @@ static void fast_loop()
 
 static void medium_loop()
 {
-#if CAMERA == ENABLED
-	// TODO replace home with a POI coming from a MavLink message or command
-	//camera_mount.set_GPS_target(home);
-
-	// For now point the camera manually via the RC inputs (later remove these two lines)
-	// for simple dcm tests, replace k_manual with k_stabilise
-	camera_mount.set_mode(AP_Mount::k_stabilise);
-	camera_mount.update_mount();
-
-	g.camera.trigger_pic_cleanup();
-#endif
-
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
@@ -734,11 +710,6 @@ static void slow_loop()
 			// ----------------------------------
 			update_servo_switches();
 
-			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-
-#if CAMERA == ENABLED
-			camera_mount.update_mount_type();
-#endif
 			break;
 
 		case 2:

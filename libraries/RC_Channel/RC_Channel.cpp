@@ -120,7 +120,7 @@ RC_Channel::calc_pwm(void)
 {
 	if(_type == RC_CHANNEL_RANGE){
 		pwm_out 	= range_to_pwm();
-		radio_out 	= (_reverse >=0 ? pwm_out + radio_min : radio_max - pwm_out);
+		radio_out 	= pwm_out + radio_min;
 
 	}else if(_type == RC_CHANNEL_ANGLE_RAW){
 		pwm_out 	= (float)servo_out * .1;
