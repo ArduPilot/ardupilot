@@ -398,9 +398,9 @@
 // also means that you should avoid switching out of MANUAL while you have
 // any control stick deflection.
 //
-// The default is to enable AUTO_TRIM.
+// The default is to disable AUTO_TRIM.
 //
-//#define AUTO_TRIM           ENABLED
+//#define AUTO_TRIM           DISABLED
 //
 
 //////////////////////////////////////////////////////////////////////////////

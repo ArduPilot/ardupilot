@@ -300,7 +300,7 @@
 // AUTO_TRIM
 //
 #ifndef AUTO_TRIM
-# define AUTO_TRIM				ENABLED
+# define AUTO_TRIM				DISABLED
 #endif
 
 
