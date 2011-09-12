@@ -142,7 +142,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 					chan,
                     nav_roll / 1.0e2,
                     nav_pitch / 1.0e2,
-                    nav_bearing / 1.0e2,
+                    target_bearing / 1.0e2,
                     target_bearing / 1.0e2,
                     wp_distance,
                     altitude_error / 1.0e2,
