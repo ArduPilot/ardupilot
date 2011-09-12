@@ -1,6 +1,6 @@
 From https://code.google.com/p/ardupilot-mega
-   a543a5c..fe617ae  master     -> origin/master
-Updating a543a5c..fe617ae
-Fast-forward
- ArduCopter/config.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+   28bb6fd..c5f0dc1  APM_Camera -> origin/APM_Camera
+   8905f63..112b274  master     -> origin/master
+error: Your local changes to 'ArduPlane/APM_Config.h' would be overwritten by merge.  Aborting.
+Please, commit your changes or stash them before you can merge.
+Updating 8905f63..112b274
