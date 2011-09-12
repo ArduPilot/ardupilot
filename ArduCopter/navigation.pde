@@ -34,11 +34,12 @@ static void navigate()
 	// nav_bearing will include xtrac correction
 	// -----------------------------------------
 	//xtrack_enabled = false;
-	if(xtrack_enabled){
-		nav_bearing = wrap_360(target_bearing + get_crosstrack_correction());
-	}else{
-		nav_bearing = target_bearing;
-	}
+
+	//if(xtrack_enabled){
+	//	crosstrack_correction = get_crosstrack_correction();
+	//}else {
+	//	crosstrack_correction = 0;
+	//}
 }
 
 static bool check_missed_wp()
@@ -101,18 +102,20 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	}
 
 	// find the rates:
+	float temp		= radians((float)g_gps->ground_course/100.0);
+
 	// calc the cos of the error to tell how fast we are moving towards the target in cm
-	y_actual_speed 	= (float)g_gps->ground_speed * cos(radians((float)g_gps->ground_course/100.0));
+	y_actual_speed 	= (float)g_gps->ground_speed * cos(temp);
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -600, 600);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
 
 	//Serial.printf("yr: %d, nav_lat: %d, int:%d \n",y_rate_error, nav_lat, g.pi_nav_lat.get_integrator());
 
 	// calc the sin of the error to tell how fast we are moving laterally to the target in cm
-	x_actual_speed 	= (float)g_gps->ground_speed  * sin(radians((float)g_gps->ground_course/100.0));
+	x_actual_speed 	= (float)g_gps->ground_speed  * sin(temp);
 	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -250, 250);
+	x_rate_error 	= constrain(x_rate_error, -600, 600);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 
@@ -128,11 +131,11 @@ static void calc_nav_pitch_roll()
 }
 
 // ------------------------------
-static void calc_bearing_error()
+/*static void calc_bearing_error()
 {
 	bearing_error 	= nav_bearing - dcm.yaw_sensor;
 	bearing_error 	= wrap_180(bearing_error);
-}
+}*/
 
 static long get_altitude_error()
 {
@@ -189,6 +192,7 @@ static long wrap_180(long error)
 	return error;
 }
 
+/*
 static long get_crosstrack_correction(void)
 {
 	// Crosstrack Error
@@ -206,7 +210,7 @@ static long get_crosstrack_correction(void)
 	}
     return 0;
 }
-
+*/
 
 static long cross_track_test()
 {
