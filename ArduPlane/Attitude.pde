@@ -61,7 +61,7 @@ static void stabilize()
 
 	// Mix Stick input to allow users to override control surfaces
 	// -----------------------------------------------------------
-	if ((control_mode < FLY_BY_WIRE_A) || (ENABLE_STICK_MIXING == 1 && control_mode > FLY_BY_WIRE_B)) {
+	if ((control_mode < FLY_BY_WIRE_A) || (ENABLE_STICK_MIXING == 1 && control_mode > FLY_BY_WIRE_B && failsafe == FAILSAFE_NONE)) {
 
 
 		// TODO: use RC_Channel control_mix function?
@@ -92,7 +92,7 @@ static void stabilize()
 	// stick mixing performed for rudder for all cases including FBW unless disabled for higher modes
 	// important for steering on the ground during landing
 	// -----------------------------------------------
-	if (control_mode <= FLY_BY_WIRE_B || ENABLE_STICK_MIXING == 1) {
+	if (control_mode <= FLY_BY_WIRE_B || (ENABLE_STICK_MIXING == 1 && failsafe == FAILSAFE_NONE)) {
 		ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
 		ch4_inf = fabs(ch4_inf);
 		ch4_inf = min(ch4_inf, 400.0);
