@@ -274,14 +274,14 @@ static void set_servos(void)
 		}
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_out 		= g.channel_rudder.radio_in;
-		if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) g_rc_function[RC_Channel_aux::k_aileron]->radio_out = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
+		G_RC_AUX(k_aileron)->radio_out	= g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
 
 	} else {
 		if (g.mix_mode == 0) {
 			g.channel_roll.calc_pwm();
 			g.channel_pitch.calc_pwm();
 			g.channel_rudder.calc_pwm();
-			if (g_rc_function[RC_Channel_aux::k_aileron] != NULL) {
+			if (g_rc_function[RC_Channel_aux::k_aileron]) {
 				g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
 				g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
 			}
@@ -315,7 +315,7 @@ static void set_servos(void)
 	}
 	
 	if(control_mode <= FLY_BY_WIRE_B) {
-		if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
+		G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
 	} else if (control_mode >= FLY_BY_WIRE_C) {	
 		if (g.airspeed_enabled == true) {  
 			flapSpeedSource = g.airspeed_cruise;
@@ -323,11 +323,11 @@ static void set_servos(void)
 			flapSpeedSource = g.throttle_cruise;
 		}
 		if ( flapSpeedSource > g.flap_1_speed) {
-			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
+			G_RC_AUX(k_flap_auto)->servo_out = 0;
 		} else if (flapSpeedSource > g.flap_2_speed) {
-			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
+			G_RC_AUX(k_flap_auto)->servo_out = g.flap_1_percent;
 		} else {
-			if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
+			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
 		}
 	}
 	
