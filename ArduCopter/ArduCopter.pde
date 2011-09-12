@@ -1464,7 +1464,6 @@ static void tuning(){
 
 static void update_nav_wp()
 {
-	// XXX Guided mode!!!
 	if(wp_control == LOITER_MODE){
 
 		// calc a pitch to the target

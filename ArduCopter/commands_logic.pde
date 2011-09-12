@@ -105,17 +105,14 @@ static void handle_process_now()
 
 static void handle_no_commands()
 {
-	// we don't want to RTL yet. Maybe this will change in the future. RTL is kinda dangerous.
-	// use landing commands
 	/*
 	switch (control_mode){
 		default:
-			//set_mode(RTL);
+			set_mode(RTL);
 			break;
-	}
-	return;
-	*/
-	Serial.println("Handle No CMDs");
+	}*/
+	//return;
+	//Serial.println("Handle No CMDs");
 }
 
 /********************************************************************************/
