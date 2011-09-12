@@ -182,37 +182,75 @@ static void output_motors_disarmed()
 
 static void output_motor_test()
 {
-	APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 100);
-	delay(1000);
+	if( g.frame_orientation == X_FRAME || g.frame_orientation == PLUS_FRAME )
+	{	
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_11, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_11, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_10, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_10, g.rc_3.radio_min + 100);
+		delay(1000);
 
-	APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 100);
-	delay(1000);
+		APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 100);
+		delay(1000);
+	}
+	
+	if( g.frame_orientation == V_FRAME )
+	{	
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_10, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_10, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_11, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_11, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 100);
+		delay(1000);
+
+		APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
+		APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 100);
+		delay(1000);
+	}
 }
 
 #endif

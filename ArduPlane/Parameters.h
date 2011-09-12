@@ -17,7 +17,7 @@ public:
     // The increment will prevent old parameters from being used incorrectly
     // by newer code.
     //
-    static const uint16_t k_format_version = 11;
+    static const uint16_t k_format_version = 12;
 	
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -113,6 +113,13 @@ public:
         k_param_inverted_flight_ch,
 
         //
+        // Camera parameters
+        //
+#if CAMERA == ENABLED
+        k_param_camera,
+#endif
+
+        //
         // 170: Radio settings
         //
         k_param_channel_roll = 170,
@@ -134,11 +141,6 @@ public:
         k_param_long_fs_action,
 		k_param_gcs_heartbeat_fs_enabled,
         k_param_throttle_slewrate,
-        
-        k_param_rc_5_funct,
-        k_param_rc_6_funct,
-        k_param_rc_7_funct,
-        k_param_rc_8_funct,
 
         //
         // 200: Feed-forward gains
@@ -322,19 +324,20 @@ public:
     AP_Int8		flap_2_percent;
     AP_Int8		flap_2_speed;
 
+	// Camera
+#if CAMERA == ENABLED
+    AP_Camera		camera;
+#endif
+
     // RC channels
     RC_Channel  channel_roll;
     RC_Channel  channel_pitch;
     RC_Channel  channel_throttle;
     RC_Channel  channel_rudder;
-	RC_Channel	rc_5;
-	RC_Channel	rc_6;
-	RC_Channel	rc_7;
-	RC_Channel	rc_8;
-	AP_Int8		rc_5_funct;
-	AP_Int8		rc_6_funct;
-	AP_Int8		rc_7_funct;
-	AP_Int8		rc_8_funct;
+	RC_Channel_aux	rc_5;
+	RC_Channel_aux	rc_6;
+	RC_Channel_aux	rc_7;
+	RC_Channel_aux	rc_8;
 
     // PID controllers
     //
@@ -428,12 +431,12 @@ public:
         inverted_flight_ch      (0,                         k_param_inverted_flight_ch,		PSTR("INVERTEDFLT_CH")),
         sonar_enabled			(SONAR_ENABLED,				k_param_sonar_enabled,			PSTR("SONAR_ENABLE")),
         airspeed_enabled		(AIRSPEED_SENSOR,			k_param_airspeed_enabled,		PSTR("ARSPD_ENABLE")),
-        rc_5_funct				(RC_5_FUNCT,				k_param_rc_5_funct,				PSTR("RC5_FUNCT")),
-        rc_6_funct				(RC_6_FUNCT,				k_param_rc_6_funct,				PSTR("RC6_FUNCT")),
-        rc_7_funct				(RC_7_FUNCT,				k_param_rc_7_funct,				PSTR("RC7_FUNCT")),
-        rc_8_funct				(RC_8_FUNCT,				k_param_rc_8_funct,				PSTR("RC8_FUNCT")),
 
 	// Note - total parameter name length must be less than 14 characters for MAVLink compatibility!
+
+#if CAMERA == ENABLED
+		camera				(k_param_camera,	PSTR("CAM_")),
+#endif
 
         // RC channel           group key                   name
         //----------------------------------------------------------------------
