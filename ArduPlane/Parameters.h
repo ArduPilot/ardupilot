@@ -18,10 +18,10 @@ public:
     // by newer code.
     //
     static const uint16_t k_format_version = 12;
-	
+
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
-	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use 
+	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
 	// values within that range to identify different branches.
 	//
     static const uint16_t k_software_type = 0;		// 0 for APM trunk
@@ -70,7 +70,7 @@ public:
         k_param_flap_2_speed,
         k_param_num_resets,
 
-		
+
 		// 110: Telemetry control
 		//
 		k_param_streamrates_port0 = 110,
@@ -95,10 +95,13 @@ public:
 		k_param_compass_enabled,
 		k_param_compass,
 		k_param_battery_monitoring,
-		k_param_pack_capacity,	
-        k_param_airspeed_offset,	
-		k_param_sonar_enabled,	
-		k_param_airspeed_enabled,	
+		k_param_volt_div_ratio,
+		k_param_curr_amp_per_volt,
+		k_param_input_voltage,
+		k_param_pack_capacity,
+        k_param_airspeed_offset,
+		k_param_sonar_enabled,
+		k_param_airspeed_enabled,
 
         //
         // 150: Navigation parameters
@@ -129,7 +132,7 @@ public:
         k_param_throttle_fs_enabled,
         k_param_throttle_fs_value,
         k_param_throttle_cruise,
-		
+
         k_param_short_fs_action,
         k_param_long_fs_action,
 		k_param_gcs_heartbeat_fs_enabled,
@@ -222,13 +225,13 @@ public:
 
     AP_Int16    format_version;
 	AP_Int8		software_type;
-	
+
 	// Telemetry control
 	//
 	AP_Int16		sysid_this_mav;
 	AP_Int16		sysid_my_gcs;
     AP_Int8			serial3_baud;
-	
+
     // Feed-forward gains
     //
     AP_Float    kff_pitch_compensation;
@@ -268,7 +271,7 @@ public:
 	AP_Int8     throttle_fs_enabled;
     AP_Int16    throttle_fs_value;
     AP_Int8     throttle_cruise;
-	
+
 	// Failsafe
     AP_Int8     short_fs_action;
     AP_Int8     long_fs_action;
@@ -308,6 +311,9 @@ public:
     AP_Int8		compass_enabled;
     AP_Int16    angle_of_attack;
     AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
+    AP_Float	volt_div_ratio;
+    AP_Float	curr_amp_per_volt;
+    AP_Float	input_voltage;
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
     AP_Int8		inverted_flight_ch; // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8		sonar_enabled;
@@ -377,7 +383,7 @@ public:
         throttle_fs_enabled   	(THROTTLE_FAILSAFE,         k_param_throttle_fs_enabled,	PSTR("THR_FAILSAFE")),
         throttle_fs_value 		(THROTTLE_FS_VALUE,         k_param_throttle_fs_value, 		PSTR("THR_FS_VALUE")),
         throttle_cruise         (THROTTLE_CRUISE,           k_param_throttle_cruise,        PSTR("TRIM_THROTTLE")),
-		
+
         short_fs_action			(SHORT_FAILSAFE_ACTION,		k_param_short_fs_action, 	PSTR("FS_SHORT_ACTN")),
         long_fs_action			(LONG_FAILSAFE_ACTION,		k_param_long_fs_action, 	PSTR("FS_LONG_ACTN")),
         gcs_heartbeat_fs_enabled(GCS_HEARTBEAT_FAILSAFE,	k_param_gcs_heartbeat_fs_enabled, 	PSTR("FS_GCS_ENABL")),
@@ -412,9 +418,12 @@ public:
         flap_1_speed			(FLAP_1_SPEED,				k_param_flap_1_speed,			PSTR("FLAP_1_SPEED")),
         flap_2_percent			(FLAP_2_PERCENT,			k_param_flap_2_percent,			PSTR("FLAP_2_PERCNT")),
         flap_2_speed			(FLAP_2_SPEED,				k_param_flap_2_speed,			PSTR("FLAP_2_SPEED")),
-        
-        
+
+
         battery_monitoring 		(DISABLED,					k_param_battery_monitoring,		PSTR("BATT_MONITOR")),
+        volt_div_ratio			(VOLT_DIV_RATIO,			k_param_volt_div_ratio,			PSTR("VOLT_DIVIDER")),
+        curr_amp_per_volt		(CURR_AMP_PER_VOLT,			k_param_curr_amp_per_volt,		PSTR("AMP_PER_VOLT")),
+        input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,			PSTR("INPUT_VOLTS")),
         pack_capacity	 		(HIGH_DISCHARGE,			k_param_pack_capacity,			PSTR("BATT_CAPACITY")),
         inverted_flight_ch      (0,                         k_param_inverted_flight_ch,		PSTR("INVERTEDFLT_CH")),
         sonar_enabled			(SONAR_ENABLED,				k_param_sonar_enabled,			PSTR("SONAR_ENABLE")),

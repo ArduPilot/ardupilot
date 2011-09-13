@@ -72,7 +72,7 @@
 #define FLY_BY_WIRE_A 5		// Fly By Wire A has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical = manual throttle
 #define FLY_BY_WIRE_B 6		// Fly By Wire B has left stick horizontal => desired roll angle, left stick vertical => desired pitch angle, right stick vertical => desired airspeed
 #define FLY_BY_WIRE_C 7		// Fly By Wire C has left stick horizontal => desired roll angle, left stick vertical => desired climb rate, right stick vertical => desired airspeed
-							// Fly By Wire B and Fly By Wire C require airspeed sensor 
+							// Fly By Wire B and Fly By Wire C require airspeed sensor
 #define AUTO 10
 #define RTL 11
 #define LOITER 12
@@ -105,7 +105,7 @@
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be
 /// create new MSG_ IDs for additional messages on the same
-/// stream 
+/// stream
 #define MSG_ACKNOWLEDGE 0x00
 #define MSG_HEARTBEAT 0x01
 #define MSG_ATTITUDE 0x02
@@ -220,9 +220,9 @@
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
 
-#define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
+#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
 
-#define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
+#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
 
 #define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
 #define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
