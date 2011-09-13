@@ -18,7 +18,7 @@ AP_GPS_Auto GPS(&Serial1, &gps);
 
 void setup()
 {
-	Serial.begin(38400);
+	Serial.begin(115200);
 	Serial1.begin(38400);
 
 	Serial.println("GPS AUTO library test");
