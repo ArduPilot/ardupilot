@@ -24,10 +24,6 @@ static void init_rc_in()
 
 	//set auxiliary ranges
 	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
-	G_RC_AUX(k_flap)->set_range(0,100);
-	G_RC_AUX(k_flap_auto)->set_range(0,100);
-	G_RC_AUX(k_aileron)->set_angle(SERVO_MAX);
-	G_RC_AUX(k_flaperon)->set_range(0,100);
 }
 
 static void init_rc_out()
