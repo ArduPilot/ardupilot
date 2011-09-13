@@ -14,7 +14,6 @@
 
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
-/// 	    Also contains physical min,max angular deflection, to allow calibrating open-loop servo movements
 class RC_Channel_aux : public RC_Channel{
 public:
 	/// Constructor
@@ -24,9 +23,7 @@ public:
 	///
 	RC_Channel_aux(AP_Var::Key key, const prog_char_t *name) :
 		RC_Channel(key, name),
-		function  (&_group, 4,  k_none, name ? PSTR("FUNCTION")  : 0), // suppress name if group has no name
-		angle_min (&_group, 5, -4500, name ? PSTR("ANGLE_MIN") : 0), // assume -45 degrees min deflection
-		angle_max (&_group, 6,  4500, name ? PSTR("ANGLE_MAX") : 0)  // assume  45 degrees max deflection
+		function  (&_group, 4,  k_none, name ? PSTR("FUNCTION")  : 0) // suppress name if group has no name
 	{}
 
 	typedef enum
@@ -41,8 +38,6 @@ public:
 	} Aux_servo_function_t;
 
 	AP_Int8 	function;	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
-	AP_Int16 	angle_min;	// min angle limit of actuated surface in 0.01 degree units
-	AP_Int16 	angle_max;	// max angle limit of actuated surface in 0.01 degree units
 
 	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
 
