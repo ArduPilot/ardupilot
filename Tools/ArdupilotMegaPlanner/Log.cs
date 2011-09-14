@@ -366,45 +366,6 @@ namespace ArdupilotMega
             }
         }
 
-        private byte[] readline(NetSerial comport)
-        {
-            byte[] temp = new byte[1024];
-            int count = 0;
-            int timeout = 0;
-
-            while (timeout <= 100)
-            {
-                if (!comport.IsOpen) { break; }
-                if (comport.BytesToRead > 0)
-                {
-                    byte letter = (byte)comport.ReadByte();
-
-                    temp[count] = letter;
-
-                    if (letter == '\n') // normal line
-                    {
-                        break;
-                    }
-
-
-                    count++;
-                    if (count == temp.Length)
-                        break;
-                    timeout = 0;
-                } else {
-                    timeout++;
-                    System.Threading.Thread.Sleep(5);
-                }
-            }
-            if (timeout >= 100) {
-                Console.WriteLine("readline timeout");
-            }
-
-            Array.Resize<byte>(ref temp, count + 1);
-
-            return temp;
-        }
-
         List<string> modelist = new List<string>();
         List<Core.Geometry.Point3D>[] position = new List<Core.Geometry.Point3D>[200];
         int positionindex = 0;

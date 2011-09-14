@@ -22,14 +22,3 @@
 #define GCS_PROTOCOL        GCS_PROTOCOL_MAVLINK
 #define GCS_PORT            3
 */
-
-
-// ----- Camera definitions ------
-// ------------------------------
-#define CAMERA ENABLED
-#define CAM_DEBUG DISABLED
-
-// - Options to reduce code size -
-// -------------------------------
-// Disable text based terminal configuration
-#define CLI_ENABLED DISABLED

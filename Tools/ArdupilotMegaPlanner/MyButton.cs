@@ -50,7 +50,7 @@ namespace ArdupilotMega
 
             if (!this.Enabled)
             {
-                SolidBrush brush = new SolidBrush(Color.FromArgb(200, 0x2b, 0x3a, 0x03));
+                SolidBrush brush = new SolidBrush(Color.FromArgb(150, 0x2b, 0x3a, 0x03));
 
                 gr.FillRectangle(brush, 0, 0, this.Width, this.Height);
             }
