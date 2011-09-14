@@ -236,7 +236,7 @@ System.ComponentModel.Category("Values")]
             {
                 //Console.WriteLine("ms "+(DateTime.Now - starttime).TotalMilliseconds);
                 //e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);          
-                return;              
+                //return;              
             }
 
             starttime = DateTime.Now;
@@ -1364,6 +1364,18 @@ System.ComponentModel.Category("Values")]
             base.OnResize(e);
 
             charbitmaps = new Bitmap[charbitmaps.Length];
+
+            try
+            {
+
+                foreach (int texid in charbitmaptexid)
+                {
+                    if (texid != 0)
+                        GL.DeleteTexture(texid);
+                }
+
+            }
+            catch { }
 
             GC.Collect();
             

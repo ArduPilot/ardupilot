@@ -347,7 +347,7 @@ namespace ArdupilotMega.GCSViews
         {
             TXT_mouselat.Text = lat.ToString();
             TXT_mouselong.Text = lng.ToString();
-            TXT_mousealt.Text = alt.ToString();
+            TXT_mousealt.Text = srtm.getAltitude(lat, lng).ToString("0");
 
             try
             {

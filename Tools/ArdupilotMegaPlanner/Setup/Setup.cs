@@ -231,7 +231,6 @@ namespace ArdupilotMega.Setup
 
             MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, oldrc);
 
-            MainV2.comPort.param = MainV2.comPort.getParamList();
             if (Configuration != null)
             {
                 Configuration.startup = true;
