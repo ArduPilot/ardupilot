@@ -537,9 +537,8 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt((int)wp_distance);					// 1
 	DataFlash.WriteByte(wp_verify_byte);					// 2
 	DataFlash.WriteInt((int)(target_bearing/100));			// 3
-	DataFlash.WriteInt((int)(nav_bearing/100));				// 4
-	DataFlash.WriteInt((int)long_error);					// 5
-	DataFlash.WriteInt((int)lat_error);						// 6
+	DataFlash.WriteInt((int)long_error);					// 4
+	DataFlash.WriteInt((int)lat_error);						// 5
 
 
 /*
@@ -568,7 +567,6 @@ static void Log_Read_Nav_Tuning()
 				DataFlash.ReadInt(),	// distance
 				DataFlash.ReadByte(),	// wp_verify_byte
 				DataFlash.ReadInt(),	// target_bearing
-				DataFlash.ReadInt(),	// nav_bearing
 
 				DataFlash.ReadInt(),	// long_error
 				DataFlash.ReadInt());	// lat_error

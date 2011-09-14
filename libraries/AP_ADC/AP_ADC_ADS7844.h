@@ -9,7 +9,7 @@
 #define ADC_DATAIN      50    // MISO
 #define ADC_SPICLOCK    52    // SCK
 #define ADC_CHIP_SELECT 33    // PC4   9 // PH6  Puerto:0x08 Bit mask : 0x40
-#define ADC_FILTER_SIZE	6
+#define ADC_FILTER_SIZE	3
 
 #include "AP_ADC.h"
 #include <inttypes.h>

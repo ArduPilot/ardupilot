@@ -138,21 +138,21 @@ static void output_motor_test()
 //  31
 //	24
 		if(g.rc_1.control_in > 3000){	// right
-			motor_out[CH_1] += 50;
+			motor_out[CH_1] += 100;
 		}
 
 		if(g.rc_1.control_in < -3000){	// left
-			motor_out[CH_2] += 50;
+			motor_out[CH_2] += 100;
 		}
 
 		if(g.rc_2.control_in > 3000){ 	// back
-			motor_out[CH_8] += 50;
-			motor_out[CH_4] += 50;
+			motor_out[CH_8] += 100;
+			motor_out[CH_4] += 100;
 		}
 
 		if(g.rc_2.control_in < -3000){	// front
-			motor_out[CH_7] += 50;
-			motor_out[CH_3] += 50;
+			motor_out[CH_7] += 100;
+			motor_out[CH_3] += 100;
 		}
 
 	}else{
@@ -160,21 +160,21 @@ static void output_motor_test()
 // 2 1
 //	4
 		if(g.rc_1.control_in > 3000){	// right
-			motor_out[CH_4] += 50;
-			motor_out[CH_8] += 50;
+			motor_out[CH_4] += 100;
+			motor_out[CH_8] += 100;
 		}
 
 		if(g.rc_1.control_in < -3000){	// left
-			motor_out[CH_7] += 50;
-			motor_out[CH_3] += 50;
+			motor_out[CH_7] += 100;
+			motor_out[CH_3] += 100;
 		}
 
 		if(g.rc_2.control_in > 3000){ 	// back
-			motor_out[CH_2] += 50;
+			motor_out[CH_2] += 100;
 		}
 
 		if(g.rc_2.control_in < -3000){	// front
-			motor_out[CH_1] += 50;
+			motor_out[CH_1] += 100;
 		}
 
 	}
@@ -189,27 +189,27 @@ static void output_motor_test()
 
 /*
 	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_3, g.rc_3.radio_min + 100);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 100);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 100);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_1, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_4, g.rc_3.radio_min + 100);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_8, g.rc_3.radio_min + 100);
 	delay(1000);
 
 	APM_RC.OutputCh(CH_8, g.rc_3.radio_min);
-	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 50);
+	APM_RC.OutputCh(CH_2, g.rc_3.radio_min + 100);
 	delay(1000);
 }
 */

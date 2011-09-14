@@ -1,1 +1,6 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   a543a5c..fe617ae  master     -> origin/master
+Updating a543a5c..fe617ae
+Fast-forward
+ ArduCopter/config.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
