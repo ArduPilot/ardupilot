@@ -237,7 +237,6 @@ static const char *comma = ",";
 static const char* flight_mode_strings[] = {
 	"STABILIZE",
 	"ACRO",
-	"SIMPLE",
 	"ALT_HOLD",
 	"AUTO",
 	"GUIDED",
@@ -275,6 +274,7 @@ static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
 static int 		motor_out[8];
+static bool		do_simple = false;
 
 // Heli
 // ----
@@ -338,7 +338,7 @@ static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static long initial_simple_bearing;				// used for Simple mode
-
+static float boost; 							// used to give a little extra to maintain altitude
 
 // Acro
 #if CH7_OPTION == DO_FLIP
@@ -493,7 +493,7 @@ static int 				gps_fix_count;
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
 static uint8_t 			delta_ms_fast_loop; 		// Delta Time in miliseconds
-static int 				mainLoop_count;
+//static int 				mainLoop_count;
 
 static unsigned long 	medium_loopTimer;			// Time in miliseconds of navigation control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
@@ -504,7 +504,6 @@ static uint8_t			delta_ms_fiftyhz;
 
 static byte 			slow_loopCounter;
 static int 				superslow_loopCounter;
-static byte				alt_timer;				// for limiting the execution of flight mode thingys
 static byte				simple_timer;				// for limiting the execution of flight mode thingys
 
 
@@ -533,12 +532,7 @@ void loop()
 		//PORTK |= B00010000;
 		delta_ms_fast_loop 	= millis() - fast_loopTimer;
 		fast_loopTimer		= millis();
-		//load				= float(fast_loopTimeStamp - fast_loopTimer) / delta_ms_fast_loop;
 		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-		mainLoop_count++;
-
-		//if (delta_ms_fast_loop > 6)
-		//	Log_Write_Performance();
 
 		// Execute the fast loop
 		// ---------------------
@@ -568,7 +562,7 @@ void loop()
 		}
 
 		if (millis() - perf_mon_timer > 20000) {
-			if (mainLoop_count != 0) {
+			//if (mainLoop_count != 0) {
 
 				gcs.send_message(MSG_PERF_REPORT);
 
@@ -576,7 +570,7 @@ void loop()
 					Log_Write_Performance();
 
                 resetPerfData();
-            }
+            //}
         }
 		//PORTK &= B10111111;
 	}
@@ -610,7 +604,6 @@ static void fast_loop()
 	// ---------------------------------------
 	update_yaw_mode();
 	update_roll_pitch_mode();
-	update_throttle_mode();
 
 	// write out the servo PWM values
 	// ------------------------------
@@ -630,6 +623,12 @@ static void medium_loop()
 
 			medium_loopCounter++;
 
+			/*
+			if(g.optflow_enabled){
+				optflow.update()
+			}
+			*/
+
 			if(GPS_enabled){
 				update_GPS();
 			}
@@ -646,6 +645,10 @@ static void medium_loop()
 
 			// auto_trim, uses an auto_level algorithm
 			auto_trim();
+
+			// record throttle output
+			// ------------------------------
+			throttle_integrator += g.rc_3.servo_out;
 			break;
 
 		// This case performs some navigation computations
@@ -653,13 +656,6 @@ static void medium_loop()
 		case 1:
 			loop_step = 2;
 			medium_loopCounter++;
-
-			// hack to stop navigation in Simple mode
-			if (control_mode == SIMPLE){
-				// clear GPS data
-				g_gps->new_data = false;
-				break;
-			}
 
 			// Auto control modes:
 			if(g_gps->new_data && g_gps->fix){
@@ -696,17 +692,14 @@ static void medium_loop()
 			// --------------------------
 			update_altitude();
 
-			// altitude smoothing
-			// ------------------
-			//calc_altitude_smoothing_error();
-
-			altitude_error = get_altitude_error();
-
-			//camera_stabilization();
-
 			// invalidate the throttle hold value
 			// ----------------------------------
 			invalid_throttle = true;
+
+			// calc boost
+			// ----------
+			boost = get_angle_boost();
+
 			break;
 
 		// This case deals with sending high rate telemetry
@@ -722,11 +715,13 @@ static void medium_loop()
 			}
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
-					Log_Write_Attitude();
+				if(motor_armed){
+					if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
+						Log_Write_Attitude();
 
-				if (g.log_bitmask & MASK_LOG_CTUN && motor_armed)
-					Log_Write_Control_Tuning();
+					if (g.log_bitmask & MASK_LOG_CTUN)
+						Log_Write_Control_Tuning();
+				}
 			#endif
 
 			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
@@ -785,9 +780,9 @@ static void medium_loop()
 // ---------------------------
 static void fifty_hz_loop()
 {
-	// record throttle output
-	// ------------------------------
-	throttle_integrator += g.rc_3.servo_out;
+	// moved to slower loop
+	// --------------------
+	update_throttle_mode();
 
 	// Read Sonar
 	// ----------
@@ -1010,86 +1005,6 @@ static void update_GPS(void)
 	}
 }
 
-#ifdef OPTFLOW_ENABLED
-// blend gps and optical flow location
-void update_location(void)
-{
-    //static int count = 0;
-    // get GPS position
-	if(GPS_enabled){
-		update_GPS();
-	}
-
-	if( g.optflow_enabled ) {
-	    int32_t	temp_lat, temp_lng, diff_lat, diff_lng;
-
-		// get optical flow position
-		optflow.read();
-		optflow.get_position(dcm.roll, dcm.pitch, dcm.yaw, current_loc.alt-home.alt);
-
-		// write to log
-		if (g.log_bitmask & MASK_LOG_OPTFLOW){
-			Log_Write_Optflow();
-		}
-
-		temp_lat = optflow_offset.lat + optflow.lat;
-		temp_lng = optflow_offset.lng + optflow.lng;
-
-		// if we have good GPS values, don't let optical flow position stray too far
-		if( GPS_enabled && g_gps->fix ) {
-			// ensure current location is within 3m of gps location
-			diff_lat = g_gps->latitude - temp_lat;
-			diff_lng = g_gps->longitude - temp_lng;
-			if( diff_lat > 300 ) {
-				optflow_offset.lat += diff_lat - 300;
-				//Serial.println("lat inc!");
-			}
-			if( diff_lat < -300 ) {
-				optflow_offset.lat += diff_lat + 300;
-				//Serial.println("lat dec!");
-			}
-			if( diff_lng > 300 ) {
-				optflow_offset.lng += diff_lng - 300;
-				//Serial.println("lng inc!");
-			}
-			if( diff_lng < -300 ) {
-				optflow_offset.lng += diff_lng + 300;
-				//Serial.println("lng dec!");
-			}
-		}
-
-		// update the current position
-		current_loc.lat = optflow_offset.lat + optflow.lat;
-		current_loc.lng = optflow_offset.lng + optflow.lng;
-
-		/*count++;
-		if( count >= 20 ) {
-		    count = 0;
-			Serial.println();
-			Serial.print("lat:");
-			Serial.print(current_loc.lat);
-			Serial.print("\tlng:");
-			Serial.print(current_loc.lng);
-			Serial.print("\tr:");
-			Serial.print(nav_roll);
-			Serial.print("\tp:");
-			Serial.print(nav_pitch);
-			Serial.println();
-		}*/
-
-		// indicate we have a new position for nav functions
-		new_location = true;
-
-	}else{
-	    // get current position from gps
-		current_loc.lng = g_gps->longitude;	// Lon * 10 * *7
-		current_loc.lat = g_gps->latitude;	// Lat * 10 * *7
-
-		new_location = g_gps->new_data;
-	}
-}
-#endif
-
 void update_yaw_mode(void)
 {
 	switch(yaw_mode){
@@ -1100,8 +1015,11 @@ void update_yaw_mode(void)
 
 		case YAW_HOLD:
 			// calcualte new nav_yaw offset
-			nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
-			//Serial.printf("n:%d %ld, ",g.rc_4.control_in, nav_yaw);
+			if (control_mode <= STABILIZE){
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, g.rc_3.control_in);
+			}else{
+				nav_yaw = get_nav_yaw_offset(g.rc_4.control_in, 1);
+			}
 			break;
 
 		case YAW_LOOK_AT_HOME:
@@ -1136,6 +1054,29 @@ void update_roll_pitch_mode(void)
 
 	int control_roll = 0, control_pitch = 0;
 
+	if(do_simple){
+		simple_timer++;
+		if(simple_timer > 5){
+			simple_timer = 0;
+
+			int delta = wrap_360(dcm.yaw_sensor - initial_simple_bearing)/100;
+
+			// pre-calc rotation (stored in real degrees)
+			// roll
+			float cos_x = sin(radians(90 - delta));
+			// pitch
+			float sin_y = cos(radians(90 - delta));
+
+			// Rotate input by the initial bearing
+			// roll
+			control_roll 	= g.rc_1.control_in * cos_x + g.rc_2.control_in * sin_y;
+			// pitch
+			control_pitch 	= -(g.rc_1.control_in * sin_y - g.rc_2.control_in * cos_x);
+
+			g.rc_1.control_in = control_roll;
+			g.rc_2.control_in = control_pitch;
+		}
+	}
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
@@ -1151,29 +1092,6 @@ void update_roll_pitch_mode(void)
 			control_roll  = g.rc_1.control_in;
 			control_pitch = g.rc_2.control_in;
 			break;
-
-		case ROLL_PITCH_SIMPLE:
-			simple_timer++;
-			if(simple_timer > 5){
-				simple_timer = 0;
-
-				int delta = wrap_360(dcm.yaw_sensor - initial_simple_bearing)/100;
-
-				// pre-calc rotation (stored in real degrees)
-				// roll
-				float cos_x = sin(radians(90 - delta));
-				// pitch
-				float sin_y = cos(radians(90 - delta));
-
-				// Rotate input by the initial bearing
-				// roll
-				nav_roll 	= g.rc_1.control_in * cos_x + g.rc_2.control_in * sin_y;
-				// pitch
-				nav_pitch 	= -(g.rc_1.control_in * sin_y - g.rc_2.control_in * cos_x);
-			}
-			control_roll  = nav_roll;
-			control_pitch = nav_pitch;
-		break;
 
 		case ROLL_PITCH_AUTO:
 			// mix in user control with Nav control
@@ -1194,7 +1112,7 @@ void update_throttle_mode(void)
 {
 	switch(throttle_mode){
 		case THROTTLE_MANUAL:
-			g.rc_3.servo_out = get_throttle(g.rc_3.control_in);
+			g.rc_3.servo_out = g.rc_3.control_in + boost;
 		break;
 
 		case THROTTLE_HOLD:
@@ -1204,16 +1122,20 @@ void update_throttle_mode(void)
 			// fall through
 
 		case THROTTLE_AUTO:
+				// 10hz, 			don't run up i term
 			if(invalid_throttle && motor_auto_armed == true){
+				// how far off are we
+				altitude_error = get_altitude_error();
+
 				// get the AP throttle
 				nav_throttle = get_nav_throttle(altitude_error, 200); //150 =  target speed of 1.5m/s
-
-				// apply throttle control
-				g.rc_3.servo_out = get_throttle(nav_throttle);
 
 				// clear the new data flag
 				invalid_throttle = false;
 			}
+
+			// apply throttle control at 200 hz
+			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + boost;
 			break;
 	}
 }
@@ -1237,6 +1159,11 @@ static void update_navigation()
 			break;
 
 		case GUIDED:
+			wp_control = WP_MODE;
+			update_auto_yaw();
+			update_nav_wp();
+			break;
+
 		case RTL:
 			if(wp_distance > 4){
 				// calculates desired Yaw
@@ -1250,7 +1177,6 @@ static void update_navigation()
 				set_mode(LOITER);
 				//xtrack_enabled = false;
 			}
-
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
@@ -1273,8 +1199,8 @@ static void update_navigation()
 				//circle_angle += dTnav; //1000 * (dTnav/1000);
 				circle_angle = wrap_360(target_bearing + 2000 + 18000);
 
-				target_WP.lng = next_WP.lng + g.loiter_radius * cos(radians(90 - circle_angle));
-				target_WP.lat = next_WP.lat + g.loiter_radius * sin(radians(90 - circle_angle));
+				target_WP.lng = next_WP.lng + (g.loiter_radius * 100 * cos(radians(90 - circle_angle)));
+				target_WP.lat = next_WP.lat + (g.loiter_radius * 100 * sin(radians(90 - circle_angle)));
 			}
 
 			// calc the lat and long error to the target
@@ -1379,18 +1305,13 @@ static void update_altitude()
 static void
 adjust_altitude()
 {
-	alt_timer++;
-	if(alt_timer >= 2){
-		alt_timer = 0;
-
-		if(g.rc_3.control_in <= 200){
-			next_WP.alt -= 1;												// 1 meter per second
-			next_WP.alt = max(next_WP.alt, (current_loc.alt - 400));		// don't go less than 4 meters below current location
-			next_WP.alt = max(next_WP.alt, 100);							// don't go less than 1 meter
-		}else if (g.rc_3.control_in > 700){
-			next_WP.alt += 1;												// 1 meter per second
-			next_WP.alt = min(next_WP.alt, (current_loc.alt + 400));		// don't go more than 4 meters below current location
-		}
+	if(g.rc_3.control_in <= 200){
+		next_WP.alt -= 1;												// 1 meter per second
+		next_WP.alt = max(next_WP.alt, (current_loc.alt - 400));		// don't go less than 4 meters below current location
+		next_WP.alt = max(next_WP.alt, 100);							// don't go less than 1 meter
+	}else if (g.rc_3.control_in > 700){
+		next_WP.alt += 1;												// 1 meter per second
+		next_WP.alt = min(next_WP.alt, (current_loc.alt + 400));		// don't go more than 4 meters below current location
 	}
 }
 

@@ -91,7 +91,7 @@ static int
 get_nav_throttle(long z_error, int target_speed)
 {
 	int rate_error;
-	int throttle;
+	//int throttle;
 	float scaler = (float)target_speed/(float)ALT_ERROR_MAX;
 
 	// limit error to prevent I term run up
@@ -101,8 +101,11 @@ get_nav_throttle(long z_error, int target_speed)
 	rate_error 		= target_speed - altitude_rate;
 	rate_error 		= constrain(rate_error, -110, 110);
 
-	throttle 		= g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
-	return  		  g.throttle_cruise + throttle;
+	//throttle 		= g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
+	//return  		  g.throttle_cruise + throttle;
+
+
+	return g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
 }
 
 
@@ -156,10 +159,16 @@ static void reset_hold_I(void)
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-static void reset_nav_I(void)
+static void reset_nav(void)
 {
+	nav_throttle 		= 0;
+	invalid_throttle 	= true;
+
 	g.pi_nav_lat.reset_I();
 	g.pi_nav_lon.reset_I();
+
+	long_error = 0;
+	lat_error  = 0;
 }
 
 
@@ -169,11 +178,11 @@ throttle control
 
 // user input:
 // -----------
-static int get_throttle(int throttle_input)
-{
-	throttle_input = (float)throttle_input * angle_boost();
-	return  max(throttle_input, 0);
-}
+//static int get_throttle(int throttle_input)
+//{
+//	throttle_input = (float)throttle_input * angle_boost();
+//	return  max(throttle_input, 0);
+//}
 
 static long
 get_nav_yaw_offset(int yaw_input, int reset)
@@ -188,7 +197,7 @@ get_nav_yaw_offset(int yaw_input, int reset)
 		// re-define nav_yaw if we have stick input
 		if(yaw_input != 0){
 			// set nav_yaw + or - the current location
-			_yaw 	= (long)yaw_input + dcm.yaw_sensor;
+			_yaw = (long)yaw_input + dcm.yaw_sensor;
 			// we need to wrap our value so we can be 0 to 360 (*100)
 			return wrap_360(_yaw);
 
@@ -210,7 +219,7 @@ static int alt_hold_velocity()
 }
 */
 
-static float angle_boost()
+static float get_angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 2.0 - constrain(temp, .5, 1.0);

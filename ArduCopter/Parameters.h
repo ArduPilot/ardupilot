@@ -83,7 +83,6 @@ public:
 	// 160: Navigation parameters
 	//
 	k_param_crosstrack_entry_angle = 160,
-	k_param_pitch_max,
 	k_param_RTL_altitude,
 
 	//
@@ -139,7 +138,7 @@ public:
     k_param_flight_mode4,
     k_param_flight_mode5,
     k_param_flight_mode6,
-
+    k_param_simple_modes,
 
 	//
 	// 220: Waypoint data
@@ -179,7 +178,7 @@ public:
 	//
 	AP_Int16	sysid_this_mav;
 	AP_Int16	sysid_my_gcs;
-    AP_Int8			serial3_baud;
+    AP_Int8		serial3_baud;
 
 
 	// Crosstrack navigation
@@ -213,6 +212,7 @@ public:
     AP_Int8     flight_mode4;
     AP_Int8     flight_mode5;
     AP_Int8     flight_mode6;
+    AP_Int8     simple_modes;
 
 	// Radio settings
 	//
@@ -220,8 +220,6 @@ public:
 	//AP_Var_group pwm_pitch;
 	//AP_Var_group pwm_throttle;
 	//AP_Var_group pwm_yaw;
-
-	AP_Int16	pitch_max;
 
 	// Misc
 	//
@@ -324,8 +322,7 @@ public:
     flight_mode4            (FLIGHT_MODE_4,             k_param_flight_mode4,					PSTR("FLTMODE4")),
     flight_mode5            (FLIGHT_MODE_5,             k_param_flight_mode5,					PSTR("FLTMODE5")),
     flight_mode6            (FLIGHT_MODE_6,             k_param_flight_mode6,					PSTR("FLTMODE6")),
-
-	pitch_max				(PITCH_MAX * 100,			k_param_pitch_max,						PSTR("PITCH_MAX")),
+    simple_modes            (0,             			k_param_simple_modes,					PSTR("SIMPLE")),
 
 	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
 	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),

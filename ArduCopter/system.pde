@@ -249,11 +249,6 @@ static void init_ardupilot()
 		start_new_log();
 	}
 
-	//#if(GROUND_START_DELAY > 0)
-		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
-	//	delay(GROUND_START_DELAY * 1000);
-	//#endif
-
     GPS_enabled = false;
 
     // Read in the GPS
@@ -292,10 +287,8 @@ static void init_ardupilot()
 	// ---------------------------
 	reset_control_switch();
 
-	//delay(100);
 	startup_ground();
 
-	//Serial.printf_P(PSTR("\nloiter: %d\n"), location_error_max);
 	Log_Write_Startup();
 
 	SendDebug("\nReady to FLY ");
@@ -361,9 +354,7 @@ static void set_mode(byte mode)
 	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
 
-	// most modes do not calculate crosstrack correction
-	//xtrack_enabled = false;
-	reset_nav_I();
+	reset_nav();
 
 	switch(control_mode)
 	{
@@ -381,13 +372,6 @@ static void set_mode(byte mode)
 			reset_hold_I();
 			break;
 
-		case SIMPLE:
-			yaw_mode 		= SIMPLE_YAW;
-			roll_pitch_mode = SIMPLE_RP;
-			throttle_mode 	= SIMPLE_THR;
-			reset_hold_I();
-			break;
-
 		case ALT_HOLD:
 			yaw_mode 		= ALT_HOLD_YAW;
 			roll_pitch_mode = ALT_HOLD_RP;
@@ -395,7 +379,7 @@ static void set_mode(byte mode)
 			reset_hold_I();
 
 			init_throttle_cruise();
-			next_WP.alt = current_loc.alt;
+			next_WP = current_loc;
 			break;
 
 		case AUTO:
@@ -407,12 +391,7 @@ static void set_mode(byte mode)
 			init_throttle_cruise();
 
 			// loads the commands from where we left off
-			//init_auto();
 			init_commands();
-
-			// do crosstrack correction
-			// XXX move to flight commands
-			//xtrack_enabled = true;
 			break;
 
 		case CIRCLE:
@@ -491,7 +470,7 @@ static void set_failsafe(boolean mode)
 
 
 static void resetPerfData(void) {
-	mainLoop_count 		= 0;
+	//mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
@@ -541,7 +520,7 @@ static void
 init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
-	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
+	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}

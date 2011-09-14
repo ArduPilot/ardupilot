@@ -30,6 +30,7 @@
 // CH 7 control
 #define DO_SET_HOVER 0
 #define DO_FLIP 1
+#define SIMPLE_MODE_CONTROL 2
 
 // Frame types
 #define QUAD_FRAME 0
@@ -121,14 +122,20 @@
 // ----------------
 #define STABILIZE 0			// hold level position
 #define ACRO 1				// rate control
-#define SIMPLE 2			//
-#define ALT_HOLD 3			// AUTO control
-#define AUTO 4				// AUTO control
-#define GUIDED 5			// AUTO control
-#define LOITER 6			// Hold a single location
-#define RTL 7				// AUTO control
-#define CIRCLE 8				// AUTO control
-#define NUM_MODES 9
+#define ALT_HOLD 2			// AUTO control
+#define AUTO 3				// AUTO control
+#define GUIDED 4			// AUTO control
+#define LOITER 5			// Hold a single location
+#define RTL 6				// AUTO control
+#define CIRCLE 7			// AUTO control
+#define NUM_MODES 8
+
+#define SIMPLE_1 1
+#define SIMPLE_2 2
+#define SIMPLE_3 4
+#define SIMPLE_4 8
+#define SIMPLE_5 16
+#define SIMPLE_6 32
 
 // CH_6 Tuning
 // -----------

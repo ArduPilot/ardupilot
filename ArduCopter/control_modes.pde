@@ -13,6 +13,12 @@ static void read_control_switch()
 			switch_debouncer 	= false;
 
 			set_mode(flight_modes[switchPosition]);
+
+			// setup Simple mode
+			// do we enable simple mode?
+			do_simple = (g.simple_modes & 1 << switchPosition);
+			Serial.printf("do simple: %d \n",  (int)do_simple);
+
 		}else{
 			switch_debouncer 	= true;
 		}
@@ -46,6 +52,10 @@ static void read_trim_switch()
 	if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
 		do_flip = true;
 	}
+
+#elif CH7_OPTION == SIMPLE_MODE_CONTROL
+
+	do_simple = (g.rc_7.control_in > 800);
 
 #elif CH7_OPTION == DO_SET_HOVER
 	// switch is engaged
