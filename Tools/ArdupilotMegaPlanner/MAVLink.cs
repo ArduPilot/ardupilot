@@ -951,6 +951,8 @@ namespace ArdupilotMega
 
             req.seq = index;
 
+            //Console.WriteLine("getwp req "+ DateTime.Now.Millisecond);
+
             // request
             generatePacket(MAVLINK_MSG_ID_WAYPOINT_REQUEST, req);
 
@@ -972,11 +974,14 @@ namespace ArdupilotMega
                     MainV2.givecomport = false;
                     throw new Exception("Timeout on read - getWP");
                 }
+                //Console.WriteLine("getwp read " + DateTime.Now.Millisecond);
                 byte[] buffer = readPacket();
+                //Console.WriteLine("getwp readend " + DateTime.Now.Millisecond);
                 if (buffer.Length > 5)
                 {
                     if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT)
                     {
+                        //Console.WriteLine("getwp ans " + DateTime.Now.Millisecond);
                         __mavlink_waypoint_t wp = new __mavlink_waypoint_t();
 
                         object temp = (object)wp;
@@ -1070,7 +1075,7 @@ namespace ArdupilotMega
                     }
                     else
                     {
-                        //Console.WriteLine(DateTime.Now + " PC getwp " + buffer[5]);
+                        Console.WriteLine(DateTime.Now + " PC getwp " + buffer[5]);
                     }
                 }
             }
@@ -1455,16 +1460,18 @@ namespace ArdupilotMega
                                 else
                                 {
                                     int to = 0;
-                                    while (BaseStream.BytesToRead < length)
+                                    while (BaseStream.BytesToRead < (length - 4))
                                     {
                                         if (to > 1000)
                                         {
                                             Console.WriteLine("MAVLINK: wait time out btr {0} len {1}", BaseStream.BytesToRead, length);
                                             break;
                                         }
-                                        System.Threading.Thread.Sleep(2);
-                                        System.Windows.Forms.Application.DoEvents();
+                                        System.Threading.Thread.Sleep(1);
+                                        //System.Windows.Forms.Application.DoEvents();
                                         to++;
+
+                                        //Console.WriteLine("data " + 0 + " " + length + " aval " + BaseStream.BytesToRead);
                                     }
                                     int read = BaseStream.Read(temp, 6, length - 4);
                                 }

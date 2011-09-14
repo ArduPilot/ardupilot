@@ -6,7 +6,6 @@ using System.IO.Ports;
 using System.Threading;
 using System.Net; // dns, ip address
 using System.Net.Sockets; // tcplistner
-using SerialProxy;
 
 namespace System.IO.Ports
 {
