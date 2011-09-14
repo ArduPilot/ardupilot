@@ -76,6 +76,8 @@ namespace ArdupilotMega
             //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
             //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
+            srtm.datadirectory = @"C:\srtm";
+
             var t = Type.GetType("Mono.Runtime");
             MAC = (t != null);
 

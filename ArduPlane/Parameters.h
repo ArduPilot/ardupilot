@@ -113,13 +113,6 @@ public:
         k_param_inverted_flight_ch,
 
         //
-        // Camera parameters
-        //
-#if CAMERA == ENABLED
-        k_param_camera,
-#endif
-
-        //
         // 170: Radio settings
         //
         k_param_channel_roll = 170,
@@ -324,11 +317,6 @@ public:
     AP_Int8		flap_2_percent;
     AP_Int8		flap_2_speed;
 
-	// Camera
-#if CAMERA == ENABLED
-    AP_Camera		camera;
-#endif
-
     // RC channels
     RC_Channel  channel_roll;
     RC_Channel  channel_pitch;
@@ -433,10 +421,6 @@ public:
         airspeed_enabled		(AIRSPEED_SENSOR,			k_param_airspeed_enabled,		PSTR("ARSPD_ENABLE")),
 
 	// Note - total parameter name length must be less than 14 characters for MAVLink compatibility!
-
-#if CAMERA == ENABLED
-		camera				(k_param_camera,	PSTR("CAM_")),
-#endif
 
         // RC channel           group key                   name
         //----------------------------------------------------------------------
