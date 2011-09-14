@@ -311,13 +311,10 @@ static void do_loiter_turns()
 
 static void do_loiter_time()
 {
-	///*
-	wp_control = LOITER_MODE;
+	wp_control 		= LOITER_MODE;
 	set_next_WP(&current_loc);
 	loiter_time 	= millis();
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
-	//Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
-	//*/
 }
 
 /********************************************************************************/
@@ -464,11 +461,12 @@ static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-		condition_value		= next_command.alt + home.alt;
-	} else {
-		condition_value		= next_command.alt;
-	}
+	condition_value	= next_command.alt;
+	//if (next_command.options & WP_OPTION_ALT_RELATIVE) {
+	//	condition_value		= next_command.alt + home.alt;
+	//} else {
+
+	//}
 	temp.alt		= condition_value;
 	set_next_WP(&temp);
 }

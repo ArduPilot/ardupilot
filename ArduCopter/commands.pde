@@ -1,18 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-
-/*static void init_auto()
-{
-	//if (g.waypoint_index == g.waypoint_total) {
-	//	do_RTL();
-	//}
-
-	// initialize commands
-	// -------------------
-	init_commands();
-}
-*/
-
 static void init_commands()
 {
 	// zero is home, but we always load the next command (1), in the code.

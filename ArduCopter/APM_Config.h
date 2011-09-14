@@ -46,10 +46,17 @@
     CH6_TRAVERSE_SPEED
 	*/
 
+# define CH7_OPTION		DO_SET_HOVER
+	/*
+	DO_SET_HOVER
+	DO_FLIP
+	SIMPLE_MODE_CONTROL
+	*/
+
 // See the config.h and defines.h files for how to set this up!
 //
 // lets use SIMPLE mode for Roll and Pitch during Alt Hold
-#define ALT_HOLD_RP 		ROLL_PITCH_SIMPLE
+//#define ALT_HOLD_RP 		ROLL_PITCH_SIMPLE
 
 // lets use Manual throttle during Loiter
 //#define LOITER_THR			THROTTLE_MANUAL
