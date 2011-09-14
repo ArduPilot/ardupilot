@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ArduCopter 2.0.40 Beta", main_menu_commands);
+MENU(main_menu, "ArduCopter 2.0.43 Beta", main_menu_commands);
 
 #endif // CLI_ENABLED
 
@@ -362,7 +362,7 @@ static void set_mode(byte mode)
 	led_mode = NORMAL_LEDS;
 
 	// most modes do not calculate crosstrack correction
-	xtrack_enabled = false;
+	//xtrack_enabled = false;
 	reset_nav_I();
 
 	switch(control_mode)
@@ -407,11 +407,12 @@ static void set_mode(byte mode)
 			init_throttle_cruise();
 
 			// loads the commands from where we left off
-			init_auto();
+			//init_auto();
+			init_commands();
 
 			// do crosstrack correction
 			// XXX move to flight commands
-			xtrack_enabled = true;
+			//xtrack_enabled = true;
 			break;
 
 		case CIRCLE:
@@ -437,9 +438,10 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_AUTO;
 
-			xtrack_enabled = true;
+			//xtrack_enabled = true;
 			init_throttle_cruise();
 			next_WP = current_loc;
+			set_next_WP(&guided_WP);
 			break;
 
 		case RTL:
@@ -447,7 +449,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = RTL_RP;
 			throttle_mode 	= RTL_THR;
 
-			xtrack_enabled = true;
+			//xtrack_enabled = true;
 			init_throttle_cruise();
 			do_RTL();
 			break;

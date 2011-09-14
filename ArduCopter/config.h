@@ -345,7 +345,7 @@
 
 // CIRCLE Mode
 #ifndef CIRCLE_YAW
-# define CIRCLE_YAW 		YAW_HOLD
+# define CIRCLE_YAW 		YAW_AUTO
 #endif
 
 #ifndef CIRCLE_RP
@@ -482,10 +482,10 @@
 # define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.1		// this
+# define NAV_I				0.12		// this
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			16			// degrees
+# define NAV_IMAX			20			// degrees
 #endif
 
 /*
@@ -513,7 +513,7 @@
 // Throttle control gains
 //
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.35		//
+# define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
@@ -522,7 +522,7 @@
 //# define THROTTLE_D		0.6			// upped with filter
 //#endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX		150
+# define THROTTLE_IMAX		300
 #endif
 
 

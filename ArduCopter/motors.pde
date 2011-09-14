@@ -34,8 +34,9 @@ static void arm_motors()
 					// Tune down DCM
 					// -------------------
 					#if HIL_MODE != HIL_MODE_ATTITUDE
-					dcm.kp_roll_pitch(0.030000);
-					dcm.ki_roll_pitch(0.000006);
+					  dcm.kp_roll_pitch(0.030000);
+					  dcm.ki_roll_pitch(0.00001278),	// 50 hz I term
+					//dcm.ki_roll_pitch(0.000006);
 					#endif
 
 					// tune down compass
@@ -95,8 +96,8 @@ static void arm_motors()
 				// Tune down DCM
 				// -------------------
 				#if HIL_MODE != HIL_MODE_ATTITUDE
-				dcm.kp_roll_pitch(0.12);		// higher for quads
-				dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate for 200 hz loop
+				dcm.kp_roll_pitch(0.12);			// higher for fast recovery
+				//dcm.ki_roll_pitch(0.00000319); 	// 1/4 of the normal rate for 200 hz loop
 				#endif
 
 				// tune up compass

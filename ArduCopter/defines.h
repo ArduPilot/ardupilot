@@ -87,14 +87,6 @@
 // Note channels are from 0!
 //
 // XXX these should be CH_n defines from RC.h at some point.
-#define CH_1 0
-#define CH_2 1
-#define CH_3 2
-#define CH_4 3
-#define CH_5 4
-#define CH_6 5
-#define CH_7 6
-#define CH_8 7
 #define CH_10 9    //PB5
 #define CH_11 10   //PE3
 
@@ -138,13 +130,6 @@
 #define CIRCLE 8				// AUTO control
 #define NUM_MODES 9
 
-// YAW debug
-// ---------
-#define YAW_HOLD 0
-#define YAW_BRAKE 1
-#define YAW_RATE 2
-
-
 // CH_6 Tuning
 // -----------
 #define CH6_NONE 0
@@ -152,20 +137,18 @@
 #define CH6_STABILIZE_KP 1
 #define CH6_STABILIZE_KI 2
 #define	CH6_YAW_KP 3
-#define	CH6_YAW_KD 4
 // Rate
-#define CH6_RATE_KP 5
-#define CH6_RATE_KI 6
-#define	CH6_YAW_RATE_KP 7
-#define	CH6_YAW_RATE_KD 8
+#define CH6_RATE_KP 4
+#define CH6_RATE_KI 5
+#define	CH6_YAW_RATE_KP 6
 // Altitude
-#define CH6_THROTTLE_KP 9
-#define CH6_THROTTLE_KD 10
+#define CH6_THROTTLE_KP 7
 // Extras
-#define CH6_TOP_BOTTOM_RATIO 11
-#define CH6_PMAX 12
-#define CH6_RELAY 13
-#define CH6_TRAVERSE_SPEED 14
+#define CH6_TOP_BOTTOM_RATIO 8
+#define CH6_RELAY 9
+#define CH6_TRAVERSE_SPEED 10
+
+#define CH6_NAV_P 11
 
 // nav byte mask
 // -------------
@@ -322,8 +305,8 @@
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
 
-#define BATTERY_VOLTAGE(x) (x*(INPUT_VOLTAGE/1024.0))*VOLT_DIV_RATIO
-#define CURRENT_AMPS(x) ((x*(INPUT_VOLTAGE/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
+#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*VOLT_DIV_RATIO
+#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
 //#define BARO_FILTER_SIZE 8
 
 /* ************************************************************** */
