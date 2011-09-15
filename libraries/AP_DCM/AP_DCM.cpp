@@ -10,7 +10,7 @@
     version 2.1 of the License, or (at your option) any later version.
 
         Methods:
-				update_DCM(_G_Dt)	: Updates the AHRS by integrating the rotation matrix over time _G_Dt using the IMU object data
+				update_DCM()	: Updates the AHRS by integrating the rotation matrix over time using the IMU object data
 				get_gyro()			: Returns gyro vector corrected for bias
 				get_accel()		: Returns accelerometer vector
 				get_dcm_matrix()	: Returns dcm matrix
@@ -41,13 +41,17 @@ AP_DCM::set_compass(Compass *compass)
 
 /**************************************************/
 void
-AP_DCM::update_DCM_fast(float _G_Dt)
+AP_DCM::update_DCM_fast(void)
 {
+	float delta_t;
+
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
 
-	matrix_update(_G_Dt); 	// Integrate the DCM matrix
+	delta_t = _imu->get_delta_time();
+
+	matrix_update(delta_t); 	// Integrate the DCM matrix
 
 	switch(_toggle++){
 		case 0:
@@ -82,13 +86,17 @@ AP_DCM::update_DCM_fast(float _G_Dt)
 
 /**************************************************/
 void
-AP_DCM::update_DCM(float _G_Dt)
+AP_DCM::update_DCM(void)
 {
+	float delta_t;
+
 	_imu->update();
 	_gyro_vector 	= _imu->get_gyro();			// Get current values for IMU sensors
 	_accel_vector 	= _imu->get_accel();			// Get current values for IMU sensors
 
-	matrix_update(_G_Dt); 	// Integrate the DCM matrix
+	delta_t = _imu->get_delta_time();
+
+	matrix_update(delta_t); 	// Integrate the DCM matrix
 	normalize();			// Normalize the DCM matrix
 	drift_correction();		// Perform drift correction
 	euler_angles();			// Calculate pitch, roll, yaw for stabilization and navigation

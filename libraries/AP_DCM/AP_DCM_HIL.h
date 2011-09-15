@@ -31,7 +31,7 @@ public:
 	void		set_compass(Compass *compass) {}
 
 	// Methods
-	void 		update_DCM(float _G_Dt) {}
+	void 		update_DCM(void) {}
 
 	float		get_health(void) { return 1.0; }
 
