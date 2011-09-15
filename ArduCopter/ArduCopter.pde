@@ -1209,7 +1209,7 @@ static void read_AHRS(void)
 		hil.update();
 	#endif
 
-	dcm.update_DCM_fast(G_Dt);//, _tog);
+	dcm.update_DCM_fast();
 	omega = dcm.get_gyro();
 }
 
