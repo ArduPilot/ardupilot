@@ -502,7 +502,7 @@ static void fast_loop()
 		hil.update();
 	#endif
 
-	dcm.update_DCM(G_Dt);
+	dcm.update_DCM();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
