@@ -279,7 +279,7 @@ AP_IMU_Oilpan::update(void)
 	int tc_temp = _adc->Ch(_gyro_temp_ch);
     uint16_t adc_values[6];
 
-    _ticks = _adc->Ch6(_sensors, adc_values);
+    _sample_time = _adc->Ch6(_sensors, adc_values);
 
 	// convert corrected gyro readings to delta acceleration
 	//

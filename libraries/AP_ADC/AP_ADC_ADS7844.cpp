@@ -19,9 +19,11 @@
 	XCK2 = SCK = pin PH2
 	Chip Select pin is PC4 (33)	 [PH6 (9)]
 	We are using the 16 clocks per conversion timming to increase efficiency (fast)
-	The sampling frequency is 400Hz (Timer2 overflow interrupt)
+
+	The sampling frequency is 1kHz (Timer2 overflow interrupt)
+
 	So if our loop is at 50Hz, our needed sampling freq should be 100Hz, so
-	we have an 4x oversampling and averaging.
+	we have an 10x oversampling and averaging.
 
 	Methods:
 		Init() : Initialization of interrupts an Timers (Timer2 overflow interrupt)
@@ -61,10 +63,10 @@ static volatile uint32_t _sum[8];
 // how many values we've accumulated since last read
 static volatile uint16_t _count[8];
 
-static unsigned char ADC_SPI_transfer(unsigned char data)
+static uint32_t last_ch6_micros;
+
+static inline unsigned char ADC_SPI_transfer(unsigned char data)
 {
-	/* Wait for empty transmit buffer */
-	while ( !( UCSR2A & (1 << UDRE2)) );
 	/* Put data into buffer, sends the data */
 	UDR2 = data;
 	/* Wait for data to be received */
@@ -78,32 +80,33 @@ ISR (TIMER2_OVF_vect)
 {
 	uint8_t ch;
 
-	//bit_set(PORTL,6);                        			  	// To test performance
-
 	bit_clear(PORTC, 4);							// Enable Chip Select (PIN PC4)
 	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
 
-	for (ch = 0; ch < 8; ch++){
-		uint16_t adc_tmp;
-		adc_tmp  = ADC_SPI_transfer(0) << 8;			// Read first byte
-		adc_tmp |= ADC_SPI_transfer(adc_cmd[ch + 1]);		// Read second byte and send next command
+	for (ch = 0; ch < 8; ch++) {
+		uint16_t count = _count[ch];
+                uint32_t sum = _sum[ch];
 
-		_count[ch]++;
-		if (_count[ch] == 0) {
+		if (++count == 0) {
 			// overflow ... shouldn't happen too often
 			// unless we're just not using the
 			// channel. Notice that we overflow the count
 			// to 1 here, not zero, as otherwise the
 			// reader below could get a division by zero
-			_sum[ch] = 0;
-			_count[ch] = 1;
+			sum = 0;
+			count = 1;
+			last_ch6_micros = micros();
 		}
-		_sum[ch] += adc_tmp;
+		_count[ch] = count;
+
+		sum += ADC_SPI_transfer(0) << 8;	   // Read first byte
+		sum += ADC_SPI_transfer(adc_cmd[ch + 1]);  // Read second byte and send next command
+
+		_sum[ch] = sum;
 	}
 
 	bit_set(PORTC, 4);					// Disable Chip Select (PIN PC4)
-	//bit_clear(PORTL,6);   	                        // To test performance
-	TCNT2 = 104;						// 400Hz interrupt
+	TCNT2 = 200;
 }
 
 
@@ -117,17 +120,17 @@ void AP_ADC_ADS7844::Init(void)
 {
 	pinMode(ADC_CHIP_SELECT, OUTPUT);
 
-	digitalWrite(ADC_CHIP_SELECT, HIGH);								 // Disable device (Chip select is active low)
+	digitalWrite(ADC_CHIP_SELECT, HIGH);  // Disable device (Chip select is active low)
 
 	// Setup Serial Port2 in SPI mode
 	UBRR2 = 0;
-	DDRH |= (1 << PH2);																	 // SPI clock XCK2 (PH2) as output. This enable SPI Master mode
+	DDRH |= (1 << PH2);	// SPI clock XCK2 (PH2) as output. This enable SPI Master mode
 	// Set MSPI mode of operation and SPI data mode 0.
-	UCSR2C = (1 << UMSEL21) | (1 << UMSEL20);								 // |(0 << UCPHA2) | (0 << UCPOL2);
+	UCSR2C = (1 << UMSEL21) | (1 << UMSEL20); // |(0 << UCPHA2) | (0 << UCPOL2);
 	// Enable receiver and transmitter.
 	UCSR2B = (1 << RXEN2) | (1 << TXEN2);
 	// Set Baud rate
-	UBRR2 = 2;																					// SPI clock running at 2.6MHz
+	UBRR2 = 2;	// SPI clock running at 2.6MHz
 
 	// get an initial value for each channel. This ensures
 	// _count[] is never zero
@@ -139,14 +142,15 @@ void AP_ADC_ADS7844::Init(void)
 		_sum[i]   = adc_tmp;
 	}
 
+	last_ch6_micros = micros();
 
 	// Enable Timer2 Overflow interrupt to capture ADC data
-	TIMSK2 = 0;																				 // Disable interrupts
-	TCCR2A = 0;																				 // normal counting mode
-	TCCR2B = _BV(CS21) | _BV(CS22);											 // Set prescaler of 256
+	TIMSK2 = 0;			// Disable interrupts
+	TCCR2A = 0;			// normal counting mode
+	TCCR2B = _BV(CS21) | _BV(CS22);	// Set prescaler of 256
 	TCNT2	= 0;
-	TIFR2	= _BV(TOV2);																 // clear pending interrupts;
-	TIMSK2 = _BV(TOIE2) ;															 // enable the overflow interrupt
+	TIFR2	= _BV(TOV2);	   // clear pending interrupts;
+	TIMSK2 = _BV(TOIE2) ;	   // enable the overflow interrupt
 }
 
 // Read one channel value
@@ -174,7 +178,7 @@ uint16_t AP_ADC_ADS7844::Ch(uint8_t ch_num)
 // equal. This will only be true if we always consistently access a
 // sensor by either Ch6() or Ch() and never mix them. If you mix them
 // then you will get very strange results
-uint16_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
+uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 {
 	uint16_t count[6];
 	uint32_t sum[6];
@@ -203,7 +207,9 @@ uint16_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 		result[i] = sum[i] / count[i];
 	}
 
-	// this assumes the count in all channels is equal, which will
-	// be true if the callers are using the interface consistently
-	return count[0];
+	// return number of microseconds since last call
+	uint32_t us = micros();
+	uint32_t ret = us - last_ch6_micros;
+	last_ch6_micros = us;
+	return ret;
 }
