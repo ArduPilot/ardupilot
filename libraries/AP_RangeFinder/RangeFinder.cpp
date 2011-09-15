@@ -37,8 +37,9 @@ void RangeFinder::set_orientation(int x, int y, int z)
 int RangeFinder::read()
 {
 	// read from the analog port or pitot tube
-    if( _ap_adc != NULL ){
-		raw_value = _ap_adc->Ch_raw(AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL) >> 2;  // values from ADC are twice as big as you'd expect
+   if( _ap_adc != NULL ){
+	  // values from ADC are twice as big as you'd expect
+	  raw_value = _ap_adc->Ch(AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL) >> 2;
 	}else{
 		// read raw sensor value and convert to distance
     	raw_value = analogRead(_analogPort);
