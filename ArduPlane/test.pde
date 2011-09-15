@@ -418,7 +418,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		for (int i=0;i<9;i++) Serial.printf_P(PSTR("%d\t"),adc.Ch(i));
+		for (int i=0;i<9;i++) Serial.printf_P(PSTR("%u\t"),adc.Ch(i));
 		Serial.println();
 		delay(100);
 		if(Serial.available() > 0){
@@ -476,7 +476,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 			// IMU
 			// ---
-			dcm.update_DCM(G_Dt);
+			dcm.update_DCM();
 
 			if(g.compass_enabled) {
 				medium_loopCounter++;
@@ -563,7 +563,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
 			// IMU
 			// ---
-			dcm.update_DCM(G_Dt);
+			dcm.update_DCM();
 
             medium_loopCounter++;
             if(medium_loopCounter == 5){
