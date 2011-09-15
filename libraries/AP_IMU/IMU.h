@@ -81,7 +81,7 @@ public:
 	///
 	/// @returns	number of seconds
 	///
-	float			get_delta_time(void) { return _ticks * (2.5/1000.0); }
+	float			get_delta_time(void) { return _sample_time * 1.0e-6; }
 
 	/// A count of bad sensor readings
 	///
@@ -98,9 +98,9 @@ protected:
 	/// Most recent gyro reading obtained by ::update
 	Vector3f		_gyro;
 
-	/// number of 2.5ms ticks that the accel and gyro values
-	/// were calculated from
-	uint16_t       _ticks;
+	/// number of microseconds that the accel and gyro values
+	/// were sampled over
+	uint32_t       _sample_time;
 };
 
 #endif

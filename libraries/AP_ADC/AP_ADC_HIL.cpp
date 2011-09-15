@@ -50,7 +50,7 @@ uint16_t AP_ADC_HIL::Ch(unsigned char ch_num)
 }
 
 // Read 6 channel values
-uint16_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, uint16_t *result)
+uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 {
 	for (uint8_t i=0; i<6; i++) {
 		result[i] = Ch(channel_numbers[i]);

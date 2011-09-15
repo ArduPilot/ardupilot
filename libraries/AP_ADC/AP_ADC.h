@@ -33,10 +33,11 @@ class AP_ADC
 	   Pass in an array of 6 channel numbers and results are
 	   returned in result[]
 
-	   The function returns the amount of time that the returned
-	   value has been averaged over, in 2.5 millisecond units
+	   The function returns the amount of time (in microseconds)
+	   since the last call to Ch6().
 	*/
 	virtual uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result) = 0;
+
   private:
 };
 
