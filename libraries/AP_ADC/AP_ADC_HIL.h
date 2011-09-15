@@ -32,10 +32,11 @@ class AP_ADC_HIL : public AP_ADC
 
 	///
 	// Read the sensor, part of public AP_ADC interface
-	int Ch(unsigned char ch_num);
+	uint16_t Ch(unsigned char ch_num);
+
 	///
-	// Read the sensor, part of public AP_ADC interface
-	int Ch_raw(unsigned char ch_num);
+	// Read 6 sensors at once
+	uint16_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
 
 	///
 	// Set the adc raw values given the current rotations rates,
@@ -49,16 +50,19 @@ class AP_ADC_HIL : public AP_ADC
 	// The raw adc array
 	uint16_t adcValue[8];
 
+	// the time in milliseconds when we last got a HIL update
+	uint32_t last_hil_time;
+
 	///
 	// sensor constants
 	// constants declared in cpp file
 	// @see AP_ADC_HIL.cpp
-    static const uint8_t sensors[6];
-    static const float gyroBias[3];
-    static const float gyroScale[3];
+	static const uint8_t sensors[6];
+	static const float gyroBias[3];
+	static const float gyroScale[3];
 	static const float accelBias[3];
-    static const float accelScale[3];
-    static const int8_t sensorSign[6];
+	static const float accelScale[3];
+	static const int8_t sensorSign[6];
 
 	///
 	// gyro set function
