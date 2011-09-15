@@ -84,25 +84,29 @@ ISR (TIMER2_OVF_vect)
 	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
 
 	for (ch = 0; ch < 8; ch++) {
-		uint16_t count = _count[ch];
-                uint32_t sum = _sum[ch];
+		uint16_t v;
 
-		if (++count == 0) {
+		v = ADC_SPI_transfer(0) << 8;	         // Read first byte
+		v |= ADC_SPI_transfer(adc_cmd[ch + 1]);  // Read second byte and send next command
+
+		if (v & 0x8007) {
+			// this is a 12-bit ADC, shifted by 3 bits.
+			// if we get other bits set then the value is
+			// bogus and should be ignored
+			continue;
+		}
+
+		if (++_count[ch] == 0) {
 			// overflow ... shouldn't happen too often
 			// unless we're just not using the
 			// channel. Notice that we overflow the count
 			// to 1 here, not zero, as otherwise the
 			// reader below could get a division by zero
-			sum = 0;
-			count = 1;
+			_sum[ch] = 0;
+			_count[ch] = 1;
 			last_ch6_micros = micros();
 		}
-		_count[ch] = count;
-
-		sum += ADC_SPI_transfer(0) << 8;	   // Read first byte
-		sum += ADC_SPI_transfer(adc_cmd[ch + 1]);  // Read second byte and send next command
-
-		_sum[ch] = sum;
+		_sum[ch] += (v >> 3);
 	}
 
 	bit_set(PORTC, 4);					// Disable Chip Select (PIN PC4)
