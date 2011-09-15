@@ -23,30 +23,41 @@ void setup()
 }
 
 static const uint8_t channel_map[6] = { 1, 2, 0, 4, 5, 6};
-static uint16_t sin_count;
 float v;
 uint32_t last_usec = 0;
 
 void loop()
 {
-	v = sin(millis());
-	sin_count++;
+	uint16_t result[6];
+	uint32_t deltat = 0;
+	uint16_t ch3;
+	uint16_t min[6], max[6];
+	uint8_t i;
 
-	if ((millis() - timer) > 200) {
-		uint16_t result[6];
-		uint32_t deltat;
-		uint16_t ch3;
-
-		timer = millis();
-
-		ch3 = adc.Ch(3);
-		deltat = adc.Ch6(channel_map, result);
-
-		Serial.printf("gx=%u gy=%u gz=%u ax=%u ay=%u az=%u gt=%u deltat=%lu sin_count=%u\n",
-			      result[0], result[1], result[2],
-			      result[3], result[4], result[5],
-			      ch3, deltat, sin_count);
-		sin_count = 0;
+	for (i=0;i<6;i++) {
+		min[i] = 0xFFFF;
+		max[i] = 0;
 	}
+
+
+	do {
+		ch3 = adc.Ch(3);
+		deltat += adc.Ch6(channel_map, result);
+		for (i=0;i<6;i++) {
+			if (result[i] < min[i]) min[i] = result[i];
+			if (result[i] > max[i]) max[i] = result[i];
+			if (result[i] & 0x8000) {
+				Serial.printf("result[%u]=0x%04x\n", (unsigned)i, result[i]);
+			}
+		}
+	} while ((millis() - timer) < 200);
+
+	timer = millis();
+	Serial.printf("g=(%u,%u,%u) a=(%u,%u,%u) +/-(%u,%u,%u,%u,%u,%u) gt=%u dt=%u\n",
+		      result[0], result[1], result[2],
+		      result[3], result[4], result[5],
+		      (max[0]-min[0]), (max[1]-min[1]), (max[2]-min[2]),
+		      (max[3]-min[3]), (max[4]-min[4]), (max[5]-min[5]),
+		      ch3, (unsigned)(deltat/1000));
 }
 
