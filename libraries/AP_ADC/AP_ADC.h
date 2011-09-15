@@ -1,6 +1,8 @@
 #ifndef AP_ADC_H
 #define AP_ADC_H
 
+#include <stdint.h>
+
 /*
 	AP_ADC.cpp - Analog Digital Converter Base Class for Ardupilot Mega
 	Code by James Goppert. DIYDrones.com
@@ -13,7 +15,7 @@
 	Methods:
 		Init() : Initialization of ADC. (interrupts etc)
 		Ch(ch_num) : Return the ADC channel value
-
+		Ch6(channel_numbers, result) : Return 6 ADC channel values
 */
 
 class AP_ADC
@@ -21,8 +23,20 @@ class AP_ADC
   public:
 	AP_ADC() {};  // Constructor
 	virtual void Init() {};
-	virtual int Ch(unsigned char ch_num) = 0;
-	virtual int Ch_raw(unsigned char ch_num) = 0;
+
+	/* read one channel value */
+	virtual uint16_t Ch(uint8_t ch_num) = 0;
+
+	/* read 6 channels values as a set, used by IMU for 3 gyros
+	   and 3 accelerometeres.
+
+	   Pass in an array of 6 channel numbers and results are
+	   returned in result[]
+
+	   The function returns the amount of time that the returned
+	   value has been averaged over, in 2.5 millisecond units
+	*/
+	virtual uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result) = 0;
   private:
 };
 

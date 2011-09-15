@@ -44,6 +44,7 @@
 extern "C" {
 	// AVR LibC Includes
 	#include <inttypes.h>
+	#include <stdint.h>
 	#include <avr/interrupt.h>
 	#include "WConstants.h"
 }
@@ -53,8 +54,12 @@ extern "C" {
 
 // Commands for reading ADC channels on ADS7844
 static const unsigned char 		adc_cmd[9]		= { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
-static volatile uint16_t 		_filter[8][ADC_FILTER_SIZE];
-static volatile uint8_t			_filter_index;
+
+// the sum of the values since last read
+static volatile uint32_t _sum[8];
+
+// how many values we've accumulated since last read
+static volatile uint16_t _count[8];
 
 static unsigned char ADC_SPI_transfer(unsigned char data)
 {
@@ -72,32 +77,33 @@ static unsigned char ADC_SPI_transfer(unsigned char data)
 ISR (TIMER2_OVF_vect)
 {
 	uint8_t ch;
-	uint16_t adc_tmp;
 
-  //bit_set(PORTL,6);                        			  	// To test performance
+	//bit_set(PORTL,6);                        			  	// To test performance
 
-	bit_clear(PORTC, 4);									// Enable Chip Select (PIN PC4)
-	ADC_SPI_transfer(adc_cmd[0]);							// Command to read the first channel
+	bit_clear(PORTC, 4);							// Enable Chip Select (PIN PC4)
+	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
 
 	for (ch = 0; ch < 8; ch++){
-		adc_tmp = ADC_SPI_transfer(0) << 8;					// Read first byte
+		uint16_t adc_tmp;
+		adc_tmp  = ADC_SPI_transfer(0) << 8;			// Read first byte
 		adc_tmp |= ADC_SPI_transfer(adc_cmd[ch + 1]);		// Read second byte and send next command
 
-		// Fill our Moving average filter
-		_filter[ch][_filter_index] = adc_tmp >> 3;
+		_count[ch]++;
+		if (_count[ch] == 0) {
+			// overflow ... shouldn't happen too often
+			// unless we're just not using the
+			// channel. Notice that we overflow the count
+			// to 1 here, not zero, as otherwise the
+			// reader below could get a division by zero
+			_sum[ch] = 0;
+			_count[ch] = 1;
+		}
+		_sum[ch] += adc_tmp;
 	}
 
-	// increment our filter
-	_filter_index++;
-
-	// loop our filter
-	if(_filter_index == ADC_FILTER_SIZE)
-		_filter_index = 0;
-
-
-	bit_set(PORTC, 4);										// Disable Chip Select (PIN PC4)
-  //bit_clear(PORTL,6);                               		// To test performance
-	TCNT2 = 104;											// 400 Hz
+	bit_set(PORTC, 4);					// Disable Chip Select (PIN PC4)
+	//bit_clear(PORTL,6);   	                        // To test performance
+	TCNT2 = 104;						// 400Hz interrupt
 }
 
 
@@ -123,6 +129,16 @@ void AP_ADC_ADS7844::Init(void)
 	// Set Baud rate
 	UBRR2 = 2;																					// SPI clock running at 2.6MHz
 
+	// get an initial value for each channel. This ensures
+	// _count[] is never zero
+	for (uint8_t i=0; i<8; i++) {
+		uint16_t adc_tmp;
+		adc_tmp  = ADC_SPI_transfer(0) << 8;
+		adc_tmp |= ADC_SPI_transfer(adc_cmd[i + 1]);
+		_count[i] = 1;
+		_sum[i]   = adc_tmp;
+	}
+
 
 	// Enable Timer2 Overflow interrupt to capture ADC data
 	TIMSK2 = 0;																				 // Disable interrupts
@@ -134,31 +150,60 @@ void AP_ADC_ADS7844::Init(void)
 }
 
 // Read one channel value
-int AP_ADC_ADS7844::Ch(unsigned char ch_num)
+uint16_t AP_ADC_ADS7844::Ch(uint8_t ch_num)
 {
-	uint16_t result = 0;
+	uint16_t count;
+	uint32_t sum;
 
-	//while(adc_counter[ch_num] < 2) { }									// Wait for at least 2 samples in accumlator
+	// ensure we have at least one value
+	while (_count[ch_num] == 0)  /* noop */ ;
 
-	// stop interrupts
+	// grab the value with interrupts disabled, and clear the count
 	cli();
-
-	// sum our filter
-	for(uint8_t i = 0; i < ADC_FILTER_SIZE; i++){
-		result += _filter[ch_num][i];
-	}
-
-	// resume interrupts
+	count = _count[ch_num];
+	sum   = _sum[ch_num];
+	_count[ch_num] = 0;
+	_sum[ch_num]   = 0;
 	sei();
 
-	// average our sampels
-	result /= ADC_FILTER_SIZE;
-
-	return(result);
+	return sum/count;
 }
 
-// Read one channel value
-int AP_ADC_ADS7844::Ch_raw(unsigned char ch_num)
+// Read 6 channel values
+// this assumes that the counts for all of the 6 channels are
+// equal. This will only be true if we always consistently access a
+// sensor by either Ch6() or Ch() and never mix them. If you mix them
+// then you will get very strange results
+uint16_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 {
-	return _filter[ch_num][_filter_index]; // close enough
+	uint16_t count[6];
+	uint32_t sum[6];
+	uint8_t i;
+
+	// ensure we have at least one value
+	for (i=0; i<6; i++) {
+		while (_count[channel_numbers[i]] == 0) /* noop */;
+	}
+
+	// grab the values with interrupts disabled, and clear the counts
+	cli();
+	for (i=0; i<6; i++) {
+		count[i] = _count[channel_numbers[i]];
+		sum[i]   = _sum[channel_numbers[i]];
+		_count[channel_numbers[i]] = 0;
+		_sum[channel_numbers[i]]   = 0;
+	}
+	sei();
+
+	// calculate averages. We keep this out of the cli region
+	// to prevent us stalling the ISR while doing the
+	// division. That costs us 36 bytes of stack, but I think its
+	// worth it.
+	for (i=0; i<6; i++) {
+		result[i] = sum[i] / count[i];
+	}
+
+	// this assumes the count in all channels is equal, which will
+	// be true if the callers are using the interface consistently
+	return count[0];
 }
