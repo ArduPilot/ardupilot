@@ -49,8 +49,8 @@ public:
 	void		set_compass(Compass *compass);
 
 	// Methods
-	void 		update_DCM(float _G_Dt);
-	void 		update_DCM_fast(float _G_Dt);
+	void 		update_DCM(void);
+	void 		update_DCM_fast(void);
 
 	float		get_health(void);
 
