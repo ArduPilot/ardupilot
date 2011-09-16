@@ -204,7 +204,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
  	#endif
 #endif
 
-#elif HIL_MODE == HIL_MODE_ATTITUDE
+#if HIL_MODE == HIL_MODE_ATTITUDE
 	#ifdef OPTFLOW_ENABLED
 		AP_OpticalFlow_ADNS3080 optflow(&dcm);
 	#endif
@@ -617,6 +617,7 @@ static void medium_loop()
 
 			medium_loopCounter++;
 
+			#ifdef OPTFLOW_ENABLED
 			if(g.optflow_enabled){
 				optflow.read();
 				optflow.update_position(cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
@@ -626,6 +627,7 @@ static void medium_loop()
 					Log_Write_Optflow();
 				}
 			}
+			#endif
 
 			if(GPS_enabled){
 				update_GPS();
