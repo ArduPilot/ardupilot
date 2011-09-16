@@ -210,7 +210,7 @@
   #define OPTFLOW_ENABLED
 #endif
 
-#define OPTFLOW_ENABLED
+//#define OPTFLOW_ENABLED
 
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED

@@ -97,14 +97,19 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	// find the rates:
 	float temp		= radians((float)g_gps->ground_course/100.0);
 
-	// calc the cos of the error to tell how fast we are moving towards the target in cm
-	if(g.optflow_enabled && current_loc.alt < 500 &&  g_gps->ground_speed < 150){
-		x_actual_speed 	= optflow.vlon * 10;
-		y_actual_speed 	= optflow.vlat * 10;
-	}else{
+	#ifdef OPTFLOW_ENABLED
+		// calc the cos of the error to tell how fast we are moving towards the target in cm
+		if(g.optflow_enabled && current_loc.alt < 500 &&  g_gps->ground_speed < 150){
+			x_actual_speed 	= optflow.vlon * 10;
+			y_actual_speed 	= optflow.vlat * 10;
+		}else{
+			x_actual_speed 	= (float)g_gps->ground_speed * sin(temp);
+			y_actual_speed 	= (float)g_gps->ground_speed * cos(temp);
+		}
+	#else
 		x_actual_speed 	= (float)g_gps->ground_speed * sin(temp);
 		y_actual_speed 	= (float)g_gps->ground_speed * cos(temp);
-	}
+	#endif
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -600, 600);	// added a rate error limit to keep pitching down to a minimum
@@ -127,13 +132,6 @@ static void calc_nav_pitch_roll()
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
 }
-
-// ------------------------------
-/*static void calc_bearing_error()
-{
-	bearing_error 	= nav_bearing - dcm.yaw_sensor;
-	bearing_error 	= wrap_180(bearing_error);
-}*/
 
 static long get_altitude_error()
 {
