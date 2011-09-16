@@ -2,7 +2,7 @@
 #define APM_BMP085_h
 
 #define TEMP_FILTER_SIZE 16
-#define PRESS_FILTER_SIZE 8
+#define PRESS_FILTER_SIZE 10
 
 class APM_BMP085_Class
 {

@@ -61,7 +61,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <APM_PI.h>            	// PI library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
-#include <AP_OpticalFlow.h> // Optical Flow library
+#include <AP_OpticalFlow_ADNS3080.h> // Optical Flow library
 #include <ModeFilter.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
@@ -127,9 +127,6 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	APM_BMP085_Class        barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
-  #ifdef OPTFLOW_ENABLED
-    AP_OpticalFlow_ADNS3080 optflow;
-  #endif
 
 	// real GPS selection
 	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -171,7 +168,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_Compass_HIL          compass; // never used
 	AP_IMU_Shim             imu; // never used
 	#ifdef OPTFLOW_ENABLED
-		AP_OpticalFlow_ADNS3080 optflow;
+		AP_OpticalFlow_ADNS3080 optflow(&dcm);
 	#endif
     static int32_t          gps_base_alt;
 #else
@@ -201,6 +198,16 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	#endif
 	// normal dcm
 	AP_DCM  dcm(&imu, g_gps);
+
+ 	#ifdef OPTFLOW_ENABLED
+	AP_OpticalFlow_ADNS3080 optflow(&dcm);
+ 	#endif
+#endif
+
+#elif HIL_MODE == HIL_MODE_ATTITUDE
+	#ifdef OPTFLOW_ENABLED
+		AP_OpticalFlow_ADNS3080 optflow(&dcm);
+	#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -467,14 +474,11 @@ static struct 	Location next_command;				// command preloaded
 static struct   Location guided_WP;					// guided mode waypoint
 static long 	target_altitude;					// used for
 static boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
-static struct	Location optflow_offset;			// optical flow base position
 static boolean  new_location;						// flag to tell us if location has been updated
-
 
 // IMU variables
 // -------------
 static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
-
 
 // Performance monitoring
 // ----------------------
@@ -483,17 +487,10 @@ static long 			perf_mon_timer;
 static int 				G_Dt_max;							// Max main loop cycle time in milliseconds
 static int 				gps_fix_count;
 
-// GCS
-// ---
-//static char 			GCS_buffer[53];
-//static char 			display_PID = -1;						// Flag used by DebugTerminal to indicate that the next PID calculation with this index should be displayed
-
 // System Timers
 // --------------
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
-static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
 static uint8_t 			delta_ms_fast_loop; 		// Delta Time in miliseconds
-//static int 				mainLoop_count;
 
 static unsigned long 	medium_loopTimer;			// Time in miliseconds of navigation control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
@@ -514,6 +511,7 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
 static byte				loop_step;
+static bool				new_radio_frame;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -537,7 +535,6 @@ void loop()
 		// Execute the fast loop
 		// ---------------------
 		fast_loop();
-		fast_loopTimeStamp = millis();
 	}
 	//PORTK &= B11101111;
 
@@ -562,15 +559,12 @@ void loop()
 		}
 
 		if (millis() - perf_mon_timer > 20000) {
-			//if (mainLoop_count != 0) {
+			gcs.send_message(MSG_PERF_REPORT);
 
-				gcs.send_message(MSG_PERF_REPORT);
+			if (g.log_bitmask & MASK_LOG_PM)
+				Log_Write_Performance();
 
-				if (g.log_bitmask & MASK_LOG_PM)
-					Log_Write_Performance();
-
-                resetPerfData();
-            //}
+			resetPerfData();
         }
 		//PORTK &= B10111111;
 	}
@@ -623,11 +617,15 @@ static void medium_loop()
 
 			medium_loopCounter++;
 
-			/*
 			if(g.optflow_enabled){
-				optflow.update()
+				optflow.read();
+				optflow.update_position(cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
+
+				// write to log
+				if (g.log_bitmask & MASK_LOG_OPTFLOW){
+					Log_Write_Optflow();
+				}
 			}
-			*/
 
 			if(GPS_enabled){
 				update_GPS();
@@ -795,18 +793,7 @@ static void fifty_hz_loop()
 		hil.send_message(MSG_RADIO_OUT);
 	#endif
 
-	// use Yaw to find our bearing error
-	//calc_bearing_error();
-
-	//if (throttle_slew < 0)
-	//	throttle_slew++;
-	//else if (throttle_slew > 0)
-	//	throttle_slew--;
-
 	camera_stabilization();
-
-
-	//throttle_slew = min((800 - g.rc_3.control_in), throttle_slew);
 
 	# if HIL_MODE == HIL_MODE_DISABLED
 		if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST)
@@ -882,10 +869,10 @@ static void slow_loop()
 
 			#if AUTO_RESET_LOITER == 1
 			if(control_mode == LOITER){
-				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1500){
+				//if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1500){
 					// reset LOITER to current position
 					//next_WP 	= current_loc;
-				}
+				//}
 			}
 			#endif
 
@@ -914,11 +901,6 @@ static void slow_loop()
 
 			if(g.radio_tuning > 0)
 				tuning();
-
-			// filter out the baro offset.
-			//if(baro_alt_offset > 0) baro_alt_offset--;
-			//if(baro_alt_offset < 0) baro_alt_offset++;
-
 
 			#if MOTOR_LEDS == 1
 				update_motor_leds();
@@ -1005,6 +987,7 @@ static void update_GPS(void)
 	}
 }
 
+
 void update_yaw_mode(void)
 {
 	switch(yaw_mode){
@@ -1054,28 +1037,19 @@ void update_roll_pitch_mode(void)
 
 	int control_roll = 0, control_pitch = 0;
 
-	if(do_simple){
-		simple_timer++;
-		if(simple_timer > 5){
-			simple_timer = 0;
+	//read_radio();
 
-			int delta = wrap_360(dcm.yaw_sensor - initial_simple_bearing)/100;
+	if(do_simple && new_radio_frame){
+		new_radio_frame = false;
+		//Serial.printf("1: %d, 2: %d	",g.rc_1.control_in, g.rc_2.control_in);
 
-			// pre-calc rotation (stored in real degrees)
-			// roll
-			float cos_x = sin(radians(90 - delta));
-			// pitch
-			float sin_y = cos(radians(90 - delta));
+		// Rotate input by the initial bearing
+		control_roll 	= g.rc_1.control_in * sin_yaw_y + g.rc_2.control_in * cos_yaw_x;
+		control_pitch 	= g.rc_2.control_in * sin_yaw_y - g.rc_1.control_in * cos_yaw_x;
 
-			// Rotate input by the initial bearing
-			// roll
-			control_roll 	= g.rc_1.control_in * cos_x + g.rc_2.control_in * sin_y;
-			// pitch
-			control_pitch 	= -(g.rc_1.control_in * sin_y - g.rc_2.control_in * cos_x);
-
-			g.rc_1.control_in = control_roll;
-			g.rc_2.control_in = control_pitch;
-		}
+		g.rc_1.control_in = control_roll;
+		g.rc_2.control_in = control_pitch;
+		//Serial.printf("\t1: %d, 2: %d\n",g.rc_1.control_in, g.rc_2.control_in);
 	}
 
 	switch(roll_pitch_mode){
@@ -1085,29 +1059,26 @@ void update_roll_pitch_mode(void)
 
 			// Pitch control
 			g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
-			return;
 			break;
 
 		case ROLL_PITCH_STABLE:
-			control_roll  = g.rc_1.control_in;
-			control_pitch = g.rc_2.control_in;
+			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
 		case ROLL_PITCH_AUTO:
 			// mix in user control with Nav control
-			control_roll 	= g.rc_1.control_mix(nav_roll);
-			control_pitch 	= g.rc_2.control_mix(nav_pitch);
+			control_roll 		= g.rc_1.control_mix(nav_roll);
+			control_pitch 		= g.rc_2.control_mix(nav_pitch);
+			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
+			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
 			break;
 	}
 
-	// Roll control
-	g.rc_1.servo_out = get_stabilize_roll(control_roll);
-
-	// Pitch control
-	g.rc_2.servo_out = get_stabilize_pitch(control_pitch);
 }
 
 
+// 50 hz update rate, not 250
 void update_throttle_mode(void)
 {
 	switch(throttle_mode){
@@ -1238,14 +1209,15 @@ static void update_trig(void){
 	yawvector.y 	= temp.b.x;	// cos
 	yawvector.normalize();
 
-	cos_yaw_x 		= yawvector.y;	// 0 x = north
-	sin_yaw_y 		= yawvector.x;	// 1 y
 
 	sin_pitch_y 	= -temp.c.x;
 	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));
 
 	cos_roll_x 		= temp.c.z / cos_pitch_x;
 	sin_roll_y 		= temp.c.y / cos_pitch_x;
+
+	cos_yaw_x 		= yawvector.y;	// 0 x = north
+	sin_yaw_y 		= yawvector.x;	// 1 y
 
 	//flat:
 	// 0 ° = cp: 1.00, sp: 0.00, cr: 1.00, sr:  0.00, cy:  0.00, sy:  1.00,
@@ -1366,8 +1338,8 @@ static void tuning(){
 
 		case CH6_RELAY:
 			g.rc_6.set_range(0,1000);
-		  	if (g.rc_6.control_in <= 600) relay_on();
-		  	if (g.rc_6.control_in >= 400) relay_off();
+		  	if (g.rc_6.control_in > 525) relay_on();
+		  	if (g.rc_6.control_in < 475) relay_off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:

@@ -462,12 +462,7 @@ static void do_change_alt()
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
 	condition_value	= next_command.alt;
-	//if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-	//	condition_value		= next_command.alt + home.alt;
-	//} else {
-
-	//}
-	temp.alt		= condition_value;
+	temp.alt		= next_command.alt;
 	set_next_WP(&temp);
 }
 

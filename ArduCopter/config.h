@@ -207,8 +207,10 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
-  //#define OPTFLOW_ENABLED
+  #define OPTFLOW_ENABLED
 #endif
+
+#define OPTFLOW_ENABLED
 
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
@@ -310,7 +312,7 @@
 #endif
 
 #ifndef SIMPLE_RP
-# define SIMPLE_RP 			ROLL_PITCH_SIMPLE
+# define SIMPLE_RP 			ROLL_PITCH_STABLE
 #endif
 
 #ifndef SIMPLE_THR
@@ -413,7 +415,7 @@
 // Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         .13
+# define RATE_ROLL_P         0.13
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -488,22 +490,6 @@
 # define NAV_IMAX			20			// degrees
 #endif
 
-/*
-#ifndef NAV_LOITER_P
-# define NAV_LOITER_P			.4		//1.4			//
-#endif
-#ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.05	//
-#endif
-#ifndef NAV_LOITER_D
-# define NAV_LOITER_D			2 	//
-#endif
-#ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		8		// degrees°
-#endif
-*/
-
-
 #ifndef WAYPOINT_SPEED_MAX
 # define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
 #endif
@@ -518,9 +504,6 @@
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
 #endif
-//#ifndef THROTTLE_D
-//# define THROTTLE_D		0.6			// upped with filter
-//#endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
 #endif

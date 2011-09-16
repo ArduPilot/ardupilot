@@ -14,8 +14,7 @@
 
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
-#define ROLL_PITCH_SIMPLE	2
-#define ROLL_PITCH_AUTO		3
+#define ROLL_PITCH_AUTO		2
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1

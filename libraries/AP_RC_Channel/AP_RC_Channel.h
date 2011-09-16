@@ -23,17 +23,13 @@ class AP_RC_Channel{
 		_high(1),
 		_filter(true),
 		_reverse(1),
-		dead_zone(0),
-		scale_output(1.0)
-	{}
+		dead_zone(0){}
 
 	AP_RC_Channel() :
 		_high(1),
 		_filter(true),
 		_reverse(1),
-		dead_zone(0),
-		scale_output(1.0)
-	{}
+		dead_zone(0){}
 
 	// setup min and max radio values in CLI
 	void 		update_min_max();
@@ -93,8 +89,6 @@ class AP_RC_Channel{
 	int16_t		angle_to_pwm();
 	int16_t		pwm_to_range();
 	int16_t		range_to_pwm();
-
-	float		scale_output;
 
   private:
 	bool		_filter;

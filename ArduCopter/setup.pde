@@ -304,7 +304,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 	byte _oldSwitchPosition = 0;
 	byte mode = 0;
 
-	Serial.printf_P(PSTR("\nMove mode switch to edit, aileron: select modes, rudder: Simple on/off"));
+	Serial.printf_P(PSTR("\nMove mode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
 	print_hit_enter();
 
 	while(1){
@@ -341,7 +341,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		}
 
 		// look for stick input
-		if (abs(g.rc_4.control_in) > 3000){
+		if (g.rc_4.control_in > 3000){
 			g.simple_modes |= (1<<_switchPosition);
 			// print new mode
 			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
@@ -349,7 +349,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 		}
 
 		// look for stick input
-		if (abs(g.rc_4.control_in) < 3000){
+		if (g.rc_4.control_in < -3000){
 			g.simple_modes &= ~(1<<_switchPosition);
 			// print new mode
 			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
@@ -361,6 +361,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			for (mode = 0; mode < 6; mode++)
                 flight_modes[mode].save();
 
+			g.simple_modes.save();
 			print_done();
 			report_flight_modes();
 			return (0);
@@ -760,10 +761,6 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.optflow_enabled = false;
 
-	//} else if(argv[1].i > 10){
-	//	g.optflow_fov.set_and_save(argv[1].i);
-	//	optflow.set_field_of_view(g.optflow_fov.get());
-
 	}else{
 		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
 		report_optflow();
@@ -978,13 +975,13 @@ print_radio_values()
 static void
 print_switch(byte p, byte m, bool b)
 {
-	Serial.printf_P(PSTR("Pos %d: "),p);
+	Serial.printf_P(PSTR("Pos %d:\t"),p);
 	Serial.print(flight_mode_strings[m]);
-	Serial.printf_P(PSTR(", Simple: "));
+	Serial.printf_P(PSTR(",\t\tSimple: "));
 	if(b)
-		Serial.printf_P(PSTR("T\n"));
+		Serial.printf_P(PSTR("ON\n"));
 	else
-		Serial.printf_P(PSTR("F\n"));
+		Serial.printf_P(PSTR("OFF\n"));
 }
 
 static void
