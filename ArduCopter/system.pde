@@ -204,12 +204,12 @@ static void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
-#ifdef OPTFLOW_ENABLED
+	#ifdef OPTFLOW_ENABLED
 	// init the optical flow sensor
 	if(g.optflow_enabled) {
 		init_optflow();
 	}
-#endif
+	#endif
 
 	// Logging:
 	// --------
@@ -321,8 +321,7 @@ static void startup_ground(void)
 
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
-#define ROLL_PITCH_SIMPLE	2
-#define ROLL_PITCH_AUTO		3
+#define ROLL_PITCH_AUTO		2
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1
@@ -489,7 +488,10 @@ init_compass()
 static void
 init_optflow()
 {
-	optflow.init();
+	if( optflow.init() == false ) {
+	    g.optflow_enabled = false;
+	    //SendDebug("\nFailed to Init OptFlow ");
+	}
 	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
 	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
 }

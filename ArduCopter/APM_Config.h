@@ -55,8 +55,6 @@
 
 // See the config.h and defines.h files for how to set this up!
 //
-// lets use SIMPLE mode for Roll and Pitch during Alt Hold
-//#define ALT_HOLD_RP 		ROLL_PITCH_SIMPLE
 
 // lets use Manual throttle during Loiter
 //#define LOITER_THR			THROTTLE_MANUAL

@@ -101,7 +101,7 @@ void output_min()
 static void read_radio()
 {
 	if (APM_RC.GetState() == 1){
-
+		new_radio_frame = true;
 		g.rc_1.set_pwm(APM_RC.InputCh(CH_1));
 		g.rc_2.set_pwm(APM_RC.InputCh(CH_2));
 		g.rc_3.set_pwm(APM_RC.InputCh(CH_3));

@@ -91,7 +91,6 @@ static int
 get_nav_throttle(long z_error, int target_speed)
 {
 	int rate_error;
-	//int throttle;
 	float scaler = (float)target_speed/(float)ALT_ERROR_MAX;
 
 	// limit error to prevent I term run up
@@ -101,13 +100,8 @@ get_nav_throttle(long z_error, int target_speed)
 	rate_error 		= target_speed - altitude_rate;
 	rate_error 		= constrain(rate_error, -110, 110);
 
-	//throttle 		= g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
-	//return  		  g.throttle_cruise + throttle;
-
-
 	return g.pi_throttle.get_pi(rate_error, delta_ms_medium_loop);
 }
-
 
 static int
 get_rate_roll(long target_rate)

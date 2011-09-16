@@ -98,9 +98,6 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	int dump_log_start;
 	int dump_log_end;
 
-	//byte last_log_num = get_num_logs();
-	//Serial.printf_P(PSTR("\n%d logs\n"), last_log_num);
-
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 
@@ -506,8 +503,8 @@ static void Log_Write_Optflow()
 	DataFlash.WriteInt((int)optflow.dx);
 	DataFlash.WriteInt((int)optflow.dy);
 	DataFlash.WriteInt((int)optflow.surface_quality);
-	DataFlash.WriteLong(optflow.lat);//optflow_offset.lat + optflow.lat);
-	DataFlash.WriteLong(optflow.lng);//optflow_offset.lng + optflow.lng);
+	DataFlash.WriteLong(optflow.vlat);//optflow_offset.lat + optflow.lat);
+	DataFlash.WriteLong(optflow.vlon);//optflow_offset.lng + optflow.lng);
 	DataFlash.WriteByte(END_BYTE);
 }
 #endif
