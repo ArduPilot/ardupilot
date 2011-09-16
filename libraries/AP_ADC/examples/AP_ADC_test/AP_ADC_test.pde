@@ -26,7 +26,29 @@ static const uint8_t channel_map[6] = { 1, 2, 0, 4, 5, 6};
 float v;
 uint32_t last_usec = 0;
 
-void loop()
+static void show_timing()
+{
+	uint32_t mint = (uint32_t)-1, maxt = 0, totalt=0;
+	uint32_t start_time = millis();
+	uint16_t result[6];
+	uint32_t count = 0;
+
+	Serial.println("Starting timing test");
+
+	adc.Ch6(channel_map, result);
+
+	do {
+		uint32_t deltat = adc.Ch6(channel_map, result);
+		if (deltat > maxt) maxt = deltat;
+		if (deltat < mint) mint = deltat;
+		totalt += deltat;
+		count++;
+	} while ((millis() - start_time) < 5000);
+
+	Serial.printf("timing: mint=%lu maxt=%lu avg=%lu\n", mint, maxt, totalt/count);
+}
+
+static void show_data()
 {
 	uint16_t result[6];
 	uint32_t deltat = 0;
@@ -61,3 +83,12 @@ void loop()
 		      ch3, (unsigned)(deltat/1000));
 }
 
+
+void loop()
+{
+	if (millis() < 5000) {
+		show_timing();
+	} else {
+		show_data();
+	}
+}
