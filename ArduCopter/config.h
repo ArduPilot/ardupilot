@@ -392,7 +392,7 @@
 // Attitude Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		3.6
+# define STABILIZE_ROLL_P 		4.0
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.02
@@ -402,7 +402,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		3.6
+# define STABILIZE_PITCH_P		4.0
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.02
@@ -474,7 +474,7 @@
 # define LOITER_P			.4		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.01	//
+# define LOITER_I			0.10	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		12		// degrees°
@@ -484,7 +484,7 @@
 # define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.12		// this
+# define NAV_I				0.15		// this
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			20			// degrees
@@ -654,8 +654,8 @@
 # define WP_RADIUS_DEFAULT		3
 #endif
 
-#ifndef LOITER_RADIUS_DEFAULT
-# define LOITER_RADIUS_DEFAULT 10
+#ifndef LOITER_RADIUS
+# define LOITER_RADIUS 10
 #endif
 
 #ifndef ALT_HOLD_HOME

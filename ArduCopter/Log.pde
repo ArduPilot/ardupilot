@@ -558,7 +558,7 @@ static void Log_Write_Nav_Tuning()
 
 static void Log_Read_Nav_Tuning()
 {
-	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d\n"),
+	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d\n"),
 				DataFlash.ReadInt(),	// distance
 				DataFlash.ReadByte(),	// wp_verify_byte
 				DataFlash.ReadInt(),	// target_bearing
@@ -591,8 +591,6 @@ static void Log_Read_Nav_Tuning()
 				DataFlash.ReadInt(),
 				DataFlash.ReadInt());	//nav bearing
 */
-
-
 }
 
 
@@ -630,8 +628,8 @@ static void Log_Read_Control_Tuning()
 							"%d, %d\n"),
 
 				// Control
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
+				//DataFlash.ReadInt(),
+				//DataFlash.ReadInt(),
 
 				// yaw
 				DataFlash.ReadInt(),
@@ -760,7 +758,7 @@ static void Log_Write_Attitude()
 // Read an attitude packet
 static void Log_Read_Attitude()
 {
-	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, $d\n"),
+	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, %d\n"),
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt(),
 			(uint16_t)DataFlash.ReadInt(),
@@ -821,15 +819,15 @@ static void Log_Read(int start_page, int end_page)
 			case 0:
 				if(data == HEAD_BYTE1)	// Head byte 1
 					log_step++;
-				else
-					Serial.println(".");
 				break;
 
 			case 1:
 				if(data == HEAD_BYTE2)	// Head byte 2
 					log_step++;
-				else
+				else{
 					log_step = 0;
+					Serial.println(".");
+				}
 				break;
 
 			case 2:
