@@ -345,6 +345,7 @@ static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static long initial_simple_bearing;				// used for Simple mode
+static float simple_sin_y, simple_cos_x;
 static float boost; 							// used to give a little extra to maintain altitude
 
 // Acro
@@ -1043,16 +1044,28 @@ void update_roll_pitch_mode(void)
 
 	if(do_simple && new_radio_frame){
 		new_radio_frame = false;
-		//Serial.printf("1: %d, 2: %d	",g.rc_1.control_in, g.rc_2.control_in);
+		simple_timer++;
+
+		int delta = wrap_360(dcm.yaw_sensor - initial_simple_bearing)/100;
+
+		if (simple_timer == 1){
+			// roll
+			simple_cos_x = sin(radians(90 - delta));
+
+		}else if (simple_timer > 2){
+			// pitch
+			simple_sin_y = cos(radians(90 - delta));
+			simple_timer = 0;
+		}
 
 		// Rotate input by the initial bearing
-		control_roll 	= g.rc_1.control_in * sin_yaw_y + g.rc_2.control_in * cos_yaw_x;
-		control_pitch 	= g.rc_2.control_in * sin_yaw_y - g.rc_1.control_in * cos_yaw_x;
+		control_roll 	= g.rc_1.control_in * simple_cos_x + g.rc_2.control_in * simple_sin_y;
+		control_pitch 	= -(g.rc_1.control_in * simple_sin_y - g.rc_2.control_in * simple_cos_x);
 
 		g.rc_1.control_in = control_roll;
 		g.rc_2.control_in = control_pitch;
-		//Serial.printf("\t1: %d, 2: %d\n",g.rc_1.control_in, g.rc_2.control_in);
 	}
+
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
@@ -1085,13 +1098,16 @@ void update_throttle_mode(void)
 {
 	switch(throttle_mode){
 		case THROTTLE_MANUAL:
-			g.rc_3.servo_out = g.rc_3.control_in + boost;
+			if (g.rc_3.control_in > 0){
+				g.rc_3.servo_out = g.rc_3.control_in + boost;
+			}else{
+				g.rc_3.servo_out = 0;
+			}
 		break;
 
 		case THROTTLE_HOLD:
 			// allow interactive changing of atitude
 			adjust_altitude();
-
 			// fall through
 
 		case THROTTLE_AUTO:
@@ -1170,10 +1186,10 @@ static void update_navigation()
 			update_auto_yaw();
 			{
 				//circle_angle += dTnav; //1000 * (dTnav/1000);
-				circle_angle = wrap_360(target_bearing + 2000 + 18000);
+				circle_angle = wrap_360(target_bearing + 3000 + 18000);
 
-				target_WP.lng = next_WP.lng + (g.loiter_radius * 100 * cos(radians(90 - circle_angle)));
-				target_WP.lat = next_WP.lat + (g.loiter_radius * 100 * sin(radians(90 - circle_angle)));
+				target_WP.lng = next_WP.lng + (g.loiter_radius * cos(radians(90 - circle_angle/100)));
+				target_WP.lat = next_WP.lat + (g.loiter_radius * sin(radians(90 - circle_angle/100)));
 			}
 
 			// calc the lat and long error to the target
