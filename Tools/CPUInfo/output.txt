@@ -1,0 +1,41 @@
+Type sizes:
+char      : 1
+short     : 2
+int       : 2
+long      : 4
+long long : 8
+bool      : 1
+void*     : 2
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop           0.07 usec/call
+cli/sei       0.14 usec/call
+micros()      3.04 usec/call
+millis()      1.34 usec/call
+fadd          8.68 usec/call
+fsub          8.74 usec/call
+fmul          7.21 usec/call
+fdiv          7.21 usec/call
+dadd          8.68 usec/call
+dsub          8.74 usec/call
+dmul          5.64 usec/call
+ddiv          5.57 usec/call
+sin()       114.10 usec/call
+cos()       103.03 usec/call
+tan()       147.92 usec/call
+iadd8         0.48 usec/call
+isub8         0.48 usec/call
+imul8         0.67 usec/call
+idiv8        12.93 usec/call
+iadd16        0.92 usec/call
+isub16        0.92 usec/call
+imul16        1.48 usec/call
+idiv16       13.24 usec/call
+iadd32        1.80 usec/call
+isub32        1.80 usec/call
+imul32        4.57 usec/call
+idiv32       37.71 usec/call
+memcpy128    56.76 usec/call
+memset128    49.71 usec/call
+delay(1)   1005.14 usec/call
