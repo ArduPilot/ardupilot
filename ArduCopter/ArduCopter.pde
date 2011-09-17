@@ -481,6 +481,7 @@ static long 			perf_mon_timer;
 //static float 			imu_health; 						// Metric based on accel gain deweighting
 static int 				G_Dt_max;							// Max main loop cycle time in milliseconds
 static int 				gps_fix_count;
+static byte				gps_watchdog;
 
 // System Timers
 // --------------
@@ -936,8 +937,16 @@ static void update_GPS(void)
 	//current_loc.lat = -1224318000;		// Lat * 10 * *7
 	//current_loc.alt = 100;				// alt * 10 * *7
 	//return;
+	if(gps_watchdog < 10){
+		gps_watchdog++;
+	}else{
+		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
+		nav_roll  >>= 1;
+		nav_pitch >>= 1;
+	}
 
     if (g_gps->new_data && g_gps->fix) {
+		gps_watchdog = 0;
 
 		// XXX We should be sending GPS data off one of the regular loops so that we send
 		// no-GPS-fix data too
