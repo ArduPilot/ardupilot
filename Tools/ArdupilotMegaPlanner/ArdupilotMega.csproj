@@ -188,6 +188,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CommsUdpSerial.cs" />
+    <Compile Include="georefimage.cs" />
     <Compile Include="HIL\Aircraft.cs" />
     <Compile Include="HIL\Point3d.cs" />
     <Compile Include="HIL\QuadCopter.cs" />

@@ -23,7 +23,7 @@ using OpenTK.Graphics;
 
 namespace hud
 {
-    public partial class HUD : GLControl
+    public class HUD : GLControl// : Graphics
     {
         object paintlock = new object();
         object streamlock = new object();
@@ -38,7 +38,9 @@ namespace hud
         int[] charbitmaptexid = new int[6000];
         int[] charwidth = new int[6000];
 
-        int huddrawtime = 0;
+        public int huddrawtime = 0;
+
+        public bool opengl = true;
 
         public HUD()
         {
@@ -46,7 +48,7 @@ namespace hud
                 return;
 
             InitializeComponent();
-		    graphicsObject = this;
+		    //graphicsObject = this;
 
             //graphicsObject = Graphics.FromImage(objBitmap);
         }
@@ -150,7 +152,6 @@ System.ComponentModel.Category("Values")]
         Bitmap objBitmap = new Bitmap(1024, 1024);
         int count = 0;
         DateTime countdate = DateTime.Now;
-        HUD graphicsObject; // Graphics
 
         DateTime starttime = DateTime.MinValue;
 
@@ -225,14 +226,14 @@ System.ComponentModel.Category("Values")]
         {
             //GL.Enable(EnableCap.AlphaTest);
 
-            if (this.DesignMode)                  
-            { 
-                e.Graphics.Clear(this.BackColor);     
-                e.Graphics.Flush();               
-                return;                     
+            if (this.DesignMode)
+            {
+                e.Graphics.Clear(this.BackColor);
+                e.Graphics.Flush();
+                return;
             }
-                            
-            if ((DateTime.Now - starttime).TotalMilliseconds < 75 && (_bgimage == null))               
+
+            if ((DateTime.Now - starttime).TotalMilliseconds < 75 && (_bgimage == null))
             {
                 //Console.WriteLine("ms "+(DateTime.Now - starttime).TotalMilliseconds);
                 //e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);          
@@ -241,35 +242,40 @@ System.ComponentModel.Category("Values")]
 
             starttime = DateTime.Now;
 
-            //Console.WriteLine(DateTime.Now.Millisecond);
+            if (Console.CursorLeft > 0)
+            {
+                //Console.WriteLine(" "+ Console.CursorLeft +" ");
+            }
+
+            //Console.Write("HUD a "+(DateTime.Now - starttime).TotalMilliseconds);
 
             MakeCurrent();
 
-            //GL.LoadIdentity();
-
-            //GL.ClearColor(Color.Red);
+            //Console.Write(" b " + (DateTime.Now - starttime).TotalMilliseconds);
 
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
-            //GL.LoadIdentity();
+            //Console.Write(" c " + (DateTime.Now - starttime).TotalMilliseconds);
 
-            //GL.Viewport(0, 0, Width, Height);
+            doPaint(e);
 
-            doPaint();
+            //Console.Write(" d " + (DateTime.Now - starttime).TotalMilliseconds);
 
             this.SwapBuffers();
+
+            //Console.Write(" e " + (DateTime.Now - starttime).TotalMilliseconds);
+
+            count++;
+
+            huddrawtime += (int)(DateTime.Now - starttime).TotalMilliseconds;
 
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
-                Console.WriteLine("HUD " + count + " hz drawtime " + huddrawtime);
+                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count));
                 count = 0;
+                huddrawtime = 0;
             }
-            huddrawtime = (int)(DateTime.Now - starttime).TotalMilliseconds;
-#if DEBUG
-                                   //Console.WriteLine("HUD e " + (DateTime.Now - starttime).TotalMilliseconds + " " + DateTime.Now.Millisecond);
-#endif
-            
         }
 
         void Clear(Color color)
@@ -282,7 +288,7 @@ System.ComponentModel.Category("Values")]
 
         //graphicsObject.DrawArc(whitePen, arcrect, 180 + 45, 90);
 
-        void DrawArc(Pen penn,RectangleF rect, float start,float degrees)
+        public void DrawArc(Pen penn,RectangleF rect, float start,float degrees)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -309,7 +315,7 @@ System.ComponentModel.Category("Values")]
             //GL.Enable(EnableCap.Texture2D);
         }
 
-        void DrawEllipse(Pen penn, Rectangle rect)
+        public void DrawEllipse(Pen penn, Rectangle rect)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -340,7 +346,7 @@ System.ComponentModel.Category("Values")]
         int texture;
         Bitmap bitmap = new Bitmap(512,512);
 
-        void DrawImage(Image img, int x, int y, int width, int height)
+        public void DrawImage(Image img, int x, int y, int width, int height)
         {
             if (img == null)
                 return;
@@ -392,7 +398,7 @@ System.ComponentModel.Category("Values")]
             GL.Disable(EnableCap.Texture2D);
         }
 
-        void DrawPath(Pen penn,GraphicsPath gp)
+        public void DrawPath(Pen penn, GraphicsPath gp)
         {
             try
             {
@@ -401,7 +407,7 @@ System.ComponentModel.Category("Values")]
             catch { }
         }
 
-        void FillPath(Brush brushh,GraphicsPath gp)
+        public void FillPath(Brush brushh, GraphicsPath gp)
         {
             try
             {
@@ -410,32 +416,32 @@ System.ComponentModel.Category("Values")]
             catch { }
         }
 
-        void SetClip(Rectangle rect)
+        public void SetClip(Rectangle rect)
         {
             
         }
 
-        void ResetClip()
+        public void ResetClip()
         {
 
         }
 
-        void ResetTransform()
+        public void ResetTransform()
         {
            GL.LoadIdentity();
         }
 
-        void RotateTransform(float angle)
+        public void RotateTransform(float angle)
         {
             GL.Rotate(angle,0,0,1);
         }
 
-        void TranslateTransform(float x, float y)
+        public void TranslateTransform(float x, float y)
         {
             GL.Translate(x, y, 0f);
         }
 
-        void FillPolygon(Brush brushh, Point[] list)
+        public void FillPolygon(Brush brushh, Point[] list)
         {
 
             //GL.Disable(EnableCap.Texture2D);
@@ -456,7 +462,7 @@ System.ComponentModel.Category("Values")]
             //GL.Enable(EnableCap.Texture2D);
         }
 
-        void FillPolygon(Brush brushh, PointF[] list)
+        public void FillPolygon(Brush brushh, PointF[] list)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -478,7 +484,7 @@ System.ComponentModel.Category("Values")]
 
         //graphicsObject.DrawPolygon(redPen, pointlist);
 
-        void DrawPolygon(Pen penn, Point[] list)
+        public void DrawPolygon(Pen penn, Point[] list)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -499,7 +505,7 @@ System.ComponentModel.Category("Values")]
             //GL.Enable(EnableCap.Texture2D);
         }
 
-        void DrawPolygon(Pen penn, PointF[] list)
+        public void DrawPolygon(Pen penn, PointF[] list)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -523,7 +529,7 @@ System.ComponentModel.Category("Values")]
 
         //graphicsObject.FillRectangle(linearBrush, bg);
 
-        void FillRectangle(Brush brushh,RectangleF rectf)
+        public void FillRectangle(Brush brushh, RectangleF rectf)
         {
             float x1 = rectf.X;
             float y1 = rectf.Y;
@@ -571,12 +577,12 @@ System.ComponentModel.Category("Values")]
 
         //graphicsObject.DrawRectangle(transPen, bg.X,bg.Y,bg.Width,bg.Height);
 
-        void DrawRectangle(Pen penn, RectangleF rect)
+        public void DrawRectangle(Pen penn, RectangleF rect)
         {
             DrawRectangle(penn, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
-        void DrawRectangle(Pen penn,double x1,double y1, double width,double height)
+        public void DrawRectangle(Pen penn, double x1, double y1, double width, double height)
         {
             //GL.Disable(EnableCap.Texture2D);
             
@@ -597,7 +603,7 @@ System.ComponentModel.Category("Values")]
             //GL.Enable(EnableCap.Texture2D);
         }
 
-        void DrawLine(Pen penn,double x1,double y1, double x2,double y2) 
+        public void DrawLine(Pen penn, double x1, double y1, double x2, double y2) 
         {
             //GL.Disable(EnableCap.Texture2D); 
              
@@ -616,8 +622,13 @@ System.ComponentModel.Category("Values")]
             //GL.Enable(EnableCap.Texture2D);
         }
 
-        void doPaint()
+        void doPaint(object e)
         {
+                HUD graphicsObject = this;
+                //Graphics graphicsObject = ((PaintEventArgs)e).Graphics;
+                //graphicsObject.SmoothingMode = SmoothingMode.AntiAlias;
+
+
             try
             {
                 graphicsObject.Clear(Color.Gray);
@@ -1131,6 +1142,20 @@ System.ComponentModel.Category("Values")]
                 drawstring(graphicsObject, mode, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + 5);
                 drawstring(graphicsObject, (int)disttowp + ">" + wpno, font, fontsize, whiteBrush, scrollbg.Left - 30, scrollbg.Bottom + fontsize + 2 + 10);
 
+                graphicsObject.DrawLine(greenPen, scrollbg.Left - 5, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20, scrollbg.Left - 5, scrollbg.Top - (int)(fontsize) - 2 - 20);
+                graphicsObject.DrawLine(greenPen, scrollbg.Left - 10, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 15, scrollbg.Left - 10, scrollbg.Top - (int)(fontsize) - 2 - 20);
+                graphicsObject.DrawLine(greenPen, scrollbg.Left - 15, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 10, scrollbg.Left - 15, scrollbg.Top - (int)(fontsize ) - 2 - 20);
+
+                drawstring(graphicsObject, ArdupilotMega.MainV2.cs.linkqualitygcs.ToString("0") + "%", font, fontsize, whiteBrush, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
+                if (ArdupilotMega.MainV2.cs.linkqualitygcs == 0)
+                {
+                    graphicsObject.DrawLine(redPen, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20, scrollbg.Left + 50, scrollbg.Top - (int)(fontsize * 2.2) - 2);
+
+                    graphicsObject.DrawLine(redPen, scrollbg.Left, scrollbg.Top - (int)(fontsize * 2.2) - 2, scrollbg.Left + 50, scrollbg.Top - (int)(fontsize * 2.2) - 2 - 20);
+                }
+                drawstring(graphicsObject, ArdupilotMega.MainV2.cs.datetime.ToString("HH:mm:ss"), font, fontsize, whiteBrush, scrollbg.Left - 20, scrollbg.Top - fontsize - 2 - 20);
+
+
                 // battery
 
                 graphicsObject.ResetTransform();
@@ -1191,8 +1216,6 @@ System.ComponentModel.Category("Values")]
                 Console.WriteLine("hud error "+ex.ToString());
                 //MessageBox.Show(ex.ToString());            
             }
-
-            count++;
         }
 
         protected override void OnPaintBackground(PaintEventArgs e)
@@ -1354,6 +1377,31 @@ System.ComponentModel.Category("Values")]
 
                 x += charwidth[charid] * scale;
             }
+        }
+		
+		void drawstring(Graphics e, string text, Font font, float fontsize, Brush brush, float x, float y)
+        {
+            if (text == null || text == "")
+                return;
+
+            pth.Reset();
+
+
+            if (text != null)
+                pth.AddString(text, font.FontFamily, 0, fontsize + 5, new Point((int)x, (int)y), StringFormat.GenericTypographic);
+
+            //Draw the edge
+            // this uses lots of cpu time
+
+            //e.SmoothingMode = SmoothingMode.HighSpeed;
+            
+            e.DrawPath(P, pth);
+
+            //Draw the face
+
+            e.FillPath(brush, pth);
+
+            //pth.Dispose();
         }
 
         protected override void OnResize(EventArgs e)

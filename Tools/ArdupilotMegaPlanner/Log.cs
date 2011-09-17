@@ -375,6 +375,13 @@ namespace ArdupilotMega
         {
             Color[] colours = { Color.Red, Color.Orange, Color.Yellow, Color.Green, Color.Blue, Color.Indigo, Color.Violet, Color.Pink };
 
+            AltitudeMode altmode = AltitudeMode.absolute;
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                altmode = AltitudeMode.relativeToGround; // because of sonar, this is both right and wrong. right for sonar, wrong in terms of gps as the land slopes off.
+            }
+
             KMLRoot kml = new KMLRoot();
             Folder fldr = new Folder("Log");
 
@@ -397,7 +404,7 @@ namespace ArdupilotMega
                     continue;
 
                 LineString ls = new LineString();
-                ls.AltitudeMode = AltitudeMode.absolute;
+                ls.AltitudeMode = altmode;
                 ls.Extrude = true;
                 //ls.Tessellate = true;
 
@@ -484,7 +491,7 @@ namespace ArdupilotMega
                 pmplane.visibility = false;
 
                 Model model = mod.model;
-                model.AltitudeMode = AltitudeMode.absolute;
+                model.AltitudeMode = altmode;
                 model.Scale.x = 2;
                 model.Scale.y = 2;
                 model.Scale.z = 2;
@@ -506,7 +513,7 @@ namespace ArdupilotMega
                 catch { }
 
                 pmplane.Point = new KmlPoint((float)model.Location.longitude, (float)model.Location.latitude, (float)model.Location.altitude);
-                pmplane.Point.AltitudeMode = AltitudeMode.absolute;
+                pmplane.Point.AltitudeMode = altmode;
 
                 Link link = new Link();
                 link.href = "block_plane_0.dae";

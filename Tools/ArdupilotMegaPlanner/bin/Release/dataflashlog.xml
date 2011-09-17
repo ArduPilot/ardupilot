@@ -22,9 +22,8 @@
     <F1>WP Dist</F1>
     <F2>WP Verify</F2>
     <F3>Target Bear</F3>
-    <F4>Nav Bear</F4>
-    <F5>Long Err</F5>
-    <F6>Lat Err</F6>
+    <F4>Long Err</F4>
+    <F5>Lat Err</F5>
   </NTUN>
   <CTUN>
     <F1>Yaw Sensor</F1>
@@ -56,6 +55,13 @@
     <F5>Accel Y</F5>
     <F6>Accel Z</F6>
   </RAW>
+  <CURR>
+    <F1>Throttle in</F1>
+    <F2>Throttle intergrator</F2>
+    <F3>Voltage</F3>
+    <F4>Current</F4>
+    <F5>Current total</F5>
+  </CURR>
 </AC2>
 <!-- -->
 <APM>

@@ -65,7 +65,7 @@ namespace ArdupilotMega
         public  float gz { get; set; }
 
         // calced turn rate
-        public float turnrate { get { if (groundspeed == 0) return 0; return (roll * 9.8f) / groundspeed; } }
+        public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
 
         //radio
         public  float ch1in { get; set; }
@@ -101,17 +101,17 @@ namespace ArdupilotMega
         //nav state
         public float nav_roll { get; set; }
         public float nav_pitch { get; set; }
-        public short nav_bearing { get; set; }
-        public short target_bearing { get; set; }
-        public ushort wp_dist { get { return (ushort)(_wpdist * multiplierdist); } set { _wpdist = value; } }
+        public float nav_bearing { get; set; }
+        public float target_bearing { get; set; }
+        public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
         public float alt_error { get { return _alt_error * multiplierdist; } set { _alt_error = value; } }
         public float ber_error { get { return (target_bearing - yaw); } set {  } }
         public float aspd_error { get { return _aspd_error * multiplierspeed; } set { _aspd_error = value; } }
         public float xtrack_error { get; set; }
-        public int wpno { get; set; }
+        public float wpno { get; set; }
         public string mode { get; set; }
         public float climbrate { get; set; }
-        ushort _wpdist;
+        float _wpdist;
         float _aspd_error;
         float _alt_error;
 
@@ -150,7 +150,8 @@ namespace ArdupilotMega
         public float brklevel { get; set; }
 
         // stats
-        public ushort packetdrop { get; set; }
+        public ushort packetdropremote { get; set; }
+        public ushort linkqualitygcs { get; set; }
 
         // requested stream rates
         public byte rateattitude { get; set; }
@@ -361,7 +362,7 @@ namespace ArdupilotMega
                     battery_voltage = sysstatus.vbat;
                     battery_remaining = sysstatus.battery_remaining;
 
-                    packetdrop = sysstatus.packet_drop;
+                    packetdropremote = sysstatus.packet_drop;
 
                     if (oldmode != mode && MainV2.speechenable && MainV2.getConfig("speechmodeenabled") == "True")
                     {
@@ -468,7 +469,7 @@ namespace ArdupilotMega
 
                     wpcur = (ArdupilotMega.MAVLink.__mavlink_waypoint_current_t)(temp);
 
-                    int oldwp = wpno;
+                    int oldwp = (int)wpno;
 
                     wpno = wpcur.seq;
 
