@@ -207,7 +207,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  OPTICAL_FLOW
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
-  #define OPTFLOW_ENABLED
+  //#define OPTFLOW_ENABLED
 #endif
 
 //#define OPTFLOW_ENABLED
