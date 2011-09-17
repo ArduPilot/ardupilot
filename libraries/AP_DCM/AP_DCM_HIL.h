@@ -32,6 +32,7 @@ public:
 
 	// Methods
 	void 		update_DCM(void) {}
+	void 		update_DCM_fast(void) {}
 
 	float		get_health(void) { return 1.0; }
 
