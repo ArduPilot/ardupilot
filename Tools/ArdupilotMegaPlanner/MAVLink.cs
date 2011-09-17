@@ -210,6 +210,7 @@ namespace ArdupilotMega
 
             Console.WriteLine("Done open " + sysid + " " + compid);
 
+            packetslost = 0;
         }
 
         public static byte[] StructureToByteArrayEndian(params object[] list)
@@ -1491,6 +1492,7 @@ namespace ArdupilotMega
                         }
                         else
                         {
+                            MainV2.cs.datetime = DateTime.Now;
                             temp[count] = (byte)BaseStream.ReadByte();
                         }
                     }
@@ -1565,6 +1567,15 @@ namespace ArdupilotMega
 
             Array.Resize<byte>(ref temp, count);
 
+            if (packetlosttimer.AddSeconds(10) < DateTime.Now)
+            {
+                packetlosttimer = DateTime.Now;
+                packetslost = (int)(packetslost * 0.8f);
+                packetsnotlost = (int)(packetsnotlost * 0.8f);
+            }
+
+            MainV2.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100);
+
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
                 Console.WriteLine("bps {0} loss {1} left {2}", bps1, synclost, BaseStream.BytesToRead);
@@ -1602,6 +1613,7 @@ namespace ArdupilotMega
 
             try
             {
+
                 if ((temp[0] == 'U' || temp[0] == 254) && temp.Length >= temp[1])
                 {
                     if (temp[2] != ((recvpacketcount + 1) % 0x100))
@@ -1619,15 +1631,6 @@ namespace ArdupilotMega
 
                         Console.WriteLine("lost {0} pkts {1}", temp[2], (int)packetslost);
                     }
-
-                    if (packetlosttimer.AddSeconds(10) < DateTime.Now)
-                    {
-                        packetlosttimer = DateTime.Now;
-                        packetslost = (int)(packetslost *0.8f);
-                        packetsnotlost = (int)(packetsnotlost *0.8f);
-                    }
-
-                    MainV2.cs.linkqualitygcs = (ushort)((packetsnotlost / (packetsnotlost + packetslost)) * 100);
 
                     packetsnotlost++;
 

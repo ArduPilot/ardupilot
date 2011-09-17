@@ -884,6 +884,8 @@ namespace ArdupilotMega
 
             DateTime speechcustomtime = DateTime.Now;
 
+            DateTime linkqualitytime = DateTime.Now;
+
             while (serialthread)
             {
                 try
@@ -936,6 +938,21 @@ namespace ArdupilotMega
                         speechcustomtime = DateTime.Now;
                     }
 
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
+                    {
+                        MainV2.cs.linkqualitygcs = 0;
+                    }
+
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
+                    {
+                        GCSViews.FlightData.myhud.Invalidate();
+                        if (linkqualitytime.Second != DateTime.Now.Second)
+                        {
+                            MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
+                            linkqualitytime = DateTime.Now;
+                        }
+                    }
+
                     if (speechenable && talk != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;
@@ -975,7 +992,6 @@ namespace ArdupilotMega
                             if (MainV2.talk.State == SynthesizerState.Ready)
                                 MainV2.talk.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
                         }
-                        MainV2.cs.linkqualitygcs = 0;
                     }
 
                     //Console.WriteLine(comPort.BaseStream.BytesToRead);
@@ -1477,6 +1493,12 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.T)) // for ryan beall
             {
                 MainV2.comPort.Open(false);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
+            {
+                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+                MessageBox.Show("Done MAV_ACTION_STORAGE_WRITE");
                 return true;
             }
             if (keyData == (Keys.Control | Keys.J)) // for jani

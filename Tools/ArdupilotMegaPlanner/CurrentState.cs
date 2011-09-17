@@ -285,24 +285,21 @@ namespace ArdupilotMega
                             mode = "Acro";
                             break;
                         case (byte)102:
-                            mode = "Simple";
-                            break;
-                        case (byte)103:
                             mode = "Alt Hold";
                             break;
-                        case (byte)104:
+                        case (byte)103:
                             mode = "Auto";
                             break;
-                        case (byte)105:
+                        case (byte)104:
                             mode = "Guided";
                             break;
-                        case (byte)106:
+                        case (byte)105:
                             mode = "Loiter";
                             break;
-                        case (byte)107:
+                        case (byte)106:
                             mode = "RTL";
                             break;
-                        case (byte)108:
+                        case (byte)107:
                             mode = "Circle";
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:
@@ -534,6 +531,27 @@ namespace ArdupilotMega
                     MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU], ref temp, 6);
 
                     imu = (MAVLink.__mavlink_raw_imu_t)(temp);
+
+                    gx = imu.xgyro;
+                    gy = imu.ygyro;
+                    gz = imu.zgyro;
+
+                    ax = imu.xacc;
+                    ay = imu.yacc;
+                    az = imu.zacc;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
+                }
+
+                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU] != null)
+                {
+                    var imu = new MAVLink.__mavlink_scaled_imu_t();
+
+                    object temp = imu;
+
+                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU], ref temp, 6);
+
+                    imu = (MAVLink.__mavlink_scaled_imu_t)(temp);
 
                     gx = imu.xgyro;
                     gy = imu.ygyro;
