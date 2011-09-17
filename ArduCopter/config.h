@@ -474,7 +474,7 @@
 # define LOITER_P			.4		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.10	//
+# define LOITER_I			0.04	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		12		// degrees°
