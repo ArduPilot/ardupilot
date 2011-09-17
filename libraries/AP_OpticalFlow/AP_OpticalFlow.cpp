@@ -12,15 +12,11 @@
 
 #define FORTYFIVE_DEGREES 0.78539816
 
-AP_OpticalFlow::AP_OpticalFlow() : raw_dx(0),raw_dy(0),x(0),y(0),surface_quality(0),dx(0),dy(0),last_update(0),field_of_view(1),scaler(0),num_pixels(0)
-{
-}
-
 // init - initCommAPI parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
-bool 
+bool
 AP_OpticalFlow::init(bool initCommAPI)
 {
-    _orientation_matrix = Matrix3f(1,0,0,0,1,0,0,0,1);
+	_orientation_matrix = Matrix3f(1, 0, 0, 0, 1, 0, 0, 0, 1);
     update_conversion_factors();
     return true;  // just return true by default
 }
@@ -38,28 +34,28 @@ int AP_OpticalFlow::read()
 }
 
 // reads a value from the sensor (will be sensor specific)
-byte 
+byte
 AP_OpticalFlow::read_register(byte address)
 {
 }
 
 // writes a value to one of the sensor's register (will be sensor specific)
-void 
+void
 AP_OpticalFlow::write_register(byte address, byte value)
 {
 }
 
 // rotate raw values to arrive at final x,y,dx and dy values
-void 
+void
 AP_OpticalFlow::apply_orientation_matrix()
 {
     Vector3f rot_vector;
-	
+
 	// next rotate dx and dy
-	rot_vector = _orientation_matrix * Vector3f(raw_dx,raw_dy,0);
+	rot_vector = _orientation_matrix * Vector3f(raw_dx, raw_dy, 0);
 	dx = rot_vector.x;
 	dy = rot_vector.y;
-	
+
 	// add rotated values to totals (perhaps this is pointless as we need to take into account yaw, roll, pitch)
 	x += dx;
 	y += dy;
@@ -69,30 +65,26 @@ AP_OpticalFlow::apply_orientation_matrix()
 void
 AP_OpticalFlow::update_conversion_factors()
 {
-    conv_factor = (1.0/(float)(num_pixels*scaler))*2.0*tan(field_of_view/2.0);  // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
-    radians_to_pixels = (num_pixels*scaler) / field_of_view;
+	conv_factor = (1.0 / (float)(num_pixels * scaler)) * 2.0 * tan(field_of_view / 2.0);	// multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
+	// 0.00615
+	radians_to_pixels = (num_pixels * scaler) / field_of_view;
+	// 162.99
 }
 
 // updates internal lon and lat with estimation based on optical flow
 void
-AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
+AP_OpticalFlow::update_position(float roll, float pitch, float cos_yaw_x, float sin_yaw_y, float altitude)
 {
-    float diff_roll = roll - _last_roll;
-    float diff_pitch = pitch - _last_pitch;
-	float avg_altitude = (altitude + _last_altitude)/2;
-    //float exp_change_x, exp_change_y;
-    //float change_x, change_y;
-	//float x_cm, y_cm;
-	float cos_yaw = cos(yaw);
-	float sin_yaw = sin(yaw);
-    int i;
-    
+    float diff_roll 	= roll  - _last_roll;
+    float diff_pitch 	= pitch - _last_pitch;
+
 	// only update position if surface quality is good and angle is not over 45 degrees
 	if( surface_quality >= 10 && fabs(roll) <= FORTYFIVE_DEGREES && fabs(pitch) <= FORTYFIVE_DEGREES ) {
+		altitude = max(altitude, 0);
 		// calculate expected x,y diff due to roll and pitch change
 		exp_change_x = diff_roll * radians_to_pixels;
 		exp_change_y = -diff_pitch * radians_to_pixels;
-			
+
 		// real estimated raw change from mouse
 		change_x = dx - exp_change_x;
 		change_y = dy - exp_change_y;
@@ -100,14 +92,36 @@ AP_OpticalFlow::get_position(float roll, float pitch, float yaw, float altitude)
 		// convert raw change to horizontal movement in cm
 		x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
 		y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
-		
-		// use yaw to convert x and y into lon and lat
-		lat += y_cm * cos_yaw - x_cm * sin_yaw;
-		lng += x_cm * cos_yaw + y_cm * sin_yaw;
+
+
+		vlon =  x_cm * sin_yaw_y - y_cm * cos_yaw_x;
+		vlat =  y_cm * sin_yaw_y - x_cm * cos_yaw_x;
 	}
-	
-    // capture roll and pitch for next iteration
-    _last_roll = roll;
-    _last_pitch = pitch;
-	_last_altitude = altitude;
 }
+
+
+/*
+{
+	// only update position if surface quality is good and angle is not over 45 degrees
+	if( surface_quality >= 10 && fabs(_dcm->roll) <= FORTYFIVE_DEGREES && fabs(_dcm->pitch) <= FORTYFIVE_DEGREES ) {
+		altitude = max(altitude, 0);
+		Vector3f omega = _dcm->get_gyro();
+
+		// calculate expected x,y diff due to roll and pitch change
+		float exp_change_x =  omega.x * radians_to_pixels;
+		float exp_change_y = -omega.y * radians_to_pixels;
+
+		// real estimated raw change from mouse
+		float change_x = dx - exp_change_x;
+		float change_y = dy - exp_change_y;
+
+		// convert raw change to horizontal movement in cm
+		float x_cm = -change_x * altitude * conv_factor;	// perhaps this altitude should actually be the distance to the ground?	i.e. if we are very rolled over it should be longer?
+		float y_cm = -change_y * altitude * conv_factor;	// for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
+
+		vlon =  (float)x_cm * sin_yaw_y - (float)y_cm * cos_yaw_x;
+		vlat =  (float)y_cm * sin_yaw_y - (float)x_cm * cos_yaw_x;
+	}
+}
+
+*/
