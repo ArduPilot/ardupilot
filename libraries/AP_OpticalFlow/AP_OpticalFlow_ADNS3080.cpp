@@ -73,10 +73,10 @@ AP_OpticalFlow_ADNS3080::init(bool initCommAPI)
 	if( retry < 3 ) {
 	    if( read_register(ADNS3080_PRODUCT_ID) == 0x17 )
 	        return true;
-		else
-		    retry++;
-	}else
-	    return false;
+	    retry++;
+	}
+
+	return false;
 }
 
 //
@@ -218,7 +218,7 @@ void
 AP_OpticalFlow_ADNS3080::set_led_always_on( bool alwaysOn )
 {
     byte regVal = read_register(ADNS3080_CONFIGURATION_BITS);
-    regVal = regVal & 0xBf | (alwaysOn << 6);
+    regVal = (regVal & 0xbf) | (alwaysOn << 6);
 	delayMicroseconds(50);  // small delay
 	write_register(ADNS3080_CONFIGURATION_BITS, regVal);
 }
@@ -254,7 +254,7 @@ bool
 AP_OpticalFlow_ADNS3080::get_frame_rate_auto()
 {
     byte regVal = read_register(ADNS3080_EXTENDED_CONFIG);
-	if( regVal & 0x01 > 0 ) {
+    if( (regVal & 0x01) != 0 ) {
 	    return false;
 	}else{
 	    return true;
@@ -355,10 +355,10 @@ AP_OpticalFlow_ADNS3080::set_shutter_speed_auto(bool auto_shutter_speed)
 		delayMicroseconds(50);  // small delay
 
 		// determine value to put into extended config
-        regVal = regVal & ~0x02;
+        regVal &= ~0x02;
 	}else{
 	    // determine value to put into extended config
-	    regVal = regVal & ~0x02 | 0x02;
+	    regVal |= 0x02;
 	}
 	write_register(ADNS3080_EXTENDED_CONFIG, regVal);
 	delayMicroseconds(50);  // small delay
@@ -377,7 +377,7 @@ AP_OpticalFlow_ADNS3080::get_shutter_speed()
 
 
 // set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
-unsigned int
+void
 AP_OpticalFlow_ADNS3080::set_shutter_speed(unsigned int shutter_speed)
 {
     NumericIntType aNum;
@@ -420,7 +420,7 @@ AP_OpticalFlow_ADNS3080::clear_motion()
 }
 
 // get_pixel_data - captures an image from the sensor and stores it to the pixe_data array
-int
+void
 AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
 {
     int i,j;
@@ -438,7 +438,7 @@ AP_OpticalFlow_ADNS3080::print_pixel_data(Stream *serPort)
 	for( i=0; i<ADNS3080_PIXELS_Y; i++ ) {
 	    for( j=0; j<ADNS3080_PIXELS_X; j++ ) {
 		    regValue = read_register(ADNS3080_FRAME_CAPTURE);
-			if( isFirstPixel && (regValue & 0x40 == 0) ) {
+		    if( isFirstPixel && (regValue & 0x40) == 0 ) {
 			    serPort->println("failed to find first pixel");
 			}
 			isFirstPixel = false;

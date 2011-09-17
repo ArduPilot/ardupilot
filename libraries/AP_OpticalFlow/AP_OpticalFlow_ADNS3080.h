@@ -4,7 +4,6 @@
 //#include <AP_Math.h>
 //#include <Stream.h>
 //#include <AP_Common.h>
-//#include "AP_OpticalFlow.h"
 #include "AP_OpticalFlow.h"
 
 // orientations for ADNS3080 sensor
@@ -131,11 +130,11 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	void set_shutter_speed_auto(bool auto_shutter_speed); 	// set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 
     unsigned int get_shutter_speed();
-	unsigned int set_shutter_speed(unsigned int shutter_speed);
+	void set_shutter_speed(unsigned int shutter_speed);
 
 	void clear_motion();  // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
 
-	int print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
+	void print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
 };
 
 #endif

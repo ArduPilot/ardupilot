@@ -61,7 +61,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <APM_PI.h>            	// PI library
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
-#include <AP_OpticalFlow_ADNS3080.h> // Optical Flow library
+#include <AP_OpticalFlow.h> // Optical Flow library
 #include <ModeFilter.h>
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
