@@ -11,6 +11,9 @@ set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake) # A
 
 set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
 
+
+message(STATUS "DIR: ${CMAKE_SOURCE_DIR}")
+
 cmake_minimum_required(VERSION 2.8)
 #====================================================================#
 #  Setup Project                                                     #
@@ -50,7 +53,6 @@ set(${FIRMWARE_NAME}_SKETCHES
 	commands_process.pde
 	control_modes.pde
 	events.pde
-	#flight_control.pde
 	#flip.pde
 	#GCS.pde
 	#GCS_Ardupilot.pde
@@ -103,26 +105,26 @@ set(${FIRMWARE_NAME}_LIBS
 	DataFlash
 	AP_Math
 	PID
-    RC_Channel
+        RC_Channel
 	AP_OpticalFlow
 	ModeFilter	
-    memcheck
+        memcheck
 	#AP_PID
 	APM_PI
 	#APO
-    FastSerial
-    AP_Common	
-    GCS_MAVLink
-    AP_GPS
-    APM_RC
-    AP_DCM
-    AP_ADC
-    AP_Compass
-    AP_IMU
-    AP_RangeFinder
-    APM_BMP085
-	c	
-	m	
+        FastSerial
+        AP_Common
+        GCS_MAVLink
+        AP_GPS
+        APM_RC
+        AP_DCM
+        AP_ADC
+        AP_Compass
+        AP_IMU
+        AP_RangeFinder
+        APM_BMP085
+        c
+        m
 )
 SET_TARGET_PROPERTIES(AP_Math PROPERTIES LINKER_LANGUAGE CXX)
 

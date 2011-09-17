@@ -1,4 +1,6 @@
-// Example config file. Take a look at confi.h. Any term define there can be overridden by defining it here.
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+// Example config file. Take a look at config.h. Any term define there can be overridden by defining it here.
 
 // GPS is auto-selected
 

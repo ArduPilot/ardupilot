@@ -83,13 +83,6 @@
 #define MAX_SONAR_UNKNOWN	0
 #define MAX_SONAR_XL		1
 
-// Radio channels
-// Note channels are from 0!
-//
-// XXX these should be CH_n defines from RC.h at some point.
-#define CH_10 9    //PB5
-#define CH_11 10   //PE3
-
 #define CH_ROLL CH_1
 #define CH_PITCH CH_2
 #define CH_THROTTLE CH_3
