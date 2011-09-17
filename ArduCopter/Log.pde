@@ -503,8 +503,8 @@ static void Log_Write_Optflow()
 	DataFlash.WriteInt((int)optflow.dx);
 	DataFlash.WriteInt((int)optflow.dy);
 	DataFlash.WriteInt((int)optflow.surface_quality);
-	DataFlash.WriteLong(optflow.vlat);//optflow_offset.lat + optflow.lat);
-	DataFlash.WriteLong(optflow.vlon);//optflow_offset.lng + optflow.lng);
+	DataFlash.WriteLong(optflow.lat);//optflow_offset.lat + optflow.lat);
+	DataFlash.WriteLong(optflow.lon);//optflow_offset.lng + optflow.lng);
 	DataFlash.WriteByte(END_BYTE);
 }
 #endif
