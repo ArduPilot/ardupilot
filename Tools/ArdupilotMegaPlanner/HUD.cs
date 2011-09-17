@@ -1066,7 +1066,7 @@ System.ComponentModel.Category("Values")]
                     }
                 }
 
-
+                greenPen.Width = 4;
 
                 // vsi
 
