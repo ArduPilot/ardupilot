@@ -168,7 +168,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_Compass_HIL          compass; // never used
 	AP_IMU_Shim             imu; // never used
 	#ifdef OPTFLOW_ENABLED
-		AP_OpticalFlow_ADNS3080 optflow(&dcm);
+		AP_OpticalFlow_ADNS3080 optflow;
 	#endif
     static int32_t          gps_base_alt;
 #else
@@ -200,14 +200,8 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_DCM  dcm(&imu, g_gps);
 
  	#ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow(&dcm);
+	AP_OpticalFlow_ADNS3080 optflow();
  	#endif
-#endif
-
-#if HIL_MODE == HIL_MODE_ATTITUDE
-	#ifdef OPTFLOW_ENABLED
-		AP_OpticalFlow_ADNS3080 optflow(&dcm);
-	#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -621,7 +615,7 @@ static void medium_loop()
 			#ifdef OPTFLOW_ENABLED
 			if(g.optflow_enabled){
 				optflow.read();
-				optflow.update_position(cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
+				optflow.update_position(dcm.roll, dcm.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
 
 				// write to log
 				if (g.log_bitmask & MASK_LOG_OPTFLOW){
