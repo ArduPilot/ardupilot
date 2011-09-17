@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.Params = new System.Windows.Forms.DataGridView();
             this.Command = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -167,9 +167,6 @@
             this.label21 = new System.Windows.Forms.Label();
             this.THR_HOLD_P = new System.Windows.Forms.DomainUpDown();
             this.label22 = new System.Windows.Forms.Label();
-            this.groupBox18 = new System.Windows.Forms.GroupBox();
-            this.PITCH_MAX = new System.Windows.Forms.DomainUpDown();
-            this.label27 = new System.Windows.Forms.Label();
             this.groupBox19 = new System.Windows.Forms.GroupBox();
             this.HLD_LAT_IMAX = new System.Windows.Forms.DomainUpDown();
             this.label28 = new System.Windows.Forms.Label();
@@ -285,7 +282,6 @@
             this.groupBox4.SuspendLayout();
             this.groupBox6.SuspendLayout();
             this.groupBox7.SuspendLayout();
-            this.groupBox18.SuspendLayout();
             this.groupBox19.SuspendLayout();
             this.groupBox20.SuspendLayout();
             this.groupBox21.SuspendLayout();
@@ -302,14 +298,14 @@
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
             resources.ApplyResources(this.Params, "Params");
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.Maroon;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.Params.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.Params.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Command,
@@ -318,14 +314,14 @@
             this.mavScale,
             this.RawValue});
             this.Params.Name = "Params";
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
@@ -990,7 +986,6 @@
             this.TabAC2.Controls.Add(this.groupBox4);
             this.TabAC2.Controls.Add(this.groupBox6);
             this.TabAC2.Controls.Add(this.groupBox7);
-            this.TabAC2.Controls.Add(this.groupBox18);
             this.TabAC2.Controls.Add(this.groupBox19);
             this.TabAC2.Controls.Add(this.groupBox20);
             this.TabAC2.Controls.Add(this.groupBox21);
@@ -1156,24 +1151,6 @@
             // 
             resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
-            // 
-            // groupBox18
-            // 
-            this.groupBox18.Controls.Add(this.PITCH_MAX);
-            this.groupBox18.Controls.Add(this.label27);
-            resources.ApplyResources(this.groupBox18, "groupBox18");
-            this.groupBox18.Name = "groupBox18";
-            this.groupBox18.TabStop = false;
-            // 
-            // PITCH_MAX
-            // 
-            resources.ApplyResources(this.PITCH_MAX, "PITCH_MAX");
-            this.PITCH_MAX.Name = "PITCH_MAX";
-            // 
-            // label27
-            // 
-            resources.ApplyResources(this.label27, "label27");
-            this.label27.Name = "label27";
             // 
             // groupBox19
             // 
@@ -1887,7 +1864,6 @@
             this.groupBox4.ResumeLayout(false);
             this.groupBox6.ResumeLayout(false);
             this.groupBox7.ResumeLayout(false);
-            this.groupBox18.ResumeLayout(false);
             this.groupBox19.ResumeLayout(false);
             this.groupBox20.ResumeLayout(false);
             this.groupBox21.ResumeLayout(false);
@@ -2031,9 +2007,6 @@
         private System.Windows.Forms.Label label21;
         private System.Windows.Forms.DomainUpDown THR_HOLD_P;
         private System.Windows.Forms.Label label22;
-        private System.Windows.Forms.GroupBox groupBox18;
-        private System.Windows.Forms.DomainUpDown PITCH_MAX;
-        private System.Windows.Forms.Label label27;
         private System.Windows.Forms.GroupBox groupBox19;
         private System.Windows.Forms.DomainUpDown HLD_LAT_IMAX;
         private System.Windows.Forms.Label label28;
