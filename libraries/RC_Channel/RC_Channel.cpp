@@ -98,6 +98,12 @@ RC_Channel::set_pwm(int pwm)
 		//if (fabs(scale_output) > 0){
 		//	control_in *= scale_output;
 		//}
+		/*
+		if(expo) {
+			long temp = control_in;
+			temp = (temp * temp) / (long)_high;
+			control_in = (int)((control_in >= 0) ? temp : -temp);
+		}*/
 	}
 }
 
