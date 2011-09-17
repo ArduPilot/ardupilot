@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ArduCopter 2.0.43 Beta", main_menu_commands);
+MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 #endif // CLI_ENABLED
 
@@ -73,8 +73,8 @@ static void init_ardupilot()
 	Serial1.begin(38400, 128, 16);
 	#endif
 
-	Serial.printf_P(PSTR("\n\nInit ACM"
-						 "\n\nRAM: %lu\n"),
+	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
+						 "\n\nFree RAM: %lu\n"),
 						 freeRAM());
 
 
@@ -305,7 +305,9 @@ static void startup_ground(void)
 		// Warm up and read Gyro offsets
 		// -----------------------------
 		imu.init_gyro(mavlink_delay);
-		report_imu();
+		#if CLI_ENABLED == ENABLED
+			report_imu();
+		#endif
 	#endif
 
 	// reset the leds

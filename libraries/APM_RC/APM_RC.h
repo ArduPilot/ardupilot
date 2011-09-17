@@ -15,6 +15,8 @@
 #define CH_6 5
 #define CH_7 6
 #define CH_8 7
+#define CH_10 9    //PB5
+#define CH_11 10   //PE3
 
 #include <inttypes.h>
 
