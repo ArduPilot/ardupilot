@@ -53,7 +53,6 @@ set(${FIRMWARE_NAME}_SKETCHES
 	commands_process.pde
 	control_modes.pde
 	events.pde
-	flight_control.pde
 	flip.pde
 	GCS.pde
 	GCS_Ardupilot.pde

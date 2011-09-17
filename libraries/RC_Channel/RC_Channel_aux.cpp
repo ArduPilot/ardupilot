@@ -48,6 +48,7 @@ void update_aux_servo_function(RC_Channel_aux* rc_5, RC_Channel_aux* rc_6, RC_Ch
 	g_rc_function[aux_servo_function[CH_7]] = rc_7;
 	g_rc_function[aux_servo_function[CH_8]] = rc_8;
 
+	//set auxiliary ranges
 	G_RC_AUX(k_flap)->set_range(0,100);
 	G_RC_AUX(k_flap_auto)->set_range(0,100);
 	G_RC_AUX(k_aileron)->set_angle(4500);
