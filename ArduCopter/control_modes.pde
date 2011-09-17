@@ -17,7 +17,7 @@ static void read_control_switch()
 			#if CH7_OPTION != SIMPLE_MODE_CONTROL
 				// setup Simple mode
 				// do we enable simple mode?
-				do_simple = (g.simple_modes & 1 << switchPosition);
+	            do_simple = (g.simple_modes & (1 << switchPosition));
 				//Serial.printf("do simple: %d \n",  (int)do_simple);
 			#endif
 
