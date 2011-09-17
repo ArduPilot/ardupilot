@@ -61,6 +61,12 @@ endif
 ifeq ($(SKETCHBOOK),)
   SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../.. && pwd)
+  endif
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../.. && pwd)
+  endif
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../../.. && pwd)
   endif
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
