@@ -1,8 +1,10 @@
 #ifndef AP_OPTICALFLOW_ADNS3080_H
 #define AP_OPTICALFLOW_ADNS3080_H
 
-#include <AP_Math.h>
-#include <Stream.h>
+//#include <AP_Math.h>
+//#include <Stream.h>
+//#include <AP_Common.h>
+//#include "AP_OpticalFlow.h"
 #include "AP_OpticalFlow.h"
 
 // orientations for ADNS3080 sensor
@@ -29,10 +31,10 @@
 	#define ADNS3080_CHIP_SELECT 34  // PC3
 	#define ADNS3080_RESET       40  // PG1  was 35 / PC2
 #else  // normal arduino SPI pins...these need to be checked
-	#define AP_SPI_DATAIN  12        //MISO 
+	#define AP_SPI_DATAIN  12        //MISO
 	#define AP_SPI_DATAOUT 11        //MOSI
 	#define AP_SPI_CLOCK   13        //SCK
-	#define ADNS3080_CHIP_SELECT 10  //SS   
+	#define ADNS3080_CHIP_SELECT 10  //SS
 	#define ADNS3080_RESET       9   //RESET
 #endif
 
@@ -91,39 +93,40 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
     // bytes to store SPI settings
     byte orig_spi_settings_spcr;
 	byte orig_spi_settings_spsr;
-	
+
 	// save and restore SPI settings
 	byte backup_spi_settings();
 	byte restore_spi_settings();
-	
+
 	bool _motion;  	// true if there has been motion
-	
+
   public:
-	AP_OpticalFlow_ADNS3080();  // Constructor
+  	AP_OpticalFlow_ADNS3080();
+	//AP_OpticalFlow_ADNS3080();  // Constructor
 	bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	byte read_register(byte address);
 	void write_register(byte address, byte value);
 	void reset();         // reset sensor by holding a pin high (or is it low?) for 10us.
 	int read();           // read latest values from sensor and fill in x,y and totals, return OPTICALFLOW_SUCCESS on successful read
-	
+
 	// ADNS3080 specific features
 	bool motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }			// return true if there has been motion since the last time this was called
-	
+
 	bool get_led_always_on();                    // returns true if LED is always on, false if only on when required
 	void set_led_always_on( bool alwaysOn );     // set parameter to true if you want LED always on, otherwise false for only when required
-	
+
 	int get_resolution();							// returns resolution (either 400 or 1200 counts per inch)
 	void set_resolution(int resolution);            // set parameter to 400 or 1200 counts per inch
-	
+
 	bool get_frame_rate_auto();                      // get_frame_rate_auto - return true if frame rate is set to "auto", false if manual
 	void set_frame_rate_auto(bool auto_frame_rate);  // set_frame_rate_auto(bool) - set frame rate to auto (true), or manual (false)
 
-	unsigned int get_frame_period();					// get_frame_period - 
+	unsigned int get_frame_period();					// get_frame_period -
 	void set_frame_period(unsigned int period);
 
 	unsigned int get_frame_rate();
 	void set_frame_rate(unsigned int rate);
-	
+
 	bool get_shutter_speed_auto();                   		// get_shutter_speed_auto - returns true if shutter speed is adjusted automatically, false if manual
 	void set_shutter_speed_auto(bool auto_shutter_speed); 	// set_shutter_speed_auto - set shutter speed to auto (true), or manual (false)
 
@@ -131,7 +134,7 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	unsigned int set_shutter_speed(unsigned int shutter_speed);
 
 	void clear_motion();  // will cause the x,y, dx, dy, and the sensor's motion registers to be cleared
-	
+
 	int print_pixel_data(Stream *serPort); // dumps a 30x30 image to the Serial port
 };
 
