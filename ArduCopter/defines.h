@@ -52,7 +52,7 @@
 #define FR_LED AN12  // Mega PE4 pin, OUT7
 #define RE_LED AN14  // Mega PE5 pin, OUT6
 #define RI_LED AN10  // Mega PH4 pin, OUT5
-#define LE_LED AN8  // Mega PH5 pin, OUT4
+#define LE_LED AN8   // Mega PH5 pin, OUT4
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
