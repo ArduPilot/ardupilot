@@ -200,7 +200,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_DCM  dcm(&imu, g_gps);
 
  	#ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow();
+	AP_OpticalFlow_ADNS3080 optflow;
  	#endif
 #endif
 
