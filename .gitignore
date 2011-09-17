@@ -1,3 +1,4 @@
 .metadata/
 Tools/ArdupilotMegaPlanner/bin/Release/logs/
 config.mk
+ArduCopter/Debug/

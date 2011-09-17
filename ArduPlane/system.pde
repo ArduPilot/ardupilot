@@ -41,7 +41,7 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "APM trunk", main_menu_commands);
+MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 #endif // CLI_ENABLED
 
