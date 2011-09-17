@@ -31,12 +31,14 @@ AP_OpticalFlow::set_orientation(const Matrix3f &rotation_matrix)
 // read latest values from sensor and fill in x,y and totals
 int AP_OpticalFlow::read()
 {
+	return 0;
 }
 
 // reads a value from the sensor (will be sensor specific)
 byte
 AP_OpticalFlow::read_register(byte address)
 {
+	return 0;
 }
 
 // writes a value to one of the sensor's register (will be sensor specific)
@@ -89,6 +91,8 @@ AP_OpticalFlow::update_position(float roll, float pitch, float cos_yaw_x, float 
 		change_x = dx - exp_change_x;
 		change_y = dy - exp_change_y;
 
+		float avg_altitude = (altitude + _last_altitude)*0.5;
+
 		// convert raw change to horizontal movement in cm
 		x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
 		y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
@@ -97,6 +101,10 @@ AP_OpticalFlow::update_position(float roll, float pitch, float cos_yaw_x, float 
 		vlon =  x_cm * sin_yaw_y - y_cm * cos_yaw_x;
 		vlat =  y_cm * sin_yaw_y - x_cm * cos_yaw_x;
 	}
+
+	_last_altitude = altitude;
+	_last_roll = roll;
+	_last_pitch = pitch;
 }
 
 

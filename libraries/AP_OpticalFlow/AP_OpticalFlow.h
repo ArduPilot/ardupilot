@@ -67,9 +67,11 @@ class AP_OpticalFlow
 	Matrix3f   _orientation_matrix;
 	float conv_factor; // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
     float radians_to_pixels;
-	float _last_roll, _last_pitch, _last_yaw, _last_altitude;
+	float _last_roll, _last_pitch, _last_altitude;
 	virtual void apply_orientation_matrix();  // rotate raw values to arrive at final x,y,dx and dy values
 	virtual void update_conversion_factors();
 };
+
+#include "AP_OpticalFlow_ADNS3080.h"
 
 #endif
