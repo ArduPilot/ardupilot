@@ -65,6 +65,14 @@ static volatile uint16_t _count[8];
 
 static uint32_t last_ch6_micros;
 
+// TCNT2 values for various interrupt rates,
+// assuming 256 prescaler. Note that these values
+// assume a zero-time ISR. The actual rate will be a
+// bit lower than this
+#define TCNT2_781_HZ   (256-80)
+#define TCNT2_1008_HZ  (256-62)
+#define TCNT2_1302_HZ  (256-48)
+
 static inline unsigned char ADC_SPI_transfer(unsigned char data)
 {
 	/* Put data into buffer, sends the data */
@@ -79,6 +87,7 @@ static inline unsigned char ADC_SPI_transfer(unsigned char data)
 ISR (TIMER2_OVF_vect)
 {
 	uint8_t ch;
+	static uint8_t timer_offset;
 
 	bit_clear(PORTC, 4);							// Enable Chip Select (PIN PC4)
 	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
@@ -110,7 +119,11 @@ ISR (TIMER2_OVF_vect)
 	}
 
 	bit_set(PORTC, 4);					// Disable Chip Select (PIN PC4)
-	TCNT2 = 200;
+
+	// this gives us a sample rate between 781Hz and 1302Hz. We
+	// randomise it to try to minimise aliasing effects
+        timer_offset = (timer_offset + 49) % 32;
+        TCNT2 = TCNT2_781_HZ + timer_offset;
 }
 
 
@@ -151,10 +164,10 @@ void AP_ADC_ADS7844::Init(void)
 	// Enable Timer2 Overflow interrupt to capture ADC data
 	TIMSK2 = 0;			// Disable interrupts
 	TCCR2A = 0;			// normal counting mode
-	TCCR2B = _BV(CS21) | _BV(CS22);	// Set prescaler of 256
+	TCCR2B = _BV(CS21) | _BV(CS22);	// Set prescaler of clk/256
 	TCNT2	= 0;
 	TIFR2	= _BV(TOV2);	   // clear pending interrupts;
-	TIMSK2 = _BV(TOIE2) ;	   // enable the overflow interrupt
+	TIMSK2 = _BV(TOIE2);	   // enable the overflow interrupt
 }
 
 // Read one channel value
