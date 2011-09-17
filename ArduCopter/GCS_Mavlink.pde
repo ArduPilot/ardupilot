@@ -51,6 +51,7 @@ GCS_MAVLINK::update(void)
 	// receive new packets
 	mavlink_message_t msg;
 	mavlink_status_t status;
+	status.packet_rx_drop_count = 0;
 
 	// process received bytes
 	while(comm_get_available(chan))
