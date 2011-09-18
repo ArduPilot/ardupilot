@@ -16,9 +16,5 @@
 // The following are the recommended settings for Xplane simulation. Remove the leading "/* and trailing "*/" to enable:
 
 /*
-#define HIL_PROTOCOL        HIL_PROTOCOL_MAVLINK
 #define HIL_MODE            HIL_MODE_ATTITUDE
-#define HIL_PORT            0
-#define GCS_PROTOCOL        GCS_PROTOCOL_MAVLINK
-#define GCS_PORT            3
 */

@@ -72,27 +72,15 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// HIL_PROTOCOL                             OPTIONAL
 // HIL_MODE                                 OPTIONAL
-// HIL_PORT                                 OPTIONAL
 
 #ifndef HIL_MODE
 #define HIL_MODE	HIL_MODE_DISABLED
 #endif
 
-#ifndef HIL_PROTOCOL
-#define HIL_PROTOCOL	HIL_PROTOCOL_MAVLINK
-#endif
-
-#ifndef HIL_PORT
-#define HIL_PORT 0
-#endif
-
 #if HIL_MODE != HIL_MODE_DISABLED	// we are in HIL mode
-
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
-
 #endif
 
 
