@@ -50,7 +50,7 @@ static void init_barometer(void)
 	abs_pressure = ground_pressure;
 	
     Serial.printf_P(PSTR("abs_pressure %ld\n"), abs_pressure);
-    gcs.send_text_P(SEVERITY_MEDIUM, PSTR("barometer calibration complete."));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("barometer calibration complete."));
 }
 
 static long read_barometer(void)

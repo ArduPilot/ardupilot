@@ -159,18 +159,12 @@ static void init_ardupilot()
     g_gps->callback = mavlink_delay;
 
 	// init the GCS
-#if GCS_PORT == 3
-	gcs.init(&Serial3);
-#else
-	gcs.init(&Serial);
-#endif
+	gcs0.init(&Serial);
+	gcs3.init(&Serial3);
 
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
 	mavlink_system.type = MAV_FIXED_WING;
-
-	// init the HIL
-	hil.init(&Serial);
 
 	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
 	init_rc_in();		// sets up rc channels from radio
@@ -218,7 +212,7 @@ static void init_ardupilot()
 
 	if (ENABLE_AIR_START == 1) {
 		// Perform an air start and get back to flying
-		gcs.send_text_P(SEVERITY_LOW,PSTR("<init_ardupilot> AIR START"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("<init_ardupilot> AIR START"));
 
 		// Get necessary data from EEPROM
 		//----------------
@@ -265,10 +259,10 @@ static void startup_ground(void)
 {
     set_mode(INITIALISING);
 
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> GROUND START"));
 
 	#if(GROUND_START_DELAY > 0)
-		gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> With Delay"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> With Delay"));
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -292,11 +286,11 @@ if (g.airspeed_enabled == true)
 	// initialize airspeed sensor
 	// --------------------------
 	zero_airspeed();
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
    }
 else
   {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
   }
 #endif
 
@@ -327,7 +321,7 @@ else
 	// -----------------------
 	demo_servos(3);
 
-	gcs.send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
 static void set_mode(byte mode)
@@ -423,13 +417,13 @@ static void check_short_failsafe()
 static void startup_IMU_ground(void)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
-    gcs.send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
 
 	// Makes the servos wiggle twice - about to begin IMU calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
 	demo_servos(2);
-    gcs.send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
+    gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
 	mavlink_delay(1000);
 
 	imu.init(IMU::COLD_START, mavlink_delay);

@@ -135,7 +135,7 @@ It looks to see what the next command type is and finds the last command.
 */
 static void set_next_WP(struct Location *wp)
 {
-	//gcs.send_text_P(SEVERITY_LOW,PSTR("load WP"));
+	//gcs_send_text_P(SEVERITY_LOW,PSTR("load WP"));
 	SendDebug_P("MSG - wp_index: ");
 	SendDebugln(g.waypoint_index, DEC);
 
@@ -178,8 +178,6 @@ static void set_next_WP(struct Location *wp)
 	// set a new crosstrack bearing
 	// ----------------------------
 	reset_crosstrack();
-
-	gcs.print_current_waypoints();
 }
 
 static void set_guided_WP(void)

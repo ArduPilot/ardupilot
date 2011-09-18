@@ -63,7 +63,7 @@ handle_process_may()
 			break;
 
 	/*	case MAV_CMD_NAV_LAND_OPTIONS:	//    TODO - Add the command or equiv to MAVLink (repair in verify_may() also)
-			gcs.send_text_P(SEVERITY_LOW,PSTR("Landing options set"));
+			gcs_send_text_P(SEVERITY_LOW,PSTR("Landing options set"));
 
 			// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
 			landing_pitch 		= next_command.lng * 100;
@@ -160,7 +160,7 @@ static bool verify_must()
 			break;
 
 		default:
-			gcs.send_text_P(SEVERITY_HIGH,PSTR("verify_must: Invalid or no current Nav cmd"));
+			gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_must: Invalid or no current Nav cmd"));
 			return false;
 			break;
 	}
@@ -185,7 +185,7 @@ static bool verify_may()
         break;
 
     default:
-        gcs.send_text_P(SEVERITY_HIGH,PSTR("verify_may: Invalid or no current Condition cmd"));
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_may: Invalid or no current Condition cmd"));
         break;
 	}
     return false;
@@ -320,13 +320,13 @@ static bool verify_nav_wp()
 		//SendDebugln(command_must_index,DEC);
 		char message[30];
 		sprintf(message,"Reached Waypoint #%i",command_must_index);
-		gcs.send_text(SEVERITY_LOW,message);
+		gcs_send_text(SEVERITY_LOW,message);
 		return true;
 	}
 	// add in a more complex case
 	// Doug to do
 	if(loiter_sum > 300){
-		gcs.send_text_P(SEVERITY_MEDIUM,PSTR("<verify_must: MAV_CMD_NAV_WAYPOINT> Missed WP"));
+		gcs_send_text_P(SEVERITY_MEDIUM,PSTR("<verify_must: MAV_CMD_NAV_WAYPOINT> Missed WP"));
 		return true;
 	}
 	return false;
@@ -344,7 +344,7 @@ static bool verify_loiter_time()
 	update_loiter();
 	calc_bearing_error();
 	if ((millis() - loiter_time) > (unsigned long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
-		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
 		return true;
 	}
 	return false;
@@ -356,7 +356,7 @@ static bool verify_loiter_turns()
 	calc_bearing_error();
 	if(loiter_sum > loiter_total) {
 		loiter_total = 0;
-		gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));
 		// clear the command queue;
 		return true;
 	}
@@ -366,7 +366,7 @@ static bool verify_loiter_turns()
 static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 		return true;
 	}else{
 		return false;

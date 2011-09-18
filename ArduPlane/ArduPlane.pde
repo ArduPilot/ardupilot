@@ -164,8 +164,8 @@ AP_IMU_Shim             imu; // never used
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
-GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
+GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
+GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
 
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
@@ -516,8 +516,7 @@ static void fast_loop()
 
 	// XXX is it appropriate to be doing the comms below on the fast loop?
 
-	gcs.update();
-    hil.update();
+    gcs_update();
     gcs_data_stream_send(45,1000);
 }
 
@@ -704,7 +703,6 @@ static void update_GPS(void)
 			// so that the altitude is more accurate
 			// -------------------------------------
 			if (current_loc.lat == 0) {
-				SendDebugln("!! bad loc");
 				ground_start_count = 5;
 
 			} else {
