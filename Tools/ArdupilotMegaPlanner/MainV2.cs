@@ -1391,8 +1391,11 @@ namespace ArdupilotMega
                 {
                     FileInfo fi = new FileInfo(path);
 
-                    if (fi.Length != response.ContentLength)
+                    if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
                     {
+                        StreamWriter sw = new StreamWriter(path+".etag");
+                        sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
+                        sw.Close();
                         getfile = true;
                         Console.WriteLine("NEW FILE " + file);
                     }
