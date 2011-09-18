@@ -33,15 +33,13 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
       fast_loopTimer      = millis();
       
       gcs.update();
-#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-    gcs.data_stream_send(45,1000);
-    if ((loopcount % 5) == 0) // 10 hz
-      gcs.data_stream_send(5,45);
-    if ((loopcount % 16) == 0) { // 3 hz
-      gcs.data_stream_send(1,5);
-      gcs.send_message(MSG_HEARTBEAT); 
-    }
-#endif
+      gcs_data_stream_send(45,1000);
+      if ((loopcount % 5) == 0) // 10 hz
+          gcs_data_stream_send(5,45);
+      if ((loopcount % 16) == 0) { // 3 hz
+          gcs_data_stream_send(1,5);
+          gcs_send_message(MSG_HEARTBEAT);
+      }
       loopcount++;
     }
   }
