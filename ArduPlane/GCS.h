@@ -99,7 +99,6 @@ protected:
 /// @class	GCS_MAVLINK
 /// @brief	The mavlink protocol for qgroundcontrol
 ///
-#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK || HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 class GCS_MAVLINK : public GCS_Class
 {
 public:
@@ -163,10 +162,6 @@ private:
 	AP_Int16 streamRateExtra1;
 	AP_Int16 streamRateExtra2;
 	AP_Int16 streamRateExtra3;
-
-
-    
 };
-#endif // GCS_PROTOCOL_MAVLINK
 
 #endif // __GCS_H
