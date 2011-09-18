@@ -126,6 +126,8 @@ enum ap_message {
     MSG_GPS_STATUS,
     MSG_GPS_RAW,
     MSG_SERVO_OUT,
+    MSG_NEXT_WAYPOINT,
+    MSG_NEXT_PARAM,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -228,5 +230,8 @@ enum ap_message {
 
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
+
+// mark a function as not to be inlined
+#define NOINLINE __attribute__((noinline))
 
 #endif // _DEFINES_H
