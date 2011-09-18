@@ -101,8 +101,7 @@ static void set_command_with_index(struct Location temp, int i)
 static void increment_WP_index()
 {
     if (g.waypoint_index < g.waypoint_total) {
-        g.waypoint_index.set_and_save(g.waypoint_index + 1);
-		//SendDebug("MSG <increment_WP_index> WP index is incremented to ");
+        g.waypoint_index++;
 	}
 
     SendDebugln(g.waypoint_index,DEC);
