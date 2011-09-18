@@ -105,12 +105,7 @@ static void increment_WP_index()
 {
     if (g.waypoint_index <= g.waypoint_total) {
         g.waypoint_index.set_and_save(g.waypoint_index + 1);
-		SendDebug_P("MSG - WP index is incremented to ");
-	}else{
-		//SendDebug_P("MSG <increment_WP_index> Failed to increment WP index of ");
-		// This message is used excessively at the end of a mission
 	}
-    //SendDebugln(g.waypoint_index,DEC);
 }
 
 static void decrement_WP_index()
@@ -178,8 +173,6 @@ static void set_next_WP(struct Location *wp)
 
 static void set_guided_WP(void)
 {
-	SendDebug_P("MSG - set_guided_wp");
-
 	// copy the current location into the OldWP slot
 	// ---------------------------------------
 	prev_WP = current_loc;
@@ -216,7 +209,7 @@ static void set_guided_WP(void)
 // -------------------------------
 void init_home()
 {
-	SendDebugln("MSG: init home");
+	gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
 	// block until we get a good fix
 	// -----------------------------
@@ -230,7 +223,7 @@ void init_home()
 	home.alt 	= max(g_gps->altitude, 0);
 	home_is_set = true;
 
-	Serial.printf_P(PSTR("gps alt: %ld"), home.alt);
+    gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
 	// Save Home to EEPROM
 	// -------------------
