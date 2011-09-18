@@ -118,7 +118,6 @@ static void process_next_command()
 static void process_must()
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// clear May indexes
 	command_may_index	= NO_COMMAND;
@@ -135,7 +134,6 @@ static void process_must()
 static void process_may()
 {
 	gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	command_may_ID = next_command.id;
 	handle_process_may();
@@ -154,6 +152,5 @@ static void process_now()
 	next_command.id = NO_COMMAND;
 
 	gcs.send_text(SEVERITY_LOW, "<process_now>");
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 }
 
