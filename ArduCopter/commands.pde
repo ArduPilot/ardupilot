@@ -3,7 +3,7 @@
 static void init_commands()
 {
 	// zero is home, but we always load the next command (1), in the code.
-    g.waypoint_index.set_and_save(0);
+    g.waypoint_index = 0;
 
     // This are registers for the current may and must commands
     // setting to zero will allow them to be written to by new commands

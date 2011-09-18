@@ -11,7 +11,7 @@ static void change_command(uint8_t index)
 	} else {
 		command_must_index 	= NO_COMMAND;
 		next_command.id 	= NO_COMMAND;
-		g.waypoint_index.set_and_save(index - 1);
+		g.waypoint_index 	= index - 1;
 		update_commands();
 	}
 }
