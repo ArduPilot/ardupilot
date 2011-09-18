@@ -128,6 +128,7 @@ enum ap_message {
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
+    MSG_STATUSTEXT,
     MSG_RETRY_DEFERRED // this must be last
 };
 

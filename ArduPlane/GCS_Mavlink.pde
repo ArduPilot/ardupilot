@@ -3,6 +3,11 @@
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
+// this costs us 51 bytes, but means that low priority
+// messages don't block the CPU
+static mavlink_statustext_t pending_status;
+
+
 static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
 {
     if (sysid != mavlink_system.sysid)
@@ -276,6 +281,14 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
         g.waypoint_index);
 }
 
+static void NOINLINE send_statustext(mavlink_channel_t chan)
+{
+    mavlink_msg_statustext_send(
+        chan,
+        pending_status.severity,
+        pending_status.text);
+}
+
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
@@ -391,6 +404,11 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         }
         break;
 
+    case MSG_STATUSTEXT:
+        CHECK_PAYLOAD_SIZE(STATUSTEXT);
+        send_statustext(chan);
+        break;
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
 	}
@@ -460,22 +478,23 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
 void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char *str)
 {
     if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
-        // don't send status MAVLink messages for 1 second after
+        // don't send status MAVLink messages for 2 seconds after
         // bootup, to try to prevent Xbee bricking
         return;
     }
 
-    if (severity == SEVERITY_LOW &&
-        comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
-        // don't send low priority messages unless they immediately
-        // fit in the serial buffer
-        return;
+    if (severity == SEVERITY_LOW) {
+        // send via the deferred queuing system
+        pending_status.severity = (uint8_t)severity;
+        strncpy((char *)pending_status.text, str, sizeof(pending_status.text));
+        mavlink_send_message(chan, MSG_STATUSTEXT, 0);
+    } else {
+        // send immediately
+        mavlink_msg_statustext_send(
+            chan,
+            severity,
+            (const int8_t*) str);
     }
-
-	mavlink_msg_statustext_send(
-				chan,
-				severity,
-				(const int8_t*) str);
 }
 
 
@@ -1599,4 +1618,27 @@ static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
     gcs3.send_text(severity, str);
+}
+
+/*
+  send a low priority formatted message to the GCS
+  only one fits in the queue, so if you send more than one before the
+  last one gets into the serial buffer then the old one will be lost
+ */
+static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
+{
+    char fmtstr[40];
+    va_list ap;
+    uint8_t i;
+    for (i=0; i<sizeof(fmtstr)-1; i++) {
+        fmtstr[i] = pgm_read_byte((const prog_char *)(fmt++));
+        if (fmtstr[i] == 0) break;
+    }
+    fmtstr[i] = 0;
+    pending_status.severity = (uint8_t)SEVERITY_LOW;
+    va_start(ap, fmt);
+    vsnprintf((char *)pending_status.text, sizeof(pending_status.text), fmtstr, ap);
+    va_end(ap);
+    mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
+    mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
 }
