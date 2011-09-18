@@ -57,38 +57,3 @@ static void add_altitude_data(unsigned long xl, long y)
 }
 #endif
 
-#if 0 // unused
-static void recalc_climb_rate()
-{
-	float slope = ((float)xi*(float)yi - ALTITUDE_HISTORY_LENGTH*(float)xiyi) / ((float)xi*(float)xi - ALTITUDE_HISTORY_LENGTH*(float)xi2);
-	climb_rate = (int)(slope*100);
-}
-
-static void print_climb_debug_info()
-{
-	unsigned char i, j;
-	recalc_climb_rate();
-	//SendDebugln_P("Climb rate:");
-	for (i=0; i<ALTITUDE_HISTORY_LENGTH; i++) {
-		j = i + hindex;
-		if (j >= ALTITUDE_HISTORY_LENGTH) j -= ALTITUDE_HISTORY_LENGTH;
-		//SendDebug_P("  ");
-		//SendDebug(j,DEC);
-		//SendDebug_P(": ");
-		//SendDebug(history[j].x,DEC);
-		//SendDebug_P(", ");
-		//SendDebugln(history[j].y,DEC);
-	}
-	//SendDebug_P("  sum(xi) = ");
-	//SendDebugln(xi,DEC);
-	//SendDebug_P("  sum(yi) = ");
-	//SendDebugln(yi,DEC);
-	//SendDebug_P("  sum(xi*yi) = ");
-	//SendDebugln(xiyi,DEC);
-	//SendDebug_P("  sum(xi^2) = ");
-	//SendDebugln(xi2,DEC);
-	//SendDebug_P("  Climb rate = ");
-	//SendDebug((float)climb_rate/100,2);
-	//SendDebugln_P(" m/s");
-}
-#endif

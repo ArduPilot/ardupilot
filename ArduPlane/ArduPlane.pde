@@ -260,7 +260,6 @@ const	float gravity 			= 9.81;		// meters/ sec^2
 static long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
 static long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
 static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 

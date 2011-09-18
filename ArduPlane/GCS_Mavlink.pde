@@ -213,7 +213,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
         (dcm.yaw_sensor / 100) % 360,
         (int)g.channel_throttle.servo_out,
         current_loc.alt / 100.0,
-        climb_rate);
+        0);
 }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
