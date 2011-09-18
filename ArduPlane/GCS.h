@@ -63,14 +63,14 @@ public:
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text(uint8_t severity, const char *str) {}
+	void		send_text(gcs_severity severity, const char *str) {}
 
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text(uint8_t severity, const prog_char_t *str) {}
+	void		send_text(gcs_severity severity, const prog_char_t *str) {}
 
     // test if frequency within range requested for loop
     // used by data_stream_send
@@ -107,8 +107,8 @@ public:
 	void    update(void);
 	void	init(FastSerial *port);
 	void	send_message(enum ap_message id);
-	void	send_text(uint8_t severity, const char *str);
-	void	send_text(uint8_t severity, const prog_char_t *str);
+	void	send_text(gcs_severity severity, const char *str);
+	void	send_text(gcs_severity severity, const prog_char_t *str);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
 	void    queued_param_send();
 	void    queued_waypoint_send();
