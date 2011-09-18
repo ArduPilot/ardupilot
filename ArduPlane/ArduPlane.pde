@@ -461,8 +461,7 @@ static void fast_loop()
 
     // try to send any deferred messages if the serial port now has
     // some space available    
-    gcs.send_message(MSG_RETRY_DEFERRED);
-    hil.send_message(MSG_RETRY_DEFERRED);
+    gcs_send_message(MSG_RETRY_DEFERRED);
 
 	// check for loss of control signal failsafe condition
 	// ------------------------------------
@@ -519,8 +518,7 @@ static void fast_loop()
 
 	gcs.update();
     hil.update();
-    gcs.data_stream_send(45,1000);
-    hil.data_stream_send(45,1000);
+    gcs_data_stream_send(45,1000);
 }
 
 static void medium_loop()
@@ -613,8 +611,7 @@ Serial.println(tempaccel.z, DEC);
 
             // send all requested output streams with rates requested
             // between 5 and 45 Hz
-            gcs.data_stream_send(5,45);
-            hil.data_stream_send(5,45);
+            gcs_data_stream_send(5,45);
 			break;
 
 		// This case controls the slow loop
@@ -673,8 +670,7 @@ static void slow_loop()
 			update_events();
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-            gcs.data_stream_send(3,5);
-            hil.data_stream_send(3,5);
+            gcs_data_stream_send(3,5);
 			break;
 	}
 }
@@ -685,10 +681,8 @@ static void one_second_loop()
 		Log_Write_Current();
 
 	// send a heartbeat
-	gcs.send_message(MSG_HEARTBEAT);
-    hil.send_message(MSG_HEARTBEAT);
-    gcs.data_stream_send(1,3);
-    hil.data_stream_send(1,3);
+	gcs_send_message(MSG_HEARTBEAT);
+    gcs_data_stream_send(1,3);
 }
 
 static void update_GPS(void)
@@ -697,13 +691,6 @@ static void update_GPS(void)
 	update_GPS_light();
 
 	if (g_gps->new_data && g_gps->fix) {
-
-// XXX We should be sending GPS data off one of the regular loops so that we send
-// no-GPS-fix data too
-#if GCS_PROTOCOL != GCS_PROTOCOL_MAVLINK
-		gcs.send_message(MSG_LOCATION);
-#endif
-
 		// for performance
 		// ---------------
 		gps_fix_count++;

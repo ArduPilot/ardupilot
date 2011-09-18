@@ -206,9 +206,6 @@ static void do_RTL(void)
 	// -------------------------
 	next_WP.alt = read_alt_to_hold();
 
-	// output control mode to the ground station
-	gcs.send_message(MSG_HEARTBEAT);
-
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
 }

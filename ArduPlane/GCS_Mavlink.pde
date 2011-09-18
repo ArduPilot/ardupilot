@@ -1110,10 +1110,8 @@ static void mavlink_delay(unsigned long t)
         unsigned long tnow = millis();
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
-            gcs.send_message(MSG_HEARTBEAT);
-            hil.send_message(MSG_HEARTBEAT);
-            gcs.send_message(MSG_EXTENDED_STATUS1);
-            hil.send_message(MSG_EXTENDED_STATUS1);
+            gcs_send_message(MSG_HEARTBEAT);
+            gcs_send_message(MSG_EXTENDED_STATUS1);
         }
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
@@ -1124,4 +1122,22 @@ static void mavlink_delay(unsigned long t)
     } while (millis() - tstart < t);
 
     in_mavlink_delay = false;
+}
+
+/*
+  send a message on both GCS links
+ */
+static void gcs_send_message(enum ap_message id)
+{
+    gcs.send_message(id);
+    hil.send_message(id);
+}
+
+/*
+  send data streams in the given rate range on both links
+ */
+static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
+{
+    gcs.data_stream_send(freqMin, freqMax);
+    hil.data_stream_send(freqMin, freqMax);
 }
