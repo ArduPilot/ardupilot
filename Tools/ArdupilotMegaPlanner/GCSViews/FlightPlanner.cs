@@ -347,7 +347,7 @@ namespace ArdupilotMega.GCSViews
         {
             TXT_mouselat.Text = lat.ToString();
             TXT_mouselong.Text = lng.ToString();
-            TXT_mousealt.Text = alt.ToString();
+            TXT_mousealt.Text = srtm.getAltitude(lat, lng).ToString("0");
 
             try
             {
@@ -1228,7 +1228,7 @@ namespace ArdupilotMega.GCSViews
 
                     if (CHK_holdalt.Checked)
                     {
-                        port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist * 100);
+                        port.setParam("ALT_HOLD_RTL", int.Parse(TXT_DefaultAlt.Text) / MainV2.cs.multiplierdist);
                     }
                     else
                     {
@@ -1360,7 +1360,7 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                TXT_DefaultAlt.Text = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist / 100).ToString("0");
+                TXT_DefaultAlt.Text = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist).ToString("0");
                 TXT_WPRad.Text = ((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
                 try
                 {

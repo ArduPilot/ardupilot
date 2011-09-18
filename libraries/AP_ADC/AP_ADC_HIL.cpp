@@ -35,6 +35,8 @@ AP_ADC_HIL::AP_ADC_HIL()
 	// set diff press and temp to zero
 	setGyroTemp(0);
 	setPressure(0);
+
+	last_hil_time = millis();
 }
 
 void AP_ADC_HIL::Init(void)
@@ -42,14 +44,18 @@ void AP_ADC_HIL::Init(void)
 }
 
 // Read one channel value
-int AP_ADC_HIL::Ch(unsigned char ch_num)
+uint16_t AP_ADC_HIL::Ch(unsigned char ch_num)
 {
-  return adcValue[ch_num];
+	return adcValue[ch_num];
 }
-// Read one channel value
-int AP_ADC_HIL::Ch_raw(unsigned char ch_num)
+
+// Read 6 channel values
+uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 {
-  return adcValue[ch_num];
+	for (uint8_t i=0; i<6; i++) {
+		result[i] = Ch(channel_numbers[i]);
+	}
+	return ((millis() - last_hil_time)*2)/5;
 }
 
 // Set one channel value

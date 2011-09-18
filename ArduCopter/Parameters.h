@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 107;
+	static const uint16_t k_format_version = 108;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -78,12 +78,12 @@ public:
 	k_param_top_bottom_ratio,
 	k_param_optflow_enabled,
 	k_param_input_voltage,
+	k_param_low_voltage,
 
 	//
 	// 160: Navigation parameters
 	//
 	k_param_crosstrack_entry_angle = 160,
-	k_param_pitch_max,
 	k_param_RTL_altitude,
 
 	//
@@ -139,7 +139,7 @@ public:
     k_param_flight_mode4,
     k_param_flight_mode5,
     k_param_flight_mode6,
-
+    k_param_simple_modes,
 
 	//
 	// 220: Waypoint data
@@ -179,7 +179,7 @@ public:
 	//
 	AP_Int16	sysid_this_mav;
 	AP_Int16	sysid_my_gcs;
-    AP_Int8			serial3_baud;
+    AP_Int8		serial3_baud;
 
 
 	// Crosstrack navigation
@@ -213,6 +213,7 @@ public:
     AP_Int8     flight_mode4;
     AP_Int8     flight_mode5;
     AP_Int8     flight_mode6;
+    AP_Int8     simple_modes;
 
 	// Radio settings
 	//
@@ -220,8 +221,6 @@ public:
 	//AP_Var_group pwm_pitch;
 	//AP_Var_group pwm_throttle;
 	//AP_Var_group pwm_yaw;
-
-	AP_Int16	pitch_max;
 
 	// Misc
 	//
@@ -239,6 +238,7 @@ public:
 	AP_Float	top_bottom_ratio;
     AP_Int8		optflow_enabled;
     AP_Float	input_voltage;
+	AP_Float	low_voltage;
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -302,13 +302,14 @@ public:
 	compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
 	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
 	input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,					PSTR("IN_VOLT")),
+	low_voltage				(LOW_VOLTAGE,				k_param_low_voltage,					PSTR("LOW_VOLT")),
 
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
 	waypoint_total			(0,							k_param_waypoint_total,					PSTR("WP_TOTAL")),
 	waypoint_index			(0,							k_param_waypoint_index,					PSTR("WP_INDEX")),
 	command_must_index		(0,							k_param_command_must_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
-	loiter_radius			(LOITER_RADIUS_DEFAULT,		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
+	loiter_radius			(LOITER_RADIUS * 100,		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
@@ -324,8 +325,7 @@ public:
     flight_mode4            (FLIGHT_MODE_4,             k_param_flight_mode4,					PSTR("FLTMODE4")),
     flight_mode5            (FLIGHT_MODE_5,             k_param_flight_mode5,					PSTR("FLTMODE5")),
     flight_mode6            (FLIGHT_MODE_6,             k_param_flight_mode6,					PSTR("FLTMODE6")),
-
-	pitch_max				(PITCH_MAX * 100,			k_param_pitch_max,						PSTR("PITCH_MAX")),
+    simple_modes            (0,             			k_param_simple_modes,					PSTR("SIMPLE")),
 
 	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
 	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),

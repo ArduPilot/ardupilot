@@ -362,7 +362,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		for(int i = 0; i < 9; i++){
-			Serial.printf_P(PSTR("%d,"),adc.Ch(i));
+			Serial.printf_P(PSTR("%u,"),adc.Ch(i));
 		}
 		Serial.println();
 		delay(20);
@@ -871,6 +871,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_optflow(uint8_t argc, const Menu::arg *argv)
 {
+	///*
 	if(g.optflow_enabled) {
 		Serial.printf_P(PSTR("man id: %d\t"),optflow.read_register(ADNS3080_PRODUCT_ID));
 		print_hit_enter();

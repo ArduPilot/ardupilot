@@ -101,9 +101,11 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 	report_flight_modes();
 	report_imu();
 	report_compass();
+
 #ifdef OPTFLOW_ENABLED
 	report_optflow();
 #endif
+
 #if FRAME_CONFIG == HELI_FRAME
 	report_heli();
 	report_gyro();
@@ -302,7 +304,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 	byte _oldSwitchPosition = 0;
 	byte mode = 0;
 
-	Serial.printf_P(PSTR("\nMove RC toggle switch to each position to edit, move aileron stick to select modes."));
+	Serial.printf_P(PSTR("\nMove mode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
 	print_hit_enter();
 
 	while(1){
@@ -318,14 +320,14 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			mode = constrain(mode, 0, NUM_MODES-1);
 
 			// update the user
-			print_switch(_switchPosition, mode);
+			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
 
 			// Remember switch position
 			_oldSwitchPosition = _switchPosition;
 		}
 
 		// look for stick input
-		if (radio_input_switch() ==  true){
+		if (abs(g.rc_1.control_in) > 3000){
 			mode++;
 			if(mode >= NUM_MODES)
 				mode = 0;
@@ -334,13 +336,32 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 			flight_modes[_switchPosition] = mode;
 
 			// print new mode
-			print_switch(_switchPosition, mode);
+			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+			delay(500);
+		}
+
+		// look for stick input
+		if (g.rc_4.control_in > 3000){
+			g.simple_modes |= (1<<_switchPosition);
+			// print new mode
+			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+			delay(500);
+		}
+
+		// look for stick input
+		if (g.rc_4.control_in < -3000){
+			g.simple_modes &= ~(1<<_switchPosition);
+			// print new mode
+			print_switch(_switchPosition, mode, (g.simple_modes & (1<<_switchPosition)));
+			delay(500);
 		}
 
 		// escape hatch
 		if(Serial.available() > 0){
-            for (mode=0; mode<6; mode++)
+			for (mode = 0; mode < 6; mode++)
                 flight_modes[mode].save();
+
+			g.simple_modes.save();
 			print_done();
 			report_flight_modes();
 			return (0);
@@ -740,10 +761,6 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.optflow_enabled = false;
 
-	//} else if(argv[1].i > 10){
-	//	g.optflow_fov.set_and_save(argv[1].i);
-	//	optflow.set_field_of_view(g.optflow_fov.get());
-
 	}else{
 		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
 		report_optflow();
@@ -872,7 +889,7 @@ static void report_flight_modes()
 	print_divider();
 
 	for(int i = 0; i < 6; i++ ){
-		print_switch(i, flight_modes[i]);
+		print_switch(i, flight_modes[i], (g.simple_modes & (1<<i)));
 	}
 	print_blanks(2);
 }
@@ -956,42 +973,21 @@ print_radio_values()
 }
 
 static void
-print_switch(byte p, byte m)
+print_switch(byte p, byte m, bool b)
 {
-	Serial.printf_P(PSTR("Pos %d: "),p);
-	Serial.println(flight_mode_strings[m]);
+	Serial.printf_P(PSTR("Pos %d:\t"),p);
+	Serial.print(flight_mode_strings[m]);
+	Serial.printf_P(PSTR(",\t\tSimple: "));
+	if(b)
+		Serial.printf_P(PSTR("ON\n"));
+	else
+		Serial.printf_P(PSTR("OFF\n"));
 }
 
 static void
 print_done()
 {
 	Serial.printf_P(PSTR("\nSaved Settings\n\n"));
-}
-
-// read at 50Hz
-static bool
-radio_input_switch(void)
-{
-	static int8_t bouncer = 0;
-
-	if (int16_t(g.rc_1.radio_in - g.rc_1.radio_trim) > 100) {
-	    bouncer = 10;
-	}
-	if (int16_t(g.rc_1.radio_in - g.rc_1.radio_trim) < -100) {
-	    bouncer = -10;
-	}
-	if (bouncer >0) {
-	    bouncer --;
-	}
-	if (bouncer <0) {
-	    bouncer ++;
-	}
-
-	if (bouncer == 1 || bouncer == -1) {
-	    return bouncer;
-	}else{
-	    return 0;
-	}
 }
 
 

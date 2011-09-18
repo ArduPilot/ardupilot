@@ -231,7 +231,6 @@ namespace ArdupilotMega.Setup
 
             MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, oldrc);
 
-            MainV2.comPort.param = MainV2.comPort.getParamList();
             if (Configuration != null)
             {
                 Configuration.startup = true;
@@ -253,6 +252,13 @@ namespace ArdupilotMega.Setup
             {
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
                 {
+                    CB_simple1.Visible = false;
+                    CB_simple2.Visible = false;
+                    CB_simple3.Visible = false;
+                    CB_simple4.Visible = false;
+                    CB_simple5.Visible = false;
+                    CB_simple6.Visible = false;
+
                     CMB_fmode1.Items.Clear();
                     CMB_fmode2.Items.Clear();
                     CMB_fmode3.Items.Clear();
@@ -411,6 +417,10 @@ namespace ArdupilotMega.Setup
                     MainV2.comPort.setParam("FLTMODE4", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode4.Text));
                     MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode5.Text));
                     MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode6.Text));
+
+                    float value = (float)(CB_simple1.Checked ? 1 : 0) + (CB_simple2.Checked ? 1 << 1 : 0) + (CB_simple3.Checked ? 1 <<2 : 0)
+                        + (CB_simple4.Checked ? 1 << 3 : 0) + (CB_simple5.Checked ? 1 << 4 : 0) + (CB_simple6.Checked ? 1 << 5 : 0);
+                    MainV2.comPort.setParam("SIMPLE", value);
                 }
             }
             catch { MessageBox.Show("Failed to set Flight modes"); }

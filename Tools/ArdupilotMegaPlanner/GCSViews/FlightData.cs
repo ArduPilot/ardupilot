@@ -436,10 +436,13 @@ namespace ArdupilotMega.GCSViews
         {
             this.BeginInvoke((MethodInvoker)delegate()
             {
-                tracklog.Value = (int)(MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length * 100);
+                try
+                {
+                    tracklog.Value = (int)(MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length * 100);
 
-                lbl_logpercent.Text = (MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length).ToString("0.00%");
-
+                    lbl_logpercent.Text = (MainV2.comPort.logplaybackfile.BaseStream.Position / (double)MainV2.comPort.logplaybackfile.BaseStream.Length).ToString("0.00%");
+                }
+                catch { }
             });
         }
 
@@ -861,6 +864,8 @@ namespace ArdupilotMega.GCSViews
 
             if (MainV2.comPort.logplaybackfile != null)
                 MainV2.comPort.logplaybackfile.BaseStream.Position = (long)(MainV2.comPort.logplaybackfile.BaseStream.Length * (tracklog.Value / 100.0));
+
+            updateLogPlayPosition();
         }
 
         bool loaded = false;
@@ -1223,7 +1228,7 @@ namespace ArdupilotMega.GCSViews
                 // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
                 TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
 
-                if (!(typeCode == TypeCode.Single || typeCode == TypeCode.Double || typeCode == TypeCode.Int32))
+                if (!(typeCode == TypeCode.Single))
                     continue;
 
                 CheckBox chk_box = new CheckBox();

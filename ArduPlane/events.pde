@@ -43,12 +43,12 @@ static void failsafe_long_on_event()
 		case STABILIZE:
 		case FLY_BY_WIRE_A: // middle position
 		case FLY_BY_WIRE_B: // middle position
+		case CIRCLE: 
 			set_mode(RTL);
 			break;
 
 		case AUTO: 
 		case LOITER: 
-		case CIRCLE: 
 			if(g.long_fs_action == 1) {
 				set_mode(RTL);
 			}

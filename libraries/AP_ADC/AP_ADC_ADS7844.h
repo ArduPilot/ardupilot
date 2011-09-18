@@ -9,7 +9,7 @@
 #define ADC_DATAIN      50    // MISO
 #define ADC_SPICLOCK    52    // SCK
 #define ADC_CHIP_SELECT 33    // PC4   9 // PH6  Puerto:0x08 Bit mask : 0x40
-#define ADC_FILTER_SIZE	6
+#define ADC_FILTER_SIZE	3
 
 #include "AP_ADC.h"
 #include <inttypes.h>
@@ -19,8 +19,12 @@ class AP_ADC_ADS7844 : public AP_ADC
 	public:
 	AP_ADC_ADS7844();  // Constructor
 	void 	Init();
-	int 	Ch(unsigned char ch_num);
-	int 	Ch_raw(unsigned char ch_num);
+
+	// Read 1 sensor value
+	uint16_t Ch(unsigned char ch_num);
+
+	// Read 6 sensors at once
+	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
 
 	private:
 };

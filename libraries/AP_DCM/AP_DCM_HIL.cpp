@@ -8,7 +8,7 @@
     version 2.1 of the License, or (at your option) any later version.
 
         Methods:
-				update_DCM(_G_Dt)	: Updates the AHRS by integrating the rotation matrix over time _G_Dt using the IMU object data
+				update_DCM()	: Updates the AHRS by integrating the rotation matrix over time using the IMU object data
 				get_gyro()			: Returns gyro vector corrected for bias
 				get_accel()		: Returns accelerometer vector
 				get_dcm_matrix()	: Returns dcm matrix

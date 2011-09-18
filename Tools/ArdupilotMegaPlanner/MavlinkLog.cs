@@ -431,13 +431,14 @@ namespace ArdupilotMega
                         // bar moves to 100 % in this step
                         progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 1.0f);
 
-                        Application.DoEvents();
+                        progressBar1.Refresh();
+                        //Application.DoEvents();
 
                         byte[] packet = mine.readPacket();
                         string text = "";
                         mine.DebugPacket(packet, ref text);
 
-                        sw.Write(text);
+                        sw.Write(mine.lastlogread +" "+text);
                     }
 
                     sw.Close();

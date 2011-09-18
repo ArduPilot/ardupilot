@@ -188,6 +188,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CommsUdpSerial.cs" />
+    <Compile Include="georefimage.cs" />
     <Compile Include="HIL\Aircraft.cs" />
     <Compile Include="HIL\Point3d.cs" />
     <Compile Include="HIL\QuadCopter.cs" />
@@ -232,7 +233,6 @@
     <Compile Include="MyUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="NetSerialServer.cs" />
     <Compile Include="ArduinoSTKv2.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -302,7 +302,6 @@
       <DependentUpon>ElevationProfile.cs</DependentUpon>
     </Compile>
     <Compile Include="MAVLink.cs" />
-    <Compile Include="NetSerial.cs" />
     <Compile Include="ArduinoSTK.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -338,6 +337,7 @@
     <Compile Include="Splash.Designer.cs">
       <DependentUpon>Splash.cs</DependentUpon>
     </Compile>
+    <Compile Include="srtm.cs" />
     <Compile Include="temp.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -374,6 +374,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.zh-Hans.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightData.zh-Hans.resx">
       <DependentUpon>FlightData.cs</DependentUpon>
@@ -424,6 +425,7 @@
     <EmbeddedResource Include="GCSViews\Firmware.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightData.resx">
       <DependentUpon>FlightData.cs</DependentUpon>

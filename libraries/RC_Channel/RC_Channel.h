@@ -7,12 +7,11 @@
 #define RC_Channel_h
 
 #include <AP_Common.h>
-#include <stdint.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
 class RC_Channel{
-  private:
+  protected:
 	AP_Var_group    _group;		// must be before all vars to keep ctor init order correct
 
   public:
@@ -23,9 +22,9 @@ class RC_Channel{
 	///
 	RC_Channel(AP_Var::Key key, const prog_char_t *name) :
 	    _group(key, name),
-        radio_min (&_group, 0, 1500, name ? PSTR("MIN") : 0), // suppress name if group has no name
+        radio_min (&_group, 0, 1100, name ? PSTR("MIN") : 0), // suppress name if group has no name
         radio_trim(&_group, 1, 1500, name ? PSTR("TRIM") : 0),
-        radio_max (&_group, 2, 1500, name ? PSTR("MAX") : 0),
+        radio_max (&_group, 2, 1900, name ? PSTR("MAX") : 0),
 		_high(1),
 		_filter(true),
 		_reverse  (&_group, 3,    1, name ? PSTR("REV") : 0),
@@ -103,8 +102,7 @@ class RC_Channel{
 	int16_t 	_low;
 };
 
+// This is ugly, but it fixes compilation on arduino
+#include "RC_Channel_aux.h"
+
 #endif
-
-
-
-

@@ -61,7 +61,7 @@ static void stabilize()
 
 	// Mix Stick input to allow users to override control surfaces
 	// -----------------------------------------------------------
-	if ((control_mode < FLY_BY_WIRE_A) || (ENABLE_STICK_MIXING == 1 && control_mode > FLY_BY_WIRE_B)) {
+	if ((control_mode < FLY_BY_WIRE_A) || (ENABLE_STICK_MIXING == 1 && control_mode > FLY_BY_WIRE_B && failsafe == FAILSAFE_NONE)) {
 
 
 		// TODO: use RC_Channel control_mix function?
@@ -92,7 +92,7 @@ static void stabilize()
 	// stick mixing performed for rudder for all cases including FBW unless disabled for higher modes
 	// important for steering on the ground during landing
 	// -----------------------------------------------
-	if (control_mode <= FLY_BY_WIRE_B || ENABLE_STICK_MIXING == 1) {
+	if (control_mode <= FLY_BY_WIRE_B || (ENABLE_STICK_MIXING == 1 && failsafe == FAILSAFE_NONE)) {
 		ch4_inf = (float)g.channel_rudder.radio_in - (float)g.channel_rudder.radio_trim;
 		ch4_inf = fabs(ch4_inf);
 		ch4_inf = min(ch4_inf, 400.0);
@@ -274,21 +274,16 @@ static void set_servos(void)
 		}
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_out 		= g.channel_rudder.radio_in;
-		if (g.rc_5_funct == RC_5_FUNCT_AILERON) g.rc_5.radio_out = g.rc_5.radio_in;
-		if (g.rc_6_funct == RC_6_FUNCT_AILERON) g.rc_6.radio_out = g.rc_6.radio_in;
+		G_RC_AUX(k_aileron)->radio_out	= g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
 
 	} else {
 		if (g.mix_mode == 0) {
 			g.channel_roll.calc_pwm();
 			g.channel_pitch.calc_pwm();
 			g.channel_rudder.calc_pwm();
-			if (g.rc_5_funct == RC_5_FUNCT_AILERON) {
-				g.rc_5.servo_out = g.channel_roll.servo_out;
-				g.rc_5.calc_pwm();
-			}
-			if (g.rc_6_funct == RC_6_FUNCT_AILERON) {
-				g.rc_6.servo_out = g.channel_roll.servo_out;
-				g.rc_6.calc_pwm();
+			if (g_rc_function[RC_Channel_aux::k_aileron]) {
+				g_rc_function[RC_Channel_aux::k_aileron]->servo_out = g.channel_roll.servo_out;
+				g_rc_function[RC_Channel_aux::k_aileron]->calc_pwm();
 			}
 
 		}else{
@@ -320,8 +315,7 @@ static void set_servos(void)
 	}
 	
 	if(control_mode <= FLY_BY_WIRE_B) {
-		if (g.rc_5_funct == RC_5_FUNCT_FLAP_AUTO) g.rc_5.radio_out = g.rc_5.radio_in;
-		if (g.rc_6_funct == RC_6_FUNCT_FLAP_AUTO) g.rc_6.radio_out = g.rc_6.radio_in;
+		G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
 	} else if (control_mode >= FLY_BY_WIRE_C) {	
 		if (g.airspeed_enabled == true) {  
 			flapSpeedSource = g.airspeed_cruise;
@@ -329,14 +323,11 @@ static void set_servos(void)
 			flapSpeedSource = g.throttle_cruise;
 		}
 		if ( flapSpeedSource > g.flap_1_speed) {
-			if(g.rc_5_funct == RC_5_FUNCT_FLAP_AUTO) g.rc_5.servo_out = 0;
-			if(g.rc_6_funct == RC_6_FUNCT_FLAP_AUTO) g.rc_6.servo_out = 0;
+			G_RC_AUX(k_flap_auto)->servo_out = 0;
 		} else if (flapSpeedSource > g.flap_2_speed) {
-			if(g.rc_5_funct == RC_5_FUNCT_FLAP_AUTO) g.rc_5.servo_out = g.flap_1_percent;
-			if(g.rc_6_funct == RC_6_FUNCT_FLAP_AUTO) g.rc_6.servo_out = g.flap_1_percent;
+			G_RC_AUX(k_flap_auto)->servo_out = g.flap_1_percent;
 		} else {
-			if(g.rc_5_funct == RC_5_FUNCT_FLAP_AUTO) g.rc_5.servo_out = g.flap_2_percent;
-			if(g.rc_6_funct == RC_6_FUNCT_FLAP_AUTO) g.rc_6.servo_out = g.flap_2_percent;
+			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
 		}
 	}
 	
@@ -347,8 +338,11 @@ static void set_servos(void)
 	APM_RC.OutputCh(CH_2, g.channel_pitch.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_3, g.channel_throttle.radio_out); // send to Servos
 	APM_RC.OutputCh(CH_4, g.channel_rudder.radio_out); // send to Servos
-	APM_RC.OutputCh(CH_5, g.rc_5.radio_out); // send to Servos
-	APM_RC.OutputCh(CH_6, g.rc_6.radio_out); // send to Servos
+	// Route configurable aux. functions to their respective servos
+	g.rc_5.output_ch(CH_5);
+	g.rc_6.output_ch(CH_6);
+	g.rc_7.output_ch(CH_7);
+	g.rc_8.output_ch(CH_8);
 #endif
  }
 

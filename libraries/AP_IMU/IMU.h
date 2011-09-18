@@ -70,11 +70,18 @@ public:
 	///
 	Vector3f		get_accel(void) { return _accel; }
 
+
 	/// Fetch the current accelerometer values
 	///
 	/// @returns	vector of current accelerations in m/s/s
 	///
 	Vector3f		get_accel_filtered(void) { return _accel_filtered; }
+
+	/// return the number of seconds that the last update represents
+	///
+	/// @returns	number of seconds
+	///
+	float			get_delta_time(void) { return _sample_time * 1.0e-6; }
 
 	/// A count of bad sensor readings
 	///
@@ -90,6 +97,10 @@ protected:
 
 	/// Most recent gyro reading obtained by ::update
 	Vector3f		_gyro;
+
+	/// number of microseconds that the accel and gyro values
+	/// were sampled over
+	uint32_t       _sample_time;
 };
 
 #endif

@@ -1,11 +1,26 @@
-$dir = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/message_definitions/";
-#$dir = "C:/Users/hog/Desktop/DIYDrones&avr/pixhawk-mavlink-c91adfb/include/common/";
+$dir = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/common/";
+$dir2 = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/ardupilotmega/";
+
+# mavlink 1.0 with old structs
+#$dir = "C:/Users/hog/Desktop/DIYDrones&avr/ardupilot-mega/libraries/GCS_MAVLink/include/common/";
+#$dir2 = "C:/Users/hog/Desktop/DIYDrones&avr/ardupilot-mega/libraries/GCS_MAVLink/include/ardupilotmega/";
 
 opendir(DIR,$dir) || die print $!;
+@files2 = readdir(DIR);
+closedir(DIR);
+
+opendir(DIR,$dir2) || die print $!;
 @files = readdir(DIR);
 closedir(DIR);
 
+push(@files,@files2);
+
+
+push(@files,"../mavlink_types.h");
+
 open(OUT,">MAVLinkTypes.cs");
+
+$crcs = 0;
 
 print OUT <<EOF;
 using System;
@@ -20,88 +35,72 @@ namespace ArdupilotMega
 EOF
 
 foreach $file (@files) {
-
-	if (!($file eq "common.xml" || $file eq "ardupilotmega.xml"))
-	{
+	print "$file\n";
+	
+	if ($done{$file} == 1) {
 		next;
 	}
 	
-	print "$file\n";
+	$done{$file} = 1;
 	
-	open(F,$dir.$file);
+	open(F,$dir.$file) || open(F,$dir2.$file);
 	
 	$start = 0;
 	
 	while ($line = <F>) {
-		if ($line =~ /enum name="(MAV_.*)"/) {
-			$start = 1;
-			print OUT "\t\tpublic enum $1\n\t\t{ \n";
+		if ($line =~ /(MAVLINK_MESSAGE_LENGTHS|MAVLINK_MESSAGE_CRCS) (.*)/ && $crcs < 2) {
+			print OUT "\t\tpublic byte[] $1 = new byte[] $2;\n";
+			$crcs++;
 		}
 	
-		if ($line =~ /<message id="([0-9]+)" name="([^"]+)">/) {
-			$name = lc($2);
-		
-			print OUT "\t\tpublic const byte MAVLINK_MSG_ID_".uc($name) . " = " . $1 . ";\n";
-			print OUT "\t\t[StructLayout(LayoutKind.Sequential,Pack=1)]\n";
-			print OUT "\t\tpublic struct __mavlink_".$name."_t\n\t\t{\n";
-			$no = $1;
-			
+		if ($line =~ /enum (MAV_.*)/) {
 			$start = 1;
-			
+			print OUT "\t\tpublic ";
+		}
+	
+		if ($line =~ /#define (MAVLINK_MSG_ID[^\s]+)\s+([0-9]+)/) {
+			print OUT "\t\tpublic const byte ".$1 . " = " . $2 . ";\n";
+			$no = $2;
+		}
+		if ($line =~ /typedef struct(.*)/) {
+			if ($1 =~ /__mavlink_system|param_union/) {
+				last;
+			}
+			$start = 1;
+			print OUT "\t\t[StructLayout(LayoutKind.Sequential,Pack=1)]\n";
 			#__mavlink_gps_raw_t
-			$structs[$no] = "__mavlink_".$name."_t";
-		} # __mavlink_heartbeat_t 
-		
-		$line =~ s/MAV_CMD_NAV_//;
-		
-		$line =~ s/MAV_CMD_//;
-		
-		if ($line =~ /<entry value="([0-9]+)" name="([^"]+)">/) 
-		{
-		
-		
-			print OUT "\t\t\t$2 = $1,\n";
-		
+			$structs[$no] = $1;
 		}
-		
-		#<field type="uint8_t" name="type">
-		if ($line =~ /<field type="([^"]+)" name="([^"]+)">(.*)<\/field>/) 
-		{
-		
-			$type = $1;
-			$name = $2;
-			$desc = $3;
+		if ($start) {
+			$line =~ s/MAV_CMD_NAV_//;
 			
-			print "$type = $name\n";
+			$line =~ s/MAV_CMD_//;
 		
-			$type =~ s/byte_mavlink_version/public byte/;
-		
-			$type =~ s/array/public byte/;
+			$line =~ s/typedef/public/;
+			$line =~ s/uint8_t/public byte/;
+			$line =~ s/int8_t/public byte/;
+			$line =~ s/^\s+float/public float/;
+			$line =~ s/uint16_t/public ushort/;
+			$line =~ s/uint32_t/public uint/;
+			$line =~ s/uint64_t/public ulong/;
+			$line =~ s/int16_t/public short/;
+			$line =~ s/int32_t/public int/;
+			$line =~ s/int64_t/public long/;
+			$line =~ s/typedef/public/;
 			
+			$line =~ s/}.*/};\n/;
 			
-		
-			$type =~ s/uint8_t/public byte/;
-			$type =~ s/int8_t/public byte/;
-			$type =~ s/float/public float/;
-			$type =~ s/uint16_t/public ushort/;
-			$type =~ s/uint32_t/public uint/;
-			$type =~ s/uint64_t/public ulong/;
-			$type =~ s/int16_t/public short/;
-			$type =~ s/int32_t/public int/;
-			$type =~ s/int64_t/public long/;	
-
-			if ($type =~ /\[(.*)\]/) { # array
-				  print OUT "\t\t\t[MarshalAs(UnmanagedType.ByValArray, SizeConst=". $1 .")] \n";
-				    	$type =~ s/\[.*\]//;
-				    	$type =~ s/public\s+([^\s]+)/public $1\[\]/o;
-			}			
+			if ($line =~ /\[(.*)\].*;/) { # array
+				  print OUT "\t\t[MarshalAs(
+				    	UnmanagedType.ByValArray,
+				    	SizeConst=". $1 .")] \n";
+				    	$line =~ s/\[.*\]//;
+				    	$line =~ s/public\s+([^\s]+)/public $1\[\]/o;
+			}
 			
-			print OUT "\t\t\t$type $name; ///< $desc\n";
-		
-		}
-		
-		if ($start && ($line =~ /<\/message>/ || $line =~ /<\/enum>/)) {
-			print OUT "\t\t};\n\n";
+			print OUT "\t\t".$line;
+		}		
+		if ($line =~ /}/) {
 			$start = 0;
 		}
 	
@@ -128,5 +127,7 @@ print OUT <<EOF;
 EOF
 
 close OUT;
+
+<STDIN>;
 
 1;

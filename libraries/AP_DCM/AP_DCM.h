@@ -1,7 +1,7 @@
 #ifndef AP_DCM_h
 #define AP_DCM_h
 
-// teporarily include all other classes here
+// temporarily include all other classes here
 // since this naming is a bit off from the
 // convention and the AP_DCM should be the top
 // header file
@@ -49,8 +49,8 @@ public:
 	void		set_compass(Compass *compass);
 
 	// Methods
-	void 		update_DCM(float _G_Dt);
-	void 		update_DCM_fast(float _G_Dt);
+	void 		update_DCM(void);
+	void 		update_DCM_fast(void);
 
 	float		get_health(void);
 

@@ -4,6 +4,7 @@
 
 static void output_motors_armed()
 {
+
 	int roll_out, pitch_out;
 	int out_min = g.rc_3.radio_min;
 	int out_max = g.rc_3.radio_max;
@@ -139,23 +140,23 @@ static void output_motor_test()
 //  31
 //	24
 		if(g.rc_1.control_in > 3000){
-			motor_out[CH_1] += 50;
-			motor_out[CH_4] += 50;
+			motor_out[CH_1] += 100;
+			motor_out[CH_4] += 100;
 		}
 
 		if(g.rc_1.control_in < -3000){
-			motor_out[CH_2] += 50;
-			motor_out[CH_3] += 50;
+			motor_out[CH_2] += 100;
+			motor_out[CH_3] += 100;
 		}
 
 		if(g.rc_2.control_in > 3000){
-			motor_out[CH_2] += 50;
-			motor_out[CH_4] += 50;
+			motor_out[CH_2] += 100;
+			motor_out[CH_4] += 100;
 		}
 
 		if(g.rc_2.control_in < -3000){
-			motor_out[CH_1] += 50;
-			motor_out[CH_3] += 50;
+			motor_out[CH_1] += 100;
+			motor_out[CH_3] += 100;
 		}
 
 	}else{
@@ -163,16 +164,16 @@ static void output_motor_test()
 // 2 1
 //	4
 		if(g.rc_1.control_in > 3000)
-			motor_out[CH_1] += 50;
+			motor_out[CH_1] += 100;
 
 		if(g.rc_1.control_in < -3000)
-			motor_out[CH_2] += 50;
+			motor_out[CH_2] += 100;
 
 		if(g.rc_2.control_in > 3000)
-			motor_out[CH_4] += 50;
+			motor_out[CH_4] += 100;
 
 		if(g.rc_2.control_in < -3000)
-			motor_out[CH_3] += 50;
+			motor_out[CH_3] += 100;
 	}
 
 	APM_RC.OutputCh(CH_1, motor_out[CH_1]);

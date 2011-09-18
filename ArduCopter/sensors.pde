@@ -113,17 +113,20 @@ static void read_battery(void)
 
 	if(g.battery_monitoring == 1)
 		battery_voltage = battery_voltage3; // set total battery voltage, for telemetry stream
+
 	if(g.battery_monitoring == 2)
 		battery_voltage = battery_voltage4;
+
 	if(g.battery_monitoring == 3 || g.battery_monitoring == 4)
 		battery_voltage = battery_voltage1;
+
 	if(g.battery_monitoring == 4) {
 		current_amps	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps * .9; //reads power sensor current pin
 		current_total	 += current_amps * (float)delta_ms_medium_loop * 0.000278;
 	}
 
 	#if BATTERY_EVENT == 1
-	if(battery_voltage < LOW_VOLTAGE)
+	if(battery_voltage < g.low_voltage)
 		low_battery_event();
 
 	if(g.battery_monitoring == 4 && current_total > g.pack_capacity)

@@ -257,6 +257,8 @@ namespace ArdupilotMega.GCSViews
 
         internal void processToScreen()
         {
+            
+
             Params.Rows.Clear();
 
             // process hashdefines and update display
@@ -541,7 +543,10 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_writePIDS_Click(object sender, EventArgs e)
         {
-            foreach (string value in changes.Keys)
+
+            Hashtable temp = (Hashtable)changes.Clone();
+
+            foreach (string value in temp.Keys)
             {
                 try
                 {
@@ -566,6 +571,7 @@ namespace ArdupilotMega.GCSViews
                             if (row.Cells[0].Value.ToString() == value)
                             {
                                 row.Cells[1].Style.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                                changes.Remove(value);
                                 break;
                             }
                         }
@@ -575,8 +581,6 @@ namespace ArdupilotMega.GCSViews
                 }
                 catch { MessageBox.Show("Set " + value + " Failed"); }
             }
-
-            changes.Clear();
         }
 
         const float rad2deg = (float)(180 / Math.PI);
@@ -600,9 +604,11 @@ namespace ArdupilotMega.GCSViews
 
                     MainV2.fixtheme(temp);
 
-                    TabSetup.Controls.Clear();
+                    temp.ShowDialog();
 
-                    TabSetup.Controls.Add(temp.Controls[0]);
+                    startup = true;
+                    processToScreen();
+                    startup = false;
                 }
             }
         }

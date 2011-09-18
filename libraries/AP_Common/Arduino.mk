@@ -61,6 +61,12 @@ endif
 ifeq ($(SKETCHBOOK),)
   SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../.. && pwd)
+  endif
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
+    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../.. && pwd)
+  endif
+  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../../.. && pwd)
   endif
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
@@ -124,7 +130,7 @@ ifeq ($(ARDUINO),)
   #
   ifeq ($(SYSTYPE),Darwin)
     # use Spotlight to find Arduino.app
-    ARDUINO_QUERY	=	'kMDItemKind == Application && kMDItemDisplayName == Arduino.app'
+    ARDUINO_QUERY	=	'kMDItemKind == Application && kMDItemFSName == Arduino.app'
     ARDUINOS		:=	$(addsuffix /Contents/Resources/Java,$(shell mdfind -literal $(ARDUINO_QUERY)))
     ifeq ($(ARDUINOS),)
       $(error ERROR: Spotlight cannot find Arduino on your system.)
@@ -205,10 +211,11 @@ DEPFLAGS		=	-MD -MT $@
 CXXOPTS			= 	-mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions
 COPTS			=	-mcall-prologues -ffunction-sections -fdata-sections
 ASOPTS			=	-assembler-with-cpp 
+LISTOPTS		=	-adhlns=$(@:.o=.lst)
 
-CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
-CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
-ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) $(DEPFLAGS) $(ASOPTS)
+CXXFLAGS		=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
+CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
+ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES)     $(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
 LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 
 LIBS			=	-lm
@@ -259,7 +266,11 @@ SKETCHCPP_SRC		:=	$(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS)
 # make.
 #
 SEXPR			=	's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
-LIBTOKENS		:=	$(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
+ifeq ($(SYSTYPE),Darwin)
+  LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
+else
+  LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
+endif
 
 #
 # Find sketchbook libraries referenced by the sketch.
@@ -316,7 +327,9 @@ HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 # This simply does not work, so hardcode it to the correct value
 #UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
-UPLOAD_PROTOCOL		:=	arduino
+ifeq ($(UPLOAD_PROTOCOL),)
+	UPLOAD_PROTOCOL		:=	arduino
+endif
 
 ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
