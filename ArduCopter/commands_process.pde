@@ -26,6 +26,7 @@ static void update_commands(void)
 		// fetch next command if the next command queue is empty
 		// -----------------------------------------------------
 		if (g.waypoint_index < g.waypoint_total) {
+
 			// only if we have a cmd stored in EEPROM
 			next_command = get_command_with_index(g.waypoint_index + 1);
 			//Serial.printf("queue CMD %d\n", next_command.id);
@@ -162,7 +163,7 @@ static void process_may()
 {
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
-	Serial.print("pmay");
+	//Serial.print("pmay");
 
 	command_may_ID = next_command.id;
 	handle_process_may();
@@ -170,6 +171,6 @@ static void process_may()
 
 static void process_now()
 {
-	Serial.print("pnow");
+	//Serial.print("pnow");
 	handle_process_now();
 }

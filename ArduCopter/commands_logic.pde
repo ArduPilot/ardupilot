@@ -616,13 +616,15 @@ static void do_jump()
 	struct Location temp;
 	if(next_command.lat > 0) {
 
-		command_must_index	= NO_COMMAND;
-		command_may_index	= NO_COMMAND;
-		temp				= get_command_with_index(g.waypoint_index);
-		temp.lat			= next_command.lat - 1;					// Decrement repeat counter
+		command_must_index 	= 0;
+		command_may_index 	= 0;
+		temp 				= get_command_with_index(g.waypoint_index);
+		temp.lat 			= next_command.lat - 1;					// Decrement repeat counter
 
 		set_command_with_index(temp, g.waypoint_index);
-		g.waypoint_index.set_and_save(next_command.p1 - 1);
+		g.waypoint_index 	= next_command.p1 - 1;
+	} else if (next_command.lat == -1) {
+	    g.waypoint_index 	= next_command.p1 - 1;
 	}
 }
 
