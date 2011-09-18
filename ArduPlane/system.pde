@@ -373,9 +373,6 @@ static void set_mode(byte mode)
 			break;
 	}
 
-	// output control mode to the ground station
-	gcs.send_message(MSG_MODE_CHANGE);
-
 	if (g.log_bitmask & MASK_LOG_MODE)
 		Log_Write_Mode(control_mode);
 }

@@ -436,7 +436,6 @@ void loop()
 
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
-				gcs.send_message(MSG_PERF_REPORT);
 				if (g.log_bitmask & MASK_LOG_PM)
 					Log_Write_Performance();
 
