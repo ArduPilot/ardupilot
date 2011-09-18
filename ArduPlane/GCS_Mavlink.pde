@@ -51,6 +51,7 @@ GCS_MAVLINK::update(void)
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
+	status.packet_rx_drop_count = 0;
 
     // process received bytes
     while(comm_get_available(chan))
@@ -1084,15 +1085,6 @@ GCS_MAVLINK::_queued_send()
 
 #endif // GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK || HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 
-static void send_rate(uint16_t low, uint16_t high) {
-#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-    gcs.data_stream_send(low, high);
-#endif
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-    hil.data_stream_send(low,high);
-#endif
-}
-
 /*
  a delay() callback that processes MAVLink packets. We set this as the
  callback in long running library initialisation routines to allow
@@ -1102,7 +1094,7 @@ static void send_rate(uint16_t low, uint16_t high) {
 static void mavlink_delay(unsigned long t)
 {
     unsigned long tstart;
-    static unsigned long last_1hz, last_3hz, last_10hz, last_50hz;
+    static unsigned long last_1hz, last_50hz;
 
     if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -1119,18 +1111,11 @@ static void mavlink_delay(unsigned long t)
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
             gcs.send_message(MSG_HEARTBEAT);
+            gcs.send_message(MSG_EXTENDED_STATUS1);
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.send_message(MSG_HEARTBEAT);
+            hil.send_message(MSG_EXTENDED_STATUS1);
 #endif
-            send_rate(1, 3);
-        }
-        if (tnow - last_3hz > 333) {
-            last_3hz = tnow;
-            send_rate(3, 5);
-        }
-        if (tnow - last_10hz > 100) {
-            last_10hz = tnow;
-            send_rate(5, 45);
         }
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
@@ -1138,7 +1123,6 @@ static void mavlink_delay(unsigned long t)
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.update();
 #endif
-            send_rate(45, 1000);
         }
         delay(1);
     } while (millis() - tstart < t);

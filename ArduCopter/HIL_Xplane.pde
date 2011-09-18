@@ -12,7 +12,7 @@ void HIL_XPLANE::output_HIL(void)
 	output_int((int)(g.rc_3.servo_out));				// 	2	bytes 4, 5
 	output_int((int)(g.rc_4.servo_out));				// 	3	bytes 6, 7
 	output_int((int)wp_distance);						// 	4	bytes 8,9
-	output_int((int)bearing_error);						// 	5	bytes 10,11
+	//output_int((int)bearing_error);						// 	5	bytes 10,11
 	output_int((int)altitude_error);					// 	6	bytes 12, 13
 	output_int((int)energy_error);						// 	7	bytes 14,15
 	output_byte((int)g.waypoint_index);					// 	8	bytes 16
@@ -92,8 +92,6 @@ HIL_XPLANE::send_message(uint8_t id, uint32_t param)
     case MSG_ATTITUDE:
         break;
     case MSG_LOCATION:
-        break;
-    case MSG_LOCAL_LOCATION:
         break;
     case MSG_GPS_RAW:
         break;

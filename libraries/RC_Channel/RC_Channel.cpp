@@ -98,6 +98,12 @@ RC_Channel::set_pwm(int pwm)
 		//if (fabs(scale_output) > 0){
 		//	control_in *= scale_output;
 		//}
+		/*
+		if(expo) {
+			long temp = control_in;
+			temp = (temp * temp) / (long)_high;
+			control_in = (int)((control_in >= 0) ? temp : -temp);
+		}*/
 	}
 }
 
@@ -120,7 +126,7 @@ RC_Channel::calc_pwm(void)
 {
 	if(_type == RC_CHANNEL_RANGE){
 		pwm_out 	= range_to_pwm();
-		radio_out 	= pwm_out + radio_min;
+		radio_out 	= (_reverse >=0 ? pwm_out + radio_min : radio_max - pwm_out);
 
 	}else if(_type == RC_CHANNEL_ANGLE_RAW){
 		pwm_out 	= (float)servo_out * .1;

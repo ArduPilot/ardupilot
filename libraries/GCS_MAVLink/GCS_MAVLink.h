@@ -8,6 +8,8 @@
 
 #include <BetterStream.h>
 
+#define MAVLINK_SEPARATE_HELPERS
+
 #include "include/ardupilotmega/version.h"
 
 // this allows us to make mavlink_message_t much smaller

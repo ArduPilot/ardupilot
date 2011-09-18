@@ -4,19 +4,9 @@
 
 static void init_camera()
 {
+	// ch 6 high(right) is down.
 	g.rc_camera_pitch.set_angle(4500);
-	g.rc_camera_pitch.radio_min 	= 1200;
-	g.rc_camera_pitch.radio_trim 	= 1500;
-	g.rc_camera_pitch.radio_max 	= 1900;
-	//g.rc_camera_pitch.set_reverse(1);
-
-	// ch 6 high right is down.
-
-
 	g.rc_camera_roll.set_angle(4500);
-	g.rc_camera_roll.radio_min 		= 1000;
-	g.rc_camera_roll.radio_trim 	= 1500;
-	g.rc_camera_roll.radio_max 		= 2000;
 
 	g.rc_camera_roll.set_type(RC_CHANNEL_ANGLE_RAW);
 	g.rc_camera_pitch.set_type(RC_CHANNEL_ANGLE_RAW);

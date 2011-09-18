@@ -210,6 +210,8 @@
   //#define OPTFLOW_ENABLED
 #endif
 
+//#define OPTFLOW_ENABLED
+
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
 #endif
@@ -310,7 +312,7 @@
 #endif
 
 #ifndef SIMPLE_RP
-# define SIMPLE_RP 			ROLL_PITCH_SIMPLE
+# define SIMPLE_RP 			ROLL_PITCH_STABLE
 #endif
 
 #ifndef SIMPLE_THR
@@ -390,7 +392,7 @@
 // Attitude Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		3.6
+# define STABILIZE_ROLL_P 		4.0
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.02
@@ -400,7 +402,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		3.6
+# define STABILIZE_PITCH_P		4.0
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.02
@@ -413,7 +415,7 @@
 // Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         .13
+# define RATE_ROLL_P         0.13
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -472,7 +474,7 @@
 # define LOITER_P			.4		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.01	//
+# define LOITER_I			0.04	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		12		// degrees°
@@ -482,27 +484,11 @@
 # define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.1		// this
+# define NAV_I				0.15		// this
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			16			// degrees
+# define NAV_IMAX			20			// degrees
 #endif
-
-/*
-#ifndef NAV_LOITER_P
-# define NAV_LOITER_P			.4		//1.4			//
-#endif
-#ifndef NAV_LOITER_I
-# define NAV_LOITER_I			0.05	//
-#endif
-#ifndef NAV_LOITER_D
-# define NAV_LOITER_D			2 	//
-#endif
-#ifndef NAV_LOITER_IMAX
-# define NAV_LOITER_IMAX		8		// degrees°
-#endif
-*/
-
 
 #ifndef WAYPOINT_SPEED_MAX
 # define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
@@ -518,9 +504,6 @@
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
 #endif
-//#ifndef THROTTLE_D
-//# define THROTTLE_D		0.6			// upped with filter
-//#endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
 #endif
@@ -579,7 +562,7 @@
 # define LOG_ATTITUDE_FAST		DISABLED
 #endif
 #ifndef LOG_ATTITUDE_MED
-# define LOG_ATTITUDE_MED 		DISABLED
+# define LOG_ATTITUDE_MED 		ENABLED
 #endif
 #ifndef LOG_GPS
 # define LOG_GPS 				ENABLED
@@ -671,8 +654,8 @@
 # define WP_RADIUS_DEFAULT		3
 #endif
 
-#ifndef LOITER_RADIUS_DEFAULT
-# define LOITER_RADIUS_DEFAULT 10
+#ifndef LOITER_RADIUS
+# define LOITER_RADIUS 10
 #endif
 
 #ifndef ALT_HOLD_HOME

@@ -105,17 +105,14 @@ static void handle_process_now()
 
 static void handle_no_commands()
 {
-	// we don't want to RTL yet. Maybe this will change in the future. RTL is kinda dangerous.
-	// use landing commands
 	/*
 	switch (control_mode){
 		default:
-			//set_mode(RTL);
+			set_mode(RTL);
 			break;
-	}
-	return;
-	*/
-	Serial.println("Handle No CMDs");
+	}*/
+	//return;
+	//Serial.println("Handle No CMDs");
 }
 
 /********************************************************************************/
@@ -314,13 +311,10 @@ static void do_loiter_turns()
 
 static void do_loiter_time()
 {
-	///*
-	wp_control = LOITER_MODE;
+	wp_control 		= LOITER_MODE;
 	set_next_WP(&current_loc);
 	loiter_time 	= millis();
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
-	//Serial.printf("dlt %ld, max %ld\n",loiter_time, loiter_time_max);
-	//*/
 }
 
 /********************************************************************************/
@@ -467,12 +461,8 @@ static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-		condition_value		= next_command.alt + home.alt;
-	} else {
-		condition_value		= next_command.alt;
-	}
-	temp.alt		= condition_value;
+	condition_value	= next_command.alt;
+	temp.alt		= next_command.alt;
 	set_next_WP(&temp);
 }
 

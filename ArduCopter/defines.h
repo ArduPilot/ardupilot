@@ -14,8 +14,7 @@
 
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
-#define ROLL_PITCH_SIMPLE	2
-#define ROLL_PITCH_AUTO		3
+#define ROLL_PITCH_AUTO		2
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1
@@ -30,6 +29,7 @@
 // CH 7 control
 #define DO_SET_HOVER 0
 #define DO_FLIP 1
+#define SIMPLE_MODE_CONTROL 2
 
 // Frame types
 #define QUAD_FRAME 0
@@ -52,7 +52,7 @@
 #define FR_LED AN12  // Mega PE4 pin, OUT7
 #define RE_LED AN14  // Mega PE5 pin, OUT6
 #define RI_LED AN10  // Mega PH4 pin, OUT5
-#define LE_LED AN8  // Mega PH5 pin, OUT4
+#define LE_LED AN8   // Mega PH5 pin, OUT4
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
@@ -82,21 +82,6 @@
 // SONAR types:
 #define MAX_SONAR_UNKNOWN	0
 #define MAX_SONAR_XL		1
-
-// Radio channels
-// Note channels are from 0!
-//
-// XXX these should be CH_n defines from RC.h at some point.
-#define CH_1 0
-#define CH_2 1
-#define CH_3 2
-#define CH_4 3
-#define CH_5 4
-#define CH_6 5
-#define CH_7 6
-#define CH_8 7
-#define CH_10 9    //PB5
-#define CH_11 10   //PE3
 
 #define CH_ROLL CH_1
 #define CH_PITCH CH_2
@@ -129,14 +114,20 @@
 // ----------------
 #define STABILIZE 0			// hold level position
 #define ACRO 1				// rate control
-#define SIMPLE 2			//
-#define ALT_HOLD 3			// AUTO control
-#define AUTO 4				// AUTO control
-#define GUIDED 5			// AUTO control
-#define LOITER 6			// Hold a single location
-#define RTL 7				// AUTO control
-#define CIRCLE 8				// AUTO control
-#define NUM_MODES 9
+#define ALT_HOLD 2			// AUTO control
+#define AUTO 3				// AUTO control
+#define GUIDED 4			// AUTO control
+#define LOITER 5			// Hold a single location
+#define RTL 6				// AUTO control
+#define CIRCLE 7			// AUTO control
+#define NUM_MODES 8
+
+#define SIMPLE_1 1
+#define SIMPLE_2 2
+#define SIMPLE_3 4
+#define SIMPLE_4 8
+#define SIMPLE_5 16
+#define SIMPLE_6 32
 
 // CH_6 Tuning
 // -----------
@@ -252,7 +243,6 @@
 #define MSG_ATTITUDE_CORRECT 0xb1
 #define MSG_POSITION_SET 0xb2
 #define MSG_ATTITUDE_SET 0xb3
-#define MSG_LOCAL_LOCATION 0xb4
 #define MSG_RETRY_DEFERRED 0xff
 
 #define SEVERITY_LOW 1

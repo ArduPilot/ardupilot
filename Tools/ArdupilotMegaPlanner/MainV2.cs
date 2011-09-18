@@ -76,6 +76,14 @@ namespace ArdupilotMega
             //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
             //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
+            srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "srtm";
+
+            georefimage temp = new georefimage();
+
+            //temp.dowork(141);
+
+            //return;
+
             var t = Type.GetType("Mono.Runtime");
             MAC = (t != null);
 
@@ -152,6 +160,15 @@ namespace ArdupilotMega
                 //Terminal = new GCSViews.Terminal();
             }
             catch (Exception e) { MessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
+
+            GCSViews.FlightData.myhud.Refresh();
+            GCSViews.FlightData.myhud.Refresh();
+            GCSViews.FlightData.myhud.Refresh();
+
+            if (GCSViews.FlightData.myhud.huddrawtime > 1000)
+            {
+                MessageBox.Show("The HUD draw time is above 1 seconds. Please update your graphics card driver.");
+            }
 
             changeunits();
 
@@ -867,6 +884,8 @@ namespace ArdupilotMega
 
             DateTime speechcustomtime = DateTime.Now;
 
+            DateTime linkqualitytime = DateTime.Now;
+
             while (serialthread)
             {
                 try
@@ -919,6 +938,21 @@ namespace ArdupilotMega
                         speechcustomtime = DateTime.Now;
                     }
 
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
+                    {
+                        MainV2.cs.linkqualitygcs = 0;
+                    }
+
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
+                    {
+                        GCSViews.FlightData.myhud.Invalidate();
+                        if (linkqualitytime.Second != DateTime.Now.Second)
+                        {
+                            MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
+                            linkqualitytime = DateTime.Now;
+                        }
+                    }
+
                     if (speechenable && talk != null && (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;
@@ -939,7 +973,7 @@ namespace ArdupilotMega
 
                     if (heatbeatsend.Second != DateTime.Now.Second)
                     {
-                        Console.WriteLine("remote lost {0}", cs.packetdrop);
+                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
                         MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
 
@@ -952,10 +986,12 @@ namespace ArdupilotMega
                     }
 
                     // data loss warning
-                    if (speechenable && talk != null && (DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
+                    if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
                     {
-                        if (MainV2.talk.State == SynthesizerState.Ready)
-                            MainV2.talk.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
+                        if (speechenable && talk != null) {
+                            if (MainV2.talk.State == SynthesizerState.Ready)
+                                MainV2.talk.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
+                        }
                     }
 
                     //Console.WriteLine(comPort.BaseStream.BytesToRead);
@@ -1457,6 +1493,12 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.T)) // for ryan beall
             {
                 MainV2.comPort.Open(false);
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
+            {
+                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+                MessageBox.Show("Done MAV_ACTION_STORAGE_WRITE");
                 return true;
             }
             if (keyData == (Keys.Control | Keys.J)) // for jani

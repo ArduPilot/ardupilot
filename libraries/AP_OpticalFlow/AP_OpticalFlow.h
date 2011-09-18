@@ -15,11 +15,11 @@
 		read             : reads latest value from OpticalFlow and stores values in x,y, surface_quality parameter
 		read_register()  : reads a value from the sensor (will be sensor specific)
 		write_register() : writes a value to one of the sensor's register (will be sensor specific)
-
 */
 
-#include "WProgram.h"
 #include <AP_Math.h>
+#include <AP_DCM.h>
+#include <AP_Common.h>
 
 // return value definition
 #define OPTICALFLOW_FAIL 0
@@ -37,12 +37,12 @@
 
 class AP_OpticalFlow
 {
-  public:
+	public:
 	int raw_dx, raw_dy;   // raw sensor change in x and y position (i.e. unrotated)
 	int surface_quality;  // image quality (below 15 you really can't trust the x,y values returned)
 	int x,y;              // total x,y position
 	int dx,dy;            // rotated change in x and y position
-    float lng, lat;       // position as offsets from original position
+    float vlon, vlat;       // position as offsets from original position
 	unsigned long last_update;    // millis() time of last update
 	float field_of_view;  // field of view in Radians
 	float scaler;        // number returned from sensor when moved one pixel
@@ -50,22 +50,24 @@ class AP_OpticalFlow
 	// temp variables - delete me!
     float exp_change_x, exp_change_y;
     float change_x, change_y;
-	float x_cm, y_cm;	
-  public:
-	AP_OpticalFlow();  // Constructor
+	float x_cm, y_cm;
+
+	//AP_OpticalFlow(AP_DCM *dcm);
 	virtual bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	virtual byte read_register(byte address);
 	virtual void write_register(byte address, byte value);
 	virtual void set_orientation(const Matrix3f &rotation_matrix); // Rotation vector to transform sensor readings to the body frame.
 	virtual void set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };  // sets field of view of sensor
     virtual int read(); // read latest values from sensor and fill in x,y and totals
-	virtual void get_position(float roll, float pitch, float yaw, float altitude);  // updates internal lon and lat with estimation based on optical flow
-	
+	virtual void update_position(float roll, float pitch, float cos_yaw_x, float sin_yaw_y, float altitude);  // updates internal lon and lat with estimation based on optical flow
+
+
+
 //protected:
 	Matrix3f   _orientation_matrix;
 	float conv_factor; // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
     float radians_to_pixels;
-	float _last_roll, _last_pitch, _last_yaw, _last_altitude;
+	float _last_roll, _last_pitch, _last_altitude;
 	virtual void apply_orientation_matrix();  // rotate raw values to arrive at final x,y,dx and dy values
 	virtual void update_conversion_factors();
 };

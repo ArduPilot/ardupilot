@@ -144,18 +144,18 @@ static void output_motor_test()
 
 
 	if(g.rc_1.control_in > 3000){	// right
-		motor_out[CH_1] += 50;
-		motor_out[CH_7] += 50;
+		motor_out[CH_1] += 100;
+		motor_out[CH_7] += 100;
 	}
 
 	if(g.rc_1.control_in < -3000){	// left
-		motor_out[CH_2] += 50;
-		motor_out[CH_3] += 50;
+		motor_out[CH_2] += 100;
+		motor_out[CH_3] += 100;
 	}
 
 	if(g.rc_2.control_in > 3000){	// back
-		motor_out[CH_8] += 50;
-		motor_out[CH_4] += 50;
+		motor_out[CH_8] += 100;
+		motor_out[CH_4] += 100;
 	}
 
 	APM_RC.OutputCh(CH_1, motor_out[CH_1]);

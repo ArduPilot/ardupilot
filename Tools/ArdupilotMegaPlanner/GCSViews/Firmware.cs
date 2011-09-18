@@ -519,13 +519,18 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception ex) { lbl_status.Text = "Failed download"; MessageBox.Show("Failed to download new firmware : " + ex.Message); return; }
 
+            UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
+        }
+
+        void UploadFlash(string filename, string board)
+        {
             byte[] FLASH = new byte[1];
             StreamReader sr = null;
             try
             {
                 lbl_status.Text = "Reading Hex File";
                 this.Refresh();
-                sr = new StreamReader(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex");
+                sr = new StreamReader(filename);
                 FLASH = readIntelHEXv2(sr);
                 sr.Close();
                 Console.WriteLine("\n\nSize: {0}\n\n", FLASH.Length);

@@ -415,6 +415,7 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed time for GP
 static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
 static float 			load;						// % MCU cycles used
 
+RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -501,7 +502,7 @@ static void fast_loop()
 		hil.update();
 	#endif
 
-	dcm.update_DCM(G_Dt);
+	dcm.update_DCM();
 
 	// uses the yaw from the DCM to give more accurate turns
 	calc_bearing_error();
@@ -709,6 +710,8 @@ static void slow_loop()
 			// Read Control Surfaces/Mix switches
 			// ----------------------------------
 			update_servo_switches();
+
+			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 
 			break;
 

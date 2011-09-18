@@ -41,7 +41,7 @@ const struct Menu::command main_menu_commands[] PROGMEM = {
 };
 
 // Create the top-level menu object.
-MENU(main_menu, "ArduCopter 2.0.42 Beta", main_menu_commands);
+MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
 #endif // CLI_ENABLED
 
@@ -73,8 +73,8 @@ static void init_ardupilot()
 	Serial1.begin(38400, 128, 16);
 	#endif
 
-	Serial.printf_P(PSTR("\n\nInit ACM"
-						 "\n\nRAM: %lu\n"),
+	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
+						 "\n\nFree RAM: %lu\n"),
 						 freeRAM());
 
 
@@ -204,12 +204,12 @@ static void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
-#ifdef OPTFLOW_ENABLED
+	#ifdef OPTFLOW_ENABLED
 	// init the optical flow sensor
 	if(g.optflow_enabled) {
 		init_optflow();
 	}
-#endif
+	#endif
 
 	// Logging:
 	// --------
@@ -249,11 +249,6 @@ static void init_ardupilot()
 		start_new_log();
 	}
 
-	//#if(GROUND_START_DELAY > 0)
-		//gcs.send_text_P(SEVERITY_LOW, PSTR(" With Delay"));
-	//	delay(GROUND_START_DELAY * 1000);
-	//#endif
-
     GPS_enabled = false;
 
     // Read in the GPS
@@ -292,10 +287,8 @@ static void init_ardupilot()
 	// ---------------------------
 	reset_control_switch();
 
-	//delay(100);
 	startup_ground();
 
-	//Serial.printf_P(PSTR("\nloiter: %d\n"), location_error_max);
 	Log_Write_Startup();
 
 	SendDebug("\nReady to FLY ");
@@ -312,7 +305,9 @@ static void startup_ground(void)
 		// Warm up and read Gyro offsets
 		// -----------------------------
 		imu.init_gyro(mavlink_delay);
-		report_imu();
+		#if CLI_ENABLED == ENABLED
+			report_imu();
+		#endif
 	#endif
 
 	// reset the leds
@@ -328,8 +323,7 @@ static void startup_ground(void)
 
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
-#define ROLL_PITCH_SIMPLE	2
-#define ROLL_PITCH_AUTO		3
+#define ROLL_PITCH_AUTO		2
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1
@@ -361,9 +355,7 @@ static void set_mode(byte mode)
 	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
 
-	// most modes do not calculate crosstrack correction
-	xtrack_enabled = false;
-	reset_nav_I();
+	reset_nav();
 
 	switch(control_mode)
 	{
@@ -381,13 +373,6 @@ static void set_mode(byte mode)
 			reset_hold_I();
 			break;
 
-		case SIMPLE:
-			yaw_mode 		= SIMPLE_YAW;
-			roll_pitch_mode = SIMPLE_RP;
-			throttle_mode 	= SIMPLE_THR;
-			reset_hold_I();
-			break;
-
 		case ALT_HOLD:
 			yaw_mode 		= ALT_HOLD_YAW;
 			roll_pitch_mode = ALT_HOLD_RP;
@@ -395,7 +380,7 @@ static void set_mode(byte mode)
 			reset_hold_I();
 
 			init_throttle_cruise();
-			next_WP.alt = current_loc.alt;
+			next_WP = current_loc;
 			break;
 
 		case AUTO:
@@ -407,11 +392,7 @@ static void set_mode(byte mode)
 			init_throttle_cruise();
 
 			// loads the commands from where we left off
-			init_auto();
-
-			// do crosstrack correction
-			// XXX move to flight commands
-			xtrack_enabled = true;
+			init_commands();
 			break;
 
 		case CIRCLE:
@@ -437,9 +418,10 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_AUTO;
 
-			xtrack_enabled = true;
+			//xtrack_enabled = true;
 			init_throttle_cruise();
 			next_WP = current_loc;
+			set_next_WP(&guided_WP);
 			break;
 
 		case RTL:
@@ -447,7 +429,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = RTL_RP;
 			throttle_mode 	= RTL_THR;
 
-			xtrack_enabled = true;
+			//xtrack_enabled = true;
 			init_throttle_cruise();
 			do_RTL();
 			break;
@@ -489,7 +471,7 @@ static void set_failsafe(boolean mode)
 
 
 static void resetPerfData(void) {
-	mainLoop_count 		= 0;
+	//mainLoop_count 		= 0;
 	G_Dt_max 			= 0;
 	gps_fix_count 		= 0;
 	perf_mon_timer 		= millis();
@@ -508,7 +490,10 @@ init_compass()
 static void
 init_optflow()
 {
-	optflow.init();
+	if( optflow.init() == false ) {
+	    g.optflow_enabled = false;
+	    //SendDebug("\nFailed to Init OptFlow ");
+	}
 	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
 	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
 }
@@ -539,7 +524,7 @@ static void
 init_throttle_cruise()
 {
 	// are we moving from manual throttle to auto_throttle?
-	if((old_control_mode <= SIMPLE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
+	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}

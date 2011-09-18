@@ -65,7 +65,7 @@ namespace ArdupilotMega
         public  float gz { get; set; }
 
         // calced turn rate
-        public float turnrate { get { if (groundspeed == 0) return 0; return (roll * 9.8f) / groundspeed; } }
+        public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
 
         //radio
         public  float ch1in { get; set; }
@@ -101,17 +101,17 @@ namespace ArdupilotMega
         //nav state
         public float nav_roll { get; set; }
         public float nav_pitch { get; set; }
-        public short nav_bearing { get; set; }
-        public short target_bearing { get; set; }
-        public ushort wp_dist { get { return (ushort)(_wpdist * multiplierdist); } set { _wpdist = value; } }
+        public float nav_bearing { get; set; }
+        public float target_bearing { get; set; }
+        public float wp_dist { get { return (_wpdist * multiplierdist); } set { _wpdist = value; } }
         public float alt_error { get { return _alt_error * multiplierdist; } set { _alt_error = value; } }
         public float ber_error { get { return (target_bearing - yaw); } set {  } }
         public float aspd_error { get { return _aspd_error * multiplierspeed; } set { _aspd_error = value; } }
         public float xtrack_error { get; set; }
-        public int wpno { get; set; }
+        public float wpno { get; set; }
         public string mode { get; set; }
         public float climbrate { get; set; }
-        ushort _wpdist;
+        float _wpdist;
         float _aspd_error;
         float _alt_error;
 
@@ -150,7 +150,8 @@ namespace ArdupilotMega
         public float brklevel { get; set; }
 
         // stats
-        public ushort packetdrop { get; set; }
+        public ushort packetdropremote { get; set; }
+        public ushort linkqualitygcs { get; set; }
 
         // requested stream rates
         public byte rateattitude { get; set; }
@@ -284,24 +285,21 @@ namespace ArdupilotMega
                             mode = "Acro";
                             break;
                         case (byte)102:
-                            mode = "Simple";
-                            break;
-                        case (byte)103:
                             mode = "Alt Hold";
                             break;
-                        case (byte)104:
+                        case (byte)103:
                             mode = "Auto";
                             break;
-                        case (byte)105:
+                        case (byte)104:
                             mode = "Guided";
                             break;
-                        case (byte)106:
+                        case (byte)105:
                             mode = "Loiter";
                             break;
-                        case (byte)107:
+                        case (byte)106:
                             mode = "RTL";
                             break;
-                        case (byte)108:
+                        case (byte)107:
                             mode = "Circle";
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:
@@ -361,7 +359,7 @@ namespace ArdupilotMega
                     battery_voltage = sysstatus.vbat;
                     battery_remaining = sysstatus.battery_remaining;
 
-                    packetdrop = sysstatus.packet_drop;
+                    packetdropremote = sysstatus.packet_drop;
 
                     if (oldmode != mode && MainV2.speechenable && MainV2.getConfig("speechmodeenabled") == "True")
                     {
@@ -468,7 +466,7 @@ namespace ArdupilotMega
 
                     wpcur = (ArdupilotMega.MAVLink.__mavlink_waypoint_current_t)(temp);
 
-                    int oldwp = wpno;
+                    int oldwp = (int)wpno;
 
                     wpno = wpcur.seq;
 
@@ -533,6 +531,27 @@ namespace ArdupilotMega
                     MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU], ref temp, 6);
 
                     imu = (MAVLink.__mavlink_raw_imu_t)(temp);
+
+                    gx = imu.xgyro;
+                    gy = imu.ygyro;
+                    gz = imu.zgyro;
+
+                    ax = imu.xacc;
+                    ay = imu.yacc;
+                    az = imu.zacc;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
+                }
+
+                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU] != null)
+                {
+                    var imu = new MAVLink.__mavlink_scaled_imu_t();
+
+                    object temp = imu;
+
+                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU], ref temp, 6);
+
+                    imu = (MAVLink.__mavlink_scaled_imu_t)(temp);
 
                     gx = imu.xgyro;
                     gy = imu.ygyro;

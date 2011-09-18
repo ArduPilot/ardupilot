@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY 10	// one secon
-#define DISARM_DELAY 10	// one secon
+#define ARM_DELAY 10	// one second
+#define DISARM_DELAY 10	// one second
 #define LEVEL_DELAY 120 // twelve seconds
 #define AUTO_LEVEL_DELAY 150 // twentyfive seconds
 
