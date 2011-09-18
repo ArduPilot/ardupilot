@@ -1,5 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#ifndef _DEFINES_H
+#define _DEFINES_H
+
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
@@ -106,63 +109,25 @@
 /// please keep each MSG_ to a single MAVLink message. If need be
 /// create new MSG_ IDs for additional messages on the same
 /// stream
-#define MSG_ACKNOWLEDGE 0x00
-#define MSG_HEARTBEAT 0x01
-#define MSG_ATTITUDE 0x02
-#define MSG_LOCATION 0x03
-#define MSG_PRESSURE 0x04
-#define MSG_STATUS_TEXT 0x05
-#define MSG_PERF_REPORT 0x06
-#define MSG_MODE_CHANGE 0x07 //This is different than HEARTBEAT because it occurs only when the mode is actually changed
-#define MSG_VERSION_REQUEST 0x08
-#define MSG_VERSION 0x09
-#define MSG_EXTENDED_STATUS1 0x0a
-#define MSG_EXTENDED_STATUS2 0x0b
-#define MSG_CPU_LOAD 0x0c
-#define MSG_NAV_CONTROLLER_OUTPUT 0x0d
-
-#define MSG_COMMAND_REQUEST 0x20
-#define MSG_COMMAND_UPLOAD 0x21
-#define MSG_COMMAND_MODE_CHANGE 0x23
-#define MSG_CURRENT_WAYPOINT 0x24
-
-#define MSG_VALUE_REQUEST 0x30
-#define MSG_VALUE_SET 0x31
-#define MSG_VALUE 0x32
-
-#define MSG_PID_REQUEST 0x40
-#define MSG_PID_SET 0x41
-#define MSG_PID 0x42
-#define MSG_VFR_HUD 0x4a
-
-#define MSG_TRIM_STARTUP 0x50
-#define MSG_TRIM_MIN 0x51
-#define MSG_TRIM_MAX 0x52
-#define MSG_RADIO_OUT 0x53
-#define MSG_RADIO_IN  0x54
-
-#define MSG_RAW_IMU1 0x60
-#define MSG_RAW_IMU2 0x61
-#define MSG_RAW_IMU3 0x62
-#define MSG_GPS_STATUS 0x63
-#define MSG_GPS_RAW 0x64
-
-#define MSG_SERVO_OUT 0x70
-
-#define MSG_PIN_REQUEST 0x80
-#define MSG_PIN_SET 0x81
-
-#define MSG_DATAFLASH_REQUEST 0x90
-#define MSG_DATAFLASH_SET 0x91
-
-#define MSG_EEPROM_REQUEST 0xa0
-#define MSG_EEPROM_SET 0xa1
-
-#define MSG_POSITION_CORRECT 0xb0
-#define MSG_ATTITUDE_CORRECT 0xb1
-#define MSG_POSITION_SET 0xb2
-#define MSG_ATTITUDE_SET 0xb3
-#define MSG_RETRY_DEFERRED 0xff
+enum ap_message {
+    MSG_HEARTBEAT,
+    MSG_ATTITUDE,
+    MSG_LOCATION,
+    MSG_EXTENDED_STATUS1,
+    MSG_EXTENDED_STATUS2,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_CURRENT_WAYPOINT,
+    MSG_VFR_HUD,
+    MSG_RADIO_OUT,
+    MSG_RADIO_IN,
+    MSG_RAW_IMU1,
+    MSG_RAW_IMU2,
+    MSG_RAW_IMU3,
+    MSG_GPS_STATUS,
+    MSG_GPS_RAW,
+    MSG_SERVO_OUT,
+    MSG_RETRY_DEFERRED // this must be last
+};
 
 #define SEVERITY_LOW 1
 #define SEVERITY_MEDIUM 2
@@ -263,3 +228,5 @@
 
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
+
+#endif // _DEFINES_H

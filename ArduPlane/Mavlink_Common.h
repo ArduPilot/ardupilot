@@ -393,8 +393,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 }
 
 
-#define MAX_DEFERRED_MESSAGES 17 // should be at least equal to number of
-                                 // switch types in mavlink_try_send_message()
+#define MAX_DEFERRED_MESSAGES MSG_RETRY_DEFERRED
 static struct mavlink_queue {
     uint8_t deferred_messages[MAX_DEFERRED_MESSAGES];
     uint8_t next_deferred_message;
