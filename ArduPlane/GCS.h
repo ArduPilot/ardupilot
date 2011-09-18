@@ -82,11 +82,6 @@ public:
 	///
 	void		acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) {}
 
-	/// Emit an update of the "current" waypoints, often previous, current and
-	/// next.
-	///
-	void		print_current_waypoints() {}
-
 	//
 	// The following interfaces are not currently implemented as their counterparts
 	// are not called in the mainline code.  XXX ripe for re-specification.

@@ -349,7 +349,7 @@ static void set_servos(void)
 static void demo_servos(byte i) {
 
 	while(i > 0){
-		gcs.send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 		APM_RC.OutputCh(1, 1400);
 		mavlink_delay(400);

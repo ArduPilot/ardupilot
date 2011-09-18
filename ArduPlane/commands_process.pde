@@ -6,7 +6,7 @@ static void change_command(uint8_t cmd_index)
 { 
 	struct Location temp = get_wp_with_index(cmd_index);
 	if (temp.id > MAV_CMD_NAV_LAST ){
-		gcs.send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
 	} else {
 		command_must_index 	= NO_COMMAND;
 		next_command.id = NO_COMMAND;
@@ -59,7 +59,7 @@ static void load_next_command_from_EEPROM()
 	// --------------------------------------------
 	if(next_command.id == NO_COMMAND){
 		// we are out of commands!
-		gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 		handle_no_commands();
 	}
 }
@@ -117,7 +117,7 @@ static void process_next_command()
 /**************************************************/
 static void process_must()
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 
 	// clear May indexes
 	command_may_index	= NO_COMMAND;
@@ -133,7 +133,7 @@ static void process_must()
 
 static void process_may()
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 
 	command_may_ID = next_command.id;
 	handle_process_may();
@@ -151,6 +151,6 @@ static void process_now()
 	// -----------------------------------------
 	next_command.id = NO_COMMAND;
 
-	gcs.send_text(SEVERITY_LOW, "<process_now>");
+	gcs_send_text(SEVERITY_LOW, "<process_now>");
 }
 

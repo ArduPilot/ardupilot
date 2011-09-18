@@ -1115,8 +1115,7 @@ static void mavlink_delay(unsigned long t)
         }
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
-            gcs.update();
-            hil.update();
+            gcs_update();
         }
         delay(1);
     } while (millis() - tstart < t);
@@ -1129,8 +1128,8 @@ static void mavlink_delay(unsigned long t)
  */
 static void gcs_send_message(enum ap_message id)
 {
-    gcs.send_message(id);
-    hil.send_message(id);
+    gcs0.send_message(id);
+    gcs3.send_message(id);
 }
 
 /*
@@ -1138,6 +1137,27 @@ static void gcs_send_message(enum ap_message id)
  */
 static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
 {
-    gcs.data_stream_send(freqMin, freqMax);
-    hil.data_stream_send(freqMin, freqMax);
+    gcs0.data_stream_send(freqMin, freqMax);
+    gcs3.data_stream_send(freqMin, freqMax);
+}
+
+/*
+  look for incoming commands on the GCS links
+ */
+static void gcs_update(void)
+{
+	gcs0.update();
+    gcs3.update();
+}
+
+static void gcs_send_text(uint8_t severity, const char *str)
+{
+    gcs0.send_text(severity, str);
+    gcs3.send_text(severity, str);
+}
+
+static void gcs_send_text_P(uint8_t severity, const prog_char_t *str)
+{
+    gcs0.send_text(severity, str);
+    gcs3.send_text(severity, str);
 }
