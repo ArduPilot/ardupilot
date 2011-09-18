@@ -51,20 +51,9 @@
 #define CH_YAW CH_4
 
 // HIL enumerations
-#define HIL_PROTOCOL_XPLANE			1
-#define HIL_PROTOCOL_MAVLINK		2
-
 #define HIL_MODE_DISABLED			0
 #define HIL_MODE_ATTITUDE			1
 #define HIL_MODE_SENSORS			2
-
-// GCS enumeration
-#define GCS_PROTOCOL_STANDARD		0	// standard APM protocol
-#define GCS_PROTOCOL_LEGACY			1	// legacy ArduPilot protocol
-#define GCS_PROTOCOL_XPLANE			2	// X-Plane HIL simulation
-#define GCS_PROTOCOL_DEBUGTERMINAL	3	//Human-readable debug interface for use with a dumb terminal
-#define GCS_PROTOCOL_MAVLINK	        4	// binary protocol for qgroundcontrol
-#define GCS_PROTOCOL_NONE			-1	// No GCS output
 
 // Auto Pilot modes
 // ----------------

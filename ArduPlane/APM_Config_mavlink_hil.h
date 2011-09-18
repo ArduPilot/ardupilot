@@ -13,20 +13,12 @@
 #define FLIGHT_MODE_5       STABILIZE
 #define FLIGHT_MODE_6       MANUAL
 
-// Hardware in the loop  protocol
-#define HIL_PROTOCOL        HIL_PROTOCOL_MAVLINK
-
 // HIL_MODE SELECTION
 //
 // Mavlink supports
 // 1. HIL_MODE_ATTITUDE : simulated position, airspeed, and attitude
 // 2. HIL_MODE_SENSORS: full sensor simulation
 #define HIL_MODE            HIL_MODE_ATTITUDE
-
-// You can set your gps protocol here for your actual
-// hardware and leave it without affecting the hardware
-// in the loop simulation
-#define GPS_PROTOCOL 		GPS_PROTOCOL_MTK
 
 // Sensors
 // All sensors are supported in all modes.

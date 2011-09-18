@@ -111,17 +111,6 @@
 # define GPS_PROTOCOL GPS_PROTOCOL_AUTO
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// GCS_PROTOCOL
-// GCS_PORT
-//
-#ifndef GCS_PROTOCOL
-# define GCS_PROTOCOL		GCS_PROTOCOL_MAVLINK
-#endif
-#ifndef GCS_PORT
-# define GCS_PORT			3
-#endif
-
 #ifndef MAV_SYSTEM_ID
 # define MAV_SYSTEM_ID		1
 #endif
