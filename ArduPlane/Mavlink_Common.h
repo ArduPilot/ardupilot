@@ -291,7 +291,7 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 
 
 // try to send a message, return false if it won't fit in the serial tx buffer
-static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_t packet_drops)
+static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
     int payload_space = comm_get_txspace(chan) - MAVLINK_NUM_NON_PAYLOAD_BYTES;
 
@@ -395,13 +395,13 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
 
 #define MAX_DEFERRED_MESSAGES MSG_RETRY_DEFERRED
 static struct mavlink_queue {
-    uint8_t deferred_messages[MAX_DEFERRED_MESSAGES];
+    enum ap_message deferred_messages[MAX_DEFERRED_MESSAGES];
     uint8_t next_deferred_message;
     uint8_t num_deferred_messages;
 } mavlink_queue[2];
 
 // send a message using mavlink
-static void mavlink_send_message(mavlink_channel_t chan, uint8_t id, uint16_t packet_drops)
+static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uint16_t packet_drops)
 {
     uint8_t i, nextid;
     struct mavlink_queue *q = &mavlink_queue[(uint8_t)chan];
