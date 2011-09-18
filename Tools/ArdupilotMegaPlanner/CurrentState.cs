@@ -124,7 +124,7 @@ namespace ArdupilotMega
 
         //message
         public List<string> messages { get; set; }
-        public string message { get { return messages[messages.Count - 1]; } set { } }
+        public string message { get { if (messages.Count == 0) return ""; return messages[messages.Count - 1]; } set { } }
 
         //battery
         public float battery_voltage { get { return _battery_voltage; } set { _battery_voltage = value / 1000; } }
@@ -278,28 +278,28 @@ namespace ArdupilotMega
                                     break;
                             }
                             break;
-                        case (byte)100:
+                        case (byte)(100 + Common.ac2modes.STABILIZE):
                             mode = "Stabilize";
                             break;
-                        case (byte)101:
+                        case (byte)(100 + Common.ac2modes.ACRO):
                             mode = "Acro";
                             break;
-                        case (byte)102:
+                        case (byte)(100 + Common.ac2modes.ALT_HOLD):
                             mode = "Alt Hold";
                             break;
-                        case (byte)103:
+                        case (byte)(100 + Common.ac2modes.AUTO):
                             mode = "Auto";
                             break;
-                        case (byte)104:
+                        case (byte)(100 + Common.ac2modes.GUIDED):
                             mode = "Guided";
                             break;
-                        case (byte)105:
+                        case (byte)(100 + Common.ac2modes.LOITER):
                             mode = "Loiter";
                             break;
-                        case (byte)106:
+                        case (byte)(100 + Common.ac2modes.RTL):
                             mode = "RTL";
                             break;
-                        case (byte)107:
+                        case (byte)(100 + Common.ac2modes.CIRCLE):
                             mode = "Circle";
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:

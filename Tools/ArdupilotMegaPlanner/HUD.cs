@@ -9,8 +9,6 @@ using System.IO;
 using System.Drawing.Imaging;
 
 using System.Threading;
-
-
  
 using System.Drawing.Drawing2D;
 
@@ -20,10 +18,11 @@ using OpenTK.Graphics;
 
 
 // Control written by Michael Oborne 2011
+// dual opengl and GDI+
 
 namespace hud
 {
-    public class HUD : GLControl// : Graphics
+    public class HUD : GLControl
     {
         object paintlock = new object();
         object streamlock = new object();
@@ -40,7 +39,7 @@ namespace hud
 
         public int huddrawtime = 0;
 
-        public bool opengl = true;
+        public bool opengl { get { return base.UseOpenGL; } set { base.UseOpenGL = value; } }
 
         public HUD()
         {
@@ -48,9 +47,8 @@ namespace hud
                 return;
 
             InitializeComponent();
-		    //graphicsObject = this;
 
-            //graphicsObject = Graphics.FromImage(objBitmap);
+            graphicsObject = this;
         }
 
         private void InitializeComponent()
@@ -152,6 +150,8 @@ System.ComponentModel.Category("Values")]
         Bitmap objBitmap = new Bitmap(1024, 1024);
         int count = 0;
         DateTime countdate = DateTime.Now;
+        HUD graphicsObject;
+        Graphics graphicsObjectGDIP;
 
         DateTime starttime = DateTime.MinValue;
 
@@ -168,58 +168,59 @@ System.ComponentModel.Category("Values")]
             if (this.DesignMode) 
                 return;
 
-            try
+            if (opengl)
             {
+                try
+                {
 
-                GraphicsMode test = this.GraphicsMode;
-                Console.WriteLine(test.ToString());
-                Console.WriteLine("Vendor: " + GL.GetString(StringName.Vendor));
-                Console.WriteLine("Version: " + GL.GetString(StringName.Version));
-                Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
-                //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
+                    GraphicsMode test = this.GraphicsMode;
+                    Console.WriteLine(test.ToString());
+                    Console.WriteLine("Vendor: " + GL.GetString(StringName.Vendor));
+                    Console.WriteLine("Version: " + GL.GetString(StringName.Version));
+                    Console.WriteLine("Device: " + GL.GetString(StringName.Renderer));
+                    //Console.WriteLine("Extensions: " + GL.GetString(StringName.Extensions));
 
-                int[] viewPort = new int[4];
+                    int[] viewPort = new int[4];
 
-                GL.GetInteger(GetPName.Viewport, viewPort);
+                    GL.GetInteger(GetPName.Viewport, viewPort);
 
-                GL.MatrixMode(MatrixMode.Projection);
-                GL.LoadIdentity();
-                GL.Ortho(0, Width, Height, 0, -1, 1);
-                GL.MatrixMode(MatrixMode.Modelview);
-                GL.LoadIdentity();
+                    GL.MatrixMode(MatrixMode.Projection);
+                    GL.LoadIdentity();
+                    GL.Ortho(0, Width, Height, 0, -1, 1);
+                    GL.MatrixMode(MatrixMode.Modelview);
+                    GL.LoadIdentity();
 
-                GL.PushAttrib(AttribMask.DepthBufferBit);
-                GL.Disable(EnableCap.DepthTest);
-                //GL.Enable(EnableCap.Texture2D); 
-                GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-                GL.Enable(EnableCap.Blend);
+                    GL.PushAttrib(AttribMask.DepthBufferBit);
+                    GL.Disable(EnableCap.DepthTest);
+                    //GL.Enable(EnableCap.Texture2D); 
+                    GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+                    GL.Enable(EnableCap.Blend);
 
+                }
+                catch (Exception ex) { Console.WriteLine("HUD opengl onload " + ex.ToString()); }
+
+                try
+                {
+                    GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+
+                    GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
+                    GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
+                    GL.Hint(HintTarget.PointSmoothHint, HintMode.Nicest);
+
+                    GL.Hint(HintTarget.TextureCompressionHint, HintMode.Nicest);
+                }
+                catch { }
+
+                try
+                {
+
+                    GL.Enable(EnableCap.LineSmooth);
+                    GL.Enable(EnableCap.PointSmooth);
+                    GL.Enable(EnableCap.PolygonSmooth);
+
+                }
+                catch { }
             }
-            catch (Exception ex) { Console.WriteLine("HUD opengl onload "+ex.ToString()); }
-
-            try
-            {
-                GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
-
-                GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
-                GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
-                GL.Hint(HintTarget.PointSmoothHint, HintMode.Nicest);
-
-                GL.Hint(HintTarget.TextureCompressionHint, HintMode.Nicest);
-            }
-            catch { }
-
-            try
-            {
-
-                GL.Enable(EnableCap.LineSmooth);
-                GL.Enable(EnableCap.PointSmooth);
-                GL.Enable(EnableCap.PolygonSmooth);
-
-            }
-            catch { }
-            
-            //GL.Viewport(0, 0, Width, Height);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -233,37 +234,28 @@ System.ComponentModel.Category("Values")]
                 return;
             }
 
-            if ((DateTime.Now - starttime).TotalMilliseconds < 75 && (_bgimage == null))
+            if ((DateTime.Now - starttime).TotalMilliseconds < 30 && (_bgimage == null))
             {
                 //Console.WriteLine("ms "+(DateTime.Now - starttime).TotalMilliseconds);
                 //e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);          
-                //return;              
+                return;              
             }
 
             starttime = DateTime.Now;
 
-            if (Console.CursorLeft > 0)
+            if (opengl)
             {
-                //Console.WriteLine(" "+ Console.CursorLeft +" ");
+                MakeCurrent();
+
+                GL.Clear(ClearBufferMask.ColorBufferBit);
+
             }
-
-            //Console.Write("HUD a "+(DateTime.Now - starttime).TotalMilliseconds);
-
-            MakeCurrent();
-
-            //Console.Write(" b " + (DateTime.Now - starttime).TotalMilliseconds);
-
-            GL.Clear(ClearBufferMask.ColorBufferBit);
-
-            //Console.Write(" c " + (DateTime.Now - starttime).TotalMilliseconds);
 
             doPaint(e);
 
-            //Console.Write(" d " + (DateTime.Now - starttime).TotalMilliseconds);
-
-            this.SwapBuffers();
-
-            //Console.Write(" e " + (DateTime.Now - starttime).TotalMilliseconds);
+            if (opengl) {
+                this.SwapBuffers();
+            }
 
             count++;
 
@@ -280,68 +272,68 @@ System.ComponentModel.Category("Values")]
 
         void Clear(Color color)
         {
-            GL.ClearColor(color);
+            if (opengl)
+            {
+                GL.ClearColor(color);
+            } else 
+            {
+                graphicsObjectGDIP.Clear(color);
+            }
         }
 
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
 
-        //graphicsObject.DrawArc(whitePen, arcrect, 180 + 45, 90);
-
         public void DrawArc(Pen penn,RectangleF rect, float start,float degrees)
         {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.LineWidth(penn.Width);
-            GL.Color4(penn.Color);
-
-            GL.Begin(BeginMode.LineStrip);
-            start -= 90;
-            float x = 0, y = 0;
-            for (int i = (int)start; i <= start + degrees; i++)
+            if (opengl)
             {
-                x = (float)Math.Sin(i * deg2rad) * rect.Width / 2;
-                y = (float)Math.Cos(i * deg2rad) * rect.Height / 2;
-                x = x + rect.X + rect.Width / 2;
-                y = y + rect.Y + rect.Height / 2;
-                GL.Vertex2(x, y);
-            }
-            GL.End();
+                GL.LineWidth(penn.Width);
+                GL.Color4(penn.Color);
 
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+                GL.Begin(BeginMode.LineStrip);
+                start -= 90;
+                float x = 0, y = 0;
+                for (int i = (int)start; i <= start + degrees; i++)
+                {
+                    x = (float)Math.Sin(i * deg2rad) * rect.Width / 2;
+                    y = (float)Math.Cos(i * deg2rad) * rect.Height / 2;
+                    x = x + rect.X + rect.Width / 2;
+                    y = y + rect.Y + rect.Height / 2;
+                    GL.Vertex2(x, y);
+                }
+                GL.End();
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawArc(penn, rect, start, degrees);
+            }
         }
 
         public void DrawEllipse(Pen penn, Rectangle rect)
         {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.LineWidth(penn.Width);
-            GL.Color4(penn.Color);
-
-            GL.Begin(BeginMode.LineLoop);
-            float x, y;
-            for (float i = 0; i < 360; i+=1)
+            if (opengl)
             {
-                x = (float)Math.Sin(i * deg2rad) * rect.Width / 2;
-                y = (float)Math.Cos(i * deg2rad) * rect.Height / 2;
-                x = x + rect.X + rect.Width / 2;
+                GL.LineWidth(penn.Width);
+                GL.Color4(penn.Color);
+
+                GL.Begin(BeginMode.LineLoop);
+                float x, y;
+                for (float i = 0; i < 360; i += 1)
+                {
+                    x = (float)Math.Sin(i * deg2rad) * rect.Width / 2;
+                    y = (float)Math.Cos(i * deg2rad) * rect.Height / 2;
+                    x = x + rect.X + rect.Width / 2;
                     y = y + rect.Y + rect.Height / 2;
-                GL.Vertex2(x, y);
+                    GL.Vertex2(x, y);
+                }
+                GL.End();
             }
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+            else
+            {
+                graphicsObjectGDIP.DrawEllipse(penn, rect);
+            }
         }
-
-        //graphicsObject.DrawImage(_bgimage, 0, 0, this.Width, this.Height);
 
         int texture;
         Bitmap bitmap = new Bitmap(512,512);
@@ -393,8 +385,6 @@ System.ComponentModel.Category("Values")]
 
             GL.End();
 
-
-            //GL.Disable(EnableCap.Blend);
             GL.Disable(EnableCap.Texture2D);
         }
 
@@ -428,89 +418,102 @@ System.ComponentModel.Category("Values")]
 
         public void ResetTransform()
         {
-           GL.LoadIdentity();
+            if (opengl)
+            {
+                GL.LoadIdentity();
+            }
+            else
+            {
+                graphicsObjectGDIP.ResetTransform();
+            }
         }
 
         public void RotateTransform(float angle)
         {
-            GL.Rotate(angle,0,0,1);
+            if (opengl)
+            {
+                GL.Rotate(angle, 0, 0, 1);
+            }
+            else
+            {
+                graphicsObjectGDIP.RotateTransform(angle);
+            }
         }
 
         public void TranslateTransform(float x, float y)
         {
-            GL.Translate(x, y, 0f);
+            if (opengl)
+            {
+                GL.Translate(x, y, 0f);
+            }
+            else
+            {
+                graphicsObjectGDIP.TranslateTransform(x, y);
+            }
         }
 
         public void FillPolygon(Brush brushh, Point[] list)
         {
-
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.Begin(BeginMode.TriangleFan);
-            GL.Color4(((SolidBrush)brushh).Color);
-            foreach (Point pnt in list)
+            if (opengl)
             {
-                GL.Vertex2(pnt.X, pnt.Y);
+                GL.Begin(BeginMode.TriangleFan);
+                GL.Color4(((SolidBrush)brushh).Color);
+                foreach (Point pnt in list)
+                {
+                    GL.Vertex2(pnt.X, pnt.Y);
+                }
+                GL.Vertex2(list[list.Length - 1].X, list[list.Length - 1].Y);
+                GL.End();
             }
-            GL.Vertex2(list[list.Length - 1].X, list[list.Length - 1].Y);
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+            else
+            {
+                graphicsObjectGDIP.FillPolygon(brushh, list);
+            }
         }
 
         public void FillPolygon(Brush brushh, PointF[] list)
         {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.Begin(BeginMode.Quads);
-            GL.Color4(((SolidBrush)brushh).Color);
-            foreach (PointF pnt in list)
+            if (opengl)
             {
-                GL.Vertex2(pnt.X, pnt.Y);
+                GL.Begin(BeginMode.Quads);
+                GL.Color4(((SolidBrush)brushh).Color);
+                foreach (PointF pnt in list)
+                {
+                    GL.Vertex2(pnt.X, pnt.Y);
+                }
+                GL.Vertex2(list[0].X, list[0].Y);
+                GL.End();
             }
-            GL.Vertex2(list[0].X, list[0].Y);
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+            else
+            {
+                graphicsObjectGDIP.FillPolygon(brushh, list);
+            }
         }
-
-        //graphicsObject.DrawPolygon(redPen, pointlist);
 
         public void DrawPolygon(Pen penn, Point[] list)
         {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.LineWidth(penn.Width);
-            GL.Color4(penn.Color);
-
-            GL.Begin(BeginMode.LineLoop);
-            foreach (Point pnt in list)
+            if (opengl)
             {
-                GL.Vertex2(pnt.X,pnt.Y);
-            }
-            GL.End();
+                GL.LineWidth(penn.Width);
+                GL.Color4(penn.Color);
 
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+                GL.Begin(BeginMode.LineLoop);
+                foreach (Point pnt in list)
+                {
+                    GL.Vertex2(pnt.X, pnt.Y);
+                }
+                GL.End();
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawPolygon(penn, list);
+            }                       
         }
 
         public void DrawPolygon(Pen penn, PointF[] list)
-        {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
+        {         
+            if (opengl)
+            {
             GL.LineWidth(penn.Width);
             GL.Color4(penn.Color);
 
@@ -519,63 +522,60 @@ System.ComponentModel.Category("Values")]
             {
                 GL.Vertex2(pnt.X, pnt.Y);
             }
-            //GL.Vertex2(list[0].X, list[0].Y);
-            GL.End();
 
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+            GL.End();
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawPolygon(penn, list);
+            } 
         }
 
-        //graphicsObject.FillRectangle(linearBrush, bg);
 
         public void FillRectangle(Brush brushh, RectangleF rectf)
         {
-            float x1 = rectf.X;
-            float y1 = rectf.Y;
-
-            float width = rectf.Width;
-            float height = rectf.Height;
-
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
-
-            GL.Begin(BeginMode.Quads);
-
-            if (((Type)brushh.GetType()) == typeof(LinearGradientBrush))
+            if (opengl)
             {
-                LinearGradientBrush temp = (LinearGradientBrush)brushh;
-                GL.Color4(temp.LinearColors[0]);
+                float x1 = rectf.X;
+                float y1 = rectf.Y;
+
+                float width = rectf.Width;
+                float height = rectf.Height;
+
+                GL.Begin(BeginMode.Quads);
+
+                if (((Type)brushh.GetType()) == typeof(LinearGradientBrush))
+                {
+                    LinearGradientBrush temp = (LinearGradientBrush)brushh;
+                    GL.Color4(temp.LinearColors[0]);
+                }
+                else
+                {
+                    GL.Color4(((SolidBrush)brushh).Color.R / 255f, ((SolidBrush)brushh).Color.G / 255f, ((SolidBrush)brushh).Color.B / 255f, ((SolidBrush)brushh).Color.A / 255f);
+                }
+
+                GL.Vertex2(x1, y1);
+                GL.Vertex2(x1 + width, y1);
+
+                if (((Type)brushh.GetType()) == typeof(LinearGradientBrush))
+                {
+                    LinearGradientBrush temp = (LinearGradientBrush)brushh;
+                    GL.Color4(temp.LinearColors[1]);
+                }
+                else
+                {
+                    GL.Color4(((SolidBrush)brushh).Color.R / 255f, ((SolidBrush)brushh).Color.G / 255f, ((SolidBrush)brushh).Color.B / 255f, ((SolidBrush)brushh).Color.A / 255f);
+                }
+
+                GL.Vertex2(x1 + width, y1 + height);
+                GL.Vertex2(x1, y1 + height);
+                GL.End();
             }
             else
             {
-                GL.Color4(((SolidBrush)brushh).Color.R/255f,((SolidBrush)brushh).Color.G/255f,((SolidBrush)brushh).Color.B/255f,((SolidBrush)brushh).Color.A/255f);
+                graphicsObjectGDIP.FillRectangle(brushh, rectf);
             }
-
-            GL.Vertex2(x1, y1);
-            GL.Vertex2(x1 + width, y1);
-
-            if (((Type)brushh.GetType()) == typeof(LinearGradientBrush))
-            {
-                LinearGradientBrush temp = (LinearGradientBrush)brushh;
-                GL.Color4(temp.LinearColors[1]);
-            }
-            else
-            {
-                GL.Color4(((SolidBrush)brushh).Color.R / 255f, ((SolidBrush)brushh).Color.G / 255f, ((SolidBrush)brushh).Color.B / 255f, ((SolidBrush)brushh).Color.A / 255f);
-            }
-
-            GL.Vertex2(x1 + width, y1 + height);
-            GL.Vertex2(x1, y1 + height);
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend);
-            //GL.Disable(EnableCap.ColorArray);
-            //GL.Enable(EnableCap.Texture2D);
         }
-
-        //graphicsObject.DrawRectangle(transPen, bg.X,bg.Y,bg.Width,bg.Height);
 
         public void DrawRectangle(Pen penn, RectangleF rect)
         {
@@ -584,50 +584,48 @@ System.ComponentModel.Category("Values")]
 
         public void DrawRectangle(Pen penn, double x1, double y1, double width, double height)
         {
-            //GL.Disable(EnableCap.Texture2D);
-            
-            //GL.Enable(EnableCap.Blend);
 
-            GL.LineWidth(penn.Width);
-            GL.Color4(penn.Color);
+            if (opengl)
+            {
+                GL.LineWidth(penn.Width);
+                GL.Color4(penn.Color);
 
-            GL.Begin(BeginMode.LineLoop);
-            GL.Vertex2(x1, y1);
-            GL.Vertex2(x1+width, y1);
-            GL.Vertex2(x1+width, y1+height);
-            GL.Vertex2(x1, y1+height);
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend);
-           
-            //GL.Enable(EnableCap.Texture2D);
+                GL.Begin(BeginMode.LineLoop);
+                GL.Vertex2(x1, y1);
+                GL.Vertex2(x1 + width, y1);
+                GL.Vertex2(x1 + width, y1 + height);
+                GL.Vertex2(x1, y1 + height);
+                GL.End();
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawRectangle(penn, (float)x1, (float)y1, (float)width, (float)height);
+            }
         }
 
-        public void DrawLine(Pen penn, double x1, double y1, double x2, double y2) 
+        public void DrawLine(Pen penn, double x1, double y1, double x2, double y2)
         {
-            //GL.Disable(EnableCap.Texture2D); 
-             
-            //GL.Enable(EnableCap.Blend);
 
-            GL.Color4(penn.Color);
-            GL.LineWidth(penn.Width);
+            if (opengl)
+            {
+                GL.Color4(penn.Color);
+                GL.LineWidth(penn.Width);
 
-            GL.Begin(BeginMode.Lines);
-            GL.Vertex2(x1, y1);
-            GL.Vertex2(x2, y2);
-            GL.End();
-
-            //GL.Disable(EnableCap.Blend); 
-            
-            //GL.Enable(EnableCap.Texture2D);
+                GL.Begin(BeginMode.Lines);
+                GL.Vertex2(x1, y1);
+                GL.Vertex2(x2, y2);
+                GL.End();
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawLine(penn, (float)x1, (float)y1, (float)x2, (float)y2);
+            }
         }
 
-        void doPaint(object e)
+        void doPaint(PaintEventArgs e)
         {
-                HUD graphicsObject = this;
-                //Graphics graphicsObject = ((PaintEventArgs)e).Graphics;
-                //graphicsObject.SmoothingMode = SmoothingMode.AntiAlias;
-
+                graphicsObjectGDIP = Graphics.FromImage(objBitmap);
+                graphicsObjectGDIP.SmoothingMode = SmoothingMode.AntiAlias;
 
             try
             {
@@ -1187,7 +1185,10 @@ System.ComponentModel.Category("Values")]
 
                 drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 10 * fontsize, this.Height - 30 - fontoffset);
 
-                //e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);
+                if (!opengl)
+                {
+                    e.Graphics.DrawImageUnscaled(objBitmap, 0, 0);
+                }
 
                 if (DesignMode)
                 {
@@ -1204,7 +1205,10 @@ System.ComponentModel.Category("Values")]
                 {
                     if (streamjpgenable || streamjpg == null) // init image and only update when needed
                     {
-                        objBitmap = GrabScreenshot();
+                        if (opengl)
+                        {
+                            objBitmap = GrabScreenshot();
+                        }
                         streamjpg = new MemoryStream();
                         objBitmap.Save(streamjpg, ici, eps);
                         //objBitmap.Save(streamjpg,ImageFormat.Bmp);
@@ -1267,6 +1271,12 @@ System.ComponentModel.Category("Values")]
 
         void drawstring(HUD e, string text, Font font, float fontsize, Brush brush, float x, float y)
         {
+            if (!opengl)
+            {
+                drawstring(graphicsObjectGDIP, text, font, fontsize, brush, x, y);
+                return;
+            }
+
             if (text == null || text == "")
                 return;
             /*
@@ -1404,6 +1414,30 @@ System.ComponentModel.Category("Values")]
             //pth.Dispose();
         }
 
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            try
+            {
+                if (opengl)
+                {
+                    base.OnHandleCreated(e);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; } // macs fail here
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            try
+            {
+                if (opengl)
+                {
+                    base.OnHandleDestroyed(e);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); opengl = false; }
+        }
+
         protected override void OnResize(EventArgs e)
         {
             if (DesignMode)
@@ -1415,13 +1449,14 @@ System.ComponentModel.Category("Values")]
 
             try
             {
-
-                foreach (int texid in charbitmaptexid)
+                if (opengl)
                 {
-                    if (texid != 0)
-                        GL.DeleteTexture(texid);
+                    foreach (int texid in charbitmaptexid)
+                    {
+                        if (texid != 0)
+                            GL.DeleteTexture(texid);
+                    }
                 }
-
             }
             catch { }
 
@@ -1429,13 +1464,16 @@ System.ComponentModel.Category("Values")]
             
             try
             {
-                GL.MatrixMode(MatrixMode.Projection);
-                GL.LoadIdentity();
-                GL.Ortho(0, Width, Height, 0, -1, 1);
-                GL.MatrixMode(MatrixMode.Modelview);
-                GL.LoadIdentity();
+                if (opengl)
+                {
+                    GL.MatrixMode(MatrixMode.Projection);
+                    GL.LoadIdentity();
+                    GL.Ortho(0, Width, Height, 0, -1, 1);
+                    GL.MatrixMode(MatrixMode.Modelview);
+                    GL.LoadIdentity();
 
-                GL.Viewport(0, 0, Width, Height);
+                    GL.Viewport(0, 0, Width, Height);
+                }
             }
             catch { }
              
