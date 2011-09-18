@@ -272,12 +272,6 @@ static void startup_ground(void)
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
-	// Output waypoints for confirmation
-	// --------------------------------
-	for(int i = 1; i < g.waypoint_total + 1; i++) {
-		gcs.send_message(MSG_COMMAND_LIST, i);
-	}
-
 	// Makes the servos wiggle
 	// step 1 = 1 wiggle
 	// -----------------------

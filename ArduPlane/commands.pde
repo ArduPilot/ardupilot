@@ -138,7 +138,6 @@ static void set_next_WP(struct Location *wp)
 	//gcs.send_text_P(SEVERITY_LOW,PSTR("load WP"));
 	SendDebug_P("MSG - wp_index: ");
 	SendDebugln(g.waypoint_index, DEC);
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
