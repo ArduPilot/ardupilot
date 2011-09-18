@@ -93,8 +93,6 @@ HIL_XPLANE::send_message(uint8_t id, uint32_t param)
         break;
     case MSG_LOCATION:
         break;
-    case MSG_LOCAL_LOCATION:
-        break;
     case MSG_GPS_RAW:
         break;
     case MSG_SERVO_OUT:
