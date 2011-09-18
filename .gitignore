@@ -1,4 +1,5 @@
 .metadata/
 Tools/ArdupilotMegaPlanner/bin/Release/logs/
-config.mk
 ArduCopter/Debug/
+config.mk
+serialsent.raw
