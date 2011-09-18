@@ -1111,18 +1111,14 @@ static void mavlink_delay(unsigned long t)
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
             gcs.send_message(MSG_HEARTBEAT);
-            gcs.send_message(MSG_EXTENDED_STATUS1);
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.send_message(MSG_HEARTBEAT);
+            gcs.send_message(MSG_EXTENDED_STATUS1);
             hil.send_message(MSG_EXTENDED_STATUS1);
-#endif
         }
         if (tnow - last_50hz > 20) {
             last_50hz = tnow;
             gcs.update();
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
             hil.update();
-#endif
         }
         delay(1);
     } while (millis() - tstart < t);

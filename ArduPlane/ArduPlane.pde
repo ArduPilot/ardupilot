@@ -51,7 +51,6 @@ version 2.1 of the License, or (at your option) any later version.
 #include "defines.h"
 #include "Parameters.h"
 #include "GCS.h"
-#include "HIL.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serial ports
@@ -149,19 +148,6 @@ AP_IMU_Shim             imu; // never used
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-#if HIL_MODE != HIL_MODE_DISABLED
-	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
-		GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
-	#elif HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
-		HIL_XPLANE hil;
-	#endif // HIL PROTOCOL
-#endif // HIL_MODE
-
-//  We may have a hil object instantiated just for mission planning
-#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
-	GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
-#endif
-
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	#if HIL_MODE != HIL_MODE_SENSORS
 		// Normal
@@ -178,12 +164,8 @@ AP_IMU_Shim             imu; // never used
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
 //
-#if   GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-	GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
-#else
-// If we are not using a GCS, we need a stub that does nothing.
-	GCS_Class           gcs;
-#endif
+GCS_MAVLINK	gcs(Parameters::k_param_streamrates_port3);
+GCS_MAVLINK	hil(Parameters::k_param_streamrates_port0);
 
 ////////////////////////////////////////////////////////////////////////////////
 // SONAR selection
@@ -481,9 +463,7 @@ static void fast_loop()
     // try to send any deferred messages if the serial port now has
     // some space available    
     gcs.send_message(MSG_RETRY_DEFERRED);
-#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
     hil.send_message(MSG_RETRY_DEFERRED);
-#endif
 
 	// check for loss of control signal failsafe condition
 	// ------------------------------------
@@ -538,28 +518,10 @@ static void fast_loop()
 
 	// XXX is it appropriate to be doing the comms below on the fast loop?
 
-	#if HIL_MODE != HIL_MODE_DISABLED && HIL_PORT != GCS_PORT
-		// kick the HIL to process incoming sensor packets
-		hil.update();
-
-		#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
-			hil.data_stream_send(45,1000);
-		#else
-			hil.send_message(MSG_SERVO_OUT);
-		#endif
-	#elif HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_MODE == HIL_MODE_DISABLED && HIL_PORT == 0
-		// Case for hil object on port 0 just for mission planning
-		hil.update();
-		hil.data_stream_send(45,1000);
-	#endif
-
-	// kick the GCS to process uplink data
 	gcs.update();
-	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-		gcs.data_stream_send(45,1000);
-	#endif
-	// XXX this should be absorbed into the above,
-	// or be a "GCS fast loop" interface
+    hil.update();
+    gcs.data_stream_send(45,1000);
+    hil.data_stream_send(45,1000);
 }
 
 static void medium_loop()
@@ -650,18 +612,10 @@ Serial.println(tempaccel.z, DEC);
 			if (g.log_bitmask & MASK_LOG_GPS)
 				Log_Write_GPS(g_gps->time, current_loc.lat, current_loc.lng, g_gps->altitude, current_loc.alt, (long) g_gps->ground_speed, g_gps->ground_course, g_gps->fix, g_gps->num_sats);
 
-			// XXX this should be a "GCS medium loop" interface
-			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-				gcs.data_stream_send(5,45);
-				// send all requested output streams with rates requested
-				// between 5 and 45 Hz
-			#else
-				gcs.send_message(MSG_ATTITUDE);     // Sends attitude data
-			#endif
-
-			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				hil.data_stream_send(5,45);
-			#endif
+            // send all requested output streams with rates requested
+            // between 5 and 45 Hz
+            gcs.data_stream_send(5,45);
+            hil.data_stream_send(5,45);
 			break;
 
 		// This case controls the slow loop
@@ -719,21 +673,9 @@ static void slow_loop()
 			slow_loopCounter = 0;
 			update_events();
 
-			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-				mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
-				gcs.data_stream_send(3,5);
-				// send all requested output streams with rates requested
-				// between 3 and 5 Hz
-			#else
-				gcs.send_message(MSG_LOCATION);
-				gcs.send_message(MSG_CPU_LOAD, load*100);
-			#endif
-
-			#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-				hil.data_stream_send(3,5);
-			#endif
-
-
+            mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
+            gcs.data_stream_send(3,5);
+            hil.data_stream_send(3,5);
 			break;
 	}
 }
@@ -745,16 +687,9 @@ static void one_second_loop()
 
 	// send a heartbeat
 	gcs.send_message(MSG_HEARTBEAT);
-	#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
-				gcs.data_stream_send(1,3);
-				// send all requested output streams with rates requested
-				// between 1 and 3 Hz
-	#endif		
-
-	#if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
-		hil.send_message(MSG_HEARTBEAT);
-		hil.data_stream_send(1,3);
-	#endif
+    hil.send_message(MSG_HEARTBEAT);
+    gcs.data_stream_send(1,3);
+    hil.data_stream_send(1,3);
 }
 
 static void update_GPS(void)

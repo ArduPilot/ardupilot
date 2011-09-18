@@ -60,8 +60,6 @@ static void init_ardupilot()
 
 	// GPS serial port.
 	//
-	// Not used if the IMU/X-Plane GPS is in use.
-	//
 	// XXX currently the EM406 (SiRF receiver) is nominally configured
 	// at 57600, however it's not been supported to date.  We should
 	// probably standardise on 38400.
@@ -69,13 +67,8 @@ static void init_ardupilot()
 	// XXX the 128 byte receive buffer may be too small for NMEA, depending
 	// on the message set configured.
 	//
-	#if HIL_MODE != HIL_MODE_DISABLED && HIL_PORT == 1 // TODO: figure out a better way to do this
-		// Steal gps port for hardware in the loop
-		Serial1.begin(115200, 128, 128);
-	#else
-		// standard gps running
-		Serial1.begin(38400, 128, 16);
-	#endif
+    // standard gps running
+    Serial1.begin(38400, 128, 16);
 
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %lu\n"),
@@ -176,22 +169,8 @@ static void init_ardupilot()
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
 	mavlink_system.type = MAV_FIXED_WING;
 
-// init the HIL
-#if HIL_MODE != HIL_MODE_DISABLED
-
-  #if HIL_PORT == 3
-	hil.init(&Serial3);
-  #elif HIL_PORT == 1
-	hil.init(&Serial1);
-  #else
+	// init the HIL
 	hil.init(&Serial);
-  #endif
-#endif
-
-//  We may have a hil object instantiated just for mission planning
-#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
-	hil.init(&Serial);
-#endif
 
 	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
 	init_rc_in();		// sets up rc channels from radio
