@@ -65,33 +65,12 @@ public:
 	///
 	void		send_text(uint8_t severity, const char *str) {}
 
-#define send_text_P(severity, msg) send_text(severity, msg)
-
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
 	void		send_text(uint8_t severity, const prog_char_t *str) {}
-
-	//
-	// The following interfaces are not currently implemented as their counterparts
-	// are not called in the mainline code.  XXX ripe for re-specification.
-	//
-
-	/// Send a text message with printf-style formatting.
-	///
-	/// @param	severity	A value describing the importance of the message.
-	/// @param	fmt			The format string to send.
-	/// @param	...			Additional arguments to the format string.
-	///
-	//	void		send_message(uint8_t severity, const char *fmt, ...) {}
-
-	/// Log a waypoint
-	///
-	/// @param	wp			The waypoint to log.
-	/// @param	index		The index of the waypoint.
-	//	void		print_waypoint(struct Location *wp, uint8_t index) {}
 
     // test if frequency within range requested for loop
     // used by data_stream_send

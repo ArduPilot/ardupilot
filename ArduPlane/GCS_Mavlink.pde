@@ -714,7 +714,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = 0;
 
             // do action
-            send_text_P(SEVERITY_LOW,PSTR("action received: "));
+            send_text(SEVERITY_LOW,PSTR("action received: "));
 //Serial.println(packet.action);
             switch(packet.action){
 
@@ -873,8 +873,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint request list"));
-
             // decode
             mavlink_waypoint_request_list_t packet;
             mavlink_msg_waypoint_request_list_decode(msg, &packet);
@@ -898,8 +896,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// XXX read a WP from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_WAYPOINT_REQUEST:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
-
             // Check if sending waypiont
             //if (!waypoint_sending) break;
 			// 5/10/11 - We are trying out relaxing the requirement that we be in waypoint sending mode to respond to a waypoint request.  DEW
@@ -1010,8 +1006,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_ACK:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint ack"));
-
             // decode
             mavlink_waypoint_ack_t packet;
             mavlink_msg_waypoint_ack_decode(msg, &packet);
@@ -1024,8 +1018,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("param request list"));
-
             // decode
             mavlink_param_request_list_t packet;
             mavlink_msg_param_request_list_decode(msg, &packet);
@@ -1041,8 +1033,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint clear all"));
-
             // decode
             mavlink_waypoint_clear_all_t packet;
             mavlink_msg_waypoint_clear_all_decode(msg, &packet);
@@ -1061,8 +1051,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint set current"));
-
             // decode
             mavlink_waypoint_set_current_t packet;
             mavlink_msg_waypoint_set_current_decode(msg, &packet);
@@ -1077,8 +1065,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_WAYPOINT_COUNT:
         {
-            //send_text_P(SEVERITY_LOW,PSTR("waypoint count"));
-
             // decode
             mavlink_waypoint_count_t packet;
             mavlink_msg_waypoint_count_decode(msg, &packet);
@@ -1233,7 +1219,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 						msg->compid,
 						type);
 
-					send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
+					send_text(SEVERITY_LOW,PSTR("flight plan received"));
 					waypoint_receiving = false;
 					// XXX ignores waypoint radius for individual waypoints, can
 					// only set WP_RADIUS parameter

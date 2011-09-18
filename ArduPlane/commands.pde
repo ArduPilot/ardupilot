@@ -135,10 +135,6 @@ It looks to see what the next command type is and finds the last command.
 */
 static void set_next_WP(struct Location *wp)
 {
-	//gcs_send_text_P(SEVERITY_LOW,PSTR("load WP"));
-	SendDebug_P("MSG - wp_index: ");
-	SendDebugln(g.waypoint_index, DEC);
-
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
 	prev_WP = next_WP;
