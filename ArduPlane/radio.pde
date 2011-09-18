@@ -120,8 +120,7 @@ static void control_failsafe(uint16_t pwm)
 			// throttle has dropped below the mark
 			failsafeCounter++;
 			if (failsafeCounter == 9){
-				SendDebug_P("MSG FS ON ");
-				SendDebugln(pwm, DEC);
+				gcs_send_text_fmt(PSTR("MSG FS ON %u"), (unsigned)pwm);
 			}else if(failsafeCounter == 10) {
 				ch3_failsafe = true;
 			}else if (failsafeCounter > 10){
@@ -136,8 +135,7 @@ static void control_failsafe(uint16_t pwm)
 				failsafeCounter = 3;
 			}
 			if (failsafeCounter == 1){
-				SendDebug_P("MSG FS OFF ");
-				SendDebugln(pwm, DEC);
+				gcs_send_text_fmt(PSTR("MSG FS OFF %u"), (unsigned)pwm);
 			}else if(failsafeCounter == 0) {
 				ch3_failsafe = false;
 			}else if (failsafeCounter <0){
