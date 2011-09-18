@@ -465,10 +465,6 @@ void mavlink_send_text(mavlink_channel_t chan, uint8_t severity, const char *str
 				(const int8_t*) str);
 }
 
-void mavlink_acknowledge(mavlink_channel_t chan, uint8_t id, uint8_t sum1, uint8_t sum2)
-{
-}
-
 #endif // mavlink in use
 
 #endif // inclusion guard

@@ -162,12 +162,6 @@ GCS_MAVLINK::send_text(uint8_t severity, const prog_char_t *str)
     mavlink_send_text(chan, severity, (const char *)m.text);
 }
 
-void
-GCS_MAVLINK::acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2)
-{
-    mavlink_acknowledge(chan,id,sum1,sum2);
-}
-
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     struct Location tell_command = {};                // command for telemetry
@@ -595,11 +589,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
             // clear all waypoints
-            uint8_t type = 0; // ok (0), error(1)
+            const uint8_t type = 0; // ok (0), error(1)
             g.waypoint_total.set_and_save(0);
 
             // send acknowledgement 3 times to makes sure it is received
-			for (int i=0;i<3;i++)
+			for (uint8_t i=0;i<3;i++)
 				mavlink_msg_waypoint_ack_send(chan, msg->sysid, msg->compid, type);
 
             break;
