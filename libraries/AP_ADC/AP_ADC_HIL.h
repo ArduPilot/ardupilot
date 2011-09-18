@@ -42,7 +42,7 @@ class AP_ADC_HIL : public AP_ADC
 	// Set the adc raw values given the current rotations rates,
 	// temps, accels, and pressures
 	void setHIL(int16_t p, int16_t q, int16_t r, int16_t gyroTemp,
-    	int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress);
+	int16_t aX, int16_t aY, int16_t aZ, int16_t diffPress);
 
   private:
 
