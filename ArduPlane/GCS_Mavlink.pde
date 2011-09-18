@@ -464,6 +464,14 @@ void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char
         // bootup, to try to prevent Xbee bricking
         return;
     }
+
+    if (severity == SEVERITY_LOW &&
+        comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_STATUSTEXT_LEN) {
+        // don't send low priority messages unless they immediately
+        // fit in the serial buffer
+        return;
+    }
+
 	mavlink_msg_statustext_send(
 				chan,
 				severity,
