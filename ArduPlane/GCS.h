@@ -74,14 +74,6 @@ public:
 	///
 	void		send_text(uint8_t severity, const prog_char_t *str) {}
 
-	/// Send acknowledgement for a message.
-	///
-	/// @param	id			The message ID being acknowledged.
-	/// @param	sum1		Checksum byte 1 from the message being acked.
-	/// @param	sum2		Checksum byte 2 from the message being acked.
-	///
-	void		acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) {}
-
 	//
 	// The following interfaces are not currently implemented as their counterparts
 	// are not called in the mainline code.  XXX ripe for re-specification.
@@ -138,7 +130,6 @@ public:
 	void	send_message(enum ap_message id);
 	void	send_text(uint8_t severity, const char *str);
 	void	send_text(uint8_t severity, const prog_char_t *str);
-	void	acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
 private:
 	void 	handleMessage(mavlink_message_t * msg);
