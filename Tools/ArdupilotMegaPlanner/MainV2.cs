@@ -161,6 +161,8 @@ namespace ArdupilotMega
             }
             catch (Exception e) { MessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 
+            Console.WriteLine("check hud");
+
             GCSViews.FlightData.myhud.Refresh();
             GCSViews.FlightData.myhud.Refresh();
             GCSViews.FlightData.myhud.Refresh();
@@ -168,7 +170,10 @@ namespace ArdupilotMega
             if (GCSViews.FlightData.myhud.huddrawtime > 1000)
             {
                 MessageBox.Show("The HUD draw time is above 1 seconds. Please update your graphics card driver.");
+                GCSViews.FlightData.myhud.opengl = false;
             }
+
+            Console.WriteLine("check hud done");
 
             changeunits();
 
@@ -726,6 +731,8 @@ namespace ArdupilotMega
             {
                 try
                 {
+                    System.Configuration.Configuration appconfig = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.None);
+
                     XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"config.xml", Encoding.ASCII);
                     xmlwriter.Formatting = Formatting.Indented;
 
@@ -733,13 +740,15 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteStartElement("Config");
 
-                    //xmlwriter.WriteElementString("APMlocation", defineslocation);
-
                     xmlwriter.WriteElementString("comport", comportname);
 
                     xmlwriter.WriteElementString("baudrate", CMB_baudrate.Text);
 
                     xmlwriter.WriteElementString("APMFirmware", APMFirmware.ToString());
+
+                    appconfig.AppSettings.Settings.Add("comport", comportname);
+                    appconfig.AppSettings.Settings.Add("baudrate", CMB_baudrate.Text);
+                    appconfig.AppSettings.Settings.Add("APMFirmware", APMFirmware.ToString());
 
                     foreach (string key in config.Keys)
                     {
@@ -748,6 +757,8 @@ namespace ArdupilotMega
                             if (key == "")
                                 continue;
                             xmlwriter.WriteElementString(key, config[key].ToString());
+
+                            appconfig.AppSettings.Settings.Add(key, config[key].ToString());
                         }
                         catch { }
                     }
@@ -756,6 +767,8 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteEndDocument();
                     xmlwriter.Close();
+
+                    appconfig.Save();
                 }
                 catch (Exception ex) { MessageBox.Show(ex.ToString()); }
             }
@@ -945,11 +958,12 @@ namespace ArdupilotMega
 
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds >= 1)
                     {
-                        GCSViews.FlightData.myhud.Invalidate();
                         if (linkqualitytime.Second != DateTime.Now.Second)
                         {
                             MainV2.cs.linkqualitygcs = (ushort)(MainV2.cs.linkqualitygcs * 0.8f);
                             linkqualitytime = DateTime.Now;
+
+                            GCSViews.FlightData.myhud.Invalidate();
                         }
                     }
 

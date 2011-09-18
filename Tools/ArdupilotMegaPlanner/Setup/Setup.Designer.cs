@@ -32,12 +32,30 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Setup));
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabReset = new System.Windows.Forms.TabPage();
+            this.BUT_reset = new ArdupilotMega.MyButton();
             this.tabRadioIn = new System.Windows.Forms.TabPage();
             this.CHK_revch3 = new System.Windows.Forms.CheckBox();
             this.CHK_revch4 = new System.Windows.Forms.CheckBox();
             this.CHK_revch2 = new System.Windows.Forms.CheckBox();
             this.CHK_revch1 = new System.Windows.Forms.CheckBox();
+            this.BUT_Calibrateradio = new ArdupilotMega.MyButton();
+            this.BAR8 = new ArdupilotMega.HorizontalProgressBar2();
+            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.BAR7 = new ArdupilotMega.HorizontalProgressBar2();
+            this.BAR6 = new ArdupilotMega.HorizontalProgressBar2();
+            this.BAR5 = new ArdupilotMega.HorizontalProgressBar2();
+            this.BARpitch = new ArdupilotMega.VerticalProgressBar2();
+            this.BARthrottle = new ArdupilotMega.VerticalProgressBar2();
+            this.BARyaw = new ArdupilotMega.HorizontalProgressBar2();
+            this.BARroll = new ArdupilotMega.HorizontalProgressBar2();
             this.tabModes = new System.Windows.Forms.TabPage();
+            this.label29 = new System.Windows.Forms.Label();
+            this.CB_simple6 = new System.Windows.Forms.CheckBox();
+            this.CB_simple5 = new System.Windows.Forms.CheckBox();
+            this.CB_simple4 = new System.Windows.Forms.CheckBox();
+            this.CB_simple3 = new System.Windows.Forms.CheckBox();
+            this.CB_simple2 = new System.Windows.Forms.CheckBox();
+            this.CB_simple1 = new System.Windows.Forms.CheckBox();
             this.label14 = new System.Windows.Forms.Label();
             this.LBL_flightmodepwm = new System.Windows.Forms.Label();
             this.label13 = new System.Windows.Forms.Label();
@@ -60,6 +78,7 @@
             this.CMB_fmode2 = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
             this.CMB_fmode1 = new System.Windows.Forms.ComboBox();
+            this.BUT_SaveModes = new ArdupilotMega.MyButton();
             this.tabHardware = new System.Windows.Forms.TabPage();
             this.linkLabelmagdec = new System.Windows.Forms.LinkLabel();
             this.label106 = new System.Windows.Forms.Label();
@@ -82,6 +101,7 @@
             this.label15 = new System.Windows.Forms.Label();
             this.pictureBoxQuadX = new System.Windows.Forms.PictureBox();
             this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
+            this.BUT_levelac2 = new ArdupilotMega.MyButton();
             this.tabHeli = new System.Windows.Forms.TabPage();
             this.label27 = new System.Windows.Forms.Label();
             this.GYR_GAIN_ = new System.Windows.Forms.TextBox();
@@ -106,20 +126,6 @@
             this.HS2_REV = new System.Windows.Forms.CheckBox();
             this.HS1_REV = new System.Windows.Forms.CheckBox();
             this.label17 = new System.Windows.Forms.Label();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.BUT_reset = new ArdupilotMega.MyButton();
-            this.BUT_Calibrateradio = new ArdupilotMega.MyButton();
-            this.BAR8 = new ArdupilotMega.HorizontalProgressBar2();
-            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.BAR7 = new ArdupilotMega.HorizontalProgressBar2();
-            this.BAR6 = new ArdupilotMega.HorizontalProgressBar2();
-            this.BAR5 = new ArdupilotMega.HorizontalProgressBar2();
-            this.BARpitch = new ArdupilotMega.VerticalProgressBar2();
-            this.BARthrottle = new ArdupilotMega.VerticalProgressBar2();
-            this.BARyaw = new ArdupilotMega.HorizontalProgressBar2();
-            this.BARroll = new ArdupilotMega.HorizontalProgressBar2();
-            this.BUT_SaveModes = new ArdupilotMega.MyButton();
-            this.BUT_levelac2 = new ArdupilotMega.MyButton();
             this.BUT_saveheliconfig = new ArdupilotMega.MyButton();
             this.BUT_0collective = new ArdupilotMega.MyButton();
             this.HS4 = new ArdupilotMega.VerticalProgressBar2();
@@ -129,15 +135,11 @@
             this.HS2_TRIM = new ArdupilotMega.MyTrackBar();
             this.HS1_TRIM = new ArdupilotMega.MyTrackBar();
             this.Gservoloc = new AGaugeApp.AGauge();
-            this.CB_simple1 = new System.Windows.Forms.CheckBox();
-            this.CB_simple2 = new System.Windows.Forms.CheckBox();
-            this.CB_simple3 = new System.Windows.Forms.CheckBox();
-            this.CB_simple4 = new System.Windows.Forms.CheckBox();
-            this.CB_simple5 = new System.Windows.Forms.CheckBox();
-            this.CB_simple6 = new System.Windows.Forms.CheckBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.tabControl1.SuspendLayout();
             this.tabReset.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.tabModes.SuspendLayout();
             this.tabHardware.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
@@ -148,7 +150,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
             this.tabHeli.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
@@ -174,6 +175,14 @@
             resources.ApplyResources(this.tabReset, "tabReset");
             this.tabReset.Name = "tabReset";
             this.tabReset.UseVisualStyleBackColor = true;
+            // 
+            // BUT_reset
+            // 
+            resources.ApplyResources(this.BUT_reset, "BUT_reset");
+            this.BUT_reset.Name = "BUT_reset";
+            this.BUT_reset.Tag = "";
+            this.BUT_reset.UseVisualStyleBackColor = true;
+            this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
             // 
             // tabRadioIn
             // 
@@ -222,8 +231,140 @@
             this.CHK_revch1.UseVisualStyleBackColor = true;
             this.CHK_revch1.CheckedChanged += new System.EventHandler(this.CHK_revch1_CheckedChanged);
             // 
+            // BUT_Calibrateradio
+            // 
+            resources.ApplyResources(this.BUT_Calibrateradio, "BUT_Calibrateradio");
+            this.BUT_Calibrateradio.Name = "BUT_Calibrateradio";
+            this.BUT_Calibrateradio.UseVisualStyleBackColor = true;
+            this.BUT_Calibrateradio.Click += new System.EventHandler(this.BUT_Calibrateradio_Click);
+            // 
+            // BAR8
+            // 
+            this.BAR8.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BAR8.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BAR8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch8in", true));
+            this.BAR8.Label = "Radio 8";
+            resources.ApplyResources(this.BAR8, "BAR8");
+            this.BAR8.Maximum = 2200;
+            this.BAR8.maxline = 0;
+            this.BAR8.Minimum = 800;
+            this.BAR8.minline = 0;
+            this.BAR8.Name = "BAR8";
+            this.BAR8.Value = 1500;
+            this.BAR8.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // currentStateBindingSource
+            // 
+            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
+            // 
+            // BAR7
+            // 
+            this.BAR7.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BAR7.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BAR7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch7in", true));
+            this.BAR7.Label = "Radio 7";
+            resources.ApplyResources(this.BAR7, "BAR7");
+            this.BAR7.Maximum = 2200;
+            this.BAR7.maxline = 0;
+            this.BAR7.Minimum = 800;
+            this.BAR7.minline = 0;
+            this.BAR7.Name = "BAR7";
+            this.BAR7.Value = 1500;
+            this.BAR7.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // BAR6
+            // 
+            this.BAR6.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BAR6.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BAR6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch6in", true));
+            this.BAR6.Label = "Radio 6";
+            resources.ApplyResources(this.BAR6, "BAR6");
+            this.BAR6.Maximum = 2200;
+            this.BAR6.maxline = 0;
+            this.BAR6.Minimum = 800;
+            this.BAR6.minline = 0;
+            this.BAR6.Name = "BAR6";
+            this.BAR6.Value = 1500;
+            this.BAR6.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // BAR5
+            // 
+            this.BAR5.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BAR5.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BAR5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch5in", true));
+            this.BAR5.Label = "Radio 5";
+            resources.ApplyResources(this.BAR5, "BAR5");
+            this.BAR5.Maximum = 2200;
+            this.BAR5.maxline = 0;
+            this.BAR5.Minimum = 800;
+            this.BAR5.minline = 0;
+            this.BAR5.Name = "BAR5";
+            this.BAR5.Value = 1500;
+            this.BAR5.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // BARpitch
+            // 
+            this.BARpitch.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BARpitch.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BARpitch.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch2in", true));
+            this.BARpitch.Label = "Pitch";
+            resources.ApplyResources(this.BARpitch, "BARpitch");
+            this.BARpitch.Maximum = 2200;
+            this.BARpitch.maxline = 0;
+            this.BARpitch.Minimum = 800;
+            this.BARpitch.minline = 0;
+            this.BARpitch.Name = "BARpitch";
+            this.BARpitch.Value = 1500;
+            this.BARpitch.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // BARthrottle
+            // 
+            this.BARthrottle.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
+            this.BARthrottle.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BARthrottle.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch3in", true));
+            this.BARthrottle.Label = "Throttle";
+            resources.ApplyResources(this.BARthrottle, "BARthrottle");
+            this.BARthrottle.Maximum = 2200;
+            this.BARthrottle.maxline = 0;
+            this.BARthrottle.Minimum = 800;
+            this.BARthrottle.minline = 0;
+            this.BARthrottle.Name = "BARthrottle";
+            this.BARthrottle.Value = 1000;
+            this.BARthrottle.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            // 
+            // BARyaw
+            // 
+            this.BARyaw.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BARyaw.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BARyaw.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch4in", true));
+            this.BARyaw.Label = "Yaw";
+            resources.ApplyResources(this.BARyaw, "BARyaw");
+            this.BARyaw.Maximum = 2200;
+            this.BARyaw.maxline = 0;
+            this.BARyaw.Minimum = 800;
+            this.BARyaw.minline = 0;
+            this.BARyaw.Name = "BARyaw";
+            this.BARyaw.Value = 1500;
+            this.BARyaw.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
+            // BARroll
+            // 
+            this.BARroll.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
+            this.BARroll.BorderColor = System.Drawing.SystemColors.ActiveBorder;
+            this.BARroll.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch1in", true));
+            this.BARroll.Label = "Roll";
+            resources.ApplyResources(this.BARroll, "BARroll");
+            this.BARroll.Maximum = 2200;
+            this.BARroll.maxline = 0;
+            this.BARroll.Minimum = 800;
+            this.BARroll.minline = 0;
+            this.BARroll.Name = "BARroll";
+            this.BARroll.Value = 1500;
+            this.BARroll.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
+            // 
             // tabModes
             // 
+            this.tabModes.Controls.Add(this.label29);
             this.tabModes.Controls.Add(this.CB_simple6);
             this.tabModes.Controls.Add(this.CB_simple5);
             this.tabModes.Controls.Add(this.CB_simple4);
@@ -256,6 +397,47 @@
             resources.ApplyResources(this.tabModes, "tabModes");
             this.tabModes.Name = "tabModes";
             this.tabModes.UseVisualStyleBackColor = true;
+            // 
+            // label29
+            // 
+            resources.ApplyResources(this.label29, "label29");
+            this.label29.Name = "label29";
+            // 
+            // CB_simple6
+            // 
+            resources.ApplyResources(this.CB_simple6, "CB_simple6");
+            this.CB_simple6.Name = "CB_simple6";
+            this.CB_simple6.UseVisualStyleBackColor = true;
+            // 
+            // CB_simple5
+            // 
+            resources.ApplyResources(this.CB_simple5, "CB_simple5");
+            this.CB_simple5.Name = "CB_simple5";
+            this.CB_simple5.UseVisualStyleBackColor = true;
+            // 
+            // CB_simple4
+            // 
+            resources.ApplyResources(this.CB_simple4, "CB_simple4");
+            this.CB_simple4.Name = "CB_simple4";
+            this.CB_simple4.UseVisualStyleBackColor = true;
+            // 
+            // CB_simple3
+            // 
+            resources.ApplyResources(this.CB_simple3, "CB_simple3");
+            this.CB_simple3.Name = "CB_simple3";
+            this.CB_simple3.UseVisualStyleBackColor = true;
+            // 
+            // CB_simple2
+            // 
+            resources.ApplyResources(this.CB_simple2, "CB_simple2");
+            this.CB_simple2.Name = "CB_simple2";
+            this.CB_simple2.UseVisualStyleBackColor = true;
+            // 
+            // CB_simple1
+            // 
+            resources.ApplyResources(this.CB_simple1, "CB_simple1");
+            this.CB_simple1.Name = "CB_simple1";
+            this.CB_simple1.UseVisualStyleBackColor = true;
             // 
             // label14
             // 
@@ -391,6 +573,13 @@
             this.CMB_fmode1.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_fmode1, "CMB_fmode1");
             this.CMB_fmode1.Name = "CMB_fmode1";
+            // 
+            // BUT_SaveModes
+            // 
+            resources.ApplyResources(this.BUT_SaveModes, "BUT_SaveModes");
+            this.BUT_SaveModes.Name = "BUT_SaveModes";
+            this.BUT_SaveModes.UseVisualStyleBackColor = true;
+            this.BUT_SaveModes.Click += new System.EventHandler(this.BUT_SaveModes_Click);
             // 
             // tabHardware
             // 
@@ -569,6 +758,13 @@
             this.pictureBoxQuad.TabStop = false;
             this.pictureBoxQuad.Click += new System.EventHandler(this.pictureBoxQuad_Click);
             // 
+            // BUT_levelac2
+            // 
+            resources.ApplyResources(this.BUT_levelac2, "BUT_levelac2");
+            this.BUT_levelac2.Name = "BUT_levelac2";
+            this.BUT_levelac2.UseVisualStyleBackColor = true;
+            this.BUT_levelac2.Click += new System.EventHandler(this.BUT_levelac2_Click);
+            // 
             // tabHeli
             // 
             this.tabHeli.Controls.Add(this.label27);
@@ -737,159 +933,6 @@
             // 
             resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
-            // 
-            // BUT_reset
-            // 
-            resources.ApplyResources(this.BUT_reset, "BUT_reset");
-            this.BUT_reset.Name = "BUT_reset";
-            this.BUT_reset.Tag = "";
-            this.BUT_reset.UseVisualStyleBackColor = true;
-            this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
-            // 
-            // BUT_Calibrateradio
-            // 
-            resources.ApplyResources(this.BUT_Calibrateradio, "BUT_Calibrateradio");
-            this.BUT_Calibrateradio.Name = "BUT_Calibrateradio";
-            this.BUT_Calibrateradio.UseVisualStyleBackColor = true;
-            this.BUT_Calibrateradio.Click += new System.EventHandler(this.BUT_Calibrateradio_Click);
-            // 
-            // BAR8
-            // 
-            this.BAR8.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BAR8.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BAR8.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch8in", true));
-            this.BAR8.Label = "Radio 8";
-            resources.ApplyResources(this.BAR8, "BAR8");
-            this.BAR8.Maximum = 2200;
-            this.BAR8.maxline = 0;
-            this.BAR8.Minimum = 800;
-            this.BAR8.minline = 0;
-            this.BAR8.Name = "BAR8";
-            this.BAR8.Value = 1500;
-            this.BAR8.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // currentStateBindingSource
-            // 
-            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
-            // 
-            // BAR7
-            // 
-            this.BAR7.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BAR7.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BAR7.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch7in", true));
-            this.BAR7.Label = "Radio 7";
-            resources.ApplyResources(this.BAR7, "BAR7");
-            this.BAR7.Maximum = 2200;
-            this.BAR7.maxline = 0;
-            this.BAR7.Minimum = 800;
-            this.BAR7.minline = 0;
-            this.BAR7.Name = "BAR7";
-            this.BAR7.Value = 1500;
-            this.BAR7.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BAR6
-            // 
-            this.BAR6.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BAR6.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BAR6.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch6in", true));
-            this.BAR6.Label = "Radio 6";
-            resources.ApplyResources(this.BAR6, "BAR6");
-            this.BAR6.Maximum = 2200;
-            this.BAR6.maxline = 0;
-            this.BAR6.Minimum = 800;
-            this.BAR6.minline = 0;
-            this.BAR6.Name = "BAR6";
-            this.BAR6.Value = 1500;
-            this.BAR6.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BAR5
-            // 
-            this.BAR5.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BAR5.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BAR5.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch5in", true));
-            this.BAR5.Label = "Radio 5";
-            resources.ApplyResources(this.BAR5, "BAR5");
-            this.BAR5.Maximum = 2200;
-            this.BAR5.maxline = 0;
-            this.BAR5.Minimum = 800;
-            this.BAR5.minline = 0;
-            this.BAR5.Name = "BAR5";
-            this.BAR5.Value = 1500;
-            this.BAR5.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BARpitch
-            // 
-            this.BARpitch.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BARpitch.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BARpitch.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch2in", true));
-            this.BARpitch.Label = "Pitch";
-            resources.ApplyResources(this.BARpitch, "BARpitch");
-            this.BARpitch.Maximum = 2200;
-            this.BARpitch.maxline = 0;
-            this.BARpitch.Minimum = 800;
-            this.BARpitch.minline = 0;
-            this.BARpitch.Name = "BARpitch";
-            this.BARpitch.Value = 1500;
-            this.BARpitch.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BARthrottle
-            // 
-            this.BARthrottle.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
-            this.BARthrottle.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BARthrottle.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch3in", true));
-            this.BARthrottle.Label = "Throttle";
-            resources.ApplyResources(this.BARthrottle, "BARthrottle");
-            this.BARthrottle.Maximum = 2200;
-            this.BARthrottle.maxline = 0;
-            this.BARthrottle.Minimum = 800;
-            this.BARthrottle.minline = 0;
-            this.BARthrottle.Name = "BARthrottle";
-            this.BARthrottle.Value = 1000;
-            this.BARthrottle.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
-            // 
-            // BARyaw
-            // 
-            this.BARyaw.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BARyaw.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BARyaw.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch4in", true));
-            this.BARyaw.Label = "Yaw";
-            resources.ApplyResources(this.BARyaw, "BARyaw");
-            this.BARyaw.Maximum = 2200;
-            this.BARyaw.maxline = 0;
-            this.BARyaw.Minimum = 800;
-            this.BARyaw.minline = 0;
-            this.BARyaw.Name = "BARyaw";
-            this.BARyaw.Value = 1500;
-            this.BARyaw.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BARroll
-            // 
-            this.BARroll.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(255)))));
-            this.BARroll.BorderColor = System.Drawing.SystemColors.ActiveBorder;
-            this.BARroll.DataBindings.Add(new System.Windows.Forms.Binding("Value", this.currentStateBindingSource, "ch1in", true));
-            this.BARroll.Label = "Roll";
-            resources.ApplyResources(this.BARroll, "BARroll");
-            this.BARroll.Maximum = 2200;
-            this.BARroll.maxline = 0;
-            this.BARroll.Minimum = 800;
-            this.BARroll.minline = 0;
-            this.BARroll.Name = "BARroll";
-            this.BARroll.Value = 1500;
-            this.BARroll.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // BUT_SaveModes
-            // 
-            resources.ApplyResources(this.BUT_SaveModes, "BUT_SaveModes");
-            this.BUT_SaveModes.Name = "BUT_SaveModes";
-            this.BUT_SaveModes.UseVisualStyleBackColor = true;
-            this.BUT_SaveModes.Click += new System.EventHandler(this.BUT_SaveModes_Click);
-            // 
-            // BUT_levelac2
-            // 
-            resources.ApplyResources(this.BUT_levelac2, "BUT_levelac2");
-            this.BUT_levelac2.Name = "BUT_levelac2";
-            this.BUT_levelac2.UseVisualStyleBackColor = true;
-            this.BUT_levelac2.Click += new System.EventHandler(this.BUT_levelac2_Click);
             // 
             // BUT_saveheliconfig
             // 
@@ -1126,42 +1169,6 @@
             this.Gservoloc.Value2 = 180F;
             this.Gservoloc.Value3 = 0F;
             // 
-            // CB_simple1
-            // 
-            resources.ApplyResources(this.CB_simple1, "CB_simple1");
-            this.CB_simple1.Name = "CB_simple1";
-            this.CB_simple1.UseVisualStyleBackColor = true;
-            // 
-            // CB_simple2
-            // 
-            resources.ApplyResources(this.CB_simple2, "CB_simple2");
-            this.CB_simple2.Name = "CB_simple2";
-            this.CB_simple2.UseVisualStyleBackColor = true;
-            // 
-            // CB_simple3
-            // 
-            resources.ApplyResources(this.CB_simple3, "CB_simple3");
-            this.CB_simple3.Name = "CB_simple3";
-            this.CB_simple3.UseVisualStyleBackColor = true;
-            // 
-            // CB_simple4
-            // 
-            resources.ApplyResources(this.CB_simple4, "CB_simple4");
-            this.CB_simple4.Name = "CB_simple4";
-            this.CB_simple4.UseVisualStyleBackColor = true;
-            // 
-            // CB_simple5
-            // 
-            resources.ApplyResources(this.CB_simple5, "CB_simple5");
-            this.CB_simple5.Name = "CB_simple5";
-            this.CB_simple5.UseVisualStyleBackColor = true;
-            // 
-            // CB_simple6
-            // 
-            resources.ApplyResources(this.CB_simple6, "CB_simple6");
-            this.CB_simple6.Name = "CB_simple6";
-            this.CB_simple6.UseVisualStyleBackColor = true;
-            // 
             // Setup
             // 
             resources.ApplyResources(this, "$this");
@@ -1174,6 +1181,7 @@
             this.tabReset.ResumeLayout(false);
             this.tabRadioIn.ResumeLayout(false);
             this.tabRadioIn.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.tabModes.ResumeLayout(false);
             this.tabModes.PerformLayout();
             this.tabHardware.ResumeLayout(false);
@@ -1188,7 +1196,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
             this.tabHeli.ResumeLayout(false);
             this.tabHeli.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
@@ -1304,6 +1311,7 @@
         private System.Windows.Forms.CheckBox CB_simple3;
         private System.Windows.Forms.CheckBox CB_simple2;
         private System.Windows.Forms.CheckBox CB_simple1;
+        private System.Windows.Forms.Label label29;
 
     }
 }
