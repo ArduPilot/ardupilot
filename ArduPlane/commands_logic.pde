@@ -316,11 +316,7 @@ static bool verify_nav_wp()
 	hold_course = -1;
 	update_crosstrack();
 	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-		//SendDebug_P("MSG <verify_must: MAV_CMD_NAV_WAYPOINT> REACHED_WAYPOINT #");
-		//SendDebugln(command_must_index,DEC);
-		char message[30];
-		sprintf(message,"Reached Waypoint #%i",command_must_index);
-		gcs_send_text(SEVERITY_LOW,message);
+		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),command_must_index);
 		return true;
 	}
 	// add in a more complex case

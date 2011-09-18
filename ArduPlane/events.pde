@@ -6,7 +6,7 @@ static void failsafe_short_on_event()
 	// This is how to handle a short loss of control signal failsafe.
 	failsafe = FAILSAFE_SHORT;
 	ch3_failsafe_timer = millis();
-	SendDebug_P("Failsafe - Short event on");
+    gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on"));
 	switch(control_mode)
 	{
 		case MANUAL: 
@@ -28,14 +28,13 @@ static void failsafe_short_on_event()
 		default:
 			break;
 	}
-				SendDebug_P("flight mode = ");
-				SendDebugln(control_mode, DEC);
+    gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
 static void failsafe_long_on_event()
 {
 	// This is how to handle a long loss of control signal failsafe.
-	SendDebug_P("Failsafe - Long event on");
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on"));
 	APM_RC.clearOverride();		//  If the GCS is locked up we allow control to revert to RC
 	switch(control_mode)
 	{
@@ -63,7 +62,7 @@ static void failsafe_long_on_event()
 static void failsafe_short_off_event()
 {
 	// We're back in radio contact
-	SendDebug_P("Failsafe - Short event off");
+	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event off"));
 	failsafe = FAILSAFE_NONE;
 
 	// re-read the switch so we can return to our preferred mode
