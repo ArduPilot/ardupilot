@@ -56,7 +56,7 @@ public:
 	/// @param	id			ID of the message to send.
 	/// @param	param		Explicit message parameter.
 	///
-	void		send_message(uint8_t id, int32_t param = 0) {}
+	void		send_message(enum ap_message id) {}
 
 	/// Send a text message.
 	///
@@ -140,7 +140,7 @@ public:
 	GCS_MAVLINK(AP_Var::Key key);
 	void    update(void);
 	void	init(FastSerial *port);
-	void	send_message(uint8_t id, uint32_t param = 0);
+	void	send_message(enum ap_message id);
 	void	send_text(uint8_t severity, const char *str);
 	void	send_text(uint8_t severity, const prog_char_t *str);
 	void	acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);

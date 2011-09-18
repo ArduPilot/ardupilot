@@ -139,7 +139,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 }
 
 void
-GCS_MAVLINK::send_message(uint8_t id, uint32_t param)
+GCS_MAVLINK::send_message(enum ap_message id)
 {
     mavlink_send_message(chan,id, packet_drops);
 }
