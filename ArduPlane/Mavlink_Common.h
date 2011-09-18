@@ -149,20 +149,6 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         crosstrack_error);
 }
 
-static void NOINLINE send_local_location(mavlink_channel_t chan)
-{
-        Matrix3f rot = dcm.get_dcm_matrix(); // neglecting angle of attack for now
-        mavlink_msg_local_position_send(
-            chan,
-            micros(),
-            ToRad((current_loc.lat - home.lat) / 1.0e7) * radius_of_earth,
-            ToRad((current_loc.lng - home.lng) / 1.0e7) * radius_of_earth * cos(ToRad(home.lat / 1.0e7)),
-            (current_loc.alt - home.alt) / 1.0e2,
-            g_gps->ground_speed / 1.0e2 * rot.a.x,
-            g_gps->ground_speed / 1.0e2 * rot.b.x,
-            g_gps->ground_speed / 1.0e2 * rot.c.x);
-}
-
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
 {
         mavlink_msg_gps_raw_send(
@@ -346,11 +332,6 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, uint8_t id, uint16_
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
             send_nav_controller_output(chan);
         }
-        break;
-    
-    case MSG_LOCAL_LOCATION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION);
-        send_local_location(chan);
         break;
     
     case MSG_GPS_RAW:
