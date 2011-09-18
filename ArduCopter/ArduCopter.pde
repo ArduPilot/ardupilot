@@ -51,7 +51,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
-#include <SPI.h>
+#include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
@@ -309,8 +309,8 @@ static byte	led_mode = NORMAL_LEDS;
 // GPS variables
 // -------------
 static const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
-static float 	scaleLongUp			= 1;			// used to reverse longtitude scaling
-static float 	scaleLongDown 		= 1;			// used to reverse longtitude scaling
+static float 	scaleLongUp			= 1;			// used to reverse longitude scaling
+static float 	scaleLongDown 		= 1;			// used to reverse longitude scaling
 static byte 	ground_start_count	= 10;			// have we achieved first lock and set Home?
 static bool 	did_ground_start	= false;		// have we ground started after first arming
 
