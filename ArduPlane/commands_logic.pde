@@ -326,7 +326,7 @@ static bool verify_nav_wp()
 	// add in a more complex case
 	// Doug to do
 	if(loiter_sum > 300){
-		gcs_send_text_P(SEVERITY_MEDIUM,PSTR("<verify_must: MAV_CMD_NAV_WAYPOINT> Missed WP"));
+		gcs_send_text_P(SEVERITY_MEDIUM,PSTR("Missed WP"));
 		return true;
 	}
 	return false;

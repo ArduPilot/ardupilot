@@ -457,7 +457,7 @@ static void mavlink_send_message(mavlink_channel_t chan, enum ap_message id, uin
     }
 }
 
-void mavlink_send_text(mavlink_channel_t chan, uint8_t severity, const char *str)
+void mavlink_send_text(mavlink_channel_t chan, gcs_severity severity, const char *str)
 {
     if (chan == MAVLINK_COMM_1 && millis() < MAVLINK_TELEMETRY_PORT_DELAY) {
         // don't send status MAVLink messages for 1 second after
@@ -607,13 +607,13 @@ GCS_MAVLINK::send_message(enum ap_message id)
 }
 
 void
-GCS_MAVLINK::send_text(uint8_t severity, const char *str)
+GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
 {
     mavlink_send_text(chan,severity,str);
 }
 
 void
-GCS_MAVLINK::send_text(uint8_t severity, const prog_char_t *str)
+GCS_MAVLINK::send_text(gcs_severity severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -1581,13 +1581,13 @@ static void gcs_update(void)
     gcs3.update();
 }
 
-static void gcs_send_text(uint8_t severity, const char *str)
+static void gcs_send_text(gcs_severity severity, const char *str)
 {
     gcs0.send_text(severity, str);
     gcs3.send_text(severity, str);
 }
 
-static void gcs_send_text_P(uint8_t severity, const prog_char_t *str)
+static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
     gcs3.send_text(severity, str);
