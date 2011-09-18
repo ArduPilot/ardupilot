@@ -58,7 +58,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Quad</name>
+    <name> Quad</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION X_FRAME
@@ -69,7 +69,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Tri</name>
+    <name> Tri</name>
     <desc>
 #define FRAME_CONFIG TRI_FRAME
 #define FRAME_ORIENTATION X_FRAME
@@ -80,7 +80,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Hexa</name>
+    <name> Hexa</name>
     <desc>
 #define FRAME_CONFIG HEXA_FRAME
 #define FRAME_ORIENTATION X_FRAME
@@ -91,7 +91,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Y6</name>
+    <name> Y6</name>
     <desc>
 #define FRAME_CONFIG Y6_FRAME
 #define FRAME_ORIENTATION X_FRAME
@@ -102,7 +102,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Heli (2560 only)</name>
+    <name> Heli (2560 only)</name>
     <desc>
 #define AUTO_RESET_LOITER 0
 #define FRAME_CONFIG HELI_FRAME
@@ -148,7 +148,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-2560.hex</url2560>
-    <name>ArduCopter 2.0.42 Beta Quad Hil</name>
+    <name> Quad Hil</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION PLUS_FRAME
