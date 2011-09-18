@@ -131,12 +131,14 @@ public:
 	void	send_text(uint8_t severity, const char *str);
 	void	send_text(uint8_t severity, const prog_char_t *str);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
+	void    queued_param_send();
+	void    queued_waypoint_send();
+
 private:
 	void 	handleMessage(mavlink_message_t * msg);
 
 	/// Perform queued sending operations
 	///
-	void    _queued_send();
 
 	AP_Var      *_queued_parameter;                 ///< next parameter to be sent in queue
 	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
@@ -160,7 +162,6 @@ private:
     uint16_t packet_drops;
 
 	// waypoints
-    uint16_t requested_interface; // request port to use
 	uint16_t waypoint_request_i; // request index
 	uint16_t waypoint_dest_sysid; // where to send requests
 	uint16_t waypoint_dest_compid; // "
