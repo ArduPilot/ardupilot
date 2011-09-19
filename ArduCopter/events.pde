@@ -95,3 +95,24 @@ static void relay_toggle()
 	PORTL ^= B00000100;
 }
 
+#if PIEZO == ENABLED
+void piezo_on()
+{
+	digitalWrite(PIEZO_PIN,HIGH);
+	//PORTF |= B00100000;
+}
+
+void piezo_off()
+{
+	digitalWrite(PIEZO_PIN,LOW);
+	//PORTF &= ~B00100000;
+}
+
+void piezo_beep()
+{
+	// Note: This command should not be used in time sensitive loops
+	piezo_on();
+	delay(100);
+	piezo_off();
+}
+#endif

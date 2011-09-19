@@ -103,6 +103,11 @@ static void init_ardupilot()
 		pinMode(LE_LED, OUTPUT);			// GPS status LED
 	#endif
 
+	#if PIEZO == 1
+		pinMode(PIEZO_PIN,OUTPUT);
+		piezo_beep();
+	#endif
+
 
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {

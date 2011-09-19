@@ -182,7 +182,18 @@
 # define CURR_AMPS_OFFSET		0.0
 #endif
 #ifndef HIGH_DISCHARGE
-# define HIGH_DISCHARGE		1760
+# define HIGH_DISCHARGE			1760
+#endif
+
+
+#ifndef PIEZO
+# define PIEZO				ENABLED				//Enables Piezo Code and beeps once on Startup to verify operation
+#endif
+#ifndef PIEZO_LOW_VOLTAGE
+# define PIEZO_LOW_VOLTAGE	ENABLED				//Enables Tone on reaching low battery or current alert
+#endif
+#ifndef PIEZO_ARMING
+# define PIEZO_ARMING		ENABLED				//Two tones on ARM, 1 Tone on disarm
 #endif
 
 
