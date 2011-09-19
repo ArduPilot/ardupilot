@@ -8,16 +8,16 @@
 #include "APM_PI.h"
 
 long
-APM_PI::get_pi(int32_t error, uint16_t dt)
+APM_PI::get_pi(int32_t error, float dt)
 {
 	float output		= 0;
- 	float delta_time	= (float)dt / 1000.0;
+ 	//float delta_time	= (float)dt / 1000.0;
 
 	// Compute proportional component
 	output += error * _kp;
 
 	// Compute integral component if time has elapsed
-	_integrator += (error * _ki) * delta_time;
+	_integrator += (error * _ki) * dt;
 
 	if (_integrator < -_imax) {
 		_integrator = -_imax;
@@ -26,7 +26,6 @@ APM_PI::get_pi(int32_t error, uint16_t dt)
 	}
 
 	output += _integrator;
-
 	return output;
 }
 

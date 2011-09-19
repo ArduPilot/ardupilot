@@ -490,9 +490,9 @@ static byte				gps_watchdog;
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static uint8_t 			delta_ms_fast_loop; 		// Delta Time in miliseconds
 
-static unsigned long 	medium_loopTimer;			// Time in miliseconds of navigation control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-static uint8_t			delta_ms_medium_loop;
+static uint16_t			throttle_timer;
+static float			delta_throttle;
 
 static unsigned long	fiftyhz_loopTimer;
 static uint8_t			delta_ms_fiftyhz;
@@ -502,7 +502,7 @@ static int 				superslow_loopCounter;
 static byte				simple_timer;				// for limiting the execution of flight mode thingys
 
 
-static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
+static float 			dTnav;						// Delta Time in milliseconds for navigation computations
 static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
 //static float 			load;						// % MCU cycles used
 
@@ -526,9 +526,6 @@ void loop()
 	// ----------------------------
 	if (millis() - fast_loopTimer >= 4) {
 		//PORTK |= B00010000;
-		delta_ms_fast_loop 	= millis() - fast_loopTimer;
-		fast_loopTimer		= millis();
-		G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
 
 		// Execute the fast loop
 		// ---------------------
@@ -573,24 +570,28 @@ void loop()
 // Main loop
 static void fast_loop()
 {
-	// IMU DCM Algorithm
-	read_AHRS();
-
-	// This is the fast loop - we want it to execute at >= 100Hz
-	// ---------------------------------------------------------
-	if (delta_ms_fast_loop > G_Dt_max)
-		G_Dt_max = delta_ms_fast_loop;
-
-	// Read radio
-	// ----------
-	read_radio();
-
     // try to send any deferred messages if the serial port now has
     // some space available
     gcs.send_message(MSG_RETRY_DEFERRED);
 #if HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && (HIL_MODE != HIL_MODE_DISABLED || HIL_PORT == 0)
     hil.send_message(MSG_RETRY_DEFERRED);
 #endif
+
+	// Read radio
+	// ----------
+	read_radio();
+
+	// IMU DCM Algorithm
+	read_AHRS();
+
+	fast_loopTimer		= millis();
+	delta_ms_fast_loop 	= millis() - fast_loopTimer;
+	G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by PI Loops
+
+	// Look for slow loop times
+	// ------------------------
+	if (delta_ms_fast_loop > G_Dt_max)
+		G_Dt_max = delta_ms_fast_loop;
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -663,7 +664,7 @@ static void medium_loop()
 				g_gps->new_data 	= false;
 
 				// we are not tracking I term on navigation, so this isn't needed
-				dTnav 				= millis() - nav_loopTimer;
+				dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
 				nav_loopTimer 		= millis();
 
 				// calculate the copter's desired bearing and WP distance
@@ -744,9 +745,6 @@ static void medium_loop()
 		case 4:
 			loop_step = 5;
 			medium_loopCounter = 0;
-
-			delta_ms_medium_loop	= millis() - medium_loopTimer;
-			medium_loopTimer    	= millis();
 
 			if (g.battery_monitoring != 0){
 				read_battery();
@@ -1190,7 +1188,6 @@ static void update_navigation()
 			// calculates desired Yaw
 			update_auto_yaw();
 			{
-				//circle_angle += dTnav; //1000 * (dTnav/1000);
 				circle_angle = wrap_360(target_bearing + 3000 + 18000);
 
 				target_WP.lng = next_WP.lng + (g.loiter_radius * cos(radians(90 - circle_angle/100)));

@@ -122,7 +122,7 @@ static void read_battery(void)
 
 	if(g.battery_monitoring == 4) {
 		current_amps	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps * .9; //reads power sensor current pin
-		current_total	 += current_amps * (float)delta_ms_medium_loop * 0.000278;
+		current_total	 += current_amps * 0.0278;	// called at 100ms on average
 	}
 
 	#if BATTERY_EVENT == 1
