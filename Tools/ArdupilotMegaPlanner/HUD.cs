@@ -49,6 +49,7 @@ namespace hud
             InitializeComponent();
 
             graphicsObject = this;
+            graphicsObjectGDIP = Graphics.FromImage(objBitmap);
         }
 
         private void InitializeComponent()
@@ -136,8 +137,7 @@ namespace hud
         public bool bgon = true;
         public bool hudon = true;
 
-        [System.ComponentModel.Browsable(true),
-System.ComponentModel.Category("Values")]
+        [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public Color hudcolor { get { return whitePen.Color; } set { whitePen = new Pen(value, 2); } }
 
         Pen whitePen = new Pen(Color.White, 2);
@@ -261,10 +261,15 @@ System.ComponentModel.Category("Values")]
 
             huddrawtime += (int)(DateTime.Now - starttime).TotalMilliseconds;
 
+            if (huddrawtime > 500)
+            {
+                opengl = false;
+            }
+
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
-                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count));
+                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
                 count = 0;
                 huddrawtime = 0;
             }
@@ -624,11 +629,22 @@ System.ComponentModel.Category("Values")]
 
         void doPaint(PaintEventArgs e)
         {
-                graphicsObjectGDIP = Graphics.FromImage(objBitmap);
-                graphicsObjectGDIP.SmoothingMode = SmoothingMode.AntiAlias;
-
             try
             {
+                if (graphicsObjectGDIP == null || !opengl && (objBitmap.Width != this.Width || objBitmap.Height != this.Height))
+                {
+                    objBitmap = new Bitmap(this.Width, this.Height);
+                    graphicsObjectGDIP = Graphics.FromImage(objBitmap);
+
+                    graphicsObjectGDIP.SmoothingMode = SmoothingMode.AntiAlias;
+                    graphicsObjectGDIP.InterpolationMode = InterpolationMode.NearestNeighbor;
+                    graphicsObjectGDIP.CompositingMode = CompositingMode.SourceOver;
+                    graphicsObjectGDIP.CompositingQuality = CompositingQuality.HighSpeed;
+                    graphicsObjectGDIP.PixelOffsetMode = PixelOffsetMode.HighSpeed;
+                    graphicsObjectGDIP.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SystemDefault;
+                }
+
+
                 graphicsObject.Clear(Color.Gray);
 
                 if (_bgimage != null)
