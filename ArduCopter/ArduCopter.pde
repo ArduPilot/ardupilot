@@ -29,6 +29,7 @@ HappyKillmore		:Mavlink GCS
 Michael Oborne		:Mavlink GCS
 Jack Dunkle			:Alpha testing
 Christof Schmid		:Alpha testing
+Oliver				:Piezo support
 Guntars				:Arming safety suggestion
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
