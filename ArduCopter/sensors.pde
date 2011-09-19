@@ -126,11 +126,26 @@ static void read_battery(void)
 	}
 
 	#if BATTERY_EVENT == 1
-	if(battery_voltage < g.low_voltage)
+	//if(battery_voltage < g.low_voltage)
+	//	low_battery_event();
+
+	if((battery_voltage < g.low_voltage) || (g.battery_monitoring == 4 && current_total > g.pack_capacity)){
 		low_battery_event();
 
-	if(g.battery_monitoring == 4 && current_total > g.pack_capacity)
-		low_battery_event();
+		#if PIEZO_LOW_VOLTAGE == 1
+		// Only Activate if a battery is connected to avoid alarm on USB only
+		if (battery_voltage1 > 1){
+			piezo_on();
+		}else{
+			piezo_off();
+		}
+		#endif
+
+	}else{
+		#if PIEZO_LOW_VOLTAGE == 1
+			piezo_off();
+		#endif
+	}
 	#endif
 }
 

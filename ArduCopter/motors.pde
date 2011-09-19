@@ -31,6 +31,11 @@ static void arm_motors()
 					motor_armed 	= true;
 					arming_counter 	= ARM_DELAY;
 
+					#if PIEZO_ARMING == 1
+					piezo_beep();
+					piezo_beep();
+					#endif
+
 					// Tune down DCM
 					// -------------------
 					#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -92,6 +97,9 @@ static void arm_motors()
 				arming_counter 	= DISARM_DELAY;
 				compass.save_offsets();
 
+				#if PIEZO_ARMING == 1
+				piezo_beep();
+				#endif
 
 				// Tune down DCM
 				// -------------------
