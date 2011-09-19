@@ -161,20 +161,6 @@ namespace ArdupilotMega
             }
             catch (Exception e) { MessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 
-            Console.WriteLine("check hud");
-
-            GCSViews.FlightData.myhud.Refresh();
-            GCSViews.FlightData.myhud.Refresh();
-            GCSViews.FlightData.myhud.Refresh();
-
-            if (GCSViews.FlightData.myhud.huddrawtime > 1000)
-            {
-                MessageBox.Show("The HUD draw time is above 1 seconds. Please update your graphics card driver.");
-                GCSViews.FlightData.myhud.opengl = false;
-            }
-
-            Console.WriteLine("check hud done");
-
             changeunits();
 
             try
@@ -1370,26 +1356,33 @@ namespace ArdupilotMega
                 }
                 if (loadinglabel != null)
                     loadinglabel.Text = "Checking " + file;
+
+                string path = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + subdir + file;
+
+
                 // Create a request using a URL that can receive a post. 
                 request = WebRequest.Create(baseurl + file);
                 Console.Write(baseurl + file + " ");
                 // Set the Method property of the request to POST.
                 request.Method = "HEAD";
+
+                ((HttpWebRequest)request).IfModifiedSince = File.GetLastWriteTimeUtc(path);
+
                 // Get the response.
                 response = request.GetResponse();
                 // Display the status.
                 Console.WriteLine(((HttpWebResponse)response).StatusDescription);
                 // Get the stream containing content returned by the server.
-                dataStream = response.GetResponseStream();
+                //dataStream = response.GetResponseStream();
                 // Open the stream using a StreamReader for easy access.
-
-                string path = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + subdir + file;
 
                 bool getfile = false;
 
                 if (File.Exists(path))
                 {
                     FileInfo fi = new FileInfo(path);
+
+                    Console.WriteLine(response.Headers[HttpResponseHeader.ETag]);
 
                     if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
                     {
@@ -1408,7 +1401,7 @@ namespace ArdupilotMega
                 }
 
                 reader.Close();
-                dataStream.Close();
+                //dataStream.Close();
                 response.Close();
 
                 if (getfile)

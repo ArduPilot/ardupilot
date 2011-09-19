@@ -247,6 +247,8 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                 {
+                    BUT_playlog.Text = "Pause";
+
                     if (comPort.BaseStream.IsOpen)
                         MainV2.comPort.logreadmode = false;
 
@@ -286,6 +288,10 @@ namespace ArdupilotMega.GCSViews
                     {
                         MainV2.comPort.logreadmode = false;
                     }
+                }
+                else
+                {
+                    BUT_playlog.Text = "Play";
                 }
 
                 try
