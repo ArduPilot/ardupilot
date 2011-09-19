@@ -434,7 +434,7 @@ namespace ArdupilotMega.Setup
         private void TXT_battcapacity_Validating(object sender, CancelEventArgs e)
         {
             float ans = 0;
-            e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
+            e.Cancel = !float.TryParse(TXT_battcapacity.Text, out ans);
         }
 
         private void CMB_batmontype_SelectedIndexChanged(object sender, EventArgs e)
