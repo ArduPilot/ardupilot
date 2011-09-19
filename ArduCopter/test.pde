@@ -649,7 +649,7 @@ static int8_t
 test_current(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	delta_ms_medium_loop = 100;
+	//delta_ms_medium_loop = 100;
 
 	while(1){
 		delay(100);
