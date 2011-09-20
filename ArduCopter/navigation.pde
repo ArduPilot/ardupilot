@@ -3,17 +3,10 @@
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
-static void navigate()
+static byte navigate()
 {
-	// do not navigate with corrupt data
-	// ---------------------------------
-	if (g_gps->fix == 0){
-		g_gps->new_data = false;
-		return;
-	}
-
 	if(next_WP.lat == 0){
-		return;
+		return 0;
 	}
 
 	// waypoint distance from plane
@@ -24,12 +17,13 @@ static void navigate()
 		//gcs.send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
 		//Serial.println(wp_distance,DEC);
 		//print_current_waypoints();
-		return;
+		return 0;
 	}
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
 	target_bearing 	= get_bearing(&current_loc, &next_WP);
+	return 1;
 }
 
 static bool check_missed_wp()
