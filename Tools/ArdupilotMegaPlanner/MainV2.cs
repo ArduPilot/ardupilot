@@ -161,6 +161,9 @@ namespace ArdupilotMega
             }
             catch (Exception e) { MessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 
+            if (MainV2.config["CHK_GDIPlus"] != null)
+                GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
+
             changeunits();
 
             try
@@ -443,6 +446,8 @@ namespace ArdupilotMega
 
             UserControl temp = new GCSViews.Configuration();
 
+            temp.SuspendLayout();
+
             fixtheme(temp);
 
             temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
@@ -456,6 +461,8 @@ namespace ArdupilotMega
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
             MyView.Controls.Add(temp);
+
+            temp.ResumeLayout();
         }
 
         private void MenuSimulation_Click(object sender, EventArgs e)

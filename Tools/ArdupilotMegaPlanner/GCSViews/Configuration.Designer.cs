@@ -263,6 +263,8 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
+            this.label12 = new System.Windows.Forms.Label();
+            this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAPM2.SuspendLayout();
@@ -1448,6 +1450,8 @@
             // 
             // TabPlanner
             // 
+            this.TabPlanner.Controls.Add(this.label12);
+            this.TabPlanner.Controls.Add(this.CHK_GDIPlus);
             this.TabPlanner.Controls.Add(this.label24);
             this.TabPlanner.Controls.Add(this.CHK_loadwponconnect);
             this.TabPlanner.Controls.Add(this.label23);
@@ -1830,6 +1834,19 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
+            // label12
+            // 
+            resources.ApplyResources(this.label12, "label12");
+            this.label12.Name = "label12";
+            // 
+            // CHK_GDIPlus
+            // 
+            resources.ApplyResources(this.CHK_GDIPlus, "CHK_GDIPlus");
+            this.CHK_GDIPlus.Name = "CHK_GDIPlus";
+            this.toolTip1.SetToolTip(this.CHK_GDIPlus, resources.GetString("CHK_GDIPlus.ToolTip"));
+            this.CHK_GDIPlus.UseVisualStyleBackColor = true;
+            this.CHK_GDIPlus.CheckedChanged += new System.EventHandler(this.CHK_GDIPlus_CheckedChanged);
+            // 
             // Configuration
             // 
             resources.ApplyResources(this, "$this");
@@ -2110,5 +2127,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn mavScale;
         private System.Windows.Forms.DataGridViewTextBoxColumn RawValue;
         private MyButton BUT_compare;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.CheckBox CHK_GDIPlus;
     }
 }

@@ -4449,6 +4449,67 @@
   <data name="&gt;&gt;TabAC2.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
+  <data name="label12.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="label12.Location" type="System.Drawing.Point, System.Drawing">
+    <value>30, 300</value>
+  </data>
+  <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
+    <value>61, 13</value>
+  </data>
+  <data name="label12.TabIndex" type="System.Int32, mscorlib">
+    <value>39</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="&gt;&gt;label12.Name" xml:space="preserve">
+    <value>label12</value>
+  </data>
+  <data name="&gt;&gt;label12.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;label12.Parent" xml:space="preserve">
+    <value>TabPlanner</value>
+  </data>
+  <data name="&gt;&gt;label12.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="CHK_GDIPlus.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="CHK_GDIPlus.Location" type="System.Drawing.Point, System.Drawing">
+    <value>139, 299</value>
+  </data>
+  <data name="CHK_GDIPlus.Size" type="System.Drawing.Size, System.Drawing">
+    <value>177, 17</value>
+  </data>
+  <data name="CHK_GDIPlus.TabIndex" type="System.Int32, mscorlib">
+    <value>40</value>
+  </data>
+  <data name="CHK_GDIPlus.Text" xml:space="preserve">
+    <value>GDI+ (old type)</value>
+  </data>
+  <data name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing">
+    <value>17, 17</value>
+  </data>
+  <data name="CHK_GDIPlus.ToolTip" xml:space="preserve">
+    <value>OpenGL = Disabled
+GDI+ = Enabled</value>
+  </data>
+  <data name="&gt;&gt;CHK_GDIPlus.Name" xml:space="preserve">
+    <value>CHK_GDIPlus</value>
+  </data>
+  <data name="&gt;&gt;CHK_GDIPlus.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CHK_GDIPlus.Parent" xml:space="preserve">
+    <value>TabPlanner</value>
+  </data>
+  <data name="&gt;&gt;CHK_GDIPlus.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
   <data name="label24.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -4474,7 +4535,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label24.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>2</value>
   </data>
   <data name="CHK_loadwponconnect.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4501,7 +4562,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_loadwponconnect.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>3</value>
   </data>
   <data name="label23.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4528,7 +4589,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>4</value>
   </data>
   <data name="NUM_tracklength.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 250</value>
@@ -4538,9 +4599,6 @@
   </data>
   <data name="NUM_tracklength.TabIndex" type="System.Int32, mscorlib">
     <value>35</value>
-  </data>
-  <data name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing">
-    <value>17, 17</value>
   </data>
   <data name="NUM_tracklength.ToolTip" xml:space="preserve">
     <value>On the Flight Data Tab</value>
@@ -4555,7 +4613,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;NUM_tracklength.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>5</value>
   </data>
   <data name="CHK_speechaltwarning.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4582,7 +4640,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_speechaltwarning.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>6</value>
   </data>
   <data name="label108.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4609,7 +4667,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label108.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>7</value>
   </data>
   <data name="CHK_resetapmonconnect.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4636,7 +4694,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_resetapmonconnect.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>8</value>
   </data>
   <data name="CHK_mavdebug.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Bottom, Left</value>
@@ -4666,7 +4724,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_mavdebug.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>9</value>
   </data>
   <data name="label107.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4693,7 +4751,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label107.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>10</value>
   </data>
   <data name="CMB_raterc.Items" xml:space="preserve">
     <value>0</value>
@@ -4726,7 +4784,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_raterc.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>11</value>
   </data>
   <data name="label104.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4753,7 +4811,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label104.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>12</value>
   </data>
   <data name="label103.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4780,7 +4838,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label103.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>13</value>
   </data>
   <data name="label102.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4807,7 +4865,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label102.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>14</value>
   </data>
   <data name="label101.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4834,7 +4892,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label101.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>15</value>
   </data>
   <data name="CMB_ratestatus.Items" xml:space="preserve">
     <value>0</value>
@@ -4867,7 +4925,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_ratestatus.ZOrder" xml:space="preserve">
-    <value>14</value>
+    <value>16</value>
   </data>
   <data name="CMB_rateposition.Items" xml:space="preserve">
     <value>0</value>
@@ -4900,7 +4958,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_rateposition.ZOrder" xml:space="preserve">
-    <value>15</value>
+    <value>17</value>
   </data>
   <data name="CMB_rateattitude.Items" xml:space="preserve">
     <value>0</value>
@@ -4933,7 +4991,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_rateattitude.ZOrder" xml:space="preserve">
-    <value>16</value>
+    <value>18</value>
   </data>
   <data name="label99.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4961,7 +5019,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label99.ZOrder" xml:space="preserve">
-    <value>17</value>
+    <value>19</value>
   </data>
   <data name="label98.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4988,7 +5046,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label98.ZOrder" xml:space="preserve">
-    <value>18</value>
+    <value>20</value>
   </data>
   <data name="label97.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5015,7 +5073,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label97.ZOrder" xml:space="preserve">
-    <value>19</value>
+    <value>21</value>
   </data>
   <data name="CMB_speedunits.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 173</value>
@@ -5036,7 +5094,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_speedunits.ZOrder" xml:space="preserve">
-    <value>20</value>
+    <value>22</value>
   </data>
   <data name="CMB_distunits.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 146</value>
@@ -5057,7 +5115,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_distunits.ZOrder" xml:space="preserve">
-    <value>21</value>
+    <value>23</value>
   </data>
   <data name="label96.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5084,7 +5142,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label96.ZOrder" xml:space="preserve">
-    <value>22</value>
+    <value>24</value>
   </data>
   <data name="label95.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5111,7 +5169,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label95.ZOrder" xml:space="preserve">
-    <value>23</value>
+    <value>25</value>
   </data>
   <data name="CHK_speechbattery.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5138,7 +5196,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_speechbattery.ZOrder" xml:space="preserve">
-    <value>24</value>
+    <value>26</value>
   </data>
   <data name="CHK_speechcustom.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5165,7 +5223,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_speechcustom.ZOrder" xml:space="preserve">
-    <value>25</value>
+    <value>27</value>
   </data>
   <data name="CHK_speechmode.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5192,7 +5250,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_speechmode.ZOrder" xml:space="preserve">
-    <value>26</value>
+    <value>28</value>
   </data>
   <data name="CHK_speechwaypoint.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5219,7 +5277,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_speechwaypoint.ZOrder" xml:space="preserve">
-    <value>27</value>
+    <value>29</value>
   </data>
   <data name="label94.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5246,7 +5304,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label94.ZOrder" xml:space="preserve">
-    <value>28</value>
+    <value>30</value>
   </data>
   <data name="CMB_osdcolor.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 40</value>
@@ -5267,7 +5325,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_osdcolor.ZOrder" xml:space="preserve">
-    <value>29</value>
+    <value>31</value>
   </data>
   <data name="CMB_language.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 90</value>
@@ -5288,7 +5346,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_language.ZOrder" xml:space="preserve">
-    <value>30</value>
+    <value>32</value>
   </data>
   <data name="label93.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5315,7 +5373,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label93.ZOrder" xml:space="preserve">
-    <value>31</value>
+    <value>33</value>
   </data>
   <data name="CHK_enablespeech.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5342,7 +5400,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_enablespeech.ZOrder" xml:space="preserve">
-    <value>32</value>
+    <value>34</value>
   </data>
   <data name="CHK_hudshow.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5369,7 +5427,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CHK_hudshow.ZOrder" xml:space="preserve">
-    <value>33</value>
+    <value>35</value>
   </data>
   <data name="label92.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5396,7 +5454,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;label92.ZOrder" xml:space="preserve">
-    <value>34</value>
+    <value>36</value>
   </data>
   <data name="CMB_videosources.Location" type="System.Drawing.Point, System.Drawing">
     <value>139, 13</value>
@@ -5417,7 +5475,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;CMB_videosources.ZOrder" xml:space="preserve">
-    <value>35</value>
+    <value>37</value>
   </data>
   <data name="BUT_Joystick.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5444,7 +5502,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;BUT_Joystick.ZOrder" xml:space="preserve">
-    <value>36</value>
+    <value>38</value>
   </data>
   <data name="BUT_videostop.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5471,7 +5529,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;BUT_videostop.ZOrder" xml:space="preserve">
-    <value>37</value>
+    <value>39</value>
   </data>
   <data name="BUT_videostart.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -5498,7 +5556,7 @@
     <value>TabPlanner</value>
   </data>
   <data name="&gt;&gt;BUT_videostart.ZOrder" xml:space="preserve">
-    <value>38</value>
+    <value>40</value>
   </data>
   <data name="TabPlanner.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 22</value>

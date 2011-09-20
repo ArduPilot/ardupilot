@@ -46,10 +46,13 @@ namespace ArdupilotMega.GCSViews
             if (tooltips.Count == 0)
                 readToolTips();
 
+            this.SuspendLayout();
+
             // prefill all fields
             param = MainV2.comPort.param;
             processToScreen();
 
+            this.ResumeLayout();
 
             // enable disable relevbant hardware tabs
             if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
@@ -106,6 +109,9 @@ namespace ArdupilotMega.GCSViews
             CMB_raterc.Text = MainV2.cs.raterc.ToString();
             CMB_ratestatus.Text = MainV2.cs.ratestatus.ToString();
 
+
+            if (MainV2.config["CHK_GDIPlus"] != null)
+                CHK_GDIPlus.Checked = bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
 
             //set hud color state
             string hudcolor = (string)MainV2.config["hudcolor"];
@@ -938,6 +944,14 @@ namespace ArdupilotMega.GCSViews
                 MainV2.fixtheme(temp);
                 temp.ShowDialog();
             }
+        }
+
+        private void CHK_GDIPlus_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            MessageBox.Show("You need to restart the planner for this to take effect");
+            MainV2.config["CHK_GDIPlus"] = CHK_GDIPlus.Checked.ToString();
         }
     }
 }

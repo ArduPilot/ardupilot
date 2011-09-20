@@ -357,7 +357,7 @@ namespace ArdupilotMega.GCSViews
 
                                 foreach (PointLatLngAlt plla in FlightPlanner.pointlist)
                                 {
-                                    if (plla == null)
+                                    if (plla == null || plla.Lng == 0 || plla.Lat == 0)
                                         break;
                                     addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt);
                                 }
