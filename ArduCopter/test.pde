@@ -394,9 +394,9 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		//delay(20);
 		if (millis() - fast_loopTimer >= 5) {
-			delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			fast_loopTimer		= millis();
+			//delta_ms_fast_loop 	= millis() - fast_loopTimer;
+			//G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
+			//fast_loopTimer		= millis();
 
 			// IMU
 			// ---

@@ -488,14 +488,11 @@ static byte				gps_watchdog;
 // System Timers
 // --------------
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
-static uint8_t 			delta_ms_fast_loop; 		// Delta Time in miliseconds
-
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
 static uint16_t			throttle_timer;
 static float			delta_throttle;
 
 static unsigned long	fiftyhz_loopTimer;
-static uint8_t			delta_ms_fiftyhz;
 
 static byte 			slow_loopCounter;
 static int 				superslow_loopCounter;
@@ -504,7 +501,6 @@ static byte				simple_timer;				// for limiting the execution of flight mode thi
 
 static float 			dTnav;						// Delta Time in milliseconds for navigation computations
 static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
-//static float 			load;						// % MCU cycles used
 
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
@@ -522,10 +518,14 @@ void setup() {
 
 void loop()
 {
+	long timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
-	if (millis() - fast_loopTimer >= 4) {
+	if ((timer - fast_loopTimer) >= 4000) {
 		//PORTK |= B00010000;
+		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
+		fast_loopTimer 		= timer;
+		//Serial.printf("%1.5f\n", G_Dt);
 
 		// Execute the fast loop
 		// ---------------------
@@ -533,9 +533,8 @@ void loop()
 	}
 	//PORTK &= B11101111;
 
-	if (millis() - fiftyhz_loopTimer > 19) {
-		delta_ms_fiftyhz 		= millis() - fiftyhz_loopTimer;
-		fiftyhz_loopTimer		= millis();
+	if ((timer - fiftyhz_loopTimer) >= 20000) {
+		fiftyhz_loopTimer		= timer;
 		//PORTK |= B01000000;
 
 		// reads all of the necessary trig functions for cameras, throttle, etc.
@@ -584,14 +583,10 @@ static void fast_loop()
 	// IMU DCM Algorithm
 	read_AHRS();
 
-	fast_loopTimer		= millis();
-	delta_ms_fast_loop 	= millis() - fast_loopTimer;
-	G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by PI Loops
-
 	// Look for slow loop times
 	// ------------------------
-	if (delta_ms_fast_loop > G_Dt_max)
-		G_Dt_max = delta_ms_fast_loop;
+	//if (delta_ms_fast_loop > G_Dt_max)
+	//	G_Dt_max = delta_ms_fast_loop;
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -669,14 +664,15 @@ static void medium_loop()
 
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
-				navigate();
+				if(navigate()){
 
-				// control mode specific updates
-				// -----------------------------
-				update_navigation();
+					// control mode specific updates
+					// -----------------------------
+					update_navigation();
 
-				if (g.log_bitmask & MASK_LOG_NTUN)
-					Log_Write_Nav_Tuning();
+					if (g.log_bitmask & MASK_LOG_NTUN)
+						Log_Write_Nav_Tuning();
+				}
 			}
 
 			break;
