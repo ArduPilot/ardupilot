@@ -51,17 +51,22 @@ static boolean trim_flag;
 // set this to your trainer switch
 static void read_trim_switch()
 {
-#if CH7_OPTION == DO_FLIP
+#if CH7_OPTION == CH7_FLIP
 	if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
 		do_flip = true;
 	}
 
-#elif CH7_OPTION == SIMPLE_MODE_CONTROL
+#elif CH7_OPTION == CH7_SIMPLE_MODE
 
 	do_simple = (g.rc_7.control_in > 800);
 	//Serial.println(g.rc_7.control_in, DEC);
 
-#elif CH7_OPTION == DO_SET_HOVER
+#elif CH7_OPTION == CH7_RTL
+	set_mode(RTL);
+	//do_simple = (g.rc_7.control_in > 800);
+	//Serial.println(g.rc_7.control_in, DEC);
+
+#elif CH7_OPTION == CH7_SET_HOVER
 	// switch is engaged
 	if (g.rc_7.control_in > 800){
 		trim_flag = true;
@@ -76,7 +81,6 @@ static void read_trim_switch()
 					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
 			}
 			trim_flag = false;
-
 		}
 	}
 #endif

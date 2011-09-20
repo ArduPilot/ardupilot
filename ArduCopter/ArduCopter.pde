@@ -525,7 +525,6 @@ void loop()
 		//PORTK |= B00010000;
 		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
 		fast_loopTimer 		= timer;
-		//Serial.printf("%1.5f\n", G_Dt);
 
 		// Execute the fast loop
 		// ---------------------
