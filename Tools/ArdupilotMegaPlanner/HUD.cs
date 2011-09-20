@@ -261,11 +261,6 @@ namespace hud
 
             huddrawtime += (int)(DateTime.Now - starttime).TotalMilliseconds;
 
-            if (huddrawtime > 500)
-            {
-                opengl = false;
-            }
-
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
@@ -345,52 +340,59 @@ namespace hud
 
         public void DrawImage(Image img, int x, int y, int width, int height)
         {
-            if (img == null)
-                return;
-            //bitmap = new Bitmap(512,512);
-
-            using (Graphics graphics = Graphics.FromImage(bitmap))
+            if (opengl)
             {
-                graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
-                //draw the image into the target bitmap 
-                graphics.DrawImage(img, 0, 0, bitmap.Width, bitmap.Height);
-            } 
+                if (img == null)
+                    return;
+                //bitmap = new Bitmap(512,512);
+
+                using (Graphics graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
+                    //draw the image into the target bitmap 
+                    graphics.DrawImage(img, 0, 0, bitmap.Width, bitmap.Height);
+                }
 
 
-            GL.DeleteTexture(texture);
+                GL.DeleteTexture(texture);
 
-            GL.GenTextures(1, out texture);
-            GL.BindTexture(TextureTarget.Texture2D, texture);
+                GL.GenTextures(1, out texture);
+                GL.BindTexture(TextureTarget.Texture2D, texture);
 
-            BitmapData data = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height),
-    ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                BitmapData data = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height),
+        ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            //Console.WriteLine("w {0} h {1}",data.Width, data.Height);
+                //Console.WriteLine("w {0} h {1}",data.Width, data.Height);
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+                    OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            bitmap.UnlockBits(data);
+                bitmap.UnlockBits(data);
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
-            GL.Enable(EnableCap.Texture2D);
+                GL.Enable(EnableCap.Texture2D);
 
-            GL.BindTexture(TextureTarget.Texture2D, texture);
+                GL.BindTexture(TextureTarget.Texture2D, texture);
 
-            GL.Begin(BeginMode.Quads);
+                GL.Begin(BeginMode.Quads);
 
-            GL.TexCoord2(0.0f, 1.0f); GL.Vertex2(0, this.Height);
-            GL.TexCoord2(1.0f, 1.0f); GL.Vertex2(this.Width, this.Height);
-            GL.TexCoord2(1.0f, 0.0f); GL.Vertex2(this.Width, 0);
-            GL.TexCoord2(0.0f, 0.0f); GL.Vertex2(0, 0);
+                GL.TexCoord2(0.0f, 1.0f); GL.Vertex2(0, this.Height);
+                GL.TexCoord2(1.0f, 1.0f); GL.Vertex2(this.Width, this.Height);
+                GL.TexCoord2(1.0f, 0.0f); GL.Vertex2(this.Width, 0);
+                GL.TexCoord2(0.0f, 0.0f); GL.Vertex2(0, 0);
 
-            GL.End();
+                GL.End();
 
-            GL.Disable(EnableCap.Texture2D);
+                GL.Disable(EnableCap.Texture2D);
+            }
+            else
+            {
+                graphicsObjectGDIP.DrawImage(img,x,y,width,height);
+            }
         }
 
         public void DrawPath(Pen penn, GraphicsPath gp)
@@ -1460,6 +1462,8 @@ namespace hud
                 return;
             this.Height = (int)(this.Width / 1.333f);
             base.OnResize(e);
+
+            graphicsObjectGDIP = Graphics.FromImage(objBitmap);
 
             charbitmaps = new Bitmap[charbitmaps.Length];
 

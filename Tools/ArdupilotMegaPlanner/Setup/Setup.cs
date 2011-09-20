@@ -308,6 +308,15 @@ namespace ArdupilotMega.Setup
                         CMB_fmode4.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
                         CMB_fmode5.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
                         CMB_fmode6.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()).ToString();
+
+                        int simple = int.Parse(MainV2.comPort.param["SIMPLE"].ToString());
+
+                        CB_simple1.Checked = ((simple >> 0 & 1) == 1);
+                        CB_simple2.Checked = ((simple >> 1 & 1) == 1);
+                        CB_simple3.Checked = ((simple >> 2 & 1) == 1);
+                        CB_simple4.Checked = ((simple >> 3 & 1) == 1);
+                        CB_simple5.Checked = ((simple >> 4 & 1) == 1);
+                        CB_simple6.Checked = ((simple >> 5 & 1) == 1);
                     }
                     catch { }
                 }
@@ -434,7 +443,7 @@ namespace ArdupilotMega.Setup
         private void TXT_battcapacity_Validating(object sender, CancelEventArgs e)
         {
             float ans = 0;
-            e.Cancel = !float.TryParse(TXT_battcapacity.Text, out ans);
+            e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
         }
 
         private void CMB_batmontype_SelectedIndexChanged(object sender, EventArgs e)

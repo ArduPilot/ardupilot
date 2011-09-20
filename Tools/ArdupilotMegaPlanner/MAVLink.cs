@@ -652,6 +652,10 @@ namespace ArdupilotMega
                 || paramname.ToUpper().EndsWith("XTRK_ANGLE_CD") || paramname.ToUpper().EndsWith("LIM_PITCH_MAX") || paramname.ToUpper().EndsWith("LIM_PITCH_MIN")
                 || paramname.ToUpper().EndsWith("LIM_ROLL_CD") || paramname.ToUpper().EndsWith("PITCH_MAX") || paramname.ToUpper().EndsWith("WP_SPEED_MAX"))
             {
+                if (paramname.ToUpper().EndsWith("THR_HOLD_IMAX")) {
+                    return;
+                }
+
                 if (fromapm)
                 {
                     value /= 100.0f;
@@ -1544,7 +1548,7 @@ namespace ArdupilotMega
                                             break;
                                         }
                                         System.Threading.Thread.Sleep(1);
-                                        System.Windows.Forms.Application.DoEvents();
+                                        System.Windows.Forms.Application.DoEvents(); // when connecting this is in the main thread
                                         to++;
 
                                         //Console.WriteLine("data " + 0 + " " + length + " aval " + BaseStream.BytesToRead);
