@@ -62,7 +62,8 @@ static void read_trim_switch()
 	//Serial.println(g.rc_7.control_in, DEC);
 
 #elif CH7_OPTION == CH7_RTL
-	set_mode(RTL);
+	if(control_mode != RTL && g.rc_7.control_in > 800)
+		set_mode(RTL);
 	//do_simple = (g.rc_7.control_in > 800);
 	//Serial.println(g.rc_7.control_in, DEC);
 
