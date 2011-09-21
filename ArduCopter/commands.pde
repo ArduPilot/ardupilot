@@ -176,11 +176,7 @@ static void set_next_WP(struct Location *wp)
 
 	// to check if we have missed the WP
 	// ----------------------------
-	saved_target_bearing = target_bearing;
-
-	// set a new crosstrack bearing
-	// ----------------------------
-	//crosstrack_bearing 	= target_bearing;	// Used for track following
+	original_target_bearing = target_bearing;
 
 	gcs.print_current_waypoints();
 }

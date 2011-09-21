@@ -327,7 +327,6 @@ static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane 
 //static long		crosstrack_correction;				// deg * 100 : 0 to 360 desired angle of plane to target
 
 static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
-static long 	circle_angle = 0;
 static byte	wp_control;							// used to control - navgation or loiter
 
 static byte	command_must_index;					// current command memory location
@@ -402,9 +401,15 @@ static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, o
 
 // Loiter management
 // -----------------
-static long 	saved_target_bearing;				// deg * 100
-static unsigned long 	loiter_time;				// millis : when we started LOITER mode
-static unsigned long 	loiter_time_max;			// millis : how long to stay in LOITER mode
+static long 	original_target_bearing;			// deg * 100, used to check we are not passing the WP
+static long 	old_target_bearing;					// used to track difference in angle
+
+static int		loiter_total; 						// deg : how many times to loiter * 360
+//static int 		loiter_delta;						// deg : how far we just turned
+static int		loiter_sum;							// deg : how far we have turned around a waypoint
+static long 	loiter_time;						// millis : when we started LOITER mode
+static int 		loiter_time_max;					// millis : how long to stay in LOITER mode
+
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
@@ -1135,7 +1140,6 @@ static void update_navigation()
 	switch(control_mode){
 		case AUTO:
 			verify_commands();
-
 			// note: wp_control is handled by commands_logic
 
 			// calculates desired Yaw
@@ -1147,6 +1151,7 @@ static void update_navigation()
 
 		case GUIDED:
 			wp_control = WP_MODE;
+
 			update_auto_yaw();
 			update_nav_wp();
 			break;
@@ -1161,6 +1166,7 @@ static void update_navigation()
 
 				wp_control = WP_MODE;
 			}else{
+				// lets just jump to Loiter Mode after RTL
 				set_mode(LOITER);
 				//xtrack_enabled = false;
 			}
@@ -1171,33 +1177,19 @@ static void update_navigation()
 
 			// switch passthrough to LOITER
 		case LOITER:
-			wp_control = LOITER_MODE;
+			wp_control 		= LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
 
 		case CIRCLE:
-			yaw_tracking = MAV_ROI_WPNEXT;
+			yaw_tracking	= MAV_ROI_WPNEXT;
+			wp_control 		= CIRCLE_MODE;
 
 			// calculates desired Yaw
 			update_auto_yaw();
-			{
-				circle_angle = wrap_360(target_bearing + 3000 + 18000);
-
-				target_WP.lng = next_WP.lng + (g.loiter_radius * cos(radians(90 - circle_angle/100)));
-				target_WP.lat = next_WP.lat + (g.loiter_radius * sin(radians(90 - circle_angle/100)));
-			}
-
-			// calc the lat and long error to the target
-			calc_location_error(&target_WP);
-
-			// use error as the desired rate towards the target
-			// nav_lon, nav_lat is calculated
-			calc_nav_rate(long_error, lat_error, 200, 0);
-
-			// rotate pitch and roll to the copter frame of reference
-			calc_nav_pitch_roll();
+			update_nav_wp();
 			break;
 
 	}
@@ -1379,6 +1371,39 @@ static void update_nav_wp()
 
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
+
+		// rotate pitch and roll to the copter frame of reference
+		calc_nav_pitch_roll();
+
+	}else if(wp_control == CIRCLE_MODE){
+
+		// check if we have missed the WP
+		int loiter_delta = (target_bearing - old_target_bearing)/100;
+
+		// reset the old value
+		old_target_bearing = target_bearing;
+
+		// wrap values
+		if (loiter_delta > 180) loiter_delta -= 360;
+		if (loiter_delta < -180) loiter_delta += 360;
+
+		// sum the angle around the WP
+		loiter_sum += abs(loiter_delta);
+
+
+		// creat a virtual waypoint that circles the next_WP
+		// Count the degrees we have circulated the WP
+		int circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
+
+		target_WP.lng = next_WP.lng + (g.loiter_radius * cos(radians(90 - circle_angle)));
+		target_WP.lat = next_WP.lat + (g.loiter_radius * sin(radians(90 - circle_angle)));
+
+		// calc the lat and long error to the target
+		calc_location_error(&target_WP);
+
+		// use error as the desired rate towards the target
+		// nav_lon, nav_lat is calculated
+		calc_nav_rate(long_error, lat_error, 200, 0);
 
 		// rotate pitch and roll to the copter frame of reference
 		calc_nav_pitch_roll();

@@ -165,6 +165,7 @@
 
 #define LOITER_MODE 1
 #define WP_MODE 2
+#define CIRCLE_MODE 3
 
 // Waypoint options
 #define WP_OPTION_ALT_RELATIVE 		1
