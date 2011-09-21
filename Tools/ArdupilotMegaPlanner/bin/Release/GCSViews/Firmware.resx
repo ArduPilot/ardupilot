@@ -336,34 +336,34 @@
   <data name="&gt;&gt;progress.ZOrder" xml:space="preserve">
     <value>13</value>
   </data>
-  <data name="label1.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_AP.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>113, 167</value>
+  <data name="lbl_AP.Location" type="System.Drawing.Point, System.Drawing">
+    <value>42, 168</value>
   </data>
-  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>56, 13</value>
+  <data name="lbl_AP.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label1.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_AP.TabIndex" type="System.Int32, mscorlib">
     <value>8</value>
   </data>
-  <data name="label1.Text" xml:space="preserve">
+  <data name="lbl_AP.Text" xml:space="preserve">
     <value>ArduPlane</value>
   </data>
-  <data name="&gt;&gt;label1.Name" xml:space="preserve">
-    <value>label1</value>
+  <data name="lbl_AP.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label1.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_AP.Name" xml:space="preserve">
+    <value>lbl_AP</value>
+  </data>
+  <data name="&gt;&gt;lbl_AP.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label1.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_AP.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label1.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_AP.ZOrder" xml:space="preserve">
     <value>11</value>
   </data>
   <data name="label2.AutoSize" type="System.Boolean, mscorlib">
@@ -396,184 +396,184 @@
   <data name="&gt;&gt;label2.ZOrder" xml:space="preserve">
     <value>10</value>
   </data>
-  <data name="label3.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label3.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_APHil.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label3.Location" type="System.Drawing.Point, System.Drawing">
-    <value>74, 361</value>
+  <data name="lbl_APHil.Location" type="System.Drawing.Point, System.Drawing">
+    <value>42, 361</value>
   </data>
-  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
-    <value>142, 13</value>
+  <data name="lbl_APHil.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label3.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_APHil.TabIndex" type="System.Int32, mscorlib">
     <value>10</value>
   </data>
-  <data name="label3.Text" xml:space="preserve">
+  <data name="lbl_APHil.Text" xml:space="preserve">
     <value>ArduPlane (Xplane simulator)</value>
   </data>
-  <data name="&gt;&gt;label3.Name" xml:space="preserve">
-    <value>label3</value>
+  <data name="lbl_APHil.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label3.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_APHil.Name" xml:space="preserve">
+    <value>lbl_APHil</value>
+  </data>
+  <data name="&gt;&gt;lbl_APHil.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label3.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_APHil.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label3.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_APHil.ZOrder" xml:space="preserve">
     <value>9</value>
   </data>
-  <data name="label4.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label4.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_ACQuad.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label4.Location" type="System.Drawing.Point, System.Drawing">
-    <value>612, 168</value>
+  <data name="lbl_ACQuad.Location" type="System.Drawing.Point, System.Drawing">
+    <value>560, 168</value>
   </data>
-  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
-    <value>89, 13</value>
+  <data name="lbl_ACQuad.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label4.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_ACQuad.TabIndex" type="System.Int32, mscorlib">
     <value>11</value>
   </data>
-  <data name="label4.Text" xml:space="preserve">
+  <data name="lbl_ACQuad.Text" xml:space="preserve">
     <value>ArduCopter Quad</value>
   </data>
-  <data name="&gt;&gt;label4.Name" xml:space="preserve">
-    <value>label4</value>
+  <data name="lbl_ACQuad.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label4.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACQuad.Name" xml:space="preserve">
+    <value>lbl_ACQuad</value>
+  </data>
+  <data name="&gt;&gt;lbl_ACQuad.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label4.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACQuad.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label4.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACQuad.ZOrder" xml:space="preserve">
     <value>8</value>
   </data>
-  <data name="label5.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_ACHexa.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>817, 167</value>
+  <data name="lbl_ACHexa.Location" type="System.Drawing.Point, System.Drawing">
+    <value>767, 168</value>
   </data>
-  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>88, 13</value>
+  <data name="lbl_ACHexa.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label5.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_ACHexa.TabIndex" type="System.Int32, mscorlib">
     <value>12</value>
   </data>
-  <data name="label5.Text" xml:space="preserve">
+  <data name="lbl_ACHexa.Text" xml:space="preserve">
     <value>ArduCopter Hexa</value>
   </data>
-  <data name="&gt;&gt;label5.Name" xml:space="preserve">
-    <value>label5</value>
+  <data name="lbl_ACHexa.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label5.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHexa.Name" xml:space="preserve">
+    <value>lbl_ACHexa</value>
+  </data>
+  <data name="&gt;&gt;lbl_ACHexa.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label5.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHexa.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHexa.ZOrder" xml:space="preserve">
     <value>7</value>
   </data>
-  <data name="label6.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label6.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_ACTri.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>623, 355</value>
+  <data name="lbl_ACTri.Location" type="System.Drawing.Point, System.Drawing">
+    <value>560, 361</value>
   </data>
-  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 13</value>
+  <data name="lbl_ACTri.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label6.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_ACTri.TabIndex" type="System.Int32, mscorlib">
     <value>13</value>
   </data>
-  <data name="label6.Text" xml:space="preserve">
+  <data name="lbl_ACTri.Text" xml:space="preserve">
     <value>ArduCopter Tri</value>
   </data>
-  <data name="&gt;&gt;label6.Name" xml:space="preserve">
-    <value>label6</value>
+  <data name="lbl_ACTri.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label6.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACTri.Name" xml:space="preserve">
+    <value>lbl_ACTri</value>
+  </data>
+  <data name="&gt;&gt;lbl_ACTri.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label6.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACTri.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label6.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACTri.ZOrder" xml:space="preserve">
     <value>6</value>
   </data>
-  <data name="label7.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label7.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_ACY6.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label7.Location" type="System.Drawing.Point, System.Drawing">
-    <value>831, 355</value>
+  <data name="lbl_ACY6.Location" type="System.Drawing.Point, System.Drawing">
+    <value>767, 361</value>
   </data>
-  <data name="label7.Size" type="System.Drawing.Size, System.Drawing">
-    <value>76, 13</value>
+  <data name="lbl_ACY6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label7.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_ACY6.TabIndex" type="System.Int32, mscorlib">
     <value>14</value>
   </data>
-  <data name="label7.Text" xml:space="preserve">
+  <data name="lbl_ACY6.Text" xml:space="preserve">
     <value>ArduCopter Y6</value>
   </data>
-  <data name="&gt;&gt;label7.Name" xml:space="preserve">
-    <value>label7</value>
+  <data name="lbl_ACY6.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label7.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACY6.Name" xml:space="preserve">
+    <value>lbl_ACY6</value>
+  </data>
+  <data name="&gt;&gt;lbl_ACY6.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label7.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACY6.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label7.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACY6.ZOrder" xml:space="preserve">
     <value>5</value>
   </data>
-  <data name="label8.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label8.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_Heli.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label8.Location" type="System.Drawing.Point, System.Drawing">
-    <value>372, 168</value>
+  <data name="lbl_Heli.Location" type="System.Drawing.Point, System.Drawing">
+    <value>310, 167</value>
   </data>
-  <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
-    <value>81, 13</value>
+  <data name="lbl_Heli.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label8.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_Heli.TabIndex" type="System.Int32, mscorlib">
     <value>18</value>
   </data>
-  <data name="label8.Text" xml:space="preserve">
+  <data name="lbl_Heli.Text" xml:space="preserve">
     <value>ArduCopter Heli</value>
   </data>
-  <data name="&gt;&gt;label8.Name" xml:space="preserve">
-    <value>label8</value>
+  <data name="lbl_Heli.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label8.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_Heli.Name" xml:space="preserve">
+    <value>lbl_Heli</value>
+  </data>
+  <data name="&gt;&gt;lbl_Heli.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label8.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_Heli.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label8.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_Heli.ZOrder" xml:space="preserve">
     <value>3</value>
   </data>
   <data name="pictureBoxHeli.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
@@ -603,34 +603,34 @@
   <data name="&gt;&gt;pictureBoxHeli.ZOrder" xml:space="preserve">
     <value>4</value>
   </data>
-  <data name="label9.AutoSize" type="System.Boolean, mscorlib">
-    <value>True</value>
-  </data>
-  <data name="label9.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+  <data name="lbl_ACHil.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
-  <data name="label9.Location" type="System.Drawing.Point, System.Drawing">
-    <value>337, 361</value>
+  <data name="lbl_ACHil.Location" type="System.Drawing.Point, System.Drawing">
+    <value>310, 361</value>
   </data>
-  <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
-    <value>141, 13</value>
+  <data name="lbl_ACHil.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 13</value>
   </data>
-  <data name="label9.TabIndex" type="System.Int32, mscorlib">
+  <data name="lbl_ACHil.TabIndex" type="System.Int32, mscorlib">
     <value>21</value>
   </data>
-  <data name="label9.Text" xml:space="preserve">
+  <data name="lbl_ACHil.Text" xml:space="preserve">
     <value>ArduCopter Quad (Simulator)</value>
   </data>
-  <data name="&gt;&gt;label9.Name" xml:space="preserve">
-    <value>label9</value>
+  <data name="lbl_ACHil.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>TopCenter</value>
   </data>
-  <data name="&gt;&gt;label9.Type" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHil.Name" xml:space="preserve">
+    <value>lbl_ACHil</value>
+  </data>
+  <data name="&gt;&gt;lbl_ACHil.Type" xml:space="preserve">
     <value>System.Windows.Forms.Label, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;label9.Parent" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHil.Parent" xml:space="preserve">
     <value>$this</value>
   </data>
-  <data name="&gt;&gt;label9.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;lbl_ACHil.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <data name="pictureBoxQuadHil.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">

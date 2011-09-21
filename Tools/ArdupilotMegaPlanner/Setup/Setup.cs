@@ -334,20 +334,47 @@ namespace ArdupilotMega.Setup
                 if (MainV2.comPort.param["MAG_ENABLE"] != null)
                     CHK_enablecompass.Checked = MainV2.comPort.param["MAG_ENABLE"].ToString() == "1" ? true : false;
 
+                if (MainV2.comPort.param["COMPASS_DEC"] != null)
+                    TXT_declination.Text = (float.Parse(MainV2.comPort.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
+                startup = false;
+            }
+
+            if (tabControl1.SelectedTab == tabBattery)
+            {
+                startup = true;
+                bool not_supported = false;
                 if (MainV2.comPort.param["BATT_MONITOR"] != null)
                 {
                     if (MainV2.comPort.param["BATT_MONITOR"].ToString() != "0")
                     {
-                        CHK_enablebattmon.Checked = true;
                         CMB_batmontype.SelectedIndex = (int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString());
                     }
                 }
 
-                if (MainV2.comPort.param["COMPASS_DEC"] != null)
-                    TXT_declination.Text = (float.Parse(MainV2.comPort.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
 
                 if (MainV2.comPort.param["BATT_CAPACITY"] != null)
                     TXT_battcapacity.Text = MainV2.comPort.param["BATT_CAPACITY"].ToString();
+                if (MainV2.comPort.param["INPUT_VOLTS"] != null)
+                    TXT_inputvoltage.Text = MainV2.comPort.param["INPUT_VOLTS"].ToString();
+                else
+                    not_supported = true;
+                TXT_voltage.Text = MainV2.cs.battery_voltage.ToString();
+                TXT_measuredvoltage.Text = TXT_voltage.Text;
+                if (MainV2.comPort.param["VOLT_DIVIDER"] != null)
+                    TXT_divider.Text = MainV2.comPort.param["VOLT_DIVIDER"].ToString();
+                else
+                    not_supported = true;
+                if (MainV2.comPort.param["AMP_PER_VOLT"] != null)
+                    TXT_ampspervolt.Text = MainV2.comPort.param["AMP_PER_VOLT"].ToString();
+                else
+                    not_supported = true;
+                if (not_supported)
+                {
+                    TXT_inputvoltage.Enabled = false;
+                    TXT_measuredvoltage.Enabled = false;
+                    TXT_divider.Enabled = false;
+                    TXT_ampspervolt.Enabled = false;
+                }
 
                 startup = false;
             }
@@ -434,42 +461,11 @@ namespace ArdupilotMega.Setup
             }
             catch { MessageBox.Show("Failed to set Flight modes"); }
         }
+
         private void TXT_declination_Validating(object sender, CancelEventArgs e)
         {
             float ans = 0;
             e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
-        }
-
-        private void TXT_battcapacity_Validating(object sender, CancelEventArgs e)
-        {
-            float ans = 0;
-            e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
-        }
-
-        private void CMB_batmontype_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (startup)
-                return;
-            try
-            {
-                if (MainV2.comPort.param["BATT_MONITOR"] == null)
-                {
-                    MessageBox.Show("Not Available");
-                }
-                else
-                {
-                    MainV2.comPort.setParam("BATT_MONITOR", CMB_batmontype.SelectedIndex);
-                    if (CMB_batmontype.SelectedIndex != 0)
-                    {
-                        CHK_enablebattmon.Checked = true;
-                    }
-                    else
-                    {
-                        CHK_enablebattmon.Checked = false;
-                    }
-                }
-            }
-            catch { MessageBox.Show("Set BATT_MONITOR Failed"); }
         }
 
         private void TXT_declination_Validated(object sender, EventArgs e)
@@ -508,23 +504,6 @@ namespace ArdupilotMega.Setup
             catch { MessageBox.Show("Set COMPASS_DEC Failed"); }
         }
 
-        private void TXT_battcapacity_Validated(object sender, EventArgs e)
-        {
-            if (startup || ((TextBox)sender).Enabled == false)
-                return;
-            try
-            {
-                if (MainV2.comPort.param["BATT_CAPACITY"] == null)
-                {
-                    MessageBox.Show("Not Available");
-                }
-                else
-                {
-                    MainV2.comPort.setParam("BATT_CAPACITY", float.Parse(TXT_battcapacity.Text));
-                }
-            }
-            catch { MessageBox.Show("Set BATT_CAPACITY Failed"); }
-        }
 
         private void CHK_enablecompass_CheckedChanged(object sender, EventArgs e)
         {
@@ -546,24 +525,6 @@ namespace ArdupilotMega.Setup
 
         //((CheckBox)sender).Checked = !((CheckBox)sender).Checked;
 
-        private void CHK_enablebattmon_CheckedChanged(object sender, EventArgs e)
-        {
-            if (startup)
-                return;
-            try
-            {                    
-                if (((CheckBox)sender).Checked == false)
-                {
-                    CMB_batmontype.SelectedIndex = 0;
-                }
-                else
-                {
-                    if (CMB_batmontype.SelectedIndex <= 0)
-                        CMB_batmontype.SelectedIndex = 1;
-                }
-            }
-            catch { MessageBox.Show("Set BATT_MONITOR Failed"); }
-        }
 
         private void CHK_enablesonar_CheckedChanged(object sender, EventArgs e)
         {
@@ -599,6 +560,158 @@ namespace ArdupilotMega.Setup
                 }
             }
             catch { MessageBox.Show("Set ARSPD_ENABLE Failed"); }
+        }
+        private void CHK_enablebattmon_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (((CheckBox)sender).Checked == false)
+                {
+                    CMB_batmontype.SelectedIndex = 0;
+                }
+                else
+                {
+                    if (CMB_batmontype.SelectedIndex <= 0)
+                        CMB_batmontype.SelectedIndex = 1;
+                }
+            }
+            catch { MessageBox.Show("Set BATT_MONITOR Failed"); }
+        }
+        private void TXT_battcapacity_Validating(object sender, CancelEventArgs e)
+        {
+            float ans = 0;
+            e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
+        }
+        private void TXT_battcapacity_Validated(object sender, EventArgs e)
+        {
+            if (startup || ((TextBox)sender).Enabled == false)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["BATT_CAPACITY"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("BATT_CAPACITY", float.Parse(TXT_battcapacity.Text));
+                }
+            }
+            catch { MessageBox.Show("Set BATT_CAPACITY Failed"); }
+        }
+        private void CMB_batmontype_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["BATT_MONITOR"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("BATT_MONITOR", CMB_batmontype.SelectedIndex);
+                }
+            }
+            catch { MessageBox.Show("Set BATT_MONITOR Failed"); }
+        }
+        private void TXT_inputvoltage_Validating(object sender, CancelEventArgs e)
+        {
+            float ans = 0;
+            e.Cancel = !float.TryParse(TXT_inputvoltage.Text, out ans);
+        }
+        private void TXT_inputvoltage_Validated(object sender, EventArgs e)
+        {
+            if (startup || ((TextBox)sender).Enabled == false)
+                return;
+            try
+                {
+                if (MainV2.comPort.param["INPUT_VOLTS"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("INPUT_VOLTS", float.Parse(TXT_inputvoltage.Text));
+                }
+            }
+            catch { MessageBox.Show("Set INPUT_VOLTS Failed"); }
+        }
+        private void TXT_measuredvoltage_Validating(object sender, CancelEventArgs e)
+        {
+            float ans = 0;
+            e.Cancel = !float.TryParse(TXT_measuredvoltage.Text, out ans);
+        }
+        private void TXT_measuredvoltage_Validated(object sender, EventArgs e)
+        {
+            if (startup || ((TextBox)sender).Enabled == false)
+                return;
+            float measuredvoltage = float.Parse(TXT_measuredvoltage.Text);
+            float voltage = float.Parse(TXT_voltage.Text);
+            float divider = float.Parse(TXT_divider.Text);
+            if (voltage == 0)
+                return;
+            float new_divider = (measuredvoltage * divider) / voltage;
+            TXT_divider.Text = new_divider.ToString();
+            try
+            {
+                if (MainV2.comPort.param["VOLT_DIVIDER"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("VOLT_DIVIDER", float.Parse(TXT_divider.Text));
+                }
+            }
+            catch { MessageBox.Show("Set VOLT_DIVIDER Failed"); }
+        }
+        private void TXT_divider_Validating(object sender, CancelEventArgs e)
+        {
+            float ans = 0;
+            e.Cancel = !float.TryParse(TXT_divider.Text, out ans);
+        }
+        private void TXT_divider_Validated(object sender, EventArgs e)
+        {
+            if (startup || ((TextBox)sender).Enabled == false)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["VOLT_DIVIDER"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("VOLT_DIVIDER", float.Parse(TXT_divider.Text));
+                }
+            }
+            catch { MessageBox.Show("Set VOLT_DIVIDER Failed"); }
+        }
+        private void TXT_ampspervolt_Validating(object sender, CancelEventArgs e)
+        {
+            float ans = 0;
+            e.Cancel = !float.TryParse(TXT_ampspervolt.Text, out ans);
+        }
+        private void TXT_ampspervolt_Validated(object sender, EventArgs e)
+        {
+            if (startup || ((TextBox)sender).Enabled == false)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["AMP_PER_VOLT"] == null)
+                {
+                    MessageBox.Show("Not Available");
+                }
+                else
+                {
+                    MainV2.comPort.setParam("AMP_PER_VOLT", float.Parse(TXT_ampspervolt.Text));
+                }
+            }
+            catch { MessageBox.Show("Set AMP_PER_VOLT Failed"); }
         }
 
         private void BUT_reset_Click(object sender, EventArgs e)

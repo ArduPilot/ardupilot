@@ -38,17 +38,18 @@ namespace ArdupilotMega
                 //System.Diagnostics.Debug.WriteLine("Doing: " + value);
                 try
                 {
-                    if (param[value] != param2[value])
+                    if (param[value].ToString() != param2[value].ToString()) // this will throw is there is no matching key
                     {
+                        Console.WriteLine("{0} {1} vs {2}", value, param[value], param2[value]);
                         Params.Rows.Add();
                         Params.Rows[Params.RowCount - 1].Cells[Command.Index].Value = value;
-                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = ((float)param[value]).ToString("0.###");
+                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = param[value].ToString();
 
-                        Params.Rows[Params.RowCount - 1].Cells[newvalue.Index].Value = ((float)param2[value]).ToString("0.###");
+                        Params.Rows[Params.RowCount - 1].Cells[newvalue.Index].Value = param2[value].ToString();
                         Params.Rows[Params.RowCount - 1].Cells[Use.Index].Value = true;
                     }
                 }
-                catch { if (Params.RowCount > 1) { Params.Rows.RemoveAt(Params.RowCount - 1); } }
+                catch { };//if (Params.RowCount > 1) { Params.Rows.RemoveAt(Params.RowCount - 1); } }
 
             }
             Params.Sort(Params.Columns[0], ListSortDirection.Ascending);
@@ -64,6 +65,14 @@ namespace ArdupilotMega
                 }
             }
             this.Close();
+        }
+
+        private void CHK_toggleall_CheckedChanged(object sender, EventArgs e)
+        {
+            foreach (DataGridViewRow row in Params.Rows)
+            {
+                row.Cells[Use.Index].Value = CHK_toggleall.Checked;
+            }
         }
     }
 }

@@ -49,7 +49,6 @@
             this.BARyaw = new ArdupilotMega.HorizontalProgressBar2();
             this.BARroll = new ArdupilotMega.HorizontalProgressBar2();
             this.tabModes = new System.Windows.Forms.TabPage();
-            this.label29 = new System.Windows.Forms.Label();
             this.CB_simple6 = new System.Windows.Forms.CheckBox();
             this.CB_simple5 = new System.Windows.Forms.CheckBox();
             this.CB_simple4 = new System.Windows.Forms.CheckBox();
@@ -81,20 +80,31 @@
             this.BUT_SaveModes = new ArdupilotMega.MyButton();
             this.tabHardware = new System.Windows.Forms.TabPage();
             this.linkLabelmagdec = new System.Windows.Forms.LinkLabel();
-            this.label106 = new System.Windows.Forms.Label();
-            this.label105 = new System.Windows.Forms.Label();
-            this.TXT_battcapacity = new System.Windows.Forms.TextBox();
-            this.CMB_batmontype = new System.Windows.Forms.ComboBox();
             this.label100 = new System.Windows.Forms.Label();
             this.TXT_declination = new System.Windows.Forms.TextBox();
             this.CHK_enableairspeed = new System.Windows.Forms.CheckBox();
             this.CHK_enablesonar = new System.Windows.Forms.CheckBox();
-            this.CHK_enablebattmon = new System.Windows.Forms.CheckBox();
             this.CHK_enablecompass = new System.Windows.Forms.CheckBox();
             this.pictureBox4 = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
-            this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.tabBattery = new System.Windows.Forms.TabPage();
+            this.TXT_ampspervolt = new System.Windows.Forms.TextBox();
+            this.TXT_divider = new System.Windows.Forms.TextBox();
+            this.TXT_voltage = new System.Windows.Forms.TextBox();
+            this.TXT_measuredvoltage = new System.Windows.Forms.TextBox();
+            this.TXT_inputvoltage = new System.Windows.Forms.TextBox();
+            this.label35 = new System.Windows.Forms.Label();
+            this.label34 = new System.Windows.Forms.Label();
+            this.label33 = new System.Windows.Forms.Label();
+            this.label32 = new System.Windows.Forms.Label();
+            this.label31 = new System.Windows.Forms.Label();
+            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.label29 = new System.Windows.Forms.Label();
+            this.label30 = new System.Windows.Forms.Label();
+            this.TXT_battcapacity = new System.Windows.Forms.TextBox();
+            this.CMB_batmontype = new System.Windows.Forms.ComboBox();
+            this.pictureBox5 = new System.Windows.Forms.PictureBox();
             this.tabArducopter = new System.Windows.Forms.TabPage();
             this.label28 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
@@ -144,8 +154,9 @@
             this.tabHardware.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.tabBattery.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             this.tabArducopter.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
@@ -162,6 +173,7 @@
             this.tabControl1.Controls.Add(this.tabRadioIn);
             this.tabControl1.Controls.Add(this.tabModes);
             this.tabControl1.Controls.Add(this.tabHardware);
+            this.tabControl1.Controls.Add(this.tabBattery);
             this.tabControl1.Controls.Add(this.tabArducopter);
             this.tabControl1.Controls.Add(this.tabHeli);
             resources.ApplyResources(this.tabControl1, "tabControl1");
@@ -364,7 +376,6 @@
             // 
             // tabModes
             // 
-            this.tabModes.Controls.Add(this.label29);
             this.tabModes.Controls.Add(this.CB_simple6);
             this.tabModes.Controls.Add(this.CB_simple5);
             this.tabModes.Controls.Add(this.CB_simple4);
@@ -397,11 +408,6 @@
             resources.ApplyResources(this.tabModes, "tabModes");
             this.tabModes.Name = "tabModes";
             this.tabModes.UseVisualStyleBackColor = true;
-            // 
-            // label29
-            // 
-            resources.ApplyResources(this.label29, "label29");
-            this.label29.Name = "label29";
             // 
             // CB_simple6
             // 
@@ -585,19 +591,13 @@
             // 
             this.tabHardware.BackColor = System.Drawing.Color.DarkRed;
             this.tabHardware.Controls.Add(this.linkLabelmagdec);
-            this.tabHardware.Controls.Add(this.label106);
-            this.tabHardware.Controls.Add(this.label105);
-            this.tabHardware.Controls.Add(this.TXT_battcapacity);
-            this.tabHardware.Controls.Add(this.CMB_batmontype);
             this.tabHardware.Controls.Add(this.label100);
             this.tabHardware.Controls.Add(this.TXT_declination);
             this.tabHardware.Controls.Add(this.CHK_enableairspeed);
             this.tabHardware.Controls.Add(this.CHK_enablesonar);
-            this.tabHardware.Controls.Add(this.CHK_enablebattmon);
             this.tabHardware.Controls.Add(this.CHK_enablecompass);
             this.tabHardware.Controls.Add(this.pictureBox4);
             this.tabHardware.Controls.Add(this.pictureBox3);
-            this.tabHardware.Controls.Add(this.pictureBox2);
             this.tabHardware.Controls.Add(this.pictureBox1);
             resources.ApplyResources(this.tabHardware, "tabHardware");
             this.tabHardware.Name = "tabHardware";
@@ -608,35 +608,6 @@
             this.linkLabelmagdec.Name = "linkLabelmagdec";
             this.linkLabelmagdec.TabStop = true;
             this.linkLabelmagdec.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
-            // 
-            // label106
-            // 
-            resources.ApplyResources(this.label106, "label106");
-            this.label106.Name = "label106";
-            // 
-            // label105
-            // 
-            resources.ApplyResources(this.label105, "label105");
-            this.label105.Name = "label105";
-            // 
-            // TXT_battcapacity
-            // 
-            resources.ApplyResources(this.TXT_battcapacity, "TXT_battcapacity");
-            this.TXT_battcapacity.Name = "TXT_battcapacity";
-            this.TXT_battcapacity.Validated += new System.EventHandler(this.TXT_battcapacity_Validated);
-            // 
-            // CMB_batmontype
-            // 
-            this.CMB_batmontype.FormattingEnabled = true;
-            this.CMB_batmontype.Items.AddRange(new object[] {
-            resources.GetString("CMB_batmontype.Items"),
-            resources.GetString("CMB_batmontype.Items1"),
-            resources.GetString("CMB_batmontype.Items2"),
-            resources.GetString("CMB_batmontype.Items3"),
-            resources.GetString("CMB_batmontype.Items4")});
-            resources.ApplyResources(this.CMB_batmontype, "CMB_batmontype");
-            this.CMB_batmontype.Name = "CMB_batmontype";
-            this.CMB_batmontype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmontype_SelectedIndexChanged);
             // 
             // label100
             // 
@@ -664,13 +635,6 @@
             this.CHK_enablesonar.UseVisualStyleBackColor = true;
             this.CHK_enablesonar.CheckedChanged += new System.EventHandler(this.CHK_enablesonar_CheckedChanged);
             // 
-            // CHK_enablebattmon
-            // 
-            resources.ApplyResources(this.CHK_enablebattmon, "CHK_enablebattmon");
-            this.CHK_enablebattmon.Name = "CHK_enablebattmon";
-            this.CHK_enablebattmon.UseVisualStyleBackColor = true;
-            this.CHK_enablebattmon.CheckedChanged += new System.EventHandler(this.CHK_enablebattmon_CheckedChanged);
-            // 
             // CHK_enablecompass
             // 
             resources.ApplyResources(this.CHK_enablecompass, "CHK_enablecompass");
@@ -696,15 +660,6 @@
             this.pictureBox3.Name = "pictureBox3";
             this.pictureBox3.TabStop = false;
             // 
-            // pictureBox2
-            // 
-            this.pictureBox2.BackColor = System.Drawing.Color.White;
-            this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
-            resources.ApplyResources(this.pictureBox2, "pictureBox2");
-            this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox2.Name = "pictureBox2";
-            this.pictureBox2.TabStop = false;
-            // 
             // pictureBox1
             // 
             this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.compass;
@@ -712,6 +667,133 @@
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.TabStop = false;
+            // 
+            // tabBattery
+            // 
+            this.tabBattery.Controls.Add(this.TXT_ampspervolt);
+            this.tabBattery.Controls.Add(this.TXT_divider);
+            this.tabBattery.Controls.Add(this.TXT_voltage);
+            this.tabBattery.Controls.Add(this.TXT_measuredvoltage);
+            this.tabBattery.Controls.Add(this.TXT_inputvoltage);
+            this.tabBattery.Controls.Add(this.label35);
+            this.tabBattery.Controls.Add(this.label34);
+            this.tabBattery.Controls.Add(this.label33);
+            this.tabBattery.Controls.Add(this.label32);
+            this.tabBattery.Controls.Add(this.label31);
+            this.tabBattery.Controls.Add(this.textBox3);
+            this.tabBattery.Controls.Add(this.label29);
+            this.tabBattery.Controls.Add(this.label30);
+            this.tabBattery.Controls.Add(this.TXT_battcapacity);
+            this.tabBattery.Controls.Add(this.CMB_batmontype);
+            this.tabBattery.Controls.Add(this.pictureBox5);
+            resources.ApplyResources(this.tabBattery, "tabBattery");
+            this.tabBattery.Name = "tabBattery";
+            this.tabBattery.UseVisualStyleBackColor = true;
+            // 
+            // TXT_ampspervolt
+            // 
+            resources.ApplyResources(this.TXT_ampspervolt, "TXT_ampspervolt");
+            this.TXT_ampspervolt.Name = "TXT_ampspervolt";
+            this.TXT_ampspervolt.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_ampspervolt_Validating);
+            this.TXT_ampspervolt.Validated += new System.EventHandler(this.TXT_ampspervolt_Validated);
+            // 
+            // TXT_divider
+            // 
+            resources.ApplyResources(this.TXT_divider, "TXT_divider");
+            this.TXT_divider.Name = "TXT_divider";
+            this.TXT_divider.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_divider_Validating);
+            this.TXT_divider.Validated += new System.EventHandler(this.TXT_divider_Validated);
+            // 
+            // TXT_voltage
+            // 
+            this.TXT_voltage.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.currentStateBindingSource, "battery_voltage", true));
+            resources.ApplyResources(this.TXT_voltage, "TXT_voltage");
+            this.TXT_voltage.Name = "TXT_voltage";
+            this.TXT_voltage.ReadOnly = true;
+            // 
+            // TXT_measuredvoltage
+            // 
+            resources.ApplyResources(this.TXT_measuredvoltage, "TXT_measuredvoltage");
+            this.TXT_measuredvoltage.Name = "TXT_measuredvoltage";
+            this.TXT_measuredvoltage.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_measuredvoltage_Validating);
+            this.TXT_measuredvoltage.Validated += new System.EventHandler(this.TXT_measuredvoltage_Validated);
+            // 
+            // TXT_inputvoltage
+            // 
+            resources.ApplyResources(this.TXT_inputvoltage, "TXT_inputvoltage");
+            this.TXT_inputvoltage.Name = "TXT_inputvoltage";
+            this.TXT_inputvoltage.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_inputvoltage_Validating);
+            this.TXT_inputvoltage.Validated += new System.EventHandler(this.TXT_inputvoltage_Validated);
+            // 
+            // label35
+            // 
+            resources.ApplyResources(this.label35, "label35");
+            this.label35.Name = "label35";
+            // 
+            // label34
+            // 
+            resources.ApplyResources(this.label34, "label34");
+            this.label34.Name = "label34";
+            // 
+            // label33
+            // 
+            resources.ApplyResources(this.label33, "label33");
+            this.label33.Name = "label33";
+            // 
+            // label32
+            // 
+            resources.ApplyResources(this.label32, "label32");
+            this.label32.Name = "label32";
+            // 
+            // label31
+            // 
+            resources.ApplyResources(this.label31, "label31");
+            this.label31.Name = "label31";
+            // 
+            // textBox3
+            // 
+            resources.ApplyResources(this.textBox3, "textBox3");
+            this.textBox3.Name = "textBox3";
+            this.textBox3.ReadOnly = true;
+            // 
+            // label29
+            // 
+            resources.ApplyResources(this.label29, "label29");
+            this.label29.Name = "label29";
+            // 
+            // label30
+            // 
+            resources.ApplyResources(this.label30, "label30");
+            this.label30.Name = "label30";
+            // 
+            // TXT_battcapacity
+            // 
+            resources.ApplyResources(this.TXT_battcapacity, "TXT_battcapacity");
+            this.TXT_battcapacity.Name = "TXT_battcapacity";
+            this.TXT_battcapacity.Validating += new System.ComponentModel.CancelEventHandler(this.TXT_battcapacity_Validating);
+            this.TXT_battcapacity.Validated += new System.EventHandler(this.TXT_battcapacity_Validated);
+            // 
+            // CMB_batmontype
+            // 
+            this.CMB_batmontype.FormattingEnabled = true;
+            this.CMB_batmontype.Items.AddRange(new object[] {
+            resources.GetString("CMB_batmontype.Items"),
+            resources.GetString("CMB_batmontype.Items1"),
+            resources.GetString("CMB_batmontype.Items2"),
+            resources.GetString("CMB_batmontype.Items3"),
+            resources.GetString("CMB_batmontype.Items4")});
+            resources.ApplyResources(this.CMB_batmontype, "CMB_batmontype");
+            this.CMB_batmontype.Name = "CMB_batmontype";
+            this.CMB_batmontype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmontype_SelectedIndexChanged);
+            // 
+            // pictureBox5
+            // 
+            this.pictureBox5.BackColor = System.Drawing.Color.White;
+            this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
+            resources.ApplyResources(this.pictureBox5, "pictureBox5");
+            this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox5.Name = "pictureBox5";
+            this.pictureBox5.TabStop = false;
             // 
             // tabArducopter
             // 
@@ -1188,8 +1270,10 @@
             this.tabHardware.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.tabBattery.ResumeLayout(false);
+            this.tabBattery.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
             this.tabArducopter.ResumeLayout(false);
             this.tabArducopter.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).EndInit();
@@ -1246,17 +1330,11 @@
         private System.Windows.Forms.Label LBL_flightmodepwm;
         private System.Windows.Forms.PictureBox pictureBox4;
         private System.Windows.Forms.PictureBox pictureBox3;
-        private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Label label106;
-        private System.Windows.Forms.Label label105;
-        private System.Windows.Forms.TextBox TXT_battcapacity;
-        private System.Windows.Forms.ComboBox CMB_batmontype;
         private System.Windows.Forms.Label label100;
         private System.Windows.Forms.TextBox TXT_declination;
         private System.Windows.Forms.CheckBox CHK_enableairspeed;
         private System.Windows.Forms.CheckBox CHK_enablesonar;
-        private System.Windows.Forms.CheckBox CHK_enablebattmon;
         private System.Windows.Forms.CheckBox CHK_enablecompass;
         private System.Windows.Forms.TabPage tabReset;
         private MyButton BUT_reset;
@@ -1312,6 +1390,22 @@
         private System.Windows.Forms.CheckBox CB_simple2;
         private System.Windows.Forms.CheckBox CB_simple1;
         private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.TabPage tabBattery;
+        private System.Windows.Forms.Label label30;
+        private System.Windows.Forms.TextBox TXT_battcapacity;
+        private System.Windows.Forms.ComboBox CMB_batmontype;
+        private System.Windows.Forms.PictureBox pictureBox5;
+        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.Label label31;
+        private System.Windows.Forms.TextBox TXT_ampspervolt;
+        private System.Windows.Forms.TextBox TXT_divider;
+        private System.Windows.Forms.TextBox TXT_voltage;
+        private System.Windows.Forms.TextBox TXT_measuredvoltage;
+        private System.Windows.Forms.TextBox TXT_inputvoltage;
+        private System.Windows.Forms.Label label35;
+        private System.Windows.Forms.Label label34;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.Label label32;
 
     }
 }

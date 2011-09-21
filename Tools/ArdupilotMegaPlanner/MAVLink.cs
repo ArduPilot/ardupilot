@@ -646,7 +646,7 @@ namespace ArdupilotMega
             return param;
         }
 
-        void modifyParamForDisplay(bool fromapm, string paramname, ref float value)
+        public static void modifyParamForDisplay(bool fromapm, string paramname, ref float value)
         {
             if (paramname.ToUpper().EndsWith("_IMAX") || paramname.ToUpper().EndsWith("ALT_HOLD_RTL") || paramname.ToUpper().EndsWith("TRIM_ARSPD_CM")
                 || paramname.ToUpper().EndsWith("XTRK_ANGLE_CD") || paramname.ToUpper().EndsWith("LIM_PITCH_MAX") || paramname.ToUpper().EndsWith("LIM_PITCH_MIN")
