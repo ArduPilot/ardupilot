@@ -32,6 +32,7 @@
 #define CH7_FLIP 2
 #define CH7_SIMPLE_MODE 3
 #define CH7_RTL 4
+#deinfe CH7_AUTO_TRIM 5
 
 // Frame types
 #define QUAD_FRAME 0
