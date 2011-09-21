@@ -425,11 +425,7 @@ static bool verify_loiter_unlim()
 
 static bool verify_loiter_time()
 {
-	//Serial.printf("vlt %ld\n",(millis() - loiter_time));
-
-	if ((millis() - loiter_time) > loiter_time_max) {		// scale loiter_time_max from (sec*10) to milliseconds
-		//gcs.send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
-		//Serial.println("vlt done");
+	if ((millis() - loiter_time) > loiter_time_max) {
 		return true;
 	}
 	return false;
@@ -578,6 +574,8 @@ static bool verify_yaw()
 		// time out
 		// make sure we hold at the final desired yaw angle
 		nav_yaw = command_yaw_end;
+		auto_yaw 	= nav_yaw;
+
 		//Serial.println("Y");
 		return true;
 

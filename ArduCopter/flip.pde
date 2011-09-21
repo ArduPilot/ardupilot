@@ -6,7 +6,7 @@
 //    Some states are fixed commands (for a fixed time)
 //    Some states are fixed commands (until some IMU condition)
 //    Some states include controls inside
-#if CH7_OPTION == DO_FLIP
+#if CH7_OPTION == CH7_FLIP
 void roll_flip()
 {
 	#define AAP_THR_INC 180
@@ -18,7 +18,7 @@ void roll_flip()
 	static byte AAP_state = 0;
 
 	// Yaw
-	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
+	g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 	// Pitch
 	g.rc_2.servo_out = get_stabilize_pitch(0);
 
@@ -33,7 +33,7 @@ void roll_flip()
 			if (AAP_timer < 95){ 	// .5 seconds
 				g.rc_1.servo_out = get_stabilize_roll(0);
 				g.rc_3.servo_out = get_throttle(g.rc_3.control_in + AAP_THR_INC);
-				//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw, 1.0);
+				//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				AAP_timer++;
 			}else{
 				AAP_state++;

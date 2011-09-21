@@ -345,7 +345,7 @@ static float simple_sin_y, simple_cos_x;
 static float boost; 							// used to give a little extra to maintain altitude
 
 // Acro
-#if CH7_OPTION == DO_FLIP
+#if CH7_OPTION == CH7_FLIP
 static bool do_flip = false;
 #endif
 
@@ -1029,7 +1029,7 @@ void update_yaw_mode(void)
 
 void update_roll_pitch_mode(void)
 {
-	#if CH7_OPTION == DO_FLIP
+	#if CH7_OPTION == CH7_FLIP
 	if (do_flip){
 		roll_flip();
 		return;
