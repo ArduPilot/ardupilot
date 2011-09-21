@@ -48,13 +48,14 @@
     CH6_TRAVERSE_SPEED
 	*/
 
-# define CH7_OPTION		CH7_DO_NOTHING
+# define CH7_OPTION		CH7_RTL
 	/*
 	CH7_DO_NOTHING
 	CH7_SET_HOVER
 	CH7_FLIP
 	CH7_SIMPLE_MODE
 	CH7_RTL
+	CH7_AUTO_TRIM
 	*/
 
 // See the config.h and defines.h files for how to set this up!
