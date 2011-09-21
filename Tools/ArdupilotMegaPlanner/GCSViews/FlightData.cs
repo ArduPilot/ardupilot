@@ -97,6 +97,7 @@ namespace ArdupilotMega.GCSViews
                 list.Add("NAVIGATE");
                 list.Add("LOITER");
                 list.Add("TAKEOFF");
+                list.Add("CALIBRATE_GYRO");
             }
 
             CMB_action.DataSource = list;

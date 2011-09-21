@@ -174,6 +174,7 @@
             this.hud1.Name = "hud1";
             this.hud1.navpitch = 0F;
             this.hud1.navroll = 0F;
+            this.hud1.opengl = true;
             this.hud1.pitch = 0F;
             this.hud1.roll = 0F;
             this.hud1.streamjpg = null;
@@ -320,6 +321,7 @@
             // CMB_action
             // 
             this.CMB_action.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_action.DropDownWidth = 110;
             this.CMB_action.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_action, "CMB_action");
             this.CMB_action.Name = "CMB_action";
