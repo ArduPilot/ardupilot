@@ -95,6 +95,7 @@ RC_Channel::set_pwm(int pwm)
 	}else{
 		control_in = pwm_to_angle();
 		control_in = (abs(control_in) < dead_zone) ? 0 : control_in;
+
 		//if (fabs(scale_output) > 0){
 		//	control_in *= scale_output;
 		//}
@@ -126,16 +127,17 @@ RC_Channel::calc_pwm(void)
 {
 	if(_type == RC_CHANNEL_RANGE){
 		pwm_out 	= range_to_pwm();
-		radio_out 	= (_reverse >=0 ? pwm_out + radio_min : radio_max - pwm_out);
+		radio_out 	= (_reverse >= 0) ? (radio_min + pwm_out) : (radio_max - pwm_out);
 
 	}else if(_type == RC_CHANNEL_ANGLE_RAW){
 		pwm_out 	= (float)servo_out * .1;
-		radio_out 	= (pwm_out * _reverse) + 1500;
+		radio_out 	= (pwm_out * _reverse) + radio_trim;
 
 	}else{
 		pwm_out 	= angle_to_pwm();
 		radio_out 	= pwm_out + radio_trim;
 	}
+
 	radio_out = constrain(radio_out, radio_min.get(), radio_max.get());
 }
 
