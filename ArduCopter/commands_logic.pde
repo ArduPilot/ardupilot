@@ -493,13 +493,13 @@ static void do_yaw()
 	// if unspecified go counterclockwise
 	if(command_yaw_dir == 0)
 		command_yaw_dir = -1;
+	else
+		command_yaw_dir = 1;
 
-	if (command_yaw_relative){
+	if (command_yaw_relative == 1){
 		// relative
-		//command_yaw_dir	  = (command_yaw_end > 0) ? 1 : -1;
-		//command_yaw_end	  += nav_yaw;
-		//command_yaw_end	  = wrap_360(command_yaw_end);
 		command_yaw_delta	= next_command.alt * 100;
+
 	}else{
 		// absolute
 		command_yaw_end		= next_command.alt * 100;
@@ -588,6 +588,7 @@ static bool verify_yaw()
 
 		nav_yaw		= command_yaw_start + ((float)command_yaw_delta * power * command_yaw_dir);
 		nav_yaw		= wrap_360(nav_yaw);
+		auto_yaw 	= nav_yaw;
 		//Serial.printf("ny %ld\n",nav_yaw);
 		return false;
 	}

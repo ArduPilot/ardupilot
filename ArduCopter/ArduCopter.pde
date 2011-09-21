@@ -1409,6 +1409,7 @@ static void update_auto_yaw()
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
 		auto_yaw = target_bearing;
 	}
+	// MAV_ROI_NONE = basic Yaw hold
 }
 
 static long point_at_home_yaw()
