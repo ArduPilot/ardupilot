@@ -501,6 +501,8 @@ namespace ArdupilotMega.GCSViews
                     string name = line.Substring(0, index);
                     float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
 
+                    MAVLink.modifyParamForDisplay(true,name,ref value);
+
                     // set param table as well
                     foreach (DataGridViewRow row in Params.Rows)
                     {
@@ -541,7 +543,11 @@ namespace ArdupilotMega.GCSViews
                     sw.WriteLine("NOTE: " + input.Replace(',', '|'));
                 foreach (DataGridViewRow row in Params.Rows)
                 {
-                    sw.WriteLine(row.Cells[0].Value.ToString() + "," + float.Parse(row.Cells[1].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")));
+                    float value = float.Parse(row.Cells[1].Value.ToString());
+
+                    MAVLink.modifyParamForDisplay(false, row.Cells[0].Value.ToString(), ref value);
+
+                    sw.WriteLine(row.Cells[0].Value.ToString() + "," + value);
                 }
                 sw.Close();
             }
@@ -930,6 +936,8 @@ namespace ArdupilotMega.GCSViews
 
                     string name = line.Substring(0, index);
                     float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
+
+                    MAVLink.modifyParamForDisplay(true, name, ref value);
 
                     if (name == "SYSID_SW_MREV")
                         continue;
