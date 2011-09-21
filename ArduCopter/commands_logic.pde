@@ -142,7 +142,7 @@ static bool verify_must()
 			break;
 
 		case MAV_CMD_NAV_LOITER_TURNS:
-			return true;
+			return verify_loiter_turns();
 			break;
 
 		case MAV_CMD_NAV_LOITER_TIME:
@@ -297,8 +297,7 @@ static void do_loiter_unlimited()
 
 static void do_loiter_turns()
 {
-/*
-	wp_control = LOITER_MODE;
+	wp_control == CIRCLE_MODE;
 
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
@@ -306,7 +305,7 @@ static void do_loiter_turns()
 		set_next_WP(&next_command);
 
 	loiter_total = next_command.p1 * 360;
-*/
+	loiter_sum	 = 0;
 }
 
 static void do_loiter_time()
@@ -426,6 +425,20 @@ static bool verify_loiter_unlim()
 static bool verify_loiter_time()
 {
 	if ((millis() - loiter_time) > loiter_time_max) {
+		return true;
+	}
+	return false;
+}
+
+static bool verify_loiter_turns()
+{
+	// have we rotated around the center enough times?
+	// -----------------------------------------------
+	if(loiter_sum > loiter_total) {
+		loiter_total 	= 0;
+		loiter_sum		= 0;
+		//gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));
+		// clear the command queue;
 		return true;
 	}
 	return false;
