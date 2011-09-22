@@ -1119,7 +1119,6 @@ void update_throttle_mode(void)
 
 				// clear the new data flag
 				invalid_throttle = false;
-				Serial.printf("nt %d\n",nav_throttle);
 			}
 
 			// apply throttle control at 200 hz

@@ -104,8 +104,6 @@ get_nav_throttle(long z_error, int target_speed)
 	float delta_throttle	= (float)(timer - throttle_timer)/1000.0;
 	throttle_timer    		= timer;
 
-	Serial.printf("tt %ld, dt %1.4f ", throttle_timer, delta_throttle);
-
 	return g.pi_throttle.get_pi(rate_error, delta_throttle);
 }
 
