@@ -62,14 +62,19 @@ static void read_trim_switch()
 	//Serial.println(g.rc_7.control_in, DEC);
 
 #elif CH7_OPTION == CH7_RTL
-	if(control_mode == RTL && g.rc_7.control_in < 800){
-		reset_control_switch();
-	}
-	if(control_mode != RTL && g.rc_7.control_in > 800)
-		set_mode(RTL);
+	static bool ch7_rtl_flag = false;
 
-	//do_simple = (g.rc_7.control_in > 800);
-	//Serial.println(g.rc_7.control_in, DEC);
+	if (ch7_rtl_flag == false && g.rc_7.control_in > 800){
+		ch7_rtl_flag = true;
+		set_mode(RTL);
+	}
+
+	if (ch7_rtl_flag == true && g.rc_7.control_in < 800){
+		ch7_rtl_flag = false;
+		if (control_mode == RTL || control_mode == LOITER){
+			reset_control_switch();
+		}
+	}
 
 #elif CH7_OPTION == CH7_SET_HOVER
 	// switch is engaged
@@ -125,13 +130,13 @@ static void trim_accel()
 	g.pi_stabilize_roll.reset_I();
 	g.pi_stabilize_pitch.reset_I();
 
-	if(g.rc_1.control_in > 0){
+	if(g.rc_1.control_in > 0){ // Roll RIght
 		imu.ay(imu.ay() + 1);
 	}else if (g.rc_1.control_in < 0){
 		imu.ay(imu.ay() - 1);
 	}
 
-	if(g.rc_2.control_in > 0){
+	if(g.rc_2.control_in > 0){ // Pitch Back
 		imu.ax(imu.ax() + 1);
 	}else if (g.rc_2.control_in < 0){
 		imu.ax(imu.ax() - 1);
