@@ -405,7 +405,6 @@ static long 	original_target_bearing;			// deg * 100, used to check we are not p
 static long 	old_target_bearing;					// used to track difference in angle
 
 static int		loiter_total; 						// deg : how many times to loiter * 360
-//static int 		loiter_delta;						// deg : how far we just turned
 static int		loiter_sum;							// deg : how far we have turned around a waypoint
 static long 	loiter_time;						// millis : when we started LOITER mode
 static int 		loiter_time_max;					// millis : how long to stay in LOITER mode
@@ -494,8 +493,7 @@ static byte				gps_watchdog;
 // --------------
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-static uint16_t			throttle_timer;
-static float			delta_throttle;
+static unsigned long	throttle_timer;
 
 static unsigned long	fiftyhz_loopTimer;
 
@@ -1012,12 +1010,7 @@ void update_yaw_mode(void)
 			break;
 
 		case YAW_LOOK_AT_HOME:
-			// copter will always point at home
-			if(home_is_set){
-				nav_yaw = point_at_home_yaw();
-			} else {
-				nav_yaw = 0;
-			}
+			//nav_yaw updated in update_navigation()
 			break;
 
 		case YAW_AUTO:
@@ -1100,13 +1093,14 @@ void update_roll_pitch_mode(void)
 void update_throttle_mode(void)
 {
 	switch(throttle_mode){
+
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
 				g.rc_3.servo_out = g.rc_3.control_in + boost;
 			}else{
 				g.rc_3.servo_out = 0;
 			}
-		break;
+			break;
 
 		case THROTTLE_HOLD:
 			// allow interactive changing of atitude
@@ -1116,6 +1110,7 @@ void update_throttle_mode(void)
 		case THROTTLE_AUTO:
 				// 10hz, 			don't run up i term
 			if(invalid_throttle && motor_auto_armed == true){
+
 				// how far off are we
 				altitude_error = get_altitude_error();
 
@@ -1124,6 +1119,7 @@ void update_throttle_mode(void)
 
 				// clear the new data flag
 				invalid_throttle = false;
+				Serial.printf("nt %d\n",nav_throttle);
 			}
 
 			// apply throttle control at 200 hz
@@ -1192,6 +1188,15 @@ static void update_navigation()
 			update_nav_wp();
 			break;
 
+	}
+
+	if(yaw_mode == YAW_LOOK_AT_HOME){
+		if(home_is_set){
+			//nav_yaw = point_at_home_yaw();
+			nav_yaw = get_bearing(&current_loc, &home);
+		} else {
+			nav_yaw = 0;
+		}
 	}
 }
 
@@ -1372,9 +1377,6 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
 
-		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
-
 	}else if(wp_control == CIRCLE_MODE){
 
 		// check if we have missed the WP
@@ -1405,9 +1407,6 @@ static void update_nav_wp()
 		// nav_lon, nav_lat is calculated
 		calc_nav_rate(long_error, lat_error, 200, 0);
 
-		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
-
 	} else {
 		// for long journey's reset the wind resopnse
 		// it assumes we are standing still.
@@ -1420,9 +1419,9 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 100);
 
-		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
 	}
+	// rotate pitch and roll to the copter frame of reference
+	calc_nav_pitch_roll();
 }
 
 static void update_auto_yaw()
@@ -1437,9 +1436,5 @@ static void update_auto_yaw()
 	// MAV_ROI_NONE = basic Yaw hold
 }
 
-static long point_at_home_yaw()
-{
-	return get_bearing(&current_loc, &home);
-}
 
 
