@@ -79,6 +79,18 @@ namespace System.IO.Ports
 
             client = new UdpClient(int.Parse(Port));
 
+            int timeout = 5;
+            while (timeout > 0)
+            {
+                if (BytesToRead > 0)
+                    break;
+                System.Threading.Thread.Sleep(1000);
+                timeout--;
+            }
+
+            if (BytesToRead == 0)
+                return;
+
             try
             {
                 client.Receive(ref RemoteIpEndPoint);
