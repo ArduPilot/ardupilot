@@ -341,7 +341,6 @@ static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static long initial_simple_bearing;				// used for Simple mode
 static float simple_sin_y, simple_cos_x;
-static float boost; 							// used to give a little extra to maintain altitude
 
 // Acro
 #if CH7_OPTION == CH7_FLIP
@@ -420,7 +419,7 @@ static long		nav_lat;							// for error calcs
 static long		nav_lon;							// for error calcs
 static int		nav_throttle;						// 0-1000 for throttle control
 
-static long 	throttle_integrator;				// used to integrate throttle output to predict battery life
+static unsigned long throttle_integrator;				// used to integrate throttle output to predict battery life
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
 //static bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
@@ -693,10 +692,6 @@ static void medium_loop()
 			// ----------------------------------
 			invalid_throttle = true;
 
-			// calc boost
-			// ----------
-			boost = get_angle_boost();
-
 			break;
 
 		// This case deals with sending high rate telemetry
@@ -965,7 +960,7 @@ static void update_GPS(void)
 			// so that the altitude is more accurate
 			// -------------------------------------
 			if (current_loc.lat == 0) {
-                SendDebugln("!! bad loc");
+				//SendDebugln("!! bad loc");
 				ground_start_count = 5;
 
 			}else{
@@ -1096,7 +1091,7 @@ void update_throttle_mode(void)
 
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
-				g.rc_3.servo_out = g.rc_3.control_in + boost;
+				g.rc_3.servo_out = g.rc_3.control_in + get_angle_boost();
 			}else{
 				g.rc_3.servo_out = 0;
 			}
@@ -1116,13 +1111,14 @@ void update_throttle_mode(void)
 
 				// get the AP throttle
 				nav_throttle = get_nav_throttle(altitude_error, 200); //150 =  target speed of 1.5m/s
+				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
 
 				// clear the new data flag
 				invalid_throttle = false;
 			}
 
 			// apply throttle control at 200 hz
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + boost;
+			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost();
 			break;
 	}
 }

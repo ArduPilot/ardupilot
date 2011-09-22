@@ -393,7 +393,7 @@
 #endif
 
 #ifndef RTL_THR
-# define RTL_THR			THROTTLE_AUTO
+# define RTL_THR			THROTTLE_HOLD
 #endif
 
 
@@ -513,7 +513,7 @@
 # define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.10		// with 4m error, 12.5s windup
+# define THROTTLE_I		0.03		// with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
@@ -670,7 +670,7 @@
 #endif
 
 #ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME 8
+# define ALT_HOLD_HOME -1
 #endif
 
 #ifndef USE_CURRENT_ALT
