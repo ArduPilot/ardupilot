@@ -456,7 +456,8 @@ namespace ArdupilotMega.Setup
 
                     float value = (float)(CB_simple1.Checked ? 1 : 0) + (CB_simple2.Checked ? 1 << 1 : 0) + (CB_simple3.Checked ? 1 <<2 : 0)
                         + (CB_simple4.Checked ? 1 << 3 : 0) + (CB_simple5.Checked ? 1 << 4 : 0) + (CB_simple6.Checked ? 1 << 5 : 0);
-                    MainV2.comPort.setParam("SIMPLE", value);
+                    if (MainV2.comPort.param.ContainsKey("SIMPLE"))
+                        MainV2.comPort.setParam("SIMPLE", value);
                 }
             }
             catch { MessageBox.Show("Failed to set Flight modes"); }

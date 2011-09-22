@@ -622,7 +622,11 @@ namespace ArdupilotMega.GCSViews
                     case MAVLink.MAV_CMD.LAND:
                         Commands.Columns[1].HeaderText = "N/A";
                         if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
+                        {
                             Commands.Columns[2].HeaderText = "N/A";
+                            Commands.Columns[3].HeaderText = "N/A";
+                            Commands.Columns[4].HeaderText = "N/A";
+                        }
                         break;
                     case MAVLink.MAV_CMD.TAKEOFF:
                         if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
@@ -2430,7 +2434,7 @@ namespace ArdupilotMega.GCSViews
 
                 polygons.Markers.Add(new GMapMarkerGoogleRed(start));
                 MainMap.Invalidate();
-                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start), true));
+                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start),true) + " AZ: " + (MainMap.Manager.GetBearing(startmeasure, start).ToString("0")));
                 polygons.Polygons.Remove(line);
                 polygons.Markers.Clear();
                 startmeasure = new PointLatLng();
