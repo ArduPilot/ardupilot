@@ -222,9 +222,12 @@ namespace ArdupilotMega
 
         private void CMB_serialport_Click(object sender, EventArgs e)
         {
+            String old_port = CMB_serialport.Text;
             CMB_serialport.Items.Clear();
             CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
             CMB_serialport.Items.Add("UDP");
+            if (CMB_serialport.Items.Contains(old_port))
+                CMB_serialport.Text = old_port;
         }
 
         public static void fixtheme(Control temp)
@@ -672,6 +675,10 @@ namespace ArdupilotMega
         private void CMB_serialport_SelectedIndexChanged(object sender, EventArgs e)
         {
             comportname = CMB_serialport.Text;
+            if (comportname == "UDP")
+                CMB_baudrate.Enabled = false;
+            else
+                CMB_baudrate.Enabled = true;
             try
             {
                 comPort.BaseStream.PortName = CMB_serialport.Text;
