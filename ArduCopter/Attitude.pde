@@ -104,7 +104,7 @@ get_nav_throttle(long z_error, int target_speed)
 	float delta_throttle	= (float)(timer - throttle_timer)/1000.0;
 	throttle_timer    		= timer;
 
-	return g.pi_throttle.get_pi(rate_error, delta_throttle);
+	return (int)g.pi_throttle.get_pi(rate_error, delta_throttle);
 }
 
 static int
@@ -162,6 +162,9 @@ static void reset_nav(void)
 	nav_throttle 		= 0;
 	invalid_throttle 	= true;
 
+	// clear the throttle timer
+	throttle_timer = millis();
+
 	g.pi_nav_lat.reset_I();
 	g.pi_nav_lon.reset_I();
 
@@ -173,14 +176,6 @@ static void reset_nav(void)
 /*************************************************************
 throttle control
 ****************************************************************/
-
-// user input:
-// -----------
-//static int get_throttle(int throttle_input)
-//{
-//	throttle_input = (float)throttle_input * angle_boost();
-//	return  max(throttle_input, 0);
-//}
 
 static long
 get_nav_yaw_offset(int yaw_input, int reset)
@@ -217,10 +212,10 @@ static int alt_hold_velocity()
 }
 */
 
-static float get_angle_boost()
+static int get_angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 2.0 - constrain(temp, .5, 1.0);
-	return temp;
+	return (int)(temp * 50.0);
 }
 
