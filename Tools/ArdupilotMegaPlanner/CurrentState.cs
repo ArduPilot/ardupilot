@@ -136,7 +136,11 @@ namespace ArdupilotMega
         public int hilch1 { get; set; }
         public int hilch2 { get; set; }
         public int hilch3 { get; set; }
-        public int hilch4 { get; set; } 
+        public int hilch4 { get; set; }
+        public int hilch5;
+        public int hilch6;
+        public int hilch7;
+        public int hilch8;
 
         // rc override
         public ushort rcoverridech1 { get; set; }
@@ -230,6 +234,10 @@ namespace ArdupilotMega
                     hilch2 = hil.chan2_scaled;
                     hilch3 = hil.chan3_scaled;
                     hilch4 = hil.chan4_scaled;
+                    hilch5 = hil.chan5_scaled;
+                    hilch6 = hil.chan6_scaled;
+                    hilch7 = hil.chan7_scaled;
+                    hilch8 = hil.chan8_scaled;
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
                 }

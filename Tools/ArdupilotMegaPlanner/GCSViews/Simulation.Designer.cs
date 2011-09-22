@@ -109,6 +109,7 @@
             this.BUT_startfgquad = new ArdupilotMega.MyButton();
             this.BUT_startfgplane = new ArdupilotMega.MyButton();
             this.BUT_startxplane = new ArdupilotMega.MyButton();
+            this.CHK_heli = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -673,10 +674,17 @@
             this.BUT_startxplane.UseVisualStyleBackColor = true;
             this.BUT_startxplane.Click += new System.EventHandler(this.BUT_startxplane_Click);
             // 
+            // CHK_heli
+            // 
+            resources.ApplyResources(this.CHK_heli, "CHK_heli");
+            this.CHK_heli.Name = "CHK_heli";
+            this.CHK_heli.UseVisualStyleBackColor = true;
+            // 
             // Simulation
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CHK_heli);
             this.Controls.Add(this.BUT_startxplane);
             this.Controls.Add(this.BUT_startfgplane);
             this.Controls.Add(this.BUT_startfgquad);
@@ -801,5 +809,6 @@
         private MyButton BUT_startfgquad;
         private MyButton BUT_startfgplane;
         private MyButton BUT_startxplane;
+        private System.Windows.Forms.CheckBox CHK_heli;
     }
 }
