@@ -3,9 +3,9 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/crap-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/crap-2560.hex</url2560>
-    <name></name>
+    <name>Please Update</name>
     <desc></desc>
-    <format_version></format_version>
+    <format_version>0</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-1280.hex</url>
