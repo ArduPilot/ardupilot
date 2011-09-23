@@ -219,7 +219,7 @@ static int alt_hold_velocity()
 static int get_angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
-	temp = 2.0 - constrain(temp, .5, 1.0);
-	return (int)(temp * 50.0);
+	temp = 1.0 - constrain(temp, .5, 1.0);
+	return (int)(temp * 60.0);
 }
 
