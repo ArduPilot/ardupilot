@@ -1,55 +1,6 @@
 From https://code.google.com/p/ardupilot-mega
-   2974c8c..35e16dd  APM_Camera -> origin/APM_Camera
-   68174a8..231e797  master     -> origin/master
-Updating 68174a8..231e797
+   f088536..90b5237  master     -> origin/master
+Updating f088536..90b5237
 Fast-forward
- ArduCopter/APM_Config.h                            |   30 +-
- ArduCopter/ArduCopter.pde                          |  141 +-
- ArduCopter/Attitude.pde                            |   33 +-
- ArduCopter/Parameters.h                            |    2 +-
- ArduCopter/commands.pde                            |    6 +-
- ArduCopter/commands_logic.pde                      |   40 +-
- ArduCopter/config.h                                |   39 +-
- ArduCopter/control_modes.pde                       |   31 +-
- ArduCopter/defines.h                               |   10 +-
- ArduCopter/flip.pde                                |    6 +-
- ArduCopter/motors.pde                              |    8 +-
- ArduCopter/motors_quad.pde                         |    1 -
- ArduCopter/navigation.pde                          |    2 +-
- ArduCopter/system.pde                              |    6 +-
- ArduPlane/Attitude.pde                             |    9 +-
- Tools/ArdupilotMegaPlanner/CommsUdpSerial.cs       |   11 +
- Tools/ArdupilotMegaPlanner/CurrentState.cs         |   10 +-
- .../GCSViews/Configuration.Designer.cs             |  328 +-
- .../ArdupilotMegaPlanner/GCSViews/Configuration.cs |   10 +-
- .../GCSViews/Configuration.resx                    | 8175 +++++++++++---------
- .../GCSViews/Configuration.zh-Hans.resx            |  777 ++-
- Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |  140 +-
- Tools/ArdupilotMegaPlanner/GCSViews/Firmware.resx  |  240 +-
- .../GCSViews/FlightData.Designer.cs                |    2 +
- Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |    1 +
- .../GCSViews/FlightPlanner.Designer.cs             |  103 +-
- .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |    6 +-
- .../GCSViews/FlightPlanner.resx                    | 2732 ++++----
- .../GCSViews/FlightPlanner.zh-Hans.resx            |  137 +-
- .../GCSViews/Simulation.Designer.cs                |    9 +
- Tools/ArdupilotMegaPlanner/GCSViews/Simulation.cs  |   70 +-
- .../ArdupilotMegaPlanner/GCSViews/Simulation.resx  |   88 +-
- Tools/ArdupilotMegaPlanner/HIL/QuadCopter.cs       |    4 +-
- Tools/ArdupilotMegaPlanner/MAVLink.cs              |    2 +-
- Tools/ArdupilotMegaPlanner/MainV2.cs               |    8 +
- .../Properties/AssemblyInfo.cs                     |    2 +-
- Tools/ArdupilotMegaPlanner/Setup/Setup.Designer.cs |  238 +-
- Tools/ArdupilotMegaPlanner/Setup/Setup.cs          |  234 +-
- Tools/ArdupilotMegaPlanner/Setup/Setup.resx        |  806 ++-
- .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2075136 -> 2098176 bytes
- .../bin/Release/GCSViews/Firmware.resx             |  240 +-
- .../bin/Release/GCSViews/Simulation.resx           |   88 +-
- Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 13312 -> 13312 bytes
- .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 397312 -> 397312 bytes
- .../ArdupilotMegaPlanner/paramcompare.Designer.cs  |   39 +-
- Tools/ArdupilotMegaPlanner/paramcompare.cs         |   17 +-
- libraries/AP_Common/Arduino.mk                     |    5 +-
- libraries/RC_Channel/RC_Channel.cpp                |    6 +-
- 49 files changed, 8713 insertions(+), 6179 deletions(-)
+ ArduCopter/Attitude.pde |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
