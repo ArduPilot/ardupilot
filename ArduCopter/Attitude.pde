@@ -25,7 +25,6 @@ get_stabilize_roll(long target_angle)
 
 	// output control:
 	return (int)constrain(rate, -2500, 2500);
-
 }
 
 static int

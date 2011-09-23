@@ -4,7 +4,6 @@
 
 static void output_motors_armed()
 {
-
 	int roll_out, pitch_out;
 	int out_min = g.rc_3.radio_min;
 	int out_max = g.rc_3.radio_max;
