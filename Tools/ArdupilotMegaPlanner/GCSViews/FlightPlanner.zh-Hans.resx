@@ -349,6 +349,9 @@
   <data name="panel1.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="label6.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label7.Font" type="System.Drawing.Font, System.Drawing">
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
@@ -454,36 +457,6 @@
   <data name="splitter1.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="TXT_MAV_CMD.Text" xml:space="preserve">
-    <value>WAYPOINT;航点;延迟;高度;纬度;经度
-LOITER_UNLIM;盘旋_无限制;N/A;高度;纬度;经度
-LOITER_TURNS;盘旋_圈数;圈数;高度;纬度;经度
-LOITER_TIME;盘旋_时间;时间 s*10;高度;纬度;经度
-RETURN_TO_LAUNCH;返航;N/A;高度;纬度;经度
-LAND;着陆;N/A;高度;纬度;经度
-TAKEOFF;起飞;角度;高度;N/A;N/A
-PATHPLANNING;路径规划
-CONDITION_DELAY;条件_延迟;N/A;N/A;时间(秒);N/A
-CONDITION_CHANGE_ALT;条件_高度;速率(厘米/秒);高度;N/A;N/A
-CONDITION_DISTANCE;条件_距离;N/A;N/A;距离(米);N/A
-CONDITION_YAW;条件_偏航;角度;速度(度/秒);方向(1,-1);相对(1)/绝对(0)
-DO_SET_MODE;设置模式
-DO_JUMP;执行跳转;WP #;N/A;重复次数;N/A
-DO_CHANGE_SPEED;改变速度;类型(0=空速 1=地速);速度 (米/秒);油门(%);N/A
-DO_SET_HOME;设置起始点;当前(1) 指定(0);高度 (m);纬度;经度
-DO_SET_PARAMETER;设置参数;参数编号;参数值;N/A;N/A
-DO_REPEAT_RELAY;重复继电器;N/A;重复次数;延迟 (sec);N/A
-DO_SET_RELAY;设置继电器;关(0)/开(1);N/A;N/A;N/A
-DO_SET_SERVO;设置舵机;舵机号;PWM;N/A;N/A
-DO_REPEAT_SERVO;重复舵机;舵机编号;PWM;重复次数;延迟(秒)
-DO_CONTROL_VIDEO;控制相机
-DO_SET_ROI;设置兴趣点
-PREFLIGHT_CALIBRATION;飞行前校准
-PREFLIGHT_STORAGE;飞行前保存</value>
-  </data>
-  <data name="TXT_MAV_CMD.ToolTip" xml:space="preserve">
-    <value />
-  </data>
   <data name="BUT_grid.Text" xml:space="preserve">
     <value>网格</value>
   </data>
@@ -506,12 +479,6 @@ PREFLIGHT_STORAGE;飞行前保存</value>
     <value>在下方表格中增加一行</value>
   </data>
   <data name="panelWaypoints.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="panel6.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="tableLayoutPanel2.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="panelAction.ToolTip" xml:space="preserve">
@@ -543,6 +510,90 @@ PREFLIGHT_STORAGE;飞行前保存</value>
   </data>
   <data name="lbl_prevdist.ToolTip" xml:space="preserve">
     <value />
+  </data>
+  <data name="deleteWPToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="deleteWPToolStripMenuItem.Text" xml:space="preserve">
+    <value>删除航点</value>
+  </data>
+  <data name="loiterForeverToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
+    <value>永久</value>
+  </data>
+  <data name="loitertimeToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="loitertimeToolStripMenuItem.Text" xml:space="preserve">
+    <value>时间</value>
+  </data>
+  <data name="loitercirclesToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="loitercirclesToolStripMenuItem.Text" xml:space="preserve">
+    <value>圈数</value>
+  </data>
+  <data name="loiterToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="loiterToolStripMenuItem.Text" xml:space="preserve">
+    <value>盘旋</value>
+  </data>
+  <data name="jumpstartToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="jumpwPToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="jumpToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="jumpToolStripMenuItem.Text" xml:space="preserve">
+    <value>跳转</value>
+  </data>
+  <data name="toolStripSeparator1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>119, 6</value>
+  </data>
+  <data name="ContextMeasure.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="ContextMeasure.Text" xml:space="preserve">
+    <value>测距</value>
+  </data>
+  <data name="rotateMapToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="rotateMapToolStripMenuItem.Text" xml:space="preserve">
+    <value>旋转地图</value>
+  </data>
+  <data name="addPolygonPointToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
+    <value>增加顶点</value>
+  </data>
+  <data name="clearPolygonToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="clearPolygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>清除区域</value>
+  </data>
+  <data name="gridToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="gridToolStripMenuItem.Text" xml:space="preserve">
+    <value>网格</value>
+  </data>
+  <data name="clearMissionToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>122, 22</value>
+  </data>
+  <data name="clearMissionToolStripMenuItem.Text" xml:space="preserve">
+    <value>清空任务</value>
+  </data>
+  <data name="contextMenuStrip1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>123, 164</value>
   </data>
   <data name="contextMenuStrip1.ToolTip" xml:space="preserve">
     <value />
@@ -699,7 +750,7 @@ PREFLIGHT_STORAGE;飞行前保存</value>
     <value />
   </data>
   <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
-    <value>31, 16</value>
+    <value>31, 13</value>
   </data>
   <data name="label11.Text" xml:space="preserve">
     <value>缩放</value>
@@ -707,13 +758,7 @@ PREFLIGHT_STORAGE;飞行前保存</value>
   <data name="label11.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="panel3.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="panel4.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="tableLayoutPanel1.ToolTip" xml:space="preserve">
+  <data name="panelMap.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="panelBASE.ToolTip" xml:space="preserve">
@@ -721,9 +766,5 @@ PREFLIGHT_STORAGE;飞行前保存</value>
   </data>
   <data name="$this.ToolTip" xml:space="preserve">
     <value />
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="MAVCmd" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\MAVCmd.zh-Hans.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
 </root>
