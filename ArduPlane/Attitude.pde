@@ -275,6 +275,7 @@ static void set_servos(void)
 		g.channel_throttle.radio_out 	= g.channel_throttle.radio_in;
 		g.channel_rudder.radio_out 		= g.channel_rudder.radio_in;
 		G_RC_AUX(k_aileron)->radio_out	= g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
+		G_RC_AUX(k_flap_auto)->radio_out	= g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
 
 	} else {
 		if (g.mix_mode == 0) {
@@ -314,11 +315,11 @@ static void set_servos(void)
 		throttle_slew_limit();
 	}
 	
-	if(control_mode <= FLY_BY_WIRE_B) {
+	if(control_mode < FLY_BY_WIRE_B) {
 		G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-	} else if (control_mode >= FLY_BY_WIRE_C) {	
+	} else if (control_mode >= FLY_BY_WIRE_B) {	
 		if (g.airspeed_enabled == true) {  
-			flapSpeedSource = g.airspeed_cruise;
+			flapSpeedSource = g.airspeed_cruise/100;
 		} else {
 			flapSpeedSource = g.throttle_cruise;
 		}
@@ -329,6 +330,8 @@ static void set_servos(void)
 		} else {
 			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
 		}
+		g_rc_function[RC_Channel_aux::k_flap_auto]->calc_pwm();
+
 	}
 	
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
