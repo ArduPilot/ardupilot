@@ -350,6 +350,10 @@ static bool verify_land()
 
 	if(g.sonar_enabled){
 		// decide which sensor we're using
+		if(sonar_alt < 300){
+			next_WP = current_loc; // don't pitch or roll
+			next_WP.alt = -200; // force us down
+		}
 		if(sonar_alt < 40){
 			land_complete = true;
 			//Serial.println("Y");

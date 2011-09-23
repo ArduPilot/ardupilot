@@ -29,7 +29,7 @@
 	*/
 
 
-# define CH7_OPTION		CH7_RTL
+# define CH7_OPTION		CH7_DO_NOTHING
 	/*
 	CH7_DO_NOTHING
 	CH7_SET_HOVER
