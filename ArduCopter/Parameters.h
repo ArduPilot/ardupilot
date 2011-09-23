@@ -317,7 +317,7 @@ public:
 	throttle_fs_enabled		(THROTTLE_FAILSAFE,			k_param_throttle_fs_enabled,			PSTR("THR_FAILSAFE")),
 	throttle_fs_action		(THROTTLE_FAILSAFE_ACTION,	k_param_throttle_fs_action, 			PSTR("THR_FS_ACTION")),
 	throttle_fs_value 		(THROTTLE_FS_VALUE,			k_param_throttle_fs_value, 				PSTR("THR_FS_VALUE")),
-	throttle_cruise			(100,						k_param_throttle_cruise,				PSTR("TRIM_THROTTLE")),
+	throttle_cruise			(THROTTLE_CRUISE,			k_param_throttle_cruise,				PSTR("TRIM_THROTTLE")),
 
     flight_mode1            (FLIGHT_MODE_1,             k_param_flight_mode1,					PSTR("FLTMODE1")),
     flight_mode2            (FLIGHT_MODE_2,             k_param_flight_mode2,					PSTR("FLTMODE2")),

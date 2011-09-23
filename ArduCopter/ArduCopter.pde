@@ -1080,7 +1080,6 @@ void update_roll_pitch_mode(void)
 			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
 			break;
 	}
-
 }
 
 
@@ -1093,6 +1092,8 @@ void update_throttle_mode(void)
 			if (g.rc_3.control_in > 0){
 				g.rc_3.servo_out = g.rc_3.control_in + get_angle_boost();
 			}else{
+				g.pi_rate_roll.reset_I();
+				g.pi_rate_pitch.reset_I();
 				g.rc_3.servo_out = 0;
 			}
 			// reset the timer to throttle so that we never get fast I term run-ups

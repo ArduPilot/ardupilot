@@ -509,6 +509,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throttle control gains
 //
+
+
+#ifndef THROTTLE_CRUISE
+# define THROTTLE_CRUISE	350			//
+#endif
+
 #ifndef THROTTLE_P
 # define THROTTLE_P		0.6			//
 #endif
