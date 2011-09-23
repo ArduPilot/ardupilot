@@ -556,11 +556,6 @@
 #endif
 
 
-#ifndef CHANNEL_6_TUNING
-# define CHANNEL_6_TUNING CH6_NONE
-#endif
-
-
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
