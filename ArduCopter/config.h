@@ -485,7 +485,7 @@
 # define LOITER_P			.4		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.04	//
+# define LOITER_I			0.01	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		12		// degrees°
@@ -513,7 +513,7 @@
 # define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.03		// with 4m error, 12.5s windup
+# define THROTTLE_I		0.02		// with 4m error, 8 PWM gain/s
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300

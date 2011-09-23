@@ -1095,6 +1095,8 @@ void update_throttle_mode(void)
 			}else{
 				g.rc_3.servo_out = 0;
 			}
+			// reset the timer to throttle so that we never get fast I term run-ups
+			throttle_timer = 0;
 			break;
 
 		case THROTTLE_HOLD:
