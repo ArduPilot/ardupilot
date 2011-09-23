@@ -159,7 +159,7 @@ namespace ArdupilotMega.HIL
 
             //Console.WriteLine("Z {0} halt {1}  < gl {2} fh {3}" ,position.Z , home_altitude , ground_level , frame_height);
 
-            if (home_latitude == 0)
+            if (home_latitude == 0 || home_latitude > 90 || home_latitude < -90 || home_longitude == 0)
             {
                 this.home_latitude = fdm.latitude * rad2deg;
                 this.home_longitude = fdm.longitude * rad2deg;
@@ -187,7 +187,7 @@ namespace ArdupilotMega.HIL
                 position = new Vector3d(position.X, position.Y,
                                                ground_level + frame_height - home_altitude + 0);
                // Console.WriteLine("here " + position.Z);
-            } 
+            }
 
             //# update lat/lon/altitude
             update_position();

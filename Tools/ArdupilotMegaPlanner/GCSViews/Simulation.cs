@@ -124,6 +124,8 @@ namespace ArdupilotMega.GCSViews
 
                 try
                 {
+                    quad = new HIL.QuadCopter();
+
                     SetupUDPRecv();
 
                     if (RAD_softXplanes.Checked)
@@ -149,6 +151,7 @@ namespace ArdupilotMega.GCSViews
                 };
                 t11.Start();
                 MainV2.threads.Add(t11);
+                timer1.Start();
             }
             else
             {
@@ -618,6 +621,9 @@ namespace ArdupilotMega.GCSViews
                 att.pitch = (DATA[18][0] * deg2rad);
                 att.roll = (DATA[18][1] * deg2rad);
                 att.yaw = (DATA[18][2] * deg2rad);
+                att.pitchspeed = (DATA[17][0]);
+                att.rollspeed = (DATA[17][1]);
+                att.yawspeed = (DATA[17][2]);
                 
                 TimeSpan timediff = DateTime.Now - oldtime;
 
@@ -679,7 +685,7 @@ namespace ArdupilotMega.GCSViews
 
                 object imudata = new fgIMUData();
 
-                MAVLink.ByteArrayToStructure(data, ref imudata, 0);
+                MAVLink.ByteArrayToStructureEndian(data, ref imudata, 0);
 
                 imudata = (fgIMUData)(imudata);
 
@@ -725,7 +731,7 @@ namespace ArdupilotMega.GCSViews
 
                 object temp = fdm;
 
-                MAVLink.ByteArrayToStructure(data, ref temp, 0);
+                MAVLink.ByteArrayToStructureEndian(data, ref temp, 0);
 
                 fdm = (FGNetFDM)(temp);
 
@@ -904,12 +910,9 @@ namespace ArdupilotMega.GCSViews
         private void processArduPilot()
         {
 
-            //            Console.WriteLine("sim "+DateTime.Now.Millisecond);
+            bool heli = CHK_heli.Checked;
 
-            float roll_out = (float)MainV2.cs.hilch1 / rollgain;
-            float pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
-            float throttle_out = ((float)MainV2.cs.hilch3 + 5000) / throttlegain;
-            float rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
+            //            Console.WriteLine("sim "+DateTime.Now.Millisecond);
 
             if (CHK_quad.Checked)
             {
@@ -930,6 +933,9 @@ namespace ArdupilotMega.GCSViews
 
                 try
                 {
+
+                    if (lastfdmdata.version == 0)
+                        return;
 
                     quad.update(ref m, lastfdmdata);
                 }
@@ -1010,12 +1016,37 @@ namespace ArdupilotMega.GCSViews
 
             }
 
+            float roll_out, pitch_out, throttle_out, rudder_out, collective_out;
+
+            collective_out = 0;
+
+            if (heli)
+            {
+                roll_out = (float)MainV2.cs.hilch1 / rollgain;
+                pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
+                throttle_out = 1;
+                rudder_out = (float)MainV2.cs.hilch4 / -ruddergain;
+
+                collective_out = (float)(MainV2.cs.hilch3 - 1000) / throttlegain; 
+            }
+            else
+            {
+
+                roll_out = (float)MainV2.cs.hilch1 / rollgain;
+                pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
+                throttle_out = ((float)MainV2.cs.hilch3 + 5000) / throttlegain;
+                rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
+            }
 
             if ((roll_out == -1 || roll_out == 1) && (pitch_out == -1 || pitch_out == 1))
             {
                 this.Invoke((MethodInvoker)delegate
                 {
-                    //OutputLog.AppendText("Please check your radio setup - CLI -> setup -> radio!!!\n");
+                    try
+                    {
+                        OutputLog.AppendText("Please check your radio setup - CLI -> setup -> radio!!!\n");
+                    }
+                    catch { }
                 });
             }
 
@@ -1158,15 +1189,9 @@ namespace ArdupilotMega.GCSViews
             {
                 // sending only 1 packet instead of many.
 
-                bool helicopter = false;
-
-#if !DEBUG
-                helicopter = false;
-#endif
-
                 byte[] Xplane = new byte[5 + 36 + 36];
 
-                if (helicopter)
+                if (heli)
                 {
                     Xplane = new byte[5 + 36 + 36 + 36];
                 }
@@ -1183,14 +1208,6 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((float)throttle_out), 0, Xplane, 13, 4);
                 Array.Copy(BitConverter.GetBytes((float)throttle_out), 0, Xplane, 17, 4);
                 Array.Copy(BitConverter.GetBytes((float)throttle_out), 0, Xplane, 21, 4);
-
-                if (helicopter)
-                {
-                    Array.Copy(BitConverter.GetBytes((float)1), 0, Xplane, 9, 4); // start data
-                    Array.Copy(BitConverter.GetBytes((float)1), 0, Xplane, 13, 4);
-                    Array.Copy(BitConverter.GetBytes((float)1), 0, Xplane, 17, 4);
-                    Array.Copy(BitConverter.GetBytes((float)1), 0, Xplane, 21, 4);
-                }
 
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 25, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 29, 4);
@@ -1211,12 +1228,15 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 69, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 73, 4);
 
-                if (helicopter)
+                if (heli)
                 {
+                    Array.Copy(BitConverter.GetBytes((float)(0)), 0, Xplane, 53, 4);
+
+
                     int a = 73 + 4;
                     Array.Copy(BitConverter.GetBytes((int)39), 0, Xplane, a, 4); // packet index
                     a += 4;
-                    Array.Copy(BitConverter.GetBytes((float)(12 * throttle_out - 2)), 0, Xplane, a, 4); // main rotor 0 - 12
+                    Array.Copy(BitConverter.GetBytes((float)(12 * collective_out)), 0, Xplane, a, 4); // main rotor 0 - 12
                     a += 4;
                     Array.Copy(BitConverter.GetBytes((float)(12 * rudder_out)), 0, Xplane, a, 4); // tail rotor -12 - 12
                     a += 4;
