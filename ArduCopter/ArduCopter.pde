@@ -296,8 +296,6 @@ static boolean		motor_auto_armed;				// if true,
 
 // PIDs
 // ----
-//int 	max_stabilize_dampener;				//
-//int 	max_yaw_dampener;					//
 static Vector3f omega;
 float tuning_value;
 
@@ -319,14 +317,9 @@ static bool 	did_ground_start	= false;		// have we ground started after first ar
 // ---------------------
 static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
-//static long		nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
 static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 
-//static bool		xtrack_enabled = false;
-//static long		crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-//static long		crosstrack_correction;				// deg * 100 : 0 to 360 desired angle of plane to target
-
-static int		climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
+static int	climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
 static byte	wp_control;							// used to control - navgation or loiter
 
 static byte	command_must_index;					// current command memory location
@@ -380,8 +373,7 @@ static int 		ground_temperature;
 // Altitude Sensor variables
 // ----------------------
 static int		sonar_alt;
-static int		baro_alt;
-//static int		baro_alt_offset;
+static int		baro_alt;;
 static byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 static int		altitude_rate;
 
@@ -393,7 +385,6 @@ static byte		throttle_mode;
 
 static boolean	takeoff_complete;					// Flag for using take-off controls
 static boolean	land_complete;
-//static int		landing_distance;					// meters;
 static long 	old_alt;							// used for managing altitude rates
 static int		velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
@@ -1113,7 +1104,7 @@ void update_throttle_mode(void)
 				altitude_error = get_altitude_error();
 
 				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error, 200); //150 =  target speed of 1.5m/s
+				nav_throttle = get_nav_throttle(altitude_error, 250); //150 =  target speed of 1.5m/s
 				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
 
 				// clear the new data flag

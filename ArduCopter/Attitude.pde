@@ -85,7 +85,7 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-#define ALT_ERROR_MAX 300
+#define ALT_ERROR_MAX 350
 static int
 get_nav_throttle(long z_error, int target_speed)
 {
@@ -97,7 +97,7 @@ get_nav_throttle(long z_error, int target_speed)
 	target_speed 	= z_error * scaler;
 
 	rate_error 		= target_speed - altitude_rate;
-	rate_error 		= constrain(rate_error, -110, 110);
+	rate_error 		= constrain(rate_error, -120, 140);
 
 	float delta_throttle;
 
