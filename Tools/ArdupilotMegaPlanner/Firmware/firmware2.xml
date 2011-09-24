@@ -10,17 +10,14 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560.hex</url2560>
-    <name>ArduPlane V2.24  
-</name>
+    <name>ArduPlane V2.24  </name>
     <desc></desc>
-    <format_version>11
-</format_version>
+    <format_version>11</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-2560.hex</url2560>
-    <name>ArduPlane V2.24 HIL
-</name>
+    <name>ArduPlane V2.24 HIL</name>
     <desc>
 #define FLIGHT_MODE_CHANNEL	8
 #define FLIGHT_MODE_1		AUTO
@@ -49,75 +46,63 @@
 #define AIRSPEED_CRUISE     25
 #define THROTTLE_FAILSAFE   ENABLED
 </desc>
-    <format_version>11
-</format_version>
+    <format_version>11</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-2560.hex</url2560>
-    <name>ArduPlane V2.24 APM trunk
-</name>
+    <name>ArduPlane V2.24 APM trunk</name>
     <desc></desc>
-    <format_version>11
-</format_version>
+    <format_version>11</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-2560.hex</url2560>
-    <name>ArduCopter V2.0.44 Beta Quad
-</name>
+    <name>ArduCopter V2.0.44 Beta Quad</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-2560.hex</url2560>
-    <name>ArduCopter V2.0.44 Beta Tri
-</name>
+    <name>ArduCopter V2.0.44 Beta Tri</name>
     <desc>
 #define FRAME_CONFIG TRI_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560.hex</url2560>
-    <name>ArduCopter V2.0.44 Beta Hexa
-</name>
+    <name>ArduCopter V2.0.44 Beta Hexa</name>
     <desc>
 #define FRAME_CONFIG HEXA_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560.hex</url2560>
-    <name>ArduCopter V2.0.44 Beta Y6
-</name>
+    <name>ArduCopter V2.0.44 Beta Y6</name>
     <desc>
 #define FRAME_CONFIG Y6_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-2560.hex</url2560>
-    <name>ArduCopter V2.0.43 Beta Heli (2560 only)
-</name>
+    <name>ArduCopter V2.0.43 Beta Heli (2560 only)</name>
     <desc>
 #define AUTO_RESET_LOITER 0
 #define FRAME_CONFIG HELI_FRAME
@@ -158,14 +143,12 @@
 #define NAV_LOITER_IMAX  10
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-2560.hex</url2560>
-    <name>ArduCopter V2.0.44 Beta Quad Hil
-</name>
+    <name>ArduCopter V2.0.44 Beta Quad Hil</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION PLUS_FRAME
@@ -175,7 +158,6 @@
 
 
 </desc>
-    <format_version>108
-</format_version>
+    <format_version>108</format_version>
   </Firmware>
 </options>
