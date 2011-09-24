@@ -75,7 +75,7 @@ static void handle_process_now()
 			break;
 
 		case MAV_CMD_DO_CHANGE_SPEED:
-			//do_change_speed();
+			do_change_speed();
 			break;
 
 		case MAV_CMD_DO_SET_HOME:
@@ -193,6 +193,7 @@ static bool verify_may()
 
 static void do_RTL(void)
 {
+	// TODO: Altitude option from mission planner
 	Location temp	= home;
 	temp.alt		= read_alt_to_hold();
 
@@ -451,7 +452,7 @@ static bool verify_loiter_turns()
 static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+		//gcs.send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 		return true;
 	}else{
 		return false;
@@ -466,7 +467,7 @@ static void do_wait_delay()
 {
 	//Serial.print("dwd ");
 	condition_start = millis();
-	condition_value	 = next_command.lat * 1000; // convert to milliseconds
+	condition_value	= next_command.lat * 1000; // convert to milliseconds
 	Serial.println(condition_value,DEC);
 }
 
@@ -494,9 +495,9 @@ static void do_yaw()
 	command_yaw_start_time	= millis();
 
 	command_yaw_dir			= next_command.p1;		// 1 = clockwise,	 0 = counterclockwise
+	command_yaw_speed		= next_command.lat * 100; // ms * 100
 	command_yaw_relative	= next_command.lng;		// 1 = Relative,	 0 = Absolute
 
-	command_yaw_speed		= next_command.lat * 100; // ms * 100
 
 
 	// if unspecified go 30° a second
@@ -613,6 +614,11 @@ static bool verify_yaw()
 //	Do (Now) commands
 /********************************************************************************/
 
+static void do_change_speed()
+{
+	g.waypoint_speed_max = next_command.p1 * 100;
+}
+
 static void do_target_yaw()
 {
 	yaw_tracking = next_command.p1;
@@ -680,9 +686,9 @@ static void do_repeat_servo()
 	if(next_command.p1 >= CH_5 + 1 && next_command.p1 <= CH_8 + 1) {
 
 		event_timer		= 0;
-		event_delay		= next_command.lng * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
-		event_repeat	= next_command.lat * 2;
 		event_value		= next_command.alt;
+		event_repeat	= next_command.lat * 2;
+		event_delay		= next_command.lng * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
 
 		switch(next_command.p1) {
 			case CH_5:
