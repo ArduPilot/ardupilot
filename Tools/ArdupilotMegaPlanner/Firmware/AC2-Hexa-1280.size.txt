@@ -281,7 +281,6 @@
 0000000c V Parameters::Parameters()::__c
 0000000c V Parameters::Parameters()::__c
 0000000c V Parameters::Parameters()::__c
-0000000d r verify_RTL()::__c
 0000000d r select_logs(unsigned char, Menu::arg const*)::__c
 0000000d r test_tuning(unsigned char, Menu::arg const*)::__c
 0000000d r test_battery(unsigned char, Menu::arg const*)::__c
@@ -459,7 +458,6 @@
 0000003a t report_imu()
 0000003c W RC_Channel::~RC_Channel()
 0000003d B g_gps_driver
-0000003e t verify_RTL()
 0000003e T GCS_MAVLINK::send_text(unsigned char, prog_char_t const*)
 0000003e W AP_VarT<signed char>::AP_VarT(signed char, unsigned int, prog_char_t const*, unsigned char)
 00000040 t read_AHRS()
@@ -618,7 +616,7 @@
 000005ee t init_ardupilot()
 000007b0 t __static_initialization_and_destruction_0(int, int)
 000007ea b g
-0000085e t process_next_command()
-000008a0 W Parameters::Parameters()
-000011d8 T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001b7c T loop
+0000085a t process_next_command()
+0000089c W Parameters::Parameters()
+00001228 T GCS_MAVLINK::handleMessage(__mavlink_message*)
+00001ba2 T loop
