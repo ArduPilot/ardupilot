@@ -111,4 +111,6 @@ static inline int comm_get_txspace(mavlink_channel_t chan)
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/ardupilotmega/mavlink.h"
 
+uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
+
 #endif // GCS_MAVLink_h

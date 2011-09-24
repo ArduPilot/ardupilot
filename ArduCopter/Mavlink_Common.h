@@ -8,23 +8,6 @@
 byte mavdelay = 0;
 
 
-static uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid)
-{
-//Serial.print("target = "); Serial.print(sysid, DEC); Serial.print("\tcomp = "); Serial.println(compid, DEC);
-    if (sysid != mavlink_system.sysid){
-        return 1;
-
-	// Currently we are not checking for correct compid since APM is not passing mavlink info to any subsystem
-	// If it is addressed to our system ID we assume it is for us
-    //}else if(compid != mavlink_system.compid){
-	//	gcs.send_text_P(SEVERITY_LOW,PSTR("component id mismatch"));
-    //    return 1; // XXX currently not receiving correct compid from gcs
-
-    }else{
-    	return 0; // no error
-    }
-}
-
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_## id ##_LEN) return false
 
 /*
