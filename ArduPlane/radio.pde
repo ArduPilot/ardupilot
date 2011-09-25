@@ -73,7 +73,7 @@ static void read_radio()
 
 	//  TO DO  - go through and patch throttle reverse for RC_Channel library compatibility
 	#if THROTTLE_REVERSE == 1
-		radio_in[CH_THROTTLE] = radio_max(CH_THROTTLE) + radio_min(CH_THROTTLE) - radio_in[CH_THROTTLE];
+		g.channel_throttle.radio_in = g.channel_throttle.radio_max + g.channel_throttle.radio_min - g.channel_throttle.radio_in;
 	#endif
 
 	control_failsafe(g.channel_throttle.radio_in);
