@@ -495,6 +495,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="apm2.ico" />
+    <Content Include="hud.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />
     <None Include="Resources\MAVCmd.txt" />

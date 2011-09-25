@@ -217,8 +217,6 @@
             this.RATE_RLL_P = new System.Windows.Forms.DomainUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.TabPlanner = new System.Windows.Forms.TabPage();
-            this.label12 = new System.Windows.Forms.Label();
-            this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
             this.label24 = new System.Windows.Forms.Label();
             this.CHK_loadwponconnect = new System.Windows.Forms.CheckBox();
             this.label23 = new System.Windows.Forms.Label();
@@ -265,6 +263,8 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
+            this.label12 = new System.Windows.Forms.Label();
+            this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAPM2.SuspendLayout();
@@ -297,9 +297,9 @@
             // 
             // Params
             // 
-            resources.ApplyResources(this.Params, "Params");
             this.Params.AllowUserToAddRows = false;
             this.Params.AllowUserToDeleteRows = false;
+            resources.ApplyResources(this.Params, "Params");
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.Color.Maroon;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -325,7 +325,6 @@
             dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
             this.Params.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.Params.RowHeadersVisible = false;
-            this.toolTip1.SetToolTip(this.Params, resources.GetString("Params.ToolTip"));
             this.Params.CellValueChanged += new System.Windows.Forms.DataGridViewCellEventHandler(this.Params_CellValueChanged);
             // 
             // Command
@@ -363,12 +362,10 @@
             this.ConfigTabs.Controls.Add(this.TabSetup);
             this.ConfigTabs.Name = "ConfigTabs";
             this.ConfigTabs.SelectedIndex = 0;
-            this.toolTip1.SetToolTip(this.ConfigTabs, resources.GetString("ConfigTabs.ToolTip"));
             this.ConfigTabs.SelectedIndexChanged += new System.EventHandler(this.Planner_TabIndexChanged);
             // 
             // TabAPM2
             // 
-            resources.ApplyResources(this.TabAPM2, "TabAPM2");
             this.TabAPM2.BackColor = System.Drawing.Color.Transparent;
             this.TabAPM2.Controls.Add(this.groupBox3);
             this.TabAPM2.Controls.Add(this.groupBox1);
@@ -382,12 +379,11 @@
             this.TabAPM2.Controls.Add(this.groupBox10);
             this.TabAPM2.Controls.Add(this.groupBox9);
             this.TabAPM2.Controls.Add(this.groupBox8);
+            resources.ApplyResources(this.TabAPM2, "TabAPM2");
             this.TabAPM2.Name = "TabAPM2";
-            this.toolTip1.SetToolTip(this.TabAPM2, resources.GetString("TabAPM2.ToolTip"));
             // 
             // groupBox3
             // 
-            resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Controls.Add(this.THR_FS_VALUE);
             this.groupBox3.Controls.Add(this.label5);
             this.groupBox3.Controls.Add(this.THR_MAX);
@@ -396,61 +392,52 @@
             this.groupBox3.Controls.Add(this.label7);
             this.groupBox3.Controls.Add(this.TRIM_THROTTLE);
             this.groupBox3.Controls.Add(this.label8);
+            resources.ApplyResources(this.groupBox3, "groupBox3");
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox3, resources.GetString("groupBox3.ToolTip"));
             // 
             // THR_FS_VALUE
             // 
             resources.ApplyResources(this.THR_FS_VALUE, "THR_FS_VALUE");
             this.THR_FS_VALUE.Name = "THR_FS_VALUE";
-            this.toolTip1.SetToolTip(this.THR_FS_VALUE, resources.GetString("THR_FS_VALUE.ToolTip"));
             // 
             // label5
             // 
             resources.ApplyResources(this.label5, "label5");
             this.label5.Name = "label5";
-            this.toolTip1.SetToolTip(this.label5, resources.GetString("label5.ToolTip"));
             // 
             // THR_MAX
             // 
             resources.ApplyResources(this.THR_MAX, "THR_MAX");
             this.THR_MAX.Name = "THR_MAX";
-            this.toolTip1.SetToolTip(this.THR_MAX, resources.GetString("THR_MAX.ToolTip"));
             // 
             // label6
             // 
             resources.ApplyResources(this.label6, "label6");
             this.label6.Name = "label6";
-            this.toolTip1.SetToolTip(this.label6, resources.GetString("label6.ToolTip"));
             // 
             // THR_MIN
             // 
             resources.ApplyResources(this.THR_MIN, "THR_MIN");
             this.THR_MIN.Name = "THR_MIN";
-            this.toolTip1.SetToolTip(this.THR_MIN, resources.GetString("THR_MIN.ToolTip"));
             // 
             // label7
             // 
             resources.ApplyResources(this.label7, "label7");
             this.label7.Name = "label7";
-            this.toolTip1.SetToolTip(this.label7, resources.GetString("label7.ToolTip"));
             // 
             // TRIM_THROTTLE
             // 
             resources.ApplyResources(this.TRIM_THROTTLE, "TRIM_THROTTLE");
             this.TRIM_THROTTLE.Name = "TRIM_THROTTLE";
-            this.toolTip1.SetToolTip(this.TRIM_THROTTLE, resources.GetString("TRIM_THROTTLE.ToolTip"));
             // 
             // label8
             // 
             resources.ApplyResources(this.label8, "label8");
             this.label8.Name = "label8";
-            this.toolTip1.SetToolTip(this.label8, resources.GetString("label8.ToolTip"));
             // 
             // groupBox1
             // 
-            resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Controls.Add(this.ARSPD_RATIO);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.ARSPD_FBW_MAX);
@@ -459,194 +446,166 @@
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.TRIM_ARSPD_CM);
             this.groupBox1.Controls.Add(this.label4);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox1, resources.GetString("groupBox1.ToolTip"));
             // 
             // ARSPD_RATIO
             // 
             resources.ApplyResources(this.ARSPD_RATIO, "ARSPD_RATIO");
             this.ARSPD_RATIO.Name = "ARSPD_RATIO";
-            this.toolTip1.SetToolTip(this.ARSPD_RATIO, resources.GetString("ARSPD_RATIO.ToolTip"));
             // 
             // label1
             // 
             resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
-            this.toolTip1.SetToolTip(this.label1, resources.GetString("label1.ToolTip"));
             // 
             // ARSPD_FBW_MAX
             // 
             resources.ApplyResources(this.ARSPD_FBW_MAX, "ARSPD_FBW_MAX");
             this.ARSPD_FBW_MAX.Name = "ARSPD_FBW_MAX";
-            this.toolTip1.SetToolTip(this.ARSPD_FBW_MAX, resources.GetString("ARSPD_FBW_MAX.ToolTip"));
             // 
             // label2
             // 
             resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
-            this.toolTip1.SetToolTip(this.label2, resources.GetString("label2.ToolTip"));
             // 
             // ARSPD_FBW_MIN
             // 
             resources.ApplyResources(this.ARSPD_FBW_MIN, "ARSPD_FBW_MIN");
             this.ARSPD_FBW_MIN.Name = "ARSPD_FBW_MIN";
-            this.toolTip1.SetToolTip(this.ARSPD_FBW_MIN, resources.GetString("ARSPD_FBW_MIN.ToolTip"));
             // 
             // label3
             // 
             resources.ApplyResources(this.label3, "label3");
             this.label3.Name = "label3";
-            this.toolTip1.SetToolTip(this.label3, resources.GetString("label3.ToolTip"));
             // 
             // TRIM_ARSPD_CM
             // 
             resources.ApplyResources(this.TRIM_ARSPD_CM, "TRIM_ARSPD_CM");
             this.TRIM_ARSPD_CM.Name = "TRIM_ARSPD_CM";
-            this.toolTip1.SetToolTip(this.TRIM_ARSPD_CM, resources.GetString("TRIM_ARSPD_CM.ToolTip"));
             // 
             // label4
             // 
             resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
-            this.toolTip1.SetToolTip(this.label4, resources.GetString("label4.ToolTip"));
             // 
             // groupBox2
             // 
-            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Controls.Add(this.LIM_PITCH_MIN);
             this.groupBox2.Controls.Add(this.label39);
             this.groupBox2.Controls.Add(this.LIM_PITCH_MAX);
             this.groupBox2.Controls.Add(this.label38);
             this.groupBox2.Controls.Add(this.LIM_ROLL_CD);
             this.groupBox2.Controls.Add(this.label37);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox2, resources.GetString("groupBox2.ToolTip"));
             // 
             // LIM_PITCH_MIN
             // 
             resources.ApplyResources(this.LIM_PITCH_MIN, "LIM_PITCH_MIN");
             this.LIM_PITCH_MIN.Name = "LIM_PITCH_MIN";
-            this.toolTip1.SetToolTip(this.LIM_PITCH_MIN, resources.GetString("LIM_PITCH_MIN.ToolTip"));
             // 
             // label39
             // 
             resources.ApplyResources(this.label39, "label39");
             this.label39.Name = "label39";
-            this.toolTip1.SetToolTip(this.label39, resources.GetString("label39.ToolTip"));
             // 
             // LIM_PITCH_MAX
             // 
             resources.ApplyResources(this.LIM_PITCH_MAX, "LIM_PITCH_MAX");
             this.LIM_PITCH_MAX.Name = "LIM_PITCH_MAX";
-            this.toolTip1.SetToolTip(this.LIM_PITCH_MAX, resources.GetString("LIM_PITCH_MAX.ToolTip"));
             // 
             // label38
             // 
             resources.ApplyResources(this.label38, "label38");
             this.label38.Name = "label38";
-            this.toolTip1.SetToolTip(this.label38, resources.GetString("label38.ToolTip"));
             // 
             // LIM_ROLL_CD
             // 
             resources.ApplyResources(this.LIM_ROLL_CD, "LIM_ROLL_CD");
             this.LIM_ROLL_CD.Name = "LIM_ROLL_CD";
-            this.toolTip1.SetToolTip(this.LIM_ROLL_CD, resources.GetString("LIM_ROLL_CD.ToolTip"));
             // 
             // label37
             // 
             resources.ApplyResources(this.label37, "label37");
             this.label37.Name = "label37";
-            this.toolTip1.SetToolTip(this.label37, resources.GetString("label37.ToolTip"));
             // 
             // groupBox15
             // 
-            resources.ApplyResources(this.groupBox15, "groupBox15");
             this.groupBox15.Controls.Add(this.XTRK_ANGLE_CD);
             this.groupBox15.Controls.Add(this.label79);
             this.groupBox15.Controls.Add(this.XTRK_GAIN_SC);
             this.groupBox15.Controls.Add(this.label80);
+            resources.ApplyResources(this.groupBox15, "groupBox15");
             this.groupBox15.Name = "groupBox15";
             this.groupBox15.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox15, resources.GetString("groupBox15.ToolTip"));
             // 
             // XTRK_ANGLE_CD
             // 
             resources.ApplyResources(this.XTRK_ANGLE_CD, "XTRK_ANGLE_CD");
             this.XTRK_ANGLE_CD.Name = "XTRK_ANGLE_CD";
-            this.toolTip1.SetToolTip(this.XTRK_ANGLE_CD, resources.GetString("XTRK_ANGLE_CD.ToolTip"));
             // 
             // label79
             // 
             resources.ApplyResources(this.label79, "label79");
             this.label79.Name = "label79";
-            this.toolTip1.SetToolTip(this.label79, resources.GetString("label79.ToolTip"));
             // 
             // XTRK_GAIN_SC
             // 
             resources.ApplyResources(this.XTRK_GAIN_SC, "XTRK_GAIN_SC");
             this.XTRK_GAIN_SC.Name = "XTRK_GAIN_SC";
-            this.toolTip1.SetToolTip(this.XTRK_GAIN_SC, resources.GetString("XTRK_GAIN_SC.ToolTip"));
             // 
             // label80
             // 
             resources.ApplyResources(this.label80, "label80");
             this.label80.Name = "label80";
-            this.toolTip1.SetToolTip(this.label80, resources.GetString("label80.ToolTip"));
             // 
             // groupBox16
             // 
-            resources.ApplyResources(this.groupBox16, "groupBox16");
             this.groupBox16.Controls.Add(this.KFF_PTCH2THR);
             this.groupBox16.Controls.Add(this.label83);
             this.groupBox16.Controls.Add(this.KFF_RDDRMIX);
             this.groupBox16.Controls.Add(this.label78);
             this.groupBox16.Controls.Add(this.KFF_PTCHCOMP);
             this.groupBox16.Controls.Add(this.label81);
+            resources.ApplyResources(this.groupBox16, "groupBox16");
             this.groupBox16.Name = "groupBox16";
             this.groupBox16.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox16, resources.GetString("groupBox16.ToolTip"));
             // 
             // KFF_PTCH2THR
             // 
             resources.ApplyResources(this.KFF_PTCH2THR, "KFF_PTCH2THR");
             this.KFF_PTCH2THR.Name = "KFF_PTCH2THR";
-            this.toolTip1.SetToolTip(this.KFF_PTCH2THR, resources.GetString("KFF_PTCH2THR.ToolTip"));
             // 
             // label83
             // 
             resources.ApplyResources(this.label83, "label83");
             this.label83.Name = "label83";
-            this.toolTip1.SetToolTip(this.label83, resources.GetString("label83.ToolTip"));
             // 
             // KFF_RDDRMIX
             // 
             resources.ApplyResources(this.KFF_RDDRMIX, "KFF_RDDRMIX");
             this.KFF_RDDRMIX.Name = "KFF_RDDRMIX";
-            this.toolTip1.SetToolTip(this.KFF_RDDRMIX, resources.GetString("KFF_RDDRMIX.ToolTip"));
             // 
             // label78
             // 
             resources.ApplyResources(this.label78, "label78");
             this.label78.Name = "label78";
-            this.toolTip1.SetToolTip(this.label78, resources.GetString("label78.ToolTip"));
             // 
             // KFF_PTCHCOMP
             // 
             resources.ApplyResources(this.KFF_PTCHCOMP, "KFF_PTCHCOMP");
             this.KFF_PTCHCOMP.Name = "KFF_PTCHCOMP";
-            this.toolTip1.SetToolTip(this.KFF_PTCHCOMP, resources.GetString("KFF_PTCHCOMP.ToolTip"));
             // 
             // label81
             // 
             resources.ApplyResources(this.label81, "label81");
             this.label81.Name = "label81";
-            this.toolTip1.SetToolTip(this.label81, resources.GetString("label81.ToolTip"));
             // 
             // groupBox14
             // 
-            resources.ApplyResources(this.groupBox14, "groupBox14");
             this.groupBox14.Controls.Add(this.ENRGY2THR_IMAX);
             this.groupBox14.Controls.Add(this.label73);
             this.groupBox14.Controls.Add(this.ENRGY2THR_D);
@@ -655,61 +614,52 @@
             this.groupBox14.Controls.Add(this.label75);
             this.groupBox14.Controls.Add(this.ENRGY2THR_P);
             this.groupBox14.Controls.Add(this.label76);
+            resources.ApplyResources(this.groupBox14, "groupBox14");
             this.groupBox14.Name = "groupBox14";
             this.groupBox14.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox14, resources.GetString("groupBox14.ToolTip"));
             // 
             // ENRGY2THR_IMAX
             // 
             resources.ApplyResources(this.ENRGY2THR_IMAX, "ENRGY2THR_IMAX");
             this.ENRGY2THR_IMAX.Name = "ENRGY2THR_IMAX";
-            this.toolTip1.SetToolTip(this.ENRGY2THR_IMAX, resources.GetString("ENRGY2THR_IMAX.ToolTip"));
             // 
             // label73
             // 
             resources.ApplyResources(this.label73, "label73");
             this.label73.Name = "label73";
-            this.toolTip1.SetToolTip(this.label73, resources.GetString("label73.ToolTip"));
             // 
             // ENRGY2THR_D
             // 
             resources.ApplyResources(this.ENRGY2THR_D, "ENRGY2THR_D");
             this.ENRGY2THR_D.Name = "ENRGY2THR_D";
-            this.toolTip1.SetToolTip(this.ENRGY2THR_D, resources.GetString("ENRGY2THR_D.ToolTip"));
             // 
             // label74
             // 
             resources.ApplyResources(this.label74, "label74");
             this.label74.Name = "label74";
-            this.toolTip1.SetToolTip(this.label74, resources.GetString("label74.ToolTip"));
             // 
             // ENRGY2THR_I
             // 
             resources.ApplyResources(this.ENRGY2THR_I, "ENRGY2THR_I");
             this.ENRGY2THR_I.Name = "ENRGY2THR_I";
-            this.toolTip1.SetToolTip(this.ENRGY2THR_I, resources.GetString("ENRGY2THR_I.ToolTip"));
             // 
             // label75
             // 
             resources.ApplyResources(this.label75, "label75");
             this.label75.Name = "label75";
-            this.toolTip1.SetToolTip(this.label75, resources.GetString("label75.ToolTip"));
             // 
             // ENRGY2THR_P
             // 
             resources.ApplyResources(this.ENRGY2THR_P, "ENRGY2THR_P");
             this.ENRGY2THR_P.Name = "ENRGY2THR_P";
-            this.toolTip1.SetToolTip(this.ENRGY2THR_P, resources.GetString("ENRGY2THR_P.ToolTip"));
             // 
             // label76
             // 
             resources.ApplyResources(this.label76, "label76");
             this.label76.Name = "label76";
-            this.toolTip1.SetToolTip(this.label76, resources.GetString("label76.ToolTip"));
             // 
             // groupBox13
             // 
-            resources.ApplyResources(this.groupBox13, "groupBox13");
             this.groupBox13.Controls.Add(this.ALT2PTCH_IMAX);
             this.groupBox13.Controls.Add(this.label69);
             this.groupBox13.Controls.Add(this.ALT2PTCH_D);
@@ -718,61 +668,52 @@
             this.groupBox13.Controls.Add(this.label71);
             this.groupBox13.Controls.Add(this.ALT2PTCH_P);
             this.groupBox13.Controls.Add(this.label72);
+            resources.ApplyResources(this.groupBox13, "groupBox13");
             this.groupBox13.Name = "groupBox13";
             this.groupBox13.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox13, resources.GetString("groupBox13.ToolTip"));
             // 
             // ALT2PTCH_IMAX
             // 
             resources.ApplyResources(this.ALT2PTCH_IMAX, "ALT2PTCH_IMAX");
             this.ALT2PTCH_IMAX.Name = "ALT2PTCH_IMAX";
-            this.toolTip1.SetToolTip(this.ALT2PTCH_IMAX, resources.GetString("ALT2PTCH_IMAX.ToolTip"));
             // 
             // label69
             // 
             resources.ApplyResources(this.label69, "label69");
             this.label69.Name = "label69";
-            this.toolTip1.SetToolTip(this.label69, resources.GetString("label69.ToolTip"));
             // 
             // ALT2PTCH_D
             // 
             resources.ApplyResources(this.ALT2PTCH_D, "ALT2PTCH_D");
             this.ALT2PTCH_D.Name = "ALT2PTCH_D";
-            this.toolTip1.SetToolTip(this.ALT2PTCH_D, resources.GetString("ALT2PTCH_D.ToolTip"));
             // 
             // label70
             // 
             resources.ApplyResources(this.label70, "label70");
             this.label70.Name = "label70";
-            this.toolTip1.SetToolTip(this.label70, resources.GetString("label70.ToolTip"));
             // 
             // ALT2PTCH_I
             // 
             resources.ApplyResources(this.ALT2PTCH_I, "ALT2PTCH_I");
             this.ALT2PTCH_I.Name = "ALT2PTCH_I";
-            this.toolTip1.SetToolTip(this.ALT2PTCH_I, resources.GetString("ALT2PTCH_I.ToolTip"));
             // 
             // label71
             // 
             resources.ApplyResources(this.label71, "label71");
             this.label71.Name = "label71";
-            this.toolTip1.SetToolTip(this.label71, resources.GetString("label71.ToolTip"));
             // 
             // ALT2PTCH_P
             // 
             resources.ApplyResources(this.ALT2PTCH_P, "ALT2PTCH_P");
             this.ALT2PTCH_P.Name = "ALT2PTCH_P";
-            this.toolTip1.SetToolTip(this.ALT2PTCH_P, resources.GetString("ALT2PTCH_P.ToolTip"));
             // 
             // label72
             // 
             resources.ApplyResources(this.label72, "label72");
             this.label72.Name = "label72";
-            this.toolTip1.SetToolTip(this.label72, resources.GetString("label72.ToolTip"));
             // 
             // groupBox12
             // 
-            resources.ApplyResources(this.groupBox12, "groupBox12");
             this.groupBox12.Controls.Add(this.ARSP2PTCH_IMAX);
             this.groupBox12.Controls.Add(this.label65);
             this.groupBox12.Controls.Add(this.ARSP2PTCH_D);
@@ -781,61 +722,52 @@
             this.groupBox12.Controls.Add(this.label67);
             this.groupBox12.Controls.Add(this.ARSP2PTCH_P);
             this.groupBox12.Controls.Add(this.label68);
+            resources.ApplyResources(this.groupBox12, "groupBox12");
             this.groupBox12.Name = "groupBox12";
             this.groupBox12.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox12, resources.GetString("groupBox12.ToolTip"));
             // 
             // ARSP2PTCH_IMAX
             // 
             resources.ApplyResources(this.ARSP2PTCH_IMAX, "ARSP2PTCH_IMAX");
             this.ARSP2PTCH_IMAX.Name = "ARSP2PTCH_IMAX";
-            this.toolTip1.SetToolTip(this.ARSP2PTCH_IMAX, resources.GetString("ARSP2PTCH_IMAX.ToolTip"));
             // 
             // label65
             // 
             resources.ApplyResources(this.label65, "label65");
             this.label65.Name = "label65";
-            this.toolTip1.SetToolTip(this.label65, resources.GetString("label65.ToolTip"));
             // 
             // ARSP2PTCH_D
             // 
             resources.ApplyResources(this.ARSP2PTCH_D, "ARSP2PTCH_D");
             this.ARSP2PTCH_D.Name = "ARSP2PTCH_D";
-            this.toolTip1.SetToolTip(this.ARSP2PTCH_D, resources.GetString("ARSP2PTCH_D.ToolTip"));
             // 
             // label66
             // 
             resources.ApplyResources(this.label66, "label66");
             this.label66.Name = "label66";
-            this.toolTip1.SetToolTip(this.label66, resources.GetString("label66.ToolTip"));
             // 
             // ARSP2PTCH_I
             // 
             resources.ApplyResources(this.ARSP2PTCH_I, "ARSP2PTCH_I");
             this.ARSP2PTCH_I.Name = "ARSP2PTCH_I";
-            this.toolTip1.SetToolTip(this.ARSP2PTCH_I, resources.GetString("ARSP2PTCH_I.ToolTip"));
             // 
             // label67
             // 
             resources.ApplyResources(this.label67, "label67");
             this.label67.Name = "label67";
-            this.toolTip1.SetToolTip(this.label67, resources.GetString("label67.ToolTip"));
             // 
             // ARSP2PTCH_P
             // 
             resources.ApplyResources(this.ARSP2PTCH_P, "ARSP2PTCH_P");
             this.ARSP2PTCH_P.Name = "ARSP2PTCH_P";
-            this.toolTip1.SetToolTip(this.ARSP2PTCH_P, resources.GetString("ARSP2PTCH_P.ToolTip"));
             // 
             // label68
             // 
             resources.ApplyResources(this.label68, "label68");
             this.label68.Name = "label68";
-            this.toolTip1.SetToolTip(this.label68, resources.GetString("label68.ToolTip"));
             // 
             // groupBox11
             // 
-            resources.ApplyResources(this.groupBox11, "groupBox11");
             this.groupBox11.Controls.Add(this.HDNG2RLL_IMAX);
             this.groupBox11.Controls.Add(this.label61);
             this.groupBox11.Controls.Add(this.HDNG2RLL_D);
@@ -844,61 +776,52 @@
             this.groupBox11.Controls.Add(this.label63);
             this.groupBox11.Controls.Add(this.HDNG2RLL_P);
             this.groupBox11.Controls.Add(this.label64);
+            resources.ApplyResources(this.groupBox11, "groupBox11");
             this.groupBox11.Name = "groupBox11";
             this.groupBox11.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox11, resources.GetString("groupBox11.ToolTip"));
             // 
             // HDNG2RLL_IMAX
             // 
             resources.ApplyResources(this.HDNG2RLL_IMAX, "HDNG2RLL_IMAX");
             this.HDNG2RLL_IMAX.Name = "HDNG2RLL_IMAX";
-            this.toolTip1.SetToolTip(this.HDNG2RLL_IMAX, resources.GetString("HDNG2RLL_IMAX.ToolTip"));
             // 
             // label61
             // 
             resources.ApplyResources(this.label61, "label61");
             this.label61.Name = "label61";
-            this.toolTip1.SetToolTip(this.label61, resources.GetString("label61.ToolTip"));
             // 
             // HDNG2RLL_D
             // 
             resources.ApplyResources(this.HDNG2RLL_D, "HDNG2RLL_D");
             this.HDNG2RLL_D.Name = "HDNG2RLL_D";
-            this.toolTip1.SetToolTip(this.HDNG2RLL_D, resources.GetString("HDNG2RLL_D.ToolTip"));
             // 
             // label62
             // 
             resources.ApplyResources(this.label62, "label62");
             this.label62.Name = "label62";
-            this.toolTip1.SetToolTip(this.label62, resources.GetString("label62.ToolTip"));
             // 
             // HDNG2RLL_I
             // 
             resources.ApplyResources(this.HDNG2RLL_I, "HDNG2RLL_I");
             this.HDNG2RLL_I.Name = "HDNG2RLL_I";
-            this.toolTip1.SetToolTip(this.HDNG2RLL_I, resources.GetString("HDNG2RLL_I.ToolTip"));
             // 
             // label63
             // 
             resources.ApplyResources(this.label63, "label63");
             this.label63.Name = "label63";
-            this.toolTip1.SetToolTip(this.label63, resources.GetString("label63.ToolTip"));
             // 
             // HDNG2RLL_P
             // 
             resources.ApplyResources(this.HDNG2RLL_P, "HDNG2RLL_P");
             this.HDNG2RLL_P.Name = "HDNG2RLL_P";
-            this.toolTip1.SetToolTip(this.HDNG2RLL_P, resources.GetString("HDNG2RLL_P.ToolTip"));
             // 
             // label64
             // 
             resources.ApplyResources(this.label64, "label64");
             this.label64.Name = "label64";
-            this.toolTip1.SetToolTip(this.label64, resources.GetString("label64.ToolTip"));
             // 
             // groupBox10
             // 
-            resources.ApplyResources(this.groupBox10, "groupBox10");
             this.groupBox10.Controls.Add(this.YW2SRV_IMAX);
             this.groupBox10.Controls.Add(this.label57);
             this.groupBox10.Controls.Add(this.YW2SRV_D);
@@ -907,61 +830,52 @@
             this.groupBox10.Controls.Add(this.label59);
             this.groupBox10.Controls.Add(this.YW2SRV_P);
             this.groupBox10.Controls.Add(this.label60);
+            resources.ApplyResources(this.groupBox10, "groupBox10");
             this.groupBox10.Name = "groupBox10";
             this.groupBox10.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox10, resources.GetString("groupBox10.ToolTip"));
             // 
             // YW2SRV_IMAX
             // 
             resources.ApplyResources(this.YW2SRV_IMAX, "YW2SRV_IMAX");
             this.YW2SRV_IMAX.Name = "YW2SRV_IMAX";
-            this.toolTip1.SetToolTip(this.YW2SRV_IMAX, resources.GetString("YW2SRV_IMAX.ToolTip"));
             // 
             // label57
             // 
             resources.ApplyResources(this.label57, "label57");
             this.label57.Name = "label57";
-            this.toolTip1.SetToolTip(this.label57, resources.GetString("label57.ToolTip"));
             // 
             // YW2SRV_D
             // 
             resources.ApplyResources(this.YW2SRV_D, "YW2SRV_D");
             this.YW2SRV_D.Name = "YW2SRV_D";
-            this.toolTip1.SetToolTip(this.YW2SRV_D, resources.GetString("YW2SRV_D.ToolTip"));
             // 
             // label58
             // 
             resources.ApplyResources(this.label58, "label58");
             this.label58.Name = "label58";
-            this.toolTip1.SetToolTip(this.label58, resources.GetString("label58.ToolTip"));
             // 
             // YW2SRV_I
             // 
             resources.ApplyResources(this.YW2SRV_I, "YW2SRV_I");
             this.YW2SRV_I.Name = "YW2SRV_I";
-            this.toolTip1.SetToolTip(this.YW2SRV_I, resources.GetString("YW2SRV_I.ToolTip"));
             // 
             // label59
             // 
             resources.ApplyResources(this.label59, "label59");
             this.label59.Name = "label59";
-            this.toolTip1.SetToolTip(this.label59, resources.GetString("label59.ToolTip"));
             // 
             // YW2SRV_P
             // 
             resources.ApplyResources(this.YW2SRV_P, "YW2SRV_P");
             this.YW2SRV_P.Name = "YW2SRV_P";
-            this.toolTip1.SetToolTip(this.YW2SRV_P, resources.GetString("YW2SRV_P.ToolTip"));
             // 
             // label60
             // 
             resources.ApplyResources(this.label60, "label60");
             this.label60.Name = "label60";
-            this.toolTip1.SetToolTip(this.label60, resources.GetString("label60.ToolTip"));
             // 
             // groupBox9
             // 
-            resources.ApplyResources(this.groupBox9, "groupBox9");
             this.groupBox9.Controls.Add(this.PTCH2SRV_IMAX);
             this.groupBox9.Controls.Add(this.label53);
             this.groupBox9.Controls.Add(this.PTCH2SRV_D);
@@ -970,61 +884,52 @@
             this.groupBox9.Controls.Add(this.label55);
             this.groupBox9.Controls.Add(this.PTCH2SRV_P);
             this.groupBox9.Controls.Add(this.label56);
+            resources.ApplyResources(this.groupBox9, "groupBox9");
             this.groupBox9.Name = "groupBox9";
             this.groupBox9.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox9, resources.GetString("groupBox9.ToolTip"));
             // 
             // PTCH2SRV_IMAX
             // 
             resources.ApplyResources(this.PTCH2SRV_IMAX, "PTCH2SRV_IMAX");
             this.PTCH2SRV_IMAX.Name = "PTCH2SRV_IMAX";
-            this.toolTip1.SetToolTip(this.PTCH2SRV_IMAX, resources.GetString("PTCH2SRV_IMAX.ToolTip"));
             // 
             // label53
             // 
             resources.ApplyResources(this.label53, "label53");
             this.label53.Name = "label53";
-            this.toolTip1.SetToolTip(this.label53, resources.GetString("label53.ToolTip"));
             // 
             // PTCH2SRV_D
             // 
             resources.ApplyResources(this.PTCH2SRV_D, "PTCH2SRV_D");
             this.PTCH2SRV_D.Name = "PTCH2SRV_D";
-            this.toolTip1.SetToolTip(this.PTCH2SRV_D, resources.GetString("PTCH2SRV_D.ToolTip"));
             // 
             // label54
             // 
             resources.ApplyResources(this.label54, "label54");
             this.label54.Name = "label54";
-            this.toolTip1.SetToolTip(this.label54, resources.GetString("label54.ToolTip"));
             // 
             // PTCH2SRV_I
             // 
             resources.ApplyResources(this.PTCH2SRV_I, "PTCH2SRV_I");
             this.PTCH2SRV_I.Name = "PTCH2SRV_I";
-            this.toolTip1.SetToolTip(this.PTCH2SRV_I, resources.GetString("PTCH2SRV_I.ToolTip"));
             // 
             // label55
             // 
             resources.ApplyResources(this.label55, "label55");
             this.label55.Name = "label55";
-            this.toolTip1.SetToolTip(this.label55, resources.GetString("label55.ToolTip"));
             // 
             // PTCH2SRV_P
             // 
             resources.ApplyResources(this.PTCH2SRV_P, "PTCH2SRV_P");
             this.PTCH2SRV_P.Name = "PTCH2SRV_P";
-            this.toolTip1.SetToolTip(this.PTCH2SRV_P, resources.GetString("PTCH2SRV_P.ToolTip"));
             // 
             // label56
             // 
             resources.ApplyResources(this.label56, "label56");
             this.label56.Name = "label56";
-            this.toolTip1.SetToolTip(this.label56, resources.GetString("label56.ToolTip"));
             // 
             // groupBox8
             // 
-            resources.ApplyResources(this.groupBox8, "groupBox8");
             this.groupBox8.Controls.Add(this.RLL2SRV_IMAX);
             this.groupBox8.Controls.Add(this.label49);
             this.groupBox8.Controls.Add(this.RLL2SRV_D);
@@ -1033,61 +938,52 @@
             this.groupBox8.Controls.Add(this.label51);
             this.groupBox8.Controls.Add(this.RLL2SRV_P);
             this.groupBox8.Controls.Add(this.label52);
+            resources.ApplyResources(this.groupBox8, "groupBox8");
             this.groupBox8.Name = "groupBox8";
             this.groupBox8.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox8, resources.GetString("groupBox8.ToolTip"));
             // 
             // RLL2SRV_IMAX
             // 
             resources.ApplyResources(this.RLL2SRV_IMAX, "RLL2SRV_IMAX");
             this.RLL2SRV_IMAX.Name = "RLL2SRV_IMAX";
-            this.toolTip1.SetToolTip(this.RLL2SRV_IMAX, resources.GetString("RLL2SRV_IMAX.ToolTip"));
             // 
             // label49
             // 
             resources.ApplyResources(this.label49, "label49");
             this.label49.Name = "label49";
-            this.toolTip1.SetToolTip(this.label49, resources.GetString("label49.ToolTip"));
             // 
             // RLL2SRV_D
             // 
             resources.ApplyResources(this.RLL2SRV_D, "RLL2SRV_D");
             this.RLL2SRV_D.Name = "RLL2SRV_D";
-            this.toolTip1.SetToolTip(this.RLL2SRV_D, resources.GetString("RLL2SRV_D.ToolTip"));
             // 
             // label50
             // 
             resources.ApplyResources(this.label50, "label50");
             this.label50.Name = "label50";
-            this.toolTip1.SetToolTip(this.label50, resources.GetString("label50.ToolTip"));
             // 
             // RLL2SRV_I
             // 
             resources.ApplyResources(this.RLL2SRV_I, "RLL2SRV_I");
             this.RLL2SRV_I.Name = "RLL2SRV_I";
-            this.toolTip1.SetToolTip(this.RLL2SRV_I, resources.GetString("RLL2SRV_I.ToolTip"));
             // 
             // label51
             // 
             resources.ApplyResources(this.label51, "label51");
             this.label51.Name = "label51";
-            this.toolTip1.SetToolTip(this.label51, resources.GetString("label51.ToolTip"));
             // 
             // RLL2SRV_P
             // 
             resources.ApplyResources(this.RLL2SRV_P, "RLL2SRV_P");
             this.RLL2SRV_P.Name = "RLL2SRV_P";
-            this.toolTip1.SetToolTip(this.RLL2SRV_P, resources.GetString("RLL2SRV_P.ToolTip"));
             // 
             // label52
             // 
             resources.ApplyResources(this.label52, "label52");
             this.label52.Name = "label52";
-            this.toolTip1.SetToolTip(this.label52, resources.GetString("label52.ToolTip"));
             // 
             // TabAC2
             // 
-            resources.ApplyResources(this.TabAC2, "TabAC2");
             this.TabAC2.Controls.Add(this.CHK_lockrollpitch);
             this.TabAC2.Controls.Add(this.groupBox4);
             this.TabAC2.Controls.Add(this.groupBox6);
@@ -1099,19 +995,17 @@
             this.TabAC2.Controls.Add(this.groupBox23);
             this.TabAC2.Controls.Add(this.groupBox24);
             this.TabAC2.Controls.Add(this.groupBox25);
+            resources.ApplyResources(this.TabAC2, "TabAC2");
             this.TabAC2.Name = "TabAC2";
-            this.toolTip1.SetToolTip(this.TabAC2, resources.GetString("TabAC2.ToolTip"));
             // 
             // CHK_lockrollpitch
             // 
             resources.ApplyResources(this.CHK_lockrollpitch, "CHK_lockrollpitch");
             this.CHK_lockrollpitch.Name = "CHK_lockrollpitch";
-            this.toolTip1.SetToolTip(this.CHK_lockrollpitch, resources.GetString("CHK_lockrollpitch.ToolTip"));
             this.CHK_lockrollpitch.UseVisualStyleBackColor = true;
             // 
             // groupBox4
             // 
-            resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Controls.Add(this.WP_SPEED_MAX);
             this.groupBox4.Controls.Add(this.label9);
             this.groupBox4.Controls.Add(this.NAV_LAT_IMAX);
@@ -1120,61 +1014,52 @@
             this.groupBox4.Controls.Add(this.label15);
             this.groupBox4.Controls.Add(this.NAV_LAT_P);
             this.groupBox4.Controls.Add(this.label16);
+            resources.ApplyResources(this.groupBox4, "groupBox4");
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox4, resources.GetString("groupBox4.ToolTip"));
             // 
             // WP_SPEED_MAX
             // 
             resources.ApplyResources(this.WP_SPEED_MAX, "WP_SPEED_MAX");
             this.WP_SPEED_MAX.Name = "WP_SPEED_MAX";
-            this.toolTip1.SetToolTip(this.WP_SPEED_MAX, resources.GetString("WP_SPEED_MAX.ToolTip"));
             // 
             // label9
             // 
             resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
-            this.toolTip1.SetToolTip(this.label9, resources.GetString("label9.ToolTip"));
             // 
             // NAV_LAT_IMAX
             // 
             resources.ApplyResources(this.NAV_LAT_IMAX, "NAV_LAT_IMAX");
             this.NAV_LAT_IMAX.Name = "NAV_LAT_IMAX";
-            this.toolTip1.SetToolTip(this.NAV_LAT_IMAX, resources.GetString("NAV_LAT_IMAX.ToolTip"));
             // 
             // label13
             // 
             resources.ApplyResources(this.label13, "label13");
             this.label13.Name = "label13";
-            this.toolTip1.SetToolTip(this.label13, resources.GetString("label13.ToolTip"));
             // 
             // NAV_LAT_I
             // 
             resources.ApplyResources(this.NAV_LAT_I, "NAV_LAT_I");
             this.NAV_LAT_I.Name = "NAV_LAT_I";
-            this.toolTip1.SetToolTip(this.NAV_LAT_I, resources.GetString("NAV_LAT_I.ToolTip"));
             // 
             // label15
             // 
             resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
-            this.toolTip1.SetToolTip(this.label15, resources.GetString("label15.ToolTip"));
             // 
             // NAV_LAT_P
             // 
             resources.ApplyResources(this.NAV_LAT_P, "NAV_LAT_P");
             this.NAV_LAT_P.Name = "NAV_LAT_P";
-            this.toolTip1.SetToolTip(this.NAV_LAT_P, resources.GetString("NAV_LAT_P.ToolTip"));
             // 
             // label16
             // 
             resources.ApplyResources(this.label16, "label16");
             this.label16.Name = "label16";
-            this.toolTip1.SetToolTip(this.label16, resources.GetString("label16.ToolTip"));
             // 
             // groupBox6
             // 
-            resources.ApplyResources(this.groupBox6, "groupBox6");
             this.groupBox6.Controls.Add(this.XTRK_ANGLE_CD1);
             this.groupBox6.Controls.Add(this.label10);
             this.groupBox6.Controls.Add(this.XTRACK_IMAX);
@@ -1183,453 +1068,388 @@
             this.groupBox6.Controls.Add(this.label17);
             this.groupBox6.Controls.Add(this.XTRACK_P);
             this.groupBox6.Controls.Add(this.label18);
+            resources.ApplyResources(this.groupBox6, "groupBox6");
             this.groupBox6.Name = "groupBox6";
             this.groupBox6.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox6, resources.GetString("groupBox6.ToolTip"));
             // 
             // XTRK_ANGLE_CD1
             // 
             resources.ApplyResources(this.XTRK_ANGLE_CD1, "XTRK_ANGLE_CD1");
             this.XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD1";
-            this.toolTip1.SetToolTip(this.XTRK_ANGLE_CD1, resources.GetString("XTRK_ANGLE_CD1.ToolTip"));
             // 
             // label10
             // 
             resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
-            this.toolTip1.SetToolTip(this.label10, resources.GetString("label10.ToolTip"));
             // 
             // XTRACK_IMAX
             // 
             resources.ApplyResources(this.XTRACK_IMAX, "XTRACK_IMAX");
             this.XTRACK_IMAX.Name = "XTRACK_IMAX";
-            this.toolTip1.SetToolTip(this.XTRACK_IMAX, resources.GetString("XTRACK_IMAX.ToolTip"));
             // 
             // label11
             // 
             resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
-            this.toolTip1.SetToolTip(this.label11, resources.GetString("label11.ToolTip"));
             // 
             // XTRACK_I
             // 
             resources.ApplyResources(this.XTRACK_I, "XTRACK_I");
             this.XTRACK_I.Name = "XTRACK_I";
-            this.toolTip1.SetToolTip(this.XTRACK_I, resources.GetString("XTRACK_I.ToolTip"));
             // 
             // label17
             // 
             resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
-            this.toolTip1.SetToolTip(this.label17, resources.GetString("label17.ToolTip"));
             // 
             // XTRACK_P
             // 
             resources.ApplyResources(this.XTRACK_P, "XTRACK_P");
             this.XTRACK_P.Name = "XTRACK_P";
-            this.toolTip1.SetToolTip(this.XTRACK_P, resources.GetString("XTRACK_P.ToolTip"));
             // 
             // label18
             // 
             resources.ApplyResources(this.label18, "label18");
             this.label18.Name = "label18";
-            this.toolTip1.SetToolTip(this.label18, resources.GetString("label18.ToolTip"));
             // 
             // groupBox7
             // 
-            resources.ApplyResources(this.groupBox7, "groupBox7");
             this.groupBox7.Controls.Add(this.THR_HOLD_IMAX);
             this.groupBox7.Controls.Add(this.label19);
             this.groupBox7.Controls.Add(this.THR_HOLD_I);
             this.groupBox7.Controls.Add(this.label21);
             this.groupBox7.Controls.Add(this.THR_HOLD_P);
             this.groupBox7.Controls.Add(this.label22);
+            resources.ApplyResources(this.groupBox7, "groupBox7");
             this.groupBox7.Name = "groupBox7";
             this.groupBox7.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox7, resources.GetString("groupBox7.ToolTip"));
             // 
             // THR_HOLD_IMAX
             // 
             resources.ApplyResources(this.THR_HOLD_IMAX, "THR_HOLD_IMAX");
             this.THR_HOLD_IMAX.Name = "THR_HOLD_IMAX";
-            this.toolTip1.SetToolTip(this.THR_HOLD_IMAX, resources.GetString("THR_HOLD_IMAX.ToolTip"));
             // 
             // label19
             // 
             resources.ApplyResources(this.label19, "label19");
             this.label19.Name = "label19";
-            this.toolTip1.SetToolTip(this.label19, resources.GetString("label19.ToolTip"));
             // 
             // THR_HOLD_I
             // 
             resources.ApplyResources(this.THR_HOLD_I, "THR_HOLD_I");
             this.THR_HOLD_I.Name = "THR_HOLD_I";
-            this.toolTip1.SetToolTip(this.THR_HOLD_I, resources.GetString("THR_HOLD_I.ToolTip"));
             // 
             // label21
             // 
             resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
-            this.toolTip1.SetToolTip(this.label21, resources.GetString("label21.ToolTip"));
             // 
             // THR_HOLD_P
             // 
             resources.ApplyResources(this.THR_HOLD_P, "THR_HOLD_P");
             this.THR_HOLD_P.Name = "THR_HOLD_P";
-            this.toolTip1.SetToolTip(this.THR_HOLD_P, resources.GetString("THR_HOLD_P.ToolTip"));
             // 
             // label22
             // 
             resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
-            this.toolTip1.SetToolTip(this.label22, resources.GetString("label22.ToolTip"));
             // 
             // groupBox19
             // 
-            resources.ApplyResources(this.groupBox19, "groupBox19");
             this.groupBox19.Controls.Add(this.HLD_LAT_IMAX);
             this.groupBox19.Controls.Add(this.label28);
             this.groupBox19.Controls.Add(this.HLD_LAT_I);
             this.groupBox19.Controls.Add(this.label30);
             this.groupBox19.Controls.Add(this.HLD_LAT_P);
             this.groupBox19.Controls.Add(this.label31);
+            resources.ApplyResources(this.groupBox19, "groupBox19");
             this.groupBox19.Name = "groupBox19";
             this.groupBox19.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox19, resources.GetString("groupBox19.ToolTip"));
             // 
             // HLD_LAT_IMAX
             // 
             resources.ApplyResources(this.HLD_LAT_IMAX, "HLD_LAT_IMAX");
             this.HLD_LAT_IMAX.Name = "HLD_LAT_IMAX";
-            this.toolTip1.SetToolTip(this.HLD_LAT_IMAX, resources.GetString("HLD_LAT_IMAX.ToolTip"));
             // 
             // label28
             // 
             resources.ApplyResources(this.label28, "label28");
             this.label28.Name = "label28";
-            this.toolTip1.SetToolTip(this.label28, resources.GetString("label28.ToolTip"));
             // 
             // HLD_LAT_I
             // 
             resources.ApplyResources(this.HLD_LAT_I, "HLD_LAT_I");
             this.HLD_LAT_I.Name = "HLD_LAT_I";
-            this.toolTip1.SetToolTip(this.HLD_LAT_I, resources.GetString("HLD_LAT_I.ToolTip"));
             // 
             // label30
             // 
             resources.ApplyResources(this.label30, "label30");
             this.label30.Name = "label30";
-            this.toolTip1.SetToolTip(this.label30, resources.GetString("label30.ToolTip"));
             // 
             // HLD_LAT_P
             // 
             resources.ApplyResources(this.HLD_LAT_P, "HLD_LAT_P");
             this.HLD_LAT_P.Name = "HLD_LAT_P";
-            this.toolTip1.SetToolTip(this.HLD_LAT_P, resources.GetString("HLD_LAT_P.ToolTip"));
             // 
             // label31
             // 
             resources.ApplyResources(this.label31, "label31");
             this.label31.Name = "label31";
-            this.toolTip1.SetToolTip(this.label31, resources.GetString("label31.ToolTip"));
             // 
             // groupBox20
             // 
-            resources.ApplyResources(this.groupBox20, "groupBox20");
             this.groupBox20.Controls.Add(this.STB_YAW_IMAX);
             this.groupBox20.Controls.Add(this.label32);
             this.groupBox20.Controls.Add(this.STB_YAW_I);
             this.groupBox20.Controls.Add(this.label34);
             this.groupBox20.Controls.Add(this.STB_YAW_P);
             this.groupBox20.Controls.Add(this.label35);
+            resources.ApplyResources(this.groupBox20, "groupBox20");
             this.groupBox20.Name = "groupBox20";
             this.groupBox20.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox20, resources.GetString("groupBox20.ToolTip"));
             // 
             // STB_YAW_IMAX
             // 
             resources.ApplyResources(this.STB_YAW_IMAX, "STB_YAW_IMAX");
             this.STB_YAW_IMAX.Name = "STB_YAW_IMAX";
-            this.toolTip1.SetToolTip(this.STB_YAW_IMAX, resources.GetString("STB_YAW_IMAX.ToolTip"));
             // 
             // label32
             // 
             resources.ApplyResources(this.label32, "label32");
             this.label32.Name = "label32";
-            this.toolTip1.SetToolTip(this.label32, resources.GetString("label32.ToolTip"));
             // 
             // STB_YAW_I
             // 
             resources.ApplyResources(this.STB_YAW_I, "STB_YAW_I");
             this.STB_YAW_I.Name = "STB_YAW_I";
-            this.toolTip1.SetToolTip(this.STB_YAW_I, resources.GetString("STB_YAW_I.ToolTip"));
             // 
             // label34
             // 
             resources.ApplyResources(this.label34, "label34");
             this.label34.Name = "label34";
-            this.toolTip1.SetToolTip(this.label34, resources.GetString("label34.ToolTip"));
             // 
             // STB_YAW_P
             // 
             resources.ApplyResources(this.STB_YAW_P, "STB_YAW_P");
             this.STB_YAW_P.Name = "STB_YAW_P";
-            this.toolTip1.SetToolTip(this.STB_YAW_P, resources.GetString("STB_YAW_P.ToolTip"));
             // 
             // label35
             // 
             resources.ApplyResources(this.label35, "label35");
             this.label35.Name = "label35";
-            this.toolTip1.SetToolTip(this.label35, resources.GetString("label35.ToolTip"));
             // 
             // groupBox21
             // 
-            resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Controls.Add(this.STB_PIT_IMAX);
             this.groupBox21.Controls.Add(this.label36);
             this.groupBox21.Controls.Add(this.STB_PIT_I);
             this.groupBox21.Controls.Add(this.label41);
             this.groupBox21.Controls.Add(this.STB_PIT_P);
             this.groupBox21.Controls.Add(this.label42);
+            resources.ApplyResources(this.groupBox21, "groupBox21");
             this.groupBox21.Name = "groupBox21";
             this.groupBox21.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox21, resources.GetString("groupBox21.ToolTip"));
             // 
             // STB_PIT_IMAX
             // 
             resources.ApplyResources(this.STB_PIT_IMAX, "STB_PIT_IMAX");
             this.STB_PIT_IMAX.Name = "STB_PIT_IMAX";
-            this.toolTip1.SetToolTip(this.STB_PIT_IMAX, resources.GetString("STB_PIT_IMAX.ToolTip"));
             // 
             // label36
             // 
             resources.ApplyResources(this.label36, "label36");
             this.label36.Name = "label36";
-            this.toolTip1.SetToolTip(this.label36, resources.GetString("label36.ToolTip"));
             // 
             // STB_PIT_I
             // 
             resources.ApplyResources(this.STB_PIT_I, "STB_PIT_I");
             this.STB_PIT_I.Name = "STB_PIT_I";
-            this.toolTip1.SetToolTip(this.STB_PIT_I, resources.GetString("STB_PIT_I.ToolTip"));
             // 
             // label41
             // 
             resources.ApplyResources(this.label41, "label41");
             this.label41.Name = "label41";
-            this.toolTip1.SetToolTip(this.label41, resources.GetString("label41.ToolTip"));
             // 
             // STB_PIT_P
             // 
             resources.ApplyResources(this.STB_PIT_P, "STB_PIT_P");
             this.STB_PIT_P.Name = "STB_PIT_P";
-            this.toolTip1.SetToolTip(this.STB_PIT_P, resources.GetString("STB_PIT_P.ToolTip"));
             // 
             // label42
             // 
             resources.ApplyResources(this.label42, "label42");
             this.label42.Name = "label42";
-            this.toolTip1.SetToolTip(this.label42, resources.GetString("label42.ToolTip"));
             // 
             // groupBox22
             // 
-            resources.ApplyResources(this.groupBox22, "groupBox22");
             this.groupBox22.Controls.Add(this.STB_RLL_IMAX);
             this.groupBox22.Controls.Add(this.label43);
             this.groupBox22.Controls.Add(this.STB_RLL_I);
             this.groupBox22.Controls.Add(this.label45);
             this.groupBox22.Controls.Add(this.STB_RLL_P);
             this.groupBox22.Controls.Add(this.label46);
+            resources.ApplyResources(this.groupBox22, "groupBox22");
             this.groupBox22.Name = "groupBox22";
             this.groupBox22.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox22, resources.GetString("groupBox22.ToolTip"));
             // 
             // STB_RLL_IMAX
             // 
             resources.ApplyResources(this.STB_RLL_IMAX, "STB_RLL_IMAX");
             this.STB_RLL_IMAX.Name = "STB_RLL_IMAX";
-            this.toolTip1.SetToolTip(this.STB_RLL_IMAX, resources.GetString("STB_RLL_IMAX.ToolTip"));
             // 
             // label43
             // 
             resources.ApplyResources(this.label43, "label43");
             this.label43.Name = "label43";
-            this.toolTip1.SetToolTip(this.label43, resources.GetString("label43.ToolTip"));
             // 
             // STB_RLL_I
             // 
             resources.ApplyResources(this.STB_RLL_I, "STB_RLL_I");
             this.STB_RLL_I.Name = "STB_RLL_I";
-            this.toolTip1.SetToolTip(this.STB_RLL_I, resources.GetString("STB_RLL_I.ToolTip"));
             // 
             // label45
             // 
             resources.ApplyResources(this.label45, "label45");
             this.label45.Name = "label45";
-            this.toolTip1.SetToolTip(this.label45, resources.GetString("label45.ToolTip"));
             // 
             // STB_RLL_P
             // 
             resources.ApplyResources(this.STB_RLL_P, "STB_RLL_P");
             this.STB_RLL_P.Name = "STB_RLL_P";
-            this.toolTip1.SetToolTip(this.STB_RLL_P, resources.GetString("STB_RLL_P.ToolTip"));
             // 
             // label46
             // 
             resources.ApplyResources(this.label46, "label46");
             this.label46.Name = "label46";
-            this.toolTip1.SetToolTip(this.label46, resources.GetString("label46.ToolTip"));
             // 
             // groupBox23
             // 
-            resources.ApplyResources(this.groupBox23, "groupBox23");
             this.groupBox23.Controls.Add(this.RATE_YAW_IMAX);
             this.groupBox23.Controls.Add(this.label47);
             this.groupBox23.Controls.Add(this.RATE_YAW_I);
             this.groupBox23.Controls.Add(this.label77);
             this.groupBox23.Controls.Add(this.RATE_YAW_P);
             this.groupBox23.Controls.Add(this.label82);
+            resources.ApplyResources(this.groupBox23, "groupBox23");
             this.groupBox23.Name = "groupBox23";
             this.groupBox23.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox23, resources.GetString("groupBox23.ToolTip"));
             // 
             // RATE_YAW_IMAX
             // 
             resources.ApplyResources(this.RATE_YAW_IMAX, "RATE_YAW_IMAX");
             this.RATE_YAW_IMAX.Name = "RATE_YAW_IMAX";
-            this.toolTip1.SetToolTip(this.RATE_YAW_IMAX, resources.GetString("RATE_YAW_IMAX.ToolTip"));
             // 
             // label47
             // 
             resources.ApplyResources(this.label47, "label47");
             this.label47.Name = "label47";
-            this.toolTip1.SetToolTip(this.label47, resources.GetString("label47.ToolTip"));
             // 
             // RATE_YAW_I
             // 
             resources.ApplyResources(this.RATE_YAW_I, "RATE_YAW_I");
             this.RATE_YAW_I.Name = "RATE_YAW_I";
-            this.toolTip1.SetToolTip(this.RATE_YAW_I, resources.GetString("RATE_YAW_I.ToolTip"));
             // 
             // label77
             // 
             resources.ApplyResources(this.label77, "label77");
             this.label77.Name = "label77";
-            this.toolTip1.SetToolTip(this.label77, resources.GetString("label77.ToolTip"));
             // 
             // RATE_YAW_P
             // 
             resources.ApplyResources(this.RATE_YAW_P, "RATE_YAW_P");
             this.RATE_YAW_P.Name = "RATE_YAW_P";
-            this.toolTip1.SetToolTip(this.RATE_YAW_P, resources.GetString("RATE_YAW_P.ToolTip"));
             // 
             // label82
             // 
             resources.ApplyResources(this.label82, "label82");
             this.label82.Name = "label82";
-            this.toolTip1.SetToolTip(this.label82, resources.GetString("label82.ToolTip"));
             // 
             // groupBox24
             // 
-            resources.ApplyResources(this.groupBox24, "groupBox24");
             this.groupBox24.Controls.Add(this.RATE_PIT_IMAX);
             this.groupBox24.Controls.Add(this.label84);
             this.groupBox24.Controls.Add(this.RATE_PIT_I);
             this.groupBox24.Controls.Add(this.label86);
             this.groupBox24.Controls.Add(this.RATE_PIT_P);
             this.groupBox24.Controls.Add(this.label87);
+            resources.ApplyResources(this.groupBox24, "groupBox24");
             this.groupBox24.Name = "groupBox24";
             this.groupBox24.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox24, resources.GetString("groupBox24.ToolTip"));
             // 
             // RATE_PIT_IMAX
             // 
             resources.ApplyResources(this.RATE_PIT_IMAX, "RATE_PIT_IMAX");
             this.RATE_PIT_IMAX.Name = "RATE_PIT_IMAX";
-            this.toolTip1.SetToolTip(this.RATE_PIT_IMAX, resources.GetString("RATE_PIT_IMAX.ToolTip"));
             // 
             // label84
             // 
             resources.ApplyResources(this.label84, "label84");
             this.label84.Name = "label84";
-            this.toolTip1.SetToolTip(this.label84, resources.GetString("label84.ToolTip"));
             // 
             // RATE_PIT_I
             // 
             resources.ApplyResources(this.RATE_PIT_I, "RATE_PIT_I");
             this.RATE_PIT_I.Name = "RATE_PIT_I";
-            this.toolTip1.SetToolTip(this.RATE_PIT_I, resources.GetString("RATE_PIT_I.ToolTip"));
             // 
             // label86
             // 
             resources.ApplyResources(this.label86, "label86");
             this.label86.Name = "label86";
-            this.toolTip1.SetToolTip(this.label86, resources.GetString("label86.ToolTip"));
             // 
             // RATE_PIT_P
             // 
             resources.ApplyResources(this.RATE_PIT_P, "RATE_PIT_P");
             this.RATE_PIT_P.Name = "RATE_PIT_P";
-            this.toolTip1.SetToolTip(this.RATE_PIT_P, resources.GetString("RATE_PIT_P.ToolTip"));
             // 
             // label87
             // 
             resources.ApplyResources(this.label87, "label87");
             this.label87.Name = "label87";
-            this.toolTip1.SetToolTip(this.label87, resources.GetString("label87.ToolTip"));
             // 
             // groupBox25
             // 
-            resources.ApplyResources(this.groupBox25, "groupBox25");
             this.groupBox25.Controls.Add(this.RATE_RLL_IMAX);
             this.groupBox25.Controls.Add(this.label88);
             this.groupBox25.Controls.Add(this.RATE_RLL_I);
             this.groupBox25.Controls.Add(this.label90);
             this.groupBox25.Controls.Add(this.RATE_RLL_P);
             this.groupBox25.Controls.Add(this.label91);
+            resources.ApplyResources(this.groupBox25, "groupBox25");
             this.groupBox25.Name = "groupBox25";
             this.groupBox25.TabStop = false;
-            this.toolTip1.SetToolTip(this.groupBox25, resources.GetString("groupBox25.ToolTip"));
             // 
             // RATE_RLL_IMAX
             // 
             resources.ApplyResources(this.RATE_RLL_IMAX, "RATE_RLL_IMAX");
             this.RATE_RLL_IMAX.Name = "RATE_RLL_IMAX";
-            this.toolTip1.SetToolTip(this.RATE_RLL_IMAX, resources.GetString("RATE_RLL_IMAX.ToolTip"));
             // 
             // label88
             // 
             resources.ApplyResources(this.label88, "label88");
             this.label88.Name = "label88";
-            this.toolTip1.SetToolTip(this.label88, resources.GetString("label88.ToolTip"));
             // 
             // RATE_RLL_I
             // 
             resources.ApplyResources(this.RATE_RLL_I, "RATE_RLL_I");
             this.RATE_RLL_I.Name = "RATE_RLL_I";
-            this.toolTip1.SetToolTip(this.RATE_RLL_I, resources.GetString("RATE_RLL_I.ToolTip"));
             // 
             // label90
             // 
             resources.ApplyResources(this.label90, "label90");
             this.label90.Name = "label90";
-            this.toolTip1.SetToolTip(this.label90, resources.GetString("label90.ToolTip"));
             // 
             // RATE_RLL_P
             // 
             resources.ApplyResources(this.RATE_RLL_P, "RATE_RLL_P");
             this.RATE_RLL_P.Name = "RATE_RLL_P";
-            this.toolTip1.SetToolTip(this.RATE_RLL_P, resources.GetString("RATE_RLL_P.ToolTip"));
             // 
             // label91
             // 
             resources.ApplyResources(this.label91, "label91");
             this.label91.Name = "label91";
-            this.toolTip1.SetToolTip(this.label91, resources.GetString("label91.ToolTip"));
             // 
             // TabPlanner
             // 
-            resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Controls.Add(this.label12);
             this.TabPlanner.Controls.Add(this.CHK_GDIPlus);
             this.TabPlanner.Controls.Add(this.label24);
@@ -1671,34 +1491,18 @@
             this.TabPlanner.Controls.Add(this.BUT_Joystick);
             this.TabPlanner.Controls.Add(this.BUT_videostop);
             this.TabPlanner.Controls.Add(this.BUT_videostart);
+            resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Name = "TabPlanner";
-            this.toolTip1.SetToolTip(this.TabPlanner, resources.GetString("TabPlanner.ToolTip"));
-            // 
-            // label12
-            // 
-            resources.ApplyResources(this.label12, "label12");
-            this.label12.Name = "label12";
-            this.toolTip1.SetToolTip(this.label12, resources.GetString("label12.ToolTip"));
-            // 
-            // CHK_GDIPlus
-            // 
-            resources.ApplyResources(this.CHK_GDIPlus, "CHK_GDIPlus");
-            this.CHK_GDIPlus.Name = "CHK_GDIPlus";
-            this.toolTip1.SetToolTip(this.CHK_GDIPlus, resources.GetString("CHK_GDIPlus.ToolTip"));
-            this.CHK_GDIPlus.UseVisualStyleBackColor = true;
-            this.CHK_GDIPlus.CheckedChanged += new System.EventHandler(this.CHK_GDIPlus_CheckedChanged);
             // 
             // label24
             // 
             resources.ApplyResources(this.label24, "label24");
             this.label24.Name = "label24";
-            this.toolTip1.SetToolTip(this.label24, resources.GetString("label24.ToolTip"));
             // 
             // CHK_loadwponconnect
             // 
             resources.ApplyResources(this.CHK_loadwponconnect, "CHK_loadwponconnect");
             this.CHK_loadwponconnect.Name = "CHK_loadwponconnect";
-            this.toolTip1.SetToolTip(this.CHK_loadwponconnect, resources.GetString("CHK_loadwponconnect.ToolTip"));
             this.CHK_loadwponconnect.UseVisualStyleBackColor = true;
             this.CHK_loadwponconnect.CheckedChanged += new System.EventHandler(this.CHK_loadwponconnect_CheckedChanged);
             // 
@@ -1706,16 +1510,15 @@
             // 
             resources.ApplyResources(this.label23, "label23");
             this.label23.Name = "label23";
-            this.toolTip1.SetToolTip(this.label23, resources.GetString("label23.ToolTip"));
             // 
             // NUM_tracklength
             // 
-            resources.ApplyResources(this.NUM_tracklength, "NUM_tracklength");
             this.NUM_tracklength.Increment = new decimal(new int[] {
             100,
             0,
             0,
             0});
+            resources.ApplyResources(this.NUM_tracklength, "NUM_tracklength");
             this.NUM_tracklength.Maximum = new decimal(new int[] {
             2000,
             0,
@@ -1739,7 +1542,6 @@
             // 
             resources.ApplyResources(this.CHK_speechaltwarning, "CHK_speechaltwarning");
             this.CHK_speechaltwarning.Name = "CHK_speechaltwarning";
-            this.toolTip1.SetToolTip(this.CHK_speechaltwarning, resources.GetString("CHK_speechaltwarning.ToolTip"));
             this.CHK_speechaltwarning.UseVisualStyleBackColor = true;
             this.CHK_speechaltwarning.CheckedChanged += new System.EventHandler(this.CHK_speechaltwarning_CheckedChanged);
             // 
@@ -1747,15 +1549,13 @@
             // 
             resources.ApplyResources(this.label108, "label108");
             this.label108.Name = "label108";
-            this.toolTip1.SetToolTip(this.label108, resources.GetString("label108.ToolTip"));
             // 
             // CHK_resetapmonconnect
             // 
-            resources.ApplyResources(this.CHK_resetapmonconnect, "CHK_resetapmonconnect");
             this.CHK_resetapmonconnect.Checked = true;
             this.CHK_resetapmonconnect.CheckState = System.Windows.Forms.CheckState.Checked;
+            resources.ApplyResources(this.CHK_resetapmonconnect, "CHK_resetapmonconnect");
             this.CHK_resetapmonconnect.Name = "CHK_resetapmonconnect";
-            this.toolTip1.SetToolTip(this.CHK_resetapmonconnect, resources.GetString("CHK_resetapmonconnect.ToolTip"));
             this.CHK_resetapmonconnect.UseVisualStyleBackColor = true;
             this.CHK_resetapmonconnect.CheckedChanged += new System.EventHandler(this.CHK_resetapmonconnect_CheckedChanged);
             // 
@@ -1763,7 +1563,6 @@
             // 
             resources.ApplyResources(this.CHK_mavdebug, "CHK_mavdebug");
             this.CHK_mavdebug.Name = "CHK_mavdebug";
-            this.toolTip1.SetToolTip(this.CHK_mavdebug, resources.GetString("CHK_mavdebug.ToolTip"));
             this.CHK_mavdebug.UseVisualStyleBackColor = true;
             this.CHK_mavdebug.CheckedChanged += new System.EventHandler(this.CHK_mavdebug_CheckedChanged);
             // 
@@ -1771,11 +1570,9 @@
             // 
             resources.ApplyResources(this.label107, "label107");
             this.label107.Name = "label107";
-            this.toolTip1.SetToolTip(this.label107, resources.GetString("label107.ToolTip"));
             // 
             // CMB_raterc
             // 
-            resources.ApplyResources(this.CMB_raterc, "CMB_raterc");
             this.CMB_raterc.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_raterc.FormattingEnabled = true;
             this.CMB_raterc.Items.AddRange(new object[] {
@@ -1783,37 +1580,32 @@
             resources.GetString("CMB_raterc.Items1"),
             resources.GetString("CMB_raterc.Items2"),
             resources.GetString("CMB_raterc.Items3")});
+            resources.ApplyResources(this.CMB_raterc, "CMB_raterc");
             this.CMB_raterc.Name = "CMB_raterc";
-            this.toolTip1.SetToolTip(this.CMB_raterc, resources.GetString("CMB_raterc.ToolTip"));
             this.CMB_raterc.SelectedIndexChanged += new System.EventHandler(this.CMB_raterc_SelectedIndexChanged);
             // 
             // label104
             // 
             resources.ApplyResources(this.label104, "label104");
             this.label104.Name = "label104";
-            this.toolTip1.SetToolTip(this.label104, resources.GetString("label104.ToolTip"));
             // 
             // label103
             // 
             resources.ApplyResources(this.label103, "label103");
             this.label103.Name = "label103";
-            this.toolTip1.SetToolTip(this.label103, resources.GetString("label103.ToolTip"));
             // 
             // label102
             // 
             resources.ApplyResources(this.label102, "label102");
             this.label102.Name = "label102";
-            this.toolTip1.SetToolTip(this.label102, resources.GetString("label102.ToolTip"));
             // 
             // label101
             // 
             resources.ApplyResources(this.label101, "label101");
             this.label101.Name = "label101";
-            this.toolTip1.SetToolTip(this.label101, resources.GetString("label101.ToolTip"));
             // 
             // CMB_ratestatus
             // 
-            resources.ApplyResources(this.CMB_ratestatus, "CMB_ratestatus");
             this.CMB_ratestatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_ratestatus.FormattingEnabled = true;
             this.CMB_ratestatus.Items.AddRange(new object[] {
@@ -1821,13 +1613,12 @@
             resources.GetString("CMB_ratestatus.Items1"),
             resources.GetString("CMB_ratestatus.Items2"),
             resources.GetString("CMB_ratestatus.Items3")});
+            resources.ApplyResources(this.CMB_ratestatus, "CMB_ratestatus");
             this.CMB_ratestatus.Name = "CMB_ratestatus";
-            this.toolTip1.SetToolTip(this.CMB_ratestatus, resources.GetString("CMB_ratestatus.ToolTip"));
             this.CMB_ratestatus.SelectedIndexChanged += new System.EventHandler(this.CMB_ratestatus_SelectedIndexChanged);
             // 
             // CMB_rateposition
             // 
-            resources.ApplyResources(this.CMB_rateposition, "CMB_rateposition");
             this.CMB_rateposition.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_rateposition.FormattingEnabled = true;
             this.CMB_rateposition.Items.AddRange(new object[] {
@@ -1835,13 +1626,12 @@
             resources.GetString("CMB_rateposition.Items1"),
             resources.GetString("CMB_rateposition.Items2"),
             resources.GetString("CMB_rateposition.Items3")});
+            resources.ApplyResources(this.CMB_rateposition, "CMB_rateposition");
             this.CMB_rateposition.Name = "CMB_rateposition";
-            this.toolTip1.SetToolTip(this.CMB_rateposition, resources.GetString("CMB_rateposition.ToolTip"));
             this.CMB_rateposition.SelectedIndexChanged += new System.EventHandler(this.CMB_rateposition_SelectedIndexChanged);
             // 
             // CMB_rateattitude
             // 
-            resources.ApplyResources(this.CMB_rateattitude, "CMB_rateattitude");
             this.CMB_rateattitude.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_rateattitude.FormattingEnabled = true;
             this.CMB_rateattitude.Items.AddRange(new object[] {
@@ -1849,63 +1639,55 @@
             resources.GetString("CMB_rateattitude.Items1"),
             resources.GetString("CMB_rateattitude.Items2"),
             resources.GetString("CMB_rateattitude.Items3")});
+            resources.ApplyResources(this.CMB_rateattitude, "CMB_rateattitude");
             this.CMB_rateattitude.Name = "CMB_rateattitude";
-            this.toolTip1.SetToolTip(this.CMB_rateattitude, resources.GetString("CMB_rateattitude.ToolTip"));
             this.CMB_rateattitude.SelectedIndexChanged += new System.EventHandler(this.CMB_rateattitude_SelectedIndexChanged);
             // 
             // label99
             // 
             resources.ApplyResources(this.label99, "label99");
             this.label99.Name = "label99";
-            this.toolTip1.SetToolTip(this.label99, resources.GetString("label99.ToolTip"));
             // 
             // label98
             // 
             resources.ApplyResources(this.label98, "label98");
             this.label98.Name = "label98";
-            this.toolTip1.SetToolTip(this.label98, resources.GetString("label98.ToolTip"));
             // 
             // label97
             // 
             resources.ApplyResources(this.label97, "label97");
             this.label97.Name = "label97";
-            this.toolTip1.SetToolTip(this.label97, resources.GetString("label97.ToolTip"));
             // 
             // CMB_speedunits
             // 
-            resources.ApplyResources(this.CMB_speedunits, "CMB_speedunits");
             this.CMB_speedunits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_speedunits.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_speedunits, "CMB_speedunits");
             this.CMB_speedunits.Name = "CMB_speedunits";
-            this.toolTip1.SetToolTip(this.CMB_speedunits, resources.GetString("CMB_speedunits.ToolTip"));
             this.CMB_speedunits.SelectedIndexChanged += new System.EventHandler(this.CMB_speedunits_SelectedIndexChanged);
             // 
             // CMB_distunits
             // 
-            resources.ApplyResources(this.CMB_distunits, "CMB_distunits");
             this.CMB_distunits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_distunits.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_distunits, "CMB_distunits");
             this.CMB_distunits.Name = "CMB_distunits";
-            this.toolTip1.SetToolTip(this.CMB_distunits, resources.GetString("CMB_distunits.ToolTip"));
             this.CMB_distunits.SelectedIndexChanged += new System.EventHandler(this.CMB_distunits_SelectedIndexChanged);
             // 
             // label96
             // 
             resources.ApplyResources(this.label96, "label96");
             this.label96.Name = "label96";
-            this.toolTip1.SetToolTip(this.label96, resources.GetString("label96.ToolTip"));
             // 
             // label95
             // 
             resources.ApplyResources(this.label95, "label95");
             this.label95.Name = "label95";
-            this.toolTip1.SetToolTip(this.label95, resources.GetString("label95.ToolTip"));
             // 
             // CHK_speechbattery
             // 
             resources.ApplyResources(this.CHK_speechbattery, "CHK_speechbattery");
             this.CHK_speechbattery.Name = "CHK_speechbattery";
-            this.toolTip1.SetToolTip(this.CHK_speechbattery, resources.GetString("CHK_speechbattery.ToolTip"));
             this.CHK_speechbattery.UseVisualStyleBackColor = true;
             this.CHK_speechbattery.CheckedChanged += new System.EventHandler(this.CHK_speechbattery_CheckedChanged);
             // 
@@ -1913,7 +1695,6 @@
             // 
             resources.ApplyResources(this.CHK_speechcustom, "CHK_speechcustom");
             this.CHK_speechcustom.Name = "CHK_speechcustom";
-            this.toolTip1.SetToolTip(this.CHK_speechcustom, resources.GetString("CHK_speechcustom.ToolTip"));
             this.CHK_speechcustom.UseVisualStyleBackColor = true;
             this.CHK_speechcustom.CheckedChanged += new System.EventHandler(this.CHK_speechcustom_CheckedChanged);
             // 
@@ -1921,7 +1702,6 @@
             // 
             resources.ApplyResources(this.CHK_speechmode, "CHK_speechmode");
             this.CHK_speechmode.Name = "CHK_speechmode";
-            this.toolTip1.SetToolTip(this.CHK_speechmode, resources.GetString("CHK_speechmode.ToolTip"));
             this.CHK_speechmode.UseVisualStyleBackColor = true;
             this.CHK_speechmode.CheckedChanged += new System.EventHandler(this.CHK_speechmode_CheckedChanged);
             // 
@@ -1929,7 +1709,6 @@
             // 
             resources.ApplyResources(this.CHK_speechwaypoint, "CHK_speechwaypoint");
             this.CHK_speechwaypoint.Name = "CHK_speechwaypoint";
-            this.toolTip1.SetToolTip(this.CHK_speechwaypoint, resources.GetString("CHK_speechwaypoint.ToolTip"));
             this.CHK_speechwaypoint.UseVisualStyleBackColor = true;
             this.CHK_speechwaypoint.CheckedChanged += new System.EventHandler(this.CHK_speechwaypoint_CheckedChanged);
             // 
@@ -1937,48 +1716,42 @@
             // 
             resources.ApplyResources(this.label94, "label94");
             this.label94.Name = "label94";
-            this.toolTip1.SetToolTip(this.label94, resources.GetString("label94.ToolTip"));
             // 
             // CMB_osdcolor
             // 
-            resources.ApplyResources(this.CMB_osdcolor, "CMB_osdcolor");
             this.CMB_osdcolor.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.CMB_osdcolor.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_osdcolor.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_osdcolor, "CMB_osdcolor");
             this.CMB_osdcolor.Name = "CMB_osdcolor";
-            this.toolTip1.SetToolTip(this.CMB_osdcolor, resources.GetString("CMB_osdcolor.ToolTip"));
             this.CMB_osdcolor.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.CMB_osdcolor_DrawItem);
             this.CMB_osdcolor.SelectedIndexChanged += new System.EventHandler(this.CMB_osdcolor_SelectedIndexChanged);
             // 
             // CMB_language
             // 
-            resources.ApplyResources(this.CMB_language, "CMB_language");
             this.CMB_language.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_language.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_language, "CMB_language");
             this.CMB_language.Name = "CMB_language";
-            this.toolTip1.SetToolTip(this.CMB_language, resources.GetString("CMB_language.ToolTip"));
             // 
             // label93
             // 
             resources.ApplyResources(this.label93, "label93");
             this.label93.Name = "label93";
-            this.toolTip1.SetToolTip(this.label93, resources.GetString("label93.ToolTip"));
             // 
             // CHK_enablespeech
             // 
             resources.ApplyResources(this.CHK_enablespeech, "CHK_enablespeech");
             this.CHK_enablespeech.Name = "CHK_enablespeech";
-            this.toolTip1.SetToolTip(this.CHK_enablespeech, resources.GetString("CHK_enablespeech.ToolTip"));
             this.CHK_enablespeech.UseVisualStyleBackColor = true;
             this.CHK_enablespeech.CheckedChanged += new System.EventHandler(this.CHK_enablespeech_CheckedChanged);
             // 
             // CHK_hudshow
             // 
-            resources.ApplyResources(this.CHK_hudshow, "CHK_hudshow");
             this.CHK_hudshow.Checked = true;
             this.CHK_hudshow.CheckState = System.Windows.Forms.CheckState.Checked;
+            resources.ApplyResources(this.CHK_hudshow, "CHK_hudshow");
             this.CHK_hudshow.Name = "CHK_hudshow";
-            this.toolTip1.SetToolTip(this.CHK_hudshow, resources.GetString("CHK_hudshow.ToolTip"));
             this.CHK_hudshow.UseVisualStyleBackColor = true;
             this.CHK_hudshow.CheckedChanged += new System.EventHandler(this.CHK_hudshow_CheckedChanged);
             // 
@@ -1986,22 +1759,19 @@
             // 
             resources.ApplyResources(this.label92, "label92");
             this.label92.Name = "label92";
-            this.toolTip1.SetToolTip(this.label92, resources.GetString("label92.ToolTip"));
             // 
             // CMB_videosources
             // 
-            resources.ApplyResources(this.CMB_videosources, "CMB_videosources");
             this.CMB_videosources.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.CMB_videosources.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_videosources, "CMB_videosources");
             this.CMB_videosources.Name = "CMB_videosources";
-            this.toolTip1.SetToolTip(this.CMB_videosources, resources.GetString("CMB_videosources.ToolTip"));
             this.CMB_videosources.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CMB_videosources_MouseClick);
             // 
             // BUT_Joystick
             // 
             resources.ApplyResources(this.BUT_Joystick, "BUT_Joystick");
             this.BUT_Joystick.Name = "BUT_Joystick";
-            this.toolTip1.SetToolTip(this.BUT_Joystick, resources.GetString("BUT_Joystick.ToolTip"));
             this.BUT_Joystick.UseVisualStyleBackColor = true;
             this.BUT_Joystick.Click += new System.EventHandler(this.BUT_Joystick_Click);
             // 
@@ -2009,7 +1779,6 @@
             // 
             resources.ApplyResources(this.BUT_videostop, "BUT_videostop");
             this.BUT_videostop.Name = "BUT_videostop";
-            this.toolTip1.SetToolTip(this.BUT_videostop, resources.GetString("BUT_videostop.ToolTip"));
             this.BUT_videostop.UseVisualStyleBackColor = true;
             this.BUT_videostop.Click += new System.EventHandler(this.BUT_videostop_Click);
             // 
@@ -2017,7 +1786,6 @@
             // 
             resources.ApplyResources(this.BUT_videostart, "BUT_videostart");
             this.BUT_videostart.Name = "BUT_videostart";
-            this.toolTip1.SetToolTip(this.BUT_videostart, resources.GetString("BUT_videostart.ToolTip"));
             this.BUT_videostart.UseVisualStyleBackColor = true;
             this.BUT_videostart.Click += new System.EventHandler(this.BUT_videostart_Click);
             // 
@@ -2025,7 +1793,6 @@
             // 
             resources.ApplyResources(this.TabSetup, "TabSetup");
             this.TabSetup.Name = "TabSetup";
-            this.toolTip1.SetToolTip(this.TabSetup, resources.GetString("TabSetup.ToolTip"));
             this.TabSetup.UseVisualStyleBackColor = true;
             // 
             // BUT_rerequestparams
@@ -2064,9 +1831,21 @@
             // 
             resources.ApplyResources(this.BUT_compare, "BUT_compare");
             this.BUT_compare.Name = "BUT_compare";
-            this.toolTip1.SetToolTip(this.BUT_compare, resources.GetString("BUT_compare.ToolTip"));
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
+            // 
+            // label12
+            // 
+            resources.ApplyResources(this.label12, "label12");
+            this.label12.Name = "label12";
+            // 
+            // CHK_GDIPlus
+            // 
+            resources.ApplyResources(this.CHK_GDIPlus, "CHK_GDIPlus");
+            this.CHK_GDIPlus.Name = "CHK_GDIPlus";
+            this.toolTip1.SetToolTip(this.CHK_GDIPlus, resources.GetString("CHK_GDIPlus.ToolTip"));
+            this.CHK_GDIPlus.UseVisualStyleBackColor = true;
+            this.CHK_GDIPlus.CheckedChanged += new System.EventHandler(this.CHK_GDIPlus_CheckedChanged);
             // 
             // Configuration
             // 
@@ -2081,7 +1860,6 @@
             this.Controls.Add(this.BUT_load);
             this.Controls.Add(this.Params);
             this.Name = "Configuration";
-            this.toolTip1.SetToolTip(this, resources.GetString("$this.ToolTip"));
             this.Load += new System.EventHandler(this.Configuration_Load);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ConfigTabs.ResumeLayout(false);
