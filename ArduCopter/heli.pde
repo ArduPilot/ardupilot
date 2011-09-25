@@ -2,8 +2,18 @@
 
 #if FRAME_CONFIG ==	HELI_FRAME
 
+#define HELI_SERVO_AVERAGING_DIGITAL 0  // 250Hz
+#define HELI_SERVO_AVERAGING_ANALOG  2  // 125Hz
+
 static int heli_manual_override = false;
-static float rollPitch_impact_on_collective = 0;
+
+// heli_servo_averaging:
+//   0 or 1 = no averaging, 250hz
+//   2 = average two samples, 125hz
+//   3 = averaging three samples = 83.3 hz
+//   4 = averaging four samples = 62.5 hz
+//   5 = averaging 5 samples = 50hz
+//   digital = 0 / 250hz, analog = 2 / 83.3
 
 static void heli_init_swash()
 {
@@ -16,8 +26,6 @@ static void heli_init_swash()
 	g.heli_servo_2.set_range(0,1000);
 	g.heli_servo_3.set_range(0,1000);
 	g.heli_servo_4.set_angle(4500);
-	//g.heli_servo_4.radio_min = 1000;  // required?
-	//g.heli_servo_4.radio_max = 2000;
 	
 	// pitch factors
 	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos));
@@ -36,11 +44,6 @@ static void heli_init_swash()
 		total_tilt_max = max(total_tilt_max,tilt_max[i]);
 	}
 	
-	//if( reset_collective == false ) {
-	//	g.heli_coll_min = total_tilt_max;
-	//	g.heli_coll_max = 1000 - total_tilt_max;
-	//}
-	
 	// servo min/max values - or should I use set_range?
 	g.heli_servo_1.radio_min = g.heli_coll_min - tilt_max[CH_1];
 	g.heli_servo_1.radio_max = g.heli_coll_max + tilt_max[CH_1];
@@ -48,6 +51,16 @@ static void heli_init_swash()
 	g.heli_servo_2.radio_max = g.heli_coll_max + tilt_max[CH_2];
 	g.heli_servo_3.radio_min = g.heli_coll_min - tilt_max[CH_3];
 	g.heli_servo_3.radio_max = g.heli_coll_max + tilt_max[CH_3];
+	
+	// reset the servo averaging
+	for( i=0; i<=3; i++ )
+	    heli_servo_out[i] = 0;
+		
+    // double check heli_servo_averaging is reasonable
+	if( g.heli_servo_averaging < 0 || g.heli_servo_averaging < 0 > 5 ) {
+	    g.heli_servo_averaging = 0;
+		g.heli_servo_averaging.save();
+	}
 }
 
 static void heli_move_servos_to_mid()
@@ -58,10 +71,10 @@ static void heli_move_servos_to_mid()
 //
 // heli_move_swash - moves swash plate to attitude of parameters passed in
 //                 - expected ranges:
-//                       roll : -4500 ~ 4500   // should be -500 to 500?
+//                       roll : -4500 ~ 4500
 //                       pitch: -4500 ~ 4500
 //                       collective: 1000 ~ 2000
-//                       yaw:   -4500 ~ 4500??
+//                       yaw:   -4500 ~ 4500
 //
 static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
 {
@@ -94,26 +107,46 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 	g.heli_servo_3.calc_pwm();
 	g.heli_servo_4.calc_pwm();	
 	
-	// actually move the servos
-	APM_RC.OutputCh(CH_1, g.heli_servo_1.servo_out);
-	APM_RC.OutputCh(CH_2, g.heli_servo_2.servo_out);
-	APM_RC.OutputCh(CH_3, g.heli_servo_3.servo_out);
-	//APM_RC.OutputCh(CH_4, g.heli_servo_4.servo_out);
-	APM_RC.OutputCh(CH_4, g.heli_servo_4.radio_out);
+	// add the servo values to the averaging
+	heli_servo_out[0] += g.heli_servo_1.servo_out;
+	heli_servo_out[1] += g.heli_servo_2.servo_out;
+	heli_servo_out[2] += g.heli_servo_3.servo_out;
+	heli_servo_out[3] += g.heli_servo_4.radio_out;
+	heli_servo_out_count++;
 	
-	// output gyro value
-	if( g.heli_ext_gyro_enabled ) {
-	    APM_RC.OutputCh(CH_7, g.heli_ext_gyro_gain);
-	}
+	// is it time to move the servos?
+	if( heli_servo_out_count >= g.heli_servo_averaging ) {
+	
+	    // average the values if necessary
+	    if( g.heli_servo_averaging >= 2 ) {
+		    heli_servo_out[0] /= g.heli_servo_averaging;
+			heli_servo_out[1] /= g.heli_servo_averaging;
+			heli_servo_out[2] /= g.heli_servo_averaging;
+			heli_servo_out[3] /= g.heli_servo_averaging;
+		}
+		
+		// actually move the servos
+		APM_RC.OutputCh(CH_1, heli_servo_out[0]);
+		APM_RC.OutputCh(CH_2, heli_servo_out[1]);
+		APM_RC.OutputCh(CH_3, heli_servo_out[2]);
+		APM_RC.OutputCh(CH_4, heli_servo_out[3]);
+	
+		// output gyro value
+		if( g.heli_ext_gyro_enabled ) {
+			APM_RC.OutputCh(CH_7, g.heli_ext_gyro_gain);
+		}
 
-	// InstantPWM
-	APM_RC.Force_Out0_Out1();
-	APM_RC.Force_Out2_Out3();
-	
-	// debug
-	//Serial.printf_P(PSTR("4: r%d \tcp:%d \tcol:%d \ty:%d \tout:%d \tpwm:%d \trOut:%d \ttrim:%d\n"), roll_out, pitch_out, coll_out, yaw_out, (int)g.heli_servo_4.servo_out, (int)g.heli_servo_4.pwm_out, (int)g.heli_servo_4.radio_out, (int)g.heli_servo_4.radio_trim);
-	//Serial.printf_P(PSTR("4: y:%d \tout:%d \tpwm:%d \trOut:%d \ttrim:%d\n"), yaw_out, (int)g.heli_servo_4.servo_out, (int)g.heli_servo_4.pwm_out, (int)g.heli_servo_4.radio_out, (int)g.heli_servo_4.radio_trim);
-	//Serial.printf_P(PSTR("4: y:%d \tro:%d\n"), yaw_out, (int)g.heli_servo_4.radio_out);
+		// InstantPWM - force message to the servos
+		APM_RC.Force_Out0_Out1();
+		APM_RC.Force_Out2_Out3();
+		
+		// reset the averaging
+		heli_servo_out_count = 0;
+		heli_servo_out[0] = 0;
+		heli_servo_out[1] = 0;
+		heli_servo_out[2] = 0;
+		heli_servo_out[3] = 0;
+	}
 }
 
 // these are not really motors, they're servos but we don't rename the function because it fits with the rest of the code better
@@ -128,31 +161,9 @@ static void output_motors_armed()
 	if( heli_manual_override ) {
 	    // straight pass through from radio inputs to swash plate
 	    heli_move_swash( g.rc_1.control_in, g.rc_2.control_in, g.rc_3.radio_in, g.rc_4.control_in );
-		
-	    /*Serial.printf_P(  PSTR("1: %d/%d \t2:%d/%d \t3:%d/%d \t4:%d/%d\n"), 
-			(int)g.rc_1.control_in, (int)g.rc_1.servo_out, 
-			(int)g.rc_2.control_in, (int)g.rc_2.servo_out, 
-			(int)g.rc_3.radio_in,   (int)g.rc_3.servo_out, 
-			(int)g.rc_4.control_in, (int)g.rc_4.servo_out );*/
 	}else{
-	    // collective pitch compensation for yaw/roll.  This probably belongs somewhere else
-		//Matrix3f temp 	= dcm.get_dcm_matrix();
-		//rollPitch_impact_on_collective = 1.0 * (g.rc_3.radio_in-g.heli_coll_mid) * (1.0 - temp.c.z);
-		//rollPitch_impact_on_collective = constrain(rollPitch_impact_on_collective,0,100);
-		
-		/*counter++;
-		if( counter > 20 ) {
-		    counter = 0;
-			Serial.printf_P( PSTR("dcm:%f4.1\t rc3:%d\t cm:%d\t imp:%d\n"), 
-				temp.c.z, 
-				(int)g.rc_3.radio_in,
-				(int)g.heli_coll_mid,
-				(int)rollPitch_impact_on_collective );
-		}*/
-	
-	    // source inputs from attitude controller (except for collective pitch)
-	    //heli_move_swash( g.rc_1.servo_out, g.rc_2.servo_out, g.rc_3.radio_in + rollPitch_impact_on_collective, g.rc_4.servo_out );  // to allow control by PIDs except for collective
-		heli_move_swash( g.rc_1.servo_out, g.rc_2.servo_out, g.rc_3.radio_out, g.rc_4.servo_out );  // to allow control by PIDs except for collective
+	    // source inputs from attitude controller
+		heli_move_swash( g.rc_1.servo_out, g.rc_2.servo_out, g.rc_3.radio_out, g.rc_4.servo_out );
 	}
 }
 
@@ -160,8 +171,7 @@ static void output_motors_armed()
 static void output_motors_disarmed()
 {
 	if(g.rc_3.control_in > 0){
-		// we have pushed up the throttle
-		// remove safety
+		// we have pushed up the throttle, remove safety
 		motor_auto_armed = true;
 	}
 

@@ -284,7 +284,8 @@ static bool		do_simple = false;
 #if FRAME_CONFIG ==	HELI_FRAME
 static float heli_rollFactor[3], heli_pitchFactor[3];  // only required for 3 swashplate servos
 static int heli_servo_min[3], heli_servo_max[3];       // same here.  for yaw servo we use heli_servo4_min/max parameter directly
-static int heli_servo_out[4];
+static long heli_servo_out[4];                         // used for servo averaging for analog servos
+static int heli_servo_out_count = 0;                   // use for servo averaging
 #endif
 
 // Failsafe
