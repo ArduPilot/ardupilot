@@ -322,6 +322,21 @@ namespace ArdupilotMega
                     lastpos = (position[positionindex][position[positionindex].Count - 1]);
                     lastline = line;
                 }
+                if (items[0].Contains("GPS") && items[4] != "0" && items[4] != "-1")
+                {
+                    if (position[positionindex] == null)
+                        position[positionindex] = new List<Point3D>();
+
+                    MainV2.cs.firmware = MainV2.Firmwares.ArduCopter2;
+
+                    double alt = double.Parse(items[5], new System.Globalization.CultureInfo("en-US"));
+
+                    position[positionindex].Add(new Point3D(double.Parse(items[4], new System.Globalization.CultureInfo("en-US")), double.Parse(items[3], new System.Globalization.CultureInfo("en-US")), alt));
+                    oldlastpos = lastpos;
+                    lastpos = (position[positionindex][position[positionindex].Count - 1]);
+                    lastline = line;
+
+                }
                 if (items[0].Contains("CTUN"))
                 {
                     ctunlast = items;
