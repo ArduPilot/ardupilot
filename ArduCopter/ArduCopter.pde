@@ -1022,7 +1022,6 @@ void update_roll_pitch_mode(void)
 	int control_roll = 0, control_pitch = 0;
 
 	//read_radio();
-
 	if(do_simple && new_radio_frame){
 		new_radio_frame = false;
 		simple_timer++;
@@ -1046,7 +1045,6 @@ void update_roll_pitch_mode(void)
 		g.rc_1.control_in = control_roll;
 		g.rc_2.control_in = control_pitch;
 	}
-
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
