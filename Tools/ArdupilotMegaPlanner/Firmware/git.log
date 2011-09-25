@@ -1,12 +1,14 @@
 From https://code.google.com/p/ardupilot-mega
-   35e16dd..27704d4  APM_Camera -> origin/APM_Camera
-   8b96023..787dacf  master     -> origin/master
-Updating 8b96023..787dacf
+   27704d4..61a4415  APM_Camera -> origin/APM_Camera
+   f7f1c0b..43c6a23  master     -> origin/master
+Updating f7f1c0b..43c6a23
 Fast-forward
- ArduCopter/Mavlink_Common.h           |   17 -----------------
- ArduCopter/commands_logic.pde         |   18 ++++++++++++------
- ArduCopter/config.h                   |    4 ++--
- ArduPlane/GCS_Mavlink.pde             |   10 ----------
- libraries/GCS_MAVLink/GCS_MAVLink.cpp |    9 +++++++++
- libraries/GCS_MAVLink/GCS_MAVLink.h   |    2 ++
- 6 files changed, 25 insertions(+), 35 deletions(-)
+ ArduCopter/APM_Config.h       |    5 +++-
+ ArduCopter/ArduCopter.pde     |   50 +++++++++++++++++++-----------------
+ ArduCopter/Attitude.pde       |    2 +-
+ ArduCopter/commands_logic.pde |   44 ++++++++++++++++++++++++--------
+ ArduCopter/config.h           |   10 +++---
+ ArduCopter/heli.pde           |    7 ++++-
+ ArduCopter/navigation.pde     |   56 +++++++++++++++++++++++++++++++++++++++++
+ ArduCopter/test.pde           |   36 ++++++++++++++++++++++++++
+ 8 files changed, 167 insertions(+), 43 deletions(-)

@@ -33,6 +33,7 @@ namespace ArdupilotMega
         bool oldlogformat = false;
 
         byte mavlinkversion = 0;
+        byte[] readingpacket = new byte[256];
 
         public PointLatLngAlt[] wps = new PointLatLngAlt[200];
 
@@ -525,6 +526,8 @@ namespace ArdupilotMega
                             Console.WriteLine("MAVLINK bad param responce - {0} vs {1}",paramname,st);
                             continue;
                         }
+
+                        modifyParamForDisplay(true, st, ref par.param_value);
 
                         param[st] = (par.param_value);
 

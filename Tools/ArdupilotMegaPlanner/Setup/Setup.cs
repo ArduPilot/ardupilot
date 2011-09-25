@@ -248,6 +248,20 @@ namespace ArdupilotMega.Setup
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (tabControl1.SelectedTab == tabRadioIn)
+            {
+                startup = true;
+                try
+                {
+                    CHK_revch1.Checked = MainV2.comPort.param["RC1_REV"].ToString() == "-1";
+                    CHK_revch2.Checked = MainV2.comPort.param["RC2_REV"].ToString() == "-1";
+                    CHK_revch3.Checked = MainV2.comPort.param["RC3_REV"].ToString() == "-1";
+                    CHK_revch4.Checked = MainV2.comPort.param["RC4_REV"].ToString() == "-1";
+                }
+                catch { MessageBox.Show("Missing RC rev Param"); }
+                startup = false;
+            }
+
             if (tabControl1.SelectedTab == tabModes)
             {
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane) // APM
@@ -280,7 +294,8 @@ namespace ArdupilotMega.Setup
                         CMB_fmode3.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE3"].ToString()).ToString();
                         CMB_fmode4.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
                         CMB_fmode5.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
-                        CMB_fmode6.Text = Enum.Parse(typeof(Common.apmmodes), MainV2.comPort.param["FLTMODE6"].ToString()).ToString();
+                        CMB_fmode6.Text = Common.apmmodes.MANUAL.ToString();
+                        CMB_fmode6.Enabled = false;
                     }
                     catch { }
                 }
@@ -308,6 +323,7 @@ namespace ArdupilotMega.Setup
                         CMB_fmode4.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE4"].ToString()).ToString();
                         CMB_fmode5.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE5"].ToString()).ToString();
                         CMB_fmode6.Text = Enum.Parse(typeof(Common.ac2modes), MainV2.comPort.param["FLTMODE6"].ToString()).ToString();
+                        CMB_fmode6.Enabled = true;
 
                         int simple = int.Parse(MainV2.comPort.param["SIMPLE"].ToString());
 
@@ -1034,6 +1050,17 @@ namespace ArdupilotMega.Setup
 
         void reverseChannel(string name,bool normalreverse,Control progressbar)
         {
+            if (normalreverse == true)
+            {
+                ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(148, 193, 31);
+                ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(0x43, 0x44, 0x45);
+            }
+            else
+            {
+                ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(0x43, 0x44, 0x45);
+                ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(148, 193, 31);
+            }
+
             if (startup)
                 return;
             if (MainV2.comPort.param["SWITCH_ENABLE"] != null && (float)MainV2.comPort.param["SWITCH_ENABLE"] == 1)
@@ -1049,17 +1076,6 @@ namespace ArdupilotMega.Setup
             {
                 int i = normalreverse == false ? 1 : -1;
                 MainV2.comPort.setParam(name, i);
-
-                if (normalreverse == true)
-                {
-                    ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(148, 193, 31);
-                    ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(0x43, 0x44, 0x45); 
-                }
-                else
-                {
-                    ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(0x43, 0x44, 0x45);
-                    ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(148, 193, 31);
-                }
             }
             catch { MessageBox.Show("Error Reversing"); }
         }

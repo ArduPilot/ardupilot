@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 108;
+	static const uint16_t k_format_version = 109;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -57,6 +57,27 @@ public:
 	//
 	k_param_log_bitmask,
 
+	#if FRAME_CONFIG ==	HELI_FRAME
+	//
+	// 80: Heli
+	//
+	k_param_heli_servo_1 = 80,
+	k_param_heli_servo_2,
+	k_param_heli_servo_3,
+	k_param_heli_servo_4,
+	k_param_heli_servo1_pos ,
+	k_param_heli_servo2_pos,
+	k_param_heli_servo3_pos,
+	k_param_heli_roll_max,
+	k_param_heli_pitch_max,
+	k_param_heli_collective_min,
+	k_param_heli_collective_max,
+	k_param_heli_collective_mid,
+	k_param_heli_ext_gyro_enabled,
+	k_param_heli_ext_gyro_gain,
+	k_param_heli_servo_averaging, // 94
+	#endif
+	
 	// 110: Telemetry control
 	//
 	k_param_streamrates_port0 = 110,
@@ -107,28 +128,6 @@ public:
 	k_param_throttle_cruise,
 	k_param_esc_calibrate,
 	k_param_radio_tuning,
-
-
-	#if FRAME_CONFIG ==	HELI_FRAME
-	//
-	// 200: Heli
-	//
-	k_param_heli_servo_1 = 200,
-	k_param_heli_servo_2,
-	k_param_heli_servo_3,
-	k_param_heli_servo_4,
-	k_param_heli_servo1_pos ,
-	k_param_heli_servo2_pos,
-	k_param_heli_servo3_pos,
-	k_param_heli_roll_max,
-	k_param_heli_pitch_max,
-	k_param_heli_collective_min,
-	k_param_heli_collective_max,
-	k_param_heli_collective_mid,
-	k_param_heli_ext_gyro_enabled,
-	k_param_heli_ext_gyro_gain,	// 213
-	#endif
-
 
     //
     // 210: flight modes
@@ -247,7 +246,8 @@ public:
 	AP_Int16	heli_roll_max, heli_pitch_max;	// maximum allowed roll and pitch of swashplate
 	AP_Int16	heli_coll_min, heli_coll_max, heli_coll_mid;		// min and max collective.	mid = main blades at zero pitch
 	AP_Int8		heli_ext_gyro_enabled;	// 0 = no external tail gyro, 1 = external tail gyro
-	AP_Int16	heli_ext_gyro_gain;			// radio output 1000~2000 (value output on CH_7)
+	AP_Int16	heli_ext_gyro_gain;		// radio output 1000~2000 (value output on CH_7)
+	AP_Int8		heli_servo_averaging;	// 0 or 1 = no averaging (250hz) for **digital servos**, 2=average of two samples (125hz), 3=three samples (83.3hz) **analog servos**, 4=four samples (62.5hz), 5=5 samples(50hz)
 	#endif
 
 	// RC channels
@@ -349,6 +349,7 @@ public:
 	heli_coll_mid			(1500,						k_param_heli_collective_mid,			PSTR("COL_MID_")),
 	heli_ext_gyro_enabled	(0,							k_param_heli_ext_gyro_enabled,			PSTR("GYR_ENABLE_")),
 	heli_ext_gyro_gain		(1000,						k_param_heli_ext_gyro_gain,				PSTR("GYR_GAIN_")),
+	heli_servo_averaging	(0,							k_param_heli_servo_averaging,			PSTR("SV_AVG")),
 	#endif
 
 	// RC channel			group key					name

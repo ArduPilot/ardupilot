@@ -131,7 +131,6 @@ namespace ArdupilotMega.GCSViews
                 }
             }
             catch { }
-
         }
 
         void tabControl1_DrawItem(object sender, DrawItemEventArgs e)
