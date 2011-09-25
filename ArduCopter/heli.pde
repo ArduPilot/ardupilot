@@ -159,7 +159,12 @@ static void output_motors_armed()
 // for helis - armed or disarmed we allow servos to move
 static void output_motors_disarmed()
 {
-	//heli_move_servos_to_mid();
+	if(g.rc_3.control_in > 0){
+		// we have pushed up the throttle
+		// remove safety
+		motor_auto_armed = true;
+	}
+
 	output_motors_armed();
 }
 
