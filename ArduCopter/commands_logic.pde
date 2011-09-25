@@ -24,7 +24,7 @@ static void handle_process_must()
 			break;
 
 		case MAV_CMD_NAV_LOITER_TURNS:	// Loiter N Times
-			//do_loiter_turns();
+			do_loiter_turns();
 			break;
 
 		case MAV_CMD_NAV_LOITER_TIME:  // 19
@@ -311,9 +311,15 @@ static void do_loiter_turns()
 
 static void do_loiter_time()
 {
-	wp_control 		= LOITER_MODE;
-	set_next_WP(&current_loc);
-	loiter_time 	= millis();
+	if(next_command.lat == 0){
+		wp_control 		= LOITER_MODE;
+		loiter_time 	= millis();
+		set_next_WP(&current_loc);
+	}else{
+		wp_control 		= WP_MODE;
+		set_next_WP(&next_command);
+	}
+
 	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
 }
 
@@ -429,8 +435,16 @@ static bool verify_loiter_unlim()
 
 static bool verify_loiter_time()
 {
-	if ((millis() - loiter_time) > loiter_time_max) {
-		return true;
+	if(wp_control == LOITER_MODE){
+		if ((millis() - loiter_time) > loiter_time_max) {
+			return true;
+		}
+	}
+	if(wp_control == WP_MODE &&  wp_distance <= g.waypoint_radius){
+		// reset our loiter time
+		loiter_time = millis();
+		// switch to position hold
+		wp_control 	= LOITER_MODE;
 	}
 	return false;
 }
@@ -636,16 +650,24 @@ static void do_loiter_at_location()
 static void do_jump()
 {
 	struct Location temp;
-	if(next_command.lat > 0) {
+	if(jump == -10){
+		jump = next_command.lat;
+	}
 
+	if(jump > 0) {
+		jump--;
 		command_must_index 	= 0;
 		command_may_index 	= 0;
-		temp 				= get_command_with_index(g.waypoint_index);
-		temp.lat 			= next_command.lat - 1;					// Decrement repeat counter
 
-		set_command_with_index(temp, g.waypoint_index);
+		// set pointer to desired index
 		g.waypoint_index 	= next_command.p1 - 1;
-	} else if (next_command.lat == -1) {
+
+	} else if (jump == 0){
+		// we're done, move along
+		jump = -10;
+
+	} else if (jump == -1) {
+		// repeat forever
 	    g.waypoint_index 	= next_command.p1 - 1;
 	}
 }
