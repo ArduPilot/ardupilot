@@ -28,11 +28,10 @@ void roll_flip()
 			AAP_timer = 0;
 			AAP_state++;
 			break;
-
 		case 1: // Step 2 : Increase throttle to start maneuver
 			if (AAP_timer < 95){ 	// .5 seconds
 				g.rc_1.servo_out = get_stabilize_roll(0);
-				g.rc_3.servo_out = get_throttle(g.rc_3.control_in + AAP_THR_INC);
+				g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
 				//g.rc_4.servo_out = get_stabilize_yaw(nav_yaw);
 				AAP_timer++;
 			}else{
@@ -45,7 +44,7 @@ void roll_flip()
 			if (dcm.roll_sensor < 4500){
 				// Roll control
 				g.rc_1.servo_out = AAP_ROLL_OUT;	//get_rate_roll(AAP_ROLL_RATE);
-				g.rc_3.servo_out = get_throttle(g.rc_3.control_in - AAP_THR_DEC);
+				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
 				AAP_state++;
 			}
@@ -54,7 +53,7 @@ void roll_flip()
 		case 3: // Step 4 : CONTINUE ROLL (until we reach a certain angle [-45º])
 			if ((dcm.roll_sensor >= 4500) || (dcm.roll_sensor < -4500)){
 				g.rc_1.servo_out = 150; //get_rate_roll(AAP_ROLL_RATE);
-				g.rc_3.servo_out = get_throttle(g.rc_3.control_in - AAP_THR_DEC);
+				g.rc_3.servo_out = g.rc_3.control_in - AAP_THR_DEC;
 			}else{
 				AAP_state++;
 			}
@@ -63,7 +62,7 @@ void roll_flip()
 		case 4: // Step 5 : Increase throttle to stop the descend
 			if (AAP_timer < 90){ // .5 seconds
 				g.rc_1.servo_out = get_stabilize_roll(0);
-				g.rc_3.servo_out = get_throttle(g.rc_3.control_in + AAP_THR_INC);
+				g.rc_3.servo_out = g.rc_3.control_in + AAP_THR_INC;
 				AAP_timer++;
 			}else{
 				AAP_state++;

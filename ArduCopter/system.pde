@@ -470,14 +470,6 @@ static void set_failsafe(boolean mode)
 }
 
 
-
-static void resetPerfData(void) {
-	//mainLoop_count 		= 0;
-	G_Dt_max 			= 0;
-	gps_fix_count 		= 0;
-	perf_mon_timer 		= millis();
-}
-
 static void
 init_compass()
 {

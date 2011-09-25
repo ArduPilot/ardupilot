@@ -658,8 +658,6 @@ static void Log_Write_Performance()
 
 	//*
 	//DataFlash.WriteLong(	millis()- perf_mon_timer);
-	//DataFlash.WriteInt (	mainLoop_count);
-	DataFlash.WriteInt (	G_Dt_max);							//1
 
 	DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
 	DataFlash.WriteByte(	imu.adc_constraints);				//3
@@ -676,14 +674,13 @@ static void Log_Write_Performance()
 // Read a performance packet
 static void Log_Read_Performance()
 {
-	Serial.printf_P(PSTR(   "PM, %d, %d, %d, "
+	Serial.printf_P(PSTR(   "PM, %d, %d, "
 							"%d, %d, %d, "
 							"%d, %ld\n"),
 
 				// Control
 				//DataFlash.ReadLong(),
 				//DataFlash.ReadInt(),
-				DataFlash.ReadInt(),			//1
 				DataFlash.ReadByte(),			//2
 				DataFlash.ReadByte(),			//3
 

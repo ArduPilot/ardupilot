@@ -347,7 +347,6 @@ static int		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-//static long		bearing_error;						// deg * 100 : 0 to 36000
 static long		altitude_error;						// meters * 100 we are off in altitude
 static long 	old_altitude;
 static long 	yaw_error;							// how off are we pointed
@@ -374,7 +373,7 @@ static int 		ground_temperature;
 // Altitude Sensor variables
 // ----------------------
 static int		sonar_alt;
-static int		baro_alt;;
+static int		baro_alt;
 static byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
 static int		altitude_rate;
 
@@ -476,7 +475,6 @@ static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm
 // ----------------------
 static long 			perf_mon_timer;
 //static float 			imu_health; 						// Metric based on accel gain deweighting
-static int 				G_Dt_max;							// Max main loop cycle time in milliseconds
 static int 				gps_fix_count;
 static byte				gps_watchdog;
 
@@ -533,6 +531,7 @@ void loop()
 		// reads all of the necessary trig functions for cameras, throttle, etc.
 		update_trig();
 
+		// perform 10hz tasks
 		medium_loop();
 
 		// Stuff to run at full 50hz, but after the loops
@@ -551,7 +550,8 @@ void loop()
 			if (g.log_bitmask & MASK_LOG_PM)
 				Log_Write_Performance();
 
-			resetPerfData();
+			gps_fix_count 		= 0;
+			perf_mon_timer 		= millis();
         }
 		//PORTK &= B10111111;
 	}
@@ -575,11 +575,6 @@ static void fast_loop()
 
 	// IMU DCM Algorithm
 	read_AHRS();
-
-	// Look for slow loop times
-	// ------------------------
-	//if (delta_ms_fast_loop > G_Dt_max)
-	//	G_Dt_max = delta_ms_fast_loop;
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -1156,7 +1151,6 @@ static void update_navigation()
 			}else{
 				// lets just jump to Loiter Mode after RTL
 				set_mode(LOITER);
-				//xtrack_enabled = false;
 			}
 
 			// calculates the desired Roll and Pitch
