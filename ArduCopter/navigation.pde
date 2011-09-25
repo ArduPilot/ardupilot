@@ -116,6 +116,58 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 
+#define NAV2_ERR_MAX 600.0
+static void calc_nav_rate2(int max_speed)
+{
+	float scaler 	= (float)wp_distance / NAV2_ERR_MAX;
+	scaler			= constrain(scaler, 0.0, 1.0);
+	max_speed 		= (float)max_speed * scaler;
+
+	// XXX target_angle should be the original  desired target angle!
+	float temp		= radians((original_target_bearing - g_gps->ground_course)/100.0);
+
+	x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
+	x_rate_error 	= -x_actual_speed;
+	x_rate_error 	= constrain(x_rate_error, -800, 800);
+	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
+
+	y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
+	y_rate_error 	= max_speed - y_actual_speed; // 413
+	y_rate_error 	= constrain(y_rate_error, -800, 800);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
+
+	/*Serial.printf("max_speed: %d, xspeed: %d, yspeed: %d, x_re: %d, y_re: %d, nav_lon: %ld, nav_lat: %ld  ",
+					max_speed,
+					x_actual_speed,
+					y_actual_speed,
+					x_rate_error,
+					y_rate_error,
+					nav_lon,
+					nav_lat);*/
+}
+
+// nav_roll, nav_pitch
+static void calc_nav_pitch_roll2()
+{
+	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor - original_target_bearing))/100.0);
+	float _cos_yaw_x = cos(temp);
+	float _sin_yaw_y = sin(temp);
+
+	// rotate the vector
+	nav_roll 	=  (float)nav_lon * _sin_yaw_y - (float)nav_lat * _cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * _cos_yaw_x + (float)nav_lat * _sin_yaw_y;
+
+	// flip pitch because forward is negative
+	nav_pitch = -nav_pitch;
+
+	/*Serial.printf("_cos_yaw_x:%1.4f, _sin_yaw_y:%1.4f, nav_roll:%ld, nav_pitch:%ld\n",
+					_cos_yaw_x,
+					_sin_yaw_y,
+					nav_roll,
+					nav_pitch);*/
+}
+
+
 // nav_roll, nav_pitch
 static void calc_nav_pitch_roll()
 {

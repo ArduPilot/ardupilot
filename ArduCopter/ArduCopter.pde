@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.44 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.45 Beta"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -319,21 +319,22 @@ static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
 static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 
-static int	climb_rate;							// m/s * 100  - For future implementation of controlled ascent/descent by rate
-static byte	wp_control;							// used to control - navgation or loiter
+static int	climb_rate;								// m/s * 100  - For future implementation of controlled ascent/descent by rate
+static byte	wp_control;								// used to control - navgation or loiter
 
-static byte	command_must_index;					// current command memory location
-static byte	command_may_index;					// current command memory location
-static byte	command_must_ID;					// current command ID
-static byte	command_may_ID;						// current command ID
-static byte wp_verify_byte;						// used for tracking state of navigating waypoints
+static byte	command_must_index;						// current command memory location
+static byte	command_may_index;						// current command memory location
+static byte	command_must_ID;						// current command ID
+static byte	command_may_ID;							// current command ID
+static byte wp_verify_byte;							// used for tracking state of navigating waypoints
 
 static float cos_roll_x 	= 1;
 static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
-static long initial_simple_bearing;				// used for Simple mode
+static long initial_simple_bearing;					// used for Simple mode
 static float simple_sin_y, simple_cos_x;
+static byte jump = -10;								// used to track loops in jump command
 
 // Acro
 #if CH7_OPTION == CH7_FLIP
@@ -654,6 +655,9 @@ static void medium_loop()
 				dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
 				nav_loopTimer 		= millis();
 
+				// prevent runup from bad GPS
+				dTnav = min(dTnav, 1.0);
+
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
 				if(navigate()){
@@ -666,7 +670,6 @@ static void medium_loop()
 						Log_Write_Nav_Tuning();
 				}
 			}
-
 			break;
 
 		// command processing
@@ -1221,10 +1224,10 @@ static void update_trig(void){
 	sin_yaw_y 		= yawvector.x;	// 1 y
 
 	//flat:
-	// 0 ° = cp: 1.00, sp: 0.00, cr: 1.00, sr:  0.00, cy:  0.00, sy:  1.00,
-	// 90° = cp: 1.00, sp: 0.00, cr: 1.00, sr:  0.00, cy:  1.00, sy:  0.00,
-	// 180 = cp: 1.00, sp: 0.10, cr: 1.00, sr: -0.01, cy:  0.00, sy: -1.00,
-	// 270 = cp: 1.00, sp: 0.10, cr: 1.00, sr: -0.01, cy: -1.00, sy:  0.00,
+	// 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
+	// 90° = cos_yaw:  1.00, sin_yaw:  0.00,
+	// 180 = cos_yaw:  0.00, sin_yaw: -1.00,
+	// 270 = cos_yaw: -1.00, sin_yaw:  0.00,
 
 
 	//Vector3f accel_filt	= imu.get_accel_filtered();
@@ -1366,6 +1369,9 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
 
+		// rotate pitch and roll to the copter frame of reference
+		calc_nav_pitch_roll();
+
 	}else if(wp_control == CIRCLE_MODE){
 
 		// check if we have missed the WP
@@ -1396,21 +1402,17 @@ static void update_nav_wp()
 		// nav_lon, nav_lat is calculated
 		calc_nav_rate(long_error, lat_error, 200, 0);
 
+		// rotate pitch and roll to the copter frame of reference
+		calc_nav_pitch_roll();
+
 	} else {
 		// for long journey's reset the wind resopnse
 		// it assumes we are standing still.
-		g.pi_loiter_lat.reset_I();
-		g.pi_loiter_lat.reset_I();
-
-		// calc the lat and long error to the target
-		calc_location_error(&next_WP);
-
 		// use error as the desired rate towards the target
-		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 100);
-
+		calc_nav_rate2(g.waypoint_speed_max);
+		// rotate pitch and roll to the copter frame of reference
+		calc_nav_pitch_roll2();
 	}
-	// rotate pitch and roll to the copter frame of reference
-	calc_nav_pitch_roll();
 }
 
 static void update_auto_yaw()
