@@ -1,1 +1,9 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   e7d6202..4743949  master     -> origin/master
+Updating e7d6202..4743949
+Fast-forward
+ ArduCopter/ArduCopter.pde    |    2 --
+ ArduCopter/Attitude.pde      |   14 +-------------
+ ArduCopter/config.h          |    2 +-
+ ArduCopter/control_modes.pde |    2 +-
+ 4 files changed, 3 insertions(+), 17 deletions(-)
