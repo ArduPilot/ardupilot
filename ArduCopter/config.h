@@ -63,7 +63,7 @@
 //
 
 #ifndef CH7_OPTION
-# define CH7_OPTION		DO_SET_HOVER
+# define CH7_OPTION		CH7_SET_HOVER
 #endif
 
 
