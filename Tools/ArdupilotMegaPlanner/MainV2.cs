@@ -1162,79 +1162,102 @@ namespace ArdupilotMega
                     //url = url.Replace(" HTTP/1.0", "");
                     //url = url.Replace(" HTTP/1.1", "");
 
-                    string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\n\n--APMPLANNER\r\n";
-                    byte[] temp = encoding.GetBytes(header);
-                    stream.Write(temp, 0, temp.Length);
-
-                    while (client.Connected)
+                    if (url.Contains("websocket"))
                     {
-                        System.Threading.Thread.Sleep(200); // 5hz
-                        byte[] data = null;
-
-                        if (url.ToLower().Contains("hud"))
+                        using (var writer = new StreamWriter(stream))
                         {
-                            GCSViews.FlightData.myhud.streamjpgenable = true;
-                            data = GCSViews.FlightData.myhud.streamjpg.ToArray();
+                            writer.WriteLine("HTTP/1.1 101 Web Socket Protocol Handshake");
+                            writer.WriteLine("Upgrade: WebSocket");
+                            writer.WriteLine("Connection: Upgrade");
+                            writer.WriteLine("WebSocket-Origin: http://localhost:56781/");
+                            writer.WriteLine("WebSocket-Location: ws://localhost:56781/websocket/server");
+                            writer.WriteLine("");
+
+                            while (client.Connected)
+                            {
+                                System.Threading.Thread.Sleep(200);
+                                Console.WriteLine(stream.DataAvailable + " " + client.Available);
+                                stream.WriteByte(0x00);
+                                writer.WriteLine("test from planner");
+                                stream.WriteByte(0xff);
+                                
+                                //break;
+                            }
+
+                            stream.WriteByte(0x00);
+                            //message
+                            stream.WriteByte(0xff);
                         }
-                        else if (url.ToLower().Contains("map"))
-                        {
-                            GCSViews.FlightData.mymap.streamjpgenable = true;
-                            data = GCSViews.FlightData.mymap.streamjpg.ToArray();
+                    } else if (url.Contains(".html")) {
+                        BinaryReader file = new BinaryReader(File.Open("hud.html",FileMode.Open,FileAccess.Read,FileShare.Read));
+                        byte[] buffer = new byte[1024];
+                        while (file.PeekChar() != -1) {
+                                                        
+                            int leng = file.Read(buffer,0,buffer.Length);
+
+                            stream.Write(buffer,0,leng);
                         }
-                        else
-                        {
-                            GCSViews.FlightData.mymap.streamjpgenable = true;
-                            GCSViews.FlightData.myhud.streamjpgenable = true;
-                            Image img1 = Image.FromStream(GCSViews.FlightData.myhud.streamjpg);
-                            Image img2 = Image.FromStream(GCSViews.FlightData.mymap.streamjpg);
-                            int bigger = img1.Height > img2.Height ? img1.Height : img2.Height;
-                            Image imgout = new Bitmap(img1.Width + img2.Width, bigger);
-
-                            Graphics grap = Graphics.FromImage(imgout);
-
-                            grap.DrawImageUnscaled(img1, 0, 0);
-                            grap.DrawImageUnscaled(img2, img1.Width, 0);
-
-                            MemoryStream streamjpg = new MemoryStream();
-                            imgout.Save(streamjpg, System.Drawing.Imaging.ImageFormat.Jpeg);
-                            data = streamjpg.ToArray();
-
-                        }
-
-                        header = "Content-Type: image/jpeg\r\nContent-Length: " + data.Length + "\r\n\r\n";
-                        temp = encoding.GetBytes(header);
-                        stream.Write(temp, 0, temp.Length);
-
-                        stream.Write(data, 0, data.Length);
-
-                        header = "\r\n--APMPLANNER\r\n";
-                        temp = encoding.GetBytes(header);
-                        stream.Write(temp, 0, temp.Length);
-
+                        file.Close();
+                        stream.Close();
                     }
-                    GCSViews.FlightData.mymap.streamjpgenable = false;
-                    GCSViews.FlightData.myhud.streamjpgenable = false;
-                    /*
-                    while (client.Connected)
+                    else if (url.ToLower().Contains("hud") || url.ToLower().Contains("map"))
                     {
-
-                        byte[] data = GCSViews.FlightData.myhud.streamjpg.ToArray();
-
-                        byte[] request = new byte[1024];
-
-                        int len = stream.Read(request, 0, request.Length);
-                        Console.WriteLine(System.Text.ASCIIEncoding.ASCII.GetString(request, 0, len));
-
-                        string header = "HTTP/1.1 200 OK\nContent-Length: " + data.Length + "\nContent-Type: image/jpeg\n\n";
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\n\n--APMPLANNER\r\n";
                         byte[] temp = encoding.GetBytes(header);
                         stream.Write(temp, 0, temp.Length);
 
-                        stream.Write(data, 0, data.Length);
+                        while (client.Connected)
+                        {
+                            System.Threading.Thread.Sleep(200); // 5hz
+                            byte[] data = null;
+
+                            if (url.ToLower().Contains("hud"))
+                            {
+                                GCSViews.FlightData.myhud.streamjpgenable = true;
+                                data = GCSViews.FlightData.myhud.streamjpg.ToArray();
+                            }
+                            else if (url.ToLower().Contains("map"))
+                            {
+                                GCSViews.FlightData.mymap.streamjpgenable = true;
+                                data = GCSViews.FlightData.mymap.streamjpg.ToArray();
+                            }
+                            else
+                            {
+                                GCSViews.FlightData.mymap.streamjpgenable = true;
+                                GCSViews.FlightData.myhud.streamjpgenable = true;
+                                Image img1 = Image.FromStream(GCSViews.FlightData.myhud.streamjpg);
+                                Image img2 = Image.FromStream(GCSViews.FlightData.mymap.streamjpg);
+                                int bigger = img1.Height > img2.Height ? img1.Height : img2.Height;
+                                Image imgout = new Bitmap(img1.Width + img2.Width, bigger);
+
+                                Graphics grap = Graphics.FromImage(imgout);
+
+                                grap.DrawImageUnscaled(img1, 0, 0);
+                                grap.DrawImageUnscaled(img2, img1.Width, 0);
+
+                                MemoryStream streamjpg = new MemoryStream();
+                                imgout.Save(streamjpg, System.Drawing.Imaging.ImageFormat.Jpeg);
+                                data = streamjpg.ToArray();
+
+                            }
+
+                            header = "Content-Type: image/jpeg\r\nContent-Length: " + data.Length + "\r\n\r\n";
+                            temp = encoding.GetBytes(header);
+                            stream.Write(temp, 0, temp.Length);
+
+                            stream.Write(data, 0, data.Length);
+
+                            header = "\r\n--APMPLANNER\r\n";
+                            temp = encoding.GetBytes(header);
+                            stream.Write(temp, 0, temp.Length);
+
+                        }
+                        GCSViews.FlightData.mymap.streamjpgenable = false;
+                        GCSViews.FlightData.myhud.streamjpgenable = false;
+                        stream.Close();
 
                     }
-                    */
                     stream.Close();
-
                 }
                 catch (Exception ee) { Console.WriteLine("Failed mjpg " + ee.Message); }
             }

@@ -4,19 +4,21 @@
 <AC2>
   <GPS>
     <F1>Time</F1>
-    <F2>Fix</F2>
-    <F3>Sats</F3>
-    <F4>Lat</F4>
-    <F5>Long</F5>
-    <F6>Mix Alt</F6>
-    <F7>GPSAlt</F7>
-    <F8>GR Speed</F8>
-    <F9>CRS</F9>
+    <F2>Sats</F2>
+    <F3>Lat</F3>
+    <F4>Long</F4>
+    <F5>Mix Alt</F5>
+    <F6>GPSAlt</F6>
+    <F7>GR Speed</F7>
+    <F8>CRS</F8>
   </GPS>
   <ATT>
     <F1>Roll</F1>
     <F2>Pitch</F2>
     <F3>Yaw</F3>
+    <F4>rc1 servo</F4>
+    <F5>rc2 servo</F5>
+    <F6>rc3 servo</F6>
   </ATT>
   <NTUN>
     <F1>WP Dist</F1>
