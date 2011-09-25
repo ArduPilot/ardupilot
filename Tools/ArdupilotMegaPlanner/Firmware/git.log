@@ -1,14 +1,1 @@
-From https://code.google.com/p/ardupilot-mega
-   27704d4..61a4415  APM_Camera -> origin/APM_Camera
-   f7f1c0b..43c6a23  master     -> origin/master
-Updating f7f1c0b..43c6a23
-Fast-forward
- ArduCopter/APM_Config.h       |    5 +++-
- ArduCopter/ArduCopter.pde     |   50 +++++++++++++++++++-----------------
- ArduCopter/Attitude.pde       |    2 +-
- ArduCopter/commands_logic.pde |   44 ++++++++++++++++++++++++--------
- ArduCopter/config.h           |   10 +++---
- ArduCopter/heli.pde           |    7 ++++-
- ArduCopter/navigation.pde     |   56 +++++++++++++++++++++++++++++++++++++++++
- ArduCopter/test.pde           |   36 ++++++++++++++++++++++++++
- 8 files changed, 167 insertions(+), 43 deletions(-)
+Already up-to-date.

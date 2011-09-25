@@ -59,7 +59,6 @@
 00000002 b superslow_loopCounter
 00000002 r comma
 00000002 b g_gps
-00000002 b G_Dt_max
 00000002 b airspeed
 00000002 b baro_alt
 00000002 b sonar_alt
@@ -403,6 +402,7 @@
 00000021 r print_log_menu()::__c
 00000021 r report_compass()::__c
 00000021 r Log_Read_Current()::__c
+00000021 r Log_Read_Performance()::__c
 00000022 t clear_leds()
 00000022 t print_blanks(int)
 00000022 t reset_hold_I()
@@ -419,7 +419,6 @@
 00000024 r init_ardupilot()::__c
 00000024 r print_accel_offsets()::__c
 00000025 r setup_factory(unsigned char, Menu::arg const*)::__c
-00000025 r Log_Read_Performance()::__c
 00000026 t print_done()
 00000026 b mavlink_queue
 00000026 t print_hit_enter()
@@ -544,6 +543,7 @@
 000000c4 r setup_esc(unsigned char, Menu::arg const*)::__c
 000000c6 t test_eedump(unsigned char, Menu::arg const*)
 000000c6 t send_radio_in(mavlink_channel_t)
+000000c6 t Log_Read_Performance()
 000000c6 t test_tri(unsigned char, Menu::arg const*)
 000000c7 B dcm
 000000ca t init_barometer()
@@ -553,7 +553,6 @@
 000000d4 t Log_Read(int, int)
 000000d8 t test_radio(unsigned char, Menu::arg const*)
 000000d8 t read_barometer()
-000000da t Log_Read_Performance()
 000000de t test_adc(unsigned char, Menu::arg const*)
 000000e0 r setup_menu_commands
 000000e4 t test_radio_pwm(unsigned char, Menu::arg const*)
@@ -621,4 +620,4 @@
 00000874 t process_next_command()
 00000894 W Parameters::Parameters()
 00001228 T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001b50 T loop
+00001b38 T loop
