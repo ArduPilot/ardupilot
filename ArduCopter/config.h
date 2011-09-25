@@ -406,20 +406,20 @@
 # define STABILIZE_ROLL_P 		4.2
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.008
+# define STABILIZE_ROLL_I 		0.001
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	3		// degrees
+# define STABILIZE_ROLL_IMAX 	0		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		4.2
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.008
+# define STABILIZE_PITCH_I		0.001
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	3		// degrees
+# define STABILIZE_PITCH_IMAX	0		// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -502,7 +502,7 @@
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			400			// for 6m/s error = 13mph
 #endif
 
 
