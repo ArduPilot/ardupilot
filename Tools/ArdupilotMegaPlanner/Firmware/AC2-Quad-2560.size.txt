@@ -5,6 +5,7 @@
 00000001 b motor_light
 00000001 b control_mode
 00000001 b gps_watchdog
+00000001 b simple_timer
 00000001 d yaw_tracking
 00000001 b land_complete
 00000001 b throttle_mode
@@ -34,7 +35,9 @@
 00000001 b led_mode
 00000001 b yaw_mode
 00000001 b GPS_light
+00000001 b do_simple
 00000001 b loop_step
+00000001 b trim_flag
 00000001 b dancing_light()::step
 00000001 b read_control_switch()::switch_debouncer
 00000001 d GCS_MAVLINK::handleMessage(__mavlink_message*)::mav_nav
@@ -94,6 +97,8 @@
 00000004 b current_amps
 00000004 b old_altitude
 00000004 b original_alt
+00000004 b simple_cos_x
+00000004 b simple_sin_y
 00000004 b current_total
 00000004 b nav_loopTimer
 00000004 d scaleLongDown
@@ -483,7 +488,6 @@
 00000056 t readSwitch()
 00000056 t dancing_light()
 00000057 r help_log(unsigned char, Menu::arg const*)::__c
-0000005a t read_control_switch()
 0000005c t get_num_logs()
 0000005c t setup_esc(unsigned char, Menu::arg const*)
 0000005e t update_GPS_light()
@@ -498,6 +502,7 @@
 0000006e T output_min()
 00000078 t setup_batt_monitor(unsigned char, Menu::arg const*)
 0000007a t setup_factory(unsigned char, Menu::arg const*)
+0000007a t read_control_switch()
 0000007a t report_flight_modes()
 0000007a t test_baro(unsigned char, Menu::arg const*)
 0000007c t send_gps_status(mavlink_channel_t)
@@ -606,13 +611,13 @@
 00000228 t setup_radio(unsigned char, Menu::arg const*)
 0000022a t send_gps_raw(mavlink_channel_t)
 00000268 t send_raw_imu3(mavlink_channel_t)
-000002bc T update_roll_pitch_mode()
 000002ea t tuning()
 00000354 t calc_nav_rate(int, int, int, int)
 00000382 t print_log_menu()
 000003a0 t read_battery()
+000003ae T update_throttle_mode()
 00000410 T update_yaw_mode()
-0000042c T update_throttle_mode()
+0000046e T update_roll_pitch_mode()
 000005ee t init_ardupilot()
 000006e6 t update_nav_wp()
 000007b0 t __static_initialization_and_destruction_0(int, int)
@@ -620,4 +625,4 @@
 00000874 t process_next_command()
 00000894 W Parameters::Parameters()
 00001228 T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001af6 T loop
+00001b36 T loop
