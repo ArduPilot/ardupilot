@@ -147,7 +147,7 @@ static void send_message(byte id, long param) {
 		tempint 		= mainLoop_count;				// Main Loop cycles
 		mess_buffer[7] 	= tempint & 0xff;
 		mess_buffer[8] 	= (tempint >> 8) & 0xff;
-		mess_buffer[9] 	= G_Dt_max & 0xff;
+		mess_buffer[9] 	= 0 & 0xff;
 		mess_buffer[10] = gyro_sat_count;			// Problem counts
 		mess_buffer[11] = adc_constraints;
 		mess_buffer[12] = renorm_sqrt_count;
