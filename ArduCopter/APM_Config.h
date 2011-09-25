@@ -46,5 +46,5 @@
 //#define LOITER_THR			THROTTLE_MANUAL
 # define RTL_YAW 			YAW_HOLD
 
-#define RATE_ROLL_I 	0.18
-#define RATE_PITCH_I	0.18
+//#define RATE_ROLL_I 	0.18
+//#define RATE_PITCH_I	0.18
