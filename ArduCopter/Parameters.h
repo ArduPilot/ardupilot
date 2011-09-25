@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 109;
+	static const uint16_t k_format_version = 110;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -77,7 +77,7 @@ public:
 	k_param_heli_ext_gyro_gain,
 	k_param_heli_servo_averaging, // 94
 	#endif
-	
+
 	// 110: Telemetry control
 	//
 	k_param_streamrates_port0 = 110,
