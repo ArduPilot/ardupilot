@@ -116,12 +116,16 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 
-#define NAV2_ERR_MAX 600.0
 static void calc_nav_rate2(int max_speed)
 {
-	float scaler 	= (float)wp_distance / NAV2_ERR_MAX;
-	scaler			= constrain(scaler, 0.0, 1.0);
-	max_speed 		= (float)max_speed * scaler;
+	/*
+	0  1   2   3   4   5   6   7   8
+	...|...|...|...|...|...|...|...|
+		  100	  200	  300	  400
+	                                     +|+
+	*/
+
+	max_speed 		= min(max_speed, (wp_distance * 50));
 
 	// XXX target_angle should be the original  desired target angle!
 	float temp		= radians((original_target_bearing - g_gps->ground_course)/100.0);

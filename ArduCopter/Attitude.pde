@@ -220,6 +220,6 @@ static int get_angle_boost()
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
-	return (int)(temp * 60.0);
+	return (int)(temp * g.throttle_cruise);
 }
 
