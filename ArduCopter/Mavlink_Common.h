@@ -154,14 +154,14 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
     
     mavlink_msg_rc_channels_scaled_send(
         chan,
-        10000 * g.rc_1.norm_output(),
+        g.rc_1.servo_out,
+        g.rc_2.servo_out,
+        g.rc_3.radio_out,
+        g.rc_4.servo_out,
+		10000 * g.rc_1.norm_output(),
         10000 * g.rc_2.norm_output(),
         10000 * g.rc_3.norm_output(),
         10000 * g.rc_4.norm_output(),
-        0,
-        0,
-        0,
-        0,
         rssi);
         
      #endif
