@@ -135,6 +135,23 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
     const uint8_t rssi = 1;
     // normalized values scaled to -10000 to 10000
     // This is used for HIL.  Do not change without discussing with HIL maintainers
+    
+    #if FRAME_CONFIG ==	HELI_FRAME 
+    
+        mavlink_msg_rc_channels_scaled_send(
+        chan,
+        g.rc_1.servo_out, 
+        g.rc_2.servo_out, 
+        g.rc_3.radio_out, 
+        g.rc_4.servo_out
+        0,
+        0,
+        0,
+        0,
+        rssi);
+    
+    #else
+    
     mavlink_msg_rc_channels_scaled_send(
         chan,
         10000 * g.rc_1.norm_output(),
@@ -146,6 +163,8 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         0,
         0,
         rssi);
+        
+     #endif
 }
 
 static void NOINLINE send_radio_in(mavlink_channel_t chan)
