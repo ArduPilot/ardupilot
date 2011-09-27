@@ -32,7 +32,7 @@ static void init_rc_in()
 	g.rc_1.set_dead_zone(60);
 	g.rc_2.set_dead_zone(60);
 	g.rc_3.set_dead_zone(60);
-	g.rc_4.set_dead_zone(300);
+	g.rc_4.set_dead_zone(200);
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
