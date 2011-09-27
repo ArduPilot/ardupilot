@@ -151,6 +151,7 @@
 #define CH6_TRAVERSE_SPEED 10
 
 #define CH6_NAV_P 11
+#define CH6_LOITER_P 12
 
 // nav byte mask
 // -------------
