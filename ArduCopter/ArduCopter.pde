@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.45 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.46 Beta"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -129,6 +129,9 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	APM_BMP085_Class        barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
+  #ifdef OPTFLOW_ENABLED
+    AP_OpticalFlow_ADNS3080 optflow;
+  #endif
 
 	// real GPS selection
 	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -200,10 +203,6 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	#endif
 	// normal dcm
 	AP_DCM  dcm(&imu, g_gps);
-
- 	#ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow;
- 	#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -483,7 +482,6 @@ static byte				gps_watchdog;
 // --------------
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-static unsigned long	throttle_timer;
 
 static unsigned long	fiftyhz_loopTimer;
 
@@ -585,6 +583,9 @@ static void fast_loop()
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos_4();
+
+	//if(motor_armed)
+	//	Log_Write_Attitude();
 }
 
 static void medium_loop()
@@ -950,19 +951,10 @@ static void update_GPS(void)
 			// so that the altitude is more accurate
 			// -------------------------------------
 			if (current_loc.lat == 0) {
-				//SendDebugln("!! bad loc");
 				ground_start_count = 5;
 
 			}else{
-				//Serial.printf("init Home!");
-
-				// reset our nav loop timer
-				//nav_loopTimer = millis();
 				init_home();
-
-				// init altitude
-				// commented out because we aren't using absolute altitude
-				// current_loc.alt = home.alt;
 				ground_start_count = 0;
 			}
 		}
@@ -1048,10 +1040,7 @@ void update_roll_pitch_mode(void)
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
-			// Roll control
 			g.rc_1.servo_out = get_rate_roll(g.rc_1.control_in);
-
-			// Pitch control
 			g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
 			break;
 
@@ -1070,7 +1059,6 @@ void update_roll_pitch_mode(void)
 	}
 }
 
-
 // 50 hz update rate, not 250
 void update_throttle_mode(void)
 {
@@ -1084,8 +1072,6 @@ void update_throttle_mode(void)
 				g.pi_rate_pitch.reset_I();
 				g.rc_3.servo_out = 0;
 			}
-			// reset the timer to throttle so that we never get fast I term run-ups
-			throttle_timer = 0;
 			break;
 
 		case THROTTLE_HOLD:
@@ -1276,11 +1262,11 @@ adjust_altitude()
 {
 	if(g.rc_3.control_in <= 200){
 		next_WP.alt -= 1;												// 1 meter per second
-		next_WP.alt = max(next_WP.alt, (current_loc.alt - 400));		// don't go less than 4 meters below current location
+		next_WP.alt = max(next_WP.alt, (current_loc.alt - 500));		// don't go less than 4 meters below current location
 		next_WP.alt = max(next_WP.alt, 100);							// don't go less than 1 meter
 	}else if (g.rc_3.control_in > 700){
 		next_WP.alt += 1;												// 1 meter per second
-		next_WP.alt = min(next_WP.alt, (current_loc.alt + 400));		// don't go more than 4 meters below current location
+		next_WP.alt = min(next_WP.alt, (current_loc.alt + 500));		// don't go more than 4 meters below current location
 	}
 }
 
@@ -1360,10 +1346,10 @@ static void update_nav_wp()
 		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
-		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
+		calc_loiter(long_error, lat_error);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
+		calc_loiter_pitch_roll();
 
 	}else if(wp_control == CIRCLE_MODE){
 
@@ -1393,18 +1379,18 @@ static void update_nav_wp()
 
 		// use error as the desired rate towards the target
 		// nav_lon, nav_lat is calculated
-		calc_nav_rate(long_error, lat_error, 200, 0);
+		calc_loiter(long_error, lat_error);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
+		calc_loiter_pitch_roll();
 
 	} else {
 		// for long journey's reset the wind resopnse
 		// it assumes we are standing still.
 		// use error as the desired rate towards the target
-		calc_nav_rate2(g.waypoint_speed_max);
+		calc_nav_rate(g.waypoint_speed_max);
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll2();
+		calc_nav_pitch_roll();
 	}
 }
 
