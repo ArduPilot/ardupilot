@@ -327,13 +327,13 @@ HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 
 ifeq ($(UPLOAD_PROTOCOL),)
-UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
 endif
 
 # Adding override for mega since boards.txt uses stk500 instead of
 # arduino on 22 release
-ifeq ($(BOARD),"mega")
-UPLOAD_PROTOCOL := "arduino"
+ifeq ($(BOARD),mega)
+  UPLOAD_PROTOCOL	:=	arduino
 endif
 
 ifeq ($(MCU),)
