@@ -330,6 +330,12 @@ ifeq ($(UPLOAD_PROTOCOL),)
 UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
 endif
 
+# Adding override for mega since boards.txt uses stk500 instead of
+# arduino on 22 release
+ifeq ($(BOARD),"mega")
+UPLOAD_PROTOCOL := "arduino"
+endif
+
 ifeq ($(MCU),)
 $(error ERROR: Could not locate board $(BOARD) in $(BOARDFILE))
 endif
