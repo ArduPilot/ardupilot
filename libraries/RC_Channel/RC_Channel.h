@@ -28,7 +28,7 @@ class RC_Channel{
 		_high(1),
 		_filter(true),
 		_reverse  (&_group, 3,    1, name ? PSTR("REV") : 0),
-		dead_zone(0),
+		_dead_zone(0),
 		scale_output(1.0)
 	{}
 
@@ -48,6 +48,7 @@ class RC_Channel{
 	void 		set_angle(int angle);
 	void 		set_reverse(bool reverse);
 	bool		get_reverse(void);
+	void		set_dead_zone(int dzone);
 
 	// read input from APM_RC - create a control_in value
 	void 		set_pwm(int pwm);
@@ -63,7 +64,6 @@ class RC_Channel{
 
 	// value generated from PWM
 	int16_t 	control_in;
-	int16_t 	dead_zone; // used to keep noise down and create a dead zone.
 
 	int			control_mix(float value);
 
@@ -97,6 +97,7 @@ class RC_Channel{
 	bool		_filter;
 	AP_Int8 	_reverse;
 
+	int16_t 	_dead_zone; // used to keep noise down and create a dead zone.
 	uint8_t 	_type;
 	int16_t 	_high;
 	int16_t 	_low;
