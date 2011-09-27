@@ -59,34 +59,15 @@ static void calc_location_error(struct Location *next_loc)
 // 	nav_roll	= g.pid_of_roll.get_pid(-optflow.x_cm * 10, dTnav, 1.0);
 
 #define NAV_ERR_MAX 400
-static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed)
+static void calc_loiter(int x_error, int y_error)
 {
 	// moved to globals for logging
-	//int x_actual_speed, y_actual_speed;
-	//int x_rate_error, y_rate_error;
+
 	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	float scaler = (float)max_speed/(float)NAV_ERR_MAX;
-	g.pi_loiter_lat.kP(scaler);
-	g.pi_loiter_lon.kP(scaler);
-
 	int x_target_speed = g.pi_loiter_lon.get_pi(x_error, dTnav);
 	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
-
-	//Serial.printf("scaler: %1.3f, y_target_speed %d",scaler,y_target_speed);
-
-	if(x_target_speed > 0){
-		x_target_speed	= max(x_target_speed, min_speed);
-	}else{
-		x_target_speed	= min(x_target_speed, -min_speed);
-	}
-
-	if(y_target_speed > 0){
-		y_target_speed	= max(y_target_speed, min_speed);
-	}else{
-		y_target_speed	= min(y_target_speed, -min_speed);
-	}
 
 	// find the rates:
 	float temp		= radians((float)g_gps->ground_course/100.0);
@@ -116,7 +97,7 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 }
 
-static void calc_nav_rate2(int max_speed)
+static void calc_nav_rate(int max_speed)
 {
 	/*
 	0  1   2   3   4   5   6   7   8
@@ -151,7 +132,7 @@ static void calc_nav_rate2(int max_speed)
 }
 
 // nav_roll, nav_pitch
-static void calc_nav_pitch_roll2()
+static void calc_nav_pitch_roll()
 {
 	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor - original_target_bearing))/100.0);
 	float _cos_yaw_x = cos(temp);
@@ -173,7 +154,7 @@ static void calc_nav_pitch_roll2()
 
 
 // nav_roll, nav_pitch
-static void calc_nav_pitch_roll()
+static void calc_loiter_pitch_roll()
 {
 	// rotate the vector
 	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
