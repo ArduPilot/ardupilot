@@ -302,6 +302,17 @@ static void set_servos(void)
 		#else
 			// convert 0 to 100% into PWM
 			g.channel_throttle.servo_out = constrain(g.channel_throttle.servo_out, g.throttle_min.get(), g.throttle_max.get());
+			if (g.airspeed_enabled == true) {
+			// We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
+				if((control_mode==Circle || control_mode>=FBW_B) && current_loc.alt-home.alt < 500 && airspeed< 500) {
+					if(!(control_mode==Auto && takeoff_complete == false)  g.channel_throttle.servo_out = 0;
+				}
+			} else {
+				if((control_mode==Circle || control_mode>=FBW_B) && current_loc.alt-home.alt < 500 && g_gps->ground_speed < 500) {
+					if(!(control_mode==Auto && takeoff_complete == false)  g.channel_throttle.servo_out = 0;
+				}
+			}
+			
 		#endif
 
 		g.channel_throttle.calc_pwm();
