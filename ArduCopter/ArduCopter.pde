@@ -666,6 +666,8 @@ static void medium_loop()
 					if (g.log_bitmask & MASK_LOG_NTUN)
 						Log_Write_Nav_Tuning();
 				}
+			}else{
+				g_gps->new_data = false;
 			}
 			break;
 
@@ -921,12 +923,13 @@ static void update_GPS(void)
 	//current_loc.lat = -1224318000;		// Lat * 10 * *7
 	//current_loc.alt = 100;				// alt * 10 * *7
 	//return;
-	if(gps_watchdog < 10){
+	if(gps_watchdog < 12){
 		gps_watchdog++;
 	}else{
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  >>= 1;
-		nav_pitch >>= 1;
+		// commented temporarily
+		//nav_roll  >>= 1;
+		//nav_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
