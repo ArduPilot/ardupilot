@@ -12,7 +12,7 @@ set(FIRMWARE_NAME ArduBoat)
 set(${FIRMWARE_NAME}_BOARD ${BOARD})               # Arduino Target board
 
 set(${FIRMWARE_NAME}_SKETCHES
-	ardupilotone.pde	
+	ArduBoat.pde	
 	)  # Firmware sketches
 	
 set(${FIRMWARE_NAME}_SRCS 
@@ -20,16 +20,8 @@ set(${FIRMWARE_NAME}_SRCS
 		
 set(${FIRMWARE_NAME}_HDRS 
         BoatGeneric.h
-        CarStampede.h
-        #CNIRover.h
         #CNIBoat.h
         ControllerBoat.h
-        ControllerCar.h
-        ControllerPlane.h
-        ControllerQuad.h
-        PlaneEasystar.h
-        QuadArducopter.h
-        QuadMikrokopter.h
 	)  # Firmware sources
 
 set(${FIRMWARE_NAME}_LIBS

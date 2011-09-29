@@ -3,3 +3,6 @@ Tools/ArdupilotMegaPlanner/bin/Release/logs/
 ArduCopter/Debug/
 config.mk
 serialsent.raw
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
