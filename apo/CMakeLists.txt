@@ -7,24 +7,18 @@
 #====================================================================#
 #  Settings                                                          #
 #====================================================================#
-set(FIRMWARE_NAME ardupilotone)
+set(FIRMWARE_NAME apo)
 
 set(${FIRMWARE_NAME}_BOARD ${BOARD})               # Arduino Target board
 
 set(${FIRMWARE_NAME}_SKETCHES
-	ardupilotone.pde	
+	apo.pde	
 	)  # Firmware sketches
 	
 set(${FIRMWARE_NAME}_SRCS 
 	)  # Firmware sources
 		
 set(${FIRMWARE_NAME}_HDRS 
-        BoatGeneric.h
-        CarStampede.h
-        #CNIRover.h
-        #CNIBoat.h
-        ControllerBoat.h
-        ControllerCar.h
         ControllerPlane.h
         ControllerQuad.h
         PlaneEasystar.h
