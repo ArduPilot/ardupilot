@@ -128,6 +128,10 @@ public:
     ///
     static const size_t k_size_max = 64;
 
+    /// The maximum number of keys
+    ///
+    static const size_t k_num_max = 255;
+
     /// Optional flags affecting the behavior and usage of the variable.
     ///
     typedef uint8_t Flags;

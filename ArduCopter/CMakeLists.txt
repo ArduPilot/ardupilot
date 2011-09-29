@@ -42,7 +42,7 @@ PRINT_BOARD_SETTINGS(mega2560)
 #====================================================================#
 set(FIRMWARE_NAME arducopter)
 
-set(${FIRMWARE_NAME}_BOARD mega2560)               # Arduino Target board
+set(${FIRMWARE_NAME}_BOARD ${BOARD})               # Arduino Target board
 
 set(${FIRMWARE_NAME}_SKETCHES
     ArduCopter.pde
