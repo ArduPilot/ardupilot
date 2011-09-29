@@ -55,14 +55,9 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
 }
 
-
-// 	nav_roll	= g.pid_of_roll.get_pid(-optflow.x_cm * 10, dTnav, 1.0);
-
 #define NAV_ERR_MAX 400
 static void calc_loiter(int x_error, int y_error)
 {
-	// moved to globals for logging
-
 	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
@@ -87,14 +82,23 @@ static void calc_loiter(int x_error, int y_error)
 	#endif
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -600, 600);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
 
-	//Serial.printf("yr: %d, nav_lat: %d, int:%d \n",y_rate_error, nav_lat, g.pi_nav_lat.get_integrator());
-
 	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -600, 600);
+	x_rate_error 	= constrain(x_rate_error, -250, 250);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
+}
+
+// nav_roll, nav_pitch
+static void calc_loiter_pitch_roll()
+{
+	// rotate the vector
+	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+
+	// flip pitch because forward is negative
+	nav_pitch = -nav_pitch;
 }
 
 static void calc_nav_rate(int max_speed)
@@ -152,17 +156,6 @@ static void calc_nav_pitch_roll()
 					nav_pitch);*/
 }
 
-
-// nav_roll, nav_pitch
-static void calc_loiter_pitch_roll()
-{
-	// rotate the vector
-	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
-
-	// flip pitch because forward is negative
-	nav_pitch = -nav_pitch;
-}
 
 static long get_altitude_error()
 {
