@@ -15,7 +15,7 @@
 #include <math.h>
 #include <string.h>
 
-#define ENABLE_FASTSERIAL_DEBUG
+//#define ENABLE_FASTSERIAL_DEBUG
 
 #ifdef ENABLE_FASTSERIAL_DEBUG
 # include <FastSerial.h>
