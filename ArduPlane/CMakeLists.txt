@@ -62,7 +62,7 @@ set(${FIRMWARE_NAME}_SKETCHES
 	#GCS_Standard.pde
 	#GCS_Xplane.pde
 	#heli.pde
-	HIL_Xplane.pde
+	#HIL_Xplane.pde
 	#leds.pde
 	Log.pde
 	#motors_hexa.pde
@@ -92,12 +92,12 @@ set(${FIRMWARE_NAME}_SRCS
 set(${FIRMWARE_NAME}_HDRS 	
 	APM_Config.h
 	APM_Config_mavlink_hil.h
-	APM_Config_xplane.h
+	#APM_Config_xplane.h
 	config.h
 	defines.h
 	GCS.h
-	HIL.h
-	Mavlink_Common.h
+	#HIL.h
+	#Mavlink_Common.h
 	Parameters.h
 	)  # Firmware sources
 
