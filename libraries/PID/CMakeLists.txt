@@ -16,6 +16,6 @@ include_directories(
 #	
 	)
 
-set(${LIB_NAME}_BOARD mega2560)
+set(${LIB_NAME}_BOARD ${BOARD})
 
 generate_arduino_library(${LIB_NAME})

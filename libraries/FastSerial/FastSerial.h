@@ -55,6 +55,7 @@
 
 #include "BetterStream.h"
 
+
 /// @file	FastSerial.h
 /// @brief	An enhanced version of the Arduino HardwareSerial class
 ///			implementing interrupt-driven transmission and flexible
@@ -101,6 +102,7 @@ extern class FastSerial Serial3;
 ///
 class FastSerial: public BetterStream {
 public:
+
 	/// Constructor
 	FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volatile uint8_t *ubrrl, volatile uint8_t *ucsra,
 			   volatile uint8_t *ucsrb, const uint8_t u2x, const uint8_t portEnableBits, const uint8_t portTxBits);
@@ -149,7 +151,21 @@ public:
 		uint8_t *bytes;					///< pointer to allocated buffer
 	};
 
+	/// Tell if the serial port has been initialized
+	static bool getInitialized(uint8_t port) {
+		return (1<<port) & _serialInitialized;
+	}
+
 private:
+
+	/// Bit mask for initialized ports
+	static uint8_t _serialInitialized;
+
+	/// Set if the serial port has been initialized
+	static void setInitialized(uint8_t port) {
+		_serialInitialized |= (1<<port);
+	}
+
 	// register accessors
 	volatile uint8_t * const _ubrrh;
 	volatile uint8_t * const _ubrrl;
