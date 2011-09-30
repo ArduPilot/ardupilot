@@ -19,7 +19,6 @@ if( NOT DEFINED CMAKE_BUILD_TYPE )
 	set( CMAKE_BUILD_TYPE "RelWithDebInfo" )
 endif()
 
-#set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
 
 find_package(Arduino 22 REQUIRED)
 
@@ -30,15 +29,38 @@ if (NOT DEFINED BOARD)
 endif()
 message(STATUS "Board configured as: ${BOARD}")
 
+set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
+
 # apo
-set(apo_ASFLAGS "-assembler-with-cpp")
+#set(apo_ASFLAGS "-assembler-with-cpp")
 set(apo_BOARD ${BOARD})
-set(apo_LIBS
-	c
-	m)
 set(apo_SRCS
 	apo/apo.cpp
 	)
-
-set(GCS_MAVLink_RECURSE False)
 generate_arduino_firmware(apo)
+
+# ArduRover
+set(ArduRover_BOARD ${BOARD})
+set(ArduRover_SRCS
+	ArduRover/ArduRover.pde
+	)
+#generate_arduino_firmware(ArduRover)
+
+# ArduBoat
+set(ArduRover_BOARD ${BOARD})
+set(ArduRover_SRCS
+	ArduRover/ArduRover.pde
+	)
+#generate_arduino_firmware(ArduBoat)
+
+# ArduPlane
+set(ArduPlane ${BOARD})
+set(ArduPlane_SRCS
+	)
+#generate_arduino_firmware(ArduPlane)
+
+# ArduCopter
+set(ArduCopter ${BOARD})
+set(ArduCopter_SRCS
+	)
+#generate_arduino_firmware(ArduCopter)
