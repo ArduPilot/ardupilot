@@ -33,6 +33,7 @@
 #define CH7_SIMPLE_MODE 3
 #define CH7_RTL 4
 #define CH7_AUTO_TRIM 5
+#define CH7_ADC_FILTER 6
 
 // Frame types
 #define QUAD_FRAME 0
@@ -123,7 +124,8 @@
 #define LOITER 5			// Hold a single location
 #define RTL 6				// AUTO control
 #define CIRCLE 7			// AUTO control
-#define NUM_MODES 8
+#define POSITION 8			// AUTO control
+#define NUM_MODES 9
 
 #define SIMPLE_1 1
 #define SIMPLE_2 2

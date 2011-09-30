@@ -189,16 +189,20 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 
-/*
+///*
 static int alt_hold_velocity()
 {
-	// subtract filtered Accel
-	float error	= abs(next_WP.alt - current_loc.alt);
-	error = min(error, 200);
-	error = 1 - (error/ 200.0);
-	return (accels_rot.z + 9.81) * accel_gain * error;
+	#if ACCEL_ALT_HOLD == 1
+		// subtract filtered Accel
+		float error	= abs(next_WP.alt - current_loc.alt);
+		error = min(error, 200.0);
+		error = 1 - (error/ 200.0);
+		return (accels_rot.z + 9.81) * ACCEL_ALT_HOLD_GAIN * error;
+	#else
+		return 0;
+	#endif
 }
-*/
+//*/
 
 static int get_angle_boost()
 {

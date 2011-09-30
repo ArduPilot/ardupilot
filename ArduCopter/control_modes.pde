@@ -90,6 +90,12 @@ static void read_trim_switch()
 			trim_flag = false;
 		}
 	}
+#elif CH7_OPTION == CH7_ADC_FILTER
+	if (g.rc_7.control_in > 800){
+		adc.filter_result = true;
+	}else{
+		adc.filter_result = false;
+	}
 #elif CH7_OPTION == CH7_AUTO_TRIM
 	if (g.rc_7.control_in > 800){
 		auto_level_counter = 10;
