@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
-
 set(CMAKE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../")
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake) # Arduino Toolchain
+set(CMAKE_MODULE_PATH    ${CMAKE_SOURCE_DIR}/cmake/modules)  # CMake module search path
 
 string(REGEX REPLACE ".*/" "" PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR})
 project(${PROJECT_NAME} C CXX)
-set(FIRMWARE_NAME ${PROJECT_NAME})
 
 set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
 
@@ -40,7 +38,7 @@ ${CMAKE_SOURCE_DIR}/libraries/APM_BMP085
 )
 
 add_subdirectory(../libraries "${CMAKE_CURRENT_BINARY_DIR}/libs")
-file(WRITE ${PROJECT_NAME}.cpp "// Do not edit")
+
 set(${PROJECT_NAME}_BOARD ${BOARD})
 file(GLOB ${PROJECT_NAME}_SKETCHES *.pde)
 file(GLOB ${PROJECT_NAME}_SRCS *.cpp)
