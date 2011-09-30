@@ -49,7 +49,7 @@ set(ArduRover_SRCS
 # ArduBoat
 set(ArduRover_BOARD ${BOARD})
 set(ArduRover_SRCS
-	ArduRover/ArduRover.pde
+	ArduRover/ArduBoat.pde
 	)
 #generate_arduino_firmware(ArduBoat)
 
