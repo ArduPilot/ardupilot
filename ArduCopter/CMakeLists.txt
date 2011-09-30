@@ -22,12 +22,18 @@ project(ArduCopter C CXX)
 
 find_package(Arduino 22 REQUIRED)
 
+if (NOT DEFINED BOARD)
+        message(STATUS "board not defined, assuming mega, use cmake -DBOARD=mega2560 , etc. to specify")
+        set(BOARD "mega")
+endif()
+message(STATUS "Board configured as: ${BOARD}")
+
 add_subdirectory(../libraries "${CMAKE_CURRENT_BINARY_DIR}/libs")
 
 #add_subdirectory(${CMAKE_SOURCE_DIR}/ArduCopter)
 #add_subdirectory(testtool)
 
-PRINT_BOARD_SETTINGS(mega2560)
+PRINT_BOARD_SETTINGS(${BOARD})
 
 
 
