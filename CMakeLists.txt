@@ -4,13 +4,11 @@ set(CMAKE_MODULE_PATH    ${CMAKE_SOURCE_DIR}/cmake/modules)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
 
 # modify flags from default toolchain flags
-set(APM_OPT_FLAGS "-Os -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 -Wno-reorder")
+set(APM_OPT_FLAGS "-Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2")
 
 set(ARDUINO_C_FLAGS "${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections")
-set(ARDUINO_CXX_FLAGS "${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions")
-set(ARDUINO_LINKER_FLAGS "${APM_OPT_FLAGS} -Wl,--gc-sections")
-
-
+set(ARDUINO_CXX_FLAGS "${APM_OPT_FLAGS} -mcall-prologues -ffunction-sections -fdata-sections -fno-exceptions -Wno-reorder")
+set(ARDUINO_LINKER_FLAGS "-lc -lm ${APM_OPT_FLAGS} -Wl,--gc-sections")
 
 project(ArduPilotMega C CXX)
 
@@ -31,36 +29,33 @@ message(STATUS "Board configured as: ${BOARD}")
 
 set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
 
-# apo
-#set(apo_ASFLAGS "-assembler-with-cpp")
+# standard project setup
+function(apo_project PROJECT_NAME) 
+	message(STATUS "creating apo project ${PROJECT_NAME}")
+	set(${PROJECT_NAME}_AFLAGS "-assembler-with-cpp")
+	set(${PROJECT_NAME}_BOARD ${BOARD})
+	set(${PROJECT_NAME}_SRCS ${PROJECT_NAME}/${PROJECT_NAME}.cpp)
+	set(${PROJECT_NAME}_LIBS c)
+	generate_arduino_firmware(${PROJECT_NAME})
+endfunction()
+
+# apo projects
 set(apo_BOARD ${BOARD})
-set(apo_SRCS
-	apo/apo.cpp
-	)
+set(apo_AFLAGS "-assembler-with-cpp")
+set(apo_SRCS apo/apo.cpp)
+set(apo_LIBS c)
 generate_arduino_firmware(apo)
-
-# ArduRover
-set(ArduRover_BOARD ${BOARD})
-set(ArduRover_SRCS
-	ArduRover/ArduRover.pde
-	)
-#generate_arduino_firmware(ArduRover)
-
-# ArduBoat
-set(ArduRover_BOARD ${BOARD})
-set(ArduRover_SRCS
-	ArduRover/ArduBoat.pde
-	)
-#generate_arduino_firmware(ArduBoat)
+#apo_project(apo)
+#apo_project(ArduBoat)
 
 # ArduPlane
-set(ArduPlane ${BOARD})
+set(ArduPlane_BOARD ${BOARD})
 set(ArduPlane_SRCS
 	)
 #generate_arduino_firmware(ArduPlane)
 
 # ArduCopter
-set(ArduCopter ${BOARD})
+set(ArduCopter_BOARD ${BOARD})
 set(ArduCopter_SRCS
 	)
 #generate_arduino_firmware(ArduCopter)
