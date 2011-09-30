@@ -414,6 +414,14 @@ static void set_mode(byte mode)
 			next_WP = current_loc;
 			break;
 
+		case POSITION:
+			yaw_mode 		= YAW_HOLD;
+			roll_pitch_mode = ROLL_PITCH_AUTO;
+			throttle_mode 	= THROTTLE_MANUAL;
+
+			next_WP = current_loc;
+			break;
+
 		case GUIDED:
 			yaw_mode 		= YAW_AUTO;
 			roll_pitch_mode = ROLL_PITCH_AUTO;

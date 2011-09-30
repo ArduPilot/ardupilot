@@ -244,7 +244,8 @@ static const char* flight_mode_strings[] = {
 	"GUIDED",
 	"LOITER",
 	"RTL",
-	"CIRCLE"};
+	"CIRCLE",
+	"POSITION"};
 
 /* Radio values
 		Channel assignments
@@ -259,8 +260,8 @@ static const char* flight_mode_strings[] = {
 */
 
 // test
-//Vector3f accels_rot;
-//float	accel_gain = 20;
+Vector3f accels_rot;
+//float	accel_gain = 12;
 
 // temp
 int y_actual_speed;
@@ -495,7 +496,6 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS
 
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
-static byte				loop_step;
 static bool				new_radio_frame;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -597,8 +597,6 @@ static void medium_loop()
 		// This case deals with the GPS and Compass
 		//-----------------------------------------
 		case 0:
-			loop_step = 1;
-
 			medium_loopCounter++;
 
 			#ifdef OPTFLOW_ENABLED
@@ -638,12 +636,10 @@ static void medium_loop()
 		// This case performs some navigation computations
 		//------------------------------------------------
 		case 1:
-			loop_step = 2;
 			medium_loopCounter++;
 
 			// Auto control modes:
 			if(g_gps->new_data && g_gps->fix){
-				loop_step = 11;
 
 				// invalidate GPS data
 				g_gps->new_data 	= false;
@@ -674,7 +670,6 @@ static void medium_loop()
 		// command processing
 		//-------------------
 		case 2:
-			loop_step = 3;
 			medium_loopCounter++;
 
 			// Read altitude from sensors
@@ -690,7 +685,6 @@ static void medium_loop()
 		// This case deals with sending high rate telemetry
 		//-------------------------------------------------
 		case 3:
-			loop_step = 4;
 			medium_loopCounter++;
 
 			// perform next command
@@ -729,7 +723,6 @@ static void medium_loop()
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
-			loop_step = 5;
 			medium_loopCounter = 0;
 
 			if (g.battery_monitoring != 0){
@@ -823,7 +816,6 @@ static void slow_loop()
 	//----------------------------------------
 	switch (slow_loopCounter){
 		case 0:
-			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
@@ -838,7 +830,6 @@ static void slow_loop()
 			break;
 
 		case 1:
-			loop_step = 7;
 			slow_loopCounter++;
 
 			// Read 3-position switch on radio
@@ -863,7 +854,6 @@ static void slow_loop()
 			break;
 
 		case 2:
-			loop_step = 8;
 			slow_loopCounter = 0;
 			update_events();
 
@@ -902,7 +892,6 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
-	loop_step = 9;
 	if (g.log_bitmask & MASK_LOG_CUR)
 		Log_Write_Current();
 
@@ -915,7 +904,6 @@ static void super_slow_loop()
 
 static void update_GPS(void)
 {
-	loop_step = 10;
 	g_gps->update();
 	update_GPS_light();
 
@@ -1098,7 +1086,7 @@ void update_throttle_mode(void)
 			}
 
 			// apply throttle control at 200 hz
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost();
+			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost() + alt_hold_velocity();
 			break;
 	}
 }
@@ -1147,6 +1135,7 @@ static void update_navigation()
 
 			// switch passthrough to LOITER
 		case LOITER:
+		case POSITION:
 			wp_control 		= LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
@@ -1212,8 +1201,8 @@ static void update_trig(void){
 	// 270 = cos_yaw: -1.00, sin_yaw:  0.00,
 
 
-	//Vector3f accel_filt	= imu.get_accel_filtered();
-	//accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
+	Vector3f accel_filt	= imu.get_accel_filtered();
+	accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
 }
 
 // updated at 10hz

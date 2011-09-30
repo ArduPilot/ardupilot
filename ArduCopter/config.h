@@ -480,7 +480,7 @@
 # define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.10		// this
+# define NAV_I				0.10		// this feels really low, 4s to move 1 degree pitch...
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			16			// degrees

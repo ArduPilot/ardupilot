@@ -83,11 +83,13 @@ static void calc_loiter(int x_error, int y_error)
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
-	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
+	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
+	nav_lat			= constrain(nav_lat, -3500, 3500);
 
 	x_rate_error 	= x_target_speed - x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -250, 250);
-	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
+	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
+	nav_lon			= constrain(nav_lon, -3500, 3500);
 }
 
 // nav_roll, nav_pitch
@@ -156,28 +158,10 @@ static void calc_nav_pitch_roll()
 					nav_pitch);*/
 }
 
-
 static long get_altitude_error()
 {
 	return next_WP.alt - current_loc.alt;
 }
-
-/*
-static void calc_altitude_smoothing_error()
-{
-	// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
-	target_altitude = next_WP.alt - ((float)(wp_distance * (next_WP.alt - prev_WP.alt)) / (float)(wp_totalDistance - g.waypoint_radius));
-
-	// stay within a certain range
-	if(prev_WP.alt > next_WP.alt){
-		target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
-	}else{
-		target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
-	}
-
-	altitude_error 	= target_altitude - current_loc.alt;
-}
-*/
 
 static int get_loiter_angle()
 {
@@ -196,7 +180,6 @@ static int get_loiter_angle()
 
 	return angle;
 }
-
 
 static long wrap_360(long error)
 {
