@@ -339,7 +339,9 @@ static void set_servos(void)
 	if(control_mode < FLY_BY_WIRE_B) {
 		G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
 	} else if (control_mode >= FLY_BY_WIRE_B) {	
-		if (g.airspeed_enabled == true) {  
+		if (control_mode == FLY_BY_WIRE_B) {  
+			flapSpeedSource = airspeed_fbwB/100;
+		} else if (g.airspeed_enabled == true) {  
 			flapSpeedSource = g.airspeed_cruise/100;
 		} else {
 			flapSpeedSource = g.throttle_cruise;

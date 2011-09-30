@@ -273,6 +273,7 @@ static byte	command_may_ID;						// current command ID
 static int		airspeed;							// m/s * 100
 static int     airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
 static float   airspeed_error;						// m/s * 100
+static float   airspeed_fbwB;						// m/s * 100
 static long    energy_error;                       // energy state error (kinetic + potential) for altitude hold
 static long    airspeed_energy_error;              // kinetic portion of energy error
 
@@ -792,7 +793,7 @@ static void update_current_flight_mode(void)
 				break;
 
 			case FLY_BY_WIRE_A:
-				// fake Navigation output using sticks
+				// set nav_roll and nav_pitch using sticks
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				nav_pitch = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min;
 				// We use pitch_min above because it is usually greater magnitude then pitch_max.  -1 is to compensate for its sign.
@@ -809,15 +810,13 @@ static void update_current_flight_mode(void)
 
 				if (g.airspeed_enabled == true)
 									{
-					airspeed_error = ((int)(g.flybywire_airspeed_max -
+					airspeed_fbwB = ((int)(g.flybywire_airspeed_max -
 							g.flybywire_airspeed_min) *
 							g.channel_throttle.servo_out) +
 							((int)g.flybywire_airspeed_min * 100);
-					// Intermediate calculation - airspeed_error is just desired airspeed at this point
-					airspeed_energy_error = (long)(((long)airspeed_error *
-								(long)airspeed_error) -
+					airspeed_energy_error = (long)(((long)airspeed_fbwB *
+								(long)airspeed_fbwB) -
 							((long)airspeed * (long)airspeed))/20000;
-					//Changed 0.00005f * to / 20000 to avoid floating point calculation
 					airspeed_error = (airspeed_error - airspeed);
 									}
 
