@@ -1,0 +1,38 @@
+/** \file
+ *
+ *  This file contains special DoxyGen information for the generation of the main page and other special
+ *  documentation pages. It is not a project source file.
+ */
+
+ /** \page Page_FutureChanges Future Changes
+  *
+  *  Below is a list of future changes which are proposed for the LUFA library, but not yet started/complete.
+  *  This gives an unordered list of future changes which will be available in future releases of the library.
+  *  If you have an item to add to this list, please contact the library author via email, the LUFA mailing list,
+  *  or post your suggestion as an enhancement request to the project bug tracker.
+  *
+  *  <b>Targeted for Future Releases:</b>
+  *  - Code Features
+  *      -# Add hub support when in Host mode for multiple devices
+  *      -# Add ability to get number of bytes not written with pipe/endpoint write routines after an error
+  *      -# Add standardized descriptor names to class driver structures
+  *      -# Change makefiles to allow for absolute LUFA location to be used
+  *  - Documentation/Support
+  *      -# Add detailed overviews of how each demo works
+  *      -# Add board overviews
+  *      -# Write LUFA tutorials
+  *  - Demos/Projects
+  *      -# Multiple-Report HID device
+  *      -# Device/Host USB bridge
+  *      -# Alternative (USB-IF endorsed) USB-CDC Ethernet Class
+  *      -# Finish Test and Measurement Class demo
+  *      -# Finish BluetoothHost demo
+  *      -# Finish SideShow demo
+  *      -# Finish StandaloneProgrammer project
+  *      -# Finish MIDIToneGenerator project
+  *      -# Correct mishandling of error cases in Mass Storage demos
+  *  - Ports
+  *      -# AVR32 UC3B series microcontrollers
+  *      -# Atmel ARM7 series microcontrollers
+  *      -# Other (commercial) C compilers
+  */
