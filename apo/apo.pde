@@ -1,4 +1,5 @@
 // Libraries
+#include <WProgram.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h>

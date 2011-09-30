@@ -126,8 +126,6 @@ set(${FIRMWARE_NAME}_LIBS
         c
         m
 )
-SET_TARGET_PROPERTIES(AP_Math PROPERTIES LINKER_LANGUAGE CXX)
-
 	
 #${CONSOLE_PORT}
 set(${FIRMWARE_NAME}_PORT COM2)            # Serial upload port
