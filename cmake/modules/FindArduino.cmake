@@ -279,7 +279,7 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE AND NOT TARGET ${CORE_LIB_NAME})
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
-        find_sources(CORE_SRCS ${BOARD_CORE_PATH})
+        find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
 		list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
@@ -340,12 +340,23 @@ endfunction()
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
+#		"LIB_NAME"_RECURSE controls if the library will recurse
+# 		when looking for source files
+#
+
+# For known libraries can list recurse here
+set(Wire_RECURSE True)
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(LIB_TARGETS)
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
     if(NOT TARGET ${TARGET_LIB_NAME})
-        find_sources(LIB_SRCS ${LIB_PATH})
+		string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
+		#message(STATUS "short name: ${LIB_SHORT_NAME} recures: ${${LIB_SHORT_NAME}_RECURSE}")
+		if (NOT DEFINED ${LIB_SHORT_NAME}_RECURSE)
+			set(${LIB_SHORT_NAME}_RECURSE False)
+		endif()
+		find_sources(LIB_SRCS ${LIB_PATH} ${${LIB_SHORT_NAME}_RECURSE})
         if(LIB_SRCS)
 
             message(STATUS "Generating Arduino ${LIB_NAME} library")
@@ -448,21 +459,29 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     add_dependencies(upload ${TARGET_NAME}-upload)
 endfunction()
 
-# find_sources(VAR_NAME LIB_PATH)
+# find_sources(VAR_NAME LIB_PATH RECURSE)
 #
 #        VAR_NAME - Variable name that will hold the detected sources
 #        LIB_PATH - The base path
+#        RECURSE  - Whether or not to recurse
 #
 # Finds all C/C++ sources located at the specified path.
 #
-function(find_sources VAR_NAME LIB_PATH)
-    file(GLOB_RECURSE LIB_FILES ${LIB_PATH}/*.cpp
-                                ${LIB_PATH}/*.c
-                                ${LIB_PATH}/*.cc
-                                ${LIB_PATH}/*.cxx
-                                ${LIB_PATH}/*.h
-                                ${LIB_PATH}/*.hh
-                                ${LIB_PATH}/*.hxx)
+function(find_sources VAR_NAME LIB_PATH RECURSE)
+	set(FILE_SEARCH_LIST
+		${LIB_PATH}/*.cpp
+		${LIB_PATH}/*.c
+		${LIB_PATH}/*.cc
+		${LIB_PATH}/*.cxx
+		${LIB_PATH}/*.h
+		${LIB_PATH}/*.hh
+		${LIB_PATH}/*.hxx)
+	if (RECURSE)
+		file(GLOB_RECURSE LIB_FILES ${FILE_SEARCH_LIST})
+	else()
+		file(GLOB LIB_FILES ${FILE_SEARCH_LIST})
+	endif()
+	#message(STATUS "${LIB_PATH} recurse: ${RECURSE}")
     if(LIB_FILES)
         set(${VAR_NAME} ${LIB_FILES} PARENT_SCOPE)
     endif()
