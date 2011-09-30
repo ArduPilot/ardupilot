@@ -1,5 +1,4 @@
 // Libraries
-#include <WProgram.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h>
@@ -14,6 +13,7 @@
 #include <APM_BMP085.h>
 #include <ModeFilter.h>
 #include <APO.h>
+#include <WProgram.h>
 
 // Vehicle Configuration
 #include "PlaneEasystar.h"

@@ -1,9 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
-set(CMAKE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../")
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
-
 string(REGEX REPLACE ".*/" "" PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR})
 project(${PROJECT_NAME} C CXX)
 
