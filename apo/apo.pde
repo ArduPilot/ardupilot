@@ -1,4 +1,5 @@
 // Libraries
+#include <Wire.h>
 #include <FastSerial.h>
 #include <AP_Common.h>
 #include <APM_RC.h>
@@ -19,4 +20,9 @@
 #include "PlaneEasystar.h"
 
 // ArduPilotOne Default Setup
-#include "APO_DefaultSetup.h"
+//#include "APO_DefaultSetup.h"
+void setup() {
+};
+
+void loop() {
+};
