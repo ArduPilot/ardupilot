@@ -1,0 +1,7 @@
+string(REGEX REPLACE ".*/" "" LIB_NAME ${CMAKE_CURRENT_SOURCE_DIR})
+#message(STATUS "building lib: ${LIB_NAME}")
+file(GLOB ${LIB_NAME}_SRCS *.cpp)
+file(GLOB ${LIB_NAME}_HDRS *.h)
+set(${LIB_NAME}_BOARD ${BOARD})
+generate_arduino_library(${LIB_NAME})
+set_target_properties(${LIB_NAME} PROPERTIES LINKER_LANGUAGE CXX)
