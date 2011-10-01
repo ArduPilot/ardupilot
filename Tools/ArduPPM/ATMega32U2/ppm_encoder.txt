@@ -1,0 +1,19 @@
+Arduino USB-To-Serial & PPM_Encoder (atmega16u2 & atmega32u2).
+
+Instructions:
+Make sure you have the latest avr-gcc / winavr installed.
+Unzip the project and go to the < ./Projects/arduino-usbserial/ > directory.
+
+To compile the project type (makefile is set for atmega32u2):
+
+>make clean
+>make
+
+Uploading firmware to atmega32u2 using the DFU bootloader (see ../arduino-usbserial/readme.txt for instructions).
+
+Source:
+The PPM encoder code is located in the "ppm_encoder.h" file.
+
+What it does.
+The original Arduino USB to serial code should run and operate just like before.
+In addition there are now 8 servo inputs using (PB0:7) PCINT interrupts, and a PPM output (PC6) using PWM - OC1A for hardware driven pin toggle and timing.
