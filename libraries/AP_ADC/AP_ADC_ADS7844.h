@@ -10,8 +10,8 @@
 #define ADC_SPICLOCK    52    // SCK
 #define ADC_CHIP_SELECT 33    // PC4   9 // PH6  Puerto:0x08 Bit mask : 0x40
 
-// DO NOT CHANGE FROM 4
-#define ADC_FILTER_SIZE 4
+// DO NOT CHANGE FROM 8!!
+#define ADC_ACCEL_FILTER_SIZE 8
 
 #include "AP_ADC.h"
 #include <inttypes.h>
@@ -30,9 +30,10 @@ class AP_ADC_ADS7844 : public AP_ADC
 	bool	filter_result;
 
 	private:
-	uint16_t 		_filter[6][ADC_FILTER_SIZE];
-	uint16_t 		_prev[6];
-	uint8_t			_filter_index;
+	uint16_t 		_filter_accel[3][ADC_ACCEL_FILTER_SIZE];
+	uint16_t 		_prev_gyro[3];
+	uint16_t 		_prev_accel[3];
+	uint8_t			_filter_index_accel;
 
 };
 

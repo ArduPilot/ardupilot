@@ -128,7 +128,7 @@ ISR (TIMER2_OVF_vect)
 
 // Constructors ////////////////////////////////////////////////////////////////
 AP_ADC_ADS7844::AP_ADC_ADS7844() :
-			_filter_index(0),
+			_filter_index_accel(0),
 			filter_result(false)
 {
 }
@@ -161,7 +161,6 @@ void AP_ADC_ADS7844::Init(void)
 	}
 
 	last_ch6_micros = micros();
-	_filter_index = 0;
 
 	// Enable Timer2 Overflow interrupt to capture ADC data
 	TIMSK2 = 0;			// Disable interrupts
@@ -226,35 +225,44 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 		result[i] = sum[i] / count[i];
 	}
 
-	// filter ch 0,1,2 for smoother Gyro output.
 
 	if(filter_result){
-		uint32_t _filter_sum;
+		uint32_t _sum_accel;
 
-		for (i = 0; i < 6; i++) {
+		// simple Gyro Filter
+		for (i = 0; i < 3; i++) {
+			// add prev filtered value to new raw value, divide by 2
+			result[i] = (_prev_gyro[i] + result[i]) >> 1;
+
+			// remember the filtered value
+			_prev_gyro[i] = result[i];
+		}
+
+		// Accel filter
+		for (i = 0; i < 3; i++) {
 			// move most recent result into filter
-			_filter[i][_filter_index] = result[i];
+			_filter_accel[i][_filter_index_accel] = result[i+3];
 
-			_filter_sum = 0;
+			// clear the sum
+			_sum_accel = 0;
+
 			// sum the filter
-			for (uint8_t n = 0; n < ADC_FILTER_SIZE; n++) {
-				_filter_sum += _filter[i][n];
+			for (uint8_t n = 0; n < ADC_ACCEL_FILTER_SIZE; n++) {
+				_sum_accel += _filter_accel[i][n];
 			}
 
-			// filter does a moving average on last 4 reads, sums half with
-			// half of last filtered value
-			result[i] = (_filter_sum >> 3) + (_prev[i] >> 1);   // divide by 8, divide by 2
-
+			// filter does a moving average on last 8 reads, sums half with half of last filtered value
 			// save old result
-			_prev[i] = result[i];
+			_prev_accel[i] = result[i+3] = (_sum_accel >> 4) + (_prev_accel[i] >> 1);   // divide by 16, divide by 2
+
 		}
 
 		// increment filter index
-		_filter_index++;
+		_filter_index_accel++;
 
 		// loop our filter
-		if(_filter_index == ADC_FILTER_SIZE)
-			_filter_index = 0;
+		if(_filter_index_accel == ADC_ACCEL_FILTER_SIZE)
+			_filter_index_accel = 0;
 	}
 
 
