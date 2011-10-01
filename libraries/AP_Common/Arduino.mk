@@ -305,7 +305,14 @@ LIBOBJS			:=	$(SKETCHLIBOBJS) $(ARDUINOLIBOBJS)
 # Pull the Arduino version from the revisions.txt file
 #
 # XXX can we count on this?  If not, what?
-ARDUINO_VERS		:=	$(shell expr `head -1 $(ARDUINO)/lib/version.txt | cut -d ' ' -f 2`)
+ARDUINO_VERS	:=	$(shell expr `head -1 $(ARDUINO)/revisions.txt | cut -d ' ' -f 2`)
+# If the version is not a number, try it again, using another file
+ifneq ($(ARDUINO_VERS),$(shell echo $(ARDUINO_VERS) | sed 's/[^0-9]*//g'))
+	ARDUINO_VERS	:=	$(shell expr `head -1 $(ARDUINO)/lib/version.txt | cut -d ' ' -f 2`)
+endif
+ifneq ($(ARDUINO_VERS),$(shell echo $(ARDUINO_VERS) | sed 's/[^0-9]*//g'))
+	$(warning Could not determine Arduino version)
+endif
 
 # Find the hardware directory to use
 HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
