@@ -230,25 +230,33 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 
 	if(filter_result){
 		uint32_t _filter_sum;
-		for (i = 0; i < 3; i++) {
+
+		for (i = 0; i < 6; i++) {
 			// move most recent result into filter
 			_filter[i][_filter_index] = result[i];
 
 			_filter_sum = 0;
 			// sum the filter
-			for (uint8_t n = 0; n < 8; n++) {
+			for (uint8_t n = 0; n < ADC_FILTER_SIZE; n++) {
 				_filter_sum += _filter[i][n];
 			}
 
-			result[i] = _filter_sum / 8;
+			// filter does a moving average on last 4 reads, sums half with
+			// half of last filtered value
+			result[i] = (_filter_sum >> 3) + (_prev[i] >> 1);   // divide by 8, divide by 2
+
+			// save old result
+			_prev[i] = result[i];
 		}
+
 		// increment filter index
 		_filter_index++;
 
 		// loop our filter
-		if(_filter_index == 8)
+		if(_filter_index == ADC_FILTER_SIZE)
 			_filter_index = 0;
 	}
+
 
 	// return number of microseconds since last call
 	uint32_t us = micros();
