@@ -9,18 +9,20 @@
 /// @file   AP_Var.cpp
 /// @brief  The AP variable store.
 
-#if 0
-# include <FastSerial.h>
-extern "C" { extern void delay(unsigned long); }
-# define debug(fmt, args...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(100); } while(0)
-#else
-# define debug(fmt, args...)
-#endif
 
 #include <AP_Common.h>
 
 #include <math.h>
 #include <string.h>
+
+//#define ENABLE_FASTSERIAL_DEBUG
+
+#ifdef ENABLE_FASTSERIAL_DEBUG
+# include <FastSerial.h>
+# define serialDebug(fmt, args...)  if (FastSerial::getInitialized(0)) do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__ , ##args); delay(0); } while(0)
+#else
+# define serialDebug(fmt, args...)
+#endif
 
 // Global constants exported for general use.
 //
@@ -71,7 +73,11 @@ AP_Var::AP_Var(AP_Var_group *pGroup, Key index, const prog_char_t *name, Flags f
     // to the pointer to the node that we are considering inserting in front of.
     //
     vp = &_grouped_variables;
+    size_t loopCount = 0;
     while (*vp != NULL) {
+
+    	if (loopCount++>k_num_max) return;
+
         if ((*vp)->_key >= _key) {
                break;
         }
@@ -98,12 +104,19 @@ AP_Var::~AP_Var(void)
     }
 
     // Scan the list and remove this if we find it
-    while (*vp) {
-        if (*vp == this) {
-            *vp = _link;
-            break;
-        }
-        vp = &((*vp)->_link);
+
+    {
+    	size_t loopCount = 0;
+		while (*vp) {
+
+			if (loopCount++>k_num_max) return;
+
+			if (*vp == this) {
+				*vp = _link;
+				break;
+			}
+			vp = &((*vp)->_link);
+		}
     }
 
     // If we are destroying a group, remove all its variables from the list
@@ -112,7 +125,11 @@ AP_Var::~AP_Var(void)
 
         // Scan the list and remove any variable that has this as its group
         vp = &_grouped_variables;
+        size_t loopCount = 0;
+
         while (*vp) {
+
+        	if (loopCount++>k_num_max) return;
 
             // Does the variable claim us as its group?
             if ((*vp)->_group == this) {
@@ -145,7 +162,12 @@ AP_Var::find(const char *name)
 {
     AP_Var  *vp;
 
+    size_t loopCount = 0;
+
     for (vp = first(); vp; vp = vp->next()) {
+
+    	if (loopCount++>k_num_max) return NULL;
+
         char    name_buffer[32];
 
         // copy the variable's name into our scratch buffer
@@ -165,9 +187,9 @@ AP_Var *
 AP_Var::find(Key key)
 {
     AP_Var  *vp;
-
+    size_t loopCount = 0;
     for (vp = first(); vp; vp = vp->next()) {
-
+    	if (loopCount++>k_num_max) return NULL;
         if (key == vp->key()) {
             return vp;
         }
@@ -188,11 +210,11 @@ bool AP_Var::save(void)
         return _group->save();
     }
 
-    debug("save: %S", _name ? _name : PSTR("??"));
+    serialDebug("save: %S", _name ? _name : PSTR("??"));
 
     // locate the variable in EEPROM, allocating space as required
     if (!_EEPROM_locate(true)) {
-        debug("locate failed");
+        serialDebug("locate failed");
         return false;
     }
 
@@ -200,13 +222,13 @@ bool AP_Var::save(void)
     size = serialize(vbuf, sizeof(vbuf));
     if (0 == size) {
         // variable cannot be serialised into the buffer
-        debug("cannot save (too big or not supported)");
+        serialDebug("cannot save (too big or not supported)");
         return false;
     }
 
     // if it fit in the buffer, save it to EEPROM
     if (size <= sizeof(vbuf)) {
-        debug("saving %u to %u", size, _key);
+        serialDebug("saving %u to %u", size, _key);
         // XXX this should use eeprom_update_block if/when Arduino moves to
         // avr-libc >= 1.7
         uint8_t *ep = (uint8_t *)_key;
@@ -219,7 +241,7 @@ bool AP_Var::save(void)
             // now read it back
             newv = eeprom_read_byte(ep);
             if (newv != vbuf[i]) {
-                debug("readback failed at offset %p: got %u, expected %u",
+                serialDebug("readback failed at offset %p: got %u, expected %u",
                       ep, newv, vbuf[i]);
                 return false;
             }
@@ -241,11 +263,11 @@ bool AP_Var::load(void)
         return _group->load();
     }
 
-    debug("load: %S", _name ? _name : PSTR("??"));
+    serialDebug("load: %S", _name ? _name : PSTR("??"));
 
     // locate the variable in EEPROM, but do not allocate space
     if (!_EEPROM_locate(false)) {
-        debug("locate failed");
+        serialDebug("locate failed");
         return false;
     }
 
@@ -255,7 +277,7 @@ bool AP_Var::load(void)
     //
     size = serialize(NULL, 0);
     if (0 == size) {
-        debug("cannot load (too big or not supported)");
+        serialDebug("cannot load (too big or not supported)");
         return false;
     }
 
@@ -263,7 +285,7 @@ bool AP_Var::load(void)
     // has converted _key into an EEPROM address.
     //
     if (size <= sizeof(vbuf)) {
-        debug("loading %u from %u", size, _key);
+        serialDebug("loading %u from %u", size, _key);
         eeprom_read_block(vbuf, (void *)_key, size);
         return unserialize(vbuf, size);
     }
@@ -278,7 +300,12 @@ bool AP_Var::save_all(void)
     bool result = true;
     AP_Var *vp = _variables;
 
+    size_t loopCount = 0;
+
     while (vp) {
+
+    	if (loopCount++>k_num_max) return false;
+
         if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autosave
             (vp->_key != k_key_none)) {              // has a key
 
@@ -298,7 +325,12 @@ bool AP_Var::load_all(void)
     bool result = true;
     AP_Var *vp = _variables;
 
+    size_t loopCount = 0;
+
     while (vp) {
+
+    	if (loopCount++>k_num_max) return false;
+
         if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autoload
             (vp->_key != k_key_none)) {             // has a key
 
@@ -322,13 +354,19 @@ AP_Var::erase_all()
     AP_Var  *vp;
     uint16_t i;
 
-    debug("erase EEPROM");
+    serialDebug("erase EEPROM");
 
     // Scan the list of variables/groups, fetching their key values and
     // reverting them to their not-located state.
     //
     vp = _variables;
+
+    size_t loopCount = 0;
+
     while (vp) {
+
+    	if (loopCount++>k_num_max) return;
+
         vp->_key = vp->key() | k_key_not_located;
         vp = vp->_link;
     }
@@ -405,9 +443,15 @@ AP_Var::first_member(AP_Var_group *group)
 
     vp = &_grouped_variables;
 
-    debug("seeking %p", group);
+    serialDebug("seeking %p", group);
+
+    size_t loopCount = 0;
+
     while (*vp) {
-        debug("consider %p with %p", *vp, (*vp)->_group);
+
+    	if (loopCount++>k_num_max) return NULL;
+
+        serialDebug("consider %p with %p", *vp, (*vp)->_group);
         if ((*vp)->_group == group) {
             return *vp;
         }
@@ -423,7 +467,12 @@ AP_Var::next_member()
     AP_Var  *vp;
 
     vp = _link;
+    size_t loopCount = 0;
+
     while (vp) {
+
+    	if (loopCount++>k_num_max) return NULL;
+
         if (vp->_group == _group) {
             return vp;
         }
@@ -451,7 +500,7 @@ bool AP_Var::_EEPROM_scan(void)
     if ((ee_header.magic != k_EEPROM_magic) ||
         (ee_header.revision != k_EEPROM_revision)) {
 
-        debug("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
+        serialDebug("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
         return false;
     }
 
@@ -460,17 +509,22 @@ bool AP_Var::_EEPROM_scan(void)
     // Avoid trying to read a header when there isn't enough space left.
     //
     eeprom_address = sizeof(ee_header);
+
+    size_t loopCount = 0;
+
     while (eeprom_address < (k_EEPROM_size - sizeof(var_header) - 1)) {
+
+    	if (loopCount++>k_num_max) return NULL;
 
         // Read a variable header
         //
-        debug("reading header from %u", eeprom_address);
+        serialDebug("reading header from %u", eeprom_address);
         eeprom_read_block(&var_header, (void *)eeprom_address, sizeof(var_header));
 
         // If the header is for the sentinel, scanning is complete
         //
         if (var_header.key == k_key_sentinel) {
-            debug("found tail sentinel");
+            serialDebug("found tail sentinel");
             break;
         }
 
@@ -482,23 +536,25 @@ bool AP_Var::_EEPROM_scan(void)
                 var_header.size + 1 +   // data for this variable
                 sizeof(var_header))) {  // header for sentinel
 
-            debug("header overruns EEPROM");
+            serialDebug("header overruns EEPROM");
             return false;
         }
 
         // look for a variable with this key
         vp = _variables;
-        while (vp) {
+        size_t loopCount2 = 0;
+        while(vp) {
+        	if (loopCount2++>k_num_max) return false;
             if (vp->key() == var_header.key) {
                 // adjust the variable's key to point to this entry
                 vp->_key = eeprom_address + sizeof(var_header);
-                debug("update %p with key %u -> %u", vp, var_header.key, vp->_key);
+                serialDebug("update %p with key %u -> %u", vp, var_header.key, vp->_key);
                 break;
             }
             vp = vp->_link;
         }
         if (!vp) {
-            debug("key %u not claimed (already scanned or unknown)", var_header.key);
+            serialDebug("key %u not claimed (already scanned or unknown)", var_header.key);
         }
 
         // move to the next variable header
@@ -514,16 +570,18 @@ bool AP_Var::_EEPROM_scan(void)
     // mark all the rest as not allocated.
     //
     vp = _variables;
-    while (vp) {
+    size_t loopCount3 = 0;
+    while(vp) {
+    	if (loopCount3++>k_num_max) return false;
         if (vp->_key & k_key_not_located) {
             vp->_key |= k_key_not_allocated;
-            debug("key %u not allocated", vp->key());
+            serialDebug("key %u not allocated", vp->key());
         }
         vp = vp->_link;
     }
 
     // Scanning is complete
-    debug("scan done");
+    serialDebug("scan done");
     _tail_sentinel = eeprom_address;
     return true;
 }
@@ -539,7 +597,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // Is it a group member, or does it have a no-location key?
     //
     if (_group || (_key == k_key_none)) {
-        debug("not addressable");
+        serialDebug("not addressable");
         return false;               // it is/does, and thus it has no location
     }
 
@@ -554,7 +612,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // try scanning to see if we can locate it.
     //
     if (!(_key & k_key_not_allocated)) {
-        debug("need scan");
+        serialDebug("need scan");
         _EEPROM_scan();
 
         // Has the variable now been located?
@@ -569,7 +627,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     if (!allocate) {
         return false;
     }
-    debug("needs allocation");
+    serialDebug("needs allocation");
 
     // Ask the serializer for the size of the thing we are allocating, and fail
     // if it is too large or if it has no size, as we will not be able to allocate
@@ -577,7 +635,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     size = serialize(NULL, 0);
     if ((size == 0) || (size > k_size_max)) {
-        debug("size %u out of bounds", size);
+        serialDebug("size %u out of bounds", size);
         return false;
     }
 
@@ -585,7 +643,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     // header and the new tail sentinel.
     //
     if ((_tail_sentinel + size + sizeof(Var_header) * 2) > k_EEPROM_size) {
-        debug("no space in EEPROM");
+        serialDebug("no space in EEPROM");
         return false;
     }
 
@@ -595,7 +653,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     if (0 == _tail_sentinel) {
         uint8_t pad_size;
 
-        debug("writing header");
+        serialDebug("writing header");
         EEPROM_header   ee_header;
 
         ee_header.magic = k_EEPROM_magic;
@@ -621,7 +679,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     new_location = _tail_sentinel;
     _tail_sentinel += sizeof(var_header) + size;
-    debug("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
+    serialDebug("allocated %u/%u for key %u new sentinel %u", new_location, size, key(), _tail_sentinel);
 
     // Write the new sentinel first.  If we are interrupted during this operation
     // the old sentinel will still correctly terminate the EEPROM image.
@@ -670,17 +728,22 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
     // Traverse the list of group members, serializing each in order
     //
     vp = first_member(this);
-    debug("starting with %p", vp);
+    serialDebug("starting with %p", vp);
     total_size = 0;
+
+    size_t loopCount = 0;
+
     while (vp) {
+
+    	if (loopCount++>k_num_max) return false;
 
         // (un)serialise the group member
         if (do_serialize) {
             size = vp->serialize(buf, buf_size);
-            debug("serialize %p -> %u", vp, size);
+            serialDebug("serialize %p -> %u", vp, size);
         } else {
             size = vp->unserialize(buf, buf_size);
-            debug("unserialize %p -> %u", vp, size);
+            serialDebug("unserialize %p -> %u", vp, size);
         }
 
         // Unserialize will return zero if the buffer is too small
@@ -688,7 +751,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         // Either case is fatal for any operation we might be trying.
         //
         if (0 == size) {
-            debug("group (un)serialize failed, buffer too small or not supported");
+            serialDebug("group (un)serialize failed, buffer too small or not supported");
             return 0;
         }
 
@@ -704,7 +767,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
         // and the calling function will have to treat it as an error.
         //
         total_size += size;
-        debug("used %u", total_size);
+        serialDebug("used %u", total_size);
         if (size <= buf_size) {
             // there was space for this one, account for it
             buf_size -= size;

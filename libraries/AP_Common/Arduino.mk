@@ -305,7 +305,7 @@ LIBOBJS			:=	$(SKETCHLIBOBJS) $(ARDUINOLIBOBJS)
 # Pull the Arduino version from the revisions.txt file
 #
 # XXX can we count on this?  If not, what?
-ARDUINO_VERS		:=	$(shell expr `head -1 $(ARDUINO)/revisions.txt | cut -d ' ' -f 2`)
+ARDUINO_VERS		:=	$(shell expr `head -1 $(ARDUINO)/lib/version.txt | cut -d ' ' -f 2`)
 
 # Find the hardware directory to use
 HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
@@ -327,7 +327,13 @@ HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 
 ifeq ($(UPLOAD_PROTOCOL),)
-UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+endif
+
+# Adding override for mega since boards.txt uses stk500 instead of
+# arduino on 22 release
+ifeq ($(BOARD),mega)
+  UPLOAD_PROTOCOL	:=	arduino
 endif
 
 ifeq ($(MCU),)

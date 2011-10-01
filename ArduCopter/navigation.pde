@@ -55,38 +55,14 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
 }
 
-
-// 	nav_roll	= g.pid_of_roll.get_pid(-optflow.x_cm * 10, dTnav, 1.0);
-
 #define NAV_ERR_MAX 400
-static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed)
+static void calc_loiter(int x_error, int y_error)
 {
-	// moved to globals for logging
-	//int x_actual_speed, y_actual_speed;
-	//int x_rate_error, y_rate_error;
 	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	float scaler = (float)max_speed/(float)NAV_ERR_MAX;
-	g.pi_loiter_lat.kP(scaler);
-	g.pi_loiter_lon.kP(scaler);
-
 	int x_target_speed = g.pi_loiter_lon.get_pi(x_error, dTnav);
 	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
-
-	//Serial.printf("scaler: %1.3f, y_target_speed %d",scaler,y_target_speed);
-
-	if(x_target_speed > 0){
-		x_target_speed	= max(x_target_speed, min_speed);
-	}else{
-		x_target_speed	= min(x_target_speed, -min_speed);
-	}
-
-	if(y_target_speed > 0){
-		y_target_speed	= max(y_target_speed, min_speed);
-	}else{
-		y_target_speed	= min(y_target_speed, -min_speed);
-	}
 
 	// find the rates:
 	float temp		= radians((float)g_gps->ground_course/100.0);
@@ -106,17 +82,28 @@ static void calc_nav_rate(int x_error, int y_error, int max_speed, int min_speed
 	#endif
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -600, 600);	// added a rate error limit to keep pitching down to a minimum
-	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
-
-	//Serial.printf("yr: %d, nav_lat: %d, int:%d \n",y_rate_error, nav_lat, g.pi_nav_lat.get_integrator());
+	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
+	nav_lat			= constrain(nav_lat, -3500, 3500);
 
 	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -600, 600);
-	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
+	x_rate_error 	= constrain(x_rate_error, -250, 250);
+	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
+	nav_lon			= constrain(nav_lon, -3500, 3500);
 }
 
-static void calc_nav_rate2(int max_speed)
+// nav_roll, nav_pitch
+static void calc_loiter_pitch_roll()
+{
+	// rotate the vector
+	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+
+	// flip pitch because forward is negative
+	nav_pitch = -nav_pitch;
+}
+
+static void calc_nav_rate(int max_speed)
 {
 	/*
 	0  1   2   3   4   5   6   7   8
@@ -151,7 +138,7 @@ static void calc_nav_rate2(int max_speed)
 }
 
 // nav_roll, nav_pitch
-static void calc_nav_pitch_roll2()
+static void calc_nav_pitch_roll()
 {
 	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor - original_target_bearing))/100.0);
 	float _cos_yaw_x = cos(temp);
@@ -171,39 +158,10 @@ static void calc_nav_pitch_roll2()
 					nav_pitch);*/
 }
 
-
-// nav_roll, nav_pitch
-static void calc_nav_pitch_roll()
-{
-	// rotate the vector
-	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
-
-	// flip pitch because forward is negative
-	nav_pitch = -nav_pitch;
-}
-
 static long get_altitude_error()
 {
 	return next_WP.alt - current_loc.alt;
 }
-
-/*
-static void calc_altitude_smoothing_error()
-{
-	// limit climb rates - we draw a straight line between first location and edge of waypoint_radius
-	target_altitude = next_WP.alt - ((float)(wp_distance * (next_WP.alt - prev_WP.alt)) / (float)(wp_totalDistance - g.waypoint_radius));
-
-	// stay within a certain range
-	if(prev_WP.alt > next_WP.alt){
-		target_altitude = constrain(target_altitude, next_WP.alt, prev_WP.alt);
-	}else{
-		target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
-	}
-
-	altitude_error 	= target_altitude - current_loc.alt;
-}
-*/
 
 static int get_loiter_angle()
 {
@@ -222,7 +180,6 @@ static int get_loiter_angle()
 
 	return angle;
 }
-
 
 static long wrap_360(long error)
 {

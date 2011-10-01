@@ -221,8 +221,6 @@
   //#define OPTFLOW_ENABLED
 #endif
 
-//#define OPTFLOW_ENABLED
-
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
 #endif
@@ -317,19 +315,6 @@
 // Attitude Control
 //
 
-// SIMPLE Mode
-#ifndef SIMPLE_YAW
-# define SIMPLE_YAW 		YAW_HOLD
-#endif
-
-#ifndef SIMPLE_RP
-# define SIMPLE_RP 			ROLL_PITCH_STABLE
-#endif
-
-#ifndef SIMPLE_THR
-# define SIMPLE_THR 		THROTTLE_MANUAL
-#endif
-
 // Alt Hold Mode
 #ifndef ALT_HOLD_YAW
 # define ALT_HOLD_YAW 		YAW_HOLD
@@ -403,40 +388,40 @@
 // Attitude Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.2
+# define STABILIZE_ROLL_P 		4.0
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.001
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	0		// degrees
+# define STABILIZE_ROLL_IMAX 	1.5		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.2
+# define STABILIZE_PITCH_P		4.0
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.001
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	0		// degrees
+# define STABILIZE_PITCH_IMAX	1.5		// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         0.14
+# define RATE_ROLL_P         .13
 #endif
 #ifndef RATE_ROLL_I
-# define RATE_ROLL_I         0 //0.18
+# define RATE_ROLL_I         0.0
 #endif
 #ifndef RATE_ROLL_IMAX
 # define RATE_ROLL_IMAX	 	15			// degrees
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.14
+# define RATE_PITCH_P       0.13
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0 //0.18
@@ -482,7 +467,7 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.4		//
+# define LOITER_P			1.0		//
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.01	//
@@ -495,14 +480,14 @@
 # define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
 #endif
 #ifndef NAV_I
-# define NAV_I				0.15		// this
+# define NAV_I				0.10		// this feels really low, 4s to move 1 degree pitch...
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			20			// degrees
+# define NAV_IMAX			16			// degrees
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			400			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
 #endif
 
 
@@ -519,7 +504,7 @@
 # define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.02		// with 4m error, 8 PWM gain/s
+# define THROTTLE_I		0.10		// with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX		300
@@ -671,7 +656,7 @@
 #endif
 
 #ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME -1
+# define ALT_HOLD_HOME 10
 #endif
 
 #ifndef USE_CURRENT_ALT

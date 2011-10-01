@@ -37,7 +37,12 @@
 	CH7_SIMPLE_MODE
 	CH7_RTL
 	CH7_AUTO_TRIM
+	CH7_ADC_FILTER (experimental)
 	*/
+
+#define ACCEL_ALT_HOLD 0
+#define ACCEL_ALT_HOLD_GAIN 12.0
+// ACCEL_ALT_HOLD 1 to enable experimental alt_hold_mode
 
 // See the config.h and defines.h files for how to set this up!
 //

@@ -53,7 +53,6 @@ extern "C" {
 
 #include "AP_ADC_ADS7844.h"
 
-
 // Commands for reading ADC channels on ADS7844
 static const unsigned char 		adc_cmd[9]		= { 0x87, 0xC7, 0x97, 0xD7, 0xA7, 0xE7, 0xB7, 0xF7, 0x00 };
 
@@ -128,7 +127,9 @@ ISR (TIMER2_OVF_vect)
 
 
 // Constructors ////////////////////////////////////////////////////////////////
-AP_ADC_ADS7844::AP_ADC_ADS7844()
+AP_ADC_ADS7844::AP_ADC_ADS7844() :
+			_filter_index(0),
+			filter_result(false)
 {
 }
 
@@ -160,6 +161,7 @@ void AP_ADC_ADS7844::Init(void)
 	}
 
 	last_ch6_micros = micros();
+	_filter_index = 0;
 
 	// Enable Timer2 Overflow interrupt to capture ADC data
 	TIMSK2 = 0;			// Disable interrupts
@@ -220,9 +222,41 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	// to prevent us stalling the ISR while doing the
 	// division. That costs us 36 bytes of stack, but I think its
 	// worth it.
-	for (i=0; i<6; i++) {
+	for (i = 0; i < 6; i++) {
 		result[i] = sum[i] / count[i];
 	}
+
+	// filter ch 0,1,2 for smoother Gyro output.
+
+	if(filter_result){
+		uint32_t _filter_sum;
+
+		for (i = 0; i < 6; i++) {
+			// move most recent result into filter
+			_filter[i][_filter_index] = result[i];
+
+			_filter_sum = 0;
+			// sum the filter
+			for (uint8_t n = 0; n < ADC_FILTER_SIZE; n++) {
+				_filter_sum += _filter[i][n];
+			}
+
+			// filter does a moving average on last 4 reads, sums half with
+			// half of last filtered value
+			result[i] = (_filter_sum >> 3) + (_prev[i] >> 1);   // divide by 8, divide by 2
+
+			// save old result
+			_prev[i] = result[i];
+		}
+
+		// increment filter index
+		_filter_index++;
+
+		// loop our filter
+		if(_filter_index == ADC_FILTER_SIZE)
+			_filter_index = 0;
+	}
+
 
 	// return number of microseconds since last call
 	uint32_t us = micros();
