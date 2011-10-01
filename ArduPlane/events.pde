@@ -104,23 +104,7 @@ static void update_events(void)	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_
 		}
 
 		if  (event_id == RELAY_TOGGLE) {
-			relay_toggle();
+			relay.toggle();
 		}
 	}
 }
-
-static void relay_on()
-{
-	PORTL |= B00000100;
-}
-
-static void relay_off()
-{
-	PORTL &= ~B00000100;
-}
-
-static void relay_toggle()
-{
-	PORTL ^= B00000100;
-}
-
