@@ -188,31 +188,23 @@ function(GENERATE_ARDUINO_FIRMWARE TARGET_NAME)
     endif()
 
     message(STATUS "Generating ${TARGET_NAME}")
-	message(STATUS "Sketches ${INPUT_SKETCHES}")
-	
+
     set(ALL_LIBS)
-    set(ALL_SRCS ${INPUT_SKETCHES} ${INPUT_SRCS} ${INPUT_HDRS} )
-	#set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS} )
-	
-	#set compile flags and file properties for pde files
-	#SET_SOURCE_FILES_PROPERTIES(${INPUT_SKETCHES} PROPERTIES LANGUAGE CXX)
-	#SET_SOURCE_FILES_PROPERTIES(${INPUT_SKETCHES} PROPERTIES COMPILE_FLAGS "-x c++" )
-    
-	setup_arduino_compiler(${INPUT_BOARD})
+    set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
+
+    setup_arduino_compiler(${INPUT_BOARD})
     setup_arduino_core(CORE_LIB ${INPUT_BOARD})
 
     #setup_arduino_sketch(SKETCH_SRCS ${INPUT_SKETCHES})
 
     if(INPUT_AUTOLIBS)
-        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}")	
+        setup_arduino_libraries(ALL_LIBS ${INPUT_BOARD} "${ALL_SRCS}")
     endif()
 
     
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
-
+    
     setup_arduino_target(${TARGET_NAME} "${ALL_SRCS}" "${ALL_LIBS}")
-	#SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-	#setup_arduino_target(${TARGET_NAME} "${INPUT_SKETCHES}" ${INPUT_HDRS} "${ALL_LIBS}")
     
     if(INPUT_PORT)
         setup_arduino_upload(${INPUT_BOARD} ${TARGET_NAME} ${INPUT_PORT})
@@ -287,7 +279,8 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     set(BOARD_CORE ${${BOARD_ID}.build.core})
     if(BOARD_CORE AND NOT TARGET ${CORE_LIB_NAME})
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
-        find_sources(CORE_SRCS ${BOARD_CORE_PATH})
+        find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
+		list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
@@ -321,8 +314,11 @@ function(find_arduino_libraries VAR_NAME SRCS)
         foreach(SRC_LINE ${SRC_CONTENTS})
             if("${SRC_LINE}" MATCHES "^ *#include *[<\"](.*)[>\"]")
                 get_filename_component(INCLUDE_NAME ${CMAKE_MATCH_1} NAME_WE)
-                foreach(LIB_SEARCH_PATH ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-                    if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})		
+                get_property(LIBRARY_SEARCH_PATH
+                             DIRECTORY     # Property Scope
+                             PROPERTY LINK_DIRECTORIES)
+						 foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+                    if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                         list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                         break()
                     endif()
@@ -344,12 +340,23 @@ endfunction()
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
+#		"LIB_NAME"_RECURSE controls if the library will recurse
+# 		when looking for source files
+#
+
+# For known libraries can list recurse here
+set(Wire_RECURSE True)
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(LIB_TARGETS)
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
     if(NOT TARGET ${TARGET_LIB_NAME})
-        find_sources(LIB_SRCS ${LIB_PATH})
+		string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
+		#message(STATUS "short name: ${LIB_SHORT_NAME} recures: ${${LIB_SHORT_NAME}_RECURSE}")
+		if (NOT DEFINED ${LIB_SHORT_NAME}_RECURSE)
+			set(${LIB_SHORT_NAME}_RECURSE False)
+		endif()
+		find_sources(LIB_SRCS ${LIB_PATH} ${${LIB_SHORT_NAME}_RECURSE})
         if(LIB_SRCS)
 
             message(STATUS "Generating Arduino ${LIB_NAME} library")
@@ -452,21 +459,29 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     add_dependencies(upload ${TARGET_NAME}-upload)
 endfunction()
 
-# find_sources(VAR_NAME LIB_PATH)
+# find_sources(VAR_NAME LIB_PATH RECURSE)
 #
 #        VAR_NAME - Variable name that will hold the detected sources
 #        LIB_PATH - The base path
+#        RECURSE  - Whether or not to recurse
 #
 # Finds all C/C++ sources located at the specified path.
 #
-function(find_sources VAR_NAME LIB_PATH)
-    file(GLOB_RECURSE LIB_FILES ${LIB_PATH}/*.cpp
-                                ${LIB_PATH}/*.c
-                                ${LIB_PATH}/*.cc
-                                ${LIB_PATH}/*.cxx
-                                ${LIB_PATH}/*.h
-                                ${LIB_PATH}/*.hh
-                                ${LIB_PATH}/*.hxx)
+function(find_sources VAR_NAME LIB_PATH RECURSE)
+	set(FILE_SEARCH_LIST
+		${LIB_PATH}/*.cpp
+		${LIB_PATH}/*.c
+		${LIB_PATH}/*.cc
+		${LIB_PATH}/*.cxx
+		${LIB_PATH}/*.h
+		${LIB_PATH}/*.hh
+		${LIB_PATH}/*.hxx)
+	if (RECURSE)
+		file(GLOB_RECURSE LIB_FILES ${FILE_SEARCH_LIST})
+	else()
+		file(GLOB LIB_FILES ${FILE_SEARCH_LIST})
+	endif()
+	#message(STATUS "${LIB_PATH} recurse: ${RECURSE}")
     if(LIB_FILES)
         set(${VAR_NAME} ${LIB_FILES} PARENT_SCOPE)
     endif()

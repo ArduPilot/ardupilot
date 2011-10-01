@@ -430,9 +430,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		//delay(20);
 		if (millis() - fast_loopTimer >= 5) {
-			//delta_ms_fast_loop 	= millis() - fast_loopTimer;
-			//G_Dt 				= (float)delta_ms_fast_loop / 1000.f;		// used by DCM integrator
-			//fast_loopTimer		= millis();
 
 			// IMU
 			// ---
@@ -451,7 +448,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			}
 
 			if(medium_loopCounter == 20){
-				read_radio();
+				//read_radio();
 				medium_loopCounter = 0;
 				//tuning();
 				//dcm.kp_roll_pitch((float)g.rc_6.control_in / 2000.0);

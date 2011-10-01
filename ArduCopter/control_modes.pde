@@ -18,10 +18,7 @@ static void read_control_switch()
 				// setup Simple mode
 				// do we enable simple mode?
 	            do_simple = (g.simple_modes & (1 << switchPosition));
-				//Serial.printf("do simple: %d \n",  (int)do_simple);
 			#endif
-
-
 		}else{
 			switch_debouncer 	= true;
 		}
@@ -92,6 +89,12 @@ static void read_trim_switch()
 			}
 			trim_flag = false;
 		}
+	}
+#elif CH7_OPTION == CH7_ADC_FILTER
+	if (g.rc_7.control_in > 800){
+		adc.filter_result = true;
+	}else{
+		adc.filter_result = false;
 	}
 #elif CH7_OPTION == CH7_AUTO_TRIM
 	if (g.rc_7.control_in > 800){
