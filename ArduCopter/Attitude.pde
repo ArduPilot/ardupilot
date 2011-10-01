@@ -1,6 +1,4 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-// XXX TODO: convert these PI rate controlers to a Class
 static int
 get_stabilize_roll(long target_angle)
 {
