@@ -72,13 +72,20 @@ if (NOT DEFINED BOARD)
 endif()
 message(STATUS "Board configured as: ${BOARD}")
 
+set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
+
 # standard apm project setup
 macro(apm_project PROJECT_NAME BOARD SRCS) 
 	message(STATUS "creating apo project ${PROJECT_NAME}")
 	set(${PROJECT_NAME}_BOARD ${BOARD})
 	set(${PROJECT_NAME}_AFLAGS "-assembler-with-cpp")
-	set(${PROJECT_NAME}_SRCS ${SRCS})
+	file(GLOB HDRS ${PROJECT_NAME}/*.h)
+	file(GLOB PDE ${PROJECT_NAME}/*.pde)
+	set(${PROJECT_NAME}_SRCS ${SRCS} ${HDRS} ${PDE})
 	set(${PROJECT_NAME}_LIBS c)
+	message(STATUS "sources: ${SRCS}")
+	message(STATUS "headers: ${HDRS}")
+	message(STATUS "pde: ${PDE}")
 	generate_arduino_firmware(${PROJECT_NAME})
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 	install(FILES
@@ -87,15 +94,9 @@ macro(apm_project PROJECT_NAME BOARD SRCS)
 	)
 endmacro()
 
-set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
-
 # projects
 apm_project(apo ${BOARD} apo/apo.cpp)
 apm_project(ArduRover ${BOARD} ArduRover/ArduRover.cpp)
 apm_project(ArduBoat ${BOARD} ArduBoat/ArduBoat.cpp)
-set(ArduPlane_SRCS
-	)
-#apm_project(ArduPlane ${BOARD} ${ArduPlane_SRCS})
-set(ArduCopter_SRCS
-	)
-#apm_project(ArduPlane ${BOARD} ${ArduPlane_SRCS})
+#apm_project(ArduPlane ${BOARD} ArduPlane/ArduPlane.cpp)
+#apm_project(ArduCopter ${BOARD} ArduCopter/ArduCopter.cpp)
