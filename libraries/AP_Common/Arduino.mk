@@ -398,7 +398,8 @@ upload: $(SKETCHHEX)
 configure:
 	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
 	$(warning Please edit the file to match your system configuration, if you use a different board or port)
-	@echo BOARD=mega     >  $(SKETCHBOOK)/config.mk
+	@echo \# Select 'mega' for the original APM, or 'mega2560' for the V2 APM. > $(SKETCHBOOK)/config.mk
+	@echo BOARD=mega     >> $(SKETCHBOOK)/config.mk
 	@echo PORT=/dev/null >> $(SKETCHBOOK)/config.mk
 
 debug:
