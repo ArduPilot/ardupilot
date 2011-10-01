@@ -215,10 +215,12 @@ static const char* flight_mode_strings[] = {
 			2   Elevator
 			3   Throttle
 			4   Rudder (if we have ailerons)
-			5   Mode
-			6   TBD
-			7   TBD
-			8   TBD
+			5   Aux5
+			6   Aux6
+			7   Aux7
+			8   Aux8/Mode
+		Each Aux channel can be configured to have any of the available auxiliary functions assigned to it.
+		See libraries/RC_Channel/RC_Channel_aux.h for more information
 */
 
 // Failsafe
