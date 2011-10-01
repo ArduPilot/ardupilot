@@ -20,9 +20,4 @@
 #include "PlaneEasystar.h"
 
 // ArduPilotOne Default Setup
-//#include "APO_DefaultSetup.h"
-void setup() {
-};
-
-void loop() {
-};
+#include "APO_DefaultSetup.h"

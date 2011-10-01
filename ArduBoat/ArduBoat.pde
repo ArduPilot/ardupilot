@@ -13,6 +13,7 @@
 #include <APM_BMP085.h>
 #include <ModeFilter.h>
 #include <APO.h>
+#include <WProgram.h>
 
 // Vehicle Configuration
 #include "BoatGeneric.h"

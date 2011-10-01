@@ -13,9 +13,12 @@
 #include <APM_BMP085.h>
 #include <ModeFilter.h>
 #include <APO.h>
+#include <WProgram.h>
 
 // Vehicle Configuration
 #include "BoatGeneric.h"
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"
+
+#include <WProgram.h>; int main(void) {init();setup();for(;;) loop(); return 0; }
