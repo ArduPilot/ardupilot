@@ -17,3 +17,10 @@ Building using cmake
  - cmake ..
  - make (will build every sketch)
  - make ArduPlane (will build just ArduPlane etc.)
+
+Build a package using cpack
+-----------------------------------------------
+ - cd build
+ - cmake ..
+ - make package
+ - make package_source

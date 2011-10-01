@@ -19,3 +19,5 @@
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"
+
+#include <WProgram.h>; int main(void) {init();setup();for(;;) loop(); return 0; }
