@@ -1,2 +1,2 @@
 
-libraries used by all code bases
+libraries used by all ArduPPM code bases
