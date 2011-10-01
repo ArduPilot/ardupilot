@@ -97,9 +97,9 @@ AP_OpticalFlow::update_position(float roll, float pitch, float cos_yaw_x, float 
 		x_cm = -change_x * avg_altitude * conv_factor;    // perhaps this altitude should actually be the distance to the ground?  i.e. if we are very rolled over it should be longer?
 		y_cm = -change_y * avg_altitude * conv_factor;    // for example if you are leaned over at 45 deg the ground will appear farther away and motion from opt flow sensor will be less
 
-
-		vlon =  x_cm * sin_yaw_y - y_cm * cos_yaw_x;
-		vlat =  y_cm * sin_yaw_y - x_cm * cos_yaw_x;
+		// convert x/y movements into lon/lat movement
+		vlon = x_cm * sin_yaw_y + y_cm * cos_yaw_x;
+		vlat = y_cm * sin_yaw_y - x_cm * cos_yaw_x;
 	}
 
 	_last_altitude = altitude;
