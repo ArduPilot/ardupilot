@@ -712,14 +712,14 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		Serial.printf_P(PSTR("Relay on\n"));
-		relay_on();
+		relay.on();
 		delay(3000);
 		if(Serial.available() > 0){
 			return (0);
 		}
 
 		Serial.printf_P(PSTR("Relay off\n"));
-		relay_off();
+		relay.off();
 		delay(3000);
 		if(Serial.available() > 0){
 			return (0);
