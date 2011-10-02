@@ -65,6 +65,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <ModeFilter.h>
+#include <AP_Relay.h>		// APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
@@ -501,6 +502,8 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
 static bool				new_radio_frame;
+
+AP_Relay relay;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1328,8 +1331,8 @@ static void tuning(){
 
 		case CH6_RELAY:
 			g.rc_6.set_range(0,1000);
-		  	if (g.rc_6.control_in > 525) relay_on();
-		  	if (g.rc_6.control_in < 475) relay_off();
+		  	if (g.rc_6.control_in > 525) relay.on();
+		  	if (g.rc_6.control_in < 475) relay.off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:

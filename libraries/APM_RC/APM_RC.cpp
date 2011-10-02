@@ -28,34 +28,42 @@
 #else
 
 // Variable definition for Input Capture interrupt
-volatile unsigned int ICR4_old;
-volatile unsigned char PPM_Counter=0;
-volatile uint16_t PWM_RAW[8] = {2400,2400,2400,2400,2400,2400,2400,2400};
-volatile unsigned char radio_status=0;
+//volatile uint16_t ICR4_old;
+//volatile uint8_t PPM_Counter=0;
+volatile uint16_t PWM_RAW[NUM_CHANNELS] = {2400,2400,2400,2400,2400,2400,2400,2400};
+volatile uint8_t radio_status=0;
 
 /****************************************************
    Input Capture Interrupt ICP4 => PPM signal read
  ****************************************************/
 ISR(TIMER4_CAPT_vect)
 {
-  unsigned int Pulse;
-  unsigned int Pulse_Width;
+  static uint16_t ICR4_old;
+  static uint8_t PPM_Counter=0;
 
+  uint16_t Pulse;
+  uint16_t Pulse_Width;
+  
   Pulse=ICR4;
-  if (Pulse<ICR4_old)     // Take care of the overflow of Timer4 (TOP=40000)
-    Pulse_Width=(Pulse + 40000)-ICR4_old;  //Calculating pulse
-  else
-    Pulse_Width=Pulse-ICR4_old;            //Calculating pulse
-  if (Pulse_Width>8000)   // SYNC pulse?
+  if (Pulse<ICR4_old) {                       // Take care of the overflow of Timer4 (TOP=40000)
+    Pulse_Width=(Pulse + 40000)-ICR4_old;     // Calculating pulse
+  }
+  else {
+    Pulse_Width=Pulse-ICR4_old;               // Calculating pulse
+  }
+  
+  if (Pulse_Width>8000) {                     // SYNC pulse?
     PPM_Counter=0;
-  else
-    {
-      if (PPM_Counter < (sizeof(PWM_RAW) / sizeof(PWM_RAW[0]))) {
-	PWM_RAW[PPM_Counter++]=Pulse_Width;  //Saving pulse.
-	if (PPM_Counter >= NUM_CHANNELS)
-	  radio_status = 1;
+  }
+  else {
+    if (PPM_Counter < NUM_CHANNELS) {         // Valid pulse channel?
+	  PWM_RAW[PPM_Counter++]=Pulse_Width;     // Saving pulse.
+	  
+	  if (PPM_Counter >= NUM_CHANNELS) {
+	    radio_status = 1;
       }
     }
+  }
   ICR4_old = Pulse;
 }
 
@@ -124,7 +132,7 @@ void APM_RC_Class::Init(void)
   TIMSK4 |= (1<<ICIE4); // Enable Input Capture interrupt. Timer interrupt mask
 }
 
-void APM_RC_Class::OutputCh(unsigned char ch, uint16_t pwm)
+void APM_RC_Class::OutputCh(uint8_t ch, uint16_t pwm)
 {
   pwm=constrain(pwm,MIN_PULSEWIDTH,MAX_PULSEWIDTH);
   pwm<<=1;   // pwm*2;
@@ -145,29 +153,29 @@ void APM_RC_Class::OutputCh(unsigned char ch, uint16_t pwm)
   }
 }
 
-uint16_t APM_RC_Class::InputCh(unsigned char ch)
+uint16_t APM_RC_Class::InputCh(uint8_t ch)
 {
   uint16_t result;
-  uint16_t result2;
 
-	if (_HIL_override[ch] != 0) {
-		return _HIL_override[ch];
-	}
+  if (_HIL_override[ch] != 0) {
+    return _HIL_override[ch];
+  }
 
   // Because servo pulse variables are 16 bits and the interrupts are running values could be corrupted.
   // We dont want to stop interrupts to read radio channels so we have to do two readings to be sure that the value is correct...
-  result =  PWM_RAW[ch]>>1;  // Because timer runs at 0.5us we need to do value/2
-  result2 =  PWM_RAW[ch]>>1;
-  if (result != result2)
-    result =  PWM_RAW[ch]>>1;   // if the results are different we make a third reading (this should be fine)
-
+  result =  PWM_RAW[ch];
+  if (result != PWM_RAW[ch]) {
+    result =  PWM_RAW[ch];   // if the results are different we make a third reading (this should be fine)
+  }
+  result >>= 1;  // Because timer runs at 0.5us we need to do value/2
+	
   // Limit values to a valid range
   result = constrain(result,MIN_PULSEWIDTH,MAX_PULSEWIDTH);
   radio_status=0; // Radio channel read
   return(result);
 }
 
-unsigned char APM_RC_Class::GetState(void)
+uint8_t APM_RC_Class::GetState(void)
 {
   return(radio_status);
 }
@@ -198,7 +206,7 @@ void APM_RC_Class::Force_Out6_Out7(void)
 bool APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
 {
 	uint8_t sum = 0;
-	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
+	for (uint8_t i=0; i<NUM_CHANNELS; i++) {
 		if (v[i] != -1) {
 			_HIL_override[i] = v[i];
 		}
@@ -216,7 +224,7 @@ bool APM_RC_Class::setHIL(int16_t v[NUM_CHANNELS])
 
 void APM_RC_Class::clearOverride(void)
 {
-	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
+	for (uint8_t i=0; i<NUM_CHANNELS; i++) {
 		_HIL_override[i] = 0;
 	}
 }
