@@ -41,6 +41,5 @@ void AP_Relay::set(bool status)
 
 bool AP_Relay::get()
 {
-	// TODO get the relay status
-	return false;
+	return PORTL & B00000100;
 }
