@@ -43,12 +43,11 @@ SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
-    SRCROOT	:=	$(subst /cygdrive/c,c:,$(CURDIR))
+    SRCROOT	:=	$(shell cygpath -m ${CURDIR})
     $(warning your realpath function is not working)
     $(warning > setting SRCROOT to $(SRCROOT))
   endif
   # Correct the directory backslashes on cygwin
-  SKETCHBOOK	:=	$(subst \,/,$(SKETCHBOOK))
   ARDUINO		:=	$(subst \,/,$(ARDUINO))
 endif
 
@@ -76,6 +75,11 @@ else
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
   endif
+endif
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+	# Convert cygwin path into a windows normal path
+    SKETCHBOOK	:=	$(shell cygpath -d ${SKETCHBOOK})
+    SKETCHBOOK	:=	$(subst \,/,$(SKETCHBOOK))
 endif
 
 #
@@ -142,14 +146,29 @@ ifeq ($(ARDUINO),)
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
   endif
 
+  ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	# Most of the following commands are simply to deal with whitespaces in the path
+	# Read the "Program Files" system directory from the windows registry
+	PROGRAM_FILES		:=	$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows/CurrentVersion/ProgramFilesDir)
+	# Convert the path delimiters to /
+	PROGRAM_FILES		:=	$(shell cygpath -m ${PROGRAM_FILES})
+	# Escape the space with a backslash
+	PROGRAM_FILES		:=	$(shell echo $(PROGRAM_FILES) | sed s/\ /\\\\\ / )
+	# Use DOS paths because they do not contain spaces
+	PROGRAM_FILES		:=	$(shell cygpath -d ${PROGRAM_FILES})
+	# Convert the path delimiters to /
+	PROGRAM_FILES	:=	$(subst \,/,$(PROGRAM_FILES))
+	# Search for an Arduino instalation in a couple of paths
+	ARDUINO_SEARCHPATH	:=	c:/arduino* $(PROGRAM_FILES)/arduino*
+    ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
+  endif
+
   #
   # Pick the first option if more than one candidate is found.
   #
-  # XXX this is bad if any of the paths (c:\Program Files\ anyone?) has a space in its name...
-  #
   ARDUINO		:=	$(firstword $(ARDUINOS))
   ifeq ($(ARDUINO),)
-    $(error ERROR: Cannot find Arduino on this system, please specify on the commandline with ARDUINO=<path>)
+    $(error ERROR: Cannot find Arduino on this system, please specify on the commandline with ARDUINO=<path> or on the config.mk file)
   endif
 
   ifneq ($(words $(ARDUINOS)),1)
@@ -400,7 +419,12 @@ configure:
 	$(warning Please edit the file to match your system configuration, if you use a different board or port)
 	@echo \# Select 'mega' for the original APM, or 'mega2560' for the V2 APM. > $(SKETCHBOOK)/config.mk
 	@echo BOARD=mega     >> $(SKETCHBOOK)/config.mk
-	@echo PORT=/dev/null >> $(SKETCHBOOK)/config.mk
+	@echo \# The communication port used to communicate with the APM. >> $(SKETCHBOOK)/config.mk
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	@echo PORT=/dev/com3 >> $(SKETCHBOOK)/config.mk
+else
+	@echo PORT=/dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
+endif
 
 debug:
 	avarice --mkII --capture --jtag usb :4242 & \
