@@ -260,16 +260,20 @@ static const char* flight_mode_strings[] = {
 */
 
 // test
+#if ACCEL_ALT_HOLD == 1
 Vector3f accels_rot;
-//float	accel_gain = 12;
+static int	accels_rot_count;
+static float	accels_rot_sum;
+static float alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
+#endif
 
 // temp
-int y_actual_speed;
-int y_rate_error;
+static int y_actual_speed;
+static int y_rate_error;
 
 // calc the
-int x_actual_speed;
-int x_rate_error;
+static int x_actual_speed;
+static int x_rate_error;
 
 // Radio
 // -----
@@ -585,7 +589,7 @@ static void fast_loop()
 	set_servos_4();
 
 	//if(motor_armed)
-	//	Log_Write_Attitude();
+		//Log_Write_Attitude();
 }
 
 static void medium_loop()
@@ -1078,7 +1082,7 @@ void update_throttle_mode(void)
 				altitude_error = get_altitude_error();
 
 				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error, 250); //150 =  target speed of 1.5m/s
+				nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
 				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
 
 				// clear the new data flag
@@ -1201,8 +1205,12 @@ static void update_trig(void){
 	// 270 = cos_yaw: -1.00, sin_yaw:  0.00,
 
 
+	#if ACCEL_ALT_HOLD == 1
 	Vector3f accel_filt	= imu.get_accel_filtered();
 	accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
+	accels_rot_sum += accels_rot.z;
+	accels_rot_count++;
+	#endif
 }
 
 // updated at 10hz
@@ -1266,6 +1274,13 @@ static void tuning(){
 	tuning_value = (float)g.rc_6.control_in / 1000.0;
 
 	switch(g.radio_tuning){
+
+		/*case CH6_STABILIZE_KP:
+			g.rc_6.set_range(0,2000); 		// 0 to 8
+			tuning_value = (float)g.rc_6.control_in / 100.0;
+			alt_hold_gain = tuning_value;
+			break;*/
+
 		case CH6_STABILIZE_KP:
 			g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);

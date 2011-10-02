@@ -388,7 +388,7 @@
 // Attitude Control
 //
 #ifndef STABILIZE_ROLL_P
-# define STABILIZE_ROLL_P 		4.0
+# define STABILIZE_ROLL_P 		4.6
 #endif
 #ifndef STABILIZE_ROLL_I
 # define STABILIZE_ROLL_I 		0.001
@@ -398,7 +398,7 @@
 #endif
 
 #ifndef STABILIZE_PITCH_P
-# define STABILIZE_PITCH_P		4.0
+# define STABILIZE_PITCH_P		4.6
 #endif
 #ifndef STABILIZE_PITCH_I
 # define STABILIZE_PITCH_I		0.001
@@ -411,7 +411,7 @@
 // Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         .13
+# define RATE_ROLL_P         0.145
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -421,7 +421,7 @@
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.13
+# define RATE_PITCH_P       0.145
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0 //0.18
@@ -500,6 +500,16 @@
 # define THROTTLE_CRUISE	350			//
 #endif
 
+#ifndef THR_HOLD_P
+# define THR_HOLD_P		0.80			//
+#endif
+#ifndef THR_HOLD_I
+# define THR_HOLD_I		0.00		// with 4m error, 12.5s windup
+#endif
+#ifndef THR_HOLD_IMAX
+# define THR_HOLD_IMAX	00
+#endif
+
 #ifndef THROTTLE_P
 # define THROTTLE_P		0.6			//
 #endif
@@ -507,7 +517,7 @@
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX		300
+# define THROTTLE_IMAX	300
 #endif
 
 

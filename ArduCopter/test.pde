@@ -24,7 +24,7 @@ static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
+//static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 #ifdef OPTFLOW_ENABLED
 static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
@@ -76,11 +76,11 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"altitude",	test_baro},
 #endif
 	{"sonar",		test_sonar},
-	{"compass",		test_mag},
+	//{"compass",		test_mag},
 #ifdef OPTFLOW_ENABLED
 	{"optflow",		test_optflow},
 #endif
-	{"xbee",		test_xbee},
+	//{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"rawgps",		test_rawgps},
 //	{"mission",		test_mission},
@@ -769,7 +769,7 @@ static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
    }
  }
 
-static int8_t
+/*static int8_t
 test_xbee(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -785,6 +785,7 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+*/
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
@@ -805,6 +806,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
+/*
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
 {
@@ -834,6 +836,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 		return (0);
 	}
 }
+*/
 /*
 static int8_t
 test_reverse(uint8_t argc, 		const Menu::arg *argv)

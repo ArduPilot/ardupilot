@@ -164,6 +164,7 @@ public:
 	k_param_pi_loiter_lon,
 	k_param_pi_nav_lat,
 	k_param_pi_nav_lon,
+	k_param_pi_alt_hold,
 	k_param_pi_throttle,
 	k_param_pi_crosstrack,
 
@@ -277,6 +278,7 @@ public:
 	APM_PI		pi_nav_lat;
 	APM_PI		pi_nav_lon;
 
+	APM_PI		pi_alt_hold;
 	APM_PI		pi_throttle;
 	APM_PI		pi_crosstrack;
 
@@ -381,7 +383,8 @@ public:
 	pi_nav_lat			(k_param_pi_nav_lat,			PSTR("NAV_LAT_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 	pi_nav_lon			(k_param_pi_nav_lon,			PSTR("NAV_LON_"),	NAV_P,				NAV_I,				NAV_IMAX * 100),
 
-	pi_throttle			(k_param_pi_throttle,			PSTR("THR_HOLD_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
+	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	THR_HOLD_P,			THR_HOLD_I,			THR_HOLD_IMAX),
+	pi_throttle			(k_param_pi_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
 	pi_crosstrack		(k_param_pi_crosstrack,			PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_IMAX),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
