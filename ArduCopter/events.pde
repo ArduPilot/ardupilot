@@ -75,24 +75,9 @@ static void update_events()	// Used for MAV_CMD_DO_REPEAT_SERVO and MAV_CMD_DO_R
 		}
 
 		if  (event_id == RELAY_TOGGLE) {
-			relay_toggle();
+			relay.toggle();
 		}
 	}
-}
-
-static void relay_on()
-{
-	PORTL |= B00000100;
-}
-
-static void relay_off()
-{
-	PORTL &= ~B00000100;
-}
-
-static void relay_toggle()
-{
-	PORTL ^= B00000100;
 }
 
 #if PIEZO == ENABLED

@@ -693,11 +693,11 @@ static void do_set_servo()
 static void do_set_relay()
 {
 	if (next_command.p1 == 1) {
-		relay_on();
+		relay.on();
 	} else if (next_command.p1 == 0) {
-		relay_off();
+		relay.off();
 	}else{
-		relay_toggle();
+		relay.toggle();
 	}
 }
 
