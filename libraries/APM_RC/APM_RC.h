@@ -26,9 +26,9 @@ class APM_RC_Class
   public:
 	APM_RC_Class();
 	void Init();
-	void OutputCh(unsigned char ch, uint16_t pwm);
-	uint16_t InputCh(unsigned char ch);
-	unsigned char GetState();
+	void OutputCh(uint8_t ch, uint16_t pwm);
+	uint16_t InputCh(uint8_t ch);
+	uint8_t GetState();
 	void Force_Out0_Out1(void);
 	void Force_Out2_Out3(void);
 	void Force_Out6_Out7(void);
