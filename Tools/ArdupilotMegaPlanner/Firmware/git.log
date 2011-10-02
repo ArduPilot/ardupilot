@@ -1,9 +1,944 @@
 From https://code.google.com/p/ardupilot-mega
-   e7d6202..4743949  master     -> origin/master
-Updating e7d6202..4743949
+   c9f4213..901dd6f  APM_Camera -> origin/APM_Camera
+   31ca0f5..d7f634e  master     -> origin/master
+Updating 31ca0f5..d7f634e
 Fast-forward
- ArduCopter/ArduCopter.pde    |    2 --
- ArduCopter/Attitude.pde      |   14 +-------------
- ArduCopter/config.h          |    2 +-
- ArduCopter/control_modes.pde |    2 +-
- 4 files changed, 3 insertions(+), 17 deletions(-)
+ .gitignore                                         |    4 +
+ ArduBoat/.cproject                                 |   46 +
+ ArduBoat/.project                                  |   79 +
+ ArduBoat/ArduBoat.cpp                              |   24 +
+ ArduBoat/ArduBoat.pde                              |   22 +
+ ArduBoat/BoatGeneric.h                             |   68 +
+ ArduBoat/ControllerBoat.h                          |  125 ++
+ ArduBoat/Makefile                                  |    1 +
+ ArduCopter/.gitignore                              |    1 +
+ ArduCopter/APM_Config.h                            |    9 +-
+ ArduCopter/ArduCopter.pde                          |  118 +-
+ ArduCopter/Attitude.pde                            |   64 +-
+ ArduCopter/CMakeLists.txt                          |   12 +-
+ ArduCopter/Makefile                                |    9 -
+ ArduCopter/Parameters.h                            |    5 +-
+ ArduCopter/commands_logic.pde                      |    8 +-
+ ArduCopter/config.h                                |   53 +-
+ ArduCopter/control_modes.pde                       |   11 +-
+ ArduCopter/defines.h                               |    5 +-
+ ArduCopter/events.pde                              |   17 +-
+ ArduCopter/navigation.pde                          |   83 +-
+ ArduCopter/radio.pde                               |   18 +-
+ ArduCopter/system.pde                              |   11 +
+ ArduCopter/test.pde                                |   20 +-
+ ArduPlane/.gitignore                               |    1 +
+ ArduPlane/ArduPlane.pde                            |   23 +-
+ ArduPlane/Attitude.pde                             |   25 +-
+ ArduPlane/CMakeLists.txt                           |   20 +-
+ ArduPlane/Makefile                                 |    9 -
+ ArduPlane/commands_logic.pde                       |    7 +-
+ ArduPlane/events.pde                               |   18 +-
+ ArduPlane/radio.pde                                |   17 +-
+ ArduPlane/test.pde                                 |    4 +-
+ ArduRover/.cproject                                |   46 +
+ ArduRover/.project                                 |   79 +
+ ArduRover/ArduRover.cpp                            |   23 +
+ ArduRover/ArduRover.pde                            |   21 +
+ ArduRover/CarStampede.h                            |   69 +
+ ArduRover/ControllerCar.h                          |  125 ++
+ ArduRover/ControllerTank.h                         |  133 ++
+ ArduRover/Makefile                                 |    1 +
+ ArduRover/TankGeneric.h                            |   68 +
+ CMakeLists.txt                                     |  102 ++
+ COPYING.txt                                        |  674 +++++++++
+ README.txt                                         |   26 +
+ Tools/ArduPPM/ATMega328p/Encoder-PPM.c             |  465 ++++++
+ Tools/ArduPPM/ATMega328p/Encoder-PPM.hex           |  111 ++
+ Tools/ArduPPM/ATMega328p/Makefile                  |   77 +
+ Tools/ArduPPM/ATMega328p/manual.txt                |   81 +
+ Tools/ArduPPM/ATMega328p/readme.txt                |    3 +
+ Tools/ArduPPM/ATMega32U2/Arduino-usbdfu.hex        |  210 +++
+ Tools/ArduPPM/ATMega32U2/Arduino-usbserial.hex     |  312 ++++
+ .../Bootloaders/arduino-usbdfu/Arduino-usbdfu.c    |  728 +++++++++
+ .../Bootloaders/arduino-usbdfu/Arduino-usbdfu.h    |  220 +++
+ .../Bootloaders/arduino-usbdfu/Board/LEDs.h        |  110 ++
+ .../Bootloaders/arduino-usbdfu/Descriptors.c       |  189 +++
+ .../Bootloaders/arduino-usbdfu/Descriptors.h       |  177 +++
+ .../ATMega32U2/Bootloaders/arduino-usbdfu/makefile |  716 +++++++++
+ .../Bootloaders/arduino-usbdfu/readme.txt          |   12 +
+ Tools/ArduPPM/ATMega32U2/LUFA.pnproj               |    1 +
+ Tools/ArduPPM/ATMega32U2/LUFA/Common/Attributes.h  |  138 ++
+ Tools/ArduPPM/ATMega32U2/LUFA/Common/BoardTypes.h  |  120 ++
+ Tools/ArduPPM/ATMega32U2/LUFA/Common/Common.h      |  252 ++++
+ Tools/ArduPPM/ATMega32U2/LUFA/Doxygen.conf         | 1563 ++++++++++++++++++++
+ .../ArduPPM/ATMega32U2/LUFA/DriverStubs/Buttons.h  |   85 ++
+ .../ATMega32U2/LUFA/DriverStubs/Dataflash.h        |  185 +++
+ .../ArduPPM/ATMega32U2/LUFA/DriverStubs/Joystick.h |   97 ++
+ Tools/ArduPPM/ATMega32U2/LUFA/DriverStubs/LEDs.h   |  124 ++
+ .../LUFA/Drivers/Board/ATAVRUSBRF01/Buttons.h      |   97 ++
+ .../LUFA/Drivers/Board/ATAVRUSBRF01/LEDs.h         |  140 ++
+ .../ATMega32U2/LUFA/Drivers/Board/BENITO/Buttons.h |   97 ++
+ .../ATMega32U2/LUFA/Drivers/Board/BENITO/LEDs.h    |  129 ++
+ .../LUFA/Drivers/Board/BUMBLEB/Buttons.h           |  102 ++
+ .../LUFA/Drivers/Board/BUMBLEB/Joystick.h          |  119 ++
+ .../ATMega32U2/LUFA/Drivers/Board/BUMBLEB/LEDs.h   |  137 ++
+ .../ATMega32U2/LUFA/Drivers/Board/Buttons.h        |  118 ++
+ .../ATMega32U2/LUFA/Drivers/Board/Dataflash.h      |  207 +++
+ .../LUFA/Drivers/Board/EVK527/AT45DB321C.h         |   98 ++
+ .../ATMega32U2/LUFA/Drivers/Board/EVK527/Buttons.h |  103 ++
+ .../LUFA/Drivers/Board/EVK527/Dataflash.h          |  183 +++
+ .../LUFA/Drivers/Board/EVK527/Joystick.h           |  118 ++
+ .../ATMega32U2/LUFA/Drivers/Board/EVK527/LEDs.h    |  134 ++
+ .../ATMega32U2/LUFA/Drivers/Board/JMDBU2/Buttons.h |   97 ++
+ .../ATMega32U2/LUFA/Drivers/Board/JMDBU2/LEDs.h    |  128 ++
+ .../ATMega32U2/LUFA/Drivers/Board/Joystick.h       |  109 ++
+ Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/LEDs.h |  185 +++
+ .../LUFA/Drivers/Board/RZUSBSTICK/LEDs.h           |  162 ++
+ .../LUFA/Drivers/Board/STK525/AT45DB321C.h         |   98 ++
+ .../ATMega32U2/LUFA/Drivers/Board/STK525/Buttons.h |  103 ++
+ .../LUFA/Drivers/Board/STK525/Dataflash.h          |  183 +++
+ .../LUFA/Drivers/Board/STK525/Joystick.h           |  118 ++
+ .../ATMega32U2/LUFA/Drivers/Board/STK525/LEDs.h    |  137 ++
+ .../LUFA/Drivers/Board/STK526/AT45DB642D.h         |  108 ++
+ .../ATMega32U2/LUFA/Drivers/Board/STK526/Buttons.h |  103 ++
+ .../LUFA/Drivers/Board/STK526/Dataflash.h          |  183 +++
+ .../LUFA/Drivers/Board/STK526/Joystick.h           |  115 ++
+ .../ATMega32U2/LUFA/Drivers/Board/STK526/LEDs.h    |  137 ++
+ .../ATMega32U2/LUFA/Drivers/Board/TEENSY/LEDs.h    |  128 ++
+ .../ATMega32U2/LUFA/Drivers/Board/Temperature.c    |   60 +
+ .../ATMega32U2/LUFA/Drivers/Board/Temperature.h    |  124 ++
+ .../LUFA/Drivers/Board/USBKEY/AT45DB642D.h         |  108 ++
+ .../ATMega32U2/LUFA/Drivers/Board/USBKEY/Buttons.h |   97 ++
+ .../LUFA/Drivers/Board/USBKEY/Dataflash.h          |  191 +++
+ .../LUFA/Drivers/Board/USBKEY/Joystick.h           |  118 ++
+ .../ATMega32U2/LUFA/Drivers/Board/USBKEY/LEDs.h    |  137 ++
+ .../LUFA/Drivers/Board/USBTINYMKII/Buttons.h       |   97 ++
+ .../LUFA/Drivers/Board/USBTINYMKII/LEDs.h          |  127 ++
+ .../LUFA/Drivers/Board/XPLAIN/AT45DB642D.h         |  108 ++
+ .../LUFA/Drivers/Board/XPLAIN/Dataflash.h          |  189 +++
+ .../ATMega32U2/LUFA/Drivers/Board/XPLAIN/LEDs.h    |  128 ++
+ .../ATMega32U2/LUFA/Drivers/Misc/TerminalCodes.h   |  195 +++
+ .../ATMega32U2/LUFA/Drivers/Peripheral/ADC.h       |   71 +
+ .../LUFA/Drivers/Peripheral/AVRU4U6U7/ADC.h        |  391 +++++
+ .../LUFA/Drivers/Peripheral/AVRU4U6U7/TWI.h        |  154 ++
+ .../ATMega32U2/LUFA/Drivers/Peripheral/SPI.h       |  191 +++
+ .../ATMega32U2/LUFA/Drivers/Peripheral/Serial.c    |   53 +
+ .../ATMega32U2/LUFA/Drivers/Peripheral/Serial.h    |  166 +++
+ .../LUFA/Drivers/Peripheral/SerialStream.c         |   53 +
+ .../LUFA/Drivers/Peripheral/SerialStream.h         |  115 ++
+ .../ATMega32U2/LUFA/Drivers/Peripheral/TWI.c       |   74 +
+ .../ATMega32U2/LUFA/Drivers/Peripheral/TWI.h       |   71 +
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Audio.h      |   78 +
+ .../ATMega32U2/LUFA/Drivers/USB/Class/CDC.h        |   83 +
+ .../LUFA/Drivers/USB/Class/Common/Audio.h          |  406 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Common/CDC.h |  179 +++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Common/HID.h |  195 +++
+ .../LUFA/Drivers/USB/Class/Common/MIDI.h           |  191 +++
+ .../LUFA/Drivers/USB/Class/Common/MassStorage.h    |  322 ++++
+ .../LUFA/Drivers/USB/Class/Common/Printer.h        |   85 ++
+ .../LUFA/Drivers/USB/Class/Common/RNDIS.h          |  303 ++++
+ .../LUFA/Drivers/USB/Class/Common/RNDISConstants.h |  121 ++
+ .../LUFA/Drivers/USB/Class/Common/StillImage.h     |  146 ++
+ .../LUFA/Drivers/USB/Class/Device/Audio.c          |   89 ++
+ .../LUFA/Drivers/USB/Class/Device/Audio.h          |  327 ++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Device/CDC.c |  310 ++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Device/CDC.h |  342 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Device/HID.c |  194 +++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Device/HID.h |  212 +++
+ .../LUFA/Drivers/USB/Class/Device/MIDI.c           |  126 ++
+ .../LUFA/Drivers/USB/Class/Device/MIDI.h           |  184 +++
+ .../LUFA/Drivers/USB/Class/Device/MassStorage.c    |  230 +++
+ .../LUFA/Drivers/USB/Class/Device/MassStorage.h    |  168 +++
+ .../LUFA/Drivers/USB/Class/Device/RNDIS.c          |  477 ++++++
+ .../LUFA/Drivers/USB/Class/Device/RNDIS.h          |  176 +++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/HID.h        |   84 ++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/CDC.c   |  464 ++++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/CDC.h   |  347 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/HID.c   |  368 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/HID.h   |  314 ++++
+ .../LUFA/Drivers/USB/Class/Host/HIDParser.c        |  359 +++++
+ .../LUFA/Drivers/USB/Class/Host/HIDParser.h        |  357 +++++
+ .../LUFA/Drivers/USB/Class/Host/HIDReportData.h    |  141 ++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/MIDI.c  |  189 +++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/MIDI.h  |  205 +++
+ .../LUFA/Drivers/USB/Class/Host/MassStorage.c      |  611 ++++++++
+ .../LUFA/Drivers/USB/Class/Host/MassStorage.h      |  352 +++++
+ .../LUFA/Drivers/USB/Class/Host/Printer.c          |  256 ++++
+ .../LUFA/Drivers/USB/Class/Host/Printer.h          |  237 +++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/RNDIS.c |  476 ++++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Host/RNDIS.h |  294 ++++
+ .../LUFA/Drivers/USB/Class/Host/StillImage.c       |  423 ++++++
+ .../LUFA/Drivers/USB/Class/Host/StillImage.h       |  332 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/Class/MIDI.h       |   86 ++
+ .../LUFA/Drivers/USB/Class/MassStorage.h           |   83 +
+ .../ATMega32U2/LUFA/Drivers/USB/Class/Printer.h    |   80 +
+ .../ATMega32U2/LUFA/Drivers/USB/Class/RNDIS.h      |   83 +
+ .../ATMega32U2/LUFA/Drivers/USB/Class/StillImage.h |   78 +
+ .../LUFA/Drivers/USB/HighLevel/ConfigDescriptor.c  |  141 ++
+ .../LUFA/Drivers/USB/HighLevel/ConfigDescriptor.h  |  286 ++++
+ .../LUFA/Drivers/USB/HighLevel/DeviceStandardReq.c |  395 +++++
+ .../LUFA/Drivers/USB/HighLevel/DeviceStandardReq.h |  165 ++
+ .../ATMega32U2/LUFA/Drivers/USB/HighLevel/Events.c |   38 +
+ .../ATMega32U2/LUFA/Drivers/USB/HighLevel/Events.h |  364 +++++
+ .../LUFA/Drivers/USB/HighLevel/HostStandardReq.c   |  179 +++
+ .../LUFA/Drivers/USB/HighLevel/HostStandardReq.h   |  117 ++
+ .../LUFA/Drivers/USB/HighLevel/StdDescriptors.h    |  645 ++++++++
+ .../LUFA/Drivers/USB/HighLevel/StdRequestType.h    |  229 +++
+ .../LUFA/Drivers/USB/HighLevel/StreamCallbacks.h   |   86 ++
+ .../LUFA/Drivers/USB/HighLevel/USBMode.h           |  138 ++
+ .../LUFA/Drivers/USB/HighLevel/USBTask.c           |   88 ++
+ .../LUFA/Drivers/USB/HighLevel/USBTask.h           |  204 +++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Device.c  |   52 +
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Device.h  |  222 +++
+ .../LUFA/Drivers/USB/LowLevel/Endpoint.c           |  340 +++++
+ .../LUFA/Drivers/USB/LowLevel/Endpoint.h           | 1357 +++++++++++++++++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Host.c    |  345 +++++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Host.h    |  492 ++++++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/OTG.h     |  154 ++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Pipe.c    |  296 ++++
+ .../ATMega32U2/LUFA/Drivers/USB/LowLevel/Pipe.h    | 1153 +++++++++++++++
+ .../Template/Template_Endpoint_Control_R.c         |   45 +
+ .../Template/Template_Endpoint_Control_W.c         |   54 +
+ .../USB/LowLevel/Template/Template_Endpoint_RW.c   |   79 +
+ .../USB/LowLevel/Template/Template_Pipe_RW.c       |   82 +
+ .../LUFA/Drivers/USB/LowLevel/USBController.c      |  271 ++++
+ .../LUFA/Drivers/USB/LowLevel/USBController.h      |  465 ++++++
+ .../LUFA/Drivers/USB/LowLevel/USBInterrupt.c       |  250 ++++
+ .../LUFA/Drivers/USB/LowLevel/USBInterrupt.h       |  105 ++
+ Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/USB.h    |  395 +++++
+ Tools/ArduPPM/ATMega32U2/LUFA/License.txt          |   17 +
+ .../ArduPPM/ATMega32U2/LUFA/ManPages/AboutLUFA.txt |   20 +
+ .../ATMega32U2/LUFA/ManPages/AlternativeStacks.txt |   62 +
+ Tools/ArduPPM/ATMega32U2/LUFA/ManPages/Author.jpg  |  Bin 0 -> 28410 bytes
+ .../LUFA/ManPages/BuildingLinkableLibraries.txt    |   22 +
+ .../ArduPPM/ATMega32U2/LUFA/ManPages/ChangeLog.txt |  993 +++++++++++++
+ .../ATMega32U2/LUFA/ManPages/CompileTimeTokens.txt |  200 +++
+ .../ATMega32U2/LUFA/ManPages/CompilingApps.txt     |   30 +
+ .../ATMega32U2/LUFA/ManPages/ConfiguringApps.txt   |   87 ++
+ .../LUFA/ManPages/DevelopingWithLUFA.txt           |   22 +
+ .../ATMega32U2/LUFA/ManPages/DeviceSupport.txt     |   41 +
+ .../LUFA/ManPages/DirectorySummaries.txt           |  171 +++
+ .../ArduPPM/ATMega32U2/LUFA/ManPages/Donating.txt  |   24 +
+ .../ATMega32U2/LUFA/ManPages/FutureChanges.txt     |   38 +
+ .../ATMega32U2/LUFA/ManPages/GettingStarted.txt    |   26 +
+ Tools/ArduPPM/ATMega32U2/LUFA/ManPages/Groups.txt  |   20 +
+ Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LUFA.png    |  Bin 0 -> 10296 bytes
+ .../LUFA/ManPages/LUFAPoweredProjects.txt          |   87 ++
+ .../ATMega32U2/LUFA/ManPages/LUFAvsAtmelStack.txt  |   46 +
+ .../ATMega32U2/LUFA/ManPages/LibraryApps.txt       |  114 ++
+ .../ATMega32U2/LUFA/ManPages/LibraryResources.txt  |   35 +
+ .../ATMega32U2/LUFA/ManPages/LicenseInfo.txt       |   21 +
+ .../ArduPPM/ATMega32U2/LUFA/ManPages/MainPage.txt  |   45 +
+ .../LUFA/ManPages/MigrationInformation.txt         |  529 +++++++
+ .../ATMega32U2/LUFA/ManPages/ProgrammingApps.txt   |   27 +
+ .../ATMega32U2/LUFA/ManPages/SchedulerOverview.txt |   35 +
+ .../LUFA/ManPages/SoftwareBootloaderJump.txt       |   68 +
+ .../ATMega32U2/LUFA/ManPages/VIDAndPIDValues.txt   |  423 ++++++
+ .../ATMega32U2/LUFA/ManPages/WhyUseLUFA.txt        |   46 +
+ .../LUFA/ManPages/WritingBoardDrivers.txt          |   26 +
+ .../ArduPPM/ATMega32U2/LUFA/Scheduler/Scheduler.c  |   98 ++
+ .../ArduPPM/ATMega32U2/LUFA/Scheduler/Scheduler.h  |  294 ++++
+ Tools/ArduPPM/ATMega32U2/LUFA/Version.h            |   51 +
+ Tools/ArduPPM/ATMega32U2/LUFA/makefile             |   75 +
+ .../Projects/arduino-usbserial/Arduino-usbserial.c |  256 ++++
+ .../Projects/arduino-usbserial/Arduino-usbserial.h |   79 +
+ .../Projects/arduino-usbserial/Board/LEDs.h        |  110 ++
+ .../Projects/arduino-usbserial/Descriptors.c       |  286 ++++
+ .../Projects/arduino-usbserial/Descriptors.h       |   88 ++
+ .../arduino-usbserial/Lib/LightweightRingBuff.h    |  197 +++
+ .../ATMega32U2/Projects/arduino-usbserial/makefile |  779 ++++++++++
+ .../Projects/arduino-usbserial/ppm_encoder.txt     |   26 +
+ .../Projects/arduino-usbserial/readme.txt          |   14 +
+ Tools/ArduPPM/ATMega32U2/ppm_encoder.txt           |   19 +
+ Tools/ArduPPM/ATMega32U2/readme.txt                |   52 +
+ Tools/ArduPPM/Libraries/PPM_Encoder.h              |  718 +++++++++
+ Tools/ArduPPM/Libraries/readme.txt                 |    2 +
+ .../WorkBasket/Jeti Duplex/Jetibox/JetiBox.cpp     |  166 +++
+ .../WorkBasket/Jeti Duplex/Jetibox/JetiBox.h       |   51 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/APM_Config.h   |  925 ++++++++++++
+ .../X-DIY_Jeti_V2/X-DIY/APM_Config.h.reference     |  914 ++++++++++++
+ .../X-DIY_Jeti_V2/X-DIY/APM_Config_xplane.h        |   19 +
+ .../X-DIY_Jeti_V2/X-DIY/ArduPilotMega.pde          |  845 +++++++++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Attitude.pde   |  343 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/DCM.pde        |  387 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/EEPROM map.txt |  389 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/EEPROM.pde     |  286 ++++
+ .../X-DIY_Jeti_V2/X-DIY/GCS_Ardupilot.pde          |  176 +++
+ .../X-DIY_Jeti_V2/X-DIY/GCS_DebugTerminal.pde      | 1258 ++++++++++++++++
+ .../X-DIY_Jeti_V2/X-DIY/GCS_IMU_ouput.pde          |  192 +++
+ .../X-DIY_Jeti_V2/X-DIY/GCS_Jason_text.pde         |  238 +++
+ .../X-DIY_Jeti_V2/X-DIY/GCS_Standard.pde           |  371 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_XDIY.pde   |    9 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_Xplane.pde |  127 ++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/HIL_output.pde |   78 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Jeti.pde       |  264 ++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Log.pde        |  596 ++++++++
+ .../X-DIY_Jeti_V2/X-DIY/command description.txt    |   75 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/commands.pde   |  228 +++
+ .../X-DIY_Jeti_V2/X-DIY/commands_process.pde       |  480 ++++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/config.h       |  569 +++++++
+ .../X-DIY_Jeti_V2/X-DIY/control_modes.pde          |   58 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/debug.pde      |   70 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/defines.h      |  345 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/events.pde     |  226 +++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/navigation.pde |  230 +++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/radio.pde      |  180 +++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/sensors.pde    |   65 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/setup.pde      |  410 +++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/system.pde     |  491 ++++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/X-DIY/test.pde       |  433 ++++++
+ .../X-DIY_Jeti_V2/libraries/APM_ADC/APM_ADC.cpp    |  149 ++
+ .../X-DIY_Jeti_V2/libraries/APM_ADC/APM_ADC.h      |   24 +
+ .../APM_ADC/examples/APM_ADC_test/APM_ADC_test.pde |   33 +
+ .../X-DIY_Jeti_V2/libraries/APM_ADC/keywords.txt   |    3 +
+ .../libraries/APM_BMP085/APM_BMP085.cpp            |  243 +++
+ .../libraries/APM_BMP085/APM_BMP085.h              |   34 +
+ .../examples/APM_BMP085_test/APM_BMP085_test.pde   |   41 +
+ .../libraries/APM_BMP085/keywords.txt              |    5 +
+ .../libraries/APM_BinComm/APM_BinComm.cpp          |  206 +++
+ .../libraries/APM_BinComm/APM_BinComm.h            |  267 ++++
+ .../libraries/APM_BinComm/keywords.txt             |    6 +
+ .../libraries/APM_BinComm/protocol/protocol.def    |  224 +++
+ .../libraries/APM_BinComm/protocol/protocol.h      | 1301 ++++++++++++++++
+ .../libraries/APM_BinComm/protocol/protogen.awk    |  174 +++
+ .../libraries/APM_BinComm/test/Makefile            |   14 +
+ .../libraries/APM_BinComm/test/WProgram.h          |   15 +
+ .../libraries/APM_BinComm/test/test.cpp            |  110 ++
+ .../libraries/APM_Compass/APM_Compass.cpp          |  235 +++
+ .../libraries/APM_Compass/APM_Compass.h            |   69 +
+ .../examples/APM_Compass_test/APM_Compass_test.pde |   87 ++
+ .../libraries/APM_Compass/keywords.txt             |   19 +
+ .../libraries/APM_FastSerial/APM_FastSerial.cpp    |  150 ++
+ .../libraries/APM_FastSerial/APM_FastSerial.h      |   25 +
+ .../examples/APM_FastSerial/APM_FastSerial.pde     |   91 ++
+ .../libraries/APM_FastSerial/keywords.txt          |    2 +
+ .../X-DIY_Jeti_V2/libraries/APM_RC/APM_RC.cpp      |  193 +++
+ .../X-DIY_Jeti_V2/libraries/APM_RC/APM_RC.h        |   24 +
+ .../APM_RC/examples/APM_radio/APM_radio.pde        |   31 +
+ .../X-DIY_Jeti_V2/libraries/APM_RC/keywords.txt    |    8 +
+ .../libraries/APM_RC_QUAD/APM_RC_QUAD.cpp          |  169 +++
+ .../libraries/APM_RC_QUAD/APM_RC_QUAD.h            |   21 +
+ .../examples/APM_radio_quad/APM_radio_quad.pde     |   31 +
+ .../libraries/APM_RC_QUAD/keywords.txt             |    5 +
+ .../libraries/AP_Common/AP_Common.cpp              |   17 +
+ .../X-DIY_Jeti_V2/libraries/AP_Common/AP_Common.h  |   53 +
+ .../X-DIY_Jeti_V2/libraries/AP_Common/c++.cpp      |   21 +
+ .../libraries/AP_Common/examples/menu/menu.pde     |   45 +
+ .../libraries/AP_Common/include/menu.h             |  138 ++
+ .../X-DIY_Jeti_V2/libraries/AP_Common/keywords.txt |    4 +
+ .../X-DIY_Jeti_V2/libraries/AP_Common/menu.cpp     |  129 ++
+ .../libraries/AP_Compass/AP_Compass.cpp            |  115 ++
+ .../libraries/AP_Compass/AP_Compass.h              |   17 +
+ .../X-DIY_Jeti_V2/libraries/AP_Compass/Compass.h   |   23 +
+ .../examples/AP_Compass_test/AP_Compass_test.pde   |   40 +
+ .../libraries/AP_Compass/keywords.txt              |   15 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS.h        |   13 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_406.cpp  |   81 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_406.h    |   32 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_Auto.cpp |  162 ++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_Auto.h   |   52 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_IMU.cpp  |  224 +++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_IMU.h    |   44 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_MTK.cpp  |  146 ++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_MTK.h    |   87 ++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_NMEA.cpp |  246 +++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_NMEA.h   |   60 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_None.h   |   13 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_SIRF.cpp |  193 +++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_SIRF.h   |   96 ++
+ .../libraries/AP_GPS/AP_GPS_UBLOX.cpp              |  192 +++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_UBLOX.h  |  124 ++
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/GPS.cpp         |   35 +
+ .../X-DIY_Jeti_V2/libraries/AP_GPS/GPS.h           |  150 ++
+ .../AP_GPS/examples/GPS_406_test/GPS_406_test.pde  |   58 +
+ .../examples/GPS_AUTO_test/GPS_AUTO_test.pde       |   59 +
+ .../AP_GPS/examples/GPS_MTK_test/GPS_MTK_test.pde  |   56 +
+ .../examples/GPS_NMEA_test/GPS_NMEA_test.pde       |   57 +
+ .../examples/GPS_UBLOX_test/GPS_UBLOX_test.pde     |   56 +
+ .../X-DIY_Jeti_V2/libraries/AP_Math/AP_Math.h      |    7 +
+ .../X-DIY_Jeti_V2/libraries/AP_Math/keywords.txt   |   29 +
+ .../X-DIY_Jeti_V2/libraries/AP_Math/matrix3.h      |  134 ++
+ .../X-DIY_Jeti_V2/libraries/AP_Math/vector2.h      |  158 ++
+ .../X-DIY_Jeti_V2/libraries/AP_Math/vector3.h      |  183 +++
+ .../libraries/AP_Navigation/Navigation.cpp         |  249 ++++
+ .../libraries/AP_Navigation/Navigation.h           |   76 +
+ .../examples/Navigation/Navigation.pde             |  152 ++
+ .../Navigation_simple/Navigation_simple.pde        |   28 +
+ .../X-DIY_Jeti_V2/libraries/DCM/DCM.cpp            |  472 ++++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/libraries/DCM/DCM.h  |  147 ++
+ .../libraries/DCM/examples/DCM_test/DCM_test.pde   |   38 +
+ .../libraries/DataFlash/DataFlash.cpp              |  342 +++++
+ .../X-DIY_Jeti_V2/libraries/DataFlash/DataFlash.h  |   86 ++
+ .../examples/DataFlash_test/DataFlash_test.pde     |   99 ++
+ .../X-DIY_Jeti_V2/libraries/DataFlash/keywords.txt |   14 +
+ .../libraries/FastSerial/FastSerial.cpp            |  348 +++++
+ .../libraries/FastSerial/FastSerial.h              |  261 ++++
+ .../FastSerial/examples/FastSerial/FastSerial.pde  |   55 +
+ .../libraries/FastSerial/keywords.txt              |    7 +
+ .../X-DIY_Jeti_V2/libraries/GPS_IMU/.DS_Store      |  Bin 0 -> 6148 bytes
+ .../X-DIY_Jeti_V2/libraries/GPS_IMU/GPS_IMU.cpp    |  279 ++++
+ .../X-DIY_Jeti_V2/libraries/GPS_IMU/GPS_IMU.h      |   69 +
+ .../libraries/GPS_IMU/examples/.DS_Store           |  Bin 0 -> 6148 bytes
+ .../GPS_IMU/examples/GPS_IMU_test/GPS_IMU_test.pde |   44 +
+ .../X-DIY_Jeti_V2/libraries/GPS_IMU/keywords.txt   |   16 +
+ .../X-DIY_Jeti_V2/libraries/GPS_MTK/GPS_MTK.cpp    |  225 +++
+ .../X-DIY_Jeti_V2/libraries/GPS_MTK/GPS_MTK.h      |   49 +
+ .../GPS_MTK/examples/GPS_MTK_test/GPS_MTK_test.pde |   47 +
+ .../X-DIY_Jeti_V2/libraries/GPS_MTK/keywords.txt   |   16 +
+ .../X-DIY_Jeti_V2/libraries/GPS_NMEA/GPS_NMEA.cpp  |  272 ++++
+ .../X-DIY_Jeti_V2/libraries/GPS_NMEA/GPS_NMEA.h    |   46 +
+ .../examples/GPS_NMEA_test/GPS_NMEA_test.pde       |   42 +
+ .../X-DIY_Jeti_V2/libraries/GPS_NMEA/keywords.txt  |   18 +
+ .../libraries/GPS_UBLOX/GPS_UBLOX.cpp              |  274 ++++
+ .../X-DIY_Jeti_V2/libraries/GPS_UBLOX/GPS_UBLOX.h  |   50 +
+ .../examples/GPS_UBLOX_test/GPS_UBLOX_test.pde     |   42 +
+ .../X-DIY_Jeti_V2/libraries/GPS_UBLOX/keywords.txt |   16 +
+ .../X-DIY_Jeti_V2/libraries/JETI_Box/JETI_Box.cpp  |  202 +++
+ .../libraries/JETI_Box/JETI_Box.cpp.bak            |  188 +++
+ .../X-DIY_Jeti_V2/libraries/JETI_Box/JETI_Box.h    |   36 +
+ .../X-DIY_Jeti_V2/libraries/JETI_Box/jetibox2.zip  |  Bin 0 -> 2069 bytes
+ .../X-DIY_Jeti_V2/libraries/JETI_Box/keywords.txt  |    8 +
+ .../X-DIY_Jeti_V2/libraries/RC/APM2_RC.cpp         |  327 ++++
+ .../X-DIY_Jeti_V2/libraries/RC/APM2_RC.h           |   38 +
+ .../X-DIY_Jeti_V2/libraries/RC/AP_RC.cpp           |  329 ++++
+ .../Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/AP_RC.h |   32 +
+ .../Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/RC.cpp  |   84 ++
+ .../Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/RC.h    |   46 +
+ .../RC/examples/APM_RC_elevons/APM_RC_elevons.pde  |   59 +
+ .../RC/examples/APM_RC_test/APM_RC_test.pde        |   59 +
+ .../RC/examples/AP_RC_elevons/AP_RC_elevons.pde    |   48 +
+ .../RC/examples/AP_RC_test/AP_RC_test.pde          |   50 +
+ .../X-DIY_Jeti_V2/libraries/RC/keywords.txt        |    4 +
+ .../libraries/Waypoints/Waypoints.cpp              |  120 ++
+ .../X-DIY_Jeti_V2/libraries/Waypoints/Waypoints.h  |   46 +
+ Tools/ArduPPM/WorkBasket/Jeti Duplex/readme.txt    |   29 +
+ Tools/ArduPPM/WorkBasket/readme.txt                |    9 +
+ .../spektrum_to_ppm_encoder.pde                    |  309 ++++
+ Tools/ArduPPM/readme.txt                           |   23 +
+ Tools/PPMEncoder/ap_ppm_encoder.c                  |    1 -
+ apo/.cproject                                      |   46 +
+ apo/.gitignore                                     |    1 +
+ apo/.project                                       |   79 +
+ apo/ControllerPlane.h                              |  215 +++
+ apo/ControllerQuad.h                               |  250 ++++
+ apo/Makefile                                       |  624 ++++++++
+ apo/PlaneEasystar.h                                |  113 ++
+ apo/QuadArducopter.h                               |   98 ++
+ apo/QuadMikrokopter.h                              |   98 ++
+ apo/apo.pde                                        |   23 +
+ cmake/PdeP.jar                                     |  Bin 5690 -> 0 bytes
+ cmake/modules/FindArduino.cmake                    |   69 +-
+ cmake/modules/MacroEnsureOutOfSourceBuild.cmake    |   19 +
+ cmake/toolchains/Arduino.cmake                     |   22 +-
+ cmake/updated-arduino-cmake.sh                     |    5 +
+ libraries/APM_BMP085/CMakeLists.txt                |   22 -
+ libraries/APM_PI/APM_PI.cpp                        |   20 +-
+ libraries/APM_PI/CMakeLists.txt                    |   24 -
+ libraries/APM_RC/APM_RC.cpp                        |   70 +-
+ libraries/APM_RC/APM_RC.h                          |    6 +-
+ libraries/APM_RC/CMakeLists.txt                    |   22 -
+ libraries/APO/APO.cpp                              |    8 +
+ libraries/APO/APO.h                                |   20 +
+ libraries/APO/APO_DefaultSetup.h                   |  161 ++
+ libraries/APO/AP_Autopilot.cpp                     |  246 +++
+ libraries/APO/AP_Autopilot.h                       |  165 ++
+ libraries/APO/AP_CommLink.cpp                      |   15 +
+ libraries/APO/AP_CommLink.h                        |  790 ++++++++++
+ libraries/APO/AP_Controller.cpp                    |    8 +
+ libraries/APO/AP_Controller.h                      |  304 ++++
+ libraries/APO/AP_Guide.cpp                         |    8 +
+ libraries/APO/AP_Guide.h                           |  359 +++++
+ libraries/APO/AP_HardwareAbstractionLayer.cpp      |    8 +
+ libraries/APO/AP_HardwareAbstractionLayer.h        |  166 +++
+ libraries/APO/AP_MavlinkCommand.cpp                |  175 +++
+ libraries/APO/AP_MavlinkCommand.h                  |  359 +++++
+ libraries/APO/AP_Navigator.cpp                     |    8 +
+ libraries/APO/AP_Navigator.h                       |  391 +++++
+ libraries/APO/AP_RcChannel.cpp                     |  110 ++
+ libraries/APO/AP_RcChannel.h                       |   69 +
+ libraries/APO/AP_Var_keys.h                        |   24 +
+ libraries/APO/constants.h                          |   23 +
+ libraries/APO/examples/MavlinkTest/Makefile        |    2 +
+ libraries/APO/examples/MavlinkTest/MavlinkTest.pde |   49 +
+ libraries/APO/examples/ServoManual/Makefile        |    2 +
+ libraries/APO/examples/ServoManual/ServoManual.pde |  109 ++
+ libraries/APO/examples/ServoSweep/Makefile         |    2 +
+ libraries/APO/examples/ServoSweep/ServoSweep.pde   |  125 ++
+ libraries/APO/template.h                           |   32 +
+ libraries/AP_ADC/AP_ADC_ADS7844.cpp                |  506 ++++---
+ libraries/AP_ADC/AP_ADC_ADS7844.h                  |   72 +-
+ libraries/AP_ADC/CMakeLists.txt                    |   26 -
+ libraries/AP_Common/AP_Var.cpp                     |  161 ++-
+ libraries/AP_Common/AP_Var.h                       |    4 +
+ libraries/AP_Common/Arduino.mk                     |   20 +-
+ libraries/AP_Common/CMakeLists.txt                 |   33 -
+ libraries/AP_Compass/CMakeLists.txt                |   27 -
+ libraries/AP_DCM/CMakeLists.txt                    |   25 -
+ libraries/AP_GPS/CMakeLists.txt                    |   44 -
+ libraries/AP_IMU/AP_IMU_Oilpan.cpp                 |    6 +-
+ libraries/AP_IMU/CMakeLists.txt                    |   25 -
+ libraries/AP_Math/CMakeLists.txt                   |   24 -
+ libraries/AP_OpticalFlow/AP_OpticalFlow.cpp        |    6 +-
+ libraries/AP_OpticalFlow/CMakeLists.txt            |   24 -
+ .../AP_OpticalFlow_test/AP_OpticalFlow_test.pde    |   17 +-
+ libraries/AP_PID/CMakeLists.txt                    |   24 -
+ libraries/AP_RangeFinder/CMakeLists.txt            |   27 -
+ libraries/AP_Relay/AP_Relay.cpp                    |   45 +
+ libraries/AP_Relay/AP_Relay.h                      |   37 +
+ libraries/CMakeLists.txt                           |   24 -
+ libraries/DataFlash/CMakeLists.txt                 |   21 -
+ libraries/FastSerial/CMakeLists.txt                |   28 -
+ libraries/FastSerial/FastSerial.cpp                |    3 +
+ libraries/FastSerial/FastSerial.h                  |   16 +
+ libraries/GCS_MAVLink/CMakeLists.txt               |   19 -
+ libraries/ModeFilter/CMakeLists.txt                |   24 -
+ libraries/PID/CMakeLists.txt                       |   21 -
+ libraries/RC_Channel/CMakeLists.txt                |   24 -
+ libraries/RC_Channel/RC_Channel.cpp                |   54 +-
+ libraries/RC_Channel/RC_Channel.h                  |    5 +-
+ libraries/memcheck/CMakeLists.txt                  |   24 -
+ 490 files changed, 72508 insertions(+), 1253 deletions(-)
+ create mode 100644 ArduBoat/.cproject
+ create mode 100644 ArduBoat/.project
+ create mode 100644 ArduBoat/ArduBoat.cpp
+ create mode 100644 ArduBoat/ArduBoat.pde
+ create mode 100644 ArduBoat/BoatGeneric.h
+ create mode 100644 ArduBoat/ControllerBoat.h
+ create mode 100644 ArduBoat/Makefile
+ create mode 100644 ArduCopter/.gitignore
+ create mode 100644 ArduPlane/.gitignore
+ create mode 100644 ArduRover/.cproject
+ create mode 100644 ArduRover/.project
+ create mode 100644 ArduRover/ArduRover.cpp
+ create mode 100644 ArduRover/ArduRover.pde
+ create mode 100644 ArduRover/CarStampede.h
+ create mode 100644 ArduRover/ControllerCar.h
+ create mode 100644 ArduRover/ControllerTank.h
+ create mode 100644 ArduRover/Makefile
+ create mode 100644 ArduRover/TankGeneric.h
+ create mode 100644 CMakeLists.txt
+ create mode 100644 COPYING.txt
+ create mode 100644 README.txt
+ create mode 100644 Tools/ArduPPM/ATMega328p/Encoder-PPM.c
+ create mode 100644 Tools/ArduPPM/ATMega328p/Encoder-PPM.hex
+ create mode 100644 Tools/ArduPPM/ATMega328p/Makefile
+ create mode 100644 Tools/ArduPPM/ATMega328p/manual.txt
+ create mode 100644 Tools/ArduPPM/ATMega328p/readme.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Arduino-usbdfu.hex
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Arduino-usbserial.hex
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/Arduino-usbdfu.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/Arduino-usbdfu.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/Board/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/Descriptors.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/Descriptors.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/makefile
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Bootloaders/arduino-usbdfu/readme.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA.pnproj
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Common/Attributes.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Common/BoardTypes.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Common/Common.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Doxygen.conf
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/DriverStubs/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/DriverStubs/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/DriverStubs/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/DriverStubs/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/ATAVRUSBRF01/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/ATAVRUSBRF01/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/BENITO/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/BENITO/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/BUMBLEB/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/BUMBLEB/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/BUMBLEB/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/EVK527/AT45DB321C.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/EVK527/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/EVK527/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/EVK527/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/EVK527/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/JMDBU2/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/JMDBU2/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/RZUSBSTICK/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK525/AT45DB321C.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK525/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK525/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK525/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK525/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK526/AT45DB642D.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK526/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK526/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK526/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/STK526/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/TEENSY/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/Temperature.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/Temperature.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBKEY/AT45DB642D.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBKEY/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBKEY/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBKEY/Joystick.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBKEY/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBTINYMKII/Buttons.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/USBTINYMKII/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/XPLAIN/AT45DB642D.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/XPLAIN/Dataflash.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Board/XPLAIN/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Misc/TerminalCodes.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/ADC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/AVRU4U6U7/ADC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/AVRU4U6U7/TWI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/SPI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/Serial.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/Serial.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/SerialStream.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/SerialStream.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/TWI.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/Peripheral/TWI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Audio.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/CDC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/Audio.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/CDC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/HID.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/MIDI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/MassStorage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/Printer.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/RNDIS.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/RNDISConstants.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Common/StillImage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/Audio.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/Audio.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/CDC.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/CDC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/HID.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/HID.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/MIDI.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/MIDI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/MassStorage.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/MassStorage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/RNDIS.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Device/RNDIS.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/HID.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/CDC.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/CDC.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/HID.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/HID.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/HIDParser.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/HIDParser.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/HIDReportData.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/MIDI.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/MIDI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/MassStorage.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/MassStorage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/Printer.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/Printer.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/RNDIS.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/RNDIS.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/StillImage.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Host/StillImage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/MIDI.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/MassStorage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/Printer.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/RNDIS.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/Class/StillImage.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/ConfigDescriptor.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/ConfigDescriptor.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/DeviceStandardReq.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/DeviceStandardReq.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/Events.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/Events.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/HostStandardReq.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/HostStandardReq.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/StdDescriptors.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/StdRequestType.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/StreamCallbacks.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/USBMode.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/USBTask.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/HighLevel/USBTask.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Device.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Device.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Endpoint.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Endpoint.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Host.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Host.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/OTG.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Pipe.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Pipe.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Template/Template_Endpoint_Control_R.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Template/Template_Endpoint_Control_W.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Template/Template_Endpoint_RW.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/Template/Template_Pipe_RW.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/USBController.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/USBController.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/USBInterrupt.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/LowLevel/USBInterrupt.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Drivers/USB/USB.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/License.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/AboutLUFA.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/AlternativeStacks.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/Author.jpg
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/BuildingLinkableLibraries.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/ChangeLog.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/CompileTimeTokens.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/CompilingApps.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/ConfiguringApps.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/DevelopingWithLUFA.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/DeviceSupport.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/DirectorySummaries.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/Donating.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/FutureChanges.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/GettingStarted.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/Groups.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LUFA.png
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LUFAPoweredProjects.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LUFAvsAtmelStack.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LibraryApps.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LibraryResources.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/LicenseInfo.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/MainPage.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/MigrationInformation.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/ProgrammingApps.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/SchedulerOverview.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/SoftwareBootloaderJump.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/VIDAndPIDValues.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/WhyUseLUFA.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/ManPages/WritingBoardDrivers.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Scheduler/Scheduler.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Scheduler/Scheduler.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/Version.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/LUFA/makefile
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Arduino-usbserial.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Arduino-usbserial.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Board/LEDs.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Descriptors.c
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Descriptors.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/Lib/LightweightRingBuff.h
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/makefile
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/ppm_encoder.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/Projects/arduino-usbserial/readme.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/ppm_encoder.txt
+ create mode 100644 Tools/ArduPPM/ATMega32U2/readme.txt
+ create mode 100644 Tools/ArduPPM/Libraries/PPM_Encoder.h
+ create mode 100644 Tools/ArduPPM/Libraries/readme.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/Jetibox/JetiBox.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/Jetibox/JetiBox.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/APM_Config.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/APM_Config.h.reference
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/APM_Config_xplane.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/ArduPilotMega.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Attitude.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/DCM.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/EEPROM map.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/EEPROM.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_Ardupilot.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_DebugTerminal.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_IMU_ouput.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_Jason_text.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_Standard.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_XDIY.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/GCS_Xplane.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/HIL_output.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Jeti.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/Log.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/command description.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/commands.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/commands_process.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/config.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/control_modes.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/debug.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/defines.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/events.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/navigation.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/radio.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/sensors.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/setup.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/system.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/X-DIY/test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_ADC/APM_ADC.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_ADC/APM_ADC.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_ADC/examples/APM_ADC_test/APM_ADC_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_ADC/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BMP085/APM_BMP085.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BMP085/APM_BMP085.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BMP085/examples/APM_BMP085_test/APM_BMP085_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BMP085/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/APM_BinComm.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/APM_BinComm.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/protocol/protocol.def
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/protocol/protocol.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/protocol/protogen.awk
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/test/Makefile
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/test/WProgram.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_BinComm/test/test.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_Compass/APM_Compass.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_Compass/APM_Compass.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_Compass/examples/APM_Compass_test/APM_Compass_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_Compass/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_FastSerial/APM_FastSerial.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_FastSerial/APM_FastSerial.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_FastSerial/examples/APM_FastSerial/APM_FastSerial.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_FastSerial/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC/APM_RC.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC/APM_RC.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC/examples/APM_radio/APM_radio.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC_QUAD/APM_RC_QUAD.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC_QUAD/APM_RC_QUAD.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC_QUAD/examples/APM_radio_quad/APM_radio_quad.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/APM_RC_QUAD/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/AP_Common.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/AP_Common.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/c++.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/examples/menu/menu.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/include/menu.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Common/menu.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Compass/AP_Compass.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Compass/AP_Compass.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Compass/Compass.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Compass/examples/AP_Compass_test/AP_Compass_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Compass/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_406.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_406.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_Auto.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_Auto.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_IMU.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_IMU.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_MTK.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_MTK.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_NMEA.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_NMEA.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_None.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_SIRF.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_SIRF.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_UBLOX.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/AP_GPS_UBLOX.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/GPS.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/GPS.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/examples/GPS_406_test/GPS_406_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/examples/GPS_AUTO_test/GPS_AUTO_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/examples/GPS_MTK_test/GPS_MTK_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/examples/GPS_NMEA_test/GPS_NMEA_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_GPS/examples/GPS_UBLOX_test/GPS_UBLOX_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Math/AP_Math.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Math/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Math/matrix3.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Math/vector2.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Math/vector3.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Navigation/Navigation.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Navigation/Navigation.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Navigation/examples/Navigation/Navigation.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/AP_Navigation/examples/Navigation_simple/Navigation_simple.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DCM/DCM.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DCM/DCM.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DCM/examples/DCM_test/DCM_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DataFlash/DataFlash.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DataFlash/DataFlash.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DataFlash/examples/DataFlash_test/DataFlash_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/DataFlash/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/FastSerial/FastSerial.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/FastSerial/FastSerial.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/FastSerial/examples/FastSerial/FastSerial.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/FastSerial/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/.DS_Store
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/GPS_IMU.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/GPS_IMU.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/examples/.DS_Store
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/examples/GPS_IMU_test/GPS_IMU_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_IMU/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_MTK/GPS_MTK.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_MTK/GPS_MTK.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_MTK/examples/GPS_MTK_test/GPS_MTK_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_MTK/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_NMEA/GPS_NMEA.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_NMEA/GPS_NMEA.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_NMEA/examples/GPS_NMEA_test/GPS_NMEA_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_NMEA/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_UBLOX/GPS_UBLOX.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_UBLOX/GPS_UBLOX.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_UBLOX/examples/GPS_UBLOX_test/GPS_UBLOX_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/GPS_UBLOX/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/JETI_Box/JETI_Box.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/JETI_Box/JETI_Box.cpp.bak
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/JETI_Box/JETI_Box.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/JETI_Box/jetibox2.zip
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/JETI_Box/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/APM2_RC.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/APM2_RC.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/AP_RC.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/AP_RC.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/RC.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/RC.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/examples/APM_RC_elevons/APM_RC_elevons.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/examples/APM_RC_test/APM_RC_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/examples/AP_RC_elevons/AP_RC_elevons.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/examples/AP_RC_test/AP_RC_test.pde
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/RC/keywords.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/Waypoints/Waypoints.cpp
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/X-DIY_Jeti_V2/libraries/Waypoints/Waypoints.h
+ create mode 100644 Tools/ArduPPM/WorkBasket/Jeti Duplex/readme.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/readme.txt
+ create mode 100644 Tools/ArduPPM/WorkBasket/spektrum_to_ppm_encoder/spektrum_to_ppm_encoder.pde
+ create mode 100644 Tools/ArduPPM/readme.txt
+ create mode 100644 apo/.cproject
+ create mode 100644 apo/.gitignore
+ create mode 100644 apo/.project
+ create mode 100644 apo/ControllerPlane.h
+ create mode 100644 apo/ControllerQuad.h
+ create mode 100644 apo/Makefile
+ create mode 100644 apo/PlaneEasystar.h
+ create mode 100644 apo/QuadArducopter.h
+ create mode 100644 apo/QuadMikrokopter.h
+ create mode 100644 apo/apo.pde
+ delete mode 100644 cmake/PdeP.jar
+ create mode 100644 cmake/modules/MacroEnsureOutOfSourceBuild.cmake
+ create mode 100755 cmake/updated-arduino-cmake.sh
+ delete mode 100644 libraries/APM_BMP085/CMakeLists.txt
+ delete mode 100644 libraries/APM_PI/CMakeLists.txt
+ delete mode 100644 libraries/APM_RC/CMakeLists.txt
+ create mode 100644 libraries/APO/APO.cpp
+ create mode 100644 libraries/APO/APO.h
+ create mode 100644 libraries/APO/APO_DefaultSetup.h
+ create mode 100644 libraries/APO/AP_Autopilot.cpp
+ create mode 100644 libraries/APO/AP_Autopilot.h
+ create mode 100644 libraries/APO/AP_CommLink.cpp
+ create mode 100644 libraries/APO/AP_CommLink.h
+ create mode 100644 libraries/APO/AP_Controller.cpp
+ create mode 100644 libraries/APO/AP_Controller.h
+ create mode 100644 libraries/APO/AP_Guide.cpp
+ create mode 100644 libraries/APO/AP_Guide.h
+ create mode 100644 libraries/APO/AP_HardwareAbstractionLayer.cpp
+ create mode 100644 libraries/APO/AP_HardwareAbstractionLayer.h
+ create mode 100644 libraries/APO/AP_MavlinkCommand.cpp
+ create mode 100644 libraries/APO/AP_MavlinkCommand.h
+ create mode 100644 libraries/APO/AP_Navigator.cpp
+ create mode 100644 libraries/APO/AP_Navigator.h
+ create mode 100644 libraries/APO/AP_RcChannel.cpp
+ create mode 100644 libraries/APO/AP_RcChannel.h
+ create mode 100644 libraries/APO/AP_Var_keys.h
+ create mode 100644 libraries/APO/constants.h
+ create mode 100644 libraries/APO/examples/MavlinkTest/Makefile
+ create mode 100644 libraries/APO/examples/MavlinkTest/MavlinkTest.pde
+ create mode 100644 libraries/APO/examples/ServoManual/Makefile
+ create mode 100644 libraries/APO/examples/ServoManual/ServoManual.pde
+ create mode 100644 libraries/APO/examples/ServoSweep/Makefile
+ create mode 100644 libraries/APO/examples/ServoSweep/ServoSweep.pde
+ create mode 100644 libraries/APO/template.h
+ delete mode 100644 libraries/AP_ADC/CMakeLists.txt
+ delete mode 100644 libraries/AP_Common/CMakeLists.txt
+ delete mode 100644 libraries/AP_Compass/CMakeLists.txt
+ delete mode 100644 libraries/AP_DCM/CMakeLists.txt
+ delete mode 100644 libraries/AP_GPS/CMakeLists.txt
+ delete mode 100644 libraries/AP_IMU/CMakeLists.txt
+ delete mode 100644 libraries/AP_Math/CMakeLists.txt
+ delete mode 100644 libraries/AP_OpticalFlow/CMakeLists.txt
+ delete mode 100644 libraries/AP_PID/CMakeLists.txt
+ delete mode 100644 libraries/AP_RangeFinder/CMakeLists.txt
+ create mode 100644 libraries/AP_Relay/AP_Relay.cpp
+ create mode 100644 libraries/AP_Relay/AP_Relay.h
+ delete mode 100644 libraries/CMakeLists.txt
+ delete mode 100644 libraries/DataFlash/CMakeLists.txt
+ delete mode 100644 libraries/FastSerial/CMakeLists.txt
+ delete mode 100644 libraries/GCS_MAVLink/CMakeLists.txt
+ delete mode 100644 libraries/ModeFilter/CMakeLists.txt
+ delete mode 100644 libraries/PID/CMakeLists.txt
+ delete mode 100644 libraries/RC_Channel/CMakeLists.txt
+ delete mode 100644 libraries/memcheck/CMakeLists.txt
