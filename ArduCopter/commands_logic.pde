@@ -482,7 +482,7 @@ static void do_wait_delay()
 	//Serial.print("dwd ");
 	condition_start = millis();
 	condition_value	= next_command.lat * 1000; // convert to milliseconds
-	Serial.println(condition_value,DEC);
+	//Serial.println(condition_value,DEC);
 }
 
 static void do_change_alt()

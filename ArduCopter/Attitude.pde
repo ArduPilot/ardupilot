@@ -83,19 +83,18 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-#define ALT_ERROR_MAX 300
+#define ALT_ERROR_MAX 400
 static int
-get_nav_throttle(long z_error, int target_speed)
+get_nav_throttle(long z_error)//, //int target_speed)
 {
-	int rate_error;
-	float scaler = (float)target_speed/(float)ALT_ERROR_MAX;
-
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
-	target_speed 	= z_error * scaler;
-	rate_error 		= target_speed - altitude_rate;
-	rate_error 		= constrain(rate_error, -110, 110);
+	int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1); //_p = .85
 
+	rate_error 		= rate_error - altitude_rate;
+
+	// limit the rate
+	rate_error 		= constrain(rate_error, -100, 120);
 	return (int)g.pi_throttle.get_pi(rate_error, .1);
 }
 
@@ -187,20 +186,35 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 
-///*
 static int alt_hold_velocity()
 {
 	#if ACCEL_ALT_HOLD == 1
 		// subtract filtered Accel
 		float error	= abs(next_WP.alt - current_loc.alt);
+
+		error -= 100;
 		error = min(error, 200.0);
+		error = max(error, 0.0);
 		error = 1 - (error/ 200.0);
-		return (accels_rot.z + 9.81) * ACCEL_ALT_HOLD_GAIN * error;
+		float sum = accels_rot_sum / (float)accels_rot_count;
+
+		accels_rot_sum = 0;
+		accels_rot_count = 0;
+
+		int output = (sum + 9.81) * alt_hold_gain * error;
+
+// fast rise
+//s: -17.6241, g:0.0000, e:1.0000, o:0
+//s: -18.4990, g:0.0000, e:1.0000, o:0
+//s: -19.3193, g:0.0000, e:1.0000, o:0
+//s: -13.1310, g:47.8700, e:1.0000, o:-158
+
+		//Serial.printf("s: %1.4f, g:%1.4f, e:%1.4f, o:%d\n",sum, alt_hold_gain, error, output);
+		return output;
 	#else
 		return 0;
 	#endif
 }
-//*/
 
 static int get_angle_boost()
 {
