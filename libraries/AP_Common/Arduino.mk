@@ -421,7 +421,7 @@ configure:
 	@echo BOARD=mega     >> $(SKETCHBOOK)/config.mk
 	@echo \# The communication port used to communicate with the APM. >> $(SKETCHBOOK)/config.mk
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
-	@echo PORT=/dev/com3 >> $(SKETCHBOOK)/config.mk
+	@echo PORT=com3 >> $(SKETCHBOOK)/config.mk
 else
 	@echo PORT=/dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
 endif
