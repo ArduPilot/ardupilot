@@ -247,6 +247,7 @@ static void do_nav_wp()
 	}
 	set_next_WP(&next_command);
 
+
 	// this is our bitmask to verify we have met all conditions to move on
 	wp_verify_byte 	= 0;
 
