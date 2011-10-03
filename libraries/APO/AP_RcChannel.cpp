@@ -20,12 +20,13 @@ namespace apo {
 AP_RcChannel::AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name,
 		APM_RC_Class & rc, const uint8_t & ch, const uint16_t & pwmMin,
 		const uint16_t & pwmNeutral, const uint16_t & pwmMax,
-		const rcMode_t & rcMode, const bool & reverse) :
+		const rcMode_t & rcMode, const bool & reverse, const float & scale) :
 	AP_Var_group(keyValue, name), _ch(this, 1, ch, PSTR("ch")),
 			_pwmMin(this, 2, pwmMin, PSTR("pMin")),
 			_pwmNeutral(this, 3, pwmNeutral, PSTR("pNtrl")),
 			_pwmMax(this, 4, pwmMax, PSTR("pMax")),
 			_reverse(this, 5, reverse, PSTR("rev")),
+			_scale(scale == 0 ? AP_Float(0) : AP_Float(this,6,reverse,PSTR("scale"))),
 			_rcMode(rcMode), _rc(rc), _pwm(pwmNeutral) {
 	//Serial.print("pwm after ctor: "); Serial.println(pwmNeutral);
 	if (rcMode == RC_MODE_IN)

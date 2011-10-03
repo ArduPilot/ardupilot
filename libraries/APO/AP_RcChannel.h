@@ -28,16 +28,16 @@ public:
 			const uint8_t & ch, const uint16_t & pwmMin,
 			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
 			const rcMode_t & rcMode,
-			const bool & reverse);
+			const bool & reverse, const float & scale = 0);
 
 	// configuration
 	AP_Uint8 _ch;
 	AP_Uint16 _pwmMin;
 	AP_Uint16 _pwmNeutral;
 	AP_Uint16 _pwmMax;
-	AP_Uint8 _deg2mPwm;
 	rcMode_t _rcMode;
 	AP_Bool _reverse;
+	AP_Float _scale;
 
 	// get
 	uint16_t getPwm() {
@@ -50,6 +50,9 @@ public:
 	float getRadioPosition() {
 		return _pwmToPosition(getRadioPwm());
 	}
+	float getScaled() {
+		return _scale*getPwm();
+	}
 
 	// set
 	void setUsingRadio() {
@@ -59,7 +62,10 @@ public:
 	void setPosition(float position) {
 		setPwm(_positionToPwm(position));
 	}
-
+	void setScaled(float val) {
+		setPwm(val/_scale);
+	}
+	
 protected:
 
 	// configuration
@@ -71,27 +77,6 @@ protected:
 	// private methods
 	uint16_t _positionToPwm(const float & position);
 	float _pwmToPosition(const uint16_t & pwm);
-};
-
-class AP_RcChannel_Scaled : public AP_RcChannel {
-public:
-	AP_RcChannel_Scaled(AP_Var::Key keyValue, const prog_char_t * name, APM_RC_Class & rc,
-			const uint8_t & ch, const uint16_t & pwmMin,
-			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
-			const rcMode_t & rcMode,
-			const bool & reverse,
-			const float & scale) :
-		AP_RcChannel(keyValue,name,rc,ch,pwmMin,pwmNeutral,pwmMax,rcMode,reverse), 
-		_scale(this, 6, pwmNeutral, PSTR("scale"))
-	{
-	}
-	AP_Float _scale;
-	void setScaled(float val) {
-		setPwm(val/_scale);
-	}
-	float getScaled() {
-		return _scale*getPwm();
-	}
 };
 
 } // apo
