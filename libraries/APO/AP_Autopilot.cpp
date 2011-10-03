@@ -59,7 +59,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 			}
 		} else if (hal->getMode() == MODE_HIL_CNTL) { // hil
 			_hal->hil->receive();
-			Serial.println("HIL Recieve Called");
+			Serial.println("HIL Receive Called");
 			if (_navigator->getTimeStamp() != 0) {
 				// give hil a chance to send some packets
 				for (int i = 0; i < 5; i++) {

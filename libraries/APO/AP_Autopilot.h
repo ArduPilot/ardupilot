@@ -42,7 +42,7 @@
 #include "AP_CommLink.h"
 
 /**
- * ArduPilotOne namespace to protect varibles
+ * ArduPilotOne namespace to protect variables
  * from overlap with avr and libraries etc.
  * ArduPilotOne does not use any global
  * variables.
@@ -58,7 +58,7 @@ class AP_CommLink;
  * as well as the hardware abstraction layer.
  *
  * It inherits from loop to manage
- * the subloops and sets the overall
+ * the sub-loops and sets the overall
  * frequency for the autopilot.
  *
 
@@ -138,7 +138,7 @@ private:
 
 	/**
 	 * Loop 4 Callbacks
-	 * - super slow mesages
+	 * - super slow messages
 	 * - log writing
 	 * @see callback0
 	 */

@@ -77,7 +77,7 @@ void setup() {
 		 * On detecting NULL assigned to any ultrasonic sensor, its corresponding block of code
 		 * will not be executed by the navigator.
 		 * The coordinate system is assigned by the right hand rule with the thumb pointing down.
-		 * In set_orientation, it is defind as (front/back,left/right,down,up)
+		 * In set_orientation, it is defined as (front/back,left/right,down,up)
 		 */
 
 		if (rangeFinderFrontEnabled) {
