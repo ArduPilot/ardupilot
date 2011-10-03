@@ -24,20 +24,20 @@ class AP_RcChannel: public AP_Var_group {
 public:
 
 	/// Constructor
-	AP_RcChannel(AP_Var::Key key, const prog_char_t * name, APM_RC_Class & rc,
+	AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name, APM_RC_Class & rc,
 			const uint8_t & ch, const uint16_t & pwmMin,
 			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
-			const rcMode_t & rcMode = RC_MODE_INOUT,
-			const bool & reverse = false);
+			const rcMode_t & rcMode,
+			const bool & reverse);
 
 	// configuration
-	AP_Uint8 _ch;AP_Uint16 _pwmMin;AP_Uint16 _pwmNeutral;AP_Uint16 _pwmMax;
-	rcMode_t _rcMode;AP_Bool _reverse;
-
-	// set
-	void setUsingRadio();
-	void setPwm(uint16_t pwm);
-	void setPosition(float position);
+	AP_Uint8 _ch;
+	AP_Uint16 _pwmMin;
+	AP_Uint16 _pwmNeutral;
+	AP_Uint16 _pwmMax;
+	AP_Uint8 _deg2mPwm;
+	rcMode_t _rcMode;
+	AP_Bool _reverse;
 
 	// get
 	uint16_t getPwm() {
@@ -45,13 +45,22 @@ public:
 	}
 	uint16_t getRadioPwm();
 	float getPosition() {
-		return _pwmToPosition(_pwm);
+		return _pwmToPosition(getPwm());
 	}
 	float getRadioPosition() {
 		return _pwmToPosition(getRadioPwm());
 	}
 
-private:
+	// set
+	void setUsingRadio() {
+		setPwm(getRadioPwm());
+	}
+	void setPwm(uint16_t pwm);
+	void setPosition(float position) {
+		setPwm(_positionToPwm(position));
+	}
+
+protected:
 
 	// configuration
 	APM_RC_Class & _rc;
@@ -62,6 +71,27 @@ private:
 	// private methods
 	uint16_t _positionToPwm(const float & position);
 	float _pwmToPosition(const uint16_t & pwm);
+};
+
+class AP_RcChannel_Scaled : public AP_RcChannel {
+public:
+	AP_RcChannel_Scaled(AP_Var::Key keyValue, const prog_char_t * name, APM_RC_Class & rc,
+			const uint8_t & ch, const uint16_t & pwmMin,
+			const uint16_t & pwmNeutral, const uint16_t & pwmMax,
+			const rcMode_t & rcMode,
+			const bool & reverse,
+			const float & scale) :
+		AP_RcChannel(keyValue,name,rc,ch,pwmMin,pwmNeutral,pwmMax,rcMode,reverse), 
+		_scale(this, 6, pwmNeutral, PSTR("scale"))
+	{
+	}
+	AP_Float _scale;
+	void setScaled(float val) {
+		setPwm(val/_scale);
+	}
+	float getScaled() {
+		return _scale*getPwm();
+	}
 };
 
 } // apo

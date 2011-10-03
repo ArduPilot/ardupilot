@@ -131,6 +131,7 @@ public:
 			return getX();
 			break;
 		case MAV_FRAME_LOCAL:
+		case MAV_FRAME_LOCAL_ENU:
 		case MAV_FRAME_MISSION:
 		default:
 			return 0;
@@ -144,6 +145,7 @@ public:
 			setX(val);
 			break;
 		case MAV_FRAME_LOCAL:
+		case MAV_FRAME_LOCAL_ENU:
 		case MAV_FRAME_MISSION:
 		default:
 			break;
@@ -156,6 +158,7 @@ public:
 			return getY();
 			break;
 		case MAV_FRAME_LOCAL:
+		case MAV_FRAME_LOCAL_ENU:
 		case MAV_FRAME_MISSION:
 		default:
 			return 0;
@@ -169,6 +172,7 @@ public:
 			setY(val);
 			break;
 		case MAV_FRAME_LOCAL:
+		case MAV_FRAME_LOCAL_ENU:
 		case MAV_FRAME_MISSION:
 		default:
 			break;
@@ -205,6 +209,9 @@ public:
 			break;
 		case MAV_FRAME_GLOBAL_RELATIVE_ALT:
 		case MAV_FRAME_LOCAL:
+			return -getZ() + home.getAlt();
+			break;
+		case MAV_FRAME_LOCAL_ENU:
 			return getZ() + home.getAlt();
 			break;
 		case MAV_FRAME_MISSION:
@@ -223,6 +230,9 @@ public:
 			setZ(val);
 			break;
 		case MAV_FRAME_LOCAL:
+			setZ(home.getLonDeg() - val);
+			break;
+		case MAV_FRAME_LOCAL_ENU:
 			setZ(val - home.getLonDeg());
 			break;
 		case MAV_FRAME_MISSION:
@@ -241,6 +251,9 @@ public:
 			break;
 		case MAV_FRAME_GLOBAL_RELATIVE_ALT:
 		case MAV_FRAME_LOCAL:
+			return -getZ();
+			break;
+		case MAV_FRAME_LOCAL_ENU:
 			return getZ();
 			break;
 		case MAV_FRAME_MISSION:
@@ -250,7 +263,7 @@ public:
 		}
 	}
 	/**
-	 * set the relative altitude in meters from home
+	 * set the relative altitude in meters from home (up)
 	 */
 	void setRelAlt(float val) {
 		switch (getFrame()) {
@@ -259,6 +272,9 @@ public:
 			break;
 		case MAV_FRAME_GLOBAL_RELATIVE_ALT:
 		case MAV_FRAME_LOCAL:
+			setZ(-val);
+			break;
+		case MAV_FRAME_LOCAL_ENU:
 			setZ(val);
 			break;
 		case MAV_FRAME_MISSION:

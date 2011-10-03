@@ -24,8 +24,9 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name,
 	AP_Var_group(keyValue, name), _ch(this, 1, ch, PSTR("ch")),
 			_pwmMin(this, 2, pwmMin, PSTR("pMin")),
 			_pwmNeutral(this, 3, pwmNeutral, PSTR("pNtrl")),
-			_pwmMax(this, 4, pwmMax, PSTR("pMax")), _rcMode(rcMode),
-			_reverse(this, 5, reverse, PSTR("rev")), _rc(rc), _pwm(pwmNeutral) {
+			_pwmMax(this, 4, pwmMax, PSTR("pMax")),
+			_reverse(this, 5, reverse, PSTR("rev")),
+			_rcMode(rcMode), _rc(rc), _pwm(pwmNeutral) {
 	//Serial.print("pwm after ctor: "); Serial.println(pwmNeutral);
 	if (rcMode == RC_MODE_IN)
 		return;
@@ -41,10 +42,6 @@ uint16_t AP_RcChannel::getRadioPwm() {
 		return _pwmNeutral; // if this happens give a safe value of neutral
 	}
 	return _rc.InputCh(_ch);
-}
-
-void AP_RcChannel::setUsingRadio() {
-	setPwm(getRadioPwm());
 }
 
 void AP_RcChannel::setPwm(uint16_t pwm) {
@@ -69,14 +66,6 @@ void AP_RcChannel::setPwm(uint16_t pwm) {
 	_rc.OutputCh(_ch, _pwm);
 }
 
-void AP_RcChannel::setPosition(float position) {
-	if (position > 1.0)
-		position = 1.0;
-	else if (position < -1.0)
-		position = -1.0;
-	setPwm(_positionToPwm(position));
-}
-
 uint16_t AP_RcChannel::_positionToPwm(const float & position) {
 	uint16_t pwm;
 	//Serial.printf("position: %f\n", position);
@@ -94,6 +83,8 @@ uint16_t AP_RcChannel::_positionToPwm(const float & position) {
 
 float AP_RcChannel::_pwmToPosition(const uint16_t & pwm) {
 	float position;
+	// note a piece-wise linear mapping occurs if the pwm ranges
+	// are not symmetric about pwmNeutral
 	if (pwm < uint8_t(_pwmNeutral))
 		position = 1.0 * int16_t(pwm - _pwmNeutral) / int16_t(
 				_pwmNeutral - _pwmMin);
