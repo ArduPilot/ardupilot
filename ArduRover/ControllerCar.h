@@ -42,13 +42,13 @@ public:
 
 		_hal->rc.push_back(
 				new AP_RcChannel(k_chMode, PSTR("MODE_"), APM_RC, 7, 1100,
-						1500, 1900));
+						1500, 1900, RC_MODE_IN, false));
 		_hal->rc.push_back(
 				new AP_RcChannel(k_chStr, PSTR("STR_"), APM_RC, 0, 1100, 1540,
-						1900));
+						1900, RC_MODE_INOUT, false));
 		_hal->rc.push_back(
 				new AP_RcChannel(k_chThr, PSTR("THR_"), APM_RC, 1, 1100, 1500,
-						1900));
+						1900, RC_MODE_INOUT, false));
 	}
 	virtual MAV_MODE getMode() {
 		return (MAV_MODE) _mode.get();
