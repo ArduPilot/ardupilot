@@ -62,9 +62,7 @@ public:
 	void setCurrentIndex(uint8_t val) {
 		_cmdIndex.set_and_save(val);
 		_command = AP_MavlinkCommand(getCurrentIndex());
-		_command.load();
 		_previousCommand = AP_MavlinkCommand(getPreviousIndex());
-		_previousCommand.load();
 		//_hal->gcs->sendMessage(MAVLINK_MSG_ID_WAYPOINT_CURRENT);
 	}
 
@@ -286,9 +284,9 @@ public:
 		}
 
 		_cmdIndex = getNextIndex();
-		Serial.print("cmd       : "); Serial.println(int(_cmdIndex));
-		Serial.print("cmd prev  : "); Serial.println(int(getPreviousIndex()));
-		Serial.print("cmd num    : "); Serial.println(int(getNumberOfCommands()));
+		//Serial.print("cmd       : "); Serial.println(int(_cmdIndex));
+		//Serial.print("cmd prev  : "); Serial.println(int(getPreviousIndex()));
+		//Serial.print("cmd num    : "); Serial.println(int(getNumberOfCommands()));
 		_command = AP_MavlinkCommand(getCurrentIndex());
 		_previousCommand = AP_MavlinkCommand(getPreviousIndex());
 	}
