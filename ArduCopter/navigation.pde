@@ -111,8 +111,13 @@ static void calc_nav_rate(int max_speed)
 		  100	  200	  300	  400
 	                                     +|+
 	*/
-
 	max_speed 		= min(max_speed, (wp_distance * 50));
+
+	// limit the ramp up of the speed
+	if(waypoint_speed_gov < max_speed){
+		waypoint_speed_gov += 40;
+		max_speed 		= min(max_speed, waypoint_speed_gov);
+	}
 
 	// XXX target_angle should be the original  desired target angle!
 	float temp		= radians((original_target_bearing - g_gps->ground_course)/100.0);

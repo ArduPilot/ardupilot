@@ -341,6 +341,7 @@ static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static long initial_simple_bearing;					// used for Simple mode
 static float simple_sin_y, simple_cos_x;
 static byte jump = -10;								// used to track loops in jump command
+static int waypoint_speed_gov;
 
 // Acro
 #if CH7_OPTION == CH7_FLIP

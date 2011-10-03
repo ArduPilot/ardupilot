@@ -170,13 +170,18 @@ static void set_next_WP(struct Location *wp)
 	scaleLongUp 		= 1.0f/cos(rads);
 
 	// this is handy for the groundstation
+	// -----------------------------------
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&current_loc, &next_WP);
 
 	// to check if we have missed the WP
-	// ----------------------------
+	// ---------------------------------
 	original_target_bearing = target_bearing;
+
+	// reset speed governer
+	// --------------------
+	waypoint_speed_gov = 0;
 
 	gcs.print_current_waypoints();
 }
