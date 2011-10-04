@@ -26,7 +26,7 @@ namespace resedit
 
                 foreach (CultureInfo cul in temp) 
                 {
-                    list.Add(cul.DisplayName);
+                    list.Add(cul.DisplayName + " " + cul.Name);
                 }
 
             list.Sort();
@@ -55,7 +55,7 @@ namespace resedit
 
                 foreach (CultureInfo cul in temp)
                 {
-                    if (cul.DisplayName == comboBox1.Text)
+                    if ((cul.DisplayName + " " + cul.Name) == comboBox1.Text)
                     {
                         Console.WriteLine(cul.Name);
                         ci = cul.Name;
@@ -65,9 +65,15 @@ namespace resedit
 
                 foreach (string file in files)
                 {
+                    // load only file of the slected lang
                     if (!file.ToLower().Contains(ci.ToString().ToLower() + ".resx"))
                         continue;
 
+                    // dont load and tralations if no lang selected
+                    if (file.ToLower().Contains("translation") && comboBox1.Text == "")
+                        continue;
+
+                    // must be a resx
                     if (!file.ToLower().EndsWith(".resx"))
                         continue;
 
@@ -75,10 +81,14 @@ namespace resedit
 
                     ResXResourceReader reader = new ResXResourceReader(file);
                     Console.WriteLine(reader);
+
+                    reader.BasePath = fbd.SelectedPath + System.IO.Path.DirectorySeparatorChar +"Resources";
+
                     try
                     {
                         foreach (DictionaryEntry entry in reader)
                         {
+
                             if (entry.Key.ToString().EndsWith(".ToolTip") || entry.Key.ToString().EndsWith(".Text") || entry.Key.ToString().EndsWith("HeaderText") || entry.Key.ToString().EndsWith("ToolTipText"))
                             {
                                 dataGridView1.Rows.Add();
@@ -88,6 +98,7 @@ namespace resedit
                                 dataGridView1.Rows[dataGridView1.RowCount - 1].Cells[colEnglish.Index].Value = entry.Value.ToString();
                                 dataGridView1.Rows[dataGridView1.RowCount - 1].Cells[colOtherLang.Index].Value = entry.Value.ToString();
                             }
+
                         }
                     }
                     catch (Exception ex) { Console.WriteLine(ex.ToString()); }

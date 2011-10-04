@@ -138,7 +138,7 @@ namespace ArdupilotMega.GCSViews
 
             // setup language selection
             CultureInfo ci = null;
-            foreach (string name in new string[] { "en-US", "zh-Hans" })
+            foreach (string name in new string[] { "en-US", "zh-Hans", "ru" })
             {
                 ci = MainV2.getcultureinfo(name);
                 if (ci != null)
