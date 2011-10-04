@@ -85,7 +85,7 @@ get_stabilize_yaw(long target_angle)
 
 #define ALT_ERROR_MAX 400
 static int
-get_nav_throttle(long z_error)//, //int target_speed)
+get_nav_throttle(long z_error) 
 {
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
