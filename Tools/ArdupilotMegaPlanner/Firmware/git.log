@@ -1,1 +1,7 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   c383795..902553f  APM_Camera -> origin/APM_Camera
+   235ccdb..777c75b  master     -> origin/master
+Updating 235ccdb..777c75b
+Fast-forward
+ ArduCopter/system.pde |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
