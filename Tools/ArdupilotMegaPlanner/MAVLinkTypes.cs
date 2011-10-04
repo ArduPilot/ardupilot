@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Runtime.InteropServices;
 
 namespace ArdupilotMega
@@ -11,8 +13,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_meminfo_t
 		{
-		 public ushort brkval; ///< heap top
-		 public ushort freemem; ///< free memory
+		 public ushort brkval; /// heap top
+		 public ushort freemem; /// free memory
 		};
 
 		public const byte MAVLINK_MSG_ID_MEMINFO_LEN = 4;
@@ -21,18 +23,18 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_sensor_offsets_t
 		{
-		 public short mag_ofs_x; ///< magnetometer X offset
-		 public short mag_ofs_y; ///< magnetometer Y offset
-		 public short mag_ofs_z; ///< magnetometer Z offset
-		public float mag_declination; ///< magnetic declination (radians)
-		 public int raw_press; ///< raw pressure from barometer
-		 public int raw_temp; ///< raw temperature from barometer
-		public float gyro_cal_x; ///< gyro X calibration
-		public float gyro_cal_y; ///< gyro Y calibration
-		public float gyro_cal_z; ///< gyro Z calibration
-		public float accel_cal_x; ///< accel X calibration
-		public float accel_cal_y; ///< accel Y calibration
-		public float accel_cal_z; ///< accel Z calibration
+		 public short mag_ofs_x; /// magnetometer X offset
+		 public short mag_ofs_y; /// magnetometer Y offset
+		 public short mag_ofs_z; /// magnetometer Z offset
+		public float mag_declination; /// magnetic declination (radians)
+		 public int raw_press; /// raw pressure from barometer
+		 public int raw_temp; /// raw temperature from barometer
+		public float gyro_cal_x; /// gyro X calibration
+		public float gyro_cal_y; /// gyro Y calibration
+		public float gyro_cal_z; /// gyro Z calibration
+		public float accel_cal_x; /// accel X calibration
+		public float accel_cal_y; /// accel Y calibration
+		public float accel_cal_z; /// accel Z calibration
 		};
 
 		public const byte MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN = 42;
@@ -41,11 +43,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_mag_offsets_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public short mag_ofs_x; ///< magnetometer X offset
-		 public short mag_ofs_y; ///< magnetometer Y offset
-		 public short mag_ofs_z; ///< magnetometer Z offset
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public short mag_ofs_x; /// magnetometer X offset
+		 public short mag_ofs_y; /// magnetometer Y offset
+		 public short mag_ofs_z; /// magnetometer Z offset
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN = 8;
@@ -119,9 +121,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_action_t
 		{
-		 public byte target; ///< The system executing the action
-		 public byte target_component; ///< The component executing the action
-		 public byte action; ///< The action id
+		 public byte target; /// The system executing the action
+		 public byte target_component; /// The component executing the action
+		 public byte action; /// The action id
 		};
 
 		public const byte MAVLINK_MSG_ID_ACTION_LEN = 3;
@@ -130,8 +132,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_action_ack_t
 		{
-		 public byte action; ///< The action id
-		 public byte result; ///< 0: Action DENIED, 1: Action executed
+		 public byte action; /// The action id
+		 public byte result; /// 0: Action DENIED, 1: Action executed
 		};
 
 		public const byte MAVLINK_MSG_ID_ACTION_ACK_LEN = 2;
@@ -140,13 +142,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_attitude_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float roll; ///< Roll angle (rad)
-		public float pitch; ///< Pitch angle (rad)
-		public float yaw; ///< Yaw angle (rad)
-		public float rollspeed; ///< Roll angular speed (rad/s)
-		public float pitchspeed; ///< Pitch angular speed (rad/s)
-		public float yawspeed; ///< Yaw angular speed (rad/s)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float roll; /// Roll angle (rad)
+		public float pitch; /// Pitch angle (rad)
+		public float yaw; /// Yaw angle (rad)
+		public float rollspeed; /// Roll angular speed (rad/s)
+		public float pitchspeed; /// Pitch angular speed (rad/s)
+		public float yawspeed; /// Yaw angular speed (rad/s)
 		};
 
 		public const byte MAVLINK_MSG_ID_ATTITUDE_LEN = 32;
@@ -155,11 +157,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_attitude_controller_output_t 
 		{
-			public byte enabled; ///< 1: enabled, 0: disabled
-			public byte roll; ///< Attitude roll: -128: -100%, 127: +100%
-			public byte pitch; ///< Attitude pitch: -128: -100%, 127: +100%
-			public byte yaw; ///< Attitude yaw: -128: -100%, 127: +100%
-			public byte thrust; ///< Attitude thrust: -128: -100%, 127: +100%
+			public byte enabled; /// 1: enabled, 0: disabled
+			public byte roll; /// Attitude roll: -128: -100%, 127: +100%
+			public byte pitch; /// Attitude pitch: -128: -100%, 127: +100%
+			public byte yaw; /// Attitude yaw: -128: -100%, 127: +100%
+			public byte thrust; /// Attitude thrust: -128: -100%, 127: +100%
 		
 		};
 
@@ -167,13 +169,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_attitude_new_t 
 		{
-			public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float roll; ///< Roll angle (rad)
-		public float pitch; ///< Pitch angle (rad)
-		public float yaw; ///< Yaw angle (rad)
-		public float rollspeed; ///< Roll angular speed (rad/s)
-		public float pitchspeed; ///< Pitch angular speed (rad/s)
-		public float yawspeed; ///< Yaw angular speed (rad/s)
+			public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float roll; /// Roll angle (rad)
+		public float pitch; /// Pitch angle (rad)
+		public float yaw; /// Yaw angle (rad)
+		public float rollspeed; /// Roll angular speed (rad/s)
+		public float pitchspeed; /// Pitch angular speed (rad/s)
+		public float yawspeed; /// Yaw angular speed (rad/s)
 		
 		};
 
@@ -184,7 +186,7 @@ namespace ArdupilotMega
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=32)] 
-		 char key; ///< key
+		 char key; /// key
 		};
 
 		public const byte MAVLINK_MSG_ID_AUTH_KEY_LEN = 32;
@@ -193,7 +195,7 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_boot_t
 		{
-		 public uint version; ///< The onboard software version
+		 public uint version; /// The onboard software version
 		};
 
 		public const byte MAVLINK_MSG_ID_BOOT_LEN = 4;
@@ -202,13 +204,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_change_operator_control_t
 		{
-		 public byte target_system; ///< System the GCS requests control for
-		 public byte control_request; ///< 0: request control of this MAV, 1: Release control of this MAV
-		 public byte version; ///< 0: key as plaintext, 1-255: future, different hashing/encryption variants. The GCS should in general use the safest mode possible initially and then gradually move down the encryption level if it gets a NACK message indicating an encryption mismatch.
+		 public byte target_system; /// System the GCS requests control for
+		 public byte control_request; /// 0: request control of this MAV, 1: Release control of this MAV
+		 public byte version; /// 0: key as plaintext, 1-255: future, different hashing/encryption variants. The GCS should in general use the safest mode possible initially and then gradually move down the encryption level if it gets a NACK message indicating an encryption mismatch.
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=25)] 
-		 char passkey; ///< Password / Key, depending on version plaintext or encrypted. 25 or less characters, NULL terminated. The characters may involve A-Z, a-z, 0-9, and "!?,.-"
+		 char passkey; /// Password / Key, depending on version plaintext or encrypted. 25 or less characters, NULL terminated. The characters may involve A-Z, a-z, 0-9, and "!?,.-"
 		};
 
 		public const byte MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_LEN = 28;
@@ -217,9 +219,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_change_operator_control_ack_t
 		{
-		 public byte gcs_system_id; ///< ID of the GCS this message 
-		 public byte control_request; ///< 0: request control of this MAV, 1: Release control of this MAV
-		 public byte ack; ///< 0: ACK, 1: NACK: Wrong passkey, 2: NACK: Unsupported passkey encryption method, 3: NACK: Already under control
+		 public byte gcs_system_id; /// ID of the GCS this message 
+		 public byte control_request; /// 0: request control of this MAV, 1: Release control of this MAV
+		 public byte ack; /// 0: ACK, 1: NACK: Wrong passkey, 2: NACK: Unsupported passkey encryption method, 3: NACK: Already under control
 		};
 
 		public const byte MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL_ACK_LEN = 3;
@@ -228,14 +230,14 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_command_t
 		{
-		 public byte target_system; ///< System which should execute the command
-		 public byte target_component; ///< Component which should execute the command, 0 for all components
-		 public byte command; ///< Command ID, as defined by MAV_CMD enum.
-		 public byte confirmation; ///< 0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)
-		public float param1; ///< Parameter 1, as defined by MAV_CMD enum.
-		public float param2; ///< Parameter 2, as defined by MAV_CMD enum.
-		public float param3; ///< Parameter 3, as defined by MAV_CMD enum.
-		public float param4; ///< Parameter 4, as defined by MAV_CMD enum.
+		 public byte target_system; /// System which should execute the command
+		 public byte target_component; /// Component which should execute the command, 0 for all components
+		 public byte command; /// Command ID, as defined by MAV_CMD enum.
+		 public byte confirmation; /// 0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)
+		public float param1; /// Parameter 1, as defined by MAV_CMD enum.
+		public float param2; /// Parameter 2, as defined by MAV_CMD enum.
+		public float param3; /// Parameter 3, as defined by MAV_CMD enum.
+		public float param4; /// Parameter 4, as defined by MAV_CMD enum.
 		};
 
 		public const byte MAVLINK_MSG_ID_COMMAND_LEN = 20;
@@ -244,8 +246,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_command_ack_t
 		{
-		public float command; ///< Current airspeed in m/s
-		public float result; ///< 1: Action ACCEPTED and EXECUTED, 1: Action TEMPORARY REJECTED/DENIED, 2: Action PERMANENTLY DENIED, 3: Action UNKNOWN/UNSUPPORTED, 4: Requesting CONFIRMATION
+		public float command; /// Current airspeed in m/s
+		public float result; /// 1: Action ACCEPTED and EXECUTED, 1: Action TEMPORARY REJECTED/DENIED, 2: Action PERMANENTLY DENIED, 3: Action UNKNOWN/UNSUPPORTED, 4: Requesting CONFIRMATION
 		};
 
 		public const byte MAVLINK_MSG_ID_COMMAND_ACK_LEN = 8;
@@ -254,14 +256,14 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_control_status_t
 		{
-		 public byte position_fix; ///< Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix 
-		 public byte vision_fix; ///< Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix 
-		 public byte gps_fix; ///< GPS position fix: 0: no reception, 1: Minimum 1 satellite, but no position fix, 2: 2D position fix, 3: 3D position fix 
-		 public byte ahrs_health; ///< Attitude estimation health: 0: poor, 255: excellent
-		 public byte control_att; ///< 0: Attitude control disabled, 1: enabled
-		 public byte control_pos_xy; ///< 0: X, Y position control disabled, 1: enabled
-		 public byte control_pos_z; ///< 0: Z position control disabled, 1: enabled
-		 public byte control_pos_yaw; ///< 0: Yaw angle control disabled, 1: enabled
+		 public byte position_fix; /// Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix 
+		 public byte vision_fix; /// Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix 
+		 public byte gps_fix; /// GPS position fix: 0: no reception, 1: Minimum 1 satellite, but no position fix, 2: 2D position fix, 3: 3D position fix 
+		 public byte ahrs_health; /// Attitude estimation health: 0: poor, 255: excellent
+		 public byte control_att; /// 0: Attitude control disabled, 1: enabled
+		 public byte control_pos_xy; /// 0: X, Y position control disabled, 1: enabled
+		 public byte control_pos_z; /// 0: Z position control disabled, 1: enabled
+		 public byte control_pos_yaw; /// 0: Yaw angle control disabled, 1: enabled
 		};
 
 		public const byte MAVLINK_MSG_ID_CONTROL_STATUS_LEN = 8;
@@ -270,8 +272,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_debug_t
 		{
-		 public byte ind; ///< index of debug variable
-		public float value; ///< DEBUG value
+		 public byte ind; /// index of debug variable
+		public float value; /// DEBUG value
 		};
 
 		public const byte MAVLINK_MSG_ID_DEBUG_LEN = 5;
@@ -283,11 +285,11 @@ namespace ArdupilotMega
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=10)] 
-		 char name; ///< Name
-		 public ulong usec; ///< Timestamp
-		public float x; ///< x
-		public float y; ///< y
-		public float z; ///< z
+		 char name; /// Name
+		 public ulong usec; /// Timestamp
+		public float x; /// x
+		public float y; /// y
+		public float z; /// z
 		};
 
 		public const byte MAVLINK_MSG_ID_DEBUG_VECT_LEN = 30;
@@ -296,22 +298,22 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_full_state_t 
 		{
-			public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float roll; ///< Roll angle (rad)
-		public float pitch; ///< Pitch angle (rad)
-		public float yaw; ///< Yaw angle (rad)
-		public float rollspeed; ///< Roll angular speed (rad/s)
-		public float pitchspeed; ///< Pitch angular speed (rad/s)
-		public float yawspeed; ///< Yaw angular speed (rad/s)
-			public int lat; ///< Latitude, expressed as * 1E7
-			public int lon; ///< Longitude, expressed as * 1E7
-			public int alt; ///< Altitude in meters, expressed as * 1000 (millimeters)
-			public short vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
-			public short vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
-			public short vz; ///< Ground Z Speed (Altitude), expressed as m/s * 100
-			public short xacc; ///< X acceleration (mg)
-			public short yacc; ///< Y acceleration (mg)
-			public short zacc; ///< Z acceleration (mg)
+			public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float roll; /// Roll angle (rad)
+		public float pitch; /// Pitch angle (rad)
+		public float yaw; /// Yaw angle (rad)
+		public float rollspeed; /// Roll angular speed (rad/s)
+		public float pitchspeed; /// Pitch angular speed (rad/s)
+		public float yawspeed; /// Yaw angular speed (rad/s)
+			public int lat; /// Latitude, expressed as * 1E7
+			public int lon; /// Longitude, expressed as * 1E7
+			public int alt; /// Altitude in meters, expressed as * 1000 (millimeters)
+			public short vx; /// Ground X Speed (Latitude), expressed as m/s * 100
+			public short vy; /// Ground Y Speed (Longitude), expressed as m/s * 100
+			public short vz; /// Ground Z Speed (Altitude), expressed as m/s * 100
+			public short xacc; /// X acceleration (mg)
+			public short yacc; /// Y acceleration (mg)
+			public short zacc; /// Z acceleration (mg)
 		
 		};
 
@@ -319,13 +321,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_global_position_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since unix epoch)
-		public float lat; ///< Latitude, in degrees
-		public float lon; ///< Longitude, in degrees
-		public float alt; ///< Absolute altitude, in meters
-		public float vx; ///< X Speed (in Latitude direction, positive: going north)
-		public float vy; ///< Y Speed (in Longitude direction, positive: going east)
-		public float vz; ///< Z Speed (in Altitude direction, positive: going up)
+		 public ulong usec; /// Timestamp (microseconds since unix epoch)
+		public float lat; /// Latitude, in degrees
+		public float lon; /// Longitude, in degrees
+		public float alt; /// Absolute altitude, in meters
+		public float vx; /// X Speed (in Latitude direction, positive: going north)
+		public float vy; /// Y Speed (in Longitude direction, positive: going east)
+		public float vz; /// Z Speed (in Altitude direction, positive: going up)
 		};
 
 		public const byte MAVLINK_MSG_ID_GLOBAL_POSITION_LEN = 32;
@@ -334,12 +336,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_global_position_int_t
 		{
-		 public int lat; ///< Latitude, expressed as * 1E7
-		 public int lon; ///< Longitude, expressed as * 1E7
-		 public int alt; ///< Altitude in meters, expressed as * 1000 (millimeters)
-		 public short vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
-		 public short vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
-		 public short vz; ///< Ground Z Speed (Altitude), expressed as m/s * 100
+		 public int lat; /// Latitude, expressed as * 1E7
+		 public int lon; /// Longitude, expressed as * 1E7
+		 public int alt; /// Altitude in meters, expressed as * 1000 (millimeters)
+		 public short vx; /// Ground X Speed (Latitude), expressed as m/s * 100
+		 public short vy; /// Ground Y Speed (Longitude), expressed as m/s * 100
+		 public short vz; /// Ground Z Speed (Altitude), expressed as m/s * 100
 		};
 
 		public const byte MAVLINK_MSG_ID_GLOBAL_POSITION_INT_LEN = 18;
@@ -348,9 +350,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_gps_local_origin_set_t
 		{
-		 public int latitude; ///< Latitude (WGS84), expressed as * 1E7
-		 public int longitude; ///< Longitude (WGS84), expressed as * 1E7
-		 public int altitude; ///< Altitude(WGS84), expressed as * 1000
+		 public int latitude; /// Latitude (WGS84), expressed as * 1E7
+		 public int longitude; /// Longitude (WGS84), expressed as * 1E7
+		 public int altitude; /// Altitude(WGS84), expressed as * 1000
 		};
 
 		public const byte MAVLINK_MSG_ID_GPS_LOCAL_ORIGIN_SET_LEN = 12;
@@ -359,15 +361,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_gps_raw_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		 public byte fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
-		public float lat; ///< Latitude in degrees
-		public float lon; ///< Longitude in degrees
-		public float alt; ///< Altitude in meters
-		public float eph; ///< GPS HDOP
-		public float epv; ///< GPS VDOP
-		public float v; ///< GPS ground speed
-		public float hdg; ///< Compass heading in degrees, 0..360 degrees
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		 public byte fix_type; /// 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
+		public float lat; /// Latitude in degrees
+		public float lon; /// Longitude in degrees
+		public float alt; /// Altitude in meters
+		public float eph; /// GPS HDOP
+		public float epv; /// GPS VDOP
+		public float v; /// GPS ground speed
+		public float hdg; /// Compass heading in degrees, 0..360 degrees
 		};
 
 		public const byte MAVLINK_MSG_ID_GPS_RAW_LEN = 37;
@@ -376,15 +378,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_gps_raw_int_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		 public byte fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
-		 public int lat; ///< Latitude in 1E7 degrees
-		 public int lon; ///< Longitude in 1E7 degrees
-		 public int alt; ///< Altitude in 1E3 meters (millimeters)
-		public float eph; ///< GPS HDOP
-		public float epv; ///< GPS VDOP
-		public float v; ///< GPS ground speed (m/s)
-		public float hdg; ///< Compass heading in degrees, 0..360 degrees
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		 public byte fix_type; /// 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
+		 public int lat; /// Latitude in 1E7 degrees
+		 public int lon; /// Longitude in 1E7 degrees
+		 public int alt; /// Altitude in 1E3 meters (millimeters)
+		public float eph; /// GPS HDOP
+		public float epv; /// GPS VDOP
+		public float v; /// GPS ground speed (m/s)
+		public float hdg; /// Compass heading in degrees, 0..360 degrees
 		};
 
 		public const byte MAVLINK_MSG_ID_GPS_RAW_INT_LEN = 37;
@@ -393,11 +395,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_gps_set_global_origin_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public int latitude; ///< global position * 1E7
-		 public int longitude; ///< global position * 1E7
-		 public int altitude; ///< global position * 1000
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public int latitude; /// global position * 1E7
+		 public int longitude; /// global position * 1E7
+		 public int altitude; /// global position * 1000
 		};
 
 		public const byte MAVLINK_MSG_ID_GPS_SET_GLOBAL_ORIGIN_LEN = 14;
@@ -406,27 +408,27 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_gps_status_t
 		{
-		 public byte satellites_visible; ///< Number of satellites visible
+		 public byte satellites_visible; /// Number of satellites visible
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 public byte[] satellite_prn; ///< Global satellite ID
+		 public byte[] satellite_prn; /// Global satellite ID
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 public byte[] satellite_used; ///< 0: Satellite not used, 1: used for localization
+		 public byte[] satellite_used; /// 0: Satellite not used, 1: used for localization
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 public byte[] satellite_elevation; ///< Elevation (0: right on top of receiver, 90: on the horizon) of satellite
+		 public byte[] satellite_elevation; /// Elevation (0: right on top of receiver, 90: on the horizon) of satellite
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 public byte[] satellite_azimuth; ///< Direction of satellite, 0: 0 deg, 255: 360 deg.
+		 public byte[] satellite_azimuth; /// Direction of satellite, 0: 0 deg, 255: 360 deg.
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 public byte[] satellite_snr; ///< Signal to noise ratio of satellite
+		 public byte[] satellite_snr; /// Signal to noise ratio of satellite
 		};
 
 		public const byte MAVLINK_MSG_ID_GPS_STATUS_LEN = 101;
@@ -435,9 +437,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_heartbeat_t
 		{
-		 public byte type; ///< Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
-		 public byte autopilot; ///< Type of the Autopilot: 0: Generic, 1: PIXHAWK, 2: SLUGS, 3: Ardupilot (up to 15 types), defined in MAV_AUTOPILOT_TYPE ENUM
-		 public byte mavlink_version; ///< MAVLink version
+		 public byte type; /// Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
+		 public byte autopilot; /// Type of the Autopilot: 0: Generic, 1: PIXHAWK, 2: SLUGS, 3: Ardupilot (up to 15 types), defined in MAV_AUTOPILOT_TYPE ENUM
+		 public byte mavlink_version; /// MAVLink version
 		};
 
 		public const byte MAVLINK_MSG_ID_HEARTBEAT_LEN = 3;
@@ -446,13 +448,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_hil_controls_t
 		{
-		 public ulong time_us; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float roll_ailerons; ///< Control output -3 .. 1
-		public float pitch_elevator; ///< Control output -1 .. 1
-		public float yaw_rudder; ///< Control output -1 .. 1
-		public float throttle; ///< Throttle 0 .. 1
-		 public byte mode; ///< System mode (MAV_MODE)
-		 public byte nav_mode; ///< Navigation mode (MAV_NAV_MODE)
+		 public ulong time_us; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float roll_ailerons; /// Control output -3 .. 1
+		public float pitch_elevator; /// Control output -1 .. 1
+		public float yaw_rudder; /// Control output -1 .. 1
+		public float throttle; /// Throttle 0 .. 1
+		 public byte mode; /// System mode (MAV_MODE)
+		 public byte nav_mode; /// Navigation mode (MAV_NAV_MODE)
 		};
 
 		public const byte MAVLINK_MSG_ID_HIL_CONTROLS_LEN = 26;
@@ -461,22 +463,22 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_hil_state_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float roll; ///< Roll angle (rad)
-		public float pitch; ///< Pitch angle (rad)
-		public float yaw; ///< Yaw angle (rad)
-		public float rollspeed; ///< Roll angular speed (rad/s)
-		public float pitchspeed; ///< Pitch angular speed (rad/s)
-		public float yawspeed; ///< Yaw angular speed (rad/s)
-		 public int lat; ///< Latitude, expressed as * 1E7
-		 public int lon; ///< Longitude, expressed as * 1E7
-		 public int alt; ///< Altitude in meters, expressed as * 1000 (millimeters)
-		 public short vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
-		 public short vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
-		 public short vz; ///< Ground Z Speed (Altitude), expressed as m/s * 100
-		 public short xacc; ///< X acceleration (mg)
-		 public short yacc; ///< Y acceleration (mg)
-		 public short zacc; ///< Z acceleration (mg)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float roll; /// Roll angle (rad)
+		public float pitch; /// Pitch angle (rad)
+		public float yaw; /// Yaw angle (rad)
+		public float rollspeed; /// Roll angular speed (rad/s)
+		public float pitchspeed; /// Pitch angular speed (rad/s)
+		public float yawspeed; /// Yaw angular speed (rad/s)
+		 public int lat; /// Latitude, expressed as * 1E7
+		 public int lon; /// Longitude, expressed as * 1E7
+		 public int alt; /// Altitude in meters, expressed as * 1000 (millimeters)
+		 public short vx; /// Ground X Speed (Latitude), expressed as m/s * 100
+		 public short vy; /// Ground Y Speed (Longitude), expressed as m/s * 100
+		 public short vz; /// Ground Z Speed (Altitude), expressed as m/s * 100
+		 public short xacc; /// X acceleration (mg)
+		 public short yacc; /// Y acceleration (mg)
+		 public short zacc; /// Z acceleration (mg)
 		};
 
 		public const byte MAVLINK_MSG_ID_HIL_STATE_LEN = 56;
@@ -485,13 +487,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_local_position_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float x; ///< X Position
-		public float y; ///< Y Position
-		public float z; ///< Z Position
-		public float vx; ///< X Speed
-		public float vy; ///< Y Speed
-		public float vz; ///< Z Speed
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float x; /// X Position
+		public float y; /// Y Position
+		public float z; /// Z Position
+		public float vx; /// X Speed
+		public float vy; /// Y Speed
+		public float vz; /// Z Speed
 		};
 
 		public const byte MAVLINK_MSG_ID_LOCAL_POSITION_LEN = 32;
@@ -500,10 +502,10 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_local_position_setpoint_t
 		{
-		public float x; ///< x position
-		public float y; ///< y position
-		public float z; ///< z position
-		public float yaw; ///< Desired yaw angle
+		public float x; /// x position
+		public float y; /// y position
+		public float z; /// z position
+		public float yaw; /// Desired yaw angle
 		};
 
 		public const byte MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_LEN = 16;
@@ -512,12 +514,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_local_position_setpoint_set_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		public float x; ///< x position
-		public float y; ///< y position
-		public float z; ///< z position
-		public float yaw; ///< Desired yaw angle
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		public float x; /// x position
+		public float y; /// y position
+		public float z; /// z position
+		public float yaw; /// Desired yaw angle
 		};
 
 		public const byte MAVLINK_MSG_ID_LOCAL_POSITION_SETPOINT_SET_LEN = 18;
@@ -526,15 +528,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_manual_control_t
 		{
-		 public byte target; ///< The system to be controlled
-		public float roll; ///< roll
-		public float pitch; ///< pitch
-		public float yaw; ///< yaw
-		public float thrust; ///< thrust
-		 public byte roll_manual; ///< roll control enabled auto:0, manual:1
-		 public byte pitch_manual; ///< pitch auto:0, manual:1
-		 public byte yaw_manual; ///< yaw auto:0, manual:1
-		 public byte thrust_manual; ///< thrust auto:0, manual:1
+		 public byte target; /// The system to be controlled
+		public float roll; /// roll
+		public float pitch; /// pitch
+		public float yaw; /// yaw
+		public float thrust; /// thrust
+		 public byte roll_manual; /// roll control enabled auto:0, manual:1
+		 public byte pitch_manual; /// pitch auto:0, manual:1
+		 public byte yaw_manual; /// yaw auto:0, manual:1
+		 public byte thrust_manual; /// thrust auto:0, manual:1
 		};
 
 		public const byte MAVLINK_MSG_ID_MANUAL_CONTROL_LEN = 21;
@@ -546,8 +548,8 @@ namespace ArdupilotMega
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=10)] 
-		 char name; ///< Name of the debug variable
-		public float value; ///< Floating point value
+		 char name; /// Name of the debug variable
+		public float value; /// Floating point value
 		};
 
 		public const byte MAVLINK_MSG_ID_NAMED_VALUE_FLOAT_LEN = 14;
@@ -559,8 +561,8 @@ namespace ArdupilotMega
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=10)] 
-		 char name; ///< Name of the debug variable
-		 public int value; ///< Signed integer value
+		 char name; /// Name of the debug variable
+		 public int value; /// Signed integer value
 		};
 
 		public const byte MAVLINK_MSG_ID_NAMED_VALUE_INT_LEN = 14;
@@ -569,14 +571,14 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_nav_controller_output_t
 		{
-		public float nav_roll; ///< Current desired roll in degrees
-		public float nav_pitch; ///< Current desired pitch in degrees
-		 public short nav_bearing; ///< Current desired heading in degrees
-		 public short target_bearing; ///< Bearing to current waypoint/target in degrees
-		 public ushort wp_dist; ///< Distance to active waypoint in meters
-		public float alt_error; ///< Current altitude error in meters
-		public float aspd_error; ///< Current airspeed error in meters/second
-		public float xtrack_error; ///< Current crosstrack error on x-y plane in meters
+		public float nav_roll; /// Current desired roll in degrees
+		public float nav_pitch; /// Current desired pitch in degrees
+		 public short nav_bearing; /// Current desired heading in degrees
+		 public short target_bearing; /// Bearing to current waypoint/target in degrees
+		 public ushort wp_dist; /// Distance to active waypoint in meters
+		public float alt_error; /// Current altitude error in meters
+		public float aspd_error; /// Current airspeed error in meters/second
+		public float xtrack_error; /// Current crosstrack error on x-y plane in meters
 		};
 
 		public const byte MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT_LEN = 26;
@@ -585,16 +587,16 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_object_detection_event_t
 		{
-		 public uint time; ///< Timestamp in milliseconds since system boot
-		 public ushort object_id; ///< Object ID
-		 public byte type; ///< Object type: 0: image, 1: letter, 2: ground vehicle, 3: air vehicle, 4: surface vehicle, 5: sub-surface vehicle, 6: human, 7: animal
+		 public uint time; /// Timestamp in milliseconds since system boot
+		 public ushort object_id; /// Object ID
+		 public byte type; /// Object type: 0: image, 1: letter, 2: ground vehicle, 3: air vehicle, 4: surface vehicle, 5: sub-surface vehicle, 6: human, 7: animal
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=20)] 
-		 char name; ///< Name of the object as defined by the detector
-		 public byte quality; ///< Detection quality / confidence. 0: bad, 255: maximum confidence
-		public float bearing; ///< Angle of the object with respect to the body frame in NED coordinates in radians. 0: front
-		public float distance; ///< Ground distance in meters
+		 char name; /// Name of the object as defined by the detector
+		 public byte quality; /// Detection quality / confidence. 0: bad, 255: maximum confidence
+		public float bearing; /// Angle of the object with respect to the body frame in NED coordinates in radians. 0: front
+		public float distance; /// Ground distance in meters
 		};
 
 		public const byte MAVLINK_MSG_ID_OBJECT_DETECTION_EVENT_LEN = 36;
@@ -603,12 +605,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_optical_flow_t
 		{
-		 public ulong time; ///< Timestamp (UNIX)
-		 public byte sensor_id; ///< Sensor ID
-		 public short flow_x; ///< Flow in pixels in x-sensor direction
-		 public short flow_y; ///< Flow in pixels in y-sensor direction
-		 public byte quality; ///< Optical flow quality / confidence. 0: bad, 255: maximum quality
-		public float ground_distance; ///< Ground distance in meters
+		 public ulong time; /// Timestamp (UNIX)
+		 public byte sensor_id; /// Sensor ID
+		 public short flow_x; /// Flow in pixels in x-sensor direction
+		 public short flow_y; /// Flow in pixels in y-sensor direction
+		 public byte quality; /// Optical flow quality / confidence. 0: bad, 255: maximum quality
+		public float ground_distance; /// Ground distance in meters
 		};
 
 		public const byte MAVLINK_MSG_ID_OPTICAL_FLOW_LEN = 18;
@@ -617,8 +619,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_param_request_list_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
 		};
 
 		public const byte MAVLINK_MSG_ID_PARAM_REQUEST_LIST_LEN = 2;
@@ -627,13 +629,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_param_request_read_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=15)] 
-		 public byte[] param_id; ///< Onboard parameter id
-		 public short param_index; ///< Parameter index. Send -1 to use the param ID field as identifier
+		 public byte[] param_id; /// Onboard parameter id
+		 public short param_index; /// Parameter index. Send -1 to use the param ID field as identifier
 		};
 
 		public const byte MAVLINK_MSG_ID_PARAM_REQUEST_READ_LEN = 19;
@@ -642,13 +644,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_param_set_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=15)] 
-		 public byte[] param_id; ///< Onboard parameter id
-		public float param_value; ///< Onboard parameter value
+		 public byte[] param_id; /// Onboard parameter id
+		public float param_value; /// Onboard parameter value
 		};
 
 		public const byte MAVLINK_MSG_ID_PARAM_SET_LEN = 21;
@@ -660,10 +662,10 @@ namespace ArdupilotMega
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=15)] 
-		 public byte[] param_id; ///< Onboard parameter id
-		public float param_value; ///< Onboard parameter value
-		 public ushort param_count; ///< Total number of onboard parameters
-		 public ushort param_index; ///< Index of this onboard parameter
+		 public byte[] param_id; /// Onboard parameter id
+		public float param_value; /// Onboard parameter value
+		 public ushort param_count; /// Total number of onboard parameters
+		 public ushort param_index; /// Index of this onboard parameter
 		};
 
 		public const byte MAVLINK_MSG_ID_PARAM_VALUE_LEN = 23;
@@ -672,10 +674,10 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_ping_t
 		{
-		 public uint seq; ///< PING sequence
-		 public byte target_system; ///< 0: request ping from all receiving systems, if greater than 0: message is a ping response and number is the system id of the requesting system
-		 public byte target_component; ///< 0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system
-		 public ulong time; ///< Unix timestamp in microseconds
+		 public uint seq; /// PING sequence
+		 public byte target_system; /// 0: request ping from all receiving systems, if greater than 0: message is a ping response and number is the system id of the requesting system
+		 public byte target_component; /// 0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system
+		 public ulong time; /// Unix timestamp in microseconds
 		};
 
 		public const byte MAVLINK_MSG_ID_PING_LEN = 14;
@@ -684,11 +686,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_position_controller_output_t 
 		{
-			public byte enabled; ///< 1: enabled, 0: disabled
-			public byte x; ///< Position x: -128: -100%, 127: +100%
-			public byte y; ///< Position y: -128: -100%, 127: +100%
-			public byte z; ///< Position z: -128: -100%, 127: +100%
-			public byte yaw; ///< Position yaw: -128: -100%, 127: +100%
+			public byte enabled; /// 1: enabled, 0: disabled
+			public byte x; /// Position x: -128: -100%, 127: +100%
+			public byte y; /// Position y: -128: -100%, 127: +100%
+			public byte z; /// Position z: -128: -100%, 127: +100%
+			public byte yaw; /// Position yaw: -128: -100%, 127: +100%
 		
 		};
 
@@ -696,10 +698,10 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_position_target_t
 		{
-		public float x; ///< x position
-		public float y; ///< y position
-		public float z; ///< z position
-		public float yaw; ///< yaw orientation in radians, 0 = NORTH
+		public float x; /// x position
+		public float y; /// y position
+		public float z; /// z position
+		public float yaw; /// yaw orientation in radians, 0 = NORTH
 		};
 
 		public const byte MAVLINK_MSG_ID_POSITION_TARGET_LEN = 16;
@@ -708,16 +710,16 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_raw_imu_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		 public short xacc; ///< X acceleration (raw)
-		 public short yacc; ///< Y acceleration (raw)
-		 public short zacc; ///< Z acceleration (raw)
-		 public short xgyro; ///< Angular speed around X axis (raw)
-		 public short ygyro; ///< Angular speed around Y axis (raw)
-		 public short zgyro; ///< Angular speed around Z axis (raw)
-		 public short xmag; ///< X Magnetic field (raw)
-		 public short ymag; ///< Y Magnetic field (raw)
-		 public short zmag; ///< Z Magnetic field (raw)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		 public short xacc; /// X acceleration (raw)
+		 public short yacc; /// Y acceleration (raw)
+		 public short zacc; /// Z acceleration (raw)
+		 public short xgyro; /// Angular speed around X axis (raw)
+		 public short ygyro; /// Angular speed around Y axis (raw)
+		 public short zgyro; /// Angular speed around Z axis (raw)
+		 public short xmag; /// X Magnetic field (raw)
+		 public short ymag; /// Y Magnetic field (raw)
+		 public short zmag; /// Z Magnetic field (raw)
 		};
 
 		public const byte MAVLINK_MSG_ID_RAW_IMU_LEN = 26;
@@ -726,11 +728,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_raw_pressure_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		 public short press_abs; ///< Absolute pressure (raw)
-		 public short press_diff1; ///< Differential pressure 1 (raw)
-		 public short press_diff2; ///< Differential pressure 2 (raw)
-		 public short temperature; ///< Raw Temperature measurement (raw)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		 public short press_abs; /// Absolute pressure (raw)
+		 public short press_diff1; /// Differential pressure 1 (raw)
+		 public short press_diff2; /// Differential pressure 2 (raw)
+		 public short temperature; /// Raw Temperature measurement (raw)
 		};
 
 		public const byte MAVLINK_MSG_ID_RAW_PRESSURE_LEN = 16;
@@ -739,16 +741,16 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_rc_channels_override_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public ushort chan1_raw; ///< RC channel 1 value, in microseconds
-		 public ushort chan2_raw; ///< RC channel 2 value, in microseconds
-		 public ushort chan3_raw; ///< RC channel 3 value, in microseconds
-		 public ushort chan4_raw; ///< RC channel 4 value, in microseconds
-		 public ushort chan5_raw; ///< RC channel 5 value, in microseconds
-		 public ushort chan6_raw; ///< RC channel 6 value, in microseconds
-		 public ushort chan7_raw; ///< RC channel 7 value, in microseconds
-		 public ushort chan8_raw; ///< RC channel 8 value, in microseconds
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public ushort chan1_raw; /// RC channel 1 value, in microseconds
+		 public ushort chan2_raw; /// RC channel 2 value, in microseconds
+		 public ushort chan3_raw; /// RC channel 3 value, in microseconds
+		 public ushort chan4_raw; /// RC channel 4 value, in microseconds
+		 public ushort chan5_raw; /// RC channel 5 value, in microseconds
+		 public ushort chan6_raw; /// RC channel 6 value, in microseconds
+		 public ushort chan7_raw; /// RC channel 7 value, in microseconds
+		 public ushort chan8_raw; /// RC channel 8 value, in microseconds
 		};
 
 		public const byte MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE_LEN = 18;
@@ -757,15 +759,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_rc_channels_raw_t
 		{
-		 public ushort chan1_raw; ///< RC channel 1 value, in microseconds
-		 public ushort chan2_raw; ///< RC channel 2 value, in microseconds
-		 public ushort chan3_raw; ///< RC channel 3 value, in microseconds
-		 public ushort chan4_raw; ///< RC channel 4 value, in microseconds
-		 public ushort chan5_raw; ///< RC channel 5 value, in microseconds
-		 public ushort chan6_raw; ///< RC channel 6 value, in microseconds
-		 public ushort chan7_raw; ///< RC channel 7 value, in microseconds
-		 public ushort chan8_raw; ///< RC channel 8 value, in microseconds
-		 public byte rssi; ///< Receive signal strength indicator, 0: 0%, 255: 100%
+		 public ushort chan1_raw; /// RC channel 1 value, in microseconds
+		 public ushort chan2_raw; /// RC channel 2 value, in microseconds
+		 public ushort chan3_raw; /// RC channel 3 value, in microseconds
+		 public ushort chan4_raw; /// RC channel 4 value, in microseconds
+		 public ushort chan5_raw; /// RC channel 5 value, in microseconds
+		 public ushort chan6_raw; /// RC channel 6 value, in microseconds
+		 public ushort chan7_raw; /// RC channel 7 value, in microseconds
+		 public ushort chan8_raw; /// RC channel 8 value, in microseconds
+		 public byte rssi; /// Receive signal strength indicator, 0: 0%, 255: 100%
 		};
 
 		public const byte MAVLINK_MSG_ID_RC_CHANNELS_RAW_LEN = 17;
@@ -774,15 +776,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_rc_channels_scaled_t
 		{
-		 public short chan1_scaled; ///< RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan2_scaled; ///< RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan3_scaled; ///< RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan4_scaled; ///< RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan5_scaled; ///< RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan6_scaled; ///< RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan7_scaled; ///< RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public short chan8_scaled; ///< RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
-		 public byte rssi; ///< Receive signal strength indicator, 0: 0%, 255: 100%
+		 public short chan1_scaled; /// RC channel 1 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan2_scaled; /// RC channel 2 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan3_scaled; /// RC channel 3 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan4_scaled; /// RC channel 4 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan5_scaled; /// RC channel 5 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan6_scaled; /// RC channel 6 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan7_scaled; /// RC channel 7 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public short chan8_scaled; /// RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000
+		 public byte rssi; /// Receive signal strength indicator, 0: 0%, 255: 100%
 		};
 
 		public const byte MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN = 17;
@@ -791,11 +793,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_request_data_stream_t
 		{
-		 public byte target_system; ///< The target requested to send the message stream.
-		 public byte target_component; ///< The target requested to send the message stream.
-		 public byte req_stream_id; ///< The ID of the requested message type
-		 public ushort req_message_rate; ///< Update rate in Hertz
-		 public byte start_stop; ///< 1 to start sending, 0 to stop sending.
+		 public byte target_system; /// The target requested to send the message stream.
+		 public byte target_component; /// The target requested to send the message stream.
+		 public byte req_stream_id; /// The ID of the requested message type
+		 public ushort req_message_rate; /// Update rate in Hertz
+		 public byte start_stop; /// 1 to start sending, 0 to stop sending.
 		};
 
 		public const byte MAVLINK_MSG_ID_REQUEST_DATA_STREAM_LEN = 6;
@@ -804,11 +806,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_request_dynamic_gyro_calibration_t 
 		{
-			public byte target_system; ///< The system which should auto-calibrate
-			public byte target_component; ///< The system component which should auto-calibrate
-		public float mode; ///< The current ground-truth rpm
-			public byte axis; ///< The axis to calibrate: 0 roll, 1 pitch, 2 yaw
-			public ushort time; ///< The time to average over in ms
+			public byte target_system; /// The system which should auto-calibrate
+			public byte target_component; /// The system component which should auto-calibrate
+		public float mode; /// The current ground-truth rpm
+			public byte axis; /// The axis to calibrate: 0 roll, 1 pitch, 2 yaw
+			public ushort time; /// The time to average over in ms
 		
 		};
 
@@ -816,9 +818,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_request_static_calibration_t 
 		{
-			public byte target_system; ///< The system which should auto-calibrate
-			public byte target_component; ///< The system component which should auto-calibrate
-			public ushort time; ///< The time to average over in ms
+			public byte target_system; /// The system which should auto-calibrate
+			public byte target_component; /// The system component which should auto-calibrate
+			public ushort time; /// The time to average over in ms
 		
 		};
 
@@ -826,11 +828,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_roll_pitch_yaw_speed_thrust_setpoint_t
 		{
-		 public ulong time_us; ///< Timestamp in micro seconds since unix epoch
-		public float roll_speed; ///< Desired roll angular speed in rad/s
-		public float pitch_speed; ///< Desired pitch angular speed in rad/s
-		public float yaw_speed; ///< Desired yaw angular speed in rad/s
-		public float thrust; ///< Collective thrust, normalized to 0 .. 1
+		 public ulong time_us; /// Timestamp in micro seconds since unix epoch
+		public float roll_speed; /// Desired roll angular speed in rad/s
+		public float pitch_speed; /// Desired pitch angular speed in rad/s
+		public float yaw_speed; /// Desired yaw angular speed in rad/s
+		public float thrust; /// Collective thrust, normalized to 0 .. 1
 		};
 
 		public const byte MAVLINK_MSG_ID_ROLL_PITCH_YAW_SPEED_THRUST_SETPOINT_LEN = 24;
@@ -839,11 +841,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_roll_pitch_yaw_thrust_setpoint_t
 		{
-		 public ulong time_us; ///< Timestamp in micro seconds since unix epoch
-		public float roll; ///< Desired roll angle in radians
-		public float pitch; ///< Desired pitch angle in radians
-		public float yaw; ///< Desired yaw angle in radians
-		public float thrust; ///< Collective thrust, normalized to 0 .. 1
+		 public ulong time_us; /// Timestamp in micro seconds since unix epoch
+		public float roll; /// Desired roll angle in radians
+		public float pitch; /// Desired pitch angle in radians
+		public float yaw; /// Desired yaw angle in radians
+		public float thrust; /// Collective thrust, normalized to 0 .. 1
 		};
 
 		public const byte MAVLINK_MSG_ID_ROLL_PITCH_YAW_THRUST_SETPOINT_LEN = 24;
@@ -852,13 +854,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_safety_allowed_area_t
 		{
-		 public byte frame; ///< Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.
-		public float p1x; ///< x position 1 / Latitude 1
-		public float p1y; ///< y position 1 / Longitude 1
-		public float p1z; ///< z position 1 / Altitude 1
-		public float p2x; ///< x position 2 / Latitude 2
-		public float p2y; ///< y position 2 / Longitude 2
-		public float p2z; ///< z position 2 / Altitude 2
+		 public byte frame; /// Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.
+		public float p1x; /// x position 1 / Latitude 1
+		public float p1y; /// y position 1 / Longitude 1
+		public float p1z; /// z position 1 / Altitude 1
+		public float p2x; /// x position 2 / Latitude 2
+		public float p2y; /// y position 2 / Longitude 2
+		public float p2z; /// z position 2 / Altitude 2
 		};
 
 		public const byte MAVLINK_MSG_ID_SAFETY_ALLOWED_AREA_LEN = 25;
@@ -867,15 +869,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_safety_set_allowed_area_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public byte frame; ///< Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.
-		public float p1x; ///< x position 1 / Latitude 1
-		public float p1y; ///< y position 1 / Longitude 1
-		public float p1z; ///< z position 1 / Altitude 1
-		public float p2x; ///< x position 2 / Latitude 2
-		public float p2y; ///< y position 2 / Longitude 2
-		public float p2z; ///< z position 2 / Altitude 2
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public byte frame; /// Coordinate frame, as defined by MAV_FRAME enum in mavlink_types.h. Can be either global, GPS, right-handed with Z axis up or local, right handed, Z axis down.
+		public float p1x; /// x position 1 / Latitude 1
+		public float p1y; /// y position 1 / Longitude 1
+		public float p1z; /// z position 1 / Altitude 1
+		public float p2x; /// x position 2 / Latitude 2
+		public float p2y; /// y position 2 / Longitude 2
+		public float p2z; /// z position 2 / Altitude 2
 		};
 
 		public const byte MAVLINK_MSG_ID_SAFETY_SET_ALLOWED_AREA_LEN = 27;
@@ -884,16 +886,16 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_scaled_imu_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		 public short xacc; ///< X acceleration (mg)
-		 public short yacc; ///< Y acceleration (mg)
-		 public short zacc; ///< Z acceleration (mg)
-		 public short xgyro; ///< Angular speed around X axis (millirad /sec)
-		 public short ygyro; ///< Angular speed around Y axis (millirad /sec)
-		 public short zgyro; ///< Angular speed around Z axis (millirad /sec)
-		 public short xmag; ///< X Magnetic field (milli tesla)
-		 public short ymag; ///< Y Magnetic field (milli tesla)
-		 public short zmag; ///< Z Magnetic field (milli tesla)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		 public short xacc; /// X acceleration (mg)
+		 public short yacc; /// Y acceleration (mg)
+		 public short zacc; /// Z acceleration (mg)
+		 public short xgyro; /// Angular speed around X axis (millirad /sec)
+		 public short ygyro; /// Angular speed around Y axis (millirad /sec)
+		 public short zgyro; /// Angular speed around Z axis (millirad /sec)
+		 public short xmag; /// X Magnetic field (milli tesla)
+		 public short ymag; /// Y Magnetic field (milli tesla)
+		 public short zmag; /// Z Magnetic field (milli tesla)
 		};
 
 		public const byte MAVLINK_MSG_ID_SCALED_IMU_LEN = 26;
@@ -902,10 +904,10 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_scaled_pressure_t
 		{
-		 public ulong usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
-		public float press_abs; ///< Absolute pressure (hectopascal)
-		public float press_diff; ///< Differential pressure 1 (hectopascal)
-		 public short temperature; ///< Temperature measurement (0.01 degrees celsius)
+		 public ulong usec; /// Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+		public float press_abs; /// Absolute pressure (hectopascal)
+		public float press_diff; /// Differential pressure 1 (hectopascal)
+		 public short temperature; /// Temperature measurement (0.01 degrees celsius)
 		};
 
 		public const byte MAVLINK_MSG_ID_SCALED_PRESSURE_LEN = 18;
@@ -914,14 +916,14 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_servo_output_raw_t
 		{
-		 public ushort servo1_raw; ///< Servo output 1 value, in microseconds
-		 public ushort servo2_raw; ///< Servo output 2 value, in microseconds
-		 public ushort servo3_raw; ///< Servo output 3 value, in microseconds
-		 public ushort servo4_raw; ///< Servo output 4 value, in microseconds
-		 public ushort servo5_raw; ///< Servo output 5 value, in microseconds
-		 public ushort servo6_raw; ///< Servo output 6 value, in microseconds
-		 public ushort servo7_raw; ///< Servo output 7 value, in microseconds
-		 public ushort servo8_raw; ///< Servo output 8 value, in microseconds
+		 public ushort servo1_raw; /// Servo output 1 value, in microseconds
+		 public ushort servo2_raw; /// Servo output 2 value, in microseconds
+		 public ushort servo3_raw; /// Servo output 3 value, in microseconds
+		 public ushort servo4_raw; /// Servo output 4 value, in microseconds
+		 public ushort servo5_raw; /// Servo output 5 value, in microseconds
+		 public ushort servo6_raw; /// Servo output 6 value, in microseconds
+		 public ushort servo7_raw; /// Servo output 7 value, in microseconds
+		 public ushort servo8_raw; /// Servo output 8 value, in microseconds
 		};
 
 		public const byte MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN = 16;
@@ -930,8 +932,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_altitude_t
 		{
-		 public byte target; ///< The system setting the altitude
-		 public uint mode; ///< The new altitude in meters
+		 public byte target; /// The system setting the altitude
+		 public uint mode; /// The new altitude in meters
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_ALTITUDE_LEN = 5;
@@ -940,8 +942,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_mode_t
 		{
-		 public byte target; ///< The system setting the mode
-		 public byte mode; ///< The new mode
+		 public byte target; /// The system setting the mode
+		 public byte mode; /// The new mode
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_MODE_LEN = 2;
@@ -950,8 +952,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_nav_mode_t
 		{
-		 public byte target; ///< The system setting the mode
-		 public byte nav_mode; ///< The new navigation mode
+		 public byte target; /// The system setting the mode
+		 public byte nav_mode; /// The new navigation mode
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_NAV_MODE_LEN = 2;
@@ -960,11 +962,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_roll_pitch_yaw_t 
 		{
-			public byte target_system; ///< System ID
-			public byte target_component; ///< Component ID
-		public float roll; ///< Desired roll angle in radians
-		public float pitch; ///< Desired pitch angle in radians
-		public float yaw; ///< Desired yaw angle in radians
+			public byte target_system; /// System ID
+			public byte target_component; /// Component ID
+		public float roll; /// Desired roll angle in radians
+		public float pitch; /// Desired pitch angle in radians
+		public float yaw; /// Desired yaw angle in radians
 		
 		};
 
@@ -972,11 +974,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_roll_pitch_yaw_speed_t 
 		{
-			public byte target_system; ///< System ID
-			public byte target_component; ///< Component ID
-		public float roll_speed; ///< Desired roll angular speed in rad/s
-		public float pitch_speed; ///< Desired pitch angular speed in rad/s
-		public float yaw_speed; ///< Desired yaw angular speed in rad/s
+			public byte target_system; /// System ID
+			public byte target_component; /// Component ID
+		public float roll_speed; /// Desired roll angular speed in rad/s
+		public float pitch_speed; /// Desired pitch angular speed in rad/s
+		public float yaw_speed; /// Desired yaw angular speed in rad/s
 		
 		};
 
@@ -984,12 +986,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_roll_pitch_yaw_speed_thrust_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		public float roll_speed; ///< Desired roll angular speed in rad/s
-		public float pitch_speed; ///< Desired pitch angular speed in rad/s
-		public float yaw_speed; ///< Desired yaw angular speed in rad/s
-		public float thrust; ///< Collective thrust, normalized to 0 .. 1
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		public float roll_speed; /// Desired roll angular speed in rad/s
+		public float pitch_speed; /// Desired pitch angular speed in rad/s
+		public float yaw_speed; /// Desired yaw angular speed in rad/s
+		public float thrust; /// Collective thrust, normalized to 0 .. 1
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_SPEED_THRUST_LEN = 18;
@@ -998,12 +1000,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_set_roll_pitch_yaw_thrust_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		public float roll; ///< Desired roll angle in radians
-		public float pitch; ///< Desired pitch angle in radians
-		public float yaw; ///< Desired yaw angle in radians
-		public float thrust; ///< Collective thrust, normalized to 0 .. 1
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		public float roll; /// Desired roll angle in radians
+		public float pitch; /// Desired pitch angle in radians
+		public float yaw; /// Desired yaw angle in radians
+		public float thrust; /// Collective thrust, normalized to 0 .. 1
 		};
 
 		public const byte MAVLINK_MSG_ID_SET_ROLL_PITCH_YAW_THRUST_LEN = 18;
@@ -1012,15 +1014,15 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_state_correction_t
 		{
-		public float xErr; ///< x position error
-		public float yErr; ///< y position error
-		public float zErr; ///< z position error
-		public float rollErr; ///< roll error (radians)
-		public float pitchErr; ///< pitch error (radians)
-		public float yawErr; ///< yaw error (radians)
-		public float vxErr; ///< x velocity
-		public float vyErr; ///< y velocity
-		public float vzErr; ///< z velocity
+		public float xErr; /// x position error
+		public float yErr; /// y position error
+		public float zErr; /// z position error
+		public float rollErr; /// roll error (radians)
+		public float pitchErr; /// pitch error (radians)
+		public float yawErr; /// yaw error (radians)
+		public float vxErr; /// x velocity
+		public float vyErr; /// y velocity
+		public float vzErr; /// z velocity
 		};
 
 		public const byte MAVLINK_MSG_ID_STATE_CORRECTION_LEN = 36;
@@ -1029,11 +1031,11 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_statustext_t
 		{
-		 public byte severity; ///< Severity of status, 0 = info message, 255 = critical fault
+		 public byte severity; /// Severity of status, 0 = info message, 255 = critical fault
 		[MarshalAs(
 				    	UnmanagedType.ByValArray,
 				    	SizeConst=50)] 
-		 public byte[] text; ///< Status text message, without null termination character
+		 public byte[] text; /// Status text message, without null termination character
 		};
 
 		public const byte MAVLINK_MSG_ID_STATUSTEXT_LEN = 51;
@@ -1044,13 +1046,13 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_sys_status_t
 		{
-		 public byte mode; ///< System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
-		 public byte nav_mode; ///< Navigation mode, see MAV_NAV_MODE ENUM
-		 public byte status; ///< System status flag, see MAV_STATUS ENUM
-		 public ushort load; ///< Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
-		 public ushort vbat; ///< Battery voltage, in millivolts (1 = 1 millivolt)
-		 public ushort battery_remaining; ///< Remaining battery energy: (0%: 0, 100%: 1000)
-		 public ushort packet_drop; ///< Dropped packets (packets that were corrupted on reception on the MAV)
+		 public byte mode; /// System mode, see MAV_MODE ENUM in mavlink/include/mavlink_types.h
+		 public byte nav_mode; /// Navigation mode, see MAV_NAV_MODE ENUM
+		 public byte status; /// System status flag, see MAV_STATUS ENUM
+		 public ushort load; /// Maximum usage in percent of the mainloop time, (0%: 0, 100%: 1000) should be always below 1000
+		 public ushort vbat; /// Battery voltage, in millivolts (1 = 1 millivolt)
+		 public ushort battery_remaining; /// Remaining battery energy: (0%: 0, 100%: 1000)
+		 public ushort packet_drop; /// Dropped packets (packets that were corrupted on reception on the MAV)
 		};
 
 		public const byte MAVLINK_MSG_ID_SYS_STATUS_LEN = 11;
@@ -1059,12 +1061,12 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_vfr_hud_t
 		{
-		public float airspeed; ///< Current airspeed in m/s
-		public float groundspeed; ///< Current ground speed in m/s
-		 public short heading; ///< Current heading in degrees, in compass units (0..360, 0=north)
-		 public ushort throttle; ///< Current throttle setting in integer percent, 0 to 100
-		public float alt; ///< Current altitude (MSL), in meters
-		public float climb; ///< Current climb rate in meters/second
+		public float airspeed; /// Current airspeed in m/s
+		public float groundspeed; /// Current ground speed in m/s
+		 public short heading; /// Current heading in degrees, in compass units (0..360, 0=north)
+		 public ushort throttle; /// Current throttle setting in integer percent, 0 to 100
+		public float alt; /// Current altitude (MSL), in meters
+		public float climb; /// Current climb rate in meters/second
 		};
 
 		public const byte MAVLINK_MSG_ID_VFR_HUD_LEN = 20;
@@ -1073,20 +1075,20 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public ushort seq; ///< Sequence
-		 public byte frame; ///< The coordinate system of the waypoint. see MAV_FRAME in mavlink_types.h
-		 public byte command; ///< The scheduled action for the waypoint. see MAV_COMMAND in common.xml MAVLink specs
-		 public byte current; ///< false:0, true:1
-		 public byte autocontinue; ///< autocontinue to next wp
-		public float param1; ///< PARAM1 / For NAV command waypoints: Radius in which the waypoint is accepted as reached, in meters
-		public float param2; ///< PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
-		public float param3; ///< PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
-		public float param4; ///< PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
-		public float x; ///< PARAM5 / local: x position, global: latitude
-		public float y; ///< PARAM6 / y position: global: longitude
-		public float z; ///< PARAM7 / z position: global: altitude
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public ushort seq; /// Sequence
+		 public byte frame; /// The coordinate system of the waypoint. see MAV_FRAME in mavlink_types.h
+		 public byte command; /// The scheduled action for the waypoint. see MAV_COMMAND in common.xml MAVLink specs
+		 public byte current; /// false:0, true:1
+		 public byte autocontinue; /// autocontinue to next wp
+		public float param1; /// PARAM1 / For NAV command waypoints: Radius in which the waypoint is accepted as reached, in meters
+		public float param2; /// PARAM2 / For NAV command waypoints: Time that the MAV should stay inside the PARAM1 radius before advancing, in milliseconds
+		public float param3; /// PARAM3 / For LOITER command waypoints: Orbit to circle around the waypoint, in meters. If positive the orbit direction should be clockwise, if negative the orbit direction should be counter-clockwise.
+		public float param4; /// PARAM4 / For NAV and LOITER command waypoints: Yaw orientation in degrees, [0..360] 0 = NORTH
+		public float x; /// PARAM5 / local: x position, global: latitude
+		public float y; /// PARAM6 / y position: global: longitude
+		public float z; /// PARAM7 / z position: global: altitude
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_LEN = 36;
@@ -1095,9 +1097,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_ack_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public byte type; ///< 0: OK, 1: Error
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public byte type; /// 0: OK, 1: Error
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_ACK_LEN = 3;
@@ -1106,8 +1108,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_clear_all_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL_LEN = 2;
@@ -1116,9 +1118,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_count_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public ushort count; ///< Number of Waypoints in the Sequence
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public ushort count; /// Number of Waypoints in the Sequence
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_COUNT_LEN = 4;
@@ -1127,7 +1129,7 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_current_t
 		{
-		 public ushort seq; ///< Sequence
+		 public ushort seq; /// Sequence
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_CURRENT_LEN = 2;
@@ -1136,7 +1138,7 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_reached_t
 		{
-		 public ushort seq; ///< Sequence
+		 public ushort seq; /// Sequence
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_REACHED_LEN = 2;
@@ -1145,9 +1147,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_request_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public ushort seq; ///< Sequence
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public ushort seq; /// Sequence
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_REQUEST_LEN = 4;
@@ -1156,8 +1158,8 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_request_list_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST_LEN = 2;
@@ -1166,9 +1168,9 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_set_current_t
 		{
-		 public byte target_system; ///< System ID
-		 public byte target_component; ///< Component ID
-		 public ushort seq; ///< Sequence
+		 public byte target_system; /// System ID
+		 public byte target_component; /// Component ID
+		 public ushort seq; /// Sequence
 		};
 
 		public const byte MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT_LEN = 4;
@@ -1177,31 +1179,31 @@ namespace ArdupilotMega
 		[StructLayout(LayoutKind.Sequential,Pack=1)]
 		public struct __mavlink_waypoint_set_global_reference_t 
 		{
-			public byte target_system; ///< System ID
-			public byte target_component; ///< Component ID
-		public float global_x; ///< global x position
-		public float global_y; ///< global y position
-		public float global_z; ///< global z position
-		public float global_yaw; ///< global yaw orientation in radians, 0 = NORTH
-		public float local_x; ///< local x position that matches the global x position
-		public float local_y; ///< local y position that matches the global y position
-		public float local_z; ///< local z position that matches the global z position
-		public float local_yaw; ///< local yaw that matches the global yaw orientation
+			public byte target_system; /// System ID
+			public byte target_component; /// Component ID
+		public float global_x; /// global x position
+		public float global_y; /// global y position
+		public float global_z; /// global z position
+		public float global_yaw; /// global yaw orientation in radians, 0 = NORTH
+		public float local_x; /// local x position that matches the global x position
+		public float local_y; /// local y position that matches the global y position
+		public float local_z; /// local z position that matches the global z position
+		public float local_yaw; /// local yaw that matches the global yaw orientation
 		
 		};
 
 		public 		enum MAV_CLASS
 		{
-		    MAV_CLASS_GENERIC = 0,        ///< Generic autopilot, full support for everything
-		    MAV_CLASS_PIXHAWK = 1,        ///< PIXHAWK autopilot, http://pixhawk.ethz.ch
-		    MAV_CLASS_SLUGS = 2,          ///< SLUGS autopilot, http://slugsuav.soe.ucsc.edu
-		    MAV_CLASS_ARDUPILOTMEGA = 3,  ///< ArduPilotMega / ArduCopter, http://diydrones.com
-		    MAV_CLASS_OPENPILOT = 4,      ///< OpenPilot, http://openpilot.org
-		    MAV_CLASS_GENERIC_MISSION_WAYPOINTS_ONLY = 5,  ///< Generic autopilot only supporting simple waypoints
-		    MAV_CLASS_GENERIC_MISSION_NAVIGATION_ONLY = 6, ///< Generic autopilot supporting waypoints and other simple navigation commands
-		    MAV_CLASS_GENERIC_MISSION_FULL = 7,            ///< Generic autopilot supporting the full mission command set
-		    MAV_CLASS_NONE = 8,           ///< No valid autopilot
-		    MAV_CLASS_NB                  ///< Number of autopilot classes
+		    MAV_CLASS_GENERIC = 0,        /// Generic autopilot, full support for everything
+		    MAV_CLASS_PIXHAWK = 1,        /// PIXHAWK autopilot, http://pixhawk.ethz.ch
+		    MAV_CLASS_SLUGS = 2,          /// SLUGS autopilot, http://slugsuav.soe.ucsc.edu
+		    MAV_CLASS_ARDUPILOTMEGA = 3,  /// ArduPilotMega / ArduCopter, http://diydrones.com
+		    MAV_CLASS_OPENPILOT = 4,      /// OpenPilot, http://openpilot.org
+		    MAV_CLASS_GENERIC_MISSION_WAYPOINTS_ONLY = 5,  /// Generic autopilot only supporting simple waypoints
+		    MAV_CLASS_GENERIC_MISSION_NAVIGATION_ONLY = 6, /// Generic autopilot supporting waypoints and other simple navigation commands
+		    MAV_CLASS_GENERIC_MISSION_FULL = 7,            /// Generic autopilot supporting the full mission command set
+		    MAV_CLASS_NONE = 8,           /// No valid autopilot
+		    MAV_CLASS_NB                  /// Number of autopilot classes
 		};
 
 		public 		enum MAV_ACTION
@@ -1249,21 +1251,21 @@ namespace ArdupilotMega
 		    MAV_ACTION_LOITER_MAX_TIME = 40,
 		    MAV_ACTION_START_HILSIM = 41,
 		    MAV_ACTION_STOP_HILSIM = 42,    
-		    MAV_ACTION_NB        ///< Number of MAV actions
+		    MAV_ACTION_NB        /// Number of MAV actions
 		};
 
 		public 		enum MAV_MODE
 		{
-		    MAV_MODE_UNINIT = 0,     ///< System is in undefined state
-		    MAV_MODE_LOCKED = 1,     ///< Motors are blocked, system is safe
-		    MAV_MODE_MANUAL = 2,     ///< System is allowed to be active, under manual (RC) control
-		    MAV_MODE_GUIDED = 3,     ///< System is allowed to be active, under autonomous control, manual setpoint
-		    MAV_MODE_AUTO =   4,     ///< System is allowed to be active, under autonomous control and navigation
-		    MAV_MODE_TEST1 =  5,     ///< Generic test mode, for custom use
-		    MAV_MODE_TEST2 =  6,     ///< Generic test mode, for custom use
-		    MAV_MODE_TEST3 =  7,     ///< Generic test mode, for custom use
-		    MAV_MODE_READY =  8,     ///< System is ready, motors are unblocked, but controllers are inactive
-		    MAV_MODE_RC_TRAINING = 9 ///< System is blocked, only RC valued are read and reported back
+		    MAV_MODE_UNINIT = 0,     /// System is in undefined state
+		    MAV_MODE_LOCKED = 1,     /// Motors are blocked, system is safe
+		    MAV_MODE_MANUAL = 2,     /// System is allowed to be active, under manual (RC) control
+		    MAV_MODE_GUIDED = 3,     /// System is allowed to be active, under autonomous control, manual setpoint
+		    MAV_MODE_AUTO =   4,     /// System is allowed to be active, under autonomous control and navigation
+		    MAV_MODE_TEST1 =  5,     /// Generic test mode, for custom use
+		    MAV_MODE_TEST2 =  6,     /// Generic test mode, for custom use
+		    MAV_MODE_TEST3 =  7,     /// Generic test mode, for custom use
+		    MAV_MODE_READY =  8,     /// System is ready, motors are unblocked, but controllers are inactive
+		    MAV_MODE_RC_TRAINING = 9 /// System is blocked, only RC valued are read and reported back
 		};
 
 		public 		enum MAV_STATE

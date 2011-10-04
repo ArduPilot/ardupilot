@@ -30,14 +30,14 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.colFile = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colInternal = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colEnglish = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colOtherLang = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.colFile = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colInternal = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colEnglish = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colOtherLang = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -45,7 +45,6 @@
             // 
             this.dataGridView1.AllowUserToAddRows = false;
             this.dataGridView1.AllowUserToDeleteRows = false;
-            this.dataGridView1.AllowUserToOrderColumns = true;
             this.dataGridView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -59,32 +58,6 @@
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.Size = new System.Drawing.Size(844, 370);
             this.dataGridView1.TabIndex = 0;
-            // 
-            // colFile
-            // 
-            this.colFile.HeaderText = "File";
-            this.colFile.Name = "colFile";
-            this.colFile.ReadOnly = true;
-            // 
-            // colInternal
-            // 
-            this.colInternal.HeaderText = "Internal";
-            this.colInternal.Name = "colInternal";
-            this.colInternal.ReadOnly = true;
-            this.colInternal.Width = 150;
-            // 
-            // colEnglish
-            // 
-            this.colEnglish.HeaderText = "English";
-            this.colEnglish.Name = "colEnglish";
-            this.colEnglish.ReadOnly = true;
-            this.colEnglish.Width = 150;
-            // 
-            // colOtherLang
-            // 
-            this.colOtherLang.HeaderText = "Other Lang";
-            this.colOtherLang.Name = "colOtherLang";
-            this.colOtherLang.Width = 150;
             // 
             // button1
             // 
@@ -125,6 +98,35 @@
             this.richTextBox1.TabIndex = 4;
             this.richTextBox1.Text = resources.GetString("richTextBox1.Text");
             // 
+            // colFile
+            // 
+            this.colFile.HeaderText = "File";
+            this.colFile.Name = "colFile";
+            this.colFile.ReadOnly = true;
+            // 
+            // colInternal
+            // 
+            this.colInternal.HeaderText = "Internal";
+            this.colInternal.Name = "colInternal";
+            this.colInternal.ReadOnly = true;
+            this.colInternal.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.colInternal.Width = 150;
+            // 
+            // colEnglish
+            // 
+            this.colEnglish.HeaderText = "English";
+            this.colEnglish.Name = "colEnglish";
+            this.colEnglish.ReadOnly = true;
+            this.colEnglish.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.colEnglish.Width = 150;
+            // 
+            // colOtherLang
+            // 
+            this.colOtherLang.HeaderText = "Other Lang";
+            this.colOtherLang.Name = "colOtherLang";
+            this.colOtherLang.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.colOtherLang.Width = 150;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -149,11 +151,11 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFile;
         private System.Windows.Forms.DataGridViewTextBoxColumn colInternal;
         private System.Windows.Forms.DataGridViewTextBoxColumn colEnglish;
         private System.Windows.Forms.DataGridViewTextBoxColumn colOtherLang;
-        private System.Windows.Forms.RichTextBox richTextBox1;
     }
 }
 

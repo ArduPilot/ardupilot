@@ -349,6 +349,15 @@
       <DependentUpon>AGauge.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Firmware.ru.resx">
+      <DependentUpon>Firmware.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightData.ru.resx">
+      <DependentUpon>FlightData.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Terminal.ru.resx">
+      <DependentUpon>Terminal.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Log.zh-Hans.resx">
       <DependentUpon>Log.cs</DependentUpon>
     </EmbeddedResource>
@@ -491,7 +500,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Resources\Welcome_CN.rtf" />
-    <None Include="Resources\Welcome_to_Michael_Oborne.rtf" />
+    <None Include="Resources\Welcome_to_Michael_Oborne.rtf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="apm2.ico" />
@@ -501,8 +512,12 @@
     </Content>
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />
-    <None Include="Resources\MAVCmd.txt" />
-    <None Include="Resources\MAVParam.txt" />
+    <None Include="Resources\MAVCmd.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\MAVParam.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\new frames-09.png" />
     <Content Include="dataflashlog.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
