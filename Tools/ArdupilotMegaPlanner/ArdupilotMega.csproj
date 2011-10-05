@@ -57,7 +57,7 @@
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -349,11 +349,23 @@
       <DependentUpon>AGauge.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Configuration.ru.resx">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.ru.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightData.ru.resx">
       <DependentUpon>FlightData.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightPlanner.ru.resx">
+      <DependentUpon>FlightPlanner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Help.ru.resx">
+      <DependentUpon>Help.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Simulation.ru.resx">
+      <DependentUpon>Simulation.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Terminal.ru.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
@@ -420,7 +432,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="HUD.resx">
       <DependentUpon>HUD.cs</DependentUpon>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="JoystickSetup.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>

@@ -9,6 +9,9 @@ using System.Windows.Forms;
 using System.Resources;
 using System.Collections;
 using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace resedit
 {
@@ -113,7 +116,7 @@ namespace resedit
 
             foreach (CultureInfo cul in temp)
             {
-                if (cul.DisplayName == comboBox1.Text)
+                if ((cul.DisplayName + " " + cul.Name) == comboBox1.Text)
                 {
                     Console.WriteLine(cul.Name);
                     ci = cul.Name;
@@ -126,21 +129,60 @@ namespace resedit
 
             System.IO.Directory.CreateDirectory("translation");
 
+            StreamWriter sw = new StreamWriter("translation/output.html");
+            sw.Write("<html><body><table>");
+
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
-                if (row.Cells[colFile.Index].Value.ToString() != fname)
+                try
                 {
-                    if (writer !=null)
-                        writer.Close();
-                    writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resx", "." + ci + ".resx"));
+                    if (row.Cells[colFile.Index].Value.ToString() != fname)
+                    {
+                        if (writer != null)
+                            writer.Close();
+                        writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resx", "." + ci + ".resx"));
+                    }
+
+                    writer.AddResource(row.Cells[colInternal.Index].Value.ToString(), row.Cells[colOtherLang.Index].Value.ToString());
+
+                    fname = row.Cells[colFile.Index].Value.ToString();
                 }
+                catch { }
 
-                writer.AddResource(row.Cells[colInternal.Index].Value.ToString(),row.Cells[colOtherLang.Index].Value.ToString());
-
-                fname = row.Cells[colFile.Index].Value.ToString();
+                sw.Write("<tr><td>" + row.Cells[colFile.Index].Value.ToString() + "</td><td>" + row.Cells[colInternal.Index].Value.ToString() + "</td><td>" + row.Cells[colOtherLang.Index].Value.ToString()+"</td></tr>");
             }
             if (writer != null)
                 writer.Close();
+            sw.Write("</table></html>");
+            sw.Close();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            StreamReader sr1 = new StreamReader("translation/output.txt");
+
+            StreamReader sr2 = new StreamReader("translation/output.ru.txt", Encoding.Unicode);
+
+            while (!sr1.EndOfStream)
+            {
+                string line1 = sr1.ReadLine();
+                string line1a = sr2.ReadLine();
+
+                int index1 = line1.IndexOf(' ', line1.IndexOf(' ') + 1) + 1;
+
+                int index1a = line1a.IndexOf(' ',line1a.IndexOf(' ')+1)+1;
+
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                {
+                    if (line1.Contains(row.Cells[colFile.Index].Value.ToString()) && line1.Contains(row.Cells[colInternal.Index].Value.ToString()))
+                    {
+                        row.Cells[colOtherLang.Index].Value = line1a.Substring(index1a);
+                    }
+                }
+            }
+
+            sr1.Close();
+            sr2.Close();
         }
     }
 }
