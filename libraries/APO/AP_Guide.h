@@ -40,7 +40,8 @@ public:
 	 * @param navigator This is the navigator pointer.
 	 */
 	AP_Guide(AP_Navigator * navigator, AP_HardwareAbstractionLayer * hal) :
-		_navigator(navigator), _hal(hal), _command(0), _previousCommand(0),
+		_navigator(navigator), _hal(hal), _command(AP_MavlinkCommand::home), 
+				_previousCommand(AP_MavlinkCommand::home),
 				_headingCommand(0), _airSpeedCommand(0),
 				_groundSpeedCommand(0), _altitudeCommand(0), _pNCmd(0),
 				_pECmd(0), _pDCmd(0), _mode(MAV_NAV_LOST),
@@ -144,8 +145,8 @@ public:
 				_rangeFinderLeft(), _rangeFinderRight(),
 				_group(k_guide, PSTR("guide_")),
 				_velocityCommand(&_group, 1, 1, PSTR("velCmd")),
-				_crossTrackGain(&_group, 2, 2, PSTR("xt")),
-				_crossTrackLim(&_group, 3, 10, PSTR("xtLim")) {
+				_crossTrackGain(&_group, 2, 1, PSTR("xt")),
+				_crossTrackLim(&_group, 3, 90, PSTR("xtLim")) {
 
 		for (uint8_t i = 0; i < _hal->rangeFinders.getSize(); i++) {
 			RangeFinder * rF = _hal->rangeFinders[i];
@@ -168,67 +169,8 @@ public:
 	}
 
 	virtual void update() {
-//		_hal->debug->printf_P(
-//				PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
-//				getNumberOfCommands(),
-//				getCurrentIndex(),
-//				getPreviousIndex());
-
-		// if we don't have enough waypoint for cross track calcs
-		// go home
-		if (_numberOfCommands == 1) {
-			_mode = MAV_NAV_RETURNING;
-			_altitudeCommand = AP_MavlinkCommand::home.getAlt();
-			_headingCommand = AP_MavlinkCommand::home.bearingTo(
-					_navigator->getLat_degInt(), _navigator->getLon_degInt())
-					+ 180 * deg2Rad;
-			if (_headingCommand > 360 * deg2Rad)
-				_headingCommand -= 360 * deg2Rad;
-
-//			_hal->debug->printf_P(PSTR("going home: bearing: %f distance: %f\n"),
-//			headingCommand,AP_MavlinkCommand::home.distanceTo(_navigator->getLat_degInt(),_navigator->getLon_degInt()));
-		} else {
-			_mode = MAV_NAV_WAYPOINT;
-			_altitudeCommand = _command.getAlt();
-			// TODO wrong behavior if 0 selected as waypoint, says previous 0
-			float dXt = _command.crossTrack(_previousCommand,
-					_navigator->getLat_degInt(),
-					_navigator->getLon_degInt());
-			float temp = dXt * _crossTrackGain * deg2Rad; // crosstrack gain, rad/m
-			if (temp > _crossTrackLim * deg2Rad)
-				temp = _crossTrackLim * deg2Rad;
-			if (temp < -_crossTrackLim * deg2Rad)
-				temp = -_crossTrackLim * deg2Rad;
-			float bearing = _previousCommand.bearingTo(_command);
-			_headingCommand = bearing - temp;
-			float alongTrack = _command.alongTrack(_previousCommand,
-					_navigator->getLat_degInt(),
-					_navigator->getLon_degInt());
-			float distanceToNext = _command.distanceTo(
-					_navigator->getLat_degInt(), _navigator->getLon_degInt());
-			float segmentLength = _previousCommand.distanceTo(_command);
-			if (distanceToNext < _command.getRadius() || alongTrack
-					> segmentLength)
-			{
-				Serial.println("radius reached");
-				nextCommand();
-			}
-//			_hal->debug->printf_P(
-//					PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
-//					bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
-		}
-
-		_groundSpeedCommand = _velocityCommand;
-
-		// TODO : calculate pN,pE,pD from home and gps coordinates
-		_pNCmd = _command.getPN(_navigator->getLat_degInt(),
-				_navigator->getLon_degInt());
-		_pECmd = _command.getPE(_navigator->getLat_degInt(),
-				_navigator->getLon_degInt());
-		_pDCmd = _command.getPD(_navigator->getAlt_intM());
-
 		// process mavlink commands
-		//handleCommand();
+		handleCommand();
 
 		// obstacle avoidance overrides
 		// stop if your going to drive into something in front of you
@@ -237,6 +179,7 @@ public:
 		float frontDistance = _rangeFinderFront->distance / 200.0; //convert for other adc
 		if (_rangeFinderFront && frontDistance < 2) {
 			_mode = MAV_NAV_VECTOR;
+
 			//airSpeedCommand = 0;
 			//groundSpeedCommand = 0;
 //			_headingCommand -= 45 * deg2Rad;
@@ -291,18 +234,74 @@ public:
 		_previousCommand = AP_MavlinkCommand(getPreviousIndex());
 	}
 
-	void handleCommand(AP_MavlinkCommand command,
-			AP_MavlinkCommand previousCommand) {
+	void handleCommand() {
+
 		// TODO handle more commands
-		switch (command.getCommand()) {
+		switch (_command.getCommand()) {
+
 		case MAV_CMD_NAV_WAYPOINT: {
-			// if within radius, increment
-			float d = previousCommand.distanceTo(_navigator->getLat_degInt(),
-					_navigator->getLon_degInt());
-			if (d < command.getRadius()) {
-				nextCommand();
-				Serial.println("radius reached");
+
+			// if we don't have enough waypoint for cross track calcs
+		    // go home
+			if (_numberOfCommands == 1) {
+				_mode = MAV_NAV_RETURNING;
+				_altitudeCommand = AP_MavlinkCommand::home.getAlt();
+				_headingCommand = AP_MavlinkCommand::home.bearingTo(
+						_navigator->getLat_degInt(), _navigator->getLon_degInt())
+						+ 180 * deg2Rad;
+				if (_headingCommand > 360 * deg2Rad)
+					_headingCommand -= 360 * deg2Rad;
+
+				//_hal->debug->printf_P(PSTR("going home: bearing: %f distance: %f\n"),
+				//headingCommand,AP_MavlinkCommand::home.distanceTo(_navigator->getLat_degInt(),_navigator->getLon_degInt()));
+				
+			// if we have 2 or more waypoints do x track navigation
+			} else {
+				_mode = MAV_NAV_WAYPOINT;
+				float alongTrack = _command.alongTrack(_previousCommand,
+						_navigator->getLat_degInt(),
+						_navigator->getLon_degInt());
+				float distanceToNext = _command.distanceTo(
+						_navigator->getLat_degInt(), _navigator->getLon_degInt());
+				float segmentLength = _previousCommand.distanceTo(_command);
+				if (distanceToNext < _command.getRadius() || alongTrack
+						> segmentLength)
+				{
+					Serial.println("waypoint reached");
+					nextCommand();
+				}
+				_altitudeCommand = _command.getAlt();
+				float dXt = _command.crossTrack(_previousCommand,
+						_navigator->getLat_degInt(),
+						_navigator->getLon_degInt());
+				float temp = dXt * _crossTrackGain * deg2Rad; // crosstrack gain, rad/m
+				if (temp > _crossTrackLim * deg2Rad)
+					temp = _crossTrackLim * deg2Rad;
+				if (temp < -_crossTrackLim * deg2Rad)
+					temp = -_crossTrackLim * deg2Rad;
+				float bearing = _previousCommand.bearingTo(_command);
+				_headingCommand = bearing - temp;
+				//_hal->debug->printf_P(
+						//PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
+						//bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
 			}
+
+			_groundSpeedCommand = _velocityCommand;
+
+			// calculate pN,pE,pD from home and gps coordinates
+			_pNCmd = _command.getPN(_navigator->getLat_degInt(),
+					_navigator->getLon_degInt());
+			_pECmd = _command.getPE(_navigator->getLat_degInt(),
+					_navigator->getLon_degInt());
+			_pDCmd = _command.getPD(_navigator->getAlt_intM());
+
+			// debug 
+			//_hal->debug->printf_P(
+				//PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
+				//getNumberOfCommands(),
+				//getCurrentIndex(),
+				//getPreviousIndex());
+
 			break;
 		}
 //		case MAV_CMD_CONDITION_CHANGE_ALT:
@@ -354,4 +353,5 @@ private:
 } // namespace apo
 
 #endif // AP_Guide_H
+
 // vim:ts=4:sw=4:expandtab
