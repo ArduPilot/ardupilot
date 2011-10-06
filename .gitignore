@@ -7,3 +7,4 @@ CMakeFiles
 CMakeCache.txt
 cmake_install.cmake
 build
+/Tools/ArdupilotMegaPlanner/bin/Release/gmapcache
