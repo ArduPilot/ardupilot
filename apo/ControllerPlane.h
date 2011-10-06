@@ -83,7 +83,7 @@ public:
 						pidAltThrLim, pidAltThrDFCut),
 				requireRadio(false) {
 
-		_hal->debug->println_P(PSTR("initializing car controller"));
+		_hal->debug->println_P(PSTR("initializing plane controller"));
 
 		_hal->rc.push_back(
 				new AP_RcChannel(k_chMode, PSTR("mode_"), APM_RC, 5, 1100,

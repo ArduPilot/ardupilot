@@ -273,13 +273,9 @@ public:
 
 		AP_Navigator::calibrate();
 
-		// TODO: handle cold restart
+		// TODO: handle cold/warm restart
 		if (_hal->imu) {
-			/*
-			 * Gyro has built in warm up cycle and should
-			 * run first */
-			_hal->imu->init_gyro(NULL);
-			_hal->imu->init_accel(NULL);
+			_hal->imu->init(IMU::COLD_START,delay);
 		}
 	}
 	virtual void updateFast(float dt) {

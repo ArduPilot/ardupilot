@@ -24,6 +24,19 @@ AP_MavlinkCommand::AP_MavlinkCommand(uint16_t index, bool doLoad) :
 		Serial.print("key: "); Serial.println(k_commands + index);
 		Serial.println("++");
 	}
+
+	// default values for structure
+	_data.get().command = MAV_CMD_NAV_WAYPOINT;
+	_data.get().autocontinue = true;
+	_data.get().frame = MAV_FRAME_GLOBAL;
+	_data.get().param1 = 0;
+	_data.get().param2 = 10; // radius of 10 meters
+	_data.get().param3 = 0;
+	_data.get().param4 = 0;
+	_data.get().x = 0;
+	_data.get().y = 0;
+	_data.get().z = 1000;
+
 	// This is a failsafe measure to stop trying to load a command if it can't load
 	if (doLoad && !load()) {
 		Serial.println("load failed, reverting to home waypoint");
@@ -153,11 +166,10 @@ float AP_MavlinkCommand::distanceTo(int32_t lat_degInt, int32_t lon_degInt) cons
 //calculates cross track of a current location
 float AP_MavlinkCommand::crossTrack(const AP_MavlinkCommand & previous,
 		int32_t lat_degInt, int32_t lon_degInt) const {
-		float d = previous.distanceTo(lat_degInt, lon_degInt);
-		float bCurrent = previous.bearingTo(lat_degInt, lon_degInt);
-		float bNext = previous.bearingTo(*this);
-		return asin(sin(d / rEarth) * sin(bCurrent - bNext)) * rEarth;
-	return 0;
+	float d = previous.distanceTo(lat_degInt, lon_degInt);
+	float bCurrent = previous.bearingTo(lat_degInt, lon_degInt);
+	float bNext = previous.bearingTo(*this);
+	return asin(sin(d / rEarth) * sin(bCurrent - bNext)) * rEarth;
 }
 
 // calculates along  track distance of a current location

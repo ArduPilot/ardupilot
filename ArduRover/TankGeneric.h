@@ -11,7 +11,7 @@
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_TANK;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
@@ -32,15 +32,15 @@ static const uint8_t heartBeatTimeout = 3;
 
 // optional sensors
 static bool gpsEnabled = false;
-static bool baroEnabled = true;
-static bool compassEnabled = true;
+static bool baroEnabled = false;
+static bool compassEnabled = false;
 
-static bool rangeFinderFrontEnabled = true;
-static bool rangeFinderBackEnabled = true;
-static bool rangeFinderLeftEnabled = true;
-static bool rangeFinderRightEnabled = true;
-static bool rangeFinderUpEnabled = true;
-static bool rangeFinderDownEnabled = true;
+static bool rangeFinderFrontEnabled = false;
+static bool rangeFinderBackEnabled = false;
+static bool rangeFinderLeftEnabled = false;
+static bool rangeFinderRightEnabled = false;
+static bool rangeFinderUpEnabled = false;
+static bool rangeFinderDownEnabled = false;
 
 // loop rates
 static const float loop0Rate = 150;

@@ -29,24 +29,19 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 	hal->setState(MAV_STATE_CALIBRATING);
 	hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
 	hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
-	navigator->calibrate();
 
-	// start clock
-	//uint32_t timeStart = millis();
-	//uint16_t gpsWaitTime = 5000; // 5 second wait for gps
+	if (navigator) navigator->calibrate();
 
 	/*
 	 * Look for valid initial state
 	 */
-	while (1) {
+	while (_navigator) {
 		// letc gcs known we are alive
 		hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
 		hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
-		hal->hil->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
-		delay(1000);
 		if (hal->getMode() == MODE_LIVE) {
 			_navigator->updateSlow(0);
-			if (_hal->gps) {
+			if (hal->gps) {
 				if (hal->gps->fix) {
 					break;
 				} else {
@@ -58,7 +53,8 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 				break;
 			}
 		} else if (hal->getMode() == MODE_HIL_CNTL) { // hil
-			_hal->hil->receive();
+			hal->hil->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
+			hal->hil->receive();
 			Serial.println("HIL Receive Called");
 			if (_navigator->getTimeStamp() != 0) {
 				// give hil a chance to send some packets
@@ -71,20 +67,24 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 				break;
 			}
 			hal->debug->println_P(PSTR("waiting for hil packet"));
+			delay(1000);
 		}
 	}
-
+	
 	AP_MavlinkCommand::home.setAlt(_navigator->getAlt());
 	AP_MavlinkCommand::home.setLat(_navigator->getLat());
 	AP_MavlinkCommand::home.setLon(_navigator->getLon());
+	AP_MavlinkCommand::home.setCommand(MAV_CMD_NAV_WAYPOINT);
 	AP_MavlinkCommand::home.save();
-	_hal->debug->printf_P(PSTR("\nhome before load lat: %f deg, lon: %f deg\n"),
+	_hal->debug->printf_P(PSTR("\nhome before load lat: %f deg, lon: %f deg, cmd: %d\n"),
 			AP_MavlinkCommand::home.getLat()*rad2Deg,
-			AP_MavlinkCommand::home.getLon()*rad2Deg);
+			AP_MavlinkCommand::home.getLon()*rad2Deg,
+			AP_MavlinkCommand::home.getCommand());
 	AP_MavlinkCommand::home.load();
-	_hal->debug->printf_P(PSTR("home after load lat: %f deg, lon: %f deg\n"),
+	_hal->debug->printf_P(PSTR("\nhome after load lat: %f deg, lon: %f deg, cmd: %d\n"),
 			AP_MavlinkCommand::home.getLat()*rad2Deg,
-			AP_MavlinkCommand::home.getLon()*rad2Deg);
+			AP_MavlinkCommand::home.getLon()*rad2Deg,
+			AP_MavlinkCommand::home.getCommand());
 
 	/*
 	 * Attach loops
@@ -135,16 +135,7 @@ void AP_Autopilot::callback1(void * data) {
 		apo->getHal()->hil->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
 	}
 
-	/*
-	 * update guidance laws
-	 */
-	if (apo->getGuide())
-	{
-		//apo->getHal()->debug->println_P(PSTR("updating guide"));
-		apo->getGuide()->update();
-	}
-
-	/*
+    /*
 	 * update control laws
 	 */
 	if (apo->getController()) {
@@ -161,6 +152,15 @@ void AP_Autopilot::callback1(void * data) {
 void AP_Autopilot::callback2(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
 	//apo->getHal()->debug->println_P(PSTR("callback 2"));
+	
+	/*
+	 * update guidance laws
+	 */
+	if (apo->getGuide())
+	{
+		//apo->getHal()->debug->println_P(PSTR("updating guide"));
+		apo->getGuide()->update();
+	}
 
 	/*
 	 * send telemetry

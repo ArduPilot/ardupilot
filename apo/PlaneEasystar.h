@@ -55,7 +55,7 @@ static const float loop4Rate = 0.1;
 static const float rdrAilMix = 1.0; // since there are no ailerons
 
 // bank error to roll servo
-static const float pidBnkRllP = -0.5;
+static const float pidBnkRllP = -1;
 static const float pidBnkRllI = 0.0;
 static const float pidBnkRllD = 0.0;
 static const float pidBnkRllAwu = 0.0;
@@ -79,7 +79,7 @@ static const float pidSpdPitLim = 1.0;
 static const float pidSpdPitDFCut = 0.0;
 
 // yaw rate error to yaw servo
-static const float pidYwrYawP = -0.2;
+static const float pidYwrYawP = -0.1;
 static const float pidYwrYawI = 0.0;
 static const float pidYwrYawD = 0.0;
 static const float pidYwrYawAwu = 0.0;

@@ -15,7 +15,7 @@
 #include <APO.h>
 
 // Vehicle Configuration
-#include "CarStampede.h"
+#include "TankGeneric.h"
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"
