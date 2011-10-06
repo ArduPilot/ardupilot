@@ -117,37 +117,22 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="lbl_status.Text" xml:space="preserve">
-    <value>Статус </value>
+  <data name="BUT_logbrowse.Text" xml:space="preserve">
+    <value>Смотреть Лог</value>
   </data>
-  <data name="lbl_AP.Text" xml:space="preserve">
-    <value>ArduPlane </value>
+  <data name="BUTsetupshow.Text" xml:space="preserve">
+    <value>Показать настройки</value>
   </data>
-  <data name="label2.Text" xml:space="preserve">
-    <value>Изображения Макса Левина </value>
+  <data name="TXT_terminal.Text" xml:space="preserve">
+    <value>ВНИМАНИЕ! Вы должны переподключиться и передвинуть переключатель для работы с другими вкладками.</value>
   </data>
-  <data name="lbl_APHil.Text" xml:space="preserve">
-    <value>ArduPlane (Xplane симулятор) </value>
+  <data name="BUTtests.Text" xml:space="preserve">
+    <value>Тесты</value>
   </data>
-  <data name="lbl_ACQuad.Text" xml:space="preserve">
-    <value>ArduCopter Quad </value>
+  <data name="Logs.Text" xml:space="preserve">
+    <value>Скачать Лог</value>
   </data>
-  <data name="lbl_ACHexa.Text" xml:space="preserve">
-    <value>ArduCopter Hexa </value>
-  </data>
-  <data name="lbl_ACTri.Text" xml:space="preserve">
-    <value>ArduCopter Tri </value>
-  </data>
-  <data name="lbl_ACY6.Text" xml:space="preserve">
-    <value>ArduCopter Y6 </value>
-  </data>
-  <data name="lbl_Heli.Text" xml:space="preserve">
-    <value>ArduCopter Хели </value>
-  </data>
-  <data name="lbl_ACHil.Text" xml:space="preserve">
-    <value>ArduCopter Quad (Simulator) </value>
-  </data>
-  <data name="BUT_setup.Text" xml:space="preserve">
-    <value>APM Setup (Plane и четырехъядерных) </value>
+  <data name="BUTradiosetup.Text" xml:space="preserve">
+    <value>Настр. Радио</value>
   </data>
 </root>

@@ -161,11 +161,11 @@
             this.XTRACK_P = new System.Windows.Forms.DomainUpDown();
             this.label18 = new System.Windows.Forms.Label();
             this.groupBox7 = new System.Windows.Forms.GroupBox();
-            this.THR_HOLD_IMAX = new System.Windows.Forms.DomainUpDown();
+            this.THR_ALT_IMAX = new System.Windows.Forms.DomainUpDown();
             this.label19 = new System.Windows.Forms.Label();
-            this.THR_HOLD_I = new System.Windows.Forms.DomainUpDown();
+            this.THR_ALT_I = new System.Windows.Forms.DomainUpDown();
             this.label21 = new System.Windows.Forms.Label();
-            this.THR_HOLD_P = new System.Windows.Forms.DomainUpDown();
+            this.THR_ALT_P = new System.Windows.Forms.DomainUpDown();
             this.label22 = new System.Windows.Forms.Label();
             this.groupBox19 = new System.Windows.Forms.GroupBox();
             this.HLD_LAT_IMAX = new System.Windows.Forms.DomainUpDown();
@@ -217,6 +217,8 @@
             this.RATE_RLL_P = new System.Windows.Forms.DomainUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.TabPlanner = new System.Windows.Forms.TabPage();
+            this.label12 = new System.Windows.Forms.Label();
+            this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
             this.label24 = new System.Windows.Forms.Label();
             this.CHK_loadwponconnect = new System.Windows.Forms.CheckBox();
             this.label23 = new System.Windows.Forms.Label();
@@ -263,8 +265,13 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.label12 = new System.Windows.Forms.Label();
-            this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.THR_RATE_IMAX = new System.Windows.Forms.DomainUpDown();
+            this.label14 = new System.Windows.Forms.Label();
+            this.THR_RATE_I = new System.Windows.Forms.DomainUpDown();
+            this.label20 = new System.Windows.Forms.Label();
+            this.THR_RATE_P = new System.Windows.Forms.DomainUpDown();
+            this.label25 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAPM2.SuspendLayout();
@@ -293,6 +300,7 @@
             this.groupBox25.SuspendLayout();
             this.TabPlanner.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
+            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // Params
@@ -984,6 +992,7 @@
             // 
             // TabAC2
             // 
+            this.TabAC2.Controls.Add(this.groupBox5);
             this.TabAC2.Controls.Add(this.CHK_lockrollpitch);
             this.TabAC2.Controls.Add(this.groupBox4);
             this.TabAC2.Controls.Add(this.groupBox6);
@@ -1114,40 +1123,40 @@
             // 
             // groupBox7
             // 
-            this.groupBox7.Controls.Add(this.THR_HOLD_IMAX);
+            this.groupBox7.Controls.Add(this.THR_ALT_IMAX);
             this.groupBox7.Controls.Add(this.label19);
-            this.groupBox7.Controls.Add(this.THR_HOLD_I);
+            this.groupBox7.Controls.Add(this.THR_ALT_I);
             this.groupBox7.Controls.Add(this.label21);
-            this.groupBox7.Controls.Add(this.THR_HOLD_P);
+            this.groupBox7.Controls.Add(this.THR_ALT_P);
             this.groupBox7.Controls.Add(this.label22);
             resources.ApplyResources(this.groupBox7, "groupBox7");
             this.groupBox7.Name = "groupBox7";
             this.groupBox7.TabStop = false;
             // 
-            // THR_HOLD_IMAX
+            // THR_ALT_IMAX
             // 
-            resources.ApplyResources(this.THR_HOLD_IMAX, "THR_HOLD_IMAX");
-            this.THR_HOLD_IMAX.Name = "THR_HOLD_IMAX";
+            resources.ApplyResources(this.THR_ALT_IMAX, "THR_ALT_IMAX");
+            this.THR_ALT_IMAX.Name = "THR_ALT_IMAX";
             // 
             // label19
             // 
             resources.ApplyResources(this.label19, "label19");
             this.label19.Name = "label19";
             // 
-            // THR_HOLD_I
+            // THR_ALT_I
             // 
-            resources.ApplyResources(this.THR_HOLD_I, "THR_HOLD_I");
-            this.THR_HOLD_I.Name = "THR_HOLD_I";
+            resources.ApplyResources(this.THR_ALT_I, "THR_ALT_I");
+            this.THR_ALT_I.Name = "THR_ALT_I";
             // 
             // label21
             // 
             resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
             // 
-            // THR_HOLD_P
+            // THR_ALT_P
             // 
-            resources.ApplyResources(this.THR_HOLD_P, "THR_HOLD_P");
-            this.THR_HOLD_P.Name = "THR_HOLD_P";
+            resources.ApplyResources(this.THR_ALT_P, "THR_ALT_P");
+            this.THR_ALT_P.Name = "THR_ALT_P";
             // 
             // label22
             // 
@@ -1494,6 +1503,19 @@
             resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Name = "TabPlanner";
             // 
+            // label12
+            // 
+            resources.ApplyResources(this.label12, "label12");
+            this.label12.Name = "label12";
+            // 
+            // CHK_GDIPlus
+            // 
+            resources.ApplyResources(this.CHK_GDIPlus, "CHK_GDIPlus");
+            this.CHK_GDIPlus.Name = "CHK_GDIPlus";
+            this.toolTip1.SetToolTip(this.CHK_GDIPlus, resources.GetString("CHK_GDIPlus.ToolTip"));
+            this.CHK_GDIPlus.UseVisualStyleBackColor = true;
+            this.CHK_GDIPlus.CheckedChanged += new System.EventHandler(this.CHK_GDIPlus_CheckedChanged);
+            // 
             // label24
             // 
             resources.ApplyResources(this.label24, "label24");
@@ -1834,18 +1856,47 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // label12
+            // groupBox5
             // 
-            resources.ApplyResources(this.label12, "label12");
-            this.label12.Name = "label12";
+            this.groupBox5.Controls.Add(this.THR_RATE_IMAX);
+            this.groupBox5.Controls.Add(this.label14);
+            this.groupBox5.Controls.Add(this.THR_RATE_I);
+            this.groupBox5.Controls.Add(this.label20);
+            this.groupBox5.Controls.Add(this.THR_RATE_P);
+            this.groupBox5.Controls.Add(this.label25);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.TabStop = false;
             // 
-            // CHK_GDIPlus
+            // THR_RATE_IMAX
             // 
-            resources.ApplyResources(this.CHK_GDIPlus, "CHK_GDIPlus");
-            this.CHK_GDIPlus.Name = "CHK_GDIPlus";
-            this.toolTip1.SetToolTip(this.CHK_GDIPlus, resources.GetString("CHK_GDIPlus.ToolTip"));
-            this.CHK_GDIPlus.UseVisualStyleBackColor = true;
-            this.CHK_GDIPlus.CheckedChanged += new System.EventHandler(this.CHK_GDIPlus_CheckedChanged);
+            resources.ApplyResources(this.THR_RATE_IMAX, "THR_RATE_IMAX");
+            this.THR_RATE_IMAX.Name = "THR_RATE_IMAX";
+            // 
+            // label14
+            // 
+            resources.ApplyResources(this.label14, "label14");
+            this.label14.Name = "label14";
+            // 
+            // THR_RATE_I
+            // 
+            resources.ApplyResources(this.THR_RATE_I, "THR_RATE_I");
+            this.THR_RATE_I.Name = "THR_RATE_I";
+            // 
+            // label20
+            // 
+            resources.ApplyResources(this.label20, "label20");
+            this.label20.Name = "label20";
+            // 
+            // THR_RATE_P
+            // 
+            resources.ApplyResources(this.THR_RATE_P, "THR_RATE_P");
+            this.THR_RATE_P.Name = "THR_RATE_P";
+            // 
+            // label25
+            // 
+            resources.ApplyResources(this.label25, "label25");
+            this.label25.Name = "label25";
             // 
             // Configuration
             // 
@@ -1890,6 +1941,7 @@
             this.groupBox25.ResumeLayout(false);
             this.TabPlanner.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
+            this.groupBox5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -2018,11 +2070,11 @@
         private System.Windows.Forms.DomainUpDown XTRACK_P;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.GroupBox groupBox7;
-        private System.Windows.Forms.DomainUpDown THR_HOLD_IMAX;
+        private System.Windows.Forms.DomainUpDown THR_ALT_IMAX;
         private System.Windows.Forms.Label label19;
-        private System.Windows.Forms.DomainUpDown THR_HOLD_I;
+        private System.Windows.Forms.DomainUpDown THR_ALT_I;
         private System.Windows.Forms.Label label21;
-        private System.Windows.Forms.DomainUpDown THR_HOLD_P;
+        private System.Windows.Forms.DomainUpDown THR_ALT_P;
         private System.Windows.Forms.Label label22;
         private System.Windows.Forms.GroupBox groupBox19;
         private System.Windows.Forms.DomainUpDown HLD_LAT_IMAX;
@@ -2129,5 +2181,12 @@
         private MyButton BUT_compare;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.CheckBox CHK_GDIPlus;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.DomainUpDown THR_RATE_IMAX;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.DomainUpDown THR_RATE_I;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.DomainUpDown THR_RATE_P;
+        private System.Windows.Forms.Label label25;
     }
 }

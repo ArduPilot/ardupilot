@@ -117,22 +117,82 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="TXT_terminal.Text" xml:space="preserve">
-    <value>ПРИМЕЧАНИЕ: Вы должны отключить и измените положение переключателя, когда сделать, чтобы использовать другие вкладки  </value>
+  <data name="CHKREV_roll.Text" xml:space="preserve">
+    <value>Реверс Крен</value>
   </data>
-  <data name="BUTsetupshow.Text" xml:space="preserve">
-    <value>Показать настройки </value>
+  <data name="CHKREV_pitch.Text" xml:space="preserve">
+    <value>Реверс Тангаж</value>
   </data>
-  <data name="BUTradiosetup.Text" xml:space="preserve">
-    <value>Установка радио </value>
+  <data name="CHKREV_rudder.Text" xml:space="preserve">
+    <value>Реверс Рысканье</value>
   </data>
-  <data name="BUTtests.Text" xml:space="preserve">
-    <value>тесты </value>
+  <data name="ConnectComPort.Text" xml:space="preserve">
+    <value>Старт/Стоп</value>
   </data>
-  <data name="Logs.Text" xml:space="preserve">
-    <value>Вход Скачать </value>
+  <data name="OutputLog.Text" xml:space="preserve">
+    <value />
   </data>
-  <data name="BUT_logbrowse.Text" xml:space="preserve">
-    <value>Вход Обзор </value>
+  <data name="SaveSettings.Text" xml:space="preserve">
+    <value>Сохранить</value>
   </data>
-</root>
+  <data name="RAD_softXplanes.Text" xml:space="preserve">
+    <value>X-plane</value>
+  </data>
+  <data name="RAD_softFlightGear.Text" xml:space="preserve">
+    <value>FlightGear</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>GPS Самолета</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Высота</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Долгота</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Широта</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>Рыск.</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>IMU Самолета</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Направление</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Тангаж</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Крен</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Расстояние</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Ошибка курс</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Ошибка выс.</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>Автопилот</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>Газ</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>Рысканье</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>Тангаж</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>Крен</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+ </root>
