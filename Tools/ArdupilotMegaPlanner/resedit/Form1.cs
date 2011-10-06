@@ -148,8 +148,11 @@ namespace resedit
                     fname = row.Cells[colFile.Index].Value.ToString();
                 }
                 catch { }
-
-                sw.Write("<tr><td>" + row.Cells[colFile.Index].Value.ToString() + "</td><td>" + row.Cells[colInternal.Index].Value.ToString() + "</td><td>" + row.Cells[colOtherLang.Index].Value.ToString()+"</td></tr>");
+                try
+                {
+                    sw.Write("<tr><td>" + row.Cells[colFile.Index].Value.ToString() + "</td><td>" + row.Cells[colInternal.Index].Value.ToString() + "</td><td>" + row.Cells[colOtherLang.Index].Value.ToString() + "</td></tr>");
+                }
+                catch (Exception ex) { try { MessageBox.Show("Failed to save " + row.Cells[colOtherLang.Index].Value.ToString() + " " + ex.ToString()); } catch { } }
             }
             if (writer != null)
                 writer.Close();

@@ -118,12 +118,12 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="richTextBox1.Text" xml:space="preserve">
-    <value> </value>
+    <value />
   </data>
   <data name="CHK_showconsole.Text" xml:space="preserve">
-    <value>Показать окно консоли (перезагрузка) </value>
+    <value>Показать консоль(рестарт)</value>
   </data>
   <data name="BUT_updatecheck.Text" xml:space="preserve">
-    <value>Проверить наличие обновлений </value>
+    <value>Проверить обновления</value>
   </data>
 </root>
