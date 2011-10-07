@@ -72,7 +72,7 @@ static void init_ardupilot()
 
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %lu\n"),
-						 freeRAM());
+                    memcheck_available_memory());
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -479,23 +479,6 @@ static void resetPerfData(void) {
 	gps_fix_count 			= 0;
 	pmTest1					= 0;
 	perf_mon_timer 			= millis();
-}
-
-
-/*
- * This function gets the current value of the heap and stack pointers.
- * The stack pointer starts at the top of RAM and grows downwards. The heap pointer
- * starts just above the static variables etc. and grows upwards. SP should always
- * be larger than HP or you'll be in big trouble! The smaller the gap, the more
- * careful you need to be. Julian Gall 6 - Feb - 2009.
- */
-static unsigned long freeRAM() {
-	uint8_t * heapptr, * stackptr;
-	stackptr = (uint8_t *)malloc(4); // use stackptr temporarily
-	heapptr = stackptr; // save value of heap pointer
-	free(stackptr); // free up the memory again (sets stackptr to 0)
-	stackptr = (uint8_t *)(SP); // save value of stack pointer
-	return stackptr - heapptr;
 }
 
 
