@@ -651,7 +651,7 @@ static void Log_Read(int start_page, int end_page)
 	#endif
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
 						 "\nFree RAM: %lu\n"),
-						 freeRAM());
+                    memcheck_available_memory());
 
 	DataFlash.StartRead(start_page);
 	while (page < end_page && page != -1){
