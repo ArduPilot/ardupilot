@@ -21,13 +21,13 @@ AP_EEPROMB::write_byte(int address, int8_t value)
 }
 
 void
-AP_EEPROMB::write_int(int address, int value)
+AP_EEPROMB::write_int(int address, int16_t value)
 {
 	eeprom_write_word((uint16_t *) address, value);
 }
 
 void
-AP_EEPROMB::write_long(int address, long value)
+AP_EEPROMB::write_long(int address, int32_t value)
 {
 	eeprom_write_dword((uint32_t *) address, value);
 }
