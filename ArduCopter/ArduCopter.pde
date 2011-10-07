@@ -1125,6 +1125,9 @@ static void update_navigation()
 
 		case RTL:
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
+				// lets just jump to Loiter Mode after RTL
+				set_mode(LOITER);
+			}else{
 				// calculates desired Yaw
 				// XXX this is an experiment
 				#if FRAME_CONFIG ==	HELI_FRAME
@@ -1132,9 +1135,6 @@ static void update_navigation()
 				#endif
 
 				wp_control = WP_MODE;
-			}else{
-				// lets just jump to Loiter Mode after RTL
-				set_mode(LOITER);
 			}
 
 			// calculates the desired Roll and Pitch
