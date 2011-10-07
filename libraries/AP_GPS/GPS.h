@@ -139,7 +139,7 @@ protected:
 	/// @param	bytes		pointer to a buffer containing bytes representing an
 	///						int in the wrong byte order
 	///	@returns			endian-swapped value
-	int				_swapi(const void *bytes);
+	int16_t				_swapi(const void *bytes);
 
 	/// emit an error message
 	///
