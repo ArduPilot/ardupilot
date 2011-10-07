@@ -108,7 +108,7 @@ public:
     /// @return					An opaque handle
     ///
     Meta_handle meta_get_handle(void) const {
-        return ((Meta_handle)meta_type_id() << 16) | (uint16_t)this;
+        return ((Meta_handle)meta_type_id() << 16) | (uintptr_t)this;
     }
 
     /// Validates an AP_Meta_class handle.
@@ -134,7 +134,7 @@ public:
         // Note that this implies that we cannot deal with objects in ROM or EEPROM,
         // but the constructor wouldn't be able to populate a vtable pointer there anyway...
         //
-        if ((uint16_t)candidate >= (RAMEND - 2)) { // -2 to account for the type_id
+        if ((uintptr_t)candidate >= (RAMEND - 2)) { // -2 to account for the type_id
             return NULL;
         }
 
