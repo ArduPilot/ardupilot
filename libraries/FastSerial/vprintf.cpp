@@ -54,6 +54,15 @@ extern "C" {
 #undef PSTR 
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
 
+#if DESKTOP_BUILD
+#define GETBYTE(flag, mask, pnt)        ({      \
+       unsigned char __c;                       \
+       __c = ((flag) & (mask))                  \
+             ? pgm_read_byte(pnt) : *pnt;       \
+       pnt++;                                   \
+       __c;                                     \
+})
+#else
 #define GETBYTE(flag, mask, pnt)        ({                              \
                         unsigned char __c;                              \
                         asm (                                           \
@@ -68,15 +77,7 @@ extern "C" {
                         );                                              \
                         __c;                                            \
                 })
-/*
-#define GETBYTE(flag, mask, pnt)        ({      \
-       unsigned char __c;                       \
-       __c = ((flag) & (mask))                  \
-             ? pgm_read_byte(pnt) : *pnt;       \
-       pnt++;                                   \
-       __c;                                     \
-})
-*/
+#endif
 
 #define FL_ZFILL	0x01
 #define FL_PLUS		0x02
