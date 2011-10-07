@@ -473,8 +473,10 @@ static void fast_loop()
 	
 		// Read Airspeed
 		// -------------
-	if (g.airspeed_enabled == true && HIL_MODE != HIL_MODE_ATTITUDE) {
+	if (g.airspeed_enabled == true) {
+#if HIL_MODE != HIL_MODE_ATTITUDE
 		read_airspeed();
+#endif
 	} else if (g.airspeed_enabled == true && HIL_MODE == HIL_MODE_ATTITUDE) {
 		calc_airspeed_errors();
 	}
