@@ -56,7 +56,7 @@ void ModeFilter::isort()
 }
 
 //Mode function, returning the mode or median.
-int ModeFilter::mode(){
+int16_t ModeFilter::mode(){
 	int fmode 		= 0;
 	byte i 			= 0;
 	byte count 		= 0;
