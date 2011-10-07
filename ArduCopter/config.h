@@ -467,23 +467,23 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			1.0		//
+# define LOITER_P			.5		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.01	//
+# define LOITER_I			0.0	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		12		// degrees°
 #endif
 
 #ifndef NAV_P
-# define NAV_P				2.0			// for 4.5 ms error = 13.5 pitch
+# define NAV_P				4.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.10		// this feels really low, 4s to move 1 degree pitch...
+# define NAV_I				0.25		// this feels really low, 4s to move 1 degree pitch...
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			16			// degrees
+# define NAV_IMAX			20			// degrees
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX

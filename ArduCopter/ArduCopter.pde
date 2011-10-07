@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.46 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.47 Beta"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -1124,7 +1124,7 @@ static void update_navigation()
 			break;
 
 		case RTL:
-			if(wp_distance > 4){
+			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// calculates desired Yaw
 				// XXX this is an experiment
 				#if FRAME_CONFIG ==	HELI_FRAME
@@ -1402,8 +1402,6 @@ static void update_nav_wp()
 		calc_loiter_pitch_roll();
 
 	} else {
-		// for long journey's reset the wind resopnse
-		// it assumes we are standing still.
 		// use error as the desired rate towards the target
 		calc_nav_rate(g.waypoint_speed_max);
 		// rotate pitch and roll to the copter frame of reference
