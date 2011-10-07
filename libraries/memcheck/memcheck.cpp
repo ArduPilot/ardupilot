@@ -29,7 +29,7 @@ static __attribute__((noinline)) const uint32_t *current_stackptr(void)
 void memcheck_update_stackptr(void)
 {
     if (current_stackptr() < stack_low) {
-        unsigned s = (unsigned)(current_stackptr() - STACK_OFFSET);
+        unsigned s = (uintptr_t)(current_stackptr() - STACK_OFFSET);
         stack_low = (uint32_t *)(s & ~3);
     }
 }
@@ -39,6 +39,7 @@ void memcheck_update_stackptr(void)
  */
 void memcheck_init(void)
 {
+#ifndef DESKTOP_BUILD
     uint32_t *p;
     free(malloc(1)); // ensure heap is initialised
     stack_low = current_stackptr();
@@ -46,6 +47,7 @@ void memcheck_init(void)
     for (p=(uint32_t *)(stack_low-1); p>(uint32_t *)__brkval; p--) {
         *p = SENTINEL;
     }
+#endif
 }
 
 /*
@@ -54,9 +56,13 @@ void memcheck_init(void)
  */
 unsigned memcheck_available_memory(void)
 {
+#ifdef DESKTOP_BUILD
+    return 0x1000;
+#else
     memcheck_update_stackptr();
     while (*stack_low != SENTINEL && stack_low > (const uint32_t *)__brkval) {
         stack_low--;
     }
-    return (unsigned)(stack_low) - __brkval;
+    return (uintptr_t)(stack_low) - __brkval;
+#endif
 }
