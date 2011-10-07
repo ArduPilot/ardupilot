@@ -141,6 +141,12 @@
             this.RLL2SRV_P = new System.Windows.Forms.DomainUpDown();
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC2 = new System.Windows.Forms.TabPage();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.THR_RATE_IMAX = new System.Windows.Forms.DomainUpDown();
+            this.THR_RATE_I = new System.Windows.Forms.DomainUpDown();
+            this.label20 = new System.Windows.Forms.Label();
+            this.THR_RATE_P = new System.Windows.Forms.DomainUpDown();
+            this.label25 = new System.Windows.Forms.Label();
             this.CHK_lockrollpitch = new System.Windows.Forms.CheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.WP_SPEED_MAX = new System.Windows.Forms.DomainUpDown();
@@ -217,6 +223,7 @@
             this.RATE_RLL_P = new System.Windows.Forms.DomainUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.TabPlanner = new System.Windows.Forms.TabPage();
+            this.CMB_videoresolutions = new System.Windows.Forms.ComboBox();
             this.label12 = new System.Windows.Forms.Label();
             this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
             this.label24 = new System.Windows.Forms.Label();
@@ -259,19 +266,15 @@
             this.BUT_videostop = new ArdupilotMega.MyButton();
             this.BUT_videostart = new ArdupilotMega.MyButton();
             this.TabSetup = new System.Windows.Forms.TabPage();
+            this.label109 = new System.Windows.Forms.Label();
             this.BUT_rerequestparams = new ArdupilotMega.MyButton();
             this.BUT_writePIDS = new ArdupilotMega.MyButton();
             this.BUT_save = new ArdupilotMega.MyButton();
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.THR_RATE_IMAX = new System.Windows.Forms.DomainUpDown();
             this.label14 = new System.Windows.Forms.Label();
-            this.THR_RATE_I = new System.Windows.Forms.DomainUpDown();
-            this.label20 = new System.Windows.Forms.Label();
-            this.THR_RATE_P = new System.Windows.Forms.DomainUpDown();
-            this.label25 = new System.Windows.Forms.Label();
+            this.label26 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAPM2.SuspendLayout();
@@ -288,6 +291,7 @@
             this.groupBox9.SuspendLayout();
             this.groupBox8.SuspendLayout();
             this.TabAC2.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox6.SuspendLayout();
             this.groupBox7.SuspendLayout();
@@ -300,7 +304,6 @@
             this.groupBox25.SuspendLayout();
             this.TabPlanner.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
-            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // Params
@@ -1007,6 +1010,43 @@
             resources.ApplyResources(this.TabAC2, "TabAC2");
             this.TabAC2.Name = "TabAC2";
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.label14);
+            this.groupBox5.Controls.Add(this.THR_RATE_IMAX);
+            this.groupBox5.Controls.Add(this.THR_RATE_I);
+            this.groupBox5.Controls.Add(this.label20);
+            this.groupBox5.Controls.Add(this.THR_RATE_P);
+            this.groupBox5.Controls.Add(this.label25);
+            resources.ApplyResources(this.groupBox5, "groupBox5");
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.TabStop = false;
+            // 
+            // THR_RATE_IMAX
+            // 
+            resources.ApplyResources(this.THR_RATE_IMAX, "THR_RATE_IMAX");
+            this.THR_RATE_IMAX.Name = "THR_RATE_IMAX";
+            // 
+            // THR_RATE_I
+            // 
+            resources.ApplyResources(this.THR_RATE_I, "THR_RATE_I");
+            this.THR_RATE_I.Name = "THR_RATE_I";
+            // 
+            // label20
+            // 
+            resources.ApplyResources(this.label20, "label20");
+            this.label20.Name = "label20";
+            // 
+            // THR_RATE_P
+            // 
+            resources.ApplyResources(this.THR_RATE_P, "THR_RATE_P");
+            this.THR_RATE_P.Name = "THR_RATE_P";
+            // 
+            // label25
+            // 
+            resources.ApplyResources(this.label25, "label25");
+            this.label25.Name = "label25";
+            // 
             // CHK_lockrollpitch
             // 
             resources.ApplyResources(this.CHK_lockrollpitch, "CHK_lockrollpitch");
@@ -1459,6 +1499,8 @@
             // 
             // TabPlanner
             // 
+            this.TabPlanner.Controls.Add(this.label26);
+            this.TabPlanner.Controls.Add(this.CMB_videoresolutions);
             this.TabPlanner.Controls.Add(this.label12);
             this.TabPlanner.Controls.Add(this.CHK_GDIPlus);
             this.TabPlanner.Controls.Add(this.label24);
@@ -1502,6 +1544,13 @@
             this.TabPlanner.Controls.Add(this.BUT_videostart);
             resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Name = "TabPlanner";
+            // 
+            // CMB_videoresolutions
+            // 
+            this.CMB_videoresolutions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.CMB_videoresolutions.FormattingEnabled = true;
+            resources.ApplyResources(this.CMB_videoresolutions, "CMB_videoresolutions");
+            this.CMB_videoresolutions.Name = "CMB_videoresolutions";
             // 
             // label12
             // 
@@ -1788,6 +1837,7 @@
             this.CMB_videosources.FormattingEnabled = true;
             resources.ApplyResources(this.CMB_videosources, "CMB_videosources");
             this.CMB_videosources.Name = "CMB_videosources";
+            this.CMB_videosources.SelectedIndexChanged += new System.EventHandler(this.CMB_videosources_SelectedIndexChanged);
             this.CMB_videosources.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CMB_videosources_MouseClick);
             // 
             // BUT_Joystick
@@ -1816,6 +1866,11 @@
             resources.ApplyResources(this.TabSetup, "TabSetup");
             this.TabSetup.Name = "TabSetup";
             this.TabSetup.UseVisualStyleBackColor = true;
+            // 
+            // label109
+            // 
+            resources.ApplyResources(this.label109, "label109");
+            this.label109.Name = "label109";
             // 
             // BUT_rerequestparams
             // 
@@ -1856,47 +1911,15 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // groupBox5
-            // 
-            this.groupBox5.Controls.Add(this.THR_RATE_IMAX);
-            this.groupBox5.Controls.Add(this.label14);
-            this.groupBox5.Controls.Add(this.THR_RATE_I);
-            this.groupBox5.Controls.Add(this.label20);
-            this.groupBox5.Controls.Add(this.THR_RATE_P);
-            this.groupBox5.Controls.Add(this.label25);
-            resources.ApplyResources(this.groupBox5, "groupBox5");
-            this.groupBox5.Name = "groupBox5";
-            this.groupBox5.TabStop = false;
-            // 
-            // THR_RATE_IMAX
-            // 
-            resources.ApplyResources(this.THR_RATE_IMAX, "THR_RATE_IMAX");
-            this.THR_RATE_IMAX.Name = "THR_RATE_IMAX";
-            // 
             // label14
             // 
             resources.ApplyResources(this.label14, "label14");
             this.label14.Name = "label14";
             // 
-            // THR_RATE_I
+            // label26
             // 
-            resources.ApplyResources(this.THR_RATE_I, "THR_RATE_I");
-            this.THR_RATE_I.Name = "THR_RATE_I";
-            // 
-            // label20
-            // 
-            resources.ApplyResources(this.label20, "label20");
-            this.label20.Name = "label20";
-            // 
-            // THR_RATE_P
-            // 
-            resources.ApplyResources(this.THR_RATE_P, "THR_RATE_P");
-            this.THR_RATE_P.Name = "THR_RATE_P";
-            // 
-            // label25
-            // 
-            resources.ApplyResources(this.label25, "label25");
-            this.label25.Name = "label25";
+            resources.ApplyResources(this.label26, "label26");
+            this.label26.Name = "label26";
             // 
             // Configuration
             // 
@@ -1929,6 +1952,7 @@
             this.groupBox8.ResumeLayout(false);
             this.TabAC2.ResumeLayout(false);
             this.TabAC2.PerformLayout();
+            this.groupBox5.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
             this.groupBox6.ResumeLayout(false);
             this.groupBox7.ResumeLayout(false);
@@ -1941,7 +1965,6 @@
             this.groupBox25.ResumeLayout(false);
             this.TabPlanner.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
-            this.groupBox5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -2183,10 +2206,13 @@
         private System.Windows.Forms.CheckBox CHK_GDIPlus;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.DomainUpDown THR_RATE_IMAX;
-        private System.Windows.Forms.Label label14;
         private System.Windows.Forms.DomainUpDown THR_RATE_I;
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.DomainUpDown THR_RATE_P;
         private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.ComboBox CMB_videoresolutions;
+        private System.Windows.Forms.Label label109;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Label label26;
     }
 }

@@ -11,6 +11,8 @@ using System.Text.RegularExpressions;
 using System.Collections;
 using System.Globalization;
 using System.Threading;
+using DirectShowLib;
+using System.Runtime.InteropServices;
 
 namespace ArdupilotMega.GCSViews
 {
@@ -21,6 +23,29 @@ namespace ArdupilotMega.GCSViews
         static Hashtable tooltips = new Hashtable();
         internal bool startup = true;
         List<CultureInfo> languages = new List<CultureInfo>();
+
+        public class GCSBitmapInfo
+        {
+            public int Width { get; set; }
+            public int Height { get; set; }
+            public long Fps { get; set; }
+            public string Standard { get; set; }
+            public AMMediaType Media { get; set; }
+
+            public GCSBitmapInfo(int width, int height, long fps, string standard, AMMediaType media)
+            {
+                Width = width;
+                Height = height;
+                Fps = fps;
+                Standard = standard;
+                Media = media;
+            }
+
+            public override string ToString()
+            {
+                return Width.ToString() + " x " + Height.ToString() + String.Format(" {0:0.00} fps ", 10000000.0 / Fps) + Standard;
+            }
+        }
 
         public struct paramsettings // hk's
         {
@@ -202,6 +227,7 @@ namespace ArdupilotMega.GCSViews
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Configuration));
 
             string data = resources.GetString("MAVParam");
+
             string[] tips = data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var tip in tips)
@@ -630,9 +656,11 @@ namespace ArdupilotMega.GCSViews
             // stop first
             BUT_videostop_Click(sender, e);
 
+            GCSBitmapInfo bmp = (GCSBitmapInfo)CMB_videoresolutions.SelectedItem;
+
             try
             {
-                MainV2.cam = new WebCamService.Capture(CMB_videosources.SelectedIndex, 0, 0, 0);
+                MainV2.cam = new WebCamService.Capture(CMB_videosources.SelectedIndex, bmp.Media);
 
                 MainV2.cam.showhud = CHK_hudshow.Checked;
 
@@ -664,6 +692,58 @@ namespace ArdupilotMega.GCSViews
             CMB_videosources.DataSource = devices;
 
             capt.Dispose();
+        }
+
+        private void CMB_videosources_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int hr;
+            int count;
+            int size;
+            object o;
+            IBaseFilter capFilter = null;
+            ICaptureGraphBuilder2 capGraph = null;
+            AMMediaType media = null;
+            VideoInfoHeader v;
+            VideoStreamConfigCaps c;
+            List<GCSBitmapInfo> modes = new List<GCSBitmapInfo>();
+
+            // Get the ICaptureGraphBuilder2
+            capGraph = (ICaptureGraphBuilder2)new CaptureGraphBuilder2();
+            IFilterGraph2 m_FilterGraph = (IFilterGraph2)new FilterGraph();
+
+            DsDevice[] capDevices;
+            capDevices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
+
+            // Add the video device
+            hr = m_FilterGraph.AddSourceFilterForMoniker(capDevices[CMB_videosources.SelectedIndex].Mon, null, "Video input", out capFilter);
+            DsError.ThrowExceptionForHR(hr);
+
+            // Find the stream config interface
+            hr = capGraph.FindInterface(PinCategory.Capture, MediaType.Video, capFilter, typeof(IAMStreamConfig).GUID, out o);
+            DsError.ThrowExceptionForHR(hr);
+
+            IAMStreamConfig videoStreamConfig = o as IAMStreamConfig;
+            if (videoStreamConfig == null)
+            {
+                throw new Exception("Failed to get IAMStreamConfig");
+            }
+
+            hr = videoStreamConfig.GetNumberOfCapabilities(out count, out size);
+            DsError.ThrowExceptionForHR(hr);
+            IntPtr TaskMemPointer = Marshal.AllocCoTaskMem(size);
+            for (int i = 0; i < count; i++)
+            {
+                IntPtr ptr = IntPtr.Zero;
+
+                hr = videoStreamConfig.GetStreamCaps(i, out media, TaskMemPointer);
+                v = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
+                c = (VideoStreamConfigCaps)Marshal.PtrToStructure(TaskMemPointer, typeof(VideoStreamConfigCaps));
+                modes.Add(new GCSBitmapInfo(v.BmiHeader.Width, v.BmiHeader.Height, c.MaxFrameInterval, c.VideoStandard.ToString(), media));
+            }
+            Marshal.FreeCoTaskMem(TaskMemPointer);
+            DsUtils.FreeAMMediaType(media);
+
+            CMB_videoresolutions.DataSource = modes;
         }
 
         private void CHK_hudshow_CheckedChanged(object sender, EventArgs e)
