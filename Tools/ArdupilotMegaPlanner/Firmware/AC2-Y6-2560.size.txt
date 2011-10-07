@@ -570,8 +570,8 @@
 0000010a t test_gps(unsigned char, Menu::arg const*)
 0000010c t test_current(unsigned char, Menu::arg const*)
 0000010e t send_servo_out(mavlink_channel_t)
+0000010e t send_extended_status1(mavlink_channel_t, unsigned int)
 0000010e W RC_Channel::RC_Channel(unsigned int, prog_char_t const*)
-00000112 t send_extended_status1(mavlink_channel_t, unsigned int)
 00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000118 t set_command_with_index(Location, int)
@@ -619,6 +619,6 @@
 000007b8 t __static_initialization_and_destruction_0(int, int)
 00000824 b g
 0000086a t process_next_command()
-000008e2 W Parameters::Parameters()
+000008f4 W Parameters::Parameters()
 00001228 T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001ae6 T loop
+00001b64 T loop

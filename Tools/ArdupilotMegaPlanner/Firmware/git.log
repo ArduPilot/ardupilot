@@ -1,7 +1,130 @@
 From https://code.google.com/p/ardupilot-mega
-   c383795..902553f  APM_Camera -> origin/APM_Camera
-   235ccdb..777c75b  master     -> origin/master
-Updating 235ccdb..777c75b
+   902553f..acd13d4  APM_Camera -> origin/APM_Camera
+   d899f83..924d3d9  master     -> origin/master
+Updating d899f83..924d3d9
 Fast-forward
- ArduCopter/system.pde |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ .gitignore                                         |    1 +
+ ArduCopter/ArduCopter.pde                          |    6 +-
+ ArduCopter/config.h                                |   10 +-
+ ArduRover/ArduRover.pde                            |    2 +-
+ ArduRover/CarStampede.h                            |    2 +-
+ ArduRover/TankGeneric.h                            |   18 +-
+ .../APMPlannerXplanes/APMPlannerXplanes.suo        |  Bin 28160 -> 28160 bytes
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj    |   40 +-
+ .../ArdupilotMegaPlanner/ArdupilotMega.csproj.user |   10 +
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.suo       |  Bin 0 -> 83456 bytes
+ .../GCSViews/Configuration.Designer.cs             |  117 +-
+ .../ArdupilotMegaPlanner/GCSViews/Configuration.cs |    2 +-
+ .../GCSViews/Configuration.resx                    | 8216 +++++++++-----------
+ .../GCSViews/Configuration.ru-RU.resx              | 1237 +++
+ Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |   24 +
+ .../GCSViews/Firmware.ru-RU.resx                   |  153 +
+ .../GCSViews/FlightData.ru-RU.resx                 |  270 +
+ .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |    8 +-
+ .../GCSViews/FlightPlanner.ru-RU.resx              |  464 ++
+ Tools/ArdupilotMegaPlanner/GCSViews/HUD.ru.resx    |  132 +
+ .../ArdupilotMegaPlanner/GCSViews/Help.ru-RU.resx  |  129 +
+ .../GCSViews/JoystickSetup.ru.resx                 |  126 +
+ Tools/ArdupilotMegaPlanner/GCSViews/Simulation.cs  |   10 +
+ .../GCSViews/Simulation.ru-RU.resx                 |  198 +
+ .../GCSViews/Terminal.ru-RU.resx                   |  138 +
+ .../ArdupilotMegaPlanner/JoystickSetup.ru-RU.resx  |  180 +
+ Tools/ArdupilotMegaPlanner/MAVLinkTypes.cs         |  924 ++--
+ Tools/ArdupilotMegaPlanner/MainV2.cs               |    2 +-
+ .../Properties/AssemblyInfo.cs                     |    2 +-
+ .../Properties/Settings.Designer.cs                |   26 -
+ .../Properties/Settings.settings                   |    7 -
+ Tools/ArdupilotMegaPlanner/Resources/09028-01.png  |  Bin 27957 -> 0 bytes
+ .../Resources/APM_airframes_003.png                |  Bin 52732 -> 0 bytes
+ .../Resources/APM_airframes_004.png                |  Bin 27260 -> 0 bytes
+ .../Resources/APM_airframes_0042.png               |  Bin 27260 -> 0 bytes
+ .../Resources/APM_airframes_005.png                |  Bin 16531 -> 0 bytes
+ .../Resources/APM_airframes_006.png                |  Bin 55845 -> 0 bytes
+ .../Resources/Horizon_Background.gif               |  Bin 8087 -> 0 bytes
+ .../Resources/Horizon_GroundSky.gif                |  Bin 5698 -> 0 bytes
+ Tools/ArdupilotMegaPlanner/Resources/MAVParam.txt  |   22 +-
+ .../Resources/Maquette_Avion.gif                   |  Bin 1231 -> 0 bytes
+ .../ArdupilotMegaPlanner/Resources/Welcome CN.rtf  |  Bin 2847 -> 0 bytes
+ .../Resources/Welcome to Michael Oborne.rtf        |  201 -
+ Tools/ArdupilotMegaPlanner/Resources/apm.ico       |  Bin 5686 -> 0 bytes
+ Tools/ArdupilotMegaPlanner/Resources/guagebg.png   |  Bin 25685 -> 0 bytes
+ .../Resources/new/FRAMES-01.png                    |  Bin 53892 -> 0 bytes
+ .../Resources/new/FRAMES-02.png                    |  Bin 56349 -> 0 bytes
+ .../Resources/new/FRAMES-03.png                    |  Bin 82318 -> 0 bytes
+ .../Resources/new/FRAMES-04.png                    |  Bin 84978 -> 0 bytes
+ .../Resources/new/FRAMES-05.png                    |  Bin 42852 -> 0 bytes
+ .../Resources/new/FRAMES-06.png                    |  Bin 45504 -> 0 bytes
+ .../Resources/new/FRAMES-07.png                    |  Bin 62734 -> 0 bytes
+ .../Resources/new/FRAMES-08.png                    |  Bin 38962 -> 0 bytes
+ .../Resources/new/FRAMES-09.png                    |  Bin 38455 -> 0 bytes
+ .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2112512 -> 2109440 bytes
+ .../bin/Release/GCSViews/Configuration.resx        | 8216 +++++++++-----------
+ .../bin/Release/Resources/MAVCmd.txt               |   19 +
+ .../bin/Release/Resources/MAVParam.txt             |  221 +
+ .../Resources/Welcome_to_Michael_Oborne.rtf        |  Bin 0 -> 1532 bytes
+ .../bin/Release/Setup/Setup.resx                   | 3304 ++++++++
+ Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/hud.html    |  225 +
+ Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 13312 -> 20480 bytes
+ .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 0 -> 53248 bytes
+ .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 380928 bytes
+ Tools/ArdupilotMegaPlanner/hud.html                |  225 +
+ Tools/ArdupilotMegaPlanner/mavlinklist.pl          |    2 +
+ .../ArdupilotMegaPlanner/resedit/Form1.Designer.cs |   22 +-
+ Tools/ArdupilotMegaPlanner/resedit/Form1.cs        |   76 +-
+ Tools/ArdupilotMegaPlanner/resedit/resedit.csproj  |    4 +-
+ Tools/ArdupilotMegaPlanner/srtm.cs                 |    2 +-
+ Tools/ArdupilotMegaPlanner/temp.cs                 |    6 +-
+ apo/ControllerPlane.h                              |    2 +-
+ apo/PlaneEasystar.h                                |    4 +-
+ libraries/APO/APO_DefaultSetup.h                   |   56 +-
+ libraries/APO/AP_Autopilot.cpp                     |   48 +-
+ libraries/APO/AP_CommLink.h                        |    3 +-
+ libraries/APO/AP_Guide.h                           |  144 +-
+ libraries/APO/AP_MavlinkCommand.cpp                |   38 +-
+ libraries/APO/AP_MavlinkCommand.h                  |   14 +-
+ libraries/APO/AP_Navigator.h                       |    8 +-
+ 81 files changed, 15673 insertions(+), 9643 deletions(-)
+ create mode 100644 Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj.user
+ create mode 100644 Tools/ArdupilotMegaPlanner/ArdupilotMega.suo
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/Configuration.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/Firmware.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/FlightData.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/FlightPlanner.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/HUD.ru.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/Help.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/JoystickSetup.ru.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/Simulation.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/GCSViews/Terminal.ru-RU.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/JoystickSetup.ru-RU.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Properties/Settings.Designer.cs
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Properties/Settings.settings
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/09028-01.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/APM_airframes_003.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/APM_airframes_004.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/APM_airframes_0042.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/APM_airframes_005.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/APM_airframes_006.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/Horizon_Background.gif
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/Horizon_GroundSky.gif
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/Maquette_Avion.gif
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/Welcome CN.rtf
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/Welcome to Michael Oborne.rtf
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/apm.ico
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/guagebg.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-01.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-02.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-03.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-04.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-05.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-06.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-07.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-08.png
+ delete mode 100644 Tools/ArdupilotMegaPlanner/Resources/new/FRAMES-09.png
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Resources/MAVCmd.txt
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Resources/MAVParam.txt
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Resources/Welcome_to_Michael_Oborne.rtf
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Setup/Setup.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/hud.html
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/ru-RU/ArdupilotMegaPlanner.resources.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/hud.html
