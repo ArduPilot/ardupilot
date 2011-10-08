@@ -143,7 +143,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         g.rc_1.servo_out, 
         g.rc_2.servo_out, 
         g.rc_3.radio_out, 
-        g.rc_4.servo_out
+        g.rc_4.servo_out,
         0,
         0,
         0,
