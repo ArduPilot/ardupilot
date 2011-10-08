@@ -1,0 +1,464 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
+    <value>Добавить точку полигона</value>
+  </data>
+  <data name="Param4.HeaderText" xml:space="preserve">
+    <value>Парам4</value>
+  </data>
+  <data name="button1.ToolTip" xml:space="preserve">
+    <value>Сравнить высоту миссии с высотой по карте</value>
+  </data>
+  <data name="label8.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Положение курсора</value>
+  </data>
+  <data name="TXT_mouselong.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="$this.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label7.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_write.Text" xml:space="preserve">
+    <value>Записать WP</value>
+  </data>
+  <data name="panelBASE.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_Add.Text" xml:space="preserve">
+    <value>Добавить WP</value>
+  </data>
+  <data name="panel1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="jumpToolStripMenuItem.Text" xml:space="preserve">
+    <value>Перейти</value>
+  </data>
+  <data name="Down.ToolTipText" xml:space="preserve">
+    <value>Сдвинуть строку вниз</value>
+  </data>
+  <data name="deleteWPToolStripMenuItem.Text" xml:space="preserve">
+    <value>Удалить WP</value>
+  </data>
+  <data name="panelMap.Text" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Увел.</value>
+  </data>
+  <data name="TXT_DefaultAlt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="loiterToolStripMenuItem.Text" xml:space="preserve">
+    <value>Кружить</value>
+  </data>
+  <data name="lbl_distance.Text" xml:space="preserve">
+    <value>Расстояние</value>
+  </data>
+  <data name="Label1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="trackBar1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Абс.Выс.</value>
+  </data>
+  <data name="rotateMapToolStripMenuItem.Text" xml:space="preserve">
+    <value>Повернуть карту</value>
+  </data>
+  <data name="LBL_defalutalt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Commands.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_loiterrad.Text" xml:space="preserve">
+    <value>45</value>
+  </data>
+  <data name="TXT_mouselat.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_read.Text" xml:space="preserve">
+    <value>Считать WP</value>
+  </data>
+  <data name="Param1.HeaderText" xml:space="preserve">
+    <value>Парам1</value>
+  </data>
+  <data name="LBL_WPRad.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="lbl_distance.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="lbl_homedist.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_WPRad.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_mousealt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_loadwpfile.Text" xml:space="preserve">
+    <value>Загрузить WP-файл</value>
+  </data>
+  <data name="Up.ToolTipText" xml:space="preserve">
+    <value>Сдвинуть строку вверх</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Рад.Кружения</value>
+  </data>
+  <data name="jumpwPToolStripMenuItem.Text" xml:space="preserve">
+    <value>WP #</value>
+  </data>
+  <data name="panelWaypoints.Text" xml:space="preserve">
+    <value>Точки (WP)</value>
+  </data>
+  <data name="lbl_homedist.Text" xml:space="preserve">
+    <value>База</value>
+  </data>
+  <data name="label9.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_homelat.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Коорд. Базы</value>
+  </data>
+  <data name="TXT_homelng.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label4.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="LBL_WPRad.Text" xml:space="preserve">
+    <value>Радиус WP</value>
+  </data>
+  <data name="loitertimeToolStripMenuItem.Text" xml:space="preserve">
+    <value>Время</value>
+  </data>
+  <data name="CHK_geheight.Text" xml:space="preserve">
+    <value>Проверить высоту</value>
+  </data>
+  <data name="BUT_grid.Text" xml:space="preserve">
+    <value>Сетка</value>
+  </data>
+  <data name="gridToolStripMenuItem.Text" xml:space="preserve">
+    <value>Сетка</value>
+  </data>
+  <data name="label5.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHK_holdalt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="comboBoxMapType.ToolTip" xml:space="preserve">
+    <value>Сменить тип карты</value>
+  </data>
+  <data name="ContextMeasure.Text" xml:space="preserve">
+    <value>Измерить расстояние</value>
+  </data>
+  <data name="CHK_holdalt.Text" xml:space="preserve">
+    <value>Держать высоту</value>
+  </data>
+  <data name="panelAction.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHK_altmode.Text" xml:space="preserve">
+    <value>Абс.Высота</value>
+  </data>
+  <data name="BUT_Add.ToolTip" xml:space="preserve">
+    <value>Добавляет строку в список</value>
+  </data>
+  <data name="panel2.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="lbl_prevdist.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Долг.</value>
+  </data>
+  <data name="label11.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_loadwpfile.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_loiterrad.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="button1.Text" xml:space="preserve">
+    <value>График возвышения</value>
+  </data>
+  <data name="label10.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Выс.</value>
+  </data>
+  <data name="BUT_Prefetch.Text" xml:space="preserve">
+    <value>Кэш карты</value>
+  </data>
+  <data name="label2.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="lbl_status.Text" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="loitercirclesToolStripMenuItem.Text" xml:space="preserve">
+    <value>Круги</value>
+  </data>
+  <data name="Command.HeaderText" xml:space="preserve">
+    <value>Команда</value>
+  </data>
+  <data name="SaveFile.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_grid.ToolTip" xml:space="preserve">
+    <value>Рисует сетку поверх отмеченной зоны</value>
+  </data>
+  <data name="TXT_homealt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="clearMissionToolStripMenuItem.Text" xml:space="preserve">
+    <value>Очистить миссию</value>
+  </data>
+  <data name="clearPolygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>Стереть полигон</value>
+  </data>
+  <data name="label3.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_Prefetch.ToolTip" xml:space="preserve">
+    <value>Кэширует указанную область карты</value>
+  </data>
+  <data name="SaveFile.Text" xml:space="preserve">
+    <value>Сохр. WP-файл</value>
+  </data>
+  <data name="textBox1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="LBL_defalutalt.Text" xml:space="preserve">
+    <value>Высота</value>
+  </data>
+  <data name="Param2.HeaderText" xml:space="preserve">
+    <value>Парам2</value>
+  </data>
+  <data name="Param3.HeaderText" xml:space="preserve">
+    <value>Парам3</value>
+  </data>
+  <data name="Down.HeaderText" xml:space="preserve">
+    <value>Вниз</value>
+  </data>
+  <data name="CHK_geheight.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_read.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Label1.Text" xml:space="preserve">
+    <value>Шир.</value>
+  </data>
+  <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
+    <value>Всегда</value>
+  </data>
+  <data name="CHK_altmode.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Шир.</value>
+  </data>
+  <data name="lbl_prevdist.Text" xml:space="preserve">
+    <value>Пред.</value>
+  </data>
+  <data name="Command.ToolTipText" xml:space="preserve">
+    <value>Команда автопилота</value>
+  </data>
+  <data name="dataGridViewImageColumn2.HeaderText" xml:space="preserve">
+    <value>Вниз</value>
+  </data>
+  <data name="contextMenuStrip1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_WPRad.Text" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="panelMap.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel5.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_write.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Долг.</value>
+  </data>
+  <data name="lbl_status.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="splitter1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="textBox1.Text" xml:space="preserve">
+    <value>1. Подключитесь 2. Считайте точки 
+3. Проверьте координаты и высоту Базы 
+4. Кликайте по карте для добавления точек</value>
+  </data>
+  <data name="jumpstartToolStripMenuItem.Text" xml:space="preserve">
+    <value>Начало</value>
+  </data>
+  <data name="Delete.HeaderText" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="panelAction.Text" xml:space="preserve">
+    <value>Действие</value>
+  </data>
+  <data name="Up.HeaderText" xml:space="preserve">
+    <value>Вверх</value>
+  </data>
+  <data name="label6.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_DefaultAlt.Text" xml:space="preserve">
+    <value>100</value>
+  </data>
+  <data name="dataGridViewImageColumn1.HeaderText" xml:space="preserve">
+    <value>Вверх</value>
+  </data>
+  <data name="MainMap.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panelWaypoints.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Delete.ToolTipText" xml:space="preserve">
+    <value>Удалить строку</value>
+  </data>
+</root>

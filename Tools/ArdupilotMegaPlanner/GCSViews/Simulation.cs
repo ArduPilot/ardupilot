@@ -1555,6 +1555,16 @@ namespace ArdupilotMega.GCSViews
                 ofd.InitialDirectory = @"C:\Program Files\FlightGear\bin\Win32\";
                 extra = " --fg-root=\"C:\\Program Files\\FlightGear\\data\"";
             }
+            else if (File.Exists(@"C:\Program Files\FlightGear 2.4.0\bin\Win32\fgfs.exe"))
+            {
+                ofd.InitialDirectory = @"C:\Program Files\FlightGear 2.4.0\bin\Win32\";
+                extra = " --fg-root=\"C:\\Program Files\\FlightGear 2.4.0\\data\"";
+            }
+            else if (File.Exists(@"C:\Program Files (x86)\FlightGear 2.4.0\bin\Win32\fgfs.exe"))
+            {
+                ofd.InitialDirectory = @"C:\Program Files (x86)\FlightGear 2.4.0\bin\Win32\";
+                extra = " --fg-root=\"C:\\Program Files (x86)\\FlightGear 2.4.0\\data\"";
+            }
             else if (File.Exists(@"/usr/games/fgfs"))
             {
                 ofd.InitialDirectory = @"/usr/games";

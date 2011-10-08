@@ -695,6 +695,7 @@ namespace ArdupilotMega.GCSViews
 
             int optionoffset = 0;
             int total = 0;
+            bool hitend = false;
 
             while (!sr.EndOfStream)
             {
@@ -726,9 +727,32 @@ namespace ArdupilotMega.GCSViews
                     {
                         optionoffset += (int)Convert.ToUInt16(line.Substring(9, 4), 16) << 4;
                     }
+                    else if (option == 1)
+                    {
+                        hitend = true;
+                    }
                     int checksum = Convert.ToInt32(line.Substring(line.Length - 2, 2), 16);
+
+                    byte checksumact = 0;
+                    for (int z = 0; z < ((line.Length - 1 - 2) / 2) ; z++) // minus 1 for : then mins 2 for checksum itself
+                    { 
+                        checksumact += Convert.ToByte(line.Substring(z * 2 + 1, 2), 16);
+                    }
+                    checksumact = (byte)(0x100 - checksumact);
+
+                    if (checksumact != checksum)
+                    {
+                        MessageBox.Show("The hex file loaded is invalid, please try again.");
+                        throw new Exception("Checksum Failed - Invalid Hex");
+                    }
                 }
                 //Regex regex = new Regex(@"^:(..)(....)(..)(.*)(..)$"); // length - address - option - data - checksum
+            }
+
+            if (!hitend)
+            {
+                MessageBox.Show("The hex file did no contain an end flag. aborting");
+                throw new Exception("No end flag in file");
             }
 
             Array.Resize<byte>(ref FLASH, total);

@@ -92,7 +92,7 @@ namespace ArdupilotMega
 
             string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             strVersion = "";
-            splash.Text = "APM Planner " + Application.ProductVersion + " Build " + strVersion + " By Michael Oborne";
+            splash.Text = "APM Planner " + Application.ProductVersion + " " + strVersion + " By Michael Oborne";
 
             splash.Refresh();
 

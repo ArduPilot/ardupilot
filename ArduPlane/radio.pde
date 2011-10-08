@@ -17,10 +17,15 @@ static void init_rc_in()
 	g.channel_throttle.set_range(0, 100);
 
 	// set rc dead zones
-	g.channel_roll.dead_zone 	= 60;
-	g.channel_pitch.dead_zone 	= 60;
-	g.channel_rudder.dead_zone 	= 60;
-	g.channel_throttle.dead_zone = 6;
+	g.channel_roll.set_dead_zone(60);
+	g.channel_pitch.set_dead_zone(60);
+	g.channel_rudder.set_dead_zone(60);
+	g.channel_throttle.set_dead_zone(6);
+
+	//g.channel_roll.dead_zone 	= 60;
+	//g.channel_pitch.dead_zone 	= 60;
+	//g.channel_rudder.dead_zone 	= 60;
+	//g.channel_throttle.dead_zone = 6;
 
 	//set auxiliary ranges
 	update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
@@ -112,7 +117,7 @@ static void control_failsafe(uint16_t pwm)
 		} else {
 			ch3_failsafe = false;
 		}
-		
+
 	//Check for failsafe and debounce funky reads
 	} else if (g.throttle_fs_enabled) {
 		if (pwm < (unsigned)g.throttle_fs_value){
@@ -155,7 +160,7 @@ static void trim_control_surfaces()
 		g.channel_pitch.radio_trim = g.channel_pitch.radio_in;
 		g.channel_rudder.radio_trim = g.channel_rudder.radio_in;
 		G_RC_AUX(k_aileron)->radio_trim = g_rc_function[RC_Channel_aux::k_aileron]->radio_in;			// Second aileron channel
-		
+
 	}else{
 		elevon1_trim = ch1_temp;
 		elevon2_trim = ch2_temp;

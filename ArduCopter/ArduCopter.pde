@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.45 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.47 Beta"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -65,6 +65,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <AP_RangeFinder.h>	// Range finder library
 #include <AP_OpticalFlow.h> // Optical Flow library
 #include <ModeFilter.h>
+#include <AP_Relay.h>		// APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
@@ -129,6 +130,9 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	APM_BMP085_Class        barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
+  #ifdef OPTFLOW_ENABLED
+    AP_OpticalFlow_ADNS3080 optflow;
+  #endif
 
 	// real GPS selection
 	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -200,10 +204,6 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	#endif
 	// normal dcm
 	AP_DCM  dcm(&imu, g_gps);
-
- 	#ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow;
- 	#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,8 @@ static const char* flight_mode_strings[] = {
 	"GUIDED",
 	"LOITER",
 	"RTL",
-	"CIRCLE"};
+	"CIRCLE",
+	"POSITION"};
 
 /* Radio values
 		Channel assignments
@@ -260,16 +261,20 @@ static const char* flight_mode_strings[] = {
 */
 
 // test
-//Vector3f accels_rot;
-//float	accel_gain = 20;
+#if ACCEL_ALT_HOLD == 1
+Vector3f accels_rot;
+static int	accels_rot_count;
+static float	accels_rot_sum;
+static float alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
+#endif
 
 // temp
-int y_actual_speed;
-int y_rate_error;
+static int y_actual_speed;
+static int y_rate_error;
 
 // calc the
-int x_actual_speed;
-int x_rate_error;
+static int x_actual_speed;
+static int x_rate_error;
 
 // Radio
 // -----
@@ -336,6 +341,7 @@ static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static long initial_simple_bearing;					// used for Simple mode
 static float simple_sin_y, simple_cos_x;
 static byte jump = -10;								// used to track loops in jump command
+static int waypoint_speed_gov;
 
 // Acro
 #if CH7_OPTION == CH7_FLIP
@@ -483,7 +489,6 @@ static byte				gps_watchdog;
 // --------------
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
-static unsigned long	throttle_timer;
 
 static unsigned long	fiftyhz_loopTimer;
 
@@ -497,8 +502,9 @@ static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS
 
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
-static byte				loop_step;
 static bool				new_radio_frame;
+
+AP_Relay relay;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -585,6 +591,9 @@ static void fast_loop()
 	// write out the servo PWM values
 	// ------------------------------
 	set_servos_4();
+
+	//if(motor_armed)
+		//Log_Write_Attitude();
 }
 
 static void medium_loop()
@@ -596,8 +605,6 @@ static void medium_loop()
 		// This case deals with the GPS and Compass
 		//-----------------------------------------
 		case 0:
-			loop_step = 1;
-
 			medium_loopCounter++;
 
 			#ifdef OPTFLOW_ENABLED
@@ -637,12 +644,10 @@ static void medium_loop()
 		// This case performs some navigation computations
 		//------------------------------------------------
 		case 1:
-			loop_step = 2;
 			medium_loopCounter++;
 
 			// Auto control modes:
 			if(g_gps->new_data && g_gps->fix){
-				loop_step = 11;
 
 				// invalidate GPS data
 				g_gps->new_data 	= false;
@@ -665,13 +670,14 @@ static void medium_loop()
 					if (g.log_bitmask & MASK_LOG_NTUN)
 						Log_Write_Nav_Tuning();
 				}
+			}else{
+				g_gps->new_data = false;
 			}
 			break;
 
 		// command processing
 		//-------------------
 		case 2:
-			loop_step = 3;
 			medium_loopCounter++;
 
 			// Read altitude from sensors
@@ -687,7 +693,6 @@ static void medium_loop()
 		// This case deals with sending high rate telemetry
 		//-------------------------------------------------
 		case 3:
-			loop_step = 4;
 			medium_loopCounter++;
 
 			// perform next command
@@ -726,7 +731,6 @@ static void medium_loop()
 		// This case controls the slow loop
 		//---------------------------------
 		case 4:
-			loop_step = 5;
 			medium_loopCounter = 0;
 
 			if (g.battery_monitoring != 0){
@@ -820,7 +824,6 @@ static void slow_loop()
 	//----------------------------------------
 	switch (slow_loopCounter){
 		case 0:
-			loop_step = 6;
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
@@ -835,7 +838,6 @@ static void slow_loop()
 			break;
 
 		case 1:
-			loop_step = 7;
 			slow_loopCounter++;
 
 			// Read 3-position switch on radio
@@ -860,7 +862,6 @@ static void slow_loop()
 			break;
 
 		case 2:
-			loop_step = 8;
 			slow_loopCounter = 0;
 			update_events();
 
@@ -899,7 +900,6 @@ static void slow_loop()
 // 1Hz loop
 static void super_slow_loop()
 {
-	loop_step = 9;
 	if (g.log_bitmask & MASK_LOG_CUR)
 		Log_Write_Current();
 
@@ -912,7 +912,6 @@ static void super_slow_loop()
 
 static void update_GPS(void)
 {
-	loop_step = 10;
 	g_gps->update();
 	update_GPS_light();
 
@@ -920,12 +919,13 @@ static void update_GPS(void)
 	//current_loc.lat = -1224318000;		// Lat * 10 * *7
 	//current_loc.alt = 100;				// alt * 10 * *7
 	//return;
-	if(gps_watchdog < 10){
+	if(gps_watchdog < 12){
 		gps_watchdog++;
 	}else{
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  >>= 1;
-		nav_pitch >>= 1;
+		// commented temporarily
+		//nav_roll  >>= 1;
+		//nav_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
@@ -950,19 +950,10 @@ static void update_GPS(void)
 			// so that the altitude is more accurate
 			// -------------------------------------
 			if (current_loc.lat == 0) {
-				//SendDebugln("!! bad loc");
 				ground_start_count = 5;
 
 			}else{
-				//Serial.printf("init Home!");
-
-				// reset our nav loop timer
-				//nav_loopTimer = millis();
 				init_home();
-
-				// init altitude
-				// commented out because we aren't using absolute altitude
-				// current_loc.alt = home.alt;
 				ground_start_count = 0;
 			}
 		}
@@ -1048,10 +1039,7 @@ void update_roll_pitch_mode(void)
 
 	switch(roll_pitch_mode){
 		case ROLL_PITCH_ACRO:
-			// Roll control
 			g.rc_1.servo_out = get_rate_roll(g.rc_1.control_in);
-
-			// Pitch control
 			g.rc_2.servo_out = get_rate_pitch(g.rc_2.control_in);
 			break;
 
@@ -1070,7 +1058,6 @@ void update_roll_pitch_mode(void)
 	}
 }
 
-
 // 50 hz update rate, not 250
 void update_throttle_mode(void)
 {
@@ -1084,8 +1071,6 @@ void update_throttle_mode(void)
 				g.pi_rate_pitch.reset_I();
 				g.rc_3.servo_out = 0;
 			}
-			// reset the timer to throttle so that we never get fast I term run-ups
-			throttle_timer = 0;
 			break;
 
 		case THROTTLE_HOLD:
@@ -1101,7 +1086,7 @@ void update_throttle_mode(void)
 				altitude_error = get_altitude_error();
 
 				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error, 250); //150 =  target speed of 1.5m/s
+				nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
 				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
 
 				// clear the new data flag
@@ -1109,7 +1094,7 @@ void update_throttle_mode(void)
 			}
 
 			// apply throttle control at 200 hz
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost();
+			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost() + alt_hold_velocity();
 			break;
 	}
 }
@@ -1139,7 +1124,10 @@ static void update_navigation()
 			break;
 
 		case RTL:
-			if(wp_distance > 4){
+			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
+				// lets just jump to Loiter Mode after RTL
+				set_mode(LOITER);
+			}else{
 				// calculates desired Yaw
 				// XXX this is an experiment
 				#if FRAME_CONFIG ==	HELI_FRAME
@@ -1147,9 +1135,6 @@ static void update_navigation()
 				#endif
 
 				wp_control = WP_MODE;
-			}else{
-				// lets just jump to Loiter Mode after RTL
-				set_mode(LOITER);
 			}
 
 			// calculates the desired Roll and Pitch
@@ -1158,6 +1143,7 @@ static void update_navigation()
 
 			// switch passthrough to LOITER
 		case LOITER:
+		case POSITION:
 			wp_control 		= LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
@@ -1223,8 +1209,12 @@ static void update_trig(void){
 	// 270 = cos_yaw: -1.00, sin_yaw:  0.00,
 
 
-	//Vector3f accel_filt	= imu.get_accel_filtered();
-	//accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
+	#if ACCEL_ALT_HOLD == 1
+	Vector3f accel_filt	= imu.get_accel_filtered();
+	accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
+	accels_rot_sum += accels_rot.z;
+	accels_rot_count++;
+	#endif
 }
 
 // updated at 10hz
@@ -1276,11 +1266,11 @@ adjust_altitude()
 {
 	if(g.rc_3.control_in <= 200){
 		next_WP.alt -= 1;												// 1 meter per second
-		next_WP.alt = max(next_WP.alt, (current_loc.alt - 400));		// don't go less than 4 meters below current location
+		next_WP.alt = max(next_WP.alt, (current_loc.alt - 500));		// don't go less than 4 meters below current location
 		next_WP.alt = max(next_WP.alt, 100);							// don't go less than 1 meter
 	}else if (g.rc_3.control_in > 700){
 		next_WP.alt += 1;												// 1 meter per second
-		next_WP.alt = min(next_WP.alt, (current_loc.alt + 400));		// don't go more than 4 meters below current location
+		next_WP.alt = min(next_WP.alt, (current_loc.alt + 500));		// don't go more than 4 meters below current location
 	}
 }
 
@@ -1288,6 +1278,13 @@ static void tuning(){
 	tuning_value = (float)g.rc_6.control_in / 1000.0;
 
 	switch(g.radio_tuning){
+
+		/*case CH6_STABILIZE_KP:
+			g.rc_6.set_range(0,2000); 		// 0 to 8
+			tuning_value = (float)g.rc_6.control_in / 100.0;
+			alt_hold_gain = tuning_value;
+			break;*/
+
 		case CH6_STABILIZE_KP:
 			g.rc_6.set_range(0,8000); 		// 0 to 8
 			g.pi_stabilize_roll.kP(tuning_value);
@@ -1335,13 +1332,19 @@ static void tuning(){
 
 		case CH6_RELAY:
 			g.rc_6.set_range(0,1000);
-		  	if (g.rc_6.control_in > 525) relay_on();
-		  	if (g.rc_6.control_in < 475) relay_off();
+		  	if (g.rc_6.control_in > 525) relay.on();
+		  	if (g.rc_6.control_in < 475) relay.off();
 			break;
 
 		case CH6_TRAVERSE_SPEED:
 			g.rc_6.set_range(0,1000);
 			g.waypoint_speed_max = g.rc_6.control_in;
+			break;
+
+		case CH6_LOITER_P:
+			g.rc_6.set_range(0,1000);
+			g.pi_loiter_lat.kP(tuning_value);
+			g.pi_loiter_lon.kP(tuning_value);
 			break;
 
 		case CH6_NAV_P:
@@ -1360,10 +1363,10 @@ static void update_nav_wp()
 		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
-		calc_nav_rate(long_error, lat_error, g.waypoint_speed_max, 0);
+		calc_loiter(long_error, lat_error);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
+		calc_loiter_pitch_roll();
 
 	}else if(wp_control == CIRCLE_MODE){
 
@@ -1393,18 +1396,16 @@ static void update_nav_wp()
 
 		// use error as the desired rate towards the target
 		// nav_lon, nav_lat is calculated
-		calc_nav_rate(long_error, lat_error, 200, 0);
+		calc_loiter(long_error, lat_error);
 
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
+		calc_loiter_pitch_roll();
 
 	} else {
-		// for long journey's reset the wind resopnse
-		// it assumes we are standing still.
 		// use error as the desired rate towards the target
-		calc_nav_rate2(g.waypoint_speed_max);
+		calc_nav_rate(g.waypoint_speed_max);
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll2();
+		calc_nav_pitch_roll();
 	}
 }
 

@@ -247,6 +247,7 @@ static void do_nav_wp()
 	}
 	set_next_WP(&next_command);
 
+
 	// this is our bitmask to verify we have met all conditions to move on
 	wp_verify_byte 	= 0;
 
@@ -482,7 +483,7 @@ static void do_wait_delay()
 	//Serial.print("dwd ");
 	condition_start = millis();
 	condition_value	= next_command.lat * 1000; // convert to milliseconds
-	Serial.println(condition_value,DEC);
+	//Serial.println(condition_value,DEC);
 }
 
 static void do_change_alt()
@@ -693,11 +694,11 @@ static void do_set_servo()
 static void do_set_relay()
 {
 	if (next_command.p1 == 1) {
-		relay_on();
+		relay.on();
 	} else if (next_command.p1 == 0) {
-		relay_off();
+		relay.off();
 	}else{
-		relay_toggle();
+		relay.toggle();
 	}
 }
 

@@ -61,25 +61,43 @@ namespace WebCamService
 
         #endregion
 
-        /// <summary> Use capture device zero, default frame rate and size</summary>
         public Capture()
         {
-            //_Capture(0, 0, 0, 0);
         }
-        /// <summary> Use specified capture device, default frame rate and size</summary>
-        public Capture(int iDeviceNum)
+
+        /// <summary> Use capture with selected media caps</summary>
+        public Capture(int iDeviceNum, AMMediaType media)
         {
-            _Capture(iDeviceNum, 0, 0, 0);
-        }
-        /// <summary> Use specified capture device, specified frame rate and default size</summary>
-        public Capture(int iDeviceNum, int iFrameRate)
-        {
-            _Capture(iDeviceNum, iFrameRate, 0, 0);
-        }
-        /// <summary> Use specified capture device, specified frame rate and size</summary>
-        public Capture(int iDeviceNum, int iFrameRate, int iWidth, int iHeight)
-        {
-            _Capture(iDeviceNum, iFrameRate, iWidth, iHeight);
+            DsDevice[] capDevices;
+
+            // Get the collection of video devices
+            capDevices = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
+
+            if (iDeviceNum + 1 > capDevices.Length)
+            {
+                throw new Exception("No video capture devices found at that index!");
+            }
+
+            try
+            {
+                // Set up the capture graph
+                SetupGraph(capDevices[iDeviceNum], media);
+
+                // tell the callback to ignore new images
+                m_PictureReady = new ManualResetEvent(false);
+                m_bGotOne = true;
+                m_bRunning = false;
+
+                timer1.Interval = 1000 / 15; // 15 fps
+                timer1.Tick += new EventHandler(timer1_Tick);
+                timer1.Start();
+
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
         /// <summary> release everything. </summary>
         public void Dispose()
@@ -195,41 +213,6 @@ namespace WebCamService
             return list;
         }
 
-        // Internal capture
-        private void _Capture(int iDeviceNum, int iFrameRate, int iWidth, int iHeight)
-        {
-            DsDevice[] capDevices;
-
-            // Get the collection of video devices
-            capDevices = DsDevice.GetDevicesOfCat( FilterCategory.VideoInputDevice );
-
-            if (iDeviceNum + 1 > capDevices.Length)
-            {
-                throw new Exception("No video capture devices found at that index!");
-            }
-
-            try
-            {
-                // Set up the capture graph
-                SetupGraph( capDevices[iDeviceNum], iFrameRate, iWidth, iHeight);
-
-                // tell the callback to ignore new images
-                m_PictureReady = new ManualResetEvent(false);
-                m_bGotOne = true;
-                m_bRunning = false;
-
-                timer1.Interval = 1000 / 15; // 15 fps
-                timer1.Tick += new EventHandler(timer1_Tick);
-                timer1.Start();
-                
-            }
-            catch
-            {
-                Dispose();
-                throw;
-            }
-        }
-
         public bool showhud = true;
 
         void timer1_Tick(object sender, EventArgs e)
@@ -248,7 +231,7 @@ namespace WebCamService
         }
 
         /// <summary> build the capture graph for grabber. </summary>
-        private void SetupGraph(DsDevice dev, int iFrameRate, int iWidth, int iHeight)
+        private void SetupGraph(DsDevice dev, AMMediaType media)
         {
             int hr;
 
@@ -328,11 +311,7 @@ namespace WebCamService
                 hr = m_FilterGraph.AddFilter( baseGrabFlt, "Ds.NET Grabber" );
                 DsError.ThrowExceptionForHR( hr );
 
-                // If any of the default config items are set
-                if (iFrameRate + iHeight + iWidth > 0)
-                {
-                    SetConfigParms(capGraph, capFilter, iFrameRate, iWidth, iHeight);
-                }
+                SetConfigParms(capGraph, capFilter, media);
 
                 hr = capGraph.RenderStream(PinCategory.Capture, MediaType.Video, capFilter, pAVIDecompressor, baseGrabFlt);
                 if (hr < 0)
@@ -409,11 +388,10 @@ namespace WebCamService
         }
 
         // Set the Framerate, and video size
-        private void SetConfigParms(ICaptureGraphBuilder2 capGraph, IBaseFilter capFilter, int iFrameRate, int iWidth, int iHeight)
+        private void SetConfigParms(ICaptureGraphBuilder2 capGraph, IBaseFilter capFilter, AMMediaType media)
         {
             int hr;
             object o;
-            AMMediaType media;
 
             // Find the stream config interface
             hr = capGraph.FindInterface(
@@ -423,36 +401,7 @@ namespace WebCamService
             if (videoStreamConfig == null)
             {
                 throw new Exception("Failed to get IAMStreamConfig");
-            }
-
-            // Get the existing format block
-            hr = videoStreamConfig.GetFormat( out media);
-            DsError.ThrowExceptionForHR( hr );
-
-            // copy out the videoinfoheader
-            VideoInfoHeader v = new VideoInfoHeader();
-            Marshal.PtrToStructure( media.formatPtr, v );
-
-            // if overriding the framerate, set the frame rate
-            if (iFrameRate > 0)
-            {
-                v.AvgTimePerFrame = 10000000 / iFrameRate;
-            }
-
-            // if overriding the width, set the width
-            if (iWidth > 0)
-            {
-                v.BmiHeader.Width = iWidth;
-            }
-
-            // if overriding the Height, set the Height
-            if (iHeight > 0)
-            {
-                v.BmiHeader.Height = iHeight;
-            }
-
-            // Copy the media structure back
-            Marshal.StructureToPtr( v, media.formatPtr, false );
+            }           
 
             // Set the new format
             hr = videoStreamConfig.SetFormat( media );

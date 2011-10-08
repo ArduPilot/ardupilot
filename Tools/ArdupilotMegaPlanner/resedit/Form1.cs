@@ -9,6 +9,9 @@ using System.Windows.Forms;
 using System.Resources;
 using System.Collections;
 using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace resedit
 {
@@ -26,7 +29,7 @@ namespace resedit
 
                 foreach (CultureInfo cul in temp) 
                 {
-                    list.Add(cul.DisplayName);
+                    list.Add(cul.DisplayName + " " + cul.Name);
                 }
 
             list.Sort();
@@ -55,7 +58,7 @@ namespace resedit
 
                 foreach (CultureInfo cul in temp)
                 {
-                    if (cul.DisplayName == comboBox1.Text)
+                    if ((cul.DisplayName + " " + cul.Name) == comboBox1.Text)
                     {
                         Console.WriteLine(cul.Name);
                         ci = cul.Name;
@@ -65,9 +68,15 @@ namespace resedit
 
                 foreach (string file in files)
                 {
+                    // load only file of the slected lang
                     if (!file.ToLower().Contains(ci.ToString().ToLower() + ".resx"))
                         continue;
 
+                    // dont load and tralations if no lang selected
+                    if (file.ToLower().Contains("translation") && comboBox1.Text == "")
+                        continue;
+
+                    // must be a resx
                     if (!file.ToLower().EndsWith(".resx"))
                         continue;
 
@@ -75,10 +84,14 @@ namespace resedit
 
                     ResXResourceReader reader = new ResXResourceReader(file);
                     Console.WriteLine(reader);
+
+                    reader.BasePath = fbd.SelectedPath + System.IO.Path.DirectorySeparatorChar +"Resources";
+
                     try
                     {
                         foreach (DictionaryEntry entry in reader)
                         {
+
                             if (entry.Key.ToString().EndsWith(".ToolTip") || entry.Key.ToString().EndsWith(".Text") || entry.Key.ToString().EndsWith("HeaderText") || entry.Key.ToString().EndsWith("ToolTipText"))
                             {
                                 dataGridView1.Rows.Add();
@@ -88,6 +101,7 @@ namespace resedit
                                 dataGridView1.Rows[dataGridView1.RowCount - 1].Cells[colEnglish.Index].Value = entry.Value.ToString();
                                 dataGridView1.Rows[dataGridView1.RowCount - 1].Cells[colOtherLang.Index].Value = entry.Value.ToString();
                             }
+
                         }
                     }
                     catch (Exception ex) { Console.WriteLine(ex.ToString()); }
@@ -102,7 +116,7 @@ namespace resedit
 
             foreach (CultureInfo cul in temp)
             {
-                if (cul.DisplayName == comboBox1.Text)
+                if ((cul.DisplayName + " " + cul.Name) == comboBox1.Text)
                 {
                     Console.WriteLine(cul.Name);
                     ci = cul.Name;
@@ -115,21 +129,63 @@ namespace resedit
 
             System.IO.Directory.CreateDirectory("translation");
 
+            StreamWriter sw = new StreamWriter("translation/output.html");
+            sw.Write("<html><body><table>");
+
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
-                if (row.Cells[colFile.Index].Value.ToString() != fname)
+                try
                 {
-                    if (writer !=null)
-                        writer.Close();
-                    writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resx", "." + ci + ".resx"));
+                    if (row.Cells[colFile.Index].Value.ToString() != fname)
+                    {
+                        if (writer != null)
+                            writer.Close();
+                        writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resx", "." + ci + ".resx"));
+                    }
+
+                    writer.AddResource(row.Cells[colInternal.Index].Value.ToString(), row.Cells[colOtherLang.Index].Value.ToString());
+
+                    fname = row.Cells[colFile.Index].Value.ToString();
                 }
-
-                writer.AddResource(row.Cells[colInternal.Index].Value.ToString(),row.Cells[colOtherLang.Index].Value.ToString());
-
-                fname = row.Cells[colFile.Index].Value.ToString();
+                catch { }
+                try
+                {
+                    sw.Write("<tr><td>" + row.Cells[colFile.Index].Value.ToString() + "</td><td>" + row.Cells[colInternal.Index].Value.ToString() + "</td><td>" + row.Cells[colOtherLang.Index].Value.ToString() + "</td></tr>");
+                }
+                catch (Exception ex) { try { MessageBox.Show("Failed to save " + row.Cells[colOtherLang.Index].Value.ToString() + " " + ex.ToString()); } catch { } }
             }
             if (writer != null)
                 writer.Close();
+            sw.Write("</table></html>");
+            sw.Close();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            StreamReader sr1 = new StreamReader("translation/output.txt");
+
+            StreamReader sr2 = new StreamReader("translation/output.ru.txt", Encoding.Unicode);
+
+            while (!sr1.EndOfStream)
+            {
+                string line1 = sr1.ReadLine();
+                string line1a = sr2.ReadLine();
+
+                int index1 = line1.IndexOf(' ', line1.IndexOf(' ') + 1) + 1;
+
+                int index1a = line1a.IndexOf(' ',line1a.IndexOf(' ')+1)+1;
+
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                {
+                    if (line1.Contains(row.Cells[colFile.Index].Value.ToString()) && line1.Contains(row.Cells[colInternal.Index].Value.ToString()))
+                    {
+                        row.Cells[colOtherLang.Index].Value = line1a.Substring(index1a);
+                    }
+                }
+            }
+
+            sr1.Close();
+            sr2.Close();
         }
     }
 }
