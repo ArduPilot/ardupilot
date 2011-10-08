@@ -989,6 +989,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 #endif
+*/
 #if HIL_MODE == HIL_MODE_SENSORS
 
     case MAVLINK_MSG_ID_RAW_IMU:
@@ -1036,7 +1037,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 #endif // HIL_MODE
-*/
 	} // end switch
 } // end handle mavlink
 
