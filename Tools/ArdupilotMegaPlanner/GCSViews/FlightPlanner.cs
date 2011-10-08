@@ -1364,7 +1364,13 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                TXT_DefaultAlt.Text = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist).ToString("0");
+                string hold_alt = ((float)param["ALT_HOLD_RTL"] * MainV2.cs.multiplierdist).ToString("0");
+
+                if (hold_alt != "-1")
+                {
+                    TXT_DefaultAlt.Text = hold_alt;
+                }
+
                 TXT_WPRad.Text = ((float)param["WP_RADIUS"] * MainV2.cs.multiplierdist).ToString("0");
                 try
                 {

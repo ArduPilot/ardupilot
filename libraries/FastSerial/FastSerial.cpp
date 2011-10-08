@@ -45,6 +45,7 @@
 
 FastSerial::Buffer __FastSerial__rxBuffer[FS_MAX_PORTS];
 FastSerial::Buffer __FastSerial__txBuffer[FS_MAX_PORTS];
+uint8_t FastSerial::_serialInitialized = 0;
 
 // Constructor /////////////////////////////////////////////////////////////////
 
@@ -61,6 +62,8 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 					   _rxBuffer(&__FastSerial__rxBuffer[portNumber]),
 					   _txBuffer(&__FastSerial__txBuffer[portNumber])
 {
+	setInitialized(portNumber);
+	begin(57600);
 }
 
 // Public Methods //////////////////////////////////////////////////////////////

@@ -22,12 +22,18 @@ project(ArduPlane C CXX)
 
 find_package(Arduino 22 REQUIRED)
 
+if (NOT DEFINED BOARD)
+	message(STATUS "board not defined, assuming mega, use cmake -DBOARD=mega2560 , etc. to specify")
+	set(BOARD "mega")
+endif()
+message(STATUS "Board configured as: ${BOARD}")
+
 add_subdirectory(../libraries "${CMAKE_CURRENT_BINARY_DIR}/libs")
 
 #add_subdirectory(${CMAKE_SOURCE_DIR}/ArduCopter)
 #add_subdirectory(testtool)
 
-PRINT_BOARD_SETTINGS(mega2560)
+PRINT_BOARD_SETTINGS(${BOARD})
 
 
 
@@ -42,7 +48,7 @@ PRINT_BOARD_SETTINGS(mega2560)
 #====================================================================#
 set(FIRMWARE_NAME ArduPlane)
 
-set(${FIRMWARE_NAME}_BOARD mega2560)               # Arduino Target board
+set(${FIRMWARE_NAME}_BOARD ${BOARD})               # Arduino Target board
 
 set(${FIRMWARE_NAME}_SKETCHES
     ArduPlane.pde
@@ -62,7 +68,7 @@ set(${FIRMWARE_NAME}_SKETCHES
 	#GCS_Standard.pde
 	#GCS_Xplane.pde
 	#heli.pde
-	HIL_Xplane.pde
+	#HIL_Xplane.pde
 	#leds.pde
 	Log.pde
 	#motors_hexa.pde
@@ -92,12 +98,12 @@ set(${FIRMWARE_NAME}_SRCS
 set(${FIRMWARE_NAME}_HDRS 	
 	APM_Config.h
 	APM_Config_mavlink_hil.h
-	APM_Config_xplane.h
+	#APM_Config_xplane.h
 	config.h
 	defines.h
 	GCS.h
-	HIL.h
-	Mavlink_Common.h
+	#HIL.h
+	#Mavlink_Common.h
 	Parameters.h
 	)  # Firmware sources
 
@@ -126,8 +132,6 @@ set(${FIRMWARE_NAME}_LIBS
         c
         m
 )
-SET_TARGET_PROPERTIES(AP_Math PROPERTIES LINKER_LANGUAGE CXX)
-
 	
 #${CONSOLE_PORT}
 set(${FIRMWARE_NAME}_PORT COM2)            # Serial upload port

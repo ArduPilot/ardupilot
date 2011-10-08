@@ -174,6 +174,9 @@ static void init_ardupilot()
 	init_camera();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
+	        // begin filtering the ADC Gyros
+        	adc.filter_result = true;
+
 		adc.Init();	 		// APM ADC library initialization
 		barometer.Init();	// APM Abs Pressure sensor initialization
 	#endif
@@ -411,6 +414,14 @@ static void set_mode(byte mode)
 			throttle_mode 	= LOITER_THR;
 
 			init_throttle_cruise();
+			next_WP = current_loc;
+			break;
+
+		case POSITION:
+			yaw_mode 		= YAW_HOLD;
+			roll_pitch_mode = ROLL_PITCH_AUTO;
+			throttle_mode 	= THROTTLE_MANUAL;
+
 			next_WP = current_loc;
 			break;
 

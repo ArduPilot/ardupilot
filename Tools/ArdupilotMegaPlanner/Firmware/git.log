@@ -1,9 +1,12 @@
 From https://code.google.com/p/ardupilot-mega
-   e7d6202..4743949  master     -> origin/master
-Updating e7d6202..4743949
+   2ceba2f..eb0b7eb  master     -> origin/master
+Updating 2ceba2f..eb0b7eb
 Fast-forward
- ArduCopter/ArduCopter.pde    |    2 --
- ArduCopter/Attitude.pde      |   14 +-------------
- ArduCopter/config.h          |    2 +-
- ArduCopter/control_modes.pde |    2 +-
- 4 files changed, 3 insertions(+), 17 deletions(-)
+ ArduCopter/ArduCopter.pde                          |    6 +-
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.suo       |  Bin 83456 -> 0 bytes
+ Tools/ArdupilotMegaPlanner/Capture.cs              |  125 +-
+ .../GCSViews/Configuration.Designer.cs             |  114 +-
+ .../ArdupilotMegaPlanner/GCSViews/Configuration.cs |   82 +-
+ .../GCSViews/Configuration.resx                    | 1936 ++++++++++++++------
+ 6 files changed, 1573 insertions(+), 690 deletions(-)
+ delete mode 100644 Tools/ArdupilotMegaPlanner/ArdupilotMega.suo

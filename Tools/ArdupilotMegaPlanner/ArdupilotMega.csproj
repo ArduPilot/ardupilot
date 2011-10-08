@@ -57,7 +57,7 @@
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -349,6 +349,30 @@
       <DependentUpon>AGauge.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Configuration.ru-RU.resx">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Firmware.ru-RU.resx">
+      <DependentUpon>Firmware.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightData.ru-RU.resx">
+      <DependentUpon>FlightData.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightPlanner.ru-RU.resx">
+      <DependentUpon>FlightPlanner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Help.ru-RU.resx">
+      <DependentUpon>Help.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Simulation.ru-RU.resx">
+      <DependentUpon>Simulation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Terminal.ru-RU.resx">
+      <DependentUpon>Terminal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="JoystickSetup.ru-RU.resx">
+      <DependentUpon>JoystickSetup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Log.zh-Hans.resx">
       <DependentUpon>Log.cs</DependentUpon>
     </EmbeddedResource>
@@ -411,7 +435,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="HUD.resx">
       <DependentUpon>HUD.cs</DependentUpon>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="JoystickSetup.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
@@ -462,6 +485,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.zh-Hans.resx">
       <DependentUpon>Setup.cs</DependentUpon>
@@ -491,7 +515,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Resources\Welcome_CN.rtf" />
-    <None Include="Resources\Welcome_to_Michael_Oborne.rtf" />
+    <None Include="Resources\Welcome_to_Michael_Oborne.rtf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="apm2.ico" />
@@ -501,8 +527,12 @@
     </Content>
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />
-    <None Include="Resources\MAVCmd.txt" />
-    <None Include="Resources\MAVParam.txt" />
+    <None Include="Resources\MAVCmd.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\MAVParam.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\new frames-09.png" />
     <Content Include="dataflashlog.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

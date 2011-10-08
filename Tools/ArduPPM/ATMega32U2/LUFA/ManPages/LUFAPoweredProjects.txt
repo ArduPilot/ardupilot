@@ -1,0 +1,87 @@
+/** \file
+ *
+ *  This file contains special DoxyGen information for the generation of the main page and other special
+ *  documentation pages. It is not a project source file.
+ */
+
+/** \page Page_LUFAPoweredProjects User Projects Powered by LUFA
+ *
+ *  LUFA is currently in use all around the world, in many applications both commercial and non-commercial. Below is a
+ *  list of known public LUFA powered projects, which all use the LUFA library in some way. Feel free to visit each project's
+ *  home page for more information on each project.
+ *
+ *  If you have a project that you would like to add to this list, please contact me via the details on the main page of this
+ *  documentation.
+ *
+ *  \section Sec_BoardsUsingLUFA AVR-USB Development Boards Using LUFA
+ *
+ *  The following is a list of known AVR USB development boards, which recommend using LUFA for the USB stack. Some of these
+ *  are open design, and all are available for purchase as completed development boards suitable for project development.
+ *
+ *  - AT90USB162 Breadboard PCB (Russian): http://microsin.ru/content/view/685/44/
+ *  - Benito #7, a no-frills USB board: http://www.dorkbotpdx.org/wiki/benito
+ *  - JM-DB-U2, an ATMEGA32U2 development board: http://www.mattairtech.com/index.php/development-boards/atmega32u2-development-board.html
+ *  - Micropendous, an open design/source set of AVR USB development boards: http://micropendous.org/
+ *  - Nanduino, a do-it-yourself AT90USB162 board: http://www.makestuff.eu/wordpress/?page_id=569
+ *  - Teensy and Teensy++, two other AVR USB development boards: http://www.pjrc.com/teensy/index.html
+ *  - U2DIL/U4DIL, a set of DIP layout USB AVR boards: http://www.reworld.eu/re/en/products/u2dil/
+ *  - USB10 AKA "The Ferret", a AT90USB162 development board: http://www.soc-machines.com
+ *  - USBFOO 2, AT90USB162 based development board: http://shop.kernelconcepts.de/product_info.php?products_id=102
+ * 
+ *  \section Sec_LUFAProjects Projects Using LUFA (Hobbyist)
+ *
+ *  The following are known hobbyist projects using LUFA. Most are open source, and show off interesting ways that the LUFA library
+ *  can be incorporated into many different applications.
+ *
+ *  - Accelerometer Game Joystick: http://www.crictor.co.il/he/episodes/joystick/
+ *  - Arcade Controller: http://fletchtronics.net/arcade-controller-made-petunia
+ *  - AVR USB Modem, a 3G Wireless Modem host: http://code.google.com/p/avrusbmodem/
+ *  - Bicycle POV: http://www.code.google.com/p/bicycleledpov/
+ *  - BusNinja, an AVR clone of the popular BusPirate project: http://blog.hodgepig.org/busninja/
+ *  - CAMTRIG, a remote Camera Trigger device: http://code.astraw.com/projects/motmot/camtrig
+ *  - CD Driver Emulator Dongle for ISO Files: http://cdemu.blogspot.com/
+ *  - ClockTamer, a configurable clock generator: http://code.google.com/p/clock-tamer/
+ *  - EMUCOMBOX, a USB-RS422 adapter for E-Mu Emax samplers: http://users.skynet.be/emxp/EMUCOMBOX.htm
+ *  - Estick JTAG, an ARM JTAG debugger: http://code.google.com/p/estick-jtag/
+ *  - "Fingerlicking Wingdinger" (WARNING: Bad Language if no Javascript), a MIDI controller: http://noisybox.net/electronics/wingdinger/
+ *  - Garmin GPS USB to NMEA standard serial sentence translator: http://github.com/nall/garmin-transmogrifier/tree/master
+ *  - Generic HID Device Creator: http://generichid.sourceforge.net/
+ *  - Ghetto Drum, a MIDI drum controller: http://noisybox.net/art/gdrum/
+ *  - IR Remote to Keyboard decoder: http://netzhansa.blogspot.com/2010/04/our-living-room-hi-fi-setup-needs-mp3.html
+ *  - LED Panel controller: http://projects.peterpolidoro.net/caltech/panelscontroller/panelscontroller.htm
+ *  - Linux Secure Storage Dongle: http://github.com/TomMD/teensy
+ *  - MakeTV Episode Dispenser: http://www.youtube.com/watch?v=BkWUi18hl3g
+ *  - MidiMonster, a USB-to-MIDI gateway board: http://www.dorkbotpdx.org/wiki/midimonster
+ *  - NES Controller USB modification: http://projects.peterpolidoro.net/video/NESUSB.htm
+ *  - Opendous-JTAG, an open source ARM JTAG debugger: http://code.google.com/p/opendous-jtag/
+ *  - Openkubus, an open source hardware-based authentication dongle: http://code.google.com/p/openkubus/
+ *  - Orbee, a USB connected RGB Orb for notifications: http://www.franksworkshop.com.au/Electronics/Orbee/Orbee.htm
+ *  - Programmable XBOX controller: http://richard-burke.dyndns.org/wordpress/pan-galactic-gargantuan-gargle-brain-aka-xbox-360-usb-controller/
+ *  - Reprap with LUFA, a LUFA powered 3D printer: http://code.google.com/p/at90usb1287-code-for-arduino-and-eclipse/
+ *  - SD Card reader: http://elasticsheep.com/2010/04/teensy2-usb-mass-storage-with-an-sd-card/
+ *  - SEGA Megadrive/Genesis Development Cartridge: http://www.makestuff.eu/wordpress/?page_id=398
+ *  - Stripe Snoop, a Magnetic Card reader: http://www.ossguy.com/ss_usb/
+ *  - Touchscreen Input Device: http://capnstech.blogspot.com/2010/07/touchscreen-update.html
+ *  - USB Interface for Playstation Portable Devices: http://forums.ps2dev.org/viewtopic.php?t=11001
+ *  - Userial, a USB to Serial converter with SPI, I2C and other protocols: http://www.tty1.net/userial/
+ *  - XUM1541, a Commodore 64 floppy drive to USB adapter: http://www.root.org/~nate/c64/xum1541/
+ * 
+ *  \section Sec_LUFACommercialProjects Projects Using LUFA (Commercial)
+ *
+ *  The following is a list of known commercial products using LUFA. Some of these are open source, although many are "black-box"
+ *  solutions with no source code given.
+ *
+ *  - ARPS Locator: http://la3t.hamradio.no/lab//?id=tracker_en
+ *  - Digital Survey Instruments Magnetometer and Pointer: http://www.digitalsurveyinstruments.com/
+ *  - Penguino, an Arduino Board With On-Board LUFA Powered Debugger/Programmer: http://wiki.icy.com.au/PenguinoAVR
+ *  - Many of Busware's Products: http://www.busware.de/
+ *  - MIDIFighter, a USB-MIDI controller: http://www.midifighter.com/
+ *  - Mobo 4.3, a USB controlled all band (160-10m) HF SDR transceiver: http://sites.google.com/site/lofturj/mobo4_3
+ *  - Retrode, a USB Games Console Cartridge Reader: http://www.retrode.org
+ *  - XMEGA Development Board, using LUFA as an On-Board Programmer: http://xmega.mattair.net/
+ *
+ *  \section Sec_LUFAPublications Publications Mentioning LUFA
+ *  - Elektor Magazine, "My First AVR-USB" by Antoine Authier (feature), January 2010 Issue
+ *  - Elektor Magazine, "USB is Cool/Sucks" by Jerry Jacobs and Chris Vossen (minor mention), January 2010 Issue
+ *  - Elektor Magazine, "20 x Open Source" by Jens Nickel, March 2010 Issue
+ */

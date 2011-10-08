@@ -1,6 +1,4 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-// XXX TODO: convert these PI rate controlers to a Class
 static int
 get_stabilize_roll(long target_angle)
 {
@@ -85,20 +83,18 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-#define ALT_ERROR_MAX 350
+#define ALT_ERROR_MAX 400
 static int
-get_nav_throttle(long z_error, int target_speed)
+get_nav_throttle(long z_error) 
 {
-	int rate_error;
-	float scaler = (float)target_speed/(float)ALT_ERROR_MAX;
-
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
-	target_speed 	= z_error * scaler;
+	int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1); //_p = .85
 
-	rate_error 		= target_speed - altitude_rate;
-	rate_error 		= constrain(rate_error, -120, 140);
+	rate_error 		= rate_error - altitude_rate;
 
+	// limit the rate
+	rate_error 		= constrain(rate_error, -100, 120);
 	return (int)g.pi_throttle.get_pi(rate_error, .1);
 }
 
@@ -106,10 +102,9 @@ static int
 get_rate_roll(long target_rate)
 {
 	long error;
-	target_rate 		= constrain(target_rate, -2500, 2500);
-
-	error		= (target_rate * 4.5) - (long)(degrees(omega.x) * 100.0);
-	target_rate = g.pi_rate_roll.get_pi(error, G_Dt);
+	target_rate 	= constrain(target_rate, -2500, 2500);
+	error			= (target_rate * 4.5) - (long)(degrees(omega.x) * 100.0);
+	target_rate 	= g.pi_rate_roll.get_pi(error, G_Dt);
 
 	// output control:
 	return (int)constrain(target_rate, -2500, 2500);
@@ -119,10 +114,9 @@ static int
 get_rate_pitch(long target_rate)
 {
 	long error;
-	target_rate 		= constrain(target_rate, -2500, 2500);
-
-	error		= (target_rate * 4.5) - (long)(degrees(omega.y) * 100.0);
-	target_rate = g.pi_rate_pitch.get_pi(error, G_Dt);
+	target_rate 	= constrain(target_rate, -2500, 2500);
+	error			= (target_rate * 4.5) - (long)(degrees(omega.y) * 100.0);
+	target_rate 	= g.pi_rate_pitch.get_pi(error, G_Dt);
 
 	// output control:
 	return (int)constrain(target_rate, -2500, 2500);
@@ -132,7 +126,6 @@ static int
 get_rate_yaw(long target_rate)
 {
 	long error;
-
 	error		= (target_rate * 4.5) - (long)(degrees(omega.z) * 100.0);
 	target_rate = g.pi_rate_yaw.get_pi(error, G_Dt);
 
@@ -193,16 +186,35 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 
-/*
 static int alt_hold_velocity()
 {
-	// subtract filtered Accel
-	float error	= abs(next_WP.alt - current_loc.alt);
-	error = min(error, 200);
-	error = 1 - (error/ 200.0);
-	return (accels_rot.z + 9.81) * accel_gain * error;
+	#if ACCEL_ALT_HOLD == 1
+		// subtract filtered Accel
+		float error	= abs(next_WP.alt - current_loc.alt);
+
+		error -= 100;
+		error = min(error, 200.0);
+		error = max(error, 0.0);
+		error = 1 - (error/ 200.0);
+		float sum = accels_rot_sum / (float)accels_rot_count;
+
+		accels_rot_sum = 0;
+		accels_rot_count = 0;
+
+		int output = (sum + 9.81) * alt_hold_gain * error;
+
+// fast rise
+//s: -17.6241, g:0.0000, e:1.0000, o:0
+//s: -18.4990, g:0.0000, e:1.0000, o:0
+//s: -19.3193, g:0.0000, e:1.0000, o:0
+//s: -13.1310, g:47.8700, e:1.0000, o:-158
+
+		//Serial.printf("s: %1.4f, g:%1.4f, e:%1.4f, o:%d\n",sum, alt_hold_gain, error, output);
+		return output;
+	#else
+		return 0;
+	#endif
 }
-*/
 
 static int get_angle_boost()
 {

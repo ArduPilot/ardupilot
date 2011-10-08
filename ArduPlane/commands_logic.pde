@@ -222,6 +222,7 @@ static void do_takeoff()
 	next_WP.lat 		= home.lat + 1000;	// so we don't have bad calcs
 	next_WP.lng 		= home.lng + 1000;	// so we don't have bad calcs
 	takeoff_complete 	= false;			// set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
+											// Flag also used to override "on the ground" throttle disable
 }
 
 static void do_nav_wp()
@@ -482,11 +483,11 @@ static void do_set_servo()
 static void do_set_relay()
 {
 	if (next_command.p1 == 1) {
-		relay_on();
+		relay.on();
 	} else if (next_command.p1 == 0) {
-		relay_off();
+		relay.off();
 	}else{
-		relay_toggle();
+		relay.toggle();
 	}
 }
 

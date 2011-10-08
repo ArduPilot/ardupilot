@@ -75,6 +75,8 @@ foreach $file (@files) {
 			$line =~ s/MAV_CMD_NAV_//;
 			
 			$line =~ s/MAV_CMD_//;
+            
+            $line =~ s/\/\/\/</\/\/\//;
 		
 			$line =~ s/typedef/public/;
 			$line =~ s/uint8_t/public byte/;

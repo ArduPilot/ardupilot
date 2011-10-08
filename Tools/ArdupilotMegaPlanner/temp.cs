@@ -789,7 +789,11 @@ namespace ArdupilotMega
 
             FolderBrowserDialog fbd = new FolderBrowserDialog();
 
-            fbd.SelectedPath = @"C:\Users\hog\Documents\albany 2011\New folder";
+            try
+            {
+                fbd.SelectedPath = @"C:\Users\hog\Documents\albany 2011\New folder";
+            }
+            catch { }
 
             fbd.ShowDialog();
 

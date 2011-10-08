@@ -12,7 +12,7 @@ namespace ArdupilotMega
 
         public static int getAltitude(double lat, double lng)
         {
-            short alt = -32768;
+            short alt = 0;
 
             lat += 0.00083333333333333;
             //lng += 0.0008;

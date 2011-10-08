@@ -41,6 +41,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder.h>	// Range finder library
 #include <ModeFilter.h>
+#include <AP_Relay.h>       // APM relay
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
@@ -215,10 +216,12 @@ static const char* flight_mode_strings[] = {
 			2   Elevator
 			3   Throttle
 			4   Rudder (if we have ailerons)
-			5   Mode
-			6   TBD
-			7   TBD
-			8   TBD
+			5   Aux5
+			6   Aux6
+			7   Aux7
+			8   Aux8/Mode
+		Each Aux channel can be configured to have any of the available auxiliary functions assigned to it.
+		See libraries/RC_Channel/RC_Channel_aux.h for more information
 */
 
 // Failsafe
@@ -273,6 +276,7 @@ static byte	command_may_ID;						// current command ID
 static int		airspeed;							// m/s * 100
 static int     airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
 static float   airspeed_error;						// m/s * 100
+static float   airspeed_fbwB;						// m/s * 100
 static long    energy_error;                       // energy state error (kinetic + potential) for altitude hold
 static long    airspeed_energy_error;              // kinetic portion of energy error
 
@@ -397,6 +401,7 @@ static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation c
 static float 			load;						// % MCU cycles used
 
 RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
+AP_Relay relay;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -792,7 +797,7 @@ static void update_current_flight_mode(void)
 				break;
 
 			case FLY_BY_WIRE_A:
-				// fake Navigation output using sticks
+				// set nav_roll and nav_pitch using sticks
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				nav_pitch = g.channel_pitch.norm_input() * (-1) * g.pitch_limit_min;
 				// We use pitch_min above because it is usually greater magnitude then pitch_max.  -1 is to compensate for its sign.
@@ -809,15 +814,13 @@ static void update_current_flight_mode(void)
 
 				if (g.airspeed_enabled == true)
 									{
-					airspeed_error = ((int)(g.flybywire_airspeed_max -
+					airspeed_fbwB = ((int)(g.flybywire_airspeed_max -
 							g.flybywire_airspeed_min) *
 							g.channel_throttle.servo_out) +
 							((int)g.flybywire_airspeed_min * 100);
-					// Intermediate calculation - airspeed_error is just desired airspeed at this point
-					airspeed_energy_error = (long)(((long)airspeed_error *
-								(long)airspeed_error) -
+					airspeed_energy_error = (long)(((long)airspeed_fbwB *
+								(long)airspeed_fbwB) -
 							((long)airspeed * (long)airspeed))/20000;
-					//Changed 0.00005f * to / 20000 to avoid floating point calculation
 					airspeed_error = (airspeed_error - airspeed);
 									}
 

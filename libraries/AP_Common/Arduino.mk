@@ -43,12 +43,11 @@ SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
-    SRCROOT	:=	$(subst /cygdrive/c,c:,$(CURDIR))
+    SRCROOT	:=	$(shell cygpath -m ${CURDIR})
     $(warning your realpath function is not working)
     $(warning > setting SRCROOT to $(SRCROOT))
   endif
   # Correct the directory backslashes on cygwin
-  SKETCHBOOK	:=	$(subst \,/,$(SKETCHBOOK))
   ARDUINO		:=	$(subst \,/,$(ARDUINO))
 endif
 
@@ -76,6 +75,11 @@ else
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
   endif
+endif
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+	# Convert cygwin path into a windows normal path
+    SKETCHBOOK	:=	$(shell cygpath -d ${SKETCHBOOK})
+    SKETCHBOOK	:=	$(subst \,/,$(SKETCHBOOK))
 endif
 
 #
@@ -142,14 +146,29 @@ ifeq ($(ARDUINO),)
     ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
   endif
 
+  ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	# Most of the following commands are simply to deal with whitespaces in the path
+	# Read the "Program Files" system directory from the windows registry
+	PROGRAM_FILES		:=	$(shell cat /proc/registry/HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows/CurrentVersion/ProgramFilesDir)
+	# Convert the path delimiters to /
+	PROGRAM_FILES		:=	$(shell cygpath -m ${PROGRAM_FILES})
+	# Escape the space with a backslash
+	PROGRAM_FILES		:=	$(shell echo $(PROGRAM_FILES) | sed s/\ /\\\\\ / )
+	# Use DOS paths because they do not contain spaces
+	PROGRAM_FILES		:=	$(shell cygpath -d ${PROGRAM_FILES})
+	# Convert the path delimiters to /
+	PROGRAM_FILES	:=	$(subst \,/,$(PROGRAM_FILES))
+	# Search for an Arduino instalation in a couple of paths
+	ARDUINO_SEARCHPATH	:=	c:/arduino* $(PROGRAM_FILES)/arduino*
+    ARDUINOS		:=	$(wildcard $(ARDUINO_SEARCHPATH))
+  endif
+
   #
   # Pick the first option if more than one candidate is found.
   #
-  # XXX this is bad if any of the paths (c:\Program Files\ anyone?) has a space in its name...
-  #
   ARDUINO		:=	$(firstword $(ARDUINOS))
   ifeq ($(ARDUINO),)
-    $(error ERROR: Cannot find Arduino on this system, please specify on the commandline with ARDUINO=<path>)
+    $(error ERROR: Cannot find Arduino on this system, please specify on the commandline with ARDUINO=<path> or on the config.mk file)
   endif
 
   ifneq ($(words $(ARDUINOS)),1)
@@ -189,6 +208,9 @@ CC			:=	$(call FIND_TOOL,avr-gcc)
 AS			:=	$(call FIND_TOOL,avr-gcc)
 AR			:=	$(call FIND_TOOL,avr-ar)
 LD			:=	$(call FIND_TOOL,avr-gcc)
+GDB			:=	$(call FIND_TOOL,avr-gdb)
+AVRDUDE		:=	$(call FIND_TOOL,avrdude)
+AVARICE		:=	$(call FIND_TOOL,avarice)
 OBJCOPY			:=	$(call FIND_TOOL,avr-objcopy)
 ifeq ($(CXX),)
 $(error ERROR: cannot find the compiler tools anywhere on the path $(TOOLPATH))
@@ -305,7 +327,14 @@ LIBOBJS			:=	$(SKETCHLIBOBJS) $(ARDUINOLIBOBJS)
 # Pull the Arduino version from the revisions.txt file
 #
 # XXX can we count on this?  If not, what?
-ARDUINO_VERS		:=	$(shell expr `head -1 $(ARDUINO)/revisions.txt | cut -d ' ' -f 2`)
+ARDUINO_VERS	:=	$(shell expr `head -1 $(ARDUINO)/revisions.txt | cut -d ' ' -f 2`)
+# If the version is not a number, try it again, using another file
+ifneq ($(ARDUINO_VERS),$(shell echo $(ARDUINO_VERS) | sed 's/[^0-9]*//g'))
+	ARDUINO_VERS	:=	$(shell expr `head -1 $(ARDUINO)/lib/version.txt | cut -d ' ' -f 2`)
+endif
+ifneq ($(ARDUINO_VERS),$(shell echo $(ARDUINO_VERS) | sed 's/[^0-9]*//g'))
+	$(warning Could not determine Arduino version)
+endif
 
 # Find the hardware directory to use
 HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
@@ -327,7 +356,13 @@ HARDWARE_CORE		:=	$(shell grep $(BOARD).build.core $(BOARDFILE) | cut -d = -f 2)
 UPLOAD_SPEED		:=	$(shell grep $(BOARD).upload.speed $(BOARDFILE) | cut -d = -f 2)
 
 ifeq ($(UPLOAD_PROTOCOL),)
-UPLOAD_PROTOCOL		:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+  UPLOAD_PROTOCOL	:=	$(shell grep $(BOARD).upload.protocol $(BOARDFILE) | cut -d = -f 2)
+endif
+
+# Adding override for mega since boards.txt uses stk500 instead of
+# arduino on 22 release
+ifeq ($(BOARD),mega)
+  UPLOAD_PROTOCOL	:=	arduino
 endif
 
 ifeq ($(MCU),)
@@ -380,21 +415,31 @@ all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
 .PHONY: upload
 upload: $(SKETCHHEX)
-	avrdude -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
+	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
 
 configure:
 	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
 	$(warning Please edit the file to match your system configuration, if you use a different board or port)
-	@echo BOARD=mega     >  $(SKETCHBOOK)/config.mk
-	@echo PORT=/dev/null >> $(SKETCHBOOK)/config.mk
+	@echo \# Select \'mega\' for the original APM, or \'mega2560\' for the V2 APM. > $(SKETCHBOOK)/config.mk
+	@echo BOARD=mega     >> $(SKETCHBOOK)/config.mk
+	@echo \# The communication port used to communicate with the APM. >> $(SKETCHBOOK)/config.mk
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	@echo PORT=com3 >> $(SKETCHBOOK)/config.mk
+else
+	@echo PORT=/dev/ttyUSB0 >> $(SKETCHBOOK)/config.mk
+endif
 
 debug:
-	avarice --mkII --capture --jtag usb :4242 & \
-	gnome-terminal -x avr-gdb $(SKETCHELF) & \
+	$(AVARICE) --mkII --capture --jtag usb :4242 & \
+	gnome-terminal -x $(GDB) $(SKETCHELF) & \
 	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
 
 clean:
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+	@del /S $(BUILDROOT)
+else
 	@rm -fr $(BUILDROOT)
+endif
 
 ################################################################################
 # Rules

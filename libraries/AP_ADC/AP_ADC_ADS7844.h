@@ -9,7 +9,9 @@
 #define ADC_DATAIN      50    // MISO
 #define ADC_SPICLOCK    52    // SCK
 #define ADC_CHIP_SELECT 33    // PC4   9 // PH6  Puerto:0x08 Bit mask : 0x40
-#define ADC_FILTER_SIZE	3
+
+// DO NOT CHANGE FROM 8!!
+#define ADC_ACCEL_FILTER_SIZE 8
 
 #include "AP_ADC.h"
 #include <inttypes.h>
@@ -25,8 +27,14 @@ class AP_ADC_ADS7844 : public AP_ADC
 
 	// Read 6 sensors at once
 	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
+	bool	filter_result;
 
 	private:
+	uint16_t 		_filter_accel[3][ADC_ACCEL_FILTER_SIZE];
+	uint16_t 		_prev_gyro[3];
+	uint16_t 		_prev_accel[3];
+	uint8_t			_filter_index_accel;
+
 };
 
 #endif
