@@ -23,6 +23,7 @@ void setup() {
 	AP_Guide * guide = NULL;
 	AP_Controller * controller = NULL;
 	AP_HardwareAbstractionLayer * hal = NULL;
+
 	/*
 	 * Communications
 	 */
@@ -50,6 +51,7 @@ void setup() {
 			hal->debug->println_P(PSTR("initializing gps"));
 			AP_GPS_Auto gpsDriver(&Serial1, &(hal->gps));
 			hal->gps = &gpsDriver;
+			hal->gps->callback = delay;
 			hal->gps->init();
 		}
 
@@ -154,7 +156,6 @@ void setup() {
 		Serial1.begin(HIL_BAUD, 128, 128);
 		hal->hil = new COMMLINK_CLASS(&Serial1, navigator, guide, controller, hal);
 	}
-
 
 	/*
 	 * Start the autopilot
