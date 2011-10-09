@@ -370,14 +370,16 @@ static void set_servos(void)
 		} else {
 			flapSpeedSource = g.throttle_cruise;
 		}
-		if ( flapSpeedSource > g.flap_1_speed) {
-			G_RC_AUX(k_flap_auto)->servo_out = 0;
-		} else if (flapSpeedSource > g.flap_2_speed) {
-			G_RC_AUX(k_flap_auto)->servo_out = g.flap_1_percent;
-		} else {
-			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
-		}
-		G_RC_AUX(k_flap_auto)->calc_pwm();
+        if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) {
+        	if ( flapSpeedSource > g.flap_1_speed) {
+        		g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
+        	} else if (flapSpeedSource > g.flap_2_speed) {
+        		g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
+        	} else {
+        		g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
+        	}
+            g_rc_function[RC_Channel_aux::k_flap_auto]->calc_pwm();
+        }
 	}
 	
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
