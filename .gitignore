@@ -8,3 +8,12 @@ CMakeCache.txt
 cmake_install.cmake
 build
 /Tools/ArdupilotMegaPlanner/bin/Release/gmapcache
+/Tools/ArdupilotMegaPlanner/APMPlannerXplanes/APMPlannerXplanes/Debug
+/Tools/ArdupilotMegaPlanner/CustomImages
+/Tools/ArdupilotMegaPlanner/Updater/obj
+/Tools/ArdupilotMegaPlanner/Updater/bin
+/Tools/ArdupilotMegaPlanner/bin/Debug
+/Tools/ArdupilotMegaPlanner/bin/APM Planner.app
+/Tools/ArdupilotMegaPlanner/obj
+/Tools/ArdupilotMegaPlanner/resedit/bin
+/Tools/ArdupilotMegaPlanner/resedit/obj
