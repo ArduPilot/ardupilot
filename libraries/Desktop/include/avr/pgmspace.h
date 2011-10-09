@@ -1,0 +1,49 @@
+#ifndef _PGMSPACE_H
+#define _PGMSPACE_H
+
+#include <stdarg.h>
+#include <unistd.h>
+#include <inttypes.h>
+
+#ifndef __ATTR_PROGMEM__
+#define __ATTR_PROGMEM__ __attribute__(())
+#endif
+
+#ifndef __ATTR_PURE__
+#define __ATTR_PURE__ __attribute__((__pure__))
+#endif
+
+#undef PROGMEM
+#define PROGMEM __ATTR_PROGMEM__
+
+#ifndef PGM_P
+#define PGM_P const prog_char *
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef char PROGMEM prog_char;
+extern int strcasecmp_P(const char *, PGM_P) __ATTR_PURE__;
+extern int strcmp_P(const char *, PGM_P) __ATTR_PURE__;
+extern size_t strlcat_P (char *, PGM_P, size_t );
+extern size_t strnlen_P (PGM_P, size_t );
+
+static inline uint8_t pgm_read_byte(PGM_P s) { return (uint8_t)*s; }
+static inline uint16_t pgm_read_word(const void *s) { return *(const uint16_t *)s; }
+
+#define GETBYTE(flag, mask, pnt)        ({      \
+       unsigned char __c;                       \
+       __c = ((flag) & (mask))                  \
+             ? pgm_read_byte(pnt) : *pnt;       \
+       pnt++;                                   \
+       __c;                                     \
+})
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -77,8 +77,14 @@ typedef struct {
 // has an equivalent effect but avoids the warnings, which otherwise
 // make finding real issues difficult.
 //
+#ifdef DESKTOP_BUILD
+# undef PROGMEM
+# define PROGMEM __attribute__(())
+#else
 # undef PROGMEM
 # define PROGMEM __attribute__(( section(".progmem.data") ))
+#endif
+
 # undef PSTR
 # define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
                 (prog_char_t *)&__c[0];}))

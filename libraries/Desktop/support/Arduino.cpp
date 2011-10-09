@@ -1,0 +1,124 @@
+#include "WProgram.h"
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <bsd/string.h>
+#include "avr/pgmspace.h"
+#include <BetterStream.h>
+#include <sys/time.h>
+
+extern "C" {
+
+volatile uint8_t __iomem[1024];
+
+unsigned __brkval = 0x2000;
+unsigned __bss_end = 0x1000;
+
+void pinMode(uint8_t pin, uint8_t mode)
+{
+
+}
+
+
+long unsigned int millis(void)
+{
+	extern struct timeval sketch_start_time;
+	struct timeval tp;
+	gettimeofday(&tp,NULL);
+	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+		      (sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6)));
+}
+
+long unsigned int micros(void)
+{
+	extern struct timeval sketch_start_time;
+	struct timeval tp;
+	gettimeofday(&tp,NULL);
+	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+		      (sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6)));
+}
+
+void delay(long unsigned msec)
+{
+	usleep(msec*1000);
+}
+
+size_t strlcat_P(char *dst, PGM_P src, size_t size)
+{
+	return strlcat(dst, src, size);
+}
+
+size_t strnlen_P(PGM_P str, size_t size)
+{
+	return strnlen(str, size);
+}
+
+int strcasecmp_P(PGM_P str1, PGM_P str2)
+{
+	return strcasecmp(str1, str2);
+}
+
+
+void digitalWrite(uint8_t pin, uint8_t val)
+{
+}
+
+int analogRead(uint8_t pin)
+{
+	return 0;
+}
+
+}
+
+
+char *itoa(int __val, char *__s, int __radix)
+{
+	switch (__radix) {
+	case 8:
+		sprintf(__s, "%o", __val);
+		break;
+	case 16:
+		sprintf(__s, "%x", __val);
+		break;
+	case 10:
+	default:
+		sprintf(__s, "%d", __val);
+		break;
+	}
+	return __s;
+}
+
+char *ultoa(unsigned long __val, char *__s, int __radix)
+{
+	switch (__radix) {
+	case 8:
+		sprintf(__s, "%lo", __val);
+		break;
+	case 16:
+		sprintf(__s, "%lx", __val);
+		break;
+	case 10:
+	default:
+		sprintf(__s, "%lu", __val);
+		break;
+	}
+	return __s;
+}
+
+char *ltoa(long __val, char *__s, int __radix)
+{
+	switch (__radix) {
+	case 8:
+		sprintf(__s, "%lo", __val);
+		break;
+	case 16:
+		sprintf(__s, "%lx", __val);
+		break;
+	case 10:
+	default:
+		sprintf(__s, "%ld", __val);
+		break;
+	}
+	return __s;
+}
+
