@@ -1,0 +1,3 @@
+This provides some support files for building APM on normal desktop
+systems. This makes it possible to use debugging tools (such as gdb
+and valgrind) on the APM code
