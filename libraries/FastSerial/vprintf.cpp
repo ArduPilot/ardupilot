@@ -54,7 +54,7 @@ extern "C" {
 #undef PSTR 
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
 
-#if DESKTOP_BUILD
+#ifdef DESKTOP_BUILD
 #define GETBYTE(flag, mask, pnt)        ({      \
        unsigned char __c;                       \
        __c = ((flag) & (mask))                  \

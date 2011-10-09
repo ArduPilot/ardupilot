@@ -77,7 +77,7 @@ typedef struct {
 // has an equivalent effect but avoids the warnings, which otherwise
 // make finding real issues difficult.
 //
-#if DESKTOP_BUILD
+#ifdef DESKTOP_BUILD
 # undef PROGMEM
 # define PROGMEM __attribute__(())
 #else
