@@ -26,6 +26,7 @@ namespace ArdupilotMega.GCSViews
         EndPoint Remote = (EndPoint)(new IPEndPoint(IPAddress.Any, 0));
         byte[] udpdata = new byte[113 * 9 + 5]; // 113 types - 9 items per type (index+8) + 5 byte header
         float[][] DATA = new float[113][];
+        TDataFromAeroSimRC aeroin = new TDataFromAeroSimRC();
         DateTime now = DateTime.Now;
         DateTime lastgpsupdate = DateTime.Now;
         List<string> position = new List<string>();
@@ -836,7 +837,7 @@ namespace ArdupilotMega.GCSViews
             }
             else if (receviedbytes == 582)
             {
-                TDataFromAeroSimRC aeroin = new TDataFromAeroSimRC();
+                aeroin = new TDataFromAeroSimRC();
 
                 object temp = aeroin;
 
@@ -1154,7 +1155,7 @@ namespace ArdupilotMega.GCSViews
                 throttle_out = 1;
                 rudder_out = (float)MainV2.cs.hilch4 / -ruddergain;
 
-                collective_out = (float)(MainV2.cs.hilch3 - 1000) / throttlegain;
+                collective_out = (float)(MainV2.cs.hilch3 - 1500) / throttlegain;
             }
             else
             {
@@ -1164,7 +1165,7 @@ namespace ArdupilotMega.GCSViews
                 throttle_out = ((float)MainV2.cs.hilch3 + 5000) / throttlegain;
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
             }
-
+            /*
             if ((roll_out == -1 || roll_out == 1) && (pitch_out == -1 || pitch_out == 1))
             {
                 this.Invoke((MethodInvoker)delegate
@@ -1176,7 +1177,7 @@ namespace ArdupilotMega.GCSViews
                     catch { }
                 });
             }
-
+            */
             // Limit min and max
             roll_out = Constrain(roll_out, -1, 1);
             pitch_out = Constrain(pitch_out, -1, 1);
@@ -1207,7 +1208,14 @@ namespace ArdupilotMega.GCSViews
                     else { list3.Clear(); }
                     if (CHKgraphthrottle.Checked)
                     {
-                        list4.Add(time, throttle_out);
+                        if (heli)
+                        {
+                            list4.Add(time, collective_out);
+                        }
+                        else
+                        {
+                            list4.Add(time, throttle_out);
+                        }
                     }
                     else { list4.Clear(); }
                 }
@@ -1222,6 +1230,11 @@ namespace ArdupilotMega.GCSViews
                     if (RAD_softFlightGear.Checked)
                     {
                         updateScreenDisplay(lastfdmdata.latitude, lastfdmdata.longitude, lastfdmdata.altitude * .3048, lastfdmdata.phi, lastfdmdata.theta, lastfdmdata.psi, lastfdmdata.psi, roll_out, pitch_out, rudder_out, throttle_out);
+                    }
+
+                    if (RAD_aerosimrc.Checked)
+                    {
+                        updateScreenDisplay(aeroin.Model_fLatitude * deg2rad, aeroin.Model_fLongitude * deg2rad, aeroin.Model_fPosZ, aeroin.Model_fRoll, aeroin.Model_fPitch, aeroin.Model_fHeading, aeroin.Model_fHeading, roll_out, pitch_out, rudder_out, throttle_out);
                     }
                 }
             }
@@ -1239,6 +1252,11 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)(pitch_out * REV_pitch * -1)), 0, AeroSimRC, 8, 8);
                 Array.Copy(BitConverter.GetBytes((double)(rudder_out * REV_rudder)), 0, AeroSimRC, 16, 8);
                 Array.Copy(BitConverter.GetBytes((double)(throttle_out)), 0, AeroSimRC, 24, 8);
+
+                if (heli)
+                {
+                    Array.Copy(BitConverter.GetBytes((double)(collective_out)), 0, AeroSimRC, 24, 8);
+                }
 
                 try
                 {
