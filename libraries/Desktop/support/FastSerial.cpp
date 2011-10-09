@@ -33,6 +33,7 @@
 #include "FastSerial.h"
 #include "WProgram.h"
 #include <unistd.h>
+#include <pty.h>
 
 #if   defined(UDR3)
 # define FS_MAX_PORTS   4
@@ -68,10 +69,12 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 
 void FastSerial::begin(long baud)
 {
+	printf("Starting serial port\n");
 }
 
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
 {
+	begin(baud);
 }
 
 void FastSerial::end()
@@ -107,6 +110,7 @@ void FastSerial::flush(void)
 void FastSerial::write(uint8_t c)
 {
 	fwrite(&c, 1, 1, stdout);
+	fflush(stdout);
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
