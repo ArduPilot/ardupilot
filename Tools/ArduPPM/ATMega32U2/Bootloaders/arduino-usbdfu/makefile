@@ -52,7 +52,7 @@
 #MCU = atmega16u2
 MCU = atmega32u2
 
-MCU_AVRDUDE = $(F_CPU)
+MCU_AVRDUDE = $(MCU)
 
 # Specify the Arduino model using the assigned PID.  This is used by Descriptors.c
 #   to set the product descriptor string (for DFU we must use the PID for each
