@@ -13,8 +13,11 @@ int main(void)
 	gettimeofday(&sketch_start_time, NULL);
 	setup();
 	while (true) {
+		struct timespec ts;
 		loop();
-		usleep(10);
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100;
+		nanosleep(&ts, NULL);
 	}
 	return 0;
 }
