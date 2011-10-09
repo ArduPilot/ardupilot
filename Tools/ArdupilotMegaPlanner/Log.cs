@@ -197,6 +197,8 @@ namespace ArdupilotMega
                             sw.Close();
                             TextReader tr = new StreamReader(logfile);
 
+                            MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+
                             while (tr.Peek() != -1)
                             {
                                 processLine(tr.ReadLine());
@@ -322,7 +324,7 @@ namespace ArdupilotMega
                     lastpos = (position[positionindex][position[positionindex].Count - 1]);
                     lastline = line;
                 }
-                if (items[0].Contains("GPS") && items[4] != "0" && items[4] != "-1")
+                if (items[0].Contains("GPS") && items[4] != "0" && items[4] != "-1" && items.Length <= 9)
                 {
                     if (position[positionindex] == null)
                         position[positionindex] = new List<Point3D>();
@@ -710,6 +712,8 @@ namespace ArdupilotMega
 
                     TextReader tr = new StreamReader(logfile);
 
+                    MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
+
                     while (tr.Peek() != -1)
                     {
                         processLine(tr.ReadLine());
@@ -782,6 +786,8 @@ namespace ArdupilotMega
                     try
                     {
                         TextReader tr = new StreamReader(logfile);
+
+                        MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
 
                         while (tr.Peek() != -1)
                         {
