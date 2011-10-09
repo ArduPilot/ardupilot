@@ -669,6 +669,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         pad_size = (((uint8_t)micros()) % k_size_max) + 1;     // should be fairly random
         var_header.key = k_key_pad;
         var_header.size = pad_size - 1;
+        var_header.spare = 0;
 
         eeprom_write_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
         _tail_sentinel += sizeof(var_header) + pad_size;
@@ -686,6 +687,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
     //
     var_header.key = k_key_sentinel;
     var_header.size = 0;
+    var_header.spare = 0;
     eeprom_write_block(&var_header, (void *)_tail_sentinel, sizeof(var_header));
 
     // Write the header for the block we have just located, claiming the EEPROM space.
