@@ -1,0 +1,36 @@
+guide to dfu programing using a usbtiny to a atmega32u2
+
+1. download newest winavr and install
+2. modify avrdude.conf in the bin directory under AT90USB162
+from this: 
+memory "flash" 
+paged = yes; 
+size = 16384; 
+page_size = 128; 
+num_pages = 128; 
+
+into this: 
+memory "flash" 
+paged = yes; 
+size = 32768; 
+page_size = 128; 
+num_pages = 256; 
+
+i also changed 
+ desc             = "atmega32u2";
+
+update your makefile to point to the correct programing device.
+fix this
+AVRDUDE_PROGRAMMER = usbtiny
+AVRDUDE_PORT = usb
+
+now run
+
+make
+make program.
+
+i used a usbtiny from sparkfun.
+
+
+or manualy
+avrdude -p atmega32u2 -F -P usb -c usbtiny  -v  -U flash:w:Arduino-usbdfu.hex  -U efuse:w:0xF4:m -U hfuse:w:0xD9:m -U lfuse:w:0xFF:m  -U lock:w:0x0F:m
