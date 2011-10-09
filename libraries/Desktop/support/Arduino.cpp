@@ -25,8 +25,8 @@ long unsigned int millis(void)
 	extern struct timeval sketch_start_time;
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
-	return 1.0e3*(tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		(sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6));
+	return 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+		      (sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6)));
 }
 
 long unsigned int micros(void)
@@ -34,8 +34,8 @@ long unsigned int micros(void)
 	extern struct timeval sketch_start_time;
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
-	return 1.0e6*(tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
-		(sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6));
+	return 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+		      (sketch_start_time.tv_sec + (sketch_start_time.tv_usec*1.0e-6)));
 }
 
 void delay(long unsigned msec)
