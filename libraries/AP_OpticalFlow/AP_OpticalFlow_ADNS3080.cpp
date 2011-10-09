@@ -25,7 +25,7 @@
 
 #include "AP_OpticalFlow_ADNS3080.h"
 #include "WProgram.h"
-#include "../SPI/SPI.h"
+#include "SPI.h"
 
 #define AP_SPI_TIMEOUT 1000
 
