@@ -377,9 +377,7 @@ static void set_servos(void)
 		} else {
 			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
 		}
-        if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) {
-            g_rc_function[RC_Channel_aux::k_flap_auto]->calc_pwm();
-        }
+		G_RC_AUX(k_flap_auto)->calc_pwm();
 	}
 	
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
