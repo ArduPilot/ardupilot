@@ -123,7 +123,7 @@ void setup() {
 			hal->rangeFinders.push_back(rangeFinder);
 		}
 
-	} else 
+	}
 
 	/*
 	 * Select guidance, navigation, control algorithms
