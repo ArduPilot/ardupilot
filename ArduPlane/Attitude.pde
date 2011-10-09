@@ -287,13 +287,15 @@ static void set_servos(void)
 		g.channel_rudder.radio_out 		= g.channel_rudder.radio_in;
 		// FIXME To me it does not make sense to control the aileron using radio_in in manual mode
 		// Doug could you please take a look at this ?
-		if (g_rc_function[RC_Channel_aux::k_aileron] != rc_array[g.flight_mode_channel-1])
+		if (g_rc_function[RC_Channel_aux::k_aileron] != rc_array[g.flight_mode_channel-1]) {
 			G_RC_AUX(k_aileron)->radio_out	= g_rc_function[RC_Channel_aux::k_aileron]->radio_in;
+        }
 		// only use radio_in if the channel is not used as flight_mode_channel
-		if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1])
+		if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
 			G_RC_AUX(k_flap_auto)->radio_out	= g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-		else
+		} else {
 			G_RC_AUX(k_flap_auto)->radio_out	= g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
+        }
 	} else {
 		if (g.mix_mode == 0) {
 			g.channel_roll.calc_pwm();
@@ -355,10 +357,11 @@ static void set_servos(void)
 	
 	if(control_mode < FLY_BY_WIRE_B) {
 		// only use radio_in if the channel is not used as flight_mode_channel
-		if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1])
+		if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
 			G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-		else
+		} else {
 			G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
+        }
 	} else if (control_mode >= FLY_BY_WIRE_B) {	
 		if (control_mode == FLY_BY_WIRE_B) {  
 			flapSpeedSource = airspeed_fbwB/100;
