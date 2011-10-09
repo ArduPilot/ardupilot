@@ -521,6 +521,7 @@ init_throttle_cruise()
 	}
 }
 
+#if CLI_ENABLED == ENABLED
 #if BROKEN_SLIDER == 1
 
 static boolean
@@ -549,8 +550,8 @@ check_startup_for_CLI()
 	return (digitalRead(SLIDE_SWITCH_PIN) == 0);
 }
 
-#endif
-
+#endif // BROKEN_SLIDER
+#endif // CLI_ENABLED
 
 /*
   map from a 8 bit EEPROM baud rate to a real baud rate
