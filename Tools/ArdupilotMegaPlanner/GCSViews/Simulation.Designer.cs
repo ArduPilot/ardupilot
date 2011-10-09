@@ -110,6 +110,8 @@
             this.BUT_startfgplane = new ArdupilotMega.MyButton();
             this.BUT_startxplane = new ArdupilotMega.MyButton();
             this.CHK_heli = new System.Windows.Forms.CheckBox();
+            this.RAD_aerosimrc = new System.Windows.Forms.RadioButton();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -243,6 +245,7 @@
             this.RAD_softXplanes.Checked = true;
             this.RAD_softXplanes.Name = "RAD_softXplanes";
             this.RAD_softXplanes.TabStop = true;
+            this.toolTip1.SetToolTip(this.RAD_softXplanes, resources.GetString("RAD_softXplanes.ToolTip"));
             this.RAD_softXplanes.UseVisualStyleBackColor = true;
             this.RAD_softXplanes.CheckedChanged += new System.EventHandler(this.RAD_softXplanes_CheckedChanged);
             // 
@@ -250,6 +253,7 @@
             // 
             resources.ApplyResources(this.RAD_softFlightGear, "RAD_softFlightGear");
             this.RAD_softFlightGear.Name = "RAD_softFlightGear";
+            this.toolTip1.SetToolTip(this.RAD_softFlightGear, resources.GetString("RAD_softFlightGear.ToolTip"));
             this.RAD_softFlightGear.UseVisualStyleBackColor = true;
             this.RAD_softFlightGear.CheckedChanged += new System.EventHandler(this.RAD_softFlightGear_CheckedChanged);
             // 
@@ -680,10 +684,19 @@
             this.CHK_heli.Name = "CHK_heli";
             this.CHK_heli.UseVisualStyleBackColor = true;
             // 
+            // RAD_aerosimrc
+            // 
+            resources.ApplyResources(this.RAD_aerosimrc, "RAD_aerosimrc");
+            this.RAD_aerosimrc.Name = "RAD_aerosimrc";
+            this.toolTip1.SetToolTip(this.RAD_aerosimrc, resources.GetString("RAD_aerosimrc.ToolTip"));
+            this.RAD_aerosimrc.UseVisualStyleBackColor = true;
+            this.RAD_aerosimrc.CheckedChanged += new System.EventHandler(this.RAD_aerosimrc_CheckedChanged);
+            // 
             // Simulation
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.RAD_aerosimrc);
             this.Controls.Add(this.CHK_heli);
             this.Controls.Add(this.BUT_startxplane);
             this.Controls.Add(this.BUT_startfgplane);
@@ -714,7 +727,7 @@
             this.Controls.Add(this.CHKREV_pitch);
             this.Controls.Add(this.CHKREV_roll);
             this.Name = "Simulation";
-            this.Load += new System.EventHandler(this.ArdupilotSim_Load);
+            this.Load += new System.EventHandler(this.Simulation_Load);
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
@@ -810,5 +823,7 @@
         private MyButton BUT_startfgplane;
         private MyButton BUT_startxplane;
         private System.Windows.Forms.CheckBox CHK_heli;
+        private System.Windows.Forms.RadioButton RAD_aerosimrc;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }

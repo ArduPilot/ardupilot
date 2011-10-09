@@ -496,6 +496,9 @@
     <EmbeddedResource Include="temp.resx">
       <DependentUpon>temp.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="AeroSimRCAPMHil.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="app.config" />
     <None Include="arducopter-fgmodel.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

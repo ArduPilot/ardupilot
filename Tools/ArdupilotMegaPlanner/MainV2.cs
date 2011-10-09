@@ -80,7 +80,7 @@ namespace ArdupilotMega
 
             georefimage temp = new georefimage();
 
-            //temp.dowork(141);
+            //temp.dowork(244 + 60*60*24 * -1 );
 
             //return;
 

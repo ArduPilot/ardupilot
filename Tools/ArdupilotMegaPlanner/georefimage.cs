@@ -71,13 +71,16 @@ namespace ArdupilotMega
 
         public void dowork(float offsetseconds)
         {
+            DateTime localmin = DateTime.MaxValue;
+            DateTime localmax = DateTime.MinValue;
+
             DateTime startTime = DateTime.MinValue;
 
-            logFile = @"C:\Users\hog\Pictures\sams mums 22-6-2011\23-06-11 10-03 4.log";
+            logFile = @"C:\temp\farm 1-10-2011\100SSCAM\2011-10-01 11-48 1.log";
 
             List<string[]> list = readLog(logFile);
 
-            dirWithImages = @"C:\Users\hog\Pictures\sams mums 22-6-2011";
+            dirWithImages = @"C:\temp\farm 1-10-2011\100SSCAM";
 
             string[] files = Directory.GetFiles(dirWithImages);
 
@@ -95,21 +98,37 @@ namespace ArdupilotMega
                     DateTime dt = getPhotoTime(file);
 
                     if (startTime == DateTime.MinValue)
-                        startTime = new DateTime(dt.Year,dt.Month,dt.Day,0,0,0,0,DateTimeKind.Utc).ToLocalTime();
+                    {
+                        startTime = new DateTime(dt.Year, dt.Month, dt.Day, 0, 0, 0, 0, DateTimeKind.Utc).ToLocalTime();
+
+                        foreach (string[] arr in list)
+                        {
+                            DateTime crap = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
+
+                            if (localmin > crap)
+                                localmin = crap;
+                            if (localmax < crap)
+                                localmax = crap;
+                        }
+
+                        Console.WriteLine("min " + localmin + " max " + localmax);
+                    }
+
+                    
 
                     foreach (string[] arr in list)
                     {
                         DateTime crap = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
 
-                        //Console.Write(dt + " " + crap + "\r");
+                        Console.Write("ph " + dt + " log " + crap + "         \r");
 
                         if (dt.Equals(crap))
                         {
-                            sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[6]);
-                            sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") +"\t"+ arr[5] + "\t" + arr[4] + "\t" + arr[6]);
+                            sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[7]);
+                            sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") +"\t"+ arr[5] + "\t" + arr[4] + "\t" + arr[7]);
                             sw.Flush();
                             sw2.Flush();
-                            Console.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[6] + "           ");
+                            Console.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[7] + "           ");
                             break;
                         }
                         //Console.WriteLine(crap);
