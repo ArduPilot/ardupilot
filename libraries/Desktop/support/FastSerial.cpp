@@ -34,6 +34,7 @@
 #include "WProgram.h"
 #include <unistd.h>
 #include <pty.h>
+#include <fcntl.h>
 
 #if   defined(UDR3)
 # define FS_MAX_PORTS   4
@@ -57,7 +58,7 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 					   _ubrrl(ubrrl),
 					   _ucsra(ucsra),
 					   _ucsrb(ucsrb),
-					   _u2x(u2x),
+					   _u2x(portNumber),
 					   _portEnableBits(portEnableBits),
 					   _portTxBits(portTxBits),
 					   _rxBuffer(&__FastSerial__rxBuffer[portNumber]),
@@ -69,7 +70,13 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 
 void FastSerial::begin(long baud)
 {
-	printf("Starting serial port\n");
+	if (_u2x == 0) {
+		unsigned v;
+		v = fcntl(0, F_GETFL, 0);
+		fcntl(0, F_SETFL, v | O_NONBLOCK);
+		v = fcntl(1, F_GETFL, 0);
+		fcntl(1, F_SETFL, v | O_NONBLOCK);
+	}
 }
 
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
@@ -83,6 +90,11 @@ void FastSerial::end()
 
 int FastSerial::available(void)
 {
+	if (_u2x != 0) return 0;
+	int num_ready;
+	if (ioctl(0, FIONREAD, &num_ready) == 0) {
+		return num_ready;
+	}
 	return 0;
 }
 
@@ -93,8 +105,13 @@ int FastSerial::txspace(void)
 
 int FastSerial::read(void)
 {
+	if (_u2x != 0) {
+		return -1;
+	}
 	char c;
-	pread(0, (void *)&c, 1, 0);
+	if (fread(&c, 1, 1, stdin) != 1) {
+		return -1;
+	}
 	return (int)c;
 }
 
@@ -109,6 +126,9 @@ void FastSerial::flush(void)
 
 void FastSerial::write(uint8_t c)
 {
+	if (_u2x != 0) {
+		return;
+	}
 	fwrite(&c, 1, 1, stdout);
 	fflush(stdout);
 }
