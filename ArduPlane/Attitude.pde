@@ -351,35 +351,38 @@ static void set_servos(void)
 			radio_out[CH_THROTTLE] = radio_max(CH_THROTTLE) + radio_min(CH_THROTTLE) - radio_out[CH_THROTTLE];
 		#endif
 		*/
-		
+
 		throttle_slew_limit();
 	}
-	
-	if(control_mode < FLY_BY_WIRE_B) {
-		// only use radio_in if the channel is not used as flight_mode_channel
-		if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
-			G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
-		} else {
-			G_RC_AUX(k_flap_auto)->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
-        }
-	} else if (control_mode >= FLY_BY_WIRE_B) {	
-		if (control_mode == FLY_BY_WIRE_B) {  
-			flapSpeedSource = airspeed_fbwB/100;
-		} else if (g.airspeed_enabled == true) {  
-			flapSpeedSource = g.airspeed_cruise/100;
-		} else {
-			flapSpeedSource = g.throttle_cruise;
+
+	// Auto flap deployment
+	if (g_rc_function[RC_Channel_aux::k_flap_auto] != NULL) {
+		if(control_mode < FLY_BY_WIRE_B) {
+			// only use radio_in if the channel is not used as flight_mode_channel
+			if (g_rc_function[RC_Channel_aux::k_flap_auto] != rc_array[g.flight_mode_channel-1]) {
+				g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_in;
+			} else {
+				g_rc_function[RC_Channel_aux::k_flap_auto]->radio_out = g_rc_function[RC_Channel_aux::k_flap_auto]->radio_trim;
+			}
+		} else if (control_mode >= FLY_BY_WIRE_B) {
+			if (control_mode == FLY_BY_WIRE_B) {
+				flapSpeedSource = airspeed_fbwB/100;
+			} else if (g.airspeed_enabled == true) {
+				flapSpeedSource = g.airspeed_cruise/100;
+			} else {
+				flapSpeedSource = g.throttle_cruise;
+			}
+			if ( flapSpeedSource > g.flap_1_speed) {
+				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = 0;
+			} else if (flapSpeedSource > g.flap_2_speed) {
+				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_1_percent;
+			} else {
+				g_rc_function[RC_Channel_aux::k_flap_auto]->servo_out = g.flap_2_percent;
+			}
+			g_rc_function[RC_Channel_aux::k_flap_auto]->calc_pwm();
 		}
-		if ( flapSpeedSource > g.flap_1_speed) {
-			G_RC_AUX(k_flap_auto)->servo_out = 0;
-		} else if (flapSpeedSource > g.flap_2_speed) {
-			G_RC_AUX(k_flap_auto)->servo_out = g.flap_1_percent;
-		} else {
-			G_RC_AUX(k_flap_auto)->servo_out = g.flap_2_percent;
-		}
-		G_RC_AUX(k_flap_auto)->calc_pwm();
 	}
-	
+
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 	// send values to the PWM timers for output
 	// ----------------------------------------
@@ -393,7 +396,7 @@ static void set_servos(void)
 	g.rc_7.output_ch(CH_7);
 	g.rc_8.output_ch(CH_8);
 #endif
- }
+}
 
 static void demo_servos(byte i) {
 
