@@ -3,7 +3,7 @@
 
 #include "io.h"
 
-#define ISR(vector,...) extern "C" void vector(void);	\
+#define ISR(vector,...) void vector(void);	\
 void vector(void)
 
 #define cli()
