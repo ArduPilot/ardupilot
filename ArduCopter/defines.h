@@ -1,5 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#ifndef _DEFINES_H
+#define _DEFINES_H
+
 // Just so that it's completely clear...
 #define ENABLED			1
 #define DISABLED		0
@@ -99,20 +102,9 @@
 #define RC_CHANNEL_ANGLE_RAW 2
 
 // HIL enumerations
-#define HIL_PROTOCOL_XPLANE			1
-#define HIL_PROTOCOL_MAVLINK		2
-
 #define HIL_MODE_DISABLED			0
 #define HIL_MODE_ATTITUDE			1
 #define HIL_MODE_SENSORS			2
-
-// GCS enumeration
-#define GCS_PROTOCOL_STANDARD		0	// standard APM protocol
-#define GCS_PROTOCOL_LEGACY			1	// legacy ArduPilot protocol
-#define GCS_PROTOCOL_XPLANE			2	// X-Plane HIL simulation
-#define GCS_PROTOCOL_DEBUGTERMINAL	3	//Human-readable debug interface for use with a dumb terminal
-#define GCS_PROTOCOL_MAVLINK	        4	// binary protocol for qgroundcontrol
-#define GCS_PROTOCOL_NONE			-1	// No GCS output
 
 // Auto Pilot modes
 // ----------------
@@ -193,69 +185,39 @@
 //#define MAV_CMD_CONDITION_YAW 23
 
 //  GCS Message ID's
-#define MSG_ACKNOWLEDGE 0x00
-#define MSG_HEARTBEAT 0x01
-#define MSG_ATTITUDE 0x02
-#define MSG_LOCATION 0x03
-#define MSG_PRESSURE 0x04
-#define MSG_STATUS_TEXT 0x05
-#define MSG_PERF_REPORT 0x06
-#define MSG_MODE_CHANGE 0x07 //This is different than HEARTBEAT because it occurs only when the mode is actually changed
-#define MSG_VERSION_REQUEST 0x08
-#define MSG_VERSION 0x09
-#define MSG_EXTENDED_STATUS1 0x0a
-#define MSG_EXTENDED_STATUS2 0x0b
-#define MSG_CPU_LOAD 0x0c
-#define MSG_NAV_CONTROLLER_OUTPUT 0x0d
+/// NOTE: to ensure we never block on sending MAVLink messages
+/// please keep each MSG_ to a single MAVLink message. If need be
+/// create new MSG_ IDs for additional messages on the same
+/// stream
+enum ap_message {
+    MSG_HEARTBEAT,
+    MSG_ATTITUDE,
+    MSG_LOCATION,
+    MSG_EXTENDED_STATUS1,
+    MSG_EXTENDED_STATUS2,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_CURRENT_WAYPOINT,
+    MSG_VFR_HUD,
+    MSG_RADIO_OUT,
+    MSG_RADIO_IN,
+    MSG_RAW_IMU1,
+    MSG_RAW_IMU2,
+    MSG_RAW_IMU3,
+    MSG_GPS_STATUS,
+    MSG_GPS_RAW,
+    MSG_SERVO_OUT,
+    MSG_NEXT_WAYPOINT,
+    MSG_NEXT_PARAM,
+    MSG_STATUSTEXT,
+    MSG_RETRY_DEFERRED // this must be last
+};
 
-#define MSG_COMMAND_REQUEST 0x20
-#define MSG_COMMAND_UPLOAD 0x21
-#define MSG_COMMAND_LIST 0x22
-#define MSG_COMMAND_MODE_CHANGE 0x23
-#define MSG_CURRENT_WAYPOINT 0x24
-
-#define MSG_VALUE_REQUEST 0x30
-#define MSG_VALUE_SET 0x31
-#define MSG_VALUE 0x32
-
-#define MSG_PID_REQUEST 0x40
-#define MSG_PID_SET 0x41
-#define MSG_PID 0x42
-#define MSG_VFR_HUD 0x4a
-
-#define MSG_TRIM_STARTUP 0x50
-#define MSG_TRIM_MIN 0x51
-#define MSG_TRIM_MAX 0x52
-#define MSG_RADIO_OUT 0x53
-#define MSG_RADIO_IN  0x54
-
-#define MSG_RAW_IMU1 0x60
-#define MSG_RAW_IMU2 0x61
-#define MSG_RAW_IMU3 0x62
-#define MSG_GPS_STATUS 0x63
-#define MSG_GPS_RAW 0x64
-
-#define MSG_SERVO_OUT 0x70
-
-#define MSG_PIN_REQUEST 0x80
-#define MSG_PIN_SET 0x81
-
-#define MSG_DATAFLASH_REQUEST 0x90
-#define MSG_DATAFLASH_SET 0x91
-
-#define MSG_EEPROM_REQUEST 0xa0
-#define MSG_EEPROM_SET 0xa1
-
-#define MSG_POSITION_CORRECT 0xb0
-#define MSG_ATTITUDE_CORRECT 0xb1
-#define MSG_POSITION_SET 0xb2
-#define MSG_ATTITUDE_SET 0xb3
-#define MSG_RETRY_DEFERRED 0xff
-
-#define SEVERITY_LOW 1
-#define SEVERITY_MEDIUM 2
-#define SEVERITY_HIGH 3
-#define SEVERITY_CRITICAL 4
+enum gcs_severity {
+    SEVERITY_LOW=1,
+    SEVERITY_MEDIUM,
+    SEVERITY_HIGH,
+    SEVERITY_CRITICAL
+};
 
 //  Logging parameters
 #define TYPE_AIRSTART_MSG		0x00
@@ -377,3 +339,8 @@
 
 #define ONBOARD_PARAM_NAME_LENGTH 15
 #define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+
+// mark a function as not to be inlined
+#define NOINLINE __attribute__((noinline))
+
+#endif // _DEFINES_H

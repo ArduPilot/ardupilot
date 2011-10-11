@@ -26,7 +26,7 @@ planner_mode(uint8_t argc, const Menu::arg *argv)
 static int8_t
 planner_gcs(uint8_t argc, const Menu::arg *argv)
 {
-	gcs.init(&Serial);
+	gcs0.init(&Serial);
 
 	int loopcount = 0;
 
@@ -34,21 +34,17 @@ planner_gcs(uint8_t argc, const Menu::arg *argv)
 		if (millis()-fast_loopTimer > 19) {
 			fast_loopTimer			= millis();
 
-			gcs.update();
+			gcs_update();
 
-			#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK
+            gcs_data_stream_send(45, 1000);
 
-				gcs.data_stream_send(45, 1000);
+            if ((loopcount % 5) == 0) // 10 hz
+                gcs_data_stream_send(5, 45);
 
-				if ((loopcount % 5) == 0) // 10 hz
-					gcs.data_stream_send(5, 45);
-
-				if ((loopcount % 16) == 0) { // 3 hz
-					gcs.data_stream_send(1, 5);
-					gcs.send_message(MSG_HEARTBEAT);
-				}
-
-			#endif
+            if ((loopcount % 16) == 0) { // 3 hz
+                gcs_data_stream_send(1, 5);
+                gcs_send_message(MSG_HEARTBEAT);
+            }
 
 			loopcount++;
 		}

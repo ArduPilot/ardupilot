@@ -7,7 +7,7 @@ static void change_command(uint8_t index)
 	struct Location temp = get_command_with_index(index);
 
 	if (temp.id > MAV_CMD_NAV_LAST ){
-		gcs.send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 	} else {
 		command_must_index 	= NO_COMMAND;
 		next_command.id 	= NO_COMMAND;
@@ -39,7 +39,7 @@ static void update_commands(void)
 		// And we have no nav commands
 		// --------------------------------------------
 		if (command_must_ID == NO_COMMAND){
-			gcs.send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
 			handle_no_commands();
 		}
 	}
@@ -142,8 +142,7 @@ process_next_command()
 /**************************************************/
 static void process_must()
 {
-	//gcs.send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
-	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	//gcs_send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
 	//Serial.printf("pmst %d\n", (int)next_command.id);
 
 	// clear May indexes to force loading of more commands
@@ -161,8 +160,7 @@ static void process_must()
 
 static void process_may()
 {
-	//gcs.send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
-	//gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
+	//gcs_send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
 	//Serial.print("pmay");
 
 	command_may_ID = next_command.id;

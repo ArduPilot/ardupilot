@@ -285,7 +285,7 @@ static void start_new_log()
 		DataFlash.StartWrite(start_pages[num_existing_logs - 1]);
 
 	}else{
-		gcs.send_text_P(SEVERITY_LOW,PSTR("Logs full"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Logs full"));
 	}
 }
 

@@ -187,27 +187,8 @@ static void init_ardupilot()
     g_gps->callback = mavlink_delay;
 
 	// init the GCS
-	#if GCS_PORT == 3
-		gcs.init(&Serial3);
-	#else
-		gcs.init(&Serial);
-	#endif
-
-	// init the HIL
-	#if HIL_MODE != HIL_MODE_DISABLED
-		#if HIL_PORT == 3
-			hil.init(&Serial3);
-		#elif HIL_PORT == 1
-			hil.init(&Serial1);
-		#else
-			hil.init(&Serial);
-		#endif
-	#endif
-
-	//  We may have a hil object instantiated just for mission planning
-	#if HIL_MODE == HIL_MODE_DISABLED && HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK && HIL_PORT == 0
-		hil.init(&Serial);
-	#endif
+    gcs0.init(&Serial);
+    gcs3.init(&Serial3);
 
 	if(g.compass_enabled)
 		init_compass();
@@ -309,7 +290,7 @@ static void init_ardupilot()
 //********************************************************************************
 static void startup_ground(void)
 {
-	gcs.send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+	gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// Warm up and read Gyro offsets
@@ -453,9 +434,6 @@ static void set_mode(byte mode)
 	}
 
 	Log_Write_Mode(control_mode);
-
-	// output control mode to the ground station
-	gcs.send_message(MSG_MODE_CHANGE);
 }
 
 static void set_failsafe(boolean mode)
