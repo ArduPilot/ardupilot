@@ -1,3 +1,18 @@
 This provides some support files for building APM on normal desktop
 systems. This makes it possible to use debugging tools (such as gdb
 and valgrind) on the APM code
+
+To build it do this:
+
+  cd ArduPlane
+  make -f ../libraries/Desktop/Makefile.desktop hil
+
+currently only 'hil' builds work.
+
+It currently runs with the first serial port mapped to
+stdin/stdout. To test it, you can use mavproxy like this:
+
+ mavproxy.py --master=/tmp/ArduPlane/ArduPlane.elf
+
+that will run ArduPlane as a child process, and will give you the
+ability to control ArduPlane over MAVLink.
