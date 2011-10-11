@@ -170,7 +170,8 @@ else
   LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
 endif
 
-NODESKTOP		:= FastSerial/FastSerial.cpp
+# these are library objects we don't want in the desktop build (maybe we'll add them later)
+NODESKTOP		:= FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp APM_BMP085/APM_BMP085.cpp
 
 #
 # Find sketchbook libraries referenced by the sketch.
