@@ -650,7 +650,6 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
-	struct Location temp;
 	if(jump == -10){
 		jump = next_command.lat;
 	}
