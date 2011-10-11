@@ -71,6 +71,11 @@ int strcasecmp_P(PGM_P str1, PGM_P str2)
 	return strcasecmp(str1, str2);
 }
 
+int strcmp_P(PGM_P str1, PGM_P str2)
+{
+	return strcmp(str1, str2);
+}
+
 
 void digitalWrite(uint8_t pin, uint8_t val)
 {
