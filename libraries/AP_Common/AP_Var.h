@@ -119,7 +119,7 @@ public:
     /// A bitmask that removes any control bits from a key giving just the
     /// value.
     ///
-    static const Key k_key_mask = ~(k_key_not_located | k_key_not_allocated);
+    static const Key k_key_mask = (Key)(~(k_key_not_located | k_key_not_allocated));
 
     /// The largest variable that will be saved to EEPROM.
     /// This affects the amount of stack space that is required by the ::save, ::load,
