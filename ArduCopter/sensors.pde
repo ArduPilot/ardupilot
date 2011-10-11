@@ -8,7 +8,7 @@ static void ReadSCP1000(void) {}
 static void init_barometer(void)
 {
 	#if HIL_MODE == HIL_MODE_SENSORS
-		hil.update();					// look for inbound hil packets for initialization
+		gcs_update();					// look for inbound hil packets for initialization
 	#endif
 
 	ground_temperature = barometer.Temp;
@@ -28,7 +28,7 @@ static void init_barometer(void)
 		delay(20);
 
 		#if HIL_MODE == HIL_MODE_SENSORS
-			hil.update(); 				// look for inbound hil packets
+			gcs_update(); 				// look for inbound hil packets
 		#endif
 
 		// Get initial data from absolute pressure sensor

@@ -150,7 +150,6 @@ static void set_next_WP(struct Location *wp)
 {
 	//SendDebug("MSG <set_next_wp> wp_index: ");
 	//SendDebugln(g.waypoint_index, DEC);
-	gcs.send_message(MSG_COMMAND_LIST, g.waypoint_index);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
@@ -182,8 +181,6 @@ static void set_next_WP(struct Location *wp)
 	// reset speed governer
 	// --------------------
 	waypoint_speed_gov = 0;
-
-	gcs.print_current_waypoints();
 }
 
 

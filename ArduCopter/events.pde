@@ -45,7 +45,7 @@ static void failsafe_off_event()
 
 static void low_battery_event(void)
 {
-	gcs.send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
+	gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
 	low_batt = true;
 
 	// if we are in Auto mode, come home

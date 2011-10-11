@@ -1,8 +1,5 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// Hardware in the loop  protocol
-#define HIL_PROTOCOL        HIL_PROTOCOL_MAVLINK
-
 // HIL_MODE SELECTION
 //
 // Mavlink supports
@@ -36,12 +33,6 @@
 // hardware and leave it without affecting the hardware
 // in the loop simulation
 #define GPS_PROTOCOL 		GPS_PROTOCOL_MTK
-
-// Ground control station comms
-#if HIL_PORT != 3
-# define GCS_PROTOCOL        GCS_PROTOCOL_MAVLINK
-# define GCS_PORT            3
-#endif
 
 // Sensors
 // All sensors are supported in all modes.

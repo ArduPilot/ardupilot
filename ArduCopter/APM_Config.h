@@ -5,7 +5,6 @@
 // GPS is auto-selected
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
-//#define GCS_PROTOCOL			GCS_PROTOCOL_NONE
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 
 //#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)

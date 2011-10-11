@@ -6,7 +6,7 @@
 #ifndef __GCS_H
 #define __GCS_H
 
-#include <BetterStream.h>
+#include <FastSerial.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 #include <GPS.h>
@@ -40,7 +40,7 @@ public:
 	///
 	/// @param	port		The stream over which messages are exchanged.
 	///
-	void		init(BetterStream *port) { _port = port; }
+	void		init(FastSerial *port) { _port = port; }
 
 	/// Update GCS state.
 	///
@@ -56,64 +56,28 @@ public:
 	/// @param	id			ID of the message to send.
 	/// @param	param		Explicit message parameter.
 	///
-	void		send_message(uint8_t id, int32_t param = 0) {}
+	void		send_message(enum ap_message id) {}
 
 	/// Send a text message.
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text(uint8_t severity, const char *str) {}
-
-#define send_text_P(severity, msg) send_text(severity, msg)
+	void		send_text(gcs_severity severity, const char *str) {}
 
 	/// Send a text message with a PSTR()
 	///
 	/// @param	severity	A value describing the importance of the message.
 	/// @param	str			The text to be sent.
 	///
-	void		send_text(uint8_t severity, const prog_char_t *str) {}
-
-	/// Send acknowledgement for a message.
-	///
-	/// @param	id			The message ID being acknowledged.
-	/// @param	sum1		Checksum byte 1 from the message being acked.
-	/// @param	sum2		Checksum byte 2 from the message being acked.
-	///
-	void		acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) {}
-
-	/// Emit an update of the "current" waypoints, often previous, current and
-	/// next.
-	///
-	void		print_current_waypoints() {}
-
-	//
-	// The following interfaces are not currently implemented as their counterparts
-	// are not called in the mainline code.  XXX ripe for re-specification.
-	//
-
-	/// Send a text message with printf-style formatting.
-	///
-	/// @param	severity	A value describing the importance of the message.
-	/// @param	fmt			The format string to send.
-	/// @param	...			Additional arguments to the format string.
-	///
-	//	void		send_message(uint8_t severity, const char *fmt, ...) {}
-
-	/// Log a waypoint
-	///
-	/// @param	wp			The waypoint to log.
-	/// @param	index		The index of the waypoint.
-	//	void		print_waypoint(struct Location *wp, uint8_t index) {}
+	void		send_text(gcs_severity severity, const prog_char_t *str) {}
 
     // test if frequency within range requested for loop
     // used by data_stream_send
     static bool freqLoopMatch(uint16_t freq, uint16_t freqMin, uint16_t freqMax)
     {
-        if (freq != 0 && freq >= freqMin && freq < freqMax)
-        	return true;
-        else
-        	return false;
+        if (freq != 0 && freq >= freqMin && freq < freqMax) return true;
+        else return false;
     }
 
     // send streams which match frequency range
@@ -121,7 +85,7 @@ public:
 
 protected:
 	/// The stream we are communicating over
-	BetterStream			*_port;
+	FastSerial			*_port;
 };
 
 //
@@ -135,24 +99,24 @@ protected:
 /// @class	GCS_MAVLINK
 /// @brief	The mavlink protocol for qgroundcontrol
 ///
-#if GCS_PROTOCOL == GCS_PROTOCOL_MAVLINK || HIL_PROTOCOL == HIL_PROTOCOL_MAVLINK
 class GCS_MAVLINK : public GCS_Class
 {
 public:
 	GCS_MAVLINK(AP_Var::Key key);
 	void    update(void);
-	void	init(BetterStream *port);
-	void	send_message(uint8_t id, uint32_t param = 0);
-	void	send_text(uint8_t severity, const char *str);
-	void	send_text(uint8_t severity, const prog_char_t *str);
-	void	acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
+	void	init(FastSerial *port);
+	void	send_message(enum ap_message id);
+	void	send_text(gcs_severity severity, const char *str);
+	void	send_text(gcs_severity severity, const prog_char_t *str);
     void    data_stream_send(uint16_t freqMin, uint16_t freqMax);
+	void    queued_param_send();
+	void    queued_waypoint_send();
+
 private:
 	void 	handleMessage(mavlink_message_t * msg);
 
 	/// Perform queued sending operations
 	///
-	void    _queued_send();
 
 	AP_Var      *_queued_parameter;                 ///< next parameter to be sent in queue
 	uint16_t    _queued_parameter_index;            ///< next queued parameter's index
@@ -176,7 +140,6 @@ private:
     uint16_t packet_drops;
 
 	// waypoints
-    uint16_t requested_interface; // request port to use
 	uint16_t waypoint_request_i; // request index
 	uint16_t waypoint_dest_sysid; // where to send requests
 	uint16_t waypoint_dest_compid; // "
@@ -199,10 +162,6 @@ private:
 	AP_Int16 streamRateExtra1;
 	AP_Int16 streamRateExtra2;
 	AP_Int16 streamRateExtra3;
-
-
-
 };
-#endif // GCS_PROTOCOL_MAVLINK
 
 #endif // __GCS_H
