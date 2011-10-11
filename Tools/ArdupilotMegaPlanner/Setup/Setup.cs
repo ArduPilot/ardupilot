@@ -477,6 +477,7 @@ namespace ArdupilotMega.Setup
                 }
             }
             catch { MessageBox.Show("Failed to set Flight modes"); }
+            BUT_SaveModes.Text = "Complete";
         }
 
         private void TXT_declination_Validating(object sender, CancelEventArgs e)

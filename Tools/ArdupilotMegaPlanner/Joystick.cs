@@ -15,6 +15,7 @@ namespace ArdupilotMega
         public bool enabled = false;
         byte[] buttonpressed = new byte[128];
         public string name;
+        public bool elevons = false;
 
         public static Joystick self;
 
@@ -114,6 +115,8 @@ namespace ArdupilotMega
 
             joystick.Acquire();
 
+            System.Windows.Forms.MessageBox.Show("Please ensure you have calibrated your joystick in Windows first");
+
             joystick.Poll();
 
             JoystickState obj = joystick.CurrentJoystickState;
@@ -145,7 +148,7 @@ namespace ArdupilotMega
                 {
                     //Console.WriteLine("Name: " + property.Name + ", Value: " + property.GetValue(obj, null));
 
-                    //Console.WriteLine("test name {0} old {1} new {2} ", property.Name, values[property.Name], int.Parse(property.GetValue(nextstate, null).ToString()));
+                    Console.WriteLine("test name {0} old {1} new {2} ", property.Name, values[property.Name], int.Parse(property.GetValue(nextstate, null).ToString()));
                     Console.WriteLine("{0}  {1}", (int)values[property.Name], (int.Parse(property.GetValue(nextstate, null).ToString()) + threshold));
                     if ((int)values[property.Name] > (int.Parse(property.GetValue(nextstate, null).ToString()) + threshold) ||
                         (int)values[property.Name] < (int.Parse(property.GetValue(nextstate, null).ToString()) - threshold))
@@ -263,6 +266,21 @@ namespace ArdupilotMega
             JoyButtons[buttonid].buttonno = newid;
         }
 
+        int BOOL_TO_SIGN(bool input)
+        {
+            if (input == true)
+            {
+                return -1;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+
+        /// <summary>
+        /// Updates the rcoverride values and controls the mode changes
+        /// </summary>
         void mainloop()
         {
             while (enabled)
@@ -276,8 +294,21 @@ namespace ArdupilotMega
 
                     int[] slider = state.GetSlider();
 
-                    MainV2.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
-                    MainV2.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
+                    if (elevons)
+                    {
+//g.channel_roll.set_pwm(BOOL_TO_SIGN(g.reverse_elevons) * (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) - BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
+//g.channel_pitch.set_pwm(                                 (BOOL_TO_SIGN(g.reverse_ch2_elevon) * int(ch2_temp - elevon2_trim) + BOOL_TO_SIGN(g.reverse_ch1_elevon) * int(ch1_temp - elevon1_trim)) / 2 + 1500);
+                        ushort roll = pickchannel(1, JoyChannels[1].axis, false, JoyChannels[1].expo);
+                        ushort pitch = pickchannel(2, JoyChannels[2].axis, false, JoyChannels[2].expo);
+
+                        MainV2.cs.rcoverridech1 = (ushort)(BOOL_TO_SIGN(JoyChannels[1].reverse) * ((int)(pitch - 1500) - (int)(roll - 1500)) / 2 + 1500);
+                        MainV2.cs.rcoverridech2 = (ushort)(BOOL_TO_SIGN(JoyChannels[2].reverse) * ((int)(pitch - 1500) + (int)(roll - 1500)) / 2 + 1500);
+                    }
+                    else
+                    {
+                        MainV2.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
+                        MainV2.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
+                    }
                     MainV2.cs.rcoverridech3 = pickchannel(3, JoyChannels[3].axis, JoyChannels[3].reverse, JoyChannels[3].expo);//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
                     MainV2.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
 
@@ -311,7 +342,7 @@ namespace ArdupilotMega
 
                     //Console.WriteLine("{0} {1} {2} {3}", MainV2.cs.rcoverridech1, MainV2.cs.rcoverridech2, MainV2.cs.rcoverridech3, MainV2.cs.rcoverridech4);
                 }
-                catch { Console.WriteLine("Joystick thread error"); } // so we cant fall out
+                catch (Exception ex) { Console.WriteLine("Joystick thread error "+ex.ToString()); } // so we cant fall out
             }
         }
 
