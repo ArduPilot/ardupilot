@@ -27,7 +27,7 @@
 #
 # Locate the sketch sources based on the initial Makefile's path
 #
-SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
+SRCROOT			:=	$(PWD)
 
 #
 # We need to know the location of the sketchbook.  If it hasn't been overridden,
