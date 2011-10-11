@@ -1312,7 +1312,7 @@ static void update_nav_wp()
 		loiter_sum += abs(loiter_delta);
 
 
-		// creat a virtual waypoint that circles the next_WP
+		// create a virtual waypoint that circles the next_WP
 		// Count the degrees we have circulated the WP
 		int circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
 
