@@ -381,8 +381,8 @@ static long 	old_target_bearing;					// used to track difference in angle
 
 static int		loiter_total; 						// deg : how many times to loiter * 360
 static int		loiter_sum;							// deg : how far we have turned around a waypoint
-static long 	loiter_time;						// millis : when we started LOITER mode
-static int 		loiter_time_max;					// millis : how long to stay in LOITER mode
+static unsigned long loiter_time;       			// millis : when we started LOITER mode
+static unsigned loiter_time_max;					// millis : how long to stay in LOITER mode
 
 
 // these are the values for navigation control functions
