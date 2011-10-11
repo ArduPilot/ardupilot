@@ -117,25 +117,25 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BSE.Windows.Forms">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\BSE.Windows.Forms.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\BSE.Windows.Forms.dll</HintPath>
     </Reference>
     <Reference Include="Core">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\kml-library\KmlTestbed\bin\Release\Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\Core.dll</HintPath>
     </Reference>
     <Reference Include="DirectShowLib-2005">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\DirectShowLib-2005.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\DirectShowLib-2005.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.Core">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.Core.dll</HintPath>
     </Reference>
     <Reference Include="GMap.NET.WindowsForms">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.WindowsForms.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\GMap.NET.WindowsForms\bin\Debug\GMap.NET.WindowsForms.dll</HintPath>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\SrcSamples\bin\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\SrcSamples\bin\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="KMLib">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.DirectX, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
@@ -149,21 +149,21 @@
     </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\opentk\trunk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\opentk\trunk\Binaries\OpenTK\Release\OpenTK.GLControl.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Release\OpenTK.GLControl.dll</HintPath>
     </Reference>
     <Reference Include="SharpKml, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e608cd7d975805ad, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\sharpkml\SharpKml\bin\Release\SharpKml.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\sharpkml\SharpKml\bin\Release\SharpKml.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.SQLite">
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones&amp;avr\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\x86\System.Data.SQLite.DLL</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\x86\System.Data.SQLite.DLL</HintPath>
     </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Speech">

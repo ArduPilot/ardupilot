@@ -63,6 +63,8 @@ namespace ArdupilotMega
                 expo_ch2.Text = MainV2.config["expo_ch2"].ToString();
                 expo_ch3.Text = MainV2.config["expo_ch3"].ToString();
                 expo_ch4.Text = MainV2.config["expo_ch4"].ToString();
+
+                CHK_elevons.Checked = bool.Parse(MainV2.config["joy_elevons"].ToString());
             }
             catch { } // IF 1 DOESNT EXIST NONE WILL
 
@@ -102,6 +104,8 @@ namespace ArdupilotMega
                 joy.setChannel(2, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH2.Text), revCH2.Checked, int.Parse(expo_ch2.Text));
                 joy.setChannel(3, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH3.Text), revCH3.Checked, int.Parse(expo_ch3.Text));
                 joy.setChannel(4, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH4.Text), revCH4.Checked, int.Parse(expo_ch4.Text));
+
+                joy.elevons = CHK_elevons.Checked;
 
                 for (int f = 0; f < noButtons; f++)
                 {
@@ -178,6 +182,8 @@ namespace ArdupilotMega
             MainV2.config["expo_ch3"] = expo_ch3.Text;
             MainV2.config["expo_ch4"] = expo_ch4.Text;
 
+            MainV2.config["joy_elevons"] = CHK_elevons.Checked;
+
             for (int f = 0; f < noButtons; f++)
             {
                 string name = (f + 1).ToString();
@@ -202,6 +208,8 @@ namespace ArdupilotMega
                         joy.setChannel(3, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH3.Text), revCH3.Checked, int.Parse(expo_ch3.Text));
                         joy.setChannel(4, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH4.Text), revCH4.Checked, int.Parse(expo_ch4.Text));
 
+                        joy.elevons = CHK_elevons.Checked;
+
                         joy.AcquireJoystick(CMB_joysticks.Text);
 
                         noButtons = joy.getNumButtons();
@@ -221,6 +229,8 @@ namespace ArdupilotMega
 
                         CMB_joysticks.SelectedIndex = CMB_joysticks.Items.IndexOf(joy.name);
                     }
+
+                    MainV2.joystick.elevons = CHK_elevons.Checked;
 
                     MainV2.cs.rcoverridech1 = joy.getValueForChannel(1, CMB_joysticks.Text);
                     MainV2.cs.rcoverridech2 = joy.getValueForChannel(2, CMB_joysticks.Text);
@@ -401,7 +411,12 @@ namespace ArdupilotMega
 
         private void CMB_joysticks_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            try
+            {
+                if (MainV2.joystick != null)
+                    MainV2.joystick.UnAcquireJoyStick();
+            }
+            catch { }
         }
 
         private void JoystickSetup_FormClosed(object sender, FormClosedEventArgs e)
@@ -411,6 +426,11 @@ namespace ArdupilotMega
                 MainV2.joystick.UnAcquireJoyStick();
                 MainV2.joystick = null;
             }
+        }
+
+        private void CHK_elevons_CheckedChanged(object sender, EventArgs e)
+        {
+            MainV2.joystick.elevons = CHK_elevons.Checked;
         }
     }
 }

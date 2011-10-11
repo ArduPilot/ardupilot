@@ -6,5 +6,8 @@
     <ErrorReportUrlHistory />
     <FallbackCulture>en-US</FallbackCulture>
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
+    <PublishUrlHistory>publish/</PublishUrlHistory>
+    <InstallUrlHistory />
+    <UpdateUrlHistory />
   </PropertyGroup>
 </Project>
