@@ -116,7 +116,7 @@ CFLAGS			=	-g $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS			=	-g $(DEFINES) $(DEPFLAGS) $(ASOPTS)
 LDFLAGS			=	-g $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 
-LIBS			=	-lm -lbsd
+LIBS			=	-lm
 
 SRCSUFFIXES		=	*.cpp *.c
 
