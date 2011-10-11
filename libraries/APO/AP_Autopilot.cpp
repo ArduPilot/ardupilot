@@ -45,6 +45,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 				if (hal->gps->fix) {
 					break;
 				} else {
+					hal->gps->update();
 					hal->gcs->sendText(SEVERITY_LOW,
 							PSTR("waiting for gps lock\n"));
 					hal->debug->printf_P(PSTR("waiting for gps lock\n"));
@@ -67,8 +68,8 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 				break;
 			}
 			hal->debug->println_P(PSTR("waiting for hil packet"));
-			delay(1000);
 		}
+		delay(1000);
 	}
 	
 	AP_MavlinkCommand::home.setAlt(_navigator->getAlt());
