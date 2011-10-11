@@ -244,7 +244,7 @@ String String::replace( char findChar, char replaceChar )
   return theReturn;
 }
 
-String String::replace( const String& match, const String& replace )
+String String::replace( const String& match, const String& rep )
 {
   if ( _buffer == NULL ) return *this;
   String temp = _buffer, newString;
@@ -253,7 +253,7 @@ String String::replace( const String& match, const String& replace )
   while ( (loc = temp.indexOf( match )) != -1 )
   {
     newString += temp.substring( 0, loc );
-    newString += replace;
+    newString += rep;
     temp = temp.substring( loc + match._length );
   }
   newString += temp;  
