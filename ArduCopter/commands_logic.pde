@@ -299,7 +299,7 @@ static void do_loiter_unlimited()
 
 static void do_loiter_turns()
 {
-	wp_control == CIRCLE_MODE;
+	wp_control = CIRCLE_MODE;
 
 	if(next_command.lat == 0)
 		set_next_WP(&current_loc);
