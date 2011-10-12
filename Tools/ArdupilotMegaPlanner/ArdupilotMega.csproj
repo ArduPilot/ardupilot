@@ -188,6 +188,7 @@
     <Compile Include="CommsSerialPort.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="CommsTCPSerial.cs" />
     <Compile Include="CommsUdpSerial.cs" />
     <Compile Include="georefimage.cs" />
     <Compile Include="HIL\Aircraft.cs" />
