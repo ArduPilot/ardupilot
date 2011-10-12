@@ -171,7 +171,7 @@ else
 endif
 
 # these are library objects we don't want in the desktop build (maybe we'll add them later)
-NODESKTOP		:= FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp APM_BMP085/APM_BMP085.cpp AP_IMU/AP_IMU_Oilpan.cpp RC_Channel/RC_Channel_aux.cpp AP_OpticalFlow/AP_OpticalFlow_ADNS3080.cpp
+NODESKTOP		:= FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp APM_BMP085/APM_BMP085.cpp AP_IMU/AP_IMU_Oilpan.cpp AP_OpticalFlow/AP_OpticalFlow_ADNS3080.cpp
 
 #
 # Find sketchbook libraries referenced by the sketch.
