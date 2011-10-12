@@ -874,6 +874,11 @@ namespace ArdupilotMega.GCSViews
                 gps.usec = ((ulong)DateTime.Now.Ticks);
                 gps.v = ((float)Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)));
 
+                float xvec = aeroin.Model_fVelY - aeroin.Model_fWindVelY;
+                float yvec = aeroin.Model_fVelX - aeroin.Model_fWindVelX;
+
+                asp.airspeed = ((float)Math.Sqrt((yvec * yvec) + (xvec * xvec)));
+
             }
             else if (receviedbytes > 0x100)
             {
@@ -1251,7 +1256,7 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)(roll_out * REV_roll)), 0, AeroSimRC, 0, 8);
                 Array.Copy(BitConverter.GetBytes((double)(pitch_out * REV_pitch * -1)), 0, AeroSimRC, 8, 8);
                 Array.Copy(BitConverter.GetBytes((double)(rudder_out * REV_rudder)), 0, AeroSimRC, 16, 8);
-                Array.Copy(BitConverter.GetBytes((double)(throttle_out)), 0, AeroSimRC, 24, 8);
+                Array.Copy(BitConverter.GetBytes((double)((throttle_out *2) -1)), 0, AeroSimRC, 24, 8);
 
                 if (heli)
                 {

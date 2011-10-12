@@ -413,7 +413,7 @@ namespace ArdupilotMega
         {
             try
             {
-                if (MainV2.joystick != null)
+                if (MainV2.joystick != null && MainV2.joystick.enabled == false)
                     MainV2.joystick.UnAcquireJoyStick();
             }
             catch { }

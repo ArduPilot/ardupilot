@@ -120,6 +120,7 @@ namespace ArdupilotMega
             comPort.BaseStream.BaudRate = 115200;
 
             CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Count > 0)
             {
@@ -225,6 +226,7 @@ namespace ArdupilotMega
             string oldport = CMB_serialport.Text;
             CMB_serialport.Items.Clear();
             CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Contains(oldport))
                 CMB_serialport.Text = oldport;
@@ -564,6 +566,11 @@ namespace ArdupilotMega
             }
             else
             {
+                if (CMB_serialport.Text == "TCP")
+                {
+                    comPort.BaseStream = new TcpSerial();
+                }
+                else
                 if (CMB_serialport.Text == "UDP")
                 {
                     comPort.BaseStream = new UdpSerial();
