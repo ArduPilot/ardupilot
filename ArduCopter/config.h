@@ -47,6 +47,14 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
+// PWM control
+//
+#ifndef INSTANT_PWM
+# define INSTANT_PWM	DISABLED
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////////
 // Sonar
 //
 
@@ -443,7 +451,7 @@
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			450			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			300			// for 6m/s error = 13mph
 #endif
 
 

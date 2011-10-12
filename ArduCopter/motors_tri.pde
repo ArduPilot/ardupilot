@@ -1,6 +1,16 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #if FRAME_CONFIG ==	TRI_FRAME
 
+static void init_motors_out()
+{
+	#if INSTANT_PWM == 0
+	ICR5 = 5000;	// 400 hz output 	CH 1, 2, 9
+	ICR1 = 5000;	// 400 hz output	CH 3, 4, 10
+	ICR3 = 40000;	// 50 hz output		CH 7, 8, 11
+	#endif
+}
+
+
 static void output_motors_armed()
 {
 	int out_min = g.rc_3.radio_min;
@@ -64,9 +74,12 @@ static void output_motors_armed()
 	APM_RC.OutputCh(CH_1, motor_out[CH_1]);
 	APM_RC.OutputCh(CH_2, motor_out[CH_2]);
 	APM_RC.OutputCh(CH_4, motor_out[CH_4]);
+
+	#if INSTANT_PWM == 1
 	// InstantPWM
 	APM_RC.Force_Out0_Out1();
 	APM_RC.Force_Out2_Out3();
+	#endif
 }
 
 static void output_motors_disarmed()

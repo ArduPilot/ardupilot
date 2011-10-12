@@ -2,6 +2,15 @@
 
 #if FRAME_CONFIG ==	OCTA_FRAME
 
+static void init_motors_out()
+{
+	#if INSTANT_PWM == 0
+	ICR5 = 5000;	// 400 hz output 	CH 1, 2, 9
+	ICR1 = 5000;	// 400 hz output	CH 3, 4, 10
+	ICR3 = 5000;	// 50 hz output		CH 7, 8, 11
+	#endif
+}
+
 static void output_motors_armed()
 {
 	int roll_out, pitch_out;
@@ -149,10 +158,12 @@ static void output_motors_armed()
 	APM_RC.OutputCh(CH_10, motor_out[CH_10]);
 	APM_RC.OutputCh(CH_11, motor_out[CH_11]);
 
+	#if INSTANT_PWM == 1
 	// InstantPWM
 	APM_RC.Force_Out0_Out1();
-	APM_RC.Force_Out6_Out7();
 	APM_RC.Force_Out2_Out3();
+	APM_RC.Force_Out6_Out7();
+	#endif
 }
 
 static void output_motors_disarmed()
@@ -183,7 +194,7 @@ static void output_motors_disarmed()
 static void output_motor_test()
 {
 	if( g.frame_orientation == X_FRAME || g.frame_orientation == PLUS_FRAME )
-	{	
+	{
 		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 		APM_RC.OutputCh(CH_1, g.rc_3.radio_min + 100);
 		delay(1000);
@@ -216,9 +227,9 @@ static void output_motor_test()
 		APM_RC.OutputCh(CH_7, g.rc_3.radio_min + 100);
 		delay(1000);
 	}
-	
+
 	if( g.frame_orientation == V_FRAME )
-	{	
+	{
 		APM_RC.OutputCh(CH_7, g.rc_3.radio_min);
 		APM_RC.OutputCh(CH_10, g.rc_3.radio_min + 100);
 		delay(1000);

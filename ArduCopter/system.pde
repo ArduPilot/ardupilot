@@ -174,8 +174,8 @@ static void init_ardupilot()
 	init_camera();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
-	        // begin filtering the ADC Gyros
-        	adc.filter_result = true;
+		// begin filtering the ADC Gyros
+		adc.filter_result = true;
 
 		adc.Init();	 		// APM ADC library initialization
 		barometer.Init();	// APM Abs Pressure sensor initialization

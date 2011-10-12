@@ -51,6 +51,7 @@ static void init_rc_out()
 
 
 	APM_RC.Init();		// APM Radio initialization
+	init_motors_out();
 
     // fix for crazy output
     OCR1B = 0xFFFF;     // PB6, OUT3
