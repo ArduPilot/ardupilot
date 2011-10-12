@@ -2,6 +2,15 @@
 
 #if FRAME_CONFIG ==	HEXA_FRAME
 
+static void init_motors_out()
+{
+	#if INSTANT_PWM == 0
+	ICR5 = 5000;	// 400 hz output 	CH 1, 2, 9
+	ICR1 = 5000;	// 400 hz output	CH 3, 4, 10
+	ICR3 = 5000;	// 50 hz output		CH 7, 8, 11
+	#endif
+}
+
 static void output_motors_armed()
 {
 	int roll_out, pitch_out;
@@ -96,10 +105,13 @@ static void output_motors_armed()
 	APM_RC.OutputCh(CH_7, motor_out[CH_7]);
 	APM_RC.OutputCh(CH_8, motor_out[CH_8]);
 
+	#if INSTANT_PWM == 1
 	// InstantPWM
 	APM_RC.Force_Out0_Out1();
-	APM_RC.Force_Out6_Out7();
 	APM_RC.Force_Out2_Out3();
+	APM_RC.Force_Out6_Out7();
+	#endif
+
 }
 
 static void output_motors_disarmed()

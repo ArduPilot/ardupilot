@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.47 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.48 Beta"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -774,9 +774,9 @@ static void slow_loop()
 			slow_loopCounter++;
 			superslow_loopCounter++;
 
-			if(superslow_loopCounter > 800){ // every 4 minutes
+			if(superslow_loopCounter > 1200){
 				#if HIL_MODE != HIL_MODE_ATTITUDE
-					if(g.rc_3.control_in == 0 && g.compass_enabled){
+					if(g.rc_3.control_in == 0 && control_mode == STABILIZE && g.compass_enabled){
 						compass.save_offsets();
 						superslow_loopCounter = 0;
 					}
