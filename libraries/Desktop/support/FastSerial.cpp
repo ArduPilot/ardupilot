@@ -36,6 +36,35 @@
 #include <pty.h>
 #include <fcntl.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+
+
+    int       list_s;                /*  listening socket          */
+    int       conn_s;                /*  connection socket         */
+    short int port = 5760;                  /*  port number               */
+    struct    sockaddr_in servaddr, cli_addr;  /*  socket address structure  */
+    char      buffer[256];      /*  character buffer          */
+    socklen_t clilen;
+
+    
+int myread(void)
+{
+    return read(conn_s,buffer,1);
+}
+
+int mywrite(uint8_t c)
+{
+    return write(conn_s,(char *) &c,1);
+}
+
+
 #if   defined(UDR3)
 # define FS_MAX_PORTS   4
 #elif defined(UDR2)
@@ -76,7 +105,53 @@ void FastSerial::begin(long baud)
 		fcntl(0, F_SETFL, v | O_NONBLOCK);
 		v = fcntl(1, F_GETFL, 0);
 		fcntl(1, F_SETFL, v | O_NONBLOCK);
-	}
+    
+        /*  Create the listening socket  */
+
+        if ( (list_s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+        fprintf(stderr, "ECHOSERV: Error creating listening socket.\n");
+        exit(EXIT_FAILURE);
+        }
+
+        int val = 1;
+        
+        setsockopt(list_s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val);
+
+        /*  Set all bytes in socket address structure to
+            zero, and fill in the relevant data members   */
+
+        memset(&servaddr, 0, sizeof(servaddr));
+       
+        servaddr.sin_family      = AF_INET;
+        servaddr.sin_addr.s_addr = INADDR_ANY;
+        servaddr.sin_port        = htons(port + _u2x);
+
+
+        /*  Bind our socket addresss to the 
+        listening socket, and call listen()  */
+
+        if ( bind(list_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0 ) {
+        fprintf(stderr, "ECHOSERV: Error calling bind()\n");
+        exit(EXIT_FAILURE);
+        }
+
+        if ( listen(list_s, 5) < 0 ) {
+        fprintf(stderr, "ECHOSERV: Error calling listen()\n");
+        exit(EXIT_FAILURE);
+        }
+        clilen = sizeof(cli_addr);
+        
+        fprintf(stdout, "Listerning on port %i\n",port + _u2x);
+        fflush(stdout);
+
+        if ( (conn_s = accept(list_s, NULL, NULL) ) < 0 ) {
+            fprintf(stderr, "ECHOSERV: Error calling accept()\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        fcntl(conn_s, F_SETFL, O_NONBLOCK);
+    }
+
 }
 
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
@@ -92,9 +167,22 @@ int FastSerial::available(void)
 {
 	if (_u2x != 0) return 0;
 	int num_ready;
-	if (ioctl(0, FIONREAD, &num_ready) == 0) {
-		return num_ready;
-	}
+
+ fd_set socks;
+ struct timeval t;
+ FD_ZERO(&socks);
+ FD_SET(conn_s, &socks);
+ t.tv_sec = 0;
+ t.tv_usec = 500;
+ if (int ans = select(conn_s + 1, &socks, NULL, NULL,&t))
+ {
+
+  //FD_ZERO(&socks);
+ //FD_SET(conn_s, &socks);
+ //if (FD_ISSET(conn_s, &socks)) {
+        return 1;
+//    }
+ }
 	return 0;
 }
 
@@ -109,10 +197,17 @@ int FastSerial::read(void)
 		return -1;
 	}
 	char c;
-	if (fread(&c, 1, 1, stdin) != 1) {
-		return -1;
-	}
-	return (int)c;
+    int n = myread();
+    if (n == 0) {
+    
+        if ( (conn_s = accept(list_s, NULL, NULL) ) < 0 ) {
+            fprintf(stderr, "ECHOSERV: Error calling accept()\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        fcntl(conn_s, F_SETFL, O_NONBLOCK);
+    }
+	return (int)buffer[0];
 }
 
 int FastSerial::peek(void)
@@ -129,8 +224,11 @@ void FastSerial::write(uint8_t c)
 	if (_u2x != 0) {
 		return;
 	}
-	fwrite(&c, 1, 1, stdout);
-	fflush(stdout);
+    mywrite(c);
+    if (c >= '\n' && c <= 128) {
+        fwrite(&c, 1, 1, stdout);
+        fflush(stdout);
+    }
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
