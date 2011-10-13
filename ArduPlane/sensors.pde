@@ -22,7 +22,7 @@ static void init_barometer(void)
 	for(int i = 0; i < 30; i++){		// We take some readings...
 
 		#if HIL_MODE == HIL_MODE_SENSORS
-			hil.update(); 				// look for inbound hil packets
+			gcs_update(); 				// look for inbound hil packets
 		#endif
 
 		barometer.Read(); 				// Get initial data from absolute pressure sensor

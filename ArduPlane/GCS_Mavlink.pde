@@ -1401,8 +1401,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // TODO: check scaling for temp/absPress
             float temp = 70;
             float absPress = 1;
-            //      Serial.printf_P(PSTR("accel:\t%d\t%d\t%d\n"), packet.xacc, packet.yacc, packet.zacc);
-            //      Serial.printf_P(PSTR("gyro:\t%d\t%d\t%d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
+                  Serial.printf_P(PSTR("accel: %d %d %d\n"), packet.xacc, packet.yacc, packet.zacc);
+                  Serial.printf_P(PSTR("gyro: %d %d %d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
 
             // rad/sec
             Vector3f gyros;

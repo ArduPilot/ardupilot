@@ -13,7 +13,7 @@ public:
 
 	/// @name IMU protocol
 	//@{
-	virtual void	init(Start_style style, void (*callback)(unsigned long t)) {}
+    virtual void	init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay) {};
 	virtual void	init_accel(void (*callback)(unsigned long t) = delay) {};
 	virtual void	init_gyro(void (*callback)(unsigned long t) = delay) {};
 	virtual bool	update(void) {
