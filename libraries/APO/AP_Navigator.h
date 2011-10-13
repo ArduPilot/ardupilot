@@ -348,8 +348,9 @@ public:
 
 		if (_hal->compass) {
 			_hal->compass->read();
-			_hal->compass->calculate(getRoll(), getPitch());
+			_hal->compass->calculate(_dcm->get_dcm_matrix());
 			_hal->compass->null_offsets(_dcm->get_dcm_matrix());
+			//_hal->debug->printf_P(PSTR("heading: %f"), _hal->compass->heading);
 		}
 	}
 	void updateGpsLight(void) {
