@@ -454,7 +454,7 @@ static bool verify_loiter_turns()
 {
 	// have we rotated around the center enough times?
 	// -----------------------------------------------
-	if(loiter_sum > loiter_total) {
+	if(abs(loiter_sum) > loiter_total) {
 		loiter_total 	= 0;
 		loiter_sum		= 0;
 		//gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));

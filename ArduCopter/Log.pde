@@ -394,7 +394,6 @@ static void Log_Read_GPS()
 						(uint16_t)DataFlash.ReadInt());			// 8 ground course
 }
 
-
 // Write an raw accel/gyro data packet. Total length : 28 bytes
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Raw()
@@ -733,6 +732,45 @@ static void Log_Read_Cmd()
 				DataFlash.ReadLong(),
 				DataFlash.ReadLong());
 }
+/*
+// Write an attitude packet. Total length : 10 bytes
+static void Log_Write_Attitude2()
+{
+	Vector3f gyro  = imu.get_gyro();
+	Vector3f accel = imu.get_accel();
+
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_ATTITUDE_MSG);
+
+	DataFlash.WriteInt((int)dcm.roll_sensor);
+	DataFlash.WriteInt((int)dcm.pitch_sensor);
+
+	DataFlash.WriteLong((long)(degrees(omega.x) * 100.0));
+	DataFlash.WriteLong((long)(degrees(omega.y) * 100.0));
+
+	DataFlash.WriteLong((long)(accel.x * 100000));
+	DataFlash.WriteLong((long)(accel.y * 100000));
+
+	//DataFlash.WriteLong((long)(accel.z * 100000));
+
+	DataFlash.WriteByte(END_BYTE);
+}*/
+/*
+// Read an attitude packet
+static void Log_Read_Attitude2()
+{
+	Serial.printf_P(PSTR("ATT, %d, %d, %ld, %ld, %1.4f, %1.4f\n"),
+			DataFlash.ReadInt(),
+			DataFlash.ReadInt(),
+
+			DataFlash.ReadLong(),
+			DataFlash.ReadLong(),
+
+			(float)DataFlash.ReadLong()/100000.0,
+			(float)DataFlash.ReadLong()/100000.0 );
+}
+*/
 
 // Write an attitude packet. Total length : 10 bytes
 static void Log_Write_Attitude()

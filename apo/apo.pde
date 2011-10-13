@@ -17,7 +17,7 @@
 #include <WProgram.h>
 
 // Vehicle Configuration
-#include "PlaneEasystar.h"
+#include "QuadArducopter.h"
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"
