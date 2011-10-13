@@ -587,6 +587,7 @@
 000001a8 t print_radio_values()
 000001c8 t setup_motors(unsigned char, Menu::arg const*)
 000001cc t start_new_log()
+000001e4 t verify_nav_wp()
 000001e4 t setup_flightmodes(unsigned char, Menu::arg const*)
 000001ea t init_home()
 00000216 t set_mode(unsigned char)
@@ -606,5 +607,5 @@
 00000824 b g
 00000870 t process_next_command()
 000008f4 W Parameters::Parameters()
-0000152e T loop
+0000136a T loop
 00001604 T GCS_MAVLINK::handleMessage(__mavlink_message*)

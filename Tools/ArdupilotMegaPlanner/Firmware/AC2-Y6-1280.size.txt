@@ -601,6 +601,7 @@
 000001be t arm_motors()
 000001cc t start_new_log()
 000001e4 t setup_flightmodes(unsigned char, Menu::arg const*)
+000001e6 t verify_nav_wp()
 000001ea t init_home()
 00000216 t set_mode(unsigned char)
 0000021a t send_raw_imu1(mavlink_channel_t)
@@ -622,4 +623,4 @@
 00000870 t process_next_command()
 000008f4 W Parameters::Parameters()
 000012ec T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001ad2 T loop
+00001904 T loop
