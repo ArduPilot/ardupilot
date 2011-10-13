@@ -21,26 +21,27 @@ public:
 	 */
 	enum {
 		CH_MODE = 0, // note scicoslab channels set mode, left, right, front, back order
-		CH_LEFT, // this enum must match this
 		CH_RIGHT,
+		CH_LEFT,
 		CH_FRONT,
 		CH_BACK,
 		CH_ROLL,
 		CH_PITCH,
-		CH_YAW,
-		CH_THRUST
+		CH_THRUST,
+		CH_YAW
 	};
 
+	// must match channel enum
 	enum {
 		k_chMode = k_radioChannelsStart,
-		k_chLeft,
 		k_chRight,
+		k_chLeft,
 		k_chFront,
 		k_chBack,
 		k_chRoll,
 		k_chPitch,
-		k_chYaw,
-		k_chThr
+		k_chThr,
+		k_chYaw
 	};
 
 	enum {
@@ -84,11 +85,12 @@ public:
 				new AP_RcChannel(k_chMode, PSTR("MODE_"), APM_RC, 5, 1100,
 						1500, 1900, RC_MODE_IN, false));
 		_hal->rc.push_back(
-				new AP_RcChannel(k_chLeft, PSTR("LEFT_"), APM_RC, 0, 1100,
+				new AP_RcChannel(k_chRight, PSTR("RIGHT_"), APM_RC, 0, 1100,
 						1100, 1900, RC_MODE_OUT, false));
 		_hal->rc.push_back(
-				new AP_RcChannel(k_chRight, PSTR("RIGHT_"), APM_RC, 1, 1100,
+				new AP_RcChannel(k_chLeft, PSTR("LEFT_"), APM_RC, 1, 1100,
 						1100, 1900, RC_MODE_OUT, false));
+
 		_hal->rc.push_back(
 				new AP_RcChannel(k_chFront, PSTR("FRONT_"), APM_RC, 2, 1100,
 						1100, 1900, RC_MODE_OUT, false));
@@ -102,11 +104,11 @@ public:
 				new AP_RcChannel(k_chPitch, PSTR("PITCH_"), APM_RC, 1, 1100,
 						1500, 1900, RC_MODE_IN, false));
 		_hal->rc.push_back(
-				new AP_RcChannel(k_chYaw, PSTR("YAW_"), APM_RC, 2, 1100, 1500,
-						1900, RC_MODE_IN, false));
-		_hal->rc.push_back(
-				new AP_RcChannel(k_chThr, PSTR("THRUST_"), APM_RC, 3, 1100,
+				new AP_RcChannel(k_chThr, PSTR("THRUST_"), APM_RC, 2, 1100,
 						1100, 1900, RC_MODE_IN, false));
+		_hal->rc.push_back(
+				new AP_RcChannel(k_chYaw, PSTR("YAW_"), APM_RC, 3, 1100, 1500,
+						1900, RC_MODE_IN, false));
 	}
 
 	virtual void update(const float & dt) {
@@ -133,9 +135,7 @@ public:
 		}
 
 		// manual mode
-		float mixRemoteWeight = 0;
 		if (_hal->rc[CH_MODE]->getRadioPosition() > 0) {
-			mixRemoteWeight = 1;
 			_mode = MAV_MODE_MANUAL;
 		} else {
 			_mode = MAV_MODE_AUTO;
@@ -152,13 +152,10 @@ public:
 		case MAV_MODE_MANUAL: {
 			setAllRadioChannelsManually();
 			// "mix manual"
-			cmdRoll = 0.5 * _hal->rc[CH_ROLL]->getPosition()
-					* mixRemoteWeight;
-			cmdPitch = 0.5 * _hal->rc[CH_PITCH]->getPosition()
-					* mixRemoteWeight;
-			cmdYawRate = 0.5 * _hal->rc[CH_YAW]->getPosition()
-					* mixRemoteWeight;
-			thrustMix = _hal->rc[CH_THRUST]->getPosition() * mixRemoteWeight;
+			cmdRoll = -1 * _hal->rc[CH_ROLL]->getPosition();
+			cmdPitch = -1 * _hal->rc[CH_PITCH]->getPosition();
+			cmdYawRate = -1 * _hal->rc[CH_YAW]->getPosition();
+			thrustMix = _hal->rc[CH_THRUST]->getPosition();
 			break;
 		}
 
@@ -166,6 +163,7 @@ public:
 
 			// XXX kills all commands, 
 			// auto not currently implemented
+			setAllRadioChannelsToNeutral();
 
 			// position loop
 			/*
@@ -203,36 +201,39 @@ public:
 		}
 
 		// attitude loop
-		// XXX negative sign added to nav roll, not sure why this is necessary
-		// XXX negative sign added to nav roll rate, not sure why this is necessary
-		float rollMix = pidRoll.update(cmdRoll + _nav->getRoll(),
-				-_nav->getRollRate(), dt);
-		// XXX negative sign added to cmdPitch, not sure why this is necessary
-		float pitchMix = pidPitch.update(-cmdPitch - _nav->getPitch(),
+		float rollMix = pidRoll.update(cmdRoll - _nav->getRoll(),
+				_nav->getRollRate(), dt);
+		float pitchMix = pidPitch.update(cmdPitch - _nav->getPitch(),
 				_nav->getPitchRate(), dt);
-		// XXX negative sign added to cmdYawRate, not sure why this is necessary
-		float yawMix = pidYawRate.update(-cmdYawRate - _nav->getYawRate(), dt);
+		float yawMix = pidYawRate.update(cmdYawRate - _nav->getYawRate(), dt);
 
-		_hal->rc[CH_LEFT]->setPosition(thrustMix + rollMix + yawMix);
 		_hal->rc[CH_RIGHT]->setPosition(thrustMix - rollMix + yawMix);
+		_hal->rc[CH_LEFT]->setPosition(thrustMix + rollMix + yawMix);
 		_hal->rc[CH_FRONT]->setPosition(thrustMix + pitchMix - yawMix);
 		_hal->rc[CH_BACK]->setPosition(thrustMix - pitchMix - yawMix);
 
-		//		_hal->debug->printf("L: %f\t R: %f\t F: %f\t B: %f\n",
-		//				_hal->rc[CH_LEFT]->getPosition(),
-		//				_hal->rc[CH_RIGHT]->getPosition(),
-		//				_hal->rc[CH_FRONT]->getPosition(),
-		//				_hal->rc[CH_BACK]->getPosition());
+		//_hal->debug->printf("R: %f\t L: %f\t F: %f\t B: %f\n",
+		//_hal->rc[CH_RIGHT]->getPosition(),
+		//_hal->rc[CH_LEFT]->getPosition(),
+		//_hal->rc[CH_FRONT]->getPosition(),
+		//_hal->rc[CH_BACK]->getPosition());
 
-		_hal->debug->printf(
-				"rollMix: %f\t pitchMix: %f\t yawMix: %f\t thrustMix: %f\n",
-				rollMix, pitchMix, yawMix, thrustMix);
+		//_hal->debug->printf(
+		//		"rollMix: %f\t pitchMix: %f\t yawMix: %f\t thrustMix: %f\n",
+		//		rollMix, pitchMix, yawMix, thrustMix);
+		
+		//_hal->debug->printf("cmdRoll: %f\t roll: %f\t rollMix: %f\n",
+		//		cmdRoll, _nav->getRoll(), rollMix);
+		//_hal->debug->printf("cmdPitch: %f\t pitch: %f\t pitchMix: %f\n",
+		//		cmdPitch, _nav->getPitch(), pitchMix);
+		//_hal->debug->printf("cmdYawRate: %f\t yawRate: %f\t yawMix: %f\n",
+		//		cmdYawRate, _nav->getYawRate(), yawMix);
 
-		//			_hal->debug->printf("roll pwm: %d\t pitch pwm: %d\t yaw pwm: %d\t thrust pwm: %d\n",
-		//					_hal->rc[CH_ROLL]->readRadio(),
-		//					_hal->rc[CH_PITCH]->readRadio(),
-		//					_hal->rc[CH_YAW]->readRadio(),
-		//					_hal->rc[CH_THRUST]->readRadio());
+		//_hal->debug->printf("roll pwm: %d\t pitch pwm: %d\t yaw pwm: %d\t thrust pwm: %d\n",
+		//_hal->rc[CH_ROLL]->getRadioPwm(),
+		//_hal->rc[CH_PITCH]->getRadioPwm(),
+		//_hal->rc[CH_YAW]->getRadioPwm(),
+		//_hal->rc[CH_THRUST]->getRadioPwm());
 	}
 	virtual MAV_MODE getMode() {
 		return (MAV_MODE) _mode.get();
