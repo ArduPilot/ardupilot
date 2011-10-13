@@ -56,7 +56,7 @@ public:
 
 	// set
 	void setUsingRadio() {
-		setPwm(getRadioPwm());
+		if (_rcMode != RC_MODE_OUT) setPwm(getRadioPwm());
 	}
 	void setPwm(uint16_t pwm);
 	void setPosition(float position) {

@@ -27,7 +27,7 @@ void setup() {
 	/*
 	 * Communications
 	 */
-	Serial.begin(DEBUG_BAUD, 128, 128); // debug
+	Serial.begin(debugBaud, 128, 128); // debug
 	
 	// hardware abstraction layer
 	hal = new AP_HardwareAbstractionLayer(
@@ -47,7 +47,7 @@ void setup() {
 		hal->adc->Init();
 
 		if (gpsEnabled) {
-			Serial1.begin(GPS_BAUD, 128, 16); // gps
+			Serial1.begin(gpsBaud, 128, 16); // gps
 			hal->debug->println_P(PSTR("initializing gps"));
 			AP_GPS_Auto gpsDriver(&Serial1, &(hal->gps));
 			hal->gps = &gpsDriver;
@@ -62,9 +62,12 @@ void setup() {
 		}
 
 		if (compassEnabled) {
+			Wire.begin();
 			hal->debug->println_P(PSTR("initializing compass"));
 			hal->compass = new COMPASS_CLASS;
-			hal->compass->set_orientation(AP_COMPASS_COMPONENTS_UP_PINS_FORWARD);
+			hal->compass->set_orientation(compassOrientation);
+			hal->compass->set_offsets(0,0,0);
+			hal->compass->set_declination(0.0);
 			hal->compass->init();
 		}
 
@@ -139,12 +142,12 @@ void setup() {
 	 */
 	if (board==BOARD_ARDUPILOTMEGA_2)
 	{
-		Serial2.begin(TELEM_BAUD, 128, 128); // gcs
+		Serial2.begin(telemBaud, 128, 128); // gcs
 		hal->gcs = new COMMLINK_CLASS(&Serial2, navigator, guide, controller, hal);
 	}
 	else
 	{
-	   	Serial3.begin(TELEM_BAUD, 128, 128); // gcs
+	   	Serial3.begin(telemBaud, 128, 128); // gcs
 		hal->gcs = new COMMLINK_CLASS(&Serial3, navigator, guide, controller, hal);
 	}
 
@@ -153,14 +156,14 @@ void setup() {
 	 */
 	if (hal->getMode() == MODE_HIL_CNTL) {
 		Serial.println("HIL line setting up");
-		Serial1.begin(HIL_BAUD, 128, 128);
+		Serial1.begin(hilBaud, 128, 128);
 		hal->hil = new COMMLINK_CLASS(&Serial1, navigator, guide, controller, hal);
 	}
 
 	/*
 	 * Start the autopilot
 	 */
-	hal->debug->printf_P(PSTR("initializing arduplane\n"));
+	hal->debug->printf_P(PSTR("initializing autopilot\n"));
 	hal->debug->printf_P(PSTR("free ram: %d bytes\n"),freeMemory());
 
 	autoPilot = new apo::AP_Autopilot(navigator, guide, controller, hal,

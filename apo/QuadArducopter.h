@@ -11,7 +11,7 @@
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
@@ -25,22 +25,26 @@ static const uint8_t heartBeatTimeout = 3;
 #define COMPASS_CLASS AP_Compass_HMC5843
 #define BARO_CLASS APM_BMP085_Class
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
-#define DEBUG_BAUD 57600
-#define TELEM_BAUD 57600
-#define GPS_BAUD 38400
-#define HIL_BAUD 57600
+
+// baud rates
+static uint32_t debugBaud = 57600; 
+static uint32_t telemBaud = 57600; 
+static uint32_t gpsBaud = 38400; 
+static uint32_t hilBaud = 57600; 
 
 // optional sensors
-static bool gpsEnabled = false;
-static bool baroEnabled = true;
-static bool compassEnabled = true;
+static const bool gpsEnabled = false;
+static const bool baroEnabled = false;
+static const bool compassEnabled = true;
+static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD;
+// compass orientation: See AP_Compass_HMC5843.h for possible values
 
-static bool rangeFinderFrontEnabled = true;
-static bool rangeFinderBackEnabled = true;
-static bool rangeFinderLeftEnabled = true;
-static bool rangeFinderRightEnabled = true;
-static bool rangeFinderUpEnabled = true;
-static bool rangeFinderDownEnabled = true;
+static const bool rangeFinderFrontEnabled = false;
+static const bool rangeFinderBackEnabled = false;
+static const bool rangeFinderLeftEnabled = false;
+static const bool rangeFinderRightEnabled = false;
+static const bool rangeFinderUpEnabled = false;
+static const bool rangeFinderDownEnabled = false;
 
 // loop rates
 static const float loop0Rate = 150;
