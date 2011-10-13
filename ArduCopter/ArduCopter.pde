@@ -1046,6 +1046,8 @@ static void update_navigation()
 
 		case GUIDED:
 			wp_control = WP_MODE;
+            // check if we are close to point > loiter
+            verify_nav_wp();
 
 			update_auto_yaw();
 			update_nav_wp();
