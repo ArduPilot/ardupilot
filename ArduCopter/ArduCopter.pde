@@ -1309,8 +1309,7 @@ static void update_nav_wp()
 		if (loiter_delta < -180) loiter_delta += 360;
 
 		// sum the angle around the WP
-		loiter_sum += abs(loiter_delta);
-
+		loiter_sum += loiter_delta;
 
 		// create a virtual waypoint that circles the next_WP
 		// Count the degrees we have circulated the WP
