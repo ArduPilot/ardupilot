@@ -1,44 +1,12 @@
 From https://code.google.com/p/ardupilot-mega
-   25b258c..a188536  APM_Camera -> origin/APM_Camera
-   36e7d95..9f44a2e  master     -> origin/master
-Updating 36e7d95..9f44a2e
+   5e66647..fcb2af5  master     -> origin/master
+Updating 5e66647..fcb2af5
 Fast-forward
- ArduCopter/ArduCopter.pde                          |   11 +-
- ArduCopter/commands_logic.pde                      |    2 +-
- ArduCopter/config.h                                |   10 +-
- ArduCopter/motors.pde                              |    2 +-
- ArduCopter/motors_hexa.pde                         |   14 ++-
- ArduCopter/motors_octa.pde                         |   19 ++-
- ArduCopter/motors_octa_quad.pde                    |   13 +-
- ArduCopter/motors_quad.pde                         |   11 +
- ArduCopter/motors_tri.pde                          |   13 ++
- ArduCopter/motors_y6.pde                           |   14 ++-
- ArduCopter/radio.pde                               |    1 +
- ArduCopter/system.pde                              |    4 +-
- Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj    |    1 +
- Tools/ArdupilotMegaPlanner/CommsTCPSerial.cs       |  222 ++++++++++++++++++++
- Tools/ArdupilotMegaPlanner/GCSViews/Simulation.cs  |    7 +-
- Tools/ArdupilotMegaPlanner/JoystickSetup.cs        |    2 +-
- Tools/ArdupilotMegaPlanner/MainV2.cs               |    7 +
- .../Properties/AssemblyInfo.cs                     |    2 +-
- Tools/ArdupilotMegaPlanner/bin/Release/.gitignore  |    3 +-
- .../ArdupilotMegaPlanner/bin/Release/ArduPlane.exe |  Bin 0 -> 673167 bytes
- .../bin/Release/ArdupilotMegaPlanner.application   |    2 +-
- .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2186240 -> 2189824 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/cygwin1.dll |  Bin 0 -> 2666500 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 20480 -> 20480 bytes
- .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 53248 -> 53248 bytes
- .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 380928 bytes
- apo/ControllerQuad.h                               |   91 ++++----
- apo/QuadArducopter.h                               |   32 ++--
- apo/apo.pde                                        |    2 +-
- libraries/APO/APO_DefaultSetup.h                   |   17 +-
- libraries/APO/AP_Navigator.h                       |    3 +-
- libraries/APO/AP_RcChannel.h                       |    2 +-
- libraries/Desktop/Desktop.mk                       |    5 +-
- libraries/Desktop/support/Arduino.cpp              |   24 ++-
- 35 files changed, 438 insertions(+), 98 deletions(-)
- create mode 100644 Tools/ArdupilotMegaPlanner/CommsTCPSerial.cs
- create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/ArduPlane.exe
- create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/cygwin1.dll
+ ArduCopter/ArduCopter.pde                          |    2 +
+ ArduCopter/Log.pde                                 |   40 +++++++-
+ ArduCopter/navigation.pde                          |    2 +-
+ .../bin/Release/ArduCopter.exe                     |  Bin 0 -> 677607 bytes
+ libraries/Desktop/Desktop.mk                       |    2 +-
+ libraries/Desktop/support/FastSerial.cpp           |  118 ++++++++++++++++++--
+ 6 files changed, 151 insertions(+), 13 deletions(-)
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/ArduCopter.exe
