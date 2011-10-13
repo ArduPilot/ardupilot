@@ -19,6 +19,13 @@ public:
 	virtual bool	update(void) {
 		bool updated = _updated;
 		_updated = false;
+        
+        // return number of microseconds since last call
+        uint32_t us = micros();
+        uint32_t ret = us - last_ch6_micros;
+        last_ch6_micros = us;
+        
+        _sample_time = ret;
 		return updated;
 	}
 	//@}
@@ -54,6 +61,7 @@ public:
 private:
 	/// set true when new data is delivered
 	bool		_updated;
+    uint32_t    last_ch6_micros;
 };
 
 #endif
