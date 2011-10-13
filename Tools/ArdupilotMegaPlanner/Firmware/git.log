@@ -1,12 +1,1 @@
-From https://code.google.com/p/ardupilot-mega
-   5e66647..fcb2af5  master     -> origin/master
-Updating 5e66647..fcb2af5
-Fast-forward
- ArduCopter/ArduCopter.pde                          |    2 +
- ArduCopter/Log.pde                                 |   40 +++++++-
- ArduCopter/navigation.pde                          |    2 +-
- .../bin/Release/ArduCopter.exe                     |  Bin 0 -> 677607 bytes
- libraries/Desktop/Desktop.mk                       |    2 +-
- libraries/Desktop/support/FastSerial.cpp           |  118 ++++++++++++++++++--
- 6 files changed, 151 insertions(+), 13 deletions(-)
- create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/ArduCopter.exe
+Already up-to-date.
