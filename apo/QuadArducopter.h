@@ -11,7 +11,7 @@
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
@@ -47,18 +47,13 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loop0Rate = 150;
-static const float loop1Rate = 100;
-static const float loop2Rate = 10;
-static const float loop3Rate = 1;
+static const float loop0Rate = 200; // attitude nav
+static const float loop1Rate = 50; // controller
+static const float loop2Rate = 10; 	// pos nav/ gcs fast
+static const float loop3Rate = 1; 	// gcs slow
 static const float loop4Rate = 0.1;
 
-//motor parameters
-static const float MOTOR_MAX = 1;
-static const float MOTOR_MIN = 0.1;
-
 // position control loop
-static const float PID_POS_INTERVAL = 1 / 100; // 5 hz
 static const float PID_POS_P = 0;
 static const float PID_POS_I = 0;
 static const float PID_POS_D = 0;
@@ -71,29 +66,22 @@ static const float PID_POS_Z_LIM = 0;
 static const float PID_POS_Z_AWU = 0;
 
 // attitude control loop
-static const float PID_ATT_INTERVAL = 1 / 100; // 100 hz
-static const float PID_ATT_P = 0.1; // 0.1
-static const float PID_ATT_I = 0; // 0.0
-static const float PID_ATT_D = 0.1; // 0.1
-static const float PID_ATT_LIM = 1; // 0.01 // 10 % #define MOTORs
-static const float PID_ATT_AWU = 0; // 0.0
+static const float PID_ATT_P = 0.3;
+static const float PID_ATT_I = 0.5;
+static const float PID_ATT_D = 0.08;
+static const float PID_ATT_LIM = 0.1; // 10 %
+static const float PID_ATT_AWU = 0.03; // 3 %
 static const float PID_YAWPOS_P = 0;
 static const float PID_YAWPOS_I = 0;
 static const float PID_YAWPOS_D = 0;
 static const float PID_YAWPOS_LIM = 0; // 1 rad/s
 static const float PID_YAWPOS_AWU = 0; // 1 rad/s
-static const float PID_YAWSPEED_P = .2;
+static const float PID_YAWSPEED_P = 0.5;
 static const float PID_YAWSPEED_I = 0;
 static const float PID_YAWSPEED_D = 0;
-static const float PID_YAWSPEED_LIM = .3; // 0.01 // 10 % MOTORs
+static const float PID_YAWSPEED_LIM = .1; // 10 % MOTORs
 static const float PID_YAWSPEED_AWU = 0.0;
 static const float PID_YAWSPEED_DFCUT = 3.0; // 3 Radians, about 1 Hz
-
-// mixing
-static const float MIX_REMOTE_WEIGHT = 1;
-static const float MIX_POSITION_WEIGHT = 1;
-static const float MIX_POSITION_Z_WEIGHT = 1;
-static const float MIX_POSITION_YAW_WEIGHT = 1;
 
 static const float THRUST_HOVER_OFFSET = 0.475;
 
