@@ -115,7 +115,7 @@ static void calc_nav_rate(int max_speed)
 
 	// limit the ramp up of the speed
 	if(waypoint_speed_gov < max_speed){
-		waypoint_speed_gov += 40;
+		waypoint_speed_gov += 10;
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
