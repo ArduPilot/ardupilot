@@ -1401,8 +1401,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // TODO: check scaling for temp/absPress
             float temp = 70;
             float absPress = 1;
-                  Serial.printf_P(PSTR("accel: %d %d %d\n"), packet.xacc, packet.yacc, packet.zacc);
-                  Serial.printf_P(PSTR("gyro: %d %d %d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
+                  //Serial.printf_P(PSTR("accel: %d %d %d\n"), packet.xacc, packet.yacc, packet.zacc);
+                  //Serial.printf_P(PSTR("gyro: %d %d %d\n"), packet.xgyro, packet.ygyro, packet.zgyro);
 
             // rad/sec
             Vector3f gyros;
@@ -1432,7 +1432,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set pressure hil sensor
             // TODO: check scaling
             float temp = 70;
-            barometer.setHIL(temp,packet.press_diff1);
+            barometer.setHIL(temp,packet.press_diff1 + 101325);
             break;
         }
 #endif // HIL_MODE
