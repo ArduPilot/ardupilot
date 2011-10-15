@@ -17,7 +17,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 	Loop(loop0Rate, callback0, this), _navigator(navigator), _guide(guide),
 			_controller(controller), _hal(hal), _loop0Rate(loop0Rate),
 			_loop1Rate(loop1Rate), _loop2Rate(loop2Rate), _loop3Rate(loop3Rate),
-			_loop4Rate(loop3Rate) {
+			_loop4Rate(loop3Rate), callback0Calls(0), clockInit(millis()) {
 
 	hal->setState(MAV_STATE_BOOT);
 	hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
@@ -111,6 +111,8 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 	hal->debug->println_P(PSTR("initializing radio"));
 	APM_RC.Init(); // APM Radio initialization,
 	// start this after control loop is running
+	
+	clockInit = millis();
 }
 
 void AP_Autopilot::callback0(void * data) {
@@ -120,6 +122,8 @@ void AP_Autopilot::callback0(void * data) {
 	/*
 	 * ahrs update
 	 */
+
+	apo->callback0Calls++;
 	if (apo->getNavigator())
 		apo->getNavigator()->updateFast(1.0 / apo->getLoopRate(0));
 }
@@ -164,23 +168,17 @@ void AP_Autopilot::callback2(void * data) {
 	}
 
 	/*
-	 * send telemetry
-	 */
-	if (apo->getHal()->gcs) {
-		// send messages
-		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW);
-		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_ATTITUDE);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
-		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
-	}
-
-	/*
 	 * slow navigation loop update
 	 */
 	if (apo->getNavigator()) {
 		apo->getNavigator()->updateSlow(1.0 / apo->getLoopRate(2));
+	}
+
+	/*
+	 * send telemetry
+	 */
+	if (apo->getHal()->gcs) {
+		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_ATTITUDE);
 	}
 
 	/*
@@ -215,6 +213,18 @@ void AP_Autopilot::callback2(void * data) {
 void AP_Autopilot::callback3(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
 	//apo->getHal()->debug->println_P(PSTR("callback 3"));
+	
+	/*
+	 * send telemetry
+	 */
+	if (apo->getHal()->gcs) {
+		// send messages
+		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW);
+		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
+		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
+		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
+		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
+	}
 
 	/*
 	 * send heartbeat
@@ -225,6 +235,7 @@ void AP_Autopilot::callback3(void * data) {
 	 * load/loop rate/ram debug
 	 */
 	apo->getHal()->load = apo->load();
+	apo->getHal()->debug->printf_P(PSTR("missed calls: %d\n"),uint16_t(millis()*apo->getLoopRate(0)/1000-apo->callback0Calls));
 	apo->getHal()->debug->printf_P(PSTR("load: %d%%\trate: %f Hz\tfree ram: %d bytes\n"),
 			apo->load(),1.0/apo->dt(),freeMemory());
 

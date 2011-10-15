@@ -160,4 +160,55 @@
 </desc>
     <format_version>110</format_version>
   </Firmware>
+  <Firmware>
+    <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELIHIL-1280.hex</url>
+    <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELIHIL-2560.hex</url2560>
+    <name>Please Update</name>
+    <desc>
+
+#define HIL_MODE            HIL_MODE_ATTITUDE
+#define ALLOW_RC_OVERRIDE ENABLED
+
+#define AUTO_RESET_LOITER 0
+#define FRAME_CONFIG HELI_FRAME
+
+// DEFAULT PIDS
+
+// roll
+#define STABILIZE_ROLL_P 0.70
+#define STABILIZE_ROLL_I 0.025
+#define STABILIZE_ROLL_D 0.04
+#define STABILIZE_ROLL_IMAX 7
+
+//pitch
+#define STABILIZE_PITCH_P 0.70
+#define STABILIZE_PITCH_I 0.025
+#define STABILIZE_PITCH_D 0.04
+#define STABILIZE_PITCH_IMAX 7
+
+// yaw stablise
+#define STABILIZE_YAW_P  0.7
+#define STABILIZE_YAW_I  0.02
+#define STABILIZE_YAW_D  0.0
+
+// yaw rate
+#define RATE_YAW_P  0.135   
+#define RATE_YAW_I  0.0
+#define RATE_YAW_D  0.0
+
+// throttle
+#define THROTTLE_P 0.2
+#define THROTTLE_I 0.001
+#define THROTTLE_IMAX 100
+
+// navigation
+#define NAV_LOITER_P  1.1
+#define NAV_LOITER_I  0.03
+#define NAV_LOITER_D  0.02
+#define NAV_LOITER_IMAX  10
+
+
+</desc>
+    <format_version>0</format_version>
+  </Firmware>
 </options>

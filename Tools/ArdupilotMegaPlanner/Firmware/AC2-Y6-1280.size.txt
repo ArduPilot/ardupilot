@@ -572,9 +572,9 @@
 0000010a t send_raw_imu2(mavlink_channel_t)
 0000010a t test_gps(unsigned char, Menu::arg const*)
 0000010c t test_current(unsigned char, Menu::arg const*)
-0000010e t send_extended_status1(mavlink_channel_t, unsigned int)
 0000010e W RC_Channel::RC_Channel(unsigned int, prog_char_t const*)
 00000112 t set_next_WP(Location*)
+00000112 t send_extended_status1(mavlink_channel_t, unsigned int)
 00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000118 t set_command_with_index(Location, int)
@@ -601,6 +601,7 @@
 000001be t arm_motors()
 000001cc t start_new_log()
 000001e4 t setup_flightmodes(unsigned char, Menu::arg const*)
+000001e6 t verify_nav_wp()
 000001ea t init_home()
 00000216 t set_mode(unsigned char)
 0000021a t send_raw_imu1(mavlink_channel_t)
@@ -622,4 +623,4 @@
 00000870 t process_next_command()
 000008f4 W Parameters::Parameters()
 000012ec T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001ad2 T loop
+00001904 T loop

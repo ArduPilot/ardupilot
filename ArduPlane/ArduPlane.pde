@@ -483,7 +483,7 @@ static void fast_loop()
 
 	#if HIL_MODE == HIL_MODE_SENSORS
 		// update hil before dcm update
-		hil.update();
+		gcs_update();
 	#endif
 
 	dcm.update_DCM();
