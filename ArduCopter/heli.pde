@@ -20,30 +20,30 @@ static void heli_init_swash()
     int i;
 	int tilt_max[CH_3+1];
 	int total_tilt_max = 0;
-	
+
 	// swash servo initialisation
 	g.heli_servo_1.set_range(0,1000);
 	g.heli_servo_2.set_range(0,1000);
 	g.heli_servo_3.set_range(0,1000);
 	g.heli_servo_4.set_angle(4500);
-	
+
 	// pitch factors
 	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos));
 	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos));
 	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos));
-	
+
 	// roll factors
     heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90));
 	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90));
 	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90));
-	
+
 	// collective min / max
 	total_tilt_max = 0;
 	for( i=CH_1; i<=CH_3; i++ ) {
 	    tilt_max[i] = max(abs(heli_rollFactor[i]*g.heli_roll_max), abs(heli_pitchFactor[i]*g.heli_pitch_max))/100;
 		total_tilt_max = max(total_tilt_max,tilt_max[i]);
 	}
-	
+
 	// servo min/max values - or should I use set_range?
 	g.heli_servo_1.radio_min = g.heli_coll_min - tilt_max[CH_1];
 	g.heli_servo_1.radio_max = g.heli_coll_max + tilt_max[CH_1];
@@ -51,11 +51,11 @@ static void heli_init_swash()
 	g.heli_servo_2.radio_max = g.heli_coll_max + tilt_max[CH_2];
 	g.heli_servo_3.radio_min = g.heli_coll_min - tilt_max[CH_3];
 	g.heli_servo_3.radio_max = g.heli_coll_max + tilt_max[CH_3];
-	
+
 	// reset the servo averaging
 	for( i=0; i<=3; i++ )
 	    heli_servo_out[i] = 0;
-		
+
     // double check heli_servo_averaging is reasonable
 	if( g.heli_servo_averaging < 0 || g.heli_servo_averaging < 0 > 5 ) {
 	    g.heli_servo_averaging = 0;
@@ -87,36 +87,36 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 	g.heli_servo_1.servo_out = (heli_rollFactor[CH_1] * roll_out + heli_pitchFactor[CH_1] * pitch_out)/10 + coll_out + (g.heli_servo_1.radio_trim-1500);
 	if( g.heli_servo_1.get_reverse() )
 	    g.heli_servo_1.servo_out = 3000 - g.heli_servo_1.servo_out;
-		
+
 	g.heli_servo_2.servo_out = (heli_rollFactor[CH_2] * roll_out + heli_pitchFactor[CH_2] * pitch_out)/10 + coll_out + (g.heli_servo_2.radio_trim-1500);
 	if( g.heli_servo_2.get_reverse() )
 		g.heli_servo_2.servo_out = 3000 - g.heli_servo_2.servo_out;
-		
+
 	g.heli_servo_3.servo_out = (heli_rollFactor[CH_3] * roll_out + heli_pitchFactor[CH_3] * pitch_out)/10 + coll_out + (g.heli_servo_3.radio_trim-1500);
 	if( g.heli_servo_3.get_reverse() )
 	    g.heli_servo_3.servo_out = 3000 - g.heli_servo_3.servo_out;
-		
+
 	if( g.heli_servo_4.get_reverse() )
 		g.heli_servo_4.servo_out = -yaw_out;  // should probably just use rc_4 directly like we do for a tricopter
 	else
 		g.heli_servo_4.servo_out = yaw_out;
-	
+
 	// use servo_out to calculate pwm_out and radio_out
 	g.heli_servo_1.calc_pwm();
 	g.heli_servo_2.calc_pwm();
 	g.heli_servo_3.calc_pwm();
-	g.heli_servo_4.calc_pwm();	
-	
+	g.heli_servo_4.calc_pwm();
+
 	// add the servo values to the averaging
 	heli_servo_out[0] += g.heli_servo_1.servo_out;
 	heli_servo_out[1] += g.heli_servo_2.servo_out;
 	heli_servo_out[2] += g.heli_servo_3.servo_out;
 	heli_servo_out[3] += g.heli_servo_4.radio_out;
 	heli_servo_out_count++;
-	
+
 	// is it time to move the servos?
 	if( heli_servo_out_count >= g.heli_servo_averaging ) {
-	
+
 	    // average the values if necessary
 	    if( g.heli_servo_averaging >= 2 ) {
 		    heli_servo_out[0] /= g.heli_servo_averaging;
@@ -124,22 +124,24 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 			heli_servo_out[2] /= g.heli_servo_averaging;
 			heli_servo_out[3] /= g.heli_servo_averaging;
 		}
-		
+
 		// actually move the servos
 		APM_RC.OutputCh(CH_1, heli_servo_out[0]);
 		APM_RC.OutputCh(CH_2, heli_servo_out[1]);
 		APM_RC.OutputCh(CH_3, heli_servo_out[2]);
 		APM_RC.OutputCh(CH_4, heli_servo_out[3]);
-	
+
 		// output gyro value
 		if( g.heli_ext_gyro_enabled ) {
 			APM_RC.OutputCh(CH_7, g.heli_ext_gyro_gain);
 		}
 
-		// InstantPWM - force message to the servos
+		#if INSTANT_PWM == 1
+		// InstantPWM
 		APM_RC.Force_Out0_Out1();
 		APM_RC.Force_Out2_Out3();
-		
+		#endif
+
 		// reset the averaging
 		heli_servo_out_count = 0;
 		heli_servo_out[0] = 0;
@@ -147,6 +149,15 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 		heli_servo_out[2] = 0;
 		heli_servo_out[3] = 0;
 	}
+}
+
+static void init_motors_out()
+{
+	#if INSTANT_PWM == 0
+	ICR5 = 5000;	// 400 hz output 	CH 1, 2, 9
+	ICR1 = 5000;	// 400 hz output	CH 3, 4, 10
+	ICR3 = 40000;	// 50 hz output		CH 7, 8, 11
+	#endif
 }
 
 // these are not really motors, they're servos but we don't rename the function because it fits with the rest of the code better

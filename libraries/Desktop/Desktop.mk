@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2010 Andrew Tridgell. All rights reserved.
 # based on Arduino.mk, Copyright (c) 2010 Michael Smith
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
 # are met:
@@ -10,7 +10,7 @@
 # 2. Redistributions in binary form must reproduce the above copyright
 #	  notice, this list of conditions and the following disclaimer in the
 #	  documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -109,7 +109,7 @@ DEPFLAGS		=	-MD -MT $@
 # XXX warning options TBD
 CXXOPTS			= 	-fno-exceptions -D__AVR_ATmega2560__ -I$(SKETCHBOOK)/libraries/Desktop/include -DDESKTOP_BUILD=1
 COPTS			=	-I$(SKETCHBOOK)/libraries/Desktop/include -DDESKTOP_BUILD=1
-ASOPTS			=	-assembler-with-cpp 
+ASOPTS			=	-assembler-with-cpp
 
 CXXFLAGS		=	-g $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS			=	-g $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
@@ -171,12 +171,12 @@ else
 endif
 
 # these are library objects we don't want in the desktop build (maybe we'll add them later)
-NODESKTOP		:= FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp APM_BMP085/APM_BMP085.cpp AP_IMU/AP_IMU_Oilpan.cpp AP_OpticalFlow/AP_OpticalFlow_ADNS3080.cpp
+NODESKTOP		:= FastSerial/FastSerial.cpp AP_Compass/AP_Compass_HMC5843.cpp APM_BMP085/APM_BMP085.cpp AP_IMU/AP_IMU_Oilpan.cpp AP_OpticalFlow/AP_OpticalFlow_ADNS3080.cpp RC_Channel/RC_Channel_aux.cpp
 
 #
 # Find sketchbook libraries referenced by the sketch.
 #
-# Include paths for sketch libraries 
+# Include paths for sketch libraries
 #
 SKETCHLIBS		:=	$(wildcard $(addprefix $(SKETCHBOOK)/libraries/,$(LIBTOKENS)))
 SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
@@ -196,10 +196,10 @@ ARDUINOLIBSRCDIRS	:=	$(ARDUINOLIBS) $(addsuffix /utility,$(ARDUINOLIBS))
 ARDUINOLIBSRCS		:=	$(wildcard $(foreach suffix,$(SRCSUFFIXES),$(addsuffix /$(suffix),$(ARDUINOLIBSRCDIRS))))
 ARDUINOLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(ARDUINO),$(BUILDROOT),$(ARDUINOLIBSRCS))))
 ARDUINOLIBINCLUDES	:=	$(addprefix -I,$(ARDUINOLIBS))
-ARDUINOLIBINCLUDES	:=	$(ARDUINOLIBINCLUDES) 
+ARDUINOLIBINCLUDES	:=	$(ARDUINOLIBINCLUDES)
 
 # Library object files
-LIBOBJS			:=	$(SKETCHLIBOBJS) 
+LIBOBJS			:=	$(SKETCHLIBOBJS)
 
 ################################################################################
 # Built products
@@ -212,7 +212,7 @@ SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
 SKETCHMAP		=	$(BUILDROOT)/$(SKETCH).map
 
 # The core library
-CORELIB			=	
+CORELIB			=
 
 # All of the objects that may be built
 ALLOBJS			=	$(SKETCHOBJS) $(LIBOBJS) $(CORELIBOBJS)
@@ -338,7 +338,7 @@ $(CORELIB): $(CORELIBOBJS)
 # This process strives to be as faithful to the Arduino implementation as
 # possible.  Conceptually, the process is as follows:
 #
-# * All of the .pde files are concatenated, starting with the file named 
+# * All of the .pde files are concatenated, starting with the file named
 #   for the sketch and followed by the others in alphabetical order.
 # * An insertion point is created in the concatenated file at
 #   the first statement that isn't a preprocessor directive or comment.

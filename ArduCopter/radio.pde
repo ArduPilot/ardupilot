@@ -184,11 +184,3 @@ static void trim_radio()
 	g.rc_4.save_eeprom();
 }
 
-static void trim_yaw()
-{
-	for (byte i = 0; i < 30; i++){
-		read_radio();
-	}
-	g.rc_4.trim();	// yaw
-}
-
