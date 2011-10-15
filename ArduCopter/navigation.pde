@@ -95,16 +95,9 @@ static void calc_loiter(int x_error, int y_error)
 // nav_roll, nav_pitch
 static void calc_loiter_pitch_roll()
 {
-
-	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor))/100.0);
-	float _cos_yaw_x = cos(temp);
-	float _sin_yaw_y = sin(temp);
-
-	Serial.printf("ys %ld, cyx %1.4f, _cyx %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x);
-
 	// rotate the vector
-	nav_roll 	=  (float)nav_lon * _sin_yaw_y - (float)nav_lat * _cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * _cos_yaw_x + (float)nav_lat * _sin_yaw_y;
+	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
