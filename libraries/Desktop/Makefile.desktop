@@ -3,7 +3,7 @@ DESKTOP=$(PWD)/../libraries/Desktop
 include ../libraries/Desktop/Desktop.mk
 
 default:
-	make -f $(DESKTOP)/Makefile.desktop 
+	make -f $(DESKTOP)/Makefile.desktop
 
 nologging:
 	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DLOGGING_ENABLED=DISABLED"
@@ -19,3 +19,6 @@ hilnocli:
 
 heli:
 	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME"
+
+helihil:
+	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE -DCLI_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"

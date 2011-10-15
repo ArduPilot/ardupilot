@@ -42,7 +42,9 @@ static void reset_control_switch()
 	read_control_switch();
 }
 
+#if CH7_OPTION == CH7_SET_HOVER
 static boolean trim_flag;
+#endif
 
 // read at 10 hz
 // set this to your trainer switch
