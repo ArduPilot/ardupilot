@@ -279,6 +279,7 @@ public:
 		}
 	}
 	virtual void updateFast(float dt) {
+
 		if (_hal->getMode() != MODE_LIVE)
 			return;
 

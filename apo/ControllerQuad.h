@@ -152,8 +152,8 @@ public:
 		case MAV_MODE_MANUAL: {
 			setAllRadioChannelsManually();
 			// "mix manual"
-			cmdRoll = -1 * _hal->rc[CH_ROLL]->getPosition();
-			cmdPitch = -1 * _hal->rc[CH_PITCH]->getPosition();
+			cmdRoll = -0.5 * _hal->rc[CH_ROLL]->getPosition();
+			cmdPitch = -0.5 * _hal->rc[CH_PITCH]->getPosition();
 			cmdYawRate = -1 * _hal->rc[CH_YAW]->getPosition();
 			thrustMix = _hal->rc[CH_THRUST]->getPosition();
 			break;

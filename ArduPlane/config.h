@@ -83,24 +83,6 @@
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
 #endif
 
-
-// If we are in XPlane, diasble the mag
-#if HIL_MODE != HIL_MODE_DISABLED // we are in HIL mode
-
- // check xplane settings
- #if HIL_PROTOCOL == HIL_PROTOCOL_XPLANE
-
-  // MAGNETOMETER not supported by XPLANE
-  # undef MAGNETOMETER
-  # define MAGNETOMETER			DISABLED
-
-  # if HIL_MODE != HIL_MODE_ATTITUDE
-  #  error HIL_PROTOCOL_XPLANE requires HIL_MODE_ATTITUDE
-  # endif
-
- #endif
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // GPS_PROTOCOL
 //

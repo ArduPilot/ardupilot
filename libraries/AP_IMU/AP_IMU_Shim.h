@@ -13,12 +13,19 @@ public:
 
 	/// @name IMU protocol
 	//@{
-	virtual void	init(Start_style style, void (*callback)(unsigned long t)) {}
+    virtual void	init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay) {};
 	virtual void	init_accel(void (*callback)(unsigned long t) = delay) {};
 	virtual void	init_gyro(void (*callback)(unsigned long t) = delay) {};
 	virtual bool	update(void) {
 		bool updated = _updated;
 		_updated = false;
+        
+        // return number of microseconds since last call
+        uint32_t us = micros();
+        uint32_t ret = us - last_ch6_micros;
+        last_ch6_micros = us;
+        
+        _sample_time = ret;
 		return updated;
 	}
 	//@}
@@ -54,6 +61,7 @@ public:
 private:
 	/// set true when new data is delivered
 	bool		_updated;
+    uint32_t    last_ch6_micros;
 };
 
 #endif

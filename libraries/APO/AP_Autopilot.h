@@ -99,6 +99,12 @@ public:
 		}
 	}
 
+	/**
+	 * Loop Monitoring
+	 */
+	uint32_t callback0Calls;
+	uint32_t clockInit;
+
 private:
 
 	/**
