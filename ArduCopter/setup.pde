@@ -132,7 +132,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 		return(-1);
 
 	AP_Var::erase_all();
-	Serial.printf_P(PSTR("\nFACTORY RESET complete - reboot APM"));
+	Serial.printf_P(PSTR("\nReboot APM"));
 
 	delay(1000);
 	//default_gains();
@@ -936,7 +936,7 @@ void report_optflow()
 static void report_heli()
 {
     int servo_rate;
-	
+
 	Serial.printf_P(PSTR("Heli\n"));
 	print_divider();
 
@@ -950,7 +950,7 @@ static void report_heli()
 	Serial.printf_P(PSTR("roll max: \t%d\n"), (int)g.heli_roll_max);
 	Serial.printf_P(PSTR("pitch max: \t%d\n"), (int)g.heli_pitch_max);
 	Serial.printf_P(PSTR("coll min:\t%d\t mid:%d\t max:%d\n"),(int)g.heli_coll_min, (int)g.heli_coll_mid, (int)g.heli_coll_max);
-	
+
 	// calculate and print servo rate
 	if( g.heli_servo_averaging <= 1 ) {
 	    servo_rate = 250;
