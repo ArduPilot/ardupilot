@@ -210,6 +210,14 @@ ModeFilter sonar_mode_filter;
     #error Unrecognised SONAR_TYPE setting.
 #endif
 
+// agmatthews USERHOOKS
+////////////////////////////////////////////////////////////////////////////////
+// User variables
+////////////////////////////////////////////////////////////////////////////////
+#ifdef USERHOOK_VARIABLES
+#include USERHOOK_VARIABLES
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -565,6 +573,12 @@ static void fast_loop()
 
 	//if(motor_armed)
 		//Log_Write_Attitude();
+
+// agmatthews - USERHOOKS
+#ifdef USERHOOK_FASTLOOP
+   USERHOOK_FASTLOOP
+#endif
+
 }
 
 static void medium_loop()
@@ -719,6 +733,10 @@ static void medium_loop()
 			medium_loopCounter = 0;
 			break;
 	}
+// agmatthews - USERHOOKS
+#ifdef USERHOOK_MEDIUMLOOP
+   USERHOOK_MEDIUMLOOP
+#endif
 
 }
 
@@ -735,6 +753,10 @@ static void fifty_hz_loop()
 	if(g.sonar_enabled){
 		sonar_alt = sonar.read();
 	}
+	// agmatthews - USERHOOKS
+	#ifdef USERHOOK_50HZLOOP
+	  USERHOOK_50HZLOOP
+	#endif
 
 	#if HIL_MODE != HIL_MODE_DISABLED && FRAME_CONFIG != HELI_FRAME
 		// HIL for a copter needs very fast update of the servo values
@@ -831,6 +853,11 @@ static void slow_loop()
 			break;
 
 	}
+	// agmatthews - USERHOOKS
+	#ifdef USERHOOK_SLOWLOOP
+	   USERHOOK_SLOWLOOP
+	#endif
+
 }
 
 // 1Hz loop
@@ -840,6 +867,10 @@ static void super_slow_loop()
 		Log_Write_Current();
 
     gcs_send_message(MSG_HEARTBEAT);
+	// agmatthews - USERHOOKS
+	#ifdef USERHOOK_SUPERSLOWLOOP
+	   USERHOOK_SUPERSLOWLOOP
+	#endif
 }
 
 static void update_GPS(void)
