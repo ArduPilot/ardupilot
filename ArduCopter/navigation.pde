@@ -115,7 +115,12 @@ static void calc_nav_rate(int max_speed)
 
 	// limit the ramp up of the speed
 	if(waypoint_speed_gov < max_speed){
-		waypoint_speed_gov += 10;
+
+		waypoint_speed_gov += (int)(150.0 * dTnav); // increase at 1.5/ms
+
+		// go at least 1m/s
+		max_speed 		= max(100, waypoint_speed_gov);
+		// limit with governer
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
