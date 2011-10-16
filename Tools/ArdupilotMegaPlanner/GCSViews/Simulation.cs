@@ -682,7 +682,7 @@ namespace ArdupilotMega.GCSViews
             return Math.Cos(rad);
         }
 
-        //float oldax =0, olday =0, oldaz = 0;
+        float oldax =0, olday =0, oldaz = 0;
         DateTime oldtime = DateTime.Now;
 
         ArdupilotMega.MAVLink.__mavlink_attitude_t oldatt = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
@@ -742,7 +742,7 @@ namespace ArdupilotMega.GCSViews
                 float rdiff = (float)((att.roll - oldatt.roll) / timediff.TotalSeconds);
                 float ydiff = (float)((att.yaw - oldatt.yaw) / timediff.TotalSeconds);
 
-                //                Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
+                                //Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
 
                 oldatt = att;
 
@@ -758,7 +758,21 @@ namespace ArdupilotMega.GCSViews
 
                 YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1], DATA[18][0], 0, -9.8); //DATA[18][2]
 
-                //accel3D += new YLScsDrawing.Drawing3d.Vector3d(0, 0, -9.8);
+                float turnrad = (float)(((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704) * 1.943844) / (float)(11.26 * Math.Tan(att.roll))) * ft2m;
+
+                float centripaccel = (float)((DATA[3][7] * 0.44704) * (DATA[3][7] * 0.44704)) / turnrad;
+
+                //Console.WriteLine("old {0} {1} {2}",accel3D.X,accel3D.Y,accel3D.Z);
+
+                YLScsDrawing.Drawing3d.Vector3d cent3D = HIL.QuadCopter.RPY_to_XYZ(DATA[18][1] - 90, 0, 0, centripaccel);
+
+                accel3D -= cent3D;
+
+                //Console.WriteLine("new {0} {1} {2}", accel3D.X, accel3D.Y, accel3D.Z);
+
+                oldax = DATA[4][5];
+                olday = DATA[4][6];
+                oldaz = DATA[4][4];
 
                 double head = DATA[18][2] - 90;
 
@@ -861,9 +875,13 @@ namespace ArdupilotMega.GCSViews
                 imu.zgyro = (short)(aeroin.Model_fAngVelZ * 1000);
                 //imu.zmag = 0;
 
-                imu.xacc = (Int16)(aeroin.Model_fAccelX * 1000); // pitch
-                imu.yacc = (Int16)(aeroin.Model_fAccelY * 1000); // roll
-                imu.zacc = (Int16)(aeroin.Model_fAccelZ * 1000);
+                YLScsDrawing.Drawing3d.Vector3d accel3D = HIL.QuadCopter.RPY_to_XYZ(att.roll, att.pitch, 0, -9.8); //DATA[18][2]
+
+                imu.xacc = (Int16)((accel3D.X + aeroin.Model_fAccelX) * 1000); // pitch
+                imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccelY) * 1000); // roll
+                imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccelZ) * 1000);
+
+                Console.WriteLine("x {0} y {1} z {2}",imu.xacc,imu.yacc,imu.zacc);
 
 
                 gps.alt = ((float)(aeroin.Model_fPosZ));

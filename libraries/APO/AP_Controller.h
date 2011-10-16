@@ -19,37 +19,28 @@
 #ifndef AP_Controller_H
 #define AP_Controller_H
 
-#include "AP_Navigator.h"
-#include "AP_Guide.h"
-#include "AP_HardwareAbstractionLayer.h"
-#include "../AP_Common/AP_Vector.h"
-#include "../AP_Common/AP_Var.h"
+#include <inttypes.h>
+#include "../GCS_MAVLink/GCS_MAVLink.h"
+#include <math.h>
+
+class AP_Var_group;
 
 namespace apo {
+
+class AP_HardwareAbstractionLayer;
+class AP_Guide;
+class AP_Navigator;
+class Menu;
 
 /// Controller class
 class AP_Controller {
 public:
 	AP_Controller(AP_Navigator * nav, AP_Guide * guide,
-			AP_HardwareAbstractionLayer * hal) :
-		_nav(nav), _guide(guide), _hal(hal) {
-	}
-
+			AP_HardwareAbstractionLayer * hal);
 	virtual void update(const float & dt) = 0;
-
 	virtual MAV_MODE getMode() = 0;
-
-	void setAllRadioChannelsToNeutral() {
-		for (uint8_t i = 0; i < _hal->rc.getSize(); i++) {
-			_hal->rc[i]->setPosition(0.0);
-		}
-	}
-
-	void setAllRadioChannelsManually() {
-		for (uint8_t i = 0; i < _hal->rc.getSize(); i++) {
-			_hal->rc[i]->setUsingRadio();
-		}
-	}
+	void setAllRadioChannelsToNeutral();
+	void setAllRadioChannelsManually();
 
 protected:
 	AP_Navigator * _nav;
@@ -278,23 +269,30 @@ protected:
 class BlockPIDDfb: public AP_ControllerBlock {
 public:
 	BlockPIDDfb(AP_Var_group * group, uint8_t groupStart, float kP, float kI,
-			float kD, float iMax, float yMax, const prog_char_t * dLabel = NULL) :
+			float kD, float iMax, float yMax, float dFCut, 
+			const prog_char_t * dFCutLabel = NULL,
+			const prog_char_t * dLabel = NULL) :
 		AP_ControllerBlock(group, groupStart, 5),
 				_blockP(group, groupStart, kP),
 				_blockI(group, _blockP.getGroupEnd(), kI, iMax),
 				_blockSaturation(group, _blockI.getGroupEnd(), yMax),
-				_kD(group, _blockSaturation.getGroupEnd(), kD, dLabel ? : PSTR("d")) {
+				_blockLowPass(group, _blockSaturation.getGroupEnd(), dFCut, 
+						dFCutLabel ? : PSTR("dFCut")),
+				_kD(group, _blockLowPass.getGroupEnd(), kD, dLabel ? : PSTR("d"))
+				{
 	}
 	float update(const float & input, const float & derivative,
 			const float & dt) {
+		
 		float y = _blockP.update(input) + _blockI.update(input, dt) - _kD
-				* derivative;
+				* _blockLowPass.update(derivative,dt);
 		return _blockSaturation.update(y);
 	}
 protected:
 	BlockP _blockP;
 	BlockI _blockI;
 	BlockSaturation _blockSaturation;
+	BlockLowPass _blockLowPass;
 	AP_Float _kD; /// derivative gain
 };
 

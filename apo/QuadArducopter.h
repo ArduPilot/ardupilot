@@ -39,6 +39,13 @@ static const bool compassEnabled = true;
 static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD;
 // compass orientation: See AP_Compass_HMC5843.h for possible values
 
+// battery monitoring
+static const bool batteryMonitorEnabled = true;
+static const uint8_t batteryPin = 0;
+static const float batteryVoltageDivRatio = 6;
+static const float batteryMinVolt = 10.0;
+static const float batteryMaxVolt = 12.4;
+
 static const bool rangeFinderFrontEnabled = false;
 static const bool rangeFinderBackEnabled = false;
 static const bool rangeFinderLeftEnabled = false;
@@ -47,11 +54,11 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loop0Rate = 200; // attitude nav
-static const float loop1Rate = 50; // controller
-static const float loop2Rate = 10; 	// pos nav/ gcs fast
-static const float loop3Rate = 1; 	// gcs slow
-static const float loop4Rate = 0.1;
+static const float loopRate = 150; // attitude nav
+static const float loop0Rate = 50; // controller
+static const float loop1Rate = 5; 	// pos nav/ gcs fast
+static const float loop2Rate = 1; 	// gcs slow
+static const float loop3Rate = 0.1;
 
 // position control loop
 static const float PID_POS_P = 0;
@@ -64,13 +71,15 @@ static const float PID_POS_Z_I = 0;
 static const float PID_POS_Z_D = 0;
 static const float PID_POS_Z_LIM = 0;
 static const float PID_POS_Z_AWU = 0;
+static const float PID_POS_DFCUT = 10; // cut derivative feedback at 10 hz
 
 // attitude control loop
-static const float PID_ATT_P = 0.3;
+static const float PID_ATT_P = 0.17;
 static const float PID_ATT_I = 0.5;
-static const float PID_ATT_D = 0.08;
-static const float PID_ATT_LIM = 0.1; // 10 %
-static const float PID_ATT_AWU = 0.03; // 3 %
+static const float PID_ATT_D = 0.06;
+static const float PID_ATT_LIM = 0.05; // 10 %
+static const float PID_ATT_AWU = 0.005; // 0.5 %
+static const float PID_ATT_DFCUT = 25; // cut derivative feedback at 25 hz
 static const float PID_YAWPOS_P = 0;
 static const float PID_YAWPOS_I = 0;
 static const float PID_YAWPOS_D = 0;

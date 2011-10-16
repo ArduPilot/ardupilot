@@ -34,7 +34,7 @@ public:
 				_group(k_cntrl, PSTR("CNTRL_")),
 				_mode(&_group, 1, MAV_MODE_UNINIT, PSTR("MODE")),
 				pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
-						steeringI, steeringD, steeringIMax, steeringYMax),
+						steeringI, steeringD, steeringIMax, steeringYMax,steeringDFCut),
 				pidThr(new AP_Var_group(k_pidThr, PSTR("THR_")), 1, throttleP,
 						throttleI, throttleD, throttleIMax, throttleYMax,
 						throttleDFCut) {

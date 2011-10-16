@@ -26,7 +26,7 @@ namespace ArdupilotMega
         float _airspeed;
         float _groundspeed;
         float _verticalspeed;
-        public float verticalspeed { get { return _verticalspeed; } set { _verticalspeed = _verticalspeed * 0.8f + value * 0.2f; } }
+        public float verticalspeed { get { if (float.IsNaN(_verticalspeed)) _verticalspeed = 0; return _verticalspeed; } set { _verticalspeed = _verticalspeed * 0.8f + value * 0.2f; } }
         public float wind_dir { get; set; }
         public float wind_vel { get; set; }
         /// <summary>

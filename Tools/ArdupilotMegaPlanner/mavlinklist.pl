@@ -2,8 +2,8 @@ $dir = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/common/";
 $dir2 = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/ardupilotmega/";
 
 # mavlink 1.0 with old structs
-#$dir = "C:/Users/hog/Desktop/DIYDrones&avr/ardupilot-mega/libraries/GCS_MAVLink/include/common/";
-#$dir2 = "C:/Users/hog/Desktop/DIYDrones&avr/ardupilot-mega/libraries/GCS_MAVLink/include/ardupilotmega/";
+$dir = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/common/";
+$dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/ardupilotmega/";
 
 opendir(DIR,$dir) || die print $!;
 @files2 = readdir(DIR);
