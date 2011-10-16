@@ -52,3 +52,22 @@
 
 //#define RATE_ROLL_I 	0.18
 //#define RATE_PITCH_I	0.18
+
+
+
+
+// agmatthews USERHOOKS
+// the choice of function names is up to the user and does not have to match these
+// uncomment these hooks and ensure there is a matching function un your "UserCode.pde" file
+//#define USERHOOK_FASTLOOP userhook_FastLoop();
+#define USERHOOK_50HZLOOP userhook_50Hz();
+//#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();
+//#define USERHOOK_SLOWLOOP userhook_SlowLoop();
+//#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();
+#define USERHOOK_INIT userhook_init();
+
+// the choice of includeed variables file (*.h) is up to the user and does not have to match this one
+// Ensure the defined file exists and is in the arducopter directory
+#define USERHOOK_VARIABLES "UserVariables.h"
+
+

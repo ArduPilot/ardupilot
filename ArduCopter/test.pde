@@ -29,7 +29,7 @@ static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 #ifdef OPTFLOW_ENABLED
 static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
 #endif
-static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
+//static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_mission(uint8_t argc, 		const Menu::arg *argv);
