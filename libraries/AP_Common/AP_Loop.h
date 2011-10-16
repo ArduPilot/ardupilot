@@ -30,7 +30,7 @@ public:
     Vector<Loop *> & subLoops() {
         return _subLoops;
     }
-    uint32_t frequency() {
+    float frequency() {
         return 1.0e6/_period;
     }
     void frequency(float _frequency) {
@@ -45,7 +45,7 @@ public:
     uint8_t load() {
         return _load;
     }
-private:
+protected:
     void (*_fptr)(void *);
     void * _data;
     uint32_t _period;
