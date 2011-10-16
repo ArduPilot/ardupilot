@@ -1,26 +1,60 @@
 From https://code.google.com/p/ardupilot-mega
-   6a8104d..b4f49d1  APM_Camera -> origin/APM_Camera
-   d5ab678..7f6c49b  master     -> origin/master
-Updating d5ab678..7f6c49b
+   b4f49d1..8a21477  APM_Camera -> origin/APM_Camera
+   55624f7..ec24ff5  master     -> origin/master
+Updating 55624f7..ec24ff5
 Fast-forward
- ArduCopter/APM_Config.h            |   19 ++++++
- ArduCopter/ArduCopter.pde          |   48 +++++++++++++--
- ArduCopter/Camera.pde              |   11 ++-
- ArduCopter/Parameters.h            |   15 ++++-
- ArduCopter/UserCode.pde            |   15 +++++
- ArduCopter/UserVariables.h         |   13 ++++
- ArduCopter/config.h                |   14 ++++-
- ArduCopter/control_modes.pde       |   19 ++++---
- ArduCopter/heli.pde                |   49 ++++++++++------
- ArduCopter/navigation.pde          |   26 ++++++--
- ArduCopter/radio.pde               |    8 ---
- ArduCopter/read_commands.pde       |  112 ------------------------------------
- ArduCopter/setup.pde               |    6 +-
- ArduCopter/system.pde              |   11 +---
- ArduCopter/test.pde                |    2 +-
- libraries/Desktop/Desktop.mk       |   18 +++---
- libraries/Desktop/Makefile.desktop |    5 +-
- 17 files changed, 198 insertions(+), 193 deletions(-)
- create mode 100644 ArduCopter/UserCode.pde
- create mode 100644 ArduCopter/UserVariables.h
- delete mode 100644 ArduCopter/read_commands.pde
+ ArduBoat/BoatGeneric.h                             |   50 +-
+ ArduBoat/ControllerBoat.h                          |    2 +-
+ ArduCopter/Camera.pde                              |    2 +-
+ ArduCopter/config.h                                |   13 +-
+ ArduCopter/navigation.pde                          |    2 +-
+ ArduRover/ArduRover.cpp                            |    2 +
+ ArduRover/ArduRover.pde                            |    4 +-
+ ArduRover/CarStampede.h                            |   48 +-
+ ArduRover/ControllerCar.h                          |    2 +-
+ ArduRover/ControllerTank.h                         |    2 +-
+ ArduRover/TankGeneric.h                            |   48 +-
+ Tools/ArdupilotMegaPlanner/Common.cs               |    3 +-
+ Tools/ArdupilotMegaPlanner/CurrentState.cs         |    2 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |    6 +-
+ .../GCSViews/FlightData.Designer.cs                |   11 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |   28 +
+ .../ArdupilotMegaPlanner/GCSViews/FlightData.resx  |   16 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Simulation.cs  |   30 +-
+ Tools/ArdupilotMegaPlanner/MAVLink.cs              |   62 ++
+ Tools/ArdupilotMegaPlanner/MAVLinkTypes.cs         |  112 +++-
+ Tools/ArdupilotMegaPlanner/MAVLinkTypesenum.cs     |    4 +-
+ .../Properties/AssemblyInfo.cs                     |    2 +-
+ .../bin/Release/ArdupilotMegaPlanner.application   |    2 +-
+ .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2189824 -> 2194432 bytes
+ .../bin/Release/GCSViews/FlightData.resx           |   16 +-
+ Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 20480 -> 20480 bytes
+ .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 53248 -> 53248 bytes
+ .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 380928 bytes
+ Tools/ArdupilotMegaPlanner/mavlinklist.pl          |    4 +-
+ apo/ControllerQuad.h                               |  300 +++++----
+ apo/PlaneEasystar.h                                |   53 +-
+ apo/QuadArducopter.h                               |   27 +-
+ apo/QuadMikrokopter.h                              |   98 ---
+ apo/apo.pde                                        |    1 +
+ libraries/APO/APO.h                                |    1 +
+ libraries/APO/APO_DefaultSetup.h                   |    6 +-
+ libraries/APO/AP_Autopilot.cpp                     |   80 +--
+ libraries/APO/AP_Autopilot.h                       |   49 +-
+ libraries/APO/AP_BatteryMonitor.cpp                |   10 +
+ libraries/APO/AP_BatteryMonitor.h                  |   51 ++
+ libraries/APO/AP_CommLink.cpp                      |  706 ++++++++++++++++++++
+ libraries/APO/AP_CommLink.h                        |  696 +-------------------
+ libraries/APO/AP_Controller.cpp                    |   25 +
+ libraries/APO/AP_Controller.h                      |   48 +-
+ libraries/APO/AP_Guide.cpp                         |  229 +++++++
+ libraries/APO/AP_Guide.h                           |  231 +------
+ libraries/APO/AP_HardwareAbstractionLayer.h        |   19 +-
+ libraries/APO/AP_Navigator.cpp                     |  186 +++++
+ libraries/APO/AP_Navigator.h                       |  199 +-----
+ libraries/AP_Common/AP_Loop.h                      |    4 +-
+ 51 files changed, 1966 insertions(+), 1526 deletions(-)
+ delete mode 100644 apo/QuadMikrokopter.h
+ create mode 100644 libraries/APO/AP_BatteryMonitor.cpp
+ create mode 100644 libraries/APO/AP_BatteryMonitor.h
