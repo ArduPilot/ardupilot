@@ -41,7 +41,7 @@ camera_stabilization()
 	*/
 
 	// dont allow control mixing
-	g.rc_camera_roll.servo_out	= (float)g.rc_camera_roll.servo_out * g.camera_roll_gain;
+	g.rc_camera_roll.servo_out	= (float)-dcm.roll_sensor * g.camera_roll_gain;
 
 	// limit
 	//g.rc_camera_roll.servo_out = constrain(-dcm.roll_sensor, -4500, 4500);
