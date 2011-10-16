@@ -373,7 +373,7 @@ public:
 
 	// variable				default						key										name
 	//-------------------------------------------------------------------------------------------------------------------
-	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_frame_orientation, 				PSTR("CAM_P_G")),
+	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_camera_pitch_gain, 				PSTR("CAM_P_G")),
 	camera_roll_gain 		(CAM_ROLL_GAIN, 			k_param_camera_roll_gain,	 			PSTR("CAM_R_G")),
 
 	// PI controller	group key						name				initial P			initial I			initial imax
