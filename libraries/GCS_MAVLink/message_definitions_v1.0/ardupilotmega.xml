@@ -1,0 +1,55 @@
+<?xml version='1.0'?>
+<mavlink>
+     <include>common.xml</include>
+     <!-- note that APM specific messages should use the command id
+      range from 150 to 250, to leave plenty of room for growth
+      of common.xml
+
+      If you prototype a message here, then you should consider if it
+      is general enough to move into common.xml later
+    -->
+     <messages>
+          <message id="150" name="SENSOR_OFFSETS">
+               <description>Offsets and calibrations values for hardware
+        sensors. This makes it easier to debug the calibration process.</description>
+               <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
+               <field type="int16_t" name="mag_ofs_y">magnetometer Y offset</field>
+               <field type="int16_t" name="mag_ofs_z">magnetometer Z offset</field>
+               <field type="float" name="mag_declination">magnetic declination (radians)</field>
+               <field type="int32_t" name="raw_press">raw pressure from barometer</field>
+               <field type="int32_t" name="raw_temp">raw temperature from barometer</field>
+               <field type="float" name="gyro_cal_x">gyro X calibration</field>
+               <field type="float" name="gyro_cal_y">gyro Y calibration</field>
+               <field type="float" name="gyro_cal_z">gyro Z calibration</field>
+               <field type="float" name="accel_cal_x">accel X calibration</field>
+               <field type="float" name="accel_cal_y">accel Y calibration</field>
+               <field type="float" name="accel_cal_z">accel Z calibration</field>
+          </message>
+
+          <message id="151" name="SET_MAG_OFFSETS">
+               <description>set the magnetometer offsets</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="uint8_t" name="target_component">Component ID</field>
+               <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
+               <field type="int16_t" name="mag_ofs_y">magnetometer Y offset</field>
+               <field type="int16_t" name="mag_ofs_z">magnetometer Z offset</field>
+          </message>
+
+          <message id="152" name="MEMINFO">
+               <description>state of APM memory</description>
+               <field type="uint16_t" name="brkval">heap top</field>
+               <field type="uint16_t" name="freemem">free memory</field>
+          </message>
+
+          <message id="153" name="AP_ADC">
+               <description>raw ADC output</description>
+               <field type="uint16_t" name="adc1">ADC output 1</field>
+               <field type="uint16_t" name="adc2">ADC output 2</field>
+               <field type="uint16_t" name="adc3">ADC output 3</field>
+               <field type="uint16_t" name="adc4">ADC output 4</field>
+               <field type="uint16_t" name="adc5">ADC output 5</field>
+               <field type="uint16_t" name="adc6">ADC output 6</field>
+          </message>
+
+     </messages>
+</mavlink>
