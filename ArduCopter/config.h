@@ -441,7 +441,7 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.5		//
+# define LOITER_P			.3		//
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.0	//
@@ -451,7 +451,7 @@
 #endif
 
 #ifndef NAV_P
-# define NAV_P				4.0			//
+# define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.25		// this feels really low, 4s to move 1 degree pitch...
@@ -473,15 +473,16 @@
 #endif
 
 #ifndef THR_HOLD_P
-# define THR_HOLD_P		0.80			//
+# define THR_HOLD_P		0.5			//
 #endif
 #ifndef THR_HOLD_I
-# define THR_HOLD_I		0.00		// with 4m error, 12.5s windup
+# define THR_HOLD_I		0.01		// with 4m error, 12.5s windup
 #endif
 #ifndef THR_HOLD_IMAX
-# define THR_HOLD_IMAX	00
+# define THR_HOLD_IMAX	300
 #endif
 
+// RATE control
 #ifndef THROTTLE_P
 # define THROTTLE_P		0.6			//
 #endif
@@ -489,7 +490,7 @@
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup
 #endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX	300
+# define THROTTLE_IMAX	50
 #endif
 
 

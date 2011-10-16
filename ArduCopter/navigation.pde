@@ -55,7 +55,7 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 0 - 500 = -500 pitch NORTH
 }
 
-#define NAV_ERR_MAX 400
+#define NAV_ERR_MAX 800
 static void calc_loiter(int x_error, int y_error)
 {
 	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
