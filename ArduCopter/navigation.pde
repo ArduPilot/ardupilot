@@ -95,9 +95,16 @@ static void calc_loiter(int x_error, int y_error)
 // nav_roll, nav_pitch
 static void calc_loiter_pitch_roll()
 {
+
+	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor))/100.0);
+	float _cos_yaw_x = cos(temp);
+	float _sin_yaw_y = sin(temp);
+
+//	Serial.printf("ys %ld, cyx %1.4f, _cyx %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x);
+
 	// rotate the vector
-	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+	nav_roll 	=  (float)nav_lon * _sin_yaw_y - (float)nav_lat * _cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * _cos_yaw_x + (float)nav_lat * _sin_yaw_y;
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
@@ -115,7 +122,12 @@ static void calc_nav_rate(int max_speed)
 
 	// limit the ramp up of the speed
 	if(waypoint_speed_gov < max_speed){
-		waypoint_speed_gov += 10;
+
+		waypoint_speed_gov += (int)(150.0 * dTnav); // increase at 1.5/ms
+
+		// go at least 1m/s
+		max_speed 		= max(100, waypoint_speed_gov);
+		// limit with governer
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
@@ -232,7 +244,7 @@ static void reset_crosstrack()
 	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
 */
-static long get_altitude_above_home(void)
+/*static long get_altitude_above_home(void)
 {
 	// This is the altitude above the home location
 	// The GPS gives us altitude at Sea Level
@@ -240,7 +252,7 @@ static long get_altitude_above_home(void)
 	// -------------------------------------------------------------
 	return current_loc.alt - home.alt;
 }
-
+*/
 // distance is returned in meters
 static long get_distance(struct Location *loc1, struct Location *loc2)
 {
@@ -252,12 +264,12 @@ static long get_distance(struct Location *loc1, struct Location *loc2)
 	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
 	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
 }
-
+/*
 static long get_alt_distance(struct Location *loc1, struct Location *loc2)
 {
 	return abs(loc1->alt - loc2->alt);
 }
-
+*/
 static long get_bearing(struct Location *loc1, struct Location *loc2)
 {
 	long off_x = loc2->lng - loc1->lng;
