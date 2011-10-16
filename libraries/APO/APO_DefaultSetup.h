@@ -46,6 +46,10 @@ void setup() {
 		hal->adc = new ADC_CLASS;
 		hal->adc->Init();
 
+		if (batteryMonitorEnabled) {
+			hal->batteryMonitor = new AP_BatteryMonitor(batteryPin,batteryVoltageDivRatio,batteryMinVolt,batteryMaxVolt);
+		}
+
 		if (gpsEnabled) {
 			Serial1.begin(gpsBaud, 128, 16); // gps
 			hal->debug->println_P(PSTR("initializing gps"));
@@ -167,7 +171,7 @@ void setup() {
 	hal->debug->printf_P(PSTR("free ram: %d bytes\n"),freeMemory());
 
 	autoPilot = new apo::AP_Autopilot(navigator, guide, controller, hal,
-			loop0Rate, loop1Rate, loop2Rate, loop3Rate);
+			loopRate, loop0Rate, loop1Rate, loop2Rate, loop3Rate);
 }
 
 void loop() {

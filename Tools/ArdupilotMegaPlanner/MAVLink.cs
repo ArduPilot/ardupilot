@@ -1436,6 +1436,68 @@ namespace ArdupilotMega
             }
         }
 
+        public void setMountConfigure(MAV_MOUNT_MODE mountmode,bool stabroll,bool stabpitch,bool stabyaw)
+        {
+            __mavlink_mount_configure_t req = new __mavlink_mount_configure_t();
+
+            req.target_system = sysid;
+            req.target_component = compid;
+            req.mount_mode = (byte)mountmode;
+            req.stab_pitch = (stabpitch == true) ? (byte)1 : (byte)0;
+            req.stab_roll = (stabroll == true) ? (byte)1 : (byte)0;
+            req.stab_yaw = (stabyaw == true) ? (byte)1 : (byte)0;
+
+            generatePacket(MAVLINK_MSG_ID_MOUNT_CONFIGURE, req);
+            System.Threading.Thread.Sleep(20);
+            generatePacket(MAVLINK_MSG_ID_MOUNT_CONFIGURE, req);
+        }
+
+        public void setMountControl(double pa,double pb,double pc,bool islatlng)
+        {
+            __mavlink_mount_control_t req = new __mavlink_mount_control_t();
+
+            req.target_system = sysid;
+            req.target_component = compid;
+            if (!islatlng)
+            {
+                req.input_a = (int)pa;
+                req.input_b = (int)pb;
+                req.input_c = (int)pc;
+            }
+            else
+            {
+                req.input_a = (int)(pa * 10000000.0);
+                req.input_b = (int)(pb * 10000000.0);
+                req.input_c = (int)(pc * 100.0);
+            }
+
+            generatePacket(MAVLINK_MSG_ID_MOUNT_CONTROL, req);
+            System.Threading.Thread.Sleep(20);
+            generatePacket(MAVLINK_MSG_ID_MOUNT_CONTROL, req);
+        }
+
+        public void setMode(string modein)
+        {
+            try
+            {
+                MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
+
+                MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+
+                if (Common.translateMode(modein, ref navmode, ref mode))
+                {
+                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                    System.Threading.Thread.Sleep(10);
+                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                    System.Threading.Thread.Sleep(10);
+                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                    System.Threading.Thread.Sleep(10);
+                    MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                }
+            }
+            catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
+        }
+
         /// <summary>
         /// used for last bad serial characters
         /// </summary>

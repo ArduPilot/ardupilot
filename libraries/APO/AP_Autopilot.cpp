@@ -6,6 +6,7 @@
  */
 
 #include "AP_Autopilot.h"
+#include "AP_BatteryMonitor.h"
 
 namespace apo {
 
@@ -13,15 +14,20 @@ class AP_HardwareAbstractionLayer;
 
 AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 		AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
-		float loop0Rate, float loop1Rate, float loop2Rate, float loop3Rate) :
-	Loop(loop0Rate, callback0, this), _navigator(navigator), _guide(guide),
-			_controller(controller), _hal(hal), _loop0Rate(loop0Rate),
-			_loop1Rate(loop1Rate), _loop2Rate(loop2Rate), _loop3Rate(loop3Rate),
-			_loop4Rate(loop3Rate), callback0Calls(0), clockInit(millis()) {
+		float loopRate, float loop0Rate, float loop1Rate, float loop2Rate, float loop3Rate) :
+	Loop(loopRate, callback, this), _navigator(navigator), _guide(guide),
+			_controller(controller), _hal(hal),
+			callbackCalls(0) {
 
 	hal->setState(MAV_STATE_BOOT);
 	hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
 	hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
+
+	/*
+	 * Radio setup
+	 */
+	hal->debug->println_P(PSTR("initializing radio"));
+	APM_RC.Init(); // APM Radio initialization,
 
 	/*
 	 * Calibration
@@ -69,7 +75,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 			}
 			hal->debug->println_P(PSTR("waiting for hil packet"));
 		}
-		delay(1000);
+		delay(500);
 	}
 	
 	AP_MavlinkCommand::home.setAlt(_navigator->getAlt());
@@ -91,46 +97,31 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 	 * Attach loops
 	 */
 	hal->debug->println_P(PSTR("attaching loops"));
-	subLoops().push_back(new Loop(getLoopRate(1), callback1, this));
-	subLoops().push_back(new Loop(getLoopRate(2), callback2, this));
-	subLoops().push_back(new Loop(getLoopRate(3), callback3, this));
-	subLoops().push_back(new Loop(getLoopRate(4), callback4, this));
+	subLoops().push_back(new Loop(loop0Rate, callback0, this));
+	subLoops().push_back(new Loop(loop1Rate, callback1, this));
+	subLoops().push_back(new Loop(loop2Rate, callback2, this));
+	subLoops().push_back(new Loop(loop3Rate, callback3, this));
 
 	hal->debug->println_P(PSTR("running"));
 	hal->gcs->sendText(SEVERITY_LOW, PSTR("running"));
-
-	if (hal->getMode() == MODE_LIVE) {
-		hal->setState(MAV_STATE_ACTIVE);
-	} else {
-		hal->setState(MAV_STATE_HILSIM);
-	}
-
-	/*
-	 * Radio setup
-	 */
-	hal->debug->println_P(PSTR("initializing radio"));
-	APM_RC.Init(); // APM Radio initialization,
-	// start this after control loop is running
-	
-	clockInit = millis();
+	hal->setState(MAV_STATE_STANDBY);
 }
 
-void AP_Autopilot::callback0(void * data) {
+void AP_Autopilot::callback(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
-	//apo->hal()->debug->println_P(PSTR("callback 0"));
+	//apo->hal()->debug->println_P(PSTR("callback"));
 
 	/*
 	 * ahrs update
 	 */
-
-	apo->callback0Calls++;
+	apo->callbackCalls++;
 	if (apo->getNavigator())
-		apo->getNavigator()->updateFast(1.0 / apo->getLoopRate(0));
+		apo->getNavigator()->updateFast(apo->dt());
 }
 
-void AP_Autopilot::callback1(void * data) {
+void AP_Autopilot::callback0(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
-	//apo->getHal()->debug->println_P(PSTR("callback 1"));
+	//apo->getHal()->debug->println_P(PSTR("callback 0"));
 
 	/*
 	 * hardware in the loop
@@ -145,7 +136,7 @@ void AP_Autopilot::callback1(void * data) {
 	 */
 	if (apo->getController()) {
 		//apo->getHal()->debug->println_P(PSTR("updating controller"));
-		apo->getController()->update(1. / apo->getLoopRate(1));
+		apo->getController()->update(apo->subLoops()[0]->dt());
 	}
 	/*
 	 char msg[50];
@@ -154,9 +145,9 @@ void AP_Autopilot::callback1(void * data) {
 	 */
 }
 
-void AP_Autopilot::callback2(void * data) {
+void AP_Autopilot::callback1(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
-	//apo->getHal()->debug->println_P(PSTR("callback 2"));
+	//apo->getHal()->debug->println_P(PSTR("callback 1"));
 	
 	/*
 	 * update guidance laws
@@ -171,7 +162,7 @@ void AP_Autopilot::callback2(void * data) {
 	 * slow navigation loop update
 	 */
 	if (apo->getNavigator()) {
-		apo->getNavigator()->updateSlow(1.0 / apo->getLoopRate(2));
+		apo->getNavigator()->updateSlow(apo->subLoops()[1]->dt());
 	}
 
 	/*
@@ -210,9 +201,9 @@ void AP_Autopilot::callback2(void * data) {
 	 */
 }
 
-void AP_Autopilot::callback3(void * data) {
+void AP_Autopilot::callback2(void * data) {
 	AP_Autopilot * apo = (AP_Autopilot *) data;
-	//apo->getHal()->debug->println_P(PSTR("callback 3"));
+	//apo->getHal()->debug->println_P(PSTR("callback 2"));
 	
 	/*
 	 * send telemetry
@@ -227,6 +218,11 @@ void AP_Autopilot::callback3(void * data) {
 	}
 
 	/*
+	 * update battery monitor
+	 */
+	if (apo->getHal()->batteryMonitor) apo->getHal()->batteryMonitor->update();
+
+	/*
 	 * send heartbeat
 	 */
 	apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
@@ -235,10 +231,10 @@ void AP_Autopilot::callback3(void * data) {
 	 * load/loop rate/ram debug
 	 */
 	apo->getHal()->load = apo->load();
-	apo->getHal()->debug->printf_P(PSTR("missed calls: %d\n"),uint16_t(millis()*apo->getLoopRate(0)/1000-apo->callback0Calls));
+	apo->getHal()->debug->printf_P(PSTR("callback calls: %d\n"),apo->callbackCalls);
+	apo->callbackCalls = 0;
 	apo->getHal()->debug->printf_P(PSTR("load: %d%%\trate: %f Hz\tfree ram: %d bytes\n"),
 			apo->load(),1.0/apo->dt(),freeMemory());
-
 	apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
 
 	/*
@@ -250,9 +246,9 @@ void AP_Autopilot::callback3(void * data) {
 	//apo->adc()->Ch(6), apo->adc()->Ch(7), apo->adc()->Ch(8));
 }
 
-void AP_Autopilot::callback4(void * data) {
+void AP_Autopilot::callback3(void * data) {
 	//AP_Autopilot * apo = (AP_Autopilot *) data;
-	//apo->getHal()->debug->println_P(PSTR("callback 4"));
+	//apo->getHal()->debug->println_P(PSTR("callback 3"));
 }
 
 } // apo

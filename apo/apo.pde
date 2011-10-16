@@ -18,6 +18,7 @@
 
 // Vehicle Configuration
 #include "QuadArducopter.h"
+//#include "PlaneEasystar.h"
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"

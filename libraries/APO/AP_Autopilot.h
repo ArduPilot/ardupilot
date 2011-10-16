@@ -70,7 +70,7 @@ public:
 	 */
 	AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 			AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
-			float loop0Rate, float loop1Rate, float loop2Rate, float loop3Rate);
+			float loopRate, float loop0Rate, float loop1Rate, float loop2Rate, float loop3Rate);
 
 	/**
 	 * Accessors
@@ -88,68 +88,51 @@ public:
 		return _hal;
 	}
 
-	float getLoopRate(uint8_t i) {
-		switch(i) {
-		case 0: return _loop0Rate;
-		case 1: return _loop1Rate;
-		case 2: return _loop2Rate;
-		case 3: return _loop3Rate;
-		case 4: return _loop4Rate;
-		default: return 0;
-		}
-	}
-
 	/**
 	 * Loop Monitoring
 	 */
-	uint32_t callback0Calls;
-	uint32_t clockInit;
+	uint32_t callbackCalls;
 
 private:
 
 	/**
-	 * Loop 0 Callbacks (fastest)
+	 * Loop Callbacks (fastest)
 	 * - inertial navigation
 	 * @param data A void pointer used to pass the apo class
 	 *  so that the apo public interface may be accessed.
 	 */
+	static void callback(void * data);
+
+	/**
+	 * Loop 0 Callbacks
+	 * - control
+	 * - compass reading
+	 * @see callback
+	 */
 	static void callback0(void * data);
-	float _loop0Rate;
 
 	/**
 	 * Loop 1 Callbacks
-	 * - control
-	 * - compass reading
-	 * @see callback0
+	 * - gps sensor fusion
+	 * - compass sensor fusion
+	 * @see callback
 	 */
 	static void callback1(void * data);
-	float _loop1Rate;
 
 	/**
 	 * Loop 2 Callbacks
-	 * - gps sensor fusion
-	 * - compass sensor fusion
-	 * @see callback0
+	 * - slow messages
+	 * @see callback
 	 */
 	static void callback2(void * data);
-	float _loop2Rate;
 
 	/**
 	 * Loop 3 Callbacks
-	 * - slow messages
-	 * @see callback0
-	 */
-	static void callback3(void * data);
-	float _loop3Rate;
-
-	/**
-	 * Loop 4 Callbacks
 	 * - super slow messages
 	 * - log writing
-	 * @see callback0
+	 * @see callback
 	 */
-	static void callback4(void * data);
-	float _loop4Rate;
+	static void callback3(void * data);
 
 	/**
 	 * Components

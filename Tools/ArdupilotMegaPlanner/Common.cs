@@ -245,7 +245,8 @@ namespace ArdupilotMega
             GUIDED = 4,		// AUTO control
             LOITER = 5,		// Hold a single location
             RTL = 6,				// AUTO control
-            CIRCLE = 7
+            CIRCLE = 7,
+            POSITION = 8
         }
 
         public static bool translateMode(string modein, ref  MAVLink.__mavlink_set_nav_mode_t navmode, ref MAVLink.__mavlink_set_mode_t mode)

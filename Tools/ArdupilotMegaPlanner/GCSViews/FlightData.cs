@@ -1339,5 +1339,33 @@ namespace ArdupilotMega.GCSViews
                 }
             }
         }
+
+        private void pointCameraHereToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!MainV2.comPort.BaseStream.IsOpen)
+            {
+                MessageBox.Show("Please Connect First");
+                return;
+            }
+
+            string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+            Common.InputBox("Enter Alt", "Enter Target Alt (absolute)", ref alt);
+
+            int intalt = (int)(100 * MainV2.cs.multiplierdist);
+            if (!int.TryParse(alt, out intalt))
+            {
+                MessageBox.Show("Bad Alt");
+                return;
+            }
+
+            if (gotolocation.Lat == 0 || gotolocation.Lng == 0)
+            {
+                MessageBox.Show("Bad Lat/Long");
+                return;
+            }
+
+            MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.MAV_MOUNT_MODE_GPS_POINT, true, true, true);
+            MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.cs.multiplierdist), true);
+        }
     }
 }

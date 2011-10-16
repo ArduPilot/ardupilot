@@ -8,18 +8,7 @@
 #ifndef AP_HARDWAREABSTRACTIONLAYER_H_
 #define AP_HARDWAREABSTRACTIONLAYER_H_
 
-#include "../AP_Common/AP_Common.h"
-#include "../FastSerial/FastSerial.h"
 #include "../AP_Common/AP_Vector.h"
-#include "../GCS_MAVLink/GCS_MAVLink.h"
-
-#include "../AP_ADC/AP_ADC.h"
-#include "../AP_IMU/AP_IMU.h"
-#include "../AP_GPS/GPS.h"
-#include "../APM_BMP085/APM_BMP085.h"
-#include "../AP_Compass/AP_Compass.h"
-#include "AP_RcChannel.h"
-#include "../AP_RangeFinder/AP_RangeFinder.h"
 #include "../GCS_MAVLink/GCS_MAVLink.h"
 
 class AP_ADC;
@@ -29,11 +18,13 @@ class APM_BMP085_Class;
 class Compass;
 class BetterStream;
 class RangeFinder;
+class FastSerial;
 
 namespace apo {
 
 class AP_RcChannel;
 class AP_CommLink;
+class AP_BatteryMonitor;
 
 // enumerations
 enum halMode_t {
@@ -50,9 +41,12 @@ class AP_HardwareAbstractionLayer {
 
 public:
 
+	// default ctors on pointers called on pointers here, this
+	// allows NULL to be used as a boolean for if the device was
+	// initialized
 	AP_HardwareAbstractionLayer(halMode_t mode, board_t board,
 			vehicle_t vehicle, uint8_t heartBeatTimeout) :
-		adc(), gps(), baro(), compass(), rangeFinders(), imu(), rc(), gcs(),
+		adc(), gps(), baro(), compass(), rangeFinders(), imu(), batteryMonitor(), rc(), gcs(),
 				hil(), debug(), load(), lastHeartBeat(),
 				_heartBeatTimeout(heartBeatTimeout), _mode(mode),
 				_board(board), _vehicle(vehicle), _state(MAV_STATE_UNINIT) {
@@ -98,6 +92,7 @@ public:
 	Compass * compass;
 	Vector<RangeFinder *> rangeFinders;
 	IMU * imu;
+	AP_BatteryMonitor * batteryMonitor;
 
 	/**
 	 * Radio Channels

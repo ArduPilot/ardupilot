@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 namespace ArdupilotMega
 {
     partial class MAVLink
-    {	
-		
+    {
+
 	}
 }
 
