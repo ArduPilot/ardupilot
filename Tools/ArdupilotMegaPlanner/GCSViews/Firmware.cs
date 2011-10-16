@@ -388,13 +388,17 @@ namespace ArdupilotMega.GCSViews
             {
                 lbl_ACY6.Text = temp.name;
             }
-            else if (temp.url.ToLower().Contains("firmware/ac2-heli".ToLower()))
+            else if (temp.url.ToLower().Contains("firmware/ac2-heli-1".ToLower()))
             {
                 lbl_Heli.Text = temp.name;
             }
             else if (temp.url.ToLower().Contains("firmware/ac2-quadhil".ToLower()))
             {
                 lbl_ACHil.Text = temp.name;
+            }
+            else
+            {
+                Console.WriteLine("No Home "+ temp.name + " " + temp.url);
             }
         }
 
