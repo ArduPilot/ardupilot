@@ -83,6 +83,7 @@ public:
         //
         k_param_flybywire_airspeed_min = 120,
         k_param_flybywire_airspeed_max,
+        k_param_FBWB_min_altitude,  // -1=disabled, minimum value for altitude in cm (default 30m)
 
         //
         // 130: Sensor parameters
@@ -262,6 +263,7 @@ public:
     //
     AP_Int8     flybywire_airspeed_min;
     AP_Int8     flybywire_airspeed_max;
+    AP_Int16    FBWB_min_altitude;
 
     // Throttle
     //
@@ -411,6 +413,7 @@ public:
         airspeed_cruise         (AIRSPEED_CRUISE_CM,        k_param_airspeed_cruise,        PSTR("TRIM_ARSPD_CM")),
         pitch_trim              (0,                         k_param_pitch_trim,             PSTR("TRIM_PITCH_CD")),
         RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,           PSTR("ALT_HOLD_RTL")),
+        FBWB_min_altitude       (ALT_HOLD_FBW_CM,           k_param_FBWB_min_altitude,      PSTR("ALT_HOLD_FBWCM")),
         ground_temperature      (0,                         k_param_ground_temperature,     PSTR("GND_TEMP")),
         ground_pressure         (0,                         k_param_ground_pressure,        PSTR("GND_ABS_PRESS")),
         compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,		PSTR("MAG_ENABLE")),
