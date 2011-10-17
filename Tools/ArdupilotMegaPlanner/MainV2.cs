@@ -321,6 +321,13 @@ namespace ArdupilotMega
                     RichTextBox txtr = (RichTextBox)ctl;
                     txtr.BorderStyle = BorderStyle.None;
                 }
+                else if (((Type)ctl.GetType()) == typeof(CheckedListBox))
+                {
+                    ctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                    ctl.ForeColor = Color.White;
+                    CheckedListBox txtr = (CheckedListBox)ctl;
+                    txtr.BorderStyle = BorderStyle.None;
+                }
                 else if (((Type)ctl.GetType()) == typeof(TabPage))
                 {
                     ctl.BackColor = Color.FromArgb(0x26, 0x27, 0x28);  //Color.FromArgb(0x43, 0x44, 0x45);
@@ -682,7 +689,7 @@ namespace ArdupilotMega
         private void CMB_serialport_SelectedIndexChanged(object sender, EventArgs e)
         {
             comportname = CMB_serialport.Text;
-            if (comportname == "UDP")
+            if (comportname == "UDP" || comportname == "TCP")
                 CMB_baudrate.Enabled = false;
             else
                 CMB_baudrate.Enabled = true;
