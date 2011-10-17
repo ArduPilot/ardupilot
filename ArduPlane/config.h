@@ -366,6 +366,14 @@
 #ifndef AIRSPEED_FBW_MAX
 # define AIRSPEED_FBW_MAX		22
 #endif
+
+#ifndef ALT_HOLD_FBW
+# define ALT_HOLD_FBW 0
+#endif
+#define ALT_HOLD_FBW_CM ALT_HOLD_FBW*100
+
+
+
 /*  The following parmaeters have no corresponding control implementation
 #ifndef THROTTLE_ALT_P
 # define THROTTLE_ALT_P         0.32
