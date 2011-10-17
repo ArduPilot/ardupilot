@@ -40,31 +40,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-
-
-    int       list_s;                /*  listening socket          */
-    int       conn_s;                /*  connection socket         */
-    short int port = 5760;                  /*  port number               */
-    struct    sockaddr_in servaddr, cli_addr;  /*  socket address structure  */
-    char      buffer[256];      /*  character buffer          */
-    socklen_t clilen;
+#define LISTEN_BASE_PORT 5760
+#define BUFFER_SIZE 128
 
     
-int myread(void)
-{
-    return read(conn_s,buffer,1);
-}
-
-int mywrite(uint8_t c)
-{
-    return write(conn_s,(char *) &c,1);
-}
-
-
 #if   defined(UDR3)
 # define FS_MAX_PORTS   4
 #elif defined(UDR2)
@@ -74,6 +59,122 @@ int mywrite(uint8_t c)
 #else
 # define FS_MAX_PORTS   1
 #endif
+
+static struct tcp_state {
+	bool connected; // true if a client has connected
+	int listen_fd;  // socket we are listening on
+	int fd;         // data socket
+	int serial_port;
+} tcp_state[FS_MAX_PORTS];
+
+
+
+/*
+  start a TCP connection for a given serial port. If
+  wait_for_connection is true then block until a client connects
+ */
+static void tcp_start_connection(unsigned int serial_port, bool wait_for_connection)
+{
+	struct tcp_state *s = &tcp_state[serial_port];
+	int one=1;
+	struct sockaddr_in sockaddr;
+	int ret;
+
+	s->serial_port = serial_port;
+
+	/*  Create the listening socket  */
+	s->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (s->listen_fd == -1) {
+        fprintf(stderr, "ECHOSERV: Error creating listening socket - %s\n", strerror(errno));
+        exit(1);
+	}
+
+	memset(&sockaddr,0,sizeof(sockaddr));
+
+#ifdef HAVE_SOCK_SIN_LEN
+	sockaddr.sin_len = sizeof(sockaddr);
+#endif
+	sockaddr.sin_port = htons(LISTEN_BASE_PORT+serial_port);
+	sockaddr.sin_family = AF_INET;
+
+	s->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (s->listen_fd == -1) {
+		fprintf(stderr, "socket failed - %s\n", strerror(errno));
+		exit(1);
+	}
+
+	/* we want to be able to re-use ports quickly */
+	setsockopt(s->listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+	ret = bind(s->listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+	if (ret == -1) {
+		fprintf(stderr, "bind failed on port %u - %s\n",
+				LISTEN_BASE_PORT+serial_port,
+				strerror(errno));
+		exit(1);
+	}
+
+	ret = listen(s->listen_fd, 5);
+	if (ret == -1) {
+        fprintf(stderr, "listen failed - %s\n", strerror(errno));
+        exit(1);
+	}
+
+	printf("Serial port %u on TCP port %u\n", serial_port, LISTEN_BASE_PORT+serial_port);
+	fflush(stdout);
+
+	if (wait_for_connection) {
+		printf("Waiting for connection ....\n");
+		s->fd = accept(s->listen_fd, NULL, NULL);
+		if (s->fd == -1) {
+            fprintf(stderr, "accept() error - %s", strerror(errno));
+            exit(1);
+        }
+		s->connected = true;
+    }
+}
+
+
+/*
+  use select() to see if something is pending
+ */
+static bool select_check(int fd)
+{
+	fd_set fds;
+	struct timeval tv;
+
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+
+	// zero time means immediate return from select()
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+
+	if (select(fd+1, &fds, NULL, NULL, &tv) == 1) {
+		return true;
+	}
+	return false;
+}
+
+
+/*
+  see if a new connection is coming in
+ */
+static void check_connection(struct tcp_state *s)
+{
+	if (s->connected) {
+		// we only want 1 connection at a time
+		return;
+	}
+	if (select_check(s->listen_fd)) {
+		s->fd = accept(s->listen_fd, NULL, NULL);
+		if (s->fd != -1) {
+			s->connected = true;
+			printf("New connection on serial port %u\n", s->serial_port);
+		}
+	}
+}
+
 
 FastSerial::Buffer __FastSerial__rxBuffer[FS_MAX_PORTS];
 FastSerial::Buffer __FastSerial__txBuffer[FS_MAX_PORTS];
@@ -99,59 +200,7 @@ FastSerial::FastSerial(const uint8_t portNumber, volatile uint8_t *ubrrh, volati
 
 void FastSerial::begin(long baud)
 {
-	if (_u2x == 0) {
-		unsigned v;
-		v = fcntl(0, F_GETFL, 0);
-		fcntl(0, F_SETFL, v | O_NONBLOCK);
-		v = fcntl(1, F_GETFL, 0);
-		fcntl(1, F_SETFL, v | O_NONBLOCK);
-    
-        /*  Create the listening socket  */
-
-        if ( (list_s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
-        fprintf(stderr, "ECHOSERV: Error creating listening socket.\n");
-        exit(EXIT_FAILURE);
-        }
-
-        int val = 1;
-        
-        setsockopt(list_s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof val);
-
-        /*  Set all bytes in socket address structure to
-            zero, and fill in the relevant data members   */
-
-        memset(&servaddr, 0, sizeof(servaddr));
-       
-        servaddr.sin_family      = AF_INET;
-        servaddr.sin_addr.s_addr = INADDR_ANY;
-        servaddr.sin_port        = htons(port + _u2x);
-
-
-        /*  Bind our socket addresss to the 
-        listening socket, and call listen()  */
-
-        if ( bind(list_s, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0 ) {
-        fprintf(stderr, "ECHOSERV: Error calling bind()\n");
-        exit(EXIT_FAILURE);
-        }
-
-        if ( listen(list_s, 5) < 0 ) {
-        fprintf(stderr, "ECHOSERV: Error calling listen()\n");
-        exit(EXIT_FAILURE);
-        }
-        clilen = sizeof(cli_addr);
-        
-        fprintf(stdout, "Listerning on port %i\n",port + _u2x);
-        fflush(stdout);
-
-        if ( (conn_s = accept(list_s, NULL, NULL) ) < 0 ) {
-            fprintf(stderr, "ECHOSERV: Error calling accept()\n");
-            exit(EXIT_FAILURE);
-        }
-        
-        fcntl(conn_s, F_SETFL, O_NONBLOCK);
-    }
-
+	tcp_start_connection(_u2x, _u2x == 0?true:false);
 }
 
 void FastSerial::begin(long baud, unsigned int rxSpace, unsigned int txSpace)
@@ -165,49 +214,65 @@ void FastSerial::end()
 
 int FastSerial::available(void)
 {
-	if (_u2x != 0) return 0;
-	int num_ready;
+	struct tcp_state *s = &tcp_state[_u2x];
 
- fd_set socks;
- struct timeval t;
- FD_ZERO(&socks);
- FD_SET(conn_s, &socks);
- t.tv_sec = 0;
- t.tv_usec = 500;
- if (int ans = select(conn_s + 1, &socks, NULL, NULL,&t))
- {
+	check_connection(s);
 
-  //FD_ZERO(&socks);
- //FD_SET(conn_s, &socks);
- //if (FD_ISSET(conn_s, &socks)) {
-        return 1;
-//    }
- }
+	if (!s->connected) {
+		return 0;
+	}
+
+	if (select_check(s->fd)) {
+#ifdef FIONREAD
+		// use FIONREAD to get exact value if possible
+		int num_ready;
+		if (ioctl(s->fd, FIONREAD, &num_ready) == 0) {
+			if (num_ready > BUFFER_SIZE) {
+				return BUFFER_SIZE;
+			}
+			if (num_ready == 0) {
+				// EOF is reached
+				fprintf(stdout, "Closed connection on serial port %u\n", s->serial_port);
+				close(s->fd);
+				s->connected = false;
+				return 0;
+			}
+			return num_ready;
+		}
+#endif
+		return 1; // best we can do is say 1 byte available
+	}
 	return 0;
 }
 
 int FastSerial::txspace(void)
 {
-	return 128;
+	// always claim there is space available
+	return BUFFER_SIZE;
 }
 
 int FastSerial::read(void)
 {
-	if (_u2x != 0) {
+	struct tcp_state *s = &tcp_state[_u2x];
+	char c;
+
+	if (available() <= 0) {
 		return -1;
 	}
-	char c;
-    int n = myread();
-    if (n == 0) {
-    
-        if ( (conn_s = accept(list_s, NULL, NULL) ) < 0 ) {
-            fprintf(stderr, "ECHOSERV: Error calling accept()\n");
-            exit(EXIT_FAILURE);
-        }
-        
-        fcntl(conn_s, F_SETFL, O_NONBLOCK);
-    }
-	return (int)buffer[0];
+
+    int n = recv(s->fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
+	if (n <= 0) {
+		// the socket has reached EOF
+		close(s->fd);
+		s->connected = false;
+		fprintf(stdout, "Closed connection on serial port %u\n", s->serial_port);
+		fflush(stdout);
+		return -1;
+	}
+    if (n == 1) {
+		return (int)c;
+	}
+	return -1;
 }
 
 int FastSerial::peek(void)
@@ -221,14 +286,12 @@ void FastSerial::flush(void)
 
 void FastSerial::write(uint8_t c)
 {
-	if (_u2x != 0) {
+	struct tcp_state *s = &tcp_state[_u2x];
+	check_connection(s);
+	if (!s->connected) {
 		return;
 	}
-    mywrite(c);
-    if (c >= '\n' && c <= 128) {
-        fwrite(&c, 1, 1, stdout);
-        fflush(stdout);
-    }
+	send(s->fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
