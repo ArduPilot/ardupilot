@@ -808,12 +808,20 @@ static void update_current_flight_mode(void)
 				break;
 
 			case FLY_BY_WIRE_B:
-				// fake Navigation output using sticks
+				// Substitute stick inputs for Navigation control output
 				// We use g.pitch_limit_min because its magnitude is
 				// normally greater than g.pitch_limit_max
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 
+				if ((current_loc.alt>=home.alt+g.FBWB_min_altitude) || (g.FBWB_min_altitude == -1)) {
+	 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
+				} else {
+					if (g.channel_pitch.norm_input()<0) 
+						altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) + g.channel_pitch.norm_input() * g.pitch_limit_min ; 
+					else altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) ;                                    
+				}
+ 
 				if (g.airspeed_enabled == true)
 									{
 					airspeed_fbwB = ((int)(g.flybywire_airspeed_max -

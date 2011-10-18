@@ -41,6 +41,8 @@
 00000001 b read_control_switch()::switch_debouncer
 00000001 d GCS_MAVLINK::handleMessage(__mavlink_message*)::mav_nav
 00000001 B relay
+00000002 T userhook_50Hz()
+00000002 T userhook_init()
 00000002 b climb_rate
 00000002 b loiter_sum
 00000002 b event_delay
@@ -217,10 +219,13 @@
 00000008 r report_frame()::__c
 00000008 r report_frame()::__c
 00000008 r report_tuning()::__c
+00000008 r init_ardupilot()::__c
 00000008 r print_log_menu()::__c
 00000008 r report_batt_monitor()::__c
 00000008 r report_batt_monitor()::__c
 00000008 r test_wp(unsigned char, Menu::arg const*)::__c
+00000008 V Parameters::Parameters()::__c
+00000008 V Parameters::Parameters()::__c
 00000008 V Parameters::Parameters()::__c
 00000008 V Parameters::Parameters()::__c
 00000008 V Parameters::Parameters()::__c
@@ -276,6 +281,7 @@
 0000000c V vtable for IMU
 0000000c r print_switch(unsigned char, unsigned char, bool)::__c
 0000000c r report_frame()::__c
+0000000c r setup_factory(unsigned char, Menu::arg const*)::__c
 0000000c r test_baro(unsigned char, Menu::arg const*)::__c
 0000000c V Parameters::Parameters()::__c
 0000000c V Parameters::Parameters()::__c
@@ -374,7 +380,6 @@
 00000014 W AP_VarT<int>::cast_to_float() const
 00000014 r setup_sonar(unsigned char, Menu::arg const*)::__c
 00000014 r test_tri(unsigned char, Menu::arg const*)::__c
-00000015 r map_baudrate(signed char, unsigned long)::__c
 00000015 r init_ardupilot()::__c
 00000015 r Log_Read_Motors()::__c
 00000015 r print_hit_enter()::__c
@@ -418,7 +423,6 @@
 00000023 r print_gyro_offsets()::__c
 00000024 r init_ardupilot()::__c
 00000024 r print_accel_offsets()::__c
-00000025 r setup_factory(unsigned char, Menu::arg const*)::__c
 00000026 t print_done()
 00000026 t print_hit_enter()
 00000026 t Log_Read_Startup()
@@ -486,6 +490,7 @@
 00000056 t dancing_light()
 00000056 T GCS_MAVLINK::queued_waypoint_send()
 00000057 r help_log(unsigned char, Menu::arg const*)::__c
+0000005a W AP_VarT<float>::AP_VarT(float, unsigned int, prog_char_t const*, unsigned char)
 0000005c t get_num_logs()
 0000005c t setup_esc(unsigned char, Menu::arg const*)
 0000005e t update_GPS_light()
@@ -518,8 +523,6 @@
 00000090 t report_tuning()
 00000092 t test_tuning(unsigned char, Menu::arg const*)
 00000092 T GCS_MAVLINK::queued_param_send()
-00000095 r init_ardupilot()::__c
-00000096 t map_baudrate(signed char, unsigned long)
 00000096 t print_wp(Location*, unsigned char)
 0000009a t planner_gcs(unsigned char, Menu::arg const*)
 0000009a t init_compass()
@@ -566,7 +569,6 @@
 000000ea t Log_Read_Control_Tuning()
 000000ee t report_batt_monitor()
 000000f6 t Log_Read_Cmd()
-000000fa t calc_loiter_pitch_roll()
 00000100 r test_menu_commands
 0000010a t mavlink_delay(unsigned long)
 0000010a t send_raw_imu2(mavlink_channel_t)
@@ -579,6 +581,7 @@
 00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000118 t set_command_with_index(Location, int)
 0000011c t get_command_with_index(int)
+0000012c t calc_loiter_pitch_roll()
 00000130 t report_compass()
 00000138 t get_stabilize_roll(long)
 00000138 t get_stabilize_pitch(long)
@@ -616,11 +619,11 @@
 000003a0 t read_battery()
 00000410 T update_yaw_mode()
 0000046e T update_roll_pitch_mode()
-000005ec t init_ardupilot()
-000006f0 t update_nav_wp()
-000007b8 t __static_initialization_and_destruction_0(int, int)
-00000824 b g
+00000636 t init_ardupilot()
+0000071a t update_nav_wp()
+000007c8 t __static_initialization_and_destruction_0(int, int)
+00000842 b g
 00000870 t process_next_command()
-000008f4 W Parameters::Parameters()
+00000884 W Parameters::Parameters()
 000012ec T GCS_MAVLINK::handleMessage(__mavlink_message*)
-000019f6 T loop
+00001a00 T loop
