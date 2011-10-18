@@ -168,6 +168,8 @@ namespace ArdupilotMega.GCSViews
 
                 comPort.ReadBufferSize = 1024 * 1024;
 
+                comPort.PortName = MainV2.comportname;
+
                 comPort.Open();
 
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate()
