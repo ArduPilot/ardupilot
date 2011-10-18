@@ -199,6 +199,10 @@ static void init_ardupilot()
 	}
 	#endif
 
+// agmatthews USERHOOKS
+#ifdef USERHOOK_INIT
+   USERHOOK_INIT
+#endif
 	// Logging:
 	// --------
 	// DataFlash log initialization
