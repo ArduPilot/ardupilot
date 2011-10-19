@@ -54,9 +54,9 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loopRate = 400; // attitude nav
-static const float loop0Rate = 50; // controller
-static const float loop1Rate = 10; 	// pos nav/ gcs fast
+static const float loopRate = 250; // attitude nav
+static const float loop0Rate = 40; // controller
+static const float loop1Rate = 5; 	// pos nav/ gcs fast
 static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
 

@@ -52,7 +52,7 @@ public:
 private:
 
     AP_HardwareAbstractionLayer * _hal;
-    uint8_t _armingClock;
+    int8_t _armingClock;
     uint8_t _ch1; /// typically throttle channel
     uint8_t _ch2; /// typically yaw channel
     float _ch1Min; /// arms/disarms below this on ch1
