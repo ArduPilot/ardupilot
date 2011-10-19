@@ -92,6 +92,22 @@ static void read_trim_switch()
 		}
 	}
 
+	#elif CH7_OPTION == CH7_SAVE_WP
+
+	if (g.rc_7.control_in > 800){
+		trim_flag = true;
+
+	}else{ // switch is disengaged
+
+		if(trim_flag){
+			// set the next_WP
+			CH7_wp_index++;
+			current_loc.id = MAV_CMD_NAV_WAYPOINT;
+			g.waypoint_total.set_and_save(CH7_wp_index);
+			set_command_with_index(current_loc, CH7_wp_index);
+		}
+	}
+
 	#elif CH7_OPTION == CH7_ADC_FILTER
 	if (g.rc_7.control_in > 800){
 		adc.filter_result = true;
