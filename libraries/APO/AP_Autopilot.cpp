@@ -94,13 +94,13 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 			AP_MavlinkCommand::home.getCommand());
 
 	/*
-	 * Attach loops
+	 * Attach loops, stacking for priority
 	 */
 	hal->debug->println_P(PSTR("attaching loops"));
 	subLoops().push_back(new Loop(loop0Rate, callback0, this));
-	subLoops().push_back(new Loop(loop1Rate, callback1, this));
-	subLoops().push_back(new Loop(loop2Rate, callback2, this));
-	subLoops().push_back(new Loop(loop3Rate, callback3, this));
+	subLoops()[0]->subLoops().push_back(new Loop(loop1Rate, callback1, this));
+	subLoops()[0]->subLoops()[0]->subLoops().push_back(new Loop(loop2Rate, callback2, this));
+	subLoops()[0]->subLoops()[0]->subLoops()[0]->subLoops().push_back(new Loop(loop3Rate, callback3, this));
 
 	hal->debug->println_P(PSTR("running"));
 	hal->gcs->sendText(SEVERITY_LOW, PSTR("running"));
@@ -162,7 +162,7 @@ void AP_Autopilot::callback1(void * data) {
 	 * slow navigation loop update
 	 */
 	if (apo->getNavigator()) {
-		apo->getNavigator()->updateSlow(apo->subLoops()[1]->dt());
+		apo->getNavigator()->updateSlow(apo->subLoops()[0]->subLoops()[0]->dt());
 	}
 
 	/*
