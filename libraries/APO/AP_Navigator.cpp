@@ -121,7 +121,7 @@ void DcmNavigator::updateFast(float dt) {
 
 	// dcm class for attitude
 	if (_dcm) {
-		_dcm->update_DCM();
+		_dcm->update_DCM_fast();
 		setRoll(_dcm->roll);
 		setPitch(_dcm->pitch);
 		setYaw(_dcm->yaw);
