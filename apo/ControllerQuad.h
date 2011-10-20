@@ -127,7 +127,7 @@ public:
 			_mode = MAV_MODE_FAILSAFE;
 			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
 		// if battery less than 5%, go to failsafe
-		} else if (_hal->batteryMonitor->getPercentage() < 5) {
+		} else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
 			_mode = MAV_MODE_FAILSAFE;
 			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
 		// manual/auto switch
