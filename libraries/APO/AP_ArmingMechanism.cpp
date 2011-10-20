@@ -15,7 +15,7 @@ namespace apo {
 void AP_ArmingMechanism::update(const float dt) {
 
     // arming
-    if ( (_hal->getState() != MAV_STATE_ACTIVE) &
+    if ( (_hal->getState() != MAV_STATE_ACTIVE) &&
      (_hal->rc[_ch1]->getRadioPosition() < _ch1Min) &&
      (_hal->rc[_ch2]->getRadioPosition() < _ch2Min) ) {
 
@@ -30,7 +30,7 @@ void AP_ArmingMechanism::update(const float dt) {
         }
     }
     // disarming
-    else if ( (_hal->getState() == MAV_STATE_ACTIVE) &
+    else if ( (_hal->getState() == MAV_STATE_ACTIVE) &&
          (_hal->rc[_ch1]->getRadioPosition() < _ch1Min) &&
          (_hal->rc[_ch2]->getRadioPosition() > _ch2Max) ) {
 

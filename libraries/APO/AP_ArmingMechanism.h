@@ -28,7 +28,7 @@ public:
     AP_ArmingMechanism(AP_HardwareAbstractionLayer * hal,
             uint8_t ch1, uint8_t ch2, float ch1Min, float ch2Min,
             float ch2Max) : _armingClock(0), _hal(hal), _ch1(ch1), _ch2(ch2),
-            _ch1Min(ch1Min), _ch2Min(ch2Min) {
+            _ch1Min(ch1Min), _ch2Min(ch2Min), _ch2Max(ch2Max) {
     }
 
     /**
