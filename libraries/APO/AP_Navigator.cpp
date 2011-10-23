@@ -69,13 +69,25 @@ DcmNavigator::DcmNavigator(AP_HardwareAbstractionLayer * hal) :
 	}
 
 	if (_hal->getMode() == MODE_LIVE) {
-		if (_hal->adc)
+
+		if (_hal->adc) {
 			_hal->imu = new AP_IMU_Oilpan(_hal->adc, k_sensorCalib);
-		if (_hal->imu)
+		}
+
+		if (_hal->imu) {
 			_dcm = new AP_DCM(_hal->imu, _hal->gps, _hal->compass);
+
+			// tune down dcm
+			_dcm->kp_roll_pitch(0.030000);
+			_dcm->ki_roll_pitch(0.00001278),	// 50 hz I term
+
+			// tune down compass in dcm
+			_dcm->kp_yaw(0.08);
+			_dcm->ki_yaw(0);
+		}
+
 		if (_hal->compass) {
 			_dcm->set_compass(_hal->compass);
-
 		}
 	}
 }
@@ -121,7 +133,7 @@ void DcmNavigator::updateFast(float dt) {
 
 	// dcm class for attitude
 	if (_dcm) {
-		_dcm->update_DCM();
+		_dcm->update_DCM_fast();
 		setRoll(_dcm->roll);
 		setPitch(_dcm->pitch);
 		setYaw(_dcm->yaw);

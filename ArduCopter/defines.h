@@ -37,6 +37,7 @@
 #define CH7_RTL 4
 #define CH7_AUTO_TRIM 5
 #define CH7_ADC_FILTER 6
+#define CH7_SAVE_WP 7
 
 // Frame types
 #define QUAD_FRAME 0

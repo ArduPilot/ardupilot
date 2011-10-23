@@ -11,7 +11,7 @@
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
@@ -54,9 +54,9 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loopRate = 150; // attitude nav
+static const float loopRate = 250; // attitude nav
 static const float loop0Rate = 50; // controller
-static const float loop1Rate = 5; 	// pos nav/ gcs fast
+static const float loop1Rate = 10; 	// pos nav/ gcs fast
 static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
 
@@ -77,7 +77,7 @@ static const float PID_POS_DFCUT = 10; // cut derivative feedback at 10 hz
 static const float PID_ATT_P = 0.17;
 static const float PID_ATT_I = 0.5;
 static const float PID_ATT_D = 0.06;
-static const float PID_ATT_LIM = 0.05; // 10 %
+static const float PID_ATT_LIM = 0.05; // 5 % motors
 static const float PID_ATT_AWU = 0.005; // 0.5 %
 static const float PID_ATT_DFCUT = 25; // cut derivative feedback at 25 hz
 static const float PID_YAWPOS_P = 0;
@@ -88,7 +88,7 @@ static const float PID_YAWPOS_AWU = 0; // 1 rad/s
 static const float PID_YAWSPEED_P = 0.5;
 static const float PID_YAWSPEED_I = 0;
 static const float PID_YAWSPEED_D = 0;
-static const float PID_YAWSPEED_LIM = .1; // 10 % MOTORs
+static const float PID_YAWSPEED_LIM = .05; // 5 % motors
 static const float PID_YAWSPEED_AWU = 0.0;
 static const float PID_YAWSPEED_DFCUT = 3.0; // 3 Radians, about 1 Hz
 

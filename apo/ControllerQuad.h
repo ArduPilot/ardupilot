@@ -10,6 +10,7 @@
 
 #include "../APO/AP_Controller.h"
 #include "../APO/AP_BatteryMonitor.h"
+#include "../APO/AP_ArmingMechanism.h"
 
 namespace apo {
 
@@ -78,7 +79,7 @@ public:
 						PID_POS_I, PID_POS_D, PID_POS_AWU, PID_POS_LIM, PID_POS_DFCUT),
 				pidPD(new AP_Var_group(k_pidPD, PSTR("DOWN_")), 1, PID_POS_Z_P,
 						PID_POS_Z_I, PID_POS_Z_D, PID_POS_Z_AWU, PID_POS_Z_LIM, PID_POS_DFCUT),
-   				_armingClock(0), _thrustMix(0), _pitchMix(0), _rollMix(0), _yawMix(0),
+   				_armingMechanism(hal,CH_THRUST,CH_YAW,0.1,-0.9,0.9), _thrustMix(0), _pitchMix(0), _rollMix(0), _yawMix(0),
 				_cmdRoll(0), _cmdPitch(0), _cmdYawRate(0), _mode(MAV_MODE_LOCKED) {
 		/*
 		 * allocate radio channels
@@ -117,51 +118,7 @@ public:
 	virtual void update(const float & dt) {
 		//_hal->debug->printf_P(PSTR("thr: %f, yaw: %f\n"),_hal->rc[CH_THRUST]->getRadioPosition(),_hal->rc[CH_YAW]->getRadioPosition());
 
-		// arming
-		//
-		// to arm: put stick to bottom right for 100 controller cycles
-		//  (max yaw, min throttle)
-		//
-		// didn't use clock here in case of millis() roll over
-		// for long runs
-		if ( (_hal->getState() != MAV_STATE_ACTIVE) &
-			 (_hal->rc[CH_THRUST]->getRadioPosition() < 0.1) &&
-			 (_hal->rc[CH_YAW]->getRadioPosition() < -0.9) ) {
-
-			// always start clock at 0
-			if (_armingClock<0) _armingClock = 0;
-
-			if (_armingClock++ >= 100) {
-				_hal->gcs->sendText(SEVERITY_HIGH, PSTR("armed"));
-				_hal->setState(MAV_STATE_ACTIVE);
-			} else {
-				_hal->gcs->sendText(SEVERITY_HIGH, PSTR("arming"));
-			}
-		}
-		// disarming
-		//
-		// to disarm: put stick to bottom left for 100 controller cycles
-		//  (min yaw, min throttle)
-		else if ( (_hal->getState() == MAV_STATE_ACTIVE) &
-			 (_hal->rc[CH_THRUST]->getRadioPosition() < 0.1) &&
-			 (_hal->rc[CH_YAW]->getRadioPosition() > 0.9) ) {
-
-			// always start clock at 0
-			if (_armingClock>0) _armingClock = 0;
-
-			if (_armingClock-- <= -100) {
-				_hal->gcs->sendText(SEVERITY_HIGH, PSTR("disarmed"));
-				_hal->setState(MAV_STATE_STANDBY);
-			} else {
-				_hal->gcs->sendText(SEVERITY_HIGH, PSTR("disarming"));
-			}
-		}
-		// reset arming clock and report status
-		else if (_armingClock != 0) {
-			_armingClock = 0;
-			if (_hal->getState()==MAV_STATE_ACTIVE) _hal->gcs->sendText(SEVERITY_HIGH, PSTR("armed"));
-			else if (_hal->getState()!=MAV_STATE_ACTIVE) _hal->gcs->sendText(SEVERITY_HIGH, PSTR("disarmed"));
-		}
+		_armingMechanism.update(dt);
 
 		// determine flight mode
 		//
@@ -170,7 +127,7 @@ public:
 			_mode = MAV_MODE_FAILSAFE;
 			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
 		// if battery less than 5%, go to failsafe
-		} else if (_hal->batteryMonitor->getPercentage() < 5) {
+		} else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
 			_mode = MAV_MODE_FAILSAFE;
 			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
 		// manual/auto switch
@@ -232,7 +189,7 @@ private:
 	BlockPIDDfb pidRoll, pidPitch, pidYaw;
 	BlockPID pidYawRate;
 	BlockPIDDfb pidPN, pidPE, pidPD;
-	int32_t _armingClock;
+	AP_ArmingMechanism _armingMechanism;
 
 	float _thrustMix, _pitchMix, _rollMix, _yawMix;
 	float _cmdRoll, _cmdPitch, _cmdYawRate;
