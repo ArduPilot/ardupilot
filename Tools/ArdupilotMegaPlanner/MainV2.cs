@@ -874,10 +874,22 @@ namespace ArdupilotMega
                             rc.target_component = comPort.compid;
                             rc.target_system = comPort.sysid;
 
-                            rc.chan1_raw = cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
-                            rc.chan2_raw = cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
-                            rc.chan3_raw = cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
-                            rc.chan4_raw = cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(1) != Joystick.joystickaxis.None)
+                                rc.chan1_raw = cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(2) != Joystick.joystickaxis.None)
+                                rc.chan2_raw = cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(3) != Joystick.joystickaxis.None)
+                                rc.chan3_raw = cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
+                            if (joystick.getJoystickAxis(4) != Joystick.joystickaxis.None)
+                                rc.chan4_raw = cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(5) != Joystick.joystickaxis.None)
+                                rc.chan5_raw = cs.rcoverridech5;
+                            if (joystick.getJoystickAxis(6) != Joystick.joystickaxis.None)
+                                rc.chan6_raw = cs.rcoverridech6;
+                            if (joystick.getJoystickAxis(7) != Joystick.joystickaxis.None)
+                                rc.chan7_raw = cs.rcoverridech7;
+                            if (joystick.getJoystickAxis(8) != Joystick.joystickaxis.None)
+                                rc.chan8_raw = cs.rcoverridech8;
 
                             if (lastjoystick.AddMilliseconds(50) < DateTime.Now)
                             {

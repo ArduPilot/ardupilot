@@ -53,6 +53,25 @@
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.CHK_elevons = new System.Windows.Forms.CheckBox();
+            this.revCH5 = new System.Windows.Forms.CheckBox();
+            this.label10 = new System.Windows.Forms.Label();
+            this.expo_ch5 = new System.Windows.Forms.TextBox();
+            this.CMB_CH5 = new System.Windows.Forms.ComboBox();
+            this.revCH6 = new System.Windows.Forms.CheckBox();
+            this.label11 = new System.Windows.Forms.Label();
+            this.expo_ch6 = new System.Windows.Forms.TextBox();
+            this.CMB_CH6 = new System.Windows.Forms.ComboBox();
+            this.revCH7 = new System.Windows.Forms.CheckBox();
+            this.label12 = new System.Windows.Forms.Label();
+            this.expo_ch7 = new System.Windows.Forms.TextBox();
+            this.CMB_CH7 = new System.Windows.Forms.ComboBox();
+            this.revCH8 = new System.Windows.Forms.CheckBox();
+            this.label13 = new System.Windows.Forms.Label();
+            this.expo_ch8 = new System.Windows.Forms.TextBox();
+            this.CMB_CH8 = new System.Windows.Forms.ComboBox();
+            this.BUT_detch8 = new ArdupilotMega.MyButton();
+            this.horizontalProgressBar4 = new ArdupilotMega.HorizontalProgressBar();
             this.BUT_detch4 = new ArdupilotMega.MyButton();
             this.BUT_detch3 = new ArdupilotMega.MyButton();
             this.BUT_detch2 = new ArdupilotMega.MyButton();
@@ -63,7 +82,12 @@
             this.progressBar3 = new ArdupilotMega.HorizontalProgressBar();
             this.progressBar2 = new ArdupilotMega.HorizontalProgressBar();
             this.progressBar1 = new ArdupilotMega.HorizontalProgressBar();
-            this.CHK_elevons = new System.Windows.Forms.CheckBox();
+            this.BUT_detch5 = new ArdupilotMega.MyButton();
+            this.horizontalProgressBar1 = new ArdupilotMega.HorizontalProgressBar();
+            this.BUT_detch6 = new ArdupilotMega.MyButton();
+            this.horizontalProgressBar2 = new ArdupilotMega.HorizontalProgressBar();
+            this.BUT_detch7 = new ArdupilotMega.MyButton();
+            this.horizontalProgressBar3 = new ArdupilotMega.HorizontalProgressBar();
             this.SuspendLayout();
             // 
             // CMB_joysticks
@@ -224,6 +248,151 @@
             this.timer1.Enabled = true;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // CHK_elevons
+            // 
+            resources.ApplyResources(this.CHK_elevons, "CHK_elevons");
+            this.CHK_elevons.Name = "CHK_elevons";
+            this.CHK_elevons.UseVisualStyleBackColor = true;
+            this.CHK_elevons.CheckedChanged += new System.EventHandler(this.CHK_elevons_CheckedChanged);
+            // 
+            // revCH5
+            // 
+            resources.ApplyResources(this.revCH5, "revCH5");
+            this.revCH5.Name = "revCH5";
+            this.revCH5.UseVisualStyleBackColor = true;
+            this.revCH5.CheckedChanged += new System.EventHandler(this.revCH5_CheckedChanged);
+            // 
+            // label10
+            // 
+            resources.ApplyResources(this.label10, "label10");
+            this.label10.Name = "label10";
+            // 
+            // expo_ch5
+            // 
+            this.expo_ch5.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch5, "expo_ch5");
+            this.expo_ch5.Name = "expo_ch5";
+            // 
+            // CMB_CH5
+            // 
+            this.CMB_CH5.FormattingEnabled = true;
+            this.CMB_CH5.Items.AddRange(new object[] {
+            resources.GetString("CMB_CH5.Items"),
+            resources.GetString("CMB_CH5.Items1"),
+            resources.GetString("CMB_CH5.Items2"),
+            resources.GetString("CMB_CH5.Items3")});
+            resources.ApplyResources(this.CMB_CH5, "CMB_CH5");
+            this.CMB_CH5.Name = "CMB_CH5";
+            this.CMB_CH5.SelectedIndexChanged += new System.EventHandler(this.CMB_CH5_SelectedIndexChanged);
+            // 
+            // revCH6
+            // 
+            resources.ApplyResources(this.revCH6, "revCH6");
+            this.revCH6.Name = "revCH6";
+            this.revCH6.UseVisualStyleBackColor = true;
+            this.revCH6.CheckedChanged += new System.EventHandler(this.revCH6_CheckedChanged);
+            // 
+            // label11
+            // 
+            resources.ApplyResources(this.label11, "label11");
+            this.label11.Name = "label11";
+            // 
+            // expo_ch6
+            // 
+            this.expo_ch6.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch6, "expo_ch6");
+            this.expo_ch6.Name = "expo_ch6";
+            // 
+            // CMB_CH6
+            // 
+            this.CMB_CH6.FormattingEnabled = true;
+            this.CMB_CH6.Items.AddRange(new object[] {
+            resources.GetString("CMB_CH6.Items"),
+            resources.GetString("CMB_CH6.Items1"),
+            resources.GetString("CMB_CH6.Items2"),
+            resources.GetString("CMB_CH6.Items3")});
+            resources.ApplyResources(this.CMB_CH6, "CMB_CH6");
+            this.CMB_CH6.Name = "CMB_CH6";
+            this.CMB_CH6.SelectedIndexChanged += new System.EventHandler(this.CMB_CH6_SelectedIndexChanged);
+            // 
+            // revCH7
+            // 
+            resources.ApplyResources(this.revCH7, "revCH7");
+            this.revCH7.Name = "revCH7";
+            this.revCH7.UseVisualStyleBackColor = true;
+            this.revCH7.CheckedChanged += new System.EventHandler(this.revCH7_CheckedChanged);
+            // 
+            // label12
+            // 
+            resources.ApplyResources(this.label12, "label12");
+            this.label12.Name = "label12";
+            // 
+            // expo_ch7
+            // 
+            this.expo_ch7.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch7, "expo_ch7");
+            this.expo_ch7.Name = "expo_ch7";
+            // 
+            // CMB_CH7
+            // 
+            this.CMB_CH7.FormattingEnabled = true;
+            this.CMB_CH7.Items.AddRange(new object[] {
+            resources.GetString("CMB_CH7.Items"),
+            resources.GetString("CMB_CH7.Items1"),
+            resources.GetString("CMB_CH7.Items2"),
+            resources.GetString("CMB_CH7.Items3")});
+            resources.ApplyResources(this.CMB_CH7, "CMB_CH7");
+            this.CMB_CH7.Name = "CMB_CH7";
+            this.CMB_CH7.SelectedIndexChanged += new System.EventHandler(this.CMB_CH7_SelectedIndexChanged);
+            // 
+            // revCH8
+            // 
+            resources.ApplyResources(this.revCH8, "revCH8");
+            this.revCH8.Name = "revCH8";
+            this.revCH8.UseVisualStyleBackColor = true;
+            this.revCH8.CheckedChanged += new System.EventHandler(this.revCH8_CheckedChanged);
+            // 
+            // label13
+            // 
+            resources.ApplyResources(this.label13, "label13");
+            this.label13.Name = "label13";
+            // 
+            // expo_ch8
+            // 
+            this.expo_ch8.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            resources.ApplyResources(this.expo_ch8, "expo_ch8");
+            this.expo_ch8.Name = "expo_ch8";
+            // 
+            // CMB_CH8
+            // 
+            this.CMB_CH8.FormattingEnabled = true;
+            this.CMB_CH8.Items.AddRange(new object[] {
+            resources.GetString("CMB_CH8.Items"),
+            resources.GetString("CMB_CH8.Items1"),
+            resources.GetString("CMB_CH8.Items2"),
+            resources.GetString("CMB_CH8.Items3")});
+            resources.ApplyResources(this.CMB_CH8, "CMB_CH8");
+            this.CMB_CH8.Name = "CMB_CH8";
+            this.CMB_CH8.SelectedIndexChanged += new System.EventHandler(this.CMB_CH8_SelectedIndexChanged);
+            // 
+            // BUT_detch8
+            // 
+            resources.ApplyResources(this.BUT_detch8, "BUT_detch8");
+            this.BUT_detch8.Name = "BUT_detch8";
+            this.BUT_detch8.UseVisualStyleBackColor = true;
+            this.BUT_detch8.Click += new System.EventHandler(this.BUT_detch8_Click);
+            // 
+            // horizontalProgressBar4
+            // 
+            resources.ApplyResources(this.horizontalProgressBar4, "horizontalProgressBar4");
+            this.horizontalProgressBar4.Label = null;
+            this.horizontalProgressBar4.Maximum = 2200;
+            this.horizontalProgressBar4.maxline = 0;
+            this.horizontalProgressBar4.Minimum = 800;
+            this.horizontalProgressBar4.minline = 0;
+            this.horizontalProgressBar4.Name = "horizontalProgressBar4";
+            this.horizontalProgressBar4.Value = 800;
+            // 
             // BUT_detch4
             // 
             resources.ApplyResources(this.BUT_detch4, "BUT_detch4");
@@ -310,17 +479,88 @@
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Value = 800;
             // 
-            // CHK_elevons
+            // BUT_detch5
             // 
-            resources.ApplyResources(this.CHK_elevons, "CHK_elevons");
-            this.CHK_elevons.Name = "CHK_elevons";
-            this.CHK_elevons.UseVisualStyleBackColor = true;
-            this.CHK_elevons.CheckedChanged += new System.EventHandler(this.CHK_elevons_CheckedChanged);
+            resources.ApplyResources(this.BUT_detch5, "BUT_detch5");
+            this.BUT_detch5.Name = "BUT_detch5";
+            this.BUT_detch5.UseVisualStyleBackColor = true;
+            this.BUT_detch5.Click += new System.EventHandler(this.BUT_detch5_Click);
+            // 
+            // horizontalProgressBar1
+            // 
+            resources.ApplyResources(this.horizontalProgressBar1, "horizontalProgressBar1");
+            this.horizontalProgressBar1.Label = null;
+            this.horizontalProgressBar1.Maximum = 2200;
+            this.horizontalProgressBar1.maxline = 0;
+            this.horizontalProgressBar1.Minimum = 800;
+            this.horizontalProgressBar1.minline = 0;
+            this.horizontalProgressBar1.Name = "horizontalProgressBar1";
+            this.horizontalProgressBar1.Value = 800;
+            // 
+            // BUT_detch6
+            // 
+            resources.ApplyResources(this.BUT_detch6, "BUT_detch6");
+            this.BUT_detch6.Name = "BUT_detch6";
+            this.BUT_detch6.UseVisualStyleBackColor = true;
+            this.BUT_detch6.Click += new System.EventHandler(this.BUT_detch6_Click);
+            // 
+            // horizontalProgressBar2
+            // 
+            resources.ApplyResources(this.horizontalProgressBar2, "horizontalProgressBar2");
+            this.horizontalProgressBar2.Label = null;
+            this.horizontalProgressBar2.Maximum = 2200;
+            this.horizontalProgressBar2.maxline = 0;
+            this.horizontalProgressBar2.Minimum = 800;
+            this.horizontalProgressBar2.minline = 0;
+            this.horizontalProgressBar2.Name = "horizontalProgressBar2";
+            this.horizontalProgressBar2.Value = 800;
+            // 
+            // BUT_detch7
+            // 
+            resources.ApplyResources(this.BUT_detch7, "BUT_detch7");
+            this.BUT_detch7.Name = "BUT_detch7";
+            this.BUT_detch7.UseVisualStyleBackColor = true;
+            this.BUT_detch7.Click += new System.EventHandler(this.BUT_detch7_Click);
+            // 
+            // horizontalProgressBar3
+            // 
+            resources.ApplyResources(this.horizontalProgressBar3, "horizontalProgressBar3");
+            this.horizontalProgressBar3.Label = null;
+            this.horizontalProgressBar3.Maximum = 2200;
+            this.horizontalProgressBar3.maxline = 0;
+            this.horizontalProgressBar3.Minimum = 800;
+            this.horizontalProgressBar3.minline = 0;
+            this.horizontalProgressBar3.Name = "horizontalProgressBar3";
+            this.horizontalProgressBar3.Value = 800;
             // 
             // JoystickSetup
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BUT_detch8);
+            this.Controls.Add(this.revCH8);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.expo_ch8);
+            this.Controls.Add(this.horizontalProgressBar4);
+            this.Controls.Add(this.CMB_CH8);
+            this.Controls.Add(this.BUT_detch7);
+            this.Controls.Add(this.revCH7);
+            this.Controls.Add(this.label12);
+            this.Controls.Add(this.expo_ch7);
+            this.Controls.Add(this.horizontalProgressBar3);
+            this.Controls.Add(this.CMB_CH7);
+            this.Controls.Add(this.BUT_detch6);
+            this.Controls.Add(this.revCH6);
+            this.Controls.Add(this.label11);
+            this.Controls.Add(this.expo_ch6);
+            this.Controls.Add(this.horizontalProgressBar2);
+            this.Controls.Add(this.CMB_CH6);
+            this.Controls.Add(this.BUT_detch5);
+            this.Controls.Add(this.revCH5);
+            this.Controls.Add(this.label10);
+            this.Controls.Add(this.expo_ch5);
+            this.Controls.Add(this.horizontalProgressBar1);
+            this.Controls.Add(this.CMB_CH5);
             this.Controls.Add(this.CHK_elevons);
             this.Controls.Add(this.BUT_detch4);
             this.Controls.Add(this.BUT_detch3);
@@ -398,5 +638,29 @@
         private MyButton BUT_detch3;
         private MyButton BUT_detch4;
         private System.Windows.Forms.CheckBox CHK_elevons;
+        private MyButton BUT_detch5;
+        private System.Windows.Forms.CheckBox revCH5;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.TextBox expo_ch5;
+        private HorizontalProgressBar horizontalProgressBar1;
+        private System.Windows.Forms.ComboBox CMB_CH5;
+        private MyButton BUT_detch6;
+        private System.Windows.Forms.CheckBox revCH6;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.TextBox expo_ch6;
+        private HorizontalProgressBar horizontalProgressBar2;
+        private System.Windows.Forms.ComboBox CMB_CH6;
+        private MyButton BUT_detch7;
+        private System.Windows.Forms.CheckBox revCH7;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.TextBox expo_ch7;
+        private HorizontalProgressBar horizontalProgressBar3;
+        private System.Windows.Forms.ComboBox CMB_CH7;
+        private MyButton BUT_detch8;
+        private System.Windows.Forms.CheckBox revCH8;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.TextBox expo_ch8;
+        private HorizontalProgressBar horizontalProgressBar4;
+        private System.Windows.Forms.ComboBox CMB_CH8;
     }
 }
