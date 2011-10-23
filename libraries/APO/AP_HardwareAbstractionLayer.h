@@ -80,6 +80,19 @@ public:
 			pinMode(slideSwitchPin, INPUT);
 			pinMode(pushButtonPin, INPUT);
 			DDRL |= B00000100; // set port L, pint 2 to output for the relay
+		} else if (board == BOARD_ARDUPILOTMEGA_2) {
+			slideSwitchPin = 40;
+			pushButtonPin = 41;
+			aLedPin = 37;
+			bLedPin = 36;
+			cLedPin = 35;
+			eepromMaxAddr = 2048;
+			pinMode(aLedPin, OUTPUT); //  extra led
+			pinMode(bLedPin, OUTPUT); //  imu ledclass AP_CommLink;
+			pinMode(cLedPin, OUTPUT); //  gps led
+			pinMode(slideSwitchPin, INPUT);
+			pinMode(pushButtonPin, INPUT);
+			DDRL |= B00000100; // set port L, pint 2 to output for the relay
 		}
 	}
 

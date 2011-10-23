@@ -94,7 +94,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 			AP_MavlinkCommand::home.getCommand());
 
 	/*
-	 * Attach loops
+	 * Attach loops, stacking for priority
 	 */
 	hal->debug->println_P(PSTR("attaching loops"));
 	subLoops().push_back(new Loop(loop0Rate, callback0, this));
@@ -211,10 +211,10 @@ void AP_Autopilot::callback2(void * data) {
 	if (apo->getHal()->gcs) {
 		// send messages
 		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
+		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
+		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
 		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
-		//apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
+		apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
 	}
 
 	/*
