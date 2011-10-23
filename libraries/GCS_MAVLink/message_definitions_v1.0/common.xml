@@ -19,11 +19,11 @@
                <entry value="4" name="MAV_AUTOPILOT_OPENPILOT">
                     <description>OpenPilot, http://openpilot.org</description>
                </entry>
-               <entry value="5" name="MAV_AUTOPILOT_GENERIC_MISSION_MISSIONS_ONLY">
-                    <description>Generic autopilot only supporting simple MISSIONs</description>
+               <entry value="5" name="MAV_AUTOPILOT_GENERIC_WAYPOINTS_ONLY">
+                    <description>Generic autopilot only supporting simple waypoints</description>
                </entry>
-               <entry value="6" name="MAV_AUTOPILOT_GENERIC_MISSION_NAVIGATION_ONLY">
-                    <description>Generic autopilot supporting MISSIONs and other simple navigation commands</description>
+               <entry value="6" name="MAV_AUTOPILOT_GENERIC_WAYPOINTS_AND_SIMPLE_NAVIGATION_ONLY">
+                    <description>Generic autopilot supporting waypoints and other simple navigation commands</description>
                </entry>
                <entry value="7" name="MAV_AUTOPILOT_GENERIC_MISSION_FULL">
                     <description>Generic autopilot supporting the full mission command set</description>
@@ -43,61 +43,75 @@
           </enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
-			<description>These flags encode the MAV mode.</description>
-			<entry value="128" name="MAV_MODE_FLAG_SAFETY_ARMED">
-				<description>0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly.</description>
-			</entry>
+          		<description>These flags encode the MAV mode.</description>
+          		<entry value="128" name="MAV_MODE_FLAG_SAFETY_ARMED">
+          			<description>0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly.</description>
+          		</entry>
                 <entry value="64" name="MAV_MODE_FLAG_MANUAL_INPUT_ENABLED">
-				<description>0b01000000 remote control input is enabled.</description>
-			</entry>
-			<entry value="32" name="MAV_MODE_FLAG_HIL_ENABLED">
-				<description>0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational.</description>
-			</entry>
+          			<description>0b01000000 remote control input is enabled.</description>
+          		</entry>
+          		<entry value="32" name="MAV_MODE_FLAG_HIL_ENABLED">
+          			<description>0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational.</description>
+          		</entry>
                 <entry value="16" name="MAV_MODE_FLAG_STABILIZE_ENABLED">
-				<description>0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however further control inputs to move around.</description>
-			</entry>
+          			<description>0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however further control inputs to move around.</description>
+          		</entry>
                 <entry value="8" name="MAV_MODE_FLAG_GUIDED_ENABLED">
-				<description>0b00001000 guided mode enabled, system flies MISSIONs / mission items.</description>
-			</entry>
+          			<description>0b00001000 guided mode enabled, system flies MISSIONs / mission items.</description>
+          		</entry>
                 <entry value="4" name="MAV_MODE_FLAG_AUTO_ENABLED">
-				<description>0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not, depends on the actual implementation.</description>
-			</entry>
+          			<description>0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not, depends on the actual implementation.</description>
+          		</entry>
                 <entry value="2" name="MAV_MODE_FLAG_TEST_ENABLED">
-				<description>0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.</description>
-			</entry>
+          			<description>0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.</description>
+          		</entry>
                 <entry value="1" name="MAV_MODE_FLAG_RESERVED_ENABLED">
-				<description>0b00000001 Reserved for future use.</description>
-			</entry>
+          			<description>0b00000001 Reserved for future use.</description>
+          		</entry>
           </enum>
-
+          
           <enum name="MAV_MODE_FLAG_DECODE_POSITION">
-			<description>These values encode the bit positions of the decode position. These values can be used to read the value of a flag bit by combining the base_mode variable with AND with the flag position value. The result will be either 0 or 1, depending on if the flag is set or not.</description>
+          		<description>These values encode the bit positions of the decode position. These values can be used to read the value of a flag bit by combining the base_mode variable with AND with the flag position value. The result will be either 0 or 1, depending on if the flag is set or not.</description>
                 <entry value="128" name="MAV_MODE_FLAG_DECODE_POSITION_SAFETY">
-				<description>First bit:  10000000</description>
-			</entry>
+          			<description>First bit:  10000000</description>
+          		</entry>
                 <entry value="64" name="MAV_MODE_FLAG_DECODE_POSITION_MANUAL">
-				<description>Second bit: 01000000</description>
-			</entry>
-			<entry value="32" name="MAV_MODE_FLAG_DECODE_POSITION_HIL">
-				<description>Third bit:  00100000</description>
-			</entry>
+          			<description>Second bit: 01000000</description>
+          		</entry>
+          		<entry value="32" name="MAV_MODE_FLAG_DECODE_POSITION_HIL">
+          			<description>Third bit:  00100000</description>
+          		</entry>
                 <entry value="16" name="MAV_MODE_FLAG_DECODE_POSITION_STABILIZE">
-				<description>Fourth bit: 00010000</description>
-			</entry>
+          			<description>Fourth bit: 00010000</description>
+          		</entry>
                 <entry value="8" name="MAV_MODE_FLAG_DECODE_POSITION_GUIDED">
-				<description>Fifth bit:  00001000</description>
-			</entry>
+          			<description>Fifth bit:  00001000</description>
+          		</entry>
                 <entry value="4" name="MAV_MODE_FLAG_DECODE_POSITION_AUTO">
-				<description>Sixt bit:   00000100</description>
-			</entry>
+          			<description>Sixt bit:   00000100</description>
+          		</entry>
                 <entry value="2" name="MAV_MODE_FLAG_DECODE_POSITION_TEST">
-				<description>Seventh bit: 00000010</description>
-			</entry>
+          			<description>Seventh bit: 00000010</description>
+          		</entry>
                 <entry value="1" name="MAV_MODE_FLAG_DECODE_POSITION_RESERVED">
-				<description>Eighth bit: 00000001</description>
-			</entry>
+          			<description>Eighth bit: 00000001</description>
+          		</entry>
           </enum>
-
+          <enum name="MAV_GOTO">
+               <description>Override command, pauses current mission execution and moves immediately to a position</description>
+               <entry value="0" name="MAV_GOTO_DO_HOLD">
+                    <description>Hold at the current position.</description>
+               </entry>
+               <entry value="1" name="MAV_GOTO_DO_CONTINUE">
+                    <description>Continue with the mission execution.</description>
+               </entry>
+               <entry value="2" name="MAV_GOTO_HOLD_AT_CURRENT_POSITION">
+                    <description>Hold at the current position of the system</description>
+               </entry>
+               <entry value="3" name="MAV_GOTO_HOLD_AT_SPECIFIED_POSITION">
+                    <description>Hold at the position specified in the parameters of the DO_HOLD action</description>
+               </entry>
+          </enum>
           <enum name="MAV_MODE">
                <description>These defines are predefined OR-combined mode flags. There is no need to use values from this enum, but it
                simplifies the use of the mode flags. Note that manual input is enabled in all modes as a safety override.</description>
@@ -215,6 +229,9 @@
                </entry>
           </enum>
           <enum name="MAV_COMPONENT">
+               <entry value="0" name="MAV_COMP_ID_ALL">
+                    <description/>
+               </entry>
                <entry value="220" name="MAV_COMP_ID_GPS">
                     <description/>
                </entry>
@@ -331,10 +348,10 @@
           <enum name="MAV_CMD">
                <description>Commands to be executed by the MAV. They can be executed on user request,
       or as part of a mission script. If the action is used in a mission, the parameter mapping
-      to the MISSION/mission message is as follows:
+      to the waypoint/mission message is as follows:
       Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what
-      ARINC 424 is for commercial aircraft: A data format how to interpret MISSION/mission data.</description>
-               <entry value="16" name="MAV_CMD_NAV_MISSION">
+      ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data.</description>
+               <entry value="16" name="MAV_CMD_NAV_WAYPOINT">
                     <description>Navigate to MISSION.</description>
                     <param index="1">Hold time in decimal seconds. (ignored by fixed wing, time to stay at MISSION for rotary wing)</param>
                     <param index="2">Acceptance radius in meters (if the sphere with this radius is hit, the MISSION counts as reached)</param>
@@ -627,6 +644,26 @@
                     <param index="6">Empty</param>
                     <param index="7">Empty</param>
                </entry>
+               <entry value="246" name="MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN">
+                    <description>Request the reboot or shutdown of system components.</description>
+                    <param index="1">0: Do nothing for autopilot, 1: Reboot autopilot, 2: Shutdown autopilot.</param>
+                    <param index="2">0: Do nothing for onboard computer, 1: Reboot onboard computer, 2: Shutdown onboard computer.</param>
+                    <param index="3">Reserved</param>
+                    <param index="4">Reserved</param>
+                    <param index="5">Empty</param>
+                    <param index="6">Empty</param>
+                    <param index="7">Empty</param>
+               </entry>
+               <entry value="252" name="MAV_CMD_OVERRIDE_GOTO">
+                    <description>Hold / continue the current action</description>
+                    <param index="1">MAV_GOTO_DO_HOLD: hold MAV_GOTO_DO_CONTINUE: continue with mission plan</param>
+                    <param index="2">MAV_GOTO_HOLD_AT_CURRENT_POSITION: Hold at current position MAV_GOTO_HOLD_AT_SPECIFIED_POSITION: hold at specified position</param>
+                    <param index="3">MAV_FRAME coordinate frame of hold point</param>
+                    <param index="4">Desired yaw angle in degrees</param>
+                    <param index="5">Latitude / X position</param>
+                    <param index="6">Longitude / Y position</param>
+                    <param index="7">Altitude / Z position</param>
+               </entry>
           </enum>
           <enum name="MAV_DATA_STREAM">
                <description>Data stream IDs. A data stream is not a fixed set of messages, but rather a
@@ -739,7 +776,7 @@
                <field type="uint16_t" name="errors_count3">Autopilot-specific errors</field>
                <field type="uint16_t" name="errors_count4">Autopilot-specific errors</field>
           </message>
-
+          
           <message id="2" name="SYSTEM_TIME">
                <description>The system time is the time of the master clock, typically the computer clock of the main onboard computer.</description>
                <field type="uint64_t" name="time_unix_usec">Timestamp of the master clock in microseconds since UNIX epoch.</field>
@@ -1119,7 +1156,7 @@
           </message>
           <message id="62" name="NAV_CONTROLLER_OUTPUT">
                <description>Outputs of the APM navigation controller. The primary use of this message is to check the response and signs
-                of the controller before actual flight and to assist with tuning controller parameters
+                of the controller before actual flight and to assist with tuning controller parameters 
             </description>
                <field type="float" name="nav_roll">Current desired roll in degrees</field>
                <field type="float" name="nav_pitch">Current desired pitch in degrees</field>
@@ -1214,14 +1251,14 @@
           </message>
           <message id="77" name="COMMAND_ACK">
                <description>Report status of a command. Includes feedback wether the command was executed</description>
-               <field type="float" name="command">Current airspeed in m/s</field>
-               <field type="float" name="result">1: Action ACCEPTED and EXECUTED, 1: Action TEMPORARY REJECTED/DENIED, 2: Action PERMANENTLY DENIED, 3: Action UNKNOWN/UNSUPPORTED, 4: Requesting CONFIRMATION</field>
+               <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
+               <field type="uint8_t" name="result">1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed</field>
           </message>
-
+          
           <!--
           <message id="80" name="MISSION_ITEM">
-		   <description>One mission element following the MAV_CMD enumeration</description>
-		   <field type="uint8_t" name="target_system">System ID</field>
+          	   <description>One mission element following the MAV_CMD enumeration</description>
+          	   <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint16_t" name="id">ID</field>
                <field type="uint16_t" name="id">Total count (size of total mission)</field>
@@ -1239,7 +1276,7 @@
           </message>
           <message id="81" name="MISSION_ACK">
                <description>ACK / NACK for one mission element or a whole mission</description>
-		   <field type="uint8_t" name="target_system">System ID</field>
+          	   <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint8_t" name="mission_status"></field>
                <field type="uint16_t" name="begin_item"></field>
@@ -1248,7 +1285,7 @@
           </message>
           <message id="82" name="MISSION_REQUEST">
                <description>One mission element following the MAV_CMD enumeration</description>
-		   <field type="uint8_t" name="target_system">System ID</field>
+          	   <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint8_t" name="mission_command">Command id: 0: read whole mission, 1: read mission from begin to end, 2: write mission items from begin to end, 3: clear mission.</field>
                <field type="uint16_t" name="begin_item"></field>
@@ -1314,6 +1351,39 @@
                <field type="int16_t" name="flow_y">Flow in pixels in y-sensor direction</field>
                <field type="uint8_t" name="quality">Optical flow quality / confidence. 0: bad, 255: maximum quality</field>
                <field type="float" name="ground_distance">Ground distance in meters</field>
+          </message>
+          <message id="101" name="GLOBAL_VISION_POSITION_ESTIMATE">
+               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="float" name="x">Global X position</field>
+               <field type="float" name="y">Global Y position</field>
+               <field type="float" name="z">Global Z position</field>
+               <field type="float" name="roll">Roll angle in rad</field>
+               <field type="float" name="pitch">Pitch angle in rad</field>
+               <field type="float" name="yaw">Yaw angle in rad</field>
+          </message>
+          <message id="102" name="VISION_POSITION_ESTIMATE">
+               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="float" name="x">Global X position</field>
+               <field type="float" name="y">Global Y position</field>
+               <field type="float" name="z">Global Z position</field>
+               <field type="float" name="roll">Roll angle in rad</field>
+               <field type="float" name="pitch">Pitch angle in rad</field>
+               <field type="float" name="yaw">Yaw angle in rad</field>
+          </message>
+          <message id="103" name="VISION_SPEED_ESTIMATE">
+               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="float" name="x">Global X speed</field>
+               <field type="float" name="y">Global Y speed</field>
+               <field type="float" name="z">Global Z speed</field>
+          </message>
+          <message id="104" name="VICON_POSITION_ESTIMATE">
+               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
+               <field type="float" name="x">Global X position</field>
+               <field type="float" name="y">Global Y position</field>
+               <field type="float" name="z">Global Z position</field>
+               <field type="float" name="roll">Roll angle in rad</field>
+               <field type="float" name="pitch">Pitch angle in rad</field>
+               <field type="float" name="yaw">Yaw angle in rad</field>
           </message>
           <!-- MESSAGE IDs 150 - 240: Space for custom messages in individual projectname_messages.xml files -->
           <message id="249" name="MEMORY_VECT">

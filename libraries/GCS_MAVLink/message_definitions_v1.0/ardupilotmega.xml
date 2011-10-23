@@ -3,7 +3,7 @@
      <include>common.xml</include>
      <!-- note that APM specific messages should use the command id
       range from 150 to 250, to leave plenty of room for growth
-      of common.xml
+      of common.xml 
 
       If you prototype a message here, then you should consider if it
       is general enough to move into common.xml later

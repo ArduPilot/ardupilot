@@ -45,20 +45,20 @@ static void mavlink_test_sensor_offsets(uint8_t system_id, uint8_t component_id,
 	};
 	mavlink_sensor_offsets_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-		packet1.mag_declination = packet_in.mag_declination;
-		packet1.raw_press = packet_in.raw_press;
-		packet1.raw_temp = packet_in.raw_temp;
-		packet1.gyro_cal_x = packet_in.gyro_cal_x;
-		packet1.gyro_cal_y = packet_in.gyro_cal_y;
-		packet1.gyro_cal_z = packet_in.gyro_cal_z;
-		packet1.accel_cal_x = packet_in.accel_cal_x;
-		packet1.accel_cal_y = packet_in.accel_cal_y;
-		packet1.accel_cal_z = packet_in.accel_cal_z;
-		packet1.mag_ofs_x = packet_in.mag_ofs_x;
-		packet1.mag_ofs_y = packet_in.mag_ofs_y;
-		packet1.mag_ofs_z = packet_in.mag_ofs_z;
-
-
+        	packet1.mag_declination = packet_in.mag_declination;
+        	packet1.raw_press = packet_in.raw_press;
+        	packet1.raw_temp = packet_in.raw_temp;
+        	packet1.gyro_cal_x = packet_in.gyro_cal_x;
+        	packet1.gyro_cal_y = packet_in.gyro_cal_y;
+        	packet1.gyro_cal_z = packet_in.gyro_cal_z;
+        	packet1.accel_cal_x = packet_in.accel_cal_x;
+        	packet1.accel_cal_y = packet_in.accel_cal_y;
+        	packet1.accel_cal_z = packet_in.accel_cal_z;
+        	packet1.mag_ofs_x = packet_in.mag_ofs_x;
+        	packet1.mag_ofs_y = packet_in.mag_ofs_y;
+        	packet1.mag_ofs_z = packet_in.mag_ofs_z;
+        
+        
 
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_sensor_offsets_encode(system_id, component_id, &msg, &packet1);
@@ -78,11 +78,11 @@ static void mavlink_test_sensor_offsets(uint8_t system_id, uint8_t component_id,
         memset(&packet2, 0, sizeof(packet2));
         mavlink_msg_to_send_buffer(buffer, &msg);
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
-		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
 	mavlink_msg_sensor_offsets_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
+        
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_sensor_offsets_send(MAVLINK_COMM_1 , packet1.mag_ofs_x , packet1.mag_ofs_y , packet1.mag_ofs_z , packet1.mag_declination , packet1.raw_press , packet1.raw_temp , packet1.gyro_cal_x , packet1.gyro_cal_y , packet1.gyro_cal_z , packet1.accel_cal_x , packet1.accel_cal_y , packet1.accel_cal_z );
 	mavlink_msg_sensor_offsets_decode(last_msg, &packet2);
@@ -103,13 +103,13 @@ static void mavlink_test_set_mag_offsets(uint8_t system_id, uint8_t component_id
 	};
 	mavlink_set_mag_offsets_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-		packet1.mag_ofs_x = packet_in.mag_ofs_x;
-		packet1.mag_ofs_y = packet_in.mag_ofs_y;
-		packet1.mag_ofs_z = packet_in.mag_ofs_z;
-		packet1.target_system = packet_in.target_system;
-		packet1.target_component = packet_in.target_component;
-
-
+        	packet1.mag_ofs_x = packet_in.mag_ofs_x;
+        	packet1.mag_ofs_y = packet_in.mag_ofs_y;
+        	packet1.mag_ofs_z = packet_in.mag_ofs_z;
+        	packet1.target_system = packet_in.target_system;
+        	packet1.target_component = packet_in.target_component;
+        
+        
 
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_set_mag_offsets_encode(system_id, component_id, &msg, &packet1);
@@ -129,11 +129,11 @@ static void mavlink_test_set_mag_offsets(uint8_t system_id, uint8_t component_id
         memset(&packet2, 0, sizeof(packet2));
         mavlink_msg_to_send_buffer(buffer, &msg);
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
-		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
 	mavlink_msg_set_mag_offsets_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
+        
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_set_mag_offsets_send(MAVLINK_COMM_1 , packet1.target_system , packet1.target_component , packet1.mag_ofs_x , packet1.mag_ofs_y , packet1.mag_ofs_z );
 	mavlink_msg_set_mag_offsets_decode(last_msg, &packet2);
@@ -151,10 +151,10 @@ static void mavlink_test_meminfo(uint8_t system_id, uint8_t component_id, mavlin
 	};
 	mavlink_meminfo_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-		packet1.brkval = packet_in.brkval;
-		packet1.freemem = packet_in.freemem;
-
-
+        	packet1.brkval = packet_in.brkval;
+        	packet1.freemem = packet_in.freemem;
+        
+        
 
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_meminfo_encode(system_id, component_id, &msg, &packet1);
@@ -174,11 +174,11 @@ static void mavlink_test_meminfo(uint8_t system_id, uint8_t component_id, mavlin
         memset(&packet2, 0, sizeof(packet2));
         mavlink_msg_to_send_buffer(buffer, &msg);
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
-		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
 	mavlink_msg_meminfo_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
+        
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_meminfo_send(MAVLINK_COMM_1 , packet1.brkval , packet1.freemem );
 	mavlink_msg_meminfo_decode(last_msg, &packet2);
@@ -200,14 +200,14 @@ static void mavlink_test_ap_adc(uint8_t system_id, uint8_t component_id, mavlink
 	};
 	mavlink_ap_adc_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-		packet1.adc1 = packet_in.adc1;
-		packet1.adc2 = packet_in.adc2;
-		packet1.adc3 = packet_in.adc3;
-		packet1.adc4 = packet_in.adc4;
-		packet1.adc5 = packet_in.adc5;
-		packet1.adc6 = packet_in.adc6;
-
-
+        	packet1.adc1 = packet_in.adc1;
+        	packet1.adc2 = packet_in.adc2;
+        	packet1.adc3 = packet_in.adc3;
+        	packet1.adc4 = packet_in.adc4;
+        	packet1.adc5 = packet_in.adc5;
+        	packet1.adc6 = packet_in.adc6;
+        
+        
 
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_ap_adc_encode(system_id, component_id, &msg, &packet1);
@@ -227,11 +227,11 @@ static void mavlink_test_ap_adc(uint8_t system_id, uint8_t component_id, mavlink
         memset(&packet2, 0, sizeof(packet2));
         mavlink_msg_to_send_buffer(buffer, &msg);
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
-		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
 	mavlink_msg_ap_adc_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
-
+        
         memset(&packet2, 0, sizeof(packet2));
 	mavlink_msg_ap_adc_send(MAVLINK_COMM_1 , packet1.adc1 , packet1.adc2 , packet1.adc3 , packet1.adc4 , packet1.adc5 , packet1.adc6 );
 	mavlink_msg_ap_adc_decode(last_msg, &packet2);
