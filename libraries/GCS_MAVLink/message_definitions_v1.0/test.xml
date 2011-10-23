@@ -1,14 +1,14 @@
 <?xml version='1.0'?>
 <mavlink>
-    <version>3</version>
-    <messages>
+     <version>3</version>
+     <messages>
           <message id="0" name="TEST_TYPES">
                <description>Test all field types</description>
-	       <field type="char" name="c">char</field>
-	       <field type="char[10]" name="s">string</field>
+               <field type="char" name="c">char</field>
+               <field type="char[10]" name="s">string</field>
                <field type="uint8_t" name="u8">uint8_t</field>
                <field type="uint16_t" name="u16">uint16_t</field>
-               <field type="uint32_t" name="u32" print_format="0x%08x">uint32_t</field>
+               <field print_format="0x%08x" type="uint32_t" name="u32">uint32_t</field>
                <field type="uint64_t" name="u64">uint64_t</field>
                <field type="int8_t" name="s8">int8_t</field>
                <field type="int16_t" name="s16">int16_t</field>
@@ -27,5 +27,5 @@
                <field type="float[3]" name="f_array">float_array</field>
                <field type="double[3]" name="d_array">double_array</field>
           </message>
-    </messages>
+     </messages>
 </mavlink>

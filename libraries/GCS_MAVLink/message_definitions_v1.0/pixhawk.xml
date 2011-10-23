@@ -60,30 +60,6 @@
                <field type="float" name="ground_y">Ground truth Y</field>
                <field type="float" name="ground_z">Ground truth Z</field>
           </message>
-          <message id="156" name="VISION_POSITION_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
-               <field type="float" name="x">Global X position</field>
-               <field type="float" name="y">Global Y position</field>
-               <field type="float" name="z">Global Z position</field>
-               <field type="float" name="roll">Roll angle in rad</field>
-               <field type="float" name="pitch">Pitch angle in rad</field>
-               <field type="float" name="yaw">Yaw angle in rad</field>
-          </message>
-          <message id="157" name="VICON_POSITION_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
-               <field type="float" name="x">Global X position</field>
-               <field type="float" name="y">Global Y position</field>
-               <field type="float" name="z">Global Z position</field>
-               <field type="float" name="roll">Roll angle in rad</field>
-               <field type="float" name="pitch">Pitch angle in rad</field>
-               <field type="float" name="yaw">Yaw angle in rad</field>
-          </message>
-          <message id="158" name="VISION_SPEED_ESTIMATE">
-               <field type="uint64_t" name="usec">Timestamp (milliseconds)</field>
-               <field type="float" name="x">Global X speed</field>
-               <field type="float" name="y">Global Y speed</field>
-               <field type="float" name="z">Global Z speed</field>
-          </message>
           <message id="159" name="POSITION_CONTROL_SETPOINT_SET">
                <description>Message sent to the MAV to set a new position as reference for the controller</description>
                <field type="uint8_t" name="target_system">System ID</field>
@@ -212,7 +188,7 @@
                <field type="uint8_t[32]" name="descriptor">Descriptor</field>
                <field type="float" name="response">Harris operator response at this location</field>
           </message>
-                    <message id="200" name="ATTITUDE_CONTROL">
+          <message id="200" name="ATTITUDE_CONTROL">
                <field type="uint8_t" name="target">The system to be controlled</field>
                <field type="float" name="roll">roll</field>
                <field type="float" name="pitch">pitch</field>
