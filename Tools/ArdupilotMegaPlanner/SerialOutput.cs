@@ -14,7 +14,8 @@ namespace ArdupilotMega
     {
         System.Threading.Thread t12;
         static bool threadrun = false;
-        static SerialPort comPort = new SerialPort();
+        static internal SerialPort comPort = new SerialPort();
+        static internal PointLatLngAlt HomeLoc = new PointLatLngAlt(0,0,0,"Home");
 
         public SerialOutput()
         {
@@ -62,6 +63,7 @@ namespace ArdupilotMega
         void mainloop()
         {
             threadrun = true;
+            int counter = 0;
             while (threadrun)
             {
                 try
@@ -78,7 +80,16 @@ namespace ArdupilotMega
                     checksum = GetChecksum(line);
                     comPort.WriteLine(line + "*" + checksum);
 
+                    if (counter % 5 == 0 && HomeLoc.Lat != 0 && HomeLoc.Lng != 0)
+                    {
+                        line = string.Format("$GP{0},{1:HHmmss},{2},{3},{4},{5},{6},{7},", "HOM", DateTime.Now.ToUniversalTime(), Math.Abs(HomeLoc.Lat * 100), HomeLoc.Lat < 0 ? "S" : "N", Math.Abs(HomeLoc.Lng * 100), HomeLoc.Lng < 0 ? "W" : "E", HomeLoc.Alt, "M");
+
+                        checksum = GetChecksum(line);
+                        comPort.WriteLine(line + "*" + checksum);
+                    }
+
                     System.Threading.Thread.Sleep(500);
+                    counter++;
                 }
                 catch { }
             }

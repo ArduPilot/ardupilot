@@ -47,7 +47,7 @@ namespace ArdupilotMega
             self = this;
         }
 
-        JoyChannel[] JoyChannels = new JoyChannel[5]; // we are base 1
+        JoyChannel[] JoyChannels = new JoyChannel[9]; // we are base 1
         JoyButton[] JoyButtons = new JoyButton[128]; // base 0
 
         public static DeviceList getDevices()
@@ -301,16 +301,22 @@ namespace ArdupilotMega
                         ushort roll = pickchannel(1, JoyChannels[1].axis, false, JoyChannels[1].expo);
                         ushort pitch = pickchannel(2, JoyChannels[2].axis, false, JoyChannels[2].expo);
 
-                        MainV2.cs.rcoverridech1 = (ushort)(BOOL_TO_SIGN(JoyChannels[1].reverse) * ((int)(pitch - 1500) - (int)(roll - 1500)) / 2 + 1500);
-                        MainV2.cs.rcoverridech2 = (ushort)(BOOL_TO_SIGN(JoyChannels[2].reverse) * ((int)(pitch - 1500) + (int)(roll - 1500)) / 2 + 1500);
+                        if (getJoystickAxis(1) != Joystick.joystickaxis.None)
+                            MainV2.cs.rcoverridech1 = (ushort)(BOOL_TO_SIGN(JoyChannels[1].reverse) * ((int)(pitch - 1500) - (int)(roll - 1500)) / 2 + 1500);
+                        if (getJoystickAxis(2) != Joystick.joystickaxis.None)
+                            MainV2.cs.rcoverridech2 = (ushort)(BOOL_TO_SIGN(JoyChannels[2].reverse) * ((int)(pitch - 1500) + (int)(roll - 1500)) / 2 + 1500);
                     }
                     else
                     {
-                        MainV2.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
-                        MainV2.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
+                        if (getJoystickAxis(1) != Joystick.joystickaxis.None)
+                            MainV2.cs.rcoverridech1 = pickchannel(1, JoyChannels[1].axis, JoyChannels[1].reverse, JoyChannels[1].expo);//(ushort)(((int)state.Rz / 65.535) + 1000);
+                        if (getJoystickAxis(2) != Joystick.joystickaxis.None)
+                            MainV2.cs.rcoverridech2 = pickchannel(2, JoyChannels[2].axis, JoyChannels[2].reverse, JoyChannels[2].expo);//(ushort)(((int)state.Y / 65.535) + 1000);
                     }
-                    MainV2.cs.rcoverridech3 = pickchannel(3, JoyChannels[3].axis, JoyChannels[3].reverse, JoyChannels[3].expo);//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
-                    MainV2.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
+                    if (getJoystickAxis(3) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech3 = pickchannel(3, JoyChannels[3].axis, JoyChannels[3].reverse, JoyChannels[3].expo);//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
+                    if (getJoystickAxis(4) != Joystick.joystickaxis.None)
+                        MainV2.cs.rcoverridech4 = pickchannel(4, JoyChannels[4].axis, JoyChannels[4].reverse, JoyChannels[4].expo);//(ushort)(((int)state.X / 65.535) + 1000);
 
                     foreach (JoyButton but in JoyButtons)
                     {
@@ -349,6 +355,7 @@ namespace ArdupilotMega
         public enum joystickaxis
         {
             None,
+            Pass,
             ARx,
             ARy,
             ARz,
@@ -462,6 +469,15 @@ namespace ArdupilotMega
             return joystick.Caps.NumberButtons;
         }
 
+        public joystickaxis getJoystickAxis(int channel)
+        {
+            try
+            {
+                return JoyChannels[channel].axis;
+            }
+            catch { return joystickaxis.None; }
+        }
+
         public bool isButtonPressed(int buttonno)
         {
             byte[] buts = state.GetButtons();
@@ -510,6 +526,12 @@ namespace ArdupilotMega
 
             switch (axis)
             {
+                case joystickaxis.None:
+                    working = ushort.MaxValue / 2;
+                    break;
+                case joystickaxis.Pass:
+                    working = (int)(((float)(trim - min) / range) * ushort.MaxValue);
+                    break;
                 case joystickaxis.ARx:
                     working = state.ARx;
                     break;
