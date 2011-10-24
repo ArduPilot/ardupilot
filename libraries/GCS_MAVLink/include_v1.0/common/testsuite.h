@@ -383,9 +383,9 @@ static void mavlink_test_set_mode(uint8_t system_id, uint8_t component_id, mavli
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_set_mode_t packet_in = {
-		17235,
-	139,
-	206,
+		963497464,
+	17,
+	84,
 	};
 	mavlink_set_mode_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
