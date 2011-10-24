@@ -300,6 +300,51 @@ enum MAV_CMD_ACK
 	MAV_CMD_ACK_ENUM_END=10, /*  | */
 };
 
+/** @brief type of a mavlink parameter */
+enum MAV_VAR
+{
+	MAV_VAR_FLOAT=0, /* 32 bit float | */
+	MAV_VAR_UINT8=1, /* 8 bit unsigned integer | */
+	MAV_VAR_INT8=2, /* 8 bit signed integer | */
+	MAV_VAR_UINT16=3, /* 16 bit unsigned integer | */
+	MAV_VAR_INT16=4, /* 16 bit signed integer | */
+	MAV_VAR_UINT32=5, /* 32 bit unsigned integer | */
+	MAV_VAR_INT32=6, /* 32 bit signed integer | */
+	MAV_VAR_ENUM_END=7, /*  | */
+};
+
+/** @brief result from a mavlink command */
+enum MAV_RESULT
+{
+	MAV_RESULT_ACCEPTED=0, /* Command ACCEPTED and EXECUTED | */
+	MAV_RESULT_TEMPORARILY_REJECTED=1, /* Command TEMPORARY REJECTED/DENIED | */
+	MAV_RESULT_DENIED=2, /* Command PERMANENTLY DENIED | */
+	MAV_RESULT_UNSUPPORTED=3, /* Command UNKNOWN/UNSUPPORTED | */
+	MAV_RESULT_FAILED=4, /* Command executed, but failed | */
+	MAV_RESULT_ENUM_END=5, /*  | */
+};
+
+/** @brief result in a mavlink mission ack */
+enum MAV_MISSION_RESULT
+{
+	MAV_MISSION_ACCEPTED=0, /* mission accepted OK | */
+	MAV_MISSION_ERROR=1, /* generic error / not accepting mission commands at all right now | */
+	MAV_MISSION_UNSUPPORTED_FRAME=2, /* coordinate frame is not supported | */
+	MAV_MISSION_UNSUPPORTED=3, /* command is not supported | */
+	MAV_MISSION_NO_SPACE=4, /* mission item exceeds storage space | */
+	MAV_MISSION_INVALID=5, /* one of the parameters has an invalid value | */
+	MAV_MISSION_INVALID_PARAM1=6, /* param1 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM2=7, /* param2 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM3=8, /* param3 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM4=9, /* param4 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM5_X=10, /* x/param5 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM6_Y=11, /* y/param6 has an invalid value | */
+	MAV_MISSION_INVALID_PARAM7=12, /* param7 has an invalid value | */
+	MAV_MISSION_INVALID_SEQUENCE=13, /* received waypoint out of sequence | */
+	MAV_MISSION_DENIED=14, /* not accepting any mission commands from this communication partner | */
+	MAV_MISSION_RESULT_ENUM_END=15, /*  | */
+};
+
 // MESSAGE DEFINITIONS
 #include "./mavlink_msg_heartbeat.h"
 #include "./mavlink_msg_sys_status.h"
