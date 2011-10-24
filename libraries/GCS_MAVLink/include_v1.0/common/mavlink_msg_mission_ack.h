@@ -6,7 +6,7 @@ typedef struct __mavlink_mission_ack_t
 {
  uint8_t target_system; ///< System ID
  uint8_t target_component; ///< Component ID
- uint8_t type; ///< 0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner
+ uint8_t type; ///< See MAV_MISSION_RESULT enum
 } mavlink_mission_ack_t;
 
 #define MAVLINK_MSG_ID_MISSION_ACK_LEN 3
@@ -32,7 +32,7 @@ typedef struct __mavlink_mission_ack_t
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param type 0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner
+ * @param type See MAV_MISSION_RESULT enum
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mission_ack_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -66,7 +66,7 @@ static inline uint16_t mavlink_msg_mission_ack_pack(uint8_t system_id, uint8_t c
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
- * @param type 0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner
+ * @param type See MAV_MISSION_RESULT enum
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mission_ack_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -112,7 +112,7 @@ static inline uint16_t mavlink_msg_mission_ack_encode(uint8_t system_id, uint8_t
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param type 0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner
+ * @param type See MAV_MISSION_RESULT enum
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -163,7 +163,7 @@ static inline uint8_t mavlink_msg_mission_ack_get_target_component(const mavlink
 /**
  * @brief Get field type from mission_ack message
  *
- * @return 0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner
+ * @return See MAV_MISSION_RESULT enum
  */
 static inline uint8_t mavlink_msg_mission_ack_get_type(const mavlink_message_t* msg)
 {

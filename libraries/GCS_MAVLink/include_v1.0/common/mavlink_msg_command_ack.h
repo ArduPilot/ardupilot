@@ -5,7 +5,7 @@
 typedef struct __mavlink_command_ack_t
 {
  uint16_t command; ///< Command ID, as defined by MAV_CMD enum.
- uint8_t result; ///< 1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed
+ uint8_t result; ///< See MAV_RESULT enum
 } mavlink_command_ack_t;
 
 #define MAVLINK_MSG_ID_COMMAND_ACK_LEN 3
@@ -29,7 +29,7 @@ typedef struct __mavlink_command_ack_t
  * @param msg The MAVLink message to compress the data into
  *
  * @param command Command ID, as defined by MAV_CMD enum.
- * @param result 1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed
+ * @param result See MAV_RESULT enum
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_command_ack_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -60,7 +60,7 @@ static inline uint16_t mavlink_msg_command_ack_pack(uint8_t system_id, uint8_t c
  * @param chan The MAVLink channel this message was sent over
  * @param msg The MAVLink message to compress the data into
  * @param command Command ID, as defined by MAV_CMD enum.
- * @param result 1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed
+ * @param result See MAV_RESULT enum
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_command_ack_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -103,7 +103,7 @@ static inline uint16_t mavlink_msg_command_ack_encode(uint8_t system_id, uint8_t
  * @param chan MAVLink channel to send the message
  *
  * @param command Command ID, as defined by MAV_CMD enum.
- * @param result 1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed
+ * @param result See MAV_RESULT enum
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -142,7 +142,7 @@ static inline uint16_t mavlink_msg_command_ack_get_command(const mavlink_message
 /**
  * @brief Get field result from command_ack message
  *
- * @return 1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed
+ * @return See MAV_RESULT enum
  */
 static inline uint8_t mavlink_msg_command_ack_get_result(const mavlink_message_t* msg)
 {
