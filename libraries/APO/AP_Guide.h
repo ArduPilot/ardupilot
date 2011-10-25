@@ -125,7 +125,7 @@ protected:
 class MavlinkGuide: public AP_Guide {
 public:
 	MavlinkGuide(AP_Navigator * navigator,
-			AP_HardwareAbstractionLayer * hal);
+			AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim);
 	virtual void update();
 	void nextCommand();
 	void handleCommand();

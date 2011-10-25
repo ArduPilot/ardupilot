@@ -32,13 +32,13 @@ void AP_Guide::setCurrentIndex(uint8_t val){
 }
 
 MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
-		AP_HardwareAbstractionLayer * hal) :
+		AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
 	AP_Guide(navigator, hal), _rangeFinderFront(), _rangeFinderBack(),
 			_rangeFinderLeft(), _rangeFinderRight(),
 			_group(k_guide, PSTR("guide_")),
-			_velocityCommand(&_group, 1, 1, PSTR("velCmd")),
-			_crossTrackGain(&_group, 2, 1, PSTR("xt")),
-			_crossTrackLim(&_group, 3, 90, PSTR("xtLim")) {
+			_velocityCommand(&_group, 1, velCmd, PSTR("velCmd")),
+			_crossTrackGain(&_group, 2, xt, PSTR("xt")),
+			_crossTrackLim(&_group, 3, xtLim, PSTR("xtLim")) {
 
 	for (uint8_t i = 0; i < _hal->rangeFinders.getSize(); i++) {
 		RangeFinder * rF = _hal->rangeFinders[i];

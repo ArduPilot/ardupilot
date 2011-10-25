@@ -22,6 +22,8 @@
 #include <inttypes.h>
 #include "../GCS_MAVLink/GCS_MAVLink.h"
 #include <math.h>
+#include "../AP_Common/AP_Var.h"
+#include "AP_Var_keys.h"
 
 class AP_Var_group;
 
@@ -31,21 +33,38 @@ class AP_HardwareAbstractionLayer;
 class AP_Guide;
 class AP_Navigator;
 class Menu;
+class AP_ArmingMechanism;
 
 /// Controller class
 class AP_Controller {
 public:
 	AP_Controller(AP_Navigator * nav, AP_Guide * guide,
-			AP_HardwareAbstractionLayer * hal);
-	virtual void update(const float & dt) = 0;
-	virtual MAV_MODE getMode() = 0;
-	void setAllRadioChannelsToNeutral();
+			AP_HardwareAbstractionLayer * hal, 
+            AP_ArmingMechanism * armingMechanism,
+            const uint8_t _chMode,
+            const uint16_t key = k_cntrl,
+            const prog_char_t * name = NULL);
+	virtual void update(const float dt);
+	virtual void setMotors() = 0;
+    void setAllRadioChannelsToNeutral();
 	void setAllRadioChannelsManually();
-
+	virtual void manualLoop(const float dt) {
+        setAllRadioChannelsToNeutral();
+    };
+	virtual void autoLoop(const float dt) {
+        setAllRadioChannelsToNeutral();
+    };
+    AP_Uint8 getMode() {
+        return _mode;
+    }
 protected:
 	AP_Navigator * _nav;
 	AP_Guide * _guide;
 	AP_HardwareAbstractionLayer * _hal;
+	AP_ArmingMechanism * _armingMechanism;
+    uint8_t _chMode;
+	AP_Var_group _group;
+	AP_Uint8 _mode;
 };
 
 class AP_ControllerBlock {

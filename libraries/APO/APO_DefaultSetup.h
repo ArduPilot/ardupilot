@@ -138,8 +138,8 @@ void setup() {
 	 * Select guidance, navigation, control algorithms
 	 */
 	navigator = new NAVIGATOR_CLASS(hal);
-	guide = new GUIDE_CLASS(navigator, hal);
-	controller = new CONTROLLER_CLASS(navigator, guide, hal);
+	guide = new GUIDE_CLASS(navigator, hal, velCmd, xt, xtLim);
+	controller = new CONTROLLER_CLASS(navigator,guide,hal);
 
 	/*
 	 * CommLinks
@@ -161,6 +161,8 @@ void setup() {
 	if (hal->getMode() == MODE_HIL_CNTL) {
 		Serial.println("HIL line setting up");
 		Serial1.begin(hilBaud, 128, 128);
+		delay(1000);
+		Serial1.println("starting hil");
 		hal->hil = new COMMLINK_CLASS(&Serial1, navigator, guide, controller, hal);
 	}
 
