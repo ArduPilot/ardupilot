@@ -24,7 +24,7 @@ AP_Controller::AP_Controller(AP_Navigator * nav, AP_Guide * guide,
 		_nav(nav), _guide(guide), _hal(hal), _armingMechanism(armingMechanism),
 		_group(key, name ? : PSTR("CNTRL_")),
 		_chMode(chMode),
-		_mode(&_group, 1, MAV_MODE_UNINIT, PSTR("MODE")) {
+		_mode(&_group, 1, MAV_MODE_LOCKED, PSTR("MODE")) {
 	setAllRadioChannelsToNeutral();
 }
 

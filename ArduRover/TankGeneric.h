@@ -5,6 +5,8 @@
  *      Author: jgoppert
  */
 
+// NOT CURRENTLY WORKING
+
 #ifndef TANKGENERIC_H_
 #define TANKGENERIC_H_
 
@@ -74,6 +76,11 @@ const float throttleD = 0.0;
 const float throttleIMax = 0.0;
 const float throttleYMax = 0.0;
 const float throttleDFCut = 3.0;
+
+// guidance
+static const float velCmd = 5;
+static const float xt = 10;
+static const float xtLim = 90;
 
 #include "ControllerTank.h"
 

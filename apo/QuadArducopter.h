@@ -10,7 +10,7 @@
 
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
-static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
+static const apo::halMode_t halMode = apo::MODE_LIVE;
 static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
@@ -91,8 +91,12 @@ static const float PID_YAWSPEED_D = 0;
 static const float PID_YAWSPEED_LIM = .05; // 5 % motors
 static const float PID_YAWSPEED_AWU = 0.0;
 static const float PID_YAWSPEED_DFCUT = 3.0; // 3 Radians, about 1 Hz
-
 static const float THRUST_HOVER_OFFSET = 0.475;
+
+// guidance
+static const float velCmd = 1; // m/s
+static const float xt = 10; // cross track gain
+static const float xtLim = 90; // cross track angle limit, deg
 
 #include "ControllerQuad.h"
 

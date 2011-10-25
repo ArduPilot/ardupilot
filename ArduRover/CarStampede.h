@@ -62,19 +62,24 @@ static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
 
 // gains
-static const float steeringP = 1.0;
+static const float steeringP = 0.1;
 static const float steeringI = 0.0;
-static const float steeringD = 0.0;
+static const float steeringD = 0.1;
 static const float steeringIMax = 0.0;
-static const float steeringYMax = 3.0;
-static const float steeringDFCut = 25;
+static const float steeringYMax = 1;
+static const float steeringDFCut = 25.0;
 
-static const float throttleP = 0.0;
+static const float throttleP = 0.1;
 static const float throttleI = 0.0;
 static const float throttleD = 0.0;
 static const float throttleIMax = 0.0;
-static const float throttleYMax = 0.0;
-static const float throttleDFCut = 3.0;
+static const float throttleYMax = 1;
+static const float throttleDFCut = 0.0;
+
+// guidance
+static const float velCmd = 5;
+static const float xt = 10;
+static const float xtLim = 90;
 
 #include "ControllerCar.h"
 

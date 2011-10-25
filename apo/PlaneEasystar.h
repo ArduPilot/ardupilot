@@ -10,7 +10,7 @@
 
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_PLANE;
-static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
+static const apo::halMode_t halMode = apo::MODE_LIVE;
 static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
@@ -116,6 +116,11 @@ static const float ailTrim = 0.0;
 static const float elvTrim = 0.0;
 static const float rdrTrim = 0.0;
 static const float thrTrim = 0.5;
+
+// guidance
+static const float velCmd = 1; // m/s
+static const float xt = 10; // cross track gain
+static const float xtLim = 90; // cross track angle limit, deg
 
 #include "ControllerPlane.h"
 

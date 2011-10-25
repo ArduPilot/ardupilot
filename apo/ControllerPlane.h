@@ -13,18 +13,9 @@
 namespace apo {
 
 class ControllerPlane: public AP_Controller {
-private:
-	AP_Var_group _group;
-	AP_Var_group _trimGroup;
-	AP_Uint8 _mode;
-	AP_Uint8 _rdrAilMix;
-	bool _needsTrim;
-	AP_Float _ailTrim;
-	AP_Float _elvTrim;
-	AP_Float _rdrTrim;
-	AP_Float _thrTrim;
+public:
 	enum {
-		ch_mode = 0, ch_roll, ch_pitch, ch_thr, ch_yaw
+		ch_mode = 0, ch_roll, ch_pitch, ch_thrust, ch_yaw
 	};
 	enum {
 		k_chMode = k_radioChannelsStart,
@@ -42,21 +33,11 @@ private:
 
 		k_trim = k_customStart
 	};
-	BlockPID pidBnkRll; // bank error to roll servo deflection
-	BlockPID pidSpdPit; // speed error to pitch command
-	BlockPID pidPitPit; // pitch error to pitch servo deflection
-	BlockPID pidYwrYaw; // yaw rate error to yaw servo deflection
-	BlockPID pidHdgBnk; // heading error to bank command
-	BlockPID pidAltThr; // altitude error to throttle deflection
-	bool requireRadio;
 
-public:
 	ControllerPlane(AP_Navigator * nav, AP_Guide * guide,
 			AP_HardwareAbstractionLayer * hal) :
-				AP_Controller(nav, guide, hal),
-				_group(k_cntrl, PSTR("cntrl_")),
+				AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_yaw,0.1,-0.9,0.9),ch_mode),
 				_trimGroup(k_trim, PSTR("trim_")),
-				_mode(&_group, 1, MAV_MODE_UNINIT, PSTR("mode")),
 				_rdrAilMix(&_group, 2, rdrAilMix, PSTR("rdrAilMix")),
 				_needsTrim(false),
 				_ailTrim(&_trimGroup, 1, ailTrim, PSTR("ail")),
@@ -81,7 +62,7 @@ public:
 				pidAltThr(new AP_Var_group(k_pidAltThr, PSTR("altThr_")), 1,
 						pidAltThrP, pidAltThrI, pidAltThrD, pidAltThrAwu,
 						pidAltThrLim, pidAltThrDFCut),
-				requireRadio(false) {
+				requireRadio(false), _aileron(0), _elevator(0), _rudder(0), _throttle(0) {
 
 		_hal->debug->println_P(PSTR("initializing plane controller"));
 
@@ -101,113 +82,112 @@ public:
 				new AP_RcChannel(k_chYaw, PSTR("yaw_"), APM_RC, 3, 1200, 1500,
 						1800, RC_MODE_INOUT, false));
 	}
-	virtual MAV_MODE getMode() {
-		return (MAV_MODE) _mode.get();
+
+	void manualLoop(const float dt) {
+		setAllRadioChannelsManually();
+
+		// force auto to read new manual trim
+		if (_needsTrim == false)
+			_needsTrim = true;
+		//_hal->debug->println("manual");
 	}
-	virtual void update(const float & dt) {
 
-		// check for heartbeat
-		if (_hal->heartBeatLost()) {
-			_mode = MAV_MODE_FAILSAFE;
-			setAllRadioChannelsToNeutral();
-			_hal->setState(MAV_STATE_EMERGENCY);
-			_hal->debug->printf_P(PSTR("comm lost, send heartbeat from gcs\n"));
-			return;
-		// if the value of the throttle is less than 5% cut motor power
-		} else if (requireRadio && _hal->rc[ch_thr]->getRadioPosition() < 0.05) {
-			_mode = MAV_MODE_LOCKED;
-			setAllRadioChannelsToNeutral();
-			_hal->setState(MAV_STATE_STANDBY);
-			return;
-		// if in live mode then set state to active
-		} else if (_hal->getMode() == MODE_LIVE) {
-			_hal->setState(MAV_STATE_ACTIVE);
-		// if in hardware in the loop (control) mode, set to hilsim
-		} else if (_hal->getMode() == MODE_HIL_CNTL) {
-			_hal->setState(MAV_STATE_HILSIM);
+	void autoLoop(const float dt) {
+		float headingError = _guide->getHeadingCommand()
+				- _nav->getYaw();
+		if (headingError > 180 * deg2Rad)
+			headingError -= 360 * deg2Rad;
+		if (headingError < -180 * deg2Rad)
+			headingError += 360 * deg2Rad;
+
+		_aileron = pidBnkRll.update(
+				pidHdgBnk.update(headingError, dt) - _nav->getRoll(), dt);
+		_elevator = pidPitPit.update(
+				-pidSpdPit.update(
+						_guide->getAirSpeedCommand() - _nav->getAirSpeed(),
+						dt) - _nav->getPitch(), dt);
+		_rudder = pidYwrYaw.update(-_nav->getYawRate(), dt);
+
+		// desired yaw rate is zero, needs washout
+		_throttle = pidAltThr.update(
+				_guide->getAltitudeCommand() - _nav->getAlt(), dt);
+
+		// if needs trim
+		if (_needsTrim) {
+			// need to subtract current controller deflections so control
+			// surfaces are actually at the same position as manual flight
+			_ailTrim = _hal->rc[ch_roll]->getRadioPosition() - _aileron;
+			_elvTrim = _hal->rc[ch_pitch]->getRadioPosition() - _elevator;
+			_rdrTrim = _hal->rc[ch_yaw]->getRadioPosition() - _rudder;
+			_thrTrim = _hal->rc[ch_thrust]->getRadioPosition() - _throttle;
+			_needsTrim = false;
 		}
 
-		// read switch to set mode
-		if (_hal->rc[ch_mode]->getRadioPosition() > 0) {
-			_mode = MAV_MODE_MANUAL;
-		} else {
-			_mode = MAV_MODE_AUTO;
-		}
+		// actuator mixing/ output
+		_aileron += _rdrAilMix * _rudder + _ailTrim;
+		_elevator += _elvTrim;
+		_rudder += _rdrTrim;
+		_throttle += _thrTrim;
 
-		// manual mode
-		switch (_mode) {
+		//_hal->debug->println("automode");
+	}
 
-		case MAV_MODE_MANUAL: {
-			setAllRadioChannelsManually();
+	void setMotors() {
 
-			// force auto to read new manual trim
-			if (_needsTrim == false)
-				_needsTrim = true;
-			//_hal->debug->println("manual");
-			break;
-		}
-		case MAV_MODE_AUTO: {
-			float headingError = _guide->getHeadingCommand()
-					- _nav->getYaw();
-			if (headingError > 180 * deg2Rad)
-				headingError -= 360 * deg2Rad;
-			if (headingError < -180 * deg2Rad)
-				headingError += 360 * deg2Rad;
+		switch (_hal->getState()) {
 
-			float aileron = pidBnkRll.update(
-					pidHdgBnk.update(headingError, dt) - _nav->getRoll(), dt);
-			float elevator = pidPitPit.update(
-					-pidSpdPit.update(
-							_guide->getAirSpeedCommand() - _nav->getAirSpeed(),
-							dt) - _nav->getPitch(), dt);
-			float rudder = pidYwrYaw.update(-_nav->getYawRate(), dt);
-			// desired yaw rate is zero, needs washout
-			float throttle = pidAltThr.update(
-					_guide->getAltitudeCommand() - _nav->getAlt(), dt);
-
-			// if needs trim
-			if (_needsTrim) {
-				// need to subtract current controller deflections so control
-				// surfaces are actually at the same position as manual flight
-				_ailTrim = _hal->rc[ch_roll]->getRadioPosition() - aileron;
-				_elvTrim = _hal->rc[ch_pitch]->getRadioPosition() - elevator;
-				_rdrTrim = _hal->rc[ch_yaw]->getRadioPosition() - rudder;
-				_thrTrim = _hal->rc[ch_thr]->getRadioPosition() - throttle;
-				_needsTrim = false;
+			case MAV_STATE_ACTIVE: {
+				digitalWrite(_hal->aLedPin, HIGH);
+				// turn all motors off if below 0.1 throttle
+				if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
+					setAllRadioChannelsToNeutral();
+				} else {
+					// actuator mixing/ output
+					_hal->rc[ch_roll]->setPosition(_aileron);
+					_hal->rc[ch_yaw]->setPosition(_rudder);
+					_hal->rc[ch_pitch]->setPosition(_elevator);
+					_hal->rc[ch_thrust]->setPosition(_throttle);
+				}
+				break;
+			}
+			case MAV_STATE_EMERGENCY: {
+				digitalWrite(_hal->aLedPin, LOW);
+				setAllRadioChannelsToNeutral();
+				break;
+			}
+			case MAV_STATE_STANDBY: {
+				digitalWrite(_hal->aLedPin,LOW);
+				setAllRadioChannelsToNeutral();
+				break;
+			}
+			default: {
+				digitalWrite(_hal->aLedPin, LOW);
+				setAllRadioChannelsToNeutral();
 			}
 
-			// actuator mixing/ output
-			_hal->rc[ch_roll]->setPosition(
-					aileron + _rdrAilMix * rudder + _ailTrim);
-			_hal->rc[ch_yaw]->setPosition(rudder + _rdrTrim);
-			_hal->rc[ch_pitch]->setPosition(elevator + _elvTrim);
-			_hal->rc[ch_thr]->setPosition(throttle + _thrTrim);
-
-			//_hal->debug->println("automode");
-			
-
-			// heading debug
-//			Serial.print("heading command: "); Serial.println(_guide->getHeadingCommand());
-//			Serial.print("heading: "); Serial.println(_nav->getYaw());
-//			Serial.print("heading error: "); Serial.println(headingError);
-
-			// alt debug
-//			Serial.print("alt command: "); Serial.println(_guide->getAltitudeCommand());
-//			Serial.print("alt: "); Serial.println(_nav->getAlt());
-//			Serial.print("alt error: "); Serial.println(_guide->getAltitudeCommand() - _nav->getAlt());
-			break;
 		}
 
-		default: {
-			setAllRadioChannelsToNeutral();
-			_mode = MAV_MODE_FAILSAFE;
-			_hal->setState(MAV_STATE_EMERGENCY);
-			_hal->debug->printf_P(PSTR("unknown controller mode\n"));
-			break;
-		}
-
-		}
 	}
+
+private:
+	AP_Var_group _trimGroup;
+	AP_Uint8 _rdrAilMix;
+	bool _needsTrim;
+	AP_Float _ailTrim;
+	AP_Float _elvTrim;
+	AP_Float _rdrTrim;
+	AP_Float _thrTrim;
+	BlockPID pidBnkRll; // bank error to roll servo deflection
+	BlockPID pidSpdPit; // speed error to pitch command
+	BlockPID pidPitPit; // pitch error to pitch servo deflection
+	BlockPID pidYwrYaw; // yaw rate error to yaw servo deflection
+	BlockPID pidHdgBnk; // heading error to bank command
+	BlockPID pidAltThr; // altitude error to throttle deflection
+	bool requireRadio;
+	float _aileron;
+	float _elevator;
+	float _rudder;
+	float _throttle;
 };
 
 } // namespace apo
