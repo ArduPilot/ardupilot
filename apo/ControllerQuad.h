@@ -22,15 +22,15 @@ public:
 	 * unique keys so they can be reaccessed from the hal rc vector
 	 */
 	enum {
-		CH_MODE = 0, // note scicoslab channels set mode, left, right, front, back order
-		CH_RIGHT,
-		CH_LEFT,
-		CH_FRONT,
-		CH_BACK,
-		CH_ROLL,
-		CH_PITCH,
-		CH_THRUST,
-		CH_YAW
+		ch_mode = 0, // note scicoslab channels set mode, left, right, front, back order
+		ch_right,
+		ch_left,
+		ch_front,
+		ch_back,
+		ch_roll,
+		ch_pitch,
+		ch_thrust,
+		ch_yaw
 	};
 
 	// must match channel enum
@@ -60,7 +60,7 @@ public:
 
 	ControllerQuad(AP_Navigator * nav, AP_Guide * guide,
 			AP_HardwareAbstractionLayer * hal) :
-				AP_Controller(nav, guide, hal),
+				AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode),
 				pidRoll(new AP_Var_group(k_pidRoll, PSTR("ROLL_")), 1,
 						PID_ATT_P, PID_ATT_I, PID_ATT_D, PID_ATT_AWU,
 						PID_ATT_LIM, PID_ATT_DFCUT),
@@ -79,8 +79,10 @@ public:
 						PID_POS_I, PID_POS_D, PID_POS_AWU, PID_POS_LIM, PID_POS_DFCUT),
 				pidPD(new AP_Var_group(k_pidPD, PSTR("DOWN_")), 1, PID_POS_Z_P,
 						PID_POS_Z_I, PID_POS_Z_D, PID_POS_Z_AWU, PID_POS_Z_LIM, PID_POS_DFCUT),
-   				_armingMechanism(hal,CH_THRUST,CH_YAW,0.1,-0.9,0.9), _thrustMix(0), _pitchMix(0), _rollMix(0), _yawMix(0),
-				_cmdRoll(0), _cmdPitch(0), _cmdYawRate(0), _mode(MAV_MODE_LOCKED) {
+   				_thrustMix(0), _pitchMix(0), _rollMix(0), _yawMix(0),
+				_cmdRoll(0), _cmdPitch(0), _cmdYawRate(0) {
+		_hal->debug->println_P(PSTR("initializing quad controller"));
+
 		/*
 		 * allocate radio channels
 		 * the order of the channels has to match the enumeration above
@@ -115,91 +117,30 @@ public:
 						1900, RC_MODE_IN, false));
 	}
 
-	virtual void update(const float & dt) {
-		//_hal->debug->printf_P(PSTR("thr: %f, yaw: %f\n"),_hal->rc[CH_THRUST]->getRadioPosition(),_hal->rc[CH_YAW]->getRadioPosition());
-
-		_armingMechanism.update(dt);
-
-		// determine flight mode
-		//
-		// check for heartbeat from gcs, if not found go to failsafe
-		if (_hal->heartBeatLost()) {
-			_mode = MAV_MODE_FAILSAFE;
-			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
-		// if battery less than 5%, go to failsafe
-		} else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
-			_mode = MAV_MODE_FAILSAFE;
-			_hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
-		// manual/auto switch
-		} else {
-			// if all emergencies cleared, fall back to standby
-			if (_hal->getState()==MAV_STATE_EMERGENCY) _hal->setState(MAV_STATE_STANDBY);
-		   	if (_hal->rc[CH_MODE]->getRadioPosition() > 0) _mode = MAV_MODE_MANUAL;
-			else _mode = MAV_MODE_AUTO;
-		}
-
-		// handle flight modes
-		switch(_mode) {
-
-			case MAV_MODE_LOCKED: {
-				_hal->setState(MAV_STATE_STANDBY);
-				break;
-			}
-
-			case MAV_MODE_FAILSAFE: {
-				_hal->setState(MAV_STATE_EMERGENCY);
-				break;
-			}
-
-			case MAV_MODE_MANUAL: {
-				manualPositionLoop();
-				autoAttitudeLoop(dt);
-				break;
-			}
-
-			case MAV_MODE_AUTO: {
-				// until position loop is tested just
-				// go to standby
-				_hal->setState(MAV_STATE_STANDBY);
-
-				//attitudeLoop();
-				// XXX autoPositionLoop NOT TESTED, don't uncomment yet
-				//autoPositionLoop(dt);
-				//autoAttitudeLoop(dt);
-				break;
-			}
-
-			default: {
-				_hal->gcs->sendText(SEVERITY_HIGH, PSTR("unknown mode"));
-				_hal->setState(MAV_STATE_EMERGENCY);
-			}
-		}
-
-		// this sends commands to motors
-		setMotors();
-	}
-
-	virtual MAV_MODE getMode() {
-		return (MAV_MODE) _mode.get();
-	}
-
 private:
-
-	AP_Uint8 _mode;
 	BlockPIDDfb pidRoll, pidPitch, pidYaw;
 	BlockPID pidYawRate;
 	BlockPIDDfb pidPN, pidPE, pidPD;
-	AP_ArmingMechanism _armingMechanism;
 
 	float _thrustMix, _pitchMix, _rollMix, _yawMix;
 	float _cmdRoll, _cmdPitch, _cmdYawRate;
 
-	void manualPositionLoop() {
+	void manualLoop(const float dt) {
 		setAllRadioChannelsManually();
-		_cmdRoll = -0.5 * _hal->rc[CH_ROLL]->getPosition();
-		_cmdPitch = -0.5 * _hal->rc[CH_PITCH]->getPosition();
-		_cmdYawRate = -1 * _hal->rc[CH_YAW]->getPosition();
-		_thrustMix = _hal->rc[CH_THRUST]->getPosition();
+		_cmdRoll = -0.5 * _hal->rc[ch_roll]->getPosition();
+		_cmdPitch = -0.5 * _hal->rc[ch_pitch]->getPosition();
+		_cmdYawRate = -1 * _hal->rc[ch_yaw]->getPosition();
+		_thrustMix = _hal->rc[ch_thrust]->getPosition();
+		autoAttitudeLoop(dt);
+	}
+
+	void autoLoop(const float dt) {
+		autoPositionLoop(dt);
+		autoAttitudeLoop(dt);
+
+		// XXX currently auto loop not tested, so
+		// put vehicle in standby
+		_hal->setState(MAV_STATE_STANDBY);
 	}
 
 	void autoPositionLoop(float dt) {
@@ -242,13 +183,13 @@ private:
 			case MAV_STATE_ACTIVE: {
 				digitalWrite(_hal->aLedPin, HIGH);
 				// turn all motors off if below 0.1 throttle
-				if (_hal->rc[CH_THRUST]->getRadioPosition() < 0.1) {
+				if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
 					setAllRadioChannelsToNeutral();
 				} else {
-					_hal->rc[CH_RIGHT]->setPosition(_thrustMix - _rollMix + _yawMix);
-					_hal->rc[CH_LEFT]->setPosition(_thrustMix + _rollMix + _yawMix);
-					_hal->rc[CH_FRONT]->setPosition(_thrustMix + _pitchMix - _yawMix);
-					_hal->rc[CH_BACK]->setPosition(_thrustMix - _pitchMix - _yawMix);
+					_hal->rc[ch_right]->setPosition(_thrustMix - _rollMix + _yawMix);
+					_hal->rc[ch_left]->setPosition(_thrustMix + _rollMix + _yawMix);
+					_hal->rc[ch_front]->setPosition(_thrustMix + _pitchMix - _yawMix);
+					_hal->rc[ch_back]->setPosition(_thrustMix - _pitchMix - _yawMix);
 				}
 				break;
 			}
