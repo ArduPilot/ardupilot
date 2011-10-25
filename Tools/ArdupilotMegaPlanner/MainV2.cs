@@ -66,10 +66,10 @@ namespace ArdupilotMega
 
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
-        //GCSViews.Configuration Configuration;
+        GCSViews.Configuration Configuration;
         GCSViews.Simulation Simulation;
         GCSViews.Firmware Firmware;
-        //GCSViews.Terminal Terminal;
+        GCSViews.Terminal Terminal;
 
         public MainV2()
         {
@@ -219,6 +219,22 @@ namespace ArdupilotMega
 
             instance = this;
             splash.Close();
+        }
+
+        internal void ScreenShot()
+        {
+            Rectangle bounds = Screen.GetBounds(Point.Empty);
+            using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
+            {
+                using (Graphics g = Graphics.FromImage(bitmap))
+                {
+                    g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
+                }
+                string name = "ss" + DateTime.Now.ToString("hhmmss") + ".jpg";
+                bitmap.Save(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + name, System.Drawing.Imaging.ImageFormat.Jpeg);
+                MessageBox.Show("Screenshot saved to " + name);
+            } 
+
         }
 
         private void CMB_serialport_Click(object sender, EventArgs e)
@@ -456,7 +472,19 @@ namespace ArdupilotMega
 
             GCSViews.Terminal.threadrun = false;
 
-            UserControl temp = new GCSViews.Configuration();
+            // dispose of old else memory leak
+            if (Configuration != null)
+            {
+                try
+                {
+                    Configuration.Dispose();
+                }
+                catch { }
+            }
+
+            Configuration = new GCSViews.Configuration();
+
+            UserControl temp = Configuration;
 
             temp.SuspendLayout();
 
@@ -633,6 +661,8 @@ namespace ArdupilotMega
 
                     cs.firmware = APMFirmware;
 
+                    config[CMB_serialport.Text + "_BAUD"] = CMB_baudrate.Text;
+
                     if (config["loadwpsonconnect"] != null && bool.Parse(config["loadwpsonconnect"].ToString()) == true)
                     {
                         MenuFlightPlanner_Click(null, null);
@@ -697,6 +727,9 @@ namespace ArdupilotMega
             try
             {
                 comPort.BaseStream.PortName = CMB_serialport.Text;
+
+                if (config[CMB_serialport.Text + "_BAUD"] != null)
+                    CMB_baudrate.Text = config[CMB_serialport.Text + "_BAUD"].ToString();
             }
             catch { }
         }
@@ -1555,6 +1588,11 @@ namespace ArdupilotMega
                 Form frm = new temp();
                 fixtheme(frm);
                 frm.Show();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                ScreenShot();
                 return true;
             }
             if (keyData == (Keys.Control | Keys.G)) // test

@@ -31,18 +31,33 @@ namespace ArdupilotMega.GCSViews
         RollingPointPairList list3 = new RollingPointPairList(1200);
         RollingPointPairList list4 = new RollingPointPairList(1200);
         RollingPointPairList list5 = new RollingPointPairList(1200);
+        RollingPointPairList list6 = new RollingPointPairList(1200);
+        RollingPointPairList list7 = new RollingPointPairList(1200);
+        RollingPointPairList list8 = new RollingPointPairList(1200);
+        RollingPointPairList list9 = new RollingPointPairList(1200);
+        RollingPointPairList list10 = new RollingPointPairList(1200);
 
         System.Reflection.PropertyInfo list1item = null;
         System.Reflection.PropertyInfo list2item = null;
         System.Reflection.PropertyInfo list3item = null;
         System.Reflection.PropertyInfo list4item = null;
         System.Reflection.PropertyInfo list5item = null;
+        System.Reflection.PropertyInfo list6item = null;
+        System.Reflection.PropertyInfo list7item = null;
+        System.Reflection.PropertyInfo list8item = null;
+        System.Reflection.PropertyInfo list9item = null;
+        System.Reflection.PropertyInfo list10item = null;
 
         CurveItem list1curve;
         CurveItem list2curve;
         CurveItem list3curve;
         CurveItem list4curve;
         CurveItem list5curve;
+        CurveItem list6curve;
+        CurveItem list7curve;
+        CurveItem list8curve;
+        CurveItem list9curve;
+        CurveItem list10curve;
 
         bool huddropout = false;
         bool huddropoutresize = false;
@@ -77,10 +92,22 @@ namespace ArdupilotMega.GCSViews
             Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
 
             // setup default tuning graph
-            chk_box_CheckedChanged((object)(new CheckBox() { Name = "roll", Checked = true }), new EventArgs());
-            chk_box_CheckedChanged((object)(new CheckBox() { Name = "pitch", Checked = true }), new EventArgs());
-            chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_roll", Checked = true }), new EventArgs());
-            chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_pitch", Checked = true }), new EventArgs());
+            if (MainV2.config["Tuning_Graph_Selected"] != null)
+            {
+                string line = MainV2.config["Tuning_Graph_Selected"].ToString();
+                string[] lines = line.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string option in lines)
+                {
+                    chk_box_CheckedChanged((object)(new CheckBox() { Name = option, Checked = true }), new EventArgs());
+                }
+            }
+            else
+            {
+                chk_box_CheckedChanged((object)(new CheckBox() { Name = "roll", Checked = true }), new EventArgs());
+                chk_box_CheckedChanged((object)(new CheckBox() { Name = "pitch", Checked = true }), new EventArgs());
+                chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_roll", Checked = true }), new EventArgs());
+                chk_box_CheckedChanged((object)(new CheckBox() { Name = "nav_pitch", Checked = true }), new EventArgs());
+            }
 
             List<string> list = new List<string>();
 
@@ -314,6 +341,16 @@ namespace ArdupilotMega.GCSViews
                             list4.Add(time, (float)list4item.GetValue((object)MainV2.cs, null));
                         if (list5item != null)
                             list5.Add(time, (float)list5item.GetValue((object)MainV2.cs, null));
+                        if (list6item != null)
+                            list6.Add(time, (float)list6item.GetValue((object)MainV2.cs, null));
+                        if (list7item != null)
+                            list7.Add(time, (float)list7item.GetValue((object)MainV2.cs, null));
+                        if (list8item != null)
+                            list8.Add(time, (float)list8item.GetValue((object)MainV2.cs, null));
+                        if (list9item != null)
+                            list9.Add(time, (float)list9item.GetValue((object)MainV2.cs, null));
+                        if (list10item != null)
+                            list10.Add(time, (float)list10item.GetValue((object)MainV2.cs, null));
                     }
 
                     if (tracklast.AddSeconds(1) < DateTime.Now)
@@ -681,14 +718,14 @@ namespace ArdupilotMega.GCSViews
         {
             if (CB_tuning.Checked)
             {
-                gMapControl1.Visible = false;
+                splitContainer1.Panel1Collapsed = false;
                 ZedGraphTimer.Enabled = true;
                 ZedGraphTimer.Start();
                 zg1.Visible = true;
             }
             else
             {
-                gMapControl1.Visible = true;
+                splitContainer1.Panel1Collapsed = true;
                 ZedGraphTimer.Enabled = false;
                 ZedGraphTimer.Stop();
                 zg1.Visible = false;
@@ -1203,6 +1240,8 @@ namespace ArdupilotMega.GCSViews
                     return;
                 }
             }
+
+
         }
 
         private void zg1_DoubleClick(object sender, EventArgs e)
@@ -1210,13 +1249,26 @@ namespace ArdupilotMega.GCSViews
             Form selectform = new Form()
             {
                 Name = "select",
-                Width = 650,
+                Width = 750,
                 Height = 250,
                 Text = "Graph This"
             };
 
             int x = 10;
             int y = 10;
+
+            {
+                CheckBox chk_box = new CheckBox();
+                chk_box.Text = "Logarithmic";
+                chk_box.Name = "Logarithmic";
+                chk_box.Location = new Point(x, y);
+                chk_box.Size = new System.Drawing.Size(100, 20);
+                chk_box.CheckedChanged += new EventHandler(chk_log_CheckedChanged);
+
+                selectform.Controls.Add(chk_box);
+            }
+
+            y += 20;
 
             object thisBoxed = MainV2.cs;
             Type test = thisBoxed.GetType();
@@ -1249,6 +1301,16 @@ namespace ArdupilotMega.GCSViews
                     chk_box.Checked = true;
                 if (list5item != null && list5item.Name == field.Name)
                     chk_box.Checked = true;
+                if (list6item != null && list6item.Name == field.Name)
+                    chk_box.Checked = true;
+                if (list7item != null && list7item.Name == field.Name)
+                    chk_box.Checked = true;
+                if (list8item != null && list8item.Name == field.Name)
+                    chk_box.Checked = true;
+                if (list9item != null && list9item.Name == field.Name)
+                    chk_box.Checked = true;
+                if (list10item != null && list10item.Name == field.Name)
+                    chk_box.Checked = true;
 
                 chk_box.Text = field.Name;
                 chk_box.Name = field.Name;
@@ -1271,6 +1333,18 @@ namespace ArdupilotMega.GCSViews
             }
             MainV2.fixtheme(selectform);
             selectform.Show();
+        }
+
+        void chk_log_CheckedChanged(object sender, EventArgs e)
+        {
+            if (((CheckBox)sender).Checked)
+            {
+                zg1.GraphPane.YAxis.Type = AxisType.Log;
+            }
+            else
+            {
+                zg1.GraphPane.YAxis.Type = AxisType.Linear;
+            }
         }
 
         void chk_box_CheckedChanged(object sender, EventArgs e)
@@ -1302,12 +1376,55 @@ namespace ArdupilotMega.GCSViews
                     setupPropertyInfo(ref list5item, ((CheckBox)sender).Name, MainV2.cs);
                     list5curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list5, Color.Yellow, SymbolType.None);
                 }
+                else if (list6item == null)
+                {
+                    setupPropertyInfo(ref list6item, ((CheckBox)sender).Name, MainV2.cs);
+                    list6curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list6, Color.Magenta, SymbolType.None);
+                }
+                else if (list7item == null)
+                {
+                    setupPropertyInfo(ref list7item, ((CheckBox)sender).Name, MainV2.cs);
+                    list7curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list7, Color.Purple, SymbolType.None);
+                }
+                else if (list8item == null)
+                {
+                    setupPropertyInfo(ref list8item, ((CheckBox)sender).Name, MainV2.cs);
+                    list8curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list8, Color.LimeGreen, SymbolType.None);
+                }
+                else if (list9item == null)
+                {
+                    setupPropertyInfo(ref list9item, ((CheckBox)sender).Name, MainV2.cs);
+                    list9curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list9, Color.Cyan, SymbolType.None);
+                }
+                else if (list10item == null)
+                {
+                    setupPropertyInfo(ref list10item, ((CheckBox)sender).Name, MainV2.cs);
+                    list10curve = zg1.GraphPane.AddCurve(((CheckBox)sender).Name, list10, Color.Violet, SymbolType.None);
+                }
                 else
                 {
-                    MessageBox.Show("Max 5 at a time.");
+                    MessageBox.Show("Max 10 at a time.");
                     ((CheckBox)sender).Checked = false;
                 }
                 MainV2.fixtheme(this);
+
+                string selected = "";
+                try
+                {
+                    selected = selected + zg1.GraphPane.CurveList[0].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[1].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[2].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[3].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[4].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[5].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[6].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[7].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[8].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[9].Label.Text + "|";
+                    selected = selected + zg1.GraphPane.CurveList[10].Label.Text + "|";
+                }
+                catch { }
+                MainV2.config["Tuning_Graph_Selected"] = selected;
             }
             else
             {
@@ -1336,6 +1453,31 @@ namespace ArdupilotMega.GCSViews
                 {
                     list5item = null;
                     zg1.GraphPane.CurveList.Remove(list5curve);
+                } 
+                if (list6item != null && list6item.Name == ((CheckBox)sender).Name)
+                {
+                    list6item = null;
+                    zg1.GraphPane.CurveList.Remove(list6curve);
+                } 
+                if (list7item != null && list7item.Name == ((CheckBox)sender).Name)
+                {
+                    list7item = null;
+                    zg1.GraphPane.CurveList.Remove(list7curve);
+                } 
+                if (list8item != null && list8item.Name == ((CheckBox)sender).Name)
+                {
+                    list8item = null;
+                    zg1.GraphPane.CurveList.Remove(list8curve);
+                } 
+                if (list9item != null && list9item.Name == ((CheckBox)sender).Name)
+                {
+                    list9item = null;
+                    zg1.GraphPane.CurveList.Remove(list9curve);
+                } 
+                if (list10item != null && list10item.Name == ((CheckBox)sender).Name)
+                {
+                    list10item = null;
+                    zg1.GraphPane.CurveList.Remove(list10curve);
                 }
             }
         }
