@@ -16,6 +16,6 @@
 #include "AP_Navigator.h"
 #include "AP_RcChannel.h"
 #include "AP_BatteryMonitor.h"
-//#include "AP_Var_keys.h"
+#include "AP_ArmingMechanism.h"
 
 #endif /* APO_H_ */

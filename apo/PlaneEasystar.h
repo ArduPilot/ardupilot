@@ -10,8 +10,8 @@
 
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_PLANE;
-static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
+static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
