@@ -277,7 +277,7 @@ namespace ArdupilotMega.GCSViews
                 cell = Commands.Rows[selectedrow].Cells[1] as DataGridViewTextBoxCell;
                 cell.Value = 0;
             }
-            if (Commands.Columns[Param2.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][1]/*"Alt"*/))
+            if (alt != -1 && Commands.Columns[Param2.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][1]/*"Alt"*/))
             {
                 cell = Commands.Rows[selectedrow].Cells[2] as DataGridViewTextBoxCell;
 
@@ -1719,7 +1719,7 @@ namespace ArdupilotMega.GCSViews
                         }
                         else
                         {
-                            callMeDrag(CurentRectMarker.InnerMarker.Tag.ToString(), currentMarker.Position.Lat, currentMarker.Position.Lng, 0);
+                            callMeDrag(CurentRectMarker.InnerMarker.Tag.ToString(), currentMarker.Position.Lat, currentMarker.Position.Lng, -1);
                         }
                         CurentRectMarker = null;
                     }

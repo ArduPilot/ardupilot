@@ -50,6 +50,11 @@
             this.BUT_playlog = new ArdupilotMega.MyButton();
             this.BUT_loadtelem = new ArdupilotMega.MyButton();
             this.tableMap = new System.Windows.Forms.TableLayoutPanel();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.zg1 = new ZedGraph.ZedGraphControl();
+            this.lbl_winddir = new ArdupilotMega.MyLabel();
+            this.lbl_windvel = new ArdupilotMega.MyLabel();
+            this.gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
             this.panel1 = new System.Windows.Forms.Panel();
             this.TXT_lat = new ArdupilotMega.MyLabel();
             this.Zoomlevel = new System.Windows.Forms.NumericUpDown();
@@ -58,11 +63,6 @@
             this.TXT_alt = new ArdupilotMega.MyLabel();
             this.CHK_autopan = new System.Windows.Forms.CheckBox();
             this.CB_tuning = new System.Windows.Forms.CheckBox();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.lbl_windvel = new ArdupilotMega.MyLabel();
-            this.lbl_winddir = new ArdupilotMega.MyLabel();
-            this.gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
-            this.zg1 = new ZedGraph.ZedGraphControl();
             this.dataGridViewImageColumn1 = new System.Windows.Forms.DataGridViewImageColumn();
             this.dataGridViewImageColumn2 = new System.Windows.Forms.DataGridViewImageColumn();
             this.ZedGraphTimer = new System.Windows.Forms.Timer(this.components);
@@ -84,9 +84,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.NUM_playbackspeed)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.tracklog)).BeginInit();
             this.tableMap.SuspendLayout();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).BeginInit();
-            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // contextMenuStrip1
@@ -1042,9 +1044,79 @@
             // tableMap
             // 
             resources.ApplyResources(this.tableMap, "tableMap");
+            this.tableMap.Controls.Add(this.splitContainer1, 0, 0);
             this.tableMap.Controls.Add(this.panel1, 0, 1);
-            this.tableMap.Controls.Add(this.panel2, 0, 0);
             this.tableMap.Name = "tableMap";
+            // 
+            // splitContainer1
+            // 
+            resources.ApplyResources(this.splitContainer1, "splitContainer1");
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.zg1);
+            this.splitContainer1.Panel1Collapsed = true;
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.lbl_winddir);
+            this.splitContainer1.Panel2.Controls.Add(this.lbl_windvel);
+            this.splitContainer1.Panel2.Controls.Add(this.gMapControl1);
+            // 
+            // zg1
+            // 
+            resources.ApplyResources(this.zg1, "zg1");
+            this.zg1.Name = "zg1";
+            this.zg1.ScrollGrace = 0D;
+            this.zg1.ScrollMaxX = 0D;
+            this.zg1.ScrollMaxY = 0D;
+            this.zg1.ScrollMaxY2 = 0D;
+            this.zg1.ScrollMinX = 0D;
+            this.zg1.ScrollMinY = 0D;
+            this.zg1.ScrollMinY2 = 0D;
+            this.zg1.DoubleClick += new System.EventHandler(this.zg1_DoubleClick);
+            // 
+            // lbl_winddir
+            // 
+            this.lbl_winddir.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "wind_dir", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "Dir: 0"));
+            resources.ApplyResources(this.lbl_winddir, "lbl_winddir");
+            this.lbl_winddir.Name = "lbl_winddir";
+            this.lbl_winddir.resize = true;
+            this.toolTip1.SetToolTip(this.lbl_winddir, resources.GetString("lbl_winddir.ToolTip"));
+            // 
+            // lbl_windvel
+            // 
+            this.lbl_windvel.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "wind_vel", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "Vel: 0"));
+            resources.ApplyResources(this.lbl_windvel, "lbl_windvel");
+            this.lbl_windvel.Name = "lbl_windvel";
+            this.lbl_windvel.resize = true;
+            this.toolTip1.SetToolTip(this.lbl_windvel, resources.GetString("lbl_windvel.ToolTip"));
+            // 
+            // gMapControl1
+            // 
+            this.gMapControl1.BackColor = System.Drawing.Color.Transparent;
+            this.gMapControl1.Bearing = 0F;
+            this.gMapControl1.CanDragMap = true;
+            this.gMapControl1.ContextMenuStrip = this.contextMenuStrip1;
+            resources.ApplyResources(this.gMapControl1, "gMapControl1");
+            this.gMapControl1.GrayScaleMode = false;
+            this.gMapControl1.LevelsKeepInMemmory = 5;
+            this.gMapControl1.MarkersEnabled = true;
+            this.gMapControl1.MaxZoom = 2;
+            this.gMapControl1.MinZoom = 2;
+            this.gMapControl1.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
+            this.gMapControl1.Name = "gMapControl1";
+            this.gMapControl1.NegativeMode = false;
+            this.gMapControl1.PolygonsEnabled = true;
+            this.gMapControl1.RetryLoadTile = 0;
+            this.gMapControl1.RoutesEnabled = true;
+            this.gMapControl1.ShowTileGridLines = false;
+            this.gMapControl1.streamjpg = ((System.IO.MemoryStream)(resources.GetObject("gMapControl1.streamjpg")));
+            this.gMapControl1.Zoom = 0D;
+            this.gMapControl1.Click += new System.EventHandler(this.gMapControl1_Click);
+            this.gMapControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseDown);
+            this.gMapControl1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseMove);
             // 
             // panel1
             // 
@@ -1130,69 +1202,6 @@
             this.CB_tuning.UseVisualStyleBackColor = true;
             this.CB_tuning.CheckedChanged += new System.EventHandler(this.CB_tuning_CheckedChanged);
             // 
-            // panel2
-            // 
-            this.panel2.Controls.Add(this.lbl_windvel);
-            this.panel2.Controls.Add(this.lbl_winddir);
-            this.panel2.Controls.Add(this.gMapControl1);
-            this.panel2.Controls.Add(this.zg1);
-            resources.ApplyResources(this.panel2, "panel2");
-            this.panel2.Name = "panel2";
-            // 
-            // lbl_windvel
-            // 
-            this.lbl_windvel.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "wind_vel", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "Vel: 0"));
-            resources.ApplyResources(this.lbl_windvel, "lbl_windvel");
-            this.lbl_windvel.Name = "lbl_windvel";
-            this.lbl_windvel.resize = true;
-            this.toolTip1.SetToolTip(this.lbl_windvel, resources.GetString("lbl_windvel.ToolTip"));
-            // 
-            // lbl_winddir
-            // 
-            this.lbl_winddir.DataBindings.Add(new System.Windows.Forms.Binding("Text", this.bindingSource1, "wind_dir", true, System.Windows.Forms.DataSourceUpdateMode.OnValidation, null, "Dir: 0"));
-            resources.ApplyResources(this.lbl_winddir, "lbl_winddir");
-            this.lbl_winddir.Name = "lbl_winddir";
-            this.lbl_winddir.resize = true;
-            this.toolTip1.SetToolTip(this.lbl_winddir, resources.GetString("lbl_winddir.ToolTip"));
-            // 
-            // gMapControl1
-            // 
-            this.gMapControl1.BackColor = System.Drawing.Color.Transparent;
-            this.gMapControl1.Bearing = 0F;
-            this.gMapControl1.CanDragMap = true;
-            this.gMapControl1.ContextMenuStrip = this.contextMenuStrip1;
-            resources.ApplyResources(this.gMapControl1, "gMapControl1");
-            this.gMapControl1.GrayScaleMode = false;
-            this.gMapControl1.LevelsKeepInMemmory = 5;
-            this.gMapControl1.MarkersEnabled = true;
-            this.gMapControl1.MaxZoom = 2;
-            this.gMapControl1.MinZoom = 2;
-            this.gMapControl1.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
-            this.gMapControl1.Name = "gMapControl1";
-            this.gMapControl1.NegativeMode = false;
-            this.gMapControl1.PolygonsEnabled = true;
-            this.gMapControl1.RetryLoadTile = 0;
-            this.gMapControl1.RoutesEnabled = true;
-            this.gMapControl1.ShowTileGridLines = false;
-            this.gMapControl1.streamjpg = ((System.IO.MemoryStream)(resources.GetObject("gMapControl1.streamjpg")));
-            this.gMapControl1.Zoom = 0D;
-            this.gMapControl1.Click += new System.EventHandler(this.gMapControl1_Click);
-            this.gMapControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseDown);
-            this.gMapControl1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseMove);
-            // 
-            // zg1
-            // 
-            resources.ApplyResources(this.zg1, "zg1");
-            this.zg1.Name = "zg1";
-            this.zg1.ScrollGrace = 0D;
-            this.zg1.ScrollMaxX = 0D;
-            this.zg1.ScrollMaxY = 0D;
-            this.zg1.ScrollMaxY2 = 0D;
-            this.zg1.ScrollMinX = 0D;
-            this.zg1.ScrollMinY = 0D;
-            this.zg1.ScrollMinY2 = 0D;
-            this.zg1.DoubleClick += new System.EventHandler(this.zg1_DoubleClick);
-            // 
             // dataGridViewImageColumn1
             // 
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
@@ -1254,10 +1263,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.NUM_playbackspeed)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tracklog)).EndInit();
             this.tableMap.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).EndInit();
-            this.panel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1294,7 +1305,6 @@
         private ArdupilotMega.MyLabel TXT_long;
         private ArdupilotMega.MyLabel TXT_alt;
         private System.Windows.Forms.CheckBox CHK_autopan;
-        private System.Windows.Forms.Panel panel2;
         private GMap.NET.WindowsForms.GMapControl gMapControl1;
         private ZedGraph.ZedGraphControl zg1;
         private System.Windows.Forms.TabControl tabControl1;
@@ -1320,5 +1330,6 @@
         private System.Windows.Forms.ToolStripMenuItem stopRecordToolStripMenuItem;
         private MyLabel lbl_logpercent;
         private System.Windows.Forms.ToolStripMenuItem pointCameraHereToolStripMenuItem;
+        private System.Windows.Forms.SplitContainer splitContainer1;
     }
 }

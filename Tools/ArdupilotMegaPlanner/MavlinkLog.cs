@@ -137,7 +137,7 @@ namespace ArdupilotMega
                 flyto.Duration = (cs.datetime - lasttime).TotalMilliseconds / 1000.0;
 
                 flyto.Mode = FlyToMode.Smooth;
-                Camera cam = new Camera();
+                SharpKml.Dom.Camera cam = new SharpKml.Dom.Camera();
                 cam.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
                 cam.Latitude = cs.lat;
                 cam.Longitude = cs.lng;
