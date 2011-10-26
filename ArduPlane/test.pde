@@ -306,12 +306,12 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 		Serial.printf_P(PSTR("Hold altitude of %dm\n"), (int)g.RTL_altitude/100);
 	}
 
-	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.waypoint_total);
+	Serial.printf_P(PSTR("%d waypoints\n"), (int)g.command_total);
 	Serial.printf_P(PSTR("Hit radius: %d\n"), (int)g.waypoint_radius);
 	Serial.printf_P(PSTR("Loiter radius: %d\n\n"), (int)g.loiter_radius);
 
-	for(byte i = 0; i <= g.waypoint_total; i++){
-		struct Location temp = get_wp_with_index(i);
+	for(byte i = 0; i <= g.command_total; i++){
+		struct Location temp = get_cmd_with_index(i);
 		test_wp_print(&temp, i);
 	}
 

@@ -162,8 +162,8 @@ public:
         // 220: Waypoint data
         //
         k_param_waypoint_mode = 220,
-        k_param_waypoint_total,
-        k_param_waypoint_index,
+        k_param_command_total,
+        k_param_command_index,
         k_param_waypoint_radius,
         k_param_loiter_radius,
 
@@ -254,8 +254,8 @@ public:
     // Waypoints
     //
     AP_Int8     waypoint_mode;
-    AP_Int8     waypoint_total;
-    AP_Int8     waypoint_index;
+    AP_Int8     command_total;
+    AP_Int8     command_index;
     AP_Int8     waypoint_radius;
     AP_Int8     loiter_radius;
 
@@ -371,8 +371,8 @@ public:
         airspeed_offset			(0,				            k_param_airspeed_offset,		PSTR("ARSPD_OFFSET")),
 
         /* XXX waypoint_mode missing here */
-        waypoint_total          (0,                         k_param_waypoint_total,         PSTR("WP_TOTAL")),
-        waypoint_index          (0,                         k_param_waypoint_index,         PSTR("WP_INDEX")),
+        command_total           (0,                         k_param_command_total,         PSTR("CMD_TOTAL")),
+        command_index           (0,                         k_param_command_index,         PSTR("CMD_INDEX")),
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        PSTR("WP_RADIUS")),
         loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          PSTR("WP_LOITER_RAD")),
 
