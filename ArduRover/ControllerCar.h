@@ -44,6 +44,7 @@ private:
         _thrustCmd = _hal->rc[ch_thrust]->getRadioPosition();
     }
     void autoLoop(const float dt) {
+        //_hal->debug->printf_P(PSTR("cont: ch1: %f\tch2: %f\n"),_hal->rc[ch_thrust]->getRadioPosition(), _hal->rc[ch_str]->getRadioPosition());
         _strCmd = pidStr.update(_guide->getHeadingError(), _nav->getYawRate(), dt);
         _thrustCmd = pidThrust.update(
                          _guide->getGroundSpeedCommand()

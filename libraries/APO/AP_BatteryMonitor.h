@@ -49,5 +49,4 @@ private:
 } // namespace apo
 
 #endif /* AP_BATTERYMONITOR_H_ */
-
 // vim:ts=4:sw=4:expandtab

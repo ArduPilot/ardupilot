@@ -17,5 +17,9 @@
 #include "AP_RcChannel.h"
 #include "AP_BatteryMonitor.h"
 #include "AP_ArmingMechanism.h"
+#include "AP_CommLink.h"
+#include "AP_Var_keys.h"
+#include "constants.h"
 
 #endif /* APO_H_ */
+// vim:ts=4:sw=4:expandtab

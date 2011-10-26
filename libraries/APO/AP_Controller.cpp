@@ -120,3 +120,4 @@ void AP_Controller::setMotors() {
 
 
 } // namespace apo
+// vim:ts=4:sw=4:expandtab

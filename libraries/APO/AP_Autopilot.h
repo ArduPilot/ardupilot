@@ -8,38 +8,7 @@
 #ifndef AP_AUTOPILOT_H_
 #define AP_AUTOPILOT_H_
 
-/*
- * AVR runtime
- */
-#include <avr/io.h>
-#include <avr/eeprom.h>
-#include <avr/pgmspace.h>
-#include <math.h>
-/*
- * Libraries
- */
-#include "../AP_Common/AP_Common.h"
-#include "../FastSerial/FastSerial.h"
-#include "../AP_GPS/GPS.h"
-#include "../APM_RC/APM_RC.h"
-#include "../AP_ADC/AP_ADC.h"
-#include "../APM_BMP085/APM_BMP085.h"
-#include "../AP_Compass/AP_Compass.h"
-#include "../AP_Math/AP_Math.h"
-#include "../AP_IMU/AP_IMU.h"
-#include "../AP_DCM/AP_DCM.h"
 #include "../AP_Common/AP_Loop.h"
-#include "../GCS_MAVLink/GCS_MAVLink.h"
-#include "../AP_RangeFinder/AP_RangeFinder.h"
-/*
- * Local Modules
- */
-#include "AP_HardwareAbstractionLayer.h"
-#include "AP_RcChannel.h"
-#include "AP_Controller.h"
-#include "AP_Navigator.h"
-#include "AP_Guide.h"
-#include "AP_CommLink.h"
 
 /**
  * ArduPilotOne namespace to protect variables
@@ -50,7 +19,10 @@
 namespace apo {
 
 // forward declarations
-class AP_CommLink;
+class AP_Navigator;
+class AP_Guide;
+class AP_Controller;
+class AP_HardwareAbstractionLayer;
 
 /**
  * This class encapsulates the entire autopilot system
@@ -152,3 +124,4 @@ private:
 } // namespace apo
 
 #endif /* AP_AUTOPILOT_H_ */
+// vim:ts=4:sw=4:expandtab

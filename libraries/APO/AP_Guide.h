@@ -146,6 +146,4 @@ private:
 } // namespace apo
 
 #endif // AP_Guide_H
-
 // vim:ts=4:sw=4:expandtab
-

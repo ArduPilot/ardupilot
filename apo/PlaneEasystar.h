@@ -40,7 +40,7 @@ static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
 // compass orientation: See AP_Compass_HMC5843.h for possible values
 
 // battery monitoring
-static const bool batteryMonitorEnabled = true;
+static const bool batteryMonitorEnabled = false;
 static const uint8_t batteryPin = 0;
 static const float batteryVoltageDivRatio = 6;
 static const float batteryMinVolt = 10.0;

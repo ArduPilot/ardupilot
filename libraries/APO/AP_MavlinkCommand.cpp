@@ -5,6 +5,7 @@
  *      Author: jgoppert
  */
 
+#include "../FastSerial/FastSerial.h"
 #include "AP_MavlinkCommand.h"
 
 namespace apo {
@@ -204,4 +205,5 @@ float AP_MavlinkCommand::alongTrack(const AP_MavlinkCommand & previous,
 
 AP_MavlinkCommand AP_MavlinkCommand::home = AP_MavlinkCommand(0,false);
 
-}
+} // namespace apo
+// vim:ts=4:sw=4:expandtab
