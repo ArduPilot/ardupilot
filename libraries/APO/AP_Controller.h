@@ -45,9 +45,16 @@ public:
                   const uint16_t key = k_cntrl,
                   const prog_char_t * name = NULL);
     virtual void update(const float dt);
-    virtual void setMotors() = 0;
     void setAllRadioChannelsToNeutral();
     void setAllRadioChannelsManually();
+    virtual void setMotors();
+    virtual void setMotorsActive() = 0;
+    virtual void setMotorsEmergency() {
+        setAllRadioChannelsToNeutral();
+    };
+    virtual void setMotorsStandby() {
+        setAllRadioChannelsToNeutral();
+    };
     virtual void manualLoop(const float dt) {
         setAllRadioChannelsToNeutral();
     };

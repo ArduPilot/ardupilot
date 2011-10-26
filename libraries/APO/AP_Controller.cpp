@@ -94,4 +94,29 @@ void AP_Controller::update(const float dt) {
     setMotors();
 }
 
+void AP_Controller::setMotors() {
+    switch (_hal->getState()) {
+
+    case MAV_STATE_ACTIVE: {
+        digitalWrite(_hal->aLedPin, HIGH);
+        setMotorsActive();
+    }
+    case MAV_STATE_EMERGENCY: {
+        digitalWrite(_hal->aLedPin, LOW);
+        setMotorsEmergency();
+        break;
+    }
+    case MAV_STATE_STANDBY: {
+        digitalWrite(_hal->aLedPin,LOW);
+        setMotorsStandby();
+        break;
+    }
+    default: {
+        setMotorsStandby();
+    }
+
+    }
+}
+
+
 } // namespace apo

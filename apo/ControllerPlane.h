@@ -14,26 +14,6 @@ namespace apo {
 
 class ControllerPlane: public AP_Controller {
 public:
-    enum {
-        ch_mode = 0, ch_roll, ch_pitch, ch_thrust, ch_yaw
-    };
-    enum {
-        k_chMode = k_radioChannelsStart,
-        k_chRoll,
-        k_chPitch,
-        k_chYaw,
-        k_chThr,
-
-        k_pidBnkRll = k_controllersStart,
-        k_pidSpdPit,
-        k_pidPitPit,
-        k_pidYwrYaw,
-        k_pidHdgBnk,
-        k_pidAltThr,
-
-        k_trim = k_customStart
-    };
-
     ControllerPlane(AP_Navigator * nav, AP_Guide * guide,
                     AP_HardwareAbstractionLayer * hal) :
         AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_yaw,0.1,-0.9,0.9),ch_mode),
@@ -83,25 +63,17 @@ public:
                              1800, RC_MODE_INOUT, false));
     }
 
+private:
+    // methdos
     void manualLoop(const float dt) {
         setAllRadioChannelsManually();
-
         // force auto to read new manual trim
         if (_needsTrim == false)
             _needsTrim = true;
-        //_hal->debug->println("manual");
     }
-
     void autoLoop(const float dt) {
-        float headingError = _guide->getHeadingCommand()
-                             - _nav->getYaw();
-        if (headingError > 180 * deg2Rad)
-            headingError -= 360 * deg2Rad;
-        if (headingError < -180 * deg2Rad)
-            headingError += 360 * deg2Rad;
-
         _aileron = pidBnkRll.update(
-                       pidHdgBnk.update(headingError, dt) - _nav->getRoll(), dt);
+                       pidHdgBnk.update(_guide->getHeadingError(), dt) - _nav->getRoll(), dt);
         _elevator = pidPitPit.update(
                         -pidSpdPit.update(
                             _guide->getAirSpeedCommand() - _nav->getAirSpeed(),
@@ -112,7 +84,6 @@ public:
         _throttle = pidAltThr.update(
                         _guide->getAltitudeCommand() - _nav->getAlt(), dt);
 
-        // if needs trim
         if (_needsTrim) {
             // need to subtract current controller deflections so control
             // surfaces are actually at the same position as manual flight
@@ -128,48 +99,39 @@ public:
         _elevator += _elvTrim;
         _rudder += _rdrTrim;
         _throttle += _thrTrim;
-
-        //_hal->debug->println("automode");
+    }
+    void setMotorsActive() {
+        // turn all motors off if below 0.1 throttle
+        if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
+            setAllRadioChannelsToNeutral();
+        } else {
+            _hal->rc[ch_roll]->setPosition(_aileron);
+            _hal->rc[ch_yaw]->setPosition(_rudder);
+            _hal->rc[ch_pitch]->setPosition(_elevator);
+            _hal->rc[ch_thrust]->setPosition(_throttle);
+        }
     }
 
-    void setMotors() {
+    // attributes
+    enum {
+        ch_mode = 0, ch_roll, ch_pitch, ch_thrust, ch_yaw
+    };
+    enum {
+        k_chMode = k_radioChannelsStart,
+        k_chRoll,
+        k_chPitch,
+        k_chYaw,
+        k_chThr,
 
-        switch (_hal->getState()) {
+        k_pidBnkRll = k_controllersStart,
+        k_pidSpdPit,
+        k_pidPitPit,
+        k_pidYwrYaw,
+        k_pidHdgBnk,
+        k_pidAltThr,
 
-        case MAV_STATE_ACTIVE: {
-            digitalWrite(_hal->aLedPin, HIGH);
-            // turn all motors off if below 0.1 throttle
-            if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
-                setAllRadioChannelsToNeutral();
-            } else {
-                // actuator mixing/ output
-                _hal->rc[ch_roll]->setPosition(_aileron);
-                _hal->rc[ch_yaw]->setPosition(_rudder);
-                _hal->rc[ch_pitch]->setPosition(_elevator);
-                _hal->rc[ch_thrust]->setPosition(_throttle);
-            }
-            break;
-        }
-        case MAV_STATE_EMERGENCY: {
-            digitalWrite(_hal->aLedPin, LOW);
-            setAllRadioChannelsToNeutral();
-            break;
-        }
-        case MAV_STATE_STANDBY: {
-            digitalWrite(_hal->aLedPin,LOW);
-            setAllRadioChannelsToNeutral();
-            break;
-        }
-        default: {
-            digitalWrite(_hal->aLedPin, LOW);
-            setAllRadioChannelsToNeutral();
-        }
-
-        }
-
-    }
-
-private:
+        k_trim = k_customStart
+    };
     AP_Var_group _trimGroup;
     AP_Uint8 _rdrAilMix;
     bool _needsTrim;
@@ -193,3 +155,4 @@ private:
 } // namespace apo
 
 #endif /* CONTROLLERPLANE_H_ */
+// vim:ts=4:sw=4:expandtab

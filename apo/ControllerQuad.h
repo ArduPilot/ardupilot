@@ -16,48 +16,6 @@ namespace apo {
 
 class ControllerQuad: public AP_Controller {
 public:
-
-    /**
-     * note that these are not the controller radio channel numbers, they are just
-     * unique keys so they can be reaccessed from the hal rc vector
-     */
-    enum {
-        ch_mode = 0, // note scicoslab channels set mode, left, right, front, back order
-        ch_right,
-        ch_left,
-        ch_front,
-        ch_back,
-        ch_roll,
-        ch_pitch,
-        ch_thrust,
-        ch_yaw
-    };
-
-    // must match channel enum
-    enum {
-        k_chMode = k_radioChannelsStart,
-        k_chRight,
-        k_chLeft,
-        k_chFront,
-        k_chBack,
-        k_chRoll,
-        k_chPitch,
-        k_chThr,
-        k_chYaw
-    };
-
-    enum {
-        k_pidGroundSpeed2Throttle = k_controllersStart,
-        k_pidStr,
-        k_pidPN,
-        k_pidPE,
-        k_pidPD,
-        k_pidRoll,
-        k_pidPitch,
-        k_pidYawRate,
-        k_pidYaw,
-    };
-
     ControllerQuad(AP_Navigator * nav, AP_Guide * guide,
                    AP_HardwareAbstractionLayer * hal) :
         AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode),
@@ -118,13 +76,7 @@ public:
     }
 
 private:
-    BlockPIDDfb pidRoll, pidPitch, pidYaw;
-    BlockPID pidYawRate;
-    BlockPIDDfb pidPN, pidPE, pidPD;
-
-    float _thrustMix, _pitchMix, _rollMix, _yawMix;
-    float _cmdRoll, _cmdPitch, _cmdYawRate;
-
+    // methods
     void manualLoop(const float dt) {
         setAllRadioChannelsManually();
         _cmdRoll = -0.5 * _hal->rc[ch_roll]->getPosition();
@@ -133,7 +85,6 @@ private:
         _thrustMix = _hal->rc[ch_thrust]->getPosition();
         autoAttitudeLoop(dt);
     }
-
     void autoLoop(const float dt) {
         autoPositionLoop(dt);
         autoAttitudeLoop(dt);
@@ -142,7 +93,6 @@ private:
         // put vehicle in standby
         _hal->setState(MAV_STATE_STANDBY);
     }
-
     void autoPositionLoop(float dt) {
         float cmdNorthTilt = pidPN.update(_nav->getPN(),_nav->getVN(),dt);
         float cmdEastTilt = pidPE.update(_nav->getPE(),_nav->getVE(),dt);
@@ -167,7 +117,6 @@ private:
         if (fabs(_cmdPitch) > 0.5) _thrustMix *= 1.13949393;
         else _thrustMix /= cos(_cmdPitch);
     }
-
     void autoAttitudeLoop(float dt) {
         _rollMix = pidRoll.update(_cmdRoll - _nav->getRoll(),
                                   _nav->getRollRate(), dt);
@@ -175,43 +124,65 @@ private:
                                     _nav->getPitchRate(), dt);
         _yawMix = pidYawRate.update(_cmdYawRate - _nav->getYawRate(), dt);
     }
-
-    void setMotors() {
-
-        switch (_hal->getState()) {
-
-        case MAV_STATE_ACTIVE: {
-            digitalWrite(_hal->aLedPin, HIGH);
-            // turn all motors off if below 0.1 throttle
-            if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
-                setAllRadioChannelsToNeutral();
-            } else {
-                _hal->rc[ch_right]->setPosition(_thrustMix - _rollMix + _yawMix);
-                _hal->rc[ch_left]->setPosition(_thrustMix + _rollMix + _yawMix);
-                _hal->rc[ch_front]->setPosition(_thrustMix + _pitchMix - _yawMix);
-                _hal->rc[ch_back]->setPosition(_thrustMix - _pitchMix - _yawMix);
-            }
-            break;
-        }
-        case MAV_STATE_EMERGENCY: {
-            digitalWrite(_hal->aLedPin, LOW);
+    void setMotorsActive() {
+        // turn all motors off if below 0.1 throttle
+        if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
             setAllRadioChannelsToNeutral();
-            break;
-        }
-        case MAV_STATE_STANDBY: {
-            digitalWrite(_hal->aLedPin,LOW);
-            setAllRadioChannelsToNeutral();
-            break;
-        }
-        default: {
-            digitalWrite(_hal->aLedPin, LOW);
-            setAllRadioChannelsToNeutral();
-        }
-
+        } else {
+            _hal->rc[ch_right]->setPosition(_thrustMix - _rollMix + _yawMix);
+            _hal->rc[ch_left]->setPosition(_thrustMix + _rollMix + _yawMix);
+            _hal->rc[ch_front]->setPosition(_thrustMix + _pitchMix - _yawMix);
+            _hal->rc[ch_back]->setPosition(_thrustMix - _pitchMix - _yawMix);
         }
     }
+
+    // attributes
+    /**
+     * note that these are not the controller radio channel numbers, they are just
+     * unique keys so they can be reaccessed from the hal rc vector
+     */
+    enum {
+        ch_mode = 0, // note scicoslab channels set mode, left, right, front, back order
+        ch_right,
+        ch_left,
+        ch_front,
+        ch_back,
+        ch_roll,
+        ch_pitch,
+        ch_thrust,
+        ch_yaw
+    };
+    // must match channel enum
+    enum {
+        k_chMode = k_radioChannelsStart,
+        k_chRight,
+        k_chLeft,
+        k_chFront,
+        k_chBack,
+        k_chRoll,
+        k_chPitch,
+        k_chThr,
+        k_chYaw
+    };
+    enum {
+        k_pidGroundSpeed2Throttle = k_controllersStart,
+        k_pidStr,
+        k_pidPN,
+        k_pidPE,
+        k_pidPD,
+        k_pidRoll,
+        k_pidPitch,
+        k_pidYawRate,
+        k_pidYaw,
+    };
+    BlockPIDDfb pidRoll, pidPitch, pidYaw;
+    BlockPID pidYawRate;
+    BlockPIDDfb pidPN, pidPE, pidPD;
+    float _thrustMix, _pitchMix, _rollMix, _yawMix;
+    float _cmdRoll, _cmdPitch, _cmdYawRate;
 };
 
 } // namespace apo
 
 #endif /* CONTROLLERQUAD_H_ */
+// vim:ts=4:sw=4:expandtab

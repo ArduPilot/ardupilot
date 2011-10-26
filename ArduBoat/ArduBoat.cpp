@@ -22,3 +22,4 @@
 #include "APO_DefaultSetup.h"
 
 #include <WProgram.h>; int main(void) {init();setup();for(;;) loop(); return 0; }
+// vim:ts=4:sw=4:expandtab
