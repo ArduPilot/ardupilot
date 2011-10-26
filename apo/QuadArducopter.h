@@ -27,10 +27,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static uint32_t debugBaud = 57600;
+static uint32_t telemBaud = 57600;
+static uint32_t gpsBaud = 38400;
+static uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
