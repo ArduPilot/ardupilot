@@ -13,7 +13,7 @@
 namespace apo {
 
 void AP_ArmingMechanism::update(const float dt) {
-
+    //_hal->debug->printf_P(PSTR("ch1: %f\tch2: %f\n"),_hal->rc[_ch1]->getRadioPosition(), _hal->rc[_ch2]->getRadioPosition());
     // arming
     if ( (_hal->getState() != MAV_STATE_ACTIVE) &&
             (fabs(_hal->rc[_ch1]->getRadioPosition()) < _ch1Min) &&

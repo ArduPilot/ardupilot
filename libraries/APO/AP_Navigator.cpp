@@ -15,6 +15,7 @@
 #include "AP_Var_keys.h"
 #include "../AP_RangeFinder/AP_RangeFinder.h"
 #include "../AP_IMU/AP_IMU.h"
+#include "../APM_BMP085/APM_BMP085_hil.h"
 #include "../APM_BMP085/APM_BMP085.h"
 
 namespace apo {
@@ -204,3 +205,4 @@ void DcmNavigator::updateGpsLight(void) {
 }
 
 } // namespace apo
+// vim:ts=4:sw=4:expandtab

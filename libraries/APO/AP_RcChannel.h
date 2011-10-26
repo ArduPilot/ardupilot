@@ -82,3 +82,4 @@ protected:
 } // apo
 
 #endif	// AP_RCCHANNEL_H
+// vim:ts=4:sw=4:expandtab

@@ -12,7 +12,6 @@
 #include "../AP_Common/AP_Common.h"
 #include "AP_Var_keys.h"
 #include "constants.h"
-#include "../FastSerial/FastSerial.h"
 
 namespace apo {
 
@@ -373,3 +372,4 @@ public:
 
 
 #endif /* AP_MAVLINKCOMMAND_H_ */
+// vim:ts=4:sw=4:expandtab

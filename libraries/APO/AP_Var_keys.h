@@ -22,3 +22,4 @@ enum keys {
 // max 256 keys
 
 #endif
+// vim:ts=4:sw=4:expandtab

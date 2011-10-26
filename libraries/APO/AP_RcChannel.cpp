@@ -100,3 +100,4 @@ float AP_RcChannel::_pwmToPosition(const uint16_t & pwm) {
 }
 
 } // namespace apo
+// vim:ts=4:sw=4:expandtab

@@ -38,28 +38,28 @@ public:
         testPosition(2), testSign(1) {
         ch.push_back(
             new AP_RcChannel(rollKey, PSTR("ROLL"), APM_RC, 0, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(pitchKey, PSTR("PITCH"), APM_RC, 1, 1100,
-                             1500, 1900));
+                             1500, 1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(thrKey, PSTR("THR"), APM_RC, 2, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(yawKey, PSTR("YAW"), APM_RC, 3, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(ch5Key, PSTR("CH5"), APM_RC, 4, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(ch6Key, PSTR("CH6"), APM_RC, 5, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(ch7Key, PSTR("CH7"), APM_RC, 6, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
         ch.push_back(
             new AP_RcChannel(ch8Key, PSTR("CH8"), APM_RC, 7, 1100, 1500,
-                             1900));
+                             1900, RC_MODE_INOUT, false));
 
         Serial.begin(115200);
         delay(2000);

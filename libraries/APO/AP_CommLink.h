@@ -22,7 +22,7 @@
 #include <inttypes.h>
 #include "../AP_Common/AP_Common.h"
 #include "../AP_Common/AP_Vector.h"
-#include "AP_MavlinkCommand.h"
+#include "../GCS_MAVLink/GCS_MAVLink.h"
 
 class FastSerial;
 

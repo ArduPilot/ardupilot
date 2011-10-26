@@ -10,6 +10,7 @@
 #include "AP_Navigator.h"
 #include "AP_Guide.h"
 #include "AP_Controller.h"
+#include "AP_MavlinkCommand.h"
 #include "AP_HardwareAbstractionLayer.h"
 #include "AP_RcChannel.h"
 #include "../AP_GPS/AP_GPS.h"
@@ -719,3 +720,4 @@ uint8_t MavlinkComm::_checkTarget(uint8_t sysid, uint8_t compid) {
 }
 
 } // apo
+// vim:ts=4:sw=4:expandtab

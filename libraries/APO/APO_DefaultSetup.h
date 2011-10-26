@@ -181,3 +181,4 @@ void loop() {
 }
 
 #endif //_APO_COMMON_H
+// vim:ts=4:sw=4:expandtab

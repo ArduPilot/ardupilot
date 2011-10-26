@@ -170,6 +170,7 @@ private:
     MAV_STATE _state;
 };
 
-}
+} // namespace apo
 
 #endif /* AP_HARDWAREABSTRACTIONLAYER_H_ */
+// vim:ts=4:sw=4:expandtab

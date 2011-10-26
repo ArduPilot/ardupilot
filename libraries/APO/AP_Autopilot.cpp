@@ -5,8 +5,26 @@
  *      Author: jgoppert
  */
 
+/*
+ * AVR runtime
+ */
+//#include <avr/io.h>
+//#include <avr/eeprom.h>
+//#include <avr/pgmspace.h>
+//#include <math.h>
+
+#include "../FastSerial/FastSerial.h"
 #include "AP_Autopilot.h"
+#include "../AP_GPS/AP_GPS.h"
+#include "../APM_RC/APM_RC.h"
+#include "AP_HardwareAbstractionLayer.h"
+#include "AP_CommLink.h"
+#include "AP_MavlinkCommand.h"
+#include "AP_Navigator.h"
+#include "AP_Controller.h"
+#include "AP_Guide.h"
 #include "AP_BatteryMonitor.h"
+
 
 namespace apo {
 
@@ -252,3 +270,4 @@ void AP_Autopilot::callback3(void * data) {
 }
 
 } // apo
+// vim:ts=4:sw=4:expandtab
