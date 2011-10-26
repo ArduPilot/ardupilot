@@ -532,7 +532,7 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_waypoint_current_send(
         chan,
-        g.waypoint_index);
+        g.command_index);
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
@@ -838,7 +838,7 @@ GCS_MAVLINK::update(void)
     }
 
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.waypoint_total) {
+        waypoint_request_i <= (unsigned)g.command_total) {
         send_message(MSG_NEXT_WAYPOINT);
     }
 
@@ -1278,7 +1278,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_waypoint_count_send(
                 chan,msg->sysid,
                 msg->compid,
-                g.waypoint_total + 1); // + home
+                g.command_total + 1); // + home
 
             waypoint_timelast_send   = millis();
             waypoint_sending         = true;
@@ -1304,7 +1304,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
  				break;
 
             // send waypoint
-            tell_command = get_wp_with_index(packet.seq);
+            tell_command = get_cmd_with_index(packet.seq);
 
             // set frame of waypoint
             uint8_t frame;
@@ -1320,7 +1320,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // time that the mav should loiter in milliseconds
             uint8_t current = 0; // 1 (true), 0 (false)
 
-			if (packet.seq == (uint16_t)g.waypoint_index)
+			if (packet.seq == (uint16_t)g.command_index)
             	current = 1;
 
             uint8_t autocontinue = 1; // 1 (true), 0 (false)
@@ -1435,8 +1435,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_waypoint_clear_all_decode(msg, &packet);
 			if (mavlink_check_target(packet.target_system, packet.target_component)) break;
 
-            // clear all waypoints
-            g.waypoint_total.set_and_save(0);
+            // clear all commands
+            g.command_total.set_and_save(0);
 
             // note that we don't send multiple acks, as otherwise a
             // GCS that is doing a clear followed by a set may see
@@ -1455,7 +1455,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set current command
             change_command(packet.seq);
 
-            mavlink_msg_waypoint_current_send(chan, g.waypoint_index);
+            mavlink_msg_waypoint_current_send(chan, g.command_index);
             break;
         }
 
@@ -1470,7 +1470,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (packet.count > MAX_WAYPOINTS) {
                 packet.count = MAX_WAYPOINTS;
             }
-            g.waypoint_total.set_and_save(packet.count - 1);
+            g.command_total.set_and_save(packet.count - 1);
 
             waypoint_timelast_receive = millis();
             waypoint_receiving   = true;
@@ -1645,13 +1645,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     goto mission_failed;
                 }
 
-                set_wp_with_index(tell_command, packet.seq);
+                set_cmd_with_index(tell_command, packet.seq);
 
 				// update waypoint receiving state machine
 				waypoint_timelast_receive = millis();
 				waypoint_request_i++;
 
-				if (waypoint_request_i > (uint16_t)g.waypoint_total){
+				if (waypoint_request_i > (uint16_t)g.command_total){
 					mavlink_msg_waypoint_ack_send(
 						chan,
 						msg->sysid,
@@ -1988,7 +1988,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.waypoint_total) {
+        waypoint_request_i <= (unsigned)g.command_total) {
         mavlink_msg_waypoint_request_send(
             chan,
             waypoint_dest_sysid,

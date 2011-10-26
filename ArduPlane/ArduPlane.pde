@@ -266,19 +266,20 @@ static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of pla
 static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 
-static byte	command_must_index;					// current command memory location
-static byte	command_may_index;					// current command memory location
-static byte	command_must_ID;					// current command ID
-static byte	command_may_ID;						// current command ID
+static byte	command_index;						// current command memory location
+static byte	nav_command_index;					// active nav command memory location
+static byte	non_nav_command_index;				// active non-nav command memory location
+static byte	nav_command_ID		= NO_COMMAND;	// active nav command ID
+static byte	non_nav_command_ID	= NO_COMMAND;	// active non-nav command ID
 
 // Airspeed
 // --------
 static int		airspeed;							// m/s * 100
-static int     airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
-static float   airspeed_error;						// m/s * 100
-static float   airspeed_fbwB;						// m/s * 100
-static long    energy_error;                       // energy state error (kinetic + potential) for altitude hold
-static long    airspeed_energy_error;              // kinetic portion of energy error
+static int		airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
+static float	airspeed_error;						// m/s * 100
+static float	airspeed_fbwB;						// m/s * 100
+static long 	energy_error;                       // energy state error (kinetic + potential) for altitude hold
+static long		airspeed_energy_error;              // kinetic portion of energy error
 
 // Location Errors
 // ---------------
@@ -360,8 +361,9 @@ static struct 	Location home;						// home location
 static struct 	Location prev_WP;					// last waypoint
 static struct 	Location current_loc;				// current location
 static struct 	Location next_WP;					// next waypoint
-static struct 	Location next_command;				// command preloaded
-static struct  Location guided_WP;					// guided mode waypoint
+static struct  	Location guided_WP;					// guided mode waypoint
+static struct 	Location next_nav_command;			// command preloaded
+static struct 	Location next_nonnav_command;		// command preloaded
 static long 	target_altitude;					// used for altitude management between waypoints
 static long 	offset_altitude;					// used for altitude management between waypoints
 static bool	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
@@ -739,7 +741,7 @@ static void update_current_flight_mode(void)
 	if(control_mode == AUTO){
 		crash_checker();
 
-		switch(command_must_ID){
+		switch(nav_command_ID){
 			case MAV_CMD_NAV_TAKEOFF:
 				if (hold_course > -1) {
 					calc_nav_roll();

@@ -4,13 +4,13 @@
 // Command Event Handlers
 /********************************************************************************/
 static void
-handle_process_must()
+handle_process_nav_cmd()
 {
 	// reset navigation integrators
 	// -------------------------
 	reset_I();
 
-	switch(next_command.id){
+	switch(next_nav_command.id){
 
 		case MAV_CMD_NAV_TAKEOFF:
 			do_takeoff();
@@ -46,9 +46,9 @@ handle_process_must()
 }
 
 static void
-handle_process_may()
+handle_process_condition_command()
 {
-	switch(next_command.id){
+	switch(next_nonnav_command.id){
 
 		case MAV_CMD_CONDITION_DELAY:
 			do_wait_delay();
@@ -62,15 +62,14 @@ handle_process_may()
 			do_change_alt();
 			break;
 
-	/*	case MAV_CMD_NAV_LAND_OPTIONS:	//    TODO - Add the command or equiv to MAVLink (repair in verify_may() also)
+	/*	case MAV_CMD_NAV_LAND_OPTIONS:	//    TODO - Add the command or equiv to MAVLink (repair in verify_condition() also)
 			gcs_send_text_P(SEVERITY_LOW,PSTR("Landing options set"));
 
 			// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-			landing_pitch 		= next_command.lng * 100;
-			g.airspeed_cruise   =  next_command.alt * 100;
-			g.throttle_cruise   = next_command.lat;
-			landing_distance 	= next_command.p1;
-			//landing_roll 	= command.lng;
+			landing_pitch 		= next_nav_command.lng * 100;
+			g.airspeed_cruise   =  next_nav_command.alt * 100;
+			g.throttle_cruise   = next_nav_command.lat;
+			landing_distance 	= next_nav_command.p1;
 
 			SendDebug_P("MSG: throttle_cruise = ");
 			SendDebugln(g.throttle_cruise,DEC);
@@ -82,9 +81,9 @@ handle_process_may()
 	}
 }
 
-static void handle_process_now()
+static void handle_process_do_command()
 {
-	switch(next_command.id){
+	switch(next_nonnav_command.id){
 
 		case MAV_CMD_DO_JUMP:
 			do_jump();
@@ -118,18 +117,18 @@ static void handle_process_now()
 
 static void handle_no_commands()
 {
-	next_command = home;
-	next_command.alt = read_alt_to_hold();
-	next_command.id = MAV_CMD_NAV_LOITER_UNLIM;
+	next_nav_command = home;
+	next_nav_command.alt = read_alt_to_hold();
+	next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
 }
 
 /********************************************************************************/
 // Verify command Handlers
 /********************************************************************************/
 
-static bool verify_must()
+static bool verify_nav_command()	// Returns true if command complete
 {
-	switch(command_must_ID) {
+	switch(nav_command_ID) {
 
 		case MAV_CMD_NAV_TAKEOFF:
 			return verify_takeoff();
@@ -160,15 +159,15 @@ static bool verify_must()
 			break;
 
 		default:
-			gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_must: Invalid or no current Nav cmd"));
+			gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_nav: Invalid or no current Nav cmd"));
 			return false;
 			break;
 	}
 }
 
-static bool verify_may()
+static bool verify_condition_command()		// Returns true if command complete
 {
-	switch(command_may_ID) {
+	switch(non_nav_command_ID) {
     case NO_COMMAND:
         break;
 
@@ -185,7 +184,7 @@ static bool verify_may()
         break;
 
     default:
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_may: Invalid or no current Condition cmd"));
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Invalid or no current Condition cmd"));
         break;
 	}
     return false;
@@ -212,12 +211,12 @@ static void do_RTL(void)
 
 static void do_takeoff()
 {
-	set_next_WP(&next_command);
+	set_next_WP(&next_nav_command);
 	// pitch in deg, airspeed  m/s, throttle %, track WP 1 or 0
-	takeoff_pitch 	 	= (int)next_command.p1 * 100;
+	takeoff_pitch 	 	= (int)next_nav_command.p1 * 100;
 			//Serial.printf_P(PSTR("TO pitch:"));	Serial.println(takeoff_pitch);
 			//Serial.printf_P(PSTR("home.alt:"));	Serial.println(home.alt);
-	takeoff_altitude 	= next_command.alt;
+	takeoff_altitude 	= next_nav_command.alt;
 			//Serial.printf_P(PSTR("takeoff_altitude:"));	Serial.println(takeoff_altitude);
 	next_WP.lat 		= home.lat + 1000;	// so we don't have bad calcs
 	next_WP.lng 		= home.lng + 1000;	// so we don't have bad calcs
@@ -227,30 +226,30 @@ static void do_takeoff()
 
 static void do_nav_wp()
 {
-	set_next_WP(&next_command);
+	set_next_WP(&next_nav_command);
 }
 
 static void do_land()
 {
-	set_next_WP(&next_command);
+	set_next_WP(&next_nav_command);
 }
 
 static void do_loiter_unlimited()
 {
-	set_next_WP(&next_command);
+	set_next_WP(&next_nav_command);
 }
 
 static void do_loiter_turns()
 {
-	set_next_WP(&next_command);
-	loiter_total = next_command.p1 * 360;
+	set_next_WP(&next_nav_command);
+	loiter_total = next_nav_command.p1 * 360;
 }
 
 static void do_loiter_time()
 {
-	set_next_WP(&next_command);
+	set_next_WP(&next_nav_command);
 	loiter_time = millis();
-	loiter_time_max = next_command.p1; // units are (seconds * 10)
+	loiter_time_max = next_nav_command.p1; // units are (seconds * 10)
 }
 
 /********************************************************************************/
@@ -287,7 +286,7 @@ static bool verify_takeoff()
 
 static bool verify_land()
 {
-	// we don't verify landing - we never go to a new Must command after Land
+	// we don't verify landing - we never go to a new Nav command after Land
 	if (((wp_distance > 0) && (wp_distance <= (2*g_gps->ground_speed/100)))
 		|| (current_loc.alt <= next_WP.alt + 300)){
 
@@ -317,7 +316,7 @@ static bool verify_nav_wp()
 	hold_course = -1;
 	update_crosstrack();
 	if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),command_must_index);
+		gcs_send_text_fmt(PSTR("Reached Waypoint #%i"),nav_command_index);
 		return true;
 	}
 	// add in a more complex case
@@ -341,7 +340,7 @@ static bool verify_loiter_time()
 	update_loiter();
 	calc_bearing_error();
 	if ((millis() - loiter_time) > (unsigned long)loiter_time_max * 10000l) {		// scale loiter_time_max from (sec*10) to milliseconds
-		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER time complete"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
 		return true;
 	}
 	return false;
@@ -353,7 +352,7 @@ static bool verify_loiter_turns()
 	calc_bearing_error();
 	if(loiter_sum > loiter_total) {
 		loiter_total = 0;
-		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_must: LOITER orbits complete"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
 		// clear the command queue;
 		return true;
 	}
@@ -377,13 +376,13 @@ static bool verify_RTL()
 static void do_wait_delay()
 {
 	condition_start = millis();
-	condition_value  = next_command.lat * 1000;	// convert to milliseconds
+	condition_value  = next_nonnav_command.lat * 1000;	// convert to milliseconds
 }
 
 static void do_change_alt()
 {
-	condition_rate		= next_command.lat;
-	condition_value 	= next_command.alt;
+	condition_rate		= next_nonnav_command.lat;
+	condition_value 	= next_nonnav_command.alt;
 	target_altitude		= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
 	next_WP.alt 		= condition_value;								// For future nav calculations
 	offset_altitude 	= 0;											// For future nav calculations
@@ -391,7 +390,7 @@ static void do_change_alt()
 
 static void do_within_distance()
 {
-	condition_value  = next_command.lat;
+	condition_value  = next_nonnav_command.lat;
 }
 
 /********************************************************************************/
@@ -438,53 +437,55 @@ static void do_loiter_at_location()
 static void do_jump()
 {
 	struct Location temp;
-	if(next_command.lat > 0) {
+	if(next_nonnav_command.lat > 0) {
 
-		command_must_index 	= 0;
-		command_may_index 	= 0;
-		temp 				= get_wp_with_index(g.waypoint_index);
-		temp.lat 			= next_command.lat - 1;					// Decrement repeat counter
+		nav_command_ID 	= NO_COMMAND;
+		non_nav_command_ID 	= NO_COMMAND;
+		temp 				= get_cmd_with_index(g.command_index);
+		temp.lat 			= next_nonnav_command.lat - 1;					// Decrement repeat counter
 
-		set_wp_with_index(temp, g.waypoint_index);
-		g.waypoint_index.set_and_save(next_command.p1 - 1);
-	} else if (next_command.lat == -1) {
-	    g.waypoint_index.set_and_save(next_command.p1 - 1);
+		set_cmd_with_index(temp, g.command_index);
+		g.command_index.set_and_save(next_nonnav_command.p1 - 1);
+	} else if (next_nonnav_command.lat == -1) {								// A repeat count of -1 = repeat forever
+		nav_command_ID 	= NO_COMMAND;
+		non_nav_command_ID 	= NO_COMMAND;
+	    g.command_index.set_and_save(next_nonnav_command.p1 - 1);
 	}
 }
 
 static void do_change_speed()
 {
 	// Note: we have no implementation for commanded ground speed, only air speed and throttle
-	if(next_command.alt > 0)
-		g.airspeed_cruise.set_and_save(next_command.alt * 100);
+	if(next_nonnav_command.alt > 0)
+		g.airspeed_cruise.set_and_save(next_nonnav_command.alt * 100);
 
-	if(next_command.lat > 0)
-		g.throttle_cruise.set_and_save(next_command.lat);
+	if(next_nonnav_command.lat > 0)
+		g.throttle_cruise.set_and_save(next_nonnav_command.lat);
 }
 
 static void do_set_home()
 {
-	if(next_command.p1 == 1 && GPS_enabled) {
+	if(next_nonnav_command.p1 == 1 && GPS_enabled) {
 		init_home();
 	} else {
 		home.id 	= MAV_CMD_NAV_WAYPOINT;
-		home.lng 	= next_command.lng;				// Lon * 10**7
-		home.lat 	= next_command.lat;				// Lat * 10**7
-		home.alt 	= max(next_command.alt, 0);
+		home.lng 	= next_nonnav_command.lng;				// Lon * 10**7
+		home.lat 	= next_nonnav_command.lat;				// Lat * 10**7
+		home.alt 	= max(next_nonnav_command.alt, 0);
 		home_is_set = true;
 	}
 }
 
 static void do_set_servo()
 {
-	APM_RC.OutputCh(next_command.p1 - 1, next_command.alt);
+	APM_RC.OutputCh(next_nonnav_command.p1 - 1, next_nonnav_command.alt);
 }
 
 static void do_set_relay()
 {
-	if (next_command.p1 == 1) {
+	if (next_nonnav_command.p1 == 1) {
 		relay.on();
-	} else if (next_command.p1 == 0) {
+	} else if (next_nonnav_command.p1 == 0) {
 		relay.off();
 	}else{
 		relay.toggle();
@@ -493,16 +494,16 @@ static void do_set_relay()
 
 static void do_repeat_servo()
 {
-	event_id = next_command.p1 - 1;
+	event_id = next_nonnav_command.p1 - 1;
 
-	if(next_command.p1 >= CH_5 + 1 && next_command.p1 <= CH_8 + 1) {
+	if(next_nonnav_command.p1 >= CH_5 + 1 && next_nonnav_command.p1 <= CH_8 + 1) {
 
 		event_timer 	= 0;
-		event_delay 	= next_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
-		event_repeat 	= next_command.lat * 2;
-		event_value 	= next_command.alt;
+		event_delay 	= next_nonnav_command.lng * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
+		event_repeat 	= next_nonnav_command.lat * 2;
+		event_value 	= next_nonnav_command.alt;
 
-		switch(next_command.p1) {
+		switch(next_nonnav_command.p1) {
 			case CH_5:
 				event_undo_value = g.rc_5.radio_trim;
 				break;
@@ -524,7 +525,7 @@ static void do_repeat_relay()
 {
 	event_id 		= RELAY_TOGGLE;
 	event_timer 	= 0;
-	event_delay 	= next_command.lat * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
-	event_repeat	= next_command.alt * 2;
+	event_delay 	= next_nonnav_command.lat * 500.0;	// /2 (half cycle time) * 1000 (convert to milliseconds)
+	event_repeat	= next_nonnav_command.alt * 2;
 	update_events();
 }
