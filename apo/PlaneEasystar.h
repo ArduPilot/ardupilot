@@ -125,3 +125,4 @@ static const float xtLim = 90; // cross track angle limit, deg
 #include "ControllerPlane.h"
 
 #endif /* PLANEEASYSTAR_H_ */
+// vim:ts=4:sw=4:expandtab

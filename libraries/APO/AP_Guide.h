@@ -76,6 +76,8 @@ public:
         return nextIndex;
     }
 
+    float getHeadingError();
+
     float getHeadingCommand() {
         return _headingCommand;
     }

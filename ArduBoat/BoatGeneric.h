@@ -28,10 +28,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static uint32_t debugBaud = 57600;
+static uint32_t telemBaud = 57600;
+static uint32_t gpsBaud = 38400;
+static uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -84,3 +84,4 @@ static const float xtLim = 90;
 #include "ControllerBoat.h"
 
 #endif /* BOATGENERIC_H_ */
+// vim:ts=4:sw=4:expandtab

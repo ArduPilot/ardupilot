@@ -20,3 +20,4 @@
 
 // ArduPilotOne Default Setup
 #include "APO_DefaultSetup.h"
+// vim:ts=4:sw=4:expandtab

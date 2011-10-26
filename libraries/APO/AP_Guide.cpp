@@ -31,6 +31,16 @@ void AP_Guide::setCurrentIndex(uint8_t val) {
     _hal->gcs->sendMessage(MAVLINK_MSG_ID_WAYPOINT_CURRENT);
 }
 
+float AP_Guide::getHeadingError() {
+    float headingError = getHeadingCommand()
+                         - _navigator->getYaw();
+    if (headingError > 180 * deg2Rad)
+        headingError -= 360 * deg2Rad;
+    if (headingError < -180 * deg2Rad)
+        headingError += 360 * deg2Rad;
+    return headingError;
+}
+
 MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
                            AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
     AP_Guide(navigator, hal), _rangeFinderFront(), _rangeFinderBack(),
