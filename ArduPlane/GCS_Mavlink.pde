@@ -1537,6 +1537,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             if (result != MAV_MISSION_ACCEPTED) goto mission_failed;
 
             switch (tell_command.id) {                    // Switch to map APM command fields inot MAVLink command fields
+            case MAV_CMD_NAV_WAYPOINT:
+            case MAV_CMD_NAV_LOITER_UNLIM:
+            case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+            case MAV_CMD_NAV_LAND:
+                break;
+
             case MAV_CMD_NAV_LOITER_TURNS:
             case MAV_CMD_NAV_TAKEOFF:
             case MAV_CMD_DO_SET_HOME:
@@ -1578,7 +1584,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             default:
+#ifdef MAVLINK10
                 result = MAV_MISSION_UNSUPPORTED;
+#endif
                 break;
             }
 
