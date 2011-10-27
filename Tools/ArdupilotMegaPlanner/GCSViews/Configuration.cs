@@ -289,8 +289,6 @@ namespace ArdupilotMega.GCSViews
 
         internal void processToScreen()
         {
-            
-
             Params.Rows.Clear();
 
             // process hashdefines and update display
@@ -343,7 +341,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             try
                             {
-                                toolTip1.SetToolTip(ctl, tooltips[value].ToString());
+                                toolTip1.SetToolTip(ctl, ((paramsettings)tooltips[value]).desc);
                             }
                             catch { }
                         }

@@ -3,6 +3,7 @@
  *
  *  Created on: May 1, 2011
  *      Author: jgoppert
+ *
  */
 
 #ifndef BOATGENERIC_H_
@@ -27,10 +28,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static const uint32_t debugBaud = 57600;
+static const uint32_t telemBaud = 57600;
+static const uint32_t gpsBaud = 38400;
+static const uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -61,20 +62,26 @@ static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
 
 // gains
-const float steeringP = 1.0;
-const float steeringI = 0.0;
-const float steeringD = 0.0;
-const float steeringIMax = 0.0;
-const float steeringYMax = 3.0;
-const float steeringDFCut = 25;
+static const float steeringP = 0.1;
+static const float steeringI = 0.0;
+static const float steeringD = 0.1;
+static const float steeringIMax = 0.0;
+static const float steeringYMax = 1;
+static const float steeringDFCut = 25.0;
 
-const float throttleP = 0.0;
-const float throttleI = 0.0;
-const float throttleD = 0.0;
-const float throttleIMax = 0.0;
-const float throttleYMax = 0.0;
-const float throttleDFCut = 3.0;
+static const float throttleP = 0.1;
+static const float throttleI = 0.0;
+static const float throttleD = 0.0;
+static const float throttleIMax = 0.0;
+static const float throttleYMax = 1;
+static const float throttleDFCut = 0.0;
+
+// guidance
+static const float velCmd = 5;
+static const float xt = 10;
+static const float xtLim = 90;
 
 #include "ControllerBoat.h"
 
 #endif /* BOATGENERIC_H_ */
+// vim:ts=4:sw=4:expandtab

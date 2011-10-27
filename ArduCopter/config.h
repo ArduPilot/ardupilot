@@ -361,6 +361,19 @@
 //////////////////////////////////////////////////////////////////////////////
 // Attitude Control
 //
+
+// Extra motor values that are changed from time to time by jani @ jDrones as software
+// and charachteristics changes.
+#ifdef MOTORS_JD880
+# define STABILIZE_ROLL_P 		3.6
+# define STABILIZE_ROLL_I 		0.06
+# define STABILIZE_ROLL_IMAX 	        2.0		// degrees
+# define STABILIZE_PITCH_P		3.6
+# define STABILIZE_PITCH_I		0.06
+# define STABILIZE_PITCH_IMAX	        2.0		// degrees
+#endif
+
+// Jasons default values that are good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.6
 #endif
@@ -700,6 +713,11 @@
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
 # define CLI_ENABLED ENABLED
+#endif
+
+// use this to disable the CLI slider switch
+#ifndef CLI_SLIDER_ENABLED
+# define CLI_SLIDER_ENABLED ENABLED
 #endif
 
 // delay to prevent Xbee bricking, in milliseconds

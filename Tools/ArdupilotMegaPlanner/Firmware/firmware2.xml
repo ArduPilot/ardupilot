@@ -99,6 +99,7 @@
     <desc>
 #define AUTO_RESET_LOITER 0
 #define FRAME_CONFIG HELI_FRAME
+#define INSTANT_PWM ENABLED
 
 // DEFAULT PIDS
 

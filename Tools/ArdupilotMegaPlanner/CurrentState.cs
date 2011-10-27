@@ -147,6 +147,10 @@ namespace ArdupilotMega
         public ushort rcoverridech2 { get; set; }
         public ushort rcoverridech3 { get; set; }
         public ushort rcoverridech4 { get; set; }
+        public ushort rcoverridech5 { get; set; }
+        public ushort rcoverridech6 { get; set; }
+        public ushort rcoverridech7 { get; set; }
+        public ushort rcoverridech8 { get; set; }
 
         // current firmware
         public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
@@ -187,10 +191,15 @@ namespace ArdupilotMega
 
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs)
         {
-            UpdateCurrentSettings(bs, false);
+            UpdateCurrentSettings(bs, false, MainV2.comPort);
         }
 
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow)
+        {
+            UpdateCurrentSettings(bs, false, MainV2.comPort);
+        }
+
+        public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, MAVLink mavinterface)
         {
             if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz
             {
@@ -203,10 +212,10 @@ namespace ArdupilotMega
                 }
 
                 //                Console.WriteLine("Updating CurrentState " + DateTime.Now.Millisecond);
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
                 {
 
-                    string logdata = DateTime.Now + " " + Encoding.ASCII.GetString(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT], 6, MAVLink.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT].Length - 6);
+                    string logdata = DateTime.Now + " " + Encoding.ASCII.GetString(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT], 6, mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT].Length - 6);
 
                     int ind = logdata.IndexOf('\0');
                     if (ind != -1)
@@ -217,16 +226,16 @@ namespace ArdupilotMega
                     }
                     messages.Add(logdata + "\n");
 
-                    MAVLink.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] = null;
+                    mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] != null) // hil
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] != null) // hil
                 {
                     var hil = new ArdupilotMega.MAVLink.__mavlink_rc_channels_scaled_t();
 
                     object temp = hil;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED], ref temp, 6);
 
                     hil = (MAVLink.__mavlink_rc_channels_scaled_t)(temp);
 
@@ -242,13 +251,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_SCALED] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] != null)
                 {
                     MAVLink.__mavlink_nav_controller_output_t nav = new MAVLink.__mavlink_nav_controller_output_t();
 
                     object temp = nav;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT], ref temp, 6);
 
                     nav = (MAVLink.__mavlink_nav_controller_output_t)(temp);
 
@@ -264,13 +273,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
                 }
 
-                if (MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
                 {
                     ArdupilotMega.MAVLink.__mavlink_sys_status_t sysstatus = new ArdupilotMega.MAVLink.__mavlink_sys_status_t();
 
                     object temp = sysstatus;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
 
                     sysstatus = (ArdupilotMega.MAVLink.__mavlink_sys_status_t)(temp);
 
@@ -377,13 +386,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] != null)
                 {
                     var att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
 
                     object temp = att;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE], ref temp, 6);
 
                     att = (MAVLink.__mavlink_attitude_t)(temp);
 
@@ -396,13 +405,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] != null)
                 {
                     var gps = new MAVLink.__mavlink_gps_raw_t();
 
                     object temp = gps;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW], ref temp, 6);
 
                     gps = (MAVLink.__mavlink_gps_raw_t)(temp);
 
@@ -421,26 +430,26 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS] != null)
                 {
                     var gps = new MAVLink.__mavlink_gps_status_t();
 
                     object temp = gps;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS], ref temp, 6);
 
                     gps = (MAVLink.__mavlink_gps_status_t)(temp);
 
                     satcount = gps.satellites_visible;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT] != null)
                 {
                     var loc = new MAVLink.__mavlink_global_position_int_t();
 
                     object temp = loc;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT], ref temp, 6);
 
                     loc = (MAVLink.__mavlink_global_position_int_t)(temp);
 
@@ -449,13 +458,13 @@ namespace ArdupilotMega
                     lng = loc.lon / 10000000.0f;
 
                 }
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION] != null)
                 {
                     var loc = new MAVLink.__mavlink_global_position_t();
 
                     object temp = loc;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION], ref temp, 6);
 
                     loc = (MAVLink.__mavlink_global_position_t)(temp);
 
@@ -464,13 +473,13 @@ namespace ArdupilotMega
                     lng = loc.lon;
 
                 }
-                if (MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] != null)
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] != null)
                 {
                     ArdupilotMega.MAVLink.__mavlink_waypoint_current_t wpcur = new ArdupilotMega.MAVLink.__mavlink_waypoint_current_t();
 
                     object temp = wpcur;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT], ref temp, 6);
 
                     wpcur = (ArdupilotMega.MAVLink.__mavlink_waypoint_current_t)(temp);
 
@@ -486,13 +495,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] != null)
                 {
                     var rcin = new MAVLink.__mavlink_rc_channels_raw_t();
 
                     object temp = rcin;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW], ref temp, 6);
 
                     rcin = (MAVLink.__mavlink_rc_channels_raw_t)(temp);
 
@@ -508,13 +517,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW] != null)
                 {
                     var servoout = new MAVLink.__mavlink_servo_output_raw_t();
 
                     object temp = servoout;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW], ref temp, 6);
 
                     servoout = (MAVLink.__mavlink_servo_output_raw_t)(temp);
 
@@ -530,13 +539,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] != null)
                 {
                     var imu = new MAVLink.__mavlink_raw_imu_t();
 
                     object temp = imu;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU], ref temp, 6);
 
                     imu = (MAVLink.__mavlink_raw_imu_t)(temp);
 
@@ -551,13 +560,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU] != null)
                 {
                     var imu = new MAVLink.__mavlink_scaled_imu_t();
 
                     object temp = imu;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_SCALED_IMU], ref temp, 6);
 
                     imu = (MAVLink.__mavlink_scaled_imu_t)(temp);
 
@@ -572,13 +581,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD] != null)
                 {
                     MAVLink.__mavlink_vfr_hud_t vfr = new MAVLink.__mavlink_vfr_hud_t();
 
                     object temp = vfr;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD], ref temp, 6);
 
                     vfr = (MAVLink.__mavlink_vfr_hud_t)(temp);
 
@@ -602,13 +611,13 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_VFR_HUD] = null;
                 }
 
-                if (MAVLink.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO] != null) // hil
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO] != null) // hil
                 {
                     var mem = new ArdupilotMega.MAVLink.__mavlink_meminfo_t();
 
                     object temp = mem;
 
-                    MAVLink.ByteArrayToStructure(MAVLink.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_MEMINFO], ref temp, 6);
 
                     mem = (MAVLink.__mavlink_meminfo_t)(temp);
 

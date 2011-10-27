@@ -43,6 +43,10 @@ namespace ArdupilotMega
             CMB_CH2.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
             CMB_CH3.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
             CMB_CH4.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
+            CMB_CH5.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
+            CMB_CH6.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
+            CMB_CH7.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
+            CMB_CH8.DataSource = (Enum.GetValues(typeof(Joystick.joystickaxis)));
 
             try
             {
@@ -51,18 +55,30 @@ namespace ArdupilotMega
                 CMB_CH2.Text = MainV2.config["CMB_CH2"].ToString();
                 CMB_CH3.Text = MainV2.config["CMB_CH3"].ToString();
                 CMB_CH4.Text = MainV2.config["CMB_CH4"].ToString();
+                CMB_CH5.Text = MainV2.config["CMB_CH5"].ToString();
+                CMB_CH6.Text = MainV2.config["CMB_CH6"].ToString();
+                CMB_CH7.Text = MainV2.config["CMB_CH7"].ToString();
+                CMB_CH8.Text = MainV2.config["CMB_CH8"].ToString();
 
                 //revCH1
                 revCH1.Checked = bool.Parse(MainV2.config["revCH1"].ToString());
                 revCH2.Checked = bool.Parse(MainV2.config["revCH2"].ToString());
                 revCH3.Checked = bool.Parse(MainV2.config["revCH3"].ToString());
                 revCH4.Checked = bool.Parse(MainV2.config["revCH4"].ToString());
+                revCH5.Checked = bool.Parse(MainV2.config["revCH5"].ToString());
+                revCH6.Checked = bool.Parse(MainV2.config["revCH6"].ToString());
+                revCH7.Checked = bool.Parse(MainV2.config["revCH7"].ToString());
+                revCH8.Checked = bool.Parse(MainV2.config["revCH8"].ToString());
 
                 //expo_ch1
                 expo_ch1.Text = MainV2.config["expo_ch1"].ToString();
                 expo_ch2.Text = MainV2.config["expo_ch2"].ToString();
                 expo_ch3.Text = MainV2.config["expo_ch3"].ToString();
                 expo_ch4.Text = MainV2.config["expo_ch4"].ToString();
+                expo_ch5.Text = MainV2.config["expo_ch5"].ToString();
+                expo_ch6.Text = MainV2.config["expo_ch6"].ToString();
+                expo_ch7.Text = MainV2.config["expo_ch7"].ToString();
+                expo_ch8.Text = MainV2.config["expo_ch8"].ToString();
 
                 CHK_elevons.Checked = bool.Parse(MainV2.config["joy_elevons"].ToString());
             }
@@ -104,6 +120,10 @@ namespace ArdupilotMega
                 joy.setChannel(2, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH2.Text), revCH2.Checked, int.Parse(expo_ch2.Text));
                 joy.setChannel(3, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH3.Text), revCH3.Checked, int.Parse(expo_ch3.Text));
                 joy.setChannel(4, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH4.Text), revCH4.Checked, int.Parse(expo_ch4.Text));
+                joy.setChannel(5, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH5.Text), revCH5.Checked, int.Parse(expo_ch5.Text));
+                joy.setChannel(6, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH6.Text), revCH6.Checked, int.Parse(expo_ch6.Text));
+                joy.setChannel(7, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH7.Text), revCH7.Checked, int.Parse(expo_ch7.Text));
+                joy.setChannel(8, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH8.Text), revCH8.Checked, int.Parse(expo_ch8.Text));
 
                 joy.elevons = CHK_elevons.Checked;
 
@@ -153,13 +173,6 @@ namespace ArdupilotMega
                 MainV2.joystick = null;
                 BUT_enable.Text = "Enable";
             }
-
-            /*
-            MainV2.cs.rcoverridech1 = pickchannel(1, CMB_CH1.Text, revCH1.Checked, int.Parse(expo_ch1.Text));//(ushort)(((int)state.Rz / 65.535) + 1000);
-            MainV2.cs.rcoverridech2 = pickchannel(2, CMB_CH2.Text, revCH2.Checked, int.Parse(expo_ch2.Text));//(ushort)(((int)state.Y / 65.535) + 1000);
-            MainV2.cs.rcoverridech3 = pickchannel(3, CMB_CH3.Text, revCH3.Checked, int.Parse(expo_ch3.Text));//(ushort)(1000 - ((int)slider[0] / 65.535) + 1000);
-            MainV2.cs.rcoverridech4 = pickchannel(4, CMB_CH4.Text, revCH4.Checked, int.Parse(expo_ch4.Text));//(ushort)(((int)state.X / 65.535) + 1000);
-            */
         }
 
         private void BUT_save_Click(object sender, EventArgs e)
@@ -169,18 +182,30 @@ namespace ArdupilotMega
             MainV2.config["CMB_CH2"] = CMB_CH2.Text;
             MainV2.config["CMB_CH3"] = CMB_CH3.Text;
             MainV2.config["CMB_CH4"] = CMB_CH4.Text;
+            MainV2.config["CMB_CH5"] = CMB_CH5.Text;
+            MainV2.config["CMB_CH6"] = CMB_CH6.Text;
+            MainV2.config["CMB_CH7"] = CMB_CH7.Text;
+            MainV2.config["CMB_CH8"] = CMB_CH8.Text;
 
             //revCH1
             MainV2.config["revCH1"] = revCH1.Checked;
             MainV2.config["revCH2"] = revCH2.Checked;
             MainV2.config["revCH3"] = revCH3.Checked;
             MainV2.config["revCH4"] = revCH4.Checked;
+            MainV2.config["revCH5"] = revCH5.Checked;
+            MainV2.config["revCH6"] = revCH6.Checked;
+            MainV2.config["revCH7"] = revCH7.Checked;
+            MainV2.config["revCH8"] = revCH8.Checked;
 
             //expo_ch1
             MainV2.config["expo_ch1"] = expo_ch1.Text;
             MainV2.config["expo_ch2"] = expo_ch2.Text;
             MainV2.config["expo_ch3"] = expo_ch3.Text;
             MainV2.config["expo_ch4"] = expo_ch4.Text;
+            MainV2.config["expo_ch5"] = expo_ch5.Text;
+            MainV2.config["expo_ch6"] = expo_ch6.Text;
+            MainV2.config["expo_ch7"] = expo_ch7.Text;
+            MainV2.config["expo_ch8"] = expo_ch8.Text;
 
             MainV2.config["joy_elevons"] = CHK_elevons.Checked;
 
@@ -207,6 +232,10 @@ namespace ArdupilotMega
                         joy.setChannel(2, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH2.Text), revCH2.Checked, int.Parse(expo_ch2.Text));
                         joy.setChannel(3, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH3.Text), revCH3.Checked, int.Parse(expo_ch3.Text));
                         joy.setChannel(4, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH4.Text), revCH4.Checked, int.Parse(expo_ch4.Text));
+                        joy.setChannel(5, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH5.Text), revCH5.Checked, int.Parse(expo_ch5.Text));
+                        joy.setChannel(6, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH6.Text), revCH6.Checked, int.Parse(expo_ch6.Text));
+                        joy.setChannel(7, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH7.Text), revCH7.Checked, int.Parse(expo_ch7.Text));
+                        joy.setChannel(8, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), CMB_CH8.Text), revCH8.Checked, int.Parse(expo_ch8.Text));
 
                         joy.elevons = CHK_elevons.Checked;
 
@@ -218,7 +247,7 @@ namespace ArdupilotMega
                         {
                             string name = (f + 1).ToString();
 
-                            doButtontoUI(name, 10, 195 + f * 25);
+                            doButtontoUI(name, 10, 290 + f * 25);
 
                             joy.setButton(f, int.Parse(this.Controls.Find("cmbbutton" + name, false)[0].Text), this.Controls.Find("cmbaction" + name, false)[0].Text);
                         }
@@ -236,6 +265,10 @@ namespace ArdupilotMega
                     MainV2.cs.rcoverridech2 = joy.getValueForChannel(2, CMB_joysticks.Text);
                     MainV2.cs.rcoverridech3 = joy.getValueForChannel(3, CMB_joysticks.Text);
                     MainV2.cs.rcoverridech4 = joy.getValueForChannel(4, CMB_joysticks.Text);
+                    MainV2.cs.rcoverridech5 = joy.getValueForChannel(5, CMB_joysticks.Text);
+                    MainV2.cs.rcoverridech6 = joy.getValueForChannel(6, CMB_joysticks.Text);
+                    MainV2.cs.rcoverridech7 = joy.getValueForChannel(7, CMB_joysticks.Text);
+                    MainV2.cs.rcoverridech8 = joy.getValueForChannel(8, CMB_joysticks.Text);
 
                     //Console.WriteLine(DateTime.Now.Millisecond + " end ");
                 }
@@ -246,6 +279,10 @@ namespace ArdupilotMega
             progressBar2.Value = MainV2.cs.rcoverridech2;
             progressBar3.Value = MainV2.cs.rcoverridech3;
             progressBar4.Value = MainV2.cs.rcoverridech4;
+            horizontalProgressBar1.Value = MainV2.cs.rcoverridech5;
+            horizontalProgressBar2.Value = MainV2.cs.rcoverridech6;
+            horizontalProgressBar3.Value = MainV2.cs.rcoverridech7;
+            horizontalProgressBar4.Value = MainV2.cs.rcoverridech8;
 
             try
             {
@@ -431,6 +468,78 @@ namespace ArdupilotMega
         private void CHK_elevons_CheckedChanged(object sender, EventArgs e)
         {
             MainV2.joystick.elevons = CHK_elevons.Checked;
+        }
+
+        private void CMB_CH5_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup || MainV2.joystick == null)
+                return;
+            MainV2.joystick.setAxis(5, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), ((ComboBox)sender).Text));
+        }
+
+        private void CMB_CH6_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup || MainV2.joystick == null)
+                return;
+            MainV2.joystick.setAxis(6, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), ((ComboBox)sender).Text));
+        }
+
+        private void CMB_CH7_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup || MainV2.joystick == null)
+                return;
+            MainV2.joystick.setAxis(7, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), ((ComboBox)sender).Text));
+        }
+
+        private void CMB_CH8_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup || MainV2.joystick == null)
+                return;
+            MainV2.joystick.setAxis(8, (Joystick.joystickaxis)Enum.Parse(typeof(Joystick.joystickaxis), ((ComboBox)sender).Text));
+        }
+
+        private void BUT_detch5_Click(object sender, EventArgs e)
+        {
+            CMB_CH5.Text = Joystick.getMovingAxis(CMB_joysticks.Text, 16000).ToString();
+        }
+
+        private void BUT_detch6_Click(object sender, EventArgs e)
+        {
+            CMB_CH6.Text = Joystick.getMovingAxis(CMB_joysticks.Text, 16000).ToString();
+        }
+
+        private void BUT_detch7_Click(object sender, EventArgs e)
+        {
+            CMB_CH7.Text = Joystick.getMovingAxis(CMB_joysticks.Text, 16000).ToString();
+        }
+
+        private void BUT_detch8_Click(object sender, EventArgs e)
+        {
+            CMB_CH8.Text = Joystick.getMovingAxis(CMB_joysticks.Text, 16000).ToString();
+        }
+
+        private void revCH5_CheckedChanged(object sender, EventArgs e)
+        {
+            if (MainV2.joystick != null)
+                MainV2.joystick.setReverse(5, ((CheckBox)sender).Checked);
+        }
+
+        private void revCH6_CheckedChanged(object sender, EventArgs e)
+        {
+            if (MainV2.joystick != null)
+                MainV2.joystick.setReverse(6, ((CheckBox)sender).Checked);
+        }
+
+        private void revCH7_CheckedChanged(object sender, EventArgs e)
+        {
+            if (MainV2.joystick != null)
+                MainV2.joystick.setReverse(7, ((CheckBox)sender).Checked);
+        }
+
+        private void revCH8_CheckedChanged(object sender, EventArgs e)
+        {
+            if (MainV2.joystick != null)
+                MainV2.joystick.setReverse(8, ((CheckBox)sender).Checked);
         }
     }
 }

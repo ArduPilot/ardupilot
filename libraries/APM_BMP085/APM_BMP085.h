@@ -4,7 +4,7 @@
 #define TEMP_FILTER_SIZE 16
 #define PRESS_FILTER_SIZE 10
 
-#include <APM_BMP085_hil.h>
+#include "APM_BMP085_hil.h"
 
 class APM_BMP085_Class
 {

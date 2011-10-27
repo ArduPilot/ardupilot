@@ -23,11 +23,11 @@ namespace ArdupilotMega
         public byte sysid = 0;
         public byte compid = 0;
         public Hashtable param = new Hashtable();
-        public static byte[][] packets = new byte[256][];
+        public byte[][] packets = new byte[256][];
         public double[] packetspersecond = new double[256];
         DateTime[] packetspersecondbuild = new DateTime[256];
-        static object objlock = new object();
-        static object readlock = new object();
+        object objlock = new object();
+        object readlock = new object();
         object logwritelock = new object();
         public DateTime lastvalidpacket = DateTime.Now;
         bool oldlogformat = false;
@@ -44,7 +44,7 @@ namespace ArdupilotMega
         public BinaryReader logplaybackfile = null;
         public BinaryWriter logfile = null;
 
-        public static byte[] streams = new byte[256];
+        public byte[] streams = new byte[256];
 
         int bps1 = 0;
         int bps2 = 0;

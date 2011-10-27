@@ -137,7 +137,7 @@ namespace ArdupilotMega
                 flyto.Duration = (cs.datetime - lasttime).TotalMilliseconds / 1000.0;
 
                 flyto.Mode = FlyToMode.Smooth;
-                Camera cam = new Camera();
+                SharpKml.Dom.Camera cam = new SharpKml.Dom.Camera();
                 cam.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
                 cam.Latitude = cs.lat;
                 cam.Longitude = cs.lng;
@@ -316,7 +316,7 @@ namespace ArdupilotMega
                     mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
                     mine.logreadmode = true;
 
-                    MAVLink.packets.Initialize(); // clear
+                    mine.packets.Initialize(); // clear
 
                     CurrentState cs = new CurrentState();
 
@@ -422,7 +422,7 @@ namespace ArdupilotMega
                     mine.logplaybackfile = new BinaryReader(File.Open(logfile, FileMode.Open, FileAccess.Read, FileShare.Read));
                     mine.logreadmode = true;
 
-                    MAVLink.packets.Initialize(); // clear
+                    mine.packets.Initialize(); // clear
 
                     StreamWriter sw = new StreamWriter(Path.GetDirectoryName(logfile)+ Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(logfile) + ".txt");
 

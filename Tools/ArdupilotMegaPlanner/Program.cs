@@ -24,6 +24,7 @@ namespace ArdupilotMega
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new Camera());
             Application.Run(new MainV2());
         }
 
