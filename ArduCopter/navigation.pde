@@ -92,19 +92,49 @@ static void calc_loiter(int x_error, int y_error)
 	nav_lon			= constrain(nav_lon, -3500, 3500);
 }
 
+static void calc_loiter2(int x_error, int y_error)
+{
+	static int last_x_error = 0;
+	static int last_y_error = 0;
+
+	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+
+	int x_target_speed = g.pi_loiter_lon.get_pi(x_error, dTnav);
+	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
+
+	// find the rates:
+	x_actual_speed 	= (float)(last_x_error - x_error)/dTnav;
+	y_actual_speed 	= (float)(last_y_error - y_error)/dTnav;
+
+	// save speeds
+	last_x_error	= x_error;
+	last_y_error	= y_error;
+
+	y_rate_error 	= y_target_speed - y_actual_speed; // 413
+	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
+	nav_lat			= constrain(nav_lat, -3500, 3500);
+
+	x_rate_error 	= x_target_speed - x_actual_speed;
+	x_rate_error 	= constrain(x_rate_error, -250, 250);
+	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
+	nav_lon			= constrain(nav_lon, -3500, 3500);
+}
+
 // nav_roll, nav_pitch
 static void calc_loiter_pitch_roll()
 {
 
-	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor))/100.0);
-	float _cos_yaw_x = cos(temp);
-	float _sin_yaw_y = sin(temp);
+	//float temp  	 = radians((float)(9000 - (dcm.yaw_sensor))/100.0);
+	//float _cos_yaw_x = cos(temp);
+	//float _sin_yaw_y = sin(temp);
 
-//	Serial.printf("ys %ld, cyx %1.4f, _cyx %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x);
+	//Serial.printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
 
 	// rotate the vector
-	nav_roll 	=  (float)nav_lon * _sin_yaw_y - (float)nav_lat * _cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * _cos_yaw_x + (float)nav_lat * _sin_yaw_y;
+	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
