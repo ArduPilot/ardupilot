@@ -18,3 +18,4 @@ build
 /Tools/ArdupilotMegaPlanner/resedit/bin
 /Tools/ArdupilotMegaPlanner/resedit/obj
 tags
+.*.swp
