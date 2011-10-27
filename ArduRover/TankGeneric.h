@@ -5,6 +5,8 @@
  *      Author: jgoppert
  */
 
+// NOT CURRENTLY WORKING
+
 #ifndef TANKGENERIC_H_
 #define TANKGENERIC_H_
 
@@ -27,10 +29,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static const uint32_t debugBaud = 57600;
+static const uint32_t telemBaud = 57600;
+static const uint32_t gpsBaud = 38400;
+static const uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -75,6 +77,12 @@ const float throttleIMax = 0.0;
 const float throttleYMax = 0.0;
 const float throttleDFCut = 3.0;
 
+// guidance
+static const float velCmd = 5;
+static const float xt = 10;
+static const float xtLim = 90;
+
 #include "ControllerTank.h"
 
 #endif /* TANKGENERIC_H_ */
+// vim:ts=4:sw=4:expandtab

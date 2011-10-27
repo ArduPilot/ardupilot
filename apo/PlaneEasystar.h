@@ -11,7 +11,7 @@
 // vehicle options
 static const apo::vehicle_t vehicle = apo::VEHICLE_PLANE;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_2560;
+static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
 
 // algorithm selection
@@ -27,10 +27,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static const uint32_t debugBaud = 57600;
+static const uint32_t telemBaud = 57600;
+static const uint32_t gpsBaud = 38400;
+static const uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -40,7 +40,7 @@ static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD
 // compass orientation: See AP_Compass_HMC5843.h for possible values
 
 // battery monitoring
-static const bool batteryMonitorEnabled = true;
+static const bool batteryMonitorEnabled = false;
 static const uint8_t batteryPin = 0;
 static const float batteryVoltageDivRatio = 6;
 static const float batteryMinVolt = 10.0;
@@ -117,6 +117,12 @@ static const float elvTrim = 0.0;
 static const float rdrTrim = 0.0;
 static const float thrTrim = 0.5;
 
+// guidance
+static const float velCmd = 1; // m/s
+static const float xt = 10; // cross track gain
+static const float xtLim = 90; // cross track angle limit, deg
+
 #include "ControllerPlane.h"
 
 #endif /* PLANEEASYSTAR_H_ */
+// vim:ts=4:sw=4:expandtab

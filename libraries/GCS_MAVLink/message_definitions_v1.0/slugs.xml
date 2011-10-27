@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<mavlink>
+    <include>common.xml</include>
+    
+    <!-- <enums> 
+  <enum name="SLUGS_ACTION" > 
+    <description> Slugs Actions </description> 
+    <entry name = "SLUGS_ACTION_NONE"> 
+    <entry name = "SLUGS_ACTION_SUCCESS"> 
+    <entry name = "SLUGS_ACTION_FAIL"> 
+    <entry name = "SLUGS_ACTION_EEPROM"> 
+    <entry name = "SLUGS_ACTION_MODE_CHANGE"> 
+    <entry name = "SLUGS_ACTION_MODE_REPORT"> 
+    <entry name = "SLUGS_ACTION_PT_CHANGE"> 
+    <entry name = "SLUGS_ACTION_PT_REPORT"> 
+    <entry name = "SLUGS_ACTION_PID_CHANGE"> 
+    <entry name = "SLUGS_ACTION_PID_REPORT"> 
+    <entry name = "SLUGS_ACTION_WP_CHANGE"> 
+    <entry name = "SLUGS_ACTION_WP_REPORT"> 
+    <entry name = "SLUGS_ACTION_MLC_CHANGE"> 
+    <entry name = "SLUGS_ACTION_MLC_REPORT"> 
+  </enum> 
+
+  <enum name="WP_PROTOCOL_STATE" > 
+    <description> Waypoint Protocol States </description> 
+    <entry name = "WP_PROT_IDLE"> 
+    <entry name = "WP_PROT_LIST_REQUESTED"> 
+    <entry name = "WP_PROT_NUM_SENT">
+    <entry name = "WP_PROT_TX_WP"> 
+    <entry name = "WP_PROT_RX_WP"> 
+    <entry name = "WP_PROT_SENDING_WP_IDLE"> 
+    <entry name = "WP_PROT_GETTING_WP_IDLE"> 
+  </enum>
+  
+</enums> -->
+    
+    <messages>
+        
+        <message name="CPU_LOAD" id="170">
+            Sensor and DSC control loads.
+            <field name="sensLoad" type="uint8_t">Sensor DSC Load</field>
+            <field name="ctrlLoad" type="uint8_t">Control DSC Load</field>
+            <field name="batVolt" type="uint16_t">Battery Voltage in millivolts</field>     
+        </message>
+        
+        <message name="AIR_DATA" id="171">
+            Air data for altitude and airspeed computation.
+            <field name="dynamicPressure" type="float">Dynamic pressure (Pa)</field>
+            <field name="staticPressure" type="float">Static pressure (Pa)</field>
+            <field name="temperature" type="uint16_t">Board temperature</field>     
+        </message>
+        
+        <message name="SENSOR_BIAS" id="172">
+            Accelerometer and gyro biases.
+            <field name="axBias" type="float">Accelerometer X bias (m/s)</field>
+            <field name="ayBias" type="float">Accelerometer Y bias (m/s)</field>
+            <field name="azBias" type="float">Accelerometer Z bias (m/s)</field>
+            <field name="gxBias" type="float">Gyro X bias (rad/s)</field>
+            <field name="gyBias" type="float">Gyro Y bias (rad/s)</field>
+            <field name="gzBias" type="float">Gyro Z bias (rad/s)</field>
+        </message>
+        
+        <message name="DIAGNOSTIC" id="173">
+            Configurable diagnostic messages.
+            <field name="diagFl1" type="float">Diagnostic float 1</field>
+            <field name="diagFl2" type="float">Diagnostic float 2</field>
+            <field name="diagFl3" type="float">Diagnostic float 3</field>
+            <field name="diagSh1" type="int16_t">Diagnostic short 1</field>
+            <field name="diagSh2" type="int16_t">Diagnostic short 2</field>
+            <field name="diagSh3" type="int16_t">Diagnostic short 3</field>
+        </message>
+        
+        <message name="SLUGS_NAVIGATION" id="176">
+            Data used in the navigation algorithm.
+            <field name="u_m" type="float">Measured Airspeed prior to the Nav Filter</field>
+            <field name="phi_c" type="float">Commanded Roll</field>
+            <field name="theta_c" type="float">Commanded Pitch</field>
+            <field name="psiDot_c" type="float">Commanded Turn rate</field>
+            <field name="ay_body" type="float">Y component of the body acceleration</field>
+            <field name="totalDist" type="float">Total Distance to Run on this leg of Navigation</field>
+            <field name="dist2Go" type="float">Remaining distance to Run on this leg of Navigation</field>
+            <field name="fromWP" type="uint8_t">Origin WP</field>
+            <field name="toWP" type="uint8_t">Destination WP</field>
+        </message>
+        
+        <message name="DATA_LOG" id="177">
+            Configurable data log probes to be used inside Simulink
+            <field name="fl_1" type="float">Log value 1 </field>
+            <field name="fl_2" type="float">Log value 2 </field>
+            <field name="fl_3" type="float">Log value 3 </field>
+            <field name="fl_4" type="float">Log value 4 </field>
+            <field name="fl_5" type="float">Log value 5 </field>
+            <field name="fl_6" type="float">Log value 6 </field>
+        </message>
+        
+        <message name="GPS_DATE_TIME" id="179">
+            Pilot console PWM messges.
+            <field name="year"  type="uint8_t">Year reported by Gps </field>
+            <field name="month" type="uint8_t">Month reported by Gps </field>
+            <field name="day"   type="uint8_t">Day reported by Gps </field>
+            <field name="hour"  type="uint8_t">Hour reported by Gps </field>
+            <field name="min"   type="uint8_t">Min reported by Gps </field>
+            <field name="sec"   type="uint8_t">Sec reported by Gps  </field>
+            <field name="visSat"   type="uint8_t">Visible sattelites reported by Gps  </field>
+        </message>
+        
+        <message name="MID_LVL_CMDS" id="180">
+            Mid Level commands sent from the GS to the autopilot. These are only sent when being opperated in mid-level commands mode from the ground; for periodic report of these commands generated from the autopilot see message XXXX.
+            <field name="target" type="uint8_t">The system setting the commands</field>
+            <field name="hCommand" type="float">Commanded Airspeed</field>
+            <field name="uCommand" type="float">Log value 2 </field>
+            <field name="rCommand" type="float">Log value 3 </field>
+        </message>
+         
+        
+        <message name="CTRL_SRFC_PT" id="181">
+            This message configures the Selective Passthrough mode. it allows to select which control surfaces the Pilot can control from his console. It is implemented as a bitfield as follows: 
+            Position          Bit        Code
+            =================================
+            15-8             Reserved  
+            7                 dt_pass    128
+            6                 dla_pass   64
+            5                 dra_pass   32
+            4                 dr_pass    16
+            3                 dle_pass   8
+            2                 dre_pass   4
+            1                 dlf_pass   2
+            0                 drf_pass   1
+            Where Bit 15 is the MSb. 0 = AP has control of the surface; 1 = Pilot Console has control of the surface.
+            <field name="target" type="uint8_t">The system setting the commands</field>
+            <field name="bitfieldPt" type="uint16_t">Bitfield containing the PT configuration</field>
+        </message>
+         
+        
+        
+        <message name="SLUGS_ACTION" id="183">
+            Action messages focused on the SLUGS AP. 
+            <field name="target" type="uint8_t">The system reporting the action</field>
+            <field name="actionId" type="uint8_t">Action ID. See apDefinitions.h in the SLUGS /clib directory for the ID names</field>
+            <field name="actionVal" type="uint16_t">Value associated with the action</field>
+        </message>
+        
+    </messages>
+</mavlink>

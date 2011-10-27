@@ -563,7 +563,7 @@ namespace ArdupilotMega.GCSViews
                 this.Refresh();
                 Console.WriteLine("Downloaded");
             }
-            catch (Exception ex) { lbl_status.Text = "Failed download"; MessageBox.Show("Failed to download new firmware : " + ex.Message); return; }
+            catch (Exception ex) { lbl_status.Text = "Failed download"; MessageBox.Show("Failed to download new firmware : " + ex.ToString()); return; }
 
             UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
         }

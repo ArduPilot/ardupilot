@@ -66,10 +66,10 @@ namespace ArdupilotMega
 
         GCSViews.FlightData FlightData;
         GCSViews.FlightPlanner FlightPlanner;
-        //GCSViews.Configuration Configuration;
+        GCSViews.Configuration Configuration;
         GCSViews.Simulation Simulation;
         GCSViews.Firmware Firmware;
-        //GCSViews.Terminal Terminal;
+        GCSViews.Terminal Terminal;
 
         public MainV2()
         {
@@ -219,6 +219,22 @@ namespace ArdupilotMega
 
             instance = this;
             splash.Close();
+        }
+
+        internal void ScreenShot()
+        {
+            Rectangle bounds = Screen.GetBounds(Point.Empty);
+            using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
+            {
+                using (Graphics g = Graphics.FromImage(bitmap))
+                {
+                    g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
+                }
+                string name = "ss" + DateTime.Now.ToString("hhmmss") + ".jpg";
+                bitmap.Save(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + name, System.Drawing.Imaging.ImageFormat.Jpeg);
+                MessageBox.Show("Screenshot saved to " + name);
+            } 
+
         }
 
         private void CMB_serialport_Click(object sender, EventArgs e)
@@ -456,7 +472,19 @@ namespace ArdupilotMega
 
             GCSViews.Terminal.threadrun = false;
 
-            UserControl temp = new GCSViews.Configuration();
+            // dispose of old else memory leak
+            if (Configuration != null)
+            {
+                try
+                {
+                    Configuration.Dispose();
+                }
+                catch { }
+            }
+
+            Configuration = new GCSViews.Configuration();
+
+            UserControl temp = Configuration;
 
             temp.SuspendLayout();
 
@@ -633,6 +661,8 @@ namespace ArdupilotMega
 
                     cs.firmware = APMFirmware;
 
+                    config[CMB_serialport.Text + "_BAUD"] = CMB_baudrate.Text;
+
                     if (config["loadwpsonconnect"] != null && bool.Parse(config["loadwpsonconnect"].ToString()) == true)
                     {
                         MenuFlightPlanner_Click(null, null);
@@ -697,6 +727,9 @@ namespace ArdupilotMega
             try
             {
                 comPort.BaseStream.PortName = CMB_serialport.Text;
+
+                if (config[CMB_serialport.Text + "_BAUD"] != null)
+                    CMB_baudrate.Text = config[CMB_serialport.Text + "_BAUD"].ToString();
             }
             catch { }
         }
@@ -874,10 +907,22 @@ namespace ArdupilotMega
                             rc.target_component = comPort.compid;
                             rc.target_system = comPort.sysid;
 
-                            rc.chan1_raw = cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
-                            rc.chan2_raw = cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
-                            rc.chan3_raw = cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
-                            rc.chan4_raw = cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(1) != Joystick.joystickaxis.None)
+                                rc.chan1_raw = cs.rcoverridech1;//(ushort)(((int)state.Rz / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(2) != Joystick.joystickaxis.None)
+                                rc.chan2_raw = cs.rcoverridech2;//(ushort)(((int)state.Y / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(3) != Joystick.joystickaxis.None)
+                                rc.chan3_raw = cs.rcoverridech3;//(ushort)(1000 - ((int)slider[0] / 65.535 ) + 1000);
+                            if (joystick.getJoystickAxis(4) != Joystick.joystickaxis.None)
+                                rc.chan4_raw = cs.rcoverridech4;//(ushort)(((int)state.X / 65.535) + 1000);
+                            if (joystick.getJoystickAxis(5) != Joystick.joystickaxis.None)
+                                rc.chan5_raw = cs.rcoverridech5;
+                            if (joystick.getJoystickAxis(6) != Joystick.joystickaxis.None)
+                                rc.chan6_raw = cs.rcoverridech6;
+                            if (joystick.getJoystickAxis(7) != Joystick.joystickaxis.None)
+                                rc.chan7_raw = cs.rcoverridech7;
+                            if (joystick.getJoystickAxis(8) != Joystick.joystickaxis.None)
+                                rc.chan8_raw = cs.rcoverridech8;
 
                             if (lastjoystick.AddMilliseconds(50) < DateTime.Now)
                             {
@@ -1543,6 +1588,11 @@ namespace ArdupilotMega
                 Form frm = new temp();
                 fixtheme(frm);
                 frm.Show();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                ScreenShot();
                 return true;
             }
             if (keyData == (Keys.Control | Keys.G)) // test

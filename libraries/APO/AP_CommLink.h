@@ -22,7 +22,7 @@
 #include <inttypes.h>
 #include "../AP_Common/AP_Common.h"
 #include "../AP_Common/AP_Vector.h"
-#include "AP_MavlinkCommand.h"
+#include "../GCS_MAVLink/GCS_MAVLink.h"
 
 class FastSerial;
 
@@ -34,7 +34,7 @@ class AP_Guide;
 class AP_HardwareAbstractionLayer;
 
 enum {
-	SEVERITY_LOW, SEVERITY_MED, SEVERITY_HIGH
+    SEVERITY_LOW, SEVERITY_MED, SEVERITY_HIGH
 };
 
 // forward declarations
@@ -45,83 +45,83 @@ enum {
 class AP_CommLink {
 public:
 
-	AP_CommLink(FastSerial * link, AP_Navigator * navigator, AP_Guide * guide,
-			AP_Controller * controller, AP_HardwareAbstractionLayer * hal);
-	virtual void send() = 0;
-	virtual void receive() = 0;
-	virtual void sendMessage(uint8_t id, uint32_t param = 0) = 0;
-	virtual void sendText(uint8_t severity, const char *str) = 0;
-	virtual void sendText(uint8_t severity, const prog_char_t *str) = 0;
-	virtual void acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) = 0;
-	virtual void sendParameters() = 0;
-	virtual void requestCmds() = 0;
+    AP_CommLink(FastSerial * link, AP_Navigator * navigator, AP_Guide * guide,
+                AP_Controller * controller, AP_HardwareAbstractionLayer * hal);
+    virtual void send() = 0;
+    virtual void receive() = 0;
+    virtual void sendMessage(uint8_t id, uint32_t param = 0) = 0;
+    virtual void sendText(uint8_t severity, const char *str) = 0;
+    virtual void sendText(uint8_t severity, const prog_char_t *str) = 0;
+    virtual void acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) = 0;
+    virtual void sendParameters() = 0;
+    virtual void requestCmds() = 0;
 
 protected:
-	FastSerial * _link;
-	AP_Navigator * _navigator;
-	AP_Guide * _guide;
-	AP_Controller * _controller;
-	AP_HardwareAbstractionLayer * _hal;
+    FastSerial * _link;
+    AP_Navigator * _navigator;
+    AP_Guide * _guide;
+    AP_Controller * _controller;
+    AP_HardwareAbstractionLayer * _hal;
 };
 
 class MavlinkComm: public AP_CommLink {
 public:
-	MavlinkComm(FastSerial * link, AP_Navigator * nav, AP_Guide * guide,
-			AP_Controller * controller, AP_HardwareAbstractionLayer * hal);
+    MavlinkComm(FastSerial * link, AP_Navigator * nav, AP_Guide * guide,
+                AP_Controller * controller, AP_HardwareAbstractionLayer * hal);
 
-	virtual void send();
-	void sendMessage(uint8_t id, uint32_t param = 0);
-	virtual void receive();
-	void sendText(uint8_t severity, const char *str);
-	void sendText(uint8_t severity, const prog_char_t *str);
-	void acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
+    virtual void send();
+    void sendMessage(uint8_t id, uint32_t param = 0);
+    virtual void receive();
+    void sendText(uint8_t severity, const char *str);
+    void sendText(uint8_t severity, const prog_char_t *str);
+    void acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2);
 
-	/**
-	 * sends parameters one at a time
-	 */
-	void sendParameters();
+    /**
+     * sends parameters one at a time
+     */
+    void sendParameters();
 
-	/**
-	 * request commands one at a time
-	 */
-	void requestCmds();
+    /**
+     * request commands one at a time
+     */
+    void requestCmds();
 
 private:
 
-	// options
-	bool _useRelativeAlt;
+    // options
+    bool _useRelativeAlt;
 
-	// commands
-	bool _sendingCmds;
-	bool _receivingCmds;
-	uint16_t _cmdTimeLastSent;
-	uint16_t _cmdTimeLastReceived;
-	uint16_t _cmdDestSysId;
-	uint16_t _cmdDestCompId;
-	uint16_t _cmdRequestIndex;
-	uint16_t _cmdNumberRequested;
-	uint16_t _cmdMax;
-	Vector<mavlink_command_t *> _cmdList;
+    // commands
+    bool _sendingCmds;
+    bool _receivingCmds;
+    uint16_t _cmdTimeLastSent;
+    uint16_t _cmdTimeLastReceived;
+    uint16_t _cmdDestSysId;
+    uint16_t _cmdDestCompId;
+    uint16_t _cmdRequestIndex;
+    uint16_t _cmdNumberRequested;
+    uint16_t _cmdMax;
+    Vector<mavlink_command_t *> _cmdList;
 
-	// parameters
-	static uint8_t _paramNameLengthMax;
-	uint16_t _parameterCount;
-	AP_Var * _queuedParameter;
-	uint16_t _queuedParameterIndex;
+    // parameters
+    static uint8_t _paramNameLengthMax;
+    uint16_t _parameterCount;
+    AP_Var * _queuedParameter;
+    uint16_t _queuedParameterIndex;
 
-	// channel
-	mavlink_channel_t _channel;
-	uint16_t _packetDrops;
-	static uint8_t _nChannels;
+    // channel
+    mavlink_channel_t _channel;
+    uint16_t _packetDrops;
+    static uint8_t _nChannels;
 
-	void _handleMessage(mavlink_message_t * msg);
+    void _handleMessage(mavlink_message_t * msg);
 
-	uint16_t _countParameters();
+    uint16_t _countParameters();
 
-	AP_Var * _findParameter(uint16_t index);
+    AP_Var * _findParameter(uint16_t index);
 
-	// check the target
-	uint8_t _checkTarget(uint8_t sysid, uint8_t compid);
+    // check the target
+    uint8_t _checkTarget(uint8_t sysid, uint8_t compid);
 
 };
 

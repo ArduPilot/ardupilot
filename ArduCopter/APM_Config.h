@@ -27,7 +27,6 @@
 	V_FRAME
 	*/
 
-
 # define CH7_OPTION		CH7_DO_NOTHING
 	/*
 	CH7_DO_NOTHING
@@ -52,8 +51,7 @@
 
 //#define RATE_ROLL_I 	0.18
 //#define RATE_PITCH_I	0.18
-
-
+//#define MOTORS_JD880
 
 
 // agmatthews USERHOOKS

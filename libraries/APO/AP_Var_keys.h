@@ -3,22 +3,23 @@
 
 enum keys {
 
-	// general
-	k_config = 0,
-	k_cntrl,
-	k_guide,
-	k_sensorCalib,
+    // general
+    k_config = 0,
+    k_cntrl,
+    k_guide,
+    k_sensorCalib,
 
-	k_radioChannelsStart=10,
+    k_radioChannelsStart=10,
 
-	k_controllersStart=30,
+    k_controllersStart=30,
 
-	k_customStart=100,
+    k_customStart=100,
 
-	// 200-256 reserved for commands
-	k_commands = 200
+    // 200-256 reserved for commands
+    k_commands = 200
 };
 
 // max 256 keys
 
 #endif
+// vim:ts=4:sw=4:expandtab

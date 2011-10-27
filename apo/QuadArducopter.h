@@ -27,10 +27,10 @@ static const uint8_t heartBeatTimeout = 3;
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
 
 // baud rates
-static uint32_t debugBaud = 57600; 
-static uint32_t telemBaud = 57600; 
-static uint32_t gpsBaud = 38400; 
-static uint32_t hilBaud = 57600; 
+static const uint32_t debugBaud = 57600;
+static const uint32_t telemBaud = 57600;
+static const uint32_t gpsBaud = 38400;
+static const uint32_t hilBaud = 57600;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -54,7 +54,7 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loopRate = 400; // attitude nav
+static const float loopRate = 250; // attitude nav
 static const float loop0Rate = 50; // controller
 static const float loop1Rate = 10; 	// pos nav/ gcs fast
 static const float loop2Rate = 1; 	// gcs slow
@@ -91,9 +91,14 @@ static const float PID_YAWSPEED_D = 0;
 static const float PID_YAWSPEED_LIM = .05; // 5 % motors
 static const float PID_YAWSPEED_AWU = 0.0;
 static const float PID_YAWSPEED_DFCUT = 3.0; // 3 Radians, about 1 Hz
-
 static const float THRUST_HOVER_OFFSET = 0.475;
+
+// guidance
+static const float velCmd = 1; // m/s
+static const float xt = 10; // cross track gain
+static const float xtLim = 90; // cross track angle limit, deg
 
 #include "ControllerQuad.h"
 
 #endif /* QUADARDUCOPTER_H_ */
+// vim:ts=4:sw=4:expandtab
