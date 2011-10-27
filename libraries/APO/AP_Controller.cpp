@@ -35,8 +35,10 @@ void AP_Controller::setAllRadioChannelsToNeutral() {
 }
 
 void AP_Controller::setAllRadioChannelsManually() {
+	//_hal->debug->printf_P(PSTR("\tsize: %d\n"),_hal->rc.getSize());
     for (uint8_t i = 0; i < _hal->rc.getSize(); i++) {
         _hal->rc[i]->setUsingRadio();
+		//_hal->debug->printf_P(PSTR("\trc %d: %f\n"),i,_hal->rc[i]->getPosition());
     }
 }
 
@@ -100,6 +102,7 @@ void AP_Controller::setMotors() {
     case MAV_STATE_ACTIVE: {
         digitalWrite(_hal->aLedPin, HIGH);
         setMotorsActive();
+		break;
     }
     case MAV_STATE_EMERGENCY: {
         digitalWrite(_hal->aLedPin, LOW);
