@@ -43,6 +43,8 @@ public:
 
     virtual void nextCommand() = 0;
 
+    virtual void updateCommand() {};
+
     MAV_NAV getMode() const {
         return _mode;
     }
@@ -131,6 +133,7 @@ public:
     virtual void update();
     void nextCommand();
     void handleCommand();
+    void updateCommand();
 
 private:
     RangeFinder * _rangeFinderFront;
