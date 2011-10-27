@@ -32,7 +32,10 @@ static void update_auto()
 			next_WP.lng 		= home.lng + 1000;	// so we don't have bad calcs
 		}
 	} else {
-    	g.command_index--;
+    	if(g.command_index != 0) {
+    		g.command_index = nav_command_index;
+    		nav_command_index--;
+    	}
 		nav_command_ID	= NO_COMMAND;
 		non_nav_command_ID	= NO_COMMAND;
 		next_nav_command.id 	= CMD_BLANK;
