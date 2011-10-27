@@ -85,7 +85,7 @@ get_stabilize_yaw(long target_angle)
 
 #define ALT_ERROR_MAX 400
 static int
-get_nav_throttle(long z_error) 
+get_nav_throttle(long z_error)
 {
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
@@ -98,28 +98,41 @@ get_nav_throttle(long z_error)
 	return (int)g.pi_throttle.get_pi(rate_error, .1);
 }
 
+#define ALT_ERROR_MAX2 300
+static int
+get_nav_throttle2(long z_error)
+{
+	if (z_error > ALT_ERROR_MAX2){
+		return g.pi_throttle.kP() * 80;
+
+	}else if (z_error < -ALT_ERROR_MAX2){
+		return g.pi_throttle.kP() * -60;
+
+	} else{
+		// limit error to prevent I term run up
+		z_error 		= constrain(z_error, -ALT_ERROR_MAX2, ALT_ERROR_MAX2);
+		int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1); //_p = .85
+
+		rate_error 		= rate_error - altitude_rate;
+
+		// limit the rate
+		rate_error 		= constrain(rate_error, -100, 120);
+		return (int)g.pi_throttle.get_pi(rate_error, .1) + alt_hold_velocity();
+	}
+}
+
 static int
 get_rate_roll(long target_rate)
 {
-	long error;
-	target_rate 	= constrain(target_rate, -2500, 2500);
-	error			= (target_rate * 4.5) - (long)(degrees(omega.x) * 100.0);
-	target_rate 	= g.pi_rate_roll.get_pi(error, G_Dt);
-
-	// output control:
-	return (int)constrain(target_rate, -2500, 2500);
+	long error	= (target_rate * 3.5) - (long)(degrees(omega.x) * 100.0);
+	return g.pi_acro_roll.get_pi(error, G_Dt);
 }
 
 static int
 get_rate_pitch(long target_rate)
 {
-	long error;
-	target_rate 	= constrain(target_rate, -2500, 2500);
-	error			= (target_rate * 4.5) - (long)(degrees(omega.y) * 100.0);
-	target_rate 	= g.pi_rate_pitch.get_pi(error, G_Dt);
-
-	// output control:
-	return (int)constrain(target_rate, -2500, 2500);
+	long error	= (target_rate * 3.5) - (long)(degrees(omega.y) * 100.0);
+	return  g.pi_acro_pitch.get_pi(error, G_Dt);
 }
 
 static int
@@ -139,7 +152,7 @@ get_rate_yaw(long target_rate)
 static void reset_hold_I(void)
 {
 	g.pi_loiter_lat.reset_I();
-	g.pi_loiter_lat.reset_I();
+	g.pi_loiter_lon.reset_I();
 	g.pi_crosstrack.reset_I();
 }
 
@@ -189,19 +202,21 @@ get_nav_yaw_offset(int yaw_input, int reset)
 static int alt_hold_velocity()
 {
 	#if ACCEL_ALT_HOLD == 1
+		Vector3f accel_filt;
+		float error;
+
 		// subtract filtered Accel
-		float error	= abs(next_WP.alt - current_loc.alt);
+		error		= abs(next_WP.alt - current_loc.alt) - 25;
+		error		= min(error, 50.0);
+		error		= max(error, 0.0);
+		error		= 1 - (error/ 50.0);
 
-		error -= 100;
-		error = min(error, 200.0);
-		error = max(error, 0.0);
-		error = 1 - (error/ 200.0);
-		float sum = accels_rot_sum / (float)accels_rot_count;
+		accel_filt	= imu.get_accel_filtered();
+		accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
+		int output = (accels_rot.z + 9.81) * alt_hold_gain * error;   // alt_hold_gain  = 12
 
-		accels_rot_sum = 0;
-		accels_rot_count = 0;
-
-		int output = (sum + 9.81) * alt_hold_gain * error;
+		//Serial.printf("s: %1.4f, g:%1.4f, e:%1.4f, o:%d\n",sum, alt_hold_gain, error, output);
+		return constrain(output, -70, 70);
 
 // fast rise
 //s: -17.6241, g:0.0000, e:1.0000, o:0
@@ -209,17 +224,15 @@ static int alt_hold_velocity()
 //s: -19.3193, g:0.0000, e:1.0000, o:0
 //s: -13.1310, g:47.8700, e:1.0000, o:-158
 
-		//Serial.printf("s: %1.4f, g:%1.4f, e:%1.4f, o:%d\n",sum, alt_hold_gain, error, output);
-		return output;
 	#else
 		return 0;
 	#endif
 }
 
-static int get_angle_boost()
+static int get_angle_boost(int value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
-	return (int)(temp * g.throttle_cruise);
+	return (int)(temp * value);
 }
 
