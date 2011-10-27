@@ -139,8 +139,12 @@ static void auto_trim()
 			led_mode = NORMAL_LEDS;
 			clear_leds();
 			imu.save();
+
 			//Serial.println("Done");
 			auto_level_counter = 0;
+
+			// set TC
+			init_throttle_cruise();
 		}
 	}
 }

@@ -134,6 +134,9 @@ static void init_ardupilot()
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 
+		// save default radio values
+		default_dead_zones();
+
 		Serial.printf_P(PSTR("Please Run Setup...\n"));
 		while (true) {
 			delay(1000);
@@ -150,6 +153,8 @@ static void init_ardupilot()
 		}
 
 	}else{
+		// save default radio values
+		//default_dead_zones();
 
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();

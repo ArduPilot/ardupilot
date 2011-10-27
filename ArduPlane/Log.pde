@@ -380,15 +380,15 @@ static void Log_Write_Startup(byte type)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_STARTUP_MSG);
 	DataFlash.WriteByte(type);
-	DataFlash.WriteByte(g.waypoint_total);
+	DataFlash.WriteByte(g.command_total);
 	DataFlash.WriteByte(END_BYTE);
 
 	// create a location struct to hold the temp Waypoints for printing
-	struct Location cmd = get_wp_with_index(0);
+	struct Location cmd = get_cmd_with_index(0);
 		Log_Write_Cmd(0, &cmd);
 
-	for (int i = 1; i <= g.waypoint_total; i++){
-		cmd = get_wp_with_index(i);
+	for (int i = 1; i <= g.command_total; i++){
+		cmd = get_cmd_with_index(i);
 		Log_Write_Cmd(i, &cmd);
 	}
 }

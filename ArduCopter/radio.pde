@@ -4,6 +4,13 @@
 // ----------------------------------------------------------------------------
 static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
+static void default_dead_zones()
+{
+	g.rc_1.set_dead_zone(60);
+	g.rc_2.set_dead_zone(60);
+	g.rc_3.set_dead_zone(60);
+	g.rc_4.set_dead_zone(200);
+}
 
 static void init_rc_in()
 {
@@ -29,14 +36,9 @@ static void init_rc_in()
 	g.rc_4.dead_zone = 300;
 	*/
 
-	g.rc_1.set_dead_zone(60);
-	g.rc_2.set_dead_zone(60);
-	g.rc_3.set_dead_zone(60);
-	g.rc_4.set_dead_zone(200);
 
 	//set auxiliary ranges
 	g.rc_5.set_range(0,1000);
-	g.rc_5.set_filter(false);
 	g.rc_6.set_range(0,1000);
 	g.rc_7.set_range(0,1000);
 	g.rc_8.set_range(0,1000);
