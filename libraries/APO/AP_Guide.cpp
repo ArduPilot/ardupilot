@@ -29,6 +29,7 @@ void AP_Guide::setCurrentIndex(uint8_t val) {
     _command = AP_MavlinkCommand(getCurrentIndex());
     _previousCommand = AP_MavlinkCommand(getPreviousIndex());
     _hal->gcs->sendMessage(MAVLINK_MSG_ID_WAYPOINT_CURRENT);
+    updateCommand();
 }
 
 float AP_Guide::getHeadingError() {
@@ -128,118 +129,152 @@ void MavlinkGuide::nextCommand() {
         _nextCommandCalls = 0;
     }
 
+    // set the current command
     setCurrentIndex(getNextIndex());
-    //Serial.print("cmd       : "); Serial.println(int(_cmdIndex));
-    //Serial.print("cmd prev  : "); Serial.println(int(getPreviousIndex()));
-    //Serial.print("cmd num    : "); Serial.println(int(getNumberOfCommands()));
-    _command = AP_MavlinkCommand(getCurrentIndex());
-    _previousCommand = AP_MavlinkCommand(getPreviousIndex());
+}
+
+void MavlinkGuide::updateCommand() {
+    // update guidance mode
+    if (_command.getCommand() == MAV_CMD_NAV_WAYPOINT) {
+        _mode = MAV_NAV_WAYPOINT;
+    } else if (_command.getCommand() == MAV_CMD_NAV_LAND) {
+        _mode = MAV_NAV_LANDING;
+    } else if (_command.getCommand() == MAV_CMD_NAV_LOITER_TIME) {
+        _mode = MAV_NAV_LOITER;
+    } else if (_command.getCommand() == MAV_CMD_NAV_LOITER_UNLIM) {
+        _mode = MAV_NAV_LOITER;
+    } else if (_command.getCommand() == MAV_CMD_NAV_LOITER_TURNS) {
+        _mode = MAV_NAV_LOITER;
+    } else if (_command.getCommand() == MAV_CMD_NAV_RETURN_TO_LAUNCH) {
+        _mode = MAV_NAV_RETURNING;
+    } else if (_command.getCommand() == MAV_CMD_NAV_TAKEOFF) {
+        _mode = MAV_NAV_LIFTOFF;
+    } else {
+        _hal->debug->printf_P(PSTR("unhandled command"));
+        _hal->gcs->sendText(SEVERITY_HIGH,PSTR("unhandled command"));
+        nextCommand();
+        return;
+    }
+
+    // TODO handle more commands
+    //MAV_CMD_CONDITION_CHANGE_ALT
+    //MAV_CMD_CONDITION_DELAY
+    //MAV_CMD_CONDITION_DISTANCE
+    //MAV_CMD_CONDITION_LAST
+    //MAV_CMD_CONDITION_YAW
+
+    //MAV_CMD_DO_CHANGE_SPEED
+    //MAV_CMD_DO_CONTROL_VIDEO
+    //MAV_CMD_DO_JUMP
+    //MAV_CMD_DO_LAST
+    //MAV_CMD_DO_LAST
+    //MAV_CMD_DO_REPEAT_RELAY
+    //MAV_CMD_DO_REPEAT_SERVO
+    //MAV_CMD_DO_SET_HOME
+    //MAV_CMD_DO_SET_MODE
+    //MAV_CMD_DO_SET_PARAMETER
+    //MAV_CMD_DO_SET_RELAY
+    //MAV_CMD_DO_SET_SERVO
+
+    //MAV_CMD_PREFLIGHT_CALIBRATION
+    //MAV_CMD_PREFLIGHT_STORAGE
 }
 
 void MavlinkGuide::handleCommand() {
 
-    // TODO handle more commands
-    switch (_command.getCommand()) {
-
-    case MAV_CMD_NAV_WAYPOINT: {
+    // for these modes use crosstrack navigation
+    if (
+        _mode == MAV_NAV_WAYPOINT ||
+        _mode == MAV_NAV_LANDING ||
+        _mode == MAV_NAV_LIFTOFF ||
+        _mode == MAV_NAV_VECTOR) {
 
         // if we don't have enough waypoint for cross track calcs
-        // go home
+        // switch to loiter mode
         if (_numberOfCommands == 1) {
-            _mode = MAV_NAV_RETURNING;
-            _altitudeCommand = AP_MavlinkCommand::home.getAlt();
-            _headingCommand = AP_MavlinkCommand::home.bearingTo(
-                                  _navigator->getLat_degInt(), _navigator->getLon_degInt())
-                              + 180 * deg2Rad;
-            if (_headingCommand > 360 * deg2Rad)
-                _headingCommand -= 360 * deg2Rad;
-
-            //_hal->debug->printf_P(PSTR("going home: bearing: %f distance: %f\n"),
-            //headingCommand,AP_MavlinkCommand::home.distanceTo(_navigator->getLat_degInt(),_navigator->getLon_degInt()));
-
-            // if we have 2 or more waypoints do x track navigation
-        } else {
-            _mode = MAV_NAV_WAYPOINT;
-            float alongTrack = _command.alongTrack(_previousCommand,
-                                                   _navigator->getLat_degInt(),
-                                                   _navigator->getLon_degInt());
-            float distanceToNext = _command.distanceTo(
-                                       _navigator->getLat_degInt(), _navigator->getLon_degInt());
-            float segmentLength = _previousCommand.distanceTo(_command);
-            if (distanceToNext < _command.getRadius() || alongTrack
-                    > segmentLength)
-            {
-                Serial.println("waypoint reached");
-                nextCommand();
-            }
-            _altitudeCommand = _command.getAlt();
-            float dXt = _command.crossTrack(_previousCommand,
-                                            _navigator->getLat_degInt(),
-                                            _navigator->getLon_degInt());
-            float temp = dXt * _crossTrackGain * deg2Rad; // crosstrack gain, rad/m
-            if (temp > _crossTrackLim * deg2Rad)
-                temp = _crossTrackLim * deg2Rad;
-            if (temp < -_crossTrackLim * deg2Rad)
-                temp = -_crossTrackLim * deg2Rad;
-            float bearing = _previousCommand.bearingTo(_command);
-            _headingCommand = bearing - temp;
-            //_hal->debug->printf_P(
-            //PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
-            //bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
+            _mode = MAV_NAV_LOITER;
+            return;
         }
 
-        _groundSpeedCommand = _velocityCommand;
+        float distanceToNext = _command.distanceTo(
+                                   _navigator->getLat_degInt(), _navigator->getLon_degInt());
 
-        // calculate pN,pE,pD from home and gps coordinates
-        _pNCmd = _command.getPN(_navigator->getLat_degInt(),
-                                _navigator->getLon_degInt());
-        _pECmd = _command.getPE(_navigator->getLat_degInt(),
-                                _navigator->getLon_degInt());
-        _pDCmd = _command.getPD(_navigator->getAlt_intM());
+        // check if we are at waypoint or if command
+        // radius is zero within tolerance
+        if (distanceToNext < _command.getRadius() | distanceToNext < 1e-5) {
+            _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (distance)"));
+            _hal->debug->printf_P(PSTR("waypoint reached (distance)"));
+            nextCommand();
+            return;
+        }
 
-        // debug
+        // check for along track next waypoint requirement
+        float alongTrack = _command.alongTrack(_previousCommand,
+                                               _navigator->getLat_degInt(),
+                                               _navigator->getLon_degInt());
+        float segmentLength = _previousCommand.distanceTo(_command);
+        if (alongTrack > segmentLength) {
+            _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (along track)"));
+            _hal->debug->printf_P(PSTR("waypoint reached (along track)"));
+            nextCommand();
+            return;
+        }
+
+        // calculate altitude and heading commands
+        _altitudeCommand = _command.getAlt();
+        float dXt = _command.crossTrack(_previousCommand,
+                                        _navigator->getLat_degInt(),
+                                        _navigator->getLon_degInt());
+        float temp = dXt * _crossTrackGain * deg2Rad; // crosstrack gain, rad/m
+        if (temp > _crossTrackLim * deg2Rad)
+            temp = _crossTrackLim * deg2Rad;
+        if (temp < -_crossTrackLim * deg2Rad)
+            temp = -_crossTrackLim * deg2Rad;
+        float bearing = _previousCommand.bearingTo(_command);
+        _headingCommand = bearing - temp;
         //_hal->debug->printf_P(
-        //PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
-        //getNumberOfCommands(),
-        //getCurrentIndex(),
-        //getPreviousIndex());
+        //	PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
+        //	bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
 
-        break;
+        // for these modes just head to current command
+    } else if (
+        _mode == MAV_NAV_LOITER ||
+        _mode == MAV_NAV_RETURNING) {
+        _altitudeCommand = AP_MavlinkCommand::home.getAlt();
+        _headingCommand = AP_MavlinkCommand::home.bearingTo(
+                              _navigator->getLat_degInt(), _navigator->getLon_degInt())
+                          + 180 * deg2Rad;
+        if (_headingCommand > 360 * deg2Rad)
+            _headingCommand -= 360 * deg2Rad;
+
+        // do nothing for these modes
+    } else if (
+        _mode == MAV_NAV_GROUNDED ||
+        _mode == MAV_NAV_HOLD  ||
+        _mode == MAV_NAV_LOST) {
+
     }
-//		case MAV_CMD_CONDITION_CHANGE_ALT:
-//		case MAV_CMD_CONDITION_DELAY:
-//		case MAV_CMD_CONDITION_DISTANCE:
-//		case MAV_CMD_CONDITION_LAST:
-//		case MAV_CMD_CONDITION_YAW:
-//		case MAV_CMD_DO_CHANGE_SPEED:
-//		case MAV_CMD_DO_CONTROL_VIDEO:
-//		case MAV_CMD_DO_JUMP:
-//	    case MAV_CMD_DO_LAST:
-//		case MAV_CMD_DO_LAST:
-//		case MAV_CMD_DO_REPEAT_RELAY:
-//		case MAV_CMD_DO_REPEAT_SERVO:
-//		case MAV_CMD_DO_SET_HOME:
-//		case MAV_CMD_DO_SET_MODE:
-//		case MAV_CMD_DO_SET_PARAMETER:
-//		case MAV_CMD_DO_SET_RELAY:
-//		case MAV_CMD_DO_SET_SERVO:
-//		case MAV_CMD_PREFLIGHT_CALIBRATION:
-//		case MAV_CMD_PREFLIGHT_STORAGE:
-//		case MAV_CMD_NAV_LAND:
-//		case MAV_CMD_NAV_LAST:
-//		case MAV_CMD_NAV_LOITER_TIME:
-//		case MAV_CMD_NAV_LOITER_TURNS:
-//		case MAV_CMD_NAV_LOITER_UNLIM:
-//		case MAV_CMD_NAV_ORIENTATION_TARGET:
-//		case MAV_CMD_NAV_PATHPLANNING:
-//		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-//		case MAV_CMD_NAV_TAKEOFF:
-    default:
-        // unhandled command, skip
-        Serial.println("unhandled command");
-        nextCommand();
-        break;
+
+    // if in unhandled mode, then return
+    else {
+        _hal->debug->printf_P(PSTR("unhandled guide mode"));
+        _hal->gcs->sendText(SEVERITY_HIGH,PSTR("unhandled guide mode"));
+        _mode = MAV_NAV_RETURNING;
     }
+
+    _groundSpeedCommand = _velocityCommand;
+
+    // calculate pN,pE,pD from home and gps coordinates
+    _pNCmd = _command.getPN(_navigator->getLat_degInt(),
+                            _navigator->getLon_degInt());
+    _pECmd = _command.getPE(_navigator->getLat_degInt(),
+                            _navigator->getLon_degInt());
+    _pDCmd = _command.getPD(_navigator->getAlt_intM());
+
+    // debug
+    _hal->debug->printf_P(
+        PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
+        getNumberOfCommands(), getCurrentIndex(), getPreviousIndex());
 }
 
 } // namespace apo

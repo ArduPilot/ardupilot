@@ -90,7 +90,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
                 break;
             }
             hal->debug->println_P(PSTR("waiting for hil packet"));
-			hal->gcs->sendText(SEVERITY_LOW, PSTR("waiting for hil packets"));
+            hal->gcs->sendText(SEVERITY_LOW, PSTR("waiting for hil packets"));
         }
         delay(500);
     }
@@ -109,6 +109,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
                           AP_MavlinkCommand::home.getLat()*rad2Deg,
                           AP_MavlinkCommand::home.getLon()*rad2Deg,
                           AP_MavlinkCommand::home.getCommand());
+    guide->setCurrentIndex(0);
 
     /*
      * Attach loops, stacking for priority
