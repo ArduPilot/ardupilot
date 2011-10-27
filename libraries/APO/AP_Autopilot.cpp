@@ -80,18 +80,17 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
         } else if (hal->getMode() == MODE_HIL_CNTL) { // hil
             hal->hil->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
             hal->hil->receive();
-            Serial.println("HIL Receive Called");
             if (_navigator->getTimeStamp() != 0) {
                 // give hil a chance to send some packets
                 for (int i = 0; i < 5; i++) {
                     hal->debug->println_P(PSTR("reading initial hil packets"));
-                    hal->gcs->sendText(SEVERITY_LOW,
-                                       PSTR("reading initial hil packets"));
+                    hal->gcs->sendText(SEVERITY_LOW, PSTR("reading initial hil packets"));
                     delay(1000);
                 }
                 break;
             }
             hal->debug->println_P(PSTR("waiting for hil packet"));
+			hal->gcs->sendText(SEVERITY_LOW, PSTR("waiting for hil packets"));
         }
         delay(500);
     }

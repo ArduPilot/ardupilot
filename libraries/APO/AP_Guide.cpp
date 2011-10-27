@@ -128,7 +128,7 @@ void MavlinkGuide::nextCommand() {
         _nextCommandCalls = 0;
     }
 
-    _cmdIndex = getNextIndex();
+    setCurrentIndex(getNextIndex());
     //Serial.print("cmd       : "); Serial.println(int(_cmdIndex));
     //Serial.print("cmd prev  : "); Serial.println(int(getPreviousIndex()));
     //Serial.print("cmd num    : "); Serial.println(int(getNumberOfCommands()));
