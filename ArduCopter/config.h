@@ -382,7 +382,30 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Rate Control
+// Acro Rate Control
+//
+#ifndef ACRO_ROLL_P
+# define ACRO_ROLL_P         0.145
+#endif
+#ifndef ACRO_ROLL_I
+# define ACRO_ROLL_I         0.0
+#endif
+#ifndef ACRO_ROLL_IMAX
+# define ACRO_ROLL_IMAX	 	15			// degrees
+#endif
+
+#ifndef ACRO_PITCH_P
+# define ACRO_PITCH_P       0.145
+#endif
+#ifndef ACRO_PITCH_I
+# define ACRO_PITCH_I		0 //0.18
+#endif
+#ifndef ACRO_PITCH_IMAX
+# define ACRO_PITCH_IMAX   	15			// degrees
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
 # define RATE_ROLL_P         0.145
