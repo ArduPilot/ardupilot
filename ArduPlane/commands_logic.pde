@@ -10,6 +10,7 @@ handle_process_nav_cmd()
 	// -------------------------
 	reset_I();
 
+		gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nav_command.id);
 	switch(next_nav_command.id){
 
 		case MAV_CMD_NAV_TAKEOFF:
@@ -48,6 +49,7 @@ handle_process_nav_cmd()
 static void
 handle_process_condition_command()
 {
+	gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nonnav_command.id);
 	switch(next_nonnav_command.id){
 
 		case MAV_CMD_CONDITION_DELAY:
@@ -83,6 +85,7 @@ handle_process_condition_command()
 
 static void handle_process_do_command()
 {
+	gcs_send_text_fmt(PSTR("Executing command ID #%i"),next_nonnav_command.id);
 	switch(next_nonnav_command.id){
 
 		case MAV_CMD_DO_JUMP:
@@ -117,9 +120,14 @@ static void handle_process_do_command()
 
 static void handle_no_commands()
 {
+	gcs_send_text_fmt(PSTR("Returning to Home"));
 	next_nav_command = home;
 	next_nav_command.alt = read_alt_to_hold();
 	next_nav_command.id = MAV_CMD_NAV_LOITER_UNLIM;
+	nav_command_ID = MAV_CMD_NAV_LOITER_UNLIM;
+	non_nav_command_ID = WAIT_COMMAND;
+	handle_process_nav_cmd();
+	
 }
 
 /********************************************************************************/
@@ -182,6 +190,11 @@ static bool verify_condition_command()		// Returns true if command complete
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
         break;
+        
+    case WAIT_COMMAND:
+        return 0;
+        break;
+        
 
     default:
         gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Invalid or no current Condition cmd"));
