@@ -61,7 +61,7 @@ public:
             new AP_RcChannel(ch8Key, PSTR("CH8"), APM_RC, 7, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
 
-        Serial.begin(115200);
+        Serial.begin(57600);
         delay(2000);
         Serial.println("ArduPilot RC Channel test");
         APM_RC.Init(); // APM Radio initialization
