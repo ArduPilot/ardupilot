@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 111;
+	static const uint16_t k_format_version = 112;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -156,7 +156,7 @@ public:
 	//
 	// 240: PI/D Controllers
 	//
-	k_param_pi_rate_roll = 240,
+	k_param_pi_rate_roll = 235,
 	k_param_pi_rate_pitch,
 	k_param_pi_rate_yaw,
 	k_param_pi_stabilize_roll,
@@ -169,6 +169,8 @@ public:
 	k_param_pi_alt_hold,
 	k_param_pi_throttle,
 	k_param_pi_crosstrack,
+	k_param_pi_acro_roll,
+	k_param_pi_acro_pitch,
 
 
     // 254,255: reserved
@@ -286,6 +288,9 @@ public:
 	APM_PI		pi_throttle;
 	APM_PI		pi_crosstrack;
 
+	APM_PI		pi_acro_roll;
+	APM_PI		pi_acro_pitch;
+
 	uint8_t		junk;
 
 	// Note: keep initializers here in the same order as they are declared above.
@@ -395,6 +400,9 @@ public:
 	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	THR_HOLD_P,			THR_HOLD_I,			THR_HOLD_IMAX),
 	pi_throttle			(k_param_pi_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
 	pi_crosstrack		(k_param_pi_crosstrack,			PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_IMAX),
+
+	pi_acro_roll		(k_param_pi_acro_roll,			PSTR("ACRO_RLL_"),	ACRO_ROLL_P,		ACRO_ROLL_I,		ACRO_ROLL_IMAX * 100),
+	pi_acro_pitch		(k_param_pi_acro_pitch,			PSTR("ACRO_PIT_"),	ACRO_PITCH_P,		ACRO_PITCH_I,		ACRO_PITCH_IMAX * 100),
 
 	junk(0)		// XXX just so that we can add things without worrying about the trailing comma
 	{

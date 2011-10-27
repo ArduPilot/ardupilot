@@ -1,22 +1,45 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+/* Functions in this file:
+	void init_commands()
+	void update_auto()
+	void reload_commands_airstart()
+	struct Location get_cmd_with_index(int i)
+	void set_cmd_with_index(struct Location temp, int i)
+	void increment_cmd_index()
+	void decrement_cmd_index()
+	long read_alt_to_hold()
+	void set_next_WP(struct Location *wp)
+	void set_guided_WP(void)
+	void init_home()
+************************************************************ 
+*/
+
 static void init_commands()
 {
-	//read_EEPROM_waypoint_info();
-    g.waypoint_index.set_and_save(0);
-	command_must_index	= 0;
-	command_may_index	= 0;
-	next_command.id 	= CMD_BLANK;
+    g.command_index.set_and_save(0);
+	nav_command_ID	= NO_COMMAND;
+	non_nav_command_ID	= NO_COMMAND;
+	next_nav_command.id 	= CMD_BLANK;
 }
 
 static void update_auto()
 {
-	if (g.waypoint_index >= g.waypoint_total) {
+	if (g.command_index >= g.command_total) {
 		handle_no_commands();
-		if(g.waypoint_total == 0) {
+		if(g.command_total == 0) {
 			next_WP.lat 		= home.lat + 1000;	// so we don't have bad calcs
 			next_WP.lng 		= home.lng + 1000;	// so we don't have bad calcs
 		}
+	} else {
+    	if(g.command_index != 0) {
+    		g.command_index = nav_command_index;
+    		nav_command_index--;
+    	}
+		nav_command_ID	= NO_COMMAND;
+		non_nav_command_ID	= NO_COMMAND;
+		next_nav_command.id 	= CMD_BLANK;
+		process_next_command();
 	}
 }
 
@@ -24,20 +47,20 @@ static void update_auto()
 static void reload_commands_airstart()
 {
 	init_commands();
-	g.waypoint_index.load();        // XXX can we assume it's been loaded already by ::load_all?
-	decrement_WP_index();
+	g.command_index.load();        // XXX can we assume it's been loaded already by ::load_all?
+	decrement_cmd_index();
 }
 
 // Getters
 // -------
-static struct Location get_wp_with_index(int i)
+static struct Location get_cmd_with_index(int i)
 {
 	struct Location temp;
 	long mem;
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
-	if (i > g.waypoint_total) {
+	if (i > g.command_total) {
 		temp.id = CMD_BLANK;
 	}else{
 		// read WP position
@@ -70,9 +93,9 @@ static struct Location get_wp_with_index(int i)
 
 // Setters
 // -------
-static void set_wp_with_index(struct Location temp, int i)
+static void set_cmd_with_index(struct Location temp, int i)
 {
-	i = constrain(i, 0, g.waypoint_total.get());
+	i = constrain(i, 0, g.command_total.get());
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	// Set altitude options bitmask
@@ -101,17 +124,17 @@ static void set_wp_with_index(struct Location temp, int i)
 	eeprom_write_dword((uint32_t *)	mem, temp.lng);
 }
 
-static void increment_WP_index()
+static void increment_cmd_index()
 {
-    if (g.waypoint_index <= g.waypoint_total) {
-        g.waypoint_index.set_and_save(g.waypoint_index + 1);
+    if (g.command_index <= g.command_total) {
+        g.command_index.set_and_save(g.command_index + 1);
 	}
 }
 
-static void decrement_WP_index()
+static void decrement_cmd_index()
 {
-    if (g.waypoint_index > 0) {
-        g.waypoint_index.set_and_save(g.waypoint_index - 1);
+    if (g.command_index > 0) {
+        g.command_index.set_and_save(g.command_index - 1);
     }
 }
 
@@ -225,9 +248,9 @@ void init_home()
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
-	// Save Home to EEPROM
+	// Save Home to EEPROM - Command 0
 	// -------------------
-	set_wp_with_index(home, 0);
+	set_cmd_with_index(home, 0);
 
 	// Save prev loc
 	// -------------

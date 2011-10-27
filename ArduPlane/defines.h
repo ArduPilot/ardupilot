@@ -77,6 +77,7 @@
 // Commands - Note that APM now uses a subset of the MAVLink protocol commands.  See enum MAV_CMD in the GCS_Mavlink library
 #define CMD_BLANK 0 // there is no command stored in the mem location requested
 #define NO_COMMAND 0
+#define WAIT_COMMAND 255
 
 // Command/Waypoint/Location Options Bitmask
 //--------------------
@@ -169,7 +170,7 @@ enum gcs_severity {
 // Events
 // ------
 #define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_WAYPOINT_INDEX 2
+#define EVENT_SET_NEW_COMMAND_INDEX 2
 #define EVENT_LOADED_WAYPOINT 3
 #define EVENT_LOOP 4
 

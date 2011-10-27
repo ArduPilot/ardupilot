@@ -100,7 +100,7 @@ static void calc_altitude_error()
 		}else{
 			target_altitude = constrain(target_altitude, prev_WP.alt, next_WP.alt);
 		}
-	} else if (command_may_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
+	} else if (non_nav_command_ID != MAV_CMD_CONDITION_CHANGE_ALT) {
 		target_altitude = next_WP.alt;
 	}
 

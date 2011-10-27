@@ -4,14 +4,16 @@
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
 { 
-	struct Location temp = get_wp_with_index(cmd_index);
+	struct Location temp = get_cmd_with_index(cmd_index);
 	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs_send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
 	} else {
-		command_must_index 	= NO_COMMAND;
-		next_command.id = NO_COMMAND;
-		g.waypoint_index.set_and_save(cmd_index - 1);
-		load_next_command_from_EEPROM();
+		gcs_send_text_fmt(PSTR("Received Request - jump to command #%i"),cmd_index);
+		nav_command_ID 	= NO_COMMAND;
+		next_nav_command.id = NO_COMMAND;
+		non_nav_command_ID = NO_COMMAND;
+		nav_command_index = cmd_index - 1;
+		g.command_index.set_and_save(cmd_index - 1);
 		process_next_command();
 	}
 }
@@ -21,136 +23,121 @@ static void change_command(uint8_t cmd_index)
 // --------------------
 static void update_commands(void)
 {
-	// This function loads commands into three buffers
-	// when a new command is loaded, it is processed with process_XXX()
-	// ----------------------------------------------------------------
 	if(home_is_set == false){
 		return;	// don't do commands
 	}
 
 	if(control_mode == AUTO){
-		load_next_command_from_EEPROM();
 		process_next_command();
 	}									// Other (eg GCS_Auto) modes may be implemented here
 }
 
 static void verify_commands(void)
 {
-	if(verify_must()){
-		command_must_index 	= NO_COMMAND;
+	if(verify_nav_command()){
+		nav_command_ID 	= NO_COMMAND;
 	}
 
-	if(verify_may()){
-		command_may_index 	= NO_COMMAND;
-		command_may_ID		= NO_COMMAND;
+	if(verify_condition_command()){
+		non_nav_command_ID		= NO_COMMAND;
 	}
 }
 
-static void load_next_command_from_EEPROM()
-{
-	// fetch next command if the next command queue is empty
-	// -----------------------------------------------------
-	if(next_command.id == NO_COMMAND){
-		next_command = get_wp_with_index(g.waypoint_index + 1);
-	}
-
-	// If the preload failed, return or just Loiter
-	// generate a dynamic command for RTL
-	// --------------------------------------------
-	if(next_command.id == NO_COMMAND){
-		// we are out of commands!
-		gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
-		handle_no_commands();
-	}
-}
 
 static void process_next_command()
 {
+	// This function makes sure that we always have a current navigation command
+	// and loads conditional or immediate commands if applicable
+	
+	struct Location temp;
+	byte old_index;
+	
 	// these are Navigation/Must commands
 	// ---------------------------------
-	if (command_must_index == 0){ // no current command loaded
-		if (next_command.id < MAV_CMD_NAV_LAST ){
-			increment_WP_index();
-			//save_command_index();			// TO DO - fix - to Recover from in air Restart
-			command_must_index = g.waypoint_index;
-
-			//SendDebug_P("MSG <process_next_command> new command_must_id ");
-			//SendDebug(next_command.id,DEC);
-			//SendDebug_P(" index:");
-			//SendDebugln(command_must_index,DEC);
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
-			process_must();
+	if (nav_command_ID == NO_COMMAND){ // no current navigation command loaded
+		old_index = nav_command_index;
+		temp.id = MAV_CMD_NAV_LAST;
+		while(temp.id >= MAV_CMD_NAV_LAST && nav_command_index <= g.command_total) {
+			nav_command_index++;
+			temp = get_cmd_with_index(nav_command_index);
+		}
+		gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),nav_command_index);
+		if(nav_command_index > g.command_total){
+			// we are out of commands!
+			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+			handle_no_commands();
+		} else {
+			next_nav_command = temp;
+			nav_command_ID = next_nav_command.id;
+			non_nav_command_index = NO_COMMAND;			// This will cause the next intervening non-nav command (if any) to be loaded
+			non_nav_command_ID = NO_COMMAND;
+		
+			if (g.log_bitmask & MASK_LOG_CMD) {
+				Log_Write_Cmd(g.command_index, &next_nav_command);
+			}
+			process_nav_cmd();
 		}
 	}
 
-	// these are Condition/May commands
-	// ----------------------
-	if (command_may_index == 0){
-		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
-			increment_WP_index();		// this command is from the command list in EEPROM
-			command_may_index = g.waypoint_index;
-				//SendDebug_P("MSG <process_next_command> new command_may_id ");
-				//SendDebug(next_command.id,DEC);
-				//Serial.printf_P(PSTR("new command_may_index "));
-				//Serial.println(command_may_index,DEC);
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
-			process_may();
+	// these are Condition/May and Do/Now commands
+	// -------------------------------------------
+	if (non_nav_command_index == NO_COMMAND) {		// If the index is NO_COMMAND then we have just loaded a nav command
+		non_nav_command_index = old_index + 1;
+		//gcs_send_text_fmt(PSTR("Non-Nav command index #%i"),non_nav_command_index);
+	} else if (non_nav_command_ID == NO_COMMAND) {	// If the ID is NO_COMMAND then we have just completed a non-nav command
+		non_nav_command_index++;
+	}
+	
+		//gcs_send_text_fmt(PSTR("Nav command index #%i"),nav_command_index);
+		//gcs_send_text_fmt(PSTR("Non-Nav command index #%i"),non_nav_command_index);
+		//gcs_send_text_fmt(PSTR("Non-Nav command ID #%i"),non_nav_command_ID);
+	if(nav_command_index <= (int)g.command_total && non_nav_command_ID == NO_COMMAND) {
+		temp = get_cmd_with_index(non_nav_command_index);
+		if(temp.id <= MAV_CMD_NAV_LAST) {		// The next command is a nav command.  No non-nav commands to do
+			g.command_index.set_and_save(nav_command_index);
+			non_nav_command_index = nav_command_index;
+			non_nav_command_ID = WAIT_COMMAND;
+		gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+		} else {								// The next command is a non-nav command.  Prepare to execute it.
+			g.command_index.set_and_save(non_nav_command_index);
+			next_nonnav_command = temp;
+			non_nav_command_ID = next_nonnav_command.id;
+		gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+			if (g.log_bitmask & MASK_LOG_CMD) {
+				Log_Write_Cmd(g.command_index, &next_nonnav_command);
+			}
+			
+			process_non_nav_command();	
 		}
 
-		// these are Do/Now commands
-		// ---------------------------
-		if (next_command.id > MAV_CMD_CONDITION_LAST){
-			increment_WP_index();		// this command is from the command list in EEPROM
-				//SendDebug_P("MSG <process_next_command> new command_now_id ");
-				//SendDebug(next_command.id,DEC);
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index, &next_command);
-			process_now();
-		}
 	}
 }
 
 /**************************************************/
 //  These functions implement the commands.
 /**************************************************/
-static void process_must()
+static void process_nav_cmd()
 {
-	gcs_send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
+	//gcs_send_text_P(SEVERITY_LOW,PSTR("New nav command loaded"));
 
-	// clear May indexes
-	command_may_index	= NO_COMMAND;
-	command_may_ID		= NO_COMMAND;
+	// clear non-nav command ID and index
+	non_nav_command_index	= NO_COMMAND;		// Redundant - remove?
+	non_nav_command_ID		= NO_COMMAND;		// Redundant - remove?
 
-	command_must_ID 	= next_command.id;
-	handle_process_must();
+	handle_process_nav_cmd();
 
-	// invalidate command so a new one is loaded
-	// -----------------------------------------
-	next_command.id		= NO_COMMAND;
 }
 
-static void process_may()
+static void process_non_nav_command()
 {
-	gcs_send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
+	//gcs_send_text_P(SEVERITY_LOW,PSTR("new non-nav command loaded"));
 
-	command_may_ID = next_command.id;
-	handle_process_may();
-
-	// invalidate command so a new one is loaded
-	// -----------------------------------------
-	next_command.id = NO_COMMAND;
+	if(non_nav_command_ID < MAV_CMD_CONDITION_LAST) {
+		handle_process_condition_command();
+	} else { 
+		handle_process_do_command();
+		// flag command ID so a new one is loaded
+		// -----------------------------------------
+		non_nav_command_ID = NO_COMMAND;
+	}
 }
-
-static void process_now()
-{
-	handle_process_now();
-
-	// invalidate command so a new one is loaded
-	// -----------------------------------------
-	next_command.id = NO_COMMAND;
-
-	gcs_send_text(SEVERITY_LOW, "<process_now>");
-}
-

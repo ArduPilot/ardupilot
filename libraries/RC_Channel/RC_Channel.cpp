@@ -38,7 +38,7 @@ RC_Channel::set_angle(int angle)
 void
 RC_Channel::set_dead_zone(int dzone)
 {
-	_dead_zone = abs(dzone >>1);
+	_dead_zone.set_and_save(abs(dzone >>1));
 }
 
 void
