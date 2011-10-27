@@ -43,6 +43,14 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
+// the user wants the CLI. It never exits
+static void run_cli(void)
+{
+    while (1) {
+        main_menu.run();
+    }
+}
+
 #endif // CLI_ENABLED
 
 static void init_ardupilot()
@@ -185,7 +193,7 @@ static void init_ardupilot()
 	// the system in an odd state, we don't let the user exit the top
 	// menu; they must reset in order to fly.
 	//
-#if CLI_ENABLED == ENABLED
+#if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
 		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\n"
@@ -194,13 +202,12 @@ static void init_ardupilot()
 							 "If using the Arduino Serial Monitor, ensure Line Ending is set to Carriage Return.\n"
 							 "Type 'help' to list commands, 'exit' to leave a submenu.\n"
 							 "Visit the 'setup' menu for first-time configuration.\n"));
-		for (;;) {
-			Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
-			main_menu.run();
-		}
+        Serial.println_P(PSTR("\nMove the slide switch and reset to FLY.\n"));
+        run_cli();
 	}
+#else
+    Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
 #endif // CLI_ENABLED
-
 
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
