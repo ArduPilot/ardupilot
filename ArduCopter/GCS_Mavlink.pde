@@ -8,6 +8,9 @@ static bool in_mavlink_delay;
 // messages don't block the CPU
 static mavlink_statustext_t pending_status;
 
+// true when we have received at least 1 MAVLink packet
+static bool mavlink_active;
+
 
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (payload_space < MAVLINK_MSG_ID_## id ##_LEN) return false
@@ -539,8 +542,26 @@ GCS_MAVLINK::update(void)
 	{
 		uint8_t c = comm_receive_ch(chan);
 
+#if CLI_ENABLED == ENABLED
+        /* allow CLI to be started by hitting enter 3 times, if no
+           heartbeat packets have been received */
+        if (mavlink_active == false) {
+            if (c == '\n' || c == '\r') {
+                crlf_count++;
+            } else {
+                crlf_count = 0;
+            }
+            if (crlf_count == 3) {
+                run_cli();
+            }
+        }
+#endif
+
 		// Try to get a new message
-		if(mavlink_parse_char(chan, c, &msg, &status)) handleMessage(&msg);
+        if (mavlink_parse_char(chan, c, &msg, &status)) {
+            mavlink_active = true;
+            handleMessage(&msg);
+        }
 	}
 
 	// Update packet drops counter

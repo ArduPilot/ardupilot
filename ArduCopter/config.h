@@ -692,6 +692,11 @@
 # define CLI_ENABLED ENABLED
 #endif
 
+// use this to disable the CLI slider switch
+#ifndef CLI_SLIDER_ENABLED
+# define CLI_SLIDER_ENABLED ENABLED
+#endif
+
 // delay to prevent Xbee bricking, in milliseconds
 #ifndef MAVLINK_TELEMETRY_PORT_DELAY
 # define MAVLINK_TELEMETRY_PORT_DELAY 2000
