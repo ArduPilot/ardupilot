@@ -1022,8 +1022,10 @@ void update_throttle_mode(void)
 
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
-				g.rc_3.servo_out = g.rc_3.control_in + get_angle_boost();
+				g.rc_3.servo_out = g.rc_3.control_in + get_angle_boost(g.rc_3.control_in);
 			}else{
+				g.pi_stabilize_roll.reset_I();
+				g.pi_stabilize_pitch.reset_I();
 				g.pi_rate_roll.reset_I();
 				g.pi_rate_pitch.reset_I();
 				g.rc_3.servo_out = 0;
@@ -1050,8 +1052,7 @@ void update_throttle_mode(void)
 				invalid_throttle = false;
 			}
 
-			// apply throttle control at 200 hz
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost() + alt_hold_velocity();
+			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost(g.throttle_cruise);
 			break;
 	}
 }
@@ -1171,14 +1172,6 @@ static void update_trig(void){
 	// 90° = cos_yaw:  1.00, sin_yaw:  0.00,
 	// 180 = cos_yaw:  0.00, sin_yaw: -1.00,
 	// 270 = cos_yaw: -1.00, sin_yaw:  0.00,
-
-
-	#if ACCEL_ALT_HOLD == 1
-	Vector3f accel_filt	= imu.get_accel_filtered();
-	accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
-	accels_rot_sum += accels_rot.z;
-	accels_rot_count++;
-	#endif
 }
 
 // updated at 10hz
