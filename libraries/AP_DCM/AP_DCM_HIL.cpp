@@ -42,12 +42,12 @@ AP_DCM_HIL::setHil(float _roll, float _pitch, float _yaw,
 	float sPitch = sin(pitch), cPitch = cos(pitch);
 	float sYaw = sin(yaw), cYaw = cos(yaw);
 	_dcm_matrix.a.x =  cPitch*cYaw;
-	_dcm_matrix.a.y =  cPitch*sYaw;
-	_dcm_matrix.a.z =  -sPitch;
-	_dcm_matrix.b.x =  -cRoll*sYaw+sRoll*sPitch*cYaw;
+	_dcm_matrix.a.y =  -cRoll*sYaw+sRoll*sPitch*cYaw;
+	_dcm_matrix.a.z =  sRoll*sYaw+cRoll*sPitch*cYaw;
+	_dcm_matrix.b.x =  cPitch*sYaw;
 	_dcm_matrix.b.y =  cRoll*cYaw+sRoll*sPitch*sYaw;
-	_dcm_matrix.b.z =  sRoll*cPitch;
-	_dcm_matrix.c.x =  sRoll*sYaw+cRoll*sPitch*cYaw;
-	_dcm_matrix.c.y =  -sRoll*cYaw+cRoll*sPitch*sYaw;
+	_dcm_matrix.b.z =  -sRoll*cYaw+cRoll*sPitch*sYaw;
+	_dcm_matrix.c.x =  -sPitch;
+	_dcm_matrix.c.y =  sRoll*cPitch;
 	_dcm_matrix.c.z =  cRoll*cPitch;
 }
