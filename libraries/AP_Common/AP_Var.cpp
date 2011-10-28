@@ -40,10 +40,10 @@ uint16_t    AP_Var::_bytes_in_use;
 // Constructor for standalone variables
 //
 AP_Var::AP_Var(Key p_key, const prog_char_t *name, Flags flags) :
-        _group(NULL),
-        _key(p_key | k_key_not_located),
-        _name(name),
-        _flags(flags)
+    _group(NULL),
+    _key(p_key | k_key_not_located),
+    _name(name),
+    _flags(flags)
 {
     // Insert the variable or group into the list of known variables, unless
     // it wants to be unlisted.
@@ -57,10 +57,10 @@ AP_Var::AP_Var(Key p_key, const prog_char_t *name, Flags flags) :
 // Constructor for variables in a group
 //
 AP_Var::AP_Var(AP_Var_group *pGroup, Key index, const prog_char_t *name, Flags flags) :
-        _group(pGroup),
-        _key(index),
-        _name(name),
-        _flags(flags)
+    _group(pGroup),
+    _key(index),
+    _name(name),
+    _flags(flags)
 {
     AP_Var  **vp;
 
@@ -76,10 +76,10 @@ AP_Var::AP_Var(AP_Var_group *pGroup, Key index, const prog_char_t *name, Flags f
     size_t loopCount = 0;
     while (*vp != NULL) {
 
-    	if (loopCount++>k_num_max) return;
+        if (loopCount++>k_num_max) return;
 
         if ((*vp)->_key >= _key) {
-               break;
+            break;
         }
         vp = &((*vp)->_link);
     }
@@ -106,17 +106,17 @@ AP_Var::~AP_Var(void)
     // Scan the list and remove this if we find it
 
     {
-    	size_t loopCount = 0;
-		while (*vp) {
+        size_t loopCount = 0;
+        while (*vp) {
 
-			if (loopCount++>k_num_max) return;
+            if (loopCount++>k_num_max) return;
 
-			if (*vp == this) {
-				*vp = _link;
-				break;
-			}
-			vp = &((*vp)->_link);
-		}
+            if (*vp == this) {
+                *vp = _link;
+                break;
+            }
+            vp = &((*vp)->_link);
+        }
     }
 
     // If we are destroying a group, remove all its variables from the list
@@ -129,7 +129,7 @@ AP_Var::~AP_Var(void)
 
         while (*vp) {
 
-        	if (loopCount++>k_num_max) return;
+            if (loopCount++>k_num_max) return;
 
             // Does the variable claim us as its group?
             if ((*vp)->_group == this) {
@@ -166,7 +166,7 @@ AP_Var::find(const char *name)
 
     for (vp = first(); vp; vp = vp->next()) {
 
-    	if (loopCount++>k_num_max) return NULL;
+        if (loopCount++>k_num_max) return NULL;
 
         char    name_buffer[32];
 
@@ -189,7 +189,7 @@ AP_Var::find(Key key)
     AP_Var  *vp;
     size_t loopCount = 0;
     for (vp = first(); vp; vp = vp->next()) {
-    	if (loopCount++>k_num_max) return NULL;
+        if (loopCount++>k_num_max) return NULL;
         if (key == vp->key()) {
             return vp;
         }
@@ -242,7 +242,7 @@ bool AP_Var::save(void)
             newv = eeprom_read_byte(ep);
             if (newv != vbuf[i]) {
                 serialDebug("readback failed at offset %p: got %u, expected %u",
-                      ep, newv, vbuf[i]);
+                            ep, newv, vbuf[i]);
                 return false;
             }
         }
@@ -304,10 +304,10 @@ bool AP_Var::save_all(void)
 
     while (vp) {
 
-    	if (loopCount++>k_num_max) return false;
+        if (loopCount++>k_num_max) return false;
 
         if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autosave
-            (vp->_key != k_key_none)) {              // has a key
+                (vp->_key != k_key_none)) {              // has a key
 
             if (!vp->save()) {
                 result = false;
@@ -329,10 +329,10 @@ bool AP_Var::load_all(void)
 
     while (vp) {
 
-    	if (loopCount++>k_num_max) return false;
+        if (loopCount++>k_num_max) return false;
 
         if (!vp->has_flags(k_flag_no_auto_load) &&  // not opted out of autoload
-            (vp->_key != k_key_none)) {             // has a key
+                (vp->_key != k_key_none)) {             // has a key
 
             if (!vp->load()) {
                 result = false;
@@ -365,7 +365,7 @@ AP_Var::erase_all()
 
     while (vp) {
 
-    	if (loopCount++>k_num_max) return;
+        if (loopCount++>k_num_max) return;
 
         vp->_key = vp->key() | k_key_not_located;
         vp = vp->_link;
@@ -449,7 +449,7 @@ AP_Var::first_member(AP_Var_group *group)
 
     while (*vp) {
 
-    	if (loopCount++>k_num_max) return NULL;
+        if (loopCount++>k_num_max) return NULL;
 
         serialDebug("consider %p with %p", *vp, (*vp)->_group);
         if ((*vp)->_group == group) {
@@ -471,7 +471,7 @@ AP_Var::next_member()
 
     while (vp) {
 
-    	if (loopCount++>k_num_max) return NULL;
+        if (loopCount++>k_num_max) return NULL;
 
         if (vp->_group == _group) {
             return vp;
@@ -498,7 +498,7 @@ bool AP_Var::_EEPROM_scan(void)
     eeprom_address = 0;
     eeprom_read_block(&ee_header, (void *)eeprom_address, sizeof(ee_header));
     if ((ee_header.magic != k_EEPROM_magic) ||
-        (ee_header.revision != k_EEPROM_revision)) {
+            (ee_header.revision != k_EEPROM_revision)) {
 
         serialDebug("no header, magic 0x%x revision %u", ee_header.magic, ee_header.revision);
         return false;
@@ -514,7 +514,7 @@ bool AP_Var::_EEPROM_scan(void)
 
     while (eeprom_address < (k_EEPROM_size - sizeof(var_header) - 1)) {
 
-    	if (loopCount++>k_num_max) return NULL;
+        if (loopCount++>k_num_max) return NULL;
 
         // Read a variable header
         //
@@ -531,10 +531,10 @@ bool AP_Var::_EEPROM_scan(void)
         // Sanity-check the variable header and abort if it looks bad
         //
         if (k_EEPROM_size <= (
-                eeprom_address +        // current position
-                sizeof(var_header) +    // header for this variable
-                var_header.size + 1 +   // data for this variable
-                sizeof(var_header))) {  // header for sentinel
+                    eeprom_address +        // current position
+                    sizeof(var_header) +    // header for this variable
+                    var_header.size + 1 +   // data for this variable
+                    sizeof(var_header))) {  // header for sentinel
 
             serialDebug("header overruns EEPROM");
             return false;
@@ -544,7 +544,7 @@ bool AP_Var::_EEPROM_scan(void)
         vp = _variables;
         size_t loopCount2 = 0;
         while(vp) {
-        	if (loopCount2++>k_num_max) return false;
+            if (loopCount2++>k_num_max) return false;
             if (vp->key() == var_header.key) {
                 // adjust the variable's key to point to this entry
                 vp->_key = eeprom_address + sizeof(var_header);
@@ -572,7 +572,7 @@ bool AP_Var::_EEPROM_scan(void)
     vp = _variables;
     size_t loopCount3 = 0;
     while(vp) {
-    	if (loopCount3++>k_num_max) return false;
+        if (loopCount3++>k_num_max) return false;
         if (vp->_key & k_key_not_located) {
             vp->_key |= k_key_not_allocated;
             serialDebug("key %u not allocated", vp->key());
@@ -661,7 +661,7 @@ bool AP_Var::_EEPROM_locate(bool allocate)
         ee_header.spare = 0;
 
         eeprom_write_block(&ee_header, (void *)0, sizeof(ee_header));
- 
+
         _tail_sentinel = sizeof(ee_header);
 
         // Write a variable-sized pad header with a reserved key value
@@ -737,7 +737,7 @@ AP_Var_group::_serialize_unserialize(void *buf, size_t buf_size, bool do_seriali
 
     while (vp) {
 
-    	if (loopCount++>k_num_max) return false;
+        if (loopCount++>k_num_max) return false;
 
         // (un)serialise the group member
         if (do_serialize) {

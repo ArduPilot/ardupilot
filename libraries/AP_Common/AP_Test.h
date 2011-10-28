@@ -68,8 +68,8 @@ private:
 /// Constructor
 ///
 Test::Test(const char *name) :
-        _name(name),
-        _fail(false)
+    _name(name),
+    _fail(false)
 {
 }
 

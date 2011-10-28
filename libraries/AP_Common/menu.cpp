@@ -19,10 +19,10 @@ Menu::arg Menu::_argv[MENU_ARGS_MAX + 1];
 
 // constructor
 Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entries, preprompt ppfunc) :
-	_prompt(prompt),
-	_commands(commands),
-	_entries(entries),
-	_ppfunc(ppfunc)
+    _prompt(prompt),
+    _commands(commands),
+    _entries(entries),
+    _ppfunc(ppfunc)
 {
 }
 
@@ -30,112 +30,112 @@ Menu::Menu(const prog_char *prompt, const Menu::command *commands, uint8_t entri
 void
 Menu::run(void)
 {
-	uint8_t		len, i, ret;
-	uint8_t		argc;
-	int			c;
-	char		*s;
-		
-	// loop performing commands
-	for (;;) {
+    uint8_t		len, i, ret;
+    uint8_t		argc;
+    int			c;
+    char		*s;
 
-		// run the pre-prompt function, if one is defined
-		if ((NULL != _ppfunc) && !_ppfunc())
-			return;
+    // loop performing commands
+    for (;;) {
 
-		// loop reading characters from the input
-		len = 0;
-		Serial.printf("%S] ", FPSTR(_prompt));
-		for (;;) {
-			c = Serial.read();
-			if (-1 == c)
-				continue;
-			// carriage return -> process command
-			if ('\r' == c) {
-				_inbuf[len] = '\0';
-				Serial.write('\r');
-				Serial.write('\n');
-				break;
-			}
-			// backspace
-			if ('\b' == c) {
-				if (len > 0) {
-					len--;
-					Serial.write('\b');
-					Serial.write(' ');
-					Serial.write('\b');
-					continue;
-				}
-			}
-			// printable character
-			if (isprint(c) && (len < (MENU_COMMANDLINE_MAX - 1))) {
-				_inbuf[len++] = c;
-				Serial.write((char)c);
-				continue;
-			}
-		}
-		
-		// split the input line into tokens
-		argc = 0;
-		_argv[argc++].str = strtok_r(_inbuf, " ", &s);
-		// XXX should an empty line by itself back out of the current menu?
-		while (argc <= MENU_ARGS_MAX) {
-			_argv[argc].str = strtok_r(NULL, " ", &s);
-			if ('\0' == _argv[argc].str)
-				break;
-			_argv[argc].i = atol(_argv[argc].str);
-			_argv[argc].f = atof(_argv[argc].str);	// calls strtod, > 700B !
-			argc++;
-		}
+        // run the pre-prompt function, if one is defined
+        if ((NULL != _ppfunc) && !_ppfunc())
+            return;
 
-		// populate arguments that have not been specified with "" and 0
-		// this is safer than NULL in the case where commands may look
-		// without testing argc
-		i = argc;
-		while (i <= MENU_ARGS_MAX) {
-			_argv[i].str = "";
-			_argv[i].i = 0;
-			_argv[i].f = 0;
-			i++;
-		}
-			
-		// look for a command matching the first word (note that it may be empty)
-		for (i = 0; i < _entries; i++) {
-			if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
-				ret = _call(i, argc);
-				if (-2 == ret)
-					return;
-				break;
-			}
-		}
+        // loop reading characters from the input
+        len = 0;
+        Serial.printf("%S] ", FPSTR(_prompt));
+        for (;;) {
+            c = Serial.read();
+            if (-1 == c)
+                continue;
+            // carriage return -> process command
+            if ('\r' == c) {
+                _inbuf[len] = '\0';
+                Serial.write('\r');
+                Serial.write('\n');
+                break;
+            }
+            // backspace
+            if ('\b' == c) {
+                if (len > 0) {
+                    len--;
+                    Serial.write('\b');
+                    Serial.write(' ');
+                    Serial.write('\b');
+                    continue;
+                }
+            }
+            // printable character
+            if (isprint(c) && (len < (MENU_COMMANDLINE_MAX - 1))) {
+                _inbuf[len++] = c;
+                Serial.write((char)c);
+                continue;
+            }
+        }
 
-		// implicit commands
-		if (i == _entries) {
-			if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
-				_help();
-			} else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
-				return;
-			}
-		}
-	}			
+        // split the input line into tokens
+        argc = 0;
+        _argv[argc++].str = strtok_r(_inbuf, " ", &s);
+        // XXX should an empty line by itself back out of the current menu?
+        while (argc <= MENU_ARGS_MAX) {
+            _argv[argc].str = strtok_r(NULL, " ", &s);
+            if ('\0' == _argv[argc].str)
+                break;
+            _argv[argc].i = atol(_argv[argc].str);
+            _argv[argc].f = atof(_argv[argc].str);	// calls strtod, > 700B !
+            argc++;
+        }
+
+        // populate arguments that have not been specified with "" and 0
+        // this is safer than NULL in the case where commands may look
+        // without testing argc
+        i = argc;
+        while (i <= MENU_ARGS_MAX) {
+            _argv[i].str = "";
+            _argv[i].i = 0;
+            _argv[i].f = 0;
+            i++;
+        }
+
+        // look for a command matching the first word (note that it may be empty)
+        for (i = 0; i < _entries; i++) {
+            if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
+                ret = _call(i, argc);
+                if (-2 == ret)
+                    return;
+                break;
+            }
+        }
+
+        // implicit commands
+        if (i == _entries) {
+            if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
+                _help();
+            } else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
+                return;
+            }
+        }
+    }
 }
 
 // display the list of commands in response to the 'help' command
 void
 Menu::_help(void)
 {
-	int		i;
-	
-	Serial.println("Commands:");
-	for (i = 0; i < _entries; i++)
-		Serial.printf("  %S\n", FPSTR(_commands[i].command));
+    int		i;
+
+    Serial.println("Commands:");
+    for (i = 0; i < _entries; i++)
+        Serial.printf("  %S\n", FPSTR(_commands[i].command));
 }
 
 // run the n'th command in the menu
 int8_t
 Menu::_call(uint8_t n, uint8_t argc)
 {
-	func		fn;
+    func		fn;
 
-	fn = (func)pgm_read_word(&_commands[n].func);
-	return(fn(argc, &_argv[0]));
+    fn = (func)pgm_read_word(&_commands[n].func);
+    return(fn(argc, &_argv[0]));
 }
