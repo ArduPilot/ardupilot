@@ -249,9 +249,9 @@ static const char* flight_mode_strings[] = {
 // test
 #if ACCEL_ALT_HOLD == 1
 Vector3f accels_rot;
-static int	accels_rot_count;
-static float	accels_rot_sum;
-static float alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
+static int		accels_rot_count;
+static float 	accels_rot_sum;
+static float 	alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
 #endif
 
 // temp
@@ -535,7 +535,7 @@ void loop()
 			counter_one_herz = 0;
 		}
 
-		if (millis() - perf_mon_timer > 20000) {
+		if (millis() - perf_mon_timer > 1200 /*20000*/) {
 			if (g.log_bitmask & MASK_LOG_PM)
 				Log_Write_Performance();
 
