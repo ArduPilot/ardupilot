@@ -8,8 +8,10 @@
 class AP_GPS_None : public GPS
 {
 public:
-	AP_GPS_None(Stream *s) : GPS(s) {}
-	virtual void init(void) {};
-	virtual bool read(void) { return false; };
+    AP_GPS_None(Stream *s) : GPS(s) {}
+    virtual void init(void) {};
+    virtual bool read(void) {
+        return false;
+    };
 };
 #endif

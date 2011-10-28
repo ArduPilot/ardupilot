@@ -19,39 +19,39 @@ AP_GPS_UBLOX gps(&Serial1);
 
 void setup()
 {
-	Serial.begin(38400);
-	Serial1.begin(38400);
-	stderr = stdout;
-	gps.print_errors = true;
+    Serial.begin(38400);
+    Serial1.begin(38400);
+    stderr = stdout;
+    gps.print_errors = true;
 
-	Serial.println("GPS UBLOX library test");
-	gps.init();	 // GPS Initialization
-	delay(1000);
+    Serial.println("GPS UBLOX library test");
+    gps.init();	 // GPS Initialization
+    delay(1000);
 }
 void loop()
 {
-	delay(20);
-	gps.update();
-	if (gps.new_data){
-		Serial.print("gps:");
-		Serial.print(" Lat:");
-		Serial.print((float)gps.latitude / T7, DEC);
-		Serial.print(" Lon:");
-		Serial.print((float)gps.longitude / T7, DEC);
-		Serial.print(" Alt:");
-		Serial.print((float)gps.altitude / 100.0, DEC);
-		Serial.print(" GSP:");
-		Serial.print(gps.ground_speed / 100.0);
-		Serial.print(" COG:");
-		Serial.print(gps.ground_course / 100.0, DEC);
-		Serial.print(" SAT:");
-		Serial.print(gps.num_sats, DEC);
-		Serial.print(" FIX:");
-		Serial.print(gps.fix, DEC);
-		Serial.print(" TIM:");
-		Serial.print(gps.time, DEC);
-		Serial.println();
-		gps.new_data = 0; // We have readed the data
-		}
+    delay(20);
+    gps.update();
+    if (gps.new_data) {
+        Serial.print("gps:");
+        Serial.print(" Lat:");
+        Serial.print((float)gps.latitude / T7, DEC);
+        Serial.print(" Lon:");
+        Serial.print((float)gps.longitude / T7, DEC);
+        Serial.print(" Alt:");
+        Serial.print((float)gps.altitude / 100.0, DEC);
+        Serial.print(" GSP:");
+        Serial.print(gps.ground_speed / 100.0);
+        Serial.print(" COG:");
+        Serial.print(gps.ground_course / 100.0, DEC);
+        Serial.print(" SAT:");
+        Serial.print(gps.num_sats, DEC);
+        Serial.print(" FIX:");
+        Serial.print(gps.fix, DEC);
+        Serial.print(" TIM:");
+        Serial.print(gps.time, DEC);
+        Serial.println();
+        gps.new_data = 0; // We have readed the data
+    }
 }
 

@@ -18,31 +18,31 @@ AP_GPS_Auto GPS(&Serial1, &gps);
 
 void setup()
 {
-	Serial.begin(115200);
-	Serial1.begin(38400);
+    Serial.begin(115200);
+    Serial1.begin(38400);
 
-	Serial.println("GPS AUTO library test");
-	gps = &GPS;
-	gps->init();
+    Serial.println("GPS AUTO library test");
+    gps = &GPS;
+    gps->init();
 }
 
 void loop()
 {
-	gps->update();
-	if (gps->new_data){
-		if (gps->fix) {
-			Serial.printf("\nLat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
-						  (float)gps->latitude / T7,
-						  (float)gps->longitude / T7,
-						  (float)gps->altitude / 100.0,
-						  (float)gps->ground_speed / 100.0,
-						  (int)gps->ground_course / 100,
-						  gps->num_sats,
-						  gps->time);
-		} else {
-			Serial.println("No fix");
-		}
-		gps->new_data = false;
-	}
+    gps->update();
+    if (gps->new_data) {
+        if (gps->fix) {
+            Serial.printf("\nLat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
+                          (float)gps->latitude / T7,
+                          (float)gps->longitude / T7,
+                          (float)gps->altitude / 100.0,
+                          (float)gps->ground_speed / 100.0,
+                          (int)gps->ground_course / 100,
+                          gps->num_sats,
+                          gps->time);
+        } else {
+            Serial.println("No fix");
+        }
+        gps->new_data = false;
+    }
 }
 

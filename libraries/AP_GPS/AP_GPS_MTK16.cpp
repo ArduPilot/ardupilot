@@ -20,23 +20,23 @@ AP_GPS_MTK16::AP_GPS_MTK16(Stream *s) : GPS(s)
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void 
+void
 AP_GPS_MTK16::init(void)
-{	
-	_port->flush();
+{
+    _port->flush();
 
-	// initialize serial port for binary protocol use
-	// XXX should assume binary, let GPS_AUTO handle dynamic config?
-	_port->print(MTK_SET_BINARY);
+    // initialize serial port for binary protocol use
+    // XXX should assume binary, let GPS_AUTO handle dynamic config?
+    _port->print(MTK_SET_BINARY);
 
-	// set 4Hz update rate
-	_port->print(MTK_OUTPUT_4HZ);
-	
-	// set initial epoch code
-	_epoch = TIME_OF_DAY;
-	_time_offset = 0;
-	_offset_calculated = false;
-	idleTimeout = 1200;
+    // set 4Hz update rate
+    _port->print(MTK_OUTPUT_4HZ);
+
+    // set initial epoch code
+    _epoch = TIME_OF_DAY;
+    _time_offset = 0;
+    _offset_calculated = false;
+    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
@@ -53,109 +53,109 @@ AP_GPS_MTK16::init(void)
 bool
 AP_GPS_MTK16::read(void)
 {
-	uint8_t 	data;
-	int 		numc;
-	bool		parsed = false;
+    uint8_t 	data;
+    int 		numc;
+    bool		parsed = false;
 
-	numc = _port->available();
-	for (int i = 0; i < numc; i++) {	// Process bytes received
+    numc = _port->available();
+    for (int i = 0; i < numc; i++) {	// Process bytes received
 
-		// read the next byte
-		data = _port->read();
+        // read the next byte
+        data = _port->read();
 
-restart:		
-		switch(_step){
+restart:
+        switch(_step) {
 
-			// Message preamble, class, ID detection
-			//
-			// If we fail to match any of the expected bytes, we
-			// reset the state machine and re-consider the failed
-			// byte as the first byte of the preamble.  This 
-			// improves our chances of recovering from a mismatch
-			// and makes it less likely that we will be fooled by
-			// the preamble appearing as data in some other message.
-			//
-		case 0:
-			if(PREAMBLE1 == data)
-				_step++;
-			break;
-		case 1:
-			if (PREAMBLE2 == data) {
-				_step++;
-				break;
-			}
-			_step = 0;
-			goto restart;
-		case 2:
-			if (sizeof(_buffer) == data) {
-				_step++;
-				_ck_b = _ck_a = data;				// reset the checksum accumulators
-				_payload_counter = 0;
-			} else {
-				_step = 0;							// reset and wait for a message of the right class
-				goto restart;
-			}
-			break;
+            // Message preamble, class, ID detection
+            //
+            // If we fail to match any of the expected bytes, we
+            // reset the state machine and re-consider the failed
+            // byte as the first byte of the preamble.  This
+            // improves our chances of recovering from a mismatch
+            // and makes it less likely that we will be fooled by
+            // the preamble appearing as data in some other message.
+            //
+        case 0:
+            if(PREAMBLE1 == data)
+                _step++;
+            break;
+        case 1:
+            if (PREAMBLE2 == data) {
+                _step++;
+                break;
+            }
+            _step = 0;
+            goto restart;
+        case 2:
+            if (sizeof(_buffer) == data) {
+                _step++;
+                _ck_b = _ck_a = data;				// reset the checksum accumulators
+                _payload_counter = 0;
+            } else {
+                _step = 0;							// reset and wait for a message of the right class
+                goto restart;
+            }
+            break;
 
-			// Receive message data
-			//
-		case 3:
-			_buffer.bytes[_payload_counter++] = data;
-			_ck_b += (_ck_a += data);
-			if (_payload_counter == sizeof(_buffer))
-				_step++;
-			break;
+            // Receive message data
+            //
+        case 3:
+            _buffer.bytes[_payload_counter++] = data;
+            _ck_b += (_ck_a += data);
+            if (_payload_counter == sizeof(_buffer))
+                _step++;
+            break;
 
-			// Checksum and message processing
-			//
-		case 4:
-			_step++;
-			if (_ck_a != data) {
-				_step = 0;
-			}
-			break;
-		case 5:
-			_step = 0;
-			if (_ck_b != data) {
-				break;
-			}
+            // Checksum and message processing
+            //
+        case 4:
+            _step++;
+            if (_ck_a != data) {
+                _step = 0;
+            }
+            break;
+        case 5:
+            _step = 0;
+            if (_ck_b != data) {
+                break;
+            }
 
-			fix				= _buffer.msg.fix_type == FIX_3D;
-			latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
-			longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
-			altitude		= _buffer.msg.altitude;
-			ground_speed	= _buffer.msg.ground_speed;
-			ground_course	= _buffer.msg.ground_course;
-			num_sats		= _buffer.msg.satellites;
-			hdop			= _buffer.msg.hdop;
-			date			= _buffer.msg.utc_date;
-				
-			// time from gps is UTC, but convert here to msToD
-			long time_utc	= _buffer.msg.utc_time;				
-			long temp = (time_utc/10000000);
-			time_utc -= temp*10000000;
-			time = temp * 3600000;
-			temp = (time_utc/100000);
-			time_utc -= temp*100000;
-			time += temp * 60000 + time_utc;
+            fix				= _buffer.msg.fix_type == FIX_3D;
+            latitude		= _buffer.msg.latitude  * 10;	// XXX doc says *10e7 but device says otherwise
+            longitude		= _buffer.msg.longitude * 10;	// XXX doc says *10e7 but device says otherwise
+            altitude		= _buffer.msg.altitude;
+            ground_speed	= _buffer.msg.ground_speed;
+            ground_course	= _buffer.msg.ground_course;
+            num_sats		= _buffer.msg.satellites;
+            hdop			= _buffer.msg.hdop;
+            date			= _buffer.msg.utc_date;
 
-			parsed = true;
-			
-			/*	Waiting on clarification of MAVLink protocol!
-			if(!_offset_calculated && parsed) {
-				long tempd1 = date;
-				long day 	= tempd1/10000;
-				tempd1 		-= day * 10000;
-				long month	= tempd1/100;
-				long year	= tempd1 - month * 100;
-				_time_offset = _calc_epoch_offset(day, month, year);
-				_epoch = UNIX_EPOCH;
-				_offset_calculated = TRUE;
-			}
-			*/
-			
-		}
-	} 
-	return parsed;
+            // time from gps is UTC, but convert here to msToD
+            long time_utc	= _buffer.msg.utc_time;
+            long temp = (time_utc/10000000);
+            time_utc -= temp*10000000;
+            time = temp * 3600000;
+            temp = (time_utc/100000);
+            time_utc -= temp*100000;
+            time += temp * 60000 + time_utc;
+
+            parsed = true;
+
+            /*	Waiting on clarification of MAVLink protocol!
+            if(!_offset_calculated && parsed) {
+            	long tempd1 = date;
+            	long day 	= tempd1/10000;
+            	tempd1 		-= day * 10000;
+            	long month	= tempd1/100;
+            	long year	= tempd1 - month * 100;
+            	_time_offset = _calc_epoch_offset(day, month, year);
+            	_epoch = UNIX_EPOCH;
+            	_offset_calculated = TRUE;
+            }
+            */
+
+        }
+    }
+    return parsed;
 }
 
