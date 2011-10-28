@@ -650,7 +650,7 @@ static void Log_Read(int start_page, int end_page)
 		Serial.printf_P(PSTR((AIRFRAME_NAME)
 	#endif
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
-						 "\nFree RAM: %lu\n"),
+						 "\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
 	DataFlash.StartRead(start_page);
