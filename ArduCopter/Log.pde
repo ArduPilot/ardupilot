@@ -474,10 +474,54 @@ static void Log_Write_Motors()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_MOTORS_MSG);
 
-	DataFlash.WriteInt(motor_out[CH_1]);
-	DataFlash.WriteInt(motor_out[CH_2]);
-	DataFlash.WriteInt(motor_out[CH_3]);
-	DataFlash.WriteInt(motor_out[CH_4]);
+	#if FRAME_CONFIG ==	TRI_FRAME
+	DataFlash.WriteInt(motor_out[CH_1]);//1
+	DataFlash.WriteInt(motor_out[CH_2]);//2
+	DataFlash.WriteInt(motor_out[CH_4]);//3
+	DataFlash.WriteInt(g.rc_4.radio_out);//4
+
+	#elif FRAME_CONFIG == HEXA_FRAME
+	DataFlash.WriteInt(motor_out[CH_1]);//1
+	DataFlash.WriteInt(motor_out[CH_2]);//2
+	DataFlash.WriteInt(motor_out[CH_3]);//3
+	DataFlash.WriteInt(motor_out[CH_4]);//4
+	DataFlash.WriteInt(motor_out[CH_7]);//5
+	DataFlash.WriteInt(motor_out[CH_8]);//6
+
+	#elif FRAME_CONFIG == Y6_FRAME
+	//left
+	DataFlash.WriteInt(motor_out[CH_2]);//1
+	DataFlash.WriteInt(motor_out[CH_3]);//2
+	//right
+	DataFlash.WriteInt(motor_out[CH_7]);//3
+	DataFlash.WriteInt(motor_out[CH_1]);//4
+	//back
+	DataFlash.WriteInt(motor_out[CH_8]);//5
+	DataFlash.WriteInt(motor_out[CH_4]);//6
+
+	#elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+	DataFlash.WriteInt(motor_out[CH_1]);//1
+	DataFlash.WriteInt(motor_out[CH_2]);//2
+	DataFlash.WriteInt(motor_out[CH_3]);//3
+	DataFlash.WriteInt(motor_out[CH_4]);//4
+	DataFlash.WriteInt(motor_out[CH_7]);//5
+	DataFlash.WriteInt(motor_out[CH_8]); //6
+	DataFlash.WriteInt(motor_out[CH_10]);//7
+	DataFlash.WriteInt(motor_out[CH_11]);//8
+
+	#elif FRAME_CONFIG == HELI_FRAME
+	DataFlash.WriteInt(heli_servo_out[0]);//1
+	DataFlash.WriteInt(heli_servo_out[1]);//2
+	DataFlash.WriteInt(heli_servo_out[2]);//3
+	DataFlash.WriteInt(heli_servo_out[3]);//4
+	DataFlash.WriteInt(g.heli_ext_gyro_gain);//5
+
+	#else // quads
+	DataFlash.WriteInt(motor_out[CH_1]);//1
+	DataFlash.WriteInt(motor_out[CH_2]);//2
+	DataFlash.WriteInt(motor_out[CH_3]);//3
+	DataFlash.WriteInt(motor_out[CH_4]);//4
+	#endif
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -485,11 +529,46 @@ static void Log_Write_Motors()
 // Read a Current packet
 static void Log_Read_Motors()
 {
+	#if FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME
+							  // 1  2   3   4   5   6
+	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d, %d, %d\n"),
+			DataFlash.ReadInt(), //1
+			DataFlash.ReadInt(), //2
+			DataFlash.ReadInt(), //3
+			DataFlash.ReadInt(), //4
+			DataFlash.ReadInt(), //5
+			DataFlash.ReadInt()); //6
+
+	#elif FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+							 // 1   2   3   4   5   6   7   8
+	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d, %d, %d, %d, %d\n"),
+			DataFlash.ReadInt(), //1
+			DataFlash.ReadInt(), //2
+			DataFlash.ReadInt(), //3
+			DataFlash.ReadInt(), //4
+
+			DataFlash.ReadInt(), //5
+			DataFlash.ReadInt(), //6
+			DataFlash.ReadInt(), //7
+			DataFlash.ReadInt()); //8
+
+	#elif FRAME_CONFIG == HELI_FRAME
+							 // 1   2   3   4   5
+	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d, %d\n"),
+			DataFlash.ReadInt(), //1
+			DataFlash.ReadInt(), //2
+			DataFlash.ReadInt(), //3
+			DataFlash.ReadInt(), //4
+			DataFlash.ReadInt()); //5
+
+	#else // quads, TRIs
+							 // 1   2   3   4
 	Serial.printf_P(PSTR("MOT: %d, %d, %d, %d\n"),
-			DataFlash.ReadInt(),
-			DataFlash.ReadInt(),
-			DataFlash.ReadInt(),
-			DataFlash.ReadInt());
+			DataFlash.ReadInt(), //1
+			DataFlash.ReadInt(), //2
+			DataFlash.ReadInt(), //3
+			DataFlash.ReadInt()); //4;
+	#endif
 }
 
 #ifdef OPTFLOW_ENABLED
@@ -601,8 +680,9 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
+
 	// yaw
-	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));			//1
+	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));			//2
 	DataFlash.WriteInt((int)(nav_yaw/100));					//2
 	DataFlash.WriteInt((int)yaw_error/100);					//3
 
@@ -627,7 +707,7 @@ static void Log_Read_Control_Tuning()
 							"%d, %d\n"),
 
 				// Control
-				//DataFlash.ReadInt(),
+				//DataFlash.ReadByte(),
 				//DataFlash.ReadInt(),
 
 				// yaw
@@ -658,37 +738,42 @@ static void Log_Write_Performance()
 	//*
 	//DataFlash.WriteLong(	millis()- perf_mon_timer);
 
-	DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
-	DataFlash.WriteByte(	imu.adc_constraints);				//3
-	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
-	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
-	DataFlash.WriteByte(	gps_fix_count);						//6
+	//DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
+	//DataFlash.WriteByte(	imu.adc_constraints);				//3
+	//DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
+	//DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
+	//DataFlash.WriteByte(	gps_fix_count);						//6
 
-	DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));	//7
-	DataFlash.WriteLong (	throttle_integrator);				//8
 
+
+	//DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));	//7
+
+
+
+	// control_mode
+	DataFlash.WriteByte(control_mode);					//1
+	DataFlash.WriteByte(yaw_mode);						//2
+	DataFlash.WriteByte(roll_pitch_mode);				//3
+	DataFlash.WriteByte(throttle_mode);					//4
+	DataFlash.WriteInt(g.throttle_cruise.get());		//5
+	DataFlash.WriteLong(throttle_integrator);			//6
 	DataFlash.WriteByte(END_BYTE);
 }
 
 // Read a performance packet
 static void Log_Read_Performance()
-{
-	Serial.printf_P(PSTR(   "PM, %d, %d, "
-							"%d, %d, %d, "
-							"%d, %ld\n"),
+{								//1   2   3   4   5   6
+	Serial.printf_P(PSTR(   "PM, %d, %d, %d, %d, %d, %ld\n"),
 
 				// Control
 				//DataFlash.ReadLong(),
 				//DataFlash.ReadInt(),
+				DataFlash.ReadByte(),			//1
 				DataFlash.ReadByte(),			//2
 				DataFlash.ReadByte(),			//3
-
 				DataFlash.ReadByte(),			//4
-				DataFlash.ReadByte(),			//5
-				DataFlash.ReadByte(),			//6
-
-				DataFlash.ReadInt(),			//7
-				DataFlash.ReadLong());			//8
+				DataFlash.ReadInt(),			//5
+				DataFlash.ReadLong());			//6
 }
 
 // Write a command processing packet.
