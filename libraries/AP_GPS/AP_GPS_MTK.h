@@ -20,52 +20,52 @@
 
 class AP_GPS_MTK : public GPS {
 public:
-	AP_GPS_MTK(Stream *s);
-	virtual void	init(void);
-	virtual bool	read(void);
+    AP_GPS_MTK(Stream *s);
+    virtual void	init(void);
+    virtual bool	read(void);
 
 private:
 // XXX this is being ignored by the compiler #pragma pack(1)
-	struct diyd_mtk_msg {
-		int32_t		latitude;
-		int32_t		longitude;
-		int32_t		altitude;
-		int32_t		ground_speed;
-		int32_t		ground_course;
-		uint8_t		satellites;
-		uint8_t		fix_type;
-		uint32_t	utc_time;
-	};
+    struct diyd_mtk_msg {
+        int32_t		latitude;
+        int32_t		longitude;
+        int32_t		altitude;
+        int32_t		ground_speed;
+        int32_t		ground_course;
+        uint8_t		satellites;
+        uint8_t		fix_type;
+        uint32_t	utc_time;
+    };
 // #pragma pack(pop)
-	enum diyd_mtk_fix_type {
-		FIX_NONE = 1,
-		FIX_2D = 2,
-		FIX_3D = 3
-	};
+    enum diyd_mtk_fix_type {
+        FIX_NONE = 1,
+        FIX_2D = 2,
+        FIX_3D = 3
+    };
 
-	enum diyd_mtk_protocol_bytes {
-		PREAMBLE1 = 0xb5,
-		PREAMBLE2 = 0x62,
-		MESSAGE_CLASS = 1,
-		MESSAGE_ID = 5
-	};
+    enum diyd_mtk_protocol_bytes {
+        PREAMBLE1 = 0xb5,
+        PREAMBLE2 = 0x62,
+        MESSAGE_CLASS = 1,
+        MESSAGE_ID = 5
+    };
 
-	// Packet checksum accumulators
-	uint8_t 	_ck_a;
-	uint8_t 	_ck_b;
+    // Packet checksum accumulators
+    uint8_t 	_ck_a;
+    uint8_t 	_ck_b;
 
-	// State machine state
-	uint8_t 	_step;
-	uint8_t		_payload_counter;
+    // State machine state
+    uint8_t 	_step;
+    uint8_t		_payload_counter;
 
-	// Receive buffer
-	union {
-		diyd_mtk_msg	msg;
-		uint8_t			bytes[];
-	} _buffer;
+    // Receive buffer
+    union {
+        diyd_mtk_msg	msg;
+        uint8_t			bytes[];
+    } _buffer;
 
-	// Buffer parse & GPS state update
-	void		_parse_gps();
+    // Buffer parse & GPS state update
+    void		_parse_gps();
 };
 
 #endif	// AP_GPS_MTK_H

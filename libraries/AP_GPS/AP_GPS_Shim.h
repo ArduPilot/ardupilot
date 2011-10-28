@@ -17,31 +17,31 @@
 class AP_GPS_Shim : public GPS
 {
 public:
-	AP_GPS_Shim() : GPS(NULL) {}
+    AP_GPS_Shim() : GPS(NULL) {}
 
-	virtual void init(void) {};
-	virtual bool read(void) {
-		bool updated = _updated;
-		_updated = false;
-		return updated;
-	}
+    virtual void init(void) {};
+    virtual bool read(void) {
+        bool updated = _updated;
+        _updated = false;
+        return updated;
+    }
 
-	/// Set-and-mark-updated macro for the public member variables; each instance
-	/// defines a member function set_<variable>(<type>)
-	///
+    /// Set-and-mark-updated macro for the public member variables; each instance
+    /// defines a member function set_<variable>(<type>)
+    ///
 #define __GPS_SHIM_SET(__type, __name) void set_##__name(__type v) { __name = v; _updated = true; }
-	__GPS_SHIM_SET(long, time);
-	__GPS_SHIM_SET(long, latitude);
-	__GPS_SHIM_SET(long, longitude);
-	__GPS_SHIM_SET(long, altitude);
-	__GPS_SHIM_SET(long, ground_speed);
-	__GPS_SHIM_SET(long, ground_course);
-	__GPS_SHIM_SET(long, speed_3d);
-	__GPS_SHIM_SET(int, hdop);
+    __GPS_SHIM_SET(long, time);
+    __GPS_SHIM_SET(long, latitude);
+    __GPS_SHIM_SET(long, longitude);
+    __GPS_SHIM_SET(long, altitude);
+    __GPS_SHIM_SET(long, ground_speed);
+    __GPS_SHIM_SET(long, ground_course);
+    __GPS_SHIM_SET(long, speed_3d);
+    __GPS_SHIM_SET(int, hdop);
 #undef __GPS_SHIM_SET
 
 private:
-	bool	_updated;		///< set anytime a member is updated, cleared when read() returns true
+    bool	_updated;		///< set anytime a member is updated, cleared when read() returns true
 };
 
 #endif	// AP_GPS_HIL_H

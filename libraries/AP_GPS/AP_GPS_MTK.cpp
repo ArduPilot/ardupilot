@@ -20,21 +20,21 @@ AP_GPS_MTK::AP_GPS_MTK(Stream *s) : GPS(s)
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void 
+void
 AP_GPS_MTK::init(void)
-{	
-	_port->flush();
-	// initialize serial port for binary protocol use
-	// XXX should assume binary, let GPS_AUTO handle dynamic config?
-	_port->print(MTK_SET_BINARY);
+{
+    _port->flush();
+    // initialize serial port for binary protocol use
+    // XXX should assume binary, let GPS_AUTO handle dynamic config?
+    _port->print(MTK_SET_BINARY);
 
-	// set 4Hz update rate
-	_port->print(MTK_OUTPUT_4HZ);
-	
-	// set initial epoch code
-	_epoch = TIME_OF_DAY;
-	
-	idleTimeout = 1200;
+    // set 4Hz update rate
+    _port->print(MTK_OUTPUT_4HZ);
+
+    // set initial epoch code
+    _epoch = TIME_OF_DAY;
+
+    idleTimeout = 1200;
 }
 
 // Process bytes available from the stream
@@ -51,103 +51,103 @@ AP_GPS_MTK::init(void)
 bool
 AP_GPS_MTK::read(void)
 {
-	uint8_t	data;
-	int		numc;
-	bool	parsed = false;
+    uint8_t	data;
+    int		numc;
+    bool	parsed = false;
 
-	numc = _port->available();
-	for (int i = 0; i < numc; i++){	// Process bytes received
+    numc = _port->available();
+    for (int i = 0; i < numc; i++) {	// Process bytes received
 
-		// read the next byte
-		data = _port->read();
+        // read the next byte
+        data = _port->read();
 
-restart:		
-		switch(_step){
+restart:
+        switch(_step) {
 
-			// Message preamble, class, ID detection
-			//
-			// If we fail to match any of the expected bytes, we
-			// reset the state machine and re-consider the failed
-			// byte as the first byte of the preamble.  This 
-			// improves our chances of recovering from a mismatch
-			// and makes it less likely that we will be fooled by
-			// the preamble appearing as data in some other message.
-			//
-		case 0:
-			if(PREAMBLE1 == data)
-				_step++;
-			break;
-		case 1:
-			if (PREAMBLE2 == data) {
-				_step++;
-				break;
-			}
-			_step = 0;
-			goto restart;
-		case 2:
-			if (MESSAGE_CLASS == data) {
-				_step++;
-				_ck_b = _ck_a = data;					// reset the checksum accumulators
-			} else {
-				_step = 0;							// reset and wait for a message of the right class
-				goto restart;
-			}
-			break;
-		case 3:
-			if (MESSAGE_ID == data) {
-				_step++;
-				_ck_b += (_ck_a += data);
-				_payload_counter = 0;
-			} else {
-				_step = 0;
-				goto restart;
-			}
-			break;
+            // Message preamble, class, ID detection
+            //
+            // If we fail to match any of the expected bytes, we
+            // reset the state machine and re-consider the failed
+            // byte as the first byte of the preamble.  This
+            // improves our chances of recovering from a mismatch
+            // and makes it less likely that we will be fooled by
+            // the preamble appearing as data in some other message.
+            //
+        case 0:
+            if(PREAMBLE1 == data)
+                _step++;
+            break;
+        case 1:
+            if (PREAMBLE2 == data) {
+                _step++;
+                break;
+            }
+            _step = 0;
+            goto restart;
+        case 2:
+            if (MESSAGE_CLASS == data) {
+                _step++;
+                _ck_b = _ck_a = data;					// reset the checksum accumulators
+            } else {
+                _step = 0;							// reset and wait for a message of the right class
+                goto restart;
+            }
+            break;
+        case 3:
+            if (MESSAGE_ID == data) {
+                _step++;
+                _ck_b += (_ck_a += data);
+                _payload_counter = 0;
+            } else {
+                _step = 0;
+                goto restart;
+            }
+            break;
 
-			// Receive message data
-			//
-		case 4:
-			_buffer.bytes[_payload_counter++] = data;
-			_ck_b += (_ck_a += data);
-			if (_payload_counter == sizeof(_buffer))
-				_step++;
-			break;
+            // Receive message data
+            //
+        case 4:
+            _buffer.bytes[_payload_counter++] = data;
+            _ck_b += (_ck_a += data);
+            if (_payload_counter == sizeof(_buffer))
+                _step++;
+            break;
 
-			// Checksum and message processing
-			//
-		case 5:
-			_step++;
-			if (_ck_a != data) {
-				_error("GPS_MTK: checksum error\n");
-				_step = 0;
-			}
-			break;
-		case 6:
-			_step = 0;
-			if (_ck_b != data) {
-				_error("GPS_MTK: checksum error\n");
-				break;
-			}
+            // Checksum and message processing
+            //
+        case 5:
+            _step++;
+            if (_ck_a != data) {
+                _error("GPS_MTK: checksum error\n");
+                _step = 0;
+            }
+            break;
+        case 6:
+            _step = 0;
+            if (_ck_b != data) {
+                _error("GPS_MTK: checksum error\n");
+                break;
+            }
 
-			fix				= (_buffer.msg.fix_type == FIX_3D);
-			latitude		= _swapl(&_buffer.msg.latitude)  * 10;
-			longitude		= _swapl(&_buffer.msg.longitude) * 10;
-			altitude		= _swapl(&_buffer.msg.altitude);
-			ground_speed	= _swapl(&_buffer.msg.ground_speed);
-			ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
-			num_sats		= _buffer.msg.satellites;
-			
-			// time from gps is UTC, but convert here to msToD
-			long time_utc	= _swapl(&_buffer.msg.utc_time);
-			long temp = (time_utc/10000000);
-			time_utc -= temp*10000000;
-			time = temp * 3600000;
-			temp = (time_utc/100000);
-			time_utc -= temp*100000;
-			time += temp * 60000 + time_utc;
+            fix				= (_buffer.msg.fix_type == FIX_3D);
+            latitude		= _swapl(&_buffer.msg.latitude)  * 10;
+            longitude		= _swapl(&_buffer.msg.longitude) * 10;
+            altitude		= _swapl(&_buffer.msg.altitude);
+            ground_speed	= _swapl(&_buffer.msg.ground_speed);
+            ground_course	= _swapl(&_buffer.msg.ground_course) / 10000;
+            num_sats		= _buffer.msg.satellites;
 
-			parsed = true;
-		}
-	}
-	return parsed;
+            // time from gps is UTC, but convert here to msToD
+            long time_utc	= _swapl(&_buffer.msg.utc_time);
+            long temp = (time_utc/10000000);
+            time_utc -= temp*10000000;
+            time = temp * 3600000;
+            temp = (time_utc/100000);
+            time_utc -= temp*100000;
+            time += temp * 60000 + time_utc;
+
+            parsed = true;
+        }
+    }
+    return parsed;
 }

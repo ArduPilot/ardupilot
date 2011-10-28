@@ -51,72 +51,72 @@
 class AP_GPS_NMEA : public GPS
 {
 public:
-	/// Constructor
-	///
-	AP_GPS_NMEA(Stream *s);
+    /// Constructor
+    ///
+    AP_GPS_NMEA(Stream *s);
 
-	/// Perform a (re)initialisation of the GPS; sends the
-	/// protocol configuration messages.
-	///
-	virtual void	init();
+    /// Perform a (re)initialisation of the GPS; sends the
+    /// protocol configuration messages.
+    ///
+    virtual void	init();
 
-	/// Checks the serial receive buffer for characters,
-	/// attempts to parse NMEA data and updates internal state
-	/// accordingly.
-	///
-	virtual bool	read();
+    /// Checks the serial receive buffer for characters,
+    /// attempts to parse NMEA data and updates internal state
+    /// accordingly.
+    ///
+    virtual bool	read();
 
 private:
-	/// Coding for the GPS sentences that the parser handles
+    /// Coding for the GPS sentences that the parser handles
     enum _sentence_types {	//there are some more than 10 fields in some sentences , thus we have to increase these value.
-    	_GPS_SENTENCE_GPRMC = 32,		
-    	_GPS_SENTENCE_GPGGA = 64,
-    	_GPS_SENTENCE_GPVTG = 96,
-    	_GPS_SENTENCE_OTHER = 0
+        _GPS_SENTENCE_GPRMC = 32,
+        _GPS_SENTENCE_GPGGA = 64,
+        _GPS_SENTENCE_GPVTG = 96,
+        _GPS_SENTENCE_OTHER = 0
     };
 
-	/// Update the decode state machine with a new character
-	///
-	/// @param	c		The next character in the NMEA input stream
-	/// @returns		True if processing the character has resulted in
-	///					an update to the GPS state
-	///
-	bool			_decode(char c);
+    /// Update the decode state machine with a new character
+    ///
+    /// @param	c		The next character in the NMEA input stream
+    /// @returns		True if processing the character has resulted in
+    ///					an update to the GPS state
+    ///
+    bool			_decode(char c);
 
-	/// Return the numeric value of an ascii hex character
-	///
-	/// @param	a		The character to be converted
-	/// @returns		The value of the character as a hex digit
-	///
-	int 			_from_hex(char a);
+    /// Return the numeric value of an ascii hex character
+    ///
+    /// @param	a		The character to be converted
+    /// @returns		The value of the character as a hex digit
+    ///
+    int 			_from_hex(char a);
 
-	/// Parses the current term as a NMEA-style decimal number with
-	/// up to two decimal digits.
-	///
-	/// @returns		The value expressed by the string in _term,
-	///					multiplied by 100.
-	///
-	unsigned long	_parse_decimal();
+    /// Parses the current term as a NMEA-style decimal number with
+    /// up to two decimal digits.
+    ///
+    /// @returns		The value expressed by the string in _term,
+    ///					multiplied by 100.
+    ///
+    unsigned long	_parse_decimal();
 
-	/// Parses the current term as a NMEA-style degrees + minutes
-	/// value with up to four decimal digits.
-	///
-	/// This gives a theoretical resolution limit of around 18cm.
-	///
-	/// @returns		The value expressed by the string in _term,
-	///					multiplied by 10000.
-	///
-	unsigned long	_parse_degrees();
+    /// Parses the current term as a NMEA-style degrees + minutes
+    /// value with up to four decimal digits.
+    ///
+    /// This gives a theoretical resolution limit of around 18cm.
+    ///
+    /// @returns		The value expressed by the string in _term,
+    ///					multiplied by 10000.
+    ///
+    unsigned long	_parse_degrees();
 
-	/// Processes the current term when it has been deemed to be
-	/// complete.
-	///
-	/// Each GPS message is broken up into terms separated by commas.
-	/// Each term is then processed by this function as it is received.
-	///
-	/// @returns		True if completing the term has resulted in
-	///					an update to the GPS state.
-	bool			_term_complete();
+    /// Processes the current term when it has been deemed to be
+    /// complete.
+    ///
+    /// Each GPS message is broken up into terms separated by commas.
+    /// Each term is then processed by this function as it is received.
+    ///
+    /// @returns		True if completing the term has resulted in
+    ///					an update to the GPS state.
+    bool			_term_complete();
 
     uint8_t			_parity;				///< NMEA message checksum accumulator
     bool			_is_checksum_term;		///< current term is the checksum
