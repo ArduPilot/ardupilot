@@ -1275,6 +1275,7 @@ namespace ArdupilotMega
                     if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_REQUEST && buffer[9] == 0)
                     {
                         param["WP_TOTAL"] = (float)wp_total - 1;
+                        param["CMD_TOTAL"] = (float)wp_total - 1;
                         MainV2.givecomport = false;
                         return;
                     }
@@ -1647,7 +1648,7 @@ namespace ArdupilotMega
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
-                Console.WriteLine("bps {0} loss {1} left {2}", bps1, synclost, BaseStream.BytesToRead);
+                Console.WriteLine("bps {0} loss {1} left {2} mem {3}", bps1, synclost, BaseStream.BytesToRead,System.GC.GetTotalMemory(false));
                 bps2 = bps1; // prev sec
                 bps1 = 0; // current sec
                 bpstime = DateTime.Now;

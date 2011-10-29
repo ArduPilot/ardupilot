@@ -348,6 +348,12 @@ static void set_mode(byte mode)
 	// used to stop fly_aways
 	motor_auto_armed = (g.rc_3.control_in > 0);
 
+	// clearing value used in interactive alt hold
+	manual_boost = 0;
+
+	// clearing value used to set WP's dynamically.
+	CH7_wp_index = 0;
+
 	Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
@@ -506,7 +512,11 @@ init_throttle_cruise()
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
-		g.throttle_cruise.set_and_save(g.rc_3.control_in);
+		#if FRAME_CONFIG == HELI_FRAME
+		    g.throttle_cruise.set_and_save(heli_get_scaled_throttle(g.rc_3.control_in));
+		#else
+			g.throttle_cruise.set_and_save(g.rc_3.control_in);
+		#endif
 	}
 }
 

@@ -43,7 +43,7 @@ static inline uint16_t mavlink_msg_named_value_float_pack(uint8_t system_id, uin
 #else
 	mavlink_named_value_float_t packet;
 	packet.value = value;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
         memcpy(_MAV_PAYLOAD(msg), &packet, 14);
 #endif
 
@@ -73,7 +73,7 @@ static inline uint16_t mavlink_msg_named_value_float_pack_chan(uint8_t system_id
 #else
 	mavlink_named_value_float_t packet;
 	packet.value = value;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
         memcpy(_MAV_PAYLOAD(msg), &packet, 14);
 #endif
 
@@ -113,7 +113,7 @@ static inline void mavlink_msg_named_value_float_send(mavlink_channel_t chan, co
 #else
 	mavlink_named_value_float_t packet;
 	packet.value = value;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
 	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_NAMED_VALUE_FLOAT, (const char *)&packet, 14);
 #endif
 }

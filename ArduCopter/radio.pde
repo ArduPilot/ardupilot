@@ -18,7 +18,9 @@ static void init_rc_in()
 	g.rc_1.set_angle(4500);
 	g.rc_2.set_angle(4500);
 	g.rc_3.set_range(0,1000);
+    #if FRAME_CONFIG !=	HELI_FRAME
 	g.rc_3.scale_output = .9;
+	#endif
 	g.rc_4.set_angle(4500);
 
 	// reverse: CW = left

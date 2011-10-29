@@ -1,6 +1,6 @@
 // MESSAGE RC_CHANNELS_SCALED PACKING
 
-#define MAVLINK_MSG_ID_RC_CHANNELS_SCALED 36
+#define MAVLINK_MSG_ID_RC_CHANNELS_SCALED 34
 
 typedef struct __mavlink_rc_channels_scaled_t
 {
@@ -18,7 +18,7 @@ typedef struct __mavlink_rc_channels_scaled_t
 } mavlink_rc_channels_scaled_t;
 
 #define MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN 22
-#define MAVLINK_MSG_ID_36_LEN 22
+#define MAVLINK_MSG_ID_34_LEN 22
 
 
 

@@ -214,7 +214,13 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 		break;
 
 	case MAVLINK_PARSE_STATE_GOT_STX:
-		if (status->msg_received || c > MAVLINK_MAX_PAYLOAD_LEN)
+			if (status->msg_received 
+			/* Support shorter buffers than the
+			 default maximum packet size */
+#if (MAVLINK_MAX_PAYLOAD_LEN < 255)
+				|| c > MAVLINK_MAX_PAYLOAD_LEN
+#endif
+				)
 		{
 			status->buffer_overrun++;
 			status->parse_error++;
