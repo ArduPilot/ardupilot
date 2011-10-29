@@ -50,7 +50,7 @@ static void process_next_command()
 	// and loads conditional or immediate commands if applicable
 	
 	struct Location temp;
-	byte old_index;
+	byte old_index = 0;
 	
 	// these are Navigation/Must commands
 	// ---------------------------------
