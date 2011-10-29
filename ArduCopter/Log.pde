@@ -692,7 +692,7 @@ static void Log_Write_Control_Tuning()
 
 	DataFlash.WriteInt(nav_throttle);							//7
 	DataFlash.WriteInt(angle_boost);							//8
-	DataFlash.WriteByte(manual_boost);							//9
+	DataFlash.WriteInt(manual_boost);							//9
 
 	DataFlash.WriteInt(g.rc_3.servo_out);						//10
 	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//11
@@ -724,7 +724,7 @@ static void Log_Read_Control_Tuning()
 
 				DataFlash.ReadInt(),	//7
 				DataFlash.ReadInt(),	//8
-				DataFlash.ReadByte(),	//9
+				DataFlash.ReadInt(),	//9
 
 				DataFlash.ReadInt(),	//10
 				DataFlash.ReadInt(),	//11
