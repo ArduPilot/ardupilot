@@ -190,11 +190,17 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-	float psi_dot_cmd = g.pidNavRoll.kP() * (bearing_error / 100.0);
+	//float psi_dot_cmd = g.pidNavRoll.kP() * (bearing_error / 100.0);
 	
-	nav_roll = (100 * ToDeg(atan((psi_dot_cmd * ((float)g_gps->ground_speed)) / 981.0)));
+	//nav_roll = (100 * ToDeg(atan((psi_dot_cmd * ((float)g_gps->ground_speed)) / 981.0)));
 	
 	//printf("nvrl %ld err %ld psi %f gps gs %ld COG %ld\n",nav_roll,bearing_error,psi_dot_cmd,g_gps->ground_speed,g_gps->ground_course);
+	
+	long psi_dot_cmd = g.pidNavRoll.kP() * bearing_error;
+	
+	nav_roll = (100 * ToDeg(atan((psi_dot_cmd * g_gps->ground_speed) / 9810000.0)));
+	
+//	printf("nvrl %ld err %ld psi %ld gps gs %ld COG %ld\n",nav_roll,bearing_error,psi_dot_cmd,g_gps->ground_speed,g_gps->ground_course);
 
 	Vector3f omega;
 	omega = dcm.get_gyro();

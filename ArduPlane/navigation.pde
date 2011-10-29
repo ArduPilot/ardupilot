@@ -183,7 +183,7 @@ static void update_crosstrack(void)
 
 static void reset_crosstrack()
 {
-	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
+	crosstrack_bearing 	= get_bearing(&prev_WP, &next_WP);	// Used for track following
 }
 
 static long get_distance(struct Location *loc1, struct Location *loc2)

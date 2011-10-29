@@ -180,9 +180,9 @@ static void set_next_WP(struct Location *wp)
 	scaleLongDown 		= cos(rads);
 	scaleLongUp 		= 1.0f/cos(rads);	
 	// this is handy for the groundstation
-	wp_totalDistance 	= get_distance(&prev_WP, &next_WP);
+	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&prev_WP, &next_WP);
+	target_bearing 		= get_bearing(&current_loc, &next_WP);
 	nav_bearing 		= target_bearing;
 
 	// to check if we have missed the WP
