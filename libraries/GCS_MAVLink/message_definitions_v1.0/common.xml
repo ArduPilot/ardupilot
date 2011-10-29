@@ -65,7 +65,7 @@
                 <entry value="2" name="MAV_MODE_FLAG_TEST_ENABLED">
           			<description>0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not be used for stable implementations.</description>
           		</entry>
-                <entry value="1" name="MAV_MODE_FLAG_RESERVED_ENABLED">
+                <entry value="1" name="MAV_MODE_FLAG_CUSTOM_MODE_ENABLED">
           			<description>0b00000001 Reserved for future use.</description>
           		</entry>
           </enum>
@@ -93,7 +93,7 @@
                 <entry value="2" name="MAV_MODE_FLAG_DECODE_POSITION_TEST">
           			<description>Seventh bit: 00000010</description>
           		</entry>
-                <entry value="1" name="MAV_MODE_FLAG_DECODE_POSITION_RESERVED">
+                <entry value="1" name="MAV_MODE_FLAG_DECODE_POSITION_CUSTOM_MODE">
           			<description>Eighth bit: 00000001</description>
           		</entry>
           </enum>
@@ -103,7 +103,7 @@
                     <description>Hold at the current position.</description>
                </entry>
                <entry value="1" name="MAV_GOTO_DO_CONTINUE">
-                    <description>Continue with the mission execution.</description>
+                    <description>Continue with the next item in mission execution.</description>
                </entry>
                <entry value="2" name="MAV_GOTO_HOLD_AT_CURRENT_POSITION">
                     <description>Hold at the current position of the system</description>
@@ -656,13 +656,18 @@
                </entry>
                <entry value="252" name="MAV_CMD_OVERRIDE_GOTO">
                     <description>Hold / continue the current action</description>
-                    <param index="1">MAV_GOTO_DO_HOLD: hold MAV_GOTO_DO_CONTINUE: continue with mission plan</param>
+                    <param index="1">MAV_GOTO_DO_HOLD: hold MAV_GOTO_DO_CONTINUE: continue with next item in mission plan</param>
                     <param index="2">MAV_GOTO_HOLD_AT_CURRENT_POSITION: Hold at current position MAV_GOTO_HOLD_AT_SPECIFIED_POSITION: hold at specified position</param>
                     <param index="3">MAV_FRAME coordinate frame of hold point</param>
                     <param index="4">Desired yaw angle in degrees</param>
                     <param index="5">Latitude / X position</param>
                     <param index="6">Longitude / Y position</param>
                     <param index="7">Altitude / Z position</param>
+               </entry>
+               <entry value="300" name="MAV_CMD_MISSION_START">
+                    <description>start running a mission</description>
+                    <param index="1">first_item: the first mission item to run</param>
+                    <param index="2">last_item:  the last mission item to run (after this item is run, the mission ends)</param>
                </entry>
           </enum>
           <enum name="MAV_DATA_STREAM">
@@ -748,7 +753,101 @@
                <entry name="MAV_CMD_ACK_ERR_Z_ALT_OUT_OF_RANGE">
                     <description>The Z or altitude value is out of range.</description>
                </entry>
-        </enum>
+          </enum>
+
+          <enum name="MAV_VAR">
+               <description>type of a mavlink parameter</description>
+               <entry value="0" name="MAV_VAR_FLOAT">
+                    <description>32 bit float</description>
+               </entry>
+               <entry value="1" name="MAV_VAR_UINT8">
+                    <description>8 bit unsigned integer</description>
+               </entry>
+               <entry value="2" name="MAV_VAR_INT8">
+                    <description>8 bit signed integer</description>
+               </entry>
+               <entry value="3" name="MAV_VAR_UINT16">
+                    <description>16 bit unsigned integer</description>
+               </entry>
+               <entry value="4" name="MAV_VAR_INT16">
+                    <description>16 bit signed integer</description>
+               </entry>
+               <entry value="5" name="MAV_VAR_UINT32">
+                    <description>32 bit unsigned integer</description>
+               </entry>
+               <entry value="6" name="MAV_VAR_INT32">
+                    <description>32 bit signed integer</description>
+               </entry>
+	  </enum>
+
+          <enum name="MAV_RESULT">
+               <description>result from a mavlink command</description>
+               <entry value="0" name="MAV_RESULT_ACCEPTED">
+                    <description>Command ACCEPTED and EXECUTED</description>
+               </entry>
+               <entry value="1" name="MAV_RESULT_TEMPORARILY_REJECTED">
+                    <description>Command TEMPORARY REJECTED/DENIED</description>
+               </entry>
+               <entry value="2" name="MAV_RESULT_DENIED">
+                    <description>Command PERMANENTLY DENIED</description>
+               </entry>
+               <entry value="3" name="MAV_RESULT_UNSUPPORTED">
+                    <description>Command UNKNOWN/UNSUPPORTED</description>
+               </entry>
+               <entry value="4" name="MAV_RESULT_FAILED">
+                    <description>Command executed, but failed</description>
+               </entry>
+	  </enum>
+
+          <enum name="MAV_MISSION_RESULT">
+               <description>result in a mavlink mission ack</description>
+               <entry value="0" name="MAV_MISSION_ACCEPTED">
+                    <description>mission accepted OK</description>
+               </entry>
+               <entry value="1" name="MAV_MISSION_ERROR">
+                    <description>generic error / not accepting mission commands at all right now</description>
+               </entry>
+               <entry value="2" name="MAV_MISSION_UNSUPPORTED_FRAME">
+                    <description>coordinate frame is not supported</description>
+               </entry>
+               <entry value="3" name="MAV_MISSION_UNSUPPORTED">
+                    <description>command is not supported</description>
+               </entry>
+               <entry value="4" name="MAV_MISSION_NO_SPACE">
+                    <description>mission item exceeds storage space</description>
+               </entry>
+               <entry value="5" name="MAV_MISSION_INVALID">
+                    <description>one of the parameters has an invalid value</description>
+               </entry>
+               <entry value="6" name="MAV_MISSION_INVALID_PARAM1">
+                    <description>param1 has an invalid value</description>
+               </entry>
+               <entry value="7" name="MAV_MISSION_INVALID_PARAM2">
+                    <description>param2 has an invalid value</description>
+               </entry>
+               <entry value="8" name="MAV_MISSION_INVALID_PARAM3">
+                    <description>param3 has an invalid value</description>
+               </entry>
+               <entry value="9" name="MAV_MISSION_INVALID_PARAM4">
+                    <description>param4 has an invalid value</description>
+               </entry>
+               <entry value="10" name="MAV_MISSION_INVALID_PARAM5_X">
+                    <description>x/param5 has an invalid value</description>
+               </entry>
+               <entry value="11" name="MAV_MISSION_INVALID_PARAM6_Y">
+                    <description>y/param6 has an invalid value</description>
+               </entry>
+               <entry value="12" name="MAV_MISSION_INVALID_PARAM7">
+                    <description>param7 has an invalid value</description>
+               </entry>
+               <entry value="13" name="MAV_MISSION_INVALID_SEQUENCE">
+                    <description>received waypoint out of sequence</description>
+               </entry>
+               <entry value="14" name="MAV_MISSION_DENIED">
+                    <description>not accepting any mission commands from this communication partner</description>
+               </entry>
+	  </enum>
+
      </enums>
      <messages>
           <message id="0" name="HEARTBEAT">
@@ -811,7 +910,7 @@
                <description>Set the system mode, as defined by enum MAV_MODE. There is no target component id as the mode is by definition for the overall aircraft, not only for one component.</description>
                <field type="uint8_t" name="target_system">The system setting the mode</field>
                <field type="uint8_t" name="base_mode">The new base mode</field>
-               <field type="uint16_t" name="custom_mode">The new autopilot-specific mode. This field can be ignored by an autopilot.</field>
+               <field type="uint32_t" name="custom_mode">The new autopilot-specific mode. This field can be ignored by an autopilot.</field>
           </message>
           <message id="20" name="PARAM_REQUEST_READ">
                <description>Request to read the onboard parameter with the param_id string id. Onboard parameters are stored as key[const char*] -> value[float]. This allows to send a parameter to any other component (such as the GCS) without the need of previous knowledge of possible parameter names. Thus the same GCS can store different parameters for different autopilots. See also http://qgroundcontrol.org/parameter_interface for a full documentation of QGroundControl and IMU code.</description>
@@ -829,7 +928,7 @@
                <description>Emit the value of a onboard parameter. The inclusion of param_count and param_index in the message allows the recipient to keep track of received parameters and allows him to re-request missing parameters after a loss or timeout.</description>
                <field type="char[16]" name="param_id">Onboard parameter id</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: 0: float, 1: uint8_t, 2: int8_t, 3: uint16_t, 4: int16_t, 5: uint32_t, 6: int32_t</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see MAV_VAR enum</field>
                <field type="uint16_t" name="param_count">Total number of onboard parameters</field>
                <field type="uint16_t" name="param_index">Index of this onboard parameter</field>
           </message>
@@ -839,7 +938,7 @@
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="char[16]" name="param_id">Onboard parameter id</field>
                <field type="float" name="param_value">Onboard parameter value</field>
-               <field type="uint8_t" name="param_type">Onboard parameter type: 0: float, 1: uint8_t, 2: int8_t, 3: uint16_t, 4: int16_t, 5: uint32_t, 6: int32_t</field>
+               <field type="uint8_t" name="param_type">Onboard parameter type: see MAV_VAR enum</field>
           </message>
           <message id="24" name="GPS_RAW_INT">
                <description>The global position, as returned by the Global Positioning System (GPS). This is
@@ -937,7 +1036,7 @@
                <field type="float" name="vy">Y Speed</field>
                <field type="float" name="vz">Z Speed</field>
           </message>
-          <message id="34" name="GLOBAL_POSITION_INT">
+          <message id="33" name="GLOBAL_POSITION_INT">
                <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up). It
                is designed as scaled integer message since the resolution of float is not sufficient.</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
@@ -949,21 +1048,8 @@
                <field type="int16_t" name="vy">Ground Y Speed (Longitude), expressed as m/s * 100</field>
                <field type="int16_t" name="vz">Ground Z Speed (Altitude), expressed as m/s * 100</field>
                <field type="uint16_t" name="hdg">Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: 65535</field>
-          </message><message id="35" name="RC_CHANNELS_RAW">
-               <description>The RAW values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
-               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
-               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
-               <field type="uint16_t" name="chan1_raw">RC channel 1 value, in microseconds</field>
-               <field type="uint16_t" name="chan2_raw">RC channel 2 value, in microseconds</field>
-               <field type="uint16_t" name="chan3_raw">RC channel 3 value, in microseconds</field>
-               <field type="uint16_t" name="chan4_raw">RC channel 4 value, in microseconds</field>
-               <field type="uint16_t" name="chan5_raw">RC channel 5 value, in microseconds</field>
-               <field type="uint16_t" name="chan6_raw">RC channel 6 value, in microseconds</field>
-               <field type="uint16_t" name="chan7_raw">RC channel 7 value, in microseconds</field>
-               <field type="uint16_t" name="chan8_raw">RC channel 8 value, in microseconds</field>
-               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 255: 100%</field>
           </message>
-          <message id="36" name="RC_CHANNELS_SCALED">
+          <message id="34" name="RC_CHANNELS_SCALED">
                <description>The scaled values of the RC channels received. (-100%) -10000, (0%) 0, (100%) 10000</description>
                <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
                <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
@@ -977,7 +1063,21 @@
                <field type="int16_t" name="chan8_scaled">RC channel 8 value scaled, (-100%) -10000, (0%) 0, (100%) 10000</field>
                <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 255: 100%</field>
           </message>
-          <message id="37" name="SERVO_OUTPUT_RAW">
+          <message id="35" name="RC_CHANNELS_RAW">
+               <description>The RAW values of the RC channels received. The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%. Individual receivers/transmitters might violate this specification.</description>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+               <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
+               <field type="uint16_t" name="chan1_raw">RC channel 1 value, in microseconds</field>
+               <field type="uint16_t" name="chan2_raw">RC channel 2 value, in microseconds</field>
+               <field type="uint16_t" name="chan3_raw">RC channel 3 value, in microseconds</field>
+               <field type="uint16_t" name="chan4_raw">RC channel 4 value, in microseconds</field>
+               <field type="uint16_t" name="chan5_raw">RC channel 5 value, in microseconds</field>
+               <field type="uint16_t" name="chan6_raw">RC channel 6 value, in microseconds</field>
+               <field type="uint16_t" name="chan7_raw">RC channel 7 value, in microseconds</field>
+               <field type="uint16_t" name="chan8_raw">RC channel 8 value, in microseconds</field>
+               <field type="uint8_t" name="rssi">Receive signal strength indicator, 0: 0%, 255: 100%</field>
+          </message>
+          <message id="36" name="SERVO_OUTPUT_RAW">
                <description>The RAW values of the servo outputs (for RC input from the remote, use the RC_CHANNELS messages). The standard PPM modulation is as follows: 1000 microseconds: 0%, 2000 microseconds: 100%.</description>
                <field type="uint32_t" name="time_usec">Timestamp (since UNIX epoch or microseconds since system boot)</field>
                <field type="uint8_t" name="port">Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.</field>
@@ -990,15 +1090,29 @@
                <field type="uint16_t" name="servo7_raw">Servo output 7 value, in microseconds</field>
                <field type="uint16_t" name="servo8_raw">Servo output 8 value, in microseconds</field>
           </message>
+          <message id="37" name="MISSION_REQUEST_PARTIAL_LIST">
+               <description>Request the overall list of MISSIONs from the system/component. http://qgroundcontrol.org/mavlink/waypoint_protocol</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="uint8_t" name="target_component">Component ID</field>
+               <field type="int16_t" name="start_index">Start index, 0 by default</field>
+               <field type="int16_t" name="end_index">End index, -1 by default (-1: send list to end). Else a valid index of the list</field>
+          </message>
+          <message id="38" name="MISSION_WRITE_PARTIAL_LIST">
+               <description>This message is sent to the MAV to write a partial list. If start index == end index, only one item will be transmitted / updated. If the start index is NOT 0 and above the current list size, this request should be REJECTED!</description>
+               <field type="uint8_t" name="target_system">System ID</field>
+               <field type="uint8_t" name="target_component">Component ID</field>
+               <field type="int16_t" name="start_index">Start index, 0 by default and smaller / equal to the largest index of the current onboard list.</field>
+               <field type="int16_t" name="end_index">End index, equal or greater than start index.</field>
+          </message>
           <message id="39" name="MISSION_ITEM">
-               <description>Message encoding a MISSION. This message is emitted to announce
-                the presence of a MISSION and to set a MISSION on the system. The MISSION can be either in x, y, z meters (type: LOCAL) or x:lat, y:lon, z:altitude. Local frame is Z-down, right handed, global frame is Z-up, right handed
+               <description>Message encoding a mission item. This message is emitted to announce
+                the presence of a mission item and to set a mission item on the system. The mission item can be either in x, y, z meters (type: LOCAL) or x:lat, y:lon, z:altitude. Local frame is Z-down, right handed (NED), global frame is Z-up, right handed (ENU). http://qgroundcontrol.org/mavlink/waypoint_protocol
             </description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint16_t" name="seq">Sequence</field>
                <field type="uint8_t" name="frame">The coordinate system of the MISSION. see MAV_FRAME in mavlink_types.h</field>
-               <field type="uint8_t" name="command">The scheduled action for the MISSION. see MAV_CMD in common.xml MAVLink specs</field>
+               <field type="uint16_t" name="command">The scheduled action for the MISSION. see MAV_CMD in common.xml MAVLink specs</field>
                <field type="uint8_t" name="current">false:0, true:1</field>
                <field type="uint8_t" name="autocontinue">autocontinue to next wp</field>
                <field type="float" name="param1">PARAM1 / For NAV command MISSIONs: Radius in which the MISSION is accepted as reached, in meters</field>
@@ -1010,31 +1124,31 @@
                <field type="float" name="z">PARAM7 / z position: global: altitude</field>
           </message>
           <message id="40" name="MISSION_REQUEST">
-               <description>Request the information of the MISSION with the sequence number seq. The response of the system to this message should be a MISSION message.</description>
+               <description>Request the information of the mission item with the sequence number seq. The response of the system to this message should be a MISSION_ITEM message. http://qgroundcontrol.org/mavlink/waypoint_protocol</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint16_t" name="seq">Sequence</field>
           </message>
           <message id="41" name="MISSION_SET_CURRENT">
-               <description>Set the MISSION with sequence number seq as current MISSION. This means that the MAV will continue to this MISSION on the shortest path (not following the MISSIONs in-between).</description>
+               <description>Set the mission item with sequence number seq as current item. This means that the MAV will continue to this mission item on the shortest path (not following the mission items in-between).</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="uint16_t" name="seq">Sequence</field>
           </message>
           <message id="42" name="MISSION_CURRENT">
-               <description>Message that announces the sequence number of the current active MISSION. The MAV will fly towards this MISSION.</description>
+               <description>Message that announces the sequence number of the current active mission item. The MAV will fly towards this mission item.</description>
                <field type="uint16_t" name="seq">Sequence</field>
           </message>
           <message id="43" name="MISSION_REQUEST_LIST">
-               <description>Request the overall list of MISSIONs from the system/component.</description>
+               <description>Request the overall list of mission items from the system/component.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
           </message>
           <message id="44" name="MISSION_COUNT">
-               <description>This message is emitted as response to MISSION_REQUEST_LIST by the MAV. The GCS can then request the individual MISSIONs based on the knowledge of the total number of MISSIONs.</description>
+               <description>This message is emitted as response to MISSION_REQUEST_LIST by the MAV and to initiate a write transaction. The GCS can then request the individual mission item based on the knowledge of the total number of MISSIONs.</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="uint16_t" name="count">Number of MISSIONs in the Sequence</field>
+               <field type="uint16_t" name="count">Number of mission items in the sequence</field>
           </message>
           <message id="45" name="MISSION_CLEAR_ALL">
                <description>Delete all mission items at once.</description>
@@ -1049,7 +1163,7 @@
                <description>Ack message during MISSION handling. The type field states if this message is a positive ack (type=0) or if an error happened (type=non-zero).</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
-               <field type="uint8_t" name="type">0: OK, 1: generic error / not accepting mission commands at all right now, 2: coordinate frame is not supported, 3: command is not supported, 4: mission item exceeds storage space, 5: one of the parameters has an invalid value, 6: param1 has an invalid value, 7: param2 has an invalid value, 8: param3 has an invalid value, 9: param4 has an invalid value, 10: x/param5 has an invalid value, 11: y:param6 has an invalid value, 12: z:param7 has an invalid value, 13: received waypoint out of sequence, 14: not accepting any mission commands from this communication partner</field>
+               <field type="uint8_t" name="type">See MAV_MISSION_RESULT enum</field>
           </message>
           <message id="48" name="SET_GPS_GLOBAL_ORIGIN">
                <description>As local MISSIONs exist, the global MISSION reference allows to transform between the local coordinate frame and the global (GPS) coordinate frame. This can be necessary when e.g. in- and outdoor settings are connected and the MAV should move from in- to outdoor.</description>
@@ -1224,22 +1338,11 @@
                <field type="float" name="alt">Current altitude (MSL), in meters</field>
                <field type="float" name="climb">Current climb rate in meters/second</field>
           </message>
-          <message id="75" name="COMMAND_SHORT">
-               <description>Send a command with up to four parameters to the MAV</description>
-               <field type="uint8_t" name="target_system">System which should execute the command</field>
-               <field type="uint8_t" name="target_component">Component which should execute the command, 0 for all components</field>
-               <field type="uint8_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
-               <field type="uint8_t" name="confirmation">0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)</field>
-               <field type="float" name="param1">Parameter 1, as defined by MAV_CMD enum.</field>
-               <field type="float" name="param2">Parameter 2, as defined by MAV_CMD enum.</field>
-               <field type="float" name="param3">Parameter 3, as defined by MAV_CMD enum.</field>
-               <field type="float" name="param4">Parameter 4, as defined by MAV_CMD enum.</field>
-          </message>
           <message id="76" name="COMMAND_LONG">
                <description>Send a command with up to four parameters to the MAV</description>
                <field type="uint8_t" name="target_system">System which should execute the command</field>
                <field type="uint8_t" name="target_component">Component which should execute the command, 0 for all components</field>
-               <field type="uint8_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
+               <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
                <field type="uint8_t" name="confirmation">0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)</field>
                <field type="float" name="param1">Parameter 1, as defined by MAV_CMD enum.</field>
                <field type="float" name="param2">Parameter 2, as defined by MAV_CMD enum.</field>
@@ -1252,7 +1355,7 @@
           <message id="77" name="COMMAND_ACK">
                <description>Report status of a command. Includes feedback wether the command was executed</description>
                <field type="uint16_t" name="command">Command ID, as defined by MAV_CMD enum.</field>
-               <field type="uint8_t" name="result">1: Command ACCEPTED and EXECUTED, 1: Command TEMPORARY REJECTED/DENIED, 2: Command PERMANENTLY DENIED, 3: Command UNKNOWN/UNSUPPORTED, 4: Command executed, but failed</field>
+               <field type="uint8_t" name="result">See MAV_RESULT enum</field>
           </message>
           
           <!--

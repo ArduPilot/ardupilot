@@ -36,6 +36,7 @@
 	CH7_RTL
 	CH7_AUTO_TRIM
 	CH7_ADC_FILTER (experimental)
+	CH7_SAVE_WP
 	*/
 
 #define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
