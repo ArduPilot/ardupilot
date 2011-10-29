@@ -58,7 +58,7 @@ static inline uint16_t mavlink_msg_debug_vect_pack(uint8_t system_id, uint8_t co
 	packet.x = x;
 	packet.y = y;
 	packet.z = z;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
         memcpy(_MAV_PAYLOAD(msg), &packet, 30);
 #endif
 
@@ -97,7 +97,7 @@ static inline uint16_t mavlink_msg_debug_vect_pack_chan(uint8_t system_id, uint8
 	packet.x = x;
 	packet.y = y;
 	packet.z = z;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
         memcpy(_MAV_PAYLOAD(msg), &packet, 30);
 #endif
 
@@ -146,7 +146,7 @@ static inline void mavlink_msg_debug_vect_send(mavlink_channel_t chan, const cha
 	packet.x = x;
 	packet.y = y;
 	packet.z = z;
-	memcpy(packet.name, name, sizeof(char)*10);
+	mav_array_memcpy(packet.name, name, sizeof(char)*10);
 	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_DEBUG_VECT, (const char *)&packet, 30);
 #endif
 }
