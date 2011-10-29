@@ -53,7 +53,7 @@ static inline uint16_t mavlink_msg_change_operator_control_pack(uint8_t system_i
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
-	memcpy(packet.passkey, passkey, sizeof(char)*25);
+	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
         memcpy(_MAV_PAYLOAD(msg), &packet, 28);
 #endif
 
@@ -89,7 +89,7 @@ static inline uint16_t mavlink_msg_change_operator_control_pack_chan(uint8_t sys
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
-	memcpy(packet.passkey, passkey, sizeof(char)*25);
+	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
         memcpy(_MAV_PAYLOAD(msg), &packet, 28);
 #endif
 
@@ -135,7 +135,7 @@ static inline void mavlink_msg_change_operator_control_send(mavlink_channel_t ch
 	packet.target_system = target_system;
 	packet.control_request = control_request;
 	packet.version = version;
-	memcpy(packet.passkey, passkey, sizeof(char)*25);
+	mav_array_memcpy(packet.passkey, passkey, sizeof(char)*25);
 	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_CHANGE_OPERATOR_CONTROL, (const char *)&packet, 28);
 #endif
 }

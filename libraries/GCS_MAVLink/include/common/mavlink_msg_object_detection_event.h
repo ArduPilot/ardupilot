@@ -68,7 +68,7 @@ static inline uint16_t mavlink_msg_object_detection_event_pack(uint8_t system_id
 	packet.quality = quality;
 	packet.bearing = bearing;
 	packet.distance = distance;
-	memcpy(packet.name, name, sizeof(char)*20);
+	mav_array_memcpy(packet.name, name, sizeof(char)*20);
         memcpy(_MAV_PAYLOAD(msg), &packet, 36);
 #endif
 
@@ -113,7 +113,7 @@ static inline uint16_t mavlink_msg_object_detection_event_pack_chan(uint8_t syst
 	packet.quality = quality;
 	packet.bearing = bearing;
 	packet.distance = distance;
-	memcpy(packet.name, name, sizeof(char)*20);
+	mav_array_memcpy(packet.name, name, sizeof(char)*20);
         memcpy(_MAV_PAYLOAD(msg), &packet, 36);
 #endif
 
@@ -168,7 +168,7 @@ static inline void mavlink_msg_object_detection_event_send(mavlink_channel_t cha
 	packet.quality = quality;
 	packet.bearing = bearing;
 	packet.distance = distance;
-	memcpy(packet.name, name, sizeof(char)*20);
+	mav_array_memcpy(packet.name, name, sizeof(char)*20);
 	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_OBJECT_DETECTION_EVENT, (const char *)&packet, 36);
 #endif
 }

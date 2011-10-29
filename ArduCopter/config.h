@@ -520,7 +520,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.6			//
+# define THROTTLE_P		0.8			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.10		// with 4m error, 12.5s windup

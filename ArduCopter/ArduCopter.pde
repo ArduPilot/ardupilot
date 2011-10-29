@@ -249,9 +249,9 @@ static const char* flight_mode_strings[] = {
 // test
 #if ACCEL_ALT_HOLD == 1
 Vector3f accels_rot;
-static int	accels_rot_count;
-static float	accels_rot_sum;
-static float alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
+static int		accels_rot_count;
+static float 	accels_rot_sum;
+static float 	alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
 #endif
 
 // temp
@@ -334,6 +334,9 @@ static int waypoint_speed_gov;
 static bool do_flip = false;
 #endif
 
+static boolean trim_flag;
+static int CH7_wp_index = 0;
+
 // Airspeed
 // --------
 static int		airspeed;							// m/s * 100
@@ -342,6 +345,7 @@ static int		airspeed;							// m/s * 100
 // ---------------
 static long		altitude_error;						// meters * 100 we are off in altitude
 static long 	old_altitude;
+static int 		old_rate;
 static long 	yaw_error;							// how off are we pointed
 static long		long_error, lat_error;				// temp for debugging
 
@@ -381,6 +385,8 @@ static boolean	land_complete;
 static long 	old_alt;							// used for managing altitude rates
 static int		velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
+static int 		manual_boost;						// used in adjust altitude to make changing alt faster
+static int 		angle_boost;						// used in adjust altitude to make changing alt faster
 
 // Loiter management
 // -----------------
@@ -535,7 +541,7 @@ void loop()
 			counter_one_herz = 0;
 		}
 
-		if (millis() - perf_mon_timer > 20000) {
+		if (millis() - perf_mon_timer > 1200 /*20000*/) {
 			if (g.log_bitmask & MASK_LOG_PM)
 				Log_Write_Performance();
 
@@ -1022,7 +1028,12 @@ void update_throttle_mode(void)
 
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
-				g.rc_3.servo_out = g.rc_3.control_in + get_angle_boost(g.rc_3.control_in);
+			    #if FRAME_CONFIG == HELI_FRAME
+				    g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.rc_3.control_in));
+				#else
+					angle_boost = get_angle_boost(g.rc_3.control_in);
+					g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
+				#endif
 			}else{
 				g.pi_stabilize_roll.reset_I();
 				g.pi_stabilize_pitch.reset_I();
@@ -1051,8 +1062,12 @@ void update_throttle_mode(void)
 				// clear the new data flag
 				invalid_throttle = false;
 			}
-
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + get_angle_boost(g.throttle_cruise);
+			#if FRAME_CONFIG == HELI_FRAME
+				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
+			#else
+				angle_boost = get_angle_boost(g.throttle_cruise);
+				g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + manual_boost;
+			#endif
 			break;
 	}
 }
@@ -1213,7 +1228,19 @@ static void update_altitude()
 		current_loc.alt = baro_alt + home.alt;
 	}
 
+	// calc the accel rate limit to 2m/s
 	altitude_rate 	= (current_loc.alt - old_altitude) * 10; // 10 hz timer
+
+	// rate limiter to reduce some of the motor pulsing
+	if (altitude_rate > 0){
+		// going up
+		altitude_rate = min(altitude_rate, old_rate + 20);
+	}else{
+		// going down
+		altitude_rate = max(altitude_rate, old_rate - 20);
+	}
+
+	old_rate 		= altitude_rate;
 	old_altitude 	= current_loc.alt;
 	#endif
 }
@@ -1225,9 +1252,12 @@ adjust_altitude()
 		next_WP.alt -= 1;												// 1 meter per second
 		next_WP.alt = max(next_WP.alt, (current_loc.alt - 500));		// don't go less than 4 meters below current location
 		next_WP.alt = max(next_WP.alt, 100);							// don't go less than 1 meter
+		//manual_boost = (g.rc_3.control_in == 0) ? -20 : 0;
+
 	}else if (g.rc_3.control_in > 700){
 		next_WP.alt += 1;												// 1 meter per second
 		next_WP.alt = min(next_WP.alt, (current_loc.alt + 500));		// don't go more than 4 meters below current location
+		//manual_boost = (g.rc_3.control_in == 800) ? 20 : 0;
 	}
 }
 
@@ -1309,6 +1339,13 @@ static void tuning(){
 			g.pi_nav_lat.kP(tuning_value);
 			g.pi_nav_lon.kP(tuning_value);
 			break;
+	
+		#if FRAME_CONFIG == HELI_FRAME
+		case CH6_HELI_EXTERNAL_GYRO:
+			g.rc_6.set_range(1000,2000);
+			g.heli_ext_gyro_gain = tuning_value * 1000;
+			break;
+		#endif
 	}
 }
 

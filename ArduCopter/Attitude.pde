@@ -83,7 +83,7 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-#define ALT_ERROR_MAX 400
+#define ALT_ERROR_MAX 500
 static int
 get_nav_throttle(long z_error)
 {
@@ -94,31 +94,8 @@ get_nav_throttle(long z_error)
 	rate_error 		= rate_error - altitude_rate;
 
 	// limit the rate
-	rate_error 		= constrain(rate_error, -100, 120);
+	rate_error 		= constrain(rate_error, -120, 140);
 	return (int)g.pi_throttle.get_pi(rate_error, .1);
-}
-
-#define ALT_ERROR_MAX2 300
-static int
-get_nav_throttle2(long z_error)
-{
-	if (z_error > ALT_ERROR_MAX2){
-		return g.pi_throttle.kP() * 80;
-
-	}else if (z_error < -ALT_ERROR_MAX2){
-		return g.pi_throttle.kP() * -60;
-
-	} else{
-		// limit error to prevent I term run up
-		z_error 		= constrain(z_error, -ALT_ERROR_MAX2, ALT_ERROR_MAX2);
-		int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1); //_p = .85
-
-		rate_error 		= rate_error - altitude_rate;
-
-		// limit the rate
-		rate_error 		= constrain(rate_error, -100, 120);
-		return (int)g.pi_throttle.get_pi(rate_error, .1) + alt_hold_velocity();
-	}
 }
 
 static int

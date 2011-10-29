@@ -488,7 +488,13 @@ namespace ArdupilotMega.GCSViews
                     return;
                 }
 
-                int apmformat_version = ArduinoDetect.decodeApVar(MainV2.comportname, board);
+                int apmformat_version = -1; // fail continue
+
+                try
+                {
+                    apmformat_version = ArduinoDetect.decodeApVar(MainV2.comportname, board);
+                }
+                catch { }
 
                 if (apmformat_version != -1 && apmformat_version != temp.k_format_version)
                 {
@@ -678,7 +684,7 @@ namespace ArdupilotMega.GCSViews
 
                 Application.DoEvents();
 
-                System.Threading.Thread.Sleep(5000); // 5 seconds - new apvar erases eeprom on new format version, this should buy us some time.
+                System.Threading.Thread.Sleep(10000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
 
             }
             catch (Exception ex) { lbl_status.Text = "Failed upload"; MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
