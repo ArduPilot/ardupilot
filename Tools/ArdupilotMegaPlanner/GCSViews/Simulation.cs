@@ -698,7 +698,7 @@ namespace ArdupilotMega.GCSViews
 
             ArdupilotMega.MAVLink.__mavlink_raw_imu_t imu = new ArdupilotMega.MAVLink.__mavlink_raw_imu_t();
 
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_t();
+            ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t();
 
             ArdupilotMega.MAVLink.__mavlink_attitude_t att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
 
@@ -776,7 +776,7 @@ namespace ArdupilotMega.GCSViews
 
                 double head = DATA[18][2] - 90;
 
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
+                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
                 imu.xgyro = xgyro; // roll - yes
                 imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = ygyro; // pitch - yes
@@ -790,15 +790,13 @@ namespace ArdupilotMega.GCSViews
 
                 //Console.WriteLine("ax " + imu.xacc + " ay " + imu.yacc + " az " + imu.zacc);
 
-                gps.alt = ((float)(DATA[20][2] * ft2m));
+                gps.alt = (int)(DATA[20][2] * ft2m * 1000);
                 gps.fix_type = 3;
-                gps.hdg = ((float)DATA[19][2]);
-                gps.lat = ((float)DATA[20][0]);
-                gps.lon = ((float)DATA[20][1]);
-                gps.usec = ((ulong)0);
-                gps.v = ((float)(DATA[3][7] * 0.44704));
-                gps.eph = 0;
-                gps.epv = 0;
+                gps.cog = (ushort)(DATA[19][2] * 100);
+                gps.lat = (int)(DATA[20][0] * 1.0e7);
+                gps.lon = (int)(DATA[20][1] * 1.0e7);
+                gps.time_usec = ((ulong)0);
+                gps.vel = (ushort)(DATA[3][7] * 0.44704 * 100);
 
                 asp.airspeed = ((float)(DATA[3][6] * 0.44704));
 
@@ -826,7 +824,7 @@ namespace ArdupilotMega.GCSViews
 
                 chkSensor.Checked = true;
 
-                imu.usec = ((ulong)DateTime.Now.Ticks);
+                imu.time_usec = ((ulong)DateTime.Now.Ticks);
                 imu.xacc = ((Int16)(imudata2.accelX * 9808 / 32.2));
                 imu.xgyro = ((Int16)(imudata2.rateRoll * 17.453293));
                 imu.xmag = 0;
@@ -837,13 +835,13 @@ namespace ArdupilotMega.GCSViews
                 imu.zgyro = ((Int16)(imudata2.rateYaw * 17.453293));
                 imu.zmag = 0;
 
-                gps.alt = ((float)(imudata2.altitude * ft2m));
+                gps.alt = ((int)(imudata2.altitude * ft2m * 1000));
                 gps.fix_type = 3;
-                gps.hdg = ((float)Math.Atan2(imudata2.velocityE, imudata2.velocityN) * rad2deg);
-                gps.lat = ((float)imudata2.latitude);
-                gps.lon = ((float)imudata2.longitude);
-                gps.usec = ((ulong)DateTime.Now.Ticks);
-                gps.v = ((float)Math.Sqrt((imudata2.velocityN * imudata2.velocityN) + (imudata2.velocityE * imudata2.velocityE)) * ft2m);
+                gps.cog = (ushort)(Math.Atan2(imudata2.velocityE, imudata2.velocityN) * rad2deg * 100);
+                gps.lat = (int)(imudata2.latitude * 1.0e7);
+                gps.lon = (int)(imudata2.longitude * 1.0e7);
+                gps.time_usec = ((ulong)DateTime.Now.Ticks);
+                gps.vel = (ushort)(Math.Sqrt((imudata2.velocityN * imudata2.velocityN) + (imudata2.velocityE * imudata2.velocityE)) * ft2m * 100);
 
                 //FileStream stream = File.OpenWrite("fgdata.txt");
                 //stream.Write(data, 0, receviedbytes);
@@ -867,7 +865,7 @@ namespace ArdupilotMega.GCSViews
                 att.yawspeed = (aeroin.Model_fAngVelZ);
 
 
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
+                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
                 imu.xgyro = (short)(aeroin.Model_fAngVelX * 1000); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = (short)(aeroin.Model_fAngVelY * 1000); // pitch - yes
@@ -884,13 +882,13 @@ namespace ArdupilotMega.GCSViews
                 Console.WriteLine("x {0} y {1} z {2}",imu.xacc,imu.yacc,imu.zacc);
 
 
-                gps.alt = ((float)(aeroin.Model_fPosZ));
+                gps.alt = ((int)(aeroin.Model_fPosZ) * 1000);
                 gps.fix_type = 3;
-                gps.hdg = ((float)Math.Atan2(aeroin.Model_fVelX, aeroin.Model_fVelY) * rad2deg);
-                gps.lat = ((float)aeroin.Model_fLatitude);
-                gps.lon = ((float)aeroin.Model_fLongitude);
-                gps.usec = ((ulong)DateTime.Now.Ticks);
-                gps.v = ((float)Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)));
+                gps.cog = (ushort)(Math.Atan2(aeroin.Model_fVelX, aeroin.Model_fVelY) * rad2deg * 100);
+                gps.lat = (int)(aeroin.Model_fLatitude * 1.0e7);
+                gps.lon = (int)(aeroin.Model_fLongitude * 1.0e7);
+                gps.time_usec = ((ulong)DateTime.Now.Ticks);
+                gps.vel = (ushort)(Math.Sqrt((aeroin.Model_fVelY * aeroin.Model_fVelY) + (aeroin.Model_fVelX * aeroin.Model_fVelX)) * 100);
 
                 float xvec = aeroin.Model_fVelY - aeroin.Model_fWindVelY;
                 float yvec = aeroin.Model_fVelX - aeroin.Model_fWindVelX;
@@ -915,7 +913,7 @@ namespace ArdupilotMega.GCSViews
                 att.pitch = fdm.theta;
                 att.yaw = fdm.psi;
 
-                imu.usec = ((ulong)DateTime.Now.ToBinary());
+                imu.time_usec = ((ulong)DateTime.Now.ToBinary());
                 imu.xgyro = (short)(fdm.phidot * 1150); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
                 imu.ygyro = (short)(fdm.thetadot * 1150); // pitch - yes
@@ -929,14 +927,13 @@ namespace ArdupilotMega.GCSViews
 
                 //Console.WriteLine("ax " + imu.xacc + " ay " + imu.yacc + " az " + imu.zacc);
 
-                gps.alt = ((float)(fdm.altitude * ft2m));
+                gps.alt = ((int)(fdm.altitude * ft2m * 1000));
                 gps.fix_type = 3;
-                gps.hdg = (float)(((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360);
-                //Console.WriteLine(gps.hdg);
-                gps.lat = ((float)fdm.latitude * rad2deg);
-                gps.lon = ((float)fdm.longitude * rad2deg);
-                gps.usec = ((ulong)DateTime.Now.Ticks);
-                gps.v = ((float)Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m);
+                gps.cog = (ushort)((((Math.Atan2(fdm.v_east, fdm.v_north) * rad2deg) + 360) % 360) * 100);
+                gps.lat = (int)(fdm.latitude * rad2deg * 1.0e7);
+                gps.lon = (int)(fdm.longitude * rad2deg * 1.0e7);
+                gps.time_usec = ((ulong)DateTime.Now.Ticks);
+                gps.vel = (ushort)(Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m * 100);
 
                 asp.airspeed = fdm.vcas * kts2fps * ft2m;
             }
@@ -995,15 +992,13 @@ namespace ArdupilotMega.GCSViews
                 att.roll = (DATA[18][1]);
                 att.yaw = (DATA[19][2]);
 
-                gps.alt = ((float)(DATA[20][2] * ft2m));
+                gps.alt = ((int)(DATA[20][2] * ft2m * 1000));
                 gps.fix_type = 3;
-                gps.hdg = ((float)DATA[18][2]);
-                gps.lat = ((float)DATA[20][0]);
-                gps.lon = ((float)DATA[20][1]);
-                gps.usec = ((ulong)0);
-                gps.v = ((float)(DATA[3][7] * 0.44704));
-                gps.eph = 0;
-                gps.epv = 0;
+                gps.cog = (ushort)(DATA[18][2] * 100);
+                gps.lat = (int)(DATA[20][0] * 1.0e7);
+                gps.lon = (int)(DATA[20][1] * 1.0e7);
+                gps.time_usec = ((ulong)0);
+                gps.vel = (ushort)((DATA[3][7] * 0.44704 * 100));
 
                 asp.airspeed = ((float)(DATA[3][6] * 0.44704));
             }
@@ -1041,7 +1036,7 @@ namespace ArdupilotMega.GCSViews
             {
                 lastgpsupdate = DateTime.Now;
 
-                comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_GPS_RAW, gps);
+                comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT, gps);
             }
         }
 

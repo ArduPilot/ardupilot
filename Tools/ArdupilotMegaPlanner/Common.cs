@@ -248,16 +248,11 @@ namespace ArdupilotMega
             CIRCLE = 7,
             POSITION = 8
         }
-
-        public static bool translateMode(string modein, ref  MAVLink.__mavlink_set_nav_mode_t navmode, ref MAVLink.__mavlink_set_mode_t mode)
+        
+        public static bool translateMode(string modein, ref MAVLink.__mavlink_set_mode_t mode)
         {
-
-            //MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
-            navmode.target = MainV2.comPort.sysid;
-            navmode.nav_mode = 255;
-
             //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
-            mode.target = MainV2.comPort.sysid;
+            mode.target_system = MainV2.comPort.sysid;
 
             try
             {
@@ -266,35 +261,14 @@ namespace ArdupilotMega
                     switch ((int)Enum.Parse(Common.getModes(), modein))
                     {
                         case (int)Common.apmmodes.MANUAL:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
-                            break;
-                        case (int)Common.apmmodes.GUIDED:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
-                            break;
+                        case (int)Common.apmmodes.CIRCLE:
                         case (int)Common.apmmodes.STABILIZE:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST1;
-                            break;
-                        // AUTO MODES
                         case (int)Common.apmmodes.AUTO:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
                         case (int)Common.apmmodes.RTL:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
                         case (int)Common.apmmodes.LOITER:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
-                        // FBW
                         case (int)Common.apmmodes.FLY_BY_WIRE_A:
-                            navmode.nav_mode = (byte)1;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
-                            break;
                         case (int)Common.apmmodes.FLY_BY_WIRE_B:
-                            navmode.nav_mode = (byte)2;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_TEST2;
+                            mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein) + 16;
                             break;
                         default:
                             MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
@@ -306,24 +280,10 @@ namespace ArdupilotMega
                     switch ((int)Enum.Parse(Common.getModes(), modein))
                     {
                         case (int)Common.ac2modes.GUIDED:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_GUIDED;
-                            break;
                         case (int)Common.ac2modes.STABILIZE:
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_MANUAL;
-                            break;
-                        // AUTO MODES
                         case (int)Common.ac2modes.AUTO:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_WAYPOINT;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
                         case (int)Common.ac2modes.RTL:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_RETURNING;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
                         case (int)Common.ac2modes.LOITER:
-                            navmode.nav_mode = (byte)MAVLink.MAV_NAV.MAV_NAV_LOITER;
-                            mode.mode = (byte)MAVLink.MAV_MODE.MAV_MODE_AUTO;
-                            break;
                         default:
                             MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
                             return false;
@@ -334,7 +294,7 @@ namespace ArdupilotMega
 
             return true;
         }
-
+        
         public static bool getFilefromNet(string url,string saveto) {
             try
             {

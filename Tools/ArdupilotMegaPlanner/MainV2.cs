@@ -1064,9 +1064,9 @@ namespace ArdupilotMega
 
                         MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
 
-                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_GENERIC;
-                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT_TYPE.MAV_AUTOPILOT_ARDUPILOTMEGA;
-                        htb.mavlink_version = 2;
+                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_TYPE_GCS;
+                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.MAV_AUTOPILOT_ARDUPILOTMEGA;
+                        htb.mavlink_version = 3;
 
                         comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_HEARTBEAT, htb);
                         heatbeatsend = DateTime.Now;
@@ -1622,7 +1622,8 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
             {
-                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+                int fixme;
+                //MainV2.comPort.doCommand(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
                 MessageBox.Show("Done MAV_ACTION_STORAGE_WRITE");
                 return true;
             }

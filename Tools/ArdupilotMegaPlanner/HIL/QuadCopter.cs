@@ -193,7 +193,7 @@ namespace ArdupilotMega.HIL
             update_position();
 
             // send to apm
-            ArdupilotMega.MAVLink.__mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_t();
+            ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t();
 
             ArdupilotMega.MAVLink.__mavlink_attitude_t att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
 
@@ -206,15 +206,15 @@ namespace ArdupilotMega.HIL
             att.pitchspeed = (float)pitch_rate * deg2rad;
             att.yawspeed = (float)yaw_rate * deg2rad;
 
-            gps.alt = ((float)(altitude));
+            gps.alt = ((int)(altitude * 1000));
             gps.fix_type = 3;
-            gps.v = ((float)Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)));
-            gps.hdg = (float)(((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360); ;
-            gps.lat = ((float)latitude);
-            gps.lon = ((float)longitude);
-            gps.usec = ((ulong)DateTime.Now.Ticks);
+            gps.vel = (ushort)(Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)) * 100);
+            gps.cog = (ushort)((((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360) * 100);
+            gps.lat = (int)(latitude* 1.0e7);
+            gps.lon = (int)(longitude * 1.0e7);
+            gps.time_usec = ((ulong)DateTime.Now.Ticks);
 
-            asp.airspeed = gps.v;
+            asp.airspeed = gps.vel;
 
             MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_ATTITUDE, att);
 
@@ -228,7 +228,7 @@ namespace ArdupilotMega.HIL
 
             if (framecount % 10 == 0)
             {// 50 / 10 = 5 hz
-                MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_GPS_RAW, gps);
+                MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT, gps);
                 //Console.WriteLine(DateTime.Now.Millisecond + " GPS" );
             }
 
