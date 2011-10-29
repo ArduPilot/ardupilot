@@ -153,17 +153,24 @@ static inline void byte_copy_8(char *dst, const char *src)
 #define _mav_put_double(buf, wire_offset, b)   *(double *)&buf[wire_offset] = b
 #endif
 
+/*
+  like memcpy(), but if src is NULL, do a memset to zero
+ */
+static void mav_array_memcpy(void *dest, const void *src, size_t n)
+{
+	if (src == NULL) {
+		memset(dest, 0, n);
+	} else {
+		memcpy(dest, src, n);
+	}
+}
 
 /*
  * Place a char array into a buffer
  */
 static inline void _mav_put_char_array(char *buf, uint8_t wire_offset, const char *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 /*
@@ -171,11 +178,7 @@ static inline void _mav_put_char_array(char *buf, uint8_t wire_offset, const cha
  */
 static inline void _mav_put_uint8_t_array(char *buf, uint8_t wire_offset, const uint8_t *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 /*
@@ -183,11 +186,7 @@ static inline void _mav_put_uint8_t_array(char *buf, uint8_t wire_offset, const 
  */
 static inline void _mav_put_int8_t_array(char *buf, uint8_t wire_offset, const int8_t *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 #if MAVLINK_NEED_BYTE_SWAP
@@ -207,11 +206,7 @@ static inline void _mav_put_ ## TYPE ##_array(char *buf, uint8_t wire_offset, co
 #define _MAV_PUT_ARRAY(TYPE, V)					\
 static inline void _mav_put_ ## TYPE ##_array(char *buf, uint8_t wire_offset, const TYPE *b, uint8_t array_length) \
 { \
-	if (b == NULL) { \
-		memset(&buf[wire_offset], 0, array_length*sizeof(TYPE)); \
-	} else { \
-		memcpy(&buf[wire_offset], b, array_length*sizeof(TYPE)); \
-	} \
+	mav_array_memcpy(&buf[wire_offset], b, array_length*sizeof(TYPE));	\
 }
 #endif
 

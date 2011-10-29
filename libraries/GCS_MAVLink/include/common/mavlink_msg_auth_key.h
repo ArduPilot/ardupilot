@@ -40,7 +40,7 @@ static inline uint16_t mavlink_msg_auth_key_pack(uint8_t system_id, uint8_t comp
 #else
 	mavlink_auth_key_t packet;
 
-	memcpy(packet.key, key, sizeof(char)*32);
+	mav_array_memcpy(packet.key, key, sizeof(char)*32);
         memcpy(_MAV_PAYLOAD(msg), &packet, 32);
 #endif
 
@@ -69,7 +69,7 @@ static inline uint16_t mavlink_msg_auth_key_pack_chan(uint8_t system_id, uint8_t
 #else
 	mavlink_auth_key_t packet;
 
-	memcpy(packet.key, key, sizeof(char)*32);
+	mav_array_memcpy(packet.key, key, sizeof(char)*32);
         memcpy(_MAV_PAYLOAD(msg), &packet, 32);
 #endif
 
@@ -108,7 +108,7 @@ static inline void mavlink_msg_auth_key_send(mavlink_channel_t chan, const char 
 #else
 	mavlink_auth_key_t packet;
 
-	memcpy(packet.key, key, sizeof(char)*32);
+	mav_array_memcpy(packet.key, key, sizeof(char)*32);
 	_mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_AUTH_KEY, (const char *)&packet, 32);
 #endif
 }

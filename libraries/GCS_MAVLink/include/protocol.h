@@ -48,8 +48,10 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_chan(mavlink_message_t* msg, ui
 						      uint8_t chan, uint8_t length, uint8_t crc_extra);
 MAVLINK_HELPER uint16_t mavlink_finalize_message(mavlink_message_t* msg, uint8_t system_id, uint8_t component_id, 
 						 uint8_t length, uint8_t crc_extra);
+#ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint8_t msgid, const char *packet, 
 						    uint8_t length, uint8_t crc_extra);
+#endif
 #else
 MAVLINK_HELPER uint16_t mavlink_finalize_message_chan(mavlink_message_t* msg, uint8_t system_id, uint8_t component_id, 
 						      uint8_t chan, uint8_t length);
@@ -151,17 +153,24 @@ static inline void byte_copy_8(char *dst, const char *src)
 #define _mav_put_double(buf, wire_offset, b)   *(double *)&buf[wire_offset] = b
 #endif
 
+/*
+  like memcpy(), but if src is NULL, do a memset to zero
+ */
+static void mav_array_memcpy(void *dest, const void *src, size_t n)
+{
+	if (src == NULL) {
+		memset(dest, 0, n);
+	} else {
+		memcpy(dest, src, n);
+	}
+}
 
 /*
  * Place a char array into a buffer
  */
 static inline void _mav_put_char_array(char *buf, uint8_t wire_offset, const char *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 /*
@@ -169,11 +178,7 @@ static inline void _mav_put_char_array(char *buf, uint8_t wire_offset, const cha
  */
 static inline void _mav_put_uint8_t_array(char *buf, uint8_t wire_offset, const uint8_t *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 /*
@@ -181,11 +186,7 @@ static inline void _mav_put_uint8_t_array(char *buf, uint8_t wire_offset, const 
  */
 static inline void _mav_put_int8_t_array(char *buf, uint8_t wire_offset, const int8_t *b, uint8_t array_length)
 {
-	if (b == NULL) {
-		memset(&buf[wire_offset], 0, array_length);
-	} else {
-		memcpy(&buf[wire_offset], b, array_length);
-	}
+	mav_array_memcpy(&buf[wire_offset], b, array_length);
 }
 
 #if MAVLINK_NEED_BYTE_SWAP
@@ -205,11 +206,7 @@ static inline void _mav_put_ ## TYPE ##_array(char *buf, uint8_t wire_offset, co
 #define _MAV_PUT_ARRAY(TYPE, V)					\
 static inline void _mav_put_ ## TYPE ##_array(char *buf, uint8_t wire_offset, const TYPE *b, uint8_t array_length) \
 { \
-	if (b == NULL) { \
-		memset(&buf[wire_offset], 0, array_length*sizeof(TYPE)); \
-	} else { \
-		memcpy(&buf[wire_offset], b, array_length*sizeof(TYPE)); \
-	} \
+	mav_array_memcpy(&buf[wire_offset], b, array_length*sizeof(TYPE));	\
 }
 #endif
 
