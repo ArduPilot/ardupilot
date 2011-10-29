@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_mission_count_t
 {
- uint16_t count; ///< Number of MISSIONs in the Sequence
+ uint16_t count; ///< Number of mission items in the sequence
  uint8_t target_system; ///< System ID
  uint8_t target_component; ///< Component ID
 } mavlink_mission_count_t;
@@ -32,7 +32,7 @@ typedef struct __mavlink_mission_count_t
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param count Number of MISSIONs in the Sequence
+ * @param count Number of mission items in the sequence
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mission_count_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -66,7 +66,7 @@ static inline uint16_t mavlink_msg_mission_count_pack(uint8_t system_id, uint8_t
  * @param msg The MAVLink message to compress the data into
  * @param target_system System ID
  * @param target_component Component ID
- * @param count Number of MISSIONs in the Sequence
+ * @param count Number of mission items in the sequence
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mission_count_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -112,7 +112,7 @@ static inline uint16_t mavlink_msg_mission_count_encode(uint8_t system_id, uint8
  *
  * @param target_system System ID
  * @param target_component Component ID
- * @param count Number of MISSIONs in the Sequence
+ * @param count Number of mission items in the sequence
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -163,7 +163,7 @@ static inline uint8_t mavlink_msg_mission_count_get_target_component(const mavli
 /**
  * @brief Get field count from mission_count message
  *
- * @return Number of MISSIONs in the Sequence
+ * @return Number of mission items in the sequence
  */
 static inline uint16_t mavlink_msg_mission_count_get_count(const mavlink_message_t* msg)
 {

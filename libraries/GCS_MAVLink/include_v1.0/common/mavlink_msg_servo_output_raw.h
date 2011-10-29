@@ -1,6 +1,6 @@
 // MESSAGE SERVO_OUTPUT_RAW PACKING
 
-#define MAVLINK_MSG_ID_SERVO_OUTPUT_RAW 37
+#define MAVLINK_MSG_ID_SERVO_OUTPUT_RAW 36
 
 typedef struct __mavlink_servo_output_raw_t
 {
@@ -17,7 +17,7 @@ typedef struct __mavlink_servo_output_raw_t
 } mavlink_servo_output_raw_t;
 
 #define MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN 21
-#define MAVLINK_MSG_ID_37_LEN 21
+#define MAVLINK_MSG_ID_36_LEN 21
 
 
 
