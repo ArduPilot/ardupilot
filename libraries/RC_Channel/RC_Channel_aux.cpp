@@ -3,7 +3,7 @@
 #include <APM_RC.h>
 #include "RC_Channel_aux.h"
 
-extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
+RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions];	// the aux. servo ch. assigned to each function
 
 // map a function to a servo channel and output it
 void
