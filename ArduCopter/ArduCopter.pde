@@ -1028,8 +1028,12 @@ void update_throttle_mode(void)
 
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
-				angle_boost = get_angle_boost(g.rc_3.control_in);
-				g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
+			    #if FRAME_CONFIG == HELI_FRAME
+				    g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.rc_3.control_in));
+				#else
+					angle_boost = get_angle_boost(g.rc_3.control_in);
+					g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
+				#endif
 			}else{
 				g.pi_stabilize_roll.reset_I();
 				g.pi_stabilize_pitch.reset_I();
@@ -1058,8 +1062,12 @@ void update_throttle_mode(void)
 				// clear the new data flag
 				invalid_throttle = false;
 			}
-			angle_boost = get_angle_boost(g.throttle_cruise);
-			g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + manual_boost;
+			#if FRAME_CONFIG == HELI_FRAME
+				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
+			#else
+				angle_boost = get_angle_boost(g.throttle_cruise);
+				g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + manual_boost;
+			#endif
 			break;
 	}
 }

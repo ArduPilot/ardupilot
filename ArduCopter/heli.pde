@@ -6,6 +6,7 @@
 #define HELI_SERVO_AVERAGING_ANALOG  2  // 125Hz
 
 static int heli_manual_override = false;
+static float heli_throttle_scaler = 0;
 
 // heli_servo_averaging:
 //   0 or 1 = no averaging, 250hz
@@ -52,6 +53,9 @@ static void heli_init_swash()
 	g.heli_servo_3.radio_min = g.heli_coll_min - tilt_max[CH_3];
 	g.heli_servo_3.radio_max = g.heli_coll_max + tilt_max[CH_3];
 
+	// scaler for changing channel 3 radio input into collective range
+	heli_throttle_scaler = ((float)(g.heli_coll_max - g.heli_coll_min))/1000;
+	
 	// reset the servo averaging
 	for( i=0; i<=3; i++ )
 	    heli_servo_out[i] = 0;
@@ -191,6 +195,27 @@ static void output_motors_disarmed()
 
 static void output_motor_test()
 {
+}
+
+// heli_get_scaled_throttle - user's throttle scaled to collective range
+// input is expected to be in the range of 0~1000 (ie. pwm)
+// also does equivalent of angle_boost
+static int heli_get_scaled_throttle(int throttle)
+{
+    float scaled_throttle = (g.heli_coll_min - 1000) + throttle * heli_throttle_scaler;
+	return g.heli_coll_min - 1000 + (throttle * heli_throttle_scaler);
+}
+
+// heli_angle_boost - takes servo_out position
+// adds a boost depending on roll/pitch values
+// equivalent of quad's angle_boost function
+// pwm_out value should be 0 ~ 1000
+static int heli_get_angle_boost(int pwm_out)
+{
+    float angle_boost_factor = cos_pitch_x * cos_roll_x;
+	angle_boost_factor = 1.0 - constrain(angle_boost_factor, .5, 1.0);
+    int throttle_above_center = max(1000 + pwm_out - g.heli_coll_mid,0);
+	return pwm_out + throttle_above_center*angle_boost_factor;
 }
 
 #endif // HELI_FRAME
