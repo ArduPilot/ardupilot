@@ -607,68 +607,35 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
-	DataFlash.WriteInt((int)wp_distance);					// 1
-	DataFlash.WriteByte(wp_verify_byte);					// 2
-	DataFlash.WriteInt((int)(target_bearing/100));			// 3
-	DataFlash.WriteInt((int)long_error);					// 4
-	DataFlash.WriteInt((int)lat_error);						// 5
+	DataFlash.WriteInt((int)wp_distance);						// 1
+	DataFlash.WriteInt((int)(target_bearing/100));				// 2
+	DataFlash.WriteInt((int)long_error);						// 3
+	DataFlash.WriteInt((int)lat_error);							// 4
+	DataFlash.WriteInt((int)nav_lon);							// 5
+	DataFlash.WriteInt((int)nav_lat);							// 6
+	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());		// 7
+	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());	    // 8
+	DataFlash.WriteInt((int)g.pi_loiter_lon.get_integrator());	// 9
+	DataFlash.WriteInt((int)g.pi_loiter_lat.get_integrator());	// 10
 
-
-/*
-	DataFlash.WriteInt((int)long_error);					// 5
-	DataFlash.WriteInt((int)lat_error);						// 6
-
-	DataFlash.WriteInt(x_rate_error);						// 4
-	DataFlash.WriteInt(y_rate_error);						// 4
-
-	DataFlash.WriteInt((int)nav_lon);						// 7
-	DataFlash.WriteInt((int)nav_lat);						// 8
-
-	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());	// 7
-	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());	// 8
-	DataFlash.WriteInt((int)g.pi_loiter_lon.get_integrator());	// 7
-	DataFlash.WriteInt((int)g.pi_loiter_lat.get_integrator());	// 8
-
-	*/
 	DataFlash.WriteByte(END_BYTE);
 }
 
 
 static void Log_Read_Nav_Tuning()
 {
-	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d\n"),
-				DataFlash.ReadInt(),	// distance
-				DataFlash.ReadByte(),	// wp_verify_byte
-				DataFlash.ReadInt(),	// target_bearing
-
-				DataFlash.ReadInt(),	// long_error
-				DataFlash.ReadInt());	// lat_error
-
-/*
-							 //	 1	 2	 3	 4
-	Serial.printf_P(PSTR( "NTUN, %d, %d, %d, %d, "
-								"%d, %d, %d, %d, "
-							    "%d, %d, %d, %d, "
-							    "%d, %d\n"),
-
-				DataFlash.ReadInt(),	//distance
-				DataFlash.ReadByte(),	//bitmask
-				DataFlash.ReadInt(),	//target bearing
-				DataFlash.ReadInt(),
-
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt());	//nav bearing
-*/
+							//   1   2   3   4   5   6   7   8   9  10
+	Serial.printf_P(PSTR("NTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+				DataFlash.ReadInt(),	// 1
+				DataFlash.ReadInt(),	// 2
+				DataFlash.ReadInt(),	// 3
+				DataFlash.ReadInt(),	// 4
+				DataFlash.ReadInt(),	// 5
+				DataFlash.ReadInt(),	// 6
+				DataFlash.ReadInt(),	// 7
+				DataFlash.ReadInt(),	// 8
+				DataFlash.ReadInt(),	// 9
+				DataFlash.ReadInt());	// 10
 }
 
 
@@ -769,8 +736,8 @@ static void Log_Write_Performance()
 
 // Read a performance packet
 static void Log_Read_Performance()
-{								//1   2   3   4   5   6
-	Serial.printf_P(PSTR(   "PM, %d, %d, %d, %d, %d, %ld\n"),
+{							 //1   2   3   4   5   6
+	Serial.printf_P(PSTR("PM, %d, %d, %d, %d, %d, %ld\n"),
 
 				// Control
 				//DataFlash.ReadLong(),
