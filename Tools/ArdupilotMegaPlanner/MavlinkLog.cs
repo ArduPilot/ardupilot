@@ -332,7 +332,7 @@ namespace ArdupilotMega
 
                         cs.datetime = mine.lastlogread;
 
-                        cs.UpdateCurrentSettings(null, true);
+                        cs.UpdateCurrentSettings(null, true, mine);
 
                         try
                         {
@@ -360,6 +360,7 @@ namespace ArdupilotMega
 
                     writeKML(logfile + ".kml");
 
+                    progressBar1.Value = 100;
 
                 }
             }

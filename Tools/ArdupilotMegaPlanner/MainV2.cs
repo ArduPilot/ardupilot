@@ -468,6 +468,7 @@ namespace ArdupilotMega
 
         private void MenuConfiguration_Click(object sender, EventArgs e)
         {
+            MyView.SuspendLayout();
             MyView.Controls.Clear();
 
             GCSViews.Terminal.threadrun = false;
@@ -486,13 +487,11 @@ namespace ArdupilotMega
 
             UserControl temp = Configuration;
 
-            temp.SuspendLayout();
-
             fixtheme(temp);
 
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
+            //temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
 
-            temp.Location = new Point(0, MainMenu.Height);
+            temp.Location = new Point(0, 0);
 
             temp.Dock = DockStyle.Fill;
 
@@ -500,9 +499,11 @@ namespace ArdupilotMega
 
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
+            temp.ResumeLayout();
+
             MyView.Controls.Add(temp);
 
-            temp.ResumeLayout();
+            MyView.ResumeLayout();
         }
 
         private void MenuSimulation_Click(object sender, EventArgs e)
@@ -562,7 +563,19 @@ namespace ArdupilotMega
 
             this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
 
-            UserControl temp = new GCSViews.Terminal();
+            // dispose of old else memory leak
+            if (Terminal != null)
+            {
+                try
+                {
+                    Terminal.Dispose();
+                }
+                catch { }
+            }
+
+            Terminal = new GCSViews.Terminal();
+
+            UserControl temp = Terminal;
 
             fixtheme(temp);
 

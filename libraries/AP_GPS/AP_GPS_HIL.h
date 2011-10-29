@@ -16,9 +16,9 @@
 
 class AP_GPS_HIL : public GPS {
 public:
-	AP_GPS_HIL(Stream *s);
-	virtual void init(void);
-	virtual bool read(void);
+    AP_GPS_HIL(Stream *s);
+    virtual void init(void);
+    virtual bool read(void);
 
     /**
      * Hardware in the loop set function
@@ -31,10 +31,10 @@ public:
      * @param altitude - altitude in meters
      */
     virtual void setHIL(long time, float latitude, float longitude, float altitude,
-            float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
+                        float ground_speed, float ground_course, float speed_3d, uint8_t num_sats);
 
 private:
-	bool	_updated;
+    bool	_updated;
 };
 
 #endif	// AP_GPS_HIL_H

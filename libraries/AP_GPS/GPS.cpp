@@ -6,30 +6,30 @@
 void
 GPS::update(void)
 {
-	bool	result;
+    bool	result;
 
-	// call the GPS driver to process incoming data
-	result = read();
+    // call the GPS driver to process incoming data
+    result = read();
 
-	// if we did not get a message, and the idle timer has expired, re-init
-	if (!result) {
-		if ((millis() - _idleTimer) > idleTimeout) {
-			_status = NO_GPS;
-			
-			init();
-			// reset the idle timer
-			_idleTimer = millis();
-		}
-	} else {
-		// we got a message, update our status correspondingly
-		_status = fix ? GPS_OK : NO_FIX;
+    // if we did not get a message, and the idle timer has expired, re-init
+    if (!result) {
+        if ((millis() - _idleTimer) > idleTimeout) {
+            _status = NO_GPS;
 
-		valid_read = true;
-		new_data = true;
+            init();
+            // reset the idle timer
+            _idleTimer = millis();
+        }
+    } else {
+        // we got a message, update our status correspondingly
+        _status = fix ? GPS_OK : NO_FIX;
 
-		// reset the idle timer
-		_idleTimer = millis();
-	}
+        valid_read = true;
+        new_data = true;
+
+        // reset the idle timer
+        _idleTimer = millis();
+    }
 }
 
 void
@@ -42,5 +42,5 @@ GPS::setHIL(long _time, float _latitude, float _longitude, float _altitude,
 void
 GPS::_error(const char *msg)
 {
-	Serial.println(msg);
+    Serial.println(msg);
 }
