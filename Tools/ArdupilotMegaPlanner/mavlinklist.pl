@@ -2,8 +2,8 @@ $dir = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/common/";
 $dir2 = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/ardupilotmega/";
 
 # mavlink 1.0 with old structs
-$dir = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/common/";
-$dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/ardupilotmega/";
+$dir = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include_v1.0/common/";
+$dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include_v1.0/ardupilotmega/";
 
 opendir(DIR,$dir) || die print $!;
 @files2 = readdir(DIR);
@@ -59,8 +59,12 @@ foreach $file (@files) {
 		}
 	
 		if ($line =~ /#define (MAVLINK_MSG_ID[^\s]+)\s+([0-9]+)/) {
-			print OUT "\t\tpublic const byte ".$1 . " = " . $2 . ";\n";
-			$no = $2;
+			if ($line =~ /MAVLINK_MSG_ID_([0-9]+)_LEN/) {   
+				next;
+			} else {			
+				print OUT "\t\tpublic const byte ".$1 . " = " . $2 . ";\n";
+				$no = $2;
+			}
 		}
 		if ($line =~ /typedef struct(.*)/) {
 			if ($1 =~ /__mavlink_system|param_union/) {
@@ -81,6 +85,7 @@ foreach $file (@files) {
 			$line =~ s/typedef/public/;
 			$line =~ s/uint8_t/public byte/;
 			$line =~ s/int8_t/public byte/;
+			$line =~ s/char/public byte/;
 			$line =~ s/^\s+float/public float/;
 			$line =~ s/uint16_t/public ushort/;
 			$line =~ s/uint32_t/public uint/;
