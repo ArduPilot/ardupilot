@@ -1339,6 +1339,13 @@ static void tuning(){
 			g.pi_nav_lat.kP(tuning_value);
 			g.pi_nav_lon.kP(tuning_value);
 			break;
+	
+		#if FRAME_CONFIG == HELI_FRAME
+		case CH6_HELI_EXTERNAL_GYRO:
+			g.rc_6.set_range(1000,2000);
+			g.heli_ext_gyro_gain = tuning_value * 1000;
+			break;
+		#endif
 	}
 }
 
