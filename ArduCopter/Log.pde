@@ -680,19 +680,23 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
-
 	// yaw
-	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));			//2
-	DataFlash.WriteInt((int)(nav_yaw/100));					//2
-	DataFlash.WriteInt((int)yaw_error/100);					//3
+	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));				//1
+	DataFlash.WriteInt((int)(nav_yaw/100));						//2
+	DataFlash.WriteInt((int)yaw_error/100);						//3
 
 	// Alt hold
-	DataFlash.WriteInt(g.rc_3.servo_out);					//4
-	DataFlash.WriteInt(sonar_alt);							//5
-	DataFlash.WriteInt(baro_alt);							//6
+	DataFlash.WriteInt(sonar_alt);								//4
+	DataFlash.WriteInt(baro_alt);								//5
+	DataFlash.WriteInt((int)next_WP.alt);						//6
 
-	DataFlash.WriteInt((int)next_WP.alt);					//7
-	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());//8
+	DataFlash.WriteInt(nav_throttle);							//7
+	DataFlash.WriteInt(angle_boost);							//8
+	DataFlash.WriteByte(manual_boost);							//9
+
+	DataFlash.WriteInt(g.rc_3.servo_out);						//10
+	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//11
+	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());	//12
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -701,27 +705,30 @@ static void Log_Write_Control_Tuning()
 // Read an control tuning packet
 static void Log_Read_Control_Tuning()
 {
-	Serial.printf_P(PSTR(   "CTUN, "
-							"%d, %d, %d, "
-							"%d, %d, %d, "
-							"%d, %d\n"),
+								//  1   2   3   4   5   6   7   8   9  10  11  12
+	Serial.printf_P(PSTR(   "CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
 
 				// Control
 				//DataFlash.ReadByte(),
 				//DataFlash.ReadInt(),
 
 				// yaw
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),	//1
+				DataFlash.ReadInt(),	//2
+				DataFlash.ReadInt(),	//3
 
 				// Alt Hold
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt(),
+				DataFlash.ReadInt(),	//4
+				DataFlash.ReadInt(),	//5
+				DataFlash.ReadInt(),	//6
 
-				DataFlash.ReadInt(),
-				DataFlash.ReadInt());
+				DataFlash.ReadInt(),	//7
+				DataFlash.ReadInt(),	//8
+				DataFlash.ReadByte(),	//9
+
+				DataFlash.ReadInt(),	//10
+				DataFlash.ReadInt(),	//11
+				DataFlash.ReadInt());	//12
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
