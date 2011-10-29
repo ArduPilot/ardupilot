@@ -61,24 +61,6 @@ namespace ArdupilotMega.GCSViews
         {
             InitializeComponent();
 
-            // fix for dup name
-            XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
-        }
-
-        private void Configuration_Load(object sender, EventArgs e)
-        {
-            // read tooltips
-            if (tooltips.Count == 0)
-                readToolTips();
-
-            this.SuspendLayout();
-
-            // prefill all fields
-            param = MainV2.comPort.param;
-            processToScreen();
-
-            this.ResumeLayout();
-
             // enable disable relevbant hardware tabs
             if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
             {
@@ -93,6 +75,20 @@ namespace ArdupilotMega.GCSViews
                 TabAC2.Enabled = true;
             }
 
+            // read tooltips
+            if (tooltips.Count == 0)
+                readToolTips();
+
+            // prefill all fields
+            param = MainV2.comPort.param;
+            processToScreen();
+
+            // fix for dup name
+            XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
+        }
+
+        private void Configuration_Load(object sender, EventArgs e)
+        {
             // setup up camera button states
             if (MainV2.cam != null)
             {
@@ -386,7 +382,7 @@ namespace ArdupilotMega.GCSViews
                 // enable roll and pitch pairing for ac2
                 if (CHK_lockrollpitch.Checked)
                 {
-                    if (name.StartsWith("RATE_") || name.StartsWith("STB_"))
+                    if (name.StartsWith("RATE_") || name.StartsWith("STB_") || name.StartsWith("ACRO_"))
                     {
                         if (name.Contains("_RLL_"))
                         {
@@ -533,6 +529,8 @@ namespace ArdupilotMega.GCSViews
                         if (name == "SYSID_SW_MREV")
                             continue;
                         if (name == "WP_TOTAL")
+                            continue;
+                        if (name == "CMD_TOTAL")
                             continue;
                         if (row.Cells[0].Value.ToString() == name)
                         {
@@ -1021,6 +1019,8 @@ namespace ArdupilotMega.GCSViews
                         continue;
                     if (name == "WP_TOTAL")
                         continue;
+                    if (name == "CMD_TOTAL")
+                        continue;
 
                     param2[name] = value;
                 }
@@ -1038,6 +1038,11 @@ namespace ArdupilotMega.GCSViews
                 return;
             MessageBox.Show("You need to restart the planner for this to take effect");
             MainV2.config["CHK_GDIPlus"] = CHK_GDIPlus.Checked.ToString();
+        }
+
+        private void CHK_lockrollpitch_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

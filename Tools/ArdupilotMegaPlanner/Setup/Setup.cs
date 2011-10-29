@@ -135,7 +135,7 @@ namespace ArdupilotMega.Setup
 
                 System.Threading.Thread.Sleep(5);
 
-                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true);
+                MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
 
                 if (MainV2.cs.ch1in > 800 && MainV2.cs.ch1in < 2200)
                 {
@@ -192,7 +192,7 @@ namespace ArdupilotMega.Setup
 
             MessageBox.Show("Ensure all your sticks are centered, and click ok to continue");
 
-            MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true);
+            MainV2.cs.UpdateCurrentSettings(currentStateBindingSource, true, MainV2.comPort);
 
             rctrim[0] = MainV2.cs.ch1in;
             rctrim[1] = MainV2.cs.ch2in;

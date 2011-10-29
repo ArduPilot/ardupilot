@@ -1573,16 +1573,14 @@ namespace ArdupilotMega.GCSViews
                 xScale.Max = time + xScale.MajorStep;
                 xScale.Min = xScale.Max - 30.0;
             }
-
-            // Make sure the Y axis is rescaled to accommodate actual data
-            try
-            {
-                zg1.AxisChange();
-            }
-            catch { }
-            // Force a redraw
-            zg1.Invalidate();
-
+                // Make sure the Y axis is rescaled to accommodate actual data
+                try
+                {
+                    zg1.AxisChange();
+                }
+                catch { }
+                // Force a redraw
+                zg1.Invalidate();
         }
 
         private void SaveSettings_Click(object sender, EventArgs e)

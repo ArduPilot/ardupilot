@@ -188,17 +188,17 @@ namespace ArdupilotMega
         private DateTime lastupdate = DateTime.Now;
 
         private DateTime lastwindcalc = DateTime.Now;
-
+        
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs)
         {
             UpdateCurrentSettings(bs, false, MainV2.comPort);
         }
-
+        /*
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow)
         {
             UpdateCurrentSettings(bs, false, MainV2.comPort);
         }
-
+        */
         public void UpdateCurrentSettings(System.Windows.Forms.BindingSource bs, bool updatenow, MAVLink mavinterface)
         {
             if (DateTime.Now > lastupdate.AddMilliseconds(19) || updatenow) // 50 hz

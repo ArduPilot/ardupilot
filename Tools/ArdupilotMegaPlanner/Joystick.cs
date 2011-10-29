@@ -505,9 +505,17 @@ namespace ArdupilotMega
 
             if (MainV2.comPort.param.Count > 0)
             {
-                min = (int)(float)(MainV2.comPort.param["RC" + chan + "_MIN"]);
-                max = (int)(float)(MainV2.comPort.param["RC" + chan + "_MAX"]);
-                trim = (int)(float)(MainV2.comPort.param["RC" + chan + "_TRIM"]);
+                try
+                {
+                    min = (int)(float)(MainV2.comPort.param["RC" + chan + "_MIN"]);
+                    max = (int)(float)(MainV2.comPort.param["RC" + chan + "_MAX"]);
+                    trim = (int)(float)(MainV2.comPort.param["RC" + chan + "_TRIM"]);
+                }
+                catch {
+                    min = 1000;
+                    max = 2000;
+                    trim = 1500;
+                }
             }
             else
             {

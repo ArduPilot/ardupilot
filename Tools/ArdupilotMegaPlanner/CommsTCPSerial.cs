@@ -75,8 +75,14 @@ namespace System.IO.Ports
 
             string dest = Port;
             string host = "127.0.0.1";
-            ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host);
-            ArdupilotMega.Common.InputBox("remote Port", "Enter remote port", ref dest);
+            if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote host", "Enter host name/ip (ensure remote end is already started)", ref host))
+            {
+                return;
+            }
+            if (Windows.Forms.DialogResult.Cancel == ArdupilotMega.Common.InputBox("remote Port", "Enter remote port", ref dest))
+            {
+                return;
+            }
             Port = dest;
 
             client = new TcpClient(host, int.Parse(Port));
@@ -169,7 +175,7 @@ namespace System.IO.Ports
             VerifyConnected();
             int size = client.Available;
             byte[] crap = new byte[size];
-            Console.WriteLine("UdpSerial DiscardInBuffer {0}",size);
+            Console.WriteLine("TcpSerial DiscardInBuffer {0}",size);
             Read(crap, 0, size);
         }
 
