@@ -21,21 +21,21 @@ AP_GPS_HIL::AP_GPS_HIL(Stream *s) : GPS(s)
 
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_HIL::init(void)
-{	
-	idleTimeout = 1200;
+{
+    idleTimeout = 1200;
 }
 
 bool AP_GPS_HIL::read(void)
 {
-	bool	result = _updated;
+    bool	result = _updated;
 
-	// return true once for each update pushed in
-	_updated = false;
-	return result;
+    // return true once for each update pushed in
+    _updated = false;
+    return result;
 }
 
 void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _altitude,
-    float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
+                        float _ground_speed, float _ground_course, float _speed_3d, uint8_t _num_sats)
 {
     time 			= _time;
     latitude 		= _latitude*1.0e7;
@@ -46,7 +46,7 @@ void AP_GPS_HIL::setHIL(long _time, float _latitude, float _longitude, float _al
     speed_3d 		= _speed_3d*1.0e2;
     num_sats 		= _num_sats;
     fix 			= true;
-	new_data		= true;
-	_updated		= true;
+    new_data		= true;
+    _updated		= true;
 }
 

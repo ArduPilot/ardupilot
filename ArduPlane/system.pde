@@ -79,7 +79,7 @@ static void init_ardupilot()
     Serial1.begin(38400, 128, 16);
 
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
-						 "\n\nFree RAM: %lu\n"),
+						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
 	//

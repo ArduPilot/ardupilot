@@ -26,7 +26,7 @@
 // auto-detect at compile time if a call to a string function is using
 // a flash-stored string or not
 typedef struct {
-	char c;
+    char c;
 } prog_char_t;
 
 #include <stdint.h>
@@ -97,17 +97,17 @@ typedef struct {
 
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
 {
-	return strcasecmp_P(str1, (const prog_char *)pstr);
+    return strcasecmp_P(str1, (const prog_char *)pstr);
 }
 
 static inline int strcmp_P(const char *str1, const prog_char_t *pstr)
 {
-	return strcmp_P(str1, (const prog_char *)pstr);
+    return strcmp_P(str1, (const prog_char *)pstr);
 }
 
 static inline size_t strlcat_P(char *buffer, const prog_char_t *pstr, size_t buffer_size)
 {
-	return strlcat_P(buffer, (const prog_char *)pstr, buffer_size);
+    return strlcat_P(buffer, (const prog_char *)pstr, buffer_size);
 }
 
 //@}
@@ -145,12 +145,12 @@ static inline size_t strlcat_P(char *buffer, const prog_char_t *pstr, size_t buf
 //@{
 
 struct Location {
-	uint8_t		id;					///< command id
-	uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
-	uint8_t		p1;					///< param 1
-	int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
-	int32_t		lat;				///< param 3 - Lattitude * 10**7
-	int32_t		lng;				///< param 4 - Longitude * 10**7
+    uint8_t		id;					///< command id
+    uint8_t		options;			///< options bitmask (1<<0 = relative altitude)
+    uint8_t		p1;					///< param 1
+    int32_t		alt;				///< param 2 - Altitude in centimeters (meters * 100)
+    int32_t		lat;				///< param 3 - Lattitude * 10**7
+    int32_t		lng;				///< param 4 - Longitude * 10**7
 };
 
 //@}

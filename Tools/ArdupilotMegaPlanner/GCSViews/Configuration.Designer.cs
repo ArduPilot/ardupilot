@@ -142,6 +142,7 @@
             this.label52 = new System.Windows.Forms.Label();
             this.TabAC2 = new System.Windows.Forms.TabPage();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.label14 = new System.Windows.Forms.Label();
             this.THR_RATE_IMAX = new System.Windows.Forms.DomainUpDown();
             this.THR_RATE_I = new System.Windows.Forms.DomainUpDown();
             this.label20 = new System.Windows.Forms.Label();
@@ -223,6 +224,7 @@
             this.RATE_RLL_P = new System.Windows.Forms.DomainUpDown();
             this.label91 = new System.Windows.Forms.Label();
             this.TabPlanner = new System.Windows.Forms.TabPage();
+            this.label26 = new System.Windows.Forms.Label();
             this.CMB_videoresolutions = new System.Windows.Forms.ComboBox();
             this.label12 = new System.Windows.Forms.Label();
             this.CHK_GDIPlus = new System.Windows.Forms.CheckBox();
@@ -273,8 +275,20 @@
             this.BUT_load = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.BUT_compare = new ArdupilotMega.MyButton();
-            this.label14 = new System.Windows.Forms.Label();
-            this.label26 = new System.Windows.Forms.Label();
+            this.groupBox17 = new System.Windows.Forms.GroupBox();
+            this.ACRO_PIT_IMAX = new System.Windows.Forms.DomainUpDown();
+            this.label27 = new System.Windows.Forms.Label();
+            this.ACRO_PIT_I = new System.Windows.Forms.DomainUpDown();
+            this.label29 = new System.Windows.Forms.Label();
+            this.ACRO_PIT_P = new System.Windows.Forms.DomainUpDown();
+            this.label33 = new System.Windows.Forms.Label();
+            this.groupBox18 = new System.Windows.Forms.GroupBox();
+            this.ACRO_RLL_IMAX = new System.Windows.Forms.DomainUpDown();
+            this.label40 = new System.Windows.Forms.Label();
+            this.ACRO_RLL_I = new System.Windows.Forms.DomainUpDown();
+            this.label44 = new System.Windows.Forms.Label();
+            this.ACRO_RLL_P = new System.Windows.Forms.DomainUpDown();
+            this.label48 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
             this.TabAPM2.SuspendLayout();
@@ -304,6 +318,8 @@
             this.groupBox25.SuspendLayout();
             this.TabPlanner.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).BeginInit();
+            this.groupBox17.SuspendLayout();
+            this.groupBox18.SuspendLayout();
             this.SuspendLayout();
             // 
             // Params
@@ -995,7 +1011,9 @@
             // 
             // TabAC2
             // 
+            this.TabAC2.Controls.Add(this.groupBox17);
             this.TabAC2.Controls.Add(this.groupBox5);
+            this.TabAC2.Controls.Add(this.groupBox18);
             this.TabAC2.Controls.Add(this.CHK_lockrollpitch);
             this.TabAC2.Controls.Add(this.groupBox4);
             this.TabAC2.Controls.Add(this.groupBox6);
@@ -1021,6 +1039,11 @@
             resources.ApplyResources(this.groupBox5, "groupBox5");
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.TabStop = false;
+            // 
+            // label14
+            // 
+            resources.ApplyResources(this.label14, "label14");
+            this.label14.Name = "label14";
             // 
             // THR_RATE_IMAX
             // 
@@ -1050,8 +1073,11 @@
             // CHK_lockrollpitch
             // 
             resources.ApplyResources(this.CHK_lockrollpitch, "CHK_lockrollpitch");
+            this.CHK_lockrollpitch.Checked = true;
+            this.CHK_lockrollpitch.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHK_lockrollpitch.Name = "CHK_lockrollpitch";
             this.CHK_lockrollpitch.UseVisualStyleBackColor = true;
+            this.CHK_lockrollpitch.CheckedChanged += new System.EventHandler(this.CHK_lockrollpitch_CheckedChanged);
             // 
             // groupBox4
             // 
@@ -1545,6 +1571,11 @@
             resources.ApplyResources(this.TabPlanner, "TabPlanner");
             this.TabPlanner.Name = "TabPlanner";
             // 
+            // label26
+            // 
+            resources.ApplyResources(this.label26, "label26");
+            this.label26.Name = "label26";
+            // 
             // CMB_videoresolutions
             // 
             this.CMB_videoresolutions.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -1911,15 +1942,89 @@
             this.BUT_compare.UseVisualStyleBackColor = true;
             this.BUT_compare.Click += new System.EventHandler(this.BUT_compare_Click);
             // 
-            // label14
+            // groupBox17
             // 
-            resources.ApplyResources(this.label14, "label14");
-            this.label14.Name = "label14";
+            this.groupBox17.Controls.Add(this.ACRO_PIT_IMAX);
+            this.groupBox17.Controls.Add(this.label27);
+            this.groupBox17.Controls.Add(this.ACRO_PIT_I);
+            this.groupBox17.Controls.Add(this.label29);
+            this.groupBox17.Controls.Add(this.ACRO_PIT_P);
+            this.groupBox17.Controls.Add(this.label33);
+            resources.ApplyResources(this.groupBox17, "groupBox17");
+            this.groupBox17.Name = "groupBox17";
+            this.groupBox17.TabStop = false;
             // 
-            // label26
+            // ACRO_PIT_IMAX
             // 
-            resources.ApplyResources(this.label26, "label26");
-            this.label26.Name = "label26";
+            resources.ApplyResources(this.ACRO_PIT_IMAX, "ACRO_PIT_IMAX");
+            this.ACRO_PIT_IMAX.Name = "ACRO_PIT_IMAX";
+            // 
+            // label27
+            // 
+            resources.ApplyResources(this.label27, "label27");
+            this.label27.Name = "label27";
+            // 
+            // ACRO_PIT_I
+            // 
+            resources.ApplyResources(this.ACRO_PIT_I, "ACRO_PIT_I");
+            this.ACRO_PIT_I.Name = "ACRO_PIT_I";
+            // 
+            // label29
+            // 
+            resources.ApplyResources(this.label29, "label29");
+            this.label29.Name = "label29";
+            // 
+            // ACRO_PIT_P
+            // 
+            resources.ApplyResources(this.ACRO_PIT_P, "ACRO_PIT_P");
+            this.ACRO_PIT_P.Name = "ACRO_PIT_P";
+            // 
+            // label33
+            // 
+            resources.ApplyResources(this.label33, "label33");
+            this.label33.Name = "label33";
+            // 
+            // groupBox18
+            // 
+            this.groupBox18.Controls.Add(this.ACRO_RLL_IMAX);
+            this.groupBox18.Controls.Add(this.label40);
+            this.groupBox18.Controls.Add(this.ACRO_RLL_I);
+            this.groupBox18.Controls.Add(this.label44);
+            this.groupBox18.Controls.Add(this.ACRO_RLL_P);
+            this.groupBox18.Controls.Add(this.label48);
+            resources.ApplyResources(this.groupBox18, "groupBox18");
+            this.groupBox18.Name = "groupBox18";
+            this.groupBox18.TabStop = false;
+            // 
+            // ACRO_RLL_IMAX
+            // 
+            resources.ApplyResources(this.ACRO_RLL_IMAX, "ACRO_RLL_IMAX");
+            this.ACRO_RLL_IMAX.Name = "ACRO_RLL_IMAX";
+            // 
+            // label40
+            // 
+            resources.ApplyResources(this.label40, "label40");
+            this.label40.Name = "label40";
+            // 
+            // ACRO_RLL_I
+            // 
+            resources.ApplyResources(this.ACRO_RLL_I, "ACRO_RLL_I");
+            this.ACRO_RLL_I.Name = "ACRO_RLL_I";
+            // 
+            // label44
+            // 
+            resources.ApplyResources(this.label44, "label44");
+            this.label44.Name = "label44";
+            // 
+            // ACRO_RLL_P
+            // 
+            resources.ApplyResources(this.ACRO_RLL_P, "ACRO_RLL_P");
+            this.ACRO_RLL_P.Name = "ACRO_RLL_P";
+            // 
+            // label48
+            // 
+            resources.ApplyResources(this.label48, "label48");
+            this.label48.Name = "label48";
             // 
             // Configuration
             // 
@@ -1965,6 +2070,8 @@
             this.groupBox25.ResumeLayout(false);
             this.TabPlanner.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.NUM_tracklength)).EndInit();
+            this.groupBox17.ResumeLayout(false);
+            this.groupBox18.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -2214,5 +2321,19 @@
         private System.Windows.Forms.Label label109;
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.Label label26;
+        private System.Windows.Forms.GroupBox groupBox17;
+        private System.Windows.Forms.DomainUpDown ACRO_PIT_IMAX;
+        private System.Windows.Forms.Label label27;
+        private System.Windows.Forms.DomainUpDown ACRO_PIT_I;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.DomainUpDown ACRO_PIT_P;
+        private System.Windows.Forms.Label label33;
+        private System.Windows.Forms.GroupBox groupBox18;
+        private System.Windows.Forms.DomainUpDown ACRO_RLL_IMAX;
+        private System.Windows.Forms.Label label40;
+        private System.Windows.Forms.DomainUpDown ACRO_RLL_I;
+        private System.Windows.Forms.Label label44;
+        private System.Windows.Forms.DomainUpDown ACRO_RLL_P;
+        private System.Windows.Forms.Label label48;
     }
 }

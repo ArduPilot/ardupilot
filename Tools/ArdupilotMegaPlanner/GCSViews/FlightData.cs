@@ -364,7 +364,7 @@ namespace ArdupilotMega.GCSViews
 
 
 
-                        if (CB_tuning.Checked == false) // draw if in view
+//                        if (CB_tuning.Checked == false) // draw if in view
                         {                         
 
                             if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
@@ -992,9 +992,9 @@ namespace ArdupilotMega.GCSViews
 
             CMB_setwp.Items.Add("0 (Home)");
 
-            if (MainV2.comPort.param["WP_TOTAL"] != null)
+            if (MainV2.comPort.param["CMD_TOTAL"] != null)
             {
-                int wps = int.Parse(MainV2.comPort.param["WP_TOTAL"].ToString());
+                int wps = int.Parse(MainV2.comPort.param["CMD_TOTAL"].ToString());
                 for (int z = 1; z <= wps; z++)
                 {
                     CMB_setwp.Items.Add(z.ToString());
