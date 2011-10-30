@@ -75,15 +75,15 @@ static void calc_airspeed_errors()
 }
 
 static void calc_bearing_error()
-{/*
+{
 	if(takeoff_complete == true  || g.compass_enabled == true) {
 		bearing_error = nav_bearing - dcm.yaw_sensor;
 	} else {
-*/
+
 		// TODO: we need to use the Yaw gyro for in between GPS reads,
 		// maybe as an offset from a saved gryo value.
 		bearing_error = nav_bearing - g_gps->ground_course;
-//	}
+	}
 
 	bearing_error = wrap_180(bearing_error);
 }
@@ -183,7 +183,7 @@ static void update_crosstrack(void)
 
 static void reset_crosstrack()
 {
-	crosstrack_bearing 	= get_bearing(&prev_WP, &next_WP);	// Used for track following
+	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
 
 static long get_distance(struct Location *loc1, struct Location *loc2)
