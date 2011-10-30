@@ -28,16 +28,11 @@ static bool mavlink_active;
 static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
 #ifdef MAVLINK10
-    uint8_t base_mode = 0;
+    uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
+    uint32_t custom_mode = control_mode;
 
-    // we map the custom_mode to our internal mode plus 16, to lower
-    // the chance that a ground station will give us 0 and we
-    // interpret it as manual. This is necessary as the SET_MODE
-    // command has no way to indicate that the custom_mode is filled in
-    uint32_t custom_mode = control_mode + 16;
-
-    // work out the base_mode. This value is almost completely useless
+    // work out the base_mode. This value is not very useful
     // for APM, but we calculate it as best we can so a generic
     // MAVLink enabled ground station can work out something about
     // what the MAV is up to. The actual bit values are highly
@@ -92,6 +87,9 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     if (control_mode != INITIALISING) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
+
+    // indicate we have set a custom mode
+    base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
     mavlink_msg_heartbeat_send(
         chan,
@@ -1140,13 +1138,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             mavlink_msg_set_mode_decode(msg, &packet);
 
 #ifdef MAVLINK10
-            // we ignore base_mode as there is no sane way to map
-            // from that bitmap to a APM flight mode. We rely on
-            // custom_mode instead.
-            // see comment on custom_mode above
-            int16_t adjusted_mode = packet.custom_mode - 16;
-
-            switch (adjusted_mode) {
+            if (!(packet.base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED)) {
+                // we ignore base_mode as there is no sane way to map
+                // from that bitmap to a APM flight mode. We rely on
+                // custom_mode instead.
+                break;
+            }
+            switch (packet.custom_mode) {
             case MANUAL:
             case CIRCLE:
             case STABILIZE:
@@ -1156,7 +1154,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             case AUTO:
             case RTL:
             case LOITER:
-                set_mode(adjusted_mode);
+                set_mode(packet.custom_mode);
                 break;
             }
 
