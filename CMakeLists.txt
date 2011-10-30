@@ -42,6 +42,12 @@ if (NOT DEFINED BOARD)
 	set(BOARD "mega")
 endif()
 
+if (NOT DEFINED PORT)
+	message(STATUS "please define the upload port (for example: cmake
+	-DPORT=/dev/ttyUSB0, assuming /dev/ttyUSB0")
+	set(PORT "/dev/ttyUSB0")
+endif()
+
 # cpack settings
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A universal autopilot system for the ArduPilotMega board.")
 set(CPACK_PACKAGE_VENDOR "DIYDRONES")
@@ -72,28 +78,37 @@ if (NOT DEFINED BOARD)
 endif()
 message(STATUS "Board configured as: ${BOARD}")
 
-set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
-
-# standard apm project setup
-macro(apm_project PROJECT_NAME BOARD SRCS) 
-	message(STATUS "creating apo project ${PROJECT_NAME}")
-	set(${PROJECT_NAME}_BOARD ${BOARD})
-	set(${PROJECT_NAME}_AFLAGS "-assembler-with-cpp")
-	set(${PROJECT_NAME}_SRCS ${SRCS})
-	set(${PROJECT_NAME}_LIBS c)
-	generate_arduino_firmware(${PROJECT_NAME})
-	set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+# add a sketch
+macro(add_sketch SKETCH_NAME BOARD PORT) 
+	message(STATUS "Generating sketch ${SKETCH_NAME}")
+	set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}/${SKETCH_NAME}.cpp)
+	set(SKETCH_PDE ${SKETCH_NAME}/${SKETCH_NAME}.pde)
+	set(${SKETCH_NAME}_BOARD ${BOARD})
+	set(${SKETCH_NAME}_PORT ${PORT})
+	set(${SKETCH_NAME}_SRCS ${SKETCH_CPP})
+	set(${SKETCH_NAME}_LIBS m c)
+	file(GLOB PDE_SOURCES ${SKETCH_NAME}/*.pde)
+	file(READ ${SKETCH_PDE} FILE)
+	file(WRITE ${SKETCH_CPP} ${FILE})
+	file(APPEND ${SKETCH_CPP} "#include \"WProgram.h\"")
+	list(REMOVE_ITEM PDE_SOURCES ${SKETCH_PDE})
+	list(SORT PDE_SOURCES)
+	foreach(PDE ${PDE_SOURCES})
+		file(READ ${PDE} FILE)
+		file(APPEND ${SKETCH_CPP} ${FILE})
+	endforeach()
+	include_directories(${SKETCH_NAME})
+	generate_arduino_firmware(${SKETCH_NAME})
+	set_target_properties(${SKETCH_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 	install(FILES
-		${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.hex 
+		${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}.hex 
 		DESTINATION bin
 	)
 endmacro()
 
 # projects
-apm_project(apo ${BOARD} apo/apo.cpp)
-apm_project(ArduRover ${BOARD} ArduRover/ArduRover.cpp)
-apm_project(ArduBoat ${BOARD} ArduBoat/ArduBoat.cpp)
-#apm_project(ArduPlane ${BOARD} ArduPlane/ArduPlane.cpp)
-#apm_project(ArduCopter ${BOARD} ArduCopter/ArduCopter.cpp)
-
-
+add_sketch(apo ${BOARD} ${PORT})
+add_sketch(ArduRover ${BOARD} ${PORT})
+add_sketch(ArduBoat ${BOARD} ${PORT})
+#add_sketch(ArduPlane ${BOARD} ${PORT})
+#add_sketch(ArduCopter ${BOARD} ${PORT})
