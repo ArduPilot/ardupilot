@@ -42,6 +42,12 @@ if (NOT DEFINED BOARD)
 	set(BOARD "mega")
 endif()
 
+if (NOT DEFINED PORT)
+	message(STATUS "please define the upload port (for example: cmake
+	-DPORT=/dev/ttyUSB0, assuming /dev/ttyUSB0")
+	set(PORT "/dev/ttyUSB0")
+endif()
+
 # cpack settings
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A universal autopilot system for the ArduPilotMega board.")
 set(CPACK_PACKAGE_VENDOR "DIYDRONES")
@@ -78,7 +84,7 @@ set (CMAKE_CXX_SOURCE_FILE_EXTENSIONS pde)
 macro(apm_project PROJECT_NAME BOARD SRCS) 
 	message(STATUS "creating apo project ${PROJECT_NAME}")
 	set(${PROJECT_NAME}_BOARD ${BOARD})
-	set(${PROJECT_NAME}_AFLAGS "-assembler-with-cpp")
+	set(${PROJECT_NAME}_PORT ${PORT})
 	set(${PROJECT_NAME}_SRCS ${SRCS})
 	set(${PROJECT_NAME}_LIBS m c)
 	generate_arduino_firmware(${PROJECT_NAME})
