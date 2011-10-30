@@ -80,7 +80,7 @@ macro(apm_project PROJECT_NAME BOARD SRCS)
 	set(${PROJECT_NAME}_BOARD ${BOARD})
 	set(${PROJECT_NAME}_AFLAGS "-assembler-with-cpp")
 	set(${PROJECT_NAME}_SRCS ${SRCS})
-	set(${PROJECT_NAME}_LIBS c)
+	set(${PROJECT_NAME}_LIBS m c)
 	generate_arduino_firmware(${PROJECT_NAME})
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 	install(FILES
@@ -93,7 +93,5 @@ endmacro()
 apm_project(apo ${BOARD} apo/apo.cpp)
 apm_project(ArduRover ${BOARD} ArduRover/ArduRover.cpp)
 apm_project(ArduBoat ${BOARD} ArduBoat/ArduBoat.cpp)
-#apm_project(ArduPlane ${BOARD} ArduPlane/ArduPlane.cpp)
-#apm_project(ArduCopter ${BOARD} ArduCopter/ArduCopter.cpp)
-
-
+apm_project(ArduPlane ${BOARD} ArduPlane/ArduPlane.cpp)
+apm_project(ArduCopter ${BOARD} ArduCopter/ArduCopter.cpp)
