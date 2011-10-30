@@ -1759,7 +1759,48 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             airspeed = 100*packet.airspeed;
             break;
         }
+#ifdef MAVLINK10
+	case MAVLINK_MSG_ID_HIL_STATE:
+		{
+			mavlink_hil_state_t packet;
+			mavlink_msg_hil_state_decode(msg, &packet);
+			
+			float vel = sqrt((packet.vx * packet.vx) + (packet.vy * packet.vy));
+			float cog = wrap_360(ToDeg(atan2(packet.vx, packet.vy)) * 100);
+			
+            // set gps hil sensor
+            g_gps->setHIL(packet.time_usec/1000.0,
+                          packet.lat*1.0e-7, packet.lon*1.0e-7, packet.alt*1.0e-3,
+                          vel*1.0e-2, cog*1.0e-2, 0, 0);
+			
+			#if HIL_MODE == HIL_MODE_SENSORS
+			
+			// rad/sec
+            Vector3f gyros;
+            gyros.x = (float)packet.xgyro / 1000.0;
+            gyros.y = (float)packet.ygyro / 1000.0;
+            gyros.z = (float)packet.zgyro / 1000.0;
+            // m/s/s
+            Vector3f accels;
+            accels.x = (float)packet.xacc / 1000.0;
+            accels.y = (float)packet.yacc / 1000.0;
+            accels.z = (float)packet.zacc / 1000.0;
 
+            imu.set_gyro(gyros);
+
+            imu.set_accel(accels);
+			
+			#else
+
+			// set dcm hil sensor
+            dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
+            packet.pitchspeed,packet.yawspeed);
+
+			#endif
+
+			break;
+		}
+#endif // MAVLINK10
 #endif
 #if HIL_MODE == HIL_MODE_ATTITUDE
     case MAVLINK_MSG_ID_ATTITUDE:
