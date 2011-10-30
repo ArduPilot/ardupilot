@@ -227,7 +227,6 @@
     <Compile Include="JoystickSetup.Designer.cs">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
     </Compile>
-    <Compile Include="MAVLinkTypes.cs" />
     <Compile Include="MAVLinkTypesenum.cs" />
     <Compile Include="MyButton.cs">
       <SubType>Component</SubType>
@@ -303,7 +302,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CurrentState.cs" />
-    <None Include="MAVLinkTypes0.9.cs" />
+    <Compile Include="MAVLinkTypes.cs" />
     <Compile Include="ElevationProfile.cs">
       <SubType>Form</SubType>
     </Compile>

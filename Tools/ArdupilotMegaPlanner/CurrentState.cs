@@ -273,22 +273,27 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
                 }
 
-                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_HEARTBEAT] != null)
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
                 {
-                    ArdupilotMega.MAVLink.__mavlink_heartbeat_t hb = new ArdupilotMega.MAVLink.__mavlink_heartbeat_t();
+                    ArdupilotMega.MAVLink.__mavlink_sys_status_t sysstatus = new ArdupilotMega.MAVLink.__mavlink_sys_status_t();
 
-                    object temp = hb;
+                    object temp = sysstatus;
 
-                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_HEARTBEAT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
 
-                    hb = (ArdupilotMega.MAVLink.__mavlink_heartbeat_t)(temp);
+                    sysstatus = (ArdupilotMega.MAVLink.__mavlink_sys_status_t)(temp);
 
                     string oldmode = mode;
 
-                    switch (hb.custom_mode)
+                    switch (sysstatus.mode)
                     {
-                        case (byte)MAVLink.MAV_MODE.MAV_MODE_PREFLIGHT:
-                            mode = "Initialising";
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_UNINIT:
+                            switch (sysstatus.nav_mode)
+                            {
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_GROUNDED:
+                                    mode = "Initialising";
+                                    break;
+                            }
                             break;
                         case (byte)(100 + Common.ac2modes.STABILIZE):
                             mode = "Stabilize";
@@ -314,59 +319,69 @@ namespace ArdupilotMega
                         case (byte)(100 + Common.ac2modes.CIRCLE):
                             mode = "Circle";
                             break;
-                        case (byte)(16 + Common.apmmodes.MANUAL):
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:
                             mode = "Manual";
                             break;
-                        case (byte)(16 + Common.apmmodes.GUIDED):
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_GUIDED:
                             mode = "Guided";
                             break;
-                        case (byte)(16 + Common.apmmodes.STABILIZE):
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_TEST1:
                             mode = "Stabilize";
                             break;
-                        case (byte)(16 + Common.apmmodes.FLY_BY_WIRE_A):
-                            mode = "FBW A";
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_TEST2:
+                            mode = "FBW A"; // fall though  old
+                            switch (sysstatus.nav_mode)
+                            {
+                                case (byte)1:
+                                    mode = "FBW A";
+                                    break;
+                                case (byte)2:
+                                    mode = "FBW B";
+                                    break;
+                                case (byte)3:
+                                    mode = "FBW C";
+                                    break;
+                            }
                             break;
-                        case (byte)(16 + Common.apmmodes.FLY_BY_WIRE_B):
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_TEST3:
                             mode = "FBW B";
                             break;
-                        case (byte)(16 + Common.apmmodes.AUTO):
-                            mode = "Auto";
-                            break;
-                        case (byte)(16 + Common.apmmodes.RTL):
-                            mode = "RTL";
-                            break;
-                        case (byte)(16 + Common.apmmodes.LOITER):
-                            mode = "Loiter";
-                            break;
-                        case (byte)(16 + Common.apmmodes.CIRCLE):
-                            mode = "Circle";
+                        case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_AUTO:
+                            switch (sysstatus.nav_mode)
+                            {
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_WAYPOINT:
+                                    mode = "Auto";
+                                    break;
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_RETURNING:
+                                    mode = "RTL";
+                                    break;
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_HOLD:
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_LOITER:
+                                    mode = "Loiter";
+                                    break;
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_LIFTOFF:
+                                    mode = "Takeoff";
+                                    break;
+                                case (byte)ArdupilotMega.MAVLink.MAV_NAV.MAV_NAV_LANDING:
+                                    mode = "Land";
+                                    break;
+                            }
+
                             break;
                         default:
                             mode = "Unknown";
                             break;
                     }
 
+                    battery_voltage = sysstatus.vbat;
+                    battery_remaining = sysstatus.battery_remaining;
+
+                    packetdropremote = sysstatus.packet_drop;
+
                     if (oldmode != mode && MainV2.speechenable && MainV2.getConfig("speechmodeenabled") == "True")
                     {
                         MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
                     }
-                }
-
-
-                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
-                {
-                    ArdupilotMega.MAVLink.__mavlink_sys_status_t sysstatus = new ArdupilotMega.MAVLink.__mavlink_sys_status_t();
-
-                    object temp = sysstatus;
-
-                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
-
-                    sysstatus = (ArdupilotMega.MAVLink.__mavlink_sys_status_t)(temp);
-
-                    battery_voltage = sysstatus.voltage_battery;
-                    battery_remaining = sysstatus.battery_remaining;
-
-                    packetdropremote = sysstatus.drop_rate_comm;
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                 }
@@ -390,18 +405,18 @@ namespace ArdupilotMega
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
                 }
 
-                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] != null)
                 {
-                    var gps = new MAVLink.__mavlink_gps_raw_int_t();
+                    var gps = new MAVLink.__mavlink_gps_raw_t();
 
                     object temp = gps;
 
-                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW], ref temp, 6);
 
-                    gps = (MAVLink.__mavlink_gps_raw_int_t)(temp);
+                    gps = (MAVLink.__mavlink_gps_raw_t)(temp);
 
-                    lat = gps.lat * 1.0e-7f;
-                    lng = gps.lon * 1.0e-7f;
+                    lat = gps.lat;
+                    lng = gps.lon;
                     //                alt = gps.alt; // using vfr as includes baro calc
 
                     gpsstatus = gps.fix_type;
@@ -409,8 +424,8 @@ namespace ArdupilotMega
 
                     gpshdop = gps.eph;
 
-                    groundspeed = gps.vel * 1.0e-2f;
-                    groundcourse = gps.cog * 1.0e-2f;
+                    groundspeed = gps.v;
+                    groundcourse = gps.hdg;
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
                 }
@@ -427,6 +442,7 @@ namespace ArdupilotMega
 
                     satcount = gps.satellites_visible;
                 }
+
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT] != null)
                 {
                     var loc = new MAVLink.__mavlink_global_position_int_t();
@@ -437,20 +453,35 @@ namespace ArdupilotMega
 
                     loc = (MAVLink.__mavlink_global_position_int_t)(temp);
 
-                    //alt = loc.alt / 1000.0f;
+                    alt = loc.alt / 1000.0f;
                     lat = loc.lat / 10000000.0f;
                     lng = loc.lon / 10000000.0f;
 
                 }
-                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT] != null)
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION] != null)
                 {
-                    ArdupilotMega.MAVLink.__mavlink_mission_current_t wpcur = new ArdupilotMega.MAVLink.__mavlink_mission_current_t();
+                    var loc = new MAVLink.__mavlink_global_position_t();
+
+                    object temp = loc;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION], ref temp, 6);
+
+                    loc = (MAVLink.__mavlink_global_position_t)(temp);
+
+                    alt = loc.alt;
+                    lat = loc.lat;
+                    lng = loc.lon;
+
+                }
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] != null)
+                {
+                    ArdupilotMega.MAVLink.__mavlink_waypoint_current_t wpcur = new ArdupilotMega.MAVLink.__mavlink_waypoint_current_t();
 
                     object temp = wpcur;
 
-                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT], ref temp, 6);
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT], ref temp, 6);
 
-                    wpcur = (ArdupilotMega.MAVLink.__mavlink_mission_current_t)(temp);
+                    wpcur = (ArdupilotMega.MAVLink.__mavlink_waypoint_current_t)(temp);
 
                     int oldwp = (int)wpno;
 
