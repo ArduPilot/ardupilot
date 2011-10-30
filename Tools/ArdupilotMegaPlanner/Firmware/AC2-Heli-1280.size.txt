@@ -10,6 +10,7 @@
 00000001 b land_complete
 00000001 b throttle_mode
 00000001 b command_may_ID
+00000001 b mavlink_active
 00000001 b wp_verify_byte
 00000001 d altitude_sensor
 00000001 b command_must_ID
@@ -45,10 +46,13 @@
 00000002 T userhook_init()
 00000002 b climb_rate
 00000002 b loiter_sum
+00000002 b angle_boost
 00000002 b event_delay
 00000002 b event_value
+00000002 b CH7_wp_index
 00000002 b event_repeat
 00000002 b loiter_total
+00000002 b manual_boost
 00000002 b nav_throttle
 00000002 b x_rate_error
 00000002 b y_rate_error
@@ -71,6 +75,7 @@
 00000002 b g_gps
 00000002 b airspeed
 00000002 b baro_alt
+00000002 b old_rate
 00000002 b sonar_alt
 00000002 b arm_motors()::arming_counter
 00000002 r setup_frame(unsigned char, Menu::arg const*)::__c
@@ -85,6 +90,7 @@
 00000003 r setup_sonar(unsigned char, Menu::arg const*)::__c
 00000003 r print_enabled(unsigned char)::__c
 00000003 r setup_compass(unsigned char, Menu::arg const*)::__c
+00000003 V RC_Channel::RC_Channel(unsigned int, prog_char_t const*)::__c
 00000004 d cos_roll_x
 00000004 b land_start
 00000004 b long_error
@@ -125,6 +131,7 @@
 00000004 b fiftyhz_loopTimer
 00000004 b old_target_bearing
 00000004 b throttle_integrator
+00000004 b heli_throttle_scaler
 00000004 r __menu_name__log_menu
 00000004 b command_yaw_start_time
 00000004 b initial_simple_bearing
@@ -287,6 +294,8 @@
 0000000a V Parameters::Parameters()::__c
 0000000a V Parameters::Parameters()::__c
 0000000a V Parameters::Parameters()::__c
+0000000a V Parameters::Parameters()::__c
+0000000a V Parameters::Parameters()::__c
 0000000a T setup
 0000000b r test_relay(unsigned char, Menu::arg const*)::__c
 0000000b r report_batt_monitor()::__c
@@ -418,7 +427,6 @@
 00000014 r test_tri(unsigned char, Menu::arg const*)::__c
 00000015 r setup_heli(unsigned char, Menu::arg const*)::__c
 00000015 r init_ardupilot()::__c
-00000015 r Log_Read_Motors()::__c
 00000015 r print_hit_enter()::__c
 00000015 r GCS_MAVLINK::handleMessage(__mavlink_message*)::__c
 00000016 T piezo_beep()
@@ -429,8 +437,8 @@
 00000018 r __menu_name__main_menu
 00000018 W AP_VarT<int>::serialize(void*, unsigned int) const
 00000019 r setup_gyro(unsigned char, Menu::arg const*)::__c
+00000019 r Log_Read_Motors()::__c
 0000001a r print_log_menu()::__c
-0000001a r Log_Read_Nav_Tuning()::__c
 0000001b r setup_heli(unsigned char, Menu::arg const*)::__c
 0000001b r report_heli()::__c
 0000001c W AP_VarA<float, (unsigned char)6>::unserialize(void*, unsigned int)
@@ -441,6 +449,7 @@
 0000001c W AP_VarS<Matrix3<float> >::serialize(void*, unsigned int) const
 0000001c W AP_VarS<Vector3<float> >::serialize(void*, unsigned int) const
 0000001d r Log_Read_Attitude()::__c
+0000001d r Log_Read_Performance()::__c
 0000001e r report_heli()::__c
 0000001e r Log_Read_Optflow()::__c
 00000020 t gcs_send_message(ap_message)
@@ -450,10 +459,8 @@
 00000021 r print_log_menu()::__c
 00000021 r report_compass()::__c
 00000021 r Log_Read_Current()::__c
-00000021 r Log_Read_Performance()::__c
 00000022 t clear_leds()
 00000022 t print_blanks(int)
-00000022 t reset_hold_I()
 00000022 t startup_ground()
 00000022 W AP_Float16::~AP_Float16()
 00000022 W AP_VarA<float, (unsigned char)6>::~AP_VarA()
@@ -465,13 +472,13 @@
 00000023 r setup_heli(unsigned char, Menu::arg const*)::__c
 00000023 r setup_mode(unsigned char, Menu::arg const*)::__c
 00000023 r print_gyro_offsets()::__c
+00000024 t reset_hold_I()
 00000024 r setup_heli(unsigned char, Menu::arg const*)::__c
 00000024 r init_ardupilot()::__c
 00000024 r print_accel_offsets()::__c
 00000026 t print_done()
 00000026 t print_hit_enter()
 00000026 t Log_Read_Startup()
-00000026 r Log_Read_Control_Tuning()::__c
 00000028 t test_battery(unsigned char, Menu::arg const*)
 00000028 t main_menu_help(unsigned char, Menu::arg const*)
 00000028 t help_log(unsigned char, Menu::arg const*)
@@ -482,14 +489,16 @@
 00000029 r setup_mode(unsigned char, Menu::arg const*)::__c
 00000029 r test_gps(unsigned char, Menu::arg const*)::__c
 0000002a t setup_declination(unsigned char, Menu::arg const*)
+0000002a t _mav_put_int8_t_array
 0000002b r planner_mode(unsigned char, Menu::arg const*)::__c
 0000002e t setup_motors(unsigned char, Menu::arg const*)
 0000002e t print_divider()
 0000002e t gcs_send_text_P(gcs_severity, prog_char_t const*)
 0000002e t gcs_data_stream_send(unsigned int, unsigned int)
 0000002e W AP_Var_group::AP_Var_group(unsigned int, prog_char_t const*, unsigned char)
+0000002e r init_ardupilot()::__c
+0000002e r Log_Read_Nav_Tuning()::__c
 0000002f r test_radio(unsigned char, Menu::arg const*)::__c
-0000002f r init_ardupilot()::__c
 00000030 t planner_mode(unsigned char, Menu::arg const*)
 00000030 t send_heartbeat(mavlink_channel_t)
 00000031 r setup_heli(unsigned char, Menu::arg const*)::__c
@@ -500,18 +509,16 @@
 00000033 b pending_status
 00000034 t heli_get_servo(int)
 00000034 W AP_Float16::serialize(void*, unsigned int) const
-00000034 t _mav_put_int8_t_array
 00000034 t mavlink_msg_statustext_send
 00000035 r test_radio_pwm(unsigned char, Menu::arg const*)::__c
 00000036 t report_radio()
+00000036 r Log_Read_Control_Tuning()::__c
 00000037 r print_wp(Location*, unsigned char)::__c
-00000038 t init_throttle_cruise()
 00000038 t send_current_waypoint(mavlink_channel_t)
 00000038 r setup_radio(unsigned char, Menu::arg const*)::__c
 00000038 r setup_factory(unsigned char, Menu::arg const*)::__c
 0000003a t report_gps()
 0000003a t report_imu()
-0000003c W RC_Channel::~RC_Channel()
 0000003d B g_gps_driver
 0000003e T GCS_MAVLINK::send_text(gcs_severity, prog_char_t const*)
 0000003e W AP_VarT<signed char>::AP_VarT(signed char, unsigned int, prog_char_t const*, unsigned char)
@@ -523,6 +530,7 @@
 00000042 t report_sonar()
 00000042 r setup_heli(unsigned char, Menu::arg const*)::__c
 00000044 W AP_VarT<int>::AP_VarT(int, unsigned int, prog_char_t const*, unsigned char)
+00000046 W RC_Channel::~RC_Channel()
 00000048 t change_command(unsigned char)
 00000048 t update_motor_leds()
 00000049 r setup_flightmodes(unsigned char, Menu::arg const*)::__c
@@ -553,9 +561,9 @@
 00000064 t mavlink_msg_param_value_send
 00000068 t zero_eeprom()
 00000068 t find_last_log_page(int)
+00000068 W GCS_MAVLINK::~GCS_MAVLINK()
 0000006a T mavlink_send_text(mavlink_channel_t, gcs_severity, char const*)
 0000006a t read_num_from_serial()
-0000006a W GCS_MAVLINK::~GCS_MAVLINK()
 0000006c t setup_sonar(unsigned char, Menu::arg const*)
 00000074 t output_motors_armed()
 00000078 t setup_batt_monitor(unsigned char, Menu::arg const*)
@@ -579,12 +587,12 @@
 00000092 t test_tuning(unsigned char, Menu::arg const*)
 00000092 t report_tuning()
 00000092 T GCS_MAVLINK::queued_param_send()
+00000094 t init_throttle_cruise()
 00000096 t print_wp(Location*, unsigned char)
+00000098 B gcs0
+00000098 B gcs3
 0000009a t planner_gcs(unsigned char, Menu::arg const*)
 0000009a t init_compass()
-0000009a t Log_Read_Motors()
-0000009b B gcs0
-0000009b B gcs3
 0000009e t setup_mode(unsigned char, Menu::arg const*)
 0000009e t Log_Write_Cmd(unsigned char, Location*)
 000000a0 t Log_Read_Mode()
@@ -593,11 +601,12 @@
 000000a4 T __vector_55
 000000a6 t send_servo_out(mavlink_channel_t)
 000000aa t test_sonar(unsigned char, Menu::arg const*)
-000000aa t Log_Read_Nav_Tuning()
+000000ae t Log_Read_Motors()
 000000b0 t test_relay(unsigned char, Menu::arg const*)
 000000b2 t erase_logs(unsigned char, Menu::arg const*)
 000000b4 t read_radio()
 000000b6 t get_log_boundaries(unsigned char, int&, int&)
+000000b6 t Log_Read_Performance()
 000000b7 B compass
 000000be t update_events()
 000000c2 t setup_compass(unsigned char, Menu::arg const*)
@@ -607,7 +616,6 @@
 000000c4 r setup_esc(unsigned char, Menu::arg const*)::__c
 000000c6 t test_eedump(unsigned char, Menu::arg const*)
 000000c6 t send_radio_in(mavlink_channel_t)
-000000c6 t Log_Read_Performance()
 000000c6 t test_tri(unsigned char, Menu::arg const*)
 000000c7 B dcm
 000000ca t init_barometer()
@@ -618,30 +626,32 @@
 000000d4 t Log_Read(int, int)
 000000d8 t test_radio(unsigned char, Menu::arg const*)
 000000d8 t read_barometer()
+000000de t Log_Read_Nav_Tuning()
 000000de t test_adc(unsigned char, Menu::arg const*)
 000000e4 t test_radio_pwm(unsigned char, Menu::arg const*)
 000000e4 t Log_Read_Optflow()
 000000e4 W APM_PI::APM_PI(unsigned int, prog_char_t const*, float const&, float const&, int const&)
 000000e8 t Log_Read_Current()
-000000ea t Log_Read_Control_Tuning()
 000000ee t report_batt_monitor()
 000000f6 t Log_Read_Cmd()
+000000f8 t heli_get_angle_boost(int)
+000000fa t calc_loiter_pitch_roll()
 00000100 r test_menu_commands
 00000100 r setup_menu_commands
+00000102 t Log_Read_Control_Tuning()
 00000106 t setup_gyro(unsigned char, Menu::arg const*)
 0000010a t mavlink_delay(unsigned long)
 0000010a t send_raw_imu2(mavlink_channel_t)
 0000010a t test_gps(unsigned char, Menu::arg const*)
 0000010c t test_current(unsigned char, Menu::arg const*)
-0000010e W RC_Channel::RC_Channel(unsigned int, prog_char_t const*)
+00000110 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
+00000110 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000112 t set_next_WP(Location*)
 00000112 t send_extended_status1(mavlink_channel_t, unsigned int)
-00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
-00000112 T GCS_MAVLINK::GCS_MAVLINK(unsigned int)
 00000118 t set_command_with_index(Location, int)
 0000011c t get_command_with_index(int)
-0000012c t calc_loiter_pitch_roll()
 00000130 t report_compass()
+00000136 W RC_Channel::RC_Channel(unsigned int, prog_char_t const*)
 00000148 t Log_Read_GPS()
 00000156 t update_commands()
 0000015c t update_trig()
@@ -650,10 +660,10 @@
 00000162 T GCS_MAVLINK::data_stream_send(unsigned int, unsigned int)
 00000166 t select_logs(unsigned char, Menu::arg const*)
 00000166 t send_vfr_hud(mavlink_channel_t)
-00000168 T GCS_MAVLINK::update()
 0000016c t test_imu(unsigned char, Menu::arg const*)
 0000016e t send_attitude(mavlink_channel_t)
 00000174 t mavlink_send_message(mavlink_channel_t, ap_message, unsigned int)
+000001a0 T GCS_MAVLINK::update()
 000001a2 t mavlink_try_send_message(mavlink_channel_t, ap_message, unsigned int)
 000001a8 t print_radio_values()
 000001be t arm_motors()
@@ -661,29 +671,29 @@
 000001e4 t setup_flightmodes(unsigned char, Menu::arg const*)
 000001e6 t verify_nav_wp()
 000001ea t init_home()
-00000216 t set_mode(unsigned char)
 0000021a t send_raw_imu1(mavlink_channel_t)
 00000220 t test_wp(unsigned char, Menu::arg const*)
+00000226 t set_mode(unsigned char)
 00000228 t setup_radio(unsigned char, Menu::arg const*)
 0000022a t send_gps_raw(mavlink_channel_t)
 00000242 t calc_loiter(int, int)
 00000268 t send_raw_imu3(mavlink_channel_t)
-0000030c t heli_init_swash()
-00000312 W Parameters::~Parameters()
+00000298 T update_throttle_mode()
+00000326 W Parameters::~Parameters()
 0000032a t report_heli()
-00000330 t tuning()
+0000033a t heli_init_swash()
+0000036a t tuning()
 00000384 t print_log_menu()
-0000039a T update_throttle_mode()
+0000039e T update_roll_pitch_mode()
 000003a0 t read_battery()
 0000045c T update_yaw_mode()
-0000046e T update_roll_pitch_mode()
 0000053e t heli_move_swash(int, int, int, int)
 000005cc t __static_initialization_and_destruction_0(int, int)
-00000620 t init_ardupilot()
+000005fe t init_ardupilot()
 0000071a t update_nav_wp()
 000007ec t setup_heli(unsigned char, Menu::arg const*)
 00000870 t process_next_command()
-000009b8 W Parameters::Parameters()
-00000a1f b g
+00000a64 W Parameters::Parameters()
+00000b2d b g
 000012ec T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001598 T loop
+000016c8 T loop
