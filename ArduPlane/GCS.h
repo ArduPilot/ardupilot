@@ -152,6 +152,7 @@ private:
 	uint16_t waypoint_count;
 	uint32_t waypoint_timelast_send; // milliseconds
 	uint32_t waypoint_timelast_receive; // milliseconds
+	uint32_t waypoint_timelast_request; // milliseconds
 	uint16_t waypoint_send_timeout; // milliseconds
 	uint16_t waypoint_receive_timeout; // milliseconds
 
