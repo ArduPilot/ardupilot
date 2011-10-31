@@ -3,7 +3,6 @@
 	<name>ArduPilotMega-Source@ardupilotone</name>
 	<comment></comment>
 	<projects>
-		<project>ArduPilotMega@ardupilotone-unix</project>
 	</projects>
 	<buildSpec>
 	</buildSpec>

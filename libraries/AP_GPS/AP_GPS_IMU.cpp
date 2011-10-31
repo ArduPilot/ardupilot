@@ -220,7 +220,7 @@ void AP_GPS_IMU::GPS_join_data(void)
  *
  ****************************************************************/
 // checksum algorithm
-void AP_GPS_IMU::checksum(byte data)
+void AP_GPS_IMU::checksum(unsigned char  data)
 {
     ck_a += data;
     ck_b += ck_a;
