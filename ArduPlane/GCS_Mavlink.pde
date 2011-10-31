@@ -777,8 +777,15 @@ GCS_MAVLINK::update(void)
         send_message(MSG_NEXT_PARAM);
     }
 
+    if (!waypoint_receiving && !waypoint_sending) {
+        return;
+    }
+
+    uint32_t tnow = millis();
+
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total) {
+        waypoint_request_i <= (unsigned)g.command_total &&
+        tnow > waypoint_timelast_request + 500) {
         send_message(MSG_NEXT_WAYPOINT);
     }
 
@@ -1413,6 +1420,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             g.command_total.set_and_save(packet.count - 1);
 
             waypoint_timelast_receive = millis();
+            waypoint_timelast_request = 0;
             waypoint_receiving   = true;
             waypoint_sending     = false;
             waypoint_request_i   = 0;
@@ -1589,6 +1597,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 				// update waypoint receiving state machine
 				waypoint_timelast_receive = millis();
+                waypoint_timelast_request = 0;
 				waypoint_request_i++;
 
 				if (waypoint_request_i > (uint16_t)g.command_total){
