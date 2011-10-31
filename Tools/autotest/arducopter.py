@@ -1,11 +1,55 @@
 # fly ArduCopter in SIL
 
-import util, pexpect, sys, time, math, shutil
+import util, pexpect, sys, time, math, shutil, os
+
+# get location of scripts
+testdir=os.path.dirname(os.path.realpath(__file__))
 
 sys.path.insert(0, 'pymavlink')
 import mavutil
 
 HOME_LOCATION='-35.362938,149.165085,650,270'
+
+class location(object):
+    '''represent a GPS coordinate'''
+    def __init__(self, lat, lng, alt=0):
+        self.lat = lat
+        self.lng = lng
+        self.alt = alt
+
+def get_distance(loc1, loc2):
+    '''get ground distance between two locations'''
+    dlat 		= loc2.lat - loc1.lat
+    dlong		= loc2.lng - loc1.lng
+    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+def get_bearing(loc1, loc2):
+    '''get bearing from loc1 to loc2'''
+    off_x = loc2.lng - loc1.lng
+    off_y = loc2.lat - loc1.lat
+    bearing = 90.00 + math.atan2(-off_y, off_x) * 57.2957795
+    if bearing < 0:
+        bearing += 360.00
+    return bearing;
+
+def current_location(mav):
+    '''return current location'''
+    return location(mav.messages['GPS_RAW'].lat,
+                    mav.messages['GPS_RAW'].lon,
+                    mav.messages['VFR_HUD'].alt)
+
+def wait_altitude(mav, alt_min, alt_max, timeout=30):
+    '''wait for a given altitude range'''
+    tstart = time.time()
+    print("Waiting for altitude between %u and %u" % (alt_min, alt_max))
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        print("Altitude %u" % m.alt)
+        if m.alt >= alt_min and m.alt <= alt_max:
+            return True
+    print("Failed to attain altitude range")
+    return False
+                    
 
 def arm_motors(mavproxy):
     '''arm motors'''
@@ -31,9 +75,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('switch 6\n') # stabilize mode
     mavproxy.expect('STABILIZE>')
     mavproxy.send('rc 3 1500\n')
-    mavproxy.send('status\n')
-    m = mav.recv_match(type='VFR_HUD', condition='VFR_HUD.alt>=30', blocking=True)
-    print("Altitude %u" % m.alt)
+    wait_altitude(mav, 30, 40)
     print("TAKEOFF COMPLETE")
 
 
@@ -60,22 +102,90 @@ def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
     return False
 
 
+def wait_heading(mav, heading, accuracy=5, timeout=30):
+    '''wait for a given heading'''
+    tstart = time.time()
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        print("Heading %u" % m.heading)
+        if math.fabs(m.heading - heading) <= accuracy:
+            return True
+    print("Failed to attain heading %u" % heading)
+    return False
+
+
+def wait_distance(mav, distance, accuracy=5, timeout=30):
+    '''wait for flight of a given distance'''
+    tstart = time.time()
+    start = current_location(mav)
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='GPS_RAW', blocking=True)
+        pos = current_location(mav)
+        delta = get_distance(start, pos)
+        print("Distance %.2f meters" % delta)
+        if math.fabs(delta - distance) <= accuracy:
+            return True
+    print("Failed to attain distance %u" % distance)
+    return False
+
+
+def fly_square(mavproxy, mav, side=50, timeout=120):
+    '''fly a square, flying N then E'''
+    mavproxy.send('switch 6\n')
+    mavproxy.expect('STABILIZE>')
+    tstart = time.time()
+    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 4 1610\n')
+    if not wait_heading(mav, 0):
+        return False
+    mavproxy.send('rc 4 1500\n')
+
+    print("Going north %u meters" % side)
+    mavproxy.send('rc 2 1390\n')
+    ok = wait_distance(mav, side)
+    mavproxy.send('rc 2 1500\n')
+
+    print("Going east %u meters" % side)
+    mavproxy.send('rc 1 1610\n')
+    ok = wait_distance(mav, side)
+    mavproxy.send('rc 1 1500\n')
+
+    print("Going south %u meters" % side)
+    mavproxy.send('rc 2 1610\n')
+    ok = wait_distance(mav, side)
+    mavproxy.send('rc 2 1500\n')
+
+    print("Going west %u meters" % side)
+    mavproxy.send('rc 1 1390\n')
+    ok = wait_distance(mav, side)
+    mavproxy.send('rc 1 1500\n')
+    return ok
+
+
+    
+
 def land(mavproxy, mav, timeout=60):
     '''land the quad'''
+    print("STARTING LANDING")
     mavproxy.send('switch 6\n')
     mavproxy.expect('STABILIZE>')
     mavproxy.send('status\n')
     mavproxy.expect('>')
-    mavproxy.send('rc 3 1300\n')
+
+    # start by dropping throttle till we have lost 5m
+    mavproxy.send('rc 3 1380\n')
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    wait_altitude(mav, 0, m.alt-5)
+
+    # now let it settle gently
+    mavproxy.send('rc 3 1400\n')
     tstart = time.time()
-    while time.time() < tstart + timeout:
-        m = mav.recv_match(type='VFR_HUD', blocking=True)
-        print("Altitude %u" % m.alt)
-        if m.alt <= 0:
-            print("LANDED OK")
-            return True
-    print("LANDING FAILED")
-    return False
+    if wait_altitude(mav, -5, 0):
+        print("LANDING OK")
+        return True
+    else:
+        print("LANDING FAILED")
+        return False
     
         
 
@@ -93,22 +203,31 @@ def fly_ArduCopter():
     sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
     mavproxy.expect('Please Run Setup')
+
     # we need to restart it after eeprom erase
     mavproxy.close()
     sil.close()
     sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --quadcopter')
+    mavproxy.expect('Received [0-9]+ parameters')
+
+    # setup test parameters
+    mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
+    mavproxy.expect('Loaded [0-9]+ parameters')
+
+    # reboot with new parameters
+    mavproxy.close()
+    sil.close()
+    sil = util.start_SIL('ArduCopter')
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --out=192.168.2.15:14550 --quadcopter --streamrate=1')
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
     mavproxy.expect("Ready to FLY")
     mavproxy.expect('Received [0-9]+ parameters')
 
-    # setup test parameters
-    mavproxy.send("param load autotest/ArduCopter.parm\n")
-    mavproxy.expect('Loaded [0-9]+ parameters')
-
     # start hil_quad.py
+    util.run_cmd('pkill -f hil_quad.py', checkfail=False)
     hquad = pexpect.spawn('HILTest/hil_quad.py --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
                         logfile=sys.stdout, timeout=10)
     hquad.expect('Starting at')
@@ -123,6 +242,7 @@ def fly_ArduCopter():
         setup_rc(mavproxy)
         arm_motors(mavproxy)
         takeoff(mavproxy, mav)
+        fly_square(mavproxy, mav)
         loiter(mavproxy, mav)
         land(mavproxy, mav)
         disarm_motors(mavproxy)
