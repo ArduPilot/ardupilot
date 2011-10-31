@@ -58,6 +58,10 @@ Building using eclipse
             properly. Source and header files for most languages are under the Text tree. 
             Add "*.pde" as a C++ Source.
 
+	Autocompletion:
+	
+		Right click on source project -> Properties -> Project References -> apm-build Project
+    
     Advanced:
     
         * Regenerating the eclipse source project file:
