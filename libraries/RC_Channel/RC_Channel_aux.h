@@ -14,6 +14,7 @@
 
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
+/// 	    Also contains physical min,max angular deflection, to allow calibrating open-loop servo movements
 class RC_Channel_aux : public RC_Channel{
 public:
 	/// Constructor
@@ -23,7 +24,9 @@ public:
 	///
 	RC_Channel_aux(AP_Var::Key key, const prog_char_t *name) :
 		RC_Channel(key, name),
-		function  (&_group, 4,  k_none, name ? PSTR("FUNCTION")  : 0) // suppress name if group has no name
+		function  (&_group, 4,  k_none, name ? PSTR("FUNCTION")  : 0), // suppress name if group has no name
+		angle_min (&_group, 5, -4500, name ? PSTR("ANGLE_MIN") : 0), // assume -45 degrees min deflection
+		angle_max (&_group, 6,  4500, name ? PSTR("ANGLE_MAX") : 0)  // assume  45 degrees max deflection
 	{}
 
 	typedef enum
@@ -34,10 +37,18 @@ public:
 		k_flap_auto		= 3,	// flap automated
 		k_aileron		= 4,	// aileron
 		k_flaperon		= 5,	// flaperon (flaps and aileron combined, needs two independent servos one for each wing)
+		k_mount_yaw		= 6,	// mount yaw (pan)
+		k_mount_pitch	= 7,	// mount pitch (tilt)
+		k_mount_roll	= 8,	// mount roll
+		k_mount_open	= 9,	// mount open (deploy) / close (retract)
 		k_nr_aux_servo_functions // This must be the last enum value (only add new values _before_ this one)
 	} Aux_servo_function_t;
 
 	AP_Int8 	function;	// 0=disabled, 1=manual, 2=flap, 3=flap auto, 4=aileron, 5=flaperon, 6=mount yaw (pan), 7=mount pitch (tilt), 8=mount roll, 9=camera trigger, 10=camera open, 11=egg drop
+	AP_Int16 	angle_min;	// min angle limit of actuated surface in 0.01 degree units
+	AP_Int16 	angle_max;	// max angle limit of actuated surface in 0.01 degree units
+
+	int16_t closest_limit(int16_t angle);	// saturate to the closest angle limit if outside of min max angle interval
 
 	void output_ch(unsigned char ch_nr);	// map a function to a servo channel and output it
 

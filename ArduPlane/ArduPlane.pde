@@ -42,6 +42,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_RangeFinder.h>	// Range finder library
 #include <ModeFilter.h>
 #include <AP_Relay.h>       // APM relay
+#include <AP_Mount.h>		// Camera/Antenna mount
 #include <GCS_MAVLink.h>    // MAVLink GCS definitions
 #include <memcheck.h>
 
@@ -404,6 +405,13 @@ static float 			load;						// % MCU cycles used
 
 AP_Relay relay;
 
+// Camera/Antenna mount tracking and stabilisation stuff
+// --------------------------------------
+#if MOUNT == ENABLED
+AP_Mount camera_mount(g_gps, &dcm);
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -529,6 +537,10 @@ static void fast_loop()
 
 static void medium_loop()
 {
+#if MOUNT == ENABLED
+	camera_mount.update_mount_position();
+#endif
+
 	// This is the start of the medium (10 Hz) loop pieces
 	// -----------------------------------------
 	switch(medium_loopCounter) {
@@ -669,6 +681,9 @@ static void slow_loop()
 
 			update_aux_servo_function(&g.rc_5, &g.rc_6, &g.rc_7, &g.rc_8);
 
+#if MOUNT == ENABLED
+			camera_mount.update_mount_type();
+#endif
 			break;
 
 		case 2:
