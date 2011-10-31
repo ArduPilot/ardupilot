@@ -50,7 +50,14 @@ Building using eclipse
     Importing the Eclipse Source Project:
     
         You can also import the source repository (/home/name/apm-src) if you want to modify the source/ commit using git.
-  
+
+    Settings up Eclipse to Recognize PDE files:
+
+         Window > Preferences > General > Content Types. This tree associates a
+            filename or filename pattern with its content type so that tools can treat it
+            properly. Source and header files for most languages are under the Text tree. 
+            Add "*.pde" as a C++ Source.
+
     Advanced:
     
         * Regenerating the eclipse source project file:
