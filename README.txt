@@ -40,6 +40,11 @@ Building using eclipse
     You can also import the source repository (/home/name/apm-src) if you want to modify the source/ commit using git.
     
   
+  	Advanced:
+  	
+  		* Regenerating the eclipse source project file:
+  		cmake -G"Eclipse CDT4 - Unix Makefiles" -DECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE /home/name/apm-src
+
 Build a package using cpack
 -----------------------------------------------
  - cd build
