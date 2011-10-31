@@ -1871,6 +1871,26 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 #endif // HIL_MODE
+
+#if MOUNT == ENABLED
+    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
+		{
+			camera_mount.configure_msg(msg);
+			break;
+		}
+
+    case MAVLINK_MSG_ID_MOUNT_CONTROL:
+		{
+			camera_mount.control_msg(msg);
+			break;
+		}
+
+    case MAVLINK_MSG_ID_MOUNT_STATUS:
+		{
+			camera_mount.status_msg(msg);
+			break;
+		}
+#endif // MOUNT == ENABLED
     } // end switch
 } // end handle mavlink
 
