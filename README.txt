@@ -21,29 +21,40 @@ Building using cmake
 Building using eclipse
 -----------------------------------------------
 
-	assuming source located here: /home/name/apm-src
-	You can either download it or grab it from git:
-	git clone https://code.google.com/p/ardupilot-mega/ /home/name/apm-src
-	
- 	mkdir /home/name/apm-build 
- 	cd /home/name/apm-build
- 	cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug ../apm-src -D BOARD=mega -D PORT=/dev/ttyUSB0
- 	
- 	Note: unix can be substitude for MinGW/ MSYS/ NMake (for windows)
- 	(see http://www.vtk.org/Wiki/Eclipse_CDT4_Generator)
+    Getting the Source:
 
-    Import project using Menu File->Import
-    Select General->Existing projects into workspace:
-    Browse where your build tree is and select the root build tree directory. Keep "Copy projects into workspace" unchecked.
-    You get a fully functional eclipse project
+        assuming source located here: /home/name/apm-src
+        You can either download it or grab it from git:
+        git clone https://code.google.com/p/ardupilot-mega/ /home/name/apm-src
+
+    Generating the Eclipse Project for Your System:
     
-    You can also import the source repository (/home/name/apm-src) if you want to modify the source/ commit using git.
+        mkdir /home/name/apm-build 
+        cd /home/name/apm-build
+        cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug ../apm-src -D BOARD=mega -D PORT=/dev/ttyUSB0
+
+        Note: Unix can be substituted for MinGW/ MSYS/ NMake (for windows)
+            (see http://www.vtk.org/Wiki/Eclipse_CDT4_Generator)
+
+        PORT is the port for uploading to the board, COM0 etc on windows.
+        BOARD is your board type, mega for the 1280 or mega2560 for the 2560 boards.
     
+    Importing the Eclipse Build Project:
+
+        Import project using Menu File->Import
+        Select General->Existing projects into workspace:
+        Browse where your build tree is and select the root build tree directory. 
+        Keep "Copy projects into workspace" unchecked.
+        You get a fully functional eclipse project
+
+    Importing the Eclipse Source Project:
+    
+        You can also import the source repository (/home/name/apm-src) if you want to modify the source/ commit using git.
   
-  	Advanced:
-  	
-  		* Regenerating the eclipse source project file:
-  		cmake -G"Eclipse CDT4 - Unix Makefiles" -DECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE /home/name/apm-src
+    Advanced:
+    
+        * Regenerating the eclipse source project file:
+            cmake -G"Eclipse CDT4 - Unix Makefiles" -DECLIPSE_CDT4_GENERATE_SOURCE_PROJECT=TRUE /home/name/apm-src
 
 Build a package using cpack
 -----------------------------------------------
@@ -51,3 +62,6 @@ Build a package using cpack
  - cmake ..
  - make package
  - make package_source
+
+
+vim:ts=4:sw=4:expandtab
