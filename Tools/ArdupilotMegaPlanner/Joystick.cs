@@ -326,8 +326,20 @@ namespace ArdupilotMega
                             {
                                 try
                                 {
-									MainV2.comPort.setMode(but.mode); 
+                                    MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
 
+                                    MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+
+                                    if (Common.translateMode(but.mode, ref navmode, ref mode))
+                                    {
+                                        MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                                        System.Threading.Thread.Sleep(10);
+                                        MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                                        System.Threading.Thread.Sleep(10);
+                                        MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                                        System.Threading.Thread.Sleep(10);
+                                        MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                                    }
                                 }
                                 catch { System.Windows.Forms.MessageBox.Show("Failed to change Modes"); }
                             });

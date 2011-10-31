@@ -113,9 +113,18 @@ namespace ArdupilotMega.GCSViews
 
             //foreach (object obj in Enum.GetValues(typeof(MAVLink.MAV_ACTION)))
             {
-                list.Add("LOITER_UNLIM");
-                list.Add("RETURN_TO_LAUNCH");
-                list.Add("PREFLIGHT_CALIBRATION");
+                list.Add("RETURN");
+                list.Add("HALT");
+                list.Add("CONTINUE");
+                list.Add("SET_MANUAL");
+                list.Add("SET_AUTO");
+                list.Add("STORAGE_READ");
+                list.Add("STORAGE_WRITE");
+                list.Add("CALIBRATE_RC");
+                list.Add("NAVIGATE");
+                list.Add("LOITER");
+                list.Add("TAKEOFF");
+                list.Add("CALIBRATE_GYRO");
             }
 
             CMB_action.DataSource = list;
@@ -675,8 +684,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                int fixme;
-                //comPort.doCommand((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
+                comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -776,7 +784,6 @@ namespace ArdupilotMega.GCSViews
 
             Locationwp gotohere = new Locationwp();
 
-            gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
             gotohere.alt = (int)(intalt / MainV2.cs.multiplierdist * 100); // back to m
             gotohere.lat = (int)(gotolocation.Lat * 10000000);
             gotohere.lng = (int)(gotolocation.Lng * 10000000);
@@ -952,7 +959,20 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_setmode_Click(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode(CMB_modes.Text);          
+            MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
+
+            MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+
+            if (Common.translateMode(CMB_modes.Text, ref navmode, ref mode))
+            {
+                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                System.Threading.Thread.Sleep(10);
+                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
+                System.Threading.Thread.Sleep(10);
+                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+                System.Threading.Thread.Sleep(10);
+                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
+            }
         }
 
         private void BUT_setwp_Click(object sender, EventArgs e)
@@ -987,7 +1007,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                MainV2.comPort.setMode("AUTO");
+                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO);
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -998,7 +1018,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                MainV2.comPort.setMode("RTL");
+                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_RETURN);
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1009,7 +1029,7 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
-                MainV2.comPort.setMode("MANUAL");
+                comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1485,10 +1505,9 @@ namespace ArdupilotMega.GCSViews
                 MessageBox.Show("Bad Lat/Long");
                 return;
             }
-            
+
             MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.MAV_MOUNT_MODE_GPS_POINT, true, true, true);
             MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.cs.multiplierdist), true);
-             
         }
     }
 }
