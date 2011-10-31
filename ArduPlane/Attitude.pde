@@ -190,17 +190,18 @@ static void calc_nav_pitch()
 
 static void calc_nav_roll()
 {
-	//float psi_dot_cmd = g.pidNavRoll.kP() * (bearing_error / 100.0);
-	
-	//nav_roll = (100 * ToDeg(atan((psi_dot_cmd * ((float)g_gps->ground_speed)) / 981.0)));
-	
-	//printf("nvrl %ld err %ld psi %f gps gs %ld COG %ld\n",nav_roll,bearing_error,psi_dot_cmd,g_gps->ground_speed,g_gps->ground_course);
-	
-	long psi_dot_cmd = g.pidNavRoll.kP() * bearing_error;
-	
-	nav_roll = (100 * ToDeg(atan((psi_dot_cmd * g_gps->ground_speed) / 9810000.0)));
-	
-//	printf("nvrl %ld err %ld psi %ld gps gs %ld COG %ld\n",nav_roll,bearing_error,psi_dot_cmd,g_gps->ground_speed,g_gps->ground_course);
+
+	// Adjust gain based on ground speed - We need lower nav gain going in to a headwind, etc.
+	// This does not make provisions for wind speed in excess of airframe speed
+	nav_gain_scaler = (float)g_gps->ground_speed / (STANDARD_SPEED * 100.0);
+	nav_gain_scaler = constrain(nav_gain_scaler, 0.2, 1.4);
+
+	// negative error = left turn
+	// positive error = right turn
+	// Calculate the required roll of the plane
+	// ----------------------------------------
+	nav_roll = g.pidNavRoll.get_pid(bearing_error, dTnav, nav_gain_scaler);	//returns desired bank angle in degrees*100
+	nav_roll = constrain(nav_roll, -g.roll_limit.get(), g.roll_limit.get());
 
 	Vector3f omega;
 	omega = dcm.get_gyro();
