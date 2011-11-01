@@ -202,9 +202,6 @@ static int alt_hold_velocity()
 //s: -13.1310, g:47.8700, e:1.0000, o:-158
 
 	#else
-		Vector3f accel_filt;
-		accel_filt	= imu.get_accel_filtered();
-		accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
 		return 0;
 	#endif
 }
