@@ -488,6 +488,11 @@ namespace ArdupilotMega.GCSViews
                         ((DomainUpDown)text[0]).SelectedIndex = index;
                         ((DomainUpDown)text[0]).BackColor = Color.Green;
                     }
+                    else
+                    {
+                        ((DomainUpDown)text[0]).Text = option;
+                        ((DomainUpDown)text[0]).BackColor = Color.Green;
+                    }
                 }
             }
             catch { }
@@ -515,8 +520,11 @@ namespace ArdupilotMega.GCSViews
 
                     int index = line.IndexOf(',');
 
+                    int index2 = line.IndexOf(',', index + 1);
                     if (index == -1)
                         continue;
+                    if (index2 != -1)
+                        line = line.Replace(',','.');
 
                     string name = line.Substring(0, index);
                     float value = float.Parse(line.Substring(index + 1), new System.Globalization.CultureInfo("en-US"));
@@ -569,7 +577,7 @@ namespace ArdupilotMega.GCSViews
 
                     MAVLink.modifyParamForDisplay(false, row.Cells[0].Value.ToString(), ref value);
 
-                    sw.WriteLine(row.Cells[0].Value.ToString() + "," + value);
+                    sw.WriteLine(row.Cells[0].Value.ToString() + "," + value.ToString(new System.Globalization.CultureInfo("en-US")));
                 }
                 sw.Close();
             }
