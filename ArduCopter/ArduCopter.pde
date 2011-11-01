@@ -732,7 +732,9 @@ static void medium_loop()
 
 			// Do an extra baro read
 			// ---------------------
+#if HIL_MODE != HIL_MODE_ATTITUDE
 			barometer.Read();
+#endif
 
 			slow_loop();
 			break;
