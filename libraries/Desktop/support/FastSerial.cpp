@@ -45,6 +45,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "desktop.h"
 
 #define LISTEN_BASE_PORT 5760
 #define BUFFER_SIZE 128
@@ -305,3 +306,19 @@ void FastSerial::_freeBuffer(Buffer *buffer)
 {
 }
 
+/*
+  return true if any bytes are pending
+ */
+void desktop_serial_select_setup(fd_set *fds, int *fd_high)
+{
+	int i;
+
+	for (i=0; i<FS_MAX_PORTS; i++) {
+		if (tcp_state[i].connected) {
+			FD_SET(tcp_state[i].fd, fds);
+			if (tcp_state[i].fd > *fd_high) {
+				*fd_high = tcp_state[i].fd;
+			}
+		}
+	}
+}

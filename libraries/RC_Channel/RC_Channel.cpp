@@ -190,6 +190,10 @@ RC_Channel::pwm_to_angle()
 {
 	int radio_trim_high = radio_trim + _dead_zone;
 	int radio_trim_low  = radio_trim - _dead_zone;
+    
+    // prevent div by 0
+    if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0) 
+        return 0;
 
 	if(radio_in > radio_trim_high){
 		return _reverse * ((long)_high * (long)(radio_in - radio_trim_high)) / (long)(radio_max  - radio_trim_high);
