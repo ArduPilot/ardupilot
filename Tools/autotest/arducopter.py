@@ -229,7 +229,7 @@ def land(mavproxy, mav, timeout=60):
         return False
 
 
-def fly_mission(mavproxy, mav, filename, timeout=120):
+def fly_mission(mavproxy, mav, filename):
     '''fly a mission from a file'''
     startloc = current_location(mav)
     mavproxy.send('wp load %s\n' % filename)
@@ -239,7 +239,7 @@ def fly_mission(mavproxy, mav, filename, timeout=120):
     mavproxy.send('switch 1\n') # auto mode
     mavproxy.expect('AUTO>')
     wait_distance(mav, 30, timeout=120)
-    wait_location(mav, startloc, timeout=300)
+    wait_location(mav, startloc, timeout=600)
 
 
 def setup_rc(mavproxy):
@@ -306,6 +306,7 @@ def fly_ArduCopter():
         loiter(mavproxy, mav)
         land(mavproxy, mav)
         fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"))
+        land(mavproxy, mav)
         disarm_motors(mavproxy)
     except pexpect.TIMEOUT, e:
         failed = True
