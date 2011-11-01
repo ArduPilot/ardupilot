@@ -22,10 +22,15 @@
   </ATT>
   <NTUN>
     <F1>WP Dist</F1>
-    <F2>WP Verify</F2>
-    <F3>Target Bear</F3>
-    <F4>Long Err</F4>
-    <F5>Lat Err</F5>
+    <F2>Target Bear</F2>
+    <F3>Long Err</F3>
+    <F4>Lat Err</F4>
+    <F5>nav lon</F5>
+    <F6>nav lat</F6>
+    <F7>nav lon I</F7>
+    <F8>nav lat I</F8>
+    <F9>Loiter Lon I</F9>
+    <F10>Loiter Lat I</F10>
   </NTUN>
   <CTUN>
     <F1>Yaw Sensor</F1>
