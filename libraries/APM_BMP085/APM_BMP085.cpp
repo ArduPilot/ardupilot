@@ -95,7 +95,7 @@ void APM_BMP085_Class::Init(int initialiseWireLib)
 	BMP085_State = 1;
 }
 
-
+/*
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 uint8_t APM_BMP085_Class::Read()
@@ -126,6 +126,30 @@ uint8_t APM_BMP085_Class::Read()
 				Command_ReadPress();
 				result = 1;					// New pressure reading
 			}
+		}
+	}
+	return(result);
+}
+*/
+// Read the sensor. This is a state machine
+// We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
+uint8_t APM_BMP085_Class::Read()
+{
+	uint8_t result = 0;
+
+	if (BMP085_State == 1){
+		if (digitalRead(BMP085_EOC)){
+			BMP085_State = 2;
+			ReadTemp();						 // On state 1 we read temp
+			Command_ReadPress();
+		}
+	}else{
+		if (digitalRead(BMP085_EOC)){
+			BMP085_State = 1;			// Start again from state = 1
+			ReadPress();
+			Calculate();
+			Command_ReadTemp();			// Read Temp
+			result = 1;					// New pressure reading
 		}
 	}
 	return(result);
