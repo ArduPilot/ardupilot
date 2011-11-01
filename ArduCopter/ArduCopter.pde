@@ -1240,7 +1240,7 @@ static void update_altitude()
 		current_loc.alt = baro_alt + home.alt;
 	}
 
-	// calc the accel rate limit to 2m/s
+	// calc the vertical accel rate
 	int temp_rate 	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
 	altitude_rate 	= (temp_rate - old_rate) * 10;
 	old_rate 		= temp_rate;
@@ -1251,6 +1251,7 @@ static void
 adjust_altitude()
 {
 	/*
+	// old vert control
 	if(g.rc_3.control_in <= 200){
 		next_WP.alt -= 1;												// 1 meter per second
 		next_WP.alt = max(next_WP.alt, (current_loc.alt - 500));		// don't go less than 4 meters below current location
