@@ -5,10 +5,38 @@ import util, pexpect, sys, time, math, shutil, os
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-sys.path.insert(0, 'pymavlink')
+sys.path.insert(0, util.reltopdir('../pymavlink'))
 import mavutil
 
 HOME_LOCATION='-35.362938,149.165085,650,270'
+
+# a list of pexpect objects to read while waiting for
+# messages. This keeps the output to stdout flowing
+expect_list = []
+
+def message_hook(mav, msg):
+    '''called as each mavlink msg is received'''
+    global expect_list
+    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT' ]:
+        print(msg)
+    for p in expect_list:
+        try:
+            p.read_nonblocking(100, timeout=0)
+        except pexpect.TIMEOUT:
+            pass
+
+def expect_callback(e):
+    '''called when waiting for a expect pattern'''
+    global expect_list
+    for p in expect_list:
+        if p == e:
+            continue
+        try:
+            while p.read_nonblocking(100, timeout=0):
+                pass
+        except pexpect.TIMEOUT:
+            pass
+
 
 class location(object):
     '''represent a GPS coordinate'''
@@ -128,6 +156,19 @@ def wait_distance(mav, distance, accuracy=5, timeout=30):
     print("Failed to attain distance %u" % distance)
     return False
 
+def wait_location(mav, loc, accuracy=5, timeout=30):
+    '''wait for arrival at a location'''
+    tstart = time.time()
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='GPS_RAW', blocking=True)
+        pos = current_location(mav)
+        delta = get_distance(loc, pos)
+        print("Distance %.2f meters" % delta)
+        if delta <= accuracy:
+            return True
+    print("Failed to attain location")
+    return False
+
 
 def fly_square(mavproxy, mav, side=50, timeout=120):
     '''fly a square, flying N then E'''
@@ -186,8 +227,20 @@ def land(mavproxy, mav, timeout=60):
     else:
         print("LANDING FAILED")
         return False
-    
-        
+
+
+def fly_mission(mavproxy, mav, filename, timeout=120):
+    '''fly a mission from a file'''
+    startloc = current_location(mav)
+    mavproxy.send('wp load %s\n' % filename)
+    mavproxy.expect('flight plan received')
+    mavproxy.send('wp list\n')
+    mavproxy.expect('Requesting [0-9]+ waypoints')
+    mavproxy.send('switch 1\n') # auto mode
+    mavproxy.expect('AUTO>')
+    wait_distance(mav, 30, timeout=120)
+    wait_location(mav, startloc, timeout=300)
+
 
 def setup_rc(mavproxy):
     '''setup RC override control'''
@@ -199,6 +252,8 @@ def setup_rc(mavproxy):
 
 def fly_ArduCopter():
     '''fly ArduCopter in SIL'''
+    global expect_list
+
     util.rmfile('eeprom.bin')
     sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
@@ -226,14 +281,19 @@ def fly_ArduCopter():
     mavproxy.expect("Ready to FLY")
     mavproxy.expect('Received [0-9]+ parameters')
 
+    util.expect_setup_callback(mavproxy, expect_callback)
+
     # start hil_quad.py
     util.run_cmd('pkill -f hil_quad.py', checkfail=False)
-    hquad = pexpect.spawn('HILTest/hil_quad.py --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
+    hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
                         logfile=sys.stdout, timeout=10)
     hquad.expect('Starting at')
 
+    expect_list.extend([hquad, sil, mavproxy])
+
     # get a mavlink connection going
     mav = mavutil.mavlink_connection('127.0.0.1:14550', robust_parsing=True)
+    mav.message_hooks.append(message_hook)
 
     failed = False
     try:
@@ -245,18 +305,19 @@ def fly_ArduCopter():
         fly_square(mavproxy, mav)
         loiter(mavproxy, mav)
         land(mavproxy, mav)
+        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"))
         disarm_motors(mavproxy)
-    except Exception, e:
+    except pexpect.TIMEOUT, e:
         failed = True
 
     mavproxy.close()
     sil.close()
     hquad.close()
 
-    shutil.copy(logfile, "buildlogs/ArduCopter-test.mavlog")
-    util.run_cmd("pymavlink/examples/mavtogpx.py buildlogs/ArduCopter-test.mavlog")
-    util.run_cmd("bin/gpxtokml buildlogs/ArduCopter-test.mavlog.gpx")
-    
+    shutil.copy(logfile, util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
+    util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
+    util.run_cmd(util.reltopdir("../bin/gpxtokml") + " " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog.gpx"))
+
     if failed:
         print("FAILED: %s" % e)
         sys.exit(1)
