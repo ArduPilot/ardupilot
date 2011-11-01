@@ -10,6 +10,8 @@ import mavutil
 
 HOME_LOCATION='-35.362938,149.165085,650,270'
 
+homeloc = None
+
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
 expect_list = []
@@ -231,7 +233,7 @@ def land(mavproxy, mav, timeout=60):
 
 def fly_mission(mavproxy, mav, filename):
     '''fly a mission from a file'''
-    startloc = current_location(mav)
+    global homeloc
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('flight plan received')
     mavproxy.send('wp list\n')
@@ -239,7 +241,7 @@ def fly_mission(mavproxy, mav, filename):
     mavproxy.send('switch 1\n') # auto mode
     mavproxy.expect('AUTO>')
     wait_distance(mav, 30, timeout=120)
-    wait_location(mav, startloc, timeout=600)
+    wait_location(mav, homeloc, timeout=600)
 
 
 def setup_rc(mavproxy):
@@ -252,7 +254,7 @@ def setup_rc(mavproxy):
 
 def fly_ArduCopter():
     '''fly ArduCopter in SIL'''
-    global expect_list
+    global expect_list, homeloc
 
     util.rmfile('eeprom.bin')
     sil = util.start_SIL('ArduCopter')
@@ -298,8 +300,9 @@ def fly_ArduCopter():
     failed = False
     try:
         mav.wait_heartbeat()
-        mav.recv_match(type='GPS_RAW')
+        mav.recv_match(type='GPS_RAW', blocking=True)
         setup_rc(mavproxy)
+        homeloc = current_location(mav)
         arm_motors(mavproxy)
         takeoff(mavproxy, mav)
         fly_square(mavproxy, mav)
