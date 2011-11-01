@@ -44,71 +44,16 @@ float AP_Guide::getHeadingError() {
 
 MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
                            AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
-    AP_Guide(navigator, hal), _rangeFinderFront(), _rangeFinderBack(),
-    _rangeFinderLeft(), _rangeFinderRight(),
+    AP_Guide(navigator, hal),
     _group(k_guide, PSTR("guide_")),
     _velocityCommand(&_group, 1, velCmd, PSTR("velCmd")),
     _crossTrackGain(&_group, 2, xt, PSTR("xt")),
     _crossTrackLim(&_group, 3, xtLim, PSTR("xtLim")) {
-
-    for (uint8_t i = 0; i < _hal->rangeFinders.getSize(); i++) {
-        RangeFinder * rF = _hal->rangeFinders[i];
-        if (rF == NULL)
-            continue;
-        if (rF->orientation_x == 1 && rF->orientation_y == 0
-                && rF->orientation_z == 0)
-            _rangeFinderFront = rF;
-        else if (rF->orientation_x == -1 && rF->orientation_y == 0
-                 && rF->orientation_z == 0)
-            _rangeFinderBack = rF;
-        else if (rF->orientation_x == 0 && rF->orientation_y == 1
-                 && rF->orientation_z == 0)
-            _rangeFinderRight = rF;
-        else if (rF->orientation_x == 0 && rF->orientation_y == -1
-                 && rF->orientation_z == 0)
-            _rangeFinderLeft = rF;
-
-    }
 }
 
 void MavlinkGuide::update() {
     // process mavlink commands
     handleCommand();
-
-    // obstacle avoidance overrides
-    // stop if your going to drive into something in front of you
-    for (uint8_t i = 0; i < _hal->rangeFinders.getSize(); i++)
-        _hal->rangeFinders[i]->read();
-    float frontDistance = _rangeFinderFront->distance / 200.0; //convert for other adc
-    if (_rangeFinderFront && frontDistance < 2) {
-        _mode = MAV_NAV_VECTOR;
-
-        //airSpeedCommand = 0;
-        //groundSpeedCommand = 0;
-//			_headingCommand -= 45 * deg2Rad;
-//			_hal->debug->print("Obstacle Distance (m): ");
-//			_hal->debug->println(frontDistance);
-//			_hal->debug->print("Obstacle avoidance Heading Command: ");
-//			_hal->debug->println(headingCommand);
-//			_hal->debug->printf_P(
-//					PSTR("Front Distance, %f\n"),
-//					frontDistance);
-    }
-    if (_rangeFinderBack && _rangeFinderBack->distance < 5) {
-        _airSpeedCommand = 0;
-        _groundSpeedCommand = 0;
-
-    }
-
-    if (_rangeFinderLeft && _rangeFinderLeft->distance < 5) {
-        _airSpeedCommand = 0;
-        _groundSpeedCommand = 0;
-    }
-
-    if (_rangeFinderRight && _rangeFinderRight->distance < 5) {
-        _airSpeedCommand = 0;
-        _groundSpeedCommand = 0;
-    }
 }
 
 void MavlinkGuide::nextCommand() {

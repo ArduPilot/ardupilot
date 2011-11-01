@@ -48,6 +48,8 @@ static const float batteryVoltageDivRatio = 6;
 static const float batteryMinVolt = 10.0;
 static const float batteryMaxVolt = 12.4;
 
+static const bool useForwardReverseSwitch = false;
+
 static const bool rangeFinderFrontEnabled = false;
 static const bool rangeFinderBackEnabled = false;
 static const bool rangeFinderLeftEnabled = false;
