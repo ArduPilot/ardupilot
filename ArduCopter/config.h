@@ -509,10 +509,10 @@
 #endif
 
 #ifndef THR_HOLD_P
-# define THR_HOLD_P		0.5			//
+# define THR_HOLD_P		0.4			//
 #endif
 #ifndef THR_HOLD_I
-# define THR_HOLD_I		0.01		// with 4m error, 12.5s windup
+# define THR_HOLD_I		0.02		// with 4m error, 12.5s windup
 #endif
 #ifndef THR_HOLD_IMAX
 # define THR_HOLD_IMAX	300
@@ -520,10 +520,10 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.8			//
+# define THROTTLE_P		1.0			//
 #endif
 #ifndef THROTTLE_I
-# define THROTTLE_I		0.10		// with 4m error, 12.5s windup
+# define THROTTLE_I		0.0			//
 #endif
 #ifndef THROTTLE_IMAX
 # define THROTTLE_IMAX	50
