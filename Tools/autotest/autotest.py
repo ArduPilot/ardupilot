@@ -5,7 +5,7 @@
 import pexpect, os, util, sys, shutil, arducopter
 import optparse, fnmatch
 
-os.putenv('TMPDIR', util.relcwd('tmp'))
+os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
     '''get default parameters'''
@@ -21,7 +21,7 @@ def get_default_params(atype):
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
-    dest = os.path.join('buildlogs/%s.defaults.txt' % atype)
+    dest = util.reltopdir('../buildlogs/%s.defaults.txt' % atype)
     shutil.copy(parmfile, dest)
     mavproxy.close()
     sil.close()
