@@ -83,7 +83,7 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -2500, 2500);
 }
 
-#define ALT_ERROR_MAX 500
+#define ALT_ERROR_MAX 300
 static int
 get_nav_throttle(long z_error)
 {
@@ -94,7 +94,7 @@ get_nav_throttle(long z_error)
 	rate_error 		= rate_error - altitude_rate;
 
 	// limit the rate
-	rate_error 		= constrain(rate_error, -120, 140);
+	rate_error 		= constrain(rate_error, -80, 140);
 	return (int)g.pi_throttle.get_pi(rate_error, .1);
 }
 
@@ -202,6 +202,9 @@ static int alt_hold_velocity()
 //s: -13.1310, g:47.8700, e:1.0000, o:-158
 
 	#else
+		Vector3f accel_filt;
+		accel_filt	= imu.get_accel_filtered();
+		accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
 		return 0;
 	#endif
 }
