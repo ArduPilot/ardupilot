@@ -512,6 +512,7 @@ init_throttle_cruise()
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
+		g.pi_alt_hold.reset_I();
 		#if FRAME_CONFIG == HELI_FRAME
 		    g.throttle_cruise.set_and_save(heli_get_scaled_throttle(g.rc_3.control_in));
 		#else
