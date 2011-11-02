@@ -176,40 +176,108 @@ get_nav_yaw_offset(int yaw_input, int reset)
 	}
 }
 
-static int alt_hold_velocity()
-{
-	#if ACCEL_ALT_HOLD == 1
-		Vector3f accel_filt;
-		float error;
-
-		// subtract filtered Accel
-		error		= abs(next_WP.alt - current_loc.alt) - 25;
-		error		= min(error, 50.0);
-		error		= max(error, 0.0);
-		error		= 1 - (error/ 50.0);
-
-		accel_filt	= imu.get_accel_filtered();
-		accels_rot 	= dcm.get_dcm_matrix() * imu.get_accel_filtered();
-		int output = (accels_rot.z + 9.81) * alt_hold_gain * error;   // alt_hold_gain  = 12
-
-		//Serial.printf("s: %1.4f, g:%1.4f, e:%1.4f, o:%d\n",sum, alt_hold_gain, error, output);
-		return constrain(output, -70, 70);
-
-// fast rise
-//s: -17.6241, g:0.0000, e:1.0000, o:0
-//s: -18.4990, g:0.0000, e:1.0000, o:0
-//s: -19.3193, g:0.0000, e:1.0000, o:0
-//s: -13.1310, g:47.8700, e:1.0000, o:-158
-
-	#else
-		return 0;
-	#endif
-}
-
 static int get_angle_boost(int value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
 	return (int)(temp * value);
 }
+
+// Accelerometer Z dampening by Aurelio R. Ramos
+// ---------------------------------------------
+
+#if ACCEL_ALT_HOLD == 1
+
+// contains G and any other DC offset
+static float estimatedAccelOffset = 0;
+
+// state
+static float synVelo = 0;
+static float synPos = 0;
+static float synPosFiltered = 0;
+static float posError = 0;
+static float prevSensedPos = 0;
+
+// tuning for dead reckoning
+static float synPosP = 25 * G_Dt;
+static float synPosI = 100 * G_Dt;
+static float synVeloP = 1.5 * G_Dt;
+static float maxVeloCorrection = 5 * G_Dt;
+static float maxSensedVelo = 1;
+static float synPosFilter = 0.13; // lower to filter more. should approximate sensor filtering
+
+#define NUM_G_SAMPLES 200
+
+// Z damping term.
+static float fullDampP = 0.200;
+
+float get_world_Z_accel()
+{
+	Vector3f accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
+	return accels_rot.z;
+}
+
+
+static void init_z_damper()
+{
+	estimatedAccelOffset = 0;
+	for (int i = 0; i < NUM_G_SAMPLES; i++){
+		estimatedAccelOffset += get_world_Z_accel();
+	}
+	estimatedAccelOffset /= (float)NUM_G_SAMPLES;
+}
+
+float dead_reckon_Z(float sensedPos, float sensedAccel)
+{
+	// the following algorithm synthesizes position and velocity from
+	// a noisy altitude and accelerometer data.
+
+	// synthesize uncorrected velocity by integrating acceleration
+	synVelo += (sensedAccel - estimatedAccelOffset) * G_Dt;
+
+	// synthesize uncorrected position by integrating uncorrected velocity
+	synPos += synVelo * G_Dt;
+
+	// filter synPos, the better this filter matches the filtering and dead time
+	// of the sensed position, the less the position estimate will lag.
+	synPosFiltered = synPosFiltered * (1 - synPosFilter) + synPos * synPosFilter;
+
+	// calculate error against sensor position
+	posError = sensedPos - synPosFiltered;
+
+	// correct altitude
+	synPos += synPosP * posError;
+
+	// correct integrated velocity by posError
+	synVelo = synVelo + constrain(posError, -maxVeloCorrection, maxVeloCorrection) * synPosI;
+
+	// correct integrated velocity by the sensed position delta in a small proportion
+	// (i.e., the low frequency of the delta)
+	float sensedVelo = (sensedPos - prevSensedPos) / G_Dt;
+	synVelo += constrain(sensedVelo - synVelo, -maxSensedVelo, maxSensedVelo) * synVeloP;
+
+	prevSensedPos = sensedPos;
+	return synVelo;
+}
+
+static int get_z_damping()
+{
+	float sensedAccel = get_world_Z_accel();
+	float sensedPos = current_loc.alt / 100.0;
+
+	float synVelo = dead_reckon_Z(sensedPos, sensedAccel);
+	return constrain(fullDampP * synVelo * (-1), -300, 300);
+}
+
+#else
+
+static int get_z_damping()
+{
+	return 0;
+}
+
+#endif
+
+
+
 

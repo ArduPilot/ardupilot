@@ -53,6 +53,12 @@ static void arm_motors()
 					// --------------------
 					init_simple_bearing();
 
+					// init the Z damopener
+					// --------------------
+					#if ACCEL_ALT_HOLD == 1
+					init_z_damper();
+					#endif
+
 					// Reset home position
 					// ----------------------
 					if(home_is_set)

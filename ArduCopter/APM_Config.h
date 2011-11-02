@@ -39,9 +39,7 @@
 	CH7_SAVE_WP
 	*/
 
-#define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
-#define ACCEL_ALT_HOLD_GAIN 20.0
-// ACCEL_ALT_HOLD 1 to enable experimental alt_hold_mode
+#define ACCEL_ALT_HOLD 1		// disabled by default, work in progress
 
 // See the config.h and defines.h files for how to set this up!
 //
