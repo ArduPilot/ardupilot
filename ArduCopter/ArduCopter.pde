@@ -246,14 +246,6 @@ static const char* flight_mode_strings[] = {
 			8	TBD
 */
 
-// test
-#if ACCEL_ALT_HOLD == 1
-Vector3f accels_rot;
-static int		accels_rot_count;
-static float 	accels_rot_sum;
-static float 	alt_hold_gain = ACCEL_ALT_HOLD_GAIN;
-#endif
-
 // temp
 static int y_actual_speed;
 static int y_rate_error;
@@ -1070,13 +1062,14 @@ void update_throttle_mode(void)
 				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
 			#else
 				angle_boost = get_angle_boost(g.throttle_cruise);
+
 				if(manual_boost != 0){
 					//remove alt_hold_velocity when implemented
-					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + alt_hold_velocity();
+					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
 					// reset next_WP.alt
 					next_WP.alt = max(current_loc.alt, 100);
 				}else{
-					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + alt_hold_velocity();
+					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
 				}
 
 			#endif
