@@ -136,10 +136,6 @@ public:
     void updateCommand();
 
 private:
-    RangeFinder * _rangeFinderFront;
-    RangeFinder * _rangeFinderBack;
-    RangeFinder * _rangeFinderLeft;
-    RangeFinder * _rangeFinderRight;
     AP_Var_group _group;
     AP_Float _velocityCommand;
     AP_Float _crossTrackGain;
