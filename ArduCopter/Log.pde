@@ -660,10 +660,13 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(nav_throttle);							//7
 	DataFlash.WriteInt(angle_boost);							//8
 	DataFlash.WriteInt(manual_boost);							//9
+	//DataFlash.WriteInt((int)(accels_rot.z * 1000));				//10
+	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));							//9
 
-	DataFlash.WriteInt(g.rc_3.servo_out);						//10
-	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//11
-	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());	//12
+
+	DataFlash.WriteInt(g.rc_3.servo_out);						//11
+	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//12
+	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());	//13
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -672,8 +675,8 @@ static void Log_Write_Control_Tuning()
 // Read an control tuning packet
 static void Log_Read_Control_Tuning()
 {
-								//  1   2   3   4   5   6   7   8   9  10  11  12
-	Serial.printf_P(PSTR(   "CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
+								//  1   2   3   4   5   6   7   8   9  10  11  12  13
+	Serial.printf_P(PSTR(   "CTUN, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n"),
 
 				// Control
 				//DataFlash.ReadByte(),
@@ -692,10 +695,12 @@ static void Log_Read_Control_Tuning()
 				DataFlash.ReadInt(),	//7
 				DataFlash.ReadInt(),	//8
 				DataFlash.ReadInt(),	//9
-
 				DataFlash.ReadInt(),	//10
+				//(float)DataFlash.ReadInt() / 1000,	//10
+
 				DataFlash.ReadInt(),	//11
-				DataFlash.ReadInt());	//12
+				DataFlash.ReadInt(),	//12
+				DataFlash.ReadInt());	//13
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes

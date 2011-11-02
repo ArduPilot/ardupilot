@@ -50,7 +50,7 @@ def build_SIL(atype):
 
 def start_SIL(atype):
     '''launch a SIL instance'''
-    ret = pexpect.spawn('tmp/%s.build/%s.elf' % (atype, atype),
+    ret = pexpect.spawn(reltopdir('tmp/%s.build/%s.elf' % (atype, atype)),
                         logfile=sys.stdout, timeout=5)
     ret.expect('Waiting for connection')
     return ret

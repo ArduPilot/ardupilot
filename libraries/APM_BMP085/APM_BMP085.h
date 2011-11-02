@@ -1,8 +1,8 @@
 #ifndef APM_BMP085_h
 #define APM_BMP085_h
 
-#define TEMP_FILTER_SIZE 16
-#define PRESS_FILTER_SIZE 10
+#define TEMP_FILTER_SIZE 2
+#define PRESS_FILTER_SIZE 2
 
 #include "APM_BMP085_hil.h"
 
@@ -13,6 +13,7 @@ class APM_BMP085_Class
 			_temp_index(0),
 			_press_index(0){};  // Constructor
 	int32_t RawPress;
+	int32_t	_offset_press;
 	int32_t RawTemp;
 	int16_t Temp;
 	int32_t Press;
@@ -32,7 +33,6 @@ class APM_BMP085_Class
 
 	int	 	_temp_filter[TEMP_FILTER_SIZE];
 	int	 	_press_filter[PRESS_FILTER_SIZE];
-	long	_offset_press;
 	long	_offset_temp;
 
 	uint8_t	_temp_index;

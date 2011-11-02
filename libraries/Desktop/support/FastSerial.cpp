@@ -45,6 +45,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include "desktop.h"
 
 #define LISTEN_BASE_PORT 5760
@@ -131,6 +132,7 @@ static void tcp_start_connection(unsigned int serial_port, bool wait_for_connect
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
         }
+		setsockopt(s->fd, SOL_TCP, TCP_NODELAY, &one, sizeof(one));
 		s->connected = true;
     }
 }
@@ -170,7 +172,9 @@ static void check_connection(struct tcp_state *s)
 	if (select_check(s->listen_fd)) {
 		s->fd = accept(s->listen_fd, NULL, NULL);
 		if (s->fd != -1) {
+			int one = 1;
 			s->connected = true;
+			setsockopt(s->fd, SOL_TCP, TCP_NODELAY, &one, sizeof(one));
 			printf("New connection on serial port %u\n", s->serial_port);
 		}
 	}

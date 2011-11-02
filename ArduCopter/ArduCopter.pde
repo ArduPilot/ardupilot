@@ -664,6 +664,7 @@ static void medium_loop()
 			}else{
 				g_gps->new_data = false;
 			}
+
 			break;
 
 		// command processing
@@ -729,6 +730,11 @@ static void medium_loop()
 			// -----------------------
 			arm_motors();
 
+			// Do an extra baro read
+			// ---------------------
+#if HIL_MODE != HIL_MODE_ATTITUDE
+			barometer.Read();
+#endif
 
 			slow_loop();
 			break;
@@ -1066,7 +1072,15 @@ void update_throttle_mode(void)
 				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
 			#else
 				angle_boost = get_angle_boost(g.throttle_cruise);
-				g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + manual_boost;
+				if(manual_boost != 0){
+					//remove alt_hold_velocity when implemented
+					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + alt_hold_velocity();
+					// reset next_WP.alt
+					next_WP.alt = max(current_loc.alt, 100);
+				}else{
+					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + alt_hold_velocity();
+				}
+
 			#endif
 			break;
 	}
@@ -1204,7 +1218,7 @@ static void update_altitude()
 		float scale;
 
 		// read barometer
-		baro_alt 			= read_barometer();
+		baro_alt = (baro_alt + read_barometer()) >> 1;
 
 		if(baro_alt < 1000){
 
@@ -1228,26 +1242,18 @@ static void update_altitude()
 		current_loc.alt = baro_alt + home.alt;
 	}
 
-	// calc the accel rate limit to 2m/s
-	altitude_rate 	= (current_loc.alt - old_altitude) * 10; // 10 hz timer
-
-	// rate limiter to reduce some of the motor pulsing
-	if (altitude_rate > 0){
-		// going up
-		altitude_rate = min(altitude_rate, old_rate + 20);
-	}else{
-		// going down
-		altitude_rate = max(altitude_rate, old_rate - 20);
-	}
-
-	old_rate 		= altitude_rate;
-	old_altitude 	= current_loc.alt;
+	// calc the vertical accel rate
+	int temp_rate 	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
+	altitude_rate 	= (temp_rate - old_rate) * 10;
+	old_rate 		= temp_rate;
 	#endif
 }
 
 static void
 adjust_altitude()
 {
+	/*
+	// old vert control
 	if(g.rc_3.control_in <= 200){
 		next_WP.alt -= 1;												// 1 meter per second
 		next_WP.alt = max(next_WP.alt, (current_loc.alt - 500));		// don't go less than 4 meters below current location
@@ -1258,6 +1264,25 @@ adjust_altitude()
 		next_WP.alt += 1;												// 1 meter per second
 		next_WP.alt = min(next_WP.alt, (current_loc.alt + 500));		// don't go more than 4 meters below current location
 		//manual_boost = (g.rc_3.control_in == 800) ? 20 : 0;
+	}*/
+
+	if(g.rc_3.control_in <= 180){
+		// we remove 0 to 100 PWM from hover
+		manual_boost = g.rc_3.control_in - 180;
+		manual_boost = max(-120, manual_boost);
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
+
+	}else if  (g.rc_3.control_in >= 650){
+		// we add 0 to 100 PWM to hover
+		manual_boost = g.rc_3.control_in - 650;
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
+
+	}else {
+		manual_boost = 0;
 	}
 }
 
@@ -1339,7 +1364,7 @@ static void tuning(){
 			g.pi_nav_lat.kP(tuning_value);
 			g.pi_nav_lon.kP(tuning_value);
 			break;
-	
+
 		#if FRAME_CONFIG == HELI_FRAME
 		case CH6_HELI_EXTERNAL_GYRO:
 			g.rc_6.set_range(1000,2000);
