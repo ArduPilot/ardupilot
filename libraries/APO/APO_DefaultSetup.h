@@ -86,7 +86,7 @@ void setup() {
 
         if (rangeFinderFrontEnabled) {
             hal->debug->println_P(PSTR("initializing front range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(NULL,new ModeFilter);
             rangeFinder->set_analog_port(1);
             rangeFinder->set_orientation(1, 0, 0);
             hal->rangeFinders.push_back(rangeFinder);
