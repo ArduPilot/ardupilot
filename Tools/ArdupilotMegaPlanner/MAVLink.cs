@@ -553,7 +553,11 @@ namespace ArdupilotMega
         {
             MainV2.givecomport = true;
             List<int> missed = new List<int>();
-            _param[] paramarray = new _param[300];
+
+            // ryan - re start
+            __mavlink_param_request_read_t rereq = new __mavlink_param_request_read_t();
+            rereq.target_system = sysid;
+            rereq.target_component = compid;
 
             __mavlink_param_request_list_t req = new __mavlink_param_request_list_t();
             req.target_system = sysid;
@@ -562,6 +566,7 @@ namespace ArdupilotMega
             generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_LIST, req);
 
             DateTime start = DateTime.Now;
+            DateTime restart = DateTime.Now;
 
             int retrys = 3;
             int nextid = 0;
@@ -582,6 +587,13 @@ namespace ArdupilotMega
                     MainV2.givecomport = false;
                     throw new Exception("Timeout on read - getParamList");
                 }
+                if (!(restart.AddMilliseconds(1000) > DateTime.Now))
+                {
+                    rereq.param_index = (short)nextid;
+                    generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_READ, rereq);
+                    restart = DateTime.Now;
+                }
+                System.Windows.Forms.Application.DoEvents();
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
@@ -589,6 +601,7 @@ namespace ArdupilotMega
                     //stopwatch.Start();
                     if (buffer[5] == MAVLINK_MSG_ID_PARAM_VALUE)
                     {
+                        restart = DateTime.Now;
                         start = DateTime.Now;
 
                         __mavlink_param_value_t par = new __mavlink_param_value_t();

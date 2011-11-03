@@ -767,7 +767,8 @@ namespace ArdupilotMega.GCSViews
             }
 
             string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
-            Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt);
+            if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt))
+                return;
 
             int intalt = (int)(100 * MainV2.cs.multiplierdist);
             if (!int.TryParse(alt, out intalt))
@@ -784,6 +785,7 @@ namespace ArdupilotMega.GCSViews
 
             Locationwp gotohere = new Locationwp();
 
+            gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
             gotohere.alt = (int)(intalt / MainV2.cs.multiplierdist * 100); // back to m
             gotohere.lat = (int)(gotolocation.Lat * 10000000);
             gotohere.lng = (int)(gotolocation.Lng * 10000000);
@@ -863,7 +865,7 @@ namespace ArdupilotMega.GCSViews
         {
             OpenFileDialog fd = new OpenFileDialog();
             fd.AddExtension = true;
-            fd.Filter = "Ardupilot Telemtry log (*.tlog)|*.tlog";
+            fd.Filter = "Ardupilot Telemtry log (*.tlog)|*.tlog|Mavlink Log (*.mavlog)|*.mavlog";
             fd.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs";
             fd.DefaultExt = ".tlog";
             DialogResult result = fd.ShowDialog();

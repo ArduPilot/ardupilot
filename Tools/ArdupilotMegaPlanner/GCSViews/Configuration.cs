@@ -845,7 +845,10 @@ namespace ArdupilotMega.GCSViews
 
             ((MyButton)sender).Enabled = true;
             startup = true;
+            param = MainV2.comPort.param;
+            processToScreen();
             Configuration_Load(null, null);
+            startup = false;
         }
 
         private void CHK_speechbattery_CheckedChanged(object sender, EventArgs e)
