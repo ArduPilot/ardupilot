@@ -6,122 +6,76 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.IO;
+using System.Xml;
+using System.Collections;
 
 namespace ArdupilotMega
 {
     public partial class Camera : Form
     {
-        float mm_2_feet = 1 / 304.8f;
-        float feet_2_mm = 304.8f;
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
+
+        Dictionary<string, camerainfo> cameras = new Dictionary<string, camerainfo>();
+
+        public struct camerainfo
+        {
+            public string name;
+            public float focallen;
+            public float sensorwidth;
+            public float sensorheight;
+            public float imagewidth;
+            public float imageheight;
+        }
 
         public Camera()
         {
             InitializeComponent();
         }
 
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
-        {
-            doCalc();
-        }
-
         void doCalc()
         {
+            // entered values
+            float focallen = (float)num_focallength.Value;
+            float flyalt = (float)num_agl.Value;
+            int imagewidth = int.Parse(TXT_imgwidth.Text);
+            int imageheight = int.Parse(TXT_imgheight.Text);
 
-            var film_width = 36.0f;
-            var film_height = 27.0f;
-            var film_diag = 0.0f;
+            float sensorwidth = float.Parse(TXT_senswidth.Text);
+            float sensorheight = float.Parse(TXT_sensheight.Text);
 
-            var flen = (float)num_focallength.Value;
-            var flen_mult = (float)num_focalmultip.Value;
-            var subj_dist = (float)num_agl.Value;
+            int overlap = (int)num_overlap.Value;
+            int sidelap = (int)num_sidelap.Value;
 
-            //if (isNaN(flen_mult) || flen_mult<=0)
+
+            // scale
+            float flscale = 1000 * flyalt / focallen;
+
+            float viewwidth = (sensorwidth * flscale / 1000);
+            float viewheight = (sensorheight * flscale / 1000);
+
+            TXT_fovH.Text = (viewwidth).ToString();
+            TXT_fovV.Text = (viewheight).ToString();
+
+            TXT_fovAH.Text = (Math.Atan(sensorwidth / (2 * focallen)) * rad2deg * 2).ToString();
+            TXT_fovAV.Text = (Math.Atan(sensorheight / (2 * focallen)) * rad2deg * 2).ToString();
+
+            TXT_cmpixel.Text = ((viewheight / imageheight) * 100).ToString("0.00 cm");
+
+            if (CHK_camdirection.Checked)
             {
-                //f.flen_mult = 1;
-                //flen_mult = 1;
+                TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewheight).ToString();
+                TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewwidth).ToString();
             }
-
-            // convert distance to mm
-            /*
-	if (f.units.value.search(/feet/i) != -1)
-	{
-		//user input in feet
-		subj_dist = subj_dist * feet_2_mm;
-	}
-	else */
+            else
             {
-                //user input in m
-                subj_dist = subj_dist * 1000;
+                TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewwidth).ToString();
+                TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewheight).ToString();
             }
-
-            //Account for focal length multiplier (actually, a film/sensor size multiplier)
-            film_width = film_width / flen_mult;
-            film_height = film_height / flen_mult;
-            film_diag = (int)(Math.Sqrt((film_width * film_width) + (film_height * film_height)));
-
-            var half_fov_h = (Math.Atan(film_width / (2 * flen)));
-            var fov_h = 2 * (subj_dist * Math.Tan(half_fov_h));
-
-            var half_fov_v = (Math.Atan(film_height / (2 * flen)));
-            var fov_v = 2 * (subj_dist * Math.Tan(half_fov_v));
-
-            var half_fov_d = (Math.Atan(film_diag / (2 * flen)));
-            var fov_d = 2 * (subj_dist * Math.Tan(half_fov_d));
-
-            //convert answer (currently in mm) back to feet
-            fov_h = fov_h * mm_2_feet;
-            fov_v = fov_v * mm_2_feet;
-            fov_d = fov_d * mm_2_feet;
-            /*
-	if (f.units.value.search(/feet/i) != -1)
-    {
-    	f.fov_h.value = feet_inches(fov_h);
-    	f.fov_v.value = feet_inches(fov_v);
-    	f.fov_d.value = feet_inches(fov_d);
-    }
-    else */
-            {
-                TXT_fovH.Text = meters(fov_h);
-                TXT_fovV.Text = meters(fov_v);
-                TXT_fovD.Text = meters(fov_d);
-
-                TXT_fovAH.Text = (half_fov_h * 2 * rad2deg).ToString("0.00");
-                TXT_fovAV.Text = (half_fov_v * 2 * rad2deg).ToString("0.00");
-                TXT_fovAD.Text = (half_fov_d * 2 * rad2deg).ToString("0.00");
-
-                float test1 = (float)Math.Sqrt((float)num_megapixel.Value * 1000000 * (film_height / film_width));
-
-                TXT_imgwidth.Text = test1.ToString("0");
-                TXT_imgheight.Text = (((float)num_megapixel.Value * 1000000) / test1).ToString("0");
-
-
-                TXT_cmpixel.Text = (((fov_h * feet_2_mm) / 10.0) / test1).ToString("0.000 cm");
-            }
-        }
-
-
-        //Takes a distance in feet and converts to string representation in meters/cm
-        string meters(double aNumber)
-        {
-            //if (isNaN(aNumber))
-            //return aNumber;
-
-            var mm = aNumber * feet_2_mm;
-
-            var m = Math.Floor(mm / 1000);
-            var cm = (mm / 10) % 100;
-
-            return m + "m " + cm.ToString("0.00") + "cm";
         }
 
         private void num_agl_ValueChanged(object sender, EventArgs e)
-        {
-            doCalc();
-        }
-
-        private void num_megapixel_ValueChanged(object sender, EventArgs e)
         {
             doCalc();
         }
@@ -131,9 +85,204 @@ namespace ArdupilotMega
             doCalc();
         }
 
-        private void num_focalmultip_ValueChanged(object sender, EventArgs e)
+        private void num_overlap_ValueChanged(object sender, EventArgs e)
         {
             doCalc();
         }
+
+        private void num_sidelap_ValueChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void CHK_camdirection_CheckedChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void TXT_imgwidth_TextChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void TXT_imgheight_TextChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void TXT_senswidth_TextChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void TXT_sensheight_TextChanged(object sender, EventArgs e)
+        {
+            doCalc();
+        }
+
+        private void CMB_camera_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cameras.ContainsKey(CMB_camera.Text))
+            {
+                camerainfo camera = cameras[CMB_camera.Text];
+
+                num_focallength.Value = (decimal)camera.focallen;
+                TXT_imgheight.Text = camera.imageheight.ToString();
+                TXT_imgwidth.Text = camera.imagewidth.ToString();
+                TXT_sensheight.Text = camera.sensorheight.ToString();
+                TXT_senswidth.Text = camera.sensorwidth.ToString();
+            }
+
+            doCalc();
+        }
+
+        private void xmlcamera(bool write)
+        {
+            string filename = "cameras.xml";
+
+            if (write || !File.Exists(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + filename))
+            {
+                try
+                {
+                    XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + filename, Encoding.ASCII);
+                    xmlwriter.Formatting = Formatting.Indented;
+
+                    xmlwriter.WriteStartDocument();
+
+                    xmlwriter.WriteStartElement("Cameras");
+
+                    foreach (string key in cameras.Keys)
+                    {
+                        try
+                        {
+                            if (key == "")
+                                continue;
+                            xmlwriter.WriteStartElement("Camera");
+                            xmlwriter.WriteElementString("name", cameras[key].name);
+                            xmlwriter.WriteElementString("flen", cameras[key].focallen.ToString(new System.Globalization.CultureInfo("en-US")));
+                            xmlwriter.WriteElementString("imgh", cameras[key].imageheight.ToString(new System.Globalization.CultureInfo("en-US")));
+                            xmlwriter.WriteElementString("imgw", cameras[key].imagewidth.ToString(new System.Globalization.CultureInfo("en-US")));
+                            xmlwriter.WriteElementString("senh", cameras[key].sensorheight.ToString(new System.Globalization.CultureInfo("en-US")));
+                            xmlwriter.WriteElementString("senw", cameras[key].sensorwidth.ToString(new System.Globalization.CultureInfo("en-US")));
+                            xmlwriter.WriteEndElement();
+                        }
+                        catch { }
+                    }
+
+                    xmlwriter.WriteEndElement();
+
+                    xmlwriter.WriteEndDocument();
+                    xmlwriter.Close();
+
+                }
+                catch (Exception ex) { MessageBox.Show(ex.ToString()); }
+            }
+            else
+            {
+                try
+                {
+                    using (XmlTextReader xmlreader = new XmlTextReader(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + filename))
+                    {
+                        while (xmlreader.Read())
+                        {
+                            xmlreader.MoveToElement();
+                            try
+                            {
+                                switch (xmlreader.Name)
+                                {
+                                    case "Camera":
+                                        {
+                                            camerainfo camera = new camerainfo();
+
+                                            while (xmlreader.Read())
+                                            {
+                                                bool dobreak = false;
+                                                xmlreader.MoveToElement();
+                                                switch (xmlreader.Name)
+                                                {
+                                                    case "name":
+                                                        camera.name = xmlreader.ReadString();
+                                                        break;
+                                                    case "imgw":
+                                                        camera.imagewidth = float.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                                        break;
+                                                    case "imgh":
+                                                        camera.imageheight = float.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                                        break;
+                                                    case "senw":
+                                                        camera.sensorwidth = float.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                                        break;
+                                                    case "senh":
+                                                        camera.sensorheight = float.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                                        break;
+                                                    case "flen":
+                                                        camera.focallen= float.Parse(xmlreader.ReadString(), new System.Globalization.CultureInfo("en-US"));
+                                                        break;
+                                                    case "Camera":
+                                                        cameras.Add(camera.name,camera);
+                                                        CMB_camera.Items.Add(camera.name);
+                                                        dobreak = true;
+                                                        break;
+                                                }
+                                                if (dobreak)
+                                                    break;
+                                            }
+                                            string temp = xmlreader.ReadString();
+                                        }
+                                        break;
+                                    case "Config":
+                                        break;
+                                    case "xml":
+                                        break;
+                                    default:
+                                        if (xmlreader.Name == "") // line feeds
+                                            break;
+                                        //config[xmlreader.Name] = xmlreader.ReadString();
+                                        break;
+                                }
+                            }
+                            catch (Exception ee) { Console.WriteLine(ee.Message); } // silent fail on bad entry
+                        }
+                    }
+                }
+                catch (Exception ex) { Console.WriteLine("Bad Camera File: " + ex.ToString()); } // bad config file
+            }
+        }
+
+        private void BUT_save_Click(object sender, EventArgs e)
+        {
+            camerainfo camera = new camerainfo();
+
+            // check if camera exists alreay
+            if (cameras.ContainsKey(CMB_camera.Text))
+            {
+                camera = cameras[CMB_camera.Text];
+            }
+            else
+            {
+                cameras.Add(CMB_camera.Text, camera);
+            }
+
+            try
+            {
+                camera.name = CMB_camera.Text;
+                camera.focallen = (float)num_focallength.Value;
+                camera.imageheight = float.Parse(TXT_imgheight.Text);
+                camera.imagewidth = float.Parse(TXT_imgwidth.Text);
+                camera.sensorheight = float.Parse(TXT_sensheight.Text);
+                camera.sensorwidth = float.Parse(TXT_senswidth.Text);
+            }
+            catch { MessageBox.Show("One of your entries is not a valid number"); return; }
+
+            cameras[CMB_camera.Text] = camera;
+
+            xmlcamera(true);
+        }
+
+        private void Camera_Load(object sender, EventArgs e)
+        {
+            xmlcamera(false);
+        }
+
     }
 }

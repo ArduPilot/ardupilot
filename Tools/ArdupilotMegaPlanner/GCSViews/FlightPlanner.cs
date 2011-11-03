@@ -1176,6 +1176,7 @@ namespace ArdupilotMega.GCSViews
 
                     try
                     {
+                        home.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
                         home.lat = (int)(float.Parse(TXT_homelat.Text) * 10000000);
                         home.lng = (int)(float.Parse(TXT_homelng.Text) * 10000000);
                         home.alt = (int)(float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist * 100); // use saved home
@@ -1287,10 +1288,10 @@ namespace ArdupilotMega.GCSViews
             foreach (Locationwp temp in cmds)
             {
                 i++;
-                /*if (temp.id == 0 && i != 0) // 0 and not home
+                if (temp.id == 0 && i != 0) // 0 and not home
                     break;
                 if (temp.id == 255 && i != 0) // bad record - never loaded any WP's - but have started the board up.
-                    break;*/
+                    break;
                 if (i + 1 >= Commands.Rows.Count)
                 {
                     Commands.Rows.Add();
@@ -2589,6 +2590,12 @@ namespace ArdupilotMega.GCSViews
             Commands.Rows[selectedrow].Cells[Param1.Index].Value = turns;
 
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+        }
+        private void BUT_Camera_Click(object sender, EventArgs e)
+        {
+            Camera form = new Camera();
+            MainV2.fixtheme(form);
+            form.Show();
         }
     }
 }
