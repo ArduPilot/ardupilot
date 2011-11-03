@@ -320,6 +320,7 @@ def fly_ArduCopter():
 
     shutil.copy(logfile, util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
     if os.path.exists('ArduCopter-valgrind.log'):
+        os.chmod('ArduCopter-valgrind.log', 0644)
         shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
     util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
     util.run_cmd(util.reltopdir("../bin/gpxtokml") + " " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog.gpx"))
