@@ -91,7 +91,7 @@ get_nav_throttle(long z_error)
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
 	int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1); //_p = .85
 
-	rate_error 		= rate_error - altitude_rate;
+	rate_error 		= rate_error - climb_rate;
 
 	// limit the rate
 	rate_error 		= constrain(rate_error, -80, 140);

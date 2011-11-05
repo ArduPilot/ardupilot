@@ -289,6 +289,20 @@ static void init_ardupilot()
 	// ---------------------------
 	reset_control_switch();
 
+	#if HIL_MODE != HIL_MODE_ATTITUDE
+		dcm.kp_roll_pitch(0.030000);
+		dcm.ki_roll_pitch(0.00001278),	// 50 hz I term
+		dcm.kp_yaw(0.08);
+		dcm.ki_yaw(0.00004);
+	#endif
+
+	// init the Z damopener
+	// --------------------
+	#if ACCEL_ALT_HOLD == 1
+	init_z_damper();
+	#endif
+
+
 	startup_ground();
 
 	Log_Write_Startup();

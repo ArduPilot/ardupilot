@@ -2,22 +2,22 @@
 
 // For changing active command mid-mission
 //----------------------------------------
-static void change_command(uint8_t index)
+static void change_command(uint8_t cmd_index)
 {
-	struct Location temp = get_command_with_index(index);
+	struct Location temp = get_cmd_with_index(cmd_index);
 
 	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 	} else {
 		command_must_index 	= NO_COMMAND;
 		next_command.id 	= NO_COMMAND;
-		g.waypoint_index 	= index - 1;
+		g.command_index 	= cmd_index - 1;
 		update_commands();
 	}
 }
 
-// called by 10 Hz Medium loop
-// ---------------------------
+// called by 10 Hz loop
+// --------------------
 static void update_commands(void)
 {
 	// fill command queue with a new command if available
@@ -25,10 +25,10 @@ static void update_commands(void)
 
 		// fetch next command if the next command queue is empty
 		// -----------------------------------------------------
-		if (g.waypoint_index < g.waypoint_total) {
+		if (g.command_index < g.command_total) {
 
 			// only if we have a cmd stored in EEPROM
-			next_command = get_command_with_index(g.waypoint_index + 1);
+			next_command = get_cmd_with_index(g.command_index + 1);
 			//Serial.printf("queue CMD %d\n", next_command.id);
 		}
 	}
@@ -50,7 +50,7 @@ static void update_commands(void)
 
 		// We acted on the queue - let's debug that
 		// ----------------------------------------
-		print_wp(&next_command, g.waypoint_index);
+		print_wp(&next_command, g.command_index);
 
 		// invalidate command queue so a new one is loaded
 		// -----------------------------------------------
@@ -88,11 +88,11 @@ process_next_command()
 		if (next_command.id < MAV_CMD_NAV_LAST ){
 
 			// we remember the index of our mission here
-			command_must_index = g.waypoint_index + 1;
+			command_must_index = g.command_index + 1;
 
 			// Save CMD to Log
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
+				Log_Write_Cmd(g.command_index + 1, &next_command);
 
 			// Act on the new command
 			process_must();
@@ -106,7 +106,7 @@ process_next_command()
 		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
 
 			// we remember the index of our mission here
-			command_may_index = g.waypoint_index + 1;
+			command_may_index = g.command_index + 1;
 
 			//SendDebug("MSG <pnc> new may ");
 			//SendDebugln(next_command.id,DEC);
@@ -115,7 +115,7 @@ process_next_command()
 
 			// Save CMD to Log
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
+				Log_Write_Cmd(g.command_index + 1, &next_command);
 
 			process_may();
 			return true;
@@ -128,7 +128,7 @@ process_next_command()
 			//SendDebugln(next_command.id,DEC);
 
 			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.waypoint_index + 1, &next_command);
+				Log_Write_Cmd(g.command_index + 1, &next_command);
 			process_now();
 			return true;
 		}

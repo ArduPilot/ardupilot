@@ -660,7 +660,7 @@ static void do_jump()
 		command_may_index 	= 0;
 
 		// set pointer to desired index
-		g.waypoint_index 	= next_command.p1 - 1;
+		g.command_index 	= next_command.p1 - 1;
 
 	} else if (jump == 0){
 		// we're done, move along
@@ -668,7 +668,7 @@ static void do_jump()
 
 	} else if (jump == -1) {
 		// repeat forever
-	    g.waypoint_index 	= next_command.p1 - 1;
+	    g.command_index 	= next_command.p1 - 1;
 	}
 }
 
