@@ -100,10 +100,7 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 	if( g.heli_servo_3.get_reverse() )
 	    g.heli_servo_3.servo_out = 3000 - g.heli_servo_3.servo_out;
 
-	if( g.heli_servo_4.get_reverse() )
-		g.heli_servo_4.servo_out = -yaw_out;  // should probably just use rc_4 directly like we do for a tricopter
-	else
-		g.heli_servo_4.servo_out = yaw_out;
+	g.heli_servo_4.servo_out = yaw_out;
 
 	// use servo_out to calculate pwm_out and radio_out
 	g.heli_servo_1.calc_pwm();

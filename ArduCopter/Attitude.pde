@@ -72,15 +72,19 @@ get_stabilize_yaw(long target_angle)
 		error 		= rate - (long)(degrees(omega.z) * 100.0);
 		rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 	}
+	
+	// output control:
+	return (int)constrain(rate, -4500, 4500);
 #else
 	// Rate P:
 	error 			= rate - (long)(degrees(omega.z) * 100.0);
 	rate 			= g.pi_rate_yaw.get_pi(error, G_Dt);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
-#endif
-
+	
 	// output control:
 	return (int)constrain(rate, -2500, 2500);
+#endif
+
 }
 
 #define ALT_ERROR_MAX 300
