@@ -3,21 +3,23 @@
 // For changing active command mid-mission
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
-{ 
+{
 	struct Location temp = get_cmd_with_index(cmd_index);
+
 	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs_send_text_P(SEVERITY_LOW,PSTR("Bad Request - cannot change to non-Nav cmd"));
 	} else {
 		gcs_send_text_fmt(PSTR("Received Request - jump to command #%i"),cmd_index);
-		nav_command_ID 	= NO_COMMAND;
+
+		nav_command_ID		= NO_COMMAND;
 		next_nav_command.id = NO_COMMAND;
-		non_nav_command_ID = NO_COMMAND;
-		nav_command_index = cmd_index - 1;
+		non_nav_command_ID 	= NO_COMMAND;
+
+		nav_command_index 	= cmd_index - 1;
 		g.command_index.set_and_save(cmd_index - 1);
 		process_next_command();
 	}
 }
-		
 
 // called by 10 Hz loop
 // --------------------
@@ -48,10 +50,10 @@ static void process_next_command()
 {
 	// This function makes sure that we always have a current navigation command
 	// and loads conditional or immediate commands if applicable
-	
+
 	struct Location temp;
 	byte old_index = 0;
-	
+
 	// these are Navigation/Must commands
 	// ---------------------------------
 	if (nav_command_ID == NO_COMMAND){ // no current navigation command loaded
@@ -71,7 +73,7 @@ static void process_next_command()
 			nav_command_ID = next_nav_command.id;
 			non_nav_command_index = NO_COMMAND;			// This will cause the next intervening non-nav command (if any) to be loaded
 			non_nav_command_ID = NO_COMMAND;
-		
+
 			if (g.log_bitmask & MASK_LOG_CMD) {
 				Log_Write_Cmd(g.command_index, &next_nav_command);
 			}
@@ -87,7 +89,7 @@ static void process_next_command()
 	} else if (non_nav_command_ID == NO_COMMAND) {	// If the ID is NO_COMMAND then we have just completed a non-nav command
 		non_nav_command_index++;
 	}
-	
+
 		//gcs_send_text_fmt(PSTR("Nav command index #%i"),nav_command_index);
 		//gcs_send_text_fmt(PSTR("Non-Nav command index #%i"),non_nav_command_index);
 		//gcs_send_text_fmt(PSTR("Non-Nav command ID #%i"),non_nav_command_ID);
@@ -106,8 +108,8 @@ static void process_next_command()
 			if (g.log_bitmask & MASK_LOG_CMD) {
 				Log_Write_Cmd(g.command_index, &next_nonnav_command);
 			}
-			
-			process_non_nav_command();	
+
+			process_non_nav_command();
 		}
 
 	}
@@ -134,7 +136,7 @@ static void process_non_nav_command()
 
 	if(non_nav_command_ID < MAV_CMD_CONDITION_LAST) {
 		handle_process_condition_command();
-	} else { 
+	} else {
 		handle_process_do_command();
 		// flag command ID so a new one is loaded
 		// -----------------------------------------

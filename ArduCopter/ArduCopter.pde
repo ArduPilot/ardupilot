@@ -303,7 +303,6 @@ static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
 static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 
-static int	climb_rate;								// m/s * 100  - For future implementation of controlled ascent/descent by rate
 static byte	wp_control;								// used to control - navgation or loiter
 
 static byte	command_must_index;						// current command memory location
@@ -335,9 +334,6 @@ static int		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-static long		altitude_error;						// meters * 100 we are off in altitude
-static long 	old_altitude;
-static int 		old_rate;
 static long 	yaw_error;							// how off are we pointed
 static long		long_error, lat_error;				// temp for debugging
 
@@ -361,10 +357,20 @@ static int 		ground_temperature;
 
 // Altitude Sensor variables
 // ----------------------
-static int		sonar_alt;
-static int		baro_alt;
 static byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
-static int		altitude_rate;
+static long		altitude_error;						// meters * 100 we are off in altitude
+
+static int		climb_rate;							// m/s * 100
+
+static int		sonar_alt;
+static int 		old_sonar_alt;
+static int		sonar_rate;
+
+static int		baro_alt;
+static int 		old_baro_alt;
+static int		baro_rate;
+
+
 
 // flight mode specific
 // --------------------
@@ -1206,12 +1212,21 @@ static void update_altitude()
 	return;
 	#else
 
+	// calc the vertical accel rate
+	int temp_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
+	baro_rate 		= (temp_alt - old_baro_alt) * 10;
+	old_baro_alt	= temp_alt;
+
 	if(g.sonar_enabled){
 		// filter out offset
 		float scale;
 
 		// read barometer
-		baro_alt = (baro_alt + read_barometer()) >> 1;
+		baro_alt 		= (baro_alt + read_barometer()) >> 1;
+
+		// calc rate of change for Sonar
+		sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
+		old_sonar_alt 	= sonar_alt;
 
 		if(baro_alt < 1000){
 
@@ -1224,21 +1239,23 @@ static void update_altitude()
 
 			scale = (sonar_alt - 400) / 200;
 			scale = constrain(scale, 0, 1);
-			current_loc.alt = ((float)sonar_alt * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+
+			current_loc.alt = ((float)sonar_alt  * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+			climb_rate 		= ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
+
 		}else{
 			current_loc.alt = baro_alt + home.alt;
+			climb_rate = baro_rate;
 		}
 
 	}else{
+		// No Sonar Case
 		baro_alt 		= read_barometer();
-		// no sonar altitude
 		current_loc.alt = baro_alt + home.alt;
+		climb_rate 		= baro_rate;
 	}
 
-	// calc the vertical accel rate
-	int temp_rate 	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
-	altitude_rate 	= (temp_rate - old_rate) * 10;
-	old_rate 		= temp_rate;
+
 	#endif
 }
 

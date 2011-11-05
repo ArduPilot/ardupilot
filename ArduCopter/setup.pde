@@ -815,12 +815,12 @@ static void report_batt_monitor()
 static void report_wp(byte index = 255)
 {
 	if(index == 255){
-		for(byte i = 0; i <= g.waypoint_total; i++){
-			struct Location temp = get_command_with_index(i);
+		for(byte i = 0; i <= g.command_total; i++){
+			struct Location temp = get_cmd_with_index(i);
 			print_wp(&temp, i);
 		}
 	}else{
-		struct Location temp = get_command_with_index(index);
+		struct Location temp = get_cmd_with_index(index);
 		print_wp(&temp, index);
 	}
 }

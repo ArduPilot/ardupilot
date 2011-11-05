@@ -3,7 +3,7 @@
 static void init_commands()
 {
 	// zero is home, but we always load the next command (1), in the code.
-    g.waypoint_index = 0;
+    g.command_index = 0;
 
     // This are registers for the current may and must commands
     // setting to zero will allow them to be written to by new commands
@@ -22,13 +22,13 @@ static void clear_command_queue(){
 
 // Getters
 // -------
-static struct Location get_command_with_index(int i)
+static struct Location get_cmd_with_index(int i)
 {
 	struct Location temp;
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
-	if (i > g.waypoint_total) {
+	if (i > g.command_total) {
 		// we do not have a valid command to load
 		// return a WP with a "Blank" id
 		temp.id = CMD_BLANK;
@@ -77,7 +77,7 @@ static struct Location get_command_with_index(int i)
 // -------
 static void set_command_with_index(struct Location temp, int i)
 {
-	i = constrain(i, 0, g.waypoint_total.get());
+	i = constrain(i, 0, g.command_total.get());
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -100,18 +100,18 @@ static void set_command_with_index(struct Location temp, int i)
 
 static void increment_WP_index()
 {
-    if (g.waypoint_index < g.waypoint_total) {
-        g.waypoint_index++;
+    if (g.command_index < g.command_total) {
+        g.command_index++;
 	}
 
-    SendDebugln(g.waypoint_index,DEC);
+    SendDebugln(g.command_index,DEC);
 }
 
 /*
 static void decrement_WP_index()
 {
-    if (g.waypoint_index > 0) {
-        g.waypoint_index.set_and_save(g.waypoint_index - 1);
+    if (g.command_index > 0) {
+        g.command_index.set_and_save(g.command_index - 1);
     }
 }*/
 
@@ -135,7 +135,7 @@ static Location get_LOITER_home_wp()
 	next_WP = current_loc;
 
 	// read home position
-	struct Location temp 	= get_command_with_index(0);	// 0 = home
+	struct Location temp 	= get_cmd_with_index(0);	// 0 = home
 	temp.id 				= MAV_CMD_NAV_LOITER_UNLIM;
 	temp.alt 				= read_alt_to_hold();
 	return temp;
@@ -149,7 +149,7 @@ It precalculates all the necessary stuff.
 static void set_next_WP(struct Location *wp)
 {
 	//SendDebug("MSG <set_next_wp> wp_index: ");
-	//SendDebugln(g.waypoint_index, DEC);
+	//SendDebugln(g.command_index, DEC);
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------

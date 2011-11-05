@@ -21,7 +21,7 @@ public:
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
-	// GCS will interpret values 0-9 as ArduPilotMega.	Developers may use
+	// GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
 	// values within that range to identify different branches.
 	//
 	static const uint16_t k_software_type = 10;		// 0 for APM trunk
@@ -146,8 +146,8 @@ public:
 	// 220: Waypoint data
 	//
 	k_param_waypoint_mode = 220,
-	k_param_waypoint_total,
-	k_param_waypoint_index,
+	k_param_command_total,
+	k_param_command_index,
 	k_param_command_must_index,
 	k_param_waypoint_radius,
 	k_param_loiter_radius,
@@ -193,8 +193,8 @@ public:
 	// Waypoints
 	//
 	AP_Int8		waypoint_mode;
-	AP_Int8		waypoint_total;
-	AP_Int8		waypoint_index;
+	AP_Int8		command_total;
+	AP_Int8		command_index;
 	AP_Int8		command_must_index;
 	AP_Int8		waypoint_radius;
 	AP_Int8		loiter_radius;
@@ -316,8 +316,8 @@ public:
 	low_voltage				(LOW_VOLTAGE,				k_param_low_voltage,					PSTR("LOW_VOLT")),
 
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
-	waypoint_total			(0,							k_param_waypoint_total,					PSTR("WP_TOTAL")),
-	waypoint_index			(0,							k_param_waypoint_index,					PSTR("WP_INDEX")),
+	command_total			(0,							k_param_command_total,					PSTR("WP_TOTAL")),
+	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
 	command_must_index		(0,							k_param_command_must_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
 	loiter_radius			(LOITER_RADIUS * 100,		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),

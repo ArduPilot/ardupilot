@@ -99,7 +99,7 @@ static void read_trim_switch()
 			// set the next_WP
 			CH7_wp_index++;
 			current_loc.id = MAV_CMD_NAV_WAYPOINT;
-			g.waypoint_total.set_and_save(CH7_wp_index);
+			g.command_total.set_and_save(CH7_wp_index);
 			set_command_with_index(current_loc, CH7_wp_index);
 		}
 	}

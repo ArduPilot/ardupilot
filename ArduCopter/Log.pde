@@ -762,7 +762,7 @@ static void Log_Write_Cmd(byte num, struct Location *wp)
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CMD_MSG);
 
-	DataFlash.WriteByte(g.waypoint_total);
+	DataFlash.WriteByte(g.command_total);
 
 	DataFlash.WriteByte(num);
 	DataFlash.WriteByte(wp->id);
