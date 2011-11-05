@@ -43,7 +43,9 @@ public:
 	Vector3f	get_accel(void) { return _accel_vector; }
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
-
+	Vector3f	get_integrator(void) {return _omega_I; }		// We return the current drift correction integrator values
+	
+	float		get_health(void) {return _health;}
 	void		set_centripetal(bool b) {_centripetal = b;}
 	bool		get_centripetal(void) {return _centripetal;}
 	void		set_compass(Compass *compass);
@@ -51,8 +53,6 @@ public:
 	// Methods
 	void 		update_DCM(void);
 	void 		update_DCM_fast(void);
-
-	float		get_health(void);
 
 	long		roll_sensor;					// Degrees * 100
 	long		pitch_sensor;					// Degrees * 100
