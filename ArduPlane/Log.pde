@@ -550,7 +550,7 @@ static void Log_Read_Performance()
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
-	for (int y = 1; y <= 9; y++) {
+	for (int y = 1; y <= 12; y++) {
 		if(y < 3 || y > 7){
 			logvar = DataFlash.ReadInt();
 		}else{
