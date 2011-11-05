@@ -343,10 +343,10 @@ AP_DCM::drift_correction(void)
 	_omega_P += _error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
 	_omega_I += _error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
 
-	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed half the saturation limit of the gyros
+	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed ~30 degrees/second
 	integrator_magnitude = _omega_I.length();
-	if (integrator_magnitude > radians(300)) {
-		_omega_I *= (0.5f * radians(300) / integrator_magnitude);		// Why do we have this discontinuous?  EG, why the 0.5?
+	if (integrator_magnitude > radians(30)) {
+		_omega_I *= (radians(30) / integrator_magnitude);		
 	}
 	//Serial.print("*");
 }
