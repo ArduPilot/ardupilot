@@ -393,12 +393,4 @@ AP_DCM::euler_yaw(void)
 		yaw_sensor += 36000;
 }
 
-/**************************************************/
-
-float
-AP_DCM::get_health(void)
-{
-	return _health;
-}
-
 
