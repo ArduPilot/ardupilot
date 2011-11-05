@@ -125,14 +125,6 @@ AP_DCM::matrix_update(float _G_Dt)
 	Matrix3f	update_matrix;
 	Matrix3f	temp_matrix;
 
-	//Record when you saturate any of the gyros.
-	/*
-	if( (fabs(_gyro_vector.x) >= radians(300)) ||
-		(fabs(_gyro_vector.y) >= radians(300)) ||
-		(fabs(_gyro_vector.z) >= radians(300))){
-		gyro_sat_count++;
-	}*/
-
 	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
 	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
 
@@ -232,6 +224,9 @@ AP_DCM::normalize(void)
 		_dcm_matrix.c.x = 0.0f;
 		_dcm_matrix.c.y = 0.0f;
 		_dcm_matrix.c.z = 1.0f;
+		_omega_I.x = 0.0f;
+		_omega_I.y = 0.0f;
+		_omega_I.z = 0.0f;
 	}
 }
 
