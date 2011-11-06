@@ -1066,21 +1066,25 @@ void update_throttle_mode(void)
 				// clear the new data flag
 				invalid_throttle = false;
 			}
-			#if FRAME_CONFIG == HELI_FRAME
-				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
-			#else
-				angle_boost = get_angle_boost(g.throttle_cruise);
+			angle_boost = get_angle_boost(g.throttle_cruise);
 
-				if(manual_boost != 0){
-					//remove alt_hold_velocity when implemented
+			if(manual_boost != 0){
+				//remove alt_hold_velocity when implemented
+				#if FRAME_CONFIG == HELI_FRAME
+					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + manual_boost + get_z_damping()));
+				#else
 					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
-					// reset next_WP.alt
-					next_WP.alt = max(current_loc.alt, 100);
-				}else{
+				#endif
+				// reset next_WP.alt
+				next_WP.alt = max(current_loc.alt, 100);
+			}else{
+				#if FRAME_CONFIG == HELI_FRAME
+					//g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
+					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + get_z_damping()));
+				#else
 					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
-				}
-
-			#endif
+				#endif
+			}
 			break;
 	}
 }
