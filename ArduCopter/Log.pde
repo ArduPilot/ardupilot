@@ -641,7 +641,6 @@ static void Log_Read_Nav_Tuning()
 
 
 // Write a control tuning packet. Total length : 22 bytes
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Control_Tuning()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -662,8 +661,12 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(angle_boost);							//8
 	DataFlash.WriteInt(manual_boost);							//9
 	//DataFlash.WriteInt((int)(accels_rot.z * 1000));				//10
-	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));							//9
 
+#if HIL_MODE == HIL_MODE_ATTITUDE
+	DataFlash.WriteInt(0);
+#else
+	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));							//9
+#endif
 
 	DataFlash.WriteInt(g.rc_3.servo_out);						//11
 	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//12
@@ -671,7 +674,6 @@ static void Log_Write_Control_Tuning()
 
 	DataFlash.WriteByte(END_BYTE);
 }
-#endif
 
 // Read an control tuning packet
 static void Log_Read_Control_Tuning()
