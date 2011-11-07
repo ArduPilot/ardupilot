@@ -319,7 +319,7 @@ static int find_last_log_page(int bottom_page)
 		look_page = (top_page + bottom_page) / 2;
 		DataFlash.StartRead(look_page);
 		check = DataFlash.ReadLong();
-		if(check == (int32_t)~0)
+		if(check == -1L)
 			top_page = look_page;
 		else
 			bottom_page = look_page;
