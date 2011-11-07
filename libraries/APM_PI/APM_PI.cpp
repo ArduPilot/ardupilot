@@ -8,9 +8,10 @@
 #include "APM_PI.h"
 
 long
-APM_PI::get_pi(int32_t error, float dt)
+APM_PI::get_pi(int32_t error, float dt, bool calc_i)
 {
-	_integrator += ((float)error * _ki) * dt;
+	if(true)
+		_integrator += ((float)error * _ki) * dt;
 
 	if (_integrator < -_imax) {
 		_integrator = -_imax;
