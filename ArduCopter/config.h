@@ -280,9 +280,8 @@
 // Y6 Support
 
 #ifndef TOP_BOTTOM_RATIO
-# define TOP_BOTTOM_RATIO	0.92
+# define TOP_BOTTOM_RATIO	1.00
 #endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
