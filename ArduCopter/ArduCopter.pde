@@ -691,15 +691,13 @@ static void medium_loop()
 				update_commands();
 			}
 
-			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if(motor_armed){
-					if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
-						Log_Write_Attitude();
+            if(motor_armed){
+                if (g.log_bitmask & MASK_LOG_ATTITUDE_MED)
+                    Log_Write_Attitude();
 
-					if (g.log_bitmask & MASK_LOG_CTUN)
-						Log_Write_Control_Tuning();
-				}
-			#endif
+                if (g.log_bitmask & MASK_LOG_CTUN)
+                    Log_Write_Control_Tuning();
+            }
 
 				// send all requested output streams with rates requested
 				// between 5 and 45 Hz
