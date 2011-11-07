@@ -508,7 +508,7 @@ void loop()
 	long timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
-	if ((timer - fast_loopTimer) >= 4000) {
+	if ((timer - fast_loopTimer) >= 5000) {
 		//PORTK |= B00010000;
 		G_Dt 				= (float)(timer - fast_loopTimer) / 1000000.f;		// used by PI Loops
 		fast_loopTimer 		= timer;
@@ -730,9 +730,14 @@ static void medium_loop()
 
 			// Do an extra baro read
 			// ---------------------
-#if HIL_MODE != HIL_MODE_ATTITUDE
+			#if HIL_MODE != HIL_MODE_ATTITUDE
 			barometer.Read();
-#endif
+			#endif
+
+			// agmatthews - USERHOOKS
+			#ifdef USERHOOK_MEDIUMLOOP
+			   USERHOOK_MEDIUMLOOP
+			#endif
 
 			slow_loop();
 			break;
@@ -743,11 +748,6 @@ static void medium_loop()
 			medium_loopCounter = 0;
 			break;
 	}
-// agmatthews - USERHOOKS
-#ifdef USERHOOK_MEDIUMLOOP
-   USERHOOK_MEDIUMLOOP
-#endif
-
 }
 
 // stuff that happens at 50 hz
@@ -1228,7 +1228,7 @@ static void update_altitude()
 		sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
 		old_sonar_alt 	= sonar_alt;
 
-		if(baro_alt < 1000){
+		if(baro_alt < 700){
 
 			#if SONAR_TILT_CORRECTION == 1
 				// correct alt for angle of the sonar
