@@ -32,13 +32,13 @@ static void output_motors_armed()
 
 	// Multi-Wii Mix
 	//left
-	motor_out[CH_2] 			= g.rc_3.radio_out + g.rc_1.pwm_out + (g.rc_2.pwm_out * 2 / 3); // LEFT	 TOP - CW
+	motor_out[CH_2] 			= (g.rc_3.radio_out * g.top_bottom_ratio) + g.rc_1.pwm_out + (g.rc_2.pwm_out * 2 / 3); // LEFT	 TOP - CW
 	motor_out[CH_3] 			= g.rc_3.radio_out + g.rc_1.pwm_out	+ (g.rc_2.pwm_out * 2 / 3); // BOTTOM_LEFT - CCW
 	//right
-	motor_out[CH_7] 			= g.rc_3.radio_out - g.rc_1.pwm_out + (g.rc_2.pwm_out * 2 / 3); // RIGHT TOP - CW
+	motor_out[CH_7] 			= (g.rc_3.radio_out * g.top_bottom_ratio) - g.rc_1.pwm_out + (g.rc_2.pwm_out * 2 / 3); // RIGHT TOP - CW
 	motor_out[CH_1] 			= g.rc_3.radio_out - g.rc_1.pwm_out + (g.rc_2.pwm_out * 2 / 3); // BOTTOM_RIGHT - CCW
 	//back
-	motor_out[CH_8] 			= g.rc_3.radio_out - (g.rc_2.pwm_out * 4 / 3); 					// REAR TOP - CCW
+	motor_out[CH_8] 			= (g.rc_3.radio_out * g.top_bottom_ratio) - (g.rc_2.pwm_out * 4 / 3); 					// REAR TOP - CCW
 	motor_out[CH_4] 			= g.rc_3.radio_out - (g.rc_2.pwm_out * 4 / 3); 					// BOTTOM_REAR - CW
 
 	//left
