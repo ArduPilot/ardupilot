@@ -36,6 +36,9 @@
 #
 SYSTYPE			:=	$(shell uname)
 
+# force LANG to C so awk works sanely on MacOS
+export LANG=C
+
 #
 # Locate the sketch sources based on the initial Makefile's path
 #

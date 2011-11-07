@@ -1066,21 +1066,25 @@ void update_throttle_mode(void)
 				// clear the new data flag
 				invalid_throttle = false;
 			}
-			#if FRAME_CONFIG == HELI_FRAME
-				g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle);
-			#else
-				angle_boost = get_angle_boost(g.throttle_cruise);
+			angle_boost = get_angle_boost(g.throttle_cruise);
 
-				if(manual_boost != 0){
-					//remove alt_hold_velocity when implemented
+			if(manual_boost != 0){
+				//remove alt_hold_velocity when implemented
+				#if FRAME_CONFIG == HELI_FRAME
+					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + manual_boost + get_z_damping()));
+				#else
 					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
-					// reset next_WP.alt
-					next_WP.alt = max(current_loc.alt, 100);
-				}else{
+				#endif
+				// reset next_WP.alt
+				next_WP.alt = max(current_loc.alt, 100);
+			}else{
+				#if FRAME_CONFIG == HELI_FRAME
+					//g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
+					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + get_z_damping()));
+				#else
 					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
-				}
-
-			#endif
+				#endif
+			}
 			break;
 	}
 }
@@ -1280,14 +1284,14 @@ adjust_altitude()
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
-		g.throttle_cruise += g.pi_alt_hold.get_integrator();
+		g.throttle_cruise += (g.pi_alt_hold.get_integrator() * g.pi_throttle.kP() + g.pi_throttle.get_integrator());
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
 	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
-		g.throttle_cruise += g.pi_alt_hold.get_integrator();
+		g.throttle_cruise += (g.pi_alt_hold.get_integrator() * g.pi_throttle.kP() + g.pi_throttle.get_integrator());
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
