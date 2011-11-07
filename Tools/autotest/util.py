@@ -32,7 +32,7 @@ def run_cmd(cmd, dir=".", show=False, output=False, checkfail=True):
 def rmfile(path):
     '''remove a file if it exists'''
     try:
-        os.unlink('eeprom.bin')
+        os.unlink(path)
     except Exception:
         pass
 
@@ -48,19 +48,33 @@ def build_SIL(atype):
             dir=reltopdir(atype),
             checkfail=True)
 
-def start_SIL(atype):
+def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     '''launch a SIL instance'''
-    ret = pexpect.spawn(('valgrind -q --log-file=%s-valgrind.log ' % atype) + reltopdir('tmp/%s.build/%s.elf' % (atype, atype)),
-                        logfile=sys.stdout, timeout=5)
+    cmd=""
+    if valgrind:
+        cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
+    cmd += reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
+    if wipe:
+        cmd += ' -w'
+    if CLI:
+        cmd += ' -s'
+    ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.expect('Waiting for connection')
     return ret
 
-def start_MAVProxy_SIL(atype, options=''):
+def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
+                       options=None, logfile=sys.stdout):
     '''launch mavproxy connected to a SIL instance'''
     MAVPROXY = reltopdir('../MAVProxy/mavproxy.py')
-    ret = pexpect.spawn('%s --master=tcp:127.0.0.1:5760 --aircraft=test.%s %s' % (
-        MAVPROXY,atype,options),
-                        logfile=sys.stdout, timeout=60)
+    cmd = MAVPROXY + ' --master=%s' % master
+    if setup:
+        cmd += ' --setup'
+    if aircraft is None:
+        aircraft = 'test.%s' % atype
+    cmd += ' --aircraft=%s' % aircraft
+    if options is not None:
+        cmd += ' ' + options
+    ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
     return ret
 
 
