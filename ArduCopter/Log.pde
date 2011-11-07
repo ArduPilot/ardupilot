@@ -347,7 +347,7 @@ static int find_last_log_page(int bottom_page)
 
 		//Serial.printf("look page:%d, check:%d\n", look_page, check);
 
-		if(check == (int32_t)~0)
+		if(check == -1L)
 			top_page = look_page;
 		else
 			bottom_page = look_page;
