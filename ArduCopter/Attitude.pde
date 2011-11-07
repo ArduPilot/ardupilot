@@ -1,9 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 static int
-get_stabilize_roll(long target_angle)
+get_stabilize_roll(int32_t target_angle)
 {
-	long error;
-	long rate;
+	int32_t error;
+	int32_t rate;
 
 	error 		= wrap_180(target_angle - dcm.roll_sensor);
 
@@ -16,7 +16,7 @@ get_stabilize_roll(long target_angle)
 
 #if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
 	// Rate P:
-	error 		= rate - (long)(degrees(omega.x) * 100.0);
+	error 		= rate - (degrees(omega.x) * 100.0);
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
 #endif
@@ -26,10 +26,10 @@ get_stabilize_roll(long target_angle)
 }
 
 static int
-get_stabilize_pitch(long target_angle)
+get_stabilize_pitch(int32_t target_angle)
 {
-	long error;
-	long rate;
+	int32_t error;
+	int32_t rate;
 
 	error 		= wrap_180(target_angle - dcm.pitch_sensor);
 
@@ -42,7 +42,7 @@ get_stabilize_pitch(long target_angle)
 
 #if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
 	// Rate P:
-	error 		= rate - (long)(degrees(omega.y) * 100.0);
+	error 		= rate - (degrees(omega.y) * 100.0);
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
 #endif
@@ -54,10 +54,10 @@ get_stabilize_pitch(long target_angle)
 
 #define YAW_ERROR_MAX 2000
 static int
-get_stabilize_yaw(long target_angle)
+get_stabilize_yaw(int32_t target_angle)
 {
-	long error;
-	long rate;
+	int32_t error;
+	int32_t rate;
 
 	yaw_error 		= wrap_180(target_angle - dcm.yaw_sensor);
 
@@ -69,7 +69,7 @@ get_stabilize_yaw(long target_angle)
 #if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
 	if( ! g.heli_ext_gyro_enabled ) {
 		// Rate P:
-		error 		= rate - (long)(degrees(omega.z) * 100.0);
+		error 		= rate - (degrees(omega.z) * 100.0);
 		rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 	}
 
@@ -77,7 +77,7 @@ get_stabilize_yaw(long target_angle)
 	return (int)constrain(rate, -4500, 4500);
 #else
 	// Rate P:
-	error 			= rate - (long)(degrees(omega.z) * 100.0);
+	error 			= rate - (degrees(omega.z) * 100.0);
 	rate 			= g.pi_rate_yaw.get_pi(error, G_Dt);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
 
@@ -89,7 +89,7 @@ get_stabilize_yaw(long target_angle)
 
 #define ALT_ERROR_MAX 300
 static int
-get_nav_throttle(long z_error)
+get_nav_throttle(int32_t z_error)
 {
 	bool calc_i = abs(z_error) < ALT_ERROR_MAX;
 	// limit error to prevent I term run up
@@ -102,24 +102,24 @@ get_nav_throttle(long z_error)
 }
 
 static int
-get_rate_roll(long target_rate)
+get_rate_roll(int32_t target_rate)
 {
-	long error	= (target_rate * 3.5) - (long)(degrees(omega.x) * 100.0);
+	int32_t error	= (target_rate * 3.5) - (degrees(omega.x) * 100.0);
 	return g.pi_acro_roll.get_pi(error, G_Dt);
 }
 
 static int
-get_rate_pitch(long target_rate)
+get_rate_pitch(int32_t target_rate)
 {
-	long error	= (target_rate * 3.5) - (long)(degrees(omega.y) * 100.0);
+	int32_t error	= (target_rate * 3.5) - (degrees(omega.y) * 100.0);
 	return  g.pi_acro_pitch.get_pi(error, G_Dt);
 }
 
 static int
-get_rate_yaw(long target_rate)
+get_rate_yaw(int32_t target_rate)
 {
-	long error;
-	error		= (target_rate * 4.5) - (long)(degrees(omega.z) * 100.0);
+	int32_t error;
+	error		= (target_rate * 4.5) - (degrees(omega.z) * 100.0);
 	target_rate = g.pi_rate_yaw.get_pi(error, G_Dt);
 
 	// output control:
@@ -158,7 +158,7 @@ throttle control
 static long
 get_nav_yaw_offset(int yaw_input, int reset)
 {
-	long _yaw;
+	int32_t _yaw;
 
 	if(reset == 0){
 		// we are on the ground
@@ -168,7 +168,7 @@ get_nav_yaw_offset(int yaw_input, int reset)
 		// re-define nav_yaw if we have stick input
 		if(yaw_input != 0){
 			// set nav_yaw + or - the current location
-			_yaw = (long)yaw_input + dcm.yaw_sensor;
+			_yaw = yaw_input + dcm.yaw_sensor;
 			// we need to wrap our value so we can be 0 to 360 (*100)
 			return wrap_360(_yaw);
 

@@ -45,7 +45,7 @@ static void init_barometer(void)
 }
 
 /*
-static long read_baro_filtered(void)
+static int32_t read_baro_filtered(void)
 {
 
 	// get new data from absolute pressure sensor
@@ -53,7 +53,7 @@ static long read_baro_filtered(void)
 
 	return barometer.Press;
 
-	long pressure = 0;
+	int32_t pressure = 0;
 	// add new data into our filter
 	baro_filter[baro_filter_index] = barometer.Press;
 	baro_filter_index++;
@@ -75,7 +75,7 @@ static long read_baro_filtered(void)
 	//
 }
 */
-static long read_barometer(void)
+static int32_t read_barometer(void)
 {
  	float x, scaling, temp;
 

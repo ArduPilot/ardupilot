@@ -1660,8 +1660,8 @@ GCS_MAVLINK::queued_waypoint_send()
 */
 static void mavlink_delay(unsigned long t)
 {
-    unsigned long tstart;
-    static unsigned long last_1hz, last_50hz;
+    uint32_t tstart;
+    static uint32_t last_1hz, last_50hz;
 
 	if (in_mavlink_delay) {
         // this should never happen, but let's not tempt fate by
@@ -1674,7 +1674,7 @@ static void mavlink_delay(unsigned long t)
 
     tstart = millis();
     do {
-        unsigned long tnow = millis();
+        uint32_t tnow = millis();
         if (tnow - last_1hz > 1000) {
             last_1hz = tnow;
             gcs_send_message(MSG_HEARTBEAT);
