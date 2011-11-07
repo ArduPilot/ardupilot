@@ -110,6 +110,26 @@ static inline size_t strlcat_P(char *buffer, const prog_char_t *pstr, size_t buf
     return strlcat_P(buffer, (const prog_char *)pstr, buffer_size);
 }
 
+
+// read something the size of a pointer. This makes the menu code more
+// portable
+static inline uintptr_t pgm_read_pointer(const void *s)
+{
+    if (sizeof(uintptr_t) == sizeof(uint16_t)) {
+        return (uintptr_t)pgm_read_word(s);
+    } else {
+        union {
+            uintptr_t p;
+            uint8_t a[sizeof(uintptr_t)];
+        } u;
+        uint8_t i;
+        for (i=0; i< sizeof(uintptr_t); i++) {
+            u.a[i] = pgm_read_byte(i + (const prog_char *)s);
+        }
+        return u.p;
+    }
+}
+
 //@}
 
 
