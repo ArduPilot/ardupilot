@@ -31,6 +31,7 @@
 			
 */
 
+#include <stdint.h>
 #include "DataFlash.h"
 #include <SPI.h>
 
