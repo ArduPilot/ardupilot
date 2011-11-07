@@ -27,8 +27,13 @@ DataFlash_Class::DataFlash_Class()
 void DataFlash_Class::Init(void)
 {
 	if (flash_fd == 0) {
-		flash_fd = open("dataflash.bin", O_RDWR|O_CREAT, 0777);
-		ftruncate(flash_fd, DF_NUM_PAGES*DF_PAGE_SIZE);
+		flash_fd = open("dataflash.bin", O_RDWR, 0777);
+		if (flash_fd == -1) {
+			uint8_t fill[DF_PAGE_SIZE*DF_NUM_PAGES];
+			flash_fd = open("dataflash.bin", O_RDWR | O_CREAT, 0777);
+			memset(fill, 0xFF, sizeof(fill));
+			write(flash_fd, fill, sizeof(fill));
+		}
 	}
 	df_PageSize = DF_PAGE_SIZE;
 	df_BufferNum  = 1;
@@ -96,8 +101,9 @@ unsigned char DataFlash_Class::BufferRead (unsigned char BufferNum, uint16_t Int
 
 void DataFlash_Class::PageErase (uint16_t PageAdr)
 {
-	uint8_t zero[DF_PAGE_SIZE] = {0,};
-	pwrite(flash_fd, zero, DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
+	uint8_t fill[DF_PAGE_SIZE];
+	memset(fill, 0xFF, sizeof(fill));
+	pwrite(flash_fd, fill, DF_PAGE_SIZE, PageAdr*DF_PAGE_SIZE);
 }
 
 
