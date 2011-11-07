@@ -256,8 +256,7 @@ def fly_ArduCopter():
     '''fly ArduCopter in SIL'''
     global expect_list, homeloc
 
-    util.rmfile('eeprom.bin')
-    sil = util.start_SIL('ArduCopter')
+    sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
     mavproxy.expect('Please Run Setup')
 

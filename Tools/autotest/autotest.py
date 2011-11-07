@@ -9,8 +9,7 @@ os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
     '''get default parameters'''
-    util.rmfile('eeprom.bin')
-    sil = util.start_SIL(atype)
+    sil = util.start_SIL(atype, wipe=True)
     mavproxy = util.start_MAVProxy_SIL(atype)
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
@@ -26,6 +25,24 @@ def get_default_params(atype):
     mavproxy.close()
     sil.close()
     print("Saved defaults for %s to %s" % (atype, dest))
+
+
+def dump_logs(atype):
+    '''dump DataFlash logs'''
+    print("Dumping logs for %s" % atype)
+    sil = util.start_SIL(atype, CLI=True)
+    logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
+    log = open(logfile, mode='w')
+    mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
+    mavproxy.expect(']')
+    mavproxy.send("logs\n")
+    mavproxy.expect("Log]")
+    mavproxy.send("dump 1\n")
+    mavproxy.expect("Log]")
+    mavproxy.close()
+    sil.close()
+    log.close()
+    print("Saved log for %s to %s" % (atype, logfile))
 
 def test_prerequesites():
     '''check we have the right directories and tools to run tests'''
@@ -49,10 +66,12 @@ opts, args = parser.parse_args()
 
 steps = [
     'build.ArduPlane',
-    'build.ArduCopter',
     'defaults.ArduPlane',
+    'logs.ArduPlane',
+    'build.ArduCopter',
     'defaults.ArduCopter',
-    'fly.ArduCopter'
+    'fly.ArduCopter',
+    'logs.ArduCopter',
     ]
 
 skipsteps = opts.skip.split(',')
@@ -81,6 +100,10 @@ for step in steps:
         get_default_params('ArduPlane')
     elif step == 'defaults.ArduCopter':
         get_default_params('ArduCopter')
+    elif step == 'logs.ArduPlane':
+        dump_logs('ArduPlane')
+    elif step == 'logs.ArduCopter':
+        dump_logs('ArduCopter')
     elif step == 'fly.ArduCopter':
         arducopter.fly_ArduCopter()
     else:
