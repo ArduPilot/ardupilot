@@ -260,7 +260,8 @@ static void start_new_log()
 		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
 	}
 
-	if((end_pages[num_existing_logs - 1] < 4095) && (num_existing_logs < MAX_NUM_LOGS /*50*/)) {
+	if(num_existing_logs == 0 ||
+       ((end_pages[num_existing_logs - 1] < 4095) && (num_existing_logs < MAX_NUM_LOGS /*50*/))) {
 
 		if(num_existing_logs > 0)
 			start_pages[num_existing_logs] = end_pages[num_existing_logs - 1] + 1;
