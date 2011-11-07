@@ -72,7 +72,7 @@ get_stabilize_yaw(long target_angle)
 		error 		= rate - (long)(degrees(omega.z) * 100.0);
 		rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 	}
-	
+
 	// output control:
 	return (int)constrain(rate, -4500, 4500);
 #else
@@ -80,7 +80,7 @@ get_stabilize_yaw(long target_angle)
 	error 			= rate - (long)(degrees(omega.z) * 100.0);
 	rate 			= g.pi_rate_yaw.get_pi(error, G_Dt);
 	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
-	
+
 	// output control:
 	return (int)constrain(rate, -2500, 2500);
 #endif
@@ -203,17 +203,18 @@ static float posError = 0;
 static float prevSensedPos = 0;
 
 // tuning for dead reckoning
-static float synPosP = 25 * G_Dt;
-static float synPosI = 100 * G_Dt;
-static float synVeloP = 1.5 * G_Dt;
-static float maxVeloCorrection = 5 * G_Dt;
+static const float dt_50hz = 0.02;
+static float synPosP = 10 * dt_50hz;
+static float synPosI = 15 * dt_50hz;
+static float synVeloP = 1.5 * dt_50hz;
+static float maxVeloCorrection = 5 * dt_50hz;
 static float maxSensedVelo = 1;
-static float synPosFilter = 0.13; // lower to filter more. should approximate sensor filtering
+static float synPosFilter = 0.5;
 
 #define NUM_G_SAMPLES 200
 
 // Z damping term.
-static float fullDampP = 0.200;
+static float fullDampP = 0.100;
 
 float get_world_Z_accel()
 {
@@ -237,10 +238,10 @@ float dead_reckon_Z(float sensedPos, float sensedAccel)
 	// a noisy altitude and accelerometer data.
 
 	// synthesize uncorrected velocity by integrating acceleration
-	synVelo += (sensedAccel - estimatedAccelOffset) * G_Dt;
+	synVelo += (sensedAccel - estimatedAccelOffset) * dt_50hz;
 
 	// synthesize uncorrected position by integrating uncorrected velocity
-	synPos += synVelo * G_Dt;
+	synPos += synVelo * dt_50hz;
 
 	// filter synPos, the better this filter matches the filtering and dead time
 	// of the sensed position, the less the position estimate will lag.
@@ -257,7 +258,7 @@ float dead_reckon_Z(float sensedPos, float sensedAccel)
 
 	// correct integrated velocity by the sensed position delta in a small proportion
 	// (i.e., the low frequency of the delta)
-	float sensedVelo = (sensedPos - prevSensedPos) / G_Dt;
+	float sensedVelo = (sensedPos - prevSensedPos) / dt_50hz;
 	synVelo += constrain(sensedVelo - synVelo, -maxSensedVelo, maxSensedVelo) * synVeloP;
 
 	prevSensedPos = sensedPos;
