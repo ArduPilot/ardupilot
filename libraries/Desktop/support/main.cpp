@@ -4,17 +4,43 @@
 #include <sys/time.h>
 #include <sched.h>
 #include <wiring.h>
+#include <getopt.h>
 #include "desktop.h"
 
 void setup(void);
 void loop(void);
 
-struct timeval sketch_start_time;
+// the state of the desktop simulation
+struct desktop_state desktop_state;
 
-int main(void)
+static void usage(void)
 {
-	gettimeofday(&sketch_start_time, NULL);
+	printf("Options:\n");
+	printf("\t-s          enable CLI slider switch\n");
+}
+
+int main(int argc, char * const argv[])
+{
+	int opt;
+
+	// default state
+	desktop_state.slider = false;
+	gettimeofday(&desktop_state.sketch_start_time, NULL);
+
+	while ((opt = getopt(argc, argv, "sh")) != -1) {
+		switch (opt) {
+		case 's':
+			desktop_state.slider = true;
+			break;
+		default:
+			usage();
+			break;
+		}
+	}
+
+	// run main setup() function from sketch
 	setup();
+
 	while (true) {
 		struct timeval tv;
 		fd_set fds;
