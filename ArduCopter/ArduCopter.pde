@@ -247,28 +247,28 @@ static const char* flight_mode_strings[] = {
 */
 
 // temp
-static int y_actual_speed;
-static int y_rate_error;
+static int16_t y_actual_speed;
+static int16_t y_rate_error;
 
 // calc the
-static int x_actual_speed;
-static int x_rate_error;
+static int16_t x_actual_speed;
+static int16_t x_rate_error;
 
 // Radio
 // -----
 static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
-static int 		motor_out[8];
+static int16_t  motor_out[8];
 static bool		do_simple = false;
 
 // Heli
 // ----
 #if FRAME_CONFIG ==	HELI_FRAME
 static float heli_rollFactor[3], heli_pitchFactor[3];  // only required for 3 swashplate servos
-static int heli_servo_min[3], heli_servo_max[3];       // same here.  for yaw servo we use heli_servo4_min/max parameter directly
-static long heli_servo_out[4];                         // used for servo averaging for analog servos
-static int heli_servo_out_count = 0;                   // use for servo averaging
+static int16_t heli_servo_min[3], heli_servo_max[3];       // same here.  for yaw servo we use heli_servo4_min/max parameter directly
+static int32_t heli_servo_out[4];                         // used for servo averaging for analog servos
+static int16_t heli_servo_out_count = 0;                   // use for servo averaging
 #endif
 
 // Failsafe
@@ -301,7 +301,7 @@ static bool 	did_ground_start	= false;		// have we ground started after first ar
 // ---------------------
 static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
-static long		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
+static int32_t		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 
 static byte	wp_control;								// used to control - navgation or loiter
 
@@ -315,10 +315,10 @@ static float cos_roll_x 	= 1;
 static float cos_pitch_x 	= 1;
 static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
-static long initial_simple_bearing;					// used for Simple mode
+static int32_t initial_simple_bearing;					// used for Simple mode
 static float simple_sin_y, simple_cos_x;
 static byte jump = -10;								// used to track loops in jump command
-static int waypoint_speed_gov;
+static int16_t waypoint_speed_gov;
 
 // Acro
 #if CH7_OPTION == CH7_FLIP
@@ -326,16 +326,16 @@ static bool do_flip = false;
 #endif
 
 static boolean trim_flag;
-static int CH7_wp_index = 0;
+static int16_t CH7_wp_index = 0;
 
 // Airspeed
 // --------
-static int		airspeed;							// m/s * 100
+static int16_t		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-static long 	yaw_error;							// how off are we pointed
-static long		long_error, lat_error;				// temp for debugging
+static int32_t 	yaw_error;							// how off are we pointed
+static int32_t	long_error, lat_error;				// temp for debugging
 
 // Battery Sensors
 // ---------------
@@ -351,24 +351,24 @@ static bool		low_batt = false;
 
 // Barometer Sensor variables
 // --------------------------
-static long 	abs_pressure;
-static long 	ground_pressure;
-static int 		ground_temperature;
+static int32_t 	abs_pressure;
+static int32_t 	ground_pressure;
+static int16_t 		ground_temperature;
 
 // Altitude Sensor variables
 // ----------------------
 static byte 	altitude_sensor = BARO;				// used to know which sensor is active, BARO or SONAR
-static long		altitude_error;						// meters * 100 we are off in altitude
+static int32_t		altitude_error;						// meters * 100 we are off in altitude
 
-static int		climb_rate;							// m/s * 100
+static int16_t		climb_rate;							// m/s * 100
 
-static int		sonar_alt;
-static int 		old_sonar_alt;
-static int		sonar_rate;
+static int16_t		sonar_alt;
+static int16_t 		old_sonar_alt;
+static int16_t		sonar_rate;
 
-static int		baro_alt;
-static int 		old_baro_alt;
-static int		baro_rate;
+static int16_t		baro_alt;
+static int16_t 		old_baro_alt;
+static int16_t		baro_rate;
 
 
 
@@ -380,75 +380,75 @@ static byte		throttle_mode;
 
 static boolean	takeoff_complete;					// Flag for using take-off controls
 static boolean	land_complete;
-static long 	old_alt;							// used for managing altitude rates
-static int		velocity_land;
+static int32_t 	old_alt;							// used for managing altitude rates
+static int16_t		velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
-static int 		manual_boost;						// used in adjust altitude to make changing alt faster
-static int 		angle_boost;						// used in adjust altitude to make changing alt faster
+static int16_t 		manual_boost;						// used in adjust altitude to make changing alt faster
+static int16_t 		angle_boost;						// used in adjust altitude to make changing alt faster
 
 // Loiter management
 // -----------------
-static long 	original_target_bearing;			// deg * 100, used to check we are not passing the WP
-static long 	old_target_bearing;					// used to track difference in angle
+static int32_t 	original_target_bearing;			// deg * 100, used to check we are not passing the WP
+static int32_t 	old_target_bearing;					// used to track difference in angle
 
-static int		loiter_total; 						// deg : how many times to loiter * 360
-static int		loiter_sum;							// deg : how far we have turned around a waypoint
-static unsigned long loiter_time;       			// millis : when we started LOITER mode
+static int16_t		loiter_total; 						// deg : how many times to loiter * 360
+static int16_t		loiter_sum;							// deg : how far we have turned around a waypoint
+static uint32_t loiter_time;       			// millis : when we started LOITER mode
 static unsigned loiter_time_max;					// millis : how long to stay in LOITER mode
 
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
-static long		nav_roll;							// deg * 100 : target roll angle
-static long		nav_pitch;							// deg * 100 : target pitch angle
-static long		nav_yaw;							// deg * 100 : target yaw angle
-static long		auto_yaw;							// deg * 100 : target yaw angle
-static long		nav_lat;							// for error calcs
-static long		nav_lon;							// for error calcs
-static int		nav_throttle;						// 0-1000 for throttle control
+static int32_t		nav_roll;							// deg * 100 : target roll angle
+static int32_t		nav_pitch;							// deg * 100 : target pitch angle
+static int32_t		nav_yaw;							// deg * 100 : target yaw angle
+static int32_t		auto_yaw;							// deg * 100 : target yaw angle
+static int32_t		nav_lat;							// for error calcs
+static int32_t		nav_lon;							// for error calcs
+static int16_t		nav_throttle;						// 0-1000 for throttle control
 
-static unsigned long throttle_integrator;				// used to integrate throttle output to predict battery life
+static uint32_t throttle_integrator;				// used to integrate throttle output to predict battery life
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
 //static bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
-static long 	command_yaw_start;					// what angle were we to begin with
-static unsigned long 	command_yaw_start_time;				// when did we start turning
-static unsigned int	command_yaw_time;					// how long we are turning
-static long 	command_yaw_end;					// what angle are we trying to be
-static long 	command_yaw_delta;					// how many degrees will we turn
-static int		command_yaw_speed;					// how fast to turn
+static int32_t 	command_yaw_start;					// what angle were we to begin with
+static uint32_t command_yaw_start_time;				// when did we start turning
+static uint16_t	command_yaw_time;					// how long we are turning
+static int32_t 	command_yaw_end;					// what angle are we trying to be
+static int32_t 	command_yaw_delta;					// how many degrees will we turn
+static int16_t	command_yaw_speed;					// how fast to turn
 static byte		command_yaw_dir;
 static byte		command_yaw_relative;
 
-static int 	auto_level_counter;
+static int16_t 	auto_level_counter;
 
 // Waypoints
 // ---------
-static long	wp_distance;						// meters - distance between plane and next waypoint
-static long	wp_totalDistance;					// meters - distance between old and next waypoint
+static int32_t	wp_distance;						// meters - distance between plane and next waypoint
+static int32_t	wp_totalDistance;					// meters - distance between old and next waypoint
 //static byte	next_wp_index;						// Current active command index
 
 // repeating event control
 // -----------------------
-static byte 	event_id; 							// what to do - see defines
-static unsigned long 	event_timer; 						// when the event was asked for in ms
-static unsigned int 	event_delay; 						// how long to delay the next firing of event in millis
-static int 		event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
-static int 		event_value; 						// per command value, such as PWM for servos
-static int 		event_undo_value;					// the value used to undo commands
+static byte    	    event_id; 							// what to do - see defines
+static uint32_t 	event_timer; 						// when the event was asked for in ms
+static uint16_t 	event_delay; 						// how long to delay the next firing of event in millis
+static int16_t 		event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
+static int16_t 		event_value; 						// per command value, such as PWM for servos
+static int16_t 		event_undo_value;					// the value used to undo commands
 //static byte 	repeat_forever;
 //static byte 	undo_event;							// counter for timing the undo
 
 // delay command
 // --------------
-static long 	condition_value;					// used in condition commands (eg delay, change alt, etc.)
-static long 	condition_start;
-//static int 		condition_rate;
+static int32_t 	condition_value;					// used in condition commands (eg delay, change alt, etc.)
+static int32_t 	condition_start;
+//static int16_t 		condition_rate;
 
 // land command
 // ------------
-static long 	land_start;							// when we intiated command in millis()
-static long 	original_alt;						// altitide reference for start of command
+static int32_t 	land_start;							// when we intiated command in millis()
+static int32_t 	original_alt;						// altitide reference for start of command
 
 // 3D Location vectors
 // -------------------
@@ -459,7 +459,7 @@ static struct 	Location next_WP;					// next waypoint
 static struct 	Location target_WP;					// where do we want to you towards?
 static struct 	Location next_command;				// command preloaded
 static struct   Location guided_WP;					// guided mode waypoint
-static long 	target_altitude;					// used for
+static int32_t 	target_altitude;					// used for
 static boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
 // IMU variables
@@ -468,25 +468,25 @@ static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm
 
 // Performance monitoring
 // ----------------------
-static long 			perf_mon_timer;
+static int32_t 			perf_mon_timer;
 //static float 			imu_health; 						// Metric based on accel gain deweighting
-static int 				gps_fix_count;
+static int16_t			gps_fix_count;
 static byte				gps_watchdog;
 
 // System Timers
 // --------------
-static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
+static uint32_t 	    fast_loopTimer;				// Time in miliseconds of main control loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
 
-static unsigned long	fiftyhz_loopTimer;
+static uint32_t	        fiftyhz_loopTimer;
 
 static byte 			slow_loopCounter;
-static int 				superslow_loopCounter;
+static int16_t			superslow_loopCounter;
 static byte				simple_timer;				// for limiting the execution of flight mode thingys
 
 
 static float 			dTnav;						// Delta Time in milliseconds for navigation computations
-static unsigned long 	nav_loopTimer;				// used to track the elapsed ime for GPS nav
+static uint32_t         nav_loopTimer;				// used to track the elapsed ime for GPS nav
 
 static byte				counter_one_herz;
 static bool				GPS_enabled 	= false;
@@ -505,7 +505,7 @@ void setup() {
 
 void loop()
 {
-	long timer 			= micros();
+	int32_t timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
 	if ((timer - fast_loopTimer) >= 5000) {

@@ -384,12 +384,12 @@ static void Log_Read_GPS()
 					  	"%d, %u\n"),
 
 						DataFlash.ReadLong(),					// 1 time
-						(int)DataFlash.ReadByte(),				// 2 sats
+						DataFlash.ReadByte(),				// 2 sats
 
-						(float)DataFlash.ReadLong() / t7,		// 3 lat
-						(float)DataFlash.ReadLong() / t7,		// 4 lon
-						(float)DataFlash.ReadLong() / 100.0,	// 5 gps alt
-						(float)DataFlash.ReadLong() / 100.0,	// 6 sensor alt
+						DataFlash.ReadLong() / t7,		// 3 lat
+						DataFlash.ReadLong() / t7,		// 4 lon
+						DataFlash.ReadLong() / 100.0,	// 5 gps alt
+						DataFlash.ReadLong() / 100.0,	// 6 sensor alt
 
 						DataFlash.ReadInt(),					// 7 ground speed
 						(uint16_t)DataFlash.ReadInt());			// 8 ground course
@@ -411,18 +411,18 @@ static void Log_Write_Raw()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_RAW_MSG);
 
-	DataFlash.WriteLong((long)gyro.x);
-	DataFlash.WriteLong((long)gyro.y);
-	DataFlash.WriteLong((long)gyro.z);
+	DataFlash.WriteLong(gyro.x);
+	DataFlash.WriteLong(gyro.y);
+	DataFlash.WriteLong(gyro.z);
 
 
-	//DataFlash.WriteLong((long)(accels_rot.x * t7));
-	//DataFlash.WriteLong((long)(accels_rot.y * t7));
-	//DataFlash.WriteLong((long)(accels_rot.z * t7));
+	//DataFlash.WriteLong(accels_rot.x * t7);
+	//DataFlash.WriteLong(accels_rot.y * t7);
+	//DataFlash.WriteLong(accels_rot.z * t7);
 
-	DataFlash.WriteLong((long)accel.x);
-	DataFlash.WriteLong((long)accel.y);
-	DataFlash.WriteLong((long)accel.z);
+	DataFlash.WriteLong(accel.x);
+	DataFlash.WriteLong(accel.y);
+	DataFlash.WriteLong(accel.z);
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -450,9 +450,9 @@ static void Log_Write_Current()
 	DataFlash.WriteInt(g.rc_3.control_in);
 	DataFlash.WriteLong(throttle_integrator);
 
-	DataFlash.WriteInt((int)(battery_voltage 	* 100.0));
-	DataFlash.WriteInt((int)(current_amps 		* 100.0));
-	DataFlash.WriteInt((int)current_total);
+	DataFlash.WriteInt(battery_voltage 	* 100.0);
+	DataFlash.WriteInt(current_amps 	* 100.0);
+	DataFlash.WriteInt(current_total);
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -464,8 +464,8 @@ static void Log_Read_Current()
 			DataFlash.ReadInt(),
 			DataFlash.ReadLong(),
 
-			((float)DataFlash.ReadInt() / 100.f),
-			((float)DataFlash.ReadInt() / 100.f),
+			(DataFlash.ReadInt() / 100.f),
+			(DataFlash.ReadInt() / 100.f),
 			DataFlash.ReadInt());
 }
 
@@ -608,16 +608,16 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
-	DataFlash.WriteInt((int)wp_distance);						// 1
-	DataFlash.WriteInt((int)(target_bearing/100));				// 2
-	DataFlash.WriteInt((int)long_error);						// 3
-	DataFlash.WriteInt((int)lat_error);							// 4
-	DataFlash.WriteInt((int)nav_lon);							// 5
-	DataFlash.WriteInt((int)nav_lat);							// 6
-	DataFlash.WriteInt((int)g.pi_nav_lon.get_integrator());		// 7
-	DataFlash.WriteInt((int)g.pi_nav_lat.get_integrator());	    // 8
-	DataFlash.WriteInt((int)g.pi_loiter_lon.get_integrator());	// 9
-	DataFlash.WriteInt((int)g.pi_loiter_lat.get_integrator());	// 10
+	DataFlash.WriteInt(wp_distance);						// 1
+	DataFlash.WriteInt(target_bearing/100);				// 2
+	DataFlash.WriteInt(long_error);						// 3
+	DataFlash.WriteInt(lat_error);							// 4
+	DataFlash.WriteInt(nav_lon);							// 5
+	DataFlash.WriteInt(nav_lat);							// 6
+	DataFlash.WriteInt(g.pi_nav_lon.get_integrator());		// 7
+	DataFlash.WriteInt(g.pi_nav_lat.get_integrator());	    // 8
+	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
+	DataFlash.WriteInt(g.pi_loiter_lat.get_integrator());	// 10
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -648,14 +648,14 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
 	// yaw
-	DataFlash.WriteInt((int)(dcm.yaw_sensor/100));				//1
-	DataFlash.WriteInt((int)(nav_yaw/100));						//2
-	DataFlash.WriteInt((int)yaw_error/100);						//3
+	DataFlash.WriteInt(dcm.yaw_sensor/100);				//1
+	DataFlash.WriteInt(nav_yaw/100);						//2
+	DataFlash.WriteInt(yaw_error/100);						//3
 
 	// Alt hold
 	DataFlash.WriteInt(sonar_alt);								//4
 	DataFlash.WriteInt(baro_alt);								//5
-	DataFlash.WriteInt((int)next_WP.alt);						//6
+	DataFlash.WriteInt(next_WP.alt);						//6
 
 	DataFlash.WriteInt(nav_throttle);							//7
 	DataFlash.WriteInt(angle_boost);							//8
@@ -669,8 +669,8 @@ static void Log_Write_Control_Tuning()
 #endif
 
 	DataFlash.WriteInt(g.rc_3.servo_out);						//11
-	DataFlash.WriteInt((int)g.pi_alt_hold.get_integrator());	//12
-	DataFlash.WriteInt((int)g.pi_throttle.get_integrator());	//13
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//12
+	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//13
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -813,13 +813,13 @@ static void Log_Write_Attitude2()
 	DataFlash.WriteInt((int)dcm.roll_sensor);
 	DataFlash.WriteInt((int)dcm.pitch_sensor);
 
-	DataFlash.WriteLong((long)(degrees(omega.x) * 100.0));
-	DataFlash.WriteLong((long)(degrees(omega.y) * 100.0));
+	DataFlash.WriteLong(degrees(omega.x) * 100.0);
+	DataFlash.WriteLong(degrees(omega.y) * 100.0);
 
-	DataFlash.WriteLong((long)(accel.x * 100000));
-	DataFlash.WriteLong((long)(accel.y * 100000));
+	DataFlash.WriteLong(accel.x * 100000);
+	DataFlash.WriteLong(accel.y * 100000);
 
-	//DataFlash.WriteLong((long)(accel.z * 100000));
+	//DataFlash.WriteLong(accel.z * 100000);
 
 	DataFlash.WriteByte(END_BYTE);
 }*/

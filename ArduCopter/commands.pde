@@ -39,7 +39,7 @@ static struct Location get_cmd_with_index(int i)
 	}else{
 		// we can load a command, we don't process it yet
 		// read WP position
-		long mem = (WP_START_BYTE) + (i * WP_SIZE);
+		int32_t mem = (WP_START_BYTE) + (i * WP_SIZE);
 
 		temp.id = eeprom_read_byte((uint8_t*)mem);
 
@@ -50,13 +50,13 @@ static struct Location get_cmd_with_index(int i)
 		temp.p1 = eeprom_read_byte((uint8_t*)mem);
 
 		mem++;
-		temp.alt = (long)eeprom_read_dword((uint32_t*)mem);	// alt is stored in CM! Alt is stored relative!
+		temp.alt = eeprom_read_dword((uint32_t*)mem);	// alt is stored in CM! Alt is stored relative!
 
 		mem += 4;
-		temp.lat = (long)eeprom_read_dword((uint32_t*)mem); // lat is stored in decimal * 10,000,000
+		temp.lat = eeprom_read_dword((uint32_t*)mem); // lat is stored in decimal * 10,000,000
 
 		mem += 4;
-		temp.lng = (long)eeprom_read_dword((uint32_t*)mem); // lon is stored in decimal * 10,000,000
+		temp.lng = eeprom_read_dword((uint32_t*)mem); // lon is stored in decimal * 10,000,000
 	}
 
 	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
@@ -115,7 +115,7 @@ static void decrement_WP_index()
     }
 }*/
 
-static long read_alt_to_hold()
+static int32_t read_alt_to_hold()
 {
 	if(g.RTL_altitude < 0)
 		return current_loc.alt;

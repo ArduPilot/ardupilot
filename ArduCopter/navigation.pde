@@ -28,7 +28,7 @@ static byte navigate()
 
 static bool check_missed_wp()
 {
-	long temp 	= target_bearing - original_target_bearing;
+	int32_t temp 	= target_bearing - original_target_bearing;
 	temp 		= wrap_180(temp);
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
@@ -205,7 +205,7 @@ static void calc_nav_pitch_roll()
 					nav_pitch);*/
 }
 
-static long get_altitude_error()
+static int32_t get_altitude_error()
 {
 	return next_WP.alt - current_loc.alt;
 }
@@ -228,14 +228,14 @@ static int get_loiter_angle()
 	return angle;
 }
 
-static long wrap_360(long error)
+static int32_t wrap_360(int32_t error)
 {
 	if (error > 36000)	error -= 36000;
 	if (error < 0)		error += 36000;
 	return error;
 }
 
-static long wrap_180(long error)
+static int32_t wrap_180(int32_t error)
 {
 	if (error > 18000)	error -= 36000;
 	if (error < -18000)	error += 36000;
@@ -243,7 +243,7 @@ static long wrap_180(long error)
 }
 
 /*
-static long get_crosstrack_correction(void)
+static int32_t get_crosstrack_correction(void)
 {
 	// Crosstrack Error
 	// ----------------
@@ -253,7 +253,7 @@ static long get_crosstrack_correction(void)
 		float error = sin(radians((target_bearing - crosstrack_bearing) / (float)100)) * (float)wp_distance;
 
 		// take meters * 100 to get adjustment to nav_bearing
-		long _crosstrack_correction = g.pi_crosstrack.get_pi(error, dTnav) * 100;
+		int32_t _crosstrack_correction = g.pi_crosstrack.get_pi(error, dTnav) * 100;
 
 		// constrain answer to 30° to avoid overshoot
 		return constrain(_crosstrack_correction, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
@@ -262,9 +262,9 @@ static long get_crosstrack_correction(void)
 }
 */
 /*
-static long cross_track_test()
+static int32_t cross_track_test()
 {
-	long temp = wrap_180(target_bearing - crosstrack_bearing);
+	int32_t temp = wrap_180(target_bearing - crosstrack_bearing);
 	return abs(temp);
 }
 */
@@ -274,7 +274,7 @@ static void reset_crosstrack()
 	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
 */
-/*static long get_altitude_above_home(void)
+/*static int32_t get_altitude_above_home(void)
 {
 	// This is the altitude above the home location
 	// The GPS gives us altitude at Sea Level
@@ -284,7 +284,7 @@ static void reset_crosstrack()
 }
 */
 // distance is returned in meters
-static long get_distance(struct Location *loc1, struct Location *loc2)
+static int32_t get_distance(struct Location *loc1, struct Location *loc2)
 {
 	//if(loc1->lat == 0 || loc1->lng == 0)
 	//	return -1;
@@ -295,16 +295,16 @@ static long get_distance(struct Location *loc1, struct Location *loc2)
 	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
 }
 /*
-static long get_alt_distance(struct Location *loc1, struct Location *loc2)
+static int32_t get_alt_distance(struct Location *loc1, struct Location *loc2)
 {
 	return abs(loc1->alt - loc2->alt);
 }
 */
-static long get_bearing(struct Location *loc1, struct Location *loc2)
+static int32_t get_bearing(struct Location *loc1, struct Location *loc2)
 {
-	long off_x = loc2->lng - loc1->lng;
-	long off_y = (loc2->lat - loc1->lat) * scaleLongUp;
-	long bearing =	9000 + atan2(-off_y, off_x) * 5729.57795;
+	int32_t off_x = loc2->lng - loc1->lng;
+	int32_t off_y = (loc2->lat - loc1->lat) * scaleLongUp;
+	int32_t bearing =	9000 + atan2(-off_y, off_x) * 5729.57795;
 	if (bearing < 0) bearing += 36000;
 	return bearing;
 }
