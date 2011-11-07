@@ -1,9 +1,6 @@
 #ifndef APM_BMP085_hil_h
 #define APM_BMP085_hil_h
 
-#define TEMP_FILTER_SIZE 16
-#define PRESS_FILTER_SIZE 10
-
 class APM_BMP085_HIL_Class
 {
   private:
