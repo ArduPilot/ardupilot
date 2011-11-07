@@ -125,14 +125,6 @@ AP_DCM::matrix_update(float _G_Dt)
 	Matrix3f	update_matrix;
 	Matrix3f	temp_matrix;
 
-	//Record when you saturate any of the gyros.
-	/*
-	if( (fabs(_gyro_vector.x) >= radians(300)) ||
-		(fabs(_gyro_vector.y) >= radians(300)) ||
-		(fabs(_gyro_vector.z) >= radians(300))){
-		gyro_sat_count++;
-	}*/
-
 	_omega_integ_corr 	= _gyro_vector 		+ _omega_I;		// Used for _centripetal correction (theoretically better than _omega)
 	_omega 				= _omega_integ_corr + _omega_P;		// Equation 16, adding proportional and integral correction terms
 
@@ -232,6 +224,9 @@ AP_DCM::normalize(void)
 		_dcm_matrix.c.x = 0.0f;
 		_dcm_matrix.c.y = 0.0f;
 		_dcm_matrix.c.z = 1.0f;
+		_omega_I.x = 0.0f;
+		_omega_I.y = 0.0f;
+		_omega_I.z = 0.0f;
 	}
 }
 
@@ -348,10 +343,10 @@ AP_DCM::drift_correction(void)
 	_omega_P += _error_yaw * _kp_yaw;			// Adding yaw correction to proportional correction vector.
 	_omega_I += _error_yaw * _ki_yaw;			// adding yaw correction to integrator correction vector.
 
-	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed half the saturation limit of the gyros
+	//	Here we will place a limit on the integrator so that the integrator cannot ever exceed ~30 degrees/second
 	integrator_magnitude = _omega_I.length();
-	if (integrator_magnitude > radians(300)) {
-		_omega_I *= (0.5f * radians(300) / integrator_magnitude);		// Why do we have this discontinuous?  EG, why the 0.5?
+	if (integrator_magnitude > radians(30)) {
+		_omega_I *= (radians(30) / integrator_magnitude);		
 	}
 	//Serial.print("*");
 }
@@ -396,14 +391,6 @@ AP_DCM::euler_yaw(void)
 
 	if (yaw_sensor < 0)
 		yaw_sensor += 36000;
-}
-
-/**************************************************/
-
-float
-AP_DCM::get_health(void)
-{
-	return _health;
 }
 
 

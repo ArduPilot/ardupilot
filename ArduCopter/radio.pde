@@ -8,8 +8,13 @@ static void default_dead_zones()
 {
 	g.rc_1.set_dead_zone(60);
 	g.rc_2.set_dead_zone(60);
-	g.rc_3.set_dead_zone(60);
-	g.rc_4.set_dead_zone(200);
+	#if FRAME_CONFIG == HELI_FRAME
+	    g.rc_3.set_dead_zone(0);
+		g.rc_4.set_dead_zone(60);
+	#else
+	    g.rc_3.set_dead_zone(60);
+		g.rc_4.set_dead_zone(200);
+	#endif
 }
 
 static void init_rc_in()
