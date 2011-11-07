@@ -8,7 +8,7 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, util.reltopdir('../pymavlink'))
 import mavutil
 
-HOME_LOCATION='-35.362938,149.165085,650,270'
+HOME_LOCATION='-35.362938,149.165085,584,270'
 
 homeloc = None
 
