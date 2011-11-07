@@ -86,3 +86,15 @@ def expect_setup_callback(e, callback):
     e.expect_user_callback = callback
     e.expect_saved = e.expect
     e.expect = _expect_callback
+
+def mkdir_p(dir):
+    '''like mkdir -p'''
+    if not dir:
+        return
+    if dir.endswith("/"):
+        mkdir_p(dir[:-1])
+        return
+    if os.path.isdir(dir):
+        return
+    mkdir_p(os.path.dirname(dir))
+    os.mkdir(dir)
