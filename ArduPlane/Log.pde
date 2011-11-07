@@ -313,13 +313,13 @@ static int find_last_log_page(int bottom_page)
 {
 	int top_page = 4096;
 	int look_page;
-	long check;
+	int32_t check;
 
 	while((top_page - bottom_page) > 1) {
 		look_page = (top_page + bottom_page) / 2;
 		DataFlash.StartRead(look_page);
 		check = DataFlash.ReadLong();
-		if(check == (long)0xFFFFFFFF)
+		if(check == (int32_t)~0)
 			top_page = look_page;
 		else
 			bottom_page = look_page;
