@@ -20,7 +20,7 @@ static void arm_motors()
 	// full right
 	if (g.rc_4.control_in > 4000) {
 		if (arming_counter == LEVEL_DELAY){
-			Serial.printf("\nAL\n");
+			//Serial.printf("\nAL\n");
 			// begin auto leveling
 			auto_level_counter = 200;
 			arming_counter = 0;
@@ -39,7 +39,7 @@ static void arm_motors()
 	// full left
 	}else if (g.rc_4.control_in < -4000) {
 		if (arming_counter == LEVEL_DELAY){
-			Serial.printf("\nLEV\n");
+			//Serial.printf("\nLEV\n");
 
 			// begin manual leveling
 			imu.init_accel(mavlink_delay);
@@ -65,7 +65,7 @@ static void arm_motors()
 
 static void init_arm_motors()
 {
-	Serial.printf("\nARM\n");
+	//Serial.printf("\nARM\n");
 	#if HIL_MODE != HIL_MODE_DISABLED
 	gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 	#endif
@@ -106,7 +106,7 @@ static void init_arm_motors()
 
 static void init_disarm_motors()
 {
-	Serial.printf("\nDISARM\n");
+	//Serial.printf("\nDISARM\n");
 	#if HIL_MODE != HIL_MODE_DISABLED
 	gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 	#endif
