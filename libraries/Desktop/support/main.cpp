@@ -17,6 +17,7 @@ static void usage(void)
 {
 	printf("Options:\n");
 	printf("\t-s          enable CLI slider switch\n");
+	printf("\t-w          wipe eeprom and dataflash\n");
 }
 
 int main(int argc, char * const argv[])
@@ -27,14 +28,18 @@ int main(int argc, char * const argv[])
 	desktop_state.slider = false;
 	gettimeofday(&desktop_state.sketch_start_time, NULL);
 
-	while ((opt = getopt(argc, argv, "sh")) != -1) {
+	while ((opt = getopt(argc, argv, "swh")) != -1) {
 		switch (opt) {
 		case 's':
 			desktop_state.slider = true;
 			break;
+		case 'w':
+			unlink("eeprom.bin");
+			unlink("dataflash.bin");
+			break;
 		default:
 			usage();
-			break;
+			exit(1);
 		}
 	}
 
