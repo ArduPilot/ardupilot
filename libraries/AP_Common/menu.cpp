@@ -87,6 +87,10 @@ Menu::run(void)
             argc++;
         }
 
+		if (_argv[0].str == NULL) {
+			continue;
+		}
+
         // populate arguments that have not been specified with "" and 0
         // this is safer than NULL in the case where commands may look
         // without testing argc
@@ -136,6 +140,6 @@ Menu::_call(uint8_t n, uint8_t argc)
 {
     func		fn;
 
-    fn = (func)pgm_read_word(&_commands[n].func);
+    fn = (func)pgm_read_pointer(&_commands[n].func);
     return(fn(argc, &_argv[0]));
 }
