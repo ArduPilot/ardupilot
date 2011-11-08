@@ -383,16 +383,16 @@ static void Log_Read_GPS()
 					  	"%4.7f, %4.7f, %4.4f, %4.4f, "
 					  	"%d, %u\n"),
 
-						DataFlash.ReadLong(),					// 1 time
-						DataFlash.ReadByte(),				// 2 sats
+                    (long)DataFlash.ReadLong(),					// 1 time
+                    DataFlash.ReadByte(),				// 2 sats
 
-						DataFlash.ReadLong() / t7,		// 3 lat
-						DataFlash.ReadLong() / t7,		// 4 lon
-						DataFlash.ReadLong() / 100.0,	// 5 gps alt
-						DataFlash.ReadLong() / 100.0,	// 6 sensor alt
+                    DataFlash.ReadLong() / t7,		// 3 lat
+                    DataFlash.ReadLong() / t7,		// 4 lon
+                    DataFlash.ReadLong() / 100.0,	// 5 gps alt
+                    DataFlash.ReadLong() / 100.0,	// 6 sensor alt
 
-						DataFlash.ReadInt(),					// 7 ground speed
-						(uint16_t)DataFlash.ReadInt());			// 8 ground course
+                    (int)DataFlash.ReadInt(),					// 7 ground speed
+                    (unsigned)DataFlash.ReadInt());			// 8 ground course
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
@@ -461,12 +461,12 @@ static void Log_Write_Current()
 static void Log_Read_Current()
 {
 	Serial.printf_P(PSTR("CURR: %d, %ld, %4.4f, %4.4f, %d\n"),
-			DataFlash.ReadInt(),
-			DataFlash.ReadLong(),
+                    DataFlash.ReadInt(),
+                    (long)DataFlash.ReadLong(),
 
-			(DataFlash.ReadInt() / 100.f),
-			(DataFlash.ReadInt() / 100.f),
-			DataFlash.ReadInt());
+                    (DataFlash.ReadInt() / 100.f),
+                    (DataFlash.ReadInt() / 100.f),
+                    DataFlash.ReadInt());
 }
 
 static void Log_Write_Motors()
@@ -755,7 +755,7 @@ static void Log_Read_Performance()
 				DataFlash.ReadByte(),			//3
 				DataFlash.ReadByte(),			//4
 				DataFlash.ReadInt(),			//5
-				DataFlash.ReadLong());			//6
+                (long)DataFlash.ReadLong());			//6
 }
 
 // Write a command processing packet.
@@ -795,9 +795,9 @@ static void Log_Read_Cmd()
 				DataFlash.ReadByte(),
 
 				// Alt, lat long
-				DataFlash.ReadLong(),
-				DataFlash.ReadLong(),
-				DataFlash.ReadLong());
+                (long)DataFlash.ReadLong(),
+                (long)DataFlash.ReadLong(),
+                (long)DataFlash.ReadLong());
 }
 /*
 // Write an attitude packet. Total length : 10 bytes
@@ -831,8 +831,8 @@ static void Log_Read_Attitude2()
 			DataFlash.ReadInt(),
 			DataFlash.ReadInt(),
 
-			DataFlash.ReadLong(),
-			DataFlash.ReadLong(),
+			(long)DataFlash.ReadLong(),
+			(long)DataFlash.ReadLong(),
 
 			(float)DataFlash.ReadLong()/100000.0,
 			(float)DataFlash.ReadLong()/100000.0 );
