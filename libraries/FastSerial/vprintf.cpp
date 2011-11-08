@@ -54,15 +54,6 @@ extern "C" {
 #undef PSTR 
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
 
-#ifdef DESKTOP_BUILD
-#define GETBYTE(flag, mask, pnt)        ({      \
-       unsigned char __c;                       \
-       __c = ((flag) & (mask))                  \
-             ? pgm_read_byte(pnt) : *pnt;       \
-       pnt++;                                   \
-       __c;                                     \
-})
-#else
 #define GETBYTE(flag, mask, pnt)        ({                              \
                         unsigned char __c;                              \
                         asm (                                           \
@@ -77,7 +68,6 @@ extern "C" {
                         );                                              \
                         __c;                                            \
                 })
-#endif
 
 #define FL_ZFILL	0x01
 #define FL_PLUS		0x02
@@ -98,6 +88,27 @@ extern "C" {
 #define FL_FLTEXP	FL_PREC
 #define	FL_FLTFIX	FL_LONG
 
+#ifdef DESKTOP_BUILD
+void
+BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
+{
+        char *str = NULL;
+        int i;
+        char *fmt2 = strdup(fmt);
+        for (i=0; fmt2[i]; i++) {
+                // cope with %S
+                if (fmt2[i] == '%' && fmt2[i+1] == 'S') {
+                        fmt2[i+1] = 's';
+                }
+        }
+        vasprintf(&str, fmt2, ap);
+        for (i=0; str[i]; i++) {
+                write(str[i]);
+        }
+        free(str);
+        free(fmt2);
+}
+#else
 void
 BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
 {
@@ -520,3 +531,4 @@ BetterStream::_vprintf (unsigned char in_progmem, const char *fmt, va_list ap)
                 }
         } /* for (;;) */
 }
+#endif // DESKTOP_BUILD
