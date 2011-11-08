@@ -466,7 +466,12 @@ static bool verify_loiter_turns()
 
 static bool verify_RTL()
 {
+	// loiter at the WP
+	wp_control 	= WP_MODE;
+
 	if (wp_distance <= g.waypoint_radius) {
+		wp_control 	= LOITER_MODE;
+
 		//gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
 		return true;
 	}else{
