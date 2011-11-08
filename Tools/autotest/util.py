@@ -51,7 +51,7 @@ def build_SIL(atype):
 def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     '''launch a SIL instance'''
     cmd=""
-    if valgrind:
+    if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
     cmd += reltopdir('tmp/%s.build/%s.elf' % (atype, atype))
     if wipe:
