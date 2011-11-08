@@ -10,15 +10,15 @@
 long
 APM_PI::get_pi(int32_t error, float dt, bool calc_i)
 {
-	if(true)
+	if(calc_i){
 		_integrator += ((float)error * _ki) * dt;
 
-	if (_integrator < -_imax) {
-		_integrator = -_imax;
-	} else if (_integrator > _imax) {
-		_integrator = _imax;
+		if (_integrator < -_imax) {
+			_integrator = -_imax;
+		} else if (_integrator > _imax) {
+			_integrator = _imax;
+		}
 	}
-
 	return (float)error * _kp + _integrator;
 }
 
