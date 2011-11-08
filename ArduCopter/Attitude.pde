@@ -91,10 +91,10 @@ get_stabilize_yaw(int32_t target_angle)
 static int
 get_nav_throttle(int32_t z_error)
 {
-	bool calc_i = abs(z_error) < ALT_ERROR_MAX;
+	bool calc_i = (abs(z_error) < ALT_ERROR_MAX);
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
-	int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1, calc_i); //_p = .85
+	int rate_error 	= g.pi_alt_hold.get_pi(z_error, .1, false); //_p = .85
 	rate_error 		= rate_error - climb_rate;
 
 	// limit the rate
