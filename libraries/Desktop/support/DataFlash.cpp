@@ -235,7 +235,7 @@ byte DataFlash_Class::ReadByte()
 
 int16_t DataFlash_Class::ReadInt()
 {
-  int result;
+  int16_t result;
 
   result = ReadByte();               // High byte
   result = (result<<8) | ReadByte(); // Low byte
