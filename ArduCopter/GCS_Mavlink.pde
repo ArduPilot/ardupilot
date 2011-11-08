@@ -262,10 +262,10 @@ static void NOINLINE send_gps_status(mavlink_channel_t chan)
     mavlink_msg_gps_status_send(
         chan,
         g_gps->num_sats,
-        next_WP.alt,
-        nav_throttle,
-        angle_boost,
-        manual_boost,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         NULL);
 }
 
