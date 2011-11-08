@@ -253,6 +253,7 @@ static void init_ardupilot()
 
     GPS_enabled = false;
 
+	#if HIL_MODE == HIL_MODE_DISABLED
     // Read in the GPS
 	for (byte counter = 0; ; counter++) {
 		g_gps->update();
@@ -266,6 +267,9 @@ static void init_ardupilot()
 			break;
 	    }
 	}
+	#else
+		GPS_enabled = true;
+	#endif
 
 	// lengthen the idle timeout for gps Auto_detect
 	// ---------------------------------------------
