@@ -47,26 +47,26 @@ namespace ArdupilotMega.HIL
         {
             float min_pwm = 1000;
             float max_pwm = 2000;
-                 //'''scale a PWM value'''       # default to servo range of 1000 to 2000  
+            //'''scale a PWM value'''       # default to servo range of 1000 to 2000  
             if (MainV2.comPort.param.Count > 0)
             {
                 min_pwm = int.Parse(MainV2.comPort.param["RC3_MIN"].ToString());
                 max_pwm = int.Parse(MainV2.comPort.param["RC3_MAX"].ToString());
             }
 
-             float p = (servo - min_pwm) / (max_pwm - min_pwm);
+            float p = (servo - min_pwm) / (max_pwm - min_pwm);
 
-             float v = min + p * (max - min);
+            float v = min + p * (max - min);
 
-             if (v < min)
-             v = min  ;
-             if (v > max)
-             v = max  ;
-             return v;
-         }
+            if (v < min)
+                v = min;
+            if (v > max)
+                v = max;
+            return v;
+        }
 
         public void update(ref double[] servos, ArdupilotMega.GCSViews.Simulation.FGNetFDM fdm)
-        { 
+        {
             for (int i = 0; i < servos.Length; i++)
             {
                 if (servos[i] <= 0.0)
@@ -75,7 +75,7 @@ namespace ArdupilotMega.HIL
                 }
                 else
                 {
-                    motor_speed[i] = scale_rc(i,(float)servos[i], 0.0f, 1.0f);
+                    motor_speed[i] = scale_rc(i, (float)servos[i], 0.0f, 1.0f);
                     //servos[i] = motor_speed[i];
                 }
             }
@@ -90,12 +90,12 @@ namespace ArdupilotMega.HIL
             yaw_rate = 0;
             */
 
-//            Console.WriteLine("\nin m {0:0.000000} {1:0.000000} {2:0.000000} {3:0.000000}", m[0], m[1], m[2], m[3]);
-//            Console.WriteLine("in vel {0:0.000000} {1:0.000000} {2:0.000000}", velocity.X, velocity.Y, velocity.Z);
+            //            Console.WriteLine("\nin m {0:0.000000} {1:0.000000} {2:0.000000} {3:0.000000}", m[0], m[1], m[2], m[3]);
+            //            Console.WriteLine("in vel {0:0.000000} {1:0.000000} {2:0.000000}", velocity.X, velocity.Y, velocity.Z);
             //Console.WriteLine("in r {0:0.000000} p {1:0.000000} y {2:0.000000}    - r {3:0.000000} p {4:0.000000} y {5:0.000000}", roll, pitch, yaw, roll_rate, pitch_rate, yaw_rate);
-            
 
-//            m[0] *= 0.5;
+
+            //            m[0] *= 0.5;
 
             //# how much time has passed?
             DateTime t = DateTime.Now;
@@ -112,21 +112,21 @@ namespace ArdupilotMega.HIL
             double pitch_accel = (m[2] - m[3]) * 5000.0;
             double yaw_accel = -((m[2] + m[3]) - (m[0] + m[1])) * 400.0;
 
-           // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+            // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //# update rotational rates
             roll_rate += roll_accel * delta_time.TotalSeconds;
             pitch_rate += pitch_accel * delta_time.TotalSeconds;
             yaw_rate += yaw_accel * delta_time.TotalSeconds;
 
-           // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+            // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //# update rotation
             roll += roll_rate * delta_time.TotalSeconds;
             pitch += pitch_rate * delta_time.TotalSeconds;
             yaw += yaw_rate * delta_time.TotalSeconds;
 
-//            Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+            //            Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //Console.WriteLine("r {0:0.0} p {1:0.0} y {2:0.0}    - r {3:0.0} p {4:0.0} y {5:0.0}  ms {6:0.000}", roll, pitch, yaw, roll_rate, pitch_rate, yaw_rate, delta_time.TotalSeconds);
 
@@ -155,7 +155,7 @@ namespace ArdupilotMega.HIL
             old_position = new Vector3d(position);
             position += velocity * delta_time.TotalSeconds;
 
-//            Console.WriteLine(fdm.agl + " "+ fdm.altitude);
+            //            Console.WriteLine(fdm.agl + " "+ fdm.altitude);
 
             //Console.WriteLine("Z {0} halt {1}  < gl {2} fh {3}" ,position.Z , home_altitude , ground_level , frame_height);
 
@@ -176,7 +176,7 @@ namespace ArdupilotMega.HIL
             {
                 if (old_position.Z + home_altitude > ground_level + frame_height)
                 {
-//                    Console.WriteLine("Hit ground at {0} m/s", (-velocity.Z));
+                    //                    Console.WriteLine("Hit ground at {0} m/s", (-velocity.Z));
                 }
                 velocity = new Vector3d(0, 0, 0);
                 roll_rate = 0;
@@ -186,14 +186,18 @@ namespace ArdupilotMega.HIL
                 pitch = 0;
                 position = new Vector3d(position.X, position.Y,
                                                ground_level + frame_height - home_altitude + 0);
-               // Console.WriteLine("here " + position.Z);
+                // Console.WriteLine("here " + position.Z);
             }
 
             //# update lat/lon/altitude
             update_position();
 
             // send to apm
+#if MAVLINK10
+            ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_int_t();
+#else
             ArdupilotMega.MAVLink.__mavlink_gps_raw_t gps = new ArdupilotMega.MAVLink.__mavlink_gps_raw_t();
+#endif
 
             ArdupilotMega.MAVLink.__mavlink_attitude_t att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
 
@@ -206,6 +210,19 @@ namespace ArdupilotMega.HIL
             att.pitchspeed = (float)pitch_rate * deg2rad;
             att.yawspeed = (float)yaw_rate * deg2rad;
 
+#if MAVLINK10
+
+            gps.alt = ((int)(altitude * 1000));
+            gps.fix_type = 3;
+            gps.vel = (ushort)(Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)) * 100);
+            gps.cog = (ushort)((((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360) * 100);
+            gps.lat = (int)(latitude* 1.0e7);
+            gps.lon = (int)(longitude * 1.0e7);
+            gps.time_usec = ((ulong)DateTime.Now.Ticks);
+
+            asp.airspeed = gps.vel;
+			
+#else
             gps.alt = ((float)(altitude));
             gps.fix_type = 3;
             gps.v = ((float)Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)));
@@ -215,20 +232,21 @@ namespace ArdupilotMega.HIL
             gps.usec = ((ulong)DateTime.Now.Ticks);
 
             asp.airspeed = gps.v;
+#endif
 
-            MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_ATTITUDE, att);
+            MainV2.comPort.sendPacket(att);
 
             MAVLink.__mavlink_raw_pressure_t pres = new MAVLink.__mavlink_raw_pressure_t();
             double calc = (101325 * Math.Pow(1 - 2.25577 * Math.Pow(10, -5) * gps.alt, 5.25588));
             pres.press_diff1 = (short)(int)(calc); // 0 alt is 0 pa
 
-            MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_RAW_PRESSURE, pres);
+            MainV2.comPort.sendPacket(pres);
 
-            MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_VFR_HUD, asp);
+            MainV2.comPort.sendPacket(asp);
 
             if (framecount % 10 == 0)
             {// 50 / 10 = 5 hz
-                MainV2.comPort.generatePacket(ArdupilotMega.MAVLink.MAVLINK_MSG_ID_GPS_RAW, gps);
+                MainV2.comPort.sendPacket(gps);
                 //Console.WriteLine(DateTime.Now.Millisecond + " GPS" );
             }
 

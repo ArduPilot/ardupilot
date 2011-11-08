@@ -61,6 +61,17 @@ namespace ArdupilotMega.GCSViews
         {
             InitializeComponent();
 
+            //this.Width = this.Parent.Width;
+            //this.Height = this.Parent.Height;
+
+            // fix for dup name
+            XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
+        }
+
+        private void Configuration_Load(object sender, EventArgs e)
+        {
+            startup = true;
+
             // enable disable relevbant hardware tabs
             if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
             {
@@ -83,12 +94,8 @@ namespace ArdupilotMega.GCSViews
             param = MainV2.comPort.param;
             processToScreen();
 
-            // fix for dup name
-            XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
-        }
 
-        private void Configuration_Load(object sender, EventArgs e)
-        {
+
             // setup up camera button states
             if (MainV2.cam != null)
             {
@@ -285,6 +292,7 @@ namespace ArdupilotMega.GCSViews
 
         internal void processToScreen()
         {
+            toolTip1.RemoveAll();
             Params.Rows.Clear();
 
             // process hashdefines and update display
@@ -303,12 +311,12 @@ namespace ArdupilotMega.GCSViews
                     if (tooltips[value] != null)
                     {
                         Params.Rows[Params.RowCount - 1].Cells[Command.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
-                        Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
+                        //Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
                         Params.Rows[Params.RowCount - 1].Cells[Value.Index].ToolTipText = ((paramsettings)tooltips[value]).desc;
 
-                        Params.Rows[Params.RowCount - 1].Cells[Default.Index].Value = ((paramsettings)tooltips[value]).normalvalue;
-                        Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value = ((paramsettings)tooltips[value]).scale;
-                        Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = float.Parse(Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].Value.ToString()) / float.Parse(Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value.ToString());
+                        //Params.Rows[Params.RowCount - 1].Cells[Default.Index].Value = ((paramsettings)tooltips[value]).normalvalue;
+                        //Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value = ((paramsettings)tooltips[value]).scale;
+                        //Params.Rows[Params.RowCount - 1].Cells[Value.Index].Value = float.Parse(Params.Rows[Params.RowCount - 1].Cells[RawValue.Index].Value.ToString()) / float.Parse(Params.Rows[Params.RowCount - 1].Cells[mavScale.Index].Value.ToString());
                     }
                 }
                 catch { }
@@ -319,20 +327,23 @@ namespace ArdupilotMega.GCSViews
                 {
                     try
                     {
-                        ((DomainUpDown)ctl).Items.AddRange(genpids());
-                        string option = ((float)param[value]).ToString("0.0##");
-                        int index = ((DomainUpDown)ctl).Items.IndexOf(option);
-                        ((DomainUpDown)ctl).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
-                        Console.WriteLine(name + " " + option + " " + index + " " + ((float)param[value]));
-                        ((DomainUpDown)ctl).Validated += null;
-                        if (index == -1)
+                        NumericUpDown thisctl = ((NumericUpDown)ctl);
+                        thisctl.Maximum = 9000;
+                        thisctl.Minimum = -9000;
+                        thisctl.Value = (decimal)(float)param[value];
+                        thisctl.Increment = (decimal)0.001;
+                        if (thisctl.Name.EndsWith("_P") || thisctl.Name.EndsWith("_I") || thisctl.Name.EndsWith("_D") || thisctl.Value == 0 || thisctl.Value.ToString("0.###", new System.Globalization.CultureInfo("en-US")).Contains("."))
                         {
-                            ((DomainUpDown)ctl).Text = ((float)param[value]).ToString("0.0##");
+                            thisctl.DecimalPlaces = 3;
                         }
                         else
                         {
-                            ((DomainUpDown)ctl).SelectedIndex = index;
+                            thisctl.Increment = (decimal)1;
+                            thisctl.DecimalPlaces = 1;
                         }
+
+                        thisctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                        thisctl.Validated += null;
                         if (tooltips[value] != null)
                         {
                             try
@@ -341,7 +352,7 @@ namespace ArdupilotMega.GCSViews
                             }
                             catch { }
                         }
-                        ((DomainUpDown)ctl).Validated += new EventHandler(EEPROM_View_float_TextChanged);
+                        thisctl.Validated += new EventHandler(EEPROM_View_float_TextChanged);
                     }
                     catch { }
 
@@ -475,30 +486,21 @@ namespace ArdupilotMega.GCSViews
                 Params[e.ColumnIndex, e.RowIndex].Style.BackColor = Color.Red;
             }
 
+            // set control as well
+            Control[] text = this.Controls.Find(Params[0, e.RowIndex].Value.ToString(), true);
             try
             {
-                // set control as well
-                Control[] text = this.Controls.Find(Params[0, e.RowIndex].Value.ToString(), true);
                 if (text.Length > 0)
                 {
-                    string option = (float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString())).ToString("0.0##", System.Globalization.CultureInfo.CurrentCulture);
-                    int index = ((DomainUpDown)text[0]).Items.IndexOf(option);
-                    if (index != -1)
-                    {
-                        ((DomainUpDown)text[0]).SelectedIndex = index;
-                        ((DomainUpDown)text[0]).BackColor = Color.Green;
-                    }
-                    else
-                    {
-                        ((DomainUpDown)text[0]).Text = option;
-                        ((DomainUpDown)text[0]).BackColor = Color.Green;
-                    }
+                    decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                        ((NumericUpDown)text[0]).Value = option;
+                        ((NumericUpDown)text[0]).BackColor = Color.Green;
                 }
             }
-            catch { }
+            catch { ((NumericUpDown)text[0]).BackColor = Color.Red; }
 
             Params.Focus();
-        }
+        }        
 
         private void BUT_load_Click(object sender, EventArgs e)
         {
@@ -521,8 +523,10 @@ namespace ArdupilotMega.GCSViews
                     int index = line.IndexOf(',');
 
                     int index2 = line.IndexOf(',', index + 1);
+
                     if (index == -1)
                         continue;
+
                     if (index2 != -1)
                         line = line.Replace(',','.');
 
@@ -600,7 +604,7 @@ namespace ArdupilotMega.GCSViews
                         Control[] text = this.Controls.Find(value, true);
                         if (text.Length > 0)
                         {
-                            ((DomainUpDown)text[0]).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                            ((NumericUpDown)text[0]).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
                         }
                     }
                     catch { }
@@ -845,10 +849,7 @@ namespace ArdupilotMega.GCSViews
 
             ((MyButton)sender).Enabled = true;
             startup = true;
-            param = MainV2.comPort.param;
-            processToScreen();
             Configuration_Load(null, null);
-            startup = false;
         }
 
         private void CHK_speechbattery_CheckedChanged(object sender, EventArgs e)

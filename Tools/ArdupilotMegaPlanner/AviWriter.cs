@@ -195,7 +195,7 @@ SizeConst = 4)]
     {
         Console.WriteLine(DateTime.Now.Millisecond + "avi frame");
         db_head db = new db_head { db = "00dc".ToCharArray(), size = size };
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(db), 0, Marshal.SizeOf(db));
+        fd.Write(StructureToByteArray(db), 0, Marshal.SizeOf(db));
         fd.Write(buf, 0, (int)size);
         if (size % 2 == 1)
         {
@@ -276,16 +276,35 @@ SizeConst = 4)]
         long pos = fd.Position;
         fd.Seek(0, SeekOrigin.Begin);
 
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(rh),0, Marshal.SizeOf(rh));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(lh1), 0, Marshal.SizeOf(lh1));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(ah), 0, Marshal.SizeOf(ah));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(lh2), 0, Marshal.SizeOf(lh2));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(sh), 0, Marshal.SizeOf(sh));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(fh), 0, Marshal.SizeOf(fh));
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(junk), 0, Marshal.SizeOf(junk));
+        fd.Write(StructureToByteArray(rh),0, Marshal.SizeOf(rh));
+        fd.Write(StructureToByteArray(lh1), 0, Marshal.SizeOf(lh1));
+        fd.Write(StructureToByteArray(ah), 0, Marshal.SizeOf(ah));
+        fd.Write(StructureToByteArray(lh2), 0, Marshal.SizeOf(lh2));
+        fd.Write(StructureToByteArray(sh), 0, Marshal.SizeOf(sh));
+        fd.Write(StructureToByteArray(fh), 0, Marshal.SizeOf(fh));
+        fd.Write(StructureToByteArray(junk), 0, Marshal.SizeOf(junk));
         fd.Seek(2036, SeekOrigin.Begin);
-        fd.Write(ArdupilotMega.MAVLink.StructureToByteArray(lh3), 0, Marshal.SizeOf(lh3));
+        fd.Write(StructureToByteArray(lh3), 0, Marshal.SizeOf(lh3));
 
         fd.Seek(pos, SeekOrigin.Begin);
+    }
+
+    byte[] StructureToByteArray(object obj)
+    {
+
+        int len = Marshal.SizeOf(obj);
+
+        byte[] arr = new byte[len];
+
+        IntPtr ptr = Marshal.AllocHGlobal(len);
+
+        Marshal.StructureToPtr(obj, ptr, true);
+
+        Marshal.Copy(ptr, arr, 0, len);
+
+        Marshal.FreeHGlobal(ptr);
+
+        return arr;
+
     }
 }

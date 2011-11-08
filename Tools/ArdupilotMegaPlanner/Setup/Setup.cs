@@ -221,7 +221,7 @@ namespace ArdupilotMega.Setup
                 }
                 catch { MessageBox.Show("Failed to set Channel " + (a + 1).ToString()); }
 
-                data = data +"CH" + (a+1) +  " " + rcmin[a] + " | " + rcmax[a] + "\n";
+                data = data + "CH" + (a + 1) + " " + rcmin[a] + " | " + rcmax[a] + "\n";
             }
 
             MainV2.cs.raterc = oldrc;
@@ -470,7 +470,7 @@ namespace ArdupilotMega.Setup
                     MainV2.comPort.setParam("FLTMODE5", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode5.Text));
                     MainV2.comPort.setParam("FLTMODE6", (float)(int)Enum.Parse(typeof(Common.ac2modes), CMB_fmode6.Text));
 
-                    float value = (float)(CB_simple1.Checked ? 1 : 0) + (CB_simple2.Checked ? 1 << 1 : 0) + (CB_simple3.Checked ? 1 <<2 : 0)
+                    float value = (float)(CB_simple1.Checked ? 1 : 0) + (CB_simple2.Checked ? 1 << 1 : 0) + (CB_simple3.Checked ? 1 << 2 : 0)
                         + (CB_simple4.Checked ? 1 << 3 : 0) + (CB_simple5.Checked ? 1 << 4 : 0) + (CB_simple6.Checked ? 1 << 5 : 0);
                     if (MainV2.comPort.param.ContainsKey("SIMPLE"))
                         MainV2.comPort.setParam("SIMPLE", value);
@@ -570,7 +570,7 @@ namespace ArdupilotMega.Setup
             {
                 if (MainV2.comPort.param["ARSPD_ENABLE"] == null)
                 {
-                    MessageBox.Show("Not Available on "+ MainV2.cs.firmware.ToString());
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
                 }
                 else
                 {
@@ -646,7 +646,7 @@ namespace ArdupilotMega.Setup
             if (startup || ((TextBox)sender).Enabled == false)
                 return;
             try
-                {
+            {
                 if (MainV2.comPort.param["INPUT_VOLTS"] == null)
                 {
                     MessageBox.Show("Not Available");
@@ -803,7 +803,7 @@ namespace ArdupilotMega.Setup
                 System.Threading.Thread.Sleep(1);
             }
             Console.WriteLine("sleep out");
-        } 
+        }
 
         private void pictureBoxQuad_Click(object sender, EventArgs e)
         {
@@ -1022,14 +1022,19 @@ namespace ArdupilotMega.Setup
                 MainV2.comPort.setParam("HS4_MIN", HS4.minline);
                 MainV2.comPort.setParam("HS4_MAX", HS4.maxline);
             }
-            catch { MessageBox.Show("Failed to set min/max");  }
+            catch { MessageBox.Show("Failed to set min/max"); }
         }
 
         private void BUT_levelac2_Click(object sender, EventArgs e)
         {
             try
             {
+#if MAVLINK10
+                int fixme;
+                //                MainV2.comPort.doCommand(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
+#else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
+#endif
 
                 BUT_levelac2.Text = "Complete";
             }
@@ -1049,15 +1054,17 @@ namespace ArdupilotMega.Setup
             catch { MessageBox.Show("Webpage open failed... do you have a virus?\nhttp://www.magnetic-declination.com/"); }
         }
 
-        void reverseChannel(string name,bool normalreverse,Control progressbar)
+        void reverseChannel(string name, bool normalreverse, Control progressbar)
         {
             if (normalreverse == true)
             {
+                ((HorizontalProgressBar2)progressbar).reverse = true;
                 ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(148, 193, 31);
                 ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(0x43, 0x44, 0x45);
             }
             else
             {
+                ((HorizontalProgressBar2)progressbar).reverse = false;
                 ((HorizontalProgressBar2)progressbar).BackgroundColor = Color.FromArgb(0x43, 0x44, 0x45);
                 ((HorizontalProgressBar2)progressbar).ValueColor = Color.FromArgb(148, 193, 31);
             }
@@ -1083,22 +1090,22 @@ namespace ArdupilotMega.Setup
 
         private void CHK_revch1_CheckedChanged(object sender, EventArgs e)
         {
-            reverseChannel("RC1_REV", ((CheckBox)sender).Checked,BARroll);
+            reverseChannel("RC1_REV", ((CheckBox)sender).Checked, BARroll);
         }
 
         private void CHK_revch2_CheckedChanged(object sender, EventArgs e)
         {
-            reverseChannel("RC2_REV", ((CheckBox)sender).Checked,BARpitch);
+            reverseChannel("RC2_REV", ((CheckBox)sender).Checked, BARpitch);
         }
 
         private void CHK_revch3_CheckedChanged(object sender, EventArgs e)
         {
-            reverseChannel("RC3_REV", ((CheckBox)sender).Checked,BARthrottle);
+            reverseChannel("RC3_REV", ((CheckBox)sender).Checked, BARthrottle);
         }
 
         private void CHK_revch4_CheckedChanged(object sender, EventArgs e)
         {
-            reverseChannel("RC4_REV", ((CheckBox)sender).Checked,BARyaw);
+            reverseChannel("RC4_REV", ((CheckBox)sender).Checked, BARyaw);
         }
     }
 }

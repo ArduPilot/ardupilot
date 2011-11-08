@@ -112,6 +112,13 @@ namespace ArdupilotMega.GCSViews
             List<string> list = new List<string>();
 
             //foreach (object obj in Enum.GetValues(typeof(MAVLink.MAV_ACTION)))
+#if MAVLINK10
+            {
+                list.Add("LOITER_UNLIM");
+                list.Add("RETURN_TO_LAUNCH");
+                list.Add("PREFLIGHT_CALIBRATION");
+            }
+#else
             {
                 list.Add("RETURN");
                 list.Add("HALT");
@@ -126,6 +133,7 @@ namespace ArdupilotMega.GCSViews
                 list.Add("TAKEOFF");
                 list.Add("CALIBRATE_GYRO");
             }
+#endif
 
             CMB_action.DataSource = list;
 
@@ -364,8 +372,8 @@ namespace ArdupilotMega.GCSViews
 
 
 
-//                        if (CB_tuning.Checked == false) // draw if in view
-                        {                         
+                        //                        if (CB_tuning.Checked == false) // draw if in view
+                        {
 
                             if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                             {
@@ -413,7 +421,7 @@ namespace ArdupilotMega.GCSViews
 
                                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                                 {
-                                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing,MainV2.cs.target_bearing));
+                                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing));
                                 }
                                 else
                                 {
@@ -445,7 +453,7 @@ namespace ArdupilotMega.GCSViews
                         tracklast = DateTime.Now;
                     }
                 }
-                catch (Exception ex) { Console.WriteLine("FD Main loop exception "+ ex.ToString()); }
+                catch (Exception ex) { Console.WriteLine("FD Main loop exception " + ex.ToString()); }
             }
             Console.WriteLine("FD Main loop exit");
         }
@@ -684,7 +692,11 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
+#if MAVLINK10
+                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text));
+#else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
+#endif
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -961,20 +973,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_setmode_Click(object sender, EventArgs e)
         {
-            MAVLink.__mavlink_set_nav_mode_t navmode = new MAVLink.__mavlink_set_nav_mode_t();
-
-            MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
-
-            if (Common.translateMode(CMB_modes.Text, ref navmode, ref mode))
-            {
-                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
-                System.Threading.Thread.Sleep(10);
-                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_NAV_MODE, navmode);
-                System.Threading.Thread.Sleep(10);
-                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
-                System.Threading.Thread.Sleep(10);
-                MainV2.comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_SET_MODE, mode);
-            }
+            MainV2.comPort.setMode(CMB_modes.Text);
         }
 
         private void BUT_setwp_Click(object sender, EventArgs e)
@@ -1009,7 +1008,11 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
+#if MAVLINK10
+				MainV2.comPort.setMode("AUTO");
+#else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_AUTO);
+#endif
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1020,7 +1023,11 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
+#if MAVLINK10
+				MainV2.comPort.setMode("RTL");
+#else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_RETURN);
+#endif
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1031,7 +1038,11 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 ((Button)sender).Enabled = false;
+#if MAVLINK10
+				MainV2.comPort.setMode("MANUAL");
+#else
                 comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_SET_MANUAL);
+#endif
             }
             catch { MessageBox.Show("The Command failed to execute"); }
             ((Button)sender).Enabled = true;
@@ -1455,27 +1466,27 @@ namespace ArdupilotMega.GCSViews
                 {
                     list5item = null;
                     zg1.GraphPane.CurveList.Remove(list5curve);
-                } 
+                }
                 if (list6item != null && list6item.Name == ((CheckBox)sender).Name)
                 {
                     list6item = null;
                     zg1.GraphPane.CurveList.Remove(list6curve);
-                } 
+                }
                 if (list7item != null && list7item.Name == ((CheckBox)sender).Name)
                 {
                     list7item = null;
                     zg1.GraphPane.CurveList.Remove(list7curve);
-                } 
+                }
                 if (list8item != null && list8item.Name == ((CheckBox)sender).Name)
                 {
                     list8item = null;
                     zg1.GraphPane.CurveList.Remove(list8curve);
-                } 
+                }
                 if (list9item != null && list9item.Name == ((CheckBox)sender).Name)
                 {
                     list9item = null;
                     zg1.GraphPane.CurveList.Remove(list9curve);
-                } 
+                }
                 if (list10item != null && list10item.Name == ((CheckBox)sender).Name)
                 {
                     list10item = null;
@@ -1510,6 +1521,7 @@ namespace ArdupilotMega.GCSViews
 
             MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.MAV_MOUNT_MODE_GPS_POINT, true, true, true);
             MainV2.comPort.setMountControl(gotolocation.Lat, gotolocation.Lng, (int)(intalt / MainV2.cs.multiplierdist), true);
+
         }
     }
 }

@@ -162,11 +162,11 @@ namespace ArdupilotMega
                 rc.chan7_raw = 0;
                 rc.chan8_raw = 0;
 
-                MainV2.comPort.generatePacket(MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, rc);
+                MainV2.comPort.sendPacket(rc);
                 System.Threading.Thread.Sleep(20);
-                MainV2.comPort.generatePacket(MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, rc);
+                MainV2.comPort.sendPacket(rc);
                 System.Threading.Thread.Sleep(20);
-                MainV2.comPort.generatePacket(MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, rc);
+                MainV2.comPort.sendPacket(rc);
 
                 //timer1.Stop();
                 MainV2.joystick.enabled = false;
