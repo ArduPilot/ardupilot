@@ -61,6 +61,7 @@ static struct Location get_cmd_with_index(int i)
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
 	if (i > g.command_total) {
+		memset(&temp, 0, sizeof(temp));
 		temp.id = CMD_BLANK;
 	}else{
 		// read WP position
