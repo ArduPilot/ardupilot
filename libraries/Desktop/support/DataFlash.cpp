@@ -237,22 +237,22 @@ byte DataFlash_Class::ReadByte()
 
 int16_t DataFlash_Class::ReadInt()
 {
-  int16_t result;
+  uint16_t result;
 
   result = ReadByte();               // High byte
   result = (result<<8) | ReadByte(); // Low byte
-  return result;
+  return (int16_t)result;
 }
 
 int32_t DataFlash_Class::ReadLong()
 {
-  int32_t result;
+  uint32_t result;
 
   result = ReadByte();               // First byte
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte(); // Last byte
-  return result;
+  return (int32_t)result;
 }
 
 // make one instance for the user to use
