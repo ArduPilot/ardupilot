@@ -811,20 +811,20 @@ static void Log_Read_Cmd()
 	int8_t temp3 	= DataFlash.ReadByte();
 	int8_t temp4 	= DataFlash.ReadByte();
 	int8_t temp5 	= DataFlash.ReadByte();
-	int32_t temp6 	= DataFlash.ReadLong();
-	int32_t temp7 	= DataFlash.ReadLong();
-	int32_t temp8 	= DataFlash.ReadLong();
+	long   temp6 	= DataFlash.ReadLong();
+	long   temp7 	= DataFlash.ReadLong();
+	long   temp8 	= DataFlash.ReadLong();
 
 							//  1   2    3   4   5   6   7    8
 	Serial.printf_P(PSTR( "CMD, %d, %d, %d, %d, %d, %ld, %ld, %ld\n"),
-		temp1,
-		temp2,
-		temp3,
-		temp4,
-		temp5,
-		temp6,
-		temp7,
-		temp8);
+                    temp1,
+                    temp2,
+                    temp3,
+                    temp4,
+                    temp5,
+                    temp6,
+                    temp7,
+                    temp8);
 }
 
 // Write an attitude packet. Total length : 10 bytes
