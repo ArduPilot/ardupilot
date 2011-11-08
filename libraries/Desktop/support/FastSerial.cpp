@@ -177,7 +177,7 @@ static void check_connection(struct tcp_state *s)
 		if (s->fd != -1) {
 			int one = 1;
 			s->connected = true;
-			setsockopt(s->fd, SOL_TCP, TCP_NODELAY, &one, sizeof(one));
+			setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 			printf("New connection on serial port %u\n", s->serial_port);
 		}
 	}
