@@ -25,6 +25,14 @@
 #
 
 #
+# Save the system type for later use.
+#
+SYSTYPE			:=	$(shell uname)
+
+# force LANG to C so awk works sanely on MacOS
+export LANG=C
+
+#
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(PWD)
@@ -85,13 +93,18 @@ ifneq ($(MAKECMDGOALS),configure)
 HARDWARE=desktop
 BOARD=desktop
 
-CXX			:=	g++
-CC			:=	gcc
-AS			:=	gcc
-AR			:=	ar
-LD			:=	g++
-GDB			:=	gdb
-OBJCOPY			:=	objcopy
+ifeq ($(SYSTYPE),Darwin)
+  CXX			:=	c++
+  CC			:=	cc
+  AS			:=	cc
+  AR			:=	ar
+endif
+
+CXX			?=	g++
+CC			?=	gcc
+AS			?=	gcc
+AR			?=	ar
+LD			:=	$(CXX)
 
 # Find awk
 AWK			?=	gawk
@@ -114,7 +127,7 @@ ASOPTS			=	-assembler-with-cpp
 CXXFLAGS		=	-g $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS			=	-g $(DEFINES) $(OPTFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS			=	-g $(DEFINES) $(DEPFLAGS) $(ASOPTS)
-LDFLAGS			=	-g $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+LDFLAGS			=	-g $(OPTFLAGS)
 
 LIBS			=	-lm
 
