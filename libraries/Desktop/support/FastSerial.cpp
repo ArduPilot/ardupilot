@@ -33,7 +33,6 @@
 #include "FastSerial.h"
 #include "WProgram.h"
 #include <unistd.h>
-#include <pty.h>
 #include <fcntl.h>
 
 #include <stdio.h>
@@ -60,6 +59,10 @@
 # define FS_MAX_PORTS   2
 #else
 # define FS_MAX_PORTS   1
+#endif
+
+#ifndef MSG_NOSIGNAL
+# define MSG_NOSIGNAL 0
 #endif
 
 static struct tcp_state {
@@ -132,7 +135,7 @@ static void tcp_start_connection(unsigned int serial_port, bool wait_for_connect
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
         }
-		setsockopt(s->fd, SOL_TCP, TCP_NODELAY, &one, sizeof(one));
+		setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		s->connected = true;
     }
 }
