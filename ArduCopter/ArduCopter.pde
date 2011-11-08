@@ -1210,8 +1210,10 @@ static void update_altitude()
 	altitude_sensor = BARO;
 
 	#if HIL_MODE == HIL_MODE_ATTITUDE
-	current_loc.alt = g_gps->altitude - gps_base_alt;
-	return;
+		current_loc.alt = g_gps->altitude - gps_base_alt;
+		climb_rate = (g_gps->altitude - old_baro_alt) * 10;
+		old_baro_alt = g_gps->altitude;
+		return;
 	#else
 
 	// calc the vertical accel rate
