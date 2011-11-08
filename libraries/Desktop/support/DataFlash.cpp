@@ -29,10 +29,12 @@ void DataFlash_Class::Init(void)
 	if (flash_fd == 0) {
 		flash_fd = open("dataflash.bin", O_RDWR, 0777);
 		if (flash_fd == -1) {
-			uint8_t fill[DF_PAGE_SIZE*DF_NUM_PAGES];
+			uint8_t *fill;
+			fill = malloc(DF_PAGE_SIZE*DF_NUM_PAGES);
 			flash_fd = open("dataflash.bin", O_RDWR | O_CREAT, 0777);
-			memset(fill, 0xFF, sizeof(fill));
-			write(flash_fd, fill, sizeof(fill));
+			memset(fill, 0xFF, DF_PAGE_SIZE*DF_NUM_PAGES);
+			write(flash_fd, fill, DF_PAGE_SIZE*DF_NUM_PAGES);
+			free(fill);
 		}
 	}
 	df_PageSize = DF_PAGE_SIZE;
