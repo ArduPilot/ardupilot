@@ -58,6 +58,13 @@ namespace ArdupilotMega
         public static List<System.Threading.Thread> threads = new List<System.Threading.Thread>();
         public static MainV2 instance = null;
 
+        /*
+         * "PITCH_KP",
+"PITCH_KI",
+"PITCH_LIM",
+
+         */
+
         public enum Firmwares
         {
             ArduPlane,
@@ -233,7 +240,7 @@ namespace ArdupilotMega
                 string name = "ss" + DateTime.Now.ToString("hhmmss") + ".jpg";
                 bitmap.Save(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + name, System.Drawing.Imaging.ImageFormat.Jpeg);
                 MessageBox.Show("Screenshot saved to " + name);
-            } 
+            }
 
         }
 
@@ -468,7 +475,6 @@ namespace ArdupilotMega
 
         private void MenuConfiguration_Click(object sender, EventArgs e)
         {
-            MyView.SuspendLayout();
             MyView.Controls.Clear();
 
             GCSViews.Terminal.threadrun = false;
@@ -499,11 +505,11 @@ namespace ArdupilotMega
 
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
 
-            temp.ResumeLayout();
+            temp.Size = MyView.Size;
+
+            //temp.Parent = MyView;
 
             MyView.Controls.Add(temp);
-
-            MyView.ResumeLayout();
         }
 
         private void MenuSimulation_Click(object sender, EventArgs e)
@@ -619,14 +625,14 @@ namespace ArdupilotMega
                     comPort.BaseStream = new TcpSerial();
                 }
                 else
-                if (CMB_serialport.Text == "UDP")
-                {
-                    comPort.BaseStream = new UdpSerial();
-                }
-                else
-                {
-                    comPort.BaseStream = new SerialPort();
-                }
+                    if (CMB_serialport.Text == "UDP")
+                    {
+                        comPort.BaseStream = new UdpSerial();
+                    }
+                    else
+                    {
+                        comPort.BaseStream = new SerialPort();
+                    }
                 try
                 {
                     comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
@@ -684,10 +690,13 @@ namespace ArdupilotMega
 
                     this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                 }
-                catch (Exception ex) { 
-                    try { 
-                        comPort.Close(); 
-                    } catch { }
+                catch (Exception ex)
+                {
+                    try
+                    {
+                        comPort.Close();
+                    }
+                    catch { }
                     try
                     {
                         string version = ArduinoDetect.DetectVersion(comPort.BaseStream.PortName);
@@ -723,8 +732,8 @@ namespace ArdupilotMega
                         }
                     }
                     catch { }
-                    MessageBox.Show("Is your CLI switch in Flight position?\n(this is required for MAVlink comms)\n\n" + ex.ToString()); 
-                    return; 
+                    MessageBox.Show("Is your CLI switch in Flight position?\n(this is required for MAVlink comms)\n\n" + ex.ToString());
+                    return;
                 }
             }
         }
@@ -940,7 +949,7 @@ namespace ArdupilotMega
                             if (lastjoystick.AddMilliseconds(50) < DateTime.Now)
                             {
                                 //                                Console.WriteLine(DateTime.Now.Millisecond + " {0} {1} {2} {3} ", rc.chan1_raw, rc.chan2_raw, rc.chan3_raw, rc.chan4_raw);
-                                comPort.generatePacket(MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE, rc);
+                                comPort.sendPacket(rc);
                                 lastjoystick = DateTime.Now;
                             }
 
@@ -1064,18 +1073,25 @@ namespace ArdupilotMega
 
                         MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
 
+#if MAVLINK10
+                        htb.type = (byte)MAVLink.MAV_TYPE.MAV_TYPE_GCS;
+                        htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT.MAV_AUTOPILOT_ARDUPILOTMEGA;
+                        htb.mavlink_version = 3;
+#else
                         htb.type = (byte)MAVLink.MAV_TYPE.MAV_GENERIC;
                         htb.autopilot = (byte)MAVLink.MAV_AUTOPILOT_TYPE.MAV_AUTOPILOT_ARDUPILOTMEGA;
                         htb.mavlink_version = 2;
+#endif
 
-                        comPort.generatePacket((byte)MAVLink.MAVLINK_MSG_ID_HEARTBEAT, htb);
+                        comPort.sendPacket(htb);
                         heatbeatsend = DateTime.Now;
                     }
 
                     // data loss warning
                     if ((DateTime.Now - comPort.lastvalidpacket).TotalSeconds > 10)
                     {
-                        if (speechenable && talk != null) {
+                        if (speechenable && talk != null)
+                        {
                             if (MainV2.talk.State == SynthesizerState.Ready)
                                 MainV2.talk.SpeakAsync("WARNING No Data for " + (int)(DateTime.Now - comPort.lastvalidpacket).TotalSeconds + " Seconds");
                         }
@@ -1086,7 +1102,8 @@ namespace ArdupilotMega
                     while (comPort.BaseStream.BytesToRead > minbytes && givecomport == false)
                         comPort.readPacket();
                 }
-                catch (Exception e) { 
+                catch (Exception e)
+                {
                     Console.WriteLine("Serial Reader fail :" + e.Message);
                     try
                     {
@@ -1160,7 +1177,7 @@ namespace ArdupilotMega
                 {
                     Name = "motion jpg stream",
                     IsBackground = true
-                };            
+                };
                 // wait for tcp connections               
                 t13.Start();
             }
@@ -1195,7 +1212,7 @@ namespace ArdupilotMega
             {
                 listener.Start();
             }
-            catch { Console.WriteLine("do you have the planner open already");return; } // in use
+            catch { Console.WriteLine("do you have the planner open already"); return; } // in use
             // Enter the listening loop.               
             while (true)
             {
@@ -1252,7 +1269,7 @@ namespace ArdupilotMega
                                 stream.WriteByte(0x00);
                                 writer.WriteLine("test from planner");
                                 stream.WriteByte(0xff);
-                                
+
                                 //break;
                             }
 
@@ -1260,19 +1277,22 @@ namespace ArdupilotMega
                             //message
                             stream.WriteByte(0xff);
                         }
-                    } else if (url.Contains(".html")) {
-                        BinaryReader file = new BinaryReader(File.Open("hud.html",FileMode.Open,FileAccess.Read,FileShare.Read));
+                    }
+                    else if (url.Contains(".html"))
+                    {
+                        BinaryReader file = new BinaryReader(File.Open("hud.html", FileMode.Open, FileAccess.Read, FileShare.Read));
                         byte[] buffer = new byte[1024];
-                        while (file.PeekChar() != -1) {
-                                                        
-                            int leng = file.Read(buffer,0,buffer.Length);
+                        while (file.PeekChar() != -1)
+                        {
 
-                            stream.Write(buffer,0,leng);
+                            int leng = file.Read(buffer, 0, buffer.Length);
+
+                            stream.Write(buffer, 0, leng);
                         }
                         file.Close();
                         stream.Close();
                     }
-                    else if (url.ToLower().Contains("hud") || url.ToLower().Contains("map"))
+                    else if (url.ToLower().Contains("hud.jpg") || url.ToLower().Contains("map.jpg") || url.ToLower().Contains("both.jpg"))
                     {
                         string header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace;boundary=APMPLANNER\n\n--APMPLANNER\r\n";
                         byte[] temp = encoding.GetBytes(header);
@@ -1496,7 +1516,7 @@ namespace ArdupilotMega
 
                     if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
                     {
-                        StreamWriter sw = new StreamWriter(path+".etag");
+                        StreamWriter sw = new StreamWriter(path + ".etag");
                         sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
                         sw.Close();
                         getfile = true;
@@ -1622,7 +1642,12 @@ namespace ArdupilotMega
             }
             if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
             {
-                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+#if MAVLINK10
+                int fixme;
+                //MainV2.comPort.doCommand(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+#else
+				MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+#endif
                 MessageBox.Show("Done MAV_ACTION_STORAGE_WRITE");
                 return true;
             }
@@ -1731,7 +1756,7 @@ namespace ArdupilotMega
                     comPort.logfile.Close();
             }
             catch { }
-                 
+
         }
 
         public static string getConfig(string paramname)

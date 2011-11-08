@@ -36,43 +36,48 @@ namespace ArdupilotMega
 
         void doCalc()
         {
-            // entered values
-            float focallen = (float)num_focallength.Value;
-            float flyalt = (float)num_agl.Value;
-            int imagewidth = int.Parse(TXT_imgwidth.Text);
-            int imageheight = int.Parse(TXT_imgheight.Text);
-
-            float sensorwidth = float.Parse(TXT_senswidth.Text);
-            float sensorheight = float.Parse(TXT_sensheight.Text);
-
-            int overlap = (int)num_overlap.Value;
-            int sidelap = (int)num_sidelap.Value;
-
-
-            // scale
-            float flscale = 1000 * flyalt / focallen;
-
-            float viewwidth = (sensorwidth * flscale / 1000);
-            float viewheight = (sensorheight * flscale / 1000);
-
-            TXT_fovH.Text = (viewwidth).ToString();
-            TXT_fovV.Text = (viewheight).ToString();
-
-            TXT_fovAH.Text = (Math.Atan(sensorwidth / (2 * focallen)) * rad2deg * 2).ToString();
-            TXT_fovAV.Text = (Math.Atan(sensorheight / (2 * focallen)) * rad2deg * 2).ToString();
-
-            TXT_cmpixel.Text = ((viewheight / imageheight) * 100).ToString("0.00 cm");
-
-            if (CHK_camdirection.Checked)
+            try
             {
-                TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewheight).ToString();
-                TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewwidth).ToString();
+                // entered values
+                float focallen = (float)num_focallength.Value;
+                float flyalt = (float)num_agl.Value;
+                int imagewidth = int.Parse(TXT_imgwidth.Text);
+                int imageheight = int.Parse(TXT_imgheight.Text);
+
+                float sensorwidth = float.Parse(TXT_senswidth.Text);
+                float sensorheight = float.Parse(TXT_sensheight.Text);
+
+                int overlap = (int)num_overlap.Value;
+                int sidelap = (int)num_sidelap.Value;
+
+
+                // scale
+                float flscale = 1000 * flyalt / focallen;
+
+                float viewwidth = (sensorwidth * flscale / 1000);
+                float viewheight = (sensorheight * flscale / 1000);
+
+                TXT_fovH.Text = (viewwidth).ToString();
+                TXT_fovV.Text = (viewheight).ToString();
+
+                TXT_fovAH.Text = (Math.Atan(sensorwidth / (2 * focallen)) * rad2deg * 2).ToString();
+                TXT_fovAV.Text = (Math.Atan(sensorheight / (2 * focallen)) * rad2deg * 2).ToString();
+
+                TXT_cmpixel.Text = ((viewheight / imageheight) * 100).ToString("0.00 cm");
+
+                if (CHK_camdirection.Checked)
+                {
+                    TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewheight).ToString();
+                    TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewwidth).ToString();
+                }
+                else
+                {
+                    TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewwidth).ToString();
+                    TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewheight).ToString();
+                }
+
             }
-            else
-            {
-                TXT_distflphotos.Text = ((1 - (overlap / 100.0f)) * viewwidth).ToString();
-                TXT_distacflphotos.Text = ((1 - (sidelap / 100.0f)) * viewheight).ToString();
-            }
+            catch { return; }
         }
 
         private void num_agl_ValueChanged(object sender, EventArgs e)

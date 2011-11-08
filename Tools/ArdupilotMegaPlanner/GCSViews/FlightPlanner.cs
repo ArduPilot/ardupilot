@@ -29,6 +29,7 @@ namespace ArdupilotMega.GCSViews
         bool quickadd = false;
         bool isonline = true;
         bool sethome = false;
+        bool polygongridmode = false;
         Hashtable param = new Hashtable();
         public static Hashtable hashdefines = new Hashtable();
         public static List<PointLatLngAlt> pointlist = new List<PointLatLngAlt>(); // used to calc distance
@@ -370,6 +371,11 @@ namespace ArdupilotMega.GCSViews
         /// <param name="alt"></param>
         public void callMe(double lat, double lng, int alt)
         {
+            if (polygongridmode)
+            {
+                addPolygonPointToolStripMenuItem_Click(null, null);
+                return;
+            }
 
             if (sethome)
             {
@@ -2171,6 +2177,8 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_grid_Click(object sender, EventArgs e)
         {
+            polygongridmode = false;
+
             if (drawnpolygon == null || drawnpolygon.Points.Count == 0)
             {
                 MessageBox.Show("Right click the map to draw a polygon", "Area", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -2366,8 +2374,8 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
-                drawnpolygon.Points.Clear();
-                drawnpolygons.Markers.Clear();
+                //drawnpolygon.Points.Clear();
+                //drawnpolygons.Markers.Clear();
                 MainMap.Refresh();
 
             }
@@ -2460,6 +2468,13 @@ namespace ArdupilotMega.GCSViews
 
         private void addPolygonPointToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (polygongridmode == false)
+            {
+                MessageBox.Show("You will remain in polygon mode until you clear the polygon or create a grid");
+            }
+
+            polygongridmode = true;
+
             List < PointLatLng > polygonPoints = new List<PointLatLng>();
             if (drawnpolygons.Polygons.Count == 0)
             {
@@ -2479,6 +2494,7 @@ namespace ArdupilotMega.GCSViews
 
         private void clearPolygonToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            polygongridmode = false;
             if (drawnpolygon == null)
                 return;
             drawnpolygon.Points.Clear();
@@ -2591,6 +2607,7 @@ namespace ArdupilotMega.GCSViews
 
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
         }
+
         private void BUT_Camera_Click(object sender, EventArgs e)
         {
             Camera form = new Camera();

@@ -248,7 +248,63 @@ namespace ArdupilotMega
             CIRCLE = 7,
             POSITION = 8
         }
+        
+		#if MAVLINK10
+		
+        public static bool translateMode(string modein, ref MAVLink.__mavlink_set_mode_t mode)
+        {
+            //MAVLink.__mavlink_set_mode_t mode = new MAVLink.__mavlink_set_mode_t();
+            mode.target_system = MainV2.comPort.sysid;
 
+            try
+            {
+                if (Common.getModes() == typeof(Common.apmmodes))
+                {
+                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    {
+                        case (int)Common.apmmodes.MANUAL:
+                        case (int)Common.apmmodes.CIRCLE:
+                        case (int)Common.apmmodes.STABILIZE:
+                        case (int)Common.apmmodes.AUTO:
+                        case (int)Common.apmmodes.RTL:
+                        case (int)Common.apmmodes.LOITER:
+                        case (int)Common.apmmodes.FLY_BY_WIRE_A:
+                        case (int)Common.apmmodes.FLY_BY_WIRE_B:
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
+                            break;
+                        default:
+                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            return false;
+                    }
+                }
+                else if (Common.getModes() == typeof(Common.ac2modes))
+                {
+                    switch ((int)Enum.Parse(Common.getModes(), modein))
+                    {
+                        case (int)Common.ac2modes.STABILIZE:
+                        case (int)Common.ac2modes.AUTO:
+                        case (int)Common.ac2modes.RTL:
+                        case (int)Common.ac2modes.LOITER:
+                        case (int)Common.ac2modes.ACRO:
+                        case (int)Common.ac2modes.ALT_HOLD:
+                        case (int)Common.ac2modes.CIRCLE:
+                        case (int)Common.ac2modes.POSITION:
+                            mode.base_mode = (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+                            mode.custom_mode = (uint)(int)Enum.Parse(Common.getModes(), modein);
+                            break;
+                        default:
+                            MessageBox.Show("No Mode Changed " + (int)Enum.Parse(Common.getModes(), modein));
+                            return false;
+                    }
+                }
+            }
+            catch { System.Windows.Forms.MessageBox.Show("Failed to find Mode"); return false; }
+
+            return true;
+        }
+		
+		#else
         public static bool translateMode(string modein, ref  MAVLink.__mavlink_set_nav_mode_t navmode, ref MAVLink.__mavlink_set_mode_t mode)
         {
 
@@ -333,8 +389,9 @@ namespace ArdupilotMega
             catch { System.Windows.Forms.MessageBox.Show("Failed to find Mode"); return false; }
 
             return true;
-        }
-
+        }		
+		#endif
+        
         public static bool getFilefromNet(string url,string saveto) {
             try
             {
@@ -592,6 +649,8 @@ namespace ArdupilotMega
         int _value = 0;
         System.Windows.Forms.Label lbl1 = new System.Windows.Forms.Label();
         System.Windows.Forms.Label lbl = new System.Windows.Forms.Label();
+        public bool reverse = false;
+        int displayvalue = 0;
 
         public HorizontalProgressBar2()
             : base()
@@ -606,7 +665,15 @@ namespace ArdupilotMega
                 if (_value == value)
                     return;
                 _value = value;
-                int ans = value + offset;
+                displayvalue = _value;
+
+                if (reverse)
+                {
+                    int dif = _value - Minimum;
+                    _value = Maximum - dif;
+                }
+
+                int ans = _value + offset;
                 if (ans <= base.Minimum)
                 {
                     ans = base.Minimum + 1; // prevent an exception for the -1 hack
@@ -675,7 +742,7 @@ System.ComponentModel.Description("Text under Bar")]
             lbl1.Location = new Point(this.Location.X, this.Location.Y + this.Height + 15);
             lbl1.ClientSize = new Size(this.Width, 13);
             lbl1.TextAlign = ContentAlignment.MiddleCenter;
-            lbl1.Text = Value.ToString();
+            lbl1.Text = displayvalue.ToString();
 
             if (minline != 0 && maxline != 0)
             {
@@ -688,15 +755,35 @@ System.ComponentModel.Description("Text under Bar")]
                 if ((Type)this.GetType() == typeof(VerticalProgressBar2)) {
                     e.ResetTransform();
                     range2 = this.Height;
-                    e.DrawLine(redPen, 0, (this.Maximum - minline) / range * range2 + 0, this.Width, (this.Maximum - minline) / range * range2 + 0);
-                    e.DrawLine(redPen, 0, (this.Maximum - maxline) / range * range2 + 6, this.Width, (this.Maximum - maxline) / range * range2 + 6);
-                    e.DrawString(minline.ToString(), SystemFonts.DefaultFont, mybrush, 5, (this.Maximum - minline) / range * range2 + 2);
-                    e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, Brushes.White, 5, (this.Maximum - maxline) / range * range2 - 10);
+                    if (reverse)
+                    {
+                        e.DrawLine(redPen, 0, (maxline - this.Minimum) / range * range2 + 0, this.Width, (maxline - this.Minimum) / range * range2 + 0);
+                        e.DrawLine(redPen, 0, (minline - this.Minimum) / range * range2 + 6, this.Width, (minline - this.Minimum) / range * range2 + 6);
+                        e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, mybrush, 5, (maxline - this.Minimum) / range * range2 + 2);
+                        e.DrawString(minline.ToString(), SystemFonts.DefaultFont, Brushes.White, 5, (minline - this.Minimum) / range * range2 - 10);
+                    }
+                    else
+                    {
+                        e.DrawLine(redPen, 0, (this.Maximum - minline) / range * range2 + 0, this.Width, (this.Maximum - minline) / range * range2 + 0);
+                        e.DrawLine(redPen, 0, (this.Maximum - maxline) / range * range2 + 6, this.Width, (this.Maximum - maxline) / range * range2 + 6);
+                        e.DrawString(minline.ToString(), SystemFonts.DefaultFont, mybrush, 5, (this.Maximum - minline) / range * range2 + 2);
+                        e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, Brushes.White, 5, (this.Maximum - maxline) / range * range2 - 10);
+                    }
                 } else {
-                    e.DrawLine(redPen, (minline - this.Minimum) / range * range2 - 0, 0, (minline - this.Minimum) / range * range2 - 0, this.Height);
-                    e.DrawLine(redPen, (maxline - this.Minimum) / range * range2 - 0, 0, (maxline - this.Minimum) / range * range2 - 0, this.Height);
-                    e.DrawString(minline.ToString(), SystemFonts.DefaultFont, mybrush, (minline - this.Minimum) / range * range2 - 30, 5);
-                    e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, Brushes.White, (maxline - this.Minimum) / range * range2 - 0, 5);
+                    if (reverse)
+                    {
+                        e.DrawLine(redPen, (this.Maximum - minline) / range * range2 - 0, 0, (this.Maximum - minline) / range * range2 - 0, this.Height);
+                        e.DrawLine(redPen, (this.Maximum - maxline) / range * range2 - 0, 0, (this.Maximum - maxline) / range * range2 - 0, this.Height);
+                        e.DrawString(minline.ToString(), SystemFonts.DefaultFont, mybrush, (this.Maximum - minline) / range * range2 - 30, 5);
+                        e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, Brushes.White, (this.Maximum - maxline) / range * range2 - 0, 5);
+                    }
+                    else
+                    {
+                        e.DrawLine(redPen, (minline - this.Minimum) / range * range2 - 0, 0, (minline - this.Minimum) / range * range2 - 0, this.Height);
+                        e.DrawLine(redPen, (maxline - this.Minimum) / range * range2 - 0, 0, (maxline - this.Minimum) / range * range2 - 0, this.Height);
+                        e.DrawString(minline.ToString(), SystemFonts.DefaultFont, mybrush, (minline - this.Minimum) / range * range2 - 30, 5);
+                        e.DrawString(maxline.ToString(), SystemFonts.DefaultFont, Brushes.White, (maxline - this.Minimum) / range * range2 - 0, 5);
+                    }
                 }
             }
         }

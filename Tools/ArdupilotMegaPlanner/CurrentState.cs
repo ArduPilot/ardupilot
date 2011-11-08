@@ -272,6 +272,119 @@ namespace ArdupilotMega
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT] = null;
                 }
+#if MAVLINK10
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_HEARTBEAT] != null)
+                {
+                    ArdupilotMega.MAVLink.__mavlink_heartbeat_t hb = new ArdupilotMega.MAVLink.__mavlink_heartbeat_t();
+
+                    object temp = hb;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_HEARTBEAT], ref temp, 6);
+
+                    hb = (ArdupilotMega.MAVLink.__mavlink_heartbeat_t)(temp);
+
+                    string oldmode = mode;
+
+                    mode = "Unknown";
+
+                    if ((hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) != 0)
+                    {
+                        if (hb.type == (byte)MAVLink.MAV_TYPE.MAV_TYPE_FIXED_WING)
+                        {
+                            switch (hb.custom_mode)
+                            {
+                                case (byte)(Common.apmmodes.MANUAL):
+                                    mode = "Manual";
+                                    break;
+                                case (byte)(Common.apmmodes.GUIDED):
+                                    mode = "Guided";
+                                    break;
+                                case (byte)(Common.apmmodes.STABILIZE):
+                                    mode = "Stabilize";
+                                    break;
+                                case (byte)(Common.apmmodes.FLY_BY_WIRE_A):
+                                    mode = "FBW A";
+                                    break;
+                                case (byte)(Common.apmmodes.FLY_BY_WIRE_B):
+                                    mode = "FBW B";
+                                    break;
+                                case (byte)(Common.apmmodes.AUTO):
+                                    mode = "Auto";
+                                    break;
+                                case (byte)(Common.apmmodes.RTL):
+                                    mode = "RTL";
+                                    break;
+                                case (byte)(Common.apmmodes.LOITER):
+                                    mode = "Loiter";
+                                    break;
+                                case (byte)(Common.apmmodes.CIRCLE):
+                                    mode = "Circle";
+                                    break;
+                                default:
+                                    mode = "Unknown";
+                                    break;
+                            }
+                        }
+                        else if (hb.type == (byte)MAVLink.MAV_TYPE.MAV_TYPE_QUADROTOR) 
+                        {
+                            switch (hb.custom_mode)
+                            {
+                                case (byte)(Common.ac2modes.STABILIZE):
+                                    mode = "Stabilize";
+                                    break;
+                                case (byte)(Common.ac2modes.ACRO):
+                                    mode = "Acro";
+                                    break;
+                                case (byte)(Common.ac2modes.ALT_HOLD):
+                                    mode = "Alt Hold";
+                                    break;
+                                case (byte)(Common.ac2modes.AUTO):
+                                    mode = "Auto";
+                                    break;
+                                case (byte)(Common.ac2modes.GUIDED):
+                                    mode = "Guided";
+                                    break;
+                                case (byte)(Common.ac2modes.LOITER):
+                                    mode = "Loiter";
+                                    break;
+                                case (byte)(Common.ac2modes.RTL):
+                                    mode = "RTL";
+                                    break;
+                                case (byte)(Common.ac2modes.CIRCLE):
+                                    mode = "Circle";
+                                    break;
+                                default:
+                                    mode = "Unknown";
+                                    break;
+                            }
+                        }
+                    }
+
+                    if (oldmode != mode && MainV2.speechenable && MainV2.getConfig("speechmodeenabled") == "True")
+                    {
+                        MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechmode")));
+                    }
+                }
+
+
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
+                {
+                    ArdupilotMega.MAVLink.__mavlink_sys_status_t sysstatus = new ArdupilotMega.MAVLink.__mavlink_sys_status_t();
+
+                    object temp = sysstatus;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
+
+                    sysstatus = (ArdupilotMega.MAVLink.__mavlink_sys_status_t)(temp);
+
+                    battery_voltage = sysstatus.voltage_battery;
+                    battery_remaining = sysstatus.battery_remaining;
+
+                    packetdropremote = sysstatus.drop_rate_comm;
+
+                    //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
+                }
+				#else
 
                 if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
                 {
@@ -384,8 +497,8 @@ namespace ArdupilotMega
                     }
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
-                }
-
+                }				
+#endif
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] != null)
                 {
                     var att = new ArdupilotMega.MAVLink.__mavlink_attitude_t();
@@ -404,6 +517,32 @@ namespace ArdupilotMega
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_ATTITUDE] = null;
                 }
+#if MAVLINK10
+                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT] != null)
+                {
+                    var gps = new MAVLink.__mavlink_gps_raw_int_t();
+
+                    object temp = gps;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW_INT], ref temp, 6);
+
+                    gps = (MAVLink.__mavlink_gps_raw_int_t)(temp);
+
+                    lat = gps.lat * 1.0e-7f;
+                    lng = gps.lon * 1.0e-7f;
+                    //                alt = gps.alt; // using vfr as includes baro calc
+
+                    gpsstatus = gps.fix_type;
+                    //                    Console.WriteLine("gpsfix {0}",gpsstatus);
+
+                    gpshdop = gps.eph;
+
+                    groundspeed = gps.vel * 1.0e-2f;
+                    groundcourse = gps.cog * 1.0e-2f;
+
+                    //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
+                }
+				#else
 
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] != null)
                 {
@@ -428,8 +567,8 @@ namespace ArdupilotMega
                     groundcourse = gps.hdg;
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_GPS_RAW] = null;
-                }
-
+                }				
+#endif
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GPS_STATUS] != null)
                 {
                     var gps = new MAVLink.__mavlink_gps_status_t();
@@ -442,7 +581,6 @@ namespace ArdupilotMega
 
                     satcount = gps.satellites_visible;
                 }
-
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT] != null)
                 {
                     var loc = new MAVLink.__mavlink_global_position_int_t();
@@ -453,12 +591,35 @@ namespace ArdupilotMega
 
                     loc = (MAVLink.__mavlink_global_position_int_t)(temp);
 
-                    alt = loc.alt / 1000.0f;
+                    //alt = loc.alt / 1000.0f;
                     lat = loc.lat / 10000000.0f;
                     lng = loc.lon / 10000000.0f;
 
                 }
-                if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION] != null)
+#if MAVLINK10
+                if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT] != null)
+                {
+                    ArdupilotMega.MAVLink.__mavlink_mission_current_t wpcur = new ArdupilotMega.MAVLink.__mavlink_mission_current_t();
+
+                    object temp = wpcur;
+
+                    MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_MISSION_CURRENT], ref temp, 6);
+
+                    wpcur = (ArdupilotMega.MAVLink.__mavlink_mission_current_t)(temp);
+
+                    int oldwp = (int)wpno;
+
+                    wpno = wpcur.seq;
+
+                    if (oldwp != wpno && MainV2.speechenable && MainV2.getConfig("speechwaypointenabled") == "True")
+                    {
+                        MainV2.talk.SpeakAsync(Common.speechConversion(MainV2.getConfig("speechwaypoint")));
+                    }
+
+                    //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
+                }
+				#else
+	               if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_GLOBAL_POSITION] != null)
                 {
                     var loc = new MAVLink.__mavlink_global_position_t();
 
@@ -493,8 +654,9 @@ namespace ArdupilotMega
                     }
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_WAYPOINT_CURRENT] = null;
-                }
-
+                }			
+				
+#endif
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_RC_CHANNELS_RAW] != null)
                 {
                     var rcin = new MAVLink.__mavlink_rc_channels_raw_t();

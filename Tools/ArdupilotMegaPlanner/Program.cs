@@ -22,10 +22,17 @@ namespace ArdupilotMega
 
             Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(Application_ThreadException);
 
+            Application.Idle += new EventHandler(Application_Idle);
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Camera());
             Application.Run(new MainV2());
+        }
+
+        static void Application_Idle(object sender, EventArgs e)
+        {
+            //Console.WriteLine("Idle");
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
