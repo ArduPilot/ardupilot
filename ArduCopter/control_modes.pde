@@ -47,74 +47,73 @@ static void reset_control_switch()
 static void read_trim_switch()
 {
 	#if CH7_OPTION == CH7_FLIP
-	if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
-		do_flip = true;
-	}
+		if (g.rc_7.control_in > 800 && g.rc_3.control_in != 0){
+			do_flip = true;
+		}
 
 	#elif CH7_OPTION == CH7_SIMPLE_MODE
-	do_simple = (g.rc_7.control_in > 800);
-	//Serial.println(g.rc_7.control_in, DEC);
+		do_simple = (g.rc_7.control_in > 800);
+		//Serial.println(g.rc_7.control_in, DEC);
 
 	#elif CH7_OPTION == CH7_RTL
-	static bool ch7_rtl_flag = false;
+		static bool ch7_rtl_flag = false;
 
-	if (ch7_rtl_flag == false && g.rc_7.control_in > 800){
-		ch7_rtl_flag = true;
-		set_mode(RTL);
-	}
-
-	if (ch7_rtl_flag == true && g.rc_7.control_in < 800){
-		ch7_rtl_flag = false;
-		if (control_mode == RTL || control_mode == LOITER){
-			reset_control_switch();
+		if (ch7_rtl_flag == false && g.rc_7.control_in > 800){
+			ch7_rtl_flag = true;
+			set_mode(RTL);
 		}
-	}
+
+		if (ch7_rtl_flag == true && g.rc_7.control_in < 800){
+			ch7_rtl_flag = false;
+			if (control_mode == RTL || control_mode == LOITER){
+				reset_control_switch();
+			}
+		}
 
 	#elif CH7_OPTION == CH7_SET_HOVER
-	// switch is engaged
-	if (g.rc_7.control_in > 800){
-		trim_flag = true;
+		// switch is engaged
+		if (g.rc_7.control_in > 800){
+			trim_flag = true;
 
-	}else{ // switch is disengaged
+		}else{ // switch is disengaged
 
-		if(trim_flag){
+			if(trim_flag){
 
-			// set the throttle nominal
-			if(g.rc_3.control_in > 150){
-				g.throttle_cruise.set_and_save(g.rc_3.control_in);
-					//Serial.printf("tnom %d\n", g.throttle_cruise.get());
+				// set the throttle nominal
+				if(g.rc_3.control_in > 150){
+					g.throttle_cruise.set_and_save(g.rc_3.control_in);
+						//Serial.printf("tnom %d\n", g.throttle_cruise.get());
+				}
+				trim_flag = false;
 			}
-			trim_flag = false;
 		}
-	}
 
 	#elif CH7_OPTION == CH7_SAVE_WP
+		if (g.rc_7.control_in > 800){
+			trim_flag = true;
 
-	if (g.rc_7.control_in > 800){
-		trim_flag = true;
+		}else{ // switch is disengaged
 
-	}else{ // switch is disengaged
-
-		if(trim_flag){
-			// set the next_WP
-			CH7_wp_index++;
-			current_loc.id = MAV_CMD_NAV_WAYPOINT;
-			g.command_total.set_and_save(CH7_wp_index);
-			set_command_with_index(current_loc, CH7_wp_index);
+			if(trim_flag){
+				// set the next_WP
+				CH7_wp_index++;
+				current_loc.id = MAV_CMD_NAV_WAYPOINT;
+				g.command_total.set_and_save(CH7_wp_index);
+				set_command_with_index(current_loc, CH7_wp_index);
+			}
 		}
-	}
 
 	#elif CH7_OPTION == CH7_ADC_FILTER
-	if (g.rc_7.control_in > 800){
-		adc.filter_result = true;
-	}else{
-		adc.filter_result = false;
-	}
+		if (g.rc_7.control_in > 800){
+			adc.filter_result = true;
+		}else{
+			adc.filter_result = false;
+		}
 
-	#elif CH7_OPTION == CH7_AUTO_TRIM
-	if (g.rc_7.control_in > 800){
-		auto_level_counter = 10;
-	}
+		#elif CH7_OPTION == CH7_AUTO_TRIM
+		if (g.rc_7.control_in > 800){
+			auto_level_counter = 10;
+		}
 	#endif
 
 }
