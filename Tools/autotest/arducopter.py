@@ -19,7 +19,7 @@ expect_list = []
 def message_hook(mav, msg):
     '''called as each mavlink msg is received'''
     global expect_list
-    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT' ]:
+    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
         print(msg)
     for p in expect_list:
         try:
@@ -83,6 +83,7 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
 
 def arm_motors(mavproxy):
     '''arm motors'''
+    print("Arming motors")
     mavproxy.send('switch 6\n') # stabilize mode
     mavproxy.expect('STABILIZE>')
     mavproxy.send('rc 3 1000\n')
@@ -93,6 +94,8 @@ def arm_motors(mavproxy):
 
 def disarm_motors(mavproxy):
     '''disarm motors'''
+    print("Disarming motors")
+    mavproxy.send('switch 6\n') # stabilize mode
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 1000\n')
     mavproxy.expect('APM: DISARMING MOTORS')
@@ -158,7 +161,8 @@ def wait_distance(mav, distance, accuracy=5, timeout=30):
     print("Failed to attain distance %u" % distance)
     return False
 
-def wait_location(mav, loc, accuracy=5, timeout=30):
+
+def wait_location(mav, loc, accuracy=5, timeout=30, height_accuracy=-1):
     '''wait for arrival at a location'''
     tstart = time.time()
     while time.time() < tstart + timeout:
@@ -167,6 +171,9 @@ def wait_location(mav, loc, accuracy=5, timeout=30):
         delta = get_distance(loc, pos)
         print("Distance %.2f meters" % delta)
         if delta <= accuracy:
+            if height_accuracy != -1 and math.fabs(pos.alt - loc.alt) > height_accuracy:
+                continue
+            print("Reached location (%.2f meters)" % delta)
             return True
     print("Failed to attain location")
     return False
@@ -231,7 +238,7 @@ def land(mavproxy, mav, timeout=60):
         return False
 
 
-def fly_mission(mavproxy, mav, filename):
+def fly_mission(mavproxy, mav, filename, height_accuracy=-1):
     '''fly a mission from a file'''
     global homeloc
     mavproxy.send('wp load %s\n' % filename)
@@ -241,7 +248,7 @@ def fly_mission(mavproxy, mav, filename):
     mavproxy.send('switch 1\n') # auto mode
     mavproxy.expect('AUTO>')
     wait_distance(mav, 30, timeout=120)
-    wait_location(mav, homeloc, timeout=600)
+    wait_location(mav, homeloc, timeout=600, height_accuracy=height_accuracy)
 
 
 def setup_rc(mavproxy):
@@ -264,7 +271,7 @@ def fly_ArduCopter():
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
     sil = util.start_SIL('ArduCopter')
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --quadcopter')
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -272,13 +279,22 @@ def fly_ArduCopter():
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
+    print("CLOSING")
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+    print("CLOSED THEM")
     sil = util.start_SIL('ArduCopter')
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --out=192.168.2.15:14550 --quadcopter --streamrate=1')
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --out=192.168.2.15:14550 --quadcopter --streamrate=1')
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
+
+    buildlog = util.reltopdir("../buildlogs/ArduCopter-test.mavlog")
+    print("buildlog=%s" % buildlog)
+    if os.path.exists(buildlog):
+        os.unlink(buildlog)
+    os.link(logfile, buildlog)
+
     mavproxy.expect("Ready to FLY")
     mavproxy.expect('Received [0-9]+ parameters')
 
@@ -293,7 +309,11 @@ def fly_ArduCopter():
     expect_list.extend([hquad, sil, mavproxy])
 
     # get a mavlink connection going
-    mav = mavutil.mavlink_connection('127.0.0.1:14550', robust_parsing=True)
+    try:
+        mav = mavutil.mavlink_connection('127.0.0.1:19550', robust_parsing=True)
+    except Exception, msg:
+        print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
+        raise
     mav.message_hooks.append(message_hook)
 
     failed = False
@@ -307,7 +327,7 @@ def fly_ArduCopter():
         fly_square(mavproxy, mav)
         loiter(mavproxy, mav)
         land(mavproxy, mav)
-        fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"))
+        fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
         #land(mavproxy, mav)
         disarm_motors(mavproxy)
     except pexpect.TIMEOUT, e:
@@ -317,12 +337,9 @@ def fly_ArduCopter():
     util.pexpect_close(sil)
     util.pexpect_close(hquad)
 
-    shutil.copy(logfile, util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
     if os.path.exists('ArduCopter-valgrind.log'):
         os.chmod('ArduCopter-valgrind.log', 0644)
         shutil.copy("ArduCopter-valgrind.log", util.reltopdir("../buildlogs/ArduCopter-valgrind.log"))
-    util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
-    util.run_cmd(util.reltopdir("../bin/gpxtokml") + " " + util.reltopdir("../buildlogs/ArduCopter-test.mavlog.gpx"))
 
     if failed:
         print("FAILED: %s" % e)
