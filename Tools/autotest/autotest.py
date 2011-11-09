@@ -194,10 +194,11 @@ def write_webresults(results):
     sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
-    html = util.loadfile(util.reltopdir('Tools/autotest/web/index.html'))
-    f = open(util.reltopdir("../buildlogs/index.html"), mode='w')
-    t.write(f, html, results)
-    f.close()
+    for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
+        html = util.loadfile(h)
+        f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
+        t.write(f, html, results)
+        f.close()
 
 
 
