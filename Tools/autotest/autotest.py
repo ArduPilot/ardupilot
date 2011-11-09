@@ -3,7 +3,7 @@
 # Andrew Tridgell, October 2011
 
 import pexpect, os, util, sys, shutil, arducopter
-import optparse, fnmatch, time, glob
+import optparse, fnmatch, time, glob, trackback
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -169,6 +169,7 @@ class TestResults(object):
     '''test results class'''
     def __init__(self):
         self.date = time.asctime()
+        self.githash = util.loadfile(util.reltopdir('.git/refs/heads/master'))
         self.tests = []
         self.files = []
 
@@ -193,9 +194,7 @@ def write_webresults(results):
     sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
     import mavtemplate
     t = mavtemplate.MAVTemplate()
-    f = open(util.reltopdir('Tools/autotest/web/index.html'), mode='r')
-    html = f.read()
-    f.close()
+    html = util.loadfile('Tools/autotest/web/index.html')
     f = open(util.reltopdir("../buildlogs/index.html"), mode='w')
     t.write(f, html, results)
     f.close()
@@ -226,8 +225,9 @@ def run_tests(steps):
             passed = False
             failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
+            traceback.print_exc(file=sys.stdout)
             results.add(step, "FAILED", time.time() - t1)
-            raise
+            pass
         results.add(step, "PASSED", time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:

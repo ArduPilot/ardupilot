@@ -153,3 +153,10 @@ def mkdir_p(dir):
         return
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
+
+def loadfile(fname):
+    '''load a file as a string'''
+    f = open(fname, mode='r')
+    r = f.read()
+    f.close()
+    return r

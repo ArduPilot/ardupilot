@@ -4,10 +4,12 @@
 <TITLE>ArduPilot Automatic Testing</TITLE>
 </HEAD>
 <BODY>
-<image src="../APM/Tools/autotest/web/logo.png"/>
+<a href="http://autotest.diydrones.com/"><image src="../APM/Tools/autotest/web/logo.png"/></a>
 <h1>ArduPilot Automatic Testing</h1>
 
 <h2>Automatic test run at ${date}</h2>
+
+Test run on git commit <a href="http://code.google.com/p/ardupilot-mega/source/detail?r=${githash}">${githash}</a>
 
 <ul>
 ${{tests:<li>${name} - ${result} (${elapsed} seconds)</li>
