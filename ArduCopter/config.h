@@ -486,7 +486,7 @@
 #endif
 
 #ifndef NAV_P
-# define NAV_P				3.0			//
+# define NAV_P				2.0			//
 #endif
 #ifndef NAV_I
 # define NAV_I				0.05		// Lowerd from .25 - saw lots of overshoot.
