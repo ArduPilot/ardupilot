@@ -52,13 +52,21 @@ int main(int argc, char * const argv[])
 		int fd_high = 0;
 
 		FD_ZERO(&fds);
+		FD_SET(0, &fds);
 		loop();
 
 		desktop_serial_select_setup(&fds, &fd_high);
 		tv.tv_sec = 0;
 		tv.tv_usec = 100;
 
-		select(fd_high+1, &fds, NULL, NULL, &tv);
+		if (select(fd_high+1, &fds, NULL, NULL, &tv) > 0 &&
+		    FD_ISSET(0, &fds)) {
+			char c;
+			if (read(0, &c, 1) != 1) {
+				// EOF on stdin
+				exit(1);
+			}
+		}
 	}
 	return 0;
 }
