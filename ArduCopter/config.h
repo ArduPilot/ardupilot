@@ -489,7 +489,7 @@
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.25		// this feels really low, 4s to move 1 degree pitch...
+# define NAV_I				0.05		// Lowerd from .25 - saw lots of overshoot.
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			20			// degrees
