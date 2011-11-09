@@ -3,7 +3,7 @@
 # Andrew Tridgell, October 2011
 
 import pexpect, os, util, sys, shutil, arducopter
-import optparse, fnmatch, time
+import optparse, fnmatch, time, glob
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -152,9 +152,60 @@ def run_step(step):
 
     raise RuntimeError("Unknown step %s" % step)
 
+class TestResult(object):
+    '''test result class'''
+    def __init__(self, name, result, elapsed):
+        self.name = name
+        self.result = result
+        self.elapsed = "%.1f" % elapsed
+
+class TestFile(object):
+    '''test result file'''
+    def __init__(self, name, fname):
+        self.name = name
+        self.fname = fname
+
+class TestResults(object):
+    '''test results class'''
+    def __init__(self):
+        self.date = time.asctime()
+        self.tests = []
+        self.files = []
+
+    def add(self, name, result, elapsed):
+        '''add a result'''
+        self.tests.append(TestResult(name, result, elapsed))
+
+    def addfile(self, name, fname):
+        '''add a result file'''
+        self.files.append(TestFile(name, fname))
+
+    def addglob(self, name, pattern):
+        '''add a set of files'''
+        import glob
+        for f in glob.glob(util.reltopdir('../buildlogs/%s' % pattern)):
+            self.addfile(name, os.path.basename(f))
+
+
+
+def write_webresults(results):
+    '''write webpage results'''
+    sys.path.insert(0, os.path.join(util.reltopdir("../pymavlink/generator")))
+    import mavtemplate
+    t = mavtemplate.MAVTemplate()
+    f = open(util.reltopdir('Tools/autotest/web/index.html'), mode='r')
+    html = f.read()
+    f.close()
+    f = open(util.reltopdir("../buildlogs/index.html"), mode='w')
+    t.write(f, html, results)
+    f.close()
+
+
 
 def run_tests(steps):
     '''run a list of steps'''
+
+    results = TestResults()
 
     passed = True
     failed = []
@@ -162,21 +213,34 @@ def run_tests(steps):
         if skip_step(step):
             continue
 
+        t1 = time.time()
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
             if not run_step(step):
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
+                results.add(step, "FAILED", time.time() - t1)
                 continue
         except Exception, msg:
             passed = False
             failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
+            results.add(step, "FAILED", time.time() - t1)
             raise
+        results.add(step, "PASSED", time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
+
+    results.addfile('Full Logs', 'autotest-output.txt')
+    results.addglob('DataFlash Log', '*.flashlog')
+    results.addglob("MAVLink log", '*.mavlog')
+    results.addglob("GPX track", '*.gpx')
+    results.addglob("KML track", '*.kml')
+
+    write_webresults(results)
+
     return passed
 
 try:
