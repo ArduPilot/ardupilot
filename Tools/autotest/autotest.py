@@ -3,7 +3,7 @@
 # Andrew Tridgell, October 2011
 
 import pexpect, os, util, sys, shutil, arducopter
-import optparse, fnmatch, time, glob, trackback
+import optparse, fnmatch, time, glob, traceback
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
