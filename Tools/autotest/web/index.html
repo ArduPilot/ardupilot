@@ -1,31 +1,42 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<HTML>
-<HEAD>
-<TITLE>ArduPilot Automatic Testing</TITLE>
-</HEAD>
-<BODY>
-<a href="http://autotest.diydrones.com/"><image src="logo.png"/></a>
-<h1>ArduPilot Automatic Testing</h1>
+<!DOCTYPE HTML>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ArduPilot Automatic Testing</title>
+
+<!--CSS -->
+<link href="css/main.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="main">
+<a href="http://autotest.diydrones.com/">
+<div id="logo">
+</div>
+</a>
 
 <h2>Automatic test run at ${date}</h2>
 
-Test run on git commit <a href="http://code.google.com/p/ardupilot-mega/source/detail?r=${githash}">${githash}</a>
+<div id="git">Test run on git commit <a href="http://code.google.com/p/ardupilot-mega/source/detail?r=${githash}">${githash}</a>
+</div>
 
-<ul>
+<h2>Test Results</h2>
+
+<ul id="testresults">
 ${{tests:<li>${name} - ${result} (${elapsed} seconds)</li>
 }}
 </ul>
 
 <h2>Test logs</h2>
 
-<ul>
+<ul id=testlogs>
 ${{files:<li>${name} - <a href="${fname}">${fname}</a>
 }}
 </ul>
 
 <h2>Older results</h2>
-
+<div id="git">
 Older test results are <a href="history">available here</a>
-
-</BODY>
-</HTML>
+</div>
+</div>
+</body>
+</html>
