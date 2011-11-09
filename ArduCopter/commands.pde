@@ -188,10 +188,15 @@ static void set_next_WP(struct Location *wp)
 // -------------------------------
 static void init_home()
 {
+	home_is_set = true;
+
 	// block until we get a good fix
 	// -----------------------------
 	while (!g_gps->new_data || !g_gps->fix) {
 		g_gps->update();
+        // we need GCS update while waiting for GPS, to ensure
+        // we react to HIL mavlink
+        gcs_update();
 	}
 
 	home.id 	= MAV_CMD_NAV_WAYPOINT;
@@ -199,7 +204,6 @@ static void init_home()
 	home.lat 	= g_gps->latitude;				// Lat * 10**7
 	//home.alt 	= max(g_gps->altitude, 0);		// we sometimes get negatives from GPS, not valid
 	home.alt 	= 0;							// Home is always 0
-	home_is_set = true;
 
 	// to point yaw towards home until we set it with Mavlink
 	target_WP 	= home;
