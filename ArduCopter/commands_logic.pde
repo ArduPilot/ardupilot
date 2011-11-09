@@ -7,23 +7,23 @@ static void handle_process_must()
 {
 	switch(next_command.id){
 
-		case MAV_CMD_NAV_TAKEOFF:
+		case MAV_CMD_NAV_TAKEOFF:	// 22
 			do_takeoff();
 			break;
 
-		case MAV_CMD_NAV_WAYPOINT:	// Navigate to Waypoint
+		case MAV_CMD_NAV_WAYPOINT:	// 16  Navigate to Waypoint
 			do_nav_wp();
 			break;
 
-		case MAV_CMD_NAV_LAND:	// LAND to Waypoint
+		case MAV_CMD_NAV_LAND:	// 21 LAND to Waypoint
 			do_land();
 			break;
 
-		case MAV_CMD_NAV_LOITER_UNLIM:	// Loiter indefinitely
+		case MAV_CMD_NAV_LOITER_UNLIM:	// 17 Loiter indefinitely
 			do_loiter_unlimited();
 			break;
 
-		case MAV_CMD_NAV_LOITER_TURNS:	// Loiter N Times
+		case MAV_CMD_NAV_LOITER_TURNS:	//18 Loiter N Times
 			do_loiter_turns();
 			break;
 
@@ -31,7 +31,7 @@ static void handle_process_must()
 			do_loiter_time();
 			break;
 
-		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+		case MAV_CMD_NAV_RETURN_TO_LAUNCH: //20
 			do_RTL();
 			break;
 
@@ -45,19 +45,19 @@ static void handle_process_may()
 {
 	switch(next_command.id){
 
-		case MAV_CMD_CONDITION_DELAY:
+		case MAV_CMD_CONDITION_DELAY: // 112
 			do_wait_delay();
 			break;
 
-		case MAV_CMD_CONDITION_DISTANCE:
+		case MAV_CMD_CONDITION_DISTANCE: // 114
 			do_within_distance();
 			break;
 
-		case MAV_CMD_CONDITION_CHANGE_ALT:
+		case MAV_CMD_CONDITION_CHANGE_ALT: // 113
 			do_change_alt();
 			break;
 
-		case MAV_CMD_CONDITION_YAW:
+		case MAV_CMD_CONDITION_YAW: // 115
 			do_yaw();
 			break;
 
@@ -70,35 +70,35 @@ static void handle_process_now()
 {
 	switch(next_command.id){
 
-		case MAV_CMD_DO_JUMP:
+		case MAV_CMD_DO_JUMP:  // 177
 			do_jump();
 			break;
 
-		case MAV_CMD_DO_CHANGE_SPEED:
+		case MAV_CMD_DO_CHANGE_SPEED: // 178
 			do_change_speed();
 			break;
 
-		case MAV_CMD_DO_SET_HOME:
+		case MAV_CMD_DO_SET_HOME: // 179
 			do_set_home();
 			break;
 
-		case MAV_CMD_DO_SET_SERVO:
+		case MAV_CMD_DO_SET_SERVO: // 183
 			do_set_servo();
 			break;
 
-		case MAV_CMD_DO_SET_RELAY:
+		case MAV_CMD_DO_SET_RELAY: // 181
 			do_set_relay();
 			break;
 
-		case MAV_CMD_DO_REPEAT_SERVO:
+		case MAV_CMD_DO_REPEAT_SERVO: // 184
 			do_repeat_servo();
 			break;
 
-		case MAV_CMD_DO_REPEAT_RELAY:
+		case MAV_CMD_DO_REPEAT_RELAY: // 182
 			do_repeat_relay();
 			break;
 
-		case MAV_CMD_DO_SET_ROI:
+		case MAV_CMD_DO_SET_ROI: // 201
 			do_target_yaw();
 	}
 }
