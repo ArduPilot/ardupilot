@@ -79,7 +79,7 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
             return True
     print("Failed to attain altitude range")
     return False
-                    
+
 
 def arm_motors(mavproxy):
     '''arm motors'''
@@ -98,7 +98,7 @@ def disarm_motors(mavproxy):
     mavproxy.expect('APM: DISARMING MOTORS')
     mavproxy.send('rc 4 1500\n')
     print("MOTORS DISARMED OK")
-    
+
 
 def takeoff(mavproxy, mav):
     '''takeoff get to 30m altitude'''
@@ -205,7 +205,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     return ok
 
 
-    
+
 
 def land(mavproxy, mav, timeout=60):
     '''land the quad'''
@@ -307,8 +307,8 @@ def fly_ArduCopter():
         fly_square(mavproxy, mav)
         loiter(mavproxy, mav)
         land(mavproxy, mav)
-        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"))
-        land(mavproxy, mav)
+        fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"))
+        #land(mavproxy, mav)
         disarm_motors(mavproxy)
     except pexpect.TIMEOUT, e:
         failed = True
@@ -327,4 +327,4 @@ def fly_ArduCopter():
     if failed:
         print("FAILED: %s" % e)
         sys.exit(1)
-        
+
