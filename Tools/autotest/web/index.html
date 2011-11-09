@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+<TITLE>ArduPilot Automatic Testing</TITLE>
+</HEAD>
+<BODY>
+<image src="../APM/Tools/autotest/web/logo.png"/>
+<h1>ArduPilot Automatic Testing</h1>
+
+<h2>Automatic test run at ${date}</h2>
+
+<ul>
+${{tests:<li>${name} - ${result} (${elapsed} seconds)</li>
+}}
+</ul>
+
+<h2>Test logs</h2>
+
+<ul>
+${{files:<li>${name} - <a href="${fname}">${fname}</a>
+}}
+</ul>
+
+
+</BODY>
+</HTML>
