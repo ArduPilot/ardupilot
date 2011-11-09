@@ -14,16 +14,16 @@ def get_default_params(atype):
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
         # we need to restart it after eeprom erase
-        mavproxy.close()
-        sil.close()
+        util.pexpect_close(mavproxy)
+        util.pexpect_close(sil)
         sil = util.start_SIL(atype)
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
     dest = util.reltopdir('../buildlogs/%s.defaults.txt' % atype)
     shutil.copy(parmfile, dest)
-    mavproxy.close()
-    sil.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
     print("Saved defaults for %s to %s" % (atype, dest))
 
 
@@ -44,8 +44,8 @@ def dump_logs(atype):
         mavproxy.send("dump %u\n" % (i+1))
         mavproxy.expect("logs enabled:")
         mavproxy.expect("Log]")
-    mavproxy.close()
-    sil.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
     log.close()
     print("Saved log for %s to %s" % (atype, logfile))
 
@@ -88,31 +88,35 @@ def skip_step(step):
             return True
     return False
 
-# kill any previous instance
-util.kill('ArduCopter.elf')
-util.kill('ArduPilot.elf')
+def run_tests(steps):
+    '''run a list of steps'''
 
-test_prerequesites()
+    test_prerequesites()
+    for step in steps:
+        if skip_step(step):
+            continue
+        if step == 'build.ArduPlane':
+            util.build_SIL('ArduPlane')
+        elif step == 'build.ArduCopter':
+            util.build_SIL('ArduCopter')
+        elif step == 'defaults.ArduPlane':
+            get_default_params('ArduPlane')
+        elif step == 'defaults.ArduCopter':
+            get_default_params('ArduCopter')
+        elif step == 'logs.ArduPlane':
+            dump_logs('ArduPlane')
+        elif step == 'logs.ArduCopter':
+            dump_logs('ArduCopter')
+        elif step == 'fly.ArduCopter':
+            arducopter.fly_ArduCopter()
+        else:
+            raise RuntimeError("Unknown step %s" % step)
 
-for step in steps:
-    if skip_step(step):
-        continue
-    if step == 'build.ArduPlane':
-        util.build_SIL('ArduPlane')
-    elif step == 'build.ArduCopter':
-        util.build_SIL('ArduCopter')
-    elif step == 'defaults.ArduPlane':
-        get_default_params('ArduPlane')
-    elif step == 'defaults.ArduCopter':
-        get_default_params('ArduCopter')
-    elif step == 'logs.ArduPlane':
-        dump_logs('ArduPlane')
-    elif step == 'logs.ArduCopter':
-        dump_logs('ArduCopter')
-    elif step == 'fly.ArduCopter':
-        arducopter.fly_ArduCopter()
-    else:
-        raise RuntimeError("Unknown step %s" % step)
-
-util.kill('ArduCopter.elf')
-util.kill('ArduPilot.elf')
+try:
+    run_tests(steps)
+except KeyboardInterrupt:
+    util.pexpect_close_all()
+except Exception:
+    # make sure we kill off any children
+    util.pexpect_close_all()
+    raise

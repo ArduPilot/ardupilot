@@ -48,8 +48,26 @@ def build_SIL(atype):
             dir=reltopdir(atype),
             checkfail=True)
 
+close_list = []
+
+def pexpect_close(p):
+    '''close a pexpect child'''
+    global close_list
+    p.close()
+    close_list.remove(p)
+
+def pexpect_close_all():
+    '''close all pexpect children'''
+    global close_list
+    for p in close_list[:]:
+        try:
+            p.close()
+        except Exception:
+            pass
+
 def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     '''launch a SIL instance'''
+    global close_list
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
@@ -59,12 +77,14 @@ def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     if CLI:
         cmd += ' -s'
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+    close_list.append(ret)
     ret.expect('Waiting for connection')
     return ret
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
                        options=None, logfile=sys.stdout):
     '''launch mavproxy connected to a SIL instance'''
+    global close_list
     MAVPROXY = reltopdir('../MAVProxy/mavproxy.py')
     cmd = MAVPROXY + ' --master=%s' % master
     if setup:
@@ -75,12 +95,8 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     if options is not None:
         cmd += ' ' + options
     ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
+    close_list.append(ret)
     return ret
-
-
-def kill(name):
-    '''kill a process'''
-    run_cmd('killall -9 -q %s' % name, checkfail=False)
 
 
 def expect_setup_callback(e, callback):
