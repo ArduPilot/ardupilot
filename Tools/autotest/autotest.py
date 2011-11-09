@@ -199,6 +199,8 @@ def write_webresults(results):
         f = open(util.reltopdir("../buildlogs/%s" % os.path.basename(h)), mode='w')
         t.write(f, html, results)
         f.close()
+    for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
+        shutil.copy(f, util.reltopdir('../buildlogs/%s' % os.path.basename(f)))
 
 
 
