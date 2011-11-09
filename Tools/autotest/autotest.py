@@ -238,6 +238,12 @@ def run_tests(steps):
     results.addglob("MAVLink log", '*.mavlog')
     results.addglob("GPX track", '*.gpx')
     results.addglob("KML track", '*.kml')
+    results.addfile('ArduPlane build log', 'ArduPlane.txt')
+    results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
+    results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
+    results.addfile('ArduCopter build log', 'ArduCopter.txt')
+    results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
+    results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
 
     write_webresults(results)
 
