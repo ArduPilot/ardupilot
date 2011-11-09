@@ -261,8 +261,8 @@ def fly_ArduCopter():
     mavproxy.expect('Please Run Setup')
 
     # we need to restart it after eeprom erase
-    mavproxy.close()
-    sil.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
     sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
@@ -272,8 +272,8 @@ def fly_ArduCopter():
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
-    mavproxy.close()
-    sil.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
     sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:14550 --out=192.168.2.15:14550 --quadcopter --streamrate=1')
     mavproxy.expect('Logging to (\S+)')
@@ -285,7 +285,6 @@ def fly_ArduCopter():
     util.expect_setup_callback(mavproxy, expect_callback)
 
     # start hil_quad.py
-    util.run_cmd('pkill -f hil_quad.py', checkfail=False)
     hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
                         logfile=sys.stdout, timeout=10)
     hquad.expect('Starting at')
@@ -313,9 +312,9 @@ def fly_ArduCopter():
     except pexpect.TIMEOUT, e:
         failed = True
 
-    mavproxy.close()
-    sil.close()
-    hquad.close()
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
+    util.pexpect_close(hquad)
 
     shutil.copy(logfile, util.reltopdir("../buildlogs/ArduCopter-test.mavlog"))
     if os.path.exists('ArduCopter-valgrind.log'):
