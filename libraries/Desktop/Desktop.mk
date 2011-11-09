@@ -94,6 +94,7 @@ HARDWARE=desktop
 BOARD=desktop
 
 ifeq ($(SYSTYPE),Darwin)
+  AWK			:=	awk
   CXX			:=	c++
   CC			:=	cc
   AS			:=	cc
