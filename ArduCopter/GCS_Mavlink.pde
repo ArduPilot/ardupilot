@@ -111,11 +111,11 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_roll / 1.0e2,
         nav_pitch / 1.0e2,
         target_bearing / 1.0e2,
-        target_bearing / 1.0e2,
+        dcm.yaw_sensor / 1.0e2, // was target_bearing
         wp_distance,
         altitude_error / 1.0e2,
-        0,
-        0);
+        nav_lon,	// was 0
+        nav_lat);	// was 0
 }
 
 static void NOINLINE send_gps_raw(mavlink_channel_t chan)
@@ -128,7 +128,7 @@ static void NOINLINE send_gps_raw(mavlink_channel_t chan)
         g_gps->longitude / 1.0e7,
         g_gps->altitude / 100.0,
         g_gps->hdop,
-        0.0,
+        current_loc.alt / 100.0, // was 0
         g_gps->ground_speed / 100.0,
         g_gps->ground_course / 100.0);
 }
