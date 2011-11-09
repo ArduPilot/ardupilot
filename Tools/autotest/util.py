@@ -73,19 +73,24 @@ def pexpect_autoclose(p):
 def pexpect_close(p):
     '''close a pexpect child'''
     global close_list
+    p.close()
+    time.sleep(1)
     p.close(force=True)
-    close_list.remove(p)
+    if p in close_list:
+        close_list.remove(p)
 
 def pexpect_close_all():
     '''close all pexpect children'''
     global close_list
     for p in close_list[:]:
         try:
+            p.close()
+            time.sleep(1)
             p.close(Force=True)
         except Exception:
             pass
 
-def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
+def start_SIL(atype, valgrind=False, wipe=False, CLI=False):
     '''launch a SIL instance'''
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
