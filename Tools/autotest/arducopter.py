@@ -287,6 +287,7 @@ def fly_ArduCopter():
     # start hil_quad.py
     hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
                         logfile=sys.stdout, timeout=10)
+    util.pexpect_autoclose(hquad)
     hquad.expect('Starting at')
 
     expect_list.extend([hquad, sil, mavproxy])
@@ -325,5 +326,5 @@ def fly_ArduCopter():
 
     if failed:
         print("FAILED: %s" % e)
-        sys.exit(1)
-
+        return False
+    return True

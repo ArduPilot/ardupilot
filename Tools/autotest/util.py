@@ -47,13 +47,33 @@ def build_SIL(atype):
     run_cmd("make -f ../libraries/Desktop/Makefile.desktop clean hil",
             dir=reltopdir(atype),
             checkfail=True)
+    return True
 
+def build_AVR(atype, board='mega2560'):
+    '''build AVR binaries'''
+    config = open(reltopdir('config.mk'), mode='w')
+    config.write('''
+BOARD=%s
+PORT=/dev/null
+''' % board)
+    config.close()
+    run_cmd("make clean", dir=reltopdir(atype),  checkfail=True)
+    run_cmd("make", dir=reltopdir(atype),  checkfail=True)
+    return True
+
+
+# list of pexpect children to close on exit
 close_list = []
+
+def pexpect_autoclose(p):
+    '''mark for autoclosing'''
+    global close_list
+    close_list.append(p)
 
 def pexpect_close(p):
     '''close a pexpect child'''
     global close_list
-    p.close()
+    p.close(force=True)
     close_list.remove(p)
 
 def pexpect_close_all():
@@ -61,13 +81,12 @@ def pexpect_close_all():
     global close_list
     for p in close_list[:]:
         try:
-            p.close()
+            p.close(Force=True)
         except Exception:
             pass
 
 def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     '''launch a SIL instance'''
-    global close_list
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
         cmd += 'valgrind -q --log-file=%s-valgrind.log ' % atype
@@ -77,7 +96,7 @@ def start_SIL(atype, valgrind=True, wipe=False, CLI=False):
     if CLI:
         cmd += ' -s'
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
-    close_list.append(ret)
+    pexpect_autoclose(ret)
     ret.expect('Waiting for connection')
     return ret
 
@@ -95,7 +114,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     if options is not None:
         cmd += ' ' + options
     ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
-    close_list.append(ret)
+    pexpect_autoclose(ret)
     return ret
 
 
