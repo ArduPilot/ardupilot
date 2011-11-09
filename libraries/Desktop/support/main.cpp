@@ -51,7 +51,9 @@ int main(int argc, char * const argv[])
 	}
 
 	signal(SIGALRM, sig_alarm);
-	alarm(5);
+	if (!desktop_state.slider) {
+		alarm(5);
+	}
 
 	// run main setup() function from sketch
 	setup();
@@ -61,7 +63,9 @@ int main(int argc, char * const argv[])
 		fd_set fds;
 		int fd_high = 0;
 
-		alarm(5);
+		if (!desktop_state.slider) {
+			alarm(5);
+		}
 
 		FD_ZERO(&fds);
 		FD_SET(0, &fds);
