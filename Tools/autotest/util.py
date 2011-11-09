@@ -135,7 +135,8 @@ def expect_setup_callback(e, callback):
             except pexpect.TIMEOUT:
                 e.expect_user_callback(e)
                 pass
-        raise pexpect.TIMEOUT
+        print("Timed out looking for %s" % pattern)
+        raise pexpect.TIMEOUT(timeout)
 
     e.expect_user_callback = callback
     e.expect_saved = e.expect
