@@ -5,6 +5,7 @@
 #include <sched.h>
 #include <wiring.h>
 #include <getopt.h>
+#include <signal.h>
 #include "desktop.h"
 
 void setup(void);
@@ -18,6 +19,12 @@ static void usage(void)
 	printf("Options:\n");
 	printf("\t-s          enable CLI slider switch\n");
 	printf("\t-w          wipe eeprom and dataflash\n");
+}
+
+void sig_alarm(int sig)
+{
+	printf("alarm signal in desktop emulation - loop not running\n");
+	exit(1);
 }
 
 int main(int argc, char * const argv[])
@@ -43,6 +50,9 @@ int main(int argc, char * const argv[])
 		}
 	}
 
+	signal(SIGALRM, sig_alarm);
+	alarm(5);
+
 	// run main setup() function from sketch
 	setup();
 
@@ -50,6 +60,8 @@ int main(int argc, char * const argv[])
 		struct timeval tv;
 		fd_set fds;
 		int fd_high = 0;
+
+		alarm(5);
 
 		FD_ZERO(&fds);
 		FD_SET(0, &fds);
