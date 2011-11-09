@@ -243,6 +243,12 @@ def run_tests(steps):
 
     return passed
 
+
+lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
+if lck is None:
+    print("autotest is locked - exiting")
+    sys.exit(0)
+
 try:
     if not run_tests(steps):
         sys.exit(1)

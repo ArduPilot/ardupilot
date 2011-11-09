@@ -160,3 +160,13 @@ def loadfile(fname):
     r = f.read()
     f.close()
     return r
+
+def lock_file(fname):
+    '''lock a file'''
+    import fcntl
+    f = open(fname, mode='w')
+    try:
+        fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except Exception:
+        return None
+    return f
