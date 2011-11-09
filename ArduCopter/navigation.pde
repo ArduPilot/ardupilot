@@ -143,20 +143,28 @@ static void calc_loiter_pitch_roll()
 static void calc_nav_rate(int max_speed)
 {
 	/*
-	0  1   2   3   4   5   6   7   8
+			   |< WP Radius
+	0  1   2   3   4   5   6   7   8m
 	...|...|...|...|...|...|...|...|
-		  100	  200	  300	  400
-	                                     +|+
+		  100  |  200	  300	  400cm/s
+	           |  		 		            +|+
+	           |< we should slow to 1.5 m/s as we hit the target
 	*/
+
+	// max_speed is default 400 or 4m/s
+	// (wp_distance * 50) = 1/2 of the distance converted to speed
+	// wp_distance is alwats in m/s and not cm/s - I know it's stupiod that way
+	// for example 4m from target = 200cm/s speed
+	// we choose the lowest speed based on disance
 	max_speed 		= min(max_speed, (wp_distance * 50));
 
 	// limit the ramp up of the speed
+	// waypoint_speed_gov is reset to 0 at each new WP command
 	if(waypoint_speed_gov < max_speed){
+		waypoint_speed_gov += (int)(100.0 * dTnav); // increase at 1.5/ms
 
-		waypoint_speed_gov += (int)(150.0 * dTnav); // increase at 1.5/ms
-
-		// go at least 1m/s
-		max_speed 		= max(100, waypoint_speed_gov);
+		// go at least 50cm/s
+		max_speed 		= max(50, waypoint_speed_gov);
 		// limit with governer
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
@@ -164,15 +172,22 @@ static void calc_nav_rate(int max_speed)
 	// XXX target_angle should be the original  desired target angle!
 	float temp		= radians((original_target_bearing - g_gps->ground_course)/100.0);
 
+	// heading laterally, we want a zero speed here
 	x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
 	x_rate_error 	= -x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -800, 800);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 
+	// heading towards target
 	y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
 	y_rate_error 	= max_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -800, 800);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
+	// 400cm/s * 3 = 1200 or 12 deg pitch
+	// 800cm/s * 3 = 2400 or 24 deg pitch MAX
+
+
+	// nav_lat and nav_lon will be rotated to the angle of the quad in calc_nav_pitch_roll()
 
 	/*Serial.printf("max_speed: %d, xspeed: %d, yspeed: %d, x_re: %d, y_re: %d, nav_lon: %ld, nav_lat: %ld  ",
 					max_speed,
