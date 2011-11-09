@@ -697,12 +697,12 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(nav_throttle);					//7
 	DataFlash.WriteInt(angle_boost);					//8
 	DataFlash.WriteInt(manual_boost);					//9
-
-#if HIL_MODE == HIL_MODE_ATTITUDE
-	DataFlash.WriteInt(0);								//10
-#else
-	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//10
-#endif
+	DataFlash.WriteInt(climb_rate);						//10
+//#if HIL_MODE == HIL_MODE_ATTITUDE
+//	DataFlash.WriteInt(0);								//10
+//#else
+//	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//10
+//#endif
 
 	DataFlash.WriteInt(g.rc_3.servo_out);				//11
 	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//12
