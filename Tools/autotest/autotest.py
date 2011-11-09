@@ -141,6 +141,7 @@ def run_tests(steps):
     '''run a list of steps'''
 
     passed = True
+    failed = []
     for step in steps:
         if skip_step(step):
             continue
@@ -150,12 +151,16 @@ def run_tests(steps):
             if not run_step(step):
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
+                failed.append(step)
                 continue
         except Exception, msg:
             passed = False
+            failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             continue
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+    if not passed:
+        print("FAILED %u tests: %s" % (len(failed), failed))
     return passed
 
 try:
