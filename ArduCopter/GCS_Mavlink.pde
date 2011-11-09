@@ -1232,6 +1232,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					tell_command.p1 = packet.param1;
 					break;
 
+				case MAV_CMD_CONDITION_YAW:
+					tell_command.p1 = packet.param3;
+					tell_command.alt = packet.param1;
+					tell_command.lat = packet.param2;
+					tell_command.lng = packet.param4;
+					break;
+
 				case MAV_CMD_NAV_TAKEOFF:
 					tell_command.p1 = 0;
 					break;
