@@ -50,6 +50,18 @@ def dump_logs(atype):
     print("Saved log for %s to %s" % (atype, logfile))
     return True
 
+def convert_gpx():
+    '''convert any mavlog files to GPX and KML'''
+    import glob
+    mavlog = glob.glob(util.reltopdir("../buildlogs/*.mavlog"))
+    for m in mavlog:
+        util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
+        gpx = m + '.gpx'
+        kml = m + '.kml'
+        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1 -F %s' % (gpx, kml), checkfail=False)
+    return True
+
+
 def test_prerequesites():
     '''check we have the right directories and tools to run tests'''
     print("Testing prerequesites")
@@ -85,6 +97,7 @@ steps = [
     'defaults.ArduCopter',
     'fly.ArduCopter',
     'logs.ArduCopter',
+    'convertgpx',
     ]
 
 skipsteps = opts.skip.split(',')
@@ -134,6 +147,9 @@ def run_step(step):
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter()
 
+    if step == 'convertgpx':
+        return convert_gpx()
+
     raise RuntimeError("Unknown step %s" % step)
 
 
@@ -157,7 +173,7 @@ def run_tests(steps):
             passed = False
             failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
-            continue
+            raise
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
