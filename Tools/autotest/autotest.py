@@ -3,7 +3,7 @@
 # Andrew Tridgell, October 2011
 
 import pexpect, os, util, sys, shutil, arducopter
-import optparse, fnmatch
+import optparse, fnmatch, time
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -25,7 +25,7 @@ def get_default_params(atype):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
     print("Saved defaults for %s to %s" % (atype, dest))
-
+    return True
 
 def dump_logs(atype):
     '''dump DataFlash logs'''
@@ -48,6 +48,7 @@ def dump_logs(atype):
     util.pexpect_close(sil)
     log.close()
     print("Saved log for %s to %s" % (atype, logfile))
+    return True
 
 def test_prerequesites():
     '''check we have the right directories and tools to run tests'''
@@ -60,6 +61,8 @@ You need to install HILTest in %s
 You can get it from git://git.samba.org/tridge/UAV/HILTest.git
 
         ''' % util.reltopdir('../HILTest'))
+        return False
+    return True
     
 
 ############## main program #############
@@ -70,9 +73,14 @@ parser.add_option("--list", action='store_true', default=False, help='list the a
 opts, args = parser.parse_args()
 
 steps = [
+    'prerequesites',
+    'build1280.ArduPlane',
+    'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'logs.ArduPlane',
+    'build1280.ArduCopter',
+    'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
@@ -88,34 +96,74 @@ def skip_step(step):
             return True
     return False
 
+def run_step(step):
+    '''run one step'''
+    if step == "prerequesites":
+        return test_prerequesites()
+
+    if step == 'build.ArduPlane':
+        return util.build_SIL('ArduPlane')
+
+    if step == 'build.ArduCopter':
+        return util.build_SIL('ArduCopter')
+
+    if step == 'build1280.ArduCopter':
+        return util.build_AVR('ArduCopter', board='mega')
+
+    if step == 'build2560.ArduCopter':
+        return util.build_AVR('ArduCopter', board='mega2560')
+
+    if step == 'build1280.ArduPlane':
+        return util.build_AVR('ArduPlane', board='mega')
+
+    if step == 'build2560.ArduPlane':
+        return util.build_AVR('ArduPlane', board='mega2560')
+
+    if step == 'defaults.ArduPlane':
+        return get_default_params('ArduPlane')
+
+    if step == 'defaults.ArduCopter':
+        return get_default_params('ArduCopter')
+
+    if step == 'logs.ArduPlane':
+        return dump_logs('ArduPlane')
+
+    if step == 'logs.ArduCopter':
+        return dump_logs('ArduCopter')
+
+    if step == 'fly.ArduCopter':
+        return arducopter.fly_ArduCopter()
+
+    raise RuntimeError("Unknown step %s" % step)
+
+
 def run_tests(steps):
     '''run a list of steps'''
 
-    test_prerequesites()
+    passed = True
     for step in steps:
         if skip_step(step):
             continue
-        if step == 'build.ArduPlane':
-            util.build_SIL('ArduPlane')
-        elif step == 'build.ArduCopter':
-            util.build_SIL('ArduCopter')
-        elif step == 'defaults.ArduPlane':
-            get_default_params('ArduPlane')
-        elif step == 'defaults.ArduCopter':
-            get_default_params('ArduCopter')
-        elif step == 'logs.ArduPlane':
-            dump_logs('ArduPlane')
-        elif step == 'logs.ArduCopter':
-            dump_logs('ArduCopter')
-        elif step == 'fly.ArduCopter':
-            arducopter.fly_ArduCopter()
-        else:
-            raise RuntimeError("Unknown step %s" % step)
+
+        print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
+        try:
+            if not run_step(step):
+                print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
+                passed = False
+                continue
+        except Exception, msg:
+            passed = False
+            print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
+            continue
+        print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+    return passed
 
 try:
-    run_tests(steps)
+    if not run_tests(steps):
+        sys.exit(1)
 except KeyboardInterrupt:
     util.pexpect_close_all()
+    sys.exit(1)
 except Exception:
     # make sure we kill off any children
     util.pexpect_close_all()
