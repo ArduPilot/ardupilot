@@ -81,6 +81,7 @@ You can get it from git://git.samba.org/tridge/UAV/HILTest.git
 parser = optparse.OptionParser("autotest")
 parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
 
 opts, args = parser.parse_args()
 
@@ -145,7 +146,7 @@ def run_step(step):
         return dump_logs('ArduCopter')
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter()
+        return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
 
     if step == 'convertgpx':
         return convert_gpx()
@@ -264,6 +265,7 @@ try:
     if not run_tests(steps):
         sys.exit(1)
 except KeyboardInterrupt:
+    print("INTERRUPT: Stopping child processes ....")
     util.pexpect_close_all()
     sys.exit(1)
 except Exception:
