@@ -301,7 +301,7 @@ def fly_ArduCopter():
     util.expect_setup_callback(mavproxy, expect_callback)
 
     # start hil_quad.py
-    hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --home=%s' % HOME_LOCATION,
+    hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --fgrate=200 --home=%s' % HOME_LOCATION,
                         logfile=sys.stdout, timeout=10)
     util.pexpect_autoclose(hquad)
     hquad.expect('Starting at')
