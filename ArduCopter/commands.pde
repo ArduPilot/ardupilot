@@ -129,7 +129,7 @@ static int32_t read_alt_to_hold()
 // It's not currently used
 //********************************************************************************
 
-static Location get_LOITER_home_wp()
+/*static Location get_LOITER_home_wp()
 {
 	//so we know where we are navigating from
 	next_WP = current_loc;
@@ -140,7 +140,7 @@ static Location get_LOITER_home_wp()
 	temp.alt 				= read_alt_to_hold();
 	return temp;
 }
-
+*/
 /*
 This function sets the next waypoint command
 It precalculates all the necessary stuff.

@@ -1037,7 +1037,7 @@ static void fake_out_gps()
 }
 
 */
-
+/*
 static void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n",
 				(motor_out[CH_1] 	- g.rc_3.radio_min),
@@ -1045,5 +1045,5 @@ static void print_motor_out(){
 				(motor_out[CH_3] 	- g.rc_3.radio_min),
 				(motor_out[CH_4] 	- g.rc_3.radio_min));
 }
-
+*/
 #endif // CLI_ENABLED

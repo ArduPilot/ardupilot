@@ -779,7 +779,8 @@ static void Log_Read_Performance()
 		temp2,
 		temp3,
 		temp4,
-		temp5);
+		temp5,
+		temp6);
 }
 
 // Write a command processing packet.
