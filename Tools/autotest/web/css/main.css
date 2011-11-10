@@ -56,6 +56,14 @@ h2 {
 	color:#D14836;
 }
 
+.passed-text {
+	color:green;
+}
+
+.failed-text {
+	color:red;
+}
+
 
 #main {
 	padding-top:0px;
