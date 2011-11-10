@@ -406,6 +406,7 @@ static int32_t		auto_yaw;							// deg * 100 : target yaw angle
 static int32_t		nav_lat;							// for error calcs
 static int32_t		nav_lon;							// for error calcs
 static int16_t		nav_throttle;						// 0-1000 for throttle control
+static int16_t		crosstrack_error;
 
 static uint32_t throttle_integrator;				// used to integrate throttle output to predict battery life
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
