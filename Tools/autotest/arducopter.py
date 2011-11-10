@@ -91,6 +91,7 @@ def arm_motors(mavproxy):
     mavproxy.expect('APM: ARMING MOTORS')
     mavproxy.send('rc 4 1500\n')
     print("MOTORS ARMED OK")
+    return True
 
 def disarm_motors(mavproxy):
     '''disarm motors'''
@@ -101,6 +102,7 @@ def disarm_motors(mavproxy):
     mavproxy.expect('APM: DISARMING MOTORS')
     mavproxy.send('rc 4 1500\n')
     print("MOTORS DISARMED OK")
+    return True
 
 
 def takeoff(mavproxy, mav):
@@ -110,6 +112,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 1500\n')
     wait_altitude(mav, 30, 40)
     print("TAKEOFF COMPLETE")
+    return True
 
 
 def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
@@ -186,6 +189,7 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     mavproxy.send('switch 6\n')
     mavproxy.expect('STABILIZE>')
     tstart = time.time()
+    failed = False
     mavproxy.send('rc 3 1430\n')
     mavproxy.send('rc 4 1610\n')
     if not wait_heading(mav, 0):
@@ -194,24 +198,28 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     print("Going north %u meters" % side)
     mavproxy.send('rc 2 1390\n')
-    ok = wait_distance(mav, side)
+    if not wait_distance(mav, side):
+        failed = True
     mavproxy.send('rc 2 1500\n')
 
     print("Going east %u meters" % side)
     mavproxy.send('rc 1 1610\n')
-    ok = wait_distance(mav, side)
+    if not wait_distance(mav, side):
+        failed = True
     mavproxy.send('rc 1 1500\n')
 
     print("Going south %u meters" % side)
     mavproxy.send('rc 2 1610\n')
-    ok = wait_distance(mav, side)
+    if not wait_distance(mav, side):
+        failed = True
     mavproxy.send('rc 2 1500\n')
 
     print("Going west %u meters" % side)
     mavproxy.send('rc 1 1390\n')
-    ok = wait_distance(mav, side)
+    if not wait_distance(mav, side):
+        failed = True
     mavproxy.send('rc 1 1500\n')
-    return ok
+    return not failed
 
 
 
@@ -249,8 +257,11 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n') # auto mode
     mavproxy.expect('AUTO>')
-    wait_distance(mav, 30, timeout=120)
-    wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy)
+    if not wait_distance(mav, 30, timeout=120):
+        return False
+    if not wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy):
+        return False
+    return True
 
 
 def setup_rc(mavproxy):
@@ -324,15 +335,23 @@ def fly_ArduCopter():
         mav.recv_match(type='GPS_RAW', blocking=True)
         setup_rc(mavproxy)
         homeloc = current_location(mav)
-        arm_motors(mavproxy)
-        takeoff(mavproxy, mav)
-        fly_square(mavproxy, mav)
-        loiter(mavproxy, mav)
-        land(mavproxy, mav)
+        if not arm_motors(mavproxy):
+            failed = True
+        if not takeoff(mavproxy, mav):
+            failed = True
+        if not fly_square(mavproxy, mav):
+            failed = True
+        if not loiter(mavproxy, mav):
+            failed = True
+        if not land(mavproxy, mav):
+            failed = True
         #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
-        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.5, target_altitude=10)
-        land(mavproxy, mav)
-        disarm_motors(mavproxy)
+        if not fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.5, target_altitude=10):
+            failed = True
+        if not land(mavproxy, mav):
+            failed = True
+        if not disarm_motors(mavproxy):
+            failed = True
     except pexpect.TIMEOUT, e:
         failed = True
 
