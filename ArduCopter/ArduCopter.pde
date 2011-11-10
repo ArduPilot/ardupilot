@@ -1170,7 +1170,7 @@ static void read_AHRS(void)
 {
 	// Perform IMU calculations and get attitude info
 	//-----------------------------------------------
-	#if HIL_MODE == HIL_MODE_SENSORS
+	#if HIL_MODE != HIL_MODE_DISABLED
 		// update hil before dcm update
 		gcs_update();
 	#endif
