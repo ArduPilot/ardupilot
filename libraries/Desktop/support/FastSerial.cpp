@@ -295,11 +295,15 @@ void FastSerial::flush(void)
 void FastSerial::write(uint8_t c)
 {
 	struct tcp_state *s = &tcp_state[_u2x];
+	int flags = MSG_NOSIGNAL;
 	check_connection(s);
 	if (!s->connected) {
 		return;
 	}
-	send(s->fd, &c, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
+	if (!desktop_state.slider) {
+		flags |= MSG_DONTWAIT;
+	}
+	send(s->fd, &c, 1, flags);
 }
 
 // Buffer management ///////////////////////////////////////////////////////////
