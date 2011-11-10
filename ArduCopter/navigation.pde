@@ -153,7 +153,7 @@ static void calc_nav_rate(int max_speed)
 
 	// max_speed is default 400 or 4m/s
 	// (wp_distance * 50) = 1/2 of the distance converted to speed
-	// wp_distance is alwats in m/s and not cm/s - I know it's stupiod that way
+	// wp_distance is always in m/s and not cm/s - I know it's stupid that way
 	// for example 4m from target = 200cm/s speed
 	// we choose the lowest speed based on disance
 	max_speed 		= min(max_speed, (wp_distance * 50));
@@ -170,11 +170,14 @@ static void calc_nav_rate(int max_speed)
 	}
 
 	// XXX target_angle should be the original  desired target angle!
-	float temp		= radians((original_target_bearing - g_gps->ground_course)/100.0);
+	float temp		= radians((target_bearing - g_gps->ground_course)/100.0);
+
+	// push us towards the original track
+	update_crosstrack();
 
 	// heading laterally, we want a zero speed here
 	x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
-	x_rate_error 	= -x_actual_speed;
+	x_rate_error 	= crosstrack_error -x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -800, 800);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 
@@ -198,6 +201,24 @@ static void calc_nav_rate(int max_speed)
 					nav_lon,
 					nav_lat);*/
 }
+
+void update_crosstrack(void)
+{
+	// Crosstrack Error
+	// ----------------
+	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
+		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
+		crosstrack_error = constrain(crosstrack_error * 4, -1200, 1200);
+	}
+}
+
+long cross_track_test()
+{
+	long temp 	= target_bearing - original_target_bearing;
+	temp 		= wrap_180(temp);
+	return abs(temp);
+}
+
 
 // nav_roll, nav_pitch
 static void calc_nav_pitch_roll()
