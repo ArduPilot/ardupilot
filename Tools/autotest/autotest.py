@@ -42,7 +42,7 @@ def dump_logs(atype):
     mavproxy.expect("Log]")
     for i in range(numlogs):
         mavproxy.send("dump %u\n" % (i+1))
-        mavproxy.expect("logs enabled:")
+        mavproxy.expect("logs enabled:", timeout=120)
         mavproxy.expect("Log]")
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
