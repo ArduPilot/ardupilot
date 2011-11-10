@@ -207,7 +207,7 @@ void update_crosstrack(void)
 	// Crosstrack Error
 	// ----------------
 	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
-		crosstrack_error = sin(radians((target_bearing - crosstrack_bearing) / 100)) * wp_distance;	 // Meters we are off track line
+		crosstrack_error = sin(radians((target_bearing - original_target_bearing) / 100)) * wp_distance;	 // Meters we are off track line
 		crosstrack_error = constrain(crosstrack_error * 4, -1200, 1200);
 	}
 }
