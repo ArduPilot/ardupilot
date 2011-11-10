@@ -244,9 +244,11 @@ def run_tests(steps):
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
+    results.addfile('ArduPlane defaults', 'ArduPlane.defaults.txt')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
+    results.addfile('ArduCopter defaults', 'ArduCopter.defaults.txt')
 
     write_webresults(results)
 
