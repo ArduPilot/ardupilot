@@ -222,16 +222,16 @@ def run_tests(steps):
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
                 passed = False
                 failed.append(step)
-                results.add(step, "FAILED", time.time() - t1)
+                results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
                 continue
         except Exception, msg:
             passed = False
             failed.append(step)
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
-            results.add(step, "FAILED", time.time() - t1)
+            results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
             pass
-        results.add(step, "PASSED", time.time() - t1)
+        results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
