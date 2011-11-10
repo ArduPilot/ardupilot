@@ -212,9 +212,9 @@ static void update_crosstrack(void)
 	}
 }
 
-static long cross_track_test()
+static int32_t cross_track_test()
 {
-	long temp 	= target_bearing - original_target_bearing;
+	int32_t temp 	= target_bearing - original_target_bearing;
 	temp 		= wrap_180(temp);
 	return abs(temp);
 }
