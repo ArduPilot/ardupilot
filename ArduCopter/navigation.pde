@@ -202,7 +202,7 @@ static void calc_nav_rate(int max_speed)
 					nav_lat);*/
 }
 
-void update_crosstrack(void)
+static void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
@@ -212,7 +212,7 @@ void update_crosstrack(void)
 	}
 }
 
-long cross_track_test()
+static long cross_track_test()
 {
 	long temp 	= target_bearing - original_target_bearing;
 	temp 		= wrap_180(temp);
@@ -246,7 +246,7 @@ static int32_t get_altitude_error()
 	return next_WP.alt - current_loc.alt;
 }
 
-static int get_loiter_angle()
+/*static int get_loiter_angle()
 {
 	float power;
 	int angle;
@@ -262,7 +262,7 @@ static int get_loiter_angle()
 	}
 
 	return angle;
-}
+}*/
 
 static int32_t wrap_360(int32_t error)
 {
