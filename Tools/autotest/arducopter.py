@@ -327,8 +327,9 @@ def fly_ArduCopter():
         fly_square(mavproxy, mav)
         loiter(mavproxy, mav)
         land(mavproxy, mav)
-        fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
-        #land(mavproxy, mav)
+        #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
+        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.2)
+        land(mavproxy, mav)
         disarm_motors(mavproxy)
     except pexpect.TIMEOUT, e:
         failed = True
