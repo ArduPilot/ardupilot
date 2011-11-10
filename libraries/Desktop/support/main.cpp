@@ -51,9 +51,6 @@ int main(int argc, char * const argv[])
 	}
 
 	signal(SIGALRM, sig_alarm);
-	if (!desktop_state.slider) {
-		alarm(5);
-	}
 
 	// run main setup() function from sketch
 	setup();

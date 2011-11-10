@@ -64,6 +64,9 @@ def get_bearing(loc1, loc2):
 
 def current_location(mav):
     '''return current location'''
+    # ensure we have a position
+    mav.recv_match(type='VFR_HUD', blocking=True)
+    mav.recv_match(type='GPS_RAW', blocking=True)
     return location(mav.messages['GPS_RAW'].lat,
                     mav.messages['GPS_RAW'].lon,
                     mav.messages['VFR_HUD'].alt)
