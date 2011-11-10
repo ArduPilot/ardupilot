@@ -162,16 +162,18 @@ def wait_distance(mav, distance, accuracy=5, timeout=30):
     return False
 
 
-def wait_location(mav, loc, accuracy=5, timeout=30, height_accuracy=-1):
+def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height_accuracy=-1):
     '''wait for arrival at a location'''
     tstart = time.time()
+    if target_altitude is None:
+        target_altitude = loc.alt
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='GPS_RAW', blocking=True)
         pos = current_location(mav)
         delta = get_distance(loc, pos)
         print("Distance %.2f meters" % delta)
         if delta <= accuracy:
-            if height_accuracy != -1 and math.fabs(pos.alt - loc.alt) > height_accuracy:
+            if height_accuracy != -1 and math.fabs(pos.alt - target_altitude) > height_accuracy:
                 continue
             print("Reached location (%.2f meters)" % delta)
             return True
@@ -238,7 +240,7 @@ def land(mavproxy, mav, timeout=60):
         return False
 
 
-def fly_mission(mavproxy, mav, filename, height_accuracy=-1):
+def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
     global homeloc
     mavproxy.send('wp load %s\n' % filename)
@@ -248,7 +250,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1):
     mavproxy.send('switch 1\n') # auto mode
     mavproxy.expect('AUTO>')
     wait_distance(mav, 30, timeout=120)
-    wait_location(mav, homeloc, timeout=600, height_accuracy=height_accuracy)
+    wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy)
 
 
 def setup_rc(mavproxy):
@@ -328,7 +330,7 @@ def fly_ArduCopter():
         loiter(mavproxy, mav)
         land(mavproxy, mav)
         #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
-        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.2)
+        fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.5, target_altitude=10)
         land(mavproxy, mav)
         disarm_motors(mavproxy)
     except pexpect.TIMEOUT, e:
