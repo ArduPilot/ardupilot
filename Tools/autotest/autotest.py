@@ -59,6 +59,7 @@ def convert_gpx():
         gpx = m + '.gpx'
         kml = m + '.kml'
         util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1 -F %s' % (gpx, kml), checkfail=False)
+        util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
     return True
 
 
@@ -241,7 +242,7 @@ def run_tests(steps):
     results.addglob('DataFlash Log', '*.flashlog')
     results.addglob("MAVLink log", '*.mavlog')
     results.addglob("GPX track", '*.gpx')
-    results.addglob("KML track", '*.kml')
+    results.addglob("KMZ track", '*.kmz')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
