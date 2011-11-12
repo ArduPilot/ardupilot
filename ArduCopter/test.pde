@@ -70,7 +70,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"tri",			test_tri},
 	{"current",		test_current},
 	{"relay",		test_relay},
-	{"waypoints",	test_wp},
+	{"wp",			test_wp},
 	//{"nav",			test_nav},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"altitude",	test_baro},
