@@ -39,8 +39,8 @@ def rmfile(path):
 def deltree(path):
     '''delete a tree of files'''
     run_cmd('rm -rf %s' % path)
-    
-    
+
+
 
 def build_SIL(atype):
     '''build desktop SIL'''
@@ -111,7 +111,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     '''launch mavproxy connected to a SIL instance'''
     global close_list
     MAVPROXY = reltopdir('../MAVProxy/mavproxy.py')
-    cmd = MAVPROXY + ' --master=%s --fgrate=%u' % (master, fgrate)
+    cmd = MAVPROXY + ' --master=%s --fgrate=%u --out=127.0.0.1:14550' % (master, fgrate)
     if setup:
         cmd += ' --setup'
     if aircraft is None:
