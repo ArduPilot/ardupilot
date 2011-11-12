@@ -442,6 +442,12 @@ namespace ArdupilotMega.Setup
                             }
                         }
                     }
+
+                    HS1_REV.Checked = MainV2.comPort.param["HS1_REV"].ToString() == "-1";
+                    HS2_REV.Checked = MainV2.comPort.param["HS2_REV"].ToString() == "-1";
+                    HS3_REV.Checked = MainV2.comPort.param["HS3_REV"].ToString() == "-1";
+                    HS4_REV.Checked = MainV2.comPort.param["HS4_REV"].ToString() == "-1";
+
                 }
                 catch { }
                 startup = false;
@@ -910,28 +916,28 @@ namespace ArdupilotMega.Setup
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS2_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS3_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS4_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS1_TRIM_Scroll(object sender, EventArgs e)
@@ -1016,6 +1022,20 @@ namespace ArdupilotMega.Setup
         {
             try
             {
+                try
+                {
+                    if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
+                    {
+                        MainV2.comPort.setParam("HSV_MAN", 0); // randy request
+                    }
+                    else
+                    {
+                        MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                        return;
+                    }
+                }
+                catch { MessageBox.Show("Failed to set HSV_MAN"); }
+
                 MainV2.comPort.setParam("COL_MIN_", HS3.minline);
                 MainV2.comPort.setParam("COL_MAX_", HS3.maxline);
 

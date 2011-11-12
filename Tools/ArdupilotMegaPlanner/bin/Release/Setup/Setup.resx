@@ -3008,13 +3008,13 @@ will work with hexa's etc</value>
     <value>430, 307</value>
   </data>
   <data name="BUT_saveheliconfig.Size" type="System.Drawing.Size, System.Drawing">
-    <value>90, 23</value>
+    <value>90, 41</value>
   </data>
   <data name="BUT_saveheliconfig.TabIndex" type="System.Int32, mscorlib">
     <value>111</value>
   </data>
   <data name="BUT_saveheliconfig.Text" xml:space="preserve">
-    <value>Save Travel</value>
+    <value>Manual Travel / Save Travel</value>
   </data>
   <data name="&gt;&gt;BUT_saveheliconfig.Name" xml:space="preserve">
     <value>BUT_saveheliconfig</value>

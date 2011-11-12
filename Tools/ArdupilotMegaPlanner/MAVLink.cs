@@ -348,15 +348,21 @@ namespace ArdupilotMega
 
         public void sendPacket(object indata)
         {
+            bool run = false;
             byte a = 0;
             foreach (Type ty in mavstructs)
             {
                 if (ty == indata.GetType())
                 {
+                    run = true;
                     generatePacket(a, indata);
                     return;
                 }
                 a++;
+            }
+            if (!run)
+            {
+                Console.WriteLine("Mavlink : NOT VALID PACKET sendPacket() "+indata.GetType().ToString());
             }
         }
 
