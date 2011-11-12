@@ -35,6 +35,9 @@ class location(object):
         self.lng = lng
         self.alt = alt
 
+    def __str__(self):
+        return "lat=%.6f,lon=%.6f,alt=%.1f" % (self.lat, self.lng, self.alt)
+
 def get_distance(loc1, loc2):
     '''get ground distance between two locations'''
     dlat 		= loc2.lat - loc1.lat
@@ -69,6 +72,20 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
         if m.alt >= alt_min and m.alt <= alt_max:
             return True
     print("Failed to attain altitude range")
+    return False
+
+
+def wait_roll(mav, roll, accuracy, timeout=30):
+    '''wait for a given roll in degrees'''
+    tstart = time.time()
+    print("Waiting for roll of %u" % roll)
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='ATTITUDE', blocking=True)
+        r = math.degrees(m.roll)
+        print("Roll %u" % r)
+        if math.fabs(r - roll) <= accuracy:
+            return True
+    print("Failed to attain roll %u" % roll)
     return False
 
 
@@ -155,3 +172,7 @@ def save_wp(mavproxy, mav):
     mavproxy.send('rc 7 1000\n')
     mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
     mavproxy.send('wp list\n')
+
+def wait_mode(mav, mode):
+    '''wait for a flight mode to be engaged'''
+    mav.recv_match(condition='MAV.flightmode=="%s"' % mode, blocking=True)
