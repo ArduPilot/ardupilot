@@ -112,7 +112,7 @@ namespace ArdupilotMega.HIL
             double pitch_accel = (m[2] - m[3]) * 5000.0;
             double yaw_accel = -((m[2] + m[3]) - (m[0] + m[1])) * 400.0;
 
-            // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //# update rotational rates
             roll_rate += roll_accel * delta_time.TotalSeconds;
