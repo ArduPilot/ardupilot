@@ -9,8 +9,8 @@ static void default_dead_zones()
 	g.rc_1.set_dead_zone(60);
 	g.rc_2.set_dead_zone(60);
 	#if FRAME_CONFIG == HELI_FRAME
-	    g.rc_3.set_dead_zone(0);
-		g.rc_4.set_dead_zone(60);
+	    g.rc_3.set_dead_zone(20);
+		g.rc_4.set_dead_zone(30);
 	#else
 	    g.rc_3.set_dead_zone(60);
 		g.rc_4.set_dead_zone(200);
