@@ -73,9 +73,15 @@ def pexpect_autoclose(p):
 def pexpect_close(p):
     '''close a pexpect child'''
     global close_list
-    p.close()
+    try:
+        p.close()
+    except Exception:
+        pass
     time.sleep(1)
-    p.close(force=True)
+    try:
+        p.close(force=True)
+    except Exception:
+        pass
     if p in close_list:
         close_list.remove(p)
 

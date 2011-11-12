@@ -279,6 +279,7 @@ def fly_ArduCopter(viewerip=None):
 
 
     failed = False
+    e = 'None'
     try:
         mav.wait_heartbeat()
         mav.recv_match(type='GPS_RAW', blocking=True)
