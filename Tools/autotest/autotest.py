@@ -2,7 +2,8 @@
 # APM automatic test suite
 # Andrew Tridgell, October 2011
 
-import pexpect, os, util, sys, shutil, arducopter
+import pexpect, os, util, sys, shutil
+import arducopter, arduplane
 import optparse, fnmatch, time, glob, traceback
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
@@ -91,6 +92,7 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'logs.ArduPlane',
+    'fly.ArduPlane',
     'build1280.ArduCopter',
     'build2560.ArduCopter',
     'build.ArduCopter',
@@ -146,6 +148,9 @@ def run_step(step):
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter()
+
+    if step == 'fly.ArduPlane':
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
 
     if step == 'convertgpx':
         return convert_gpx()
