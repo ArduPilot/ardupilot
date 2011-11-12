@@ -197,7 +197,7 @@ public:
 	AP_Int8		command_index;
 	AP_Int8		command_must_index;
 	AP_Int8		waypoint_radius;
-	AP_Int8		loiter_radius;
+	AP_Int16	loiter_radius;
 	AP_Int16	waypoint_speed_max;
 
 	// Throttle
