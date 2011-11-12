@@ -58,7 +58,7 @@ def convert_gpx():
         util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
-        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1 -F %s' % (gpx, kml), checkfail=False)
+        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
     return True
 
 
@@ -75,7 +75,7 @@ You can get it from git://git.samba.org/tridge/UAV/HILTest.git
         ''' % util.reltopdir('../HILTest'))
         return False
     return True
-    
+
 
 ############## main program #############
 parser = optparse.OptionParser("autotest")
