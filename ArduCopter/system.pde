@@ -92,10 +92,18 @@ static void init_ardupilot()
 	report_version();
 
 	// setup IO pins
-	pinMode(C_LED_PIN, OUTPUT);				// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);				// GPS status LED
-	pinMode(B_LED_PIN, OUTPUT);				// GPS status LED
-	pinMode(SLIDE_SWITCH_PIN, INPUT);		// To enter interactive mode
+  digitalWrite(A_LED_PIN, LED_OFF);
+
+  pinMode(B_LED_PIN, OUTPUT);				// GPS status LED
+  digitalWrite(B_LED_PIN, LED_OFF);
+
+  pinMode(C_LED_PIN, OUTPUT);				// GPS status LED
+  digitalWrite(C_LED_PIN, LED_OFF);
+
+#if SLIDE_SWITCH_PIN > 0
+  pinMode(SLIDE_SWITCH_PIN, INPUT);		// To enter interactive mode
+#endif
 	pinMode(PUSHBUTTON_PIN, INPUT);			// unused
 	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
 
@@ -141,13 +149,13 @@ static void init_ardupilot()
 		while (true) {
 			delay(1000);
 			if(motor_light){
-				digitalWrite(A_LED_PIN, HIGH);
-				digitalWrite(B_LED_PIN, HIGH);
-				digitalWrite(C_LED_PIN, HIGH);
+				digitalWrite(A_LED_PIN, LED_ON);
+				digitalWrite(B_LED_PIN, LED_ON);
+				digitalWrite(C_LED_PIN, LED_ON);
 			}else{
-				digitalWrite(A_LED_PIN, LOW);
-				digitalWrite(B_LED_PIN, LOW);
-				digitalWrite(C_LED_PIN, LOW);
+				digitalWrite(A_LED_PIN, LED_OFF);
+				digitalWrite(B_LED_PIN, LED_OFF);
+				digitalWrite(C_LED_PIN, LED_OFF);
 			}
 			motor_light = !motor_light;
 		}
@@ -236,7 +244,7 @@ static void init_ardupilot()
 	// menu; they must reset in order to fly.
 	//
 	if (check_startup_for_CLI()) {
-		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
+		digitalWrite(A_LED_PIN, LED_ON);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\nCLI:\n\n"));
         run_cli();
 	}

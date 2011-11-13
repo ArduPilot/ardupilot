@@ -763,14 +763,14 @@ test_wp(uint8_t argc, const Menu::arg *argv)
    delay(1000);
     while(1){
            if (Serial3.available()){
-                   digitalWrite(B_LED_PIN, HIGH); // Blink Yellow LED if we are sending data to GPS
+                   digitalWrite(B_LED_PIN, LED_ON); // Blink Yellow LED if we are sending data to GPS
                    Serial1.write(Serial3.read());
-                   digitalWrite(B_LED_PIN, LOW);
+                   digitalWrite(B_LED_PIN, LED_OFF);
            }
            if (Serial1.available()){
-                   digitalWrite(C_LED_PIN, HIGH); // Blink Red LED if we are receiving data from GPS
+                   digitalWrite(C_LED_PIN, LED_ON); // Blink Red LED if we are receiving data from GPS
                    Serial3.write(Serial1.read());
-                   digitalWrite(C_LED_PIN, LOW);
+                   digitalWrite(C_LED_PIN, LED_OFF);
            }
            if(Serial.available() > 0){
                    return (0);
