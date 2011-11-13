@@ -508,7 +508,7 @@ namespace ArdupilotMega.GCSViews
             ofd.AddExtension = true;
             ofd.DefaultExt = ".param";
             ofd.RestoreDirectory = true;
-            ofd.Filter = "Param List|*.param";
+            ofd.Filter = "Param List|*.param;*.parm";
             DialogResult dr = ofd.ShowDialog();
             if (dr == DialogResult.OK)
             {
@@ -562,7 +562,7 @@ namespace ArdupilotMega.GCSViews
             sfd.AddExtension = true;
             sfd.DefaultExt = ".param";
             sfd.RestoreDirectory = true;
-            sfd.Filter = "Param List|*.param";
+            sfd.Filter = "Param List|*.param;*.parm";
             DialogResult dr = sfd.ShowDialog();
             if (dr == DialogResult.OK)
             {
@@ -1005,7 +1005,7 @@ namespace ArdupilotMega.GCSViews
             ofd.AddExtension = true;
             ofd.DefaultExt = ".param";
             ofd.RestoreDirectory = true;
-            ofd.Filter = "Param List|*.param";
+            ofd.Filter = "Param List|*.param;*.parm";
             DialogResult dr = ofd.ShowDialog();
             if (dr == DialogResult.OK)
             {

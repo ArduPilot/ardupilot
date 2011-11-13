@@ -178,6 +178,7 @@ static void init_ardupilot()
 	#endif
 
     #if FRAME_CONFIG ==	HELI_FRAME
+		g.heli_servo_manual = false;
 		heli_init_swash();  // heli initialisation
 	#endif
 

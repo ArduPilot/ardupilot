@@ -75,7 +75,8 @@ public:
 	k_param_heli_collective_mid,
 	k_param_heli_ext_gyro_enabled,
 	k_param_heli_ext_gyro_gain,
-	k_param_heli_servo_averaging, // 94
+	k_param_heli_servo_averaging,
+	k_param_heli_servo_manual, // 95
 	#endif
 
 	// 110: Telemetry control
@@ -253,6 +254,7 @@ public:
 	AP_Int8		heli_ext_gyro_enabled;	// 0 = no external tail gyro, 1 = external tail gyro
 	AP_Int16	heli_ext_gyro_gain;		// radio output 1000~2000 (value output on CH_7)
 	AP_Int8		heli_servo_averaging;	// 0 or 1 = no averaging (250hz) for **digital servos**, 2=average of two samples (125hz), 3=three samples (83.3hz) **analog servos**, 4=four samples (62.5hz), 5=5 samples(50hz)
+	AP_Int8		heli_servo_manual;	    // 0 = normal mode, 1 = radio inputs directly control swash.  required for swash set-up
 	#endif
 
 	// RC channels
@@ -320,7 +322,7 @@ public:
 	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
 	command_must_index		(0,							k_param_command_must_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
-	loiter_radius			(LOITER_RADIUS * 100,		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
+	loiter_radius			(LOITER_RADIUS,		        k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
@@ -361,6 +363,7 @@ public:
 	heli_ext_gyro_enabled	(0,							k_param_heli_ext_gyro_enabled,			PSTR("GYR_ENABLE_")),
 	heli_ext_gyro_gain		(1000,						k_param_heli_ext_gyro_gain,				PSTR("GYR_GAIN_")),
 	heli_servo_averaging	(0,							k_param_heli_servo_averaging,			PSTR("SV_AVG")),
+	heli_servo_manual		(0,							k_param_heli_servo_manual,				PSTR("HSV_MAN")),
 	#endif
 
 	// RC channel			group key					name
