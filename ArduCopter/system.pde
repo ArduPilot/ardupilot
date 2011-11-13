@@ -209,7 +209,7 @@ static void init_ardupilot()
 #if CONFIG_ADC == ENABLED
 		// begin filtering the ADC Gyros
 		adc.filter_result = true;
-        adc.Init();                     // APM ADC library initialization
+        adc.Init(&timer_scheduler);       // APM ADC library initialization
 #endif // CONFIG_ADC
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
