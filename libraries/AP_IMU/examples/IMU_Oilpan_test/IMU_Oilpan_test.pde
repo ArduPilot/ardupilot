@@ -1,10 +1,14 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
 //
-// Simple test for the AP_IMU driver.
+// Simple test for the AP_IMU_Oilpan driver.
 //
 
 #include <FastSerial.h>
+#include <SPI.h>
+#include <Arduino_Mega_ISR_Registry.h>
+#include <AP_PeriodicProcess.h>
+#include <AP_InertialSensor.h>
 #include <AP_IMU.h>
 #include <AP_ADC.h>
 #include <AP_Math.h>
@@ -12,15 +16,23 @@
 
 FastSerialPort(Serial, 0);
 
+Arduino_Mega_ISR_Registry isr_registry;
+AP_TimerAperiodicProcess  adc_scheduler;
+
 AP_ADC_ADS7844	adc;
-AP_IMU_Oilpan	imu(&adc, 0);	// disable warm-start for now
+AP_InertialSensor_Oilpan oilpan_ins(&adc);
+AP_IMU_INS imu(&oilpan_ins,0);
 
 void setup(void)
 {
-	Serial.begin(38400);
+	Serial.begin(115200);
 	Serial.println("Doing IMU startup...");
-	adc.Init();
-	imu.init(IMU::COLD_START);
+
+    isr_registry.init();
+    adc_scheduler.init(&isr_registry);
+
+    /* Should also call ins.init and adc.init */
+	imu.init(IMU::COLD_START, delay, &adc_scheduler);
 }
 
 void loop(void)

@@ -8,6 +8,7 @@
 #define IMU_h
 
 #include "../AP_Math/AP_Math.h"
+#include "../AP_PeriodicProcess/AP_PeriodicProcess.h"
 #include <inttypes.h>
 
 class IMU
@@ -15,7 +16,7 @@ class IMU
 
 public:
 	/// Constructor
-	IMU() {}
+	IMU();
 
 	enum Start_style {
 		COLD_START = 0,
@@ -35,28 +36,30 @@ public:
 	///
 	/// @param style	The initialisation startup style.
 	///
-	virtual void	init(Start_style style, void (*callback)(unsigned long t)) = 0;
+	virtual void	init( Start_style style,
+                          void (*delay_cb)(unsigned long t),
+                          AP_PeriodicProcess * scheduler );
 
 	/// Perform cold startup initialisation for just the accelerometers.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work.
 	///
-	virtual void	init_accel(void (*callback)(unsigned long t)) = 0;
+	virtual void	init_accel(void (*callback)(unsigned long t));
 
 	/// Perform cold-start initialisation for just the gyros.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work
 	///
-	virtual void	init_gyro(void (*callback)(unsigned long t)) = 0;
+	virtual void	init_gyro(void (*callback)(unsigned long t));
 
 	/// Give the IMU some cycles to perform/fetch an update from its
 	/// sensors.
 	///
 	/// @returns	True if some state was updated.
 	///
-	virtual bool	update(void) = 0;
+	virtual bool	update(void);
 
 	/// Fetch the current gyro values
 	///
@@ -89,6 +92,16 @@ public:
 	///       are using ADCs, etc.
 	///
 	uint8_t 	adc_constraints;
+
+	virtual float		gx(void);
+	virtual float		gy(void);
+	virtual float		gz(void);
+	virtual float		ax(void);
+	virtual float		ay(void);
+	virtual float		az(void);
+	virtual void		ax(const float v);
+	virtual void		ay(const float v);
+	virtual void		az(const float v);
 
 protected:
 	/// Most recent accelerometer reading obtained by ::update
