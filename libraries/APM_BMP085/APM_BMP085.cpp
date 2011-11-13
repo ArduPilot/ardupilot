@@ -154,13 +154,13 @@ uint8_t APM_BMP085_Class::Read()
 	uint8_t result = 0;
 
 	if (BMP085_State == 1){
-		if (digitalRead(BMP085_EOC)){
+		if (BMP_DATA_READY()){
 			BMP085_State = 2;
 			ReadTemp();						 // On state 1 we read temp
 			Command_ReadPress();
 		}
 	}else{
-		if (digitalRead(BMP085_EOC)){
+		if (BMP_DATA_READY()){
 			BMP085_State = 1;			// Start again from state = 1
 			ReadPress();
 			Calculate();
