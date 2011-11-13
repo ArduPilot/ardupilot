@@ -204,14 +204,6 @@ enum gcs_severity {
 #define AN4			4
 #define AN5			5
 
-// Hardware Parameters
-#define SLIDE_SWITCH_PIN 40
-#define PUSHBUTTON_PIN 41
-
-#define A_LED_PIN 37			//36 = B,	37 = A,	35 = C
-#define B_LED_PIN 36
-#define C_LED_PIN 35
-
 #define SPEEDFILT 400			// centimeters/second; the speed below which a groundstart will be triggered
 
 

@@ -62,6 +62,27 @@
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #endif
 
+// LED and IO Pins
+//
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+# define A_LED_PIN        37
+# define B_LED_PIN        36
+# define C_LED_PIN        35
+# define LED_ON           HIGH
+# define LED_OFF          LOW
+# define SLIDE_SWITCH_PIN 40
+# define PUSHBUTTON_PIN   41
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+# define A_LED_PIN        27
+# define B_LED_PIN        26
+# define C_LED_PIN        25
+# define LED_ON           LOW
+# define LED_OFF          HIGH
+# define SLIDE_SWITCH_PIN (-1)
+# define PUSHBUTTON_PIN   (-1)
+# define CLI_SLIDER_ENABLED DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
 // AIRSPEED_RATIO
