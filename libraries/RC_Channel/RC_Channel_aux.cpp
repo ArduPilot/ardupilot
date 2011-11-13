@@ -56,7 +56,7 @@ RC_Channel_aux::output_ch(unsigned char ch_nr)
 		break;
 	}
 
-	APM_RC.OutputCh(ch_nr, radio_out);
+	_apm_rc->OutputCh(ch_nr, radio_out);
 }
 
 // Update the g_rc_function array of pointers to rc_x channels
