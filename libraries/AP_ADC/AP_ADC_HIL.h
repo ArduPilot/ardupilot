@@ -28,7 +28,7 @@ class AP_ADC_HIL : public AP_ADC
 
 	///
 	// Initializes sensor, part of public AP_ADC interface
-	void Init();
+	void Init(AP_PeriodicProcess*);
 
 	///
 	// Read the sensor, part of public AP_ADC interface

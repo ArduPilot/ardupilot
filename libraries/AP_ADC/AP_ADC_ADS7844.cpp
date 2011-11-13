@@ -83,10 +83,9 @@ static inline unsigned char ADC_SPI_transfer(unsigned char data)
 }
 
 
-ISR (TIMER2_OVF_vect)
+void AP_ADC_ADS7844::read(void)
 {
 	uint8_t ch;
-	static uint8_t timer_offset;
 
 	bit_clear(PORTC, 4);							// Enable Chip Select (PIN PC4)
 	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
@@ -119,10 +118,6 @@ ISR (TIMER2_OVF_vect)
 
 	bit_set(PORTC, 4);					// Disable Chip Select (PIN PC4)
 
-	// this gives us a sample rate between 781Hz and 1302Hz. We
-	// randomise it to try to minimise aliasing effects
-        timer_offset = (timer_offset + 49) % 32;
-        TCNT2 = TCNT2_781_HZ + timer_offset;
 }
 
 
@@ -134,7 +129,7 @@ AP_ADC_ADS7844::AP_ADC_ADS7844() :
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_ADC_ADS7844::Init(void)
+void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
 {
 	pinMode(ADC_CHIP_SELECT, OUTPUT);
 
@@ -162,13 +157,8 @@ void AP_ADC_ADS7844::Init(void)
 
 	last_ch6_micros = micros();
 
-	// Enable Timer2 Overflow interrupt to capture ADC data
-	TIMSK2 = 0;			// Disable interrupts
-	TCCR2A = 0;			// normal counting mode
-	TCCR2B = _BV(CS21) | _BV(CS22);	// Set prescaler of clk/256
-	TCNT2	= 0;
-	TIFR2	= _BV(TOV2);	   // clear pending interrupts;
-	TIMSK2 = _BV(TOIE2);	   // enable the overflow interrupt
+    scheduler->register_process( AP_ADC_ADS7844::read );
+
 }
 
 // Read one channel value

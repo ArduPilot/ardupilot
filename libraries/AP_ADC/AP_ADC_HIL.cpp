@@ -39,7 +39,7 @@ AP_ADC_HIL::AP_ADC_HIL()
 	last_hil_time = millis();
 }
 
-void AP_ADC_HIL::Init(void)
+void AP_ADC_HIL::Init( AP_PeriodicProcess * scheduler )
 {
 }
 
