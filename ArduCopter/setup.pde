@@ -815,7 +815,7 @@ static void report_batt_monitor()
 static void report_wp(byte index = 255)
 {
 	if(index == 255){
-		for(byte i = 0; i <= g.command_total; i++){
+		for(byte i = 0; i < g.command_total; i++){
 			struct Location temp = get_cmd_with_index(i);
 			print_wp(&temp, i);
 		}
@@ -1145,14 +1145,17 @@ init_esc()
 
 static void print_wp(struct Location *cmd, byte index)
 {
-	Serial.printf_P(PSTR("command #: %d id:%d op:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+	float t1 = (float)cmd->lat / t7;
+	float t2 = (float)cmd->lng / t7;
+
+	Serial.printf_P(PSTR("scommand #: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
 		(int)index,
 		(int)cmd->id,
 		(int)cmd->options,
 		(int)cmd->p1,
-		cmd->alt,
-		cmd->lat,
-		cmd->lng);
+		(long)cmd->alt,
+		t1,
+		t2);
 }
 
 static void report_gps()
