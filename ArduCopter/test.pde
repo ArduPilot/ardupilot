@@ -508,7 +508,7 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 	//dcm.kp_yaw(0.02);
 	//dcm.ki_yaw(0);
 
-  imu.init(IMU::WARM_START, delay, &timer_scheduler);
+    imu.init(IMU::WARM_START, delay, &timer_scheduler);
 
 	report_imu();
 	imu.init_gyro();
@@ -533,7 +533,6 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 			//Vector3f accel_filt	= imu.get_accel_filtered();
 			//accels_rot 	= dcm.get_dcm_matrix() * accel_filt;
 
-
 			medium_loopCounter++;
 
 			if(medium_loopCounter == 4){
@@ -541,51 +540,21 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 			}
 
 			if(medium_loopCounter == 1){
-				//read_radio();
 				medium_loopCounter = 0;
-				//tuning();
-				//dcm.kp_roll_pitch((float)g.rc_6.control_in / 2000.0);
-
-				/*
-				Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld, kp:%1.4f, kp:%1.4f \n"),
-								dcm.roll_sensor,
-								dcm.pitch_sensor,
-								dcm.yaw_sensor,
-								dcm.kp_roll_pitch(),
-								(float)g.rc_6.control_in / 2000.0);
-				*/
-				Serial.printf_P(PSTR("%ld, %ld, %ld,  |  %ld, %ld, %ld\n"),
-								dcm.roll_sensor,
-								dcm.pitch_sensor,
-								dcm.yaw_sensor,
-								(long)(degrees(omega.x) * 100.0),
-								(long)(degrees(omega.y) * 100.0),
-								(long)(degrees(omega.z) * 100.0));
+				Serial.printf_P(PSTR("dcm: %6.1f, %6.1f, %6.1f   omega: %6.1f, %6.1f, %6.1f\n"),
+								dcm.roll_sensor/100.0,
+								dcm.pitch_sensor/100.0,
+								dcm.yaw_sensor/100.0,
+								degrees(omega.x),
+								degrees(omega.y),
+								degrees(omega.z));
 
 				if(g.compass_enabled){
 					compass.read();		 				// Read magnetometer
 					compass.calculate(dcm.get_dcm_matrix());
 				}
 			}
-
-			// We are using the IMU
-			// ---------------------
-			/*
-			Serial.printf_P(PSTR("A: %4.4f, %4.4f, %4.4f\t"
-								 "G: %4.4f, %4.4f, %4.4f\t"),
-								accels.x, accels.y, accels.z,
-								gyros.x,  gyros.y,  gyros.z);
-			*/
-			/*
-			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
-								cos_pitch_x,
-								sin_pitch_y,
-								cos_roll_x,
-								sin_roll_y,
-								cos_yaw_x,	// x
-								sin_yaw_y);	// y
-			//*/
-			//Log_Write_Raw();
+            fast_loopTimer = millis();
 		}
 		if(Serial.available() > 0){
 			return (0);
