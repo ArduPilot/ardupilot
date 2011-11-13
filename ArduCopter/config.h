@@ -34,6 +34,26 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////
+// APM HARDWARE
+//
+
+#ifndef CONFIG_APM_HARDWARE
+# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// PURPLE HARDWARE DEFAULTS
+//
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+# define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
+# define MAG_ORIENTATION   ROTATION_NONE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // FRAME_CONFIG
@@ -45,6 +65,30 @@
 # define FRAME_ORIENTATION		PLUS_FRAME
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// IMU Selection
+//
+#ifndef CONFIG_IMU_TYPE
+# define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
+#endif
+
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+# ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
+#  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
+# endif
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////////
+// ADC Enable - used to eliminate for systems which don't have ADC.
+//
+#ifndef CONFIG_ADC
+# if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+#   define CONFIG_ADC ENABLED
+# else
+#   define CONFIG_ADC DISABLED
+# endif
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PWM control
@@ -53,6 +97,38 @@
 # define INSTANT_PWM	DISABLED
 #endif
 
+// LED and IO Pins
+//
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+# define A_LED_PIN        37
+# define B_LED_PIN        36
+# define C_LED_PIN        35
+# define LED_ON           HIGH
+# define LED_OFF          LOW
+# define SLIDE_SWITCH_PIN 40
+# define PUSHBUTTON_PIN   41
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+# define A_LED_PIN        27
+# define B_LED_PIN        26
+# define C_LED_PIN        25
+# define LED_ON           LOW
+# define LED_OFF          HIGH
+# define SLIDE_SWITCH_PIN (-1)
+# define PUSHBUTTON_PIN   (-1)
+# define CLI_SLIDER_ENABLED DISABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Pushbutton & Relay
+//
+
+#ifndef CONFIG_PUSHBUTTON
+# define CONFIG_PUSHBUTTON ENABLED
+#endif
+
+#ifndef CONFIG_RELAY
+# define CONFIG_RELAY ENABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
@@ -62,9 +138,51 @@
 # define SONAR_PORT		AP_RANGEFINDER_PITOT_TUBE
 #endif
 
+#ifndef CONFIG_SONAR_SOURCE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
+#endif
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC && CONFIG_ADC == DISABLED
+# warning Cannot use ADC for CONFIG_SONAR_SOURCE, becaude CONFIG_ADC is DISABLED
+# warning Defaulting CONFIG_SONAR_SOURCE to ANALOG_PIN
+# undef CONFIG_SONAR_SOURCE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#endif
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+# ifndef CONFIG_SONAR_SOURCE_ADC_CHANNEL
+#  define CONFIG_SONAR_SOURCE_ADC_CHANNEL 7
+# endif
+#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+# ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN AN4
+# endif
+#else
+# warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
+# undef SONAR_ENABLED
+# define SONAR_ENABLED DISABLED
+#endif
+
 #ifndef SONAR_TYPE
 # define SONAR_TYPE		MAX_SONAR_XL
 #endif
+
+// It seems that MAX_SONAR_XL depends on an ADC. For systems without an
+// ADC, we need to disable the sonar
+#if SONAR_TYPE == MAX_SONAR_XL
+# if CONFIG_ADC == DISABLED
+#   if defined(CONFIG_SONAR)
+#      warning "MAX_SONAR_XL requires a valid ADC. This system does not have an ADC enabled."
+#      undef CONFIG_SONAR
+#   endif
+#   define CONFIG_SONAR DISABLED
+#  endif
+#endif
+
+#ifndef CONFIG_SONAR
+# define CONFIG_SONAR ENABLED
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Acrobatics
