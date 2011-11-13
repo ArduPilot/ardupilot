@@ -6,6 +6,7 @@
 // are defined below. Order matters to the compiler.
 static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_passthru(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
@@ -31,6 +32,7 @@ static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
 static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
+	{"passthru",	test_passthru},
 	{"failsafe",	test_failsafe},
 	{"battery",		test_battery},
 	{"relay",		test_relay},
@@ -121,6 +123,33 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+}
+
+
+static int8_t
+test_passthru(uint8_t argc, const Menu::arg *argv)
+{
+	print_hit_enter();
+	delay(1000);
+
+	while(1){
+		delay(20);
+
+        // New radio frame? (we could use also if((millis()- timer) > 20)
+        if (APM_RC.GetState() == 1){
+            Serial.print("CH:");
+            for(int i = 0; i < 8; i++){
+                Serial.print(APM_RC.InputCh(i));	// Print channel values
+                Serial.print(",");
+                APM_RC.OutputCh(i, APM_RC.InputCh(i)); // Copy input to Servos
+            }
+            Serial.println();
+        }
+        if (Serial.available() > 0){
+            return (0);
+        }
+    }
+    return 0;
 }
 
 static int8_t
