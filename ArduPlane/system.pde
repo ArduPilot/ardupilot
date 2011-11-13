@@ -149,7 +149,7 @@ static void init_ardupilot()
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
-    adc.Init();                     // APM ADC library initialization
+    adc.Init(&timer_scheduler);      // APM ADC library initialization
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
 	barometer.Init(1, true);
