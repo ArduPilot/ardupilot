@@ -30,6 +30,9 @@
 #define SONAR 0
 #define BARO 1
 
+#define PITOT_SOURCE_ADC 1
+#define PITOT_SOURCE_ANALOG_PIN 2
+
 #define T6 1000000
 #define T7 10000000
 
@@ -226,5 +229,11 @@ enum gcs_severity {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
+
+#define CONFIG_IMU_OILPAN 1
+#define CONFIG_IMU_MPU6000 2
+
+#define APM_HARDWARE_APM1  1
+#define APM_HARDWARE_PURPLE 2
 
 #endif // _DEFINES_H
