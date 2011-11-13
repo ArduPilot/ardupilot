@@ -49,16 +49,23 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
 #include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_AnalogSource.h>
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_PeriodicProcess.h>         // Parent header of Timer and TimerAperiodic
+                                        // (only included for makefile libpath to work)
+#include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
+#include <AP_TimerAperiodicProcess.h>   // TimerAperiodicProcess is the scheduler for ADC reads.
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <APM_PI.h>            	// PI library
 #include <RC_Channel.h>     // RC Channel Library
@@ -89,6 +96,8 @@ FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
 
+Arduino_Mega_ISR_Registry isr_registry;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,6 +110,24 @@ static Parameters      g;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 static void update_events(void);
+
+////////////////////////////////////////////////////////////////////////////////
+// RC Hardware
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+    APM_RC_Purple APM_RC;
+#else
+    APM_RC_APM1 APM_RC;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Dataflash
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+    DataFlash_Purple DataFlash;
+#else
+    DataFlash_APM1   DataFlash;
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +152,10 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #if HIL_MODE == HIL_MODE_DISABLED
 
 	// real sensors
+    #if CONFIG_ADC == ENABLED
 	AP_ADC_ADS7844          adc;
+    #endif
+
 	APM_BMP085_Class        barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 
@@ -183,7 +213,14 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	#if HIL_MODE != HIL_MODE_SENSORS
 		// Normal
-		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration);
+        #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+		AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+		AP_TimerProcess timer_scheduler;
+        #else
+        AP_InertialSensor_Oilpan ins(&adc);
+		AP_TimerAperiodicProcess timer_scheduler;
+        #endif
+    AP_IMU_INS  imu(&ins, Parameters::k_param_IMU_calibration);
 	#else
 		// hil imu
 		AP_IMU_Shim imu;
@@ -203,11 +240,20 @@ GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilter sonar_mode_filter;
+#if CONFIG_SONAR == ENABLED
+
+#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+AP_AnalogSource_ADC sonar_analog_source( &adc,
+                        CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
+#endif
 
 #if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
 #else
     #error Unrecognised SONAR_TYPE setting.
+#endif
 #endif
 
 // agmatthews USERHOOKS
@@ -768,9 +814,12 @@ static void fifty_hz_loop()
 
 	// Read Sonar
 	// ----------
+    # if CONFIG_SONAR == ENABLED
 	if(g.sonar_enabled){
 		sonar_alt = sonar.read();
 	}
+    #endif
+
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_50HZLOOP
 	  USERHOOK_50HZLOOP
