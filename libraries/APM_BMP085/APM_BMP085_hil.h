@@ -16,6 +16,7 @@ class APM_BMP085_HIL_Class
 	void Init(int initialiseWireLib = 1, bool purple_hardware=false);
 	uint8_t Read();
     void setHIL(float Temp, float Press);
+    int32_t _offset_press;
 };
 
 #endif
