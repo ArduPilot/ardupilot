@@ -322,7 +322,7 @@ public:
 	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
 	command_must_index		(0,							k_param_command_must_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
-	loiter_radius			(LOITER_RADIUS * 100,		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
+	loiter_radius			(LOITER_RADIUS,		        k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
