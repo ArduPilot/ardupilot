@@ -275,8 +275,12 @@ def setup_rc(mavproxy):
     mavproxy.send('rc 3 1000\n')
 
 
-def fly_ArduCopter():
-    '''fly ArduCopter in SIL'''
+def fly_ArduCopter(viewerip=None):
+    '''fly ArduCopter in SIL
+
+    you can pass viewerip as an IP address to optionally send fg and
+    mavproxy packets too for local viewing of the flight in real time
+    '''
     global expect_list, homeloc
 
     sil = util.start_SIL('ArduCopter', wipe=True)
@@ -295,12 +299,13 @@ def fly_ArduCopter():
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
-    print("CLOSING")
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    print("CLOSED THEM")
     sil = util.start_SIL('ArduCopter')
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --out=192.168.2.15:14550 --quadcopter --streamrate=1')
+    options = '--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=1'
+    if viewerip:
+        options += ' --out=%s:14550' % viewerip
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
@@ -317,8 +322,10 @@ def fly_ArduCopter():
     util.expect_setup_callback(mavproxy, expect_callback)
 
     # start hil_quad.py
-    hquad = pexpect.spawn(util.reltopdir('../HILTest/hil_quad.py') + ' --fgout=192.168.2.15:9123 --fgrate=200 --home=%s' % HOME_LOCATION,
-                        logfile=sys.stdout, timeout=10)
+    cmd = util.reltopdir('../HILTest/hil_quad.py') + ' --fgrate=200 --home=%s' % HOME_LOCATION
+    if viewerip:
+        cmd += ' --fgout=192.168.2.15:9123'
+    hquad = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
     util.pexpect_autoclose(hquad)
     hquad.expect('Starting at')
 

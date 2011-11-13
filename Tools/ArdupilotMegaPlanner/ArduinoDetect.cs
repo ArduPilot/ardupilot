@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Management;
 
 namespace ArdupilotMega
 {
@@ -54,6 +55,26 @@ namespace ArdupilotMega
 
             System.Threading.Thread.Sleep(500);
 
+            //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
+            if (!MainV2.MAC)
+            {
+                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+                foreach (ManagementObject obj2 in searcher.Get())
+                {
+                    Console.WriteLine("Dependant : " + obj2["Dependent"]);
+
+                    if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
+                    {
+                        return "2560-2";
+                    }
+                }
+            }
+            else
+            {
+                int fixme;
+            }
+
             serialPort.DtrEnable = true;
             serialPort.BaudRate = 115200;
             serialPort.Open();
@@ -92,7 +113,7 @@ namespace ArdupilotMega
                 port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }
-            else if (version == "2560")
+            else if (version == "2560" || version == "2560-2")
             {
                 port = new ArduinoSTKv2();
                 port.BaudRate = 115200;
