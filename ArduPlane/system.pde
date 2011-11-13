@@ -83,6 +83,17 @@ static void init_ardupilot()
                     memcheck_available_memory());
 
 	//
+	// Initialize the ISR registry.
+	//
+    isr_registry.init();
+
+    //
+	// Initialize the timer scheduler to use the ISR registry.
+	//
+
+    timer_scheduler.init( & isr_registry );
+
+	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
 	//
 	if (!g.format_version.load()) {
@@ -183,6 +194,8 @@ static void init_ardupilot()
 	mavlink_system.type = MAV_FIXED_WING;
 
 	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
+
+    RC_Channel::set_apm_rc( &APM_RC ); // Provide reference to RC outputs.
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
@@ -230,7 +243,7 @@ static void init_ardupilot()
 		//----------------
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
-		imu.init(IMU::WARM_START);
+		imu.init(IMU::WARM_START, mavlink_delay, &timer_scheduler);
 		dcm.set_centripetal(1);
 #endif
 
@@ -424,7 +437,7 @@ static void startup_IMU_ground(void)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
 	mavlink_delay(1000);
 
-	imu.init(IMU::COLD_START, mavlink_delay);
+	imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
 	dcm.set_centripetal(1);
 
 	// read Baro pressure at ground
