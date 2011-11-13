@@ -85,6 +85,10 @@ static void init_ardupilot()
 						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
 
+	//
+	// Initialize the isr_registry.
+	//
+    isr_registry.init();
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -104,9 +108,12 @@ static void init_ardupilot()
 #if SLIDE_SWITCH_PIN > 0
   pinMode(SLIDE_SWITCH_PIN, INPUT);		// To enter interactive mode
 #endif
+#if CONFIG_PUSHBUTTON == ENABLED
 	pinMode(PUSHBUTTON_PIN, INPUT);			// unused
+#endif
+#if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;						// Set Port L, pin 2 to output for the relay
-
+#endif
 	// XXX set Analog out 14 to output
 	//  	   76543210
 	//DDRK |= B01010000;
@@ -190,23 +197,28 @@ static void init_ardupilot()
 		heli_init_swash();  // heli initialisation
 	#endif
 
+    RC_Channel::set_apm_rc(&APM_RC);
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
 	init_camera();
 
+    timer_scheduler.init( &isr_registry );
+
 #if HIL_MODE != HIL_MODE_ATTITUDE
+#if CONFIG_ADC == ENABLED
 		// begin filtering the ADC Gyros
 		adc.filter_result = true;
         adc.Init();                     // APM ADC library initialization
+#endif // CONFIG_ADC
 
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
         barometer.Init(1, true);
 #else
         barometer.Init(1, false);
-#endif
+#endif // CONFIG_APM_HARDWARE
 
-#endif
+#endif // HIL_MODE
 
 	// Do GPS init
 	g_gps = &g_gps_driver;
@@ -337,7 +349,7 @@ static void startup_ground(void)
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// Warm up and read Gyro offsets
 		// -----------------------------
-		imu.init_gyro(mavlink_delay);
+		imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
 		#if CLI_ENABLED == ENABLED
 			report_imu();
 		#endif
