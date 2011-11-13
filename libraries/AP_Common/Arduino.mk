@@ -437,6 +437,11 @@ debug:
 	gnome-terminal -x $(GDB) $(SKETCHELF) & \
 	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
 
+# this allows you to flash your image via JTAG for when you
+# have completely broken your USB
+jtag-program:
+	$(AVARICE) --mkII --jtag usb --erase --program --file $(SKETCHELF)
+
 clean:
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 	@del /S $(BUILDROOT)
