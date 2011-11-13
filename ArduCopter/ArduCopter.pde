@@ -217,8 +217,8 @@ AP_TimerProcess timer_scheduler;
 	AP_GPS_HIL              g_gps_driver(NULL);
 	AP_Compass_HIL          compass; // never used
 	AP_IMU_Shim             imu; // never used
-  AP_InertialSensorStub ins;
-  AP_PeriodicProcessStub timer_scheduler;
+    AP_InertialSensor_Stub ins;
+    AP_PeriodicProcessStub timer_scheduler;
 	#ifdef OPTFLOW_ENABLED
 		AP_OpticalFlow_ADNS3080 optflow;
 	#endif

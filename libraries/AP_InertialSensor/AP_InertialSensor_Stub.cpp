@@ -5,7 +5,7 @@ void AP_InertialSensor_Stub::init( AP_PeriodicProcess * scheduler ) {}
 
 /*================ AP_INERTIALSENSOR PUBLIC INTERFACE ==================== */
 
-bool AP_InertialSensor_Stub::update( void ) {}
+bool AP_InertialSensor_Stub::update( void ) { return true; }
 
 
 float AP_InertialSensor_Stub::gx() { return 0.0f; }
