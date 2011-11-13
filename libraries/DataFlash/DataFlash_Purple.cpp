@@ -153,9 +153,9 @@ void DataFlash_Purple::ReadManufacturerID()
 }
 
 // This function return 1 if Card is inserted on SD slot
-int DataFlash_Purple::CardInserted()
+bool DataFlash_Purple::CardInserted()
 {
-    return (!digitalRead(DF_CARDDETECT));
+    return (digitalRead(DF_CARDDETECT) != 0);
 }
 
 // Read the status register
@@ -178,7 +178,7 @@ byte DataFlash_Purple::ReadStatus()
 
 
 inline
-unsigned int DataFlash_Purple::PageSize()
+uint16_t DataFlash_Purple::PageSize()
 {
   return(528-((ReadStatusReg()&0x01)<<4));  // if first bit 1 trhen 512 else 528 bytes
 }
@@ -190,7 +190,7 @@ void DataFlash_Purple::WaitReady()
   while(!ReadStatus());
 }
 
-void DataFlash_Purple::PageToBuffer(unsigned char BufferNum, unsigned int PageAdr)
+void DataFlash_Purple::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
 {
   CS_inactive();
   CS_active();
@@ -214,7 +214,7 @@ void DataFlash_Purple::PageToBuffer(unsigned char BufferNum, unsigned int PageAd
   while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
 }
 
-void DataFlash_Purple::BufferToPage (unsigned char BufferNum, unsigned int PageAdr, unsigned char wait)
+void DataFlash_Purple::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
 {
   CS_inactive();     // Reset dataflash command decoder
   CS_active();
@@ -241,7 +241,7 @@ void DataFlash_Purple::BufferToPage (unsigned char BufferNum, unsigned int PageA
 	while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
 }
 
-void DataFlash_Purple::BufferWrite (unsigned char BufferNum, unsigned int IntPageAdr, unsigned char Data)
+void DataFlash_Purple::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
 {
   CS_inactive();   // Reset dataflash command decoder
   CS_active();
@@ -256,7 +256,7 @@ void DataFlash_Purple::BufferWrite (unsigned char BufferNum, unsigned int IntPag
   SPI_transfer(Data);				 //write data byte
 }
 
-unsigned char DataFlash_Purple::BufferRead (unsigned char BufferNum, unsigned int IntPageAdr)
+unsigned char DataFlash_Purple::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
 {
   byte tmp;
 
@@ -277,7 +277,7 @@ unsigned char DataFlash_Purple::BufferRead (unsigned char BufferNum, unsigned in
 }
 // *** END OF INTERNAL FUNCTIONS ***
 
-void DataFlash_Purple::PageErase (unsigned int PageAdr)
+void DataFlash_Purple::PageErase (uint16_t PageAdr)
 {
   CS_inactive();																//make sure to toggle CS signal in order
   CS_active();																//to reset Dataflash command decoder
@@ -314,7 +314,7 @@ void DataFlash_Purple::ChipErase ()
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
-void DataFlash_Purple::StartWrite(int PageAdr)
+void DataFlash_Purple::StartWrite(int16_t PageAdr)
 {
   df_BufferNum=1;
   df_BufferIdx=0;
@@ -376,13 +376,13 @@ void DataFlash_Purple::WriteByte(byte data)
     }
 }
 
-void DataFlash_Purple::WriteInt(int data)
+void DataFlash_Purple::WriteInt(int16_t data)
 {
   WriteByte(data>>8);   // High byte
   WriteByte(data&0xFF); // Low byte
 }
 
-void DataFlash_Purple::WriteLong(long data)
+void DataFlash_Purple::WriteLong(int32_t data)
 {
   WriteByte(data>>24);   // First byte
   WriteByte(data>>16);
@@ -391,18 +391,18 @@ void DataFlash_Purple::WriteLong(long data)
 }
 
 // Get the last page written to
-int DataFlash_Purple::GetWritePage()
+int16_t DataFlash_Purple::GetWritePage()
 {
   return(df_PageAdr);
 }
 
 // Get the last page read
-int DataFlash_Purple::GetPage()
+int16_t DataFlash_Purple::GetPage()
 {
   return(df_Read_PageAdr-1);
 }
 
-void DataFlash_Purple::StartRead(int PageAdr)
+void DataFlash_Purple::StartRead(int16_t PageAdr)
 {
   df_Read_BufferNum=1;
   df_Read_BufferIdx=0;
@@ -433,22 +433,22 @@ byte DataFlash_Purple::ReadByte()
   return result;
 }
 
-int DataFlash_Purple::ReadInt()
+int16_t DataFlash_Purple::ReadInt()
 {
-  int result;
+  uint16_t result;
 
   result = ReadByte();               // High byte
   result = (result<<8) | ReadByte(); // Low byte
-  return result;
+  return (int16_t)result;
 }
 
-long DataFlash_Purple::ReadLong()
+int32_t DataFlash_Purple::ReadLong()
 {
-  long result;
+  uint32_t result;
 
   result = ReadByte();               // First byte
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte(); // Last byte
-  return result;
+  return (int32_t)result;
 }
