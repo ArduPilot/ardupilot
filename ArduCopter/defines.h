@@ -29,6 +29,9 @@
 #define SONAR 0
 #define BARO 1
 
+#define SONAR_SOURCE_ADC 1
+#define SONAR_SOURCE_ANALOG_PIN 2
+
 // CH 7 control
 #define CH7_DO_NOTHING 0
 #define CH7_SET_HOVER 1
@@ -352,5 +355,13 @@ enum gcs_severity {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
+
+// IMU selection
+#define CONFIG_IMU_OILPAN 1
+#define CONFIG_IMU_MPU6000 2
+
+// APM Hardware selection
+#define APM_HARDWARE_APM1 1
+#define APM_HARDWARE_PURPLE 2
 
 #endif // _DEFINES_H
