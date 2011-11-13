@@ -18,7 +18,7 @@ def arm_motors(mavproxy, mav):
     '''arm motors'''
     print("Arming motors")
     mavproxy.send('switch 6\n') # stabilize mode
-    mav.wait_mode('STABILIZE')
+    wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 2000\n')
     mavproxy.expect('APM: ARMING MOTORS')
@@ -41,7 +41,7 @@ def disarm_motors(mavproxy, mav):
 def takeoff(mavproxy, mav):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
-    mav.wait_mode('STABILIZE')
+    wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1500\n')
     wait_altitude(mav, 30, 40)
     print("TAKEOFF COMPLETE")
@@ -51,7 +51,7 @@ def takeoff(mavproxy, mav):
 def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
-    mav.wait_mode('LOITER')
+    wait_mode(mav, 'LOITER')
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     tstart = time.time()
@@ -72,7 +72,7 @@ def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
 def fly_square(mavproxy, mav, side=50, timeout=120):
     '''fly a square, flying N then E'''
     mavproxy.send('switch 6\n')
-    mav.wait_mode('STABILIZE')
+    wait_mode(mav, 'STABILIZE')
     tstart = time.time()
     failed = False
 
@@ -132,7 +132,7 @@ def land(mavproxy, mav, timeout=60):
     '''land the quad'''
     print("STARTING LANDING")
     mavproxy.send('switch 6\n')
-    mav.wait_mode('STABILIZE')
+    wait_mode(mav, 'STABILIZE')
 
     # start by dropping throttle till we have lost 5m
     mavproxy.send('rc 3 1380\n')
