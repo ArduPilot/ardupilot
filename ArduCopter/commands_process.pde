@@ -20,16 +20,34 @@ static void change_command(uint8_t cmd_index)
 // --------------------
 static void update_commands(void)
 {
+	// A: if we do not have any commands there is nothing to do
+	// B: We have completed the mission, don't redo the mission
+	if (g.command_total <= 1 || g.command_index == 255)
+		return;
+
 	// fill command queue with a new command if available
 	if(next_command.id == NO_COMMAND){
 
 		// fetch next command if the next command queue is empty
 		// -----------------------------------------------------
-		if (g.command_index < g.command_total) {
 
-			// only if we have a cmd stored in EEPROM
+		/*
+		range check - don't grab a command that isn't there
+		0 : home command
+		1 : first WP
+		2 : seconds WP
+		3 : third WP
+
+		current g.command_index = 2,
+		Now load index 3
+		if(2 < (4-1))
+		if (2 < 3)
+		OK we can safely load the next index 3
+		*/
+
+		if (g.command_index < (g.command_total -1)) {
+			// load next index
 			next_command = get_cmd_with_index(g.command_index + 1);
-			//Serial.printf("queue CMD %d\n", next_command.id);
 		}
 	}
 
@@ -39,8 +57,9 @@ static void update_commands(void)
 		// And we have no nav commands
 		// --------------------------------------------
 		if (command_must_ID == NO_COMMAND){
-			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
+			gcs_send_text_P(SEVERITY_LOW,PSTR("mission complete"));
 			handle_no_commands();
+			g.command_index = 255;
 		}
 	}
 
