@@ -320,13 +320,17 @@ static float simple_sin_y, simple_cos_x;
 static byte jump = -10;								// used to track loops in jump command
 static int16_t waypoint_speed_gov;
 
+static float circle_angle;
+// replace with param
+static const float circle_rate = 0.174532925;
+
 // Acro
 #if CH7_OPTION == CH7_FLIP
 static bool do_flip = false;
 #endif
 
 static boolean trim_flag;
-static int16_t CH7_wp_index = 0;
+static int8_t CH7_wp_index;
 
 // Airspeed
 // --------
@@ -1209,32 +1213,51 @@ static void update_trig(void){
 static void update_altitude()
 {
 	altitude_sensor = BARO;
+		//current_loc.alt = g_gps->altitude - gps_base_alt;
+		//climb_rate = (g_gps->altitude - old_baro_alt) * 10;
+		//old_baro_alt = g_gps->altitude;
+		//baro_alt = g_gps->altitude;
 
 	#if HIL_MODE == HIL_MODE_ATTITUDE
-		current_loc.alt = g_gps->altitude - gps_base_alt;
-		climb_rate = (g_gps->altitude - old_baro_alt) * 10;
-		old_baro_alt = g_gps->altitude;
-		return;
-	#else
+		// we are in the SIM, fake out the baro and Sonar
+		int fake_relative_alt = g_gps->altitude - gps_base_alt;
+		int temp_baro_alt	= fake_relative_alt;
+		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
+		old_baro_alt		= temp_baro_alt;
+		baro_alt			= fake_relative_alt;
+		sonar_alt			= fake_relative_alt;
 
-	// calc the vertical accel rate
-	int temp_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
-	baro_rate 		= (temp_alt - old_baro_alt) * 10;
-	old_baro_alt	= temp_alt;
+	#else
+		// This is real life
+		// calc the vertical accel rate
+		int temp_baro_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
+		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
+		old_baro_alt		= temp_baro_alt;
+
+		// read in Actual Baro Altitude
+		baro_alt 			= (baro_alt + read_barometer()) >> 1;
+
+		// sonar_alt is calculaed in a faster loop and filtered with a mode filter
+	#endif
+
 
 	if(g.sonar_enabled){
 		// filter out offset
 		float scale;
 
-		// read barometer
-		baro_alt 		= (baro_alt + read_barometer()) >> 1;
-
 		// calc rate of change for Sonar
-		sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
-		old_sonar_alt 	= sonar_alt;
+		#if HIL_MODE == HIL_MODE_ATTITUDE
+			// we are in the SIM, fake outthe Sonar rate
+			sonar_rate		= baro_rate;
+		#else
+			// This is real life
+			// calc the vertical accel rate
+			sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
+			old_sonar_alt 	= sonar_alt;
+		#endif
 
-		if(baro_alt < 700){
 
+		if(baro_alt < 800){
 			#if SONAR_TILT_CORRECTION == 1
 				// correct alt for angle of the sonar
 				float temp = cos_pitch_x * cos_roll_x;
@@ -1246,22 +1269,23 @@ static void update_altitude()
 			scale = constrain(scale, 0, 1);
 
 			current_loc.alt = ((float)sonar_alt  * (1.0 - scale)) + ((float)baro_alt * scale) + home.alt;
+
+			// solve for a blended climb_rate
 			climb_rate 		= ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
 
 		}else{
-			current_loc.alt = baro_alt + home.alt;
-			climb_rate = baro_rate;
+			// we must be higher than sonar, don't get tricked by bad sonar reads
+			current_loc.alt = baro_alt + home.alt; // home alt = 0
+			// dont blend, go straight baro
+			climb_rate 		= baro_rate;
 		}
 
 	}else{
-		// No Sonar Case
-		baro_alt 		= read_barometer();
+
+		// NO Sonar case
 		current_loc.alt = baro_alt + home.alt;
 		climb_rate 		= baro_rate;
 	}
-
-
-	#endif
 }
 
 static void
@@ -1419,10 +1443,17 @@ static void update_nav_wp()
 
 		// create a virtual waypoint that circles the next_WP
 		// Count the degrees we have circulated the WP
-		int circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
+		//int circle_angle = wrap_360(target_bearing + 3000 + 18000) / 100;
 
-		target_WP.lng = next_WP.lng + (g.loiter_radius * cos(radians(90 - circle_angle)));
-		target_WP.lat = next_WP.lat + (g.loiter_radius * sin(radians(90 - circle_angle)));
+		circle_angle += (circle_rate * dTnav);
+		//1° = 0.0174532925 radians
+
+		// wrap
+		if (circle_angle > 6.28318531)
+			circle_angle -= 6.28318531;
+
+		target_WP.lng = next_WP.lng + (g.loiter_radius * cos(1.57 - circle_angle));
+		target_WP.lat = next_WP.lat + (g.loiter_radius * sin(1.57 - circle_angle));
 
 		// calc the lat and long error to the target
 		calc_location_error(&target_WP);
@@ -1431,9 +1462,14 @@ static void update_nav_wp()
 		// nav_lon, nav_lat is calculated
 		calc_loiter(long_error, lat_error);
 
+		//CIRCLE: angle:29, dist:0, lat:400, lon:242
+
 		// rotate pitch and roll to the copter frame of reference
 		calc_loiter_pitch_roll();
-
+		int angleTest = degrees(circle_angle);
+		int nroll = nav_roll;
+		int npitch = nav_pitch;
+		//Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 	} else {
 		// use error as the desired rate towards the target
 		calc_nav_rate(g.waypoint_speed_max);
