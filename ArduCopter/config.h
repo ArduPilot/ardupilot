@@ -793,10 +793,6 @@
 # define CUT_MOTORS		1		// do we cut the motors with no throttle?
 #endif
 
-#ifndef BROKEN_SLIDER
-# define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
-#endif
-
 #ifndef MOTOR_LEDS
 # define MOTOR_LEDS		1		// 0 = off, 1 = on
 #endif
