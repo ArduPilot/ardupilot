@@ -54,7 +54,7 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-	APM_RC.Init();		// APM Radio initialization
+	APM_RC.Init( &isr_registry );		// APM Radio initialization
 	init_motors_out();
 
     // fix for crazy output
