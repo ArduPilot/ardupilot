@@ -91,7 +91,9 @@ static void init_ardupilot()
 	// Initialize the timer scheduler to use the ISR registry.
 	//
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
     timer_scheduler.init( & isr_registry );
+#endif
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
