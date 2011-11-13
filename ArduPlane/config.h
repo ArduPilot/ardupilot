@@ -48,10 +48,18 @@
 
 #ifndef CONFIG_APM_HARDWARE
 # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
-#else
-# if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
-#  define CONFIG_IMU_TYPE CONFIG_IMU_MPU6000
-# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// PURPLE HARDWARE DEFAULTS
+//
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+# define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
+# define MAG_ORIENTATION   ROTATION_NONE
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
