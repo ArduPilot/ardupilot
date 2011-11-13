@@ -11,6 +11,7 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
@@ -62,6 +63,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 //	{"adc", 		test_adc},
 #endif
+	{"ins", 		test_ins},
 	{"imu",			test_imu},
 	//{"dcm",			test_dcm},
 	//{"omega",		test_omega},
@@ -412,6 +414,43 @@ static int8_t
 }
 #endif
 */
+
+static int8_t
+test_ins(uint8_t argc, const Menu::arg *argv)
+{
+    float gyro[3], accel[3], temp;
+	print_hit_enter();
+	Serial.printf_P(PSTR("InertialSensor\n"));
+	delay(1000);
+
+    ins.init(&timer_scheduler);
+
+    delay(50);
+
+	while(1){
+        ins.update();
+        ins.get_gyros(gyro);
+        ins.get_accels(accel);
+        temp = ins.temperature();
+
+        Serial.printf_P(PSTR("g"));
+
+        for (int i = 0; i < 3; i++) {
+            Serial.printf_P(PSTR(" %7.4f"), gyro[i]);
+        }
+
+        Serial.printf_P(PSTR(" a"));
+
+        for (int i = 0; i < 3; i++) {
+            Serial.printf_P(PSTR(" %7.4f"),accel[i]);
+        }
+        Serial.printf_P(PSTR(" t %7.4f \n"), temp);
+		delay(40);
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
 
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
