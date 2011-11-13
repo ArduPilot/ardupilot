@@ -28,14 +28,14 @@ static void heli_init_swash()
 	g.heli_servo_4.set_angle(4500);
 
 	// pitch factors
-	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos + g.heli_phase_angle));
-	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos + g.heli_phase_angle));
-	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos + g.heli_phase_angle));
+	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos - g.heli_phase_angle));
+	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos - g.heli_phase_angle));
+	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos - g.heli_phase_angle));
 
 	// roll factors
-    heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90 + g.heli_phase_angle));
-	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 + g.heli_phase_angle));
-	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 + g.heli_phase_angle));
+    heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90 - g.heli_phase_angle));
+	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 - g.heli_phase_angle));
+	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 - g.heli_phase_angle));
 
 	// collective min / max
 	total_tilt_max = 0;
