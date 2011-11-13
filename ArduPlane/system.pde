@@ -197,10 +197,15 @@ static void init_ardupilot()
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
+#if SLIDE_SWITCH_PIN > 0
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
+#endif
+#if CONFIG_PUSHBUTTON == ENABLED
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
+#endif
+#if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
-
+#endif
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
