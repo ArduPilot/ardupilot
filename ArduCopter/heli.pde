@@ -28,14 +28,14 @@ static void heli_init_swash()
 	g.heli_servo_4.set_angle(4500);
 
 	// pitch factors
-	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos));
-	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos));
-	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos));
+	heli_pitchFactor[CH_1] = cos(radians(g.heli_servo1_pos + g.heli_phase_angle));
+	heli_pitchFactor[CH_2] = cos(radians(g.heli_servo2_pos + g.heli_phase_angle));
+	heli_pitchFactor[CH_3] = cos(radians(g.heli_servo3_pos + g.heli_phase_angle));
 
 	// roll factors
-    heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90));
-	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90));
-	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90));
+    heli_rollFactor[CH_1] = cos(radians(g.heli_servo1_pos + 90 + g.heli_phase_angle));
+	heli_rollFactor[CH_2] = cos(radians(g.heli_servo2_pos + 90 + g.heli_phase_angle));
+	heli_rollFactor[CH_3] = cos(radians(g.heli_servo3_pos + 90 + g.heli_phase_angle));
 
 	// collective min / max
 	total_tilt_max = 0;
@@ -81,18 +81,26 @@ static void heli_move_servos_to_mid()
 //
 static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_out)
 {	
-    // ensure values are acceptable:
+    int yaw_offset = 0;
+	
+    // regular flight mode checks
 	if( g.heli_servo_manual != 1) {
+	    // ensure values are acceptable:
 		roll_out = constrain(roll_out, (int)-g.heli_roll_max, (int)g.heli_roll_max);
 		pitch_out = constrain(pitch_out, (int)-g.heli_pitch_max, (int)g.heli_pitch_max);
 		coll_out = constrain(coll_out, (int)g.heli_coll_min, (int)g.heli_coll_max);
+		
+		// rudder feed forward based on collective
+		if( !g.heli_ext_gyro_enabled ) {
+			yaw_offset = g.heli_coll_yaw_effect * (coll_out - g.heli_coll_mid);
+		}
 	}
 
 	// swashplate servos
 	g.heli_servo_1.servo_out = (heli_rollFactor[CH_1] * roll_out + heli_pitchFactor[CH_1] * pitch_out)/10 + coll_out - 1000 + (g.heli_servo_1.radio_trim-1500);
 	g.heli_servo_2.servo_out = (heli_rollFactor[CH_2] * roll_out + heli_pitchFactor[CH_2] * pitch_out)/10 + coll_out - 1000 + (g.heli_servo_2.radio_trim-1500);
 	g.heli_servo_3.servo_out = (heli_rollFactor[CH_3] * roll_out + heli_pitchFactor[CH_3] * pitch_out)/10 + coll_out - 1000 + (g.heli_servo_3.radio_trim-1500);
-	g.heli_servo_4.servo_out = yaw_out;
+	g.heli_servo_4.servo_out = yaw_out + yaw_offset;
 
 	// use servo_out to calculate pwm_out and radio_out
 	g.heli_servo_1.calc_pwm();
