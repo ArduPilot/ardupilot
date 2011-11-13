@@ -14,7 +14,7 @@ HOME_LOCATION='-35.362938,149.165085,584,270'
 homeloc = None
 num_wp = 0
 
-def arm_motors(mavproxy):
+def arm_motors(mavproxy, mav):
     '''arm motors'''
     print("Arming motors")
     mavproxy.send('switch 6\n') # stabilize mode
@@ -26,7 +26,7 @@ def arm_motors(mavproxy):
     print("MOTORS ARMED OK")
     return True
 
-def disarm_motors(mavproxy):
+def disarm_motors(mavproxy, mav):
     '''disarm motors'''
     print("Disarming motors")
     mavproxy.send('switch 6\n') # stabilize mode
@@ -285,7 +285,7 @@ def fly_ArduCopter(viewerip=None):
         mav.recv_match(type='GPS_RAW', blocking=True)
         setup_rc(mavproxy)
         homeloc = current_location(mav)
-        if not arm_motors(mavproxy):
+        if not arm_motors(mavproxy, mav):
             failed = True
 
         if not takeoff(mavproxy, mav):
@@ -316,7 +316,7 @@ def fly_ArduCopter(viewerip=None):
         if not land(mavproxy, mav):
             failed = True
 
-        if not disarm_motors(mavproxy):
+        if not disarm_motors(mavproxy, mav):
             failed = True
     except pexpect.TIMEOUT, e:
         failed = True
