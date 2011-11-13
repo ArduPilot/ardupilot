@@ -6,11 +6,12 @@ import util, pexpect, sys, time, math, shutil, os
 testdir=os.path.dirname(os.path.realpath(__file__))
 
 sys.path.insert(0, util.reltopdir('../pymavlink'))
-import mavutil
+import mavutil, mavwp
 
 HOME_LOCATION='-35.362938,149.165085,584,270'
 
 homeloc = None
+num_wp = 0
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -19,8 +20,8 @@ expect_list = []
 def message_hook(mav, msg):
     '''called as each mavlink msg is received'''
     global expect_list
-    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
-        print(msg)
+    #if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
+    #    print(msg)
     for p in expect_list:
         try:
             p.read_nonblocking(100, timeout=0)
@@ -38,7 +39,6 @@ def expect_callback(e):
                 pass
         except pexpect.TIMEOUT:
             pass
-
 
 class location(object):
     '''represent a GPS coordinate'''
@@ -71,7 +71,7 @@ def current_location(mav):
                     mav.messages['GPS_RAW'].lon,
                     mav.messages['VFR_HUD'].alt)
 
-def wait_altitude(mav, alt_min, alt_max, timeout=30):
+def wait_altitude(mav, alt_min, alt_max, timeout=60):
     '''wait for a given altitude range'''
     tstart = time.time()
     print("Waiting for altitude between %u and %u" % (alt_min, alt_max))
@@ -82,6 +82,44 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
             return True
     print("Failed to attain altitude range")
     return False
+
+def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=60):
+    '''wait for waypoint ranges'''
+    tstart = time.time()
+    m = mav.recv_match(type='WAYPOINT_CURRENT', blocking=True)
+
+    start_wp = m.seq
+    current_wp = start_wp
+
+    print("\n***wait for waypoint ranges***\n\n\n")
+    if start_wp != wpnum_start:
+        print("Expected start waypoint %u but got %u" % (wpnum_start, start_wp))
+        return False
+
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='WAYPOINT_CURRENT', blocking=True)
+        print("WP %u" % m.seq)
+        if m.seq == current_wp:
+            continue
+        if m.seq == current_wp+1 or (m.seq > current_wp+1 and allow_skip):
+            print("Starting new waypoint %u" % m.seq)
+            tstart = time.time()
+            current_wp = m.seq
+            if current_wp == wpnum_end:
+                print("Reached final waypoint %u" % m.seq)
+                return True
+        if m.seq > current_wp+1:
+            print("Skipped waypoint! Got wp %u expected %u" % (m.seq, current_wp+1))
+            return False
+    print("Timed out waiting for waypoint %u" % wpnum_end)
+    return False
+
+def save_wp(mavproxy, mav):
+    mavproxy.send('rc 7 2000\n')
+    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==2000', blocking=True)
+    mavproxy.send('rc 7 1000\n')
+    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
+    mavproxy.send('wp list\n')
 
 
 def arm_motors(mavproxy):
@@ -120,7 +158,7 @@ def takeoff(mavproxy, mav):
 
 def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
     '''hold loiter position'''
-    mavproxy.send('switch 5\n') # loiter mode
+    mavproxy.send('switch 2\n') # loiter mode
     mavproxy.expect('LOITER>')
     mavproxy.send('status\n')
     mavproxy.expect('>')
@@ -193,6 +231,11 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     mavproxy.expect('STABILIZE>')
     tstart = time.time()
     failed = False
+
+    print("Save WP 1")
+    save_wp(mavproxy, mav)
+
+    print("turn")
     mavproxy.send('rc 3 1430\n')
     mavproxy.send('rc 4 1610\n')
     if not wait_heading(mav, 0):
@@ -205,23 +248,37 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
+    print("Save WP 2")
+    save_wp(mavproxy, mav)
+
     print("Going east %u meters" % side)
     mavproxy.send('rc 1 1610\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 1 1500\n')
 
+    print("Save WP 3")
+    save_wp(mavproxy, mav)
+
     print("Going south %u meters" % side)
     mavproxy.send('rc 2 1610\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 2 1500\n')
+    mav.recv_match(condition='RC_CHANNELS_RAW.chan7_raw==1000', blocking=True)
+
+    print("Save WP 4")
+    save_wp(mavproxy, mav)
 
     print("Going west %u meters" % side)
     mavproxy.send('rc 1 1390\n')
     if not wait_distance(mav, side):
         failed = True
     mavproxy.send('rc 1 1500\n')
+
+    print("Save WP 5")
+    save_wp(mavproxy, mav)
+
     return not failed
 
 
@@ -243,6 +300,7 @@ def land(mavproxy, mav, timeout=60):
     # now let it settle gently
     mavproxy.send('rc 3 1400\n')
     tstart = time.time()
+
     if wait_altitude(mav, -5, 0):
         print("LANDING OK")
         return True
@@ -250,22 +308,60 @@ def land(mavproxy, mav, timeout=60):
         print("LANDING FAILED")
         return False
 
+def circle(mavproxy, mav, maxaltchange=10, holdtime=90, timeout=35):
+    '''fly circle'''
+    print("FLY CIRCLE")
+    mavproxy.send('switch 1\n') # CIRCLE mode
+    mavproxy.expect('CIRCLE>')
+    mavproxy.send('status\n')
+    mavproxy.expect('>')
+    m = mav.recv_match(type='VFR_HUD', blocking=True)
+    start_altitude = m.alt
+    tstart = time.time()
+    tholdstart = time.time()
+    print("Circle at %u meters for %u seconds" % (start_altitude, holdtime))
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        print("heading %u" % m.heading)
 
-def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=None):
+    print("CIRCLE OK for %u seconds" % holdtime)
+    return True
+
+
+def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
+    print("Fly a mission")
     global homeloc
+    global num_wp
+    mavproxy.send('switch 4\n') # auto mode
+    mavproxy.expect('AUTO>')
+
+    wait_altitude(mav, 30, 40)
+    if wait_waypoint(mav, 1, num_wp):
+        print("MISSION COMPLETE")
+        return True
+    else:
+        return False
+
+    #if not wait_distance(mav, 30, timeout=120):
+    #    return False
+    #if not wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy):
+    #    return False
+
+def load_mission(mavproxy, mav, filename):
+    '''load a mission from a file'''
+    global num_wp
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
-    mavproxy.send('switch 1\n') # auto mode
-    mavproxy.expect('AUTO>')
-    if not wait_distance(mav, 30, timeout=120):
-        return False
-    if not wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy):
-        return False
-    return True
 
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
+    print("loaded mission")
+    for i in range(num_wp):
+        print (dir(wploader.wp(i)))
 
 def setup_rc(mavproxy):
     '''setup RC override control'''
@@ -339,6 +435,7 @@ def fly_ArduCopter(viewerip=None):
         raise
     mav.message_hooks.append(message_hook)
 
+
     failed = False
     try:
         mav.wait_heartbeat()
@@ -347,19 +444,35 @@ def fly_ArduCopter(viewerip=None):
         homeloc = current_location(mav)
         if not arm_motors(mavproxy):
             failed = True
+
         if not takeoff(mavproxy, mav):
             failed = True
+
         if not fly_square(mavproxy, mav):
             failed = True
+
         if not loiter(mavproxy, mav):
             failed = True
-        if not land(mavproxy, mav):
+
+        #Fly a circle for 60 seconds
+        if not circle(mavproxy, mav):
             failed = True
+
+        # fly the stores mission
+        if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+            failed = True
+
         #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
-        if not fly_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt"), height_accuracy = 0.5, target_altitude=10):
+
+        if not load_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt")):
             failed = True
+
+        if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+            failed = True
+
         if not land(mavproxy, mav):
             failed = True
+
         if not disarm_motors(mavproxy):
             failed = True
     except pexpect.TIMEOUT, e:
