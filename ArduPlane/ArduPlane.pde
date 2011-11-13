@@ -26,15 +26,19 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
 #include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
+#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess and TimerAperiodicProcess
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
@@ -65,6 +69,31 @@ version 2.1 of the License, or (at your option) any later version.
 FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
+
+////////////////////////////////////////////////////////////////////////////////
+// ISR Registry
+////////////////////////////////////////////////////////////////////////////////
+Arduino_Mega_ISR_Registry isr_registry;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// APM_RC_Class Instance
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+    APM_RC_Purple APM_RC;
+#else
+    APM_RC_APM1 APM_RC;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Dataflash
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+    DataFlash_Purple DataFlash;
+#else
+    DataFlash_APM1   DataFlash;
+#endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
@@ -153,7 +182,14 @@ AP_IMU_Shim             imu; // never used
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	#if HIL_MODE != HIL_MODE_SENSORS
 		// Normal
-		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration);
+    #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+    AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+    AP_TimerProcess timer_scheduler;
+    #else
+		AP_InertialSensor_Oilpan ins( &adc );
+    AP_TimerAperiodicProcess timer_scheduler;
+    #endif
+  AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
 	#else
 		// hil imu
 		AP_IMU_Shim imu;
@@ -170,17 +206,24 @@ GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
 GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
 
 ////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
+// PITOT selection
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilter sonar_mode_filter;
 
+#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
+AP_AnalogSource_ADC pitot_analog_source( &adc,
+                        CONFIG_PITOT_SOURCE_ADC_CHANNEL, 0.25);
+#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
+AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN);
+#endif
+
 #if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #elif SONAR_TYPE == MAX_SONAR_LV
 	// XXX honestly I think these output the same values
 	// If someone knows, can they confirm it?
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
