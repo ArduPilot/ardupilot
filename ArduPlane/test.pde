@@ -9,7 +9,9 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_passthru(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
+#if CONFIG_ADC == ENABLED
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
+#endif
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
@@ -45,7 +47,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	// Tests below here are for hardware sensors only present
 	// when real sensors are attached or they are emulated
 #if HIL_MODE == HIL_MODE_DISABLED
+#if CONFIG_ADC == ENABLED
 	{"adc", 		test_adc},
+#endif
 	{"gps",			test_gps},
 	{"rawgps",		test_rawgps},
 	{"imu",			test_imu},
@@ -437,6 +441,8 @@ test_dipswitches(uint8_t argc, const Menu::arg *argv)
 // tests in this section are for real sensors or sensors that have been simulated
 
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_MODE == HIL_MODE_SENSORS
+
+#if CONFIG_ADC == ENABLED
 static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
@@ -457,6 +463,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+#endif // CONFIG_ADC
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
