@@ -161,12 +161,25 @@ AP_GPS_None     g_gps_driver(NULL);
  #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
 
+# if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+  AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+# else
+  AP_InertialSensor_Oilpan ins( &adc );
+#endif // CONFIG_IMU_TYPE
+AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
+AP_DCM  dcm(&imu, g_gps);
+AP_TimerProcess timer_scheduler;
+
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL              adc;
 APM_BMP085_HIL_Class    barometer;
 AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
+AP_InertialSensor_Oilpan ins( &adc );
+AP_IMU_Shim imu;
+AP_DCM  dcm(&imu, g_gps);
+AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
@@ -179,24 +192,6 @@ AP_IMU_Shim             imu; // never used
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-AP_TimerProcess timer_scheduler;
-
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	#if HIL_MODE != HIL_MODE_SENSORS
-		// Normal
-    #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
-    AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
-    #else
-		AP_InertialSensor_Oilpan ins( &adc );
-    #endif
-  AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
-	#else
-		// hil imu
-		AP_IMU_Shim imu;
-	#endif
-	// normal dcm
-	AP_DCM  dcm(&imu, g_gps);
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
