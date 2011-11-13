@@ -19,14 +19,14 @@ class DataFlash_Purple : public DataFlash_Class
 	unsigned char df_Read_END;
 	unsigned char df_Stop_Write;
 	//Methods
-	unsigned char BufferRead (unsigned char BufferNum, unsigned int IntPageAdr);
-	void BufferWrite (unsigned char BufferNum, unsigned int IntPageAdr, unsigned char Data);
-	void BufferToPage (unsigned char BufferNum, unsigned int PageAdr, unsigned char wait);
-	void PageToBuffer(unsigned char BufferNum, unsigned int PageAdr);
+	unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr);
+	void BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data);
+	void BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait);
+	void PageToBuffer(unsigned char BufferNum, uint16_t PageAdr);
 	void WaitReady();
 	unsigned char ReadStatusReg();
 	unsigned char ReadStatus();
-	unsigned int PageSize();
+	uint16_t PageSize();
 
 	unsigned char SPI_transfer(unsigned char data);
 	void CS_inactive();
@@ -37,28 +37,28 @@ class DataFlash_Purple : public DataFlash_Class
 	unsigned char df_manufacturer;
 	unsigned char df_device_0;
 	unsigned char df_device_1;
-	unsigned int df_PageSize;
+	uint16_t df_PageSize;
 
 	DataFlash_Purple(); // Constructor
 	void Init();
 	void ReadManufacturerID();
-    int CardInserted();
-	int GetPage();
-	int GetWritePage();
-	void PageErase (unsigned int PageAdr);
+	bool CardInserted();
+	int16_t GetPage();
+	int16_t GetWritePage();
+	void PageErase (uint16_t PageAdr);
 	void ChipErase ();
 	// Write methods
-	void StartWrite(int PageAdr);
+	void StartWrite(int16_t PageAdr);
 	void FinishWrite();
 	void WriteByte(unsigned char data);
-	void WriteInt(int data);
-	void WriteLong(long data);
+	void WriteInt(int16_t data);
+	void WriteLong(int32_t data);
 
 	// Read methods
-	void StartRead(int PageAdr);
+	void StartRead(int16_t PageAdr);
 	unsigned char ReadByte();
-	int ReadInt();
-	long ReadLong();
+	int16_t ReadInt();
+	int32_t ReadLong();
 };
 
 #endif

@@ -34,7 +34,7 @@ class DataFlash_APM1 : public DataFlash_Class
 	unsigned char df_manufacturer;
 	unsigned char df_device_0;
 	unsigned char df_device_1;
-	unsigned int df_PageSize;
+	uint16_t df_PageSize;
 
 	DataFlash_APM1(); // Constructor
 	void Init();
@@ -51,7 +51,7 @@ class DataFlash_APM1 : public DataFlash_Class
 	void WriteLong(int32_t data);
 
 	// Read methods
-	void StartRead(int PageAdr);
+	void StartRead(int16_t PageAdr);
 	unsigned char ReadByte();
 	int16_t ReadInt();
 	int32_t ReadLong();

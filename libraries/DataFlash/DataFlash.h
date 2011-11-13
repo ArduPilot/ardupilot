@@ -26,7 +26,7 @@ class DataFlash_Class
 	virtual void WriteLong(int32_t data) = 0;
 
 	// Read methods
-	virtual void StartRead(int PageAdr) = 0;
+	virtual void StartRead(int16_t PageAdr) = 0;
 	virtual unsigned char ReadByte() = 0;
 	virtual int16_t ReadInt() = 0;
 	virtual int32_t ReadLong() = 0;
