@@ -322,7 +322,7 @@ static int16_t waypoint_speed_gov;
 
 static float circle_angle;
 // replace with param
-static const float circle_rate = 0.174532925;
+static const float circle_rate = 0.0872664625;
 
 // Acro
 #if CH7_OPTION == CH7_FLIP
