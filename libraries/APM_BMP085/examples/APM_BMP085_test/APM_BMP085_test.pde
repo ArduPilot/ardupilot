@@ -13,8 +13,11 @@ unsigned long timer;
 
 FastSerialPort0(Serial);
 
-// set this to true on purple
+#ifdef PURPLE_HARDWARE
+static bool purple_hardware = true;
+#else
 static bool purple_hardware = false;
+#endif
 
 void setup()
 {	
