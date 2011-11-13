@@ -43,6 +43,18 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
+// APM HARDWARE
+//
+
+#ifndef CONFIG_APM_HARDWARE
+# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
+#else
+# if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+#  define CONFIG_IMU_TYPE CONFIG_IMU_MPU6000
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
 // AIRSPEED_RATIO
 //
@@ -55,21 +67,63 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Sonar
+// IMU Selection
 //
-
-#ifndef SONAR_ENABLED
-# define SONAR_ENABLED         	DISABLED
+#ifndef CONFIG_IMU_TYPE
+# define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
 #endif
 
-#ifndef SONAR_PIN
-# define SONAR_PIN              AN4				// AN5,  AP_RANGEFINDER_PITOT_TUBE
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+# ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
+#  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// ADC Enable - used to eliminate for systems which don't have ADC.
+//
+#ifndef CONFIG_ADC
+# if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+#   define CONFIG_ADC ENABLED
+# else
+#   define CONFIG_ADC DISABLED
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Pitot
+//
+
+#ifndef PITOT_ENABLED
+# define PITOT_ENABLED         	DISABLED
+#endif
+
+#ifndef CONFIG_PITOT_SOURCE
+# define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
+#endif
+
+#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
+# ifndef CONFIG_PITOT_SOURCE_ADC_CHANNEL
+#  define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
+# endif
+#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
+# ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
+#  define CONFIG_PITOT_SOURCE_ANALOG_PIN AN4
+# endif
+#else
+# warning Invalid value for CONFIG_PITOT_SOURCE, disabling sonar
+# undef PITOT_ENABLED
+# define PITOT_ENABLED DISABLED
 #endif
 
 #ifndef SONAR_TYPE
 # define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
 #endif
 
+/* In ArduPlane PITOT usually takes the place of SONAR, but some bits
+ * still depend on SONAR.
+ */
+#define SONAR_ENABLED PITOT_ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
