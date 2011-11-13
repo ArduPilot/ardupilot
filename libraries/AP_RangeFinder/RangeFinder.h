@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
-#include "../AP_ADC/AP_ADC.h"
+#include "../AP_AnalogSource/AP_AnalogSource.h"
 #include "../ModeFilter/ModeFilter.h" // ArduPilot Mega RC Library
 
 /*
@@ -19,7 +19,6 @@
 #define AP_RANGEFINDER_ORIENTATION_FRONT_LEFT 	  5,  5,  0
 */
 //#define AP_RANGEFINDER_PITOT_TUBE 1007
-#define AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL 7
 
 //#define AP_RANGEFINDER_NUM_AVERAGES 4
 
@@ -27,10 +26,9 @@ class RangeFinder
 {
   protected:
 	//GPS(Stream *s) : _port(s) {};
-	RangeFinder(AP_ADC *adc, ModeFilter *filter) :
-		_ap_adc(adc),
-		_mode_filter(filter),
-		_analogPort(-1)
+	RangeFinder(AP_AnalogSource * source, ModeFilter *filter) :
+		_analog_source(source),
+		_mode_filter(filter)
 	{}
   public:
 
@@ -40,13 +38,11 @@ class RangeFinder
 	int min_distance;  // minimum measurable distance (in cm) - should be set in child's constructor
 	int orientation_x, orientation_y, orientation_z;
 
-	virtual void set_analog_port(int analogPort);
     virtual void set_orientation(int x, int y, int z);
 	virtual int convert_raw_to_distance(int _raw_value) { return _raw_value; }  // function that each child class should override to convert voltage to distance
 	virtual int read();   // read value from sensor and return distance in cm
 
-	int _analogPort;   // the port to which the sensor is connected
-	AP_ADC 		*_ap_adc;   // pointer to AP_ADC used for pitot tube
+	AP_AnalogSource *_analog_source;
   	ModeFilter  *_mode_filter;
 };
 #endif

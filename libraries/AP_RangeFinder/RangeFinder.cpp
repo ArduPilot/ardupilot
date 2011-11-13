@@ -19,12 +19,6 @@
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-void RangeFinder::set_analog_port(int analogPort)
-{
-    // store the analog port to be used
-    _analogPort = analogPort;
-	pinMode(analogPort, INPUT);
-}
 
 void RangeFinder::set_orientation(int x, int y, int z)
 {
@@ -36,14 +30,9 @@ void RangeFinder::set_orientation(int x, int y, int z)
 // Read Sensor data - only the raw_value is filled in by this parent class
 int RangeFinder::read()
 {
-	// read from the analog port or pitot tube
-   if( _ap_adc != NULL ){
-	  // values from ADC are twice as big as you'd expect
-	  raw_value = _ap_adc->Ch(AP_RANGEFINDER_PITOT_TUBE_ADC_CHANNEL) >> 2;
-	}else{
-		// read raw sensor value and convert to distance
-    	raw_value = analogRead(_analogPort);
-	}
+	raw_value = _analog_source->read();
+
+	raw_value = convert_raw_to_distance(raw_value);
 
 	// convert analog value to distance in cm (using child implementation most likely)
 	raw_value = convert_raw_to_distance(raw_value);
