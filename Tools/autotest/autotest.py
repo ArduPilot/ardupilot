@@ -2,7 +2,8 @@
 # APM automatic test suite
 # Andrew Tridgell, October 2011
 
-import pexpect, os, util, sys, shutil, arducopter
+import pexpect, os, util, sys, shutil
+import arducopter, arduplane
 import optparse, fnmatch, time, glob, traceback
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
@@ -81,6 +82,8 @@ You can get it from git://git.samba.org/tridge/UAV/HILTest.git
 parser = optparse.OptionParser("autotest")
 parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
+parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 
 opts, args = parser.parse_args()
 
@@ -91,6 +94,7 @@ steps = [
     'build.ArduPlane',
     'defaults.ArduPlane',
     'logs.ArduPlane',
+    'fly.ArduPlane',
     'build1280.ArduCopter',
     'build2560.ArduCopter',
     'build.ArduCopter',
@@ -146,6 +150,12 @@ def run_step(step):
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter()
+
+    if step == 'fly.ArduPlane':
+        if not opts.experimental:
+            print("DISABLED: use --experimental to enable fly.ArduPlane")
+            return True
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
 
     if step == 'convertgpx':
         return convert_gpx()
