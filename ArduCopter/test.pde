@@ -13,6 +13,7 @@ static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_dcm_eulers(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
@@ -65,7 +66,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	{"ins", 		test_ins},
 	{"imu",			test_imu},
-	//{"dcm",			test_dcm},
+	{"dcm",			test_dcm_eulers},
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
@@ -459,13 +460,55 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+
+/*
+  test the IMU interface
+ */
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
+{
+  Vector3f gyro;
+  Vector3f accel;
+
+  imu.init(IMU::WARM_START, delay, &timer_scheduler);
+
+	report_imu();
+	imu.init_gyro();
+	report_imu();
+
+	print_hit_enter();
+	delay(1000);
+
+	while(1){
+		delay(40);
+
+        imu.update();
+        gyro = imu.get_gyro();
+        accel = imu.get_accel();
+
+        Serial.printf_P(PSTR("g %8.4f %8.4f %8.4f"), gyro.x, gyro.y, gyro.z);
+        Serial.printf_P(PSTR("  a %8.4f %8.4f %8.4f\n"), accel.x, accel.y, accel.z);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+    }
+  return 0;
+}
+
+
+/*
+   test the DCM code, printing Euler angles
+ */
+static int8_t
+test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
 
 	//dcm.kp_yaw(0.02);
 	//dcm.ki_yaw(0);
+
+  imu.init(IMU::WARM_START, delay, &timer_scheduler);
 
 	report_imu();
 	imu.init_gyro();
