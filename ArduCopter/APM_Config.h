@@ -7,8 +7,6 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 
-//#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
-
 #define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
