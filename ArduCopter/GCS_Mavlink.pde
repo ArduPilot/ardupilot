@@ -66,6 +66,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         break;
     case GUIDED:
         mode 		= MAV_MODE_GUIDED;
+        nav_mode 	= MAV_NAV_WAYPOINT;
         break;
     default:
         mode 		= control_mode + 100;
@@ -579,7 +580,7 @@ GCS_MAVLINK::update(void)
     uint32_t tnow = millis();
 
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total &&
+        waypoint_request_i < (unsigned)g.command_total &&
         tnow > waypoint_timelast_request + 500) {
         waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
@@ -947,7 +948,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			mavlink_msg_waypoint_count_send(
 				chan,msg->sysid,
 				msg->compid,
-				g.command_total + 1); // + home
+				g.command_total); // includes home
 
 			waypoint_timelast_send		= millis();
 			waypoint_sending			= true;
@@ -1005,8 +1006,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				z = tell_command.alt/1.0e2; // local (z), global/relative (altitude)
 			}
 
-
-			switch (tell_command.id) {					// Switch to map APM command fields inot MAVLink command fields
+			// Switch to map APM command fields inot MAVLink command fields
+			switch (tell_command.id) {
 
 				case MAV_CMD_NAV_LOITER_TURNS:
 				case MAV_CMD_CONDITION_CHANGE_ALT:
@@ -1122,7 +1123,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 			// clear all waypoints
 			uint8_t type = 0; // ok (0), error(1)
-			g.command_total.set_and_save(0);
+			g.command_total.set_and_save(1);
 
 			// send acknowledgement 3 times to makes sure it is received
 			for (int i=0;i<3;i++)
@@ -1160,7 +1161,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			if (packet.count > MAX_WAYPOINTS) {
 				packet.count = MAX_WAYPOINTS;
 			}
-			g.command_total.set_and_save(packet.count - 1);
+			g.command_total.set_and_save(packet.count);
 
 			waypoint_timelast_receive = millis();
 			waypoint_receiving   = true;
@@ -1313,28 +1314,33 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				// Check if receiving waypoints (mission upload expected)
 				if (!waypoint_receiving) break;
 
+
+				Serial.printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
+
 				// check if this is the requested waypoint
-				if (packet.seq != waypoint_request_i) break;
-					set_command_with_index(tell_command, packet.seq);
+				if (packet.seq != waypoint_request_i)
+					break;
 
-			// update waypoint receiving state machine
-			waypoint_timelast_receive = millis();
-            waypoint_timelast_request = 0;
-			waypoint_request_i++;
+				set_command_with_index(tell_command, packet.seq);
 
-			if (waypoint_request_i > (uint16_t)g.command_total){
-				uint8_t type = 0; // ok (0), error(1)
+				// update waypoint receiving state machine
+				waypoint_timelast_receive = millis();
+            	waypoint_timelast_request = 0;
+				waypoint_request_i++;
 
-				mavlink_msg_waypoint_ack_send(
-					chan,
-					msg->sysid,
-					msg->compid,
-					type);
+				if (waypoint_request_i == (uint16_t)g.command_total){
+					uint8_t type = 0; // ok (0), error(1)
 
-				send_text(SEVERITY_LOW,PSTR("flight plan received"));
-				waypoint_receiving = false;
-				// XXX ignores waypoint radius for individual waypoints, can
-				// only set WP_RADIUS parameter
+					mavlink_msg_waypoint_ack_send(
+						chan,
+						msg->sysid,
+						msg->compid,
+						type);
+
+					send_text(SEVERITY_LOW,PSTR("flight plan received"));
+					waypoint_receiving = false;
+					// XXX ignores waypoint radius for individual waypoints, can
+					// only set WP_RADIUS parameter
 				}
 			}
 			break;
@@ -1657,7 +1663,7 @@ void
 GCS_MAVLINK::queued_waypoint_send()
 {
     if (waypoint_receiving &&
-        waypoint_request_i <= (unsigned)g.command_total) {
+        waypoint_request_i < (unsigned)g.command_total) {
         mavlink_msg_waypoint_request_send(
             chan,
             waypoint_dest_sysid,
