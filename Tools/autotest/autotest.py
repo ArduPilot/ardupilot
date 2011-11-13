@@ -82,6 +82,7 @@ You can get it from git://git.samba.org/tridge/UAV/HILTest.git
 parser = optparse.OptionParser("autotest")
 parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
 
 opts, args = parser.parse_args()
 
