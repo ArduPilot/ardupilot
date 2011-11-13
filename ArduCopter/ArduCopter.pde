@@ -206,7 +206,10 @@ AP_TimerProcess timer_scheduler;
 	AP_GPS_HIL              g_gps_driver(NULL);
     AP_IMU_Shim imu;
     AP_DCM  dcm(&imu, g_gps);
-    AP_TimerProcess timer_scheduler;
+    AP_PeriodicProcessStub timer_scheduler;
+    AP_InertialSensor_Stub ins;
+
+    static int32_t          gps_base_alt;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 	AP_ADC_HIL              adc;
@@ -214,6 +217,8 @@ AP_TimerProcess timer_scheduler;
 	AP_GPS_HIL              g_gps_driver(NULL);
 	AP_Compass_HIL          compass; // never used
 	AP_IMU_Shim             imu; // never used
+  AP_InertialSensorStub ins;
+  AP_PeriodicProcessStub timer_scheduler;
 	#ifdef OPTFLOW_ENABLED
 		AP_OpticalFlow_ADNS3080 optflow;
 	#endif
