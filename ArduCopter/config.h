@@ -670,7 +670,7 @@
 #endif
 
 #ifndef LOITER_RADIUS
-# define LOITER_RADIUS 10
+# define LOITER_RADIUS 10		// meters for circle mode
 #endif
 
 #ifndef ALT_HOLD_HOME
