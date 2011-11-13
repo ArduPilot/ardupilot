@@ -167,13 +167,6 @@ static void init_ardupilot()
             compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
-	/*
-	Init is depricated - Jason
-	if(g.sonar_enabled){
-		sonar.init(SONAR_PIN, &adc);
-		Serial.print("Sonar init: ");	Serial.println(SONAR_PIN, DEC);
-	}
-	*/
 #endif
 
 #if LOGGING_ENABLED == ENABLED
