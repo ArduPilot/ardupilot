@@ -7,8 +7,8 @@ expect_list = []
 def message_hook(mav, msg):
     '''called as each mavlink msg is received'''
     global expect_list
-    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
-        print(msg)
+#    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
+#        print(msg)
     for p in expect_list:
         try:
             p.read_nonblocking(100, timeout=0)
@@ -143,27 +143,30 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=60):
     start_wp = m.seq
     current_wp = start_wp
 
-    print("\n***wait for waypoint ranges***\n\n\n")
+    print("\n***wait for waypoint ranges start=%u end=%u ***\n\n\n" % (wpnum_start, wpnum_end))
     if start_wp != wpnum_start:
         print("Expected start waypoint %u but got %u" % (wpnum_start, start_wp))
         return False
 
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='WAYPOINT_CURRENT', blocking=True)
-        print("WP %u" % m.seq)
-        if m.seq == current_wp:
-            continue
-        if m.seq == current_wp+1 or (m.seq > current_wp+1 and allow_skip):
-            print("Starting new waypoint %u" % m.seq)
+        seq = m.seq
+        m = mav.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=True)
+        wp_dist = m.wp_dist
+        print("WP %u (wp_dist=%u)" % (seq, wp_dist))
+        if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
+            print("Starting new waypoint %u" % seq)
             tstart = time.time()
-            current_wp = m.seq
-            if current_wp == wpnum_end:
-                print("Reached final waypoint %u" % m.seq)
-                return True
-        if m.seq > current_wp+1:
-            print("Skipped waypoint! Got wp %u expected %u" % (m.seq, current_wp+1))
+            current_wp = seq
+            # the wp_dist check is a hack until we can sort out the right seqnum
+            # for end of mission
+        if current_wp == wpnum_end or (current_wp == wpnum_end-1 and wp_dist < 2):
+            print("Reached final waypoint %u" % seq)
+            return True
+        if seq > current_wp+1:
+            print("Skipped waypoint! Got wp %u expected %u" % (seq, current_wp+1))
             return False
-    print("Timed out waiting for waypoint %u" % wpnum_end)
+    print("Timed out waiting for waypoint %u of %u" % (wpnum_end, wpnum_end))
     return False
 
 def save_wp(mavproxy, mav):
