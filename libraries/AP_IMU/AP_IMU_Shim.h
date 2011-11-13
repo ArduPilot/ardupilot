@@ -6,6 +6,8 @@
 #ifndef AP_IMU_Shim_h
 #define AP_IMU_Shim_h
 
+#include "IMU.h"
+
 class AP_IMU_Shim : public IMU
 {
 public:
