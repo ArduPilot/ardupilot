@@ -78,7 +78,8 @@ static struct Location get_cmd_with_index(int i)
 static void set_command_with_index(struct Location temp, int i)
 {
 	Serial.printf("set_command: %d with id: %d\n", i, temp.id);
-	i = constrain(i, 0, (g.command_total.get() -1));
+	i = constrain(i, 0, g.command_total.get());
+	Serial.printf("set_command: %d with id: %d\n", i, temp.id);
 
 	// store home as 0 altitude!!!
 	if (i == 0)
@@ -102,6 +103,10 @@ static void set_command_with_index(struct Location temp, int i)
 
 	mem += 4;
 	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
+
+	// Make sure our WP_total
+	if(g.command_total <= i)
+		g.command_total.set_and_save(i+1);
 }
 
 static void increment_WP_index()
