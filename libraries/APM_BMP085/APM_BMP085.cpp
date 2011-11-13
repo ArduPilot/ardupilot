@@ -33,6 +33,7 @@
 
 
 */
+
 extern "C" {
   // AVR LibC Includes
   #include <inttypes.h>
@@ -51,11 +52,20 @@ extern "C" {
 //{
 //}
 
+// the purple hardware needs to check the state of the
+// chip using a direct IO port
+// On Purple prerelease hw, the data ready port is hooked up to PE7, which
+// is not available to the arduino digitalRead function.
+#define BMP_DATA_READY() (_purple_hardware?(PINE&0x80):digitalRead(BMP085_EOC))
+
+
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_BMP085_Class::Init(int initialiseWireLib)
+bool APM_BMP085_Class::Init(int initialiseWireLib, bool purple_hardware)
 {
 	byte buff[22];
 	int i = 0;
+
+	_purple_hardware = purple_hardware;
 
 	pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
 
@@ -68,7 +78,9 @@ void APM_BMP085_Class::Init(int initialiseWireLib)
   // We read the calibration data registers
 	Wire.beginTransmission(BMP085_ADDRESS);
 	Wire.send(0xAA);
-	Wire.endTransmission();
+	if (Wire.endTransmission() != 0) {
+		return false;
+	}
 
 	Wire.requestFrom(BMP085_ADDRESS, 22);
 
@@ -76,6 +88,9 @@ void APM_BMP085_Class::Init(int initialiseWireLib)
 	while(Wire.available()){
 		buff[i] = Wire.receive();	// receive one byte
 		i++;
+	}
+	if (i != 22) {
+		return false;
 	}
 
 	ac1 = ((int)buff[0] << 8) | buff[1];
@@ -93,6 +108,7 @@ void APM_BMP085_Class::Init(int initialiseWireLib)
   //Send a command to read Temp
 	Command_ReadTemp();
 	BMP085_State = 1;
+	return true;
 }
 
 /*
@@ -103,14 +119,14 @@ uint8_t APM_BMP085_Class::Read()
 	uint8_t result = 0;
 
 	if (BMP085_State == 1){
-		if (digitalRead(BMP085_EOC)){
+		if (BMP_DATA_READY()) {
 			ReadTemp();						 // On state 1 we read temp
 			BMP085_State++;
 			Command_ReadPress();
 		}
 	}else{
 		if (BMP085_State == 5){
-			if (digitalRead(BMP085_EOC)){
+			if (BMP_DATA_READY()){
 				ReadPress();
 				Calculate();
 
@@ -119,7 +135,7 @@ uint8_t APM_BMP085_Class::Read()
 				result = 1;					// New pressure reading
 			}
 		}else{
-			if (digitalRead(BMP085_EOC)){
+			if (BMP_DATA_READY()){
 				ReadPress();
 				Calculate();
 				BMP085_State++;

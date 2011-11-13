@@ -19,9 +19,10 @@ class APM_BMP085_Class
 	int32_t Press;
 	//int Altitude;
 	uint8_t oss;
+	bool _purple_hardware;
 	//int32_t Press0;  // Pressure at sea level
 
-	void Init(int initialiseWireLib = 1);
+	bool Init(int initialiseWireLib = 1, bool purple_hardware=false);
 	uint8_t Read();
 
   private:
