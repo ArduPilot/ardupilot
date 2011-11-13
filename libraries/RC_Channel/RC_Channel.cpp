@@ -18,6 +18,7 @@
 #define RC_CHANNEL_RANGE 1
 #define RC_CHANNEL_ANGLE_RAW 2
 
+APM_RC_Class *RC_Channel::_apm_rc;
 
 // setup the control preferences
 void
@@ -251,4 +252,9 @@ RC_Channel::norm_output()
 		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
 	else
 		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
+}
+
+void RC_Channel::set_apm_rc( APM_RC_Class * apm_rc )
+{
+    _apm_rc = apm_rc;
 }
