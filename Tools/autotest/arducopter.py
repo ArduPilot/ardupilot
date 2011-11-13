@@ -143,20 +143,16 @@ def land(mavproxy, mav, timeout=60):
     mavproxy.send('rc 3 1400\n')
     tstart = time.time()
 
-    if wait_altitude(mav, -5, 0):
-        print("LANDING OK")
-        return True
-    else:
-        print("LANDING FAILED")
-        return False
+    ret = wait_altitude(mav, -5, 0)
+    print("LANDING: ok=%s" % ret)
+    return ret
+
 
 def circle(mavproxy, mav, maxaltchange=10, holdtime=90, timeout=35):
     '''fly circle'''
     print("FLY CIRCLE")
     mavproxy.send('switch 1\n') # CIRCLE mode
-    mavproxy.expect('CIRCLE>')
-    mavproxy.send('status\n')
-    mavproxy.expect('>')
+    wait_mode(mav, 'CIRCLE')
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     tstart = time.time()
@@ -175,20 +171,26 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     print("Fly a mission")
     global homeloc
     global num_wp
+    mavproxy.send('wp set 1\n')
     mavproxy.send('switch 4\n') # auto mode
-    mavproxy.expect('AUTO>')
+    wait_mode(mav, 'AUTO')
 
     wait_altitude(mav, 30, 40)
-    if wait_waypoint(mav, 1, num_wp):
-        print("MISSION COMPLETE")
-        return True
-    else:
-        return False
+    ret = wait_waypoint(mav, 1, num_wp, timeout=90)
+
+    print("MISSION COMPLETE: passed=%s" % ret)
+
+    # wait here until ready
+    mavproxy.send('switch 5\n')
+    wait_mode(mav, 'LOITER')
+
+    return ret
 
     #if not wait_distance(mav, 30, timeout=120):
     #    return False
     #if not wait_location(mav, homeloc, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy):
     #    return False
+
 
 def load_mission(mavproxy, mav, filename):
     '''load a mission from a file'''
@@ -203,7 +205,8 @@ def load_mission(mavproxy, mav, filename):
     num_wp = wploader.count()
     print("loaded mission")
     for i in range(num_wp):
-        print (dir(wploader.wp(i)))
+        print wploader.wp(i)
+    return True
 
 def setup_rc(mavproxy):
     '''setup RC override control'''
@@ -301,17 +304,19 @@ def fly_ArduCopter(viewerip=None):
         if not circle(mavproxy, mav):
             failed = True
 
-        # fly the stores mission
+        # fly the stored mission
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             failed = True
 
         #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
 
-        if not load_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt")):
+        if not load_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
             failed = True
 
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             failed = True
+        else:
+            print("Flew mission_ttt OK")
 
         if not land(mavproxy, mav):
             failed = True
