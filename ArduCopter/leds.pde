@@ -19,23 +19,23 @@ static void update_GPS_light(void)
 	switch (g_gps->status()){
 
 		case(2):
-			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
+			digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix.
 			break;
 
 		case(1):
 			if (g_gps->valid_read == true){
 				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
 				if (GPS_light){
-					digitalWrite(C_LED_PIN, LOW);
+					digitalWrite(C_LED_PIN, LED_OFF);
 				}else{
-					digitalWrite(C_LED_PIN, HIGH);
+					digitalWrite(C_LED_PIN, LED_ON);
 				}
 				g_gps->valid_read = false;
 			}
 			break;
 
 		default:
-			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, LED_OFF);
 			break;
 	}
 }
@@ -47,14 +47,14 @@ static void update_motor_light(void)
 
 		// blink
 		if(motor_light){
-			digitalWrite(A_LED_PIN, HIGH);
+			digitalWrite(A_LED_PIN, LED_ON);
 		}else{
-			digitalWrite(A_LED_PIN, LOW);
+			digitalWrite(A_LED_PIN, LED_OFF);
 		}
 	}else{
 		if(!motor_light){
 			motor_light = true;
-			digitalWrite(A_LED_PIN, HIGH);
+			digitalWrite(A_LED_PIN, LED_ON);
 		}
 	}
 }
@@ -69,26 +69,26 @@ static void dancing_light()
 	switch(step)
 	{
 		case 0:
-			digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, HIGH);
+			digitalWrite(C_LED_PIN, LED_OFF);
+			digitalWrite(A_LED_PIN, LED_ON);
 			break;
 
 		case 1:
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(B_LED_PIN, HIGH);
+			digitalWrite(A_LED_PIN, LED_OFF);
+			digitalWrite(B_LED_PIN, LED_ON);
 			break;
 
 		case 2:
-			digitalWrite(B_LED_PIN, LOW);
-			digitalWrite(C_LED_PIN, HIGH);
+			digitalWrite(B_LED_PIN, LED_OFF);
+			digitalWrite(C_LED_PIN, LED_ON);
 			break;
 	}
 }
 static void clear_leds()
 {
-	digitalWrite(A_LED_PIN, LOW);
-	digitalWrite(B_LED_PIN, LOW);
-	digitalWrite(C_LED_PIN, LOW);
+	digitalWrite(A_LED_PIN, LED_OFF);
+	digitalWrite(B_LED_PIN, LED_OFF);
+	digitalWrite(C_LED_PIN, LED_OFF);
 	motor_light = false;
 	led_mode = NORMAL_LEDS;
 }
