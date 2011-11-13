@@ -441,7 +441,9 @@ static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	adc.Init();
+    isr_registry.init();
+    timer_scheduler.init( &isr_registry );
+	adc.Init(&timer_scheduler);
 	delay(1000);
 	Serial.printf_P(PSTR("ADC\n"));
 	delay(1000);
@@ -490,8 +492,9 @@ static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
-
-	imu.init(IMU::COLD_START);
+    isr_registry.init();
+    timer_scheduler.init( &isr_registry );
+	imu.init(IMU::COLD_START, delay, &timer_scheduler);
 
 	print_hit_enter();
 	delay(1000);
@@ -534,7 +537,9 @@ static int8_t
 test_gyro(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-	adc.Init();
+    isr_registry.init();
+    timer_scheduler.init(&isr_registry);
+	adc.Init(&timer_scheduler);
 	delay(1000);
 	Serial.printf_P(PSTR("Gyro | Accel\n"));
 	delay(1000);
@@ -576,7 +581,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the DCM initialised for this test
-	imu.init(IMU::COLD_START);
+    isr_registry.init();
+    timer_scheduler.init( &isr_registry );
+	imu.init(IMU::COLD_START, delay, &timer_scheduler);
 
 	int counter = 0;
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
