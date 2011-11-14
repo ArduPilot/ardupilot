@@ -77,13 +77,15 @@ static struct Location get_cmd_with_index(int i)
 // -------
 static void set_command_with_index(struct Location temp, int i)
 {
-	Serial.printf("set_command: %d with id: %d\n", i, temp.id);
 	i = constrain(i, 0, g.command_total.get());
-	Serial.printf("set_command: %d with id: %d\n", i, temp.id);
+	//Serial.printf("set_command: %d with id: %d\n", i, temp.id);
 
 	// store home as 0 altitude!!!
-	if (i == 0)
+	// Home is always a MAV_CMD_NAV_WAYPOINT (16)
+	if (i == 0){
 		temp.alt = 0;
+		temp.id = MAV_CMD_NAV_WAYPOINT;
+	}
 
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
