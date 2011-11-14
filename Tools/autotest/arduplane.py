@@ -47,6 +47,7 @@ def fly_left_circuit(mavproxy, mav):
     '''fly a left circuit, 200m on a side'''
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
+    wait_level_flight(mavproxy, mav)
 
     print("Flying left circuit")
     # do 4 turns
@@ -80,6 +81,20 @@ def fly_LOITER(mavproxy, mav):
     return True
 
 
+def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
+    '''wait for level flight'''
+    tstart = time.time()
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='ATTITUDE', blocking=True)
+        roll = math.degrees(m.roll)
+        pitch = math.degrees(m.pitch)
+        print("Roll=%.1f Pitch=%.1f" % (roll, pitch))
+        if math.fabs(roll) <= accuracy and math.fabs(pitch) <= accuracy:
+            return True
+    print("Failed to attain level flight")
+    return False
+
+
 def change_altitude(mavproxy, mav, altitude, accuracy=10):
     '''get to a given altitude'''
     mavproxy.send('switch 4\n')
@@ -92,7 +107,7 @@ def change_altitude(mavproxy, mav, altitude, accuracy=10):
     wait_altitude(mav, altitude-accuracy/2, altitude+accuracy/2)
     mavproxy.send('rc 2 1500\n')
     print("Reached target altitude at %u" % mav.messages['VFR_HUD'].alt)
-    return True
+    return wait_level_flight(mavproxy, mav)
 
 
 def axial_left_roll(mavproxy, mav, count=1):
@@ -102,8 +117,8 @@ def axial_left_roll(mavproxy, mav, count=1):
     change_altitude(mavproxy, mav, homeloc.alt+200)
 
     # fly the roll in manual
-    mavproxy.send('switch 5\n')
-    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'MANUAL')
 
     while count > 0:
         print("Starting roll")
@@ -118,9 +133,32 @@ def axial_left_roll(mavproxy, mav, count=1):
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
     mavproxy.send('rc 3 1700\n')
-    if not wait_distance(mav, 50):
-        return False
-    return True
+    return wait_level_flight(mavproxy, mav)
+
+
+def inside_loop(mavproxy, mav, count=1):
+    '''fly a inside loop'''
+    # full throttle!
+    mavproxy.send('rc 3 2000\n')
+    change_altitude(mavproxy, mav, homeloc.alt+200)
+
+    # fly the loop in manual
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'MANUAL')
+
+    while count > 0:
+        print("Starting loop")
+        mavproxy.send('rc 2 1000\n')
+        wait_pitch(mav, 80, accuracy=20)
+        wait_pitch(mav, 0, accuracy=20)
+        count -= 1
+
+    # back to FBWA
+    mavproxy.send('rc 2 1500\n')
+    mavproxy.send('switch 4\n')
+    wait_mode(mav, 'FBWA')
+    mavproxy.send('rc 3 1700\n')
+    return wait_level_flight(mavproxy, mav)
 
 
 
@@ -266,6 +304,9 @@ def fly_ArduPlane(viewerip=None):
             failed = True
         if not axial_left_roll(mavproxy, mav, 1):
             print("Failed left roll")
+            failed = True
+        if not inside_loop(mavproxy, mav):
+            print("Failed inside loop")
             failed = True
         if not fly_RTL(mavproxy, mav):
             print("Failed RTL")
