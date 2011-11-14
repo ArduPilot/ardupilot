@@ -5,7 +5,7 @@
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560.hex</url2560>
     <name>ArduPlane V2.24  </name>
     <desc></desc>
-    <format_version>11</format_version>
+    <format_version>12</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-1280.hex</url>
@@ -39,14 +39,14 @@
 #define AIRSPEED_CRUISE     25
 #define THROTTLE_FAILSAFE   ENABLED
 </desc>
-    <format_version>11</format_version>
+    <format_version>12</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-2560.hex</url2560>
     <name>ArduPlane V2.24 APM trunk</name>
     <desc></desc>
-    <format_version>11</format_version>
+    <format_version>12</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-1280.hex</url>
