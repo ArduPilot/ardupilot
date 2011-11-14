@@ -217,9 +217,12 @@ def fly_ArduPlane(viewerip=None):
     # start fgear
     if os.getenv('DISPLAY'):
         cmd = 'fgfs %s' % fgear_options
+        fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
     else:
-        cmd = "xvfb-run -s '-screen 0 800x600x24' fgfs --enable-wireframe %s" % fgear_options
-    fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
+        cmd = "xvfb-run --server-num=42 -s '-screen 0 800x600x24' fgfs --enable-wireframe %s" % fgear_options
+        util.kill_xvfb(42)
+        fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
+        fgear.xvfb_server_num = 42
     util.pexpect_autoclose(fgear)
 
     expect_list.extend([fgear, sil, mavproxy])
