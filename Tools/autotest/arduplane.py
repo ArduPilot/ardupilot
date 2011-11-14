@@ -157,10 +157,23 @@ def fly_ArduPlane(viewerip=None):
     '''
     global expect_list, homeloc
 
-    sil = util.start_SIL('ArduPlane', wipe=True)
     options = '--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
+
+    sil = util.start_SIL('ArduPlane', wipe=True)
+    mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
+    mavproxy.expect('Received [0-9]+ parameters')
+
+    # setup test parameters
+    mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
+    mavproxy.expect('Loaded [0-9]+ parameters')
+
+    # restart with new parms
+    util.pexpect_close(mavproxy)
+    util.pexpect_close(sil)
+
+    sil = util.start_SIL('ArduPlane')
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
@@ -174,11 +187,11 @@ def fly_ArduPlane(viewerip=None):
 
     mavproxy.expect('Received [0-9]+ parameters')
 
-    # setup test parameters
-    mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
-    mavproxy.expect('Loaded [0-9]+ parameters')
-
     util.expect_setup_callback(mavproxy, expect_callback)
+
+    fg_scenery = os.getenv("FG_SCENERY")
+    if not fg_scenery:
+        raise RuntimeError("You must set the FG_SCENERY environment variable")
 
     fgear_options = '''
     --generic=socket,in,25,,5502,udp,MAVLink \
@@ -210,10 +223,10 @@ def fly_ArduPlane(viewerip=None):
     --fog-disable \
     --disable-specular-highlight \
     --disable-skyblend \
-    --fg-scenery="/home/tridge/project/UAV/fgdata/Scenery" \
+    --fg-scenery=%s \
     --disable-anti-alias-hud \
     --wind=0@0 \
-'''
+''' % fg_scenery
     # start fgear
     if os.getenv('DISPLAY'):
         cmd = 'fgfs %s' % fgear_options
@@ -224,6 +237,7 @@ def fly_ArduPlane(viewerip=None):
         fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
         fgear.xvfb_server_num = 42
     util.pexpect_autoclose(fgear)
+    fgear.expect('creating 3D noise', timeout=30)
 
     expect_list.extend([fgear, sil, mavproxy])
 
