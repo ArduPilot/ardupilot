@@ -88,6 +88,19 @@ def wait_roll(mav, roll, accuracy, timeout=30):
     print("Failed to attain roll %u" % roll)
     return False
 
+def wait_pitch(mav, pitch, accuracy, timeout=30):
+    '''wait for a given pitch in degrees'''
+    tstart = time.time()
+    print("Waiting for pitch of %u" % pitch)
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='ATTITUDE', blocking=True)
+        r = math.degrees(m.pitch)
+        print("Pitch %u" % r)
+        if math.fabs(r - pitch) <= accuracy:
+            return True
+    print("Failed to attain pitch %u" % pitch)
+    return False
+
 
 
 def wait_heading(mav, heading, accuracy=5, timeout=30):
