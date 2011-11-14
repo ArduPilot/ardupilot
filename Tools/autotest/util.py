@@ -73,6 +73,10 @@ def pexpect_autoclose(p):
 def pexpect_close(p):
     '''close a pexpect child'''
     global close_list
+
+    xvfb_server_num = getattr(p, 'xvfb_server_num', None)
+    if xvfb_server_num is not None:
+        kill_xvfb(xvfb_server_num)
     try:
         p.close()
     except Exception:
@@ -89,12 +93,7 @@ def pexpect_close_all():
     '''close all pexpect children'''
     global close_list
     for p in close_list[:]:
-        try:
-            p.close()
-            time.sleep(1)
-            p.close(Force=True)
-        except Exception:
-            pass
+        pexpect_close(p)
 
 def start_SIL(atype, valgrind=False, wipe=False, CLI=False):
     '''launch a SIL instance'''
@@ -177,3 +176,13 @@ def lock_file(fname):
     except Exception:
         return None
     return f
+
+def kill_xvfb(server_num):
+    '''Xvfb is tricky to kill!'''
+    try:
+        import signal
+        pid = int(open('/tmp/.X%s-lock' % server_num).read().strip())
+        print("Killing Xvfb process %u" % pid)
+        os.kill(pid, signal.SIGINT)
+    except Exception, msg:
+        print("failed to kill Xvfb process - %s" % msg)
