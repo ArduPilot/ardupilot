@@ -617,9 +617,8 @@ static void medium_loop()
 				update_GPS();
 			}
 
-			//readCommands();
 
-			#if HIL_MODE != HIL_MODE_ATTITUDE
+			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
 					compass.read();		 						// Read magnetometer
 					compass.calculate(dcm.get_dcm_matrix());  	// Calculate heading
@@ -677,7 +676,9 @@ static void medium_loop()
 
 			// Read altitude from sensors
 			// --------------------------
+			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 			update_altitude();
+			#endif
 
 			// invalidate the throttle hold value
 			// ----------------------------------
@@ -935,6 +936,10 @@ static void update_GPS(void)
 			Log_Write_GPS();
 		}
 	}
+	#if HIL_MODE == HIL_MODE_ATTITUDE					// don't execute in HIL mode
+		update_altitude();
+	#endif
+
 }
 
 
@@ -1256,7 +1261,6 @@ static void update_altitude()
 			old_sonar_alt 	= sonar_alt;
 		#endif
 
-
 		if(baro_alt < 800){
 			#if SONAR_TILT_CORRECTION == 1
 				// correct alt for angle of the sonar
@@ -1466,9 +1470,9 @@ static void update_nav_wp()
 
 		// rotate pitch and roll to the copter frame of reference
 		calc_loiter_pitch_roll();
-		int angleTest = degrees(circle_angle);
-		int nroll = nav_roll;
-		int npitch = nav_pitch;
+		//int angleTest = degrees(circle_angle);
+		//int nroll = nav_roll;
+		//int npitch = nav_pitch;
 		//Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 	} else {
 		// use error as the desired rate towards the target
