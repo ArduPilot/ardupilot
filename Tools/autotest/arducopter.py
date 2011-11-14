@@ -168,18 +168,15 @@ def circle(mavproxy, mav, maxaltchange=10, holdtime=90, timeout=35):
 
 def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
-    print("Fly a mission")
     global homeloc
     global num_wp
-    mavproxy.send('wp set 1\n')
+    print("test: Fly a mission from 0 to %u" % num_wp)
+    mavproxy.send('wp set 0\n')
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
-
     #wait_altitude(mav, 30, 40)
     ret = wait_waypoint(mav, 0, num_wp, timeout=90)
-
-    print("MISSION COMPLETE: passed=%s" % ret)
-
+    print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')
     wait_mode(mav, 'LOITER')
@@ -192,20 +189,30 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     #    return False
 
 
-def load_mission(mavproxy, mav, filename):
+def load_mission_from_file(mavproxy, mav, filename):
     '''load a mission from a file'''
+    global num_wp
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
+    print("loaded mission with %u waypoints" % num_wp)
+    return True
+
+def upload_mission_from_file(mavproxy, mav, filename):
+    '''Upload a mission from a file to APM'''
     global num_wp
     mavproxy.send('wp load %s\n' % filename)
     mavproxy.expect('flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
+    return True
 
-    wploader = mavwp.MAVWPLoader()
-    wploader.load(filename)
-    num_wp = wploader.count()
-    print("loaded mission")
-    for i in range(num_wp):
-        print wploader.wp(i)
+def save_mission_to_file(mavproxy, mav, filename):
+    global num_wp
+    mavproxy.send('wp save %s\n' % filename)
+    mavproxy.expect('Saved ([0-9]+) waypoints')
+    num_wp = int(mavproxy.match.group(1))
+    print("num_wp: %d" % num_wp)
     return True
 
 def setup_rc(mavproxy):
@@ -294,33 +301,50 @@ def fly_ArduCopter(viewerip=None):
         if not takeoff(mavproxy, mav):
             failed = True
 
+        print("# Fly A square")
         if not fly_square(mavproxy, mav):
             failed = True
 
+        # save the stored mission
+        print("# Save out the C7 mission")
+        if not save_mission_to_file(mavproxy, mav, os.path.join(testdir, "ch7_mission.txt")):
+            failed = True
+
+        # Loiter for 10 seconds
+        print("# Loiter for 10 seconds")
         if not loiter(mavproxy, mav):
             failed = True
 
         #Fly a circle for 60 seconds
+        print("# Fly a Circle")
         if not circle(mavproxy, mav):
             failed = True
 
-        # fly the stored mission
+        # save the stored mission
+        print("# Fly CH 7 saved mission")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             failed = True
 
-        #fly_mission(mavproxy, mav, os.path.join(testdir, "mission_ttt.txt"), height_accuracy=0.2)
-
-        if not load_mission(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+        print("# Upload mission1")
+        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
             failed = True
 
+        # this grabs our mission count
+        print("# store mission1 locally")
+        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+            failed = True
+
+        print("# Fly mission 1")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             failed = True
         else:
-            print("Flew mission_ttt OK")
+            print("Flew mission1 OK")
 
+        print("# Land")
         if not land(mavproxy, mav):
             failed = True
 
+        print("# disarm motors")
         if not disarm_motors(mavproxy, mav):
             failed = True
     except pexpect.TIMEOUT, e:
