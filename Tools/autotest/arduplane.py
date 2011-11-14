@@ -245,15 +245,20 @@ def fly_ArduPlane(viewerip=None):
         homeloc = current_location(mav)
         print("Home location: %s" % homeloc)
         if not takeoff(mavproxy, mav):
+            print("Failed takeoff")
             failed = True
         if not fly_left_circuit(mavproxy, mav):
+            print("Failed left circuit")
             failed = True
         if not axial_left_roll(mavproxy, mav, 1):
+            print("Failed left roll")
             failed = True
         if not fly_RTL(mavproxy, mav):
+            print("Failed RTL")
             failed = True
         if not fly_mission(mavproxy, mav, os.path.join(testdir, "ap1.txt"), height_accuracy = 10,
                            target_altitude=homeloc.alt+100):
+            print("Failed mission")
             failed = True
     except pexpect.TIMEOUT, e:
         failed = True
