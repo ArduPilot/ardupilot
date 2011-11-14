@@ -9,9 +9,10 @@ static void change_command(uint8_t cmd_index)
 	if (temp.id > MAV_CMD_NAV_LAST ){
 		gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 	} else {
+		//Serial.printf("APM:New cmd Index: %d\n", cmd_index);
 		command_must_index 	= NO_COMMAND;
 		next_command.id 	= NO_COMMAND;
-		g.command_index 	= cmd_index - 1;
+		g.command_index.set_and_save(cmd_index);
 		update_commands();
 	}
 }
