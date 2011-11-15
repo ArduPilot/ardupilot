@@ -135,7 +135,7 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     print("Failed to attain location")
     return False
 
-def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=60):
+def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=400):
     '''wait for waypoint ranges'''
     tstart = time.time()
     # this message arrives after we set the current WP
