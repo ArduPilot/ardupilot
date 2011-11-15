@@ -25,7 +25,9 @@ static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
 static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
+#endif
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -42,7 +44,9 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"modeswitch",	test_modeswitch},
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
 	{"dipswitches",	test_dipswitches},
+#endif
 
 	// Tests below here are for hardware sensors only present
 	// when real sensors are attached or they are emulated
@@ -406,6 +410,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
 static int8_t
 test_dipswitches(uint8_t argc, const Menu::arg *argv)
 {
@@ -436,6 +441,8 @@ test_dipswitches(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
+#endif // CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
+
 
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
