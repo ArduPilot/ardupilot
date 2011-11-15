@@ -207,6 +207,78 @@ void APM_RC_APM1::Force_Out6_Out7(void)
     TCNT3=39990;
 }
 
+/* --------------------- OUTPUT SPEED CONTROL --------------------- */
+
+// Output rate options:
+#define OUTPUT_SPEED_50HZ 0
+#define OUTPUT_SPEED_200HZ 1
+
+void APM_RC_APM1::SetFastOutputChannels(uint32_t chmask)
+{
+    if ((chmask & ( MSK_CH_1 | MSK_CH_2 | MSK_CH_9)) != 0)
+        _set_speed_ch1_ch2_ch9(OUTPUT_SPEED_200HZ);
+
+    if ((chmask & ( MSK_CH_3 | MSK_CH_4 | MSK_CH_10 )) != 0)
+        _set_speed_ch3_ch4_ch10(OUTPUT_SPEED_200HZ);
+
+    if ((chmask & ( MSK_CH_5 | MSK_CH_6 )) != 0)
+        _set_speed_ch5_ch6(OUTPUT_SPEED_200HZ);
+
+    if ((chmask & ( MSK_CH_7 | MSK_CH_8 | MSK_CH_11 )) != 0)
+        _set_speed_ch7_ch8_ch11(OUTPUT_SPEED_200HZ);
+
+}
+
+void APM_RC_APM1::_set_speed_ch1_ch2_ch9(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR1= 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR1 = 40000;
+    break;
+  }
+}
+
+void APM_RC_APM1::_set_speed_ch3_ch4_ch10(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR5= 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR5 = 40000;
+    break;
+  }
+}
+
+void APM_RC_APM1::_set_speed_ch7_ch8_ch11(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR3 = 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR3 = 40000;
+    break;
+  }
+}
+
+void APM_RC_APM1::_set_speed_ch5_ch6(uint8_t speed)
+{
+  /* This function intentionally left blank:
+   * Can't change output speed of ch5 (OCR4B) and ch6 (OCR4C).
+   * Timer 4 period controlled by OCR4A, and used for input
+   * capture on ICR4.
+   * If the period of Timer 4 must be changed, the input capture
+   * code will have to be adjusted as well
+   */
+}
+
 // allow HIL override of RC values
 // A value of -1 means no change
 // A value of 0 means no override, use the real RC values
