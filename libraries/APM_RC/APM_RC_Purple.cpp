@@ -199,6 +199,64 @@ void APM_RC_Purple::Force_Out0_Out1(void) { }
 void APM_RC_Purple::Force_Out2_Out3(void) { }
 void APM_RC_Purple::Force_Out6_Out7(void) { }
 
+/* ---------------- OUTPUT SPEED CONTROL ------------------ */
+// Output rate options:
+#define OUTPUT_SPEED_50HZ 0
+#define OUTPUT_SPEED_200HZ 1
+
+void APM_RC_Purple::SetFastOutputChannels(uint32_t chmask)
+{
+    if ((chmask & ( MSK_CH_1 | MSK_CH_2 )) != 0)
+        _set_speed_ch1_ch2(OUTPUT_SPEED_200HZ);
+
+    if ((chmask & ( MSK_CH_3 | MSK_CH_4 | MSK_CH_5 )) != 0)
+        _set_speed_ch3_ch4_ch5(OUTPUT_SPEED_200HZ);
+
+    if ((chmask & ( MSK_CH_6 | MSK_CH_7 | MSK_CH_8 )) != 0)
+        _set_speed_ch6_ch7_ch8(OUTPUT_SPEED_200HZ);
+}
+
+void APM_RC_Purple::_set_speed_ch1_ch2(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR1 = 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR1 = 40000;
+    break;
+  }
+}
+
+void APM_RC_Purple::_set_speed_ch3_ch4_ch5(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR4 = 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR4 = 40000;
+    break;
+  }
+
+}
+
+void APM_RC_Purple::_set_speed_ch6_ch7_ch8(uint8_t speed)
+{
+  switch(speed) {
+  case OUTPUT_SPEED_200HZ:
+    ICR3 = 10000;
+    break;
+  case OUTPUT_SPEED_50HZ:
+  default:
+    ICR3 = 40000;
+    break;
+  }
+
+}
+
 // allow HIL override of RC values
 // A value of -1 means no change
 // A value of 0 means no override, use the real RC values
