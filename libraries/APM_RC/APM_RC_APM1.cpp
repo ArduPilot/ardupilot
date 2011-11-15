@@ -86,9 +86,9 @@ void APM_RC_APM1::Init( Arduino_Mega_ISR_Registry * isr_reg )
   //Remember the registers not declared here remains zero by default...
   TCCR1A =((1<<WGM11)|(1<<COM1A1)|(1<<COM1B1)|(1<<COM1C1)); //Please read page 131 of DataSheet, we are changing the registers settings of WGM11,COM1B1,COM1A1 to 1 thats all...
   TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11); //Prescaler set to 8, that give us a resolution of 0.5us, read page 134 of data sheet
-  //OCR1A = 3000; //PB5, OUT9
-  //OCR1B = 3000; //PB6, OUT2
-  //OCR1C = 3000; //PB7  OUT3
+  OCR1A = 0xFFFF; // Init ODR registers to nil output signal
+  OCR1B = 0xFFFF;
+  OCR1C = 0xFFFF;
   ICR1 = 40000; //50hz freq...Datasheet says  (system_freq/prescaler)/target frequency. So (16000000hz/8)/50hz=40000,
 
   // Init PWM Timer 3
@@ -97,9 +97,9 @@ void APM_RC_APM1::Init( Arduino_Mega_ISR_Registry * isr_reg )
   pinMode(5,OUTPUT); //OUT10(PE3/OC3A)
   TCCR3A =((1<<WGM31)|(1<<COM3A1)|(1<<COM3B1)|(1<<COM3C1));
   TCCR3B = (1<<WGM33)|(1<<WGM32)|(1<<CS31);
-  //OCR3A = 3000; //PE3, OUT10
-  //OCR3B = 3000; //PE4, OUT7
-  //OCR3C = 3000; //PE5, OUT6
+  OCR3A = 0xFFFF; // Init ODR registers to nil output signal
+  OCR3B = 0xFFFF;
+  OCR3C = 0xFFFF;
   ICR3 = 40000; //50hz freq
 
   // Init PWM Timer 5
@@ -109,9 +109,9 @@ void APM_RC_APM1::Init( Arduino_Mega_ISR_Registry * isr_reg )
 
   TCCR5A =((1<<WGM51)|(1<<COM5A1)|(1<<COM5B1)|(1<<COM5C1));
   TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51);
-  //OCR5A = 3000; //PL3, OUT8
-  //OCR5B = 3000; //PL4, OUT0
-  //OCR5C = 3000; //PL5, OUT1
+  OCR5A = 0xFFFF; // Init ODR registers to nil output signal
+  OCR5B = 0xFFFF;
+  OCR5C = 0xFFFF;
   ICR5 = 40000; //50hz freq
 
   // Init PPM input and PWM Timer 4
@@ -123,10 +123,9 @@ void APM_RC_APM1::Init( Arduino_Mega_ISR_Registry * isr_reg )
   //Prescaler set to 8, that give us a resolution of 0.5us
   // Input Capture rising edge
   TCCR4B = ((1<<WGM43)|(1<<WGM42)|(1<<CS41)|(1<<ICES4));
-
+  OCR4B = 0xFFFF; // Init OCR registers to nil output signal
+  OCR4C = 0xFFFF;
   OCR4A = 40000; ///50hz freq.
-  OCR4B = 3000; //PH4, OUT5
-  OCR4C = 3000; //PH5, OUT4
 
   //TCCR4B |=(1<<ICES4); //Changing edge detector (rising edge).
   //TCCR4B &=(~(1<<ICES4)); //Changing edge detector. (falling edge)

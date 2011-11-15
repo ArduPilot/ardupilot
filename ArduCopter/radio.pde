@@ -57,14 +57,6 @@ static void init_rc_out()
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
 	init_motors_out();
 
-    // fix for crazy output
-    OCR1B = 0xFFFF;     // PB6, OUT3
-    OCR1C = 0xFFFF;     // PB7, OUT4
-    OCR5B = 0xFFFF;     // PL4, OUT1
-    OCR5C = 0xFFFF;     // PL5, OUT2
-    OCR4B = 0xFFFF;     // PH4, OUT6
-    OCR4C = 0xFFFF;     // PH5, OUT5
-
 	// this is the camera pitch5 and roll6
 	APM_RC.OutputCh(CH_5, 1500);
 	APM_RC.OutputCh(CH_6, 1500);
