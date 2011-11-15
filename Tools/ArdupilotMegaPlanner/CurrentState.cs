@@ -211,7 +211,6 @@ namespace ArdupilotMega
                     dowindcalc();
                 }
 
-                //                Console.WriteLine("Updating CurrentState " + DateTime.Now.Millisecond);
                 if (mavinterface.packets[MAVLink.MAVLINK_MSG_ID_STATUSTEXT] != null) // status text 
                 {
 

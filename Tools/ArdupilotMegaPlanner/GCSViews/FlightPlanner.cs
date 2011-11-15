@@ -154,6 +154,7 @@ namespace ArdupilotMega.GCSViews
                         for (int i = 0; i < matchs.Count; i++)
                         {
                             Locationwp temp = new Locationwp();
+                            temp.options = 1;
                             temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), matchs[i].Groups[1].Value.ToString().Replace("NAV_", ""), false);
                             temp.p1 = byte.Parse(matchs[i].Groups[2].Value.ToString());
 
@@ -1019,8 +1020,8 @@ namespace ArdupilotMega.GCSViews
         private void savewaypoints()
         {
             SaveFileDialog fd = new SaveFileDialog();
-            fd.Filter = "Ardupilot Mission (*.h)|*.*";
-            fd.DefaultExt = ".h";
+            fd.Filter = "Ardupilot Mission (*.txt)|*.*";
+            fd.DefaultExt = ".txt";
             DialogResult result = fd.ShowDialog();
             string file = fd.FileName;
             if (file != "")
@@ -1028,26 +1029,39 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
                     StreamWriter sw = new StreamWriter(file);
-                    sw.WriteLine("#define WP_RADIUS " + TXT_WPRad.Text.ToString() + " // What is the minimum distance to reach a waypoint?");
-                    sw.WriteLine("#define LOITER_RADIUS " + TXT_loiterrad.Text.ToString() + " 	// How close to Loiter?");
-                    sw.WriteLine("#define HOLD_CURRENT_ALT 0	// 1 = hold the current altitude, 0 = use the defined altitude to for RTL");
-                    sw.WriteLine("#define ALT_TO_HOLD " + TXT_DefaultAlt.Text);
-                    sw.WriteLine("");
-                    sw.WriteLine("float mission[][5] = {");
+                    sw.WriteLine("QGC WPL 110");
+                    try
+                    {
+                        sw.WriteLine("0\t1\t3\t0\t0\t0\t0\t0\t" + double.Parse(TXT_homelat.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homelng.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homealt.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t1");
+                    }
+                    catch
+                    {
+                        sw.WriteLine("0\t1\t3\t0\t0\t0\t0\t0\t0\t0\t0\t1");
+                    }
                     for (int a = 0; a < Commands.Rows.Count - 0; a++)
                     {
-                        sw.Write("{" + Commands.Rows[a].Cells[0].Value.ToString() + ",");
-                        sw.Write(Commands.Rows[a].Cells[1].Value.ToString() + ",");
-                        sw.Write(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + ",");
-                        sw.Write(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + ",");
-                        sw.Write(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString(new System.Globalization.CultureInfo("en-US")) + "}");
-                        //if (a < Commands.Rows.Count - 2)
-                        //{
-                        sw.Write(",");
-                        //}
+                        byte mode = (byte)(MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[0].Value.ToString());
+
+                        sw.Write((a+1)); // seq
+                        sw.Write("\t" +0); // current
+                        sw.Write("\t" + (CHK_altmode.Checked == true ? (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL : (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT)); //frame 
+                        sw.Write("\t" + mode);
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[1].Value.ToString()).ToString("0.000000",new System.Globalization.CultureInfo("en-US")));
+                        if (mode >= (byte)MAVLink.MAV_CMD.LAST) {
+                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        } else {
+                            sw.Write("\t" + "0.000000");
+                            sw.Write("\t" + "0.000000");
+                            sw.Write("\t" + "0.000000");
+                        }
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + 1);
                         sw.WriteLine("");
                     }
-                    sw.WriteLine("};");
                     sw.Close();
                 }
                 catch (Exception) { MessageBox.Show("Error writing file"); }
@@ -1598,13 +1612,106 @@ namespace ArdupilotMega.GCSViews
         private void BUT_loadwpfile_Click(object sender, EventArgs e)
         {
             OpenFileDialog fd = new OpenFileDialog();
-            fd.Filter = "Ardupilot Mission (*.h)|*.*";
-            fd.DefaultExt = ".h";
+            fd.Filter = "Ardupilot Mission (*.txt)|*.*";
+            fd.DefaultExt = ".txt";
             DialogResult result = fd.ShowDialog();
             string file = fd.FileName;
             if (file != "")
             {
-                readwaypointwritterfile(file);
+                if (file.ToLower().EndsWith(".h"))
+                {
+                    readwaypointwritterfile(file);
+                }
+                else
+                {
+                    readQGC110wpfile(file);
+                }
+            }
+        }
+
+        void readQGC110wpfile(string file)
+        {
+            int wp_count = 0;
+            bool error = false;
+            List<Locationwp> cmds = new List<Locationwp>();
+
+            try
+            {
+                StreamReader sr = new StreamReader(file); //"defines.h"
+                string header = sr.ReadLine();
+                if (header == null || !header.Contains("QGC WPL 110"))
+                {
+                    MessageBox.Show("Invalid Waypoint file");
+                    return;
+                }
+                while (!error && !sr.EndOfStream)
+                {
+                    string line = sr.ReadLine();
+                    // waypoints
+
+                    if (line.StartsWith("#"))
+                        continue;
+
+                    string[] items = line.Split(new char[] {(char)'\t',' '}, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (items.Length <= 9)
+                        continue;
+
+                    try
+                    {
+
+                        Locationwp temp = new Locationwp();
+                        if (items[2] == "3")
+                        { // abs MAV_FRAME_GLOBAL_RELATIVE_ALT=3
+                            temp.options = 1;
+                        } else 
+                        {
+                            temp.options = 0;
+                        }
+                        temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), items[3], false);
+                        temp.p1 = (byte)float.Parse(items[4]);
+
+                        if (temp.id == 99)
+                            temp.id = 0;
+
+                        if (temp.id < (byte)MAVLink.MAV_CMD.LAST || wp_count == 0)
+                        {
+                            temp.alt = (int)(double.Parse(items[10], new System.Globalization.CultureInfo("en-US")) * 100);
+                            temp.lat = (int)(double.Parse(items[8], new System.Globalization.CultureInfo("en-US")) * 10000000);
+                            temp.lng = (int)(double.Parse(items[9], new System.Globalization.CultureInfo("en-US")) * 10000000);
+                        }
+                        else
+                        {
+                            temp.alt = (int)(double.Parse(items[5], new System.Globalization.CultureInfo("en-US")));
+                            temp.lat = (int)(double.Parse(items[6], new System.Globalization.CultureInfo("en-US")));
+                            temp.lng = (int)(double.Parse(items[7], new System.Globalization.CultureInfo("en-US")));
+                        }
+                        cmds.Add(temp);
+
+                        wp_count++;
+
+                    }
+                    catch { MessageBox.Show("Line invalid\n" + line); }
+                        
+                        if (wp_count == byte.MaxValue)
+                        {
+                            MessageBox.Show("To many Waypoints!!!");
+                            break;
+                        }
+                    
+                }
+
+                sr.Close();
+
+                processToScreen(cmds);
+
+                writeKML();
+
+                MainMap.ZoomAndCenterMarkers("objects");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Can't open file! " + ex.ToString());
             }
         }
 
