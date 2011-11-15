@@ -85,7 +85,8 @@ void APM_RC_Purple::Init( Arduino_Mega_ISR_Registry * isr_reg )
   TCCR1A =((1<<WGM11)|(1<<COM1A1)|(1<<COM1B1));
   TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
   ICR1 = 40000; // 0.5us tick => 50hz freq
-
+  OCR1A = 0xFFFF; // Init OCR registers to nil output signal
+  OCR1B = 0xFFFF;
   OutputCh(1, 1100);
   OutputCh(2, 1100);
 
@@ -99,6 +100,9 @@ void APM_RC_Purple::Init( Arduino_Mega_ISR_Registry * isr_reg )
   // CS41: prescale by 8 => 0.5us tick
   TCCR4A =((1<<WGM41)|(1<<COM4A1)|(1<<COM4B1)|(1<<COM4C1));
   TCCR4B = (1<<WGM43)|(1<<WGM42)|(1<<CS41);
+  OCR4A = 0xFFFF; // Init OCR registers to nil output signal
+  OCR4B = 0xFFFF;
+  OCR4C = 0xFFFF;
   ICR4 = 40000; // 0.5us tick => 50hz freq
 
   OutputCh(3, 1100);
@@ -115,6 +119,9 @@ void APM_RC_Purple::Init( Arduino_Mega_ISR_Registry * isr_reg )
   // CS31: prescale by 8 => 0.5us tick
   TCCR3A =((1<<WGM31)|(1<<COM3A1)|(1<<COM3B1)|(1<<COM3C1));
   TCCR3B = (1<<WGM33)|(1<<WGM32)|(1<<CS31);
+  OCR3A = 0xFFFF; // Init OCR registers to nil output signal
+  OCR3B = 0xFFFF;
+  OCR3C = 0xFFFF;
   ICR3 = 40000; // 0.5us tick => 50hz freq
 
   OutputCh(6, 1100);
