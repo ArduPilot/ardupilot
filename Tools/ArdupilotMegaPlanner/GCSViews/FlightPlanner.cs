@@ -1032,11 +1032,11 @@ namespace ArdupilotMega.GCSViews
                     sw.WriteLine("QGC WPL 110");
                     try
                     {
-                        sw.WriteLine("0\t1\t3\t0\t0\t0\t0\t0\t" + double.Parse(TXT_homelat.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homelng.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homealt.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t1");
+                        sw.WriteLine("0\t1\t0\t16\t0\t0\t0\t0\t" + double.Parse(TXT_homelat.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homelng.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t" + double.Parse(TXT_homealt.Text).ToString("0.000000", new System.Globalization.CultureInfo("en-US")) + "\t1");
                     }
                     catch
                     {
-                        sw.WriteLine("0\t1\t3\t0\t0\t0\t0\t0\t0\t0\t0\t1");
+                        sw.WriteLine("0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1");
                     }
                     for (int a = 0; a < Commands.Rows.Count - 0; a++)
                     {
@@ -1669,7 +1669,7 @@ namespace ArdupilotMega.GCSViews
                             temp.options = 0;
                         }
                         temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), items[3], false);
-                        temp.p1 = (byte)float.Parse(items[4]);
+                        temp.p1 = (byte)float.Parse(items[4], new System.Globalization.CultureInfo("en-US"));
 
                         if (temp.id == 99)
                             temp.id = 0;
