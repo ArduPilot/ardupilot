@@ -19,6 +19,7 @@
 #ifndef Vector_H
 #define Vector_H
 
+#include "../FastSerial/BetterStream.h"
 #include <stdlib.h>
 #include <inttypes.h>
 #include <WProgram.h>

@@ -105,11 +105,18 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
         break;
     }
 
+    case MAVLINK_MSG_ID_LOCAL_POSITION: {
+        mavlink_msg_local_position_send(_channel, timeStamp,
+                _navigator->getPN(),_navigator->getPE(), _navigator->getPD(),
+                _navigator->getVN(), _navigator->getVE(), _navigator->getVD());
+        break;
+    }
+
     case MAVLINK_MSG_ID_GPS_RAW: {
         mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
                                  _navigator->getLat() * rad2Deg,
                                  _navigator->getLon() * rad2Deg, _navigator->getAlt(), 0, 0,
-                                 _navigator->getGroundSpeed(),
+                                 _navigator->getGroundSpeed()*1000.0,
                                  _navigator->getYaw() * rad2Deg);
         break;
     }
@@ -327,6 +334,26 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
          */
         break;
     }
+
+    case MAVLINK_MSG_ID_HIL_STATE: {
+        // decode
+        mavlink_hil_state_t packet;
+        mavlink_msg_hil_state_decode(msg, &packet);
+        _navigator->setTimeStamp(timeStamp);
+        _navigator->setRoll(packet.roll);
+        _navigator->setPitch(packet.pitch);
+        _navigator->setYaw(packet.yaw);
+        _navigator->setRollRate(packet.rollspeed);
+        _navigator->setPitchRate(packet.pitchspeed);
+        _navigator->setYawRate(packet.yawspeed);
+        _navigator->setVN(packet.vx/ 1e2);
+        _navigator->setVE(packet.vy/ 1e2);
+        _navigator->setVD(packet.vz/ 1e2);
+        _navigator->setLat_degInt(packet.lat);
+        _navigator->setLon_degInt(packet.lon);
+        _navigator->setAlt(packet.alt / 1e3);
+        break; 
+    } 
 
     case MAVLINK_MSG_ID_ATTITUDE: {
         // decode
