@@ -299,6 +299,7 @@ static bool 	did_ground_start	= false;		// have we ground started after first ar
 
 // Location & Navigation
 // ---------------------
+static bool	nav_ok;
 static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
 static int32_t		target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
@@ -640,17 +641,13 @@ static void medium_loop()
 			medium_loopCounter++;
 
 			// Auto control modes:
-			if(g_gps->new_data && g_gps->fix){
+			if(nav_ok){
+				// clear nav flag
+				nav_ok = false;
 
 				// invalidate GPS data
+				// -------------------
 				g_gps->new_data 	= false;
-
-				// we are not tracking I term on navigation, so this isn't needed
-				dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
-				nav_loopTimer 		= millis();
-
-				// prevent runup from bad GPS
-				dTnav = min(dTnav, 1.0);
 
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
@@ -663,10 +660,7 @@ static void medium_loop()
 					if (g.log_bitmask & MASK_LOG_NTUN)
 						Log_Write_Nav_Tuning();
 				}
-			}else{
-				g_gps->new_data = false;
 			}
-
 			break;
 
 		// command processing
@@ -900,17 +894,26 @@ static void update_GPS(void)
 		gps_watchdog++;
 	}else{
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		// commented temporarily
-		//nav_roll  >>= 1;
-		//nav_pitch >>= 1;
+		nav_roll  >>= 1;
+		nav_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
 		gps_watchdog = 0;
 
+		// OK to run the nav routines
+		nav_ok = true;
+
 		// for performance
 		// ---------------
 		gps_fix_count++;
+
+		// we are not tracking I term on navigation, so this isn't needed
+		dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
+		nav_loopTimer 		= millis();
+
+		// prevent runup from bad GPS
+		dTnav = min(dTnav, 1.0);
 
 		if(ground_start_count > 1){
 			ground_start_count--;
@@ -935,11 +938,14 @@ static void update_GPS(void)
 		if (g.log_bitmask & MASK_LOG_GPS){
 			Log_Write_GPS();
 		}
-	}
-	#if HIL_MODE == HIL_MODE_ATTITUDE					// don't execute in HIL mode
-		update_altitude();
-	#endif
 
+		#if HIL_MODE == HIL_MODE_ATTITUDE					// only execute in HIL mode
+			update_altitude();
+		#endif
+
+	} else {
+		g_gps->new_data = false;
+	}
 }
 
 
@@ -1226,11 +1232,11 @@ static void update_altitude()
 	#if HIL_MODE == HIL_MODE_ATTITUDE
 		// we are in the SIM, fake out the baro and Sonar
 		int fake_relative_alt = g_gps->altitude - gps_base_alt;
-		int temp_baro_alt	= fake_relative_alt;
-		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
-		old_baro_alt		= temp_baro_alt;
 		baro_alt			= fake_relative_alt;
 		sonar_alt			= fake_relative_alt;
+
+		baro_rate 			= (baro_alt - old_baro_alt) * 5; // 5hz
+		old_baro_alt		= baro_alt;
 
 	#else
 		// This is real life
