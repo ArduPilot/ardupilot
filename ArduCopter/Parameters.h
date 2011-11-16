@@ -77,7 +77,7 @@ public:
 	k_param_heli_ext_gyro_gain,
 	k_param_heli_servo_averaging,
 	k_param_heli_servo_manual,
-	k_param_heli_phase_angle, 
+	k_param_heli_phase_angle,
 	k_param_heli_coll_yaw_effect, // 97
 	#endif
 
@@ -151,7 +151,7 @@ public:
 	k_param_waypoint_mode = 220,
 	k_param_command_total,
 	k_param_command_index,
-	k_param_command_must_index,
+	k_param_command_nav_index,
 	k_param_waypoint_radius,
 	k_param_loiter_radius,
 	k_param_waypoint_speed_max,
@@ -198,7 +198,7 @@ public:
 	AP_Int8		waypoint_mode;
 	AP_Int8		command_total;
 	AP_Int8		command_index;
-	AP_Int8		command_must_index;
+	AP_Int8		command_nav_index;
 	AP_Int8		waypoint_radius;
 	AP_Int16	loiter_radius;
 	AP_Int16	waypoint_speed_max;
@@ -258,7 +258,7 @@ public:
 	AP_Int8		heli_servo_averaging;	// 0 or 1 = no averaging (250hz) for **digital servos**, 2=average of two samples (125hz), 3=three samples (83.3hz) **analog servos**, 4=four samples (62.5hz), 5=5 samples(50hz)
 	AP_Int8		heli_servo_manual;	    // 0 = normal mode, 1 = radio inputs directly control swash.  required for swash set-up
 	AP_Int16	heli_phase_angle;		// 0 to 360 degrees.  specifies mixing between roll and pitch for helis
-	AP_Float	heli_coll_yaw_effect;	// -5.0 ~ 5.0.  Feed forward control from collective to yaw.  1.0 = move rudder right 1% for every 1% of collective above the mid point 
+	AP_Float	heli_coll_yaw_effect;	// -5.0 ~ 5.0.  Feed forward control from collective to yaw.  1.0 = move rudder right 1% for every 1% of collective above the mid point
 	#endif
 
 	// RC channels
@@ -324,7 +324,7 @@ public:
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
 	command_total			(0,							k_param_command_total,					PSTR("WP_TOTAL")),
 	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
-	command_must_index		(0,							k_param_command_must_index,				PSTR("WP_MUST_INDEX")),
+	command_nav_index		(0,							k_param_command_nav_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
 	loiter_radius			(LOITER_RADIUS * 100,	    k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
