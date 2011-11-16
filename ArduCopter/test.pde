@@ -755,6 +755,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
+	/*
    print_hit_enter();
    delay(1000);
     while(1){
@@ -772,6 +773,7 @@ static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
                    return (0);
      }
    }
+   */
  }
 
 /*static int8_t
