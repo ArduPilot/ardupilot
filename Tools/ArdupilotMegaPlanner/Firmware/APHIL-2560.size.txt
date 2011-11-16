@@ -279,8 +279,11 @@
 00000019 r handle_process_nav_cmd()::__c
 00000019 r handle_process_do_command()::__c
 00000019 r handle_process_condition_command()::__c
+00000019 r do_jump()::__c
 0000001a t startup_IMU_ground()
 0000001a r failsafe_short_on_event()::__c
+0000001a r do_jump()::__c
+0000001a r do_jump()::__c
 0000001b r failsafe_short_off_event()::__c
 0000001c W AP_VarS<Matrix3<float> >::unserialize(void*, unsigned int)
 0000001c W AP_VarS<Vector3<float> >::unserialize(void*, unsigned int)
@@ -306,8 +309,8 @@
 00000023 r verify_loiter_turns()::__c
 00000023 r navigate()::__c
 00000026 r init_ardupilot()::__c
-00000026 r init_ardupilot()::__c
 00000027 r change_command(unsigned char)::__c
+00000027 r init_ardupilot()::__c
 00000028 t demo_servos(unsigned char)
 00000028 W AP_VarT<float>::unserialize(void*, unsigned int)
 00000028 W AP_VarT<long>::unserialize(void*, unsigned int)
@@ -410,6 +413,7 @@
 00000180 t send_extended_status1(mavlink_channel_t, unsigned int)
 00000188 T GCS_MAVLINK::data_stream_send(unsigned int, unsigned int)
 00000190 T init_home()
+0000019a t do_jump()
 000001a2 t mavlink_try_send_message(mavlink_channel_t, ap_message, unsigned int)
 000001a2 t set_mode(unsigned char)
 000001a2 T GCS_MAVLINK::update()
@@ -422,10 +426,10 @@
 0000022a t send_gps_raw(mavlink_channel_t)
 00000230 t verify_nav_command()
 0000024c t update_loiter()
+000002d4 t handle_process_do_command()
 000002e4 t read_radio()
 00000320 t __static_initialization_and_destruction_0(int, int)
 0000033a W Parameters::~Parameters()
-00000382 t handle_process_do_command()
 00000492 t init_ardupilot()
 00000920 W Parameters::Parameters()
 0000092b b g

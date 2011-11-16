@@ -343,7 +343,6 @@
 0000000f V AP_IMU_Oilpan::AP_IMU_Oilpan(AP_ADC*, unsigned int)::__c
 00000010 b rc_override
 00000010 r planner_menu_commands
-00000010 r __menu_name__main_menu
 00000010 T GCS_MAVLINK::send_message(ap_message)
 00000010 W AP_VarT<float>::cast_to_float() const
 00000010 W AP_VarT<long>::cast_to_float() const
@@ -352,6 +351,7 @@
 00000010 r Log_Read_Startup()::__c
 00000010 r test_wp(unsigned char, Menu::arg const*)::__c
 00000010 r dump_log(unsigned char, Menu::arg const*)::__c
+00000011 r __menu_name__main_menu
 00000011 r erase_logs(unsigned char, Menu::arg const*)::__c
 00000011 r zero_eeprom()::__c
 00000011 r test_airspeed(unsigned char, Menu::arg const*)::__c
@@ -419,7 +419,10 @@
 00000019 r handle_process_nav_cmd()::__c
 00000019 r handle_process_do_command()::__c
 00000019 r handle_process_condition_command()::__c
+00000019 r do_jump()::__c
 0000001a r failsafe_short_on_event()::__c
+0000001a r do_jump()::__c
+0000001a r do_jump()::__c
 0000001a r Log_Read(int, int)::__c
 0000001b r failsafe_short_off_event()::__c
 0000001c W AP_VarA<float, (unsigned char)6>::unserialize(void*, unsigned int)
@@ -440,12 +443,12 @@
 0000001e r startup_ground()::__c
 0000001f r setup_compass(unsigned char, Menu::arg const*)::__c
 0000001f r init_ardupilot()::__c
-0000001f r Log_Read(int, int)::__c
 0000001f r test_mag(unsigned char, Menu::arg const*)::__c
 00000020 t gcs_send_message(ap_message)
 00000020 r test_current(unsigned char, Menu::arg const*)::__c
 00000020 r report_xtrack()::__c
 00000020 r init_barometer()::__c
+00000020 r Log_Read(int, int)::__c
 00000020 t byte_swap_4
 00000021 r print_log_menu()::__c
 00000021 r print_log_menu()::__c
@@ -475,9 +478,9 @@
 00000026 t print_done()
 00000026 t print_hit_enter()
 00000026 r init_ardupilot()::__c
-00000026 r init_ardupilot()::__c
 00000026 r print_PID(PID*)::__c
 00000027 r change_command(unsigned char)::__c
+00000027 r init_ardupilot()::__c
 00000027 r test_xbee(unsigned char, Menu::arg const*)::__c
 00000028 t main_menu_help(unsigned char, Menu::arg const*)
 00000028 t help_log(unsigned char, Menu::arg const*)
@@ -683,6 +686,7 @@
 0000018c T GCS_MAVLINK::data_stream_send(unsigned int, unsigned int)
 00000190 T init_home()
 00000192 t test_imu(unsigned char, Menu::arg const*)
+0000019a t do_jump()
 000001ae t start_new_log(unsigned char)
 000001b2 t update_crosstrack()
 000001b2 t set_mode(unsigned char)
@@ -706,10 +710,10 @@
 0000024c t update_loiter()
 0000025c t setup_radio(unsigned char, Menu::arg const*)
 00000268 t send_raw_imu3(mavlink_channel_t)
+000002d4 t handle_process_do_command()
 000002e4 t read_radio()
 0000031e t test_mag(unsigned char, Menu::arg const*)
 0000033a W Parameters::~Parameters()
-00000382 t handle_process_do_command()
 000003e6 t read_battery()
 00000436 t print_log_menu()
 000004de t set_servos()
@@ -718,4 +722,4 @@
 00000920 W Parameters::Parameters()
 0000092b b g
 0000149a T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001be4 T loop
+00001cbe T loop
