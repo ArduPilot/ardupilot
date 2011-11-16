@@ -210,10 +210,7 @@ static void init_ardupilot()
 #endif // CLI_ENABLED
 
 	if(g.log_bitmask != 0){
-		//	TODO - Here we will check  on the length of the last log
-		//  We don't want to create a bunch of little logs due to powering on and off
-		byte last_log_num = get_num_logs();
-		start_new_log(last_log_num);
+		start_new_log();
 	}
 
 	// read in the flight switches

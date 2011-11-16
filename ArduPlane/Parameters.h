@@ -69,6 +69,7 @@ public:
         k_param_flap_2_percent,
         k_param_flap_2_speed,
         k_param_num_resets,
+        k_param_log_last_filenumber,
 
 
 		// 110: Telemetry control
@@ -305,6 +306,7 @@ public:
     AP_Int8     reverse_ch2_elevon;
     AP_Int16    num_resets;
     AP_Int16    log_bitmask;
+    AP_Int16	log_last_filenumber;
     AP_Int16    airspeed_cruise;
     AP_Int16    pitch_trim;
     AP_Int16    RTL_altitude;
@@ -410,6 +412,7 @@ public:
         reverse_ch2_elevon      (ELEVON_CH2_REVERSE,        k_param_reverse_ch2_elevon,     PSTR("ELEVON_CH2_REV")),
         num_resets              (0,                         k_param_num_resets,             PSTR("SYS_NUM_RESETS")),
         log_bitmask             (DEFAULT_LOG_BITMASK,		k_param_log_bitmask,            PSTR("LOG_BITMASK")),
+        log_last_filenumber     (0,							k_param_log_last_filenumber,    PSTR("LOG_LASTFILE")),
         airspeed_cruise         (AIRSPEED_CRUISE_CM,        k_param_airspeed_cruise,        PSTR("TRIM_ARSPD_CM")),
         pitch_trim              (0,                         k_param_pitch_trim,             PSTR("TRIM_PITCH_CD")),
         RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,           PSTR("ALT_HOLD_RTL")),

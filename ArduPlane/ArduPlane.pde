@@ -450,7 +450,9 @@ void loop()
 		if (millis() - perf_mon_timer > 20000) {
 			if (mainLoop_count != 0) {
 				if (g.log_bitmask & MASK_LOG_PM)
+					#if HIL_MODE != HIL_MODE_ATTITUDE
 					Log_Write_Performance();
+					#endif
 
 				resetPerfData();
 			}
