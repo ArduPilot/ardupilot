@@ -306,10 +306,11 @@ static int32_t		target_bearing;						// deg * 100 : 0 to 360 location of the pla
 
 static byte	wp_control;								// used to control - navgation or loiter
 
-static byte	command_must_index;						// current command memory location
-static byte	command_may_index;						// current command memory location
-static byte	command_must_ID;						// current command ID
-static byte	command_may_ID;							// current command ID
+static byte	command_nav_index;						// current command memory location
+static byte	prev_nav_index;
+static byte	command_cond_index;						// current command memory location
+//static byte	command_nav_ID;							// current command ID
+//static byte	command_cond_ID;						// current command ID
 static byte wp_verify_byte;							// used for tracking state of navigating waypoints
 
 static float cos_roll_x 	= 1;
@@ -318,7 +319,7 @@ static float cos_yaw_x 		= 1;
 static float sin_pitch_y, sin_yaw_y, sin_roll_y;
 static int32_t initial_simple_bearing;					// used for Simple mode
 static float simple_sin_y, simple_cos_x;
-static byte jump = -10;								// used to track loops in jump command
+static int8_t jump = -10;								// used to track loops in jump command
 static int16_t waypoint_speed_gov;
 
 static float circle_angle;
@@ -463,7 +464,8 @@ static struct 	Location prev_WP;					// last waypoint
 static struct 	Location current_loc;				// current location
 static struct 	Location next_WP;					// next waypoint
 static struct 	Location target_WP;					// where do we want to you towards?
-static struct 	Location next_command;				// command preloaded
+static struct 	Location command_nav_queue;			// command preloaded
+static struct 	Location command_cond_queue;		// command preloaded
 static struct   Location guided_WP;					// guided mode waypoint
 static int32_t 	target_altitude;					// used for
 static boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
@@ -688,7 +690,9 @@ static void medium_loop()
 			// perform next command
 			// --------------------
 			if(control_mode == AUTO){
-				update_commands();
+				if(home_is_set == true && g.command_total > 1){
+					update_commands();
+				}
 			}
 
             if(motor_armed){
