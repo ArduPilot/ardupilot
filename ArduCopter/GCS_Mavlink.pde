@@ -810,7 +810,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				*/
 
 				case MAV_ACTION_CONTINUE:
-					process_next_command();
+					//process_command_queue();
 					result=1;
 					break;
 
@@ -1315,13 +1315,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				if (!waypoint_receiving) break;
 
 
-				Serial.printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
+				//Serial.printf("req: %d, seq: %d, total: %d\n", waypoint_request_i,packet.seq, g.command_total.get());
 
 				// check if this is the requested waypoint
 				if (packet.seq != waypoint_request_i)
 					break;
 
-				set_command_with_index(tell_command, packet.seq);
+				if(packet.seq != 0)
+					set_command_with_index(tell_command, packet.seq);
 
 				// update waypoint receiving state machine
 				waypoint_timelast_receive = millis();
