@@ -16,8 +16,8 @@ static void change_command(uint8_t cmd_index)
 		non_nav_command_ID 	= NO_COMMAND;
 
 		nav_command_index 	= cmd_index - 1;
-		g.command_index.set_and_save(cmd_index - 1);
-		process_next_command();
+		g.command_index.set_and_save(cmd_index);
+		update_commands();
 	}
 }
 
@@ -25,23 +25,21 @@ static void change_command(uint8_t cmd_index)
 // --------------------
 static void update_commands(void)
 {
-	if(home_is_set == false){
-		return;	// don't do commands
-	}
-
 	if(control_mode == AUTO){
-		process_next_command();
+		if(home_is_set == true && g.command_total > 1){
+			process_next_command();
+		}
 	}									// Other (eg GCS_Auto) modes may be implemented here
 }
 
 static void verify_commands(void)
 {
 	if(verify_nav_command()){
-		nav_command_ID 	= NO_COMMAND;
+		nav_command_ID = NO_COMMAND;
 	}
 
 	if(verify_condition_command()){
-		non_nav_command_ID		= NO_COMMAND;
+		non_nav_command_ID = NO_COMMAND;
 	}
 }
 
@@ -63,7 +61,9 @@ static void process_next_command()
 			nav_command_index++;
 			temp = get_cmd_with_index(nav_command_index);
 		}
+
 		gcs_send_text_fmt(PSTR("Nav command index updated to #%i"),nav_command_index);
+
 		if(nav_command_index > g.command_total){
 			// we are out of commands!
 			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
@@ -99,12 +99,14 @@ static void process_next_command()
 			g.command_index.set_and_save(nav_command_index);
 			non_nav_command_index = nav_command_index;
 			non_nav_command_ID = WAIT_COMMAND;
-		gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+			gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+
 		} else {								// The next command is a non-nav command.  Prepare to execute it.
 			g.command_index.set_and_save(non_nav_command_index);
 			next_nonnav_command = temp;
 			non_nav_command_ID = next_nonnav_command.id;
-		gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+			gcs_send_text_fmt(PSTR("Non-Nav command ID updated to #%i"),non_nav_command_ID);
+
 			if (g.log_bitmask & MASK_LOG_CMD) {
 				Log_Write_Cmd(g.command_index, &next_nonnav_command);
 			}

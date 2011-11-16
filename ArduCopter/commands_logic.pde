@@ -453,7 +453,7 @@ static bool verify_loiter_time()
 
 static bool verify_loiter_turns()
 {
-	Serial.printf("loiter_sum: %d \n", loiter_sum);
+	//Serial.printf("loiter_sum: %d \n", loiter_sum);
 	// have we rotated around the center enough times?
 	// -----------------------------------------------
 	if(abs(loiter_sum) > loiter_total) {
@@ -582,7 +582,7 @@ static bool verify_wait_delay()
 
 static bool verify_change_alt()
 {
-	Serial.printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
+	//Serial.printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
 	if (condition_start < next_WP.alt){
 		// we are going higer
 		if(current_loc.alt > next_WP.alt){
@@ -601,7 +601,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
-	Serial.printf("cond dist :%d\n", (int)condition_value);
+	//Serial.printf("cond dist :%d\n", (int)condition_value);
 	if (wp_distance < condition_value){
 		condition_value = 0;
 		return true;
@@ -611,7 +611,7 @@ static bool verify_within_distance()
 
 static bool verify_yaw()
 {
-	Serial.printf("vyaw %d\n", (int)(nav_yaw/100));
+	//Serial.printf("vyaw %d\n", (int)(nav_yaw/100));
 
 	if((millis() - command_yaw_start_time) > command_yaw_time){
 		// time out
