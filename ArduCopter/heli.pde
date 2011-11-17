@@ -6,6 +6,7 @@
 #define HELI_SERVO_AVERAGING_ANALOG  2  // 125Hz
 
 static float heli_throttle_scaler = 0;
+static bool heli_swash_initialised = false;
 
 // heli_servo_averaging:
 //   0 or 1 = no averaging, 250hz
@@ -64,6 +65,9 @@ static void heli_init_swash()
 	    g.heli_servo_averaging = 0;
 		g.heli_servo_averaging.save();
 	}
+	
+	// mark swash as initialised
+	heli_swash_initialised = true;
 }
 
 static void heli_move_servos_to_mid()
@@ -83,17 +87,29 @@ static void heli_move_swash(int roll_out, int pitch_out, int coll_out, int yaw_o
 {	
     int yaw_offset = 0;
 	
-    // regular flight mode checks
-	if( g.heli_servo_manual != 1) {
+	if( g.heli_servo_manual == 1 ) {  // are we in manual servo mode? (i.e. swash set-up mode)?
+	
+	    // we must be in set-up mode so mark swash as uninitialised
+	    heli_swash_initialised = false;
+		
+	}else{  // regular flight mode
+		
+		// check if we need to reinitialise the swash
+		if( !heli_swash_initialised ) {
+			heli_init_swash();
+		}
+	
 	    // ensure values are acceptable:
 		roll_out = constrain(roll_out, (int)-g.heli_roll_max, (int)g.heli_roll_max);
 		pitch_out = constrain(pitch_out, (int)-g.heli_pitch_max, (int)g.heli_pitch_max);
 		coll_out = constrain(coll_out, (int)g.heli_coll_min, (int)g.heli_coll_max);
 		
 		// rudder feed forward based on collective
+		#if HIL_MODE == HIL_MODE_DISABLED  // don't do rudder feed forward in simulator
 		if( !g.heli_ext_gyro_enabled ) {
 			yaw_offset = g.heli_coll_yaw_effect * (coll_out - g.heli_coll_mid);
 		}
+		#endif
 	}
 
 	// swashplate servos
