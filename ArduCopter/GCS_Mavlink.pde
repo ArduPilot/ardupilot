@@ -1653,6 +1653,7 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float();
     if (!isnan(value)) {
         char param_name[ONBOARD_PARAM_NAME_LENGTH];         /// XXX HACK
+        memset(param_name, 0, sizeof(param_name));
         vp->copy_name(param_name, sizeof(param_name));
 
         mavlink_msg_param_value_send(
