@@ -691,7 +691,7 @@ static void medium_loop()
 			// --------------------
 			if(control_mode == AUTO){
 				if(home_is_set == true && g.command_total > 1){
-					update_commands();
+					update_commands(true);
 				}
 			}
 
