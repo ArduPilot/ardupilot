@@ -132,8 +132,14 @@ static AP_Int8		*flight_modes = &g.flight_mode1;
 
 // real sensors
 static AP_ADC_ADS7844          adc;
+
+#ifdef DESKTOP_BUILD
+APM_BMP085_HIL_Class    barometer;
+AP_Compass_HIL          compass;
+#else
 static APM_BMP085_Class        barometer;
 static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+#endif
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO

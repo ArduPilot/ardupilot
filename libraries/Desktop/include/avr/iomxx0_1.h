@@ -834,7 +834,12 @@
 #define TCNT4H  _SFR_MEM8(0xA5)
 
 /* Combine ICR4L and ICR4H */
+#ifdef DESKTOP_BUILD
+#include "../support/sitl_rc.h"
+extern struct RC_ICR4 ICR4;
+#else
 #define ICR4    _SFR_MEM16(0xA6)
+#endif
 
 #define ICR4L   _SFR_MEM8(0xA6)
 #define ICR4H   _SFR_MEM8(0xA7)
@@ -1061,7 +1066,12 @@
 # define UBRR2L _SFR_MEM8(0xD4)
 # define UBRR2H _SFR_MEM8(0xD5)
 
+#ifdef DESKTOP_BUILD
+#include "../support/sitl_adc.h"
+extern struct ADC_UDR2 UDR2;
+#else
 # define UDR2   _SFR_MEM8(0XD6)
+#endif
 
 #endif /* __ATmegaxx0__ */
 
