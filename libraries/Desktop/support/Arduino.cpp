@@ -38,9 +38,14 @@ long unsigned int micros(void)
 		       (desktop_state.sketch_start_time.tv_usec*1.0e-6)));
 }
 
+void delayMicroseconds(unsigned usec)
+{
+	usleep(usec);
+}
+
 void delay(long unsigned msec)
 {
-	usleep(msec*1000);
+	delayMicroseconds(msec*1000);
 }
 
 size_t strlcat_P(char *d, PGM_P s, size_t bufsize)

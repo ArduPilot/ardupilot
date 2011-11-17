@@ -156,8 +156,13 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 	AP_ADC_ADS7844          adc;
     #endif
 
+#ifdef DESKTOP_BUILD
+    APM_BMP085_HIL_Class    barometer;
+    AP_Compass_HIL          compass;
+#else
 	APM_BMP085_Class        barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+#endif
 
   #ifdef OPTFLOW_ENABLED
     AP_OpticalFlow_ADNS3080 optflow;
