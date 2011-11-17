@@ -2,22 +2,10 @@
 
 static void init_commands()
 {
-	// Zero is home, the curren command
-    g.command_index = 0;
-
-    // This are registers for the current may and must commands
-    // setting to zero will allow them to be written to by new commands
-	command_nav_index	= NO_COMMAND;
-	command_cond_index	= NO_COMMAND;
-	prev_nav_index 		= NO_COMMAND;
-
-	// clear the command queue
-	clear_command_queue();
-}
-
-// forces the loading of a new command
-// queue is emptied after a new command is processed
-static void clear_command_queue(){
+    g.command_index 		= NO_COMMAND;
+	command_nav_index		= NO_COMMAND;
+	command_cond_index		= NO_COMMAND;
+	prev_nav_index 			= NO_COMMAND;
 	command_cond_queue.id 	= NO_COMMAND;
 	command_nav_queue.id 	= NO_COMMAND;
 }

@@ -10,28 +10,24 @@ static void change_command(uint8_t cmd_index)
 	// load command
 	struct Location temp = get_cmd_with_index(cmd_index);
 
+	//Serial.printf("loading cmd: %d with id:%d\n", cmd_index, temp.id);
+
 	// verify it's a nav command
 	if (temp.id > MAV_CMD_NAV_LAST ){
-		gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
+		//gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 
 	} else {
 		//Serial.printf("APM:New cmd Index: %d\n", cmd_index);
-		command_cond_index 		= NO_COMMAND;
-		command_cond_queue.id 	= NO_COMMAND;
-
-		command_nav_index 		= NO_COMMAND;
-		command_nav_queue.id 	= NO_COMMAND;
-
-		// we save one step back, because we add one in update
-		command_nav_index 		= cmd_index-1;
+		init_commands();
+		command_nav_index 		= cmd_index;
 		prev_nav_index 			= command_nav_index;
-		update_commands();
+		update_commands(false);
 	}
 }
 
 // called by 10 Hz loop
 // --------------------
-static void update_commands(void)
+static void update_commands(bool increment)
 {
 	// A: if we do not have any commands there is nothing to do
 	// B: We have completed the mission, don't redo the mission
@@ -45,7 +41,9 @@ static void update_commands(void)
 		if (command_nav_index < (g.command_total -1)) {
 
 			// load next index
-			command_nav_index++;
+			if (increment)
+				command_nav_index++;
+
 			command_nav_queue = get_cmd_with_index(command_nav_index);
 
 			if (command_nav_queue.id <= MAV_CMD_NAV_LAST ){

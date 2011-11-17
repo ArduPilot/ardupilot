@@ -660,25 +660,29 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
+	//Serial.printf("do Jump: %d\n", jump);
+
 	if(jump == -10){
+		//Serial.printf("Fresh Jump\n");
+		// we use a locally stored index for jump
 		jump = command_cond_queue.lat;
 	}
+	//Serial.printf("Jumps left: %d\n",jump);
 
 	if(jump > 0) {
+		//Serial.printf("Do Jump to %d\n",command_cond_queue.p1);
 		jump--;
-		command_nav_index 	= 0;
-		command_cond_index 	= 0;
-
-		// set pointer to desired index
-		g.command_index 	= command_cond_queue.p1 - 1;
+		change_command(command_cond_queue.p1);
 
 	} else if (jump == 0){
+		//Serial.printf("Did last jump\n");
 		// we're done, move along
-		jump = -10;
+		jump = -11;
 
 	} else if (jump == -1) {
+		//Serial.printf("jumpForever\n");
 		// repeat forever
-	    g.command_index 	= command_cond_queue.p1 - 1;
+		change_command(command_cond_queue.p1);
 	}
 }
 
