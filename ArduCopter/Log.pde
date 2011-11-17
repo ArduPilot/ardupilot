@@ -852,9 +852,9 @@ static void Log_Read_Attitude()
 	int16_t temp1 	= DataFlash.ReadInt();
 	int16_t temp2 	= DataFlash.ReadInt();
 	uint16_t temp3 	= DataFlash.ReadInt();
-	int16_t temp4 	= DataFlash.ReadByte();
-	int16_t temp5 	= DataFlash.ReadByte();
-	int16_t temp6 	= DataFlash.ReadByte();
+	int16_t temp4 	= DataFlash.ReadInt();
+	int16_t temp5 	= DataFlash.ReadInt();
+	int16_t temp6 	= DataFlash.ReadInt();
 
 							// 1   2   3    4   5   6
 	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, %d\n"),
