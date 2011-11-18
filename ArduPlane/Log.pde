@@ -193,39 +193,24 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 }
 
 
+// This function determines the number of whole or partial log files in the DataFlash
+// Wholly overwritten files are (of course) lost.
 static byte get_num_logs(void)
 {
 	uint16_t lastpage;
 	uint16_t last;
 	uint16_t first;
-/*
-for (int counter=1;counter<=4096;counter++){
-DataFlash.StartRead(counter);
-Serial.print(counter, DEC);							Serial.print("\t");
-Serial.print(DataFlash.GetFileNumber(), DEC);		Serial.print("\t");
-Serial.println(DataFlash.GetFilePage(), DEC);		
-}
-*/
-
-
-
-
 
 	if(g.log_last_filenumber < 1) return 0;
 	
 	DataFlash.StartRead(1);
-//Serial.print("getfilenumber: ");
-//Serial.println(DataFlash.GetFileNumber(), DEC);
 	if(DataFlash.GetFileNumber() == 0XFFFF) return 0;
 	
-	lastpage = find_last_log_page(g.log_last_filenumber);
-//Serial.println(lastpage, DEC);
+	lastpage = find_last();
 	DataFlash.StartRead(lastpage);
 	last = DataFlash.GetFileNumber();
-//Serial.println(last, DEC);
 	DataFlash.StartRead(lastpage + 2);
 	first = DataFlash.GetFileNumber();
-//Serial.println(first, DEC);
 	if(first == 0xFFFF) {
 		DataFlash.StartRead(1);
 		first = DataFlash.GetFileNumber();
@@ -238,24 +223,23 @@ Serial.println(DataFlash.GetFilePage(), DEC);
 	}
 }
 	
-
+// This function starts a new log file in the DataFlash
 static void start_new_log()
 {
-
 uint16_t	last_page;
 
-	//Serial.print("last filenumber: ");	Serial.println(g.log_last_filenumber, DEC);
 	if(g.log_last_filenumber < 1) {
 		last_page = 0;
 	} else {
-		last_page = find_last_log_page(g.log_last_filenumber);
+		last_page = find_last();
 	}
 	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
-	//Serial.print("last filenumber: ");	Serial.println(g.log_last_filenumber, DEC);
 	DataFlash.SetFileNumber(g.log_last_filenumber);
 	DataFlash.StartWrite(last_page + 1);
 }
 
+// This function finds the first and last pages of a log file
+// The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
 static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 {
 	int num = get_num_logs();
@@ -284,9 +268,21 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 	}
 	if(start_page == DF_LAST_PAGE+1 || start_page == 0) start_page=1;
 }
-			
 		
+// This function finds the last page of the last file
+// It also cleans up in the situation where a file was initiated, but no pages written
+static int find_last(void)
+{
+	int16_t num;
+	do 
+	{
+		num = find_last_log_page(g.log_last_filenumber);
+		if (num == -1) g.log_last_filenumber.set_and_save(g.log_last_filenumber - 1);
+	} while (num == -1);
+	return num;
+}
 
+// This function finds the last page of a particular log file
 static int find_last_log_page(uint16_t log_number)
 {
 	int16_t bottom_page;
@@ -299,11 +295,11 @@ static int find_last_log_page(uint16_t log_number)
 	int16_t look_page_file;
 	int16_t look_page_filepage;
 	int16_t check;
-//Serial.print("in find last log page looking for: ");	Serial.println(log_number, DEC);
+	bool	XLflag = false;
+	
 	// First see if the logs are empty
 	DataFlash.StartRead(1);
 	if(DataFlash.GetFileNumber() == 0XFFFF) {
-	//Serial.println("not here");
 	return 0;
 	}
 	
@@ -311,23 +307,19 @@ static int find_last_log_page(uint16_t log_number)
 	DataFlash.StartRead(DF_LAST_PAGE);
 	if(DataFlash.GetFileNumber() == 0xFFFF)
 	{
-	// This case is that we have not wrapped the top of the dataflash
-	
+	// This case is that we have not wrapped the top of the dataflash	
 		top_page = DF_LAST_PAGE;
 		bottom_page = 1;
 		while((top_page - bottom_page) > 1) {
 			look_page = (top_page + bottom_page) / 2;
 			DataFlash.StartRead(look_page);
-//Serial.print("look page: ");
-//Serial.print(look_page, DEC);
-//Serial.print("\t ");
-//Serial.println(DataFlash.GetFileNumber(), DEC);
 			if(DataFlash.GetFileNumber() > log_number)
 				top_page = look_page;
 			else 
 				bottom_page = look_page;
 		}
 		 return bottom_page;
+		 
 	} else {
 	// The else case is that the logs do wrap the top of the dataflash
 		bottom_page = 1;
@@ -339,18 +331,45 @@ static int find_last_log_page(uint16_t log_number)
 		top_page_file = DataFlash.GetFileNumber();
 		top_page_filepage = DataFlash.GetFilePage();
 		
-		// Check is we have exactly filled the dataflash but not wrapped
-		if(top_page_file == log_number && bottom_page_file != log_number) 
-		{
+		// Check is we have exactly filled the dataflash but not wrapped.  If so we can exit quickly.
+		if(top_page_file == log_number && bottom_page_file != log_number) {
 		return top_page_file;
 		}
 		
 		// Check if the top is 1 file higher than we want.  If so we can exit quickly.
-		if(top_page_file == log_number+1)
-		{
-		//Serial.println("There");
+		if(top_page_file == log_number+1) {
 		return top_page - top_page_filepage;
 		}
+		
+		// Check if the file has partially overwritten itself
+		if(top_page_filepage >= DF_LAST_PAGE) {
+			XLflag = true;
+		} else {
+			top_page = top_page - top_page_filepage;
+			DataFlash.StartRead(top_page);
+			top_page_file = DataFlash.GetFileNumber();
+		}
+		if(top_page_file == log_number) {
+			bottom_page = top_page;
+			top_page = DF_LAST_PAGE;
+			DataFlash.StartRead(top_page);
+			top_page_filepage = DataFlash.GetFilePage();
+			if(XLflag) bottom_page = 1;
+
+			while((top_page - bottom_page) > 1) {
+				look_page = (top_page + bottom_page) / 2;
+				DataFlash.StartRead(look_page);
+				if(DataFlash.GetFilePage() < top_page_filepage)
+				{
+					top_page = look_page;
+					top_page_filepage = DataFlash.GetFilePage();
+				} else { 
+					bottom_page = look_page;
+				}
+			}
+			return bottom_page;
+		}
+		
 
 		// Step down through the files to find the one we want
 		bottom_page = top_page;
@@ -363,26 +382,23 @@ static int find_last_log_page(uint16_t log_number)
 			DataFlash.StartRead(bottom_page);
 			bottom_page_file = DataFlash.GetFileNumber();
 			bottom_page_filepage = DataFlash.GetFilePage();
-//Serial.print("Page, File and Pages: ");	//Serial.print(bottom_page, DEC);	Serial.print("\t");Serial.print(bottom_page_file, DEC);	Serial.print("\t");		Serial.println(bottom_page_filepage);
-		} while (bottom_page_file != log_number);
-Serial.print("bottom Page, File and Pages: ");	Serial.print(bottom_page, DEC);	Serial.print("\t");Serial.print(bottom_page_file, DEC);	Serial.print("\t");		Serial.println(bottom_page_filepage);
-		
-		// Check if we have wrapped multiple times
-		if(bottom_page == 1 && bottom_page_file == log_number) return DF_LAST_PAGE;
+		} while (bottom_page_file != log_number && bottom_page != 1);
 		
 		// Deal with stepping down too far due to overwriting a file
 		while((top_page - bottom_page) > 1) {
 			look_page = (top_page + bottom_page) / 2;
 			DataFlash.StartRead(look_page);
-//Serial.print("look page2: ");
-//Serial.print(look_page, DEC);
-//Serial.print("\t ");
-//Serial.println(DataFlash.GetFileNumber(), DEC);
 			if(DataFlash.GetFileNumber() < log_number)
 				top_page = look_page;
 			else 
 				bottom_page = look_page;
 		}
+		
+		// The -1 return is for the case where a very short power up increments the log
+		// number counter but no log file is actually created.  This happens if power is 
+		// removed before the first page is written to flash.
+		if(bottom_page ==1 && DataFlash.GetFileNumber() != log_number) return -1;
+		
 		 return bottom_page;
 	}
 }
@@ -807,6 +823,7 @@ static int Log_Read_Process(int start_page, int end_page)
 			}
 		page = DataFlash.GetPage();
 		}
+	return packet_count;
 }
 
 #else // LOGGING_ENABLED
