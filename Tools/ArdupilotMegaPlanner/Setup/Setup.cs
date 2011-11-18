@@ -15,6 +15,8 @@ namespace ArdupilotMega.Setup
         bool run = false;
         bool startup = false;
 
+        bool inpwmdetect = false;
+
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
 
@@ -73,6 +75,9 @@ namespace ArdupilotMega.Setup
 
             if (tabControl1.SelectedTab == tabHeli)
             {
+                if (MainV2.comPort.param["HSV_MAN"].ToString() == "0")
+                    return;
+
                 if (HS3.minline == 0)
                     HS3.minline = 2200;
 
@@ -84,6 +89,23 @@ namespace ArdupilotMega.Setup
 
                 HS4.minline = Math.Min(HS4.minline, (int)MainV2.cs.ch4in);
                 HS4.maxline = Math.Max(HS4.maxline, (int)MainV2.cs.ch4in);
+
+                if (!inpwmdetect)
+                {
+                    HS3_Paint(null, null);
+                    HS4_Paint(null, null);
+                }
+                else
+                {
+                    try
+                    {
+                        HS3.minline = int.Parse(COL_MIN_.Text);
+                        HS3.maxline = int.Parse(COL_MAX_.Text);
+                        HS4.maxline = int.Parse(HS4_MIN.Text);
+                        HS4.minline = int.Parse(HS4_MAX.Text);
+                    }
+                    catch { }
+                }
             }
 
         }
@@ -442,6 +464,12 @@ namespace ArdupilotMega.Setup
                             }
                         }
                     }
+
+                    HS1_REV.Checked = MainV2.comPort.param["HS1_REV"].ToString() == "-1";
+                    HS2_REV.Checked = MainV2.comPort.param["HS2_REV"].ToString() == "-1";
+                    HS3_REV.Checked = MainV2.comPort.param["HS3_REV"].ToString() == "-1";
+                    HS4_REV.Checked = MainV2.comPort.param["HS4_REV"].ToString() == "-1";
+
                 }
                 catch { }
                 startup = false;
@@ -848,7 +876,10 @@ namespace ArdupilotMega.Setup
 
             try
             {
+                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
+                System.Threading.Thread.Sleep(100);
+                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
 
             }
             catch { MessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
@@ -868,7 +899,10 @@ namespace ArdupilotMega.Setup
 
             try
             {
+                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
+                System.Threading.Thread.Sleep(100);
+                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
             }
             catch { MessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
         }
@@ -887,7 +921,10 @@ namespace ArdupilotMega.Setup
 
             try
             {
+                MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                 MainV2.comPort.setParam(((TextBox)sender).Name, test);
+                System.Threading.Thread.Sleep(100);
+                MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
             }
             catch { MessageBox.Show("Set " + ((TextBox)sender).Name + " failed"); }
         }
@@ -910,56 +947,57 @@ namespace ArdupilotMega.Setup
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS2_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS3_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
         }
 
         private void HS4_REV_CheckedChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : -1.0f);
+            MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == false ? 1.0f : -1.0f);
+            HS4.reverse = !HS4.reverse;
         }
 
-        private void HS1_TRIM_Scroll(object sender, EventArgs e)
+        private void HS1_TRIM_ValueChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((MyTrackBar)sender).Name, (float)((MyTrackBar)sender).Value);
+            MainV2.comPort.setParam(((NumericUpDown)sender).Name, (float)((NumericUpDown)sender).Value);
         }
 
-        private void HS2_TRIM_Scroll(object sender, EventArgs e)
+        private void HS2_TRIM_ValueChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((MyTrackBar)sender).Name, (float)((MyTrackBar)sender).Value);
+            MainV2.comPort.setParam(((NumericUpDown)sender).Name, (float)((NumericUpDown)sender).Value);
         }
 
-        private void HS3_TRIM_Scroll(object sender, EventArgs e)
+        private void HS3_TRIM_ValueChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((MyTrackBar)sender).Name, (float)((MyTrackBar)sender).Value);
+            MainV2.comPort.setParam(((NumericUpDown)sender).Name, (float)((NumericUpDown)sender).Value);
         }
 
-        private void HS4_TRIM_Scroll(object sender, EventArgs e)
+        private void HS4_TRIM_ValueChanged(object sender, EventArgs e)
         {
             if (startup)
                 return;
-            MainV2.comPort.setParam(((MyTrackBar)sender).Name, (float)((MyTrackBar)sender).Value);
+            MainV2.comPort.setParam(((NumericUpDown)sender).Name, (float)((NumericUpDown)sender).Value);
         }
 
         private void ROL_MAX__Validating(object sender, CancelEventArgs e)
@@ -1010,19 +1048,6 @@ namespace ArdupilotMega.Setup
             if (startup)
                 return;
             MainV2.comPort.setParam(((CheckBox)sender).Name, ((CheckBox)sender).Checked == true ? 1.0f : 0.0f);
-        }
-
-        private void BUT_saveheliconfig_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                MainV2.comPort.setParam("COL_MIN_", HS3.minline);
-                MainV2.comPort.setParam("COL_MAX_", HS3.maxline);
-
-                MainV2.comPort.setParam("HS4_MIN", HS4.minline);
-                MainV2.comPort.setParam("HS4_MAX", HS4.maxline);
-            }
-            catch { MessageBox.Show("Failed to set min/max"); }
         }
 
         private void BUT_levelac2_Click(object sender, EventArgs e)
@@ -1106,6 +1131,128 @@ namespace ArdupilotMega.Setup
         private void CHK_revch4_CheckedChanged(object sender, EventArgs e)
         {
             reverseChannel("RC4_REV", ((CheckBox)sender).Checked, BARyaw);
+        }
+
+        private void BUT_swash_manual_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
+                {
+                    MainV2.comPort.setParam("COL_MIN_", int.Parse(COL_MIN_.Text));
+                    MainV2.comPort.setParam("COL_MAX_", int.Parse(COL_MAX_.Text));
+                    MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                    BUT_swash_manual.Text = "Manual";
+                }
+                else
+                {
+                    COL_MAX_.Text = "1500";
+                    COL_MIN_.Text = "1500";
+                    MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                    BUT_swash_manual.Text = "Save";
+                }
+            }
+            catch { MessageBox.Show("Failed to set HSV_MAN"); }
+        }
+
+        private void BUT_HS4save_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (MainV2.comPort.param["HSV_MAN"].ToString() == "1")
+                {
+                    MainV2.comPort.setParam("HS4_MIN", int.Parse(HS4_MIN.Text));
+                    MainV2.comPort.setParam("HS4_MAX", int.Parse(HS4_MAX.Text));
+                    MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
+                    BUT_HS4save.Text = "Manual";
+                }
+                else
+                {
+                    HS4_MIN.Text = "1500";
+                    HS4_MAX.Text = "1500";
+                    MainV2.comPort.setParam("HSV_MAN", 1); // randy request
+                    BUT_HS4save.Text = "Save";
+                }
+            }
+            catch { MessageBox.Show("Failed to set HSV_MAN"); }
+        }
+
+        private void tabHeli_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void HS4_Paint(object sender, PaintEventArgs e)
+        {
+            try
+            {
+                if (int.Parse(HS4_MIN.Text) > HS4.minline)
+                    HS4_MIN.Text = HS4.minline.ToString();
+                if (int.Parse(HS4_MAX.Text) < HS4.maxline)
+                    HS4_MAX.Text = HS4.maxline.ToString();
+            } catch {}
+        }
+
+        private void HS3_Paint(object sender, PaintEventArgs e)
+        {
+            try
+            {
+                if (int.Parse(COL_MIN_.Text) > HS3.minline)
+                    COL_MIN_.Text = HS3.minline.ToString();
+                if (int.Parse(COL_MAX_.Text) < HS3.maxline)
+                    COL_MAX_.Text = HS3.maxline.ToString();
+            }
+            catch { }
+        }
+
+        private void COL_MAX__Enter(object sender, EventArgs e)
+        {
+            inpwmdetect = true;
+        }
+
+        private void COL_MIN__Enter(object sender, EventArgs e)
+        {
+            inpwmdetect = true;
+        }
+
+        private void COL_MAX__Leave(object sender, EventArgs e)
+        {
+            inpwmdetect = false;
+        }
+
+        private void COL_MIN__Leave(object sender, EventArgs e)
+        {
+            inpwmdetect = false;
+        }
+
+        private void HS4_MIN_Enter(object sender, EventArgs e)
+        {
+            inpwmdetect = true;
+        }
+
+        private void HS4_MIN_Leave(object sender, EventArgs e)
+        {
+            inpwmdetect = false;
+        }
+
+        private void HS4_MAX_Enter(object sender, EventArgs e)
+        {
+            inpwmdetect = true;
+        }
+
+        private void HS4_MAX_Leave(object sender, EventArgs e)
+        {
+            inpwmdetect = false;
+        }
+
+        private void PWM_Validating(object sender, CancelEventArgs e)
+        {
+            Control temp = (Control)(sender);
+
+            if (int.Parse(temp.Text) < 900)
+                temp.Text = "900";
+            if (int.Parse(temp.Text) > 2100)
+                temp.Text = "2100";
         }
     }
 }

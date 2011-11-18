@@ -143,7 +143,7 @@ enum gcs_severity {
 #define LOG_STARTUP_MSG 		0x0A
 #define TYPE_AIRSTART_MSG		0x00
 #define TYPE_GROUNDSTART_MSG	0x01
-#define MAX_NUM_LOGS			50
+#define MAX_NUM_LOGS			100
 
 #define MASK_LOG_ATTITUDE_FAST 	(1<<0)
 #define MASK_LOG_ATTITUDE_MED 	(1<<1)

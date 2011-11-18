@@ -70,7 +70,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"tri",			test_tri},
 	{"current",		test_current},
 	{"relay",		test_relay},
-	{"waypoints",	test_wp},
+	{"wp",			test_wp},
 	//{"nav",			test_nav},
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"altitude",	test_baro},
@@ -755,6 +755,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
+	/*
    print_hit_enter();
    delay(1000);
     while(1){
@@ -772,6 +773,7 @@ static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
                    return (0);
      }
    }
+   */
  }
 
 /*static int8_t

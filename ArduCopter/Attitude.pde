@@ -140,14 +140,23 @@ static void reset_hold_I(void)
 // Keeps outdated data out of our calculations
 static void reset_nav(void)
 {
-	nav_throttle 		= 0;
-	invalid_throttle 	= true;
+	nav_throttle 			= 0;
+	invalid_throttle 		= true;
 
 	g.pi_nav_lat.reset_I();
 	g.pi_nav_lon.reset_I();
 
-	long_error = 0;
-	lat_error  = 0;
+	circle_angle			= 0;
+	crosstrack_error 		= 0;
+	nav_lat 				= 0;
+	nav_lon 				= 0;
+	nav_roll 				= 0;
+	nav_pitch 				= 0;
+	target_bearing 			= 0;
+	wp_distance 			= 0;
+	wp_totalDistance 		= 0;
+	long_error 				= 0;
+	lat_error  				= 0;
 }
 
 

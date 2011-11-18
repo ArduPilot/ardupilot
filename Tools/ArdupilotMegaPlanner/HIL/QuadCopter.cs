@@ -112,7 +112,7 @@ namespace ArdupilotMega.HIL
             double pitch_accel = (m[2] - m[3]) * 5000.0;
             double yaw_accel = -((m[2] + m[3]) - (m[0] + m[1])) * 400.0;
 
-            // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
             //# update rotational rates
             roll_rate += roll_accel * delta_time.TotalSeconds;
@@ -225,11 +225,19 @@ namespace ArdupilotMega.HIL
 #else
             gps.alt = ((float)(altitude));
             gps.fix_type = 3;
-            gps.v = ((float)Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)));
-            gps.hdg = (float)(((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360); ;
+
             gps.lat = ((float)latitude);
             gps.lon = ((float)longitude);
             gps.usec = ((ulong)DateTime.Now.Ticks);
+
+            //Random rand = new Random();
+            //gps.alt += (rand.Next(100) - 50) / 100.0f;
+            //gps.lat += (float)((rand.NextDouble() - 0.5) * 0.00005);
+            //gps.lon += (float)((rand.NextDouble() - 0.5) * 0.00005);
+            //gps.v += (float)(rand.NextDouble() - 0.5) * 1.0f;
+
+            gps.v = ((float)Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y)));
+            gps.hdg = (float)(((Math.Atan2(velocity.Y, velocity.X) * rad2deg) + 360) % 360); ;
 
             asp.airspeed = gps.v;
 #endif
@@ -244,7 +252,7 @@ namespace ArdupilotMega.HIL
 
             MainV2.comPort.sendPacket(asp);
 
-            if (framecount % 10 == 0)
+            if (framecount % 12 == 0)
             {// 50 / 10 = 5 hz
                 MainV2.comPort.sendPacket(gps);
                 //Console.WriteLine(DateTime.Now.Millisecond + " GPS" );

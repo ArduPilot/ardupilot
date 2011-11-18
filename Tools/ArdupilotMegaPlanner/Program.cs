@@ -24,9 +24,10 @@ namespace ArdupilotMega
 
             Application.Idle += new EventHandler(Application_Idle);
 
+            MessageBox.Show("NOTE: This version may break advanced mission scripting");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Camera());
             Application.Run(new MainV2());
         }
 

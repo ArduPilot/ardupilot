@@ -1,0 +1,78 @@
+QGC WPL 110
+#s	fr ac	cmd   	p1			p2       	p3			p4			lat			lon			alt			continue
+0	1	3	16		0.000000	0.000000	0.000000	0.000000	-35.362881	149.165222	582			1
+
+# takeoff
+1	0	3	22		0.000000	0.000000	0.000000	0.000000	-35.362881	149.165222	20			1
+
+# MAV_CMD_NAV_WAYPOINT  A
+#					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue
+2	0	3	16		0			3			0			0			-35.363949  149.164151	20			1
+
+# MAV_CMD_CONDITION_YAW
+#					delta deg	sec			Dir	1=CW	Rel/Abs		Lat			lon			Alt			continue
+3	0	3	115		640			20			1			1			0  			0			0			1
+
+# MAV_CMD_NAV_LOITER_TIME
+#					seconds		empty		rad			Yaw	per		Lat			lon			Alt			continue
+4	0	3	19		35			20			0			1			0  			0			0			1
+
+# MAV_CMD_NAV_WAYPOINT	B
+#					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue
+5	0	3	16		0			3			0			0			-35.363287  149.164958	20			1
+
+# MAV_CMD_NAV_LOITER_TURNS
+#					Turns											lat			lon			alt			continue
+6	0	3	18		2			0			0			0			0  			0			0			1
+
+# MAV_CMD_DO_SET_ROI, MAV_ROI_WPNEXT = 1
+#					MAV_ROI		WP index	ROI index				lat			lon			alt			continue
+7	0	3	201		1			0			0			0			0  			0			0			1
+
+# MAV_CMD_NAV_WAYPOINT	C
+#					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue
+8	0	3	16		0			3			0			0			-35.364865  149.164952	20			1
+
+# MAV_CMD_CONDITION_DISTANCE
+#					meters																				continue
+9	0	3	114		100			0			0			0			0  			0			0			1
+
+# MAV_CMD_CONDITION_CHANGE_ALT
+#					climb_rate																alt			continue
+10	0	3	113		0			0			0			0			0  			0			40			1
+
+# MAV_CMD_NAV_WAYPOINT D
+#					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue
+11	0	3	16		0			3			0			0			-35.363165  149.163905	20			1
+
+# MAV_CMD_NAV_WAYPOINT E
+#					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue
+12	0	3	16		0			3			0			0			-35.363611  149.163583	20			1
+
+# MAV_CMD_DO_JUMP
+#					seq#		repeat		.			.			.			.			.			continue
+13	0	3	177		11			3			0			0			0			0			0			1
+
+# MAV_CMD_NAV_RETURN_TO_LAUNCH
+#											.			.			.			.			alt			continue
+14	0	3	20		0			0			0			0			0 			0			20			1
+
+# MAV_CMD_NAV_LAND
+#
+15	0	3	21		0			0			0			0			0			0			0			1
+
+# WP_total = 10
+# 0 = home
+
+# seq
+# current
+# frame
+# command
+# param1,
+# param2,
+# param3
+# param4
+# x (latitude)
+# y (longitude)
+# z (altitude)
+# autocontinue

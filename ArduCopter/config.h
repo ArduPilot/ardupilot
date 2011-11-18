@@ -670,11 +670,11 @@
 #endif
 
 #ifndef LOITER_RADIUS
-# define LOITER_RADIUS 10
+# define LOITER_RADIUS 10		// meters for circle mode
 #endif
 
 #ifndef ALT_HOLD_HOME
-# define ALT_HOLD_HOME 10
+# define ALT_HOLD_HOME 0		// height to return to Home, 0 = Maintain current altitude
 #endif
 
 #ifndef USE_CURRENT_ALT

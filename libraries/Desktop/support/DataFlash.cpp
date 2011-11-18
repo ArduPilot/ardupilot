@@ -123,6 +123,11 @@ void DataFlash_Class::StartWrite(int16_t PageAdr)
 	df_BufferIdx  = 0;
 	df_PageAdr    = PageAdr;
 	df_Stop_Write = 0;
+
+	BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
+	BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
+	BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
+	BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
 }
 
 void DataFlash_Class::FinishWrite(void)
@@ -145,6 +150,12 @@ void DataFlash_Class::FinishWrite(void)
         df_BufferNum=2;
 	else
         df_BufferNum=1;
+
+	BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
+	BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
+	df_FilePage++;
+	BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
+	BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
 }
 
 
@@ -253,6 +264,22 @@ int32_t DataFlash_Class::ReadLong()
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte(); // Last byte
   return (int32_t)result;
+}
+
+void DataFlash_Class::SetFileNumber(uint16_t FileNumber)
+{
+	df_FileNumber = FileNumber;
+	df_FilePage = 1;
+}
+
+uint16_t DataFlash_Class::GetFileNumber()
+{
+	return df_FileNumber;
+}
+
+uint16_t DataFlash_Class::GetFilePage()
+{
+	return df_FilePage;
 }
 
 // make one instance for the user to use

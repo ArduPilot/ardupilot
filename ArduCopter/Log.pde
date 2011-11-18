@@ -738,15 +738,14 @@ static void Log_Write_Performance()
 	//DataFlash.WriteByte(	loop_step);
 
 
-	//*
-	//DataFlash.WriteLong(	millis()- perf_mon_timer);
 
-	//DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
-	//DataFlash.WriteByte(	imu.adc_constraints);				//3
-	//DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
-	//DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
-	//DataFlash.WriteByte(	gps_fix_count);						//6
-
+	DataFlash.WriteLong(	millis()- perf_mon_timer);			//1
+	DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
+	DataFlash.WriteByte(	imu.adc_constraints);				//3
+	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
+	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
+	DataFlash.WriteByte(	gps_fix_count);						//6
+	DataFlash.WriteByte(END_BYTE);
 
 
 	//DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));	//7
@@ -754,6 +753,7 @@ static void Log_Write_Performance()
 
 
 	// control_mode
+	/*
 	DataFlash.WriteByte(control_mode);					//1
 	DataFlash.WriteByte(yaw_mode);						//2
 	DataFlash.WriteByte(roll_pitch_mode);				//3
@@ -761,20 +761,22 @@ static void Log_Write_Performance()
 	DataFlash.WriteInt(g.throttle_cruise.get());		//5
 	DataFlash.WriteLong(throttle_integrator);			//6
 	DataFlash.WriteByte(END_BYTE);
+	*/
+
 }
 
 // Read a performance packet
 static void Log_Read_Performance()
 {
-	int8_t temp1 	= DataFlash.ReadByte();
-	int8_t temp2 	= DataFlash.ReadByte();
-	int8_t temp3 	= DataFlash.ReadByte();
-	int8_t temp4 	= DataFlash.ReadByte();
-	int16_t temp5 	= DataFlash.ReadInt();
-	int32_t temp6 	= DataFlash.ReadLong();
+	int32_t temp1 	= DataFlash.ReadLong();
+	int8_t  temp2 	= DataFlash.ReadByte();
+	int8_t  temp3 	= DataFlash.ReadByte();
+	int8_t  temp4 	= DataFlash.ReadByte();
+	int8_t 	temp5 	= DataFlash.ReadByte();
+	int8_t	temp6 	= DataFlash.ReadByte();
 
 							 //1   2   3   4   5   6
-	Serial.printf_P(PSTR("PM, %d, %d, %d, %d, %d, %ld\n"),
+	Serial.printf_P(PSTR("PM, %ld, %d, %d, %d, %d, %d\n"),
 		temp1,
 		temp2,
 		temp3,
@@ -852,9 +854,9 @@ static void Log_Read_Attitude()
 	int16_t temp1 	= DataFlash.ReadInt();
 	int16_t temp2 	= DataFlash.ReadInt();
 	uint16_t temp3 	= DataFlash.ReadInt();
-	int16_t temp4 	= DataFlash.ReadByte();
-	int16_t temp5 	= DataFlash.ReadByte();
-	int16_t temp6 	= DataFlash.ReadByte();
+	int16_t temp4 	= DataFlash.ReadInt();
+	int16_t temp5 	= DataFlash.ReadInt();
+	int16_t temp6 	= DataFlash.ReadInt();
 
 							// 1   2   3    4   5   6
 	Serial.printf_P(PSTR("ATT, %d, %d, %u, %d, %d, %d\n"),
