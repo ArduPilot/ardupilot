@@ -3,9 +3,9 @@
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-static void handle_process_must()
+static void process_nav_command()
 {
-	switch(next_command.id){
+	switch(command_nav_queue.id){
 
 		case MAV_CMD_NAV_TAKEOFF:	// 22
 			do_takeoff();
@@ -41,9 +41,9 @@ static void handle_process_must()
 
 }
 
-static void handle_process_may()
+static void process_cond_command()
 {
-	switch(next_command.id){
+	switch(command_cond_queue.id){
 
 		case MAV_CMD_CONDITION_DELAY: // 112
 			do_wait_delay();
@@ -66,9 +66,9 @@ static void handle_process_may()
 	}
 }
 
-static void handle_process_now()
+static void process_now_command()
 {
-	switch(next_command.id){
+	switch(command_cond_queue.id){
 
 		case MAV_CMD_DO_JUMP:  // 177
 			do_jump();
@@ -121,9 +121,9 @@ static void handle_no_commands()
 
 static bool verify_must()
 {
-	//Serial.printf("vmust: %d\n", command_must_ID);
+	//Serial.printf("vmust: %d\n", command_nav_ID);
 
-	switch(command_must_ID) {
+	switch(command_nav_queue.id) {
 
 		case MAV_CMD_NAV_TAKEOFF:
 			return verify_takeoff();
@@ -162,7 +162,7 @@ static bool verify_must()
 
 static bool verify_may()
 {
-	switch(command_may_ID) {
+	switch(command_cond_queue.id) {
 
 		case MAV_CMD_CONDITION_DELAY:
 			return verify_wait_delay();
@@ -221,12 +221,12 @@ static void do_takeoff()
 	// Start with current location
 	Location temp = current_loc;
 
-	// next_command.alt is a relative altitude!!!
-	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-		temp.alt = next_command.alt + home.alt;
+	// command_nav_queue.alt is a relative altitude!!!
+	if (command_nav_queue.options & WP_OPTION_ALT_RELATIVE) {
+		temp.alt = command_nav_queue.alt + home.alt;
 		//Serial.printf("rel alt: %ld",temp.alt);
 	} else {
-		temp.alt = next_command.alt;
+		temp.alt = command_nav_queue.alt;
 		//Serial.printf("abs alt: %ld",temp.alt);
 	}
 
@@ -241,11 +241,11 @@ static void do_nav_wp()
 {
 	wp_control = WP_MODE;
 
-	// next_command.alt is a relative altitude!!!
-	if (next_command.options & WP_OPTION_ALT_RELATIVE) {
-		next_command.alt	+= home.alt;
+	// command_nav_queue.alt is a relative altitude!!!
+	if (command_nav_queue.options & WP_OPTION_ALT_RELATIVE) {
+		command_nav_queue.alt	+= home.alt;
 	}
-	set_next_WP(&next_command);
+	set_next_WP(&command_nav_queue);
 
 
 	// this is our bitmask to verify we have met all conditions to move on
@@ -255,7 +255,7 @@ static void do_nav_wp()
 	loiter_time 	= 0;
 
 	// this is the delay, stored in seconds and expanded to millis
-	loiter_time_max = next_command.p1 * 1000;
+	loiter_time_max = command_nav_queue.p1 * 1000;
 
 	// if we don't require an altitude minimum, we save this flag as passed (1)
 	if((next_WP.options & WP_OPTION_ALT_REQUIRED) == 0){
@@ -291,37 +291,38 @@ static void do_loiter_unlimited()
 	wp_control = LOITER_MODE;
 
 	//Serial.println("dloi ");
-	if(next_command.lat == 0)
+	if(command_nav_queue.lat == 0)
 		set_next_WP(&current_loc);
 	else
-		set_next_WP(&next_command);
+		set_next_WP(&command_nav_queue);
 }
 
 static void do_loiter_turns()
 {
 	wp_control = CIRCLE_MODE;
 
-	if(next_command.lat == 0)
+	if(command_nav_queue.lat == 0)
 		set_next_WP(&current_loc);
 	else
-		set_next_WP(&next_command);
+		set_next_WP(&command_nav_queue);
 
-	loiter_total = next_command.p1 * 360;
+	loiter_total = command_nav_queue.p1 * 360;
 	loiter_sum	 = 0;
+	old_target_bearing = target_bearing;
 }
 
 static void do_loiter_time()
 {
-	if(next_command.lat == 0){
+	if(command_nav_queue.lat == 0){
 		wp_control 		= LOITER_MODE;
 		loiter_time 	= millis();
 		set_next_WP(&current_loc);
 	}else{
 		wp_control 		= WP_MODE;
-		set_next_WP(&next_command);
+		set_next_WP(&command_nav_queue);
 	}
 
-	loiter_time_max = next_command.p1 * 1000; // units are (seconds)
+	loiter_time_max = command_nav_queue.p1 * 1000; // units are (seconds)
 }
 
 /********************************************************************************/
@@ -420,7 +421,7 @@ static bool verify_nav_wp()
 	if(wp_verify_byte >= 7){
 	//if(wp_verify_byte & NAV_LOCATION){
 		char message[30];
-		sprintf(message,"Reached Command #%i",command_must_index);
+		sprintf(message,"Reached Command #%i",command_nav_index);
 		gcs_send_text(SEVERITY_LOW,message);
 		wp_verify_byte = 0;
 		return true;
@@ -452,6 +453,7 @@ static bool verify_loiter_time()
 
 static bool verify_loiter_turns()
 {
+	//Serial.printf("loiter_sum: %d \n", loiter_sum);
 	// have we rotated around the center enough times?
 	// -----------------------------------------------
 	if(abs(loiter_sum) > loiter_total) {
@@ -488,7 +490,7 @@ static void do_wait_delay()
 {
 	//Serial.print("dwd ");
 	condition_start = millis();
-	condition_value	= next_command.lat * 1000; // convert to milliseconds
+	condition_value	= command_cond_queue.lat * 1000; // convert to milliseconds
 	//Serial.println(condition_value,DEC);
 }
 
@@ -496,14 +498,14 @@ static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	condition_value	= next_command.alt;
-	temp.alt		= next_command.alt;
+	condition_value	= command_cond_queue.alt;
+	temp.alt		= command_cond_queue.alt;
 	set_next_WP(&temp);
 }
 
 static void do_within_distance()
 {
-	condition_value	 = next_command.lat;
+	condition_value	 = command_cond_queue.lat;
 }
 
 static void do_yaw()
@@ -515,9 +517,9 @@ static void do_yaw()
 	command_yaw_start		= nav_yaw; // current position
 	command_yaw_start_time	= millis();
 
-	command_yaw_dir			= next_command.p1;		// 1 = clockwise,	 0 = counterclockwise
-	command_yaw_speed		= next_command.lat * 100; // ms * 100
-	command_yaw_relative	= next_command.lng;		// 1 = Relative,	 0 = Absolute
+	command_yaw_dir			= command_cond_queue.p1;			// 1 = clockwise,	 0 = counterclockwise
+	command_yaw_speed		= command_cond_queue.lat * 100; 	// ms * 100
+	command_yaw_relative	= command_cond_queue.lng;			// 1 = Relative,	 0 = Absolute
 
 
 
@@ -533,11 +535,11 @@ static void do_yaw()
 
 	if (command_yaw_relative == 1){
 		// relative
-		command_yaw_delta	= next_command.alt * 100;
+		command_yaw_delta	= command_cond_queue.alt * 100;
 
 	}else{
 		// absolute
-		command_yaw_end		= next_command.alt * 100;
+		command_yaw_end		= command_cond_queue.alt * 100;
 
 		// calculate the delta travel in deg * 100
 		if(command_yaw_dir == 1){
@@ -580,6 +582,7 @@ static bool verify_wait_delay()
 
 static bool verify_change_alt()
 {
+	//Serial.printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
 	if (condition_start < next_WP.alt){
 		// we are going higer
 		if(current_loc.alt > next_WP.alt){
@@ -598,6 +601,7 @@ static bool verify_change_alt()
 
 static bool verify_within_distance()
 {
+	//Serial.printf("cond dist :%d\n", (int)condition_value);
 	if (wp_distance < condition_value){
 		condition_value = 0;
 		return true;
@@ -607,7 +611,7 @@ static bool verify_within_distance()
 
 static bool verify_yaw()
 {
-	//Serial.print("vyaw ");
+	//Serial.printf("vyaw %d\n", (int)(nav_yaw/100));
 
 	if((millis() - command_yaw_start_time) > command_yaw_time){
 		// time out
@@ -637,15 +641,15 @@ static bool verify_yaw()
 
 static void do_change_speed()
 {
-	g.waypoint_speed_max = next_command.p1 * 100;
+	g.waypoint_speed_max = command_cond_queue.p1 * 100;
 }
 
 static void do_target_yaw()
 {
-	yaw_tracking = next_command.p1;
+	yaw_tracking = command_cond_queue.p1;
 
 	if(yaw_tracking == MAV_ROI_LOCATION){
-		target_WP = next_command;
+		target_WP = command_cond_queue;
 	}
 }
 
@@ -656,51 +660,55 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
+	//Serial.printf("do Jump: %d\n", jump);
+
 	if(jump == -10){
-		jump = next_command.lat;
+		//Serial.printf("Fresh Jump\n");
+		// we use a locally stored index for jump
+		jump = command_cond_queue.lat;
 	}
+	//Serial.printf("Jumps left: %d\n",jump);
 
 	if(jump > 0) {
+		//Serial.printf("Do Jump to %d\n",command_cond_queue.p1);
 		jump--;
-		command_must_index 	= 0;
-		command_may_index 	= 0;
-
-		// set pointer to desired index
-		g.command_index 	= next_command.p1 - 1;
+		change_command(command_cond_queue.p1);
 
 	} else if (jump == 0){
+		//Serial.printf("Did last jump\n");
 		// we're done, move along
-		jump = -10;
+		jump = -11;
 
 	} else if (jump == -1) {
+		//Serial.printf("jumpForever\n");
 		// repeat forever
-	    g.command_index 	= next_command.p1 - 1;
+		change_command(command_cond_queue.p1);
 	}
 }
 
 static void do_set_home()
 {
-	if(next_command.p1 == 1) {
+	if(command_cond_queue.p1 == 1) {
 		init_home();
 	} else {
 		home.id		= MAV_CMD_NAV_WAYPOINT;
-		home.lng	= next_command.lng;				// Lon * 10**7
-		home.lat	= next_command.lat;				// Lat * 10**7
-		home.alt	= max(next_command.alt, 0);
+		home.lng	= command_cond_queue.lng;				// Lon * 10**7
+		home.lat	= command_cond_queue.lat;				// Lat * 10**7
+		home.alt	= max(command_cond_queue.alt, 0);
 		home_is_set = true;
 	}
 }
 
 static void do_set_servo()
 {
-	APM_RC.OutputCh(next_command.p1 - 1, next_command.alt);
+	APM_RC.OutputCh(command_cond_queue.p1 - 1, command_cond_queue.alt);
 }
 
 static void do_set_relay()
 {
-	if (next_command.p1 == 1) {
+	if (command_cond_queue.p1 == 1) {
 		relay.on();
-	} else if (next_command.p1 == 0) {
+	} else if (command_cond_queue.p1 == 0) {
 		relay.off();
 	}else{
 		relay.toggle();
@@ -709,16 +717,16 @@ static void do_set_relay()
 
 static void do_repeat_servo()
 {
-	event_id = next_command.p1 - 1;
+	event_id = command_cond_queue.p1 - 1;
 
-	if(next_command.p1 >= CH_5 + 1 && next_command.p1 <= CH_8 + 1) {
+	if(command_cond_queue.p1 >= CH_5 + 1 && command_cond_queue.p1 <= CH_8 + 1) {
 
 		event_timer		= 0;
-		event_value		= next_command.alt;
-		event_repeat	= next_command.lat * 2;
-		event_delay		= next_command.lng * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
+		event_value		= command_cond_queue.alt;
+		event_repeat	= command_cond_queue.lat * 2;
+		event_delay		= command_cond_queue.lng * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
 
-		switch(next_command.p1) {
+		switch(command_cond_queue.p1) {
 			case CH_5:
 				event_undo_value = g.rc_5.radio_trim;
 				break;
@@ -740,7 +748,7 @@ static void do_repeat_relay()
 {
 	event_id		= RELAY_TOGGLE;
 	event_timer		= 0;
-	event_delay		= next_command.lat * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
-	event_repeat	= next_command.alt * 2;
+	event_delay		= command_cond_queue.lat * 500.0; // /2 (half cycle time) * 1000 (convert to milliseconds)
+	event_repeat	= command_cond_queue.alt * 2;
 	update_events();
 }

@@ -113,18 +113,42 @@
             this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
             this.BUT_levelac2 = new ArdupilotMega.MyButton();
             this.tabHeli = new System.Windows.Forms.TabPage();
-            this.label27 = new System.Windows.Forms.Label();
-            this.GYR_GAIN_ = new System.Windows.Forms.TextBox();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label46 = new System.Windows.Forms.Label();
+            this.label45 = new System.Windows.Forms.Label();
             this.GYR_ENABLE_ = new System.Windows.Forms.CheckBox();
+            this.GYR_GAIN_ = new System.Windows.Forms.TextBox();
+            this.label44 = new System.Windows.Forms.Label();
+            this.label43 = new System.Windows.Forms.Label();
+            this.label42 = new System.Windows.Forms.Label();
+            this.BUT_HS4save = new ArdupilotMega.MyButton();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label24 = new System.Windows.Forms.Label();
+            this.HS4_MIN = new System.Windows.Forms.TextBox();
+            this.HS4_MAX = new System.Windows.Forms.TextBox();
+            this.label40 = new System.Windows.Forms.Label();
+            this.BUT_swash_manual = new ArdupilotMega.MyButton();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label41 = new System.Windows.Forms.Label();
+            this.label21 = new System.Windows.Forms.Label();
+            this.COL_MIN_ = new System.Windows.Forms.TextBox();
+            this.COL_MID_ = new System.Windows.Forms.TextBox();
+            this.COL_MAX_ = new System.Windows.Forms.TextBox();
+            this.BUT_0collective = new ArdupilotMega.MyButton();
+            this.HS4_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS3_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS2_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.HS1_TRIM = new System.Windows.Forms.NumericUpDown();
+            this.label39 = new System.Windows.Forms.Label();
+            this.label38 = new System.Windows.Forms.Label();
+            this.label37 = new System.Windows.Forms.Label();
+            this.label36 = new System.Windows.Forms.Label();
             this.label26 = new System.Windows.Forms.Label();
             this.PIT_MAX_ = new System.Windows.Forms.TextBox();
             this.label25 = new System.Windows.Forms.Label();
             this.ROL_MAX_ = new System.Windows.Forms.TextBox();
-            this.label24 = new System.Windows.Forms.Label();
-            this.COL_MID_ = new System.Windows.Forms.Label();
             this.label23 = new System.Windows.Forms.Label();
             this.label22 = new System.Windows.Forms.Label();
-            this.label21 = new System.Windows.Forms.Label();
             this.HS4_REV = new System.Windows.Forms.CheckBox();
             this.label20 = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
@@ -136,14 +160,8 @@
             this.HS2_REV = new System.Windows.Forms.CheckBox();
             this.HS1_REV = new System.Windows.Forms.CheckBox();
             this.label17 = new System.Windows.Forms.Label();
-            this.BUT_saveheliconfig = new ArdupilotMega.MyButton();
-            this.BUT_0collective = new ArdupilotMega.MyButton();
-            this.HS4 = new ArdupilotMega.VerticalProgressBar2();
+            this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
             this.HS3 = new ArdupilotMega.VerticalProgressBar2();
-            this.HS4_TRIM = new ArdupilotMega.MyTrackBar();
-            this.HS3_TRIM = new ArdupilotMega.MyTrackBar();
-            this.HS2_TRIM = new ArdupilotMega.MyTrackBar();
-            this.HS1_TRIM = new ArdupilotMega.MyTrackBar();
             this.Gservoloc = new AGaugeApp.AGauge();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.tabControl1.SuspendLayout();
@@ -161,6 +179,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
             this.tabHeli.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
@@ -849,18 +870,28 @@
             // 
             // tabHeli
             // 
-            this.tabHeli.Controls.Add(this.label27);
-            this.tabHeli.Controls.Add(this.GYR_GAIN_);
-            this.tabHeli.Controls.Add(this.GYR_ENABLE_);
+            this.tabHeli.Controls.Add(this.groupBox3);
+            this.tabHeli.Controls.Add(this.label44);
+            this.tabHeli.Controls.Add(this.label43);
+            this.tabHeli.Controls.Add(this.label42);
+            this.tabHeli.Controls.Add(this.BUT_HS4save);
+            this.tabHeli.Controls.Add(this.groupBox2);
+            this.tabHeli.Controls.Add(this.BUT_swash_manual);
+            this.tabHeli.Controls.Add(this.groupBox1);
+            this.tabHeli.Controls.Add(this.HS4_TRIM);
+            this.tabHeli.Controls.Add(this.HS3_TRIM);
+            this.tabHeli.Controls.Add(this.HS2_TRIM);
+            this.tabHeli.Controls.Add(this.HS1_TRIM);
+            this.tabHeli.Controls.Add(this.label39);
+            this.tabHeli.Controls.Add(this.label38);
+            this.tabHeli.Controls.Add(this.label37);
+            this.tabHeli.Controls.Add(this.label36);
             this.tabHeli.Controls.Add(this.label26);
             this.tabHeli.Controls.Add(this.PIT_MAX_);
             this.tabHeli.Controls.Add(this.label25);
             this.tabHeli.Controls.Add(this.ROL_MAX_);
-            this.tabHeli.Controls.Add(this.label24);
-            this.tabHeli.Controls.Add(this.COL_MID_);
             this.tabHeli.Controls.Add(this.label23);
             this.tabHeli.Controls.Add(this.label22);
-            this.tabHeli.Controls.Add(this.label21);
             this.tabHeli.Controls.Add(this.HS4_REV);
             this.tabHeli.Controls.Add(this.label20);
             this.tabHeli.Controls.Add(this.label19);
@@ -872,29 +903,33 @@
             this.tabHeli.Controls.Add(this.HS2_REV);
             this.tabHeli.Controls.Add(this.HS1_REV);
             this.tabHeli.Controls.Add(this.label17);
-            this.tabHeli.Controls.Add(this.BUT_saveheliconfig);
-            this.tabHeli.Controls.Add(this.BUT_0collective);
             this.tabHeli.Controls.Add(this.HS4);
             this.tabHeli.Controls.Add(this.HS3);
-            this.tabHeli.Controls.Add(this.HS4_TRIM);
-            this.tabHeli.Controls.Add(this.HS3_TRIM);
-            this.tabHeli.Controls.Add(this.HS2_TRIM);
-            this.tabHeli.Controls.Add(this.HS1_TRIM);
             this.tabHeli.Controls.Add(this.Gservoloc);
             resources.ApplyResources(this.tabHeli, "tabHeli");
             this.tabHeli.Name = "tabHeli";
             this.tabHeli.UseVisualStyleBackColor = true;
+            this.tabHeli.Click += new System.EventHandler(this.tabHeli_Click);
             // 
-            // label27
+            // groupBox3
             // 
-            resources.ApplyResources(this.label27, "label27");
-            this.label27.Name = "label27";
+            this.groupBox3.Controls.Add(this.label46);
+            this.groupBox3.Controls.Add(this.label45);
+            this.groupBox3.Controls.Add(this.GYR_ENABLE_);
+            this.groupBox3.Controls.Add(this.GYR_GAIN_);
+            resources.ApplyResources(this.groupBox3, "groupBox3");
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.TabStop = false;
             // 
-            // GYR_GAIN_
+            // label46
             // 
-            resources.ApplyResources(this.GYR_GAIN_, "GYR_GAIN_");
-            this.GYR_GAIN_.Name = "GYR_GAIN_";
-            this.GYR_GAIN_.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
+            resources.ApplyResources(this.label46, "label46");
+            this.label46.Name = "label46";
+            // 
+            // label45
+            // 
+            resources.ApplyResources(this.label45, "label45");
+            this.label45.Name = "label45";
             // 
             // GYR_ENABLE_
             // 
@@ -902,6 +937,232 @@
             this.GYR_ENABLE_.Name = "GYR_ENABLE_";
             this.GYR_ENABLE_.UseVisualStyleBackColor = true;
             this.GYR_ENABLE_.CheckedChanged += new System.EventHandler(this.GYR_ENABLE__CheckedChanged);
+            // 
+            // GYR_GAIN_
+            // 
+            resources.ApplyResources(this.GYR_GAIN_, "GYR_GAIN_");
+            this.GYR_GAIN_.Name = "GYR_GAIN_";
+            this.GYR_GAIN_.Validating += new System.ComponentModel.CancelEventHandler(this.GYR_GAIN__Validating);
+            // 
+            // label44
+            // 
+            resources.ApplyResources(this.label44, "label44");
+            this.label44.Name = "label44";
+            // 
+            // label43
+            // 
+            resources.ApplyResources(this.label43, "label43");
+            this.label43.Name = "label43";
+            // 
+            // label42
+            // 
+            resources.ApplyResources(this.label42, "label42");
+            this.label42.Name = "label42";
+            // 
+            // BUT_HS4save
+            // 
+            resources.ApplyResources(this.BUT_HS4save, "BUT_HS4save");
+            this.BUT_HS4save.Name = "BUT_HS4save";
+            this.BUT_HS4save.UseVisualStyleBackColor = true;
+            this.BUT_HS4save.Click += new System.EventHandler(this.BUT_HS4save_Click);
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.label24);
+            this.groupBox2.Controls.Add(this.HS4_MIN);
+            this.groupBox2.Controls.Add(this.HS4_MAX);
+            this.groupBox2.Controls.Add(this.label40);
+            resources.ApplyResources(this.groupBox2, "groupBox2");
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.TabStop = false;
+            // 
+            // label24
+            // 
+            resources.ApplyResources(this.label24, "label24");
+            this.label24.Name = "label24";
+            // 
+            // HS4_MIN
+            // 
+            resources.ApplyResources(this.HS4_MIN, "HS4_MIN");
+            this.HS4_MIN.Name = "HS4_MIN";
+            this.HS4_MIN.Enter += new System.EventHandler(this.HS4_MIN_Enter);
+            this.HS4_MIN.Leave += new System.EventHandler(this.HS4_MIN_Leave);
+            this.HS4_MIN.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // HS4_MAX
+            // 
+            resources.ApplyResources(this.HS4_MAX, "HS4_MAX");
+            this.HS4_MAX.Name = "HS4_MAX";
+            this.HS4_MAX.Enter += new System.EventHandler(this.HS4_MAX_Enter);
+            this.HS4_MAX.Leave += new System.EventHandler(this.HS4_MAX_Leave);
+            this.HS4_MAX.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // label40
+            // 
+            resources.ApplyResources(this.label40, "label40");
+            this.label40.Name = "label40";
+            // 
+            // BUT_swash_manual
+            // 
+            resources.ApplyResources(this.BUT_swash_manual, "BUT_swash_manual");
+            this.BUT_swash_manual.Name = "BUT_swash_manual";
+            this.BUT_swash_manual.UseVisualStyleBackColor = true;
+            this.BUT_swash_manual.Click += new System.EventHandler(this.BUT_swash_manual_Click);
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.label41);
+            this.groupBox1.Controls.Add(this.label21);
+            this.groupBox1.Controls.Add(this.COL_MIN_);
+            this.groupBox1.Controls.Add(this.COL_MID_);
+            this.groupBox1.Controls.Add(this.COL_MAX_);
+            this.groupBox1.Controls.Add(this.BUT_0collective);
+            resources.ApplyResources(this.groupBox1, "groupBox1");
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.TabStop = false;
+            // 
+            // label41
+            // 
+            resources.ApplyResources(this.label41, "label41");
+            this.label41.Name = "label41";
+            // 
+            // label21
+            // 
+            resources.ApplyResources(this.label21, "label21");
+            this.label21.Name = "label21";
+            // 
+            // COL_MIN_
+            // 
+            resources.ApplyResources(this.COL_MIN_, "COL_MIN_");
+            this.COL_MIN_.Name = "COL_MIN_";
+            this.COL_MIN_.Enter += new System.EventHandler(this.COL_MIN__Enter);
+            this.COL_MIN_.Leave += new System.EventHandler(this.COL_MIN__Leave);
+            this.COL_MIN_.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // COL_MID_
+            // 
+            resources.ApplyResources(this.COL_MID_, "COL_MID_");
+            this.COL_MID_.Name = "COL_MID_";
+            this.COL_MID_.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // COL_MAX_
+            // 
+            resources.ApplyResources(this.COL_MAX_, "COL_MAX_");
+            this.COL_MAX_.Name = "COL_MAX_";
+            this.COL_MAX_.Enter += new System.EventHandler(this.COL_MAX__Enter);
+            this.COL_MAX_.Leave += new System.EventHandler(this.COL_MAX__Leave);
+            this.COL_MAX_.Validating += new System.ComponentModel.CancelEventHandler(this.PWM_Validating);
+            // 
+            // BUT_0collective
+            // 
+            resources.ApplyResources(this.BUT_0collective, "BUT_0collective");
+            this.BUT_0collective.Name = "BUT_0collective";
+            this.BUT_0collective.UseVisualStyleBackColor = true;
+            this.BUT_0collective.Click += new System.EventHandler(this.BUT_0collective_Click);
+            // 
+            // HS4_TRIM
+            // 
+            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
+            this.HS4_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.Name = "HS4_TRIM";
+            this.HS4_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS4_TRIM.ValueChanged += new System.EventHandler(this.HS4_TRIM_ValueChanged);
+            // 
+            // HS3_TRIM
+            // 
+            resources.ApplyResources(this.HS3_TRIM, "HS3_TRIM");
+            this.HS3_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.Name = "HS3_TRIM";
+            this.HS3_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS3_TRIM.ValueChanged += new System.EventHandler(this.HS3_TRIM_ValueChanged);
+            // 
+            // HS2_TRIM
+            // 
+            resources.ApplyResources(this.HS2_TRIM, "HS2_TRIM");
+            this.HS2_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.Name = "HS2_TRIM";
+            this.HS2_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS2_TRIM.ValueChanged += new System.EventHandler(this.HS2_TRIM_ValueChanged);
+            // 
+            // HS1_TRIM
+            // 
+            resources.ApplyResources(this.HS1_TRIM, "HS1_TRIM");
+            this.HS1_TRIM.Maximum = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.Minimum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.Name = "HS1_TRIM";
+            this.HS1_TRIM.Value = new decimal(new int[] {
+            1500,
+            0,
+            0,
+            0});
+            this.HS1_TRIM.ValueChanged += new System.EventHandler(this.HS1_TRIM_ValueChanged);
+            // 
+            // label39
+            // 
+            resources.ApplyResources(this.label39, "label39");
+            this.label39.Name = "label39";
+            // 
+            // label38
+            // 
+            resources.ApplyResources(this.label38, "label38");
+            this.label38.Name = "label38";
+            // 
+            // label37
+            // 
+            resources.ApplyResources(this.label37, "label37");
+            this.label37.Name = "label37";
+            // 
+            // label36
+            // 
+            resources.ApplyResources(this.label36, "label36");
+            this.label36.Name = "label36";
             // 
             // label26
             // 
@@ -925,16 +1186,6 @@
             this.ROL_MAX_.Name = "ROL_MAX_";
             this.ROL_MAX_.Validating += new System.ComponentModel.CancelEventHandler(this.ROL_MAX__Validating);
             // 
-            // label24
-            // 
-            resources.ApplyResources(this.label24, "label24");
-            this.label24.Name = "label24";
-            // 
-            // COL_MID_
-            // 
-            resources.ApplyResources(this.COL_MID_, "COL_MID_");
-            this.COL_MID_.Name = "COL_MID_";
-            // 
             // label23
             // 
             resources.ApplyResources(this.label23, "label23");
@@ -944,11 +1195,6 @@
             // 
             resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
-            // 
-            // label21
-            // 
-            resources.ApplyResources(this.label21, "label21");
-            this.label21.Name = "label21";
             // 
             // HS4_REV
             // 
@@ -1016,20 +1262,6 @@
             resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
             // 
-            // BUT_saveheliconfig
-            // 
-            resources.ApplyResources(this.BUT_saveheliconfig, "BUT_saveheliconfig");
-            this.BUT_saveheliconfig.Name = "BUT_saveheliconfig";
-            this.BUT_saveheliconfig.UseVisualStyleBackColor = true;
-            this.BUT_saveheliconfig.Click += new System.EventHandler(this.BUT_saveheliconfig_Click);
-            // 
-            // BUT_0collective
-            // 
-            resources.ApplyResources(this.BUT_0collective, "BUT_0collective");
-            this.BUT_0collective.Name = "BUT_0collective";
-            this.BUT_0collective.UseVisualStyleBackColor = true;
-            this.BUT_0collective.Click += new System.EventHandler(this.BUT_0collective_Click);
-            // 
             // HS4
             // 
             this.HS4.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(68)))), ((int)(((byte)(69)))));
@@ -1044,6 +1276,7 @@
             this.HS4.Name = "HS4";
             this.HS4.Value = 1500;
             this.HS4.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
+            this.HS4.Paint += new System.Windows.Forms.PaintEventHandler(this.HS4_Paint);
             // 
             // HS3
             // 
@@ -1059,54 +1292,7 @@
             this.HS3.Name = "HS3";
             this.HS3.Value = 1500;
             this.HS3.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
-            // 
-            // HS4_TRIM
-            // 
-            resources.ApplyResources(this.HS4_TRIM, "HS4_TRIM");
-            this.HS4_TRIM.LargeChange = 1000;
-            this.HS4_TRIM.Maximum = 2000D;
-            this.HS4_TRIM.Minimum = 1000D;
-            this.HS4_TRIM.Name = "HS4_TRIM";
-            this.HS4_TRIM.SmallChange = 1000;
-            this.HS4_TRIM.TickFrequency = 2000;
-            this.HS4_TRIM.Value = 1500D;
-            this.HS4_TRIM.Scroll += new System.EventHandler(this.HS4_TRIM_Scroll);
-            // 
-            // HS3_TRIM
-            // 
-            resources.ApplyResources(this.HS3_TRIM, "HS3_TRIM");
-            this.HS3_TRIM.LargeChange = 1000;
-            this.HS3_TRIM.Maximum = 2000D;
-            this.HS3_TRIM.Minimum = 1000D;
-            this.HS3_TRIM.Name = "HS3_TRIM";
-            this.HS3_TRIM.SmallChange = 1000;
-            this.HS3_TRIM.TickFrequency = 2000;
-            this.HS3_TRIM.Value = 1500D;
-            this.HS3_TRIM.Scroll += new System.EventHandler(this.HS3_TRIM_Scroll);
-            // 
-            // HS2_TRIM
-            // 
-            resources.ApplyResources(this.HS2_TRIM, "HS2_TRIM");
-            this.HS2_TRIM.LargeChange = 1000;
-            this.HS2_TRIM.Maximum = 2000D;
-            this.HS2_TRIM.Minimum = 1000D;
-            this.HS2_TRIM.Name = "HS2_TRIM";
-            this.HS2_TRIM.SmallChange = 1000;
-            this.HS2_TRIM.TickFrequency = 2000;
-            this.HS2_TRIM.Value = 1500D;
-            this.HS2_TRIM.Scroll += new System.EventHandler(this.HS2_TRIM_Scroll);
-            // 
-            // HS1_TRIM
-            // 
-            resources.ApplyResources(this.HS1_TRIM, "HS1_TRIM");
-            this.HS1_TRIM.LargeChange = 1000;
-            this.HS1_TRIM.Maximum = 2000D;
-            this.HS1_TRIM.Minimum = 1000D;
-            this.HS1_TRIM.Name = "HS1_TRIM";
-            this.HS1_TRIM.SmallChange = 1000;
-            this.HS1_TRIM.TickFrequency = 2000;
-            this.HS1_TRIM.Value = 1500D;
-            this.HS1_TRIM.Scroll += new System.EventHandler(this.HS1_TRIM_Scroll);
+            this.HS3.Paint += new System.Windows.Forms.PaintEventHandler(this.HS3_Paint);
             // 
             // Gservoloc
             // 
@@ -1280,6 +1466,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
             this.tabHeli.ResumeLayout(false);
             this.tabHeli.PerformLayout();
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.HS4_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
@@ -1355,26 +1547,17 @@
         private System.Windows.Forms.TextBox SV2_POS_;
         private System.Windows.Forms.TextBox SV1_POS_;
         private System.Windows.Forms.CheckBox HS4_REV;
-        private System.Windows.Forms.Label label21;
         private System.Windows.Forms.Label label22;
-        private MyTrackBar HS1_TRIM;
-        private MyTrackBar HS4_TRIM;
-        private MyTrackBar HS3_TRIM;
-        private MyTrackBar HS2_TRIM;
         private System.Windows.Forms.Label label23;
-        private VerticalProgressBar2 HS4;
+        private HorizontalProgressBar2 HS4;
         private VerticalProgressBar2 HS3;
         private MyButton BUT_0collective;
-        private MyButton BUT_saveheliconfig;
-        private System.Windows.Forms.Label label24;
-        private System.Windows.Forms.Label COL_MID_;
         private System.Windows.Forms.Label label25;
         private System.Windows.Forms.TextBox ROL_MAX_;
         private System.Windows.Forms.Label label26;
         private System.Windows.Forms.TextBox PIT_MAX_;
         private System.Windows.Forms.TextBox GYR_GAIN_;
         private System.Windows.Forms.CheckBox GYR_ENABLE_;
-        private System.Windows.Forms.Label label27;
         private System.Windows.Forms.Label label28;
         private MyButton BUT_levelac2;
         private System.Windows.Forms.ToolTip toolTip1;
@@ -1406,6 +1589,33 @@
         private System.Windows.Forms.Label label34;
         private System.Windows.Forms.Label label33;
         private System.Windows.Forms.Label label32;
+        private System.Windows.Forms.NumericUpDown HS1_TRIM;
+        private System.Windows.Forms.Label label39;
+        private System.Windows.Forms.Label label38;
+        private System.Windows.Forms.Label label37;
+        private System.Windows.Forms.Label label36;
+        private System.Windows.Forms.NumericUpDown HS3_TRIM;
+        private System.Windows.Forms.NumericUpDown HS2_TRIM;
+        private System.Windows.Forms.NumericUpDown HS4_TRIM;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private MyButton BUT_swash_manual;
+        private System.Windows.Forms.TextBox COL_MIN_;
+        private System.Windows.Forms.TextBox COL_MID_;
+        private System.Windows.Forms.TextBox COL_MAX_;
+        private System.Windows.Forms.Label label41;
+        private System.Windows.Forms.Label label21;
+        private MyButton BUT_HS4save;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.TextBox HS4_MIN;
+        private System.Windows.Forms.TextBox HS4_MAX;
+        private System.Windows.Forms.Label label40;
+        private System.Windows.Forms.Label label42;
+        private System.Windows.Forms.Label label44;
+        private System.Windows.Forms.Label label43;
+        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.Label label46;
+        private System.Windows.Forms.Label label45;
 
     }
 }

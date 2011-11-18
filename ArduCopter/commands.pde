@@ -2,22 +2,12 @@
 
 static void init_commands()
 {
-	// zero is home, but we always load the next command (1), in the code.
-    g.command_index = 0;
-
-    // This are registers for the current may and must commands
-    // setting to zero will allow them to be written to by new commands
-	command_must_index	= NO_COMMAND;
-	command_may_index	= NO_COMMAND;
-
-	// clear the command queue
-	clear_command_queue();
-}
-
-// forces the loading of a new command
-// queue is emptied after a new command is processed
-static void clear_command_queue(){
-	next_command.id 	= NO_COMMAND;
+    g.command_index 		= NO_COMMAND;
+	command_nav_index		= NO_COMMAND;
+	command_cond_index		= NO_COMMAND;
+	prev_nav_index 			= NO_COMMAND;
+	command_cond_queue.id 	= NO_COMMAND;
+	command_nav_queue.id 	= NO_COMMAND;
 }
 
 // Getters
@@ -28,7 +18,7 @@ static struct Location get_cmd_with_index(int i)
 
 	// Find out proper location in memory by using the start_byte position + the index
 	// --------------------------------------------------------------------------------
-	if (i > g.command_total) {
+	if (i >= g.command_total) {
 		// we do not have a valid command to load
 		// return a WP with a "Blank" id
 		temp.id = CMD_BLANK;
@@ -78,6 +68,15 @@ static struct Location get_cmd_with_index(int i)
 static void set_command_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.command_total.get());
+	//Serial.printf("set_command: %d with id: %d\n", i, temp.id);
+
+	// store home as 0 altitude!!!
+	// Home is always a MAV_CMD_NAV_WAYPOINT (16)
+	if (i == 0){
+		temp.alt = 0;
+		temp.id = MAV_CMD_NAV_WAYPOINT;
+	}
+
 	uint32_t mem = WP_START_BYTE + (i * WP_SIZE);
 
 	eeprom_write_byte((uint8_t *)	mem, temp.id);
@@ -96,19 +95,24 @@ static void set_command_with_index(struct Location temp, int i)
 
 	mem += 4;
 	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
+
+	// Make sure our WP_total
+	if(g.command_total <= i)
+		g.command_total.set_and_save(i+1);
 }
 
-static void increment_WP_index()
+/*
+//static void increment_WP_index()
 {
-    if (g.command_index < g.command_total) {
+    if (g.command_index < (g.command_total-1)) {
         g.command_index++;
 	}
 
     SendDebugln(g.command_index,DEC);
 }
-
+*/
 /*
-static void decrement_WP_index()
+//static void decrement_WP_index()
 {
     if (g.command_index > 0) {
         g.command_index.set_and_save(g.command_index - 1);
@@ -117,7 +121,7 @@ static void decrement_WP_index()
 
 static int32_t read_alt_to_hold()
 {
-	if(g.RTL_altitude < 0)
+	if(g.RTL_altitude <= 0)
 		return current_loc.alt;
 	else
 		return g.RTL_altitude;// + home.alt;
@@ -129,18 +133,6 @@ static int32_t read_alt_to_hold()
 // It's not currently used
 //********************************************************************************
 
-/*static Location get_LOITER_home_wp()
-{
-	//so we know where we are navigating from
-	next_WP = current_loc;
-
-	// read home position
-	struct Location temp 	= get_cmd_with_index(0);	// 0 = home
-	temp.id 				= MAV_CMD_NAV_LOITER_UNLIM;
-	temp.alt 				= read_alt_to_hold();
-	return temp;
-}
-*/
 /*
 This function sets the next waypoint command
 It precalculates all the necessary stuff.

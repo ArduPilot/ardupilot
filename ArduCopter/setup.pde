@@ -469,8 +469,8 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	// initialise swash plate
 	heli_init_swash();
 
-	// source swash plate movements directly from
-	heli_manual_override = true;
+	// source swash plate movements directly from radio
+	g.heli_servo_manual = true;
 
 	// display initial settings
 	report_heli();
@@ -494,6 +494,9 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 
 	    // read radio although we don't use it yet
 	    read_radio();
+		
+		// allow swash plate to move
+		output_motors_armed();
 
 		// record min/max
 		if( state == 1 ) {
@@ -501,13 +504,12 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 			    max_roll = abs(g.rc_1.control_in);
 			if( abs(g.rc_2.control_in) > max_pitch )
 			    max_pitch = abs(g.rc_2.control_in);
-			if( g.rc_3.radio_in < min_coll )
-			    min_coll = g.rc_3.radio_in;
-			if( g.rc_3.radio_in > max_coll )
-			    max_coll = g.rc_3.radio_in;
-			min_tail = min(g.rc_4.radio_in, min_tail);
-			max_tail = max(g.rc_4.radio_in, max_tail);
-			//Serial.printf_P(PSTR("4: ri:%d \tro:%d \tso:%d \n"), (int)g.rc_4.radio_in, (int)g.rc_4.radio_out, (int)g.rc_4.servo_out);
+			if( g.rc_3.radio_out < min_coll )
+			    min_coll = g.rc_3.radio_out;
+			if( g.rc_3.radio_out > max_coll )
+			    max_coll = g.rc_3.radio_out;
+			min_tail = min(g.rc_4.radio_out, min_tail);
+			max_tail = max(g.rc_4.radio_out, max_tail);
 		}
 
 	    if( Serial.available() ) {
@@ -533,8 +535,8 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 					break;
 				case 'c':
 				case 'C':
-				    if( g.rc_3.radio_in >= 900 && g.rc_3.radio_in <= 2100 ) {
-						g.heli_coll_mid = g.rc_3.radio_in;
+				    if( g.rc_3.radio_out >= 900 && g.rc_3.radio_out <= 2100 ) {
+						g.heli_coll_mid = g.rc_3.radio_out;
 						Serial.printf_P(PSTR("Collective when blade pitch at zero: %d\n"),(int)g.heli_coll_mid);
 					}
 					break;
@@ -561,7 +563,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 						max_pitch = abs(g.rc_2.control_in);
 						min_coll = 2000;
 						max_coll = 1000;
-						min_tail = max_tail = abs(g.rc_4.radio_in);
+						min_tail = max_tail = abs(g.rc_4.radio_out);
 					}else{
 					    state = 0;  // switch back to normal mode
 						// double check values aren't totally terrible
@@ -639,9 +641,6 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 			}
 		}
 
-		// allow swash plate to move
-		output_motors_armed();
-
 		delay(20);
 	}
 
@@ -664,7 +663,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 	g.heli_servo_averaging.save();
 
 	// return swash plate movements to attitude controller
-	heli_manual_override = false;
+	g.heli_servo_manual = false;
 
 	return(0);
 }
@@ -815,7 +814,7 @@ static void report_batt_monitor()
 static void report_wp(byte index = 255)
 {
 	if(index == 255){
-		for(byte i = 0; i <= g.command_total; i++){
+		for(byte i = 0; i < g.command_total; i++){
 			struct Location temp = get_cmd_with_index(i);
 			print_wp(&temp, i);
 		}
@@ -1145,14 +1144,17 @@ init_esc()
 
 static void print_wp(struct Location *cmd, byte index)
 {
-	Serial.printf_P(PSTR("command #: %d id:%d op:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
+	float t1 = (float)cmd->lat / t7;
+	float t2 = (float)cmd->lng / t7;
+
+	Serial.printf_P(PSTR("scommand #: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
 		(int)index,
 		(int)cmd->id,
 		(int)cmd->options,
 		(int)cmd->p1,
-		cmd->alt,
-		cmd->lat,
-		cmd->lng);
+		(long)cmd->alt,
+		t1,
+		t2);
 }
 
 static void report_gps()

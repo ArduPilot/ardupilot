@@ -514,9 +514,14 @@ namespace ArdupilotMega.GCSViews
                 {
                     baseurl = temp.url2560.ToString();
                 }
-                else
+                else if (board == "1280")
                 {
                     baseurl = temp.url.ToString();
+                }
+                else
+                {
+                    MessageBox.Show("Invalid Board Type");
+                    return;
                 }
 
                 // Create a request using a URL that can receive a post. 
@@ -592,6 +597,11 @@ namespace ArdupilotMega.GCSViews
 
             if (board == "1280")
             {
+                if (FLASH.Length > 126976)
+                {
+                    MessageBox.Show("Firmware is to big for a 1280, Please upgrade!!");
+                    return;
+                }
                 //port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }

@@ -178,6 +178,7 @@ static void init_ardupilot()
 	#endif
 
     #if FRAME_CONFIG ==	HELI_FRAME
+		g.heli_servo_manual = false;
 		heli_init_swash();  // heli initialisation
 	#endif
 
@@ -377,41 +378,32 @@ static void set_mode(byte mode)
 	// report the GPS and Motor arming status
 	led_mode = NORMAL_LEDS;
 
-	reset_nav();
-
 	switch(control_mode)
 	{
 		case ACRO:
 			yaw_mode 		= YAW_ACRO;
 			roll_pitch_mode = ROLL_PITCH_ACRO;
 			throttle_mode 	= THROTTLE_MANUAL;
-			reset_hold_I();
 			break;
 
 		case STABILIZE:
 			yaw_mode 		= YAW_HOLD;
 			roll_pitch_mode = ROLL_PITCH_STABLE;
 			throttle_mode 	= THROTTLE_MANUAL;
-			reset_hold_I();
 			break;
 
 		case ALT_HOLD:
 			yaw_mode 		= ALT_HOLD_YAW;
 			roll_pitch_mode = ALT_HOLD_RP;
 			throttle_mode 	= ALT_HOLD_THR;
-			reset_hold_I();
 
-			init_throttle_cruise();
 			next_WP = current_loc;
 			break;
 
 		case AUTO:
-			reset_hold_I();
 			yaw_mode 		= AUTO_YAW;
 			roll_pitch_mode = AUTO_RP;
 			throttle_mode 	= AUTO_THR;
-
-			init_throttle_cruise();
 
 			// loads the commands from where we left off
 			init_commands();
@@ -422,8 +414,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = CIRCLE_RP;
 			throttle_mode 	= CIRCLE_THR;
 
-			init_throttle_cruise();
-			next_WP = current_loc;
+			next_WP 		= current_loc;
 			break;
 
 		case LOITER:
@@ -431,8 +422,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = LOITER_RP;
 			throttle_mode 	= LOITER_THR;
 
-			init_throttle_cruise();
-			next_WP = current_loc;
+			next_WP 		= current_loc;
 			break;
 
 		case POSITION:
@@ -440,7 +430,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_MANUAL;
 
-			next_WP = current_loc;
+			next_WP 		= current_loc;
 			break;
 
 		case GUIDED:
@@ -448,8 +438,6 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_AUTO;
 
-			//xtrack_enabled = true;
-			init_throttle_cruise();
 			next_WP = current_loc;
 			set_next_WP(&guided_WP);
 			break;
@@ -459,13 +447,27 @@ static void set_mode(byte mode)
 			roll_pitch_mode = RTL_RP;
 			throttle_mode 	= RTL_THR;
 
-			//xtrack_enabled = true;
-			init_throttle_cruise();
 			do_RTL();
 			break;
 
 		default:
 			break;
+	}
+
+	if(throttle_mode == THROTTLE_MANUAL){
+		// reset all of the throttle iterms
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
+	}else { // an automatic throttle
+
+		// todo: replace with a throttle cruise estimator
+		init_throttle_cruise();
+	}
+
+	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
+		// We are under manual attitude control
+		// reset out nav parameters
+		reset_nav();
 	}
 
 	Log_Write_Mode(control_mode);

@@ -53,7 +53,9 @@ print_log_menu(void)
 {
 	int log_start;
 	int log_end;
-	byte last_log_num = get_num_logs();
+	int temp;
+	uint16_t num_logs = get_num_logs();
+//Serial.print("num logs: ");	Serial.println(num_logs, DEC);
 
 	Serial.printf_P(PSTR("logs enabled: "));
 	if (0 == g.log_bitmask) {
@@ -78,15 +80,16 @@ print_log_menu(void)
 	}
 	Serial.println();
 
-	if (last_log_num == 0) {
+	if (num_logs == 0) {
 		Serial.printf_P(PSTR("\nNo logs available for download\n"));
 	}else{
 
-		Serial.printf_P(PSTR("\n%d logs available for download\n"), last_log_num);
-		for(int i=1;i<last_log_num+1;i++) {
-			get_log_boundaries(i, log_start, log_end);
+		Serial.printf_P(PSTR("\n%d logs available for download\n"), num_logs);
+		for(int i=num_logs;i>=1;i--) {
+			temp = g.log_last_filenumber-i+1;
+			get_log_boundaries(temp, log_start, log_end);
 			Serial.printf_P(PSTR("Log number %d,    start page %d,   end page %d\n"),
-							i, log_start, log_end);
+							temp, log_start, log_end);
 		}
 		Serial.println();
 	}
@@ -103,8 +106,8 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
-	last_log_num = get_num_logs();
-	if ((argc != 2) || (dump_log < 1) || (dump_log > last_log_num)) {
+	last_log_num = g.log_last_filenumber;
+	if ((argc != 2) || (dump_log <= (last_log_num - get_num_logs())) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log number\n"));
 		return(-1);
 	}
@@ -128,15 +131,13 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 		delay(1000);
 	}
 	Serial.printf_P(PSTR("\nErasing log...\n"));
-	for(int j = 1; j < 4096; j++)
+	DataFlash.SetFileNumber(0xFFFF);
+	for(int j = 1; j <= DF_LAST_PAGE; j++) {
 		DataFlash.PageErase(j);
-	DataFlash.StartWrite(1);
-	DataFlash.WriteByte(HEAD_BYTE1);
-	DataFlash.WriteByte(HEAD_BYTE2);
-	DataFlash.WriteByte(LOG_INDEX_MSG);
-	DataFlash.WriteByte(0);
-	DataFlash.WriteByte(END_BYTE);
-	DataFlash.FinishWrite();
+		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
+	}
+	g.log_last_filenumber.set_and_save(0);
+	
 	Serial.printf_P(PSTR("\nLog erased.\n"));
     return 0;
 }
@@ -192,139 +193,214 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 }
 
 
+// This function determines the number of whole or partial log files in the DataFlash
+// Wholly overwritten files are (of course) lost.
 static byte get_num_logs(void)
 {
-	int page = 1;
-	byte data;
-	byte log_step = 0;
+	uint16_t lastpage;
+	uint16_t last;
+	uint16_t first;
 
+	if(g.log_last_filenumber < 1) return 0;
+	
 	DataFlash.StartRead(1);
-
-	while (page == 1) {
-		data = DataFlash.ReadByte();
-
-		switch(log_step){		 //This is a state machine to read the packets
-			case 0:
-				if(data==HEAD_BYTE1)	// Head byte 1
-					log_step++;
-				break;
-
-			case 1:
-				if(data==HEAD_BYTE2)	// Head byte 2
-					log_step++;
-				else
-					log_step = 0;
-				break;
-
-			case 2:
-				if(data==LOG_INDEX_MSG){
-					byte num_logs = DataFlash.ReadByte();
-					return num_logs;
-				}else{
-						log_step=0;	 // Restart, we have a problem...
-				}
-				break;
-			}
-		page = DataFlash.GetPage();
+	if(DataFlash.GetFileNumber() == 0XFFFF) return 0;
+	
+	lastpage = find_last();
+	DataFlash.StartRead(lastpage);
+	last = DataFlash.GetFileNumber();
+	DataFlash.StartRead(lastpage + 2);
+	first = DataFlash.GetFileNumber();
+	if(first == 0xFFFF) {
+		DataFlash.StartRead(1);
+		first = DataFlash.GetFileNumber();
 	}
-	return 0;
+	if(last == first) 
+	{
+		return 1;
+	} else {
+		return (last - first + 1);
+	}
 }
-
-// send the number of the last log?
-static void start_new_log(byte num_existing_logs)
+	
+// This function starts a new log file in the DataFlash
+static void start_new_log()
 {
-	int start_pages[50] = {0,0,0};
-	int end_pages[50]	= {0,0,0};
+uint16_t	last_page;
 
-	if(num_existing_logs > 0) {
-		for(int i=0;i<num_existing_logs;i++) {
-			get_log_boundaries(i+1,start_pages[i],end_pages[i]);
-		}
-		end_pages[num_existing_logs - 1] = find_last_log_page(start_pages[num_existing_logs - 1]);
+	if(g.log_last_filenumber < 1) {
+		last_page = 0;
+	} else {
+		last_page = find_last();
 	}
-
-	if(num_existing_logs == 0 ||
-       (end_pages[num_existing_logs - 1] < 4095 && num_existing_logs < MAX_NUM_LOGS)) {
-		if(num_existing_logs > 0)
-			start_pages[num_existing_logs] = end_pages[num_existing_logs - 1] + 1;
-		else
-			start_pages[0] = 2;
-		num_existing_logs++;
-		DataFlash.StartWrite(1);
-		DataFlash.WriteByte(HEAD_BYTE1);
-		DataFlash.WriteByte(HEAD_BYTE2);
-		DataFlash.WriteByte(LOG_INDEX_MSG);
-		DataFlash.WriteByte(num_existing_logs);
-		for(int i=0;i<MAX_NUM_LOGS;i++) {
-			DataFlash.WriteInt(start_pages[i]);
-			DataFlash.WriteInt(end_pages[i]);
-		}
-		DataFlash.WriteByte(END_BYTE);
-		DataFlash.FinishWrite();
-		DataFlash.StartWrite(start_pages[num_existing_logs-1]);
-	}else{
-		gcs_send_text_P(SEVERITY_LOW,PSTR("<start_new_log> Logs full - logging discontinued"));
-	}
+	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
+	DataFlash.SetFileNumber(g.log_last_filenumber);
+	DataFlash.StartWrite(last_page + 1);
 }
 
+// This function finds the first and last pages of a log file
+// The first page may be greater than the last page if the DataFlash has been filled and partially overwritten.
 static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 {
-	int page 		= 1;
-	byte data;
-	byte log_step	= 0;
-
-	DataFlash.StartRead(1);
-	while (page == 1) {
-		data = DataFlash.ReadByte();
-		switch(log_step)		 //This is a state machine to read the packets
-			{
-			case 0:
-				if(data==HEAD_BYTE1)	// Head byte 1
-					log_step++;
-				break;
-			case 1:
-				if(data==HEAD_BYTE2)	// Head byte 2
-					log_step++;
-				else
-					log_step = 0;
-				break;
-			case 2:
-				if(data==LOG_INDEX_MSG){
-					byte num_logs = DataFlash.ReadByte();
-					for(int i=0;i<log_num;i++) {
-						start_page = DataFlash.ReadInt();
-						end_page = DataFlash.ReadInt();
-					}
-					if(log_num==num_logs)
-						end_page = find_last_log_page(start_page);
-
-					return;		// This is the normal exit point
-				}else{
-						log_step=0;	 // Restart, we have a problem...
-				}
-				break;
+	int num = get_num_logs();
+	if(num == 1)
+	{
+		DataFlash.StartRead(DF_LAST_PAGE);
+		if(DataFlash.GetFileNumber() == 0xFFFF) 
+		{
+			start_page = 1;
+			end_page = find_last_log_page((uint16_t)log_num);
+		} else {
+			end_page = find_last_log_page((uint16_t)log_num);
+			start_page = end_page + 1;
+		}
+		
+	} else {
+		end_page = find_last_log_page((uint16_t)log_num);
+		if(log_num==1)
+			start_page = 1;
+		else
+			if(log_num == g.log_last_filenumber - num + 1) {
+				start_page = find_last_log_page(g.log_last_filenumber) + 1;
+			} else {
+				start_page = find_last_log_page((uint16_t)(log_num-1)) + 1;
 			}
-		page = DataFlash.GetPage();
 	}
-	//  Error condition if we reach here with page = 2   TO DO - report condition
+	if(start_page == DF_LAST_PAGE+1 || start_page == 0) start_page=1;
+}
+		
+// This function finds the last page of the last file
+// It also cleans up in the situation where a file was initiated, but no pages written
+static int find_last(void)
+{
+	int16_t num;
+	do 
+	{
+		num = find_last_log_page(g.log_last_filenumber);
+		if (num == -1) g.log_last_filenumber.set_and_save(g.log_last_filenumber - 1);
+	} while (num == -1);
+	return num;
 }
 
-static int find_last_log_page(int bottom_page)
+// This function finds the last page of a particular log file
+static int find_last_log_page(uint16_t log_number)
 {
-	int top_page = 4096;
-	int look_page;
-	int32_t check;
-
-	while((top_page - bottom_page) > 1) {
-		look_page = (top_page + bottom_page) / 2;
-		DataFlash.StartRead(look_page);
-		check = DataFlash.ReadLong();
-		if(check == -1L)
-			top_page = look_page;
-		else
-			bottom_page = look_page;
+	int16_t bottom_page;
+	int16_t top_page;
+	int16_t bottom_page_file;
+	int16_t bottom_page_filepage;
+	int16_t top_page_file;
+	int16_t top_page_filepage;
+	int16_t look_page;
+	int16_t look_page_file;
+	int16_t look_page_filepage;
+	int16_t check;
+	bool	XLflag = false;
+	
+	// First see if the logs are empty
+	DataFlash.StartRead(1);
+	if(DataFlash.GetFileNumber() == 0XFFFF) {
+	return 0;
 	}
-	return top_page;
+	
+	// Next, see if logs wrap the top of the dataflash
+	DataFlash.StartRead(DF_LAST_PAGE);
+	if(DataFlash.GetFileNumber() == 0xFFFF)
+	{
+	// This case is that we have not wrapped the top of the dataflash	
+		top_page = DF_LAST_PAGE;
+		bottom_page = 1;
+		while((top_page - bottom_page) > 1) {
+			look_page = (top_page + bottom_page) / 2;
+			DataFlash.StartRead(look_page);
+			if(DataFlash.GetFileNumber() > log_number)
+				top_page = look_page;
+			else 
+				bottom_page = look_page;
+		}
+		 return bottom_page;
+		 
+	} else {
+	// The else case is that the logs do wrap the top of the dataflash
+		bottom_page = 1;
+		top_page = DF_LAST_PAGE;
+		DataFlash.StartRead(bottom_page);
+		bottom_page_file = DataFlash.GetFileNumber();
+		bottom_page_filepage = DataFlash.GetFilePage();
+		DataFlash.StartRead(top_page);
+		top_page_file = DataFlash.GetFileNumber();
+		top_page_filepage = DataFlash.GetFilePage();
+		
+		// Check is we have exactly filled the dataflash but not wrapped.  If so we can exit quickly.
+		if(top_page_file == log_number && bottom_page_file != log_number) {
+		return top_page_file;
+		}
+		
+		// Check if the top is 1 file higher than we want.  If so we can exit quickly.
+		if(top_page_file == log_number+1) {
+		return top_page - top_page_filepage;
+		}
+		
+		// Check if the file has partially overwritten itself
+		if(top_page_filepage >= DF_LAST_PAGE) {
+			XLflag = true;
+		} else {
+			top_page = top_page - top_page_filepage;
+			DataFlash.StartRead(top_page);
+			top_page_file = DataFlash.GetFileNumber();
+		}
+		if(top_page_file == log_number) {
+			bottom_page = top_page;
+			top_page = DF_LAST_PAGE;
+			DataFlash.StartRead(top_page);
+			top_page_filepage = DataFlash.GetFilePage();
+			if(XLflag) bottom_page = 1;
+
+			while((top_page - bottom_page) > 1) {
+				look_page = (top_page + bottom_page) / 2;
+				DataFlash.StartRead(look_page);
+				if(DataFlash.GetFilePage() < top_page_filepage)
+				{
+					top_page = look_page;
+					top_page_filepage = DataFlash.GetFilePage();
+				} else { 
+					bottom_page = look_page;
+				}
+			}
+			return bottom_page;
+		}
+		
+
+		// Step down through the files to find the one we want
+		bottom_page = top_page;
+		bottom_page_filepage = top_page_filepage;
+		do
+		{
+			top_page = bottom_page;
+			bottom_page = bottom_page - bottom_page_filepage;
+			if(bottom_page < 1) bottom_page = 1;
+			DataFlash.StartRead(bottom_page);
+			bottom_page_file = DataFlash.GetFileNumber();
+			bottom_page_filepage = DataFlash.GetFilePage();
+		} while (bottom_page_file != log_number && bottom_page != 1);
+		
+		// Deal with stepping down too far due to overwriting a file
+		while((top_page - bottom_page) > 1) {
+			look_page = (top_page + bottom_page) / 2;
+			DataFlash.StartRead(look_page);
+			if(DataFlash.GetFileNumber() < log_number)
+				top_page = look_page;
+			else 
+				bottom_page = look_page;
+		}
+		
+		// The -1 return is for the case where a very short power up increments the log
+		// number counter but no log file is actually created.  This happens if power is 
+		// removed before the first page is written to flash.
+		if(bottom_page ==1 && DataFlash.GetFileNumber() != log_number) return -1;
+		
+		 return bottom_page;
+	}
 }
 
 
@@ -341,6 +417,7 @@ static void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw)
 }
 
 // Write a performance monitoring packet. Total length : 19 bytes
+#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Performance()
 {
 	DataFlash.WriteByte(HEAD_BYTE1);
@@ -355,9 +432,13 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(dcm.renorm_blowup_count);
 	DataFlash.WriteByte(gps_fix_count);
 	DataFlash.WriteInt((int)(dcm.get_health() * 1000));
+	DataFlash.WriteInt((int)(dcm.get_integrator().x * 1000));
+	DataFlash.WriteInt((int)(dcm.get_integrator().y * 1000));
+	DataFlash.WriteInt((int)(dcm.get_integrator().z * 1000));
 	DataFlash.WriteInt(pmTest1);
 	DataFlash.WriteByte(END_BYTE);
 }
+#endif
 
 // Write a command processing packet. Total length : 19 bytes
 //void Log_Write_Cmd(byte num, byte id, byte p1, long alt, long lat, long lng)
@@ -547,7 +628,7 @@ static void Log_Read_Performance()
 	pm_time = DataFlash.ReadLong();
 	Serial.print(pm_time);
 	Serial.print(comma);
-	for (int y = 1; y <= 9; y++) {
+	for (int y = 1; y <= 12; y++) {
 		if(y < 3 || y > 7){
 			logvar = DataFlash.ReadInt();
 		}else{
@@ -642,17 +723,33 @@ static void Log_Read_Raw()
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(int start_page, int end_page)
 {
-	byte data;
-	byte log_step = 0;
 	int packet_count = 0;
-	int page = start_page;
-
+	
 	#ifdef AIRFRAME_NAME
 		Serial.printf_P(PSTR((AIRFRAME_NAME)
 	#endif
 	Serial.printf_P(PSTR("\n" THISFIRMWARE
 						 "\nFree RAM: %u\n"),
                     memcheck_available_memory());
+                    
+    if(start_page > end_page)
+    {
+    	packet_count = Log_Read_Process(start_page, DF_LAST_PAGE);
+    	packet_count += Log_Read_Process(1, end_page);
+    } else {
+    	packet_count = Log_Read_Process(start_page, end_page);
+    }
+                    
+	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+}
+
+// Read the DataFlash log memory : Packet Parser
+static int Log_Read_Process(int start_page, int end_page)
+{
+	byte data;
+	byte log_step = 0;
+	int page = start_page;
+	int packet_count = 0;
 
 	DataFlash.StartRead(start_page);
 	while (page < end_page && page != -1){
@@ -726,7 +823,7 @@ static void Log_Read(int start_page, int end_page)
 			}
 		page = DataFlash.GetPage();
 		}
-	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	return packet_count;
 }
 
 #else // LOGGING_ENABLED
@@ -742,7 +839,7 @@ static void Log_Write_GPS(	long log_Time, long log_Lattitude, long log_Longitude
 static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
 static byte get_num_logs(void) { return 0; }
-static void start_new_log(byte num_existing_logs) {}
+static void start_new_log() {}
 static void Log_Write_Attitude(int log_roll, int log_pitch, uint16_t log_yaw) {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Raw() {}

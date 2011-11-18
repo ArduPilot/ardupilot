@@ -4,61 +4,118 @@
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
 {
+	// limit range
+	cmd_index = min(g.command_total-1, cmd_index);
+
+	// load command
 	struct Location temp = get_cmd_with_index(cmd_index);
 
+	//Serial.printf("loading cmd: %d with id:%d\n", cmd_index, temp.id);
+
+	// verify it's a nav command
 	if (temp.id > MAV_CMD_NAV_LAST ){
-		gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
+		//gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
+
 	} else {
-		command_must_index 	= NO_COMMAND;
-		next_command.id 	= NO_COMMAND;
-		g.command_index 	= cmd_index - 1;
-		update_commands();
+		//Serial.printf("APM:New cmd Index: %d\n", cmd_index);
+		init_commands();
+		command_nav_index 		= cmd_index;
+		prev_nav_index 			= command_nav_index;
+		update_commands(false);
 	}
 }
 
 // called by 10 Hz loop
 // --------------------
-static void update_commands(void)
+static void update_commands(bool increment)
 {
-	// fill command queue with a new command if available
-	if(next_command.id == NO_COMMAND){
+	// A: if we do not have any commands there is nothing to do
+	// B: We have completed the mission, don't redo the mission
+	if (g.command_total <= 1 || g.command_index == 255)
+		return;
 
-		// fetch next command if the next command queue is empty
-		// -----------------------------------------------------
-		if (g.command_index < g.command_total) {
+	if(command_nav_queue.id == NO_COMMAND){
+		// Our queue is empty
+		// fill command queue with a new command if available, or exit mission
+		// -------------------------------------------------------------------
+		if (command_nav_index < (g.command_total -1)) {
 
-			// only if we have a cmd stored in EEPROM
-			next_command = get_cmd_with_index(g.command_index + 1);
-			//Serial.printf("queue CMD %d\n", next_command.id);
+			// load next index
+			if (increment)
+				command_nav_index++;
+
+			command_nav_queue = get_cmd_with_index(command_nav_index);
+
+			if (command_nav_queue.id <= MAV_CMD_NAV_LAST ){
+				// This is what we report to MAVLINK
+				g.command_index  = command_nav_index;
+
+				// Save CMD to Log
+				if (g.log_bitmask & MASK_LOG_CMD)
+					Log_Write_Cmd(g.command_index + 1, &command_nav_queue);
+
+				// Act on the new command
+				process_nav_command();
+
+				// clear May indexes to force loading of more commands
+				// existing May commands are tossed.
+				command_cond_index	= NO_COMMAND;
+
+			} else{
+				// this is a conditional command so we skip it
+				command_nav_queue.id = NO_COMMAND;
+			}
 		}
 	}
 
-	// Are we out of must commands and the queue is empty?
-	if(next_command.id == NO_COMMAND && command_must_index == NO_COMMAND){
-		// if no commands were available from EEPROM
-		// And we have no nav commands
-		// --------------------------------------------
-		if (command_must_ID == NO_COMMAND){
-			gcs_send_text_P(SEVERITY_LOW,PSTR("out of commands!"));
-			handle_no_commands();
+	if(command_cond_queue.id == NO_COMMAND){
+		// Our queue is empty
+		// fill command queue with a new command if available, or do nothing
+		// -------------------------------------------------------------------
+
+		// no nav commands completed yet
+		if (prev_nav_index == NO_COMMAND)
+			return;
+
+		if (command_cond_index >= command_nav_index){
+			// don't process the fututre
+			//command_cond_index = NO_COMMAND;
+			return;
+
+		}else if (command_cond_index == NO_COMMAND){
+			// start from scratch
+			// look at command after the most recent completed nav
+			command_cond_index = prev_nav_index + 1;
+
+		}else{
+			// we've completed 1 cond, look at next command for another
+			command_cond_index++;
 		}
-	}
 
-	// check to see if we need to act on our command queue
-	if (process_next_command()){
-		//Serial.printf("did PNC: %d\n", next_command.id);
+		if(command_cond_index < (g.command_total -2)){
+			// we're OK to load a new command (last command must be a nav command)
+			command_cond_queue = get_cmd_with_index(command_cond_index);
 
-		// We acted on the queue - let's debug that
-		// ----------------------------------------
-		print_wp(&next_command, g.command_index);
+			if (command_cond_queue.id > MAV_CMD_CONDITION_LAST){
+				// this is a do now command
+				process_now_command();
 
-		// invalidate command queue so a new one is loaded
-		// -----------------------------------------------
-		clear_command_queue();
+				// clear command queue
+				command_cond_queue.id = NO_COMMAND;
 
-		// make sure we load the next command index
-		// ----------------------------------------
-		increment_WP_index();
+			}else if (command_cond_queue.id > MAV_CMD_NAV_LAST ){
+				// this is a conditional command
+				process_cond_command();
+
+			}else{
+				// this is a nav command, don't process
+				// clear the command conditional queue and index
+				prev_nav_index			= NO_COMMAND;
+				command_cond_index 		= NO_COMMAND;
+				command_cond_queue.id 	= NO_COMMAND;
+			}
+
+		}
 	}
 }
 
@@ -66,109 +123,22 @@ static void update_commands(void)
 static void verify_commands(void)
 {
 	if(verify_must()){
-		//Serial.printf("verified must cmd %d\n" , command_must_index);
-		command_must_index 	= NO_COMMAND;
+		//Serial.printf("verified must cmd %d\n" , command_nav_index);
+		command_nav_queue.id = NO_COMMAND;
+
+		// store our most recent executed nav command
+		prev_nav_index = command_nav_index;
+
+		// Wipe existing conditionals
+		command_cond_index 		= NO_COMMAND;
+		command_cond_queue.id 	= NO_COMMAND;
+
 	}else{
-		//Serial.printf("verified must false %d\n" , command_must_index);
+		//Serial.printf("verified must false %d\n" , command_nav_index);
 	}
 
 	if(verify_may()){
-		//Serial.printf("verified may cmd %d\n" , command_may_index);
-		command_may_index 	= NO_COMMAND;
-		command_may_ID		= NO_COMMAND;
+		//Serial.printf("verified may cmd %d\n" , command_cond_index);
+		command_cond_queue.id = NO_COMMAND;
 	}
-}
-
-static bool
-process_next_command()
-{
-	// these are Navigation/Must commands
-	// ---------------------------------
-	if (command_must_index == NO_COMMAND){ // no current command loaded
-		if (next_command.id < MAV_CMD_NAV_LAST ){
-
-			// we remember the index of our mission here
-			command_must_index = g.command_index + 1;
-
-			// Save CMD to Log
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.command_index + 1, &next_command);
-
-			// Act on the new command
-			process_must();
-			return true;
-		}
-	}
-
-	// these are Condition/May commands
-	// ----------------------
-	if (command_may_index == NO_COMMAND){
-		if (next_command.id > MAV_CMD_NAV_LAST && next_command.id < MAV_CMD_CONDITION_LAST ){
-
-			// we remember the index of our mission here
-			command_may_index = g.command_index + 1;
-
-			//SendDebug("MSG <pnc> new may ");
-			//SendDebugln(next_command.id,DEC);
-			//Serial.print("new command_may_index ");
-			//Serial.println(command_may_index,DEC);
-
-			// Save CMD to Log
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.command_index + 1, &next_command);
-
-			process_may();
-			return true;
-		}
-
-		// these are Do/Now commands
-		// ---------------------------
-		if (next_command.id > MAV_CMD_CONDITION_LAST){
-			//SendDebug("MSG <pnc> new now ");
-			//SendDebugln(next_command.id,DEC);
-
-			if (g.log_bitmask & MASK_LOG_CMD)
-				Log_Write_Cmd(g.command_index + 1, &next_command);
-			process_now();
-			return true;
-		}
-	}
-	// we did not need any new commands
-	return false;
-}
-
-/**************************************************/
-//  These functions implement the commands.
-/**************************************************/
-static void process_must()
-{
-	//gcs_send_text_P(SEVERITY_LOW,PSTR("New cmd: <process_must>"));
-	//Serial.printf("pmst %d\n", (int)next_command.id);
-
-	// clear May indexes to force loading of more commands
-	// existing May commands are tossed.
-	command_may_index	= NO_COMMAND;
-	command_may_ID		= NO_COMMAND;
-
-	// remember our command ID
-	command_must_ID 	= next_command.id;
-
-	// implements the Flight Logic
-	handle_process_must();
-
-}
-
-static void process_may()
-{
-	//gcs_send_text_P(SEVERITY_LOW,PSTR("<process_may>"));
-	//Serial.print("pmay");
-
-	command_may_ID = next_command.id;
-	handle_process_may();
-}
-
-static void process_now()
-{
-	//Serial.print("pnow");
-	handle_process_now();
 }

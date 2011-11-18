@@ -2,7 +2,8 @@
 # APM automatic test suite
 # Andrew Tridgell, October 2011
 
-import pexpect, os, util, sys, shutil, arducopter
+import pexpect, os, util, sys, shutil
+import arducopter, arduplane
 import optparse, fnmatch, time, glob, traceback
 
 os.putenv('TMPDIR', util.reltopdir('tmp'))
@@ -58,7 +59,8 @@ def convert_gpx():
         util.run_cmd(util.reltopdir("../pymavlink/examples/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
-        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1 -F %s' % (gpx, kml), checkfail=False)
+        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
+        util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
     return True
 
 
@@ -75,12 +77,14 @@ You can get it from git://git.samba.org/tridge/UAV/HILTest.git
         ''' % util.reltopdir('../HILTest'))
         return False
     return True
-    
+
 
 ############## main program #############
 parser = optparse.OptionParser("autotest")
 parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
 parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+parser.add_option("--viewerip", default=None, help='IP address to send MAVLink and fg packets to')
+parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 
 opts, args = parser.parse_args()
 
@@ -90,6 +94,7 @@ steps = [
     'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
+    'fly.ArduPlane',
     'logs.ArduPlane',
     'build1280.ArduCopter',
     'build2560.ArduCopter',
@@ -146,6 +151,12 @@ def run_step(step):
 
     if step == 'fly.ArduCopter':
         return arducopter.fly_ArduCopter()
+
+    if step == 'fly.ArduPlane':
+        if not opts.experimental:
+            print("DISABLED: use --experimental to enable fly.ArduPlane")
+            return True
+        return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
 
     if step == 'convertgpx':
         return convert_gpx()
@@ -240,7 +251,7 @@ def run_tests(steps):
     results.addglob('DataFlash Log', '*.flashlog')
     results.addglob("MAVLink log", '*.mavlog')
     results.addglob("GPX track", '*.gpx')
-    results.addglob("KML track", '*.kml')
+    results.addglob("KMZ track", '*.kmz')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')

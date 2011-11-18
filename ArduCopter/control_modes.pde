@@ -78,13 +78,13 @@ static void read_trim_switch()
 		}else{ // switch is disengaged
 
 			if(trim_flag){
+				trim_flag = false;
 
 				// set the throttle nominal
 				if(g.rc_3.control_in > 150){
 					g.throttle_cruise.set_and_save(g.rc_3.control_in);
 						//Serial.printf("tnom %d\n", g.throttle_cruise.get());
 				}
-				trim_flag = false;
 			}
 		}
 
@@ -95,11 +95,22 @@ static void read_trim_switch()
 		}else{ // switch is disengaged
 
 			if(trim_flag){
-				// set the next_WP
+				trim_flag = false;
+				// increment index
 				CH7_wp_index++;
+
+				// set the next_WP, 0 is Home so we don't set that
+				// max out at 100 since I think we need to stay under the EEPROM limit
+				CH7_wp_index = constrain(CH7_wp_index, 1, 100);
+
+				// set our location ID to 16, MAV_CMD_NAV_WAYPOINT
 				current_loc.id = MAV_CMD_NAV_WAYPOINT;
-				g.command_total.set_and_save(CH7_wp_index);
+
+				// save command
 				set_command_with_index(current_loc, CH7_wp_index);
+
+				// save the index
+				g.command_total.set_and_save(CH7_wp_index + 1);
 			}
 		}
 

@@ -778,7 +778,16 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            string alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+            string alt = "100";
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                alt = (10 * MainV2.cs.multiplierdist).ToString("0");
+            }
+            else
+            {
+                alt = (100 * MainV2.cs.multiplierdist).ToString("0");
+            }
             if (DialogResult.Cancel == Common.InputBox("Enter Alt", "Enter Guided Mode Alt", ref alt))
                 return;
 
@@ -816,14 +825,18 @@ namespace ArdupilotMega.GCSViews
 
         private void Zoomlevel_ValueChanged(object sender, EventArgs e)
         {
-            if (gMapControl1.MaxZoom + 1 == (double)Zoomlevel.Value)
+            try
             {
-                gMapControl1.Zoom = (double)Zoomlevel.Value - .1;
+                if (gMapControl1.MaxZoom + 1 == (double)Zoomlevel.Value)
+                {
+                    gMapControl1.Zoom = (double)Zoomlevel.Value - .1;
+                }
+                else
+                {
+                    gMapControl1.Zoom = (double)Zoomlevel.Value;
+                }
             }
-            else
-            {
-                gMapControl1.Zoom = (double)Zoomlevel.Value;
-            }
+            catch { }
         }
 
         private void gMapControl1_MouseMove(object sender, MouseEventArgs e)
