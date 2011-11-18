@@ -32,11 +32,14 @@ namespace ArdupilotMega
     public struct Locationwp
     {
         public byte id;				// command id
-        public byte options;			///< options bitmask (1<<0 = relative altitude)
-        public byte p1;				// param 1
-        public int lat;				// Lattitude * 10**7
-        public int lng;				// Longitude * 10**7
-        public int alt;				// Altitude in centimeters (meters * 100)
+        public byte options;
+        public float p1;				// param 1
+        public float p2;				// param 2
+        public float p3;				// param 3
+        public float p4;				// param 4
+        public float lat;				// Lattitude * 10**7
+        public float lng;				// Longitude * 10**7
+        public float alt;				// Altitude in centimeters (meters * 100)
     };
 
 
@@ -796,6 +799,7 @@ System.ComponentModel.Description("Text under Bar")]
             base.OnPaint(e);
             drawlbl(e.Graphics);
         }
+
     }
 
     public class HorizontalProgressBar : ProgressBar

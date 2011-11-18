@@ -362,7 +362,7 @@ namespace ArdupilotMega
             }
             if (!run)
             {
-                Console.WriteLine("Mavlink : NOT VALID PACKET sendPacket() "+indata.GetType().ToString());
+                Console.WriteLine("Mavlink : NOT VALID PACKET sendPacket() " + indata.GetType().ToString());
             }
         }
 
@@ -401,7 +401,7 @@ namespace ArdupilotMega
 #if MAVLINK10
             packet[4] = (byte)MAV_COMPONENT.MAV_COMP_ID_MISSIONPLANNER;
 #else
-			packet[4] = (byte)MAV_COMPONENT.MAV_COMP_ID_WAYPOINTPLANNER;
+            packet[4] = (byte)MAV_COMPONENT.MAV_COMP_ID_WAYPOINTPLANNER;
 #endif
             packet[5] = messageType;
 
@@ -497,7 +497,7 @@ namespace ArdupilotMega
 #if MAVLINK10
             Array.Resize(ref temp, 16);
 #else
-Array.Resize(ref temp, 15);
+            Array.Resize(ref temp, 15);
 #endif
             req.param_id = temp;
             req.param_value = (value);
@@ -756,7 +756,7 @@ Array.Resize(ref temp, 15);
             req.target_component = compid;
             req.type = 0;
 
-            generatePacket(MAVLINK_MSG_ID_WAYPOINT_ACK, req);			
+            generatePacket(MAVLINK_MSG_ID_WAYPOINT_ACK, req);
 #endif
         }
 
@@ -981,7 +981,7 @@ Array.Resize(ref temp, 15);
                     }
                 }
             }
-			
+
 #endif
         }
 
@@ -1182,7 +1182,7 @@ Array.Resize(ref temp, 15);
                     }
                 }
             }
-			#else
+#else
 
             __mavlink_waypoint_request_list_t req = new __mavlink_waypoint_request_list_t();
 
@@ -1228,8 +1228,8 @@ Array.Resize(ref temp, 15);
                     }
                 }
             }
-			
-			#endif
+
+#endif
         }
         /// <summary>
         /// Gets specfied WP
@@ -1343,30 +1343,27 @@ Array.Resize(ref temp, 15);
 
                         loc.options = (byte)(wp.frame & 0x1);
                         loc.id = (byte)(wp.command);
-                        loc.p1 = (byte)(wp.param1);
-                        if (loc.id < (byte)MAV_CMD.LAST)
-                        {
-                            loc.alt = (int)((wp.z) * 100);
-                            loc.lat = (int)((wp.x) * 10000000);
-                            loc.lng = (int)((wp.y) * 10000000);
-                        }
-                        else
-                        {
+                        loc.p1 = (wp.param1);
+                        loc.p2 = (wp.param2);
+                        loc.p3 = (wp.param3);
+                        loc.p4 = (wp.param4);
 
-                            loc.alt = (int)((wp.z));
-                            loc.lat = (int)((wp.x));
-                            loc.lng = (int)((wp.y));
-
+                        loc.alt = ((wp.z));
+                        loc.lat = ((wp.x));
+                        loc.lng = ((wp.y));
+                        /*
+                        if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+                        {
                             switch (loc.id)
                             {					// Switch to map APM command fields inot MAVLink command fields
                                 case (byte)MAV_CMD.LOITER_TURNS:
                                 case (byte)MAV_CMD.TAKEOFF:
                                 case (byte)MAV_CMD.DO_SET_HOME:
                                     //case (byte)MAV_CMD.DO_SET_ROI:
-                                    loc.alt = (int)((wp.z) * 100);
-                                    loc.lat = (int)((wp.x) * 10000000);
-                                    loc.lng = (int)((wp.y) * 10000000);
-                                    loc.p1 = (byte)wp.param1;
+                                    loc.alt = (float)((wp.z));
+                                    loc.lat = (float)((wp.x));
+                                    loc.lng = (float)((wp.y));
+                                    loc.p1 = (float)wp.param1;
                                     break;
 
                                 case (byte)MAV_CMD.CONDITION_CHANGE_ALT:
@@ -1417,7 +1414,7 @@ Array.Resize(ref temp, 15);
                                     break;
                             }
                         }
-
+                        */
                         Console.WriteLine("getWP {0} {1} {2} {3} {4} opt {5}", loc.id, loc.p1, loc.alt, loc.lat, loc.lng, loc.options);
 
                         break;
@@ -1625,7 +1622,7 @@ Array.Resize(ref temp, 15);
                 }
             }
 
-#endif			
+#endif
         }
 
         /// <summary>
@@ -1638,11 +1635,11 @@ Array.Resize(ref temp, 15);
         public void setWP(Locationwp loc, ushort index, MAV_FRAME frame, byte current)
         {
             MainV2.givecomport = true;
-			#if MAVLINK10
+#if MAVLINK10
             __mavlink_mission_item_t req = new __mavlink_mission_item_t();
-			#else
-			__mavlink_waypoint_t req = new __mavlink_waypoint_t();
-			#endif
+#else
+            __mavlink_waypoint_t req = new __mavlink_waypoint_t();
+#endif
 
             req.target_system = sysid;
             req.target_component = compid; // MAVLINK_MSG_ID_MISSION_ITEM
@@ -1652,20 +1649,18 @@ Array.Resize(ref temp, 15);
 
             req.current = current;
 
-            if (loc.id < (byte)MAV_CMD.LAST)
-            {
-                req.frame = (byte)frame;
-                req.y = (float)(loc.lng / 10000000.0);
-                req.x = (float)(loc.lat / 10000000.0);
-                req.z = (float)(loc.alt / 100.0);
-            }
-            else
-            {
-                req.frame = (byte)MAVLink.MAV_FRAME.MAV_FRAME_MISSION; // mission
-                req.y = (float)(loc.lng);
-                req.x = (float)(loc.lat);
-                req.z = (float)(loc.alt);
+            req.frame = (byte)frame;
+            req.y = (float)(loc.lng);
+            req.x = (float)(loc.lat);
+            req.z = (float)(loc.alt);
 
+            req.param1 = loc.p1;
+            req.param2 = loc.p2;
+            req.param3 = loc.p3;
+            req.param4 = loc.p4;
+            /*
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
                 switch (loc.id)
                 {					// Switch to map APM command fields inot MAVLink command fields
                     case (byte)MAV_CMD.LOITER_TURNS:
@@ -1673,9 +1668,6 @@ Array.Resize(ref temp, 15);
                         req.param1 = loc.p1;
                         break;
                     case (byte)MAV_CMD.DO_SET_HOME:
-                        req.y = (float)(loc.lng / 10000000.0);
-                        req.x = (float)(loc.lat / 10000000.0);
-                        req.z = (float)(loc.alt / 100.0);
                         req.param1 = loc.p1;
                         break;
 
@@ -1717,16 +1709,17 @@ Array.Resize(ref temp, 15);
                         break;
                 }
             }
+            */
             req.seq = index;
 
             Console.WriteLine("setWP {6} frame {0} cmd {1} p1 {2} x {3} y {4} z {5}", req.frame, req.command, req.param1, req.x, req.y, req.z, index);
 
             // request
-			#if MAVLINK10
+#if MAVLINK10
             generatePacket(MAVLINK_MSG_ID_MISSION_ITEM, req);
-			#else
-			generatePacket(MAVLINK_MSG_ID_WAYPOINT, req);
-			#endif
+#else
+            generatePacket(MAVLINK_MSG_ID_WAYPOINT, req);
+#endif
 
             DateTime start = DateTime.Now;
             int retrys = 6;
@@ -1738,11 +1731,11 @@ Array.Resize(ref temp, 15);
                     if (retrys > 0)
                     {
                         Console.WriteLine("setWP Retry " + retrys);
-			#if MAVLINK10
+#if MAVLINK10
             generatePacket(MAVLINK_MSG_ID_MISSION_ITEM, req);
-			#else
-			generatePacket(MAVLINK_MSG_ID_WAYPOINT, req);
-			#endif
+#else
+                        generatePacket(MAVLINK_MSG_ID_WAYPOINT, req);
+#endif
                         start = DateTime.Now;
                         retrys--;
                         continue;
@@ -1753,7 +1746,7 @@ Array.Resize(ref temp, 15);
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
-				#if MAVLINK10
+#if MAVLINK10
                     if (buffer[5] == MAVLINK_MSG_ID_MISSION_ACK)
                     {
                         __mavlink_mission_ack_t ans = new __mavlink_mission_ack_t();
@@ -1793,8 +1786,8 @@ Array.Resize(ref temp, 15);
                     {
                         //Console.WriteLine(DateTime.Now + " PC setwp " + buffer[5]);
                     }
-					#else 
-					                    if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_ACK)
+#else
+                    if (buffer[5] == MAVLINK_MSG_ID_WAYPOINT_ACK)
                     { //__mavlink_waypoint_request_t
                         Console.WriteLine("set wp " + index + " ACK 47 : " + buffer[5]);
                         break;
@@ -1827,7 +1820,7 @@ Array.Resize(ref temp, 15);
                     {
                         //Console.WriteLine(DateTime.Now + " PC setwp " + buffer[5]);
                     }
-					#endif
+#endif
                 }
             }
         }
