@@ -540,6 +540,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="mavcmd.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <Content Include="Resources\MAVParam.zh-Hans.txt" />
     <None Include="Resources\MAVCmd.txt">

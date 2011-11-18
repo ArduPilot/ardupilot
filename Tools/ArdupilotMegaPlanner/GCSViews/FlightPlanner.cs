@@ -25,7 +25,6 @@ namespace ArdupilotMega.GCSViews
     partial class FlightPlanner : MyUserControl
     {
         int selectedrow = 0;
-        int t7 = 10000000;
         bool quickadd = false;
         bool isonline = true;
         bool sethome = false;
@@ -37,8 +36,7 @@ namespace ArdupilotMega.GCSViews
         private TextBox textBox1;
         private ComponentResourceManager rm = new ComponentResourceManager(typeof(FlightPlanner));
 
-        private Dictionary<MAVLink.MAV_CMD, string> cmdNames = new Dictionary<MAVLink.MAV_CMD, string>();
-        private Dictionary<MAVLink.MAV_CMD, string[]> cmdParamNames = new Dictionary<MAVLink.MAV_CMD, string[]>();
+        private Dictionary<string, string[]> cmdParamNames = new Dictionary<string, string[]>();
 
 
         /// <summary>
@@ -160,15 +158,15 @@ namespace ArdupilotMega.GCSViews
 
                             if (temp.id < (byte)MAVLink.MAV_CMD.LAST)
                             {
-                                temp.alt = (int)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 100);
-                                temp.lat = (int)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 10000000);
-                                temp.lng = (int)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")) * 10000000);
+                                temp.alt = (float)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lat = (float)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lng = (float)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
                             }
                             else
                             {
-                                temp.alt = (int)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
-                                temp.lat = (int)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
-                                temp.lng = (int)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.alt = (float)(double.Parse(matchs[i].Groups[3].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lat = (float)(double.Parse(matchs[i].Groups[4].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
+                                temp.lng = (float)(double.Parse(matchs[i].Groups[5].Value.ToString(), new System.Globalization.CultureInfo("en-US")));
                             }
                             cmds.Add(temp);
 
@@ -262,26 +260,26 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
             DataGridViewTextBoxCell cell;
-            if (Commands.Columns[Param3.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][2]/*"Lat"*/))
+            if (Commands.Columns[Lat.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][4]/*"Lat"*/))
             {
-                cell = Commands.Rows[selectedrow].Cells[3] as DataGridViewTextBoxCell;
+                cell = Commands.Rows[selectedrow].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 cell.Value = lat.ToString("0.0000000");
                 cell.DataGridView.EndEdit();
             }
-            if (Commands.Columns[Param4.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][3]/*"Long"*/))
+            if (Commands.Columns[Lon.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][5]/*"Long"*/))
             {
-                cell = Commands.Rows[selectedrow].Cells[4] as DataGridViewTextBoxCell;
+                cell = Commands.Rows[selectedrow].Cells[Lon.Index] as DataGridViewTextBoxCell;
                 cell.Value = lng.ToString("0.0000000");
                 cell.DataGridView.EndEdit();
             }
-            if (Commands.Columns[Param1.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][0]/*"Delay"*/))
+            if (Commands.Columns[Param1.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][0]/*"Delay"*/))
             {
-                cell = Commands.Rows[selectedrow].Cells[1] as DataGridViewTextBoxCell;
+                cell = Commands.Rows[selectedrow].Cells[Param1.Index] as DataGridViewTextBoxCell;
                 cell.Value = 0;
             }
-            if (alt != -1 && Commands.Columns[Param2.Index].HeaderText.Equals(cmdParamNames[MAVLink.MAV_CMD.WAYPOINT][1]/*"Alt"*/))
+            if (alt != -1 && Commands.Columns[Alt.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][6]/*"Alt"*/))
             {
-                cell = Commands.Rows[selectedrow].Cells[2] as DataGridViewTextBoxCell;
+                cell = Commands.Rows[selectedrow].Cells[Alt.Index] as DataGridViewTextBoxCell;
 
                 cell.Value = TXT_DefaultAlt.Text;
 
@@ -494,46 +492,7 @@ namespace ArdupilotMega.GCSViews
                 catch { }
             }
 
-
-            // add first to keep order
-            foreach (object cmd in Enum.GetValues(typeof(MAVLink.MAV_CMD)))
-            {
-                string str = cmd.ToString();
-                if (!str.EndsWith("LAST") && !str.EndsWith("END"))
-                {
-                    cmdNames[(MAVLink.MAV_CMD)cmd] = str;
-                    cmdParamNames[(MAVLink.MAV_CMD)cmd] = new string[] { "setme", "setme", "setme", "setme" };
-                }
-            }
-
-            // replace with localizied text
-            // the command name and param names are stored in TXT_MAV_CMD, one comand per line, in following format:
-            // COMMAND_TYPE;COMMAND_NAME;PARAM_1_HEAD;PARAM_2_HEAD;PARAM_3_HEAD;PARAM_4_HEAD;
-
-            string[] cmds = rm.GetString("MAVCmd").Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-            rm.ReleaseAllResources();
-
-            foreach (string cmd in cmds)
-            {
-                string[] field = cmd.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (field.Length >= 2)
-                {
-                    MAVLink.MAV_CMD type = (MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), field[0]);
-                    cmdNames[type] = field[1];
-                    if (field.Length == 6)
-                    {
-                        string[] param = new string[4];
-                        Array.Copy(field, 2, param, 0, 4);
-                        cmdParamNames[type] = param;
-                    }
-                }
-            }
-
-            Command.DataSource = new List<KeyValuePair<MAVLink.MAV_CMD, string>>(cmdNames as ICollection<KeyValuePair<MAVLink.MAV_CMD, string>>)/*)*/;
-            Command.ValueMember = "Key";
-            Command.DisplayMember = "Value";
+            updateCMDParams();
 
             Up.Image = global::ArdupilotMega.Properties.Resources.up;
             Down.Image = global::ArdupilotMega.Properties.Resources.down;
@@ -543,6 +502,80 @@ namespace ArdupilotMega.GCSViews
             {
                 readdefines(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "defines.h");
             }
+        }
+
+        void updateCMDParams()
+        {
+            cmdParamNames = readCMDXML();
+
+            List<string> cmds = new List<string>();
+
+            foreach (string item in cmdParamNames.Keys)
+            {
+                cmds.Add(item);
+            }
+
+            Command.DataSource = cmds;
+        }
+
+        Dictionary<string, string[]> readCMDXML()
+        {
+            Dictionary<string, string[]> cmd = new Dictionary<string, string[]>();
+
+            // do lang stuff here
+
+            string file = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "mavcmd.xml";
+
+            using (XmlReader reader = XmlReader.Create(file))
+            {
+                reader.Read();
+                reader.ReadStartElement("CMD");
+                if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
+                {
+                    reader.ReadToFollowing("APM");
+                }
+                else
+                {
+                    reader.ReadToFollowing("AC2");
+                }
+
+                XmlReader inner = reader.ReadSubtree();
+
+                inner.Read();
+
+                inner.MoveToElement();
+
+                inner.Read();
+
+                while (inner.Read())
+                {
+                    inner.MoveToElement();
+                    if (inner.IsStartElement())
+                    {
+                        string cmdname = inner.Name;
+                        string[] cmdarray = new string[7];
+                        int b = 0;
+
+                        XmlReader inner2 = inner.ReadSubtree();
+
+                        inner2.Read();
+
+                        while (inner2.Read())
+                        {
+                            inner2.MoveToElement();
+                            if (inner2.IsStartElement())
+                            {
+                                cmdarray[b] = inner2.ReadString();
+                                b++;
+                            }
+                        }
+
+                        cmd[cmdname] = cmdarray;
+                    }
+                }
+            }
+
+            return cmd;
         }
 
         void Commands_DataError(object sender, DataGridViewDataErrorEventArgs e)
@@ -607,40 +640,21 @@ namespace ArdupilotMega.GCSViews
                 isonline = false;
             }
 
+            updateCMDParams();
+
             writeKML();
         }
 
-        private void ChangeColumnHeader(MAVLink.MAV_CMD command)
+        private void ChangeColumnHeader(string command)
         {
             try
             {
                 if (cmdParamNames.ContainsKey(command))
-                    for (int i = 1; i <= 4; i++)
+                    for (int i = 1; i <= 7; i++)
                         Commands.Columns[i].HeaderText = cmdParamNames[command][i - 1];
                 else
-                    for (int i = 1; i <= 4; i++)
+                    for (int i = 1; i <= 7; i++)
                         Commands.Columns[i].HeaderText = "setme";
-                switch (command)
-                {
-                    case MAVLink.MAV_CMD.WAYPOINT:
-                        if (MainV2.APMFirmware == MainV2.Firmwares.ArduPlane)
-                            Commands.Columns[1].HeaderText = "N/A";
-                        break;
-                    case MAVLink.MAV_CMD.LAND:
-                        Commands.Columns[1].HeaderText = "N/A";
-                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
-                        {
-                            Commands.Columns[2].HeaderText = "N/A";
-                            Commands.Columns[3].HeaderText = "N/A";
-                            Commands.Columns[4].HeaderText = "N/A";
-                        }
-                        break;
-                    case MAVLink.MAV_CMD.TAKEOFF:
-                        if (MainV2.APMFirmware != MainV2.Firmwares.ArduPlane)
-                            Commands.Columns[1].HeaderText = "N/A";
-                        break;
-                }
-
             }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); }
         }
@@ -657,8 +671,9 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 selectedrow = e.RowIndex;
-                /*string option = Commands[Command.Index, selectedrow].EditedFormattedValue.ToString();*/
-                MAVLink.MAV_CMD cmd = (MAVLink.MAV_CMD)Commands[0, selectedrow].Value;
+                string option = Commands[Command.Index, selectedrow].EditedFormattedValue.ToString();
+                string cmd = Commands[0, selectedrow].Value.ToString();
+                Console.WriteLine("editformat " + option + " value " + cmd);
                 ChangeColumnHeader(cmd);
             }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); }
@@ -669,7 +684,7 @@ namespace ArdupilotMega.GCSViews
             DataGridViewComboBoxCell cell = Commands.Rows[e.RowIndex].Cells[Command.Index] as DataGridViewComboBoxCell;
             if (cell.Value == null)
             {
-                cell.Value = MAVLink.MAV_CMD.WAYPOINT/*"WAYPOINT"*/;
+                cell.Value = "WAYPOINT";
                 Commands.Rows[e.RowIndex].Cells[Delete.Index].Value = "X";
                 if (!quickadd)
                 {
@@ -685,7 +700,7 @@ namespace ArdupilotMega.GCSViews
             {
                 Commands.CurrentCell = Commands.Rows[e.RowIndex].Cells[0];
 
-                if ((MAVLink.MAV_CMD)Commands.Rows[e.RowIndex - 1].Cells[Command.Index].Value/*.ToString()*/ == MAVLink.MAV_CMD.WAYPOINT/*"WAYPOINT"*/)
+                if (Commands.Rows[e.RowIndex - 1].Cells[Command.Index].Value.ToString() == "WAYPOINT")
                 {
                     Commands.Rows[e.RowIndex].Selected = true; // highlight row
                 }
@@ -707,7 +722,8 @@ namespace ArdupilotMega.GCSViews
             {
                 DataGridViewTextBoxCell cell;
                 cell = Commands.Rows[selectedrow].Cells[a] as DataGridViewTextBoxCell;
-                if (Commands.Columns[a].HeaderText.Equals("N/A"))
+
+                if (Commands.Columns[a].HeaderText.Equals("") && cell != null && cell.Value == null)
                 {
                     cell.Value = "0";
                 }
@@ -715,10 +731,11 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (cell != null && (cell.Value == null || cell.Value.ToString() == ""))
                     {
-                        cell.Value = "I need Data";
+                        cell.Value = "?";
                     }
                     else
                     {
+                        // not a text box
                     }
                 }
             }
@@ -740,30 +757,6 @@ namespace ArdupilotMega.GCSViews
                 catch { }
             }
 
-        }
-        /// <summary>
-        /// copy of ardupilot code for getting distance between WP's
-        /// </summary>
-        /// <param name="loc1"></param>
-        /// <param name="loc2"></param>
-        /// <returns></returns>
-        double getDistance(Locationwp loc1, Locationwp loc2)
-        {
-            if (loc1.lat == 0 || loc1.lng == 0)
-                return -1;
-            if (loc2.lat == 0 || loc2.lng == 0)
-                return -1;
-
-            // this is used to offset the shrinking longitude as we go towards the poles	
-            double rads = (double)((Math.Abs(loc2.lat) / t7) * 0.0174532925);
-            //377,173,810 / 10,000,000 = 37.717381 * 0.0174532925 = 0.658292482926943		
-            double scaleLongDown = Math.Cos(rads);
-            double scaleLongUp = 1.0f / Math.Cos(rads);
-
-
-            float dlat = (float)(loc2.lat - loc1.lat);
-            float dlong = (float)(((float)(loc2.lng - loc1.lng)) * scaleLongDown);
-            return Math.Sqrt(Math.Pow(dlat, 2) + Math.Pow(dlong, 2)) * .01113195;
         }
 
         /// <summary>
@@ -912,17 +905,16 @@ namespace ArdupilotMega.GCSViews
                 {
                     try
                     {
-                        //int command = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
-                        int command = (byte)(MAVLink.MAV_CMD)Commands.Rows[a].Cells[0].Value;
+                        int command = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
                         if (command < (byte)MAVLink.MAV_CMD.LAST && command != (byte)MAVLink.MAV_CMD.TAKEOFF)
                         {
-                            string cell2 = Commands.Rows[a].Cells[Param2.Index].Value.ToString(); // alt
-                            string cell3 = Commands.Rows[a].Cells[Param3.Index].Value.ToString(); // lat
-                            string cell4 = Commands.Rows[a].Cells[Param4.Index].Value.ToString(); // lng
+                            string cell2 = Commands.Rows[a].Cells[Alt.Index].Value.ToString(); // alt
+                            string cell3 = Commands.Rows[a].Cells[Lat.Index].Value.ToString(); // lat
+                            string cell4 = Commands.Rows[a].Cells[Lon.Index].Value.ToString(); // lng
 
                             if (cell4 == "0" || cell3 == "0")
                                 continue;
-                            if (cell4 == "I need Data" || cell3 == "I need Data")
+                            if (cell4 == "?" || cell3 == "?")
                                 continue;
 
                             pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()));
@@ -952,11 +944,11 @@ namespace ArdupilotMega.GCSViews
                     float range = 4000;
 
                     Locationwp loc1 = new Locationwp();
-                    loc1.lat = (int)(minlat * t7);
-                    loc1.lng = (int)(minlong * t7);
+                    loc1.lat = (float)(minlat);
+                    loc1.lng = (float)(minlong);
                     Locationwp loc2 = new Locationwp();
-                    loc2.lat = (int)(maxlat * t7);
-                    loc2.lng = (int)(maxlong * t7);
+                    loc2.lat = (float)(maxlat);
+                    loc2.lng = (float)(maxlong);
 
                     //double distance = getDistance(loc1, loc2);  // same code as ardupilot
                     double distance = 2000;
@@ -1042,23 +1034,17 @@ namespace ArdupilotMega.GCSViews
                     {
                         byte mode = (byte)(MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[0].Value.ToString());
 
-                        sw.Write((a+1)); // seq
-                        sw.Write("\t" +0); // current
+                        sw.Write((a + 1)); // seq
+                        sw.Write("\t" + 0); // current
                         sw.Write("\t" + (CHK_altmode.Checked == true ? (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL : (byte)MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT)); //frame 
                         sw.Write("\t" + mode);
-                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[1].Value.ToString()).ToString("0.000000",new System.Globalization.CultureInfo("en-US")));
-                        if (mode >= (byte)MAVLink.MAV_CMD.LAST) {
-                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                            sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                        } else {
-                            sw.Write("\t" + "0.000000");
-                            sw.Write("\t" + "0.000000");
-                            sw.Write("\t" + "0.000000");
-                        }
-                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[3].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[4].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
-                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[2].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
+                        sw.Write("\t" + (double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist).ToString("0.000000", new System.Globalization.CultureInfo("en-US")));
                         sw.Write("\t" + 1);
                         sw.WriteLine("");
                     }
@@ -1197,9 +1183,9 @@ namespace ArdupilotMega.GCSViews
                     try
                     {
                         home.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-                        home.lat = (int)(float.Parse(TXT_homelat.Text) * 10000000);
-                        home.lng = (int)(float.Parse(TXT_homelng.Text) * 10000000);
-                        home.alt = (int)(float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist * 100); // use saved home
+                        home.lat = (float.Parse(TXT_homelat.Text));
+                        home.lng = (float.Parse(TXT_homelng.Text));
+                        home.alt = (float.Parse(TXT_homealt.Text) / MainV2.cs.multiplierdist); // use saved home
                     }
                     catch { throw new Exception("Your home location is invalid"); }
 
@@ -1213,8 +1199,8 @@ namespace ArdupilotMega.GCSViews
                     for (int a = 0; a < Commands.Rows.Count - 0; a++)
                     {
                         Locationwp temp = new Locationwp();
-                        temp.id = (byte)(MAVLink.MAV_CMD)Commands.Rows[a].Cells[0].Value;// (int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[0].Value.ToString(), false);
-                        temp.p1 = byte.Parse(Commands.Rows[a].Cells[1].Value.ToString());
+                        temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(), false);
+                        temp.p1 = float.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString());
                         if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
                         {
                             if (CHK_altmode.Checked)
@@ -1225,25 +1211,15 @@ namespace ArdupilotMega.GCSViews
                             {
                                 frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
                             }
-
-                            temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()) / MainV2.cs.multiplierdist * 100);
-                            temp.lat = (int)(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()) * 10000000);
-                            temp.lng = (int)(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()) * 10000000);
                         }
-                        else
-                        {
-                            frame = MAVLink.MAV_FRAME.MAV_FRAME_MISSION;
-                            
-                            temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()));
-                            temp.lat = (int)(double.Parse(Commands.Rows[a].Cells[3].Value.ToString()));
-                            temp.lng = (int)(double.Parse(Commands.Rows[a].Cells[4].Value.ToString()));
 
-                            if (temp.id == (byte)MAVLink.MAV_CMD.CONDITION_CHANGE_ALT && !CHK_altmode.Checked)
-                            {
-                                frame = MAVLink.MAV_FRAME.MAV_FRAME_GLOBAL_RELATIVE_ALT;
-                                temp.alt = (int)(double.Parse(Commands.Rows[a].Cells[2].Value.ToString()) / MainV2.cs.multiplierdist);
-                            }
-                        }
+                        temp.alt = (float)(double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString()) / MainV2.cs.multiplierdist);
+                        temp.lat = (float)(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
+                        temp.lng = (float)(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
+
+                        temp.p2 = (float)(double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()));
+                        temp.p3 = (float)(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
+                        temp.p4 = (float)(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
 
                         port.setWP(temp, (ushort)(a + 1), frame, 0);
                     }
@@ -1308,6 +1284,7 @@ namespace ArdupilotMega.GCSViews
             foreach (Locationwp temp in cmds)
             {
                 i++;
+                //Console.WriteLine("FP processToScreen " + i);
                 if (temp.id == 0 && i != 0) // 0 and not home
                     break;
                 if (temp.id == 255 && i != 0) // bad record - never loaded any WP's - but have started the board up.
@@ -1321,19 +1298,19 @@ namespace ArdupilotMega.GCSViews
                 DataGridViewTextBoxCell cell;
                 DataGridViewComboBoxCell cellcmd;
                 cellcmd = Commands.Rows[i].Cells[Command.Index] as DataGridViewComboBoxCell;
-                cellcmd.Value = temp.id == 0 ? MAVLink.MAV_CMD.WAYPOINT : (MAVLink.MAV_CMD)temp.id; // treat home as a waypoint to avoid data error.
-                /*foreach (object value in Enum.GetValues(typeof(MAVLink.MAV_CMD)))
+                cellcmd.Value = "WAYPOINT";
+
+                foreach (object value in Enum.GetValues(typeof(MAVLink.MAV_CMD)))
                 {
                     if ((int)value == temp.id)
                     {
                         cellcmd.Value = value.ToString();
                         break;
                     }
-                }*/
+                }
+
                 if (temp.id < (byte)MAVLink.MAV_CMD.LAST || temp.id == (byte)MAVLink.MAV_CMD.DO_SET_HOME)
                 {
-                    int alt = temp.alt;
-
                     if ((temp.options & 0x1) == 0 && i != 0) // home is always abs
                     {
                         CHK_altmode.Checked = true;
@@ -1343,31 +1320,32 @@ namespace ArdupilotMega.GCSViews
                         CHK_altmode.Checked = false;
                     }
 
-                    cell = Commands.Rows[i].Cells[Param1.Index] as DataGridViewTextBoxCell;
-                    cell.Value = temp.p1;
-                    cell = Commands.Rows[i].Cells[Param2.Index] as DataGridViewTextBoxCell;
-                    cell.Value = (int)((double)alt * MainV2.cs.multiplierdist / 100);
-                    cell = Commands.Rows[i].Cells[Param3.Index] as DataGridViewTextBoxCell;
-                    cell.Value = (double)temp.lat / 10000000;
-                    cell = Commands.Rows[i].Cells[Param4.Index] as DataGridViewTextBoxCell;
-                    cell.Value = (double)temp.lng / 10000000;
+
+
                 }
-                else
-                {
-                    cell = Commands.Rows[i].Cells[Param1.Index] as DataGridViewTextBoxCell;
-                    cell.Value = temp.p1;
-                    cell = Commands.Rows[i].Cells[Param2.Index] as DataGridViewTextBoxCell;
-                    cell.Value = temp.alt;
-                    cell = Commands.Rows[i].Cells[Param3.Index] as DataGridViewTextBoxCell;
-                    cell.Value = temp.lat;
-                    cell = Commands.Rows[i].Cells[Param4.Index] as DataGridViewTextBoxCell;
-                    cell.Value = temp.lng;
-                }
+
+                int alt = (int)temp.alt;
+
+                cell = Commands.Rows[i].Cells[Alt.Index] as DataGridViewTextBoxCell;
+                cell.Value = (int)((double)alt * MainV2.cs.multiplierdist);
+                cell = Commands.Rows[i].Cells[Lat.Index] as DataGridViewTextBoxCell;
+                cell.Value = (double)temp.lat;
+                cell = Commands.Rows[i].Cells[Lon.Index] as DataGridViewTextBoxCell;
+                cell.Value = (double)temp.lng;
+
+                cell = Commands.Rows[i].Cells[Param1.Index] as DataGridViewTextBoxCell;
+                cell.Value = temp.p1;
+                cell = Commands.Rows[i].Cells[Param2.Index] as DataGridViewTextBoxCell;
+                cell.Value = temp.p2;
+                cell = Commands.Rows[i].Cells[Param3.Index] as DataGridViewTextBoxCell;
+                cell.Value = temp.p3;
+                cell = Commands.Rows[i].Cells[Param4.Index] as DataGridViewTextBoxCell;
+                cell.Value = temp.p4;
             }
             try
             {
                 DataGridViewTextBoxCell cellhome;
-                cellhome = Commands.Rows[0].Cells[Param3.Index] as DataGridViewTextBoxCell;
+                cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 if (cellhome.Value != null)
                 {
                     if (cellhome.Value.ToString() != TXT_homelat.Text)
@@ -1377,9 +1355,9 @@ namespace ArdupilotMega.GCSViews
                         if (dr == DialogResult.Yes)
                         {
                             TXT_homelat.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                            cellhome = Commands.Rows[0].Cells[Param4.Index] as DataGridViewTextBoxCell;
+                            cellhome = Commands.Rows[0].Cells[Lon.Index] as DataGridViewTextBoxCell;
                             TXT_homelng.Text = (double.Parse(cellhome.Value.ToString())).ToString();
-                            cellhome = Commands.Rows[0].Cells[Param2.Index] as DataGridViewTextBoxCell;
+                            cellhome = Commands.Rows[0].Cells[Alt.Index] as DataGridViewTextBoxCell;
                             TXT_homealt.Text = (double.Parse(cellhome.Value.ToString()) * MainV2.cs.multiplierdist).ToString();
                         }
                     }
@@ -1652,7 +1630,7 @@ namespace ArdupilotMega.GCSViews
                     if (line.StartsWith("#"))
                         continue;
 
-                    string[] items = line.Split(new char[] {(char)'\t',' '}, StringSplitOptions.RemoveEmptyEntries);
+                    string[] items = line.Split(new char[] { (char)'\t', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                     if (items.Length <= 9)
                         continue;
@@ -1664,41 +1642,38 @@ namespace ArdupilotMega.GCSViews
                         if (items[2] == "3")
                         { // abs MAV_FRAME_GLOBAL_RELATIVE_ALT=3
                             temp.options = 1;
-                        } else 
+                        }
+                        else
                         {
                             temp.options = 0;
                         }
                         temp.id = (byte)(int)Enum.Parse(typeof(MAVLink.MAV_CMD), items[3], false);
-                        temp.p1 = (byte)float.Parse(items[4], new System.Globalization.CultureInfo("en-US"));
+                        temp.p1 = float.Parse(items[4], new System.Globalization.CultureInfo("en-US"));
 
                         if (temp.id == 99)
                             temp.id = 0;
 
-                        if (temp.id < (byte)MAVLink.MAV_CMD.LAST || wp_count == 0)
-                        {
-                            temp.alt = (int)(double.Parse(items[10], new System.Globalization.CultureInfo("en-US")) * 100);
-                            temp.lat = (int)(double.Parse(items[8], new System.Globalization.CultureInfo("en-US")) * 10000000);
-                            temp.lng = (int)(double.Parse(items[9], new System.Globalization.CultureInfo("en-US")) * 10000000);
-                        }
-                        else
-                        {
-                            temp.alt = (int)(double.Parse(items[5], new System.Globalization.CultureInfo("en-US")));
-                            temp.lat = (int)(double.Parse(items[6], new System.Globalization.CultureInfo("en-US")));
-                            temp.lng = (int)(double.Parse(items[7], new System.Globalization.CultureInfo("en-US")));
-                        }
+                        temp.alt = (float)(double.Parse(items[10], new System.Globalization.CultureInfo("en-US")));
+                        temp.lat = (float)(double.Parse(items[8], new System.Globalization.CultureInfo("en-US")));
+                        temp.lng = (float)(double.Parse(items[9], new System.Globalization.CultureInfo("en-US")));
+
+                        temp.p2 = (float)(double.Parse(items[5], new System.Globalization.CultureInfo("en-US")));
+                        temp.p3 = (float)(double.Parse(items[6], new System.Globalization.CultureInfo("en-US")));
+                        temp.p4 = (float)(double.Parse(items[7], new System.Globalization.CultureInfo("en-US")));
+
                         cmds.Add(temp);
 
                         wp_count++;
 
                     }
                     catch { MessageBox.Show("Line invalid\n" + line); }
-                        
-                        if (wp_count == byte.MaxValue)
-                        {
-                            MessageBox.Show("To many Waypoints!!!");
-                            break;
-                        }
-                    
+
+                    if (wp_count == byte.MaxValue)
+                    {
+                        MessageBox.Show("To many Waypoints!!!");
+                        break;
+                    }
+
                 }
 
                 sr.Close();
@@ -1828,7 +1803,7 @@ namespace ArdupilotMega.GCSViews
                     {
                         if (CurentRectMarker.InnerMarker.Tag.ToString().Contains("grid"))
                         {
-                            drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid","")) - 1] = new PointLatLng(end.Lat,end.Lng);
+                            drawnpolygon.Points[int.Parse(CurentRectMarker.InnerMarker.Tag.ToString().Replace("grid", "")) - 1] = new PointLatLng(end.Lat, end.Lng);
                             MainMap.UpdatePolygonLocalPosition(drawnpolygon);
                         }
                         else
@@ -2097,7 +2072,7 @@ namespace ArdupilotMega.GCSViews
         {
             // update row headers
             ((ComboBox)sender).ForeColor = Color.White;
-            ChangeColumnHeader((MAVLink.MAV_CMD)((ComboBox)sender).SelectedValue);
+            ChangeColumnHeader(((ComboBox)sender).Text);
         }
         /// <summary>
         /// Get the Google earth ALT for a given coord
@@ -2241,19 +2216,19 @@ namespace ArdupilotMega.GCSViews
         {
             double denom = ((end1.Lng - start1.Lng) * (end2.Lat - start2.Lat)) - ((end1.Lat - start1.Lat) * (end2.Lng - start2.Lng));
             //  AB & CD are parallel         
-            if (denom == 0) 
+            if (denom == 0)
                 return PointLatLng.Zero;
             double numer = ((start1.Lat - start2.Lat) * (end2.Lng - start2.Lng)) - ((start1.Lng - start2.Lng) * (end2.Lat - start2.Lat));
-            double r = numer / denom; 
+            double r = numer / denom;
             double numer2 = ((start1.Lat - start2.Lat) * (end1.Lng - start1.Lng)) - ((start1.Lng - start2.Lng) * (end1.Lat - start1.Lat));
-            double s = numer2 / denom; 
-            if ((r < 0 || r > 1) || (s < 0 || s > 1)) 
-                return PointLatLng.Zero;   
+            double s = numer2 / denom;
+            if ((r < 0 || r > 1) || (s < 0 || s > 1))
+                return PointLatLng.Zero;
             // Find intersection point      
             PointLatLng result = new PointLatLng();
             result.Lng = start1.Lng + (r * (end1.Lng - start1.Lng));
-            result.Lat = start1.Lat + (r * (end1.Lat - start1.Lat));     
-            return result; 
+            result.Lat = start1.Lat + (r * (end1.Lat - start1.Lat));
+            return result;
         }
 
         RectLatLng getPolyMinMax(GMapPolygon poly)
@@ -2351,7 +2326,7 @@ namespace ArdupilotMega.GCSViews
                 double x = bottomleft.Lat - Math.Abs(fulllatdiff);
                 double y = bottomleft.Lng - Math.Abs(fulllngdiff);
 
-                Console.WriteLine("{0} < {1} {2} < {3}", x , (topright.Lat) ,y , (topright.Lng));
+                Console.WriteLine("{0} < {1} {2} < {3}", x, (topright.Lat), y, (topright.Lng));
 
                 while (x < (topright.Lat + Math.Abs(fulllatdiff)) && y < (topright.Lng + Math.Abs(fulllngdiff)))
                 {
@@ -2420,12 +2395,12 @@ namespace ArdupilotMega.GCSViews
                                 }
                             }
                         }
-                        
+
                         if (!farestlatlong.IsZero)
                             callMe(farestlatlong.Lat, farestlatlong.Lng, altitude);
                         if (!closestlatlong.IsZero)
                             callMe(closestlatlong.Lat, closestlatlong.Lng - overshootdistlng, altitude);
-                         
+
                         //callMe(x, topright.Lng, altitude);
                         //callMe(x, bottomleft.Lng - overshootdistlng, altitude);
                     }
@@ -2448,7 +2423,7 @@ namespace ArdupilotMega.GCSViews
                             newlatlong = FindLineIntersection(area.Points[a - 1], area.Points[a], new PointLatLng(ax, ay), new PointLatLng(bx, by));
                             if (!newlatlong.IsZero)
                             {
-                                if (noc >  MainMap.Manager.GetDistance(new PointLatLng(ax, ay),newlatlong))
+                                if (noc > MainMap.Manager.GetDistance(new PointLatLng(ax, ay), newlatlong))
                                 {
                                     closestlatlong.Lat = newlatlong.Lat;
                                     closestlatlong.Lng = newlatlong.Lng;
@@ -2540,7 +2515,7 @@ namespace ArdupilotMega.GCSViews
             if (startmeasure.IsZero)
             {
                 startmeasure = start;
-                polygons.Markers.Add( new GMapMarkerGoogleRed(start));
+                polygons.Markers.Add(new GMapMarkerGoogleRed(start));
                 MainMap.Invalidate();
             }
             else
@@ -2549,14 +2524,14 @@ namespace ArdupilotMega.GCSViews
                 polygonPoints.Add(startmeasure);
                 polygonPoints.Add(start);
 
-                GMapPolygon line = new GMapPolygon(polygonPoints,"measure dist");
+                GMapPolygon line = new GMapPolygon(polygonPoints, "measure dist");
                 line.Stroke.Color = Color.Green;
 
                 polygons.Polygons.Add(line);
 
                 polygons.Markers.Add(new GMapMarkerGoogleRed(start));
                 MainMap.Invalidate();
-                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start),true) + " AZ: " + (MainMap.Manager.GetBearing(startmeasure, start).ToString("0")));
+                MessageBox.Show("Distance: " + FormatDistance(MainMap.Manager.GetDistance(startmeasure, start), true) + " AZ: " + (MainMap.Manager.GetBearing(startmeasure, start).ToString("0")));
                 polygons.Polygons.Remove(line);
                 polygons.Markers.Clear();
                 startmeasure = new PointLatLng();
@@ -2566,9 +2541,10 @@ namespace ArdupilotMega.GCSViews
         private void rotateMapToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string heading = "0";
-            Common.InputBox("Rotate map to heading","Enter new UP heading",ref heading);
+            Common.InputBox("Rotate map to heading", "Enter new UP heading", ref heading);
             float ans = 0;
-            if (float.TryParse(heading,out ans)) {
+            if (float.TryParse(heading, out ans))
+            {
                 MainMap.Bearing = ans;
             }
         }
@@ -2582,14 +2558,14 @@ namespace ArdupilotMega.GCSViews
 
             polygongridmode = true;
 
-            List < PointLatLng > polygonPoints = new List<PointLatLng>();
+            List<PointLatLng> polygonPoints = new List<PointLatLng>();
             if (drawnpolygons.Polygons.Count == 0)
             {
                 drawnpolygon = new GMapPolygon(polygonPoints, "drawnpoly");
-                drawnpolygon.Stroke = new Pen(Color.Red,2);
+                drawnpolygon.Stroke = new Pen(Color.Red, 2);
                 drawnpolygons.Polygons.Add(drawnpolygon);
             }
-            drawnpolygon.Points.Add(new PointLatLng(start.Lat,start.Lng));
+            drawnpolygon.Points.Add(new PointLatLng(start.Lat, start.Lng));
 
             addpolygonmarkergrid(drawnpolygon.Points.Count.ToString(), start.Lng, start.Lat, 0);
 
@@ -2621,7 +2597,7 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_UNLIM;
 
-            setfromGE(end.Lat,end.Lng,(int)float.Parse(TXT_DefaultAlt.Text));
+            setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
         }
 
         private void jumpstartToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2641,7 +2617,7 @@ namespace ArdupilotMega.GCSViews
         private void jumpwPToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string wp = "1";
-            Common.InputBox("WP No", "Jump to WP no?",ref wp);
+            Common.InputBox("WP No", "Jump to WP no?", ref wp);
             string repeat = "5";
             Common.InputBox("Jump repeat", "Number of times to Repeat", ref repeat);
 

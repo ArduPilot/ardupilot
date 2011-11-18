@@ -597,6 +597,11 @@ namespace ArdupilotMega.GCSViews
 
             if (board == "1280")
             {
+                if (FLASH.Length > 126976)
+                {
+                    MessageBox.Show("Firmware is to big for a 1280, Please upgrade!!");
+                    return;
+                }
                 //port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }
