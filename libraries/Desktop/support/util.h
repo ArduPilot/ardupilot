@@ -8,3 +8,4 @@ void swap_doubles(double *d, unsigned count);
 float swap_float(float f);
 void swap_floats(float *f, unsigned count);
 void set_nonblocking(int fd);
+double normalise(double v, double min, double max);

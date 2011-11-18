@@ -126,9 +126,9 @@ static void sitl_fgear_input(void)
 		sitl_update_gps(d.fg_pkt.latitude, d.fg_pkt.longitude,
 				ft2m(d.fg_pkt.altitude),
 				ft2m(d.fg_pkt.speedN), ft2m(d.fg_pkt.speedE));
-		sitl_update_adc(d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.yawDeg, kt2mps(d.fg_pkt.airspeed));
+		sitl_update_adc(d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading, kt2mps(d.fg_pkt.airspeed));
 		sitl_update_barometer(ft2m(d.fg_pkt.altitude));
-		sitl_update_compass(d.fg_pkt.heading, d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.yawDeg);
+		sitl_update_compass(d.fg_pkt.heading, d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading);
 		count++;
 		sim_input_count++;
 		if (millis() - last_report > 1000) {

@@ -57,7 +57,7 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 	float rollRate, pitchRate, yawRate;
 	static uint32_t last_update;
 	static float last_roll, last_pitch, last_yaw;
-	uint32_t delta_t;
+	unsigned long delta_t;
 
 	/* map roll/pitch/yaw to values the accelerometer would see */
 	xAccel = sin(ToRad(pitch));
@@ -73,12 +73,15 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 		rollRate = 0;
 		pitchRate = 0;
 		yawRate = 0;
-		delta_t = millis();
+		delta_t = micros();
 	} else {
-		delta_t = millis() - last_update;
-		rollRate  = 1000.0 * (roll  - last_roll)  / delta_t;
-		pitchRate = 1000.0 * (pitch - last_pitch) / delta_t;
-		yawRate   = 1000.0 * (yaw   - last_yaw)   / delta_t;
+		delta_t = micros() - last_update;
+		rollRate  = 1.0e6 * (roll  - last_roll)  / delta_t;
+		pitchRate = 1.0e6 * (pitch - last_pitch) / delta_t;
+		yawRate   = 1.0e6 * (yaw   - last_yaw)   / delta_t;
+		rollRate = normalise(rollRate, -180, 180);
+		pitchRate = normalise(pitchRate, -180, 180);
+		yawRate = normalise(yawRate, -180, 180);
 	}
 	last_update += delta_t;
 
@@ -109,8 +112,8 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 
 #if 0
 	extern AP_DCM dcm;
-	printf("roll=%6.1f pitch=%6.1f dcm_roll=%6.1f dcm_pitch=%6.1f rollRate=%6.3f pitchRate=%6.3f\n",
-	       roll, pitch, dcm.roll_sensor/100.0, dcm.pitch_sensor/100.0, rollRate, pitchRate);
+	printf("roll=%6.1f / %6.1f pitch=%6.1f / %6.1f  rollRate=%6.1f pitchRate=%6.1f\n",
+	       roll, dcm.roll_sensor/100.0, pitch, dcm.pitch_sensor/100.0, rollRate, pitchRate);
 #endif
 }
 
