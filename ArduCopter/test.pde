@@ -4,13 +4,13 @@
 
 // These are function definitions so the Menu can be constructed before the functions
 // are defined below. Order matters to the compiler.
-static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
+//static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
 //static int8_t	test_stabilize(uint8_t argc, 	const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
+//static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
+//static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
@@ -21,7 +21,7 @@ static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
+//static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
@@ -54,22 +54,22 @@ static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 const struct Menu::command test_menu_commands[] PROGMEM = {
-	{"pwm",			test_radio_pwm},
+//	{"pwm",			test_radio_pwm},
 	{"radio",		test_radio},
 //	{"failsafe",	test_failsafe},
 //	{"stabilize",	test_stabilize},
 	{"gps",			test_gps},
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	{"adc", 		test_adc},
+//	{"adc", 		test_adc},
 #endif
 	{"imu",			test_imu},
 	//{"dcm",			test_dcm},
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
-	{"tri",			test_tri},
+	//{"tri",			test_tri},
 	{"current",		test_current},
-	{"relay",		test_relay},
+//	{"relay",		test_relay},
 	{"wp",			test_wp},
 	//{"nav",			test_nav},
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -82,7 +82,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #endif
 	//{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
-	{"rawgps",		test_rawgps},
+//	{"rawgps",		test_rawgps},
 //	{"mission",		test_mission},
 	//{"reverse",		test_reverse},
 	//{"wp",			test_wp_nav},
@@ -114,8 +114,8 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-static int8_t
-test_radio_pwm(uint8_t argc, const Menu::arg *argv)
+/*static int8_t
+//test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -144,10 +144,10 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
-}
+}*/
 
-static int8_t
-test_tri(uint8_t argc, const Menu::arg *argv)
+/*static int8_t
+//test_tri(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -171,11 +171,11 @@ test_tri(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
-}
+}*/
 
 /*
 static int8_t
-test_nav(uint8_t argc, const Menu::arg *argv)
+//test_nav(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -248,7 +248,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 
 /*
 static int8_t
-test_failsafe(uint8_t argc, const Menu::arg *argv)
+//test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
 
 	#if THROTTLE_FAILSAFE
@@ -303,7 +303,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 */
 
 /*static int8_t
-test_stabilize(uint8_t argc, const Menu::arg *argv)
+//test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
 
@@ -390,9 +390,10 @@ test_stabilize(uint8_t argc, const Menu::arg *argv)
 	}
 }
 */
-#if HIL_MODE != HIL_MODE_ATTITUDE
+
+/*#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
-test_adc(uint8_t argc, const Menu::arg *argv)
+//test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	Serial.printf_P(PSTR("ADC\n"));
@@ -410,6 +411,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 	}
 }
 #endif
+*/
 
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
@@ -709,8 +711,9 @@ test_current(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
+/*
 static int8_t
-test_relay(uint8_t argc, const Menu::arg *argv)
+//test_relay(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -731,7 +734,7 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-
+*/
 static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)
 {
@@ -754,7 +757,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
+//static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
 	/*
    print_hit_enter();
    delay(1000);
@@ -774,10 +777,10 @@ static int8_t test_rawgps(uint8_t argc, const Menu::arg *argv) {
      }
    }
    */
- }
+ //}
 
 /*static int8_t
-test_xbee(uint8_t argc, const Menu::arg *argv)
+//test_xbee(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -823,7 +826,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 
 /*
 static int8_t
-test_mag(uint8_t argc, const Menu::arg *argv)
+//test_mag(uint8_t argc, const Menu::arg *argv)
 {
 	if(g.compass_enabled) {
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
@@ -854,7 +857,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 */
 /*
 static int8_t
-test_reverse(uint8_t argc, 		const Menu::arg *argv)
+//test_reverse(uint8_t argc, 		const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -952,7 +955,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 
 /*
 static int8_t
-test_mission(uint8_t argc, const Menu::arg *argv)
+//test_mission(uint8_t argc, const Menu::arg *argv)
 {
 	//write out a basic mission to the EEPROM
 
@@ -1017,7 +1020,7 @@ static void print_hit_enter()
 }
 
 /*
-static void fake_out_gps()
+//static void fake_out_gps()
 {
 	static float rads;
 	g_gps->new_data 	= true;
@@ -1040,7 +1043,7 @@ static void fake_out_gps()
 
 */
 /*
-static void print_motor_out(){
+//static void print_motor_out(){
 	Serial.printf("out: R: %d,  L: %d  F: %d  B: %d\n",
 				(motor_out[CH_1] 	- g.rc_3.radio_min),
 				(motor_out[CH_2] 	- g.rc_3.radio_min),
