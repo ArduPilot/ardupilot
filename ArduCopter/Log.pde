@@ -20,8 +20,8 @@ static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of print_f that reads from flash memory
-static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
-{
+//static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
+/*{
 	Serial.printf_P(PSTR("\n"
 						 "Commands:\n"
 						 "  dump <n>"
@@ -30,7 +30,7 @@ static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 						 "  disable <name> | all\n"
 						 "\n"));
     return 0;
-}
+}*/
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -40,8 +40,7 @@ const struct Menu::command log_menu_commands[] PROGMEM = {
 	{"dump",	dump_log},
 	{"erase",	erase_logs},
 	{"enable",	select_logs},
-	{"disable",	select_logs},
-	{"help",	help_log}
+	{"disable",	select_logs}
 };
 
 // A Macro to create the Menu
@@ -698,15 +697,16 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(angle_boost);					//8
 	DataFlash.WriteInt(manual_boost);					//9
 	DataFlash.WriteInt(climb_rate);						//10
-//#if HIL_MODE == HIL_MODE_ATTITUDE
-//	DataFlash.WriteInt(0);								//10
-//#else
-//	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//10
-//#endif
 
-	DataFlash.WriteInt(g.rc_3.servo_out);				//11
-	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//12
-	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//13
+#if HIL_MODE == HIL_MODE_ATTITUDE
+	DataFlash.WriteInt(0);								//11
+#else
+	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//11
+#endif
+
+	DataFlash.WriteInt(g.rc_3.servo_out);				//12
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//13
+	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//14
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -718,7 +718,7 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 1; i < 13; i++ ){
+	for(int8_t i = 1; i < 14; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
