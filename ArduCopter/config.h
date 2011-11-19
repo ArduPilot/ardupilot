@@ -519,7 +519,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		1.0			//
+# define THROTTLE_P		0.6			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.0			//
@@ -532,23 +532,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // Crosstrack compensation
 //
-#ifndef XTRACK_ENTRY_ANGLE
-# define XTRACK_ENTRY_ANGLE   30 // deg
+#ifndef CROSSTRACK_GAIN
+# define CROSSTRACK_GAIN		4
 #endif
-
-#ifndef XTRACK_P
-# define XTRACK_P		2			// trying a lower val
-#endif
-#ifndef XTRACK_I
-# define XTRACK_I		0.00		//with 4m error, 12.5s windup
-#endif
-#ifndef XTRACK_D
-# define XTRACK_D		0.00		// upped with filter
-#endif
-#ifndef XTRACK_IMAX
-# define XTRACK_IMAX		10
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
