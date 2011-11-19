@@ -311,8 +311,8 @@
 00000023 r verify_loiter_turns()::__c
 00000023 r navigate()::__c
 00000026 r init_ardupilot()::__c
+00000026 r init_ardupilot()::__c
 00000027 r change_command(unsigned char)::__c
-00000027 r init_ardupilot()::__c
 00000028 t demo_servos(unsigned char)
 00000028 W AP_VarT<float>::unserialize(void*, unsigned int)
 00000028 W AP_VarT<long>::unserialize(void*, unsigned int)

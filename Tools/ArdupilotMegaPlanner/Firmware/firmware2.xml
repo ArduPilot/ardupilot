@@ -3,14 +3,14 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560.hex</url2560>
-    <name>ArduPlane V2.251  </name>
+    <name>ArduPlane V2.26  </name>
     <desc></desc>
     <format_version>12</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-2560.hex</url2560>
-    <name>ArduPlane V2.251 HIL</name>
+    <name>ArduPlane V2.26 HIL</name>
     <desc>
 #define FLIGHT_MODE_CHANNEL	8
 #define FLIGHT_MODE_1		AUTO
@@ -44,53 +44,53 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-2560.hex</url2560>
-    <name>ArduPlane V2.251 APM trunk</name>
+    <name>ArduPlane V2.26 APM trunk</name>
     <desc></desc>
     <format_version>12</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Quad-2560.hex</url2560>
-    <name>ArduCopter V2.0.49 Beta Quad</name>
+    <name>ArduCopter V2.0.50 Beta Quad</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>111</format_version>
+    <format_version>112</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-2560.hex</url2560>
-    <name>ArduCopter V2.0.49 Beta Tri</name>
+    <name>ArduCopter V2.0.50 Beta Tri</name>
     <desc>
 #define FRAME_CONFIG TRI_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>111</format_version>
+    <format_version>112</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-2560.hex</url2560>
-    <name>ArduCopter V2.0.49 Beta Hexa</name>
+    <name>ArduCopter V2.0.50 Beta Hexa</name>
     <desc>
 #define FRAME_CONFIG HEXA_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>111</format_version>
+    <format_version>112</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-2560.hex</url2560>
-    <name>ArduCopter V2.0.49 Beta Y6</name>
+    <name>ArduCopter V2.0.50 Beta Y6</name>
     <desc>
 #define FRAME_CONFIG Y6_FRAME
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>111</format_version>
+    <format_version>112</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
@@ -142,7 +142,7 @@
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-1280.hex</url>
     <url2560>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-QUADHIL-2560.hex</url2560>
-    <name>ArduCopter V2.0.49 Beta Quad Hil</name>
+    <name>ArduCopter V2.0.50 Beta Quad Hil</name>
     <desc>
 #define FRAME_CONFIG QUAD_FRAME
 #define FRAME_ORIENTATION PLUS_FRAME
@@ -152,7 +152,7 @@
 
 
 </desc>
-    <format_version>111</format_version>
+    <format_version>112</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-1280.hex</url>
