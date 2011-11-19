@@ -1,29 +1,20 @@
 From https://code.google.com/p/ardupilot-mega
-   66cc8dd..6f4e7ec  master     -> origin/master
-Updating 66cc8dd..6f4e7ec
+   6aeabd0..833acbd  master     -> origin/master
+Updating 6aeabd0..833acbd
 Fast-forward
- ArduCopter/APM_Config.h                            |    2 +-
- ArduCopter/ArduCopter.pde                          |   18 ++-
- ArduCopter/commands.pde                            |    8 +-
- ArduCopter/commands_process.pde                    |    3 +-
- ArduCopter/motors_hexa.pde                         |    2 +-
- ArduCopter/motors_octa.pde                         |    2 +-
- ArduCopter/motors_octa_quad.pde                    |    2 +-
- ArduCopter/motors_y6.pde                           |    3 +-
- ArduPlane/ArduPlane.pde                            |    2 +-
- ArduPlane/Log.pde                                  |    5 +-
- ArduPlane/commands_logic.pde                       |   13 ++-
- Tools/ArdupilotMegaPlanner/CurrentState.cs         |    1 -
- Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |   27 +++-
- .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |  149 +++++++++++++++++---
- Tools/ArdupilotMegaPlanner/HIL/QuadCopter.cs       |   14 ++-
- .../Properties/AssemblyInfo.cs                     |    2 +-
- .../bin/Release/ArdupilotMegaPlanner.application   |    2 +-
- .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2194432 -> 2195456 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
- Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 20480 -> 20480 bytes
- .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 53248 -> 53248 bytes
- .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 380928 bytes
- Tools/autotest/arducopter.py                       |   58 ++++++---
- Tools/autotest/common.py                           |   16 ++-
- 24 files changed, 251 insertions(+), 78 deletions(-)
+ ArduCopter/ArduCopter.pde    |   11 ++++-
+ ArduCopter/Attitude.pde      |    1 -
+ ArduCopter/Log.pde           |   28 ++++++------
+ ArduCopter/Parameters.h      |   50 +++++++++--------------
+ ArduCopter/config.h          |   20 +--------
+ ArduCopter/defines.h         |    2 +
+ ArduCopter/navigation.pde    |   17 ++++++--
+ ArduCopter/radio.pde         |    9 +----
+ ArduCopter/setup.pde         |   52 ++++++++++++------------
+ ArduCopter/system.pde        |   22 ++++++----
+ ArduCopter/test.pde          |   63 +++++++++++++++--------------
+ ArduPlane/ArduPlane.pde      |    2 +-
+ ArduPlane/Log.pde            |   91 +++++++++++++++++++++---------------------
+ Tools/autotest/arducopter.py |   10 ++--
+ Tools/autotest/common.py     |    8 +++-
+ 15 files changed, 193 insertions(+), 193 deletions(-)
