@@ -215,7 +215,7 @@ static void update_crosstrack(void)
 		//radians((target_bearing - original_target_bearing) / 100)
 		crosstrack_error = sin(temp) * wp_distance;	 // Meters we are off track line
 
-		crosstrack_error = constrain(crosstrack_error * 4, -1200, 1200);
+		crosstrack_error = constrain(crosstrack_error * g.crosstrack_gain, -1200, 1200);
 	}
 }
 
