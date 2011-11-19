@@ -86,8 +86,8 @@ macro(add_sketch SKETCH_NAME BOARD PORT)
 	# files
 	set(SKETCH_CPP ${CMAKE_CURRENT_BINARY_DIR}/${SKETCH_NAME}/${SKETCH_NAME}.cpp)
 	set(SKETCH_PDE ${CMAKE_CURRENT_SOURCE_DIR}/${SKETCH_NAME}/${SKETCH_NAME}.pde)
-	message(STATUS "SKETCH_PDE:\n${SKETCH_PDE}")
-	message(STATUS "SKETCH_CPP:\n${SKETCH_CPP}")
+    #message(STATUS "SKETCH_PDE:\n${SKETCH_PDE}")
+    #message(STATUS "SKETCH_CPP:\n${SKETCH_CPP}")
 
 	# settings
 	set(${SKETCH_NAME}_BOARD ${BOARD})
@@ -109,12 +109,12 @@ macro(add_sketch SKETCH_NAME BOARD PORT)
 	string(FIND "${STR1}" "\n" POS2)
 	math(EXPR POS3 "${POS1}+${POS2}")
 	string(SUBSTRING "${FILE}" 0 ${POS3} FILE_HEAD)
-	message(STATUS "FILE_HEAD:\n${FILE_HEAD}")
+    #message(STATUS "FILE_HEAD:\n${FILE_HEAD}")
 
 	# find the body of the main pde
 	math(EXPR BODY_LENGTH "${FILE_LENGTH}-${POS3}-1")
 	string(SUBSTRING "${FILE}" "${POS3}+1" "${BODY_LENGTH}" FILE_BODY)
-	message(STATUS "BODY:\n${FILE_BODY}")
+    #message(STATUS "BODY:\n${FILE_BODY}")
 
 	# write the file head
 	file(APPEND ${SKETCH_CPP} "${FILE_HEAD}")
@@ -122,11 +122,11 @@ macro(add_sketch SKETCH_NAME BOARD PORT)
 
 	# write prototypes
 	foreach(PDE ${PDE_SOURCES})
-		message(STATUS "pde: ${PDE}")
+        #message(STATUS "pde: ${PDE}")
 		file(READ ${PDE} FILE)
 		string(REGEX MATCHALL "[\n]([a-zA-Z]+[ ])*[_a-zA-Z0-9]+([ ]*[\n][\t]*|[ ])[_a-zA-Z0-9]+[ ]?[\n]?[\t]*[ ]*[(]([\t]*[ ]*[*]?[ ]?[a-zA-Z0-9_][,]?[ ]*[\n]?)*[)]" PROTOTYPES ${FILE})
 		foreach(PROTOTYPE ${PROTOTYPES})	
-			message(STATUS "\tprototype: ${PROTOTYPE};")
+            #message(STATUS "\tprototype: ${PROTOTYPE};")
 			file(APPEND ${SKETCH_CPP} "${PROTOTYPE};")
 		endforeach()
 	endforeach()

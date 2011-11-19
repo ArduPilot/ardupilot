@@ -14,9 +14,17 @@ Building using cmake
 -----------------------------------------------
  - mkdir build
  - cd build
- - cmake ..
+ - cmake .. -DBOARD=mega -PORT=/dev/ttyUSB0
+    You can select from mega/mega2560.
+    If you have arduino installed in a non-standard location you by specify it by using:
+        -DARDUINO_SDK_PATH=/path/to/arduino ..
  - make (will build every sketch)
  - make ArduPlane (will build just ArduPlane etc.)
+ - make ArduPloat-upload (will upload the sketch)
+
+    If you have a sync error during upload reset the board/power cycle the board
+    before the upload starts.
+
  
 Building using eclipse
 -----------------------------------------------
