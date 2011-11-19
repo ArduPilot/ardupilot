@@ -175,7 +175,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     #wait_altitude(mav, 30, 40)
-    ret = wait_waypoint(mav, 0, num_wp, timeout=90)
+    ret = wait_waypoint(mav, 0, num_wp, timeout=500)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')
