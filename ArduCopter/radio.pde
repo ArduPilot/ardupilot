@@ -54,11 +54,6 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-	#if ARM_AT_STARTUP == 1
-		motor_armed = 1;
-	#endif
-
-
 	APM_RC.Init();		// APM Radio initialization
 	init_motors_out();
 
@@ -78,9 +73,7 @@ static void init_rc_out()
 	if(g.esc_calibrate == 1)
 		return;
 
-    if(g.rc_3.radio_min <= 1200){
-        output_min();
-    }
+	output_min();
 
 	for(byte i = 0; i < 5; i++){
 		delay(20);
