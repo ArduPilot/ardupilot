@@ -133,7 +133,6 @@ static void reset_hold_I(void)
 {
 	g.pi_loiter_lat.reset_I();
 	g.pi_loiter_lon.reset_I();
-	g.pi_crosstrack.reset_I();
 }
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
