@@ -217,12 +217,10 @@ static void init_ardupilot()
 #ifdef USERHOOK_INIT
    USERHOOK_INIT
 #endif
-	// Logging:
-	// --------
-	// DataFlash log initialization
-#if LOGGING_ENABLED == ENABLED
+
+	#if LOGGING_ENABLED == ENABLED
 	DataFlash.Init();
-#endif
+	#endif
 
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
@@ -237,20 +235,21 @@ static void init_ardupilot()
         run_cli();
 	}
 #else
-    Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
+    Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
 #endif // CLI_ENABLED
 
     if(g.esc_calibrate == 1){
         init_esc();
     }
 
-	// Logging:
-	// --------
+	#if LOGGING_ENABLED == ENABLED
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
+		Serial.printf("start_new_log");
 		start_new_log();
 	}
+	#endif
 
     GPS_enabled = false;
 
