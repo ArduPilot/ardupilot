@@ -359,6 +359,13 @@ static void set_mode(byte mode)
 		return;
 	}
 
+	// if we don't have GPS lock
+	if(home_is_set == false){
+		// our max mode should be
+		if (mode > ALT_HOLD)
+			mode = STABILIZE;
+	}
+
 	old_control_mode = control_mode;
 
 	control_mode = mode;

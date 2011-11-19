@@ -332,6 +332,8 @@ enum gcs_severity {
 #define B_LED_PIN 36
 #define C_LED_PIN 35
 
+// RADIANS
+#define RADX100 0.000174533
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096
