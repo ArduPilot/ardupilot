@@ -1080,20 +1080,20 @@ void update_throttle_mode(void)
 
 			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
-		
+
 			// manual command up or down?
 			if(manual_boost != 0){
-			
+
 				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
 					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost + get_z_damping());
 				#else
 					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
 				#endif
-				
+
 				// reset next_WP.alt
 				next_WP.alt = max(current_loc.alt, 100);
-				
+
 			}else{
 				// 10hz, 			don't run up i term
 				if(invalid_throttle && motor_auto_armed == true){
@@ -1102,13 +1102,12 @@ void update_throttle_mode(void)
 					altitude_error = get_altitude_error();
 
 					// get the AP throttle
-					nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
-					//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
+					nav_throttle = get_nav_throttle(altitude_error);
 
 					// clear the new data flag
 					invalid_throttle = false;
 				}
-				
+
 				#if FRAME_CONFIG == HELI_FRAME
 					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
 				#else
@@ -1443,7 +1442,7 @@ static void tuning(){
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
-		
+
 		case CH6_THR_HOLD_KP:
 			g.rc_6.set_range(0,1000);     // 0 to 1
 			g.pi_alt_hold.kP(tuning_value);

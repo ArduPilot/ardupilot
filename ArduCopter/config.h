@@ -71,7 +71,7 @@
 //
 
 #ifndef CH7_OPTION
-# define CH7_OPTION		CH7_SET_HOVER
+# define CH7_OPTION		CH7_SAVE_WP
 #endif
 
 
