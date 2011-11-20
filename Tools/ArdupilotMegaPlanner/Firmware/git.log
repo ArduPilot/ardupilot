@@ -1,7 +1,1 @@
-From https://code.google.com/p/ardupilot-mega
-   5602ec3..413fb29  master     -> origin/master
-Updating 5602ec3..413fb29
-Fast-forward
- ArduCopter/ArduCopter.pde |   15 +++++++--------
- ArduCopter/config.h       |    4 ++--
- 2 files changed, 9 insertions(+), 10 deletions(-)
+Already up-to-date.
