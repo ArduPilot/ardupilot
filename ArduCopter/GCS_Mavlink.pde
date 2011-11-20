@@ -1383,27 +1383,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				// handle variables with standard type IDs
 				if (var_type == AP_Var::k_typeid_float) {
 					((AP_Float *)vp)->set_and_save(packet.param_value);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(1, (float)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_float16) {
 					((AP_Float16 *)vp)->set_and_save(packet.param_value);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(2, (float)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int32) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int32 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(3, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int16) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int16 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(4, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int8) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int8 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(5, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else {
 					// we don't support mavlink set on this parameter
 					break;
