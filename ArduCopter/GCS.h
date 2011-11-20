@@ -40,7 +40,10 @@ public:
 	///
 	/// @param	port		The stream over which messages are exchanged.
 	///
-	void		init(FastSerial *port) { _port = port; }
+	void		init(FastSerial *port) {
+        _port = port;
+        initialised = true;
+    }
 
 	/// Update GCS state.
 	///
@@ -82,6 +85,9 @@ public:
 
     // send streams which match frequency range
     void data_stream_send(uint16_t freqMin, uint16_t freqMax);
+
+    // set to true if this GCS link is active
+    bool initialised;
 
 protected:
 	/// The stream we are communicating over
