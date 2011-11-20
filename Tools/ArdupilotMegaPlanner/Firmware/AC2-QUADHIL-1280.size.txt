@@ -615,4 +615,4 @@
 000008fa b g
 000009be t update_commands(bool)
 000017b8 T GCS_MAVLINK::handleMessage(__mavlink_message*)
-000017d4 T loop
+00001832 T loop
