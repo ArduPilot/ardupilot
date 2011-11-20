@@ -460,7 +460,7 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
                          -p${${BOARD_ID}.build.mcu} 
                          -c${${BOARD_ID}.upload.protocol} 
                          -P${PORT} -b${${BOARD_ID}.upload.speed}
-                         -D
+                         #-D
                          -Uflash:w:${CMAKE_BINARY_DIR}/${TARGET_NAME}.hex:i
                          DEPENDS ${TARGET_NAME})
     if(NOT TARGET upload)

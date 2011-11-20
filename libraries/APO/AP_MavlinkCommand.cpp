@@ -62,8 +62,8 @@ AP_MavlinkCommand::AP_MavlinkCommand(const mavlink_waypoint_t & cmd) :
     setZ(cmd.z);
     save();
 
-    // reload home if sent
-    if (cmd.seq == 0) home.load();
+    // reload home if sent, home must be a global waypoint
+    if ( (cmd.seq == 0) && (cmd.frame == MAV_FRAME_GLOBAL)) home.load();
 
     Serial.println("============================================================");
     Serial.println("storing new command from mavlink_waypoint_t");
