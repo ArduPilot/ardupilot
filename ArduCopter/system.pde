@@ -55,6 +55,24 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
+#if USB_MUX_PIN > 0
+    // on the purple board we have a mux thet switches UART0 between
+    // USB and the board header. If the right ArduPPM firmware is
+    // installed we can detect if USB is connected using the
+    // USB_MUX_PIN
+    pinMode(USB_MUX_PIN, INPUT);
+
+    usb_connected = !digitalRead(USB_MUX_PIN);
+    if (!usb_connected) {
+        // USB is not connected, this means UART0 may be a Xbee, with
+        // its darned bricking problem. We can't write to it for at
+        // least one second after powering up. Simplest solution for
+        // now is to delay for 1 second. Something more elegant may be
+        // added later
+        delay(1000);
+    }
+#endif
+
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
@@ -175,15 +193,20 @@ static void init_ardupilot()
 	    AP_Var::load_all();
 	}
 
-	// Telemetry port.
-	//
-	// Not used if telemetry is going to the console.
-	//
-	// XXX for unidirectional protocols, we could (should) minimize
-	// the receive buffer, and the transmit buffer could also be
-	// shrunk for protocols that don't send large messages.
-	//
-	Serial3.begin(map_baudrate(g.serial3_baud,SERIAL3_BAUD), 128, 128);
+	// init the GCS
+    gcs0.init(&Serial);
+
+#if USB_MUX_PIN > 0
+    if (!usb_connected) {
+        // we are not connected via USB, re-init UART0 with right
+        // baud rate
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    }
+#else
+    // we have a 2nd serial port for telemetry
+    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+	gcs3.init(&Serial3);
+#endif
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
@@ -224,10 +247,6 @@ static void init_ardupilot()
 	g_gps = &g_gps_driver;
 	g_gps->init();			// GPS Initialization
     g_gps->callback = mavlink_delay;
-
-	// init the GCS
-    gcs0.init(&Serial);
-    gcs3.init(&Serial3);
 
 	if(g.compass_enabled)
 		init_compass();
@@ -594,3 +613,21 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     //Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
     return default_baud;
 }
+
+#if USB_MUX_PIN > 0
+static void check_usb_mux(void)
+{
+    bool usb_check = !digitalRead(USB_MUX_PIN);
+    if (usb_check == usb_connected) {
+        return;
+    }
+
+    // the user has switched to/from the telemetry port
+    usb_connected = usb_check;
+    if (usb_connected) {
+        Serial.begin(SERIAL0_BAUD, 128, 128);
+    } else {
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    }
+}
+#endif

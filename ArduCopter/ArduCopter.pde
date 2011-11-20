@@ -559,6 +559,11 @@ static bool				new_radio_frame;
 
 AP_Relay relay;
 
+#if USB_MUX_PIN > 0
+static bool usb_connected;
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
 ////////////////////////////////////////////////////////////////////////////////
@@ -918,6 +923,9 @@ static void slow_loop()
 				update_motor_leds();
 			#endif
 
+#if USB_MUX_PIN > 0
+            check_usb_mux();
+#endif
 			break;
 
 		default:
