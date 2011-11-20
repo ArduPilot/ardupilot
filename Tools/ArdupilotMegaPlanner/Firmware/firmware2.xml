@@ -57,7 +57,7 @@
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>112</format_version>
+    <format_version>113</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Tri-1280.hex</url>
@@ -68,7 +68,7 @@
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>112</format_version>
+    <format_version>113</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Hexa-1280.hex</url>
@@ -79,7 +79,7 @@
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>112</format_version>
+    <format_version>113</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Y6-1280.hex</url>
@@ -90,7 +90,7 @@
 #define FRAME_ORIENTATION X_FRAME
 
 </desc>
-    <format_version>112</format_version>
+    <format_version>113</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-Heli-1280.hex</url>
@@ -152,7 +152,7 @@
 
 
 </desc>
-    <format_version>112</format_version>
+    <format_version>113</format_version>
   </Firmware>
   <Firmware>
     <url>http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AC2-HELHIL-1280.hex</url>
