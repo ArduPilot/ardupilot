@@ -235,6 +235,10 @@ byte    control_mode        = INITIALISING;
 byte    oldSwitchPosition;              // for remembering the control mode switch
 bool    inverted_flight     = false;
 
+#if USB_MUX_PIN > 0
+static bool usb_connected;
+#endif
+
 static const char *comma = ",";
 
 static const char* flight_mode_strings[] = {
@@ -738,6 +742,11 @@ static void slow_loop()
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
             gcs_data_stream_send(3,5);
+
+#if USB_MUX_PIN > 0
+            check_usb_mux();
+#endif
+
 			break;
 	}
 }
