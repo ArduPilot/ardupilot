@@ -97,15 +97,10 @@ public:
     float getAltitudeCommand() {
         return _altitudeCommand;
     }
-    float getPNCmd() {
-        return _pNCmd;
-    }
-    float getPECmd() {
-        return _pECmd;
-    }
-    float getPDCmd() {
-        return _pDCmd;
-    }
+    virtual float getPNError() = 0;
+    virtual float getPEError() = 0;
+    virtual float getPDError() = 0;
+
     MAV_NAV getMode() {
         return _mode;
     }
@@ -121,9 +116,6 @@ protected:
     float _airSpeedCommand;
     float _groundSpeedCommand;
     float _altitudeCommand;
-    float _pNCmd;
-    float _pECmd;
-    float _pDCmd;
     MAV_NAV _mode;
     AP_Uint8 _numberOfCommands;
     AP_Uint8 _cmdIndex;
@@ -139,6 +131,9 @@ public:
     void nextCommand();
     void handleCommand();
     void updateCommand();
+    virtual float getPNError();
+    virtual float getPEError();
+    virtual float getPDError();
 
 private:
     AP_Var_group _group;
