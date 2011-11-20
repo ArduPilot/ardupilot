@@ -91,16 +91,15 @@ private:
     }
     void autoPositionLoop(float dt) {
         // XXX need to add waypoint coordinates
-        float cmdNorthTilt = pidPN.update(_nav->getPN(),_nav->getVN(),dt);
-        float cmdEastTilt = pidPE.update(_nav->getPE(),_nav->getVE(),dt);
-        float cmdDown = pidPD.update(_nav->getPD(),_nav->getVD(),dt);
+        float cmdNorthTilt = pidPN.update(_guide->getPNError(),_nav->getVN(),dt);
+        float cmdEastTilt = pidPE.update(_guide->getPEError(),_nav->getVE(),dt);
+        float cmdDown = pidPD.update(_guide->getPDError(),_nav->getVD(),dt);
 
         // "transform-to-body"
         _cmdPitch = cmdNorthTilt * cos(_nav->getYaw()) + cmdEastTilt * sin(_nav->getYaw());
         _cmdRoll = -cmdNorthTilt * sin(_nav->getYaw()) + cmdEastTilt * cos(_nav->getYaw());
         _cmdPitch *= -1; // note that the north tilt is negative of the pitch
-
-        _cmdYawRate = 0;
+        _cmdYawRate = pidYaw.update(_guide->getHeadingError(),_nav->getYawRate(),dt); // always points to next waypoint
         _thrustMix = THRUST_HOVER_OFFSET + cmdDown;
 
         // "thrust-trim-adjust"

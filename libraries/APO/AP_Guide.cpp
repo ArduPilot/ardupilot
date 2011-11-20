@@ -18,8 +18,8 @@ AP_Guide::AP_Guide(AP_Navigator * navigator, AP_HardwareAbstractionLayer * hal) 
     _navigator(navigator), _hal(hal), _command(AP_MavlinkCommand::home),
     _previousCommand(AP_MavlinkCommand::home),
     _headingCommand(0), _airSpeedCommand(0),
-    _groundSpeedCommand(0), _altitudeCommand(0), _pNCmd(0),
-    _pECmd(0), _pDCmd(0), _mode(MAV_NAV_LOST),
+    _groundSpeedCommand(0), _altitudeCommand(0),
+    _mode(MAV_NAV_LOST),
     _numberOfCommands(1), _cmdIndex(0), _nextCommandCalls(0),
     _nextCommandTimer(0) {
 }
@@ -54,6 +54,16 @@ MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
 void MavlinkGuide::update() {
     // process mavlink commands
     handleCommand();
+}
+
+float MavlinkGuide::getPNError() {
+    return -_command.getPN(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+}
+float MavlinkGuide::getPEError() {
+    return -_command.getPE(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+}
+float MavlinkGuide::getPDError() {
+    return -_command.getPD(_navigator->getAlt_intM());
 }
 
 void MavlinkGuide::nextCommand() {
@@ -208,13 +218,6 @@ void MavlinkGuide::handleCommand() {
     }
 
     _groundSpeedCommand = _velocityCommand;
-
-    // calculate pN,pE,pD from home and gps coordinates
-    _pNCmd = _command.getPN(_navigator->getLat_degInt(),
-                            _navigator->getLon_degInt());
-    _pECmd = _command.getPE(_navigator->getLat_degInt(),
-                            _navigator->getLon_degInt());
-    _pDCmd = _command.getPD(_navigator->getAlt_intM());
 
     // debug
     //_hal->debug->printf_P(
