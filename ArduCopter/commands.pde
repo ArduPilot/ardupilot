@@ -54,7 +54,7 @@ static struct Location get_cmd_with_index(int i)
 		//temp.alt += home.alt;
 	//}
 
-	if(temp.options & MASK_OPTIONS_RELATIVE_ALT){
+	if(temp.options & WP_OPTION_RELATIVE){
 		// If were relative, just offset from home
 		temp.lat	+=	home.lat;
 		temp.lng	+=	home.lng;
@@ -67,6 +67,7 @@ static struct Location get_cmd_with_index(int i)
 // -------
 static void set_cmd_with_index(struct Location temp, int i)
 {
+
 	i = constrain(i, 0, g.command_total.get());
 	//Serial.printf("set_command: %d with id: %d\n", i, temp.id);
 
