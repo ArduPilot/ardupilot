@@ -107,7 +107,7 @@ static void read_trim_switch()
 				current_loc.id = MAV_CMD_NAV_WAYPOINT;
 
 				// save command
-				set_command_with_index(current_loc, CH7_wp_index);
+				set_cmd_with_index(current_loc, CH7_wp_index);
 
 				// save the index
 				g.command_total.set_and_save(CH7_wp_index + 1);
