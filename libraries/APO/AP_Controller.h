@@ -64,6 +64,10 @@ public:
     AP_Uint8 getMode() {
         return _mode;
     }
+    void setMode(MAV_MODE mode) {
+        _mode = mode;
+    }
+
 protected:
     AP_Navigator * _nav;
     AP_Guide * _guide;

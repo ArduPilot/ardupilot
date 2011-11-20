@@ -90,6 +90,7 @@ private:
         autoAttitudeLoop(dt);
     }
     void autoPositionLoop(float dt) {
+        // XXX need to add waypoint coordinates
         float cmdNorthTilt = pidPN.update(_nav->getPN(),_nav->getVN(),dt);
         float cmdEastTilt = pidPE.update(_nav->getPE(),_nav->getVE(),dt);
         float cmdDown = pidPD.update(_nav->getPD(),_nav->getVD(),dt);
@@ -101,11 +102,6 @@ private:
             _cmdPitch = cmdEastTilt * trigCos - cmdNorthTilt * trigSin;
             _cmdRoll = -cmdEastTilt * trigSin + cmdNorthTilt * trigCos;
             // note that the north tilt is negative of the pitch
-            
-        Serial.print("  trigSin: ");
-        Serial.print(trigSin);
-        Serial.print("  trigCos: ");
-        Serial.print(trigCos);
         }
         _cmdYawRate = 0;
 
@@ -117,34 +113,9 @@ private:
 
         if (fabs(_cmdPitch) > 0.5) _thrustMix *= 1.13949393;
         else _thrustMix /= cos(_cmdPitch);
-        
-        //debug statements
-        Serial.print(" getPN: ");
-        Serial.print(_nav->getPN());
-        Serial.print("  getPE: ");
-        Serial.print(_nav->getPE());
-        Serial.print("  getPD: ");
-        Serial.print(_nav->getPD());
-        Serial.print("  getVN: ");
-        Serial.print(_nav->getVN());
-        Serial.print("  getVE: ");
-        Serial.print(_nav->getVE());
-        Serial.print("  getVD: ");
-        Serial.println(_nav->getVD());
-        //Serial.print("Roll: ");
-        //Serial.print(_cmdRoll);
-        //Serial.print("    Pitch");
-        //Serial.print(_cmdPitch);
-        //Serial.print("    YawRate");
-        //Serial.print(_cmdYawRate);
-        //Serial.print("    ThrustMix");
-        //Serial.print(_thrustMix);
-        //Serial.print("    North Tilt");
-        //Serial.print(cmdNorthTilt);
-        //Serial.print("    East Tilt");
-        //Serial.print(cmdEastTilt);
-        //Serial.print("   Down");
-        //Serial.println(cmdDown);
+
+        // debug for position loop
+        _hal->debug->printf_P(PSTR("cmd: north tilt(%f), east tilt(%f), down(%f), pitch(%f), roll(%f)\n"),cmdNorthTilt,cmdEastTilt,cmdDown,_cmdPitch,_cmdRoll);
     }
     void autoAttitudeLoop(float dt) {
         _rollMix = pidRoll.update(_cmdRoll - _nav->getRoll(),
@@ -152,26 +123,6 @@ private:
         _pitchMix = pidPitch.update(_cmdPitch - _nav->getPitch(),
                                     _nav->getPitchRate(), dt);
         _yawMix = pidYawRate.update(_cmdYawRate - _nav->getYawRate(), dt);
-        
-        //debug statements
-        //Serial.print("Roll Cmd: ");
-        //Serial.print(_cmdRoll*1000);
-        //Serial.print("  Nav_GetRoll: ");
-        //Serial.print(_nav->getRoll()*1000);
-        //Serial.print("  Roll Error: ");
-        //Serial.print((_cmdRoll - _nav->getRoll())*1000);
-        //Serial.print("  Pitch Cmd: ");
-        //Serial.print(_cmdPitch*1000);
-        //Serial.print("  Nav_GetPitch: ");
-        //Serial.print(_nav->getPitch()*1000);
-        //Serial.print("  Pitch Error: ");
-        //Serial.println((_cmdPitch - _nav->getPitch())*1000);
-        //Serial.print("  YawRate Cmd: ");
-        //Serial.print(_cmdYawRate);
-        //Serial.print("  Nav_GetYawRate: ");
-        //Serial.print( _nav->getYawRate());
-        //Serial.print("  YawRate Error: ");
-        //Serial.println(_cmdYawRate - _nav->getYawRate());
     }
     void setMotorsActive() {
     

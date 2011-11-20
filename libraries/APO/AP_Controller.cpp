@@ -49,18 +49,22 @@ void AP_Controller::update(const float dt) {
     //
     // check for heartbeat from gcs, if not found go to failsafe
     if (_hal->heartBeatLost()) {
-        _mode = MAV_MODE_FAILSAFE;
+        setMode(MAV_MODE_FAILSAFE);
         _hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
         // if battery less than 5%, go to failsafe
     } else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
-        _mode = MAV_MODE_FAILSAFE;
+        setMode(MAV_MODE_FAILSAFE);
         _hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
         // manual/auto switch
     } else {
         // if all emergencies cleared, fall back to standby
         if (_hal->getState()==MAV_STATE_EMERGENCY) _hal->setState(MAV_STATE_STANDBY);
-        if (_hal->rc[_chMode]->getRadioPosition() > 0) _mode = MAV_MODE_MANUAL;
-        else _mode = MAV_MODE_AUTO;
+
+        // if in auto mode and manual switch set, change to manual
+        if (getMode()==MAV_MODE_AUTO && (_hal->rc[_chMode]->getRadioPosition() > 0)) setMode(MAV_MODE_MANUAL);
+
+        // if in manual mode and auto switch set, switch to auto
+        if (getMode()==MAV_MODE_MANUAL && (_hal->rc[_chMode]->getRadioPosition() < 0)) setMode(MAV_MODE_AUTO);
     }
 
     // handle flight modes

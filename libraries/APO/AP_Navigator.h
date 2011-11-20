@@ -187,15 +187,15 @@ public:
         _vD = vD;
     }
 
-    void setXAcc(float xAccel) {
+    void setXAccel(float xAccel) {
         _xAccel = xAccel;
     }
 
-    void setYAcc(float yAccel) {
+    void setYAccel(float yAccel) {
         _yAccel = yAccel;
     }
 
-    void setZAcc(float zAccel) {
+    void setZAccel(float zAccel) {
         _zAccel = zAccel;
     }
 

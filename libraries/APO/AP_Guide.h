@@ -48,6 +48,11 @@ public:
     MAV_NAV getMode() const {
         return _mode;
     }
+
+    void setMode(MAV_NAV mode) {
+        _mode = mode;
+    }
+
     uint8_t getCurrentIndex() {
         return _cmdIndex;
     }
