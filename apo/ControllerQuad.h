@@ -96,15 +96,11 @@ private:
         float cmdDown = pidPD.update(_nav->getPD(),_nav->getVD(),dt);
 
         // "transform-to-body"
-        {
-            float trigSin = sin(-_nav->getYaw());
-            float trigCos = cos(-_nav->getYaw());
-            _cmdPitch = cmdEastTilt * trigCos - cmdNorthTilt * trigSin;
-            _cmdRoll = -cmdEastTilt * trigSin + cmdNorthTilt * trigCos;
-            // note that the north tilt is negative of the pitch
-        }
-        _cmdYawRate = 0;
+        _cmdPitch = cmdNorthTilt * cos(_nav->getYaw()) + cmdEastTilt * sin(_nav->getYaw());
+        _cmdRoll = -cmdNorthTilt * sin(_nav->getYaw()) + cmdEastTilt * cos(_nav->getYaw());
+        _cmdPitch *= -1; // note that the north tilt is negative of the pitch
 
+        _cmdYawRate = 0;
         _thrustMix = THRUST_HOVER_OFFSET + cmdDown;
 
         // "thrust-trim-adjust"
