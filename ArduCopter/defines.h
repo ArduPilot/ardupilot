@@ -120,6 +120,8 @@
 #define POSITION 8			// AUTO control
 #define NUM_MODES 9
 
+#define INITIALISING 9     // in startup routines
+
 #define SIMPLE_1 1
 #define SIMPLE_2 2
 #define SIMPLE_3 4
@@ -166,14 +168,14 @@
 #define CIRCLE_MODE 3
 
 // Waypoint options
-#define WP_OPTION_ALT_RELATIVE 		1
-#define WP_OPTION_ALT_CHANGE 		2
-#define WP_OPTION_YAW 				4
-#define WP_OPTION_ALT_REQUIRED		8
-#define WP_OPTION_RELATIVE			16
+#define MASK_OPTIONS_RELATIVE_ALT 		1
+#define WP_OPTION_ALT_CHANGE 			2
+#define WP_OPTION_YAW 					4
+#define WP_OPTION_ALT_REQUIRED			8
+#define WP_OPTION_RELATIVE				16
 //#define WP_OPTION_					32
 //#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD			128
+#define WP_OPTION_NEXT_CMD				128
 
 //repeating events
 #define NO_REPEAT 0

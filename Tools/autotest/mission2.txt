@@ -15,7 +15,7 @@ QGC WPL 110
 
 # MAV_CMD_NAV_LOITER_TIME
 #					seconds		empty		rad			Yaw	per		Lat			lon			Alt			continue
-4	0	3	19		35			20			0			1			0  			0			0			1
+4	0	3	19		35			0			0			1			0  			0			20			1
 
 # MAV_CMD_NAV_WAYPOINT	B
 #					Hold sec	Hit rad		empty		Yaw angle	lat			lon			alt			continue

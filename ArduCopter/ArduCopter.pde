@@ -260,7 +260,12 @@ static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
 static int16_t  motor_out[8];
-static bool		do_simple = false;
+static bool		do_simple 			= false;
+
+static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+static bool rc_override_active = false;
+static uint32_t rc_override_fs_timer = 0;
+
 
 // Heli
 // ----
@@ -480,6 +485,7 @@ static int32_t 			perf_mon_timer;
 //static float 			imu_health; 						// Metric based on accel gain deweighting
 static int16_t			gps_fix_count;
 static byte				gps_watchdog;
+static int				pmTest1;
 
 // System Timers
 // --------------
@@ -1473,8 +1479,8 @@ static void update_nav_wp()
 		if (circle_angle > 6.28318531)
 			circle_angle -= 6.28318531;
 
-		target_WP.lng = next_WP.lng + (g.loiter_radius * cos(1.57 - circle_angle) * scaleLongUp);
-		target_WP.lat = next_WP.lat + (g.loiter_radius * sin(1.57 - circle_angle));
+		target_WP.lng = next_WP.lng + (g.loiter_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
+		target_WP.lat = next_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
 
 		// calc the lat and long error to the target
 		calc_location_error(&target_WP);

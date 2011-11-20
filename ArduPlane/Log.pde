@@ -376,12 +376,19 @@ static int find_last_log_page(uint16_t log_number)
 		bottom_page_filepage = top_page_filepage;
 		do
 		{
+            int16_t last_bottom_page_file;
 			top_page = bottom_page;
 			bottom_page = bottom_page - bottom_page_filepage;
 			if(bottom_page < 1) bottom_page = 1;
 			DataFlash.StartRead(bottom_page);
+            last_bottom_page_file = bottom_page_file;
 			bottom_page_file = DataFlash.GetFileNumber();
 			bottom_page_filepage = DataFlash.GetFilePage();
+            if (bottom_page_file == last_bottom_page_file &&
+                bottom_page_filepage == 0) {
+                /* no progress can be made - give up. The log may be corrupt */
+                return -1;
+            }
 		} while (bottom_page_file != log_number && bottom_page != 1);
 
 		// Deal with stepping down too far due to overwriting a file
