@@ -1057,7 +1057,7 @@ void update_throttle_mode(void)
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
 			    #if FRAME_CONFIG == HELI_FRAME
-				    g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.rc_3.control_in));
+				    g.rc_3.servo_out = heli_get_angle_boost(g.rc_3.control_in);
 				#else
 					angle_boost = get_angle_boost(g.rc_3.control_in);
 					g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
@@ -1077,34 +1077,40 @@ void update_throttle_mode(void)
 			// fall through
 
 		case THROTTLE_AUTO:
-				// 10hz, 			don't run up i term
-			if(invalid_throttle && motor_auto_armed == true){
 
-				// how far off are we
-				altitude_error = get_altitude_error();
-
-				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
-				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
-
-				// clear the new data flag
-				invalid_throttle = false;
-			}
+			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
-
+		
+			// manual command up or down?
 			if(manual_boost != 0){
+			
 				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + manual_boost + get_z_damping()));
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost + get_z_damping());
 				#else
 					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
 				#endif
+				
 				// reset next_WP.alt
 				next_WP.alt = max(current_loc.alt, 100);
+				
 			}else{
+				// 10hz, 			don't run up i term
+				if(invalid_throttle && motor_auto_armed == true){
+
+					// how far off are we
+					altitude_error = get_altitude_error();
+
+					// get the AP throttle
+					nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
+					//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
+
+					// clear the new data flag
+					invalid_throttle = false;
+				}
+				
 				#if FRAME_CONFIG == HELI_FRAME
-					//g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
-					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + get_z_damping()));
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
 				#else
 					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
 				#endif
@@ -1399,7 +1405,7 @@ static void tuning(){
 			break;
 
 		case CH6_THROTTLE_KP:
-			g.rc_6.set_range(0,1000);
+			g.rc_6.set_range(0,1000);       // 0 to 1
 			g.pi_throttle.kP(tuning_value);
 			break;
 
@@ -1437,6 +1443,11 @@ static void tuning(){
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
+		
+		case CH6_THR_HOLD_KP:
+			g.rc_6.set_range(0,1000);     // 0 to 1
+			g.pi_alt_hold.kP(tuning_value);
+			break;
 	}
 }
 

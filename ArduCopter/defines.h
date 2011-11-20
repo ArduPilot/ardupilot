@@ -140,7 +140,7 @@
 #define CH6_RATE_KP 4
 #define CH6_RATE_KI 5
 #define	CH6_YAW_RATE_KP 6
-// Altitude
+// Altitude rate controller
 #define CH6_THROTTLE_KP 7
 // Extras
 #define CH6_TOP_BOTTOM_RATIO 8
@@ -150,6 +150,9 @@
 #define CH6_NAV_P 11
 #define CH6_LOITER_P 12
 #define CH6_HELI_EXTERNAL_GYRO 13
+
+// altitude controller
+#define CH6_THR_HOLD_KP 14
 
 // nav byte mask
 // -------------
