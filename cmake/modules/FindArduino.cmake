@@ -609,6 +609,3 @@ mark_as_advanced(ARDUINO_CORES_PATH
     ARDUINO_OBJCOPY_EEP_FLAGS
     ARDUINO_OBJCOPY_HEX_FLAGS)
 load_board_settings()
-
-endif()
-

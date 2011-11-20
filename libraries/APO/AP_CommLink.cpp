@@ -131,21 +131,23 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
      */
 
     case MAVLINK_MSG_ID_SCALED_IMU: {
-        /*
-         * accel/gyro debug
-         */
-        /*
-         Vector3f accel = _hal->imu->get_accel();
-         Vector3f gyro = _hal->imu->get_gyro();
-         Serial.printf_P(PSTR("accel: %f %f %f gyro: %f %f %f\n"),
-         accel.x,accel.y,accel.z,gyro.x,gyro.y,gyro.z);
-         */
-        Vector3f accel = _hal->imu->get_accel();
-        Vector3f gyro = _hal->imu->get_gyro();
-        mavlink_msg_raw_imu_send(_channel, timeStamp, 1000 * accel.x,
-                                 1000 * accel.y, 1000 * accel.z, 1000 * gyro.x,
-                                 1000 * gyro.y, 1000 * gyro.z, _hal->compass->mag_x,
-                                 _hal->compass->mag_y, _hal->compass->mag_z); // XXX THIS IS NOT SCALED FOR MAG
+        int16_t xmag, ymag, zmag;
+        xmag = ymag = zmag = 0;
+        if (_hal->compass) {
+            // XXX THIS IS NOT SCALED
+            xmag = _hal->compass->mag_x;
+            ymag = _hal->compass->mag_y;
+            zmag = _hal->compass->mag_z;
+        }
+        mavlink_msg_scaled_imu_send(_channel, timeStamp,
+            _navigator->getXAccel()*1e3,
+            _navigator->getYAccel()*1e3,
+            _navigator->getZAccel()*1e3,
+            _navigator->getRollRate()*1e3,
+            _navigator->getPitchRate()*1e3,
+            _navigator->getYawRate()*1e3,
+            xmag, ymag, zmag);
+        break;
     }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_SCALED: {
@@ -352,6 +354,9 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
         _navigator->setLat_degInt(packet.lat);
         _navigator->setLon_degInt(packet.lon);
         _navigator->setAlt(packet.alt / 1e3);
+        _navigator->setXAccel(packet.xacc/ 1e3);
+        _navigator->setYAccel(packet.xacc/ 1e3);
+        _navigator->setZAccel(packet.xacc/ 1e3);
         break; 
     } 
 
@@ -391,31 +396,68 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
             AP_Var::save_all();
             break;
 
-        case MAV_ACTION_CALIBRATE_RC:
+        case MAV_ACTION_MOTORS_START:
+            _hal->setState(MAV_STATE_ACTIVE);
+            break;
+
         case MAV_ACTION_CALIBRATE_GYRO:
         case MAV_ACTION_CALIBRATE_MAG:
         case MAV_ACTION_CALIBRATE_ACC:
         case MAV_ACTION_CALIBRATE_PRESSURE:
+            _hal->setState(MAV_STATE_STANDBY);
+            _navigator->calibrate();
+            break;
+
+        case MAV_ACTION_EMCY_KILL:
+        case MAV_ACTION_CONFIRM_KILL:
+        case MAV_ACTION_MOTORS_STOP:
+        case MAV_ACTION_SHUTDOWN:
+            _hal->setState(MAV_STATE_STANDBY);
+            _controller->setMode(MAV_MODE_LOCKED);
+            break;
+
+        case MAV_ACTION_LAUNCH:
+        case MAV_ACTION_TAKEOFF:
+            _controller->setMode(MAV_MODE_AUTO);
+            _guide->setMode(MAV_NAV_LIFTOFF);
+            break;
+
+        case MAV_ACTION_LAND:
+            _guide->setCurrentIndex(0);
+            _guide->setMode(MAV_NAV_LANDING);
+            break;
+
+        case MAV_ACTION_EMCY_LAND:
+            _guide->setMode(MAV_NAV_LANDING);
+            break;
+
+        case MAV_ACTION_LOITER:
+        case MAV_ACTION_HALT:
+            _guide->setMode(MAV_NAV_LOITER);
+            break;
+
+        case MAV_ACTION_SET_AUTO:
+            _controller->setMode(MAV_MODE_AUTO);
+            break;
+
+        case MAV_ACTION_SET_MANUAL:
+            _controller->setMode(MAV_MODE_MANUAL);
+            break;
+
+        case MAV_ACTION_RETURN:
+            _guide->setMode(MAV_NAV_RETURNING);
+            break;
+
+        case MAV_ACTION_NAVIGATE:
+        case MAV_ACTION_CONTINUE:
+            _guide->setMode(MAV_NAV_WAYPOINT);
+            break;
+
+        case MAV_ACTION_CALIBRATE_RC:
         case MAV_ACTION_REBOOT:
         case MAV_ACTION_REC_START:
         case MAV_ACTION_REC_PAUSE:
         case MAV_ACTION_REC_STOP:
-        case MAV_ACTION_TAKEOFF:
-        case MAV_ACTION_LAND:
-        case MAV_ACTION_NAVIGATE:
-        case MAV_ACTION_LOITER:
-        case MAV_ACTION_MOTORS_START:
-        case MAV_ACTION_CONFIRM_KILL:
-        case MAV_ACTION_EMCY_KILL:
-        case MAV_ACTION_MOTORS_STOP:
-        case MAV_ACTION_SHUTDOWN:
-        case MAV_ACTION_CONTINUE:
-        case MAV_ACTION_SET_MANUAL:
-        case MAV_ACTION_SET_AUTO:
-        case MAV_ACTION_LAUNCH:
-        case MAV_ACTION_RETURN:
-        case MAV_ACTION_EMCY_LAND:
-        case MAV_ACTION_HALT:
             sendText(SEVERITY_LOW, PSTR("action not implemented"));
             break;
         default:

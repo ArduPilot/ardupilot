@@ -146,7 +146,7 @@ void MavlinkGuide::handleCommand() {
 
         // check if we are at waypoint or if command
         // radius is zero within tolerance
-        if (distanceToNext < _command.getRadius() | distanceToNext < 1e-5) {
+        if ( (distanceToNext < _command.getRadius()) | (distanceToNext < 1e-5) ) {
             _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (distance)"));
             _hal->debug->printf_P(PSTR("waypoint reached (distance)"));
             nextCommand();
@@ -217,9 +217,9 @@ void MavlinkGuide::handleCommand() {
     _pDCmd = _command.getPD(_navigator->getAlt_intM());
 
     // debug
-    _hal->debug->printf_P(
-        PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
-        getNumberOfCommands(), getCurrentIndex(), getPreviousIndex());
+    //_hal->debug->printf_P(
+        //PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
+        //getNumberOfCommands(), getCurrentIndex(), getPreviousIndex());
 }
 
 } // namespace apo

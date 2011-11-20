@@ -12,7 +12,7 @@
 static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
 static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
 static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
-static const uint8_t heartBeatTimeout = 3;
+static const uint8_t heartBeatTimeout = 0;
 
 // algorithm selection
 #define CONTROLLER_CLASS ControllerQuad
@@ -30,7 +30,7 @@ static const uint8_t heartBeatTimeout = 3;
 static const uint32_t debugBaud = 57600;
 static const uint32_t telemBaud = 57600;
 static const uint32_t gpsBaud = 38400;
-static const uint32_t hilBaud = 57600;
+static const uint32_t hilBaud = 115200;
 
 // optional sensors
 static const bool gpsEnabled = false;
@@ -66,10 +66,10 @@ static const float PID_POS_I = 0;
 static const float PID_POS_D = 0;
 static const float PID_POS_LIM = 0; // about 5 deg
 static const float PID_POS_AWU = 0; // about 5 deg
-static const float PID_POS_Z_P = 0;
+static const float PID_POS_Z_P = 0.1;
 static const float PID_POS_Z_I = 0;
-static const float PID_POS_Z_D = 0;
-static const float PID_POS_Z_LIM = 0;
+static const float PID_POS_Z_D = 0.2;
+static const float PID_POS_Z_LIM = 0.1;
 static const float PID_POS_Z_AWU = 0;
 static const float PID_POS_DFCUT = 10; // cut derivative feedback at 10 hz
 
