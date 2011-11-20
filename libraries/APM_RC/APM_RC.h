@@ -42,7 +42,7 @@ class APM_RC_Class
 	virtual uint8_t GetState() = 0;
 	virtual void clearOverride(void) = 0;
     virtual void Force_Out() = 0;
-    virtual void SetFastOutputChannels( uint32_t channelmask );
+    virtual void SetFastOutputChannels( uint32_t channelmask ) = 0;
 };
 
 #include "APM_RC_APM1.h"
