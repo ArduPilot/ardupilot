@@ -247,6 +247,7 @@ def run_tests(steps):
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
+    results.addglob("Google Earth track", '*.kml')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*.flashlog')
     results.addglob("MAVLink log", '*.mavlog')
