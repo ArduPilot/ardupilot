@@ -310,6 +310,10 @@ static void init_ardupilot()
 	startup_ground();
 
 	Log_Write_Startup();
+	Log_Write_Data(10, g.pi_stabilize_roll.kP());
+	Log_Write_Data(11, g.pi_stabilize_pitch.kP());
+	Log_Write_Data(12, g.pi_rate_roll.kP());
+	Log_Write_Data(13, g.pi_rate_pitch.kP());
 
 	SendDebug("\nReady to FLY ");
 }
