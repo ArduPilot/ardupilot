@@ -343,7 +343,7 @@
 
 // RTL Mode
 #ifndef RTL_YAW
-# define RTL_YAW 			YAW_AUTO
+# define RTL_YAW 			YAW_HOLD
 #endif
 
 #ifndef RTL_RP
