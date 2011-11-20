@@ -6,6 +6,9 @@
 
 #include "DataFlash.h"
 
+// flash size
+#define DF_LAST_PAGE 4096
+
 class DataFlash_APM1 : public DataFlash_Class
 {
   private:

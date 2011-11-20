@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
 	DataFlash_APM1.cpp - DataFlash log library for AT45DB161
 	Code by Jordi Munoz and Jose Julio. DIYDrones.com
@@ -36,6 +37,40 @@
 #include <SPI.h>
 
 #define OVERWRITE_DATA 1 // 0: When reach the end page stop, 1: Start overwriting from page 1
+
+// arduino mega SPI pins
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+       #define DF_DATAOUT 51        // MOSI
+       #define DF_DATAIN  50        // MISO
+       #define DF_SPICLOCK  52      // SCK
+       #define DF_SLAVESELECT 53    // SS     (PB0)
+    #define DF_RESET 31          // RESET  (PC6)
+#else  // normal arduino SPI pins...
+       #define DF_DATAOUT 11     //MOSI
+       #define DF_DATAIN  12     //MISO
+       #define DF_SPICLOCK  13   //SCK
+       #define DF_SLAVESELECT 10 //SS
+#endif
+
+// AT45DB161D Commands (from Datasheet)
+#define DF_TRANSFER_PAGE_TO_BUFFER_1   0x53
+#define DF_TRANSFER_PAGE_TO_BUFFER_2   0x55
+#define DF_STATUS_REGISTER_READ   0xD7
+#define DF_READ_MANUFACTURER_AND_DEVICE_ID   0x9F
+#define DF_PAGE_READ   0xD2
+#define DF_BUFFER_1_READ   0xD4
+#define DF_BUFFER_2_READ   0xD6
+#define DF_BUFFER_1_WRITE   0x84
+#define DF_BUFFER_2_WRITE   0x87
+#define DF_BUFFER_1_TO_PAGE_WITH_ERASE   0x83
+#define DF_BUFFER_2_TO_PAGE_WITH_ERASE   0x86
+#define DF_PAGE_ERASE   0x81
+#define DF_BLOCK_ERASE   0x50
+#define DF_SECTOR_ERASE   0x7C
+#define DF_CHIP_ERASE_0   0xC7
+#define DF_CHIP_ERASE_1   0x94
+#define DF_CHIP_ERASE_2   0x80
+#define DF_CHIP_ERASE_3   0x9A
 
 // *** INTERNAL FUNCTIONS ***
 
@@ -377,6 +412,7 @@ void DataFlash_APM1::StartRead(int16_t PageAdr)
   PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write Memory page to buffer
 //Serial.print(df_Read_PageAdr, DEC);	Serial.print("\t");
   df_Read_PageAdr++;
+
       // We are starting a new page - read FileNumber and FilePage
 		df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
 //Serial.print(df_FileNumber, DEC);	Serial.print("\t");
@@ -403,6 +439,7 @@ byte DataFlash_APM1::ReadByte()
       df_Read_PageAdr = 0;
       df_Read_END = true;
       }
+
       // We are starting a new page - read FileNumber and FilePage
 		df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
 		df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
@@ -448,7 +485,3 @@ uint16_t DataFlash_APM1::GetFilePage()
 	return df_FilePage;
 }
 
-
-
-// make one instance for the user to use
-DataFlash_APM1 DataFlash;
