@@ -1,20 +1,49 @@
 From https://code.google.com/p/ardupilot-mega
-   6aeabd0..833acbd  master     -> origin/master
-Updating 6aeabd0..833acbd
+   6d78bad..6d8e6a8  master     -> origin/master
+Updating 6d78bad..6d8e6a8
 Fast-forward
- ArduCopter/ArduCopter.pde    |   11 ++++-
- ArduCopter/Attitude.pde      |    1 -
- ArduCopter/Log.pde           |   28 ++++++------
- ArduCopter/Parameters.h      |   50 +++++++++--------------
- ArduCopter/config.h          |   20 +--------
- ArduCopter/defines.h         |    2 +
- ArduCopter/navigation.pde    |   17 ++++++--
- ArduCopter/radio.pde         |    9 +----
- ArduCopter/setup.pde         |   52 ++++++++++++------------
- ArduCopter/system.pde        |   22 ++++++----
- ArduCopter/test.pde          |   63 +++++++++++++++--------------
- ArduPlane/ArduPlane.pde      |    2 +-
- ArduPlane/Log.pde            |   91 +++++++++++++++++++++---------------------
- Tools/autotest/arducopter.py |   10 ++--
- Tools/autotest/common.py     |    8 +++-
- 15 files changed, 193 insertions(+), 193 deletions(-)
+ ArduCopter/ArduCopter.pde                          |   59 +-
+ ArduCopter/GCS_Mavlink copy.txt                    | 2091 ++++++++++++++++++++
+ ArduCopter/GCS_Mavlink.pde                         |   16 +-
+ ArduCopter/Log.pde                                 |   27 +
+ ArduCopter/Parameters.h                            |    2 +-
+ ArduCopter/commands.pde                            |    7 +-
+ ArduCopter/commands_logic.pde                      |    8 +-
+ ArduCopter/control_modes.pde                       |    2 +-
+ ArduCopter/defines.h                               |   20 +-
+ ArduCopter/heli.pde                                |  115 +-
+ ArduCopter/system.pde                              |    4 +
+ ArduCopter/test.pde                                |   16 +-
+ ArduPlane/Log.pde                                  |    7 +
+ .../Projects/arduino-usbserial/Arduino-usbserial.c |    2 +-
+ Tools/ArduPPM/Libraries/PPM_Encoder.h              |   28 +-
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj    |    2 +-
+ Tools/ArdupilotMegaPlanner/CommsTCPSerial.cs       |   21 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |    7 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |    9 +-
+ .../GCSViews/FlightPlanner.Designer.cs             |    1 +
+ .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |   64 +-
+ .../GCSViews/FlightPlanner.resx                    |    4 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Simulation.cs  |    2 +-
+ Tools/ArdupilotMegaPlanner/MAVLink.cs              |   15 +-
+ Tools/ArdupilotMegaPlanner/MainV2.Designer.cs      |   10 +-
+ Tools/ArdupilotMegaPlanner/MainV2.cs               |    8 +
+ Tools/ArdupilotMegaPlanner/Program.cs              |    2 +-
+ .../Properties/AssemblyInfo.cs                     |    2 +-
+ Tools/ArdupilotMegaPlanner/Setup/Setup.Designer.cs |    1 +
+ Tools/ArdupilotMegaPlanner/Setup/Setup.cs          |    8 +-
+ .../bin/Release/ArdupilotMegaPlanner.application   |    2 +-
+ .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2212864 -> 2214400 bytes
+ .../bin/Release/BSE.Windows.Forms.dll              |  Bin 141824 -> 141824 bytes
+ .../bin/Release/GCSViews/FlightPlanner.resx        |    4 +-
+ .../bin/Release/GMap.NET.Core.dll                  |  Bin 189952 -> 183808 bytes
+ .../bin/Release/GMap.NET.WindowsForms.dll          |  Bin 77824 -> 77824 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 20480 -> 20480 bytes
+ .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 53248 -> 53248 bytes
+ .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 380928 bytes
+ Tools/autotest/autotest.py                         |    3 +-
+ Tools/autotest/mission2.txt                        |    2 +-
+ libraries/Desktop/support/DataFlash.cpp            |   20 +-
+ 43 files changed, 2445 insertions(+), 146 deletions(-)
+ create mode 100644 ArduCopter/GCS_Mavlink copy.txt
