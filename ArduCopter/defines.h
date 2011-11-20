@@ -236,6 +236,7 @@ enum gcs_severity {
 #define LOG_STARTUP_MSG 		0x0A
 #define LOG_MOTORS_MSG 			0x0B
 #define LOG_OPTFLOW_MSG 		0x0C
+#define LOG_DATA_MSG 			0x0D
 #define LOG_INDEX_MSG			0xF0
 #define MAX_NUM_LOGS			50
 
