@@ -26,8 +26,12 @@ static int8_t
 planner_gcs(uint8_t argc, const Menu::arg *argv)
 {
   gcs0.init(&Serial);
+
+#if USB_MUX_PIN > 0
+  // we don't have gcs3 if we have the USB mux setup
   gcs3.init(&Serial3);
-  
+#endif
+
   int loopcount = 0;
   while (1) {
     if (millis()-fast_loopTimer > 19) {

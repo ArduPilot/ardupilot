@@ -72,6 +72,7 @@
 # define LED_OFF          LOW
 # define SLIDE_SWITCH_PIN 40
 # define PUSHBUTTON_PIN   41
+# define USB_MUX_PIN      -1
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -81,6 +82,7 @@
 # define SLIDE_SWITCH_PIN (-1)
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
+# define USB_MUX_PIN 23
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
