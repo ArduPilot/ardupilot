@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
 	DataFlash_Purple.cpp - DataFlash log library for AT45DB321D
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -317,10 +318,16 @@ void DataFlash_Purple::ChipErase ()
 void DataFlash_Purple::StartWrite(int16_t PageAdr)
 {
   df_BufferNum=1;
-  df_BufferIdx=0;
+  df_BufferIdx=4;
   df_PageAdr=PageAdr;
   df_Stop_Write=0;
   WaitReady();
+
+  // We are starting a new page - write FileNumber and FilePage
+  BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
+  BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
+  BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
+  BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
 }
 
 void DataFlash_Purple::FinishWrite(void)
@@ -354,7 +361,7 @@ void DataFlash_Purple::WriteByte(byte data)
     df_BufferIdx++;
     if (df_BufferIdx >= df_PageSize)  // End of buffer?
       {
-      df_BufferIdx=0;
+	  df_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
 	  BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
       df_PageAdr++;
 	  if (OVERWRITE_DATA==1)
@@ -372,6 +379,12 @@ void DataFlash_Purple::WriteByte(byte data)
         df_BufferNum=2;
       else
         df_BufferNum=1;
+      // We are starting a new page - write FileNumber and FilePage
+      BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
+      BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
+      df_FilePage++;
+      BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
+      BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
       }
     }
 }
@@ -405,11 +418,17 @@ int16_t DataFlash_Purple::GetPage()
 void DataFlash_Purple::StartRead(int16_t PageAdr)
 {
   df_Read_BufferNum=1;
-  df_Read_BufferIdx=0;
+  df_Read_BufferIdx=4;
   df_Read_PageAdr=PageAdr;
   WaitReady();
   PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write Memory page to buffer
   df_Read_PageAdr++;
+
+  // We are starting a new page - read FileNumber and FilePage
+  df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
+  df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
+  df_FilePage = BufferRead(df_Read_BufferNum,2);   // High byte
+  df_FilePage = (df_FilePage<<8) | BufferRead(df_Read_BufferNum,3); // Low byte
 }
 
 byte DataFlash_Purple::ReadByte()
@@ -421,7 +440,7 @@ byte DataFlash_Purple::ReadByte()
   df_Read_BufferIdx++;
   if (df_Read_BufferIdx >= df_PageSize)  // End of buffer?
     {
-    df_Read_BufferIdx=0;
+    df_Read_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
     PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write memory page to Buffer
     df_Read_PageAdr++;
     if (df_Read_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
@@ -429,6 +448,12 @@ byte DataFlash_Purple::ReadByte()
       df_Read_PageAdr = 0;
       df_Read_END = true;
       }
+
+    // We are starting a new page - read FileNumber and FilePage
+    df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
+    df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
+    df_FilePage = BufferRead(df_Read_BufferNum,2);   // High byte
+    df_FilePage = (df_FilePage<<8) | BufferRead(df_Read_BufferNum,3); // Low byte
     }
   return result;
 }
@@ -451,4 +476,20 @@ int32_t DataFlash_Purple::ReadLong()
   result = (result<<8) | ReadByte();
   result = (result<<8) | ReadByte(); // Last byte
   return (int32_t)result;
+}
+
+void DataFlash_Purple::SetFileNumber(uint16_t FileNumber)
+{
+	df_FileNumber = FileNumber;
+	df_FilePage = 1;
+}
+
+uint16_t DataFlash_Purple::GetFileNumber()
+{
+	return df_FileNumber;
+}
+
+uint16_t DataFlash_Purple::GetFilePage()
+{
+	return df_FilePage;
 }

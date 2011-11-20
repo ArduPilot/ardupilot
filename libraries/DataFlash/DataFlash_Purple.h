@@ -18,6 +18,10 @@ class DataFlash_Purple : public DataFlash_Class
 	unsigned int df_Read_PageAdr;
 	unsigned char df_Read_END;
 	unsigned char df_Stop_Write;
+
+	uint16_t df_FileNumber;
+	uint16_t df_FilePage;
+
 	//Methods
 	unsigned char BufferRead (unsigned char BufferNum, uint16_t IntPageAdr);
 	void BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data);
@@ -59,6 +63,10 @@ class DataFlash_Purple : public DataFlash_Class
 	unsigned char ReadByte();
 	int16_t ReadInt();
 	int32_t ReadLong();
+
+	void SetFileNumber(uint16_t FileNumber);
+	uint16_t GetFileNumber();
+	uint16_t GetFilePage();
 };
 
 #endif
