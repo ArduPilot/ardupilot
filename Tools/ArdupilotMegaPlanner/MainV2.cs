@@ -742,9 +742,17 @@ namespace ArdupilotMega
         {
             comportname = CMB_serialport.Text;
             if (comportname == "UDP" || comportname == "TCP")
+            {
                 CMB_baudrate.Enabled = false;
+                if (comportname == "TCP")
+                    MainV2.comPort.BaseStream = new TcpSerial();
+                if (comportname == "UDP")
+                    MainV2.comPort.BaseStream = new UdpSerial();
+            }
             else
+            {
                 CMB_baudrate.Enabled = true;
+            }
 
             try
             {

@@ -649,6 +649,7 @@
             this.panelMap.ForeColor = System.Drawing.SystemColors.ControlText;
             this.panelMap.MinimumSize = new System.Drawing.Size(27, 27);
             this.panelMap.Name = "panelMap";
+            this.panelMap.Resize += new System.EventHandler(this.panelMap_Resize);
             // 
             // lbl_distance
             // 

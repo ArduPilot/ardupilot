@@ -556,7 +556,7 @@ namespace ArdupilotMega.GCSViews
                         processArduPilot();
                     }
                 }
-                catch { }
+                catch (Exception ex) { Console.WriteLine("SIM Main loop exception " + ex.ToString()); }
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {

@@ -75,7 +75,7 @@ namespace ArdupilotMega.Setup
 
             if (tabControl1.SelectedTab == tabHeli)
             {
-                if (MainV2.comPort.param["HSV_MAN"].ToString() == "0")
+                if (MainV2.comPort.param["HSV_MAN"] == null || MainV2.comPort.param["HSV_MAN"].ToString() == "0")
                     return;
 
                 if (HS3.minline == 0)
@@ -1253,6 +1253,12 @@ namespace ArdupilotMega.Setup
                 temp.Text = "900";
             if (int.Parse(temp.Text) > 2100)
                 temp.Text = "2100";
+        }
+
+        private void Setup_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            timer.Stop();
+            timer.Dispose();
         }
     }
 }

@@ -203,7 +203,14 @@ namespace ArdupilotMega
                 if (getparams == true)
                     getParamList();
             }
-            catch (Exception e) { MainV2.givecomport = false; frm.Close(); throw e; }
+            catch (Exception e) { 
+                try { 
+                    BaseStream.Close(); 
+                } catch { } 
+                MainV2.givecomport = false; 
+                frm.Close(); 
+                throw e; 
+            }
 
             frm.Close();
 
@@ -485,6 +492,12 @@ namespace ArdupilotMega
         /// <param name="value"></param>
         public bool setParam(string paramname, float value)
         {
+            if (!param.ContainsKey(paramname))
+            {
+                Console.WriteLine("Param doesnt exist " + paramname);
+                return false;
+            }
+
             MainV2.givecomport = true;
 
             __mavlink_param_set_t req = new __mavlink_param_set_t();

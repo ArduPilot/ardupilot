@@ -1444,6 +1444,7 @@
             this.Controls.Add(this.tabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "Setup";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Setup_FormClosing);
             this.Load += new System.EventHandler(this.Setup_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabReset.ResumeLayout(false);
