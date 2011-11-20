@@ -901,6 +901,29 @@ static void Log_Read_Startup()
 	Serial.printf_P(PSTR("START UP\n"));
 }
 
+static void Log_Write_Data(int8_t _type, float _data)
+{
+	Log_Write_Data(_type, (int32_t)(_data * 1000));
+}
+
+static void Log_Write_Data(int8_t _type, int32_t _data)
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_DATA_MSG);
+	DataFlash.WriteByte(_type);
+	DataFlash.WriteLong(_data);
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a mode packet
+static void Log_Read_Data()
+{
+	int8_t  temp1 = DataFlash.ReadByte();
+	int32_t temp2 = DataFlash.ReadLong();
+	Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp2);
+}
+
 
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(int start_page, int end_page)
@@ -980,6 +1003,10 @@ static void Log_Read(int start_page, int end_page)
 
 					case LOG_GPS_MSG:
 						Log_Read_GPS();
+						break;
+
+					case LOG_DATA_MSG:
+						Log_Read_Data();
 						break;
 				}
 				break;
