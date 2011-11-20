@@ -980,7 +980,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			// set frame of waypoint
 			uint8_t frame;
 
-			if (tell_command.options & WP_OPTION_ALT_RELATIVE) {
+			if (tell_command.options & MASK_OPTIONS_RELATIVE_ALT) {
 				frame = MAV_FRAME_GLOBAL_RELATIVE_ALT; // reference frame
 			} else {
 				frame = MAV_FRAME_GLOBAL; // reference frame
@@ -1294,7 +1294,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				guided_WP = tell_command;
 
 				// add home alt if needed
-				if (guided_WP.options & WP_OPTION_ALT_RELATIVE){
+				if (guided_WP.options & MASK_OPTIONS_RELATIVE_ALT){
 					guided_WP.alt += home.alt;
 				}
 
@@ -1322,7 +1322,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
 				if(packet.seq != 0)
-					set_command_with_index(tell_command, packet.seq);
+					set_cmd_with_index(tell_command, packet.seq);
 
 				// update waypoint receiving state machine
 				waypoint_timelast_receive = millis();
