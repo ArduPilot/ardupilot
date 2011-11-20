@@ -681,7 +681,7 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
 
-                    lbl_status.Text = "Done";
+                    lbl_status.Text = "Write Done... Waiting";
                 }
                 else
                 {
@@ -696,6 +696,7 @@ namespace ArdupilotMega.GCSViews
 
                 System.Threading.Thread.Sleep(10000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
 
+                lbl_status.Text = "Done";
             }
             catch (Exception ex) { lbl_status.Text = "Failed upload"; MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }
             flashing = false;

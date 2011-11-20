@@ -57,7 +57,7 @@ namespace System.IO.Ports
             get { return client.Available + rbuffer.Length - rbufferread; }
         }
 
-        public bool IsOpen { get { return client.Client.Connected; } }
+        public bool IsOpen { get { try { return client.Client.Connected; } catch { return false; } } }
 
         public bool DtrEnable
         {
@@ -97,6 +97,11 @@ namespace System.IO.Ports
         {
             if (client == null || !IsOpen)
             {
+                try
+                {
+                    client.Close();
+                }
+                catch { }
                 throw new Exception("The socket/serialproxy is closed");
             }
         }
@@ -216,11 +221,21 @@ namespace System.IO.Ports
 
         public void Close()
         {
-            if (client.Client.Connected)
+            try
             {
-                client.Client.Close();
+                if (client.Client.Connected)
+                {
+                    client.Client.Close();
+                    client.Close();
+                }
+            }
+            catch { }
+
+            try
+            {
                 client.Close();
             }
+            catch { }
 
             client = new TcpClient();
         }
