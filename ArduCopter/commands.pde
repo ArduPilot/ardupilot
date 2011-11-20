@@ -50,11 +50,11 @@ static struct Location get_cmd_with_index(int i)
 	}
 
 	// Add on home altitude if we are a nav command (or other command with altitude) and stored alt is relative
-	//if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & WP_OPTION_ALT_RELATIVE){
+	//if((temp.id < MAV_CMD_NAV_LAST || temp.id == MAV_CMD_CONDITION_CHANGE_ALT) && temp.options & MASK_OPTIONS_RELATIVE_ALT){
 		//temp.alt += home.alt;
 	//}
 
-	if(temp.options & WP_OPTION_RELATIVE){
+	if(temp.options & MASK_OPTIONS_RELATIVE_ALT){
 		// If were relative, just offset from home
 		temp.lat	+=	home.lat;
 		temp.lng	+=	home.lng;
@@ -65,7 +65,7 @@ static struct Location get_cmd_with_index(int i)
 
 // Setters
 // -------
-static void set_command_with_index(struct Location temp, int i)
+static void set_cmd_with_index(struct Location temp, int i)
 {
 	i = constrain(i, 0, g.command_total.get());
 	//Serial.printf("set_command: %d with id: %d\n", i, temp.id);
@@ -203,7 +203,7 @@ static void init_home()
 	// Save Home to EEPROM
 	// -------------------
 	// no need to save this to EPROM
-	set_command_with_index(home, 0);
+	set_cmd_with_index(home, 0);
 	print_wp(&home, 0);
 
 	// Save prev loc this makes the calcs look better before commands are loaded
