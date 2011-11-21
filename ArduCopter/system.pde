@@ -184,6 +184,7 @@ static void init_ardupilot()
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
+
 	init_camera();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -237,10 +238,6 @@ static void init_ardupilot()
 #else
     Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
 #endif // CLI_ENABLED
-
-    if(g.esc_calibrate == 1){
-        init_esc();
-    }
 
 	#if LOGGING_ENABLED == ENABLED
 	if(g.log_bitmask != 0){
