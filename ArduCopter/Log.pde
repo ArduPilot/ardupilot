@@ -1027,6 +1027,7 @@ static void Log_Write_Raw() {}
 static void Log_Write_GPS() {}
 static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
+static void Log_Write_Data() {}
 #ifdef OPTFLOW_ENABLED
 static void Log_Write_Optflow() {}
 #endif
