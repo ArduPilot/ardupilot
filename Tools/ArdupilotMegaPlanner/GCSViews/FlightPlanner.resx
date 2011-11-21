@@ -186,9 +186,9 @@
   <data name="Commands.ColumnHeadersHeight" type="System.Int32, mscorlib">
     <value>30</value>
   </data>
-  <metadata name="Command.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Command.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Command.HeaderText" xml:space="preserve">
     <value>Command</value>
   </data>
@@ -198,9 +198,9 @@
   <data name="Command.Width" type="System.Int32, mscorlib">
     <value>150</value>
   </data>
-  <metadata name="Param1.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Param1.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Param1.HeaderText" xml:space="preserve">
     <value>P1</value>
   </data>
@@ -210,9 +210,9 @@
   <data name="Param1.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Param2.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Param2.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Param2.HeaderText" xml:space="preserve">
     <value>P2</value>
   </data>
@@ -222,9 +222,9 @@
   <data name="Param2.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Param3.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Param3.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Param3.HeaderText" xml:space="preserve">
     <value>P3</value>
   </data>
@@ -234,9 +234,9 @@
   <data name="Param3.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Param4.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Param4.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Param4.HeaderText" xml:space="preserve">
     <value>P4</value>
   </data>
@@ -246,9 +246,9 @@
   <data name="Param4.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Lat.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Lat.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Lat.HeaderText" xml:space="preserve">
     <value>Lat</value>
   </data>
@@ -258,9 +258,9 @@
   <data name="Lat.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Lon.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Lon.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Lon.HeaderText" xml:space="preserve">
     <value>Lon</value>
   </data>
@@ -270,9 +270,9 @@
   <data name="Lon.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Alt.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Alt.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Alt.HeaderText" xml:space="preserve">
     <value>Alt</value>
   </data>
@@ -282,9 +282,9 @@
   <data name="Alt.Width" type="System.Int32, mscorlib">
     <value>40</value>
   </data>
-  <metadata name="Delete.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Delete.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Delete.HeaderText" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -294,9 +294,9 @@
   <data name="Delete.Width" type="System.Int32, mscorlib">
     <value>50</value>
   </data>
-  <metadata name="Up.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Up.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Up.HeaderText" xml:space="preserve">
     <value>Up</value>
   </data>
@@ -306,9 +306,9 @@
   <data name="Up.Width" type="System.Int32, mscorlib">
     <value>30</value>
   </data>
-  <metadata name="Down.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="Down.UserAddedColumn" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="Down.HeaderText" xml:space="preserve">
     <value>Down</value>
   </data>
@@ -1128,9 +1128,9 @@
   <data name="comboBoxMapType.TabIndex" type="System.Int32, mscorlib">
     <value>42</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <data name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing">
     <value>172, 17</value>
-  </metadata>
+  </data>
   <data name="comboBoxMapType.ToolTip" xml:space="preserve">
     <value>Change the current map type</value>
   </data>
@@ -1536,9 +1536,9 @@
   <data name="MainMap.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Bottom, Left, Right</value>
   </data>
-  <metadata name="contextMenuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <data name="contextMenuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing">
     <value>17, 17</value>
-  </metadata>
+  </data>
   <data name="deleteWPToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>167, 22</value>
   </data>
@@ -1915,9 +1915,9 @@
   <data name="&gt;&gt;panelBASE.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
-  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+  <data name="$this.Localizable" type="System.Boolean, mscorlib">
     <value>True</value>
-  </metadata>
+  </data>
   <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
     <value>6, 13</value>
   </data>
@@ -2106,5 +2106,8 @@
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
     <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+  </data>
+  <data name="MAVCmd" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\MAVCmd.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
 </root>
