@@ -178,6 +178,9 @@
   <data name="label11.Text" xml:space="preserve">
     <value>飞机 IMU</value>
   </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>朝向</value>
+  </data>
   <data name="label6.Text" xml:space="preserve">
     <value>俯仰</value>
   </data>
@@ -296,13 +299,13 @@
     <value>31, 13</value>
   </data>
   <data name="label26.Text" xml:space="preserve">
-    <value>仅在</value>
+    <value>仅  在</value>
   </data>
   <data name="CHKdisplayall.Size" type="System.Drawing.Size, System.Drawing">
-    <value>178, 17</value>
+    <value>77, 17</value>
   </data>
   <data name="CHKdisplayall.Text" xml:space="preserve">
-    <value>显示所有 (重启程序- 高速 PC)</value>
+    <value>显示所有 </value>
   </data>
   <data name="but_advsettings.Text" xml:space="preserve">
     <value>高级设置</value>
@@ -312,5 +315,26 @@
   </data>
   <data name="chkSensor.Text" xml:space="preserve">
     <value>传感器</value>
+  </data>
+  <data name="CHK_quad.Size" type="System.Drawing.Size, System.Drawing">
+    <value>56, 17</value>
+  </data>
+  <data name="CHK_quad.Text" xml:space="preserve">
+    <value>四  轴</value>
+  </data>
+  <data name="BUT_startfgquad.Text" xml:space="preserve">
+    <value>启动 FG    四轴</value>
+  </data>
+  <data name="BUT_startfgplane.Text" xml:space="preserve">
+    <value>启动 FG    固定翼</value>
+  </data>
+  <data name="BUT_startxplane.Text" xml:space="preserve">
+    <value>启动 Xplane</value>
+  </data>
+  <data name="CHK_heli.Size" type="System.Drawing.Size, System.Drawing">
+    <value>62, 17</value>
+  </data>
+  <data name="CHK_heli.Text" xml:space="preserve">
+    <value>直升机</value>
   </data>
 </root>
