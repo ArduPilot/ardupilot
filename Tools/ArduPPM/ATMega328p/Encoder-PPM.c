@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-// ARDUCODER Version v0.9.85
+// ArduPPM Version v0.9.86
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ARDUCOPTER 2 : PPM ENCODER for AT Mega 328p and APM v1.4 Boards
 // By:John Arne Birkeland - 2011
@@ -33,6 +33,7 @@
 //	0.9.83 : Implemented PPM passtrough failsafe
 //	0.9.84 : Corrected pin and port names in Encoder-PPM.c according to #define for Mega32U2 compatibility
 //	0.9.85 : Added brownout reset detection flag
+//	0.9.86 : Added a #define to disable Radio Passthrough mode (hardware failsafe for Arduplane)
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // PREPROCESSOR DIRECTIVES
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -41,10 +42,11 @@
 #include <util/delay.h>
 
 
-#define	ERROR_THRESHOLD		1									// Number of servo input errors before alerting
+#define	ERROR_THRESHOLD		2									// Number of servo input errors before alerting
 #define ERROR_DETECTION_WINDOW	3000 * LOOP_TIMER_10MS			// Detection window for error detection (default to 30s)
 #define	ERROR_CONDITION_DELAY	500 * LOOP_TIMER_10MS			// Servo error condition LED delay (LED blinking duration)
 
+#define PASSTHROUGH_MODE		ENABLED	// Set it to "DISABLED" to remove radio passthrough mode (hardware failsafe for Arduplane)
 #define PASSTHROUGH_CHANNEL		8 * 2	// Channel for passthrough mode selection
 #define PASSTHROUGH_CHANNEL_OFF_US		ONE_US * 1600 - PPM_PRE_PULSE	// Passthrough off threshold
 #define PASSTHROUGH_CHANNEL_ON_US		ONE_US * 1800 - PPM_PRE_PULSE	// Passthrough on threshold
@@ -87,8 +89,6 @@ int main(void)
 	// LOCAL VARIABLES
 	// ------------------------------------------------------------------------------------------------------------------------------------------------------------
 	bool init = true; // We are inside init sequence
-	int8_t mux_check = 0;
-	uint16_t mux_ppm = 500;
 	bool mux_passthrough = false; // Mux passthrough mode status Flag : passthrough is off
 	uint16_t led_acceleration; // Led acceleration based on throttle stick position
 	bool servo_error_condition = false;	//	Servo signal error condition
@@ -96,8 +96,14 @@ int main(void)
 	static uint16_t servo_error_detection_timer=0;		// Servo error detection timer
 	static uint16_t servo_error_condition_timer=0; 		// Servo error condition timer
 	static uint16_t blink_led_timer = 0; 		// Blink led timer
+	
+	#if PASSTHROUGH_MODE ==	ENABLED
 	static uint8_t mux_timer = 0;				// Mux timer
 	static uint8_t mux_counter = 0;				// Mux counter
+	static int8_t mux_check = 0;
+	static uint16_t mux_ppm = 500;
+	#endif
+	
 	static uint16_t led_code_timer = 0;	// Blink Code Timer
 	static uint8_t led_code_symbol = 0;	// Blink Code current symbol
 
@@ -308,6 +314,7 @@ int main(void)
 	PWM_LOOP: // SERVO_PWM_MODE
 	while( 1 )
 	{
+		#if PASSTHROUGH_MODE ==	ENABLED
 		// ------------------------------------------------------------------------------
 		// Radio passthrough control (mux chip A/B control)
 		// ------------------------------------------------------------------------------
@@ -355,7 +362,7 @@ int main(void)
 					
 		}			
 		
-		
+		#endif
 
 		// ------------------------------------------------------------------------------
 		// Status LED control
