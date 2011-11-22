@@ -146,13 +146,6 @@ public:
     vehicle_t getVehicle() {
         return _vehicle;
     }
-    MAV_STATE getState() {
-        return _state;
-    }
-    void setState(MAV_STATE state) {
-        _state = state;
-    }
-
     bool heartBeatLost() {
         if (_heartBeatTimeout == 0)
             return false;

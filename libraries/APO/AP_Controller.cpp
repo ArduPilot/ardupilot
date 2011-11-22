@@ -24,7 +24,7 @@ AP_Controller::AP_Controller(AP_Navigator * nav, AP_Guide * guide,
     _nav(nav), _guide(guide), _hal(hal), _armingMechanism(armingMechanism),
     _group(key, name ? : PSTR("CNTRL_")),
     _chMode(chMode),
-    _mode(&_group, 1, MAV_MODE_LOCKED, PSTR("MODE")) {
+    _mode(MAV_MODE_LOCKED), _state(MAV_STATE_BOOT) {
     setAllRadioChannelsToNeutral();
 }
 
@@ -45,83 +45,63 @@ void AP_Controller::setAllRadioChannelsManually() {
 void AP_Controller::update(const float dt) {
     if (_armingMechanism) _armingMechanism->update(dt);
 
-    // determine flight mode
+    // handle emergencies
     //
     // check for heartbeat from gcs, if not found go to failsafe
     if (_hal->heartBeatLost()) {
         setMode(MAV_MODE_FAILSAFE);
         _hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
-        // if battery less than 5%, go to failsafe
+        
+    // if battery less than 5%, go to failsafe
     } else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
         setMode(MAV_MODE_FAILSAFE);
         _hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
-        // manual/auto switch
-    } else {
-        // if all emergencies cleared, fall back to standby
-        if (_hal->getState()==MAV_STATE_EMERGENCY) _hal->setState(MAV_STATE_STANDBY);
+    }
+
+    // handle modes
+    //
+    // if in locked mode
+    if (getMode() == MAV_MODE_LOCKED) {
+        // if state is not stanby then set it to standby and alert gcs
+        if (getState()!=MAV_STATE_STANDBY) {
+            setState(MAV_STATE_STANDBY);
+            _hal->gcs->sendText(SEVERITY_HIGH, PSTR("disarmed"));
+        }
+    }
+    // if not locked
+    else {
+        // if state is not active, set it to active and alert gcs
+        if (getState()!=MAV_STATE_ACTIVE) {
+            setState(MAV_STATE_ACTIVE);
+            _hal->gcs->sendText(SEVERITY_HIGH, PSTR("armed"));
+        }
 
         // if in auto mode and manual switch set, change to manual
-        if (getMode()==MAV_MODE_AUTO && (_hal->rc[_chMode]->getRadioPosition() > 0)) setMode(MAV_MODE_MANUAL);
+        if (_hal->rc[_chMode]->getRadioPosition() > 0) setMode(MAV_MODE_MANUAL);
+        else setMode(MAV_MODE_AUTO);
 
-        // if in manual mode and auto switch set, switch to auto
-        if (getMode()==MAV_MODE_MANUAL && (_hal->rc[_chMode]->getRadioPosition() < 0)) setMode(MAV_MODE_AUTO);
-    }
-
-    // handle flight modes
-    switch(_mode) {
-
-    case MAV_MODE_LOCKED: {
-        _hal->setState(MAV_STATE_STANDBY);
-        break;
-    }
-
-    case MAV_MODE_FAILSAFE: {
-        _hal->setState(MAV_STATE_EMERGENCY);
-        break;
-    }
-
-    case MAV_MODE_MANUAL: {
-        manualLoop(dt);
-        break;
-    }
-
-    case MAV_MODE_AUTO: {
-        autoLoop(dt);
-        break;
-    }
-
-    default: {
-        _hal->gcs->sendText(SEVERITY_HIGH, PSTR("unknown mode"));
-        _hal->setState(MAV_STATE_EMERGENCY);
-    }
+        // handle all possible modes
+        if (getMode()==MAV_MODE_MANUAL) {
+            manualLoop(dt);
+        } else if (getMode()==MAV_MODE_AUTO) {
+            autoLoop(dt);
+        } else {
+            _hal->gcs->sendText(SEVERITY_HIGH, PSTR("unknown mode"));
+            setMode(MAV_MODE_FAILSAFE);
+        }
     }
 
     // this sends commands to motors
-    setMotors();
+    handleMotors();
 }
 
-void AP_Controller::setMotors() {
-    switch (_hal->getState()) {
-
-    case MAV_STATE_ACTIVE: {
+void AP_Controller::handleMotors() {
+    if(getState()==MAV_STATE_ACTIVE) {
         digitalWrite(_hal->aLedPin, HIGH);
-        setMotorsActive();
-        break;
-    }
-    case MAV_STATE_EMERGENCY: {
+        setMotors();
+    } else {
         digitalWrite(_hal->aLedPin, LOW);
-        setMotorsEmergency();
-        break;
-    }
-    case MAV_STATE_STANDBY: {
-        digitalWrite(_hal->aLedPin,LOW);
-        setMotorsStandby();
-        break;
-    }
-    default: {
-        setMotorsStandby();
-    }
-
+        setAllRadioChannelsToNeutral();
     }
 }
 

@@ -44,28 +44,31 @@ public:
                   const uint8_t _chMode,
                   const uint16_t key = k_cntrl,
                   const prog_char_t * name = NULL);
-    virtual void update(const float dt);
+
+    // derived class cannot override
+    void update(const float dt);
     void setAllRadioChannelsToNeutral();
     void setAllRadioChannelsManually();
-    virtual void setMotors();
-    virtual void setMotorsActive() = 0;
-    virtual void setMotorsEmergency() {
-        setAllRadioChannelsToNeutral();
-    };
-    virtual void setMotorsStandby() {
-        setAllRadioChannelsToNeutral();
-    };
-    virtual void manualLoop(const float dt) {
-        setAllRadioChannelsToNeutral();
-    };
-    virtual void autoLoop(const float dt) {
-        setAllRadioChannelsToNeutral();
-    };
-    AP_Uint8 getMode() {
+    void handleMotors();
+
+    // derived class must define
+    virtual void setMotors() = 0;
+    virtual void manualLoop(const float dt) = 0;
+    virtual void autoLoop(const float dt) = 0;
+    virtual void handleFailsafe() = 0;
+
+    // access
+    MAV_MODE getMode() {
         return _mode;
     }
     void setMode(MAV_MODE mode) {
         _mode = mode;
+    }
+    MAV_STATE getState() const { 
+        return _state;
+    }
+    void setState(MAV_STATE state) {
+        _state = state;
     }
 
 protected:
@@ -75,7 +78,8 @@ protected:
     AP_ArmingMechanism * _armingMechanism;
     uint8_t _chMode;
     AP_Var_group _group;
-    AP_Uint8 _mode;
+    MAV_MODE _mode;
+    MAV_STATE _state;
 };
 
 class AP_ControllerBlock {
@@ -218,7 +222,7 @@ public:
     }
     float update(const float & input, const float & dt) {
         // derivative with low pass
-        float _eD = _blockLowPass.update((_eP - input) / dt, dt);
+        float _eD = _blockLowPass.update((input - _eP) / dt, dt);
         // proportional, note must come after derivative
         // because derivatve uses _eP as previous value
         _eP = input;

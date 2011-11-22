@@ -97,6 +97,8 @@ public:
     float getAltitudeCommand() {
         return _altitudeCommand;
     }
+    float getDistanceToNextWaypoint();
+
     virtual float getPNError() = 0;
     virtual float getPEError() = 0;
     virtual float getPDError() = 0;

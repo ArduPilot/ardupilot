@@ -183,7 +183,7 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
             batteryVoltage = _hal->batteryMonitor->getVoltage()*1000;
         }
         mavlink_msg_sys_status_send(_channel, _controller->getMode(),
-                                    _guide->getMode(), _hal->getState(), _hal->load * 10,
+                                    _guide->getMode(), _controller->getState(), _hal->load * 10,
                                     batteryVoltage, batteryPercentage, _packetDrops);
         break;
     }
@@ -397,14 +397,14 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
             break;
 
         case MAV_ACTION_MOTORS_START:
-            _hal->setState(MAV_STATE_ACTIVE);
+            _controller->setMode(MAV_MODE_READY);
             break;
 
         case MAV_ACTION_CALIBRATE_GYRO:
         case MAV_ACTION_CALIBRATE_MAG:
         case MAV_ACTION_CALIBRATE_ACC:
         case MAV_ACTION_CALIBRATE_PRESSURE:
-            _hal->setState(MAV_STATE_STANDBY);
+            _controller->setMode(MAV_MODE_LOCKED);
             _navigator->calibrate();
             break;
 
@@ -412,13 +412,11 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
         case MAV_ACTION_CONFIRM_KILL:
         case MAV_ACTION_MOTORS_STOP:
         case MAV_ACTION_SHUTDOWN:
-            _hal->setState(MAV_STATE_STANDBY);
             _controller->setMode(MAV_MODE_LOCKED);
             break;
 
         case MAV_ACTION_LAUNCH:
         case MAV_ACTION_TAKEOFF:
-            _controller->setMode(MAV_MODE_AUTO);
             _guide->setMode(MAV_NAV_LIFTOFF);
             break;
 
@@ -651,6 +649,14 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
             sendMessage(MAVLINK_MSG_ID_WAYPOINT_ACK);
             _receivingCmds = false;
             _guide->setNumberOfCommands(_cmdNumberRequested);
+
+            // make sure curernt waypoint still exists
+            if (_cmdNumberRequested > _guide->getCurrentIndex()) {
+                _guide->setCurrentIndex(0);
+                mavlink_msg_waypoint_current_send(_channel,
+                                          _guide->getCurrentIndex());
+            }
+
             //sendText(SEVERITY_LOW, PSTR("waypoint ack sent"));
         } else if (_cmdRequestIndex > _cmdNumberRequested) {
             _receivingCmds = false;
