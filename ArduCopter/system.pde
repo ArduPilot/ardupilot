@@ -243,7 +243,6 @@ static void init_ardupilot()
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
-		Serial.printf("start_new_log");
 		start_new_log();
 	}
 	#endif

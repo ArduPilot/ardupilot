@@ -1260,8 +1260,10 @@ static void update_altitude()
 		baro_alt 			= (baro_alt + read_barometer()) >> 1;
 
 		// calc the vertical accel rate
-		#if CLIMB_RATE_BARO == 1
-		int temp_baro_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
+		#if CLIMB_RATE_BARO == 0
+		int temp_baro_alt	= (barometer._offset_press - barometer.RawPress) << 2; // invert and scale
+		temp_baro_alt		= (float)temp_baro_alt * .1 + (float)old_baro_alt * .9;
+
 		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
 		old_baro_alt		= temp_baro_alt;
 
