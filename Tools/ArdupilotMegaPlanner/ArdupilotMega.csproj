@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ArdupilotMega</RootNamespace>
     <AssemblyName>ArdupilotMegaPlanner</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -57,7 +57,7 @@
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;MAVLINK10cra</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;MAVLINK10cra</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -92,7 +92,7 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>mykey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>mykey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup />
@@ -134,6 +134,17 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\SrcSamples\bin\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
+    <Reference Include="IronPython, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython.dll</HintPath>
+      <Private>True</Private>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="IronPython.Modules, Version=2.7.0.40, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython.Modules.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="KMLib">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
     </Reference>
@@ -146,6 +157,16 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.DirectInput.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\Microsoft.Dynamic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting, Version=1.1.0.20, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\Microsoft.Scripting.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -203,6 +224,7 @@
     <Compile Include="HIL\QuadCopter.cs" />
     <Compile Include="HIL\Quaternion.cs" />
     <Compile Include="HIL\Vector3d.cs" />
+    <Compile Include="hires.cs" />
     <Compile Include="MavlinkLog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -329,6 +351,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Script.cs" />
     <Compile Include="SerialOutput.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -523,7 +546,7 @@
     </None>
     <None Include="MAC\Info.plist" />
     <None Include="MAC\run.sh" />
-    <None Include="mykey.pfx" />
+    <None Include="mykey.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\DataSources\CurrentState.datasource" />
     <None Include="block_plane_0.dae">
@@ -620,7 +643,6 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

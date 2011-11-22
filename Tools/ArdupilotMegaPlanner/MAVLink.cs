@@ -473,6 +473,8 @@ namespace ArdupilotMega
 
             packetcount++;
 
+
+
             //System.Threading.Thread.Sleep(1);
         }
 
@@ -818,7 +820,7 @@ namespace ArdupilotMega
             }
         }
 
-        public bool doCommand(MAV_CMD actionid)
+        public bool doCommand(MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7)
         {
 
             MainV2.givecomport = true;
@@ -830,6 +832,14 @@ namespace ArdupilotMega
             req.target_component = compid;
 
             req.command = (ushort)actionid;
+
+            req.param1 = p1;
+            req.param2 = p2;
+            req.param3 = p3;
+            req.param4 = p4;
+            req.param5 = p5;
+            req.param6 = p6;
+            req.param7 = p7;
 
             generatePacket(MAVLINK_MSG_ID_COMMAND_LONG, req);
 
