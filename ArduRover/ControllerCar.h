@@ -16,7 +16,7 @@ class ControllerCar: public AP_Controller {
 public:
     ControllerCar(AP_Navigator * nav, AP_Guide * guide,
                   AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode),
+        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
                steeringI, steeringD, steeringIMax, steeringYMax,steeringDFCut),
         pidThrust(new AP_Var_group(k_pidThrust, PSTR("THR_")), 1, throttleP,
@@ -84,9 +84,13 @@ private:
         _strCmd = steering;
         _thrustCmd = thrust;
     }
-    void setMotorsActive() {
+    void setMotors() {
         _hal->rc[ch_str]->setPosition(_strCmd);
         _hal->rc[ch_thrust]->setPosition(fabs(_thrustCmd) < 0.1 ? 0 : _thrustCmd);
+    }
+    void handleFailsafe() {
+        // turn off
+        setMode(MAV_MODE_LOCKED);
     }
 
     // attributes

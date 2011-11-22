@@ -16,7 +16,7 @@ class ControllerBoat: public AP_Controller {
 public:
     ControllerBoat(AP_Navigator * nav, AP_Guide * guide,
                    AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode),
+        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
                steeringI, steeringD, steeringIMax, steeringYMax,steeringDFCut),
         pidThrust(new AP_Var_group(k_pidThrust, PSTR("THR_")), 1, throttleP,
@@ -49,7 +49,7 @@ private:
                          _guide->getGroundSpeedCommand()
                          - _nav->getGroundSpeed(), dt);
     }
-    void setMotorsActive() {
+    void setMotors() {
         // turn all motors off if below 0.1 throttle
         if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
             setAllRadioChannelsToNeutral();
@@ -57,6 +57,10 @@ private:
             _hal->rc[ch_thrust]->setPosition(_thrustCmd);
             _hal->rc[ch_str]->setPosition(_strCmd);
         }
+    }
+    void handleFailsafe() {
+        // failsafe is to turn off
+        setMode(MAV_MODE_LOCKED);
     }
 
     // attributes

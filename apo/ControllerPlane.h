@@ -16,7 +16,7 @@ class ControllerPlane: public AP_Controller {
 public:
     ControllerPlane(AP_Navigator * nav, AP_Guide * guide,
                     AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_yaw,0.1,-0.9,0.9),ch_mode),
+        AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,this,ch_thrust,ch_yaw,0.1,-0.9,0.9),ch_mode),
         _trimGroup(k_trim, PSTR("trim_")),
         _rdrAilMix(&_group, 2, rdrAilMix, PSTR("rdrAilMix")),
         _needsTrim(false),
@@ -100,7 +100,7 @@ private:
         _rudder += _rdrTrim;
         _throttle += _thrTrim;
     }
-    void setMotorsActive() {
+    void setMotors() {
         // turn all motors off if below 0.1 throttle
         if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
             setAllRadioChannelsToNeutral();
@@ -110,6 +110,12 @@ private:
             _hal->rc[ch_pitch]->setPosition(_elevator);
             _hal->rc[ch_thrust]->setPosition(_throttle);
         }
+    }
+    void handleFailsafe() {
+        // note if testing and communication is lost the motors will not shut off,
+        // it will attempt to land
+        _guide->setMode(MAV_NAV_LANDING);
+        setMode(MAV_MODE_AUTO);
     }
 
     // attributes

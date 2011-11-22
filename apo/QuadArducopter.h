@@ -61,17 +61,18 @@ static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
 
 // position control loop
-static const float PID_POS_P = 0.1;
-static const float PID_POS_I = 0;
-static const float PID_POS_D = 0.1;
-static const float PID_POS_LIM = 0.04; // about 2 deg
-static const float PID_POS_AWU = 0.02; // about 1 deg
+static const float PID_TILT_P = 0.1;
+static const float PID_TILT_I = 0;
+static const float PID_TILT_D = 0.1;
+static const float PID_TILT_LIM = 0.04; // about 2 deg
+static const float PID_TILT_AWU = 0.02; // about 1 deg
+static const float PID_TILT_DFCUT = 10; // cut derivative feedback at 10 hz
 static const float PID_POS_Z_P = 0.1;
 static const float PID_POS_Z_I = 0;
 static const float PID_POS_Z_D = 0.2;
 static const float PID_POS_Z_LIM = 0.1;
 static const float PID_POS_Z_AWU = 0;
-static const float PID_POS_DFCUT = 10; // cut derivative feedback at 10 hz
+static const float PID_POS_Z_DFCUT = 10; // cut derivative feedback at 10 hz
 
 // attitude control loop
 static const float PID_ATT_P = 0.17;

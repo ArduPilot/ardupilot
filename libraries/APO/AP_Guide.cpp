@@ -42,6 +42,11 @@ float AP_Guide::getHeadingError() {
     return headingError;
 }
 
+float AP_Guide::getDistanceToNextWaypoint() {
+    return _command.distanceTo(_navigator->getLat_degInt(),
+        _navigator->getLon_degInt());
+}
+
 MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
                            AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
     AP_Guide(navigator, hal),
@@ -151,12 +156,9 @@ void MavlinkGuide::handleCommand() {
             return;
         }
 
-        float distanceToNext = _command.distanceTo(
-                                   _navigator->getLat_degInt(), _navigator->getLon_degInt());
-
         // check if we are at waypoint or if command
         // radius is zero within tolerance
-        if ( (distanceToNext < _command.getRadius()) | (distanceToNext < 1e-5) ) {
+        if ( (getDistanceToNextWaypoint() < _command.getRadius()) | (getDistanceToNextWaypoint() < 1e-5) ) {
             _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (distance)"));
             _hal->debug->printf_P(PSTR("waypoint reached (distance)"));
             nextCommand();
