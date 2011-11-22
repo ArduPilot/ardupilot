@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.50 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.51"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
