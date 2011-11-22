@@ -16,7 +16,6 @@ static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_tune				(uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 #ifdef OPTFLOW_ENABLED
 static int8_t	setup_optflow			(uint8_t argc, const Menu::arg *argv);
 #endif
@@ -36,7 +35,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"radio",			setup_radio},
 	{"frame",			setup_frame},
 	{"motors",			setup_motors},
-	{"esc",				setup_esc},
 	{"level",			setup_accel},
 	{"modes",			setup_flightmodes},
 	{"battery",			setup_batt_monitor},
@@ -228,29 +226,6 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 	}
 	report_radio();
 	return(0);
-}
-
-static int8_t
-setup_esc(uint8_t argc, const Menu::arg *argv)
-{
-	/*Serial.printf_P(PSTR("\nESC Calibration:\n"
-						"-1 Unplug USB and battery\n"
-						"-2 Move CLI/FLY switch to FLY mode\n"
-						"-3 Move throttle to max, connect battery\n"
-						"-4 After two long beeps, throttle to 0, then test\n\n"
-						" Press Enter to cancel.\n"));
-	*/
-	Serial.printf_P(PSTR("See wiki:\n"));
-	g.esc_calibrate.set_and_save(1);
-
-	while(1){
-		delay(20);
-
-		if(Serial.available() > 0){
-			g.esc_calibrate.set_and_save(0);
-			return(0);
-		}
-	}
 }
 
 static int8_t
@@ -1122,7 +1097,6 @@ static void print_enabled(boolean b)
 static void
 init_esc()
 {
-	g.esc_calibrate.set_and_save(0);
 	while(1){
 		read_radio();
 		delay(100);
