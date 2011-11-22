@@ -510,7 +510,7 @@ namespace ArdupilotMega.GCSViews
                 Console.WriteLine("Detected a " + board);
 
                 string baseurl = "";
-                if (board == "2560" || board == "2560-2")
+                if (board == "2560")
                 {
                     baseurl = temp.url2560.ToString();
                 }
@@ -605,7 +605,7 @@ namespace ArdupilotMega.GCSViews
                 //port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }
-            else if (board == "2560" || board == "2560-2")
+            else if (board == "2560")
             {
                 port = new ArduinoSTKv2();
                 port.BaudRate = 115200;

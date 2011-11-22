@@ -691,6 +691,15 @@ namespace ArdupilotMega.GCSViews
 
         private void Commands_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
         {
+            for (int i = 0; i < Commands.ColumnCount; i++)
+            {
+                DataGridViewCell tcell = Commands.Rows[e.RowIndex].Cells[i];
+                if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
+                {
+                    tcell.Value = "0";
+                }
+            }                
+
             DataGridViewComboBoxCell cell = Commands.Rows[e.RowIndex].Cells[Command.Index] as DataGridViewComboBoxCell;
             if (cell.Value == null)
             {
@@ -2079,6 +2088,18 @@ namespace ArdupilotMega.GCSViews
             // update row headers
             ((ComboBox)sender).ForeColor = Color.White;
             ChangeColumnHeader(((ComboBox)sender).Text);
+            try
+            {
+                for (int i = 0; i < Commands.ColumnCount; i++)
+                {
+                    DataGridViewCell tcell = Commands.Rows[selectedrow].Cells[i];
+                    if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
+                    {
+                        tcell.Value = "0";
+                    }
+                }
+            }
+            catch { }
         }
         /// <summary>
         /// Get the Google earth ALT for a given coord
@@ -2722,6 +2743,22 @@ namespace ArdupilotMega.GCSViews
             trackBar1.Location = new Point(panelMap.Size.Width - 50,trackBar1.Location.Y);
             trackBar1.Size = new System.Drawing.Size(trackBar1.Size.Width, panelMap.Size.Height - trackBar1.Location.Y);
             label11.Location = new Point(panelMap.Size.Width - 50, label11.Location.Y);
+        }
+
+        private void BUT_zoomto_Click(object sender, EventArgs e)
+        {
+            string place = "Perth, Australia";
+            Common.InputBox("Location", "Enter your location", ref place);
+
+            GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
+            if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
+            {
+                MessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+            else
+            {
+                MainMap.Zoom = 15;
+            }
         }
     }
 }

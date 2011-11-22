@@ -3,15 +3,18 @@
   <assemblyIdentity name="ArdupilotMegaPlanner.application" version="0.0.0.1" publicKeyToken="0000000000000000" language="en-US" processorArchitecture="x86" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <description asmv2:publisher="Michael Oborne" asmv2:product="ArdupilotMegaPlanner" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <deployment install="true" />
+  <compatibleFrameworks xmlns="urn:schemas-microsoft-com:clickonce.v2">
+    <framework targetVersion="4.0" profile="Full" supportedRuntime="4.0.30319" />
+  </compatibleFrameworks>
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="ArdupilotMegaPlanner.exe.manifest" size="18547">
+    <dependentAssembly dependencyType="install" codebase="ArdupilotMegaPlanner.exe.manifest" size="19987">
       <assemblyIdentity name="ArdupilotMegaPlanner.exe" version="0.0.0.1" publicKeyToken="0000000000000000" language="en-US" processorArchitecture="x86" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>d1SWduiRJYsMADkinyiFASzMBV8=</dsig:DigestValue>
+        <dsig:DigestValue>l2Rn8qTiwOzQt8/BkJyqqyHeXA0=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

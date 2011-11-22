@@ -1055,8 +1055,8 @@ namespace ArdupilotMega.Setup
             try
             {
 #if MAVLINK10
-                int fixme;
-                //                MainV2.comPort.doCommand(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
+                int fixme; // needs to be accel only
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION,1,1,1,1,1,1,1);
 #else
                 MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_CALIBRATE_ACC);
 #endif

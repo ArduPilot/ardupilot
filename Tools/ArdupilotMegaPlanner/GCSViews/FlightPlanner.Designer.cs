@@ -120,6 +120,7 @@
             this.label11 = new System.Windows.Forms.Label();
             this.panelBASE = new System.Windows.Forms.Panel();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.BUT_zoomto = new ArdupilotMega.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.Commands)).BeginInit();
             this.panel5.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -508,6 +509,7 @@
             this.panelWaypoints.CaptionFont = new System.Drawing.Font("Segoe UI", 11.75F, System.Drawing.FontStyle.Bold);
             this.panelWaypoints.CaptionHeight = 21;
             this.panelWaypoints.ColorScheme = BSE.Windows.Forms.ColorScheme.Custom;
+            this.panelWaypoints.Controls.Add(this.BUT_zoomto);
             this.panelWaypoints.Controls.Add(this.BUT_Camera);
             this.panelWaypoints.Controls.Add(this.BUT_grid);
             this.panelWaypoints.Controls.Add(this.BUT_Prefetch);
@@ -832,6 +834,14 @@
             resources.ApplyResources(this.panelBASE, "panelBASE");
             this.panelBASE.Name = "panelBASE";
             // 
+            // BUT_zoomto
+            // 
+            resources.ApplyResources(this.BUT_zoomto, "BUT_zoomto");
+            this.BUT_zoomto.Name = "BUT_zoomto";
+            this.toolTip1.SetToolTip(this.BUT_zoomto, resources.GetString("BUT_zoomto.ToolTip"));
+            this.BUT_zoomto.UseVisualStyleBackColor = true;
+            this.BUT_zoomto.Click += new System.EventHandler(this.BUT_zoomto_Click);
+            // 
             // FlightPlanner
             // 
             resources.ApplyResources(this, "$this");
@@ -943,5 +953,6 @@
         private System.Windows.Forms.DataGridViewButtonColumn Delete;
         private System.Windows.Forms.DataGridViewImageColumn Up;
         private System.Windows.Forms.DataGridViewImageColumn Down;
+        private MyButton BUT_zoomto;
     }
 }
