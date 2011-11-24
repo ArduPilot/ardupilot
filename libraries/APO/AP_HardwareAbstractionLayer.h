@@ -50,7 +50,7 @@ public:
         adc(), gps(), baro(), compass(), rangeFinders(), imu(), batteryMonitor(), rc(), gcs(),
         hil(), debug(), load(), lastHeartBeat(),
         _heartBeatTimeout(heartBeatTimeout), _mode(mode),
-        _board(board), _vehicle(vehicle), _state(MAV_STATE_UNINIT) {
+        _board(board), _vehicle(vehicle) {
 
         /*
          * Board specific hardware initialization
@@ -160,7 +160,6 @@ private:
     halMode_t _mode;
     board_t _board;
     vehicle_t _vehicle;
-    MAV_STATE _state;
 };
 
 } // namespace apo
