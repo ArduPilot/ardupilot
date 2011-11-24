@@ -5,14 +5,6 @@
  *      Author: jgoppert
  */
 
-/*
- * AVR runtime
- */
-//#include <avr/io.h>
-//#include <avr/eeprom.h>
-//#include <avr/pgmspace.h>
-//#include <math.h>
-
 #include "../FastSerial/FastSerial.h"
 #include "AP_Autopilot.h"
 #include "../AP_GPS/AP_GPS.h"
@@ -24,7 +16,6 @@
 #include "AP_Controller.h"
 #include "AP_Guide.h"
 #include "AP_BatteryMonitor.h"
-
 
 namespace apo {
 

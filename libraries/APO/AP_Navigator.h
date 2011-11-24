@@ -259,17 +259,17 @@ public:
 protected:
     AP_HardwareAbstractionLayer * _hal;
 private:
-    int32_t _timeStamp; // micros clock
-    float _roll; // rad
-    float _rollRate; //rad/s
-    float _pitch; // rad
-    float _pitchRate; // rad/s
-    float _yaw; // rad
-    float _yawRate; // rad/s
-    // wind assumed to be N-E plane
-    float _windSpeed; // m/s
-    float _windDirection; // m/s
-    float _vN;
+    int32_t _timeStamp;     /// time stamp for navigation data, micros clock
+    float _roll;            /// roll angle, radians
+    float _rollRate;        /// roll rate, radians/s
+    float _pitch;           /// pitch angle, radians
+    float _pitchRate;       /// pitch rate, radians/s
+    float _yaw;             /// yaw angle, radians
+    float _yawRate;         /// yaw rate, radians/s
+    // vertical 
+    float _windSpeed;       /// wind speed, m/s
+    float _windDirection;   /// wind directioin, radians
+    float _vN;              /// 
     float _vE;
     float _vD; // m/s
     float _xAccel;

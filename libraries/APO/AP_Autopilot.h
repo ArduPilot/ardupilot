@@ -113,12 +113,6 @@ private:
     AP_Guide * _guide;
     AP_Controller * _controller;
     AP_HardwareAbstractionLayer * _hal;
-
-    /**
-     * Constants
-     */
-    static const float deg2rad = M_PI / 180;
-    static const float rad2deg = 180 / M_PI;
 };
 
 } // namespace apo
