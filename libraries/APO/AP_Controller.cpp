@@ -5,16 +5,15 @@
  *      Author: jgoppert
  */
 
-#include "AP_Controller.h"
 #include "../FastSerial/FastSerial.h"
 #include "AP_ArmingMechanism.h"
 #include "AP_BatteryMonitor.h"
 #include "AP_HardwareAbstractionLayer.h"
-#include "../AP_Common/include/menu.h"
 #include "AP_RcChannel.h"
 #include "../GCS_MAVLink/include/mavlink_types.h"
 #include "constants.h"
 #include "AP_CommLink.h"
+#include "AP_Controller.h"
 
 namespace apo {
 
@@ -92,10 +91,6 @@ void AP_Controller::update(const float dt) {
     }
 
     // this sends commands to motors
-    handleMotors();
-}
-
-void AP_Controller::handleMotors() {
     if(getState()==MAV_STATE_ACTIVE) {
         digitalWrite(_hal->aLedPin, HIGH);
         setMotors();
@@ -104,7 +99,6 @@ void AP_Controller::handleMotors() {
         setAllRadioChannelsToNeutral();
     }
 }
-
 
 } // namespace apo
 // vim:ts=4:sw=4:expandtab
