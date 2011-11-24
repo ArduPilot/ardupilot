@@ -141,6 +141,8 @@ namespace ArdupilotMega.GCSViews
 
             CMB_setwp.SelectedIndex = 0;
 
+            zg1.Visible = true;
+
             CreateChart(zg1);
 
             // config map             
@@ -693,7 +695,7 @@ namespace ArdupilotMega.GCSViews
             {
                 ((Button)sender).Enabled = false;
 #if MAVLINK10
-                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text));
+                comPort.doCommand((MAVLink.MAV_CMD)Enum.Parse(typeof(MAVLink.MAV_CMD), CMB_action.Text),0,0,0,0,0,0,0);
 #else
                 comPort.doAction((MAVLink.MAV_ACTION)Enum.Parse(typeof(MAVLink.MAV_ACTION), "MAV_ACTION_" + CMB_action.Text));
 #endif
@@ -734,6 +736,7 @@ namespace ArdupilotMega.GCSViews
                 ZedGraphTimer.Enabled = true;
                 ZedGraphTimer.Start();
                 zg1.Visible = true;
+                zg1.Refresh();
             }
             else
             {
@@ -807,9 +810,9 @@ namespace ArdupilotMega.GCSViews
             Locationwp gotohere = new Locationwp();
 
             gotohere.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
-            gotohere.alt = (int)(intalt / MainV2.cs.multiplierdist * 100); // back to m
-            gotohere.lat = (int)(gotolocation.Lat * 10000000);
-            gotohere.lng = (int)(gotolocation.Lng * 10000000);
+            gotohere.alt = (float)(intalt / MainV2.cs.multiplierdist); // back to m
+            gotohere.lat = (float)(gotolocation.Lat);
+            gotohere.lng = (float)(gotolocation.Lng);
 
             try
             {

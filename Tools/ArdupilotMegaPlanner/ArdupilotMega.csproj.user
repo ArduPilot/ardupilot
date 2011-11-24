@@ -10,4 +10,7 @@
     <InstallUrlHistory />
     <UpdateUrlHistory />
   </PropertyGroup>
+  <PropertyGroup>
+    <ReferencePath>C:\Users\hog\Documents\Visual Studio 2010\Projects\ArdupilotMega\ArdupilotMega\bin\Release\</ReferencePath>
+  </PropertyGroup>
 </Project>

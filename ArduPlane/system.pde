@@ -286,20 +286,6 @@ static void startup_ground(void)
 	// ---------------------------
 	trim_radio();		// This was commented out as a HACK.  Why?  I don't find a problem.
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-if (g.airspeed_enabled == true)
-   {
-	// initialize airspeed sensor
-	// --------------------------
-	zero_airspeed();
-	gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
-   }
-else
-  {
-	gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
-  }
-#endif
-
 	// Save the settings for in-air restart
 	// ------------------------------------
 	//save_EEPROM_groundstart();
@@ -438,6 +424,15 @@ static void startup_IMU_ground(void)
 	// read Baro pressure at ground
 	//-----------------------------
 	init_barometer();
+
+    if (g.airspeed_enabled == true) {
+        // initialize airspeed sensor
+        // --------------------------
+        zero_airspeed();
+        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> zero airspeed calibrated"));
+    } else {
+        gcs_send_text_P(SEVERITY_LOW,PSTR("<startup_ground> NO airspeed"));
+    }
 
 #endif // HIL_MODE_ATTITUDE
 

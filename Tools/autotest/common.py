@@ -63,12 +63,18 @@ def current_location(mav):
                     mav.messages['VFR_HUD'].alt)
 
 def wait_altitude(mav, alt_min, alt_max, timeout=30):
+    climb_rate = 0
+    previous_alt = 0
     '''wait for a given altitude range'''
     tstart = time.time()
     print("Waiting for altitude between %u and %u" % (alt_min, alt_max))
     while time.time() < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        print("Altitude %u" % m.alt)
+        climb_rate =  m.alt - previous_alt
+        previous_alt = m.alt
+        print("Altitude %u, rate: %u" % (m.alt, climb_rate))
+        if abs(climb_rate) > 0:
+            tstart = time.time();
         if m.alt >= alt_min and m.alt <= alt_max:
             return True
     print("Failed to attain altitude range")

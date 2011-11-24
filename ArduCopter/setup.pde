@@ -16,7 +16,6 @@ static int8_t	setup_compass			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_tune				(uint8_t argc, const Menu::arg *argv);
 //static int8_t	setup_mag_offset		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_declination		(uint8_t argc, const Menu::arg *argv);
-static int8_t	setup_esc				(uint8_t argc, const Menu::arg *argv);
 #ifdef OPTFLOW_ENABLED
 static int8_t	setup_optflow			(uint8_t argc, const Menu::arg *argv);
 #endif
@@ -36,7 +35,6 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 	{"radio",			setup_radio},
 	{"frame",			setup_frame},
 	{"motors",			setup_motors},
-	{"esc",				setup_esc},
 	{"level",			setup_accel},
 	{"modes",			setup_flightmodes},
 	{"battery",			setup_batt_monitor},
@@ -72,9 +70,9 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
 	if(g.rc_1.radio_min >= 1300){
 		delay(1000);
-		Serial.printf_P(PSTR("\n!Warning, your radio is not configured!"));
+		Serial.printf_P(PSTR("\n!Warning, radio not configured!"));
 		delay(1000);
-		Serial.printf_P(PSTR("\n Type 'radio' to configure now.\n\n"));
+		Serial.printf_P(PSTR("\n Type 'radio' now.\n\n"));
 	}
 
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
@@ -122,7 +120,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 {
 	int c;
 
-	Serial.printf_P(PSTR("\n'Y' + Enter to factory reset, any other key to abort:\n"));
+	Serial.printf_P(PSTR("\n'Y' = factory reset, any other key to abort:\n"));
 
 	do {
 		c = Serial.read();
@@ -192,7 +190,7 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 	g.rc_8.radio_trim = 1500;
 
 
-	Serial.printf_P(PSTR("\nMove all controls to each extreme. Hit Enter to save: "));
+	Serial.printf_P(PSTR("\nMove all controls to extremes. Enter to save: "));
 	while(1){
 
 		delay(20);
@@ -231,29 +229,6 @@ setup_radio(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-setup_esc(uint8_t argc, const Menu::arg *argv)
-{
-	Serial.printf_P(PSTR("\nESC Calibration:\n"
-						"-1 Unplug USB and battery\n"
-						"-2 Move CLI/FLY switch to FLY mode\n"
-						"-3 Move throttle to max, connect battery\n"
-						"-4 After two long beeps, throttle to 0, then test\n\n"
-						" Press Enter to cancel.\n"));
-
-
-	g.esc_calibrate.set_and_save(1);
-
-	while(1){
-		delay(20);
-
-		if(Serial.available() > 0){
-			g.esc_calibrate.set_and_save(0);
-			return(0);
-		}
-	}
-}
-
-static int8_t
 setup_motors(uint8_t argc, const Menu::arg *argv)
 {
 	while(1){
@@ -288,7 +263,7 @@ setup_frame(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("v"))) {
 		g.frame_orientation.set_and_save(V_FRAME);
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[x,+,v]\n"));
+		Serial.printf_P(PSTR("\nOp:[x,+,v]\n"));
 		report_frame();
 		return 0;
 	}
@@ -304,7 +279,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 	byte _oldSwitchPosition = 0;
 	byte mode = 0;
 
-	Serial.printf_P(PSTR("\nMove mode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
+	Serial.printf_P(PSTR("\nMode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
 	print_hit_enter();
 
 	while(1){
@@ -406,7 +381,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 		g.compass_enabled.set_and_save(false);
 
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
+		Serial.printf_P(PSTR("\nOp:[on,off]\n"));
 		report_compass();
 		return 0;
 	}
@@ -426,7 +401,7 @@ setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 		g.battery_monitoring.set_and_save(argv[1].i);
 
 	} else {
-		Serial.printf_P(PSTR("\nOptions: off, 1-4"));
+		Serial.printf_P(PSTR("\nOp: off, 1-4"));
 	}
 
 	report_batt_monitor();
@@ -443,7 +418,7 @@ setup_sonar(uint8_t argc, const Menu::arg *argv)
 		g.sonar_enabled.set_and_save(false);
 
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
+		Serial.printf_P(PSTR("\nOp:[on, off]\n"));
 		report_sonar();
 		return 0;
 	}
@@ -494,7 +469,7 @@ setup_heli(uint8_t argc, const Menu::arg *argv)
 
 	    // read radio although we don't use it yet
 	    read_radio();
-		
+
 		// allow swash plate to move
 		output_motors_armed();
 
@@ -691,7 +666,7 @@ setup_gyro(uint8_t argc, const Menu::arg *argv)
 		g.heli_ext_gyro_gain.save();
 
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[on, off] gain\n"));
+		Serial.printf_P(PSTR("\nOp:[on, off] gain\n"));
 	}
 
 	report_gyro();
@@ -783,7 +758,7 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 		g.optflow_enabled = false;
 
 	}else{
-		Serial.printf_P(PSTR("\nOptions:[on, off]\n"));
+		Serial.printf_P(PSTR("\nOp:[on, off]\n"));
 		report_optflow();
 		return 0;
 	}
@@ -801,12 +776,12 @@ setup_optflow(uint8_t argc, const Menu::arg *argv)
 
 static void report_batt_monitor()
 {
-	Serial.printf_P(PSTR("\nBatt Mointor\n"));
+	Serial.printf_P(PSTR("\nBatt Mon:\n"));
 	print_divider();
 	if(g.battery_monitoring == 0)	print_enabled(false);
-	if(g.battery_monitoring == 1)	Serial.printf_P(PSTR("3 cells"));
-	if(g.battery_monitoring == 2)	Serial.printf_P(PSTR("4 cells"));
-	if(g.battery_monitoring == 3)	Serial.printf_P(PSTR("batt volts"));
+	if(g.battery_monitoring == 1)	Serial.printf_P(PSTR("3c"));
+	if(g.battery_monitoring == 2)	Serial.printf_P(PSTR("4c"));
+	if(g.battery_monitoring == 3)	Serial.printf_P(PSTR("volts"));
 	if(g.battery_monitoring == 4)	Serial.printf_P(PSTR("volts and cur"));
 	print_blanks(2);
 }
@@ -897,7 +872,7 @@ static void report_compass()
 	Vector3f offsets = compass.get_offsets();
 
 	// mag offsets
-	Serial.printf_P(PSTR("Mag offsets: %4.4f, %4.4f, %4.4f"),
+	Serial.printf_P(PSTR("Mag off: %4.4f, %4.4f, %4.4f"),
 							offsets.x,
 							offsets.y,
 							offsets.z);
@@ -964,7 +939,7 @@ static void report_heli()
 static void report_gyro()
 {
 
-	Serial.printf_P(PSTR("External Gyro:\n"));
+	Serial.printf_P(PSTR("Gyro:\n"));
 	print_divider();
 
 	print_enabled( g.heli_ext_gyro_enabled );
@@ -1018,7 +993,7 @@ print_switch(byte p, byte m, bool b)
 static void
 print_done()
 {
-	Serial.printf_P(PSTR("\nSaved Settings\n\n"));
+	Serial.printf_P(PSTR("\nSaved\n"));
 }
 
 
@@ -1038,7 +1013,7 @@ static void zero_eeprom(void)
 static void
 print_accel_offsets(void)
 {
-	Serial.printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\n"),
+	Serial.printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\n"),
 						(float)imu.ax(),
 						(float)imu.ay(),
 						(float)imu.az());
@@ -1047,7 +1022,7 @@ print_accel_offsets(void)
 static void
 print_gyro_offsets(void)
 {
-	Serial.printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
+	Serial.printf_P(PSTR("G_off: %4.2f, %4.2f, %4.2f\n"),
 						(float)imu.gx(),
 						(float)imu.gy(),
 						(float)imu.gz());
@@ -1122,7 +1097,6 @@ static void print_enabled(boolean b)
 static void
 init_esc()
 {
-	g.esc_calibrate.set_and_save(0);
 	while(1){
 		read_radio();
 		delay(100);
@@ -1147,7 +1121,7 @@ static void print_wp(struct Location *cmd, byte index)
 	float t1 = (float)cmd->lat / t7;
 	float t2 = (float)cmd->lng / t7;
 
-	Serial.printf_P(PSTR("scommand #: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
+	Serial.printf_P(PSTR("cmd#: %d id:%d op:%d p1:%d p2:%ld p3:%4.7f p4:%4.7f \n"),
 		(int)index,
 		(int)cmd->id,
 		(int)cmd->options,
@@ -1167,7 +1141,7 @@ static void report_gps()
 
 static void report_version()
 {
-	Serial.printf_P(PSTR("FW Version %d\n"),(int)g.format_version.get());
+	Serial.printf_P(PSTR("FW Ver: %d\n"),(int)g.format_version.get());
 	print_divider();
 	print_blanks(2);
 }

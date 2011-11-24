@@ -120,6 +120,8 @@
 #define POSITION 8			// AUTO control
 #define NUM_MODES 9
 
+#define INITIALISING 9     // in startup routines
+
 #define SIMPLE_1 1
 #define SIMPLE_2 2
 #define SIMPLE_3 4
@@ -138,7 +140,7 @@
 #define CH6_RATE_KP 4
 #define CH6_RATE_KI 5
 #define	CH6_YAW_RATE_KP 6
-// Altitude
+// Altitude rate controller
 #define CH6_THROTTLE_KP 7
 // Extras
 #define CH6_TOP_BOTTOM_RATIO 8
@@ -148,6 +150,9 @@
 #define CH6_NAV_P 11
 #define CH6_LOITER_P 12
 #define CH6_HELI_EXTERNAL_GYRO 13
+
+// altitude controller
+#define CH6_THR_HOLD_KP 14
 
 // nav byte mask
 // -------------
@@ -166,14 +171,14 @@
 #define CIRCLE_MODE 3
 
 // Waypoint options
-#define WP_OPTION_ALT_RELATIVE 		1
-#define WP_OPTION_ALT_CHANGE 		2
-#define WP_OPTION_YAW 				4
-#define WP_OPTION_ALT_REQUIRED		8
-#define WP_OPTION_RELATIVE			16
+#define MASK_OPTIONS_RELATIVE_ALT 		1
+#define WP_OPTION_ALT_CHANGE 			2
+#define WP_OPTION_YAW 					4
+#define WP_OPTION_ALT_REQUIRED			8
+#define WP_OPTION_RELATIVE				16
 //#define WP_OPTION_					32
 //#define WP_OPTION_					64
-#define WP_OPTION_NEXT_CMD			128
+#define WP_OPTION_NEXT_CMD				128
 
 //repeating events
 #define NO_REPEAT 0
@@ -236,6 +241,7 @@ enum gcs_severity {
 #define LOG_STARTUP_MSG 		0x0A
 #define LOG_MOTORS_MSG 			0x0B
 #define LOG_OPTFLOW_MSG 		0x0C
+#define LOG_DATA_MSG 			0x0D
 #define LOG_INDEX_MSG			0xF0
 #define MAX_NUM_LOGS			50
 
@@ -332,6 +338,8 @@ enum gcs_severity {
 #define B_LED_PIN 36
 #define C_LED_PIN 35
 
+// RADIANS
+#define RADX100 0.000174533
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096

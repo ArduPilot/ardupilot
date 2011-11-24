@@ -123,6 +123,9 @@
   <data name="contextMenuStrip1.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="contextMenuStrip2.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="hud1.ToolTip" xml:space="preserve">
     <value />
   </data>
@@ -4212,16 +4215,13 @@
   <data name="tabStatus.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="lbl_logpercent.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="BUT_log2kml.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="tracklog.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="BUT_stoptelemlog.Text" xml:space="preserve">
-    <value>停止记录</value>
-  </data>
-  <data name="BUT_stoptelemlog.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="BUT_playlog.Text" xml:space="preserve">
@@ -4234,12 +4234,6 @@
     <value>加载记录</value>
   </data>
   <data name="BUT_loadtelem.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="BUT_savetelem.Text" xml:space="preserve">
-    <value>开始记录</value>
-  </data>
-  <data name="BUT_savetelem.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="tabTLogs.Text" xml:space="preserve">
@@ -4260,64 +4254,10 @@
   <data name="MainH.Panel1.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="TXT_lat.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 13</value>
-  </data>
-  <data name="TXT_lat.ToolTip" xml:space="preserve">
+  <data name="zg1.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="Zoomlevel.Location" type="System.Drawing.Point, System.Drawing">
-    <value>474, 7</value>
-  </data>
-  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>440, 10</value>
-  </data>
-  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>31, 13</value>
-  </data>
-  <data name="label1.Text" xml:space="preserve">
-    <value>缩放</value>
-  </data>
-  <data name="label1.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="TXT_long.Location" type="System.Drawing.Point, System.Drawing">
-    <value>90, 10</value>
-  </data>
-  <data name="TXT_long.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 13</value>
-  </data>
-  <data name="TXT_long.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="TXT_alt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>170, 10</value>
-  </data>
-  <data name="TXT_alt.Size" type="System.Drawing.Size, System.Drawing">
-    <value>80, 13</value>
-  </data>
-  <data name="TXT_alt.ToolTip" xml:space="preserve">
-    <value />
-  </data>
-  <data name="CHK_autopan.Location" type="System.Drawing.Point, System.Drawing">
-    <value>339, 9</value>
-  </data>
-  <data name="CHK_autopan.Size" type="System.Drawing.Size, System.Drawing">
-    <value>98, 17</value>
-  </data>
-  <data name="CHK_autopan.Text" xml:space="preserve">
-    <value>自动平移地图</value>
-  </data>
-  <data name="CB_tuning.Location" type="System.Drawing.Point, System.Drawing">
-    <value>250, 9</value>
-  </data>
-  <data name="CB_tuning.Size" type="System.Drawing.Size, System.Drawing">
-    <value>74, 17</value>
-  </data>
-  <data name="CB_tuning.Text" xml:space="preserve">
-    <value>舵机调整</value>
-  </data>
-  <data name="panel1.ToolTip" xml:space="preserve">
+  <data name="splitContainer1.Panel1.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="gMapControl1.streamjpg" mimetype="application/x-microsoft.net.object.binary.base64">
@@ -4468,10 +4408,70 @@
   <data name="gMapControl1.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="zg1.ToolTip" xml:space="preserve">
+  <data name="splitContainer1.Panel2.ToolTip" xml:space="preserve">
     <value />
   </data>
-  <data name="panel2.ToolTip" xml:space="preserve">
+  <data name="splitContainer1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_lat.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 13</value>
+  </data>
+  <data name="TXT_lat.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="Zoomlevel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>474, 7</value>
+  </data>
+  <data name="label1.Location" type="System.Drawing.Point, System.Drawing">
+    <value>440, 10</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>缩放</value>
+  </data>
+  <data name="label1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_long.Location" type="System.Drawing.Point, System.Drawing">
+    <value>90, 10</value>
+  </data>
+  <data name="TXT_long.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 13</value>
+  </data>
+  <data name="TXT_long.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_alt.Location" type="System.Drawing.Point, System.Drawing">
+    <value>170, 10</value>
+  </data>
+  <data name="TXT_alt.Size" type="System.Drawing.Size, System.Drawing">
+    <value>80, 13</value>
+  </data>
+  <data name="TXT_alt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHK_autopan.Location" type="System.Drawing.Point, System.Drawing">
+    <value>339, 9</value>
+  </data>
+  <data name="CHK_autopan.Size" type="System.Drawing.Size, System.Drawing">
+    <value>98, 17</value>
+  </data>
+  <data name="CHK_autopan.Text" xml:space="preserve">
+    <value>自动平移地图</value>
+  </data>
+  <data name="CB_tuning.Location" type="System.Drawing.Point, System.Drawing">
+    <value>250, 9</value>
+  </data>
+  <data name="CB_tuning.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_tuning.Text" xml:space="preserve">
+    <value>舵机调整</value>
+  </data>
+  <data name="panel1.ToolTip" xml:space="preserve">
     <value />
   </data>
   <data name="tableMap.ToolTip" xml:space="preserve">

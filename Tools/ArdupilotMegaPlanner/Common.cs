@@ -140,6 +140,9 @@ namespace ArdupilotMega
 
     public class GMapMarkerQuad : GMapMarker
     {
+        const float rad2deg = (float)(180 / Math.PI);
+        const float deg2rad = (float)(1.0 / rad2deg);
+
         static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.quad2.Width, global::ArdupilotMega.Properties.Resources.quad2.Height);
         float heading = 0;
         float cog = -1;
@@ -158,8 +161,17 @@ namespace ArdupilotMega
         {
             Matrix temp = g.Transform;
             g.TranslateTransform(LocalPosition.X, LocalPosition.Y);
+
+            int length = 500;
+
+            g.DrawLine(new Pen(Color.Red, 2), 0.0f, 0.0f, (float)Math.Cos((heading - 90) * deg2rad) * length, (float)Math.Sin((heading - 90) * deg2rad) * length);
+            //g.DrawLine(new Pen(Color.Green, 2), 0.0f, 0.0f, (float)Math.Cos((nav_bearing - 90) * deg2rad) * length, (float)Math.Sin((nav_bearing - 90) * deg2rad) * length);
+            g.DrawLine(new Pen(Color.Black, 2), 0.0f, 0.0f, (float)Math.Cos((cog - 90) * deg2rad) * length, (float)Math.Sin((cog - 90) * deg2rad) * length);
+            g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
+
+
             g.RotateTransform(heading);
-            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.quad2, global::ArdupilotMega.Properties.Resources.quad2.Width / -2, global::ArdupilotMega.Properties.Resources.quad2.Height / -2);
+            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.quad2, global::ArdupilotMega.Properties.Resources.quad2.Width / -2 + 2, global::ArdupilotMega.Properties.Resources.quad2.Height / -2);
 
             g.Transform = temp;
         }

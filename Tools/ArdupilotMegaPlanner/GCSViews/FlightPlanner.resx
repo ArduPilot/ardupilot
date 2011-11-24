@@ -127,7 +127,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="CHK_altmode.Location" type="System.Drawing.Point, System.Drawing">
-    <value>326, 31</value>
+    <value>213, 31</value>
   </data>
   <data name="CHK_altmode.Size" type="System.Drawing.Size, System.Drawing">
     <value>82, 17</value>
@@ -148,7 +148,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;CHK_altmode.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="CHK_holdalt.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -157,7 +157,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_holdalt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>411, 24</value>
+    <value>298, 24</value>
   </data>
   <data name="CHK_holdalt.Size" type="System.Drawing.Size, System.Drawing">
     <value>98, 17</value>
@@ -178,7 +178,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;CHK_holdalt.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="Commands.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Bottom, Left, Right</value>
@@ -340,7 +340,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;Commands.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <data name="CHK_geheight.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -349,7 +349,7 @@
     <value>NoControl</value>
   </data>
   <data name="CHK_geheight.Location" type="System.Drawing.Point, System.Drawing">
-    <value>411, 40</value>
+    <value>298, 40</value>
   </data>
   <data name="CHK_geheight.Size" type="System.Drawing.Size, System.Drawing">
     <value>86, 17</value>
@@ -370,10 +370,10 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;CHK_geheight.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>13</value>
   </data>
   <data name="TXT_WPRad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>73, 32</value>
+    <value>23, 36</value>
   </data>
   <data name="TXT_WPRad.Size" type="System.Drawing.Size, System.Drawing">
     <value>36, 20</value>
@@ -394,10 +394,10 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;TXT_WPRad.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>14</value>
   </data>
   <data name="TXT_DefaultAlt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>280, 32</value>
+    <value>154, 36</value>
   </data>
   <data name="TXT_DefaultAlt.Size" type="System.Drawing.Size, System.Drawing">
     <value>40, 20</value>
@@ -418,7 +418,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;TXT_DefaultAlt.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>12</value>
   </data>
   <data name="LBL_WPRad.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -427,7 +427,7 @@
     <value>NoControl</value>
   </data>
   <data name="LBL_WPRad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>9, 32</value>
+    <value>9, 24</value>
   </data>
   <data name="LBL_WPRad.Size" type="System.Drawing.Size, System.Drawing">
     <value>61, 13</value>
@@ -448,7 +448,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;LBL_WPRad.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="LBL_defalutalt.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -457,7 +457,7 @@
     <value>NoControl</value>
   </data>
   <data name="LBL_defalutalt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>221, 32</value>
+    <value>151, 24</value>
   </data>
   <data name="LBL_defalutalt.Size" type="System.Drawing.Size, System.Drawing">
     <value>56, 13</value>
@@ -478,10 +478,10 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;LBL_defalutalt.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="TXT_loiterrad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>184, 32</value>
+    <value>89, 36</value>
   </data>
   <data name="TXT_loiterrad.Size" type="System.Drawing.Size, System.Drawing">
     <value>36, 20</value>
@@ -502,7 +502,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;TXT_loiterrad.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="label5.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -511,7 +511,7 @@
     <value>NoControl</value>
   </data>
   <data name="label5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>112, 32</value>
+    <value>76, 24</value>
   </data>
   <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
     <value>69, 13</value>
@@ -532,7 +532,7 @@
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;label5.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="panel5.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Bottom, Right</value>
@@ -556,7 +556,7 @@
     <value>BUT_write</value>
   </data>
   <data name="&gt;&gt;BUT_write.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_write.Parent" xml:space="preserve">
     <value>panel5</value>
@@ -583,7 +583,7 @@
     <value>BUT_read</value>
   </data>
   <data name="&gt;&gt;BUT_read.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_read.Parent" xml:space="preserve">
     <value>panel5</value>
@@ -610,7 +610,7 @@
     <value>SaveFile</value>
   </data>
   <data name="&gt;&gt;SaveFile.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;SaveFile.Parent" xml:space="preserve">
     <value>panel5</value>
@@ -637,7 +637,7 @@
     <value>BUT_loadwpfile</value>
   </data>
   <data name="&gt;&gt;BUT_loadwpfile.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_loadwpfile.Parent" xml:space="preserve">
     <value>panel5</value>
@@ -1239,11 +1239,41 @@
   <data name="&gt;&gt;splitter1.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
+  <data name="BUT_zoomto.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_zoomto.Location" type="System.Drawing.Point, System.Drawing">
+    <value>746, 26</value>
+  </data>
+  <data name="BUT_zoomto.Size" type="System.Drawing.Size, System.Drawing">
+    <value>62, 23</value>
+  </data>
+  <data name="BUT_zoomto.TabIndex" type="System.Int32, mscorlib">
+    <value>53</value>
+  </data>
+  <data name="BUT_zoomto.Text" xml:space="preserve">
+    <value>Zoom To</value>
+  </data>
+  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
+    <value>Get Camera settings for overlap</value>
+  </data>
+  <data name="&gt;&gt;BUT_zoomto.Name" xml:space="preserve">
+    <value>BUT_zoomto</value>
+  </data>
+  <data name="&gt;&gt;BUT_zoomto.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+  </data>
+  <data name="&gt;&gt;BUT_zoomto.Parent" xml:space="preserve">
+    <value>panelWaypoints</value>
+  </data>
+  <data name="&gt;&gt;BUT_zoomto.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
   <data name="BUT_Camera.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="BUT_Camera.Location" type="System.Drawing.Point, System.Drawing">
-    <value>809, 26</value>
+    <value>692, 26</value>
   </data>
   <data name="BUT_Camera.Size" type="System.Drawing.Size, System.Drawing">
     <value>48, 23</value>
@@ -1261,19 +1291,19 @@
     <value>BUT_Camera</value>
   </data>
   <data name="&gt;&gt;BUT_Camera.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_Camera.Parent" xml:space="preserve">
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;BUT_Camera.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
   </data>
   <data name="BUT_grid.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="BUT_grid.Location" type="System.Drawing.Point, System.Drawing">
-    <value>755, 26</value>
+    <value>638, 26</value>
   </data>
   <data name="BUT_grid.Size" type="System.Drawing.Size, System.Drawing">
     <value>48, 23</value>
@@ -1291,19 +1321,19 @@
     <value>BUT_grid</value>
   </data>
   <data name="&gt;&gt;BUT_grid.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_grid.Parent" xml:space="preserve">
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;BUT_grid.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="BUT_Prefetch.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="BUT_Prefetch.Location" type="System.Drawing.Point, System.Drawing">
-    <value>693, 26</value>
+    <value>576, 26</value>
   </data>
   <data name="BUT_Prefetch.Size" type="System.Drawing.Size, System.Drawing">
     <value>56, 23</value>
@@ -1321,19 +1351,19 @@
     <value>BUT_Prefetch</value>
   </data>
   <data name="&gt;&gt;BUT_Prefetch.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_Prefetch.Parent" xml:space="preserve">
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;BUT_Prefetch.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="button1.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="button1.Location" type="System.Drawing.Point, System.Drawing">
-    <value>596, 26</value>
+    <value>479, 26</value>
   </data>
   <data name="button1.Size" type="System.Drawing.Size, System.Drawing">
     <value>91, 23</value>
@@ -1351,19 +1381,19 @@
     <value>button1</value>
   </data>
   <data name="&gt;&gt;button1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;button1.Parent" xml:space="preserve">
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;button1.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="BUT_Add.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
   <data name="BUT_Add.Location" type="System.Drawing.Point, System.Drawing">
-    <value>515, 26</value>
+    <value>398, 26</value>
   </data>
   <data name="BUT_Add.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 23</value>
@@ -1381,13 +1411,13 @@
     <value>BUT_Add</value>
   </data>
   <data name="&gt;&gt;BUT_Add.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_Add.Parent" xml:space="preserve">
     <value>panelWaypoints</value>
   </data>
   <data name="&gt;&gt;BUT_Add.ZOrder" xml:space="preserve">
-    <value>14</value>
+    <value>15</value>
   </data>
   <data name="panelWaypoints.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
     <value>Bottom</value>
@@ -1627,7 +1657,7 @@
     <value>Clear Mission</value>
   </data>
   <data name="contextMenuStrip1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>168, 186</value>
+    <value>168, 164</value>
   </data>
   <data name="&gt;&gt;contextMenuStrip1.Name" xml:space="preserve">
     <value>contextMenuStrip1</value>
@@ -1636,7 +1666,7 @@
     <value>System.Windows.Forms.ContextMenuStrip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="MainMap.Location" type="System.Drawing.Point, System.Drawing">
-    <value>3, 4</value>
+    <value>0, 0</value>
   </data>
   <data name="MainMap.Size" type="System.Drawing.Size, System.Drawing">
     <value>838, 306</value>
@@ -1823,7 +1853,7 @@
     <value>trackBar1</value>
   </data>
   <data name="&gt;&gt;trackBar1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyTrackBar, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyTrackBar, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;trackBar1.Parent" xml:space="preserve">
     <value>panelMap</value>
@@ -2105,6 +2135,6 @@
     <value>FlightPlanner</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
 </root>

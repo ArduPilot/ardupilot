@@ -199,6 +199,7 @@
 0000000d V Parameters::Parameters()::__c
 0000000d V Parameters::Parameters()::__c
 0000000d V Parameters::Parameters()::__c
+0000000d V Parameters::Parameters()::__c
 0000000d B sonar_mode_filter
 0000000e t global destructors keyed to Serial
 0000000e t global constructors keyed to Serial
@@ -290,6 +291,7 @@
 0000001c W AP_VarT<int>::unserialize(void*, unsigned int)
 0000001c W AP_VarS<Matrix3<float> >::serialize(void*, unsigned int) const
 0000001c W AP_VarS<Vector3<float> >::serialize(void*, unsigned int) const
+0000001e t update_commands()
 0000001e r startup_ground()::__c
 00000020 t gcs_send_message(ap_message)
 00000020 t byte_swap_4
@@ -309,8 +311,8 @@
 00000023 r verify_loiter_turns()::__c
 00000023 r navigate()::__c
 00000026 r init_ardupilot()::__c
+00000026 r init_ardupilot()::__c
 00000027 r change_command(unsigned char)::__c
-00000027 r init_ardupilot()::__c
 00000028 t demo_servos(unsigned char)
 00000028 W AP_VarT<float>::unserialize(void*, unsigned int)
 00000028 W AP_VarT<long>::unserialize(void*, unsigned int)
@@ -429,9 +431,9 @@
 000002d4 t handle_process_do_command()
 000002e4 t read_radio()
 00000320 t __static_initialization_and_destruction_0(int, int)
-0000033a W Parameters::~Parameters()
+00000344 W Parameters::~Parameters()
 00000492 t init_ardupilot()
-00000920 W Parameters::Parameters()
-0000092b b g
+00000936 W Parameters::Parameters()
+00000938 b g
 0000178a T GCS_MAVLINK::handleMessage(__mavlink_message*)
-00001c82 T loop
+00001c76 T loop
