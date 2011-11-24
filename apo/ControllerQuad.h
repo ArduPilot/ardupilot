@@ -18,7 +18,7 @@ class ControllerQuad: public AP_Controller {
 public:
     ControllerQuad(AP_Navigator * nav, AP_Guide * guide,
                    AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,this,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode),
+        AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,this,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidRoll(new AP_Var_group(k_pidRoll, PSTR("ROLL_")), 1,
                 PID_ATT_P, PID_ATT_I, PID_ATT_D, PID_ATT_AWU,
                 PID_ATT_LIM, PID_ATT_DFCUT),

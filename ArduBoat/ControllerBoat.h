@@ -8,7 +8,7 @@
 #ifndef CONTROLLERBOAT_H_
 #define CONTROLLERBOAT_H_
 
-#include "../APO/AP_Controller.h"
+#include "../APO/APO.h"
 
 namespace apo {
 
@@ -16,7 +16,7 @@ class ControllerBoat: public AP_Controller {
 public:
     ControllerBoat(AP_Navigator * nav, AP_Guide * guide,
                    AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode),
+        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
                steeringI, steeringD, steeringIMax, steeringYMax,steeringDFCut),
         pidThrust(new AP_Var_group(k_pidThrust, PSTR("THR_")), 1, throttleP,

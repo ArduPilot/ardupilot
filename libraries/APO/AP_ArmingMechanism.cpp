@@ -3,7 +3,6 @@
  *
  */
 
-
 #include "AP_ArmingMechanism.h"
 #include "AP_Controller.h"
 #include "AP_RcChannel.h"
