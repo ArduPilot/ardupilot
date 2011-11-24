@@ -184,6 +184,7 @@ static void init_ardupilot()
 
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
+
 	init_camera();
 
 	#if HIL_MODE != HIL_MODE_ATTITUDE
@@ -217,12 +218,10 @@ static void init_ardupilot()
 #ifdef USERHOOK_INIT
    USERHOOK_INIT
 #endif
-	// Logging:
-	// --------
-	// DataFlash log initialization
-#if LOGGING_ENABLED == ENABLED
+
+	#if LOGGING_ENABLED == ENABLED
 	DataFlash.Init();
-#endif
+	#endif
 
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
@@ -237,20 +236,16 @@ static void init_ardupilot()
         run_cli();
 	}
 #else
-    Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
+    Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
 #endif // CLI_ENABLED
 
-    if(g.esc_calibrate == 1){
-        init_esc();
-    }
-
-	// Logging:
-	// --------
+	#if LOGGING_ENABLED == ENABLED
 	if(g.log_bitmask != 0){
 		//	TODO - Here we will check  on the length of the last log
 		//  We don't want to create a bunch of little logs due to powering on and off
 		start_new_log();
 	}
+	#endif
 
     GPS_enabled = false;
 
@@ -311,6 +306,10 @@ static void init_ardupilot()
 	startup_ground();
 
 	Log_Write_Startup();
+	Log_Write_Data(10, g.pi_stabilize_roll.kP());
+	Log_Write_Data(11, g.pi_stabilize_pitch.kP());
+	Log_Write_Data(12, g.pi_rate_roll.kP());
+	Log_Write_Data(13, g.pi_rate_pitch.kP());
 
 	SendDebug("\nReady to FLY ");
 }
@@ -357,6 +356,13 @@ static void set_mode(byte mode)
 	if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
 		return;
+	}
+
+	// if we don't have GPS lock
+	if(home_is_set == false){
+		// our max mode should be
+		if (mode > ALT_HOLD)
+			mode = STABILIZE;
 	}
 
 	old_control_mode = control_mode;

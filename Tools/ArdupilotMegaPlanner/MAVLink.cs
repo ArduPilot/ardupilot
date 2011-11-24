@@ -203,7 +203,14 @@ namespace ArdupilotMega
                 if (getparams == true)
                     getParamList();
             }
-            catch (Exception e) { MainV2.givecomport = false; frm.Close(); throw e; }
+            catch (Exception e) { 
+                try { 
+                    BaseStream.Close(); 
+                } catch { } 
+                MainV2.givecomport = false; 
+                frm.Close(); 
+                throw e; 
+            }
 
             frm.Close();
 
@@ -466,6 +473,8 @@ namespace ArdupilotMega
 
             packetcount++;
 
+
+
             //System.Threading.Thread.Sleep(1);
         }
 
@@ -485,6 +494,12 @@ namespace ArdupilotMega
         /// <param name="value"></param>
         public bool setParam(string paramname, float value)
         {
+            if (!param.ContainsKey(paramname))
+            {
+                Console.WriteLine("Param doesnt exist " + paramname);
+                return false;
+            }
+
             MainV2.givecomport = true;
 
             __mavlink_param_set_t req = new __mavlink_param_set_t();
@@ -805,7 +820,7 @@ namespace ArdupilotMega
             }
         }
 
-        public bool doCommand(MAV_CMD actionid)
+        public bool doCommand(MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7)
         {
 
             MainV2.givecomport = true;
@@ -817,6 +832,14 @@ namespace ArdupilotMega
             req.target_component = compid;
 
             req.command = (ushort)actionid;
+
+            req.param1 = p1;
+            req.param2 = p2;
+            req.param3 = p3;
+            req.param4 = p4;
+            req.param5 = p5;
+            req.param6 = p6;
+            req.param7 = p7;
 
             generatePacket(MAVLINK_MSG_ID_COMMAND_LONG, req);
 

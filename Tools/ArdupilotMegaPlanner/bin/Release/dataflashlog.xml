@@ -1,133 +1,133 @@
 <?xml version="1.0"?>
 <!-- TAGS ARE CASE SENSATIVE -->
 <LOGFORMAT>
-<AC2>
-  <GPS>
-    <F1>Time</F1>
-    <F2>Sats</F2>
-    <F3>Lat</F3>
-    <F4>Long</F4>
-    <F5>Mix Alt</F5>
-    <F6>GPSAlt</F6>
-    <F7>GR Speed</F7>
-    <F8>CRS</F8>
-  </GPS>
-  <ATT>
-    <F1>Roll</F1>
-    <F2>Pitch</F2>
-    <F3>Yaw</F3>
-    <F4>rc1 servo</F4>
-    <F5>rc2 servo</F5>
-    <F6>rc3 servo</F6>
-  </ATT>
-  <NTUN>
-    <F1>WP Dist</F1>
-    <F2>Target Bear</F2>
-    <F3>Long Err</F3>
-    <F4>Lat Err</F4>
-    <F5>nav lon</F5>
-    <F6>nav lat</F6>
-    <F7>nav lon I</F7>
-    <F8>nav lat I</F8>
-    <F9>Loiter Lon I</F9>
-    <F10>Loiter Lat I</F10>
-  </NTUN>
-  <CTUN>
-    <F1>Yaw Sensor</F1>
-    <F2>Nav Yaw</F2>
-    <F3>Yaw Error</F3>
-    <F4>Sonar Alt</F4>
-    <F5>Baro Alt</F5>
-    <F6>Next WP Alt</F6>
-    <F7>Nav Throttle</F7>
-    <F8>Angle boost</F8>
-    <F9>Manual boost</F9>
-    <F10>rc3 servo out</F10>
-    <F11>alt hold int</F11>
-    <F12>thro int</F12>
-  </CTUN>
-  <PM>
-    <F1>control mode</F1>
-    <F2>yaw mode</F2>
-    <F3>r p mode</F3>
-    <F4>thro mode</F4>
-    <F5>thro cruise</F5>
-    <F6>thro int</F6>
-  </PM>
-  <RAW>
-    <F1>Gyro X</F1>
-    <F2>Gyro Y</F2>
-    <F3>Gyro Z</F3>
-    <F4>Accel X</F4>
-    <F5>Accel Y</F5>
-    <F6>Accel Z</F6>
-  </RAW>
-  <CURR>
-    <F1>Throttle in</F1>
-    <F2>Throttle intergrator</F2>
-    <F3>Voltage</F3>
-    <F4>Current</F4>
-    <F5>Current total</F5>
-  </CURR>
-</AC2>
-<!-- -->
-<APM>
-  <GPS>
-    <F1>Time</F1>
-    <F2>Fix</F2>
-    <F3>Sats</F3>
-    <F4>Lat</F4>
-    <F5>Long</F5>
-    <F6>Mix Alt</F6>
-    <F7>GPSAlt</F7>
-    <F8>GR Speed</F8>
-    <F9>CRS</F9>
-  </GPS>
-  <ATT>
-    <F1>Roll</F1>
-    <F2>Pitch</F2>
-    <F3>Yaw</F3>
-  </ATT>
-  <NTUN>
-    <F1>Yaw</F1>
-    <F2>WP dist</F2>
-    <F3>Target Bear</F3>
-    <F4>Nav Bear</F4>
-    <F5>Alt Err</F5>
-    <F6>AS</F6>
-    <F7>NavGScaler</F7>
-    <F8></F8>
-    <F9></F9>
-  </NTUN>
-  <CTUN>
-    <F1>Servo Roll</F1>
-    <F2>nav_roll</F2>
-    <F3>roll_sensor</F3>
-    <F4>Servo Pitch</F4>
-    <F5>nav_pitch</F5>
-    <F6>pitch_sensor</F6>
-    <F7>Servo Throttle</F7>
-    <F8>Servo Rudder</F8>
-    <F9>AN 4</F9>
-  </CTUN>
-  <PM>
-    <F1>loop time</F1>
-    <F2>Main count</F2>
-    <F3>G_Dt_max</F3>
-    <F4>Gyro Sat</F4>
-    <F5>adc constr</F5>
-    <F6>renorm_sqrt</F6>
-    <F7>renorm_blowup</F7>
-    <F8>gps_fix count</F8>
-    <F9>imu_health</F9>
-  </PM>
-  <RAW>
-    <F1>Gyro X</F1>
-    <F2>Gyro Y</F2>
-    <F3>Gyro Z</F3>
-    <F4>Accel X</F4>
-    <F5>Accel Y</F5>
-    <F6>Accel Z</F6>
-  </RAW>
-</APM>
+  <AC2>
+    <GPS>
+      <F1>Time</F1>
+      <F2>Sats</F2>
+      <F3>Lat</F3>
+      <F4>Long</F4>
+      <F5>Mix Alt</F5>
+      <F6>GPSAlt</F6>
+      <F7>GR Speed</F7>
+      <F8>CRS</F8>
+    </GPS>
+    <ATT>
+      <F1>Roll</F1>
+      <F2>Pitch</F2>
+      <F3>Yaw</F3>
+      <F4>rc1 servo</F4>
+      <F5>rc2 servo</F5>
+      <F6>rc3 servo</F6>
+    </ATT>
+    <NTUN>
+      <F1>WP Dist</F1>
+      <F2>Target Bear</F2>
+      <F3>Long Err</F3>
+      <F4>Lat Err</F4>
+      <F5>nav lon</F5>
+      <F6>nav lat</F6>
+      <F7>nav lon I</F7>
+      <F8>nav lat I</F8>
+      <F9>Loiter Lon I</F9>
+      <F10>Loiter Lat I</F10>
+    </NTUN>
+    <CTUN>
+      <F1>Yaw Sensor</F1>
+      <F2>Nav Yaw</F2>
+      <F3>Yaw Error</F3>
+      <F4>Sonar Alt</F4>
+      <F5>Baro Alt</F5>
+      <F6>Next WP Alt</F6>
+      <F7>Nav Throttle</F7>
+      <F8>Angle boost</F8>
+      <F9>Manual boost</F9>
+      <F10>rc3 servo out</F10>
+      <F11>alt hold int</F11>
+      <F12>thro int</F12>
+    </CTUN>
+    <PM>
+      <F1>control mode</F1>
+      <F2>yaw mode</F2>
+      <F3>r p mode</F3>
+      <F4>thro mode</F4>
+      <F5>thro cruise</F5>
+      <F6>thro int</F6>
+    </PM>
+    <RAW>
+      <F1>Gyro X</F1>
+      <F2>Gyro Y</F2>
+      <F3>Gyro Z</F3>
+      <F4>Accel X</F4>
+      <F5>Accel Y</F5>
+      <F6>Accel Z</F6>
+    </RAW>
+    <CURR>
+      <F1>Throttle in</F1>
+      <F2>Throttle intergrator</F2>
+      <F3>Voltage</F3>
+      <F4>Current</F4>
+      <F5>Current total</F5>
+    </CURR>
+  </AC2>
+  <!-- -->
+  <APM>
+    <GPS>
+      <F1>Time</F1>
+      <F2>Fix</F2>
+      <F3>Sats</F3>
+      <F4>Lat</F4>
+      <F5>Long</F5>
+      <F6>Mix Alt</F6>
+      <F7>GPSAlt</F7>
+      <F8>GR Speed</F8>
+      <F9>CRS</F9>
+    </GPS>
+    <ATT>
+      <F1>Roll</F1>
+      <F2>Pitch</F2>
+      <F3>Yaw</F3>
+    </ATT>
+    <NTUN>
+      <F1>Yaw</F1>
+      <F2>WP dist</F2>
+      <F3>Target Bear</F3>
+      <F4>Nav Bear</F4>
+      <F5>Alt Err</F5>
+      <F6>AS</F6>
+      <F7>NavGScaler</F7>
+      <F8></F8>
+      <F9></F9>
+    </NTUN>
+    <CTUN>
+      <F1>Servo Roll</F1>
+      <F2>nav_roll</F2>
+      <F3>roll_sensor</F3>
+      <F4>Servo Pitch</F4>
+      <F5>nav_pitch</F5>
+      <F6>pitch_sensor</F6>
+      <F7>Servo Throttle</F7>
+      <F8>Servo Rudder</F8>
+      <F9>AN 4</F9>
+    </CTUN>
+    <PM>
+      <F1>loop time</F1>
+      <F2>Main count</F2>
+      <F3>G_Dt_max</F3>
+      <F4>Gyro Sat</F4>
+      <F5>adc constr</F5>
+      <F6>renorm_sqrt</F6>
+      <F7>renorm_blowup</F7>
+      <F8>gps_fix count</F8>
+      <F9>imu_health</F9>
+    </PM>
+    <RAW>
+      <F1>Gyro X</F1>
+      <F2>Gyro Y</F2>
+      <F3>Gyro Z</F3>
+      <F4>Accel X</F4>
+      <F5>Accel Y</F5>
+      <F6>Accel Z</F6>
+    </RAW>
+  </APM>
 </LOGFORMAT>

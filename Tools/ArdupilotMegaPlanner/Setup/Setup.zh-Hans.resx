@@ -117,11 +117,23 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BUT_reset.Text" xml:space="preserve">
-    <value>重置 APM 为默认设置</value>
-  </data>
   <data name="tabReset.Text" xml:space="preserve">
     <value>重置</value>
+  </data>
+  <data name="tabRadioIn.Text" xml:space="preserve">
+    <value>遥控输入</value>
+  </data>
+  <data name="tabModes.Text" xml:space="preserve">
+    <value>模式</value>
+  </data>
+  <data name="tabHardware.Text" xml:space="preserve">
+    <value>硬件</value>
+  </data>
+  <data name="tabBattery.Text" xml:space="preserve">
+    <value>电池</value>
+  </data>
+  <data name="BUT_reset.Text" xml:space="preserve">
+    <value>重置 APM 为默认设置</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="CHK_revch3.Size" type="System.Drawing.Size, System.Drawing">
@@ -151,8 +163,41 @@
   <data name="BUT_Calibrateradio.Text" xml:space="preserve">
     <value>校准遥控</value>
   </data>
-  <data name="tabRadioIn.Text" xml:space="preserve">
-    <value>遥控输入</value>
+  <data name="CB_simple6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple6.Text" xml:space="preserve">
+    <value>简单模式</value>
+  </data>
+  <data name="CB_simple5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple5.Text" xml:space="preserve">
+    <value>简单模式</value>
+  </data>
+  <data name="CB_simple4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple4.Text" xml:space="preserve">
+    <value>简单模式</value>
+  </data>
+  <data name="CB_simple3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple3.Text" xml:space="preserve">
+    <value>简单模式</value>
+  </data>
+  <data name="CB_simple2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple2.Text" xml:space="preserve">
+    <value>简单模式</value>
+  </data>
+  <data name="CB_simple1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple1.Text" xml:space="preserve">
+    <value>简单模式</value>
   </data>
   <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
     <value>64, 13</value>
@@ -205,20 +250,11 @@
   <data name="BUT_SaveModes.Text" xml:space="preserve">
     <value>保存模式</value>
   </data>
-  <data name="tabModes.Text" xml:space="preserve">
-    <value>模式</value>
-  </data>
   <data name="linkLabelmagdec.Size" type="System.Drawing.Size, System.Drawing">
     <value>67, 13</value>
   </data>
   <data name="linkLabelmagdec.Text" xml:space="preserve">
     <value>磁偏角网站</value>
-  </data>
-  <data name="label106.Text" xml:space="preserve">
-    <value>容量</value>
-  </data>
-  <data name="label105.Text" xml:space="preserve">
-    <value>监视器</value>
   </data>
   <data name="label100.Text" xml:space="preserve">
     <value>磁偏角</value>
@@ -229,23 +265,62 @@
   <data name="CHK_enablesonar.Text" xml:space="preserve">
     <value>启用声纳</value>
   </data>
-  <data name="CHK_enablebattmon.Text" xml:space="preserve">
-    <value>启用电池监视器</value>
-  </data>
   <data name="CHK_enablecompass.Text" xml:space="preserve">
     <value>启用罗盘</value>
   </data>
-  <data name="tabHardware.Text" xml:space="preserve">
-    <value>硬件</value>
+  <data name="label35.Size" type="System.Drawing.Size, System.Drawing">
+    <value>63, 13</value>
+  </data>
+  <data name="label35.Text" xml:space="preserve">
+    <value>安培/伏特:</value>
+  </data>
+  <data name="label34.Size" type="System.Drawing.Size, System.Drawing">
+    <value>52, 13</value>
+  </data>
+  <data name="label34.Text" xml:space="preserve">
+    <value>分 压 比:</value>
+  </data>
+  <data name="label33.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label33.Text" xml:space="preserve">
+    <value>电池电压:</value>
+  </data>
+  <data name="label32.Size" type="System.Drawing.Size, System.Drawing">
+    <value>94, 13</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>测量的电池电压:</value>
+  </data>
+  <data name="label31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>输入电压:</value>
+  </data>
+  <data name="textBox3.Text" xml:space="preserve">
+    <value>电压传感器校准:
+1. 测量APM输入电压，输入到下方的文本框中
+2. 测量电池电压，输入到下方的文本框中
+3. 从当前的传感器的数据表中找到安培/伏特，输入到下方的文本框中</value>
+  </data>
+  <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>容量</value>
+  </data>
+  <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
+    <value>48, 13</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>监控器</value>
   </data>
   <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
     <value>175, 13</value>
   </data>
   <data name="label28.Text" xml:space="preserve">
     <value>设置水平面的默认加速度计偏移</value>
-  </data>
-  <data name="BUT_levelac2.Text" xml:space="preserve">
-    <value>找平</value>
   </data>
   <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
     <value>261, 13</value>
@@ -259,17 +334,95 @@
   <data name="label15.Text" xml:space="preserve">
     <value>机架设置 (+ 或 x)</value>
   </data>
-  <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
-    <value>67, 13</value>
+  <data name="BUT_levelac2.Text" xml:space="preserve">
+    <value>找平</value>
   </data>
-  <data name="label27.Text" xml:space="preserve">
-    <value>陀螺仪感度</value>
+  <data name="label46.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
   </data>
-  <data name="GYR_ENABLE_.Size" type="System.Drawing.Size, System.Drawing">
-    <value>86, 17</value>
+  <data name="label46.Text" xml:space="preserve">
+    <value>感度</value>
   </data>
-  <data name="GYR_ENABLE_.Text" xml:space="preserve">
-    <value>启用陀螺仪</value>
+  <data name="label45.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="label44.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label44.Text" xml:space="preserve">
+    <value>微调</value>
+  </data>
+  <data name="label43.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>逆转</value>
+  </data>
+  <data name="label42.Size" type="System.Drawing.Size, System.Drawing">
+    <value>43, 13</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>方向舵</value>
+  </data>
+  <data name="BUT_HS4save.Text" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>最大</value>
+  </data>
+  <data name="label40.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label40.Text" xml:space="preserve">
+    <value>最小</value>
+  </data>
+  <data name="BUT_swash_manual.Text" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="label41.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value>最低</value>
+  </data>
+  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>最高</value>
+  </data>
+  <data name="BUT_0collective.Text" xml:space="preserve">
+    <value>0度</value>
+  </data>
+  <data name="label39.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label39.Text" xml:space="preserve">
+    <value>微调</value>
+  </data>
+  <data name="label38.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>逆转</value>
+  </data>
+  <data name="label37.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="label36.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>舵机</value>
   </data>
   <data name="label26.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
@@ -283,12 +436,6 @@
   <data name="label25.Text" xml:space="preserve">
     <value>最大侧倾</value>
   </data>
-  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
-    <value>55, 13</value>
-  </data>
-  <data name="label24.Text" xml:space="preserve">
-    <value>0 总螺距:</value>
-  </data>
   <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
@@ -301,65 +448,11 @@
   <data name="label22.Text" xml:space="preserve">
     <value>斜盘水平微调</value>
   </data>
-  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
-    <value>55, 13</value>
-  </data>
-  <data name="label21.Text" xml:space="preserve">
-    <value>逆转舵机</value>
-  </data>
-  <data name="HS4_REV.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 17</value>
-  </data>
-  <data name="HS4_REV.Text" xml:space="preserve">
-    <value>逆转 4</value>
-  </data>
-  <data name="label20.Size" type="System.Drawing.Size, System.Drawing">
-    <value>40, 13</value>
-  </data>
-  <data name="label20.Text" xml:space="preserve">
-    <value>舵机 3</value>
-  </data>
-  <data name="label19.Size" type="System.Drawing.Size, System.Drawing">
-    <value>40, 13</value>
-  </data>
-  <data name="label19.Text" xml:space="preserve">
-    <value>舵机 2</value>
-  </data>
-  <data name="label18.Size" type="System.Drawing.Size, System.Drawing">
-    <value>40, 13</value>
-  </data>
-  <data name="label18.Text" xml:space="preserve">
-    <value>舵机 1</value>
-  </data>
-  <data name="HS3_REV.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 17</value>
-  </data>
-  <data name="HS3_REV.Text" xml:space="preserve">
-    <value>逆转 3</value>
-  </data>
-  <data name="HS2_REV.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 17</value>
-  </data>
-  <data name="HS2_REV.Text" xml:space="preserve">
-    <value>逆转 2</value>
-  </data>
-  <data name="HS1_REV.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 17</value>
-  </data>
-  <data name="HS1_REV.Text" xml:space="preserve">
-    <value>逆转 1</value>
-  </data>
   <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
     <value>79, 13</value>
   </data>
   <data name="label17.Text" xml:space="preserve">
     <value>斜盘舵机位置</value>
-  </data>
-  <data name="BUT_saveheliconfig.Text" xml:space="preserve">
-    <value>保存行程</value>
-  </data>
-  <data name="BUT_0collective.Text" xml:space="preserve">
-    <value>设置0总螺距</value>
   </data>
   <data name="$this.Text" xml:space="preserve">
     <value>APM设置</value>

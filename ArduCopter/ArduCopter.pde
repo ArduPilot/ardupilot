@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.0.50 Beta"
+#define THISFIRMWARE "ArduCopter V2.0.51"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -260,7 +260,12 @@ static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
 static int16_t  motor_out[8];
-static bool		do_simple = false;
+static bool		do_simple 			= false;
+
+static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+static bool rc_override_active = false;
+static uint32_t rc_override_fs_timer = 0;
+
 
 // Heli
 // ----
@@ -480,6 +485,7 @@ static int32_t 			perf_mon_timer;
 //static float 			imu_health; 						// Metric based on accel gain deweighting
 static int16_t			gps_fix_count;
 static byte				gps_watchdog;
+static int				pmTest1;
 
 // System Timers
 // --------------
@@ -1051,7 +1057,7 @@ void update_throttle_mode(void)
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
 			    #if FRAME_CONFIG == HELI_FRAME
-				    g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.rc_3.control_in));
+				    g.rc_3.servo_out = heli_get_angle_boost(g.rc_3.control_in);
 				#else
 					angle_boost = get_angle_boost(g.rc_3.control_in);
 					g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
@@ -1071,34 +1077,39 @@ void update_throttle_mode(void)
 			// fall through
 
 		case THROTTLE_AUTO:
-				// 10hz, 			don't run up i term
-			if(invalid_throttle && motor_auto_armed == true){
 
-				// how far off are we
-				altitude_error = get_altitude_error();
-
-				// get the AP throttle
-				nav_throttle = get_nav_throttle(altitude_error);//, 250); //150 =  target speed of 1.5m/s
-				//Serial.printf("in:%d, cr:%d, NT:%d, I:%1.4f\n", g.rc_3.control_in,altitude_error,  nav_throttle, g.pi_throttle.get_integrator());
-
-				// clear the new data flag
-				invalid_throttle = false;
-			}
+			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
 
+			// manual command up or down?
 			if(manual_boost != 0){
+
 				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + manual_boost + get_z_damping()));
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost + get_z_damping());
 				#else
 					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
 				#endif
+
 				// reset next_WP.alt
 				next_WP.alt = max(current_loc.alt, 100);
+
 			}else{
+				// 10hz, 			don't run up i term
+				if(invalid_throttle && motor_auto_armed == true){
+
+					// how far off are we
+					altitude_error = get_altitude_error();
+
+					// get the AP throttle
+					nav_throttle = get_nav_throttle(altitude_error);
+
+					// clear the new data flag
+					invalid_throttle = false;
+				}
+
 				#if FRAME_CONFIG == HELI_FRAME
-					//g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
-					g.rc_3.servo_out = heli_get_angle_boost(heli_get_scaled_throttle(g.throttle_cruise + nav_throttle + get_z_damping()));
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
 				#else
 					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
 				#endif
@@ -1244,13 +1255,22 @@ static void update_altitude()
 
 	#else
 		// This is real life
-		// calc the vertical accel rate
-		int temp_baro_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
-		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
-		old_baro_alt		= temp_baro_alt;
 
 		// read in Actual Baro Altitude
 		baro_alt 			= (baro_alt + read_barometer()) >> 1;
+
+		// calc the vertical accel rate
+		#if CLIMB_RATE_BARO == 0
+		int temp_baro_alt	= (barometer._offset_press - barometer.RawPress) << 2; // invert and scale
+		temp_baro_alt		= (float)temp_baro_alt * .1 + (float)old_baro_alt * .9;
+
+		baro_rate 			= (temp_baro_alt - old_baro_alt) * 10;
+		old_baro_alt		= temp_baro_alt;
+
+		#else
+		baro_rate 			= (baro_alt - old_baro_alt) * 10;
+		old_baro_alt		= baro_alt;
+		#endif
 
 		// sonar_alt is calculaed in a faster loop and filtered with a mode filter
 	#endif
@@ -1386,7 +1406,7 @@ static void tuning(){
 			break;
 
 		case CH6_THROTTLE_KP:
-			g.rc_6.set_range(0,1000);
+			g.rc_6.set_range(0,1000);       // 0 to 1
 			g.pi_throttle.kP(tuning_value);
 			break;
 
@@ -1424,6 +1444,11 @@ static void tuning(){
 			g.heli_ext_gyro_gain = tuning_value * 1000;
 			break;
 		#endif
+
+		case CH6_THR_HOLD_KP:
+			g.rc_6.set_range(0,1000);     // 0 to 1
+			g.pi_alt_hold.kP(tuning_value);
+			break;
 	}
 }
 
@@ -1466,8 +1491,8 @@ static void update_nav_wp()
 		if (circle_angle > 6.28318531)
 			circle_angle -= 6.28318531;
 
-		target_WP.lng = next_WP.lng + (g.loiter_radius * cos(1.57 - circle_angle) * scaleLongUp);
-		target_WP.lat = next_WP.lat + (g.loiter_radius * sin(1.57 - circle_angle));
+		target_WP.lng = next_WP.lng + (g.loiter_radius * 100 * cos(1.57 - circle_angle) * scaleLongUp);
+		target_WP.lat = next_WP.lat + (g.loiter_radius * 100 * sin(1.57 - circle_angle));
 
 		// calc the lat and long error to the target
 		calc_location_error(&target_WP);

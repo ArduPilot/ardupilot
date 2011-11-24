@@ -43,7 +43,7 @@ def dump_logs(atype):
     mavproxy.expect("Log]")
     for i in range(numlogs):
         mavproxy.send("dump %u\n" % (i+1))
-        mavproxy.expect("logs enabled:", timeout=120)
+        mavproxy.expect("logs enabled:", timeout=400)
         mavproxy.expect("Log]")
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
@@ -247,6 +247,7 @@ def run_tests(steps):
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
+    results.addglob("Google Earth track", '*.kml')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*.flashlog')
     results.addglob("MAVLink log", '*.mavlog')

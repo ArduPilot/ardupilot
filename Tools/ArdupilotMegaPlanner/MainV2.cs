@@ -19,6 +19,7 @@ using System.Speech.Synthesis;
 using System.Globalization;
 using System.Threading;
 using System.Net.Sockets;
+using IronPython.Hosting;
 
 namespace ArdupilotMega
 {
@@ -37,7 +38,7 @@ namespace ArdupilotMega
         public static Hashtable config = new Hashtable();
         public static bool givecomport = false;
         public static Firmwares APMFirmware = Firmwares.ArduPlane;
-        public static bool MAC = false;
+        public static bool MONO = false;
 
         public static bool speechenable = false;
         public static SpeechSynthesizer talk = new SpeechSynthesizer();
@@ -78,6 +79,11 @@ namespace ArdupilotMega
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
 
+        public void testpython()
+        {
+            Console.WriteLine("hello world from c# via python");
+        }
+
         public MainV2()
         {
             //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
@@ -91,8 +97,17 @@ namespace ArdupilotMega
 
             //return;
 
+            var engine = Python.CreateEngine();
+            var scope = engine.CreateScope();
+
+            scope.SetVariable("MainV2",this);
+            Console.WriteLine(DateTime.Now.Millisecond);
+            engine.CreateScriptSourceFromString("print 'hello world from python'").Execute(scope);
+            Console.WriteLine(DateTime.Now.Millisecond);
+            engine.CreateScriptSourceFromString("MainV2.testpython()").Execute(scope);
+            Console.WriteLine(DateTime.Now.Millisecond);
             var t = Type.GetType("Mono.Runtime");
-            MAC = (t != null);
+            MONO = (t != null);
 
             Form splash = new Splash();
             splash.Show();
@@ -146,7 +161,7 @@ namespace ArdupilotMega
             if (config.ContainsKey("language") && !string.IsNullOrEmpty((string)config["language"]))
                 changelanguage(getcultureinfo((string)config["language"]));
 
-            if (!MAC) // windows only
+            if (!MONO) // windows only
             {
                 if (MainV2.config["showconsole"] != null && MainV2.config["showconsole"].ToString() == "True")
                 {
@@ -208,7 +223,7 @@ namespace ArdupilotMega
             //System.Threading.Thread.Sleep(2000);
 
             // make sure new enough .net framework is installed
-            if (!MAC)
+            if (!MONO)
             {
                 Microsoft.Win32.RegistryKey installed_versions = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\NET Framework Setup\NDP");
                 string[] version_names = installed_versions.GetSubKeyNames();
@@ -216,9 +231,9 @@ namespace ArdupilotMega
                 double Framework = Convert.ToDouble(version_names[version_names.Length - 1].Remove(0, 1), CultureInfo.InvariantCulture);
                 int SP = Convert.ToInt32(installed_versions.OpenSubKey(version_names[version_names.Length - 1]).GetValue("SP", 0));
 
-                if (Framework < 3.5)
+                if (Framework < 4.0)
                 {
-                    MessageBox.Show("This program requires .NET Framework 3.5 +. You currently have " + Framework);
+                    MessageBox.Show("This program requires .NET Framework 4.0 +. You currently have " + Framework);
                 }
             }
 
@@ -742,9 +757,17 @@ namespace ArdupilotMega
         {
             comportname = CMB_serialport.Text;
             if (comportname == "UDP" || comportname == "TCP")
+            {
                 CMB_baudrate.Enabled = false;
+                if (comportname == "TCP")
+                    MainV2.comPort.BaseStream = new TcpSerial();
+                if (comportname == "UDP")
+                    MainV2.comPort.BaseStream = new UdpSerial();
+            }
             else
+            {
                 CMB_baudrate.Enabled = true;
+            }
 
             try
             {
@@ -801,7 +824,7 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    System.Configuration.Configuration appconfig = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.None);
+                    //System.Configuration.Configuration appconfig = System.Configuration.ConfigurationManager.OpenExeConfiguration(System.Configuration.ConfigurationUserLevel.None);
 
                     XmlTextWriter xmlwriter = new XmlTextWriter(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"config.xml", Encoding.ASCII);
                     xmlwriter.Formatting = Formatting.Indented;
@@ -816,9 +839,9 @@ namespace ArdupilotMega
 
                     xmlwriter.WriteElementString("APMFirmware", APMFirmware.ToString());
 
-                    appconfig.AppSettings.Settings.Add("comport", comportname);
-                    appconfig.AppSettings.Settings.Add("baudrate", CMB_baudrate.Text);
-                    appconfig.AppSettings.Settings.Add("APMFirmware", APMFirmware.ToString());
+                    //appconfig.AppSettings.Settings.Add("comport", comportname);
+                    //appconfig.AppSettings.Settings.Add("baudrate", CMB_baudrate.Text);
+                    //appconfig.AppSettings.Settings.Add("APMFirmware", APMFirmware.ToString());
 
                     foreach (string key in config.Keys)
                     {
@@ -828,7 +851,7 @@ namespace ArdupilotMega
                                 continue;
                             xmlwriter.WriteElementString(key, config[key].ToString());
 
-                            appconfig.AppSettings.Settings.Add(key, config[key].ToString());
+                            //appconfig.AppSettings.Settings.Add(key, config[key].ToString());
                         }
                         catch { }
                     }
@@ -838,7 +861,7 @@ namespace ArdupilotMega
                     xmlwriter.WriteEndDocument();
                     xmlwriter.Close();
 
-                    appconfig.Save();
+                    //appconfig.Save();
                 }
                 catch (Exception ex) { MessageBox.Show(ex.ToString()); }
             }
@@ -918,7 +941,7 @@ namespace ArdupilotMega
             {
                 try
                 {
-                    if (!MAC)
+                    if (!MONO)
                     {
                         //joystick stuff
 
@@ -972,7 +995,7 @@ namespace ArdupilotMega
 
             int minbytes = 10;
 
-            if (MAC)
+            if (MONO)
                 minbytes = 0;
 
             DateTime menuupdate = DateTime.Now;
@@ -1393,7 +1416,7 @@ namespace ArdupilotMega
                 string baseurl = "http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/bin/Release/";
                 bool update = updatecheck(loadinglabel, baseurl, "");
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
-                if (MAC)
+                if (MONO)
                 {
                     P.StartInfo.FileName = "mono";
                     P.StartInfo.Arguments = " \"" + Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "Updater.exe\"";

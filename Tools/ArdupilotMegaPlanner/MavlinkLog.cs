@@ -231,7 +231,7 @@ namespace ArdupilotMega
 
             // create kmz - aka zip file
 
-            FileStream fs = File.Open(filename.Replace(".tlog.kml", ".kmz"), FileMode.Create);
+            FileStream fs = File.Open(filename.Replace(Path.GetExtension(filename), ".kmz"), FileMode.Create);
             ZipOutputStream zipStream = new ZipOutputStream(fs);
             zipStream.SetLevel(9); //0-9, 9 being the highest level of compression
             zipStream.UseZip64 = UseZip64.Off; // older zipfile
@@ -246,13 +246,11 @@ namespace ArdupilotMega
             // Zip the file in buffered chunks
             // the "using" will close the stream even if an exception occurs
             byte[] buffer = new byte[4096];
-            using (FileStream streamReader = File.OpenRead(filename))
+            using (FileStream streamReader = File.Open(filename,FileMode.Open,FileAccess.Read,FileShare.ReadWrite))
             {
                 StreamUtils.Copy(streamReader, zipStream, buffer);
             }
             zipStream.CloseEntry();
-
-            File.Delete(filename);
 
             filename = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "block_plane_0.dae";
 
@@ -275,6 +273,9 @@ namespace ArdupilotMega
 
             zipStream.IsStreamOwner = true;	// Makes the Close also Close the underlying stream
             zipStream.Close();
+
+            File.Delete(filename);
+
             flightdata.Clear();
         }
 

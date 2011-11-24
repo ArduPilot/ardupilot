@@ -56,7 +56,7 @@ namespace ArdupilotMega
             System.Threading.Thread.Sleep(500);
 
             //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
-            if (!MainV2.MAC)
+            if (!MainV2.MONO)
             {
                 ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
@@ -66,7 +66,7 @@ namespace ArdupilotMega
 
                     if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
                     {
-                        return "2560-2";
+                        //return "2560-2";
                     }
                 }
             }

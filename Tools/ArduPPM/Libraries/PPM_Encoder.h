@@ -243,18 +243,33 @@ const uint16_t failsafe_ppm[ PPM_ARRAY_MAX ] =
 #define USB_PORT              PORTC
 #define    USB_PIN            PC2
 
+// true if we have received a USB device connect event
+static bool usb_connected;
+
 // USB connected event
 void EVENT_USB_Device_Connect(void)
 {
     // Toggle USB pin high if USB is connected
     USB_PORT |= (1 << USB_PIN);
+
+    usb_connected = true;
+
+    // this unsets the pin connected to PA1 on the 2560
+    // when the bit is clear, USB is connected
+    PORTD &= ~1;
 }
 
-// USB dosconnect event
+// USB disconnect event
 void EVENT_USB_Device_Disconnect(void)
 {
     // toggle USB pin low if USB is disconnected
     USB_PORT &= ~(1 << USB_PIN);
+
+    usb_connected = false;
+
+    // this sets the pin connected to PA1 on the 2560
+    // when the bit is clear, USB is connected
+    PORTD |= 1;
 }
 
 // AVR parameters for ArduPilot MEGA v1.4 PPM Encoder (ATmega328P)
@@ -676,6 +691,17 @@ void ppm_encoder_init( void )
     // Activate pullups on all input pins
     SERVO_PORT |= 0xFF;
 
+#if defined (__AVR_ATmega16U2__) || defined (__AVR_ATmega32U2__)
+    // on 32U2 set PD0 to be an output, and clear the bit. This tells
+    // the 2560 that USB is connected. The USB connection event fires
+    // later to set the right value
+    DDRD |= 1;
+    if (usb_connected) {
+	    PORTD     &= ~1;
+    } else {
+	    PORTD     |= 1;
+    }
+#endif
 
     // SERVO/PPM INPUT - PIN CHANGE INTERRUPT
     // ------------------------------------------------------------------------------

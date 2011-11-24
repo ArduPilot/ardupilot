@@ -35,7 +35,7 @@
  */
 
 #include "Arduino-usbserial.h"
-#include "..\..\..\Libraries\ppm_encoder.h"
+#include "../../../Libraries/PPM_Encoder.h"
 
 
 /** Circular buffer to hold data from the host before it is sent to the device via the serial port. */

@@ -642,6 +642,11 @@ namespace ArdupilotMega.GCSViews
 
             updateCMDParams();
 
+            // mono
+            panelMap.Dock = DockStyle.None;
+            panelMap.Dock = DockStyle.Fill;
+            panelMap_Resize(null,null);
+
             writeKML();
         }
 
@@ -672,7 +677,12 @@ namespace ArdupilotMega.GCSViews
             {
                 selectedrow = e.RowIndex;
                 string option = Commands[Command.Index, selectedrow].EditedFormattedValue.ToString();
-                string cmd = Commands[0, selectedrow].Value.ToString();
+                string cmd;
+                try
+                {
+                    cmd = Commands[Command.Index, selectedrow].Value.ToString();
+                }
+                catch { cmd = option; }
                 Console.WriteLine("editformat " + option + " value " + cmd);
                 ChangeColumnHeader(cmd);
             }
@@ -681,6 +691,15 @@ namespace ArdupilotMega.GCSViews
 
         private void Commands_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
         {
+            for (int i = 0; i < Commands.ColumnCount; i++)
+            {
+                DataGridViewCell tcell = Commands.Rows[e.RowIndex].Cells[i];
+                if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
+                {
+                    tcell.Value = "0";
+                }
+            }                
+
             DataGridViewComboBoxCell cell = Commands.Rows[e.RowIndex].Cells[Command.Index] as DataGridViewComboBoxCell;
             if (cell.Value == null)
             {
@@ -873,14 +892,8 @@ namespace ArdupilotMega.GCSViews
                         {
                             if (Commands.Rows[a].HeaderCell.Value == null)
                             {
-                                if (ArdupilotMega.MainV2.MAC)
-                                {
-                                    Commands.Rows[a].HeaderCell.Value = "    " + (a + 1).ToString(); // mac doesnt auto center header text
-                                }
-                                else
-                                {
+                                    Commands.Rows[a].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                                     Commands.Rows[a].HeaderCell.Value = (a + 1).ToString();
-                                }
                             }
                             // skip rows with the correct number
                             string rowno = Commands.Rows[a].HeaderCell.Value.ToString();
@@ -920,14 +933,14 @@ namespace ArdupilotMega.GCSViews
                             pointlist.Add(new PointLatLngAlt(double.Parse(cell3), double.Parse(cell4), (int)double.Parse(cell2) + homealt, (a + 1).ToString()));
                             addpolygonmarker((a + 1).ToString(), double.Parse(cell4), double.Parse(cell3), (int)double.Parse(cell2));
 
-                            avglong += double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString());
-                            avglat += double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString());
+                            avglong += double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString());
+                            avglat += double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString());
                             usable++;
 
-                            maxlong = Math.Max(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()), maxlong);
-                            maxlat = Math.Max(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()), maxlat);
-                            minlong = Math.Min(double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()), minlong);
-                            minlat = Math.Min(double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()), minlat);
+                            maxlong = Math.Max(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()), maxlong);
+                            maxlat = Math.Max(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()), maxlat);
+                            minlong = Math.Min(double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()), minlong);
+                            minlat = Math.Min(double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()), minlat);
 
                             System.Diagnostics.Debug.WriteLine(temp - System.Diagnostics.Stopwatch.GetTimestamp());
                         }
@@ -974,9 +987,11 @@ namespace ArdupilotMega.GCSViews
                 else if (home.Length > 5 && usable == 0)
                 {
                     lookat = "<LookAt>     <longitude>" + TXT_homelng.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</longitude>     <latitude>" + TXT_homelat.Text.ToString(new System.Globalization.CultureInfo("en-US")) + "</latitude> <range>4000</range> </LookAt>";
+                    MainMap.HoldInvalidation = true;
                     MainMap.ZoomAndCenterMarkers("objects");
                     MainMap.Zoom -= 2;
                     MainMap_OnMapZoomChanged();
+                    MainMap.HoldInvalidation = false;
                 }
 
                 RegeneratePolygon();
@@ -2073,6 +2088,18 @@ namespace ArdupilotMega.GCSViews
             // update row headers
             ((ComboBox)sender).ForeColor = Color.White;
             ChangeColumnHeader(((ComboBox)sender).Text);
+            try
+            {
+                for (int i = 0; i < Commands.ColumnCount; i++)
+                {
+                    DataGridViewCell tcell = Commands.Rows[selectedrow].Cells[i];
+                    if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
+                    {
+                        tcell.Value = "0";
+                    }
+                }
+            }
+            catch { }
         }
         /// <summary>
         /// Get the Google earth ALT for a given coord
@@ -2176,12 +2203,21 @@ namespace ArdupilotMega.GCSViews
         private void BUT_Prefetch_Click(object sender, EventArgs e)
         {
             RectLatLng area = MainMap.SelectedArea;
+            if (area.IsEmpty)
+            {
+                DialogResult res = MessageBox.Show("No ripp area defined, ripp displayed on screen?", "Rip", MessageBoxButtons.YesNo);
+                if (res == DialogResult.Yes)
+                {
+                    area = MainMap.CurrentViewArea;
+                }
+            }
+
             if (!area.IsEmpty)
             {
-                for (int i = (int)MainMap.Zoom; i <= MainMap.MaxZoom; i++)
-                {
-                    DialogResult res = MessageBox.Show("Ready ripp at Zoom = " + i + " ?", "GMap.NET", MessageBoxButtons.YesNoCancel);
+                DialogResult res = MessageBox.Show("Ready ripp at Zoom = " + (int)MainMap.Zoom + " ?", "GMap.NET", MessageBoxButtons.YesNo);
 
+                for (int i = 1; i <= MainMap.MaxZoom; i++)
+                {
                     if (res == DialogResult.Yes)
                     {
                         TilePrefetcher obj = new TilePrefetcher();
@@ -2588,6 +2624,7 @@ namespace ArdupilotMega.GCSViews
         private void clearMissionToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Commands.Rows.Clear();
+            selectedrow = 0;
             writeKML();
         }
 
@@ -2611,7 +2648,7 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[row].Cells[Param1.Index].Value = 1;
 
-            Commands.Rows[row].Cells[Param3.Index].Value = repeat;
+            Commands.Rows[row].Cells[Param2.Index].Value = repeat;
         }
 
         private void jumpwPToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2627,7 +2664,7 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[row].Cells[Param1.Index].Value = wp;
 
-            Commands.Rows[row].Cells[Param3.Index].Value = repeat;
+            Commands.Rows[row].Cells[Param2.Index].Value = repeat;
         }
 
         private void deleteWPToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2696,6 +2733,32 @@ namespace ArdupilotMega.GCSViews
             Camera form = new Camera();
             MainV2.fixtheme(form);
             form.Show();
+        }
+
+        private void panelMap_Resize(object sender, EventArgs e)
+        {
+            // this is a mono fix for the zoom bar
+            Console.WriteLine("panelmap "+panelMap.Size.ToString());
+            MainMap.Size = new Size(panelMap.Size.Width - 50,panelMap.Size.Height);
+            trackBar1.Location = new Point(panelMap.Size.Width - 50,trackBar1.Location.Y);
+            trackBar1.Size = new System.Drawing.Size(trackBar1.Size.Width, panelMap.Size.Height - trackBar1.Location.Y);
+            label11.Location = new Point(panelMap.Size.Width - 50, label11.Location.Y);
+        }
+
+        private void BUT_zoomto_Click(object sender, EventArgs e)
+        {
+            string place = "Perth, Australia";
+            Common.InputBox("Location", "Enter your location", ref place);
+
+            GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
+            if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
+            {
+                MessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+            else
+            {
+                MainMap.Zoom = 15;
+            }
         }
     }
 }

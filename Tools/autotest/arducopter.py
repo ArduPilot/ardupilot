@@ -175,7 +175,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     #wait_altitude(mav, 30, 40)
-    ret = wait_waypoint(mav, 0, num_wp, timeout=90)
+    ret = wait_waypoint(mav, 0, num_wp, timeout=500)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')
@@ -326,19 +326,19 @@ def fly_ArduCopter(viewerip=None):
             failed = True
 
         print("# Upload mission1")
-        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+        if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
             failed = True
 
         # this grabs our mission count
         print("# store mission1 locally")
-        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission1.txt")):
+        if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
             failed = True
 
-        print("# Fly mission 1")
+        print("# Fly mission 2")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
             failed = True
         else:
-            print("Flew mission1 OK")
+            print("Flew mission2 OK")
 
         print("# Land")
         if not land(mavproxy, mav):

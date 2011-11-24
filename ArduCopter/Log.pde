@@ -20,8 +20,8 @@ static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of print_f that reads from flash memory
-static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
-{
+//static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
+/*{
 	Serial.printf_P(PSTR("\n"
 						 "Commands:\n"
 						 "  dump <n>"
@@ -30,7 +30,7 @@ static int8_t	help_log(uint8_t argc, 			const Menu::arg *argv)
 						 "  disable <name> | all\n"
 						 "\n"));
     return 0;
-}
+}*/
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -40,8 +40,7 @@ const struct Menu::command log_menu_commands[] PROGMEM = {
 	{"dump",	dump_log},
 	{"erase",	erase_logs},
 	{"enable",	select_logs},
-	{"disable",	select_logs},
-	{"help",	help_log}
+	{"disable",	select_logs}
 };
 
 // A Macro to create the Menu
@@ -698,15 +697,16 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteInt(angle_boost);					//8
 	DataFlash.WriteInt(manual_boost);					//9
 	DataFlash.WriteInt(climb_rate);						//10
-//#if HIL_MODE == HIL_MODE_ATTITUDE
-//	DataFlash.WriteInt(0);								//10
-//#else
-//	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//10
-//#endif
 
-	DataFlash.WriteInt(g.rc_3.servo_out);				//11
-	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//12
-	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//13
+#if HIL_MODE == HIL_MODE_ATTITUDE
+	DataFlash.WriteInt(0);								//11
+#else
+	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//11
+#endif
+
+	DataFlash.WriteInt(g.rc_3.servo_out);				//12
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//13
+	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//14
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -718,7 +718,7 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 1; i < 13; i++ ){
+	for(int8_t i = 1; i < 14; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
@@ -901,6 +901,29 @@ static void Log_Read_Startup()
 	Serial.printf_P(PSTR("START UP\n"));
 }
 
+static void Log_Write_Data(int8_t _type, float _data)
+{
+	Log_Write_Data(_type, (int32_t)(_data * 1000));
+}
+
+static void Log_Write_Data(int8_t _type, int32_t _data)
+{
+	DataFlash.WriteByte(HEAD_BYTE1);
+	DataFlash.WriteByte(HEAD_BYTE2);
+	DataFlash.WriteByte(LOG_DATA_MSG);
+	DataFlash.WriteByte(_type);
+	DataFlash.WriteLong(_data);
+	DataFlash.WriteByte(END_BYTE);
+}
+
+// Read a mode packet
+static void Log_Read_Data()
+{
+	int8_t  temp1 = DataFlash.ReadByte();
+	int32_t temp2 = DataFlash.ReadLong();
+	Serial.printf_P(PSTR("DATA: %d, %ld\n"), temp1, temp2);
+}
+
 
 // Read the DataFlash log memory : Packet Parser
 static void Log_Read(int start_page, int end_page)
@@ -981,6 +1004,10 @@ static void Log_Read(int start_page, int end_page)
 					case LOG_GPS_MSG:
 						Log_Read_GPS();
 						break;
+
+					case LOG_DATA_MSG:
+						Log_Read_Data();
+						break;
 				}
 				break;
 		}
@@ -1000,6 +1027,8 @@ static void Log_Write_Raw() {}
 static void Log_Write_GPS() {}
 static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
+static void Log_Write_Data(int8_t _type, float _data){}
+static void Log_Write_Data(int8_t _type, int32_t _data){}
 #ifdef OPTFLOW_ENABLED
 static void Log_Write_Optflow() {}
 #endif

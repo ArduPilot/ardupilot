@@ -67,7 +67,8 @@ static void calc_loiter(int x_error, int y_error)
 	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
 
 	// find the rates:
-	float temp		= radians((float)g_gps->ground_course/100.0);
+	//float temp		= radians((float)g_gps->ground_course/100.0);
+	float temp		= g_gps->ground_course * RADX100;
 
 	#ifdef OPTFLOW_ENABLED
 		// calc the cos of the error to tell how fast we are moving towards the target in cm
@@ -172,7 +173,8 @@ static void calc_nav_rate(int max_speed)
 	}
 
 	// XXX target_angle should be the original  desired target angle!
-	float temp		= radians((target_bearing - g_gps->ground_course)/100.0);
+	//float temp		= radians((target_bearing - g_gps->ground_course)/100.0);
+	float temp 		= (target_bearing - g_gps->ground_course) * RADX100;
 
 	// push us towards the original track
 	update_crosstrack();
@@ -209,8 +211,11 @@ static void update_crosstrack(void)
 	// Crosstrack Error
 	// ----------------
 	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
-		crosstrack_error = sin(radians((target_bearing - original_target_bearing) / 100)) * wp_distance;	 // Meters we are off track line
-		crosstrack_error = constrain(crosstrack_error * 4, -1200, 1200);
+		float temp = (target_bearing - original_target_bearing) * RADX100;
+		//radians((target_bearing - original_target_bearing) / 100)
+		crosstrack_error = sin(temp) * wp_distance;	 // Meters we are off track line
+
+		crosstrack_error = constrain(crosstrack_error * g.crosstrack_gain, -1200, 1200);
 	}
 }
 
@@ -225,7 +230,9 @@ static int32_t cross_track_test()
 // nav_roll, nav_pitch
 static void calc_nav_pitch_roll()
 {
-	float temp  	 = radians((float)(9000 - (dcm.yaw_sensor - original_target_bearing))/100.0);
+	float temp	 = (9000l - (dcm.yaw_sensor - original_target_bearing)) * RADX100;
+	//t: 1.5465, t1: -10.9451, t2: 1.5359, t3: 1.5465
+
 	float _cos_yaw_x = cos(temp);
 	float _sin_yaw_y = sin(temp);
 

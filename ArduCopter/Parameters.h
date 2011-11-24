@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 112;
+	static const uint16_t k_format_version = 113;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -55,7 +55,8 @@ public:
 
 	// Misc
 	//
-	k_param_log_bitmask,
+	k_param_log_bitmask = 20,
+    k_param_log_last_filenumber,
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	//
@@ -107,8 +108,8 @@ public:
 	//
 	// 160: Navigation parameters
 	//
-	k_param_crosstrack_entry_angle = 160,
-	k_param_RTL_altitude,
+	k_param_RTL_altitude = 160,
+	k_param_crosstrack_gain,
 
 	//
 	// 180: Radio settings
@@ -171,7 +172,6 @@ public:
 	k_param_pi_nav_lon,
 	k_param_pi_alt_hold,
 	k_param_pi_throttle,
-	k_param_pi_crosstrack,
 	k_param_pi_acro_roll,
 	k_param_pi_acro_pitch,
 
@@ -189,9 +189,14 @@ public:
     AP_Int8		serial3_baud;
 
 
-	// Crosstrack navigation
-	//
-	AP_Int16	crosstrack_entry_angle;
+	AP_Int16	RTL_altitude;
+	AP_Int8		sonar_enabled;
+	AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
+	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
+	AP_Int8		compass_enabled;
+    AP_Int8		optflow_enabled;
+    AP_Float	input_voltage;
+	AP_Float	low_voltage;
 
 	// Waypoints
 	//
@@ -202,6 +207,7 @@ public:
 	AP_Int8		waypoint_radius;
 	AP_Int16	loiter_radius;
 	AP_Int16	waypoint_speed_max;
+	AP_Float	crosstrack_gain;
 
 	// Throttle
 	//
@@ -222,30 +228,16 @@ public:
     AP_Int8     flight_mode6;
     AP_Int8     simple_modes;
 
-	// Radio settings
-	//
-	//AP_Var_group pwm_roll;
-	//AP_Var_group pwm_pitch;
-	//AP_Var_group pwm_throttle;
-	//AP_Var_group pwm_yaw;
-
 	// Misc
 	//
 	AP_Int16	log_bitmask;
-	AP_Int16	RTL_altitude;
+    AP_Int16	log_last_filenumber;
 
-	AP_Int8		sonar_enabled;
-	AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
-	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
-	AP_Int8		compass_enabled;
 	AP_Int8		esc_calibrate;
 	AP_Int8		radio_tuning;
-
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
-    AP_Int8		optflow_enabled;
-    AP_Float	input_voltage;
-	AP_Float	low_voltage;
+
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	// Heli
@@ -272,6 +264,7 @@ public:
 	RC_Channel	rc_8;
 	RC_Channel	rc_camera_pitch;
 	RC_Channel	rc_camera_roll;
+
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
 
@@ -292,7 +285,6 @@ public:
 
 	APM_PI		pi_alt_hold;
 	APM_PI		pi_throttle;
-	APM_PI		pi_crosstrack;
 
 	APM_PI		pi_acro_roll;
 	APM_PI		pi_acro_pitch;
@@ -310,9 +302,7 @@ public:
 	sysid_my_gcs			(255,						k_param_sysid_my_gcs,					PSTR("SYSID_MYGCS")),
     serial3_baud			(SERIAL3_BAUD/1000,         k_param_serial3_baud,					PSTR("SERIAL3_BAUD")),
 
-	//crosstrack_gain			(XTRACK_GAIN * 100,			k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
-	crosstrack_entry_angle	(XTRACK_ENTRY_ANGLE * 100,	k_param_crosstrack_entry_angle, 		PSTR("XTRK_ANGLE_CD")),
-
+	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
 	sonar_enabled			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
 	battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
 	pack_capacity			(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
@@ -326,8 +316,9 @@ public:
 	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
 	command_nav_index		(0,							k_param_command_nav_index,				PSTR("WP_MUST_INDEX")),
 	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
-	loiter_radius			(LOITER_RADIUS * 100,	    k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
+	loiter_radius			(LOITER_RADIUS,	    		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
+	crosstrack_gain			(CROSSTRACK_GAIN,			k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
 	throttle_max			(1000, 						k_param_throttle_max,					PSTR("THR_MAX")),
@@ -345,7 +336,7 @@ public:
     simple_modes            (0,             			k_param_simple_modes,					PSTR("SIMPLE")),
 
 	log_bitmask				(DEFAULT_LOG_BITMASK,		k_param_log_bitmask,					PSTR("LOG_BITMASK")),
-	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
+    log_last_filenumber     (0,							k_param_log_last_filenumber,    		PSTR("LOG_LASTFILE")),
 	esc_calibrate 			(0, 						k_param_esc_calibrate, 					PSTR("ESC")),
 	radio_tuning 			(0, 						k_param_radio_tuning, 					PSTR("TUNE")),
 	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
@@ -408,7 +399,6 @@ public:
 
 	pi_alt_hold			(k_param_pi_alt_hold,			PSTR("THR_ALT_"),	THR_HOLD_P,			THR_HOLD_I,			THR_HOLD_IMAX),
 	pi_throttle			(k_param_pi_throttle,			PSTR("THR_RATE_"),	THROTTLE_P,			THROTTLE_I,			THROTTLE_IMAX),
-	pi_crosstrack		(k_param_pi_crosstrack,			PSTR("XTRACK_"),	XTRACK_P,			XTRACK_I,			XTRACK_IMAX),
 
 	pi_acro_roll		(k_param_pi_acro_roll,			PSTR("ACRO_RLL_"),	ACRO_ROLL_P,		ACRO_ROLL_I,		ACRO_ROLL_IMAX * 100),
 	pi_acro_pitch		(k_param_pi_acro_pitch,			PSTR("ACRO_PIT_"),	ACRO_PITCH_P,		ACRO_PITCH_I,		ACRO_PITCH_IMAX * 100),
