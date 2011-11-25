@@ -79,8 +79,8 @@ Arduino_Mega_ISR_Registry isr_registry;
 ////////////////////////////////////////////////////////////////////////////////
 // APM_RC_Class Instance
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
-    APM_RC_Purple APM_RC;
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    APM_RC_APM2 APM_RC;
 #else
     APM_RC_APM1 APM_RC;
 #endif
@@ -88,8 +88,8 @@ Arduino_Mega_ISR_Registry isr_registry;
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
-    DataFlash_Purple DataFlash;
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    DataFlash_APM2 DataFlash;
 #else
     DataFlash_APM1   DataFlash;
 #endif
