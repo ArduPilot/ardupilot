@@ -13,10 +13,10 @@ unsigned long timer;
 
 FastSerialPort0(Serial);
 
-#ifdef PURPLE_HARDWARE
-static bool purple_hardware = true;
+#ifdef APM2_HARDWARE
+static bool apm2_hardware = true;
 #else
-static bool purple_hardware = false;
+static bool apm2_hardware = false;
 #endif
 
 void setup()
@@ -24,7 +24,7 @@ void setup()
 	Serial.begin(115200);
 	Serial.println("ArduPilot Mega BMP085 library test");
 	Serial.println("Initialising barometer..."); delay(100);
-	if (!APM_BMP085.Init(1, purple_hardware)) {
+	if (!APM_BMP085.Init(1, apm2_hardware)) {
 		Serial.println("Barometer initialisation FAILED\n");
 	}
 	Serial.println("initialisation complete."); delay(100);

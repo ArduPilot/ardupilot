@@ -1,5 +1,5 @@
 BOARD	=	mega
 include ../../../AP_Common/Arduino.mk
 
-purple:
-	make -f Makefile EXTRAFLAGS="-DPURPLE_HARDWARE=1"
+apm2:
+	make -f Makefile EXTRAFLAGS="-DAPM2_HARDWARE=1"

@@ -34,7 +34,7 @@ struct RC_ICR4 {
 
 
 	/*
-	   ignore rate assignment for now (needed for purple
+	   ignore rate assignment for now (needed for apm2
 	   emulation)
 	*/
 	RC_ICR4& operator=(uint16_t rate) {

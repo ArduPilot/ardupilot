@@ -10,7 +10,7 @@
 #include <APM_RC.h> // ArduPilot Mega RC Library
 
 Arduino_Mega_ISR_Registry isr_registry;
-APM_RC_Purple APM_RC;
+APM_RC_APM2 APM_RC;
 
 void setup()
 {
