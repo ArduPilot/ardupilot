@@ -5,8 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArdupilotMega", "ArdupilotM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{E64A1A41-A5B0-458E-8284-BB63705354DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "resedit", "resedit\resedit.csproj", "{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,18 +41,6 @@ Global
 		{E64A1A41-A5B0-458E-8284-BB63705354DA}.Release|Win32.ActiveCfg = Release|x86
 		{E64A1A41-A5B0-458E-8284-BB63705354DA}.Release|x86.ActiveCfg = Release|x86
 		{E64A1A41-A5B0-458E-8284-BB63705354DA}.Release|x86.Build.0 = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|Win32.ActiveCfg = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|x86.ActiveCfg = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Debug|x86.Build.0 = Debug|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|Any CPU.ActiveCfg = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|Mixed Platforms.Build.0 = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|Win32.ActiveCfg = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|x86.ActiveCfg = Release|x86
-		{BAD1CB95-CD73-44D3-ADF0-00EDFA844FB9}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

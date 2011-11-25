@@ -14,6 +14,7 @@ namespace ArdupilotMega
 {
     public partial class MAVLink
     {
+
         public ICommsSerial BaseStream = new SerialPort();
 
         /// <summary>
@@ -736,10 +737,7 @@ namespace ArdupilotMega
             // reset all
             if (forget)
             {
-                lock (objlock)
-                {
                     streams = new byte[streams.Length];
-                }
             }
 
             // no error on bad
@@ -1010,10 +1008,7 @@ namespace ArdupilotMega
 
         public void requestDatastream(byte id, byte hzrate)
         {
-            lock (objlock)
-            {
                 streams[id] = hzrate;
-            }
 
             double pps = 0;
 
@@ -2087,6 +2082,7 @@ namespace ArdupilotMega
 
             if (temp.Length >= 5 && temp[3] == 255 && logreadmode) // gcs packet
             {
+                getWPsfromstream(ref temp);
                 return temp;// new byte[0];
             }
 
@@ -2163,53 +2159,20 @@ namespace ArdupilotMega
 
                     if (temp[5] == MAVLink.MAVLINK_MSG_ID_STATUSTEXT) // status text
                     {
-                        string logdata = DateTime.Now + " " + Encoding.ASCII.GetString(temp, 6, temp.Length - 6);
+                        string logdata = Encoding.ASCII.GetString(temp, 7, temp.Length - 7);
                         int ind = logdata.IndexOf('\0');
                         if (ind != -1)
                             logdata = logdata.Substring(0, ind);
-                        Console.WriteLine(logdata);
-                    }
-#if MAVLINK10
-                    if (temp[5] == MAVLINK_MSG_ID_MISSION_COUNT)
-                    {
-                        // clear old
-                        wps = new PointLatLngAlt[wps.Length];
-                    }
+                        Console.WriteLine(DateTime.Now + " " + logdata);
 
-                    if (temp[5] == MAVLink.MAVLINK_MSG_ID_MISSION_ITEM)
-                    {
-                        __mavlink_mission_item_t wp = new __mavlink_mission_item_t();
+                        if (MainV2.talk != null && MainV2.config["speechenable"] != null && MainV2.config["speechenable"].ToString() == "True")
+                        {
+                            MainV2.talk.Speak(logdata);
+                        }
 
-                        object structtemp = (object)wp;
-
-                        //Array.Copy(buffer, 6, buffer, 0, buffer.Length - 6);
-
-                        ByteArrayToStructure(temp, ref structtemp, 6);
-
-                        wp = (__mavlink_mission_item_t)(structtemp);
-#else
-
-                    if (temp[5] == MAVLINK_MSG_ID_WAYPOINT_COUNT)
-                    {
-                        // clear old
-                        wps = new PointLatLngAlt[wps.Length];
                     }
 
-                    if (temp[5] == MAVLink.MAVLINK_MSG_ID_WAYPOINT)
-                    {
-                        __mavlink_waypoint_t wp = new __mavlink_waypoint_t();
-
-                        object structtemp = (object)wp;
-
-                        //Array.Copy(buffer, 6, buffer, 0, buffer.Length - 6);
-
-                        ByteArrayToStructure(temp, ref structtemp, 6);
-
-                        wp = (__mavlink_waypoint_t)(structtemp);
-
-#endif
-                        wps[wp.seq] = new PointLatLngAlt(wp.x, wp.y, wp.z, wp.seq.ToString());
-                    }
+                    getWPsfromstream(ref temp);
 
                     try
                     {
@@ -2235,6 +2198,55 @@ namespace ArdupilotMega
             //            Console.Write((DateTime.Now - start).TotalMilliseconds.ToString("00.000") + "\t" + temp.Length + "     \r");
 
             return temp;
+        }
+
+        /// <summary>
+        /// Used to extract mission from log file
+        /// </summary>
+        /// <param name="temp">packet</param>
+        void getWPsfromstream(ref byte[] temp )
+        {
+#if MAVLINK10
+                    if (temp[5] == MAVLINK_MSG_ID_MISSION_COUNT)
+                    {
+                        // clear old
+                        wps = new PointLatLngAlt[wps.Length];
+                    }
+
+                    if (temp[5] == MAVLink.MAVLINK_MSG_ID_MISSION_ITEM)
+                    {
+                        __mavlink_mission_item_t wp = new __mavlink_mission_item_t();
+
+                        object structtemp = (object)wp;
+
+                        //Array.Copy(buffer, 6, buffer, 0, buffer.Length - 6);
+
+                        ByteArrayToStructure(temp, ref structtemp, 6);
+
+                        wp = (__mavlink_mission_item_t)(structtemp);
+#else
+
+            if (temp[5] == MAVLINK_MSG_ID_WAYPOINT_COUNT)
+            {
+                // clear old
+                wps = new PointLatLngAlt[wps.Length];
+            }
+
+            if (temp[5] == MAVLink.MAVLINK_MSG_ID_WAYPOINT)
+            {
+                __mavlink_waypoint_t wp = new __mavlink_waypoint_t();
+
+                object structtemp = (object)wp;
+
+                //Array.Copy(buffer, 6, buffer, 0, buffer.Length - 6);
+
+                ByteArrayToStructure(temp, ref structtemp, 6);
+
+                wp = (__mavlink_waypoint_t)(structtemp);
+
+#endif
+                wps[wp.seq] = new PointLatLngAlt(wp.x, wp.y, wp.z, wp.seq.ToString());
+            }
         }
 
         byte[] readlogPacket()
