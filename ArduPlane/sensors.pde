@@ -31,16 +31,16 @@ static void init_barometer(void)
 
 		mavlink_delay(20);
 		if(flashcount == 5) {
-			digitalWrite(C_LED_PIN, LOW);
-			digitalWrite(A_LED_PIN, HIGH);
-			digitalWrite(B_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, LED_OFF);
+			digitalWrite(A_LED_PIN, LED_ON);
+			digitalWrite(B_LED_PIN, LED_OFF);
 		}
 
 		if(flashcount >= 10) {
 			flashcount = 0;
-			digitalWrite(C_LED_PIN, HIGH);
-			digitalWrite(A_LED_PIN, LOW);
-			digitalWrite(B_LED_PIN, HIGH);
+			digitalWrite(C_LED_PIN, LED_ON);
+			digitalWrite(A_LED_PIN, LED_OFF);
+			digitalWrite(B_LED_PIN, LED_ON);
 		}
 		flashcount++;
 	}

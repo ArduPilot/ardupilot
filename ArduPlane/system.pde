@@ -233,7 +233,7 @@ static void init_ardupilot()
 	//
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
+		digitalWrite(A_LED_PIN,LED_ON);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\n"
 							 "Entering interactive setup mode...\n"
 							 "\n"
@@ -474,9 +474,9 @@ static void startup_IMU_ground(void)
 
 #endif // HIL_MODE_ATTITUDE
 
-	digitalWrite(B_LED_PIN, HIGH);		// Set LED B high to indicate IMU ready
-	digitalWrite(A_LED_PIN, LOW);
-	digitalWrite(C_LED_PIN, LOW);
+	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate IMU ready
+	digitalWrite(A_LED_PIN, LED_OFF);
+	digitalWrite(C_LED_PIN, LED_OFF);
 }
 
 
@@ -486,23 +486,23 @@ static void update_GPS_light(void)
 	// ---------------------------------------------------------------------
 	switch (g_gps->status()) {
 		case(2):
-			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
+			digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix.
 			break;
 
 		case(1):
 			if (g_gps->valid_read == true){
 				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
 				if (GPS_light){
-					digitalWrite(C_LED_PIN, LOW);
+					digitalWrite(C_LED_PIN, LED_OFF);
 				} else {
-					digitalWrite(C_LED_PIN, HIGH);
+					digitalWrite(C_LED_PIN, LED_ON);
 				}
 				g_gps->valid_read = false;
 			}
 			break;
 
 		default:
-			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, LED_OFF);
 			break;
 	}
 }
