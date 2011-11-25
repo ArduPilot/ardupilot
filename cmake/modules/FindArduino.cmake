@@ -280,7 +280,10 @@ function(setup_arduino_core VAR_NAME BOARD_ID)
     if(BOARD_CORE AND NOT TARGET ${CORE_LIB_NAME})
         set(BOARD_CORE_PATH ${ARDUINO_CORES_PATH}/${BOARD_CORE})
         find_sources(CORE_SRCS ${BOARD_CORE_PATH} True)
-		list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
+
+        # Debian/Ubuntu fix
+        list(REMOVE_ITEM CORE_SRCS "${BOARD_CORE_PATH}/main.cxx")
+
         add_library(${CORE_LIB_NAME} ${CORE_SRCS})
         set(${VAR_NAME} ${CORE_LIB_NAME} PARENT_SCOPE)
     endif()
@@ -317,7 +320,7 @@ function(find_arduino_libraries VAR_NAME SRCS)
                 get_property(LIBRARY_SEARCH_PATH
                              DIRECTORY     # Property Scope
                              PROPERTY LINK_DIRECTORIES)
-						 foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+                foreach(LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
                     if(EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
                         list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
                         break()
@@ -340,23 +343,27 @@ endfunction()
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
-#		"LIB_NAME"_RECURSE controls if the library will recurse
-# 		when looking for source files
+#      ${LIB_NAME}_RECURSE controls if the library will recurse
+#      when looking for source files.
 #
 
 # For known libraries can list recurse here
 set(Wire_RECURSE True)
+set(Ethernet_RECURSE True)
 function(setup_arduino_library VAR_NAME BOARD_ID LIB_PATH)
     set(LIB_TARGETS)
+
     get_filename_component(LIB_NAME ${LIB_PATH} NAME)
     set(TARGET_LIB_NAME ${BOARD_ID}_${LIB_NAME})
     if(NOT TARGET ${TARGET_LIB_NAME})
-		string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
-		#message(STATUS "short name: ${LIB_SHORT_NAME} recures: ${${LIB_SHORT_NAME}_RECURSE}")
-		if (NOT DEFINED ${LIB_SHORT_NAME}_RECURSE)
-			set(${LIB_SHORT_NAME}_RECURSE False)
-		endif()
-		find_sources(LIB_SRCS ${LIB_PATH} ${${LIB_SHORT_NAME}_RECURSE})
+        string(REGEX REPLACE ".*/" "" LIB_SHORT_NAME ${LIB_NAME})
+
+        # Detect if recursion is needed
+        if (NOT DEFINED ${LIB_SHORT_NAME}_RECURSE)
+            set(${LIB_SHORT_NAME}_RECURSE False)
+        endif()
+
+        find_sources(LIB_SRCS ${LIB_PATH} ${${LIB_SHORT_NAME}_RECURSE})
         if(LIB_SRCS)
 
             message(STATUS "Generating Arduino ${LIB_NAME} library")
@@ -393,7 +400,7 @@ endfunction()
 #
 function(setup_arduino_libraries VAR_NAME BOARD_ID SRCS)
     set(LIB_TARGETS)
-    find_arduino_libraries(TARGET_LIBS ${SRCS})
+    find_arduino_libraries(TARGET_LIBS "${SRCS}")
     foreach(TARGET_LIB ${TARGET_LIBS})
         setup_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}) # Create static library instead of returning sources
         list(APPEND LIB_TARGETS ${LIB_DEPS})
@@ -443,16 +450,19 @@ function(setup_arduino_upload BOARD_ID TARGET_NAME PORT)
     if(DEFINED ${TARGET_NAME}_AFLAGS)
         set(AVRDUDE_FLAGS ${${TARGET_NAME}_AFLAGS})
     endif()
+    if (${${BOARD_ID}.upload.protocol} STREQUAL "stk500") 
+        set(${BOARD_ID}.upload.protocol "stk500v1")
+    endif()
     add_custom_target(${TARGET_NAME}-upload
-                     ${ARDUINO_AVRDUDE_PROGRAM} 
-                         -U flash:w:${TARGET_NAME}.hex
-                         ${AVRDUDE_FLAGS}
-                         -C ${ARDUINO_AVRDUDE_CONFIG_PATH}
-                         -p ${${BOARD_ID}.build.mcu}
-                         -c ${${BOARD_ID}.upload.protocol}
-                         -b ${${BOARD_ID}.upload.speed}
-                         -P ${PORT}
-                     DEPENDS ${TARGET_NAME})
+                     ${ARDUINO_AVRDUDE_PROGRAM}
+                        ${AVRDUDE_FLAGS}
+                         -C${ARDUINO_AVRDUDE_CONFIG_PATH}
+                         -p${${BOARD_ID}.build.mcu} 
+                         -c${${BOARD_ID}.upload.protocol} 
+                         -P${PORT} -b${${BOARD_ID}.upload.speed}
+                         #-D
+                         -Uflash:w:${CMAKE_BINARY_DIR}/${TARGET_NAME}.hex:i
+                         DEPENDS ${TARGET_NAME})
     if(NOT TARGET upload)
         add_custom_target(upload)
     endif()
@@ -468,20 +478,21 @@ endfunction()
 # Finds all C/C++ sources located at the specified path.
 #
 function(find_sources VAR_NAME LIB_PATH RECURSE)
-	set(FILE_SEARCH_LIST
-		${LIB_PATH}/*.cpp
-		${LIB_PATH}/*.c
-		${LIB_PATH}/*.cc
-		${LIB_PATH}/*.cxx
-		${LIB_PATH}/*.h
-		${LIB_PATH}/*.hh
-		${LIB_PATH}/*.hxx)
-	if (RECURSE)
-		file(GLOB_RECURSE LIB_FILES ${FILE_SEARCH_LIST})
-	else()
-		file(GLOB LIB_FILES ${FILE_SEARCH_LIST})
-	endif()
-	#message(STATUS "${LIB_PATH} recurse: ${RECURSE}")
+    set(FILE_SEARCH_LIST
+        ${LIB_PATH}/*.cpp
+        ${LIB_PATH}/*.c
+        ${LIB_PATH}/*.cc
+        ${LIB_PATH}/*.cxx
+        ${LIB_PATH}/*.h
+        ${LIB_PATH}/*.hh
+        ${LIB_PATH}/*.hxx)
+
+    if(RECURSE)
+        file(GLOB_RECURSE LIB_FILES ${FILE_SEARCH_LIST})
+    else()
+        file(GLOB LIB_FILES ${FILE_SEARCH_LIST})
+    endif()
+
     if(LIB_FILES)
         set(${VAR_NAME} ${LIB_FILES} PARENT_SCOPE)
     endif()
@@ -522,75 +533,79 @@ endfunction()
 
 
 # Setting up Arduino enviroment settings
-if(NOT ARDUINO_FOUND)
-    find_file(ARDUINO_CORES_PATH
-              NAMES cores
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_CORES_PATH
+    NAMES cores
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_LIBRARIES_PATH
-              NAMES libraries
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_LIBRARIES_PATH
+    NAMES libraries
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_BOARDS_PATH
-              NAMES boards.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_BOARDS_PATH
+    NAMES boards.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_PROGRAMMERS_PATH
-              NAMES programmers.txt
-              PATHS ${ARDUINO_SDK_PATH}
-              PATH_SUFFIXES hardware/arduino)
+find_file(ARDUINO_PROGRAMMERS_PATH
+    NAMES programmers.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/arduino
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_REVISIONS_PATH
-              NAMES revisions.txt
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_REVISIONS_PATH
+    NAMES revisions.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_file(ARDUINO_VERSION_PATH
-              NAMES lib/version.txt
-              PATHS ${ARDUINO_SDK_PATH})
+find_file(ARDUINO_VERSION_PATH
+    NAMES lib/version.txt
+    PATHS ${ARDUINO_SDK_PATH}
+    NO_DEFAULT_PATH) 
 
-    find_program(ARDUINO_AVRDUDE_PROGRAM
-                 NAMES avrdude
-                 PATHS ${ARDUINO_SDK_PATH}
-                 PATH_SUFFIXES hardware/tools)
+find_program(ARDUINO_AVRDUDE_PROGRAM
+    NAMES avrdude
+    PATHS ${ARDUINO_SDK_PATH}
+    PATH_SUFFIXES hardware/tools
+    NO_DEFAULT_PATH) 
 
-    find_program(ARDUINO_AVRDUDE_CONFIG_PATH
-                 NAMES avrdude.conf
-                 PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
-                 PATH_SUFFIXES hardware/tools
-                               hardware/tools/avr/etc)
+find_file(ARDUINO_AVRDUDE_CONFIG_PATH
+    NAMES avrdude.conf
+    PATHS ${ARDUINO_SDK_PATH} /etc/avrdude
+    PATH_SUFFIXES hardware/tools
+                  hardware/tools/avr/etc
+    NO_DEFAULT_PATH)
 
-     set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
-         CACHE STRING "")
-     set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
-         CACHE STRING "")
-     set(ARDUINO_AVRDUDE_FLAGS -V -F
-         CACHE STRING "Arvdude global flag list.")
+set(ARDUINO_OBJCOPY_EEP_FLAGS -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0
+    CACHE STRING "")
+set(ARDUINO_OBJCOPY_HEX_FLAGS -O ihex -R .eeprom
+    CACHE STRING "")
+set(ARDUINO_AVRDUDE_FLAGS -V -F
+    CACHE STRING "Arvdude global flag list.")
 
-     if(ARDUINO_SDK_PATH)
-         detect_arduino_version(ARDUINO_SDK_VERSION)
-         set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
-     endif(ARDUINO_SDK_PATH)
+if(ARDUINO_SDK_PATH)
+    detect_arduino_version(ARDUINO_SDK_VERSION)
+    set(ARDUINO_SDK_VERSION ${ARDUINO_SDK_VERSION} CACHE STRING "Arduino SDK Version")
+endif(ARDUINO_SDK_PATH)
 
-    include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(Arduino
-                                      REQUIRED_VARS ARDUINO_SDK_PATH
-                                                    ARDUINO_SDK_VERSION
-                                      VERSION_VAR ARDUINO_SDK_VERSION)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Arduino
+                                  REQUIRED_VARS ARDUINO_SDK_PATH
+                                                ARDUINO_SDK_VERSION
+                                  VERSION_VAR ARDUINO_SDK_VERSION)
 
 
-     mark_as_advanced(ARDUINO_CORES_PATH
-                      ARDUINO_SDK_VERSION
-                      ARDUINO_LIBRARIES_PATH
-                      ARDUINO_BOARDS_PATH
-                      ARDUINO_PROGRAMMERS_PATH
-                      ARDUINO_REVISIONS_PATH
-                      ARDUINO_AVRDUDE_PROGRAM
-                      ARDUINO_AVRDUDE_CONFIG_PATH
-                      ARDUINO_OBJCOPY_EEP_FLAGS
-                      ARDUINO_OBJCOPY_HEX_FLAGS)
-    load_board_settings()
-
-endif()
-
+mark_as_advanced(ARDUINO_CORES_PATH
+    ARDUINO_SDK_VERSION
+    ARDUINO_LIBRARIES_PATH
+    ARDUINO_BOARDS_PATH
+    ARDUINO_PROGRAMMERS_PATH
+    ARDUINO_REVISIONS_PATH
+    ARDUINO_AVRDUDE_PROGRAM
+    ARDUINO_AVRDUDE_CONFIG_PATH
+    ARDUINO_OBJCOPY_EEP_FLAGS
+    ARDUINO_OBJCOPY_HEX_FLAGS)
+load_board_settings()

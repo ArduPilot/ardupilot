@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
-// ArduPPM Version v0.9.86
+// ArduPPM Version v0.9.87
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // ARDUCOPTER 2 : PPM ENCODER for AT Mega 328p and APM v1.4 Boards
 // By:John Arne Birkeland - 2011
@@ -34,6 +34,7 @@
 //	0.9.84 : Corrected pin and port names in Encoder-PPM.c according to #define for Mega32U2 compatibility
 //	0.9.85 : Added brownout reset detection flag
 //	0.9.86 : Added a #define to disable Radio Passthrough mode (hardware failsafe for Arduplane)
+//	0.9.87 : #define correction for radio passthrough (was screwed up).
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
 // PREPROCESSOR DIRECTIVES
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -46,7 +47,7 @@
 #define ERROR_DETECTION_WINDOW	3000 * LOOP_TIMER_10MS			// Detection window for error detection (default to 30s)
 #define	ERROR_CONDITION_DELAY	500 * LOOP_TIMER_10MS			// Servo error condition LED delay (LED blinking duration)
 
-#define PASSTHROUGH_MODE		ENABLED	// Set it to "DISABLED" to remove radio passthrough mode (hardware failsafe for Arduplane)
+#define PASSTHROUGH_MODE_ENABLED	// Comment this line to remove CH8 radio passthrough mode support (hardware failsafe for Arduplane)
 #define PASSTHROUGH_CHANNEL		8 * 2	// Channel for passthrough mode selection
 #define PASSTHROUGH_CHANNEL_OFF_US		ONE_US * 1600 - PPM_PRE_PULSE	// Passthrough off threshold
 #define PASSTHROUGH_CHANNEL_ON_US		ONE_US * 1800 - PPM_PRE_PULSE	// Passthrough on threshold
@@ -97,7 +98,7 @@ int main(void)
 	static uint16_t servo_error_condition_timer=0; 		// Servo error condition timer
 	static uint16_t blink_led_timer = 0; 		// Blink led timer
 	
-	#if PASSTHROUGH_MODE ==	ENABLED
+	#ifdef PASSTHROUGH_MODE_ENABLED
 	static uint8_t mux_timer = 0;				// Mux timer
 	static uint8_t mux_counter = 0;				// Mux counter
 	static int8_t mux_check = 0;
@@ -314,7 +315,7 @@ int main(void)
 	PWM_LOOP: // SERVO_PWM_MODE
 	while( 1 )
 	{
-		#if PASSTHROUGH_MODE ==	ENABLED
+		#ifdef PASSTHROUGH_MODE_ENABLED
 		// ------------------------------------------------------------------------------
 		// Radio passthrough control (mux chip A/B control)
 		// ------------------------------------------------------------------------------
