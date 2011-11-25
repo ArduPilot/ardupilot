@@ -99,7 +99,7 @@ print_log_menu(void)
 static int8_t
 dump_log(uint8_t argc, const Menu::arg *argv)
 {
-	byte dump_log;
+	int dump_log;
 	int dump_log_start;
 	int dump_log_end;
 	byte last_log_num;
