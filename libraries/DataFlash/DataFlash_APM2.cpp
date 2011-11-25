@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-	DataFlash_Purple.cpp - DataFlash log library for AT45DB321D
+	DataFlash_APM2.cpp - DataFlash log library for AT45DB321D
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
 	This code works only on ATMega2560. It uses Serial port 3 in SPI MSPI mdoe.
 
@@ -39,7 +39,7 @@ extern "C" {
   #include "WConstants.h"
 }
 
-#include "DataFlash_Purple.h"
+#include "DataFlash_APM2.h"
 
 // DataFlash is connected to Serial Port 3 (we will use SPI mode)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -79,7 +79,7 @@ extern "C" {
 #define OVERWRITE_DATA 0 // 0: When reach the end page stop, 1: Start overwritten from page 1
 
 // *** INTERNAL FUNCTIONS ***
-unsigned char DataFlash_Purple::SPI_transfer(unsigned char data)
+unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
 {
 	/* Wait for empty transmit buffer */
 	while ( !( UCSR3A & (1<<UDRE3)) );
@@ -91,23 +91,23 @@ unsigned char DataFlash_Purple::SPI_transfer(unsigned char data)
 	return UDR3;
 }
 
-void DataFlash_Purple::CS_inactive()
+void DataFlash_APM2::CS_inactive()
 {
   digitalWrite(DF_SLAVESELECT,HIGH); //disable device
 }
 
-void DataFlash_Purple::CS_active()
+void DataFlash_APM2::CS_active()
 {
   digitalWrite(DF_SLAVESELECT,LOW); //enable device
 }
 
 // Constructors ////////////////////////////////////////////////////////////////
-DataFlash_Purple::DataFlash_Purple()
+DataFlash_APM2::DataFlash_APM2()
 {
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_Purple::Init(void)
+void DataFlash_APM2::Init(void)
 {
   pinMode(DF_DATAOUT, OUTPUT);
   pinMode(DF_DATAIN, INPUT);
@@ -139,7 +139,7 @@ void DataFlash_Purple::Init(void)
 }
 
 // This function is mainly to test the device
-void DataFlash_Purple::ReadManufacturerID()
+void DataFlash_APM2::ReadManufacturerID()
 {
   CS_inactive();    // Reset dataflash command decoder
   CS_active();
@@ -154,13 +154,13 @@ void DataFlash_Purple::ReadManufacturerID()
 }
 
 // This function return 1 if Card is inserted on SD slot
-bool DataFlash_Purple::CardInserted()
+bool DataFlash_APM2::CardInserted()
 {
     return (digitalRead(DF_CARDDETECT) != 0);
 }
 
 // Read the status register
-byte DataFlash_Purple::ReadStatusReg()
+byte DataFlash_APM2::ReadStatusReg()
 {
   CS_inactive();    // Reset dataflash command decoder
   CS_active();
@@ -172,26 +172,26 @@ byte DataFlash_Purple::ReadStatusReg()
 
 // Read the status of the DataFlash
 inline
-byte DataFlash_Purple::ReadStatus()
+byte DataFlash_APM2::ReadStatus()
 {
   return(ReadStatusReg()&0x80);  // We only want to extract the READY/BUSY bit
 }
 
 
 inline
-uint16_t DataFlash_Purple::PageSize()
+uint16_t DataFlash_APM2::PageSize()
 {
   return(528-((ReadStatusReg()&0x01)<<4));  // if first bit 1 trhen 512 else 528 bytes
 }
 
 
 // Wait until DataFlash is in ready state...
-void DataFlash_Purple::WaitReady()
+void DataFlash_APM2::WaitReady()
 {
   while(!ReadStatus());
 }
 
-void DataFlash_Purple::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
+void DataFlash_APM2::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
 {
   CS_inactive();
   CS_active();
@@ -215,7 +215,7 @@ void DataFlash_Purple::PageToBuffer(unsigned char BufferNum, uint16_t PageAdr)
   while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
 }
 
-void DataFlash_Purple::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
+void DataFlash_APM2::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, unsigned char wait)
 {
   CS_inactive();     // Reset dataflash command decoder
   CS_active();
@@ -242,7 +242,7 @@ void DataFlash_Purple::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, 
 	while(!ReadStatus());  //monitor the status register, wait until busy-flag is high
 }
 
-void DataFlash_Purple::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
+void DataFlash_APM2::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)
 {
   CS_inactive();   // Reset dataflash command decoder
   CS_active();
@@ -257,7 +257,7 @@ void DataFlash_Purple::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr
   SPI_transfer(Data);				 //write data byte
 }
 
-unsigned char DataFlash_Purple::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
+unsigned char DataFlash_APM2::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
 {
   byte tmp;
 
@@ -278,7 +278,7 @@ unsigned char DataFlash_Purple::BufferRead (unsigned char BufferNum, uint16_t In
 }
 // *** END OF INTERNAL FUNCTIONS ***
 
-void DataFlash_Purple::PageErase (uint16_t PageAdr)
+void DataFlash_APM2::PageErase (uint16_t PageAdr)
 {
   CS_inactive();																//make sure to toggle CS signal in order
   CS_active();																//to reset Dataflash command decoder
@@ -299,7 +299,7 @@ void DataFlash_Purple::PageErase (uint16_t PageAdr)
 }
 
 
-void DataFlash_Purple::ChipErase ()
+void DataFlash_APM2::ChipErase ()
 {
   CS_inactive();																//make sure to toggle CS signal in order
   CS_active();																//to reset Dataflash command decoder
@@ -315,7 +315,7 @@ void DataFlash_Purple::ChipErase ()
 }
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
-void DataFlash_Purple::StartWrite(int16_t PageAdr)
+void DataFlash_APM2::StartWrite(int16_t PageAdr)
 {
   df_BufferNum=1;
   df_BufferIdx=4;
@@ -330,7 +330,7 @@ void DataFlash_Purple::StartWrite(int16_t PageAdr)
   BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
 }
 
-void DataFlash_Purple::FinishWrite(void)
+void DataFlash_APM2::FinishWrite(void)
 {
 	df_BufferIdx=0;
 	BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
@@ -353,7 +353,7 @@ void DataFlash_Purple::FinishWrite(void)
 }
 
 
-void DataFlash_Purple::WriteByte(byte data)
+void DataFlash_APM2::WriteByte(byte data)
 {
   if (!df_Stop_Write)
     {
@@ -389,13 +389,13 @@ void DataFlash_Purple::WriteByte(byte data)
     }
 }
 
-void DataFlash_Purple::WriteInt(int16_t data)
+void DataFlash_APM2::WriteInt(int16_t data)
 {
   WriteByte(data>>8);   // High byte
   WriteByte(data&0xFF); // Low byte
 }
 
-void DataFlash_Purple::WriteLong(int32_t data)
+void DataFlash_APM2::WriteLong(int32_t data)
 {
   WriteByte(data>>24);   // First byte
   WriteByte(data>>16);
@@ -404,18 +404,18 @@ void DataFlash_Purple::WriteLong(int32_t data)
 }
 
 // Get the last page written to
-int16_t DataFlash_Purple::GetWritePage()
+int16_t DataFlash_APM2::GetWritePage()
 {
   return(df_PageAdr);
 }
 
 // Get the last page read
-int16_t DataFlash_Purple::GetPage()
+int16_t DataFlash_APM2::GetPage()
 {
   return(df_Read_PageAdr-1);
 }
 
-void DataFlash_Purple::StartRead(int16_t PageAdr)
+void DataFlash_APM2::StartRead(int16_t PageAdr)
 {
   df_Read_BufferNum=1;
   df_Read_BufferIdx=4;
@@ -431,7 +431,7 @@ void DataFlash_Purple::StartRead(int16_t PageAdr)
   df_FilePage = (df_FilePage<<8) | BufferRead(df_Read_BufferNum,3); // Low byte
 }
 
-byte DataFlash_Purple::ReadByte()
+byte DataFlash_APM2::ReadByte()
 {
   byte result;
 
@@ -458,7 +458,7 @@ byte DataFlash_Purple::ReadByte()
   return result;
 }
 
-int16_t DataFlash_Purple::ReadInt()
+int16_t DataFlash_APM2::ReadInt()
 {
   uint16_t result;
 
@@ -467,7 +467,7 @@ int16_t DataFlash_Purple::ReadInt()
   return (int16_t)result;
 }
 
-int32_t DataFlash_Purple::ReadLong()
+int32_t DataFlash_APM2::ReadLong()
 {
   uint32_t result;
 
@@ -478,18 +478,18 @@ int32_t DataFlash_Purple::ReadLong()
   return (int32_t)result;
 }
 
-void DataFlash_Purple::SetFileNumber(uint16_t FileNumber)
+void DataFlash_APM2::SetFileNumber(uint16_t FileNumber)
 {
 	df_FileNumber = FileNumber;
 	df_FilePage = 1;
 }
 
-uint16_t DataFlash_Purple::GetFileNumber()
+uint16_t DataFlash_APM2::GetFileNumber()
 {
 	return df_FileNumber;
 }
 
-uint16_t DataFlash_Purple::GetFilePage()
+uint16_t DataFlash_APM2::GetFilePage()
 {
 	return df_FilePage;
 }

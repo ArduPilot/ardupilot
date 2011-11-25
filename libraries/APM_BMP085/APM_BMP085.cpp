@@ -52,20 +52,20 @@ extern "C" {
 //{
 //}
 
-// the purple hardware needs to check the state of the
+// the apm2 hardware needs to check the state of the
 // chip using a direct IO port
-// On Purple prerelease hw, the data ready port is hooked up to PE7, which
+// On APM2 prerelease hw, the data ready port is hooked up to PE7, which
 // is not available to the arduino digitalRead function.
-#define BMP_DATA_READY() (_purple_hardware?(PINE&0x80):digitalRead(BMP085_EOC))
+#define BMP_DATA_READY() (_apm2_hardware?(PINE&0x80):digitalRead(BMP085_EOC))
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool APM_BMP085_Class::Init(int initialiseWireLib, bool purple_hardware)
+bool APM_BMP085_Class::Init(int initialiseWireLib, bool apm2_hardware)
 {
 	byte buff[22];
 	int i = 0;
 
-	_purple_hardware = purple_hardware;
+	_apm2_hardware = apm2_hardware;
 
 	pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
 

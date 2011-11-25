@@ -46,6 +46,6 @@ class APM_RC_Class
 };
 
 #include "APM_RC_APM1.h"
-#include "APM_RC_Purple.h"
+#include "APM_RC_APM2.h"
 
 #endif

@@ -1,5 +1,5 @@
 /*
-	APM_RC_Purple.cpp - Radio Control Library for Ardupilot Mega 2.0. Arduino
+	APM_RC_APM2.cpp - Radio Control Library for Ardupilot Mega 2.0. Arduino
 	Code by Jordi Muñoz and Jose Julio. DIYDrones.com
 
 	This library is free software; you can redistribute it and/or
@@ -18,7 +18,7 @@
 		             Automatically resets when we call InputCh to read channels
 
 */
-#include "APM_RC_Purple.h"
+#include "APM_RC_APM2.h"
 
 #include "WProgram.h"
 
@@ -27,13 +27,13 @@
 #else
 
 // Variable definition for Input Capture interrupt
-volatile uint16_t APM_RC_Purple::_PWM_RAW[NUM_CHANNELS] = {2400,2400,2400,2400,2400,2400,2400,2400};
-volatile uint8_t APM_RC_Purple::_radio_status=0;
+volatile uint16_t APM_RC_APM2::_PWM_RAW[NUM_CHANNELS] = {2400,2400,2400,2400,2400,2400,2400,2400};
+volatile uint8_t APM_RC_APM2::_radio_status=0;
 
 /****************************************************
    Input Capture Interrupt ICP5 => PPM signal read
  ****************************************************/
-void APM_RC_Purple::_timer5_capt_cb(void)
+void APM_RC_APM2::_timer5_capt_cb(void)
 {
   static uint16_t prev_icr;
   static uint8_t frame_idx;
@@ -68,12 +68,12 @@ void APM_RC_Purple::_timer5_capt_cb(void)
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-APM_RC_Purple::APM_RC_Purple()
+APM_RC_APM2::APM_RC_APM2()
 {
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_RC_Purple::Init( Arduino_Mega_ISR_Registry * isr_reg )
+void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
 {
   // --------------------- TIMER1: OUT1 and OUT2 -----------------------
   pinMode(12,OUTPUT); // OUT1 (PB6/OC1B)
@@ -147,7 +147,7 @@ void APM_RC_Purple::Init( Arduino_Mega_ISR_Registry * isr_reg )
   TIMSK5 |= (1<<ICIE5);
 }
 
-void APM_RC_Purple::OutputCh(unsigned char ch, uint16_t pwm)
+void APM_RC_APM2::OutputCh(unsigned char ch, uint16_t pwm)
 {
   pwm=constrain(pwm,MIN_PULSEWIDTH,MAX_PULSEWIDTH);
   pwm<<=1;   // pwm*2;
@@ -165,7 +165,7 @@ void APM_RC_Purple::OutputCh(unsigned char ch, uint16_t pwm)
   }
 }
 
-uint16_t APM_RC_Purple::InputCh(unsigned char ch)
+uint16_t APM_RC_APM2::InputCh(unsigned char ch)
 {
   uint16_t result;
   uint16_t result2;
@@ -187,24 +187,24 @@ uint16_t APM_RC_Purple::InputCh(unsigned char ch)
   return(result);
 }
 
-unsigned char APM_RC_Purple::GetState(void)
+unsigned char APM_RC_APM2::GetState(void)
 {
   return(_radio_status);
 }
 
 // InstantPWM is not implemented!
 
-void APM_RC_Purple::Force_Out(void) { }
-void APM_RC_Purple::Force_Out0_Out1(void) { }
-void APM_RC_Purple::Force_Out2_Out3(void) { }
-void APM_RC_Purple::Force_Out6_Out7(void) { }
+void APM_RC_APM2::Force_Out(void) { }
+void APM_RC_APM2::Force_Out0_Out1(void) { }
+void APM_RC_APM2::Force_Out2_Out3(void) { }
+void APM_RC_APM2::Force_Out6_Out7(void) { }
 
 /* ---------------- OUTPUT SPEED CONTROL ------------------ */
 // Output rate options:
 #define OUTPUT_SPEED_50HZ 0
 #define OUTPUT_SPEED_200HZ 1
 
-void APM_RC_Purple::SetFastOutputChannels(uint32_t chmask)
+void APM_RC_APM2::SetFastOutputChannels(uint32_t chmask)
 {
     if ((chmask & ( MSK_CH_1 | MSK_CH_2 )) != 0)
         _set_speed_ch1_ch2(OUTPUT_SPEED_200HZ);
@@ -216,7 +216,7 @@ void APM_RC_Purple::SetFastOutputChannels(uint32_t chmask)
         _set_speed_ch6_ch7_ch8(OUTPUT_SPEED_200HZ);
 }
 
-void APM_RC_Purple::_set_speed_ch1_ch2(uint8_t speed)
+void APM_RC_APM2::_set_speed_ch1_ch2(uint8_t speed)
 {
   switch(speed) {
   case OUTPUT_SPEED_200HZ:
@@ -229,7 +229,7 @@ void APM_RC_Purple::_set_speed_ch1_ch2(uint8_t speed)
   }
 }
 
-void APM_RC_Purple::_set_speed_ch3_ch4_ch5(uint8_t speed)
+void APM_RC_APM2::_set_speed_ch3_ch4_ch5(uint8_t speed)
 {
   switch(speed) {
   case OUTPUT_SPEED_200HZ:
@@ -243,7 +243,7 @@ void APM_RC_Purple::_set_speed_ch3_ch4_ch5(uint8_t speed)
 
 }
 
-void APM_RC_Purple::_set_speed_ch6_ch7_ch8(uint8_t speed)
+void APM_RC_APM2::_set_speed_ch6_ch7_ch8(uint8_t speed)
 {
   switch(speed) {
   case OUTPUT_SPEED_200HZ:
@@ -260,7 +260,7 @@ void APM_RC_Purple::_set_speed_ch6_ch7_ch8(uint8_t speed)
 // allow HIL override of RC values
 // A value of -1 means no change
 // A value of 0 means no override, use the real RC values
-bool APM_RC_Purple::setHIL(int16_t v[NUM_CHANNELS])
+bool APM_RC_APM2::setHIL(int16_t v[NUM_CHANNELS])
 {
 	uint8_t sum = 0;
 	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
@@ -279,7 +279,7 @@ bool APM_RC_Purple::setHIL(int16_t v[NUM_CHANNELS])
 	_radio_status = 1;
 }
 
-void APM_RC_Purple::clearOverride(void)
+void APM_RC_APM2::clearOverride(void)
 {
 	for (unsigned char i=0; i<NUM_CHANNELS; i++) {
 		_HIL_override[i] = 0;

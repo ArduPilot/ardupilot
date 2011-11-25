@@ -1,12 +1,12 @@
 /* ************************************************************ */
-/* DataFlash_Purple Log library                                 */
+/* DataFlash_APM2 Log library                                 */
 /* ************************************************************ */
-#ifndef __DATAFLASH_PURPLE_H__
-#define __DATAFLASH_PURPLE_H__
+#ifndef __DATAFLASH_APM2_H__
+#define __DATAFLASH_APM2_H__
 
 #include "DataFlash.h"
 
-class DataFlash_Purple : public DataFlash_Class
+class DataFlash_APM2 : public DataFlash_Class
 {
   private:
 	// DataFlash Log variables...
@@ -43,7 +43,7 @@ class DataFlash_Purple : public DataFlash_Class
 	unsigned char df_device_1;
 	uint16_t df_PageSize;
 
-	DataFlash_Purple(); // Constructor
+	DataFlash_APM2(); // Constructor
 	void Init();
 	void ReadManufacturerID();
 	bool CardInserted();

@@ -1,5 +1,5 @@
-#ifndef __APM_RC_PURPLE_H__
-#define __APM_RC_PURPLE_H__
+#ifndef __APM_RC_APM2_H__
+#define __APM_RC_APM2_H__
 
 #define NUM_CHANNELS 8
 #define MIN_PULSEWIDTH 900
@@ -8,11 +8,11 @@
 #include "APM_RC.h"
 #include "../Arduino_Mega_ISR_Registry/Arduino_Mega_ISR_Registry.h"
 
-class APM_RC_Purple : public APM_RC_Class
+class APM_RC_APM2 : public APM_RC_Class
 {
   private:
   public:
-	APM_RC_Purple();
+	APM_RC_APM2();
 	void Init( Arduino_Mega_ISR_Registry * isr_reg );
 	void OutputCh(unsigned char ch, uint16_t pwm);
 	uint16_t InputCh(unsigned char ch);
