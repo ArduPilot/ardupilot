@@ -37,7 +37,6 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
     _controller(controller), _hal(hal),
     callbackCalls(0) {
 
-    hal->setState(MAV_STATE_BOOT);
     hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
     hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
 
@@ -50,7 +49,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
     /*
      * Calibration
      */
-    hal->setState(MAV_STATE_CALIBRATING);
+    controller->setState(MAV_STATE_CALIBRATING);
     hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
     hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
 
@@ -110,6 +109,8 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
                           AP_MavlinkCommand::home.getLon()*rad2Deg,
                           AP_MavlinkCommand::home.getCommand());
     guide->setCurrentIndex(0);
+    controller->setMode(MAV_MODE_LOCKED);
+    controller->setState(MAV_STATE_STANDBY);
 
     /*
      * Attach loops, stacking for priority
@@ -122,7 +123,6 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 
     hal->debug->println_P(PSTR("running"));
     hal->gcs->sendText(SEVERITY_LOW, PSTR("running"));
-    hal->setState(MAV_STATE_STANDBY);
 }
 
 void AP_Autopilot::callback(void * data) {
@@ -232,6 +232,7 @@ void AP_Autopilot::callback2(void * data) {
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
         //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
+        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_LOCAL_POSITION);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
     }
 
