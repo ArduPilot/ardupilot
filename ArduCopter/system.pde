@@ -56,7 +56,7 @@ static void run_cli(void)
 static void init_ardupilot()
 {
 #if USB_MUX_PIN > 0
-    // on the purple board we have a mux thet switches UART0 between
+    // on the APM2 board we have a mux thet switches UART0 between
     // USB and the board header. If the right ArduPPM firmware is
     // installed we can detect if USB is connected using the
     // USB_MUX_PIN
@@ -235,7 +235,7 @@ static void init_ardupilot()
         adc.Init(&timer_scheduler);       // APM ADC library initialization
 #endif // CONFIG_ADC
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_PURPLE
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
         barometer.Init(1, true);
 #else
         barometer.Init(1, false);

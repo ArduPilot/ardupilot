@@ -354,6 +354,6 @@ enum gcs_severity {
 
 // APM Hardware selection
 #define APM_HARDWARE_APM1 1
-#define APM_HARDWARE_PURPLE 2
+#define APM_HARDWARE_APM2 2
 
 #endif // _DEFINES_H
