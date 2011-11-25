@@ -11,6 +11,7 @@
 #include "AP_Autopilot.h"
 #include "AP_Guide.h"
 #include "AP_Controller.h"
+#include "AP_ControllerBlock.h"
 #include "AP_HardwareAbstractionLayer.h"
 #include "AP_MavlinkCommand.h"
 #include "AP_Navigator.h"

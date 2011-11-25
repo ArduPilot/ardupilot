@@ -18,8 +18,8 @@ AP_Guide::AP_Guide(AP_Navigator * navigator, AP_HardwareAbstractionLayer * hal) 
     _navigator(navigator), _hal(hal), _command(AP_MavlinkCommand::home),
     _previousCommand(AP_MavlinkCommand::home),
     _headingCommand(0), _airSpeedCommand(0),
-    _groundSpeedCommand(0), _altitudeCommand(0), _pNCmd(0),
-    _pECmd(0), _pDCmd(0), _mode(MAV_NAV_LOST),
+    _groundSpeedCommand(0), _altitudeCommand(0),
+    _mode(MAV_NAV_LOST),
     _numberOfCommands(1), _cmdIndex(0), _nextCommandCalls(0),
     _nextCommandTimer(0) {
 }
@@ -42,6 +42,11 @@ float AP_Guide::getHeadingError() {
     return headingError;
 }
 
+float AP_Guide::getDistanceToNextWaypoint() {
+    return _command.distanceTo(_navigator->getLat_degInt(),
+        _navigator->getLon_degInt());
+}
+
 MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
                            AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
     AP_Guide(navigator, hal),
@@ -54,6 +59,16 @@ MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
 void MavlinkGuide::update() {
     // process mavlink commands
     handleCommand();
+}
+
+float MavlinkGuide::getPNError() {
+    return -_command.getPN(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+}
+float MavlinkGuide::getPEError() {
+    return -_command.getPE(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+}
+float MavlinkGuide::getPDError() {
+    return -_command.getPD(_navigator->getAlt_intM());
 }
 
 void MavlinkGuide::nextCommand() {
@@ -141,12 +156,9 @@ void MavlinkGuide::handleCommand() {
             return;
         }
 
-        float distanceToNext = _command.distanceTo(
-                                   _navigator->getLat_degInt(), _navigator->getLon_degInt());
-
         // check if we are at waypoint or if command
         // radius is zero within tolerance
-        if (distanceToNext < _command.getRadius() | distanceToNext < 1e-5) {
+        if ( (getDistanceToNextWaypoint() < _command.getRadius()) | (getDistanceToNextWaypoint() < 1e-5) ) {
             _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (distance)"));
             _hal->debug->printf_P(PSTR("waypoint reached (distance)"));
             nextCommand();
@@ -209,17 +221,10 @@ void MavlinkGuide::handleCommand() {
 
     _groundSpeedCommand = _velocityCommand;
 
-    // calculate pN,pE,pD from home and gps coordinates
-    _pNCmd = _command.getPN(_navigator->getLat_degInt(),
-                            _navigator->getLon_degInt());
-    _pECmd = _command.getPE(_navigator->getLat_degInt(),
-                            _navigator->getLon_degInt());
-    _pDCmd = _command.getPD(_navigator->getAlt_intM());
-
     // debug
-    _hal->debug->printf_P(
-        PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
-        getNumberOfCommands(), getCurrentIndex(), getPreviousIndex());
+    //_hal->debug->printf_P(
+        //PSTR("guide loop, number: %d, current index: %d, previous index: %d\n"),
+        //getNumberOfCommands(), getCurrentIndex(), getPreviousIndex());
 }
 
 } // namespace apo

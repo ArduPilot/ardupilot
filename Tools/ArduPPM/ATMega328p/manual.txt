@@ -1,7 +1,8 @@
 
-Arducoder is the new 8 channels ppm encoder code for ArduPilot Mega / Arducopter boards.
 
-It is compatible with APM v1.x board (ATMEGA 328p), Phonedrone and futur boards using ATmega32u2
+ArduPPM is a new 8 channels ppm encoder firmware.
+
+It is compatible with APM v1.x board (ATMEGA 328p), Phonedrone (using ATmega32u2) and futur boards.
 
 Emphasis has been put on code simplicity and reliability.
 
@@ -13,18 +14,19 @@ Emphasis has been put on code simplicity and reliability.
 --------------------------------------------------------------------------------------------------
 
 --------------------------------------------------
-	Warning - Warning - Warning - Warning
+	Warning
 --------------------------------------------------
 
 
-Code has not yet been extensively tested in the field.
+Code has not yet been massively tested in the field.
 
-Nevertheless extensive tests have been done in the lab with a limited set of different receivers.
+Nevertheless extensive tests have been done in the lab with a limited set of different receivers, and a limited number of users did report very sucessfull results.
+
 
 Carefully check that your radio is working perfectly before you fly.
 
 
-If you see the blue status LED blinking blinking very fast, this is an indication that something is wrong in the decoding.
+If you see the blue status LED blinking very fast very often, this is an indication that something is wrong in the decoding. Rare decoding errors do not hurt.
 
 
 If you have problems, please report the problem and what brand/modell receiver you are using.
@@ -44,10 +46,12 @@ Blue status LED is used for status reports :
 
 
 ------------------------------------------
-	Passthrough mode (mux)
+	Radio Passthrough mode (mux) 
 ------------------------------------------
 
-Passthrough mode is trigged by channel 8 > 1800 us.
+This mode is described as hardware failsafe in Arduplane terminology.
+
+Radio Passthrough mode is trigged by channel 8 > 1800 us. 
 
 Blue status LED has different behavior in passthrough mode :
 
@@ -64,7 +68,9 @@ If all contact with the receiver is lost, an internal failsafe is trigged after 
 
 Default failsafe values are :
 
-Throttle channel low (channel 3 = 1000 us)
+Throttle channel low (channel 3 = 900 us)
+
+Mode Channel set to flight mode 4 (channel 5 = 1555 us)
 
 All other channels set to midstick (1500 us)
 

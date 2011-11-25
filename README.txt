@@ -14,9 +14,17 @@ Building using cmake
 -----------------------------------------------
  - mkdir build
  - cd build
- - cmake ..
+ - cmake .. -DBOARD=mega -PORT=/dev/ttyUSB0
+    You can select from mega/mega2560.
+    If you have arduino installed in a non-standard location you by specify it by using:
+        -DARDUINO_SDK_PATH=/path/to/arduino ..
  - make (will build every sketch)
  - make ArduPlane (will build just ArduPlane etc.)
+ - make ArduPloat-upload (will upload the sketch)
+
+    If you have a sync error during upload reset the board/power cycle the board
+    before the upload starts.
+
  
 Building using eclipse
 -----------------------------------------------
@@ -36,9 +44,13 @@ Building using eclipse
         Note: Unix can be substituted for MinGW/ MSYS/ NMake (for windows)
             (see http://www.vtk.org/Wiki/Eclipse_CDT4_Generator)
 
-        PORT is the port for uploading to the board, COM0 etc on windows.
-        BOARD is your board type, mega for the 1280 or mega2560 for the 2560 boards.
-    
+        input options:
+
+            CMAKE_BUILD_TYPE choose from DEBUG, RELEASE etc.
+            PORT is the port for uploading to the board, COM0 etc on windows. /dev/ttyUSB0 etc. on linux
+            BOARD is your board type, mega for the 1280 or mega2560 for the 2560 boards.
+            ARDUINO_SDK_PATH if it is not in default path can specify as /path/to/arduino
+        
     Importing the Eclipse Build Project:
 
         Import project using Menu File->Import
