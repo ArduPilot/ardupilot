@@ -36,6 +36,9 @@ struct ADC_UDR2 {
 		case 0xB7: next_value = channels[6]; break;
 		case 0xF7: next_value = channels[7]; break;
 		}
+		if (cmd != 0) {
+			idx = 1;
+		}
 		return *this;
 	}
 
@@ -43,13 +46,15 @@ struct ADC_UDR2 {
 	  read from UDR2 fetches a byte from the channel
 	 */
 	operator int() {
-		switch (idx) {
-		case 0: idx++; return(value>>8);
-		case 1: idx++; return(value&0xFF);
+		uint8_t ret;
+		if (idx & 1) {
+			ret = (value&0xFF);
+			value = next_value;
+		} else {
+			ret = (value>>8);
 		}
-		value = next_value;
-		idx=0;
-		return(value>>8);
+		idx ^= 1;
+		return ret;
 	}
 
 	/*
