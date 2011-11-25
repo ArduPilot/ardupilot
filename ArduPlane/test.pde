@@ -25,7 +25,7 @@ static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
 #endif
 
@@ -44,7 +44,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 	{"modeswitch",	test_modeswitch},
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 	{"dipswitches",	test_dipswitches},
 #endif
 
@@ -410,7 +410,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-#if CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 static int8_t
 test_dipswitches(uint8_t argc, const Menu::arg *argv)
 {
@@ -441,7 +441,7 @@ test_dipswitches(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-#endif // CONFIG_APM_HARDWARE != APM_HARDWARE_PURPLE
+#endif // CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 
 
 //-------------------------------------------------------------------------------------------
