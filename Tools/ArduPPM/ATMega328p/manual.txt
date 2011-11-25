@@ -1,5 +1,6 @@
 
-Arducoder is the new 8 channels ppm encoder code for ArduPilot Mega / Arducopter boards.
+
+ArduPPM is a new 8 channels ppm encoder firmware.
 
 It is compatible with APM v1.x board (ATMEGA 328p), Phonedrone (using ATmega32u2) and futur boards.
 
