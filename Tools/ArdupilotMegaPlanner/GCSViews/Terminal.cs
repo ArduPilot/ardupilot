@@ -172,13 +172,6 @@ namespace ArdupilotMega.GCSViews
 
                 comPort.Open();
 
-                comPort.WriteLine("");
-                comPort.WriteLine("");
-                comPort.WriteLine("");
-                comPort.WriteLine("");
-                comPort.WriteLine("");
-                comPort.WriteLine("");
-
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate()
                 {
                     threadrun = true;

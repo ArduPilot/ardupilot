@@ -43,6 +43,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.BUT_geinjection = new ArdupilotMega.MyButton();
             this.BUT_clearcustommaps = new ArdupilotMega.MyButton();
+            this.BUT_lang_edit = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // button1
@@ -191,11 +192,22 @@
             this.BUT_clearcustommaps.UseVisualStyleBackColor = true;
             this.BUT_clearcustommaps.Click += new System.EventHandler(this.BUT_clearcustommaps_Click);
             // 
+            // BUT_lang_edit
+            // 
+            this.BUT_lang_edit.Location = new System.Drawing.Point(405, 138);
+            this.BUT_lang_edit.Name = "BUT_lang_edit";
+            this.BUT_lang_edit.Size = new System.Drawing.Size(75, 23);
+            this.BUT_lang_edit.TabIndex = 16;
+            this.BUT_lang_edit.Text = "Lang Edit";
+            this.BUT_lang_edit.UseVisualStyleBackColor = true;
+            this.BUT_lang_edit.Click += new System.EventHandler(this.BUT_lang_edit_Click);
+            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(731, 281);
+            this.Controls.Add(this.BUT_lang_edit);
             this.Controls.Add(this.BUT_clearcustommaps);
             this.Controls.Add(this.BUT_geinjection);
             this.Controls.Add(this.label3);
@@ -236,6 +248,7 @@
         private System.Windows.Forms.Label label3;
         private MyButton BUT_geinjection;
         private MyButton BUT_clearcustommaps;
+        private MyButton BUT_lang_edit;
         //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
 
     }

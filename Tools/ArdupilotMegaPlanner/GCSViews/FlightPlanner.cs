@@ -628,6 +628,9 @@ namespace ArdupilotMega.GCSViews
 
             quickadd = false;
 
+            if (MainV2.config["WMSserver"] != null)
+                MainMap.Manager.CustomWMSURL = MainV2.config["WMSserver"].ToString();
+
             trackBar1.Value = (int)MainMap.Zoom;
 
             // check for net and set offline if needed
@@ -1339,10 +1342,8 @@ namespace ArdupilotMega.GCSViews
 
                 }
 
-                int alt = (int)temp.alt;
-
                 cell = Commands.Rows[i].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                cell.Value = (int)((double)alt * MainV2.cs.multiplierdist);
+                cell.Value = Math.Round((temp.alt * MainV2.cs.multiplierdist), 0);
                 cell = Commands.Rows[i].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 cell.Value = (double)temp.lat;
                 cell = Commands.Rows[i].Cells[Lon.Index] as DataGridViewTextBoxCell;
@@ -1784,6 +1785,15 @@ namespace ArdupilotMega.GCSViews
 
             MainMap.ZoomAndCenterMarkers("objects");
 
+            if (type == MapType.CustomWMS)
+            {
+                string url = "";
+                if (MainV2.config["WMSserver"] != null)
+                    url = MainV2.config["WMSserver"].ToString();
+                Common.InputBox("WMS Server", "Enter the WMS server URL", ref url);
+                MainV2.config["WMSserver"] = url;
+                MainMap.Manager.CustomWMSURL = url;
+            }
         }
 
         void MainMap_MouseUp(object sender, MouseEventArgs e)

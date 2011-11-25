@@ -149,8 +149,8 @@ namespace ArdupilotMega.HIL
             Random rand = new Random();
             int fixme;
             
-            //velocity.X += .05 + rand.NextDouble() * .03;
-            //velocity.Y += .05 + rand.NextDouble() * .03;
+            //velocity.X += .02 + rand.NextDouble() * .03;
+            //velocity.Y += .02 + rand.NextDouble() * .03;
 
             //# new velocity vector
             velocity += accel3D * delta_time.TotalSeconds;
