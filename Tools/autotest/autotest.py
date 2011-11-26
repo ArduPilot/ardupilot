@@ -6,6 +6,8 @@ import pexpect, os, util, sys, shutil
 import arducopter, arduplane
 import optparse, fnmatch, time, glob, traceback
 
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
@@ -241,7 +243,7 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
-            pass
+            continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:
