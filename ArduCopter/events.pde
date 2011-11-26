@@ -16,7 +16,11 @@ static void failsafe_on_event()
 			// 2 = Stay in AUTO and ignore failsafe
 
 		default:
-			set_mode(RTL);
+			if(home_is_set == true){
+				if (get_distance(&current_loc, &home) > 15){
+					set_mode(RTL);
+				}
+			}
 			break;
 	}
 }
