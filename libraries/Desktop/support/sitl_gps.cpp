@@ -79,7 +79,7 @@ static void gps_send(uint8_t msgid, uint8_t *buf, uint16_t size)
   possibly send a new GPS UBLOX packet
  */
 void sitl_update_gps(float latitude, float longitude, float altitude,
-		     float speedN, float speedE)
+		     float speedN, float speedE, bool have_lock)
 {
 	struct ubx_nav_posllh {
 		uint32_t	time; // GPS msToW
@@ -130,8 +130,8 @@ void sitl_update_gps(float latitude, float longitude, float altitude,
 	pos.vertical_accuracy = 10;
 
 	status.time = pos.time;
-	status.fix_type = 3;
-	status.fix_status = 1;
+	status.fix_type = have_lock?3:0;
+	status.fix_status = have_lock?1:0;
 	status.differential_status = 0;
 	status.res = 0;
 	status.time_to_first_fix = 0;

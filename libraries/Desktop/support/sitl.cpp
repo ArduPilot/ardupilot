@@ -125,7 +125,7 @@ static void sitl_fgear_input(void)
 
 		sitl_update_gps(d.fg_pkt.latitude, d.fg_pkt.longitude,
 				ft2m(d.fg_pkt.altitude),
-				ft2m(d.fg_pkt.speedN), ft2m(d.fg_pkt.speedE));
+				ft2m(d.fg_pkt.speedN), ft2m(d.fg_pkt.speedE), true);
 		sitl_update_adc(d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading, kt2mps(d.fg_pkt.airspeed));
 		sitl_update_barometer(ft2m(d.fg_pkt.altitude));
 		sitl_update_compass(d.fg_pkt.heading, d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading);
@@ -204,13 +204,19 @@ static void sitl_simulator_output(void)
 	uint8_t i;
 
 	if (last_update == 0) {
-		(*reg[0]) = (*reg[1]) = (*reg[3]) = 1500*2;
-		(*reg[2]) = (*reg[4]) = (*reg[6]) = 1000*2;
-		(*reg[5]) = (*reg[7]) = 1800*2;
+		if (desktop_state.quadcopter) {
+			for (i=0; i<8; i++) {
+				(*reg[i]) = 1000*2;
+			}
+		} else {
+			(*reg[0]) = (*reg[1]) = (*reg[3]) = 1500*2;
+			(*reg[2]) = (*reg[4]) = (*reg[6]) = 1000*2;
+			(*reg[5]) = (*reg[7]) = 1800*2;
+		}
 	}
 
-	if (millis() - last_update < 50) {
-		// output to simulator at 20Hz
+	// output at chosen framerate
+	if (millis() - last_update < 1000/desktop_state.framerate) {
 		return;
 	}
 	last_update = millis();
@@ -251,6 +257,10 @@ static void timer_handler(int signum)
 
 	// send RC output to flight sim
 	sitl_simulator_output();
+
+	if (sim_input_count == 0) {
+		sitl_update_gps(0, 0, 0, 0, 0, false);
+	}
 }
 
 
@@ -292,8 +302,9 @@ void sitl_setup(void)
 	sitl_setup_adc();
 	printf("Starting SITL input\n");
 
-	// wait until the first valid sim packet has
-	// been processed, to ensure the sensor hardware
-	// has sane values
-	while (sim_input_count == 0) /* noop */ ;
+	// setup some initial values
+	sitl_update_barometer(desktop_state.initial_height);
+	sitl_update_adc(0, 0, 0, 0);
+	sitl_update_compass(0, 0, 0, 0);
+	sitl_update_gps(0, 0, 0, 0, 0, false);
 }
