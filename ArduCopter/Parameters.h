@@ -104,6 +104,7 @@ public:
 	k_param_optflow_enabled,
 	k_param_input_voltage,
 	k_param_low_voltage,
+	k_param_ch7_option,
 
 	//
 	// 160: Navigation parameters
@@ -237,6 +238,7 @@ public:
 	AP_Int8		radio_tuning;
 	AP_Int8		frame_orientation;
 	AP_Float	top_bottom_ratio;
+	AP_Int8		ch7_option;
 
 
 	#if FRAME_CONFIG ==	HELI_FRAME
@@ -341,6 +343,7 @@ public:
 	radio_tuning 			(0, 						k_param_radio_tuning, 					PSTR("TUNE")),
 	frame_orientation 		(FRAME_ORIENTATION, 		k_param_frame_orientation, 				PSTR("FRAME")),
 	top_bottom_ratio 		(TOP_BOTTOM_RATIO, 			k_param_top_bottom_ratio, 				PSTR("TB_RATIO")),
+	ch7_option 				(CH7_SAVE_WP, 				k_param_ch7_option, 					PSTR("CH7_OPT")),
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	heli_servo_1			(k_param_heli_servo_1,		PSTR("HS1_")),
