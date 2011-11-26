@@ -44,7 +44,7 @@ def deltree(path):
 
 def build_SIL(atype):
     '''build desktop SIL'''
-    run_cmd("make -f ../libraries/Desktop/Makefile.desktop clean hil",
+    run_cmd("make -f ../libraries/Desktop/Makefile.desktop clean all",
             dir=reltopdir(atype),
             checkfail=True)
     return True
@@ -95,7 +95,7 @@ def pexpect_close_all():
     for p in close_list[:]:
         pexpect_close(p)
 
-def start_SIL(atype, valgrind=False, wipe=False, CLI=False):
+def start_SIL(atype, valgrind=False, wipe=False, CLI=False, height=None):
     '''launch a SIL instance'''
     cmd=""
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -105,6 +105,8 @@ def start_SIL(atype, valgrind=False, wipe=False, CLI=False):
         cmd += ' -w'
     if CLI:
         cmd += ' -s'
+    if height is not None:
+        cmd += ' -H %u' % height
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     pexpect_autoclose(ret)
     ret.expect('Waiting for connection')

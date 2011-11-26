@@ -30,10 +30,11 @@ def expect_callback(e):
 
 class location(object):
     '''represent a GPS coordinate'''
-    def __init__(self, lat, lng, alt=0):
+    def __init__(self, lat, lng, alt=0, heading=0):
         self.lat = lat
         self.lng = lng
         self.alt = alt
+        self.heading = heading
 
     def __str__(self):
         return "lat=%.6f,lon=%.6f,alt=%.1f" % (self.lat, self.lng, self.alt)
