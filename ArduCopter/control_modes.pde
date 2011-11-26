@@ -52,23 +52,7 @@ static void read_trim_switch()
 		}
 
 	#elif CH7_OPTION == CH7_SIMPLE_MODE
-		do_simple = (g.rc_7.control_in > 800);
 		//Serial.println(g.rc_7.control_in, DEC);
-
-	#elif CH7_OPTION == CH7_RTL
-		static bool ch7_rtl_flag = false;
-
-		if (ch7_rtl_flag == false && g.rc_7.control_in > 800){
-			ch7_rtl_flag = true;
-			set_mode(RTL);
-		}
-
-		if (ch7_rtl_flag == true && g.rc_7.control_in < 800){
-			ch7_rtl_flag = false;
-			if (control_mode == RTL || control_mode == LOITER){
-				reset_control_switch();
-			}
-		}
 
 	#elif CH7_OPTION == CH7_SET_HOVER
 		// switch is engaged
@@ -88,12 +72,43 @@ static void read_trim_switch()
 			}
 		}
 
-	#elif CH7_OPTION == CH7_SAVE_WP
+	#elif CH7_OPTION == CH7_ADC_FILTER
 		if (g.rc_7.control_in > 800){
+			adc.filter_result = true;
+		}else{
+			adc.filter_result = false;
+		}
+
+		#elif CH7_OPTION == CH7_AUTO_TRIM
+		if (g.rc_7.control_in > 800){
+			auto_level_counter = 10;
+		}
+
+	#else
+
+	// this is the normal operation set by the mission planner
+
+	if(g.ch7_option == CH7_SIMPLE_MODE){
+		do_simple = (g.rc_7.control_in > 800);
+
+	}else if (g.ch7_option == CH7_RTL){
+		if (trim_flag == false && g.rc_7.control_in > 800){
+			trim_flag = true;
+			set_mode(RTL);
+		}
+
+		if (trim_flag == true && g.rc_7.control_in < 800){
+			trim_flag = false;
+			if (control_mode == RTL || control_mode == LOITER){
+				reset_control_switch();
+			}
+		}
+
+	}else if (g.ch7_option == CH7_SAVE_WP){
+		if (g.rc_7.control_in > 800){ // switch is engaged
 			trim_flag = true;
 
 		}else{ // switch is disengaged
-
 			if(trim_flag){
 				trim_flag = false;
 				// increment index
@@ -113,18 +128,7 @@ static void read_trim_switch()
 				g.command_total.set_and_save(CH7_wp_index + 1);
 			}
 		}
-
-	#elif CH7_OPTION == CH7_ADC_FILTER
-		if (g.rc_7.control_in > 800){
-			adc.filter_result = true;
-		}else{
-			adc.filter_result = false;
-		}
-
-		#elif CH7_OPTION == CH7_AUTO_TRIM
-		if (g.rc_7.control_in > 800){
-			auto_level_counter = 10;
-		}
+	}
 	#endif
 
 }
