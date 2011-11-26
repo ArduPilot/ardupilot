@@ -20,6 +20,8 @@ static void usage(void)
 	printf("Options:\n");
 	printf("\t-s          enable CLI slider switch\n");
 	printf("\t-w          wipe eeprom and dataflash\n");
+	printf("\t-r RATE     set SITL framerate\n");
+	printf("\t-H HEIGHT   initial barometric height\n");
 }
 
 int main(int argc, char * const argv[])
@@ -29,7 +31,7 @@ int main(int argc, char * const argv[])
 	desktop_state.slider = false;
 	gettimeofday(&desktop_state.sketch_start_time, NULL);
 
-	while ((opt = getopt(argc, argv, "swh")) != -1) {
+	while ((opt = getopt(argc, argv, "swhr:H:")) != -1) {
 		switch (opt) {
 		case 's':
 			desktop_state.slider = true;
@@ -37,6 +39,12 @@ int main(int argc, char * const argv[])
 		case 'w':
 			unlink("eeprom.bin");
 			unlink("dataflash.bin");
+			break;
+		case 'r':
+			desktop_state.framerate = (unsigned)atoi(optarg);
+			break;
+		case 'H':
+			desktop_state.initial_height = atof(optarg);
 			break;
 		default:
 			usage();
@@ -46,6 +54,13 @@ int main(int argc, char * const argv[])
 
 	if (strcmp(SKETCH, "ArduCopter") == 0) {
 		desktop_state.quadcopter = true;
+		if (desktop_state.framerate == 0) {
+			desktop_state.framerate = 200;
+		}
+	} else {
+		if (desktop_state.framerate == 0) {
+			desktop_state.framerate = 50;
+		}
 	}
 
 	sitl_setup();
