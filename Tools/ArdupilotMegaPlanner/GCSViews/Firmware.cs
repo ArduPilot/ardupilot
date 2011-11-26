@@ -268,6 +268,7 @@ namespace ArdupilotMega.GCSViews
         {
             public string url;
             public string url2560;
+            public string url2560_2;
             public string name;
             public string desc;
             public int k_format_version;
@@ -295,6 +296,7 @@ namespace ArdupilotMega.GCSViews
         {
             string url = "";
             string url2560 = "";
+            string url2560_2 = "";
             string name = "";
             string desc = "";
             int k_format_version = 0;
@@ -317,6 +319,9 @@ namespace ArdupilotMega.GCSViews
                             case "url2560":
                                 url2560 = xmlreader.ReadString();
                                 break;
+                            case "url2560-2":
+                                url2560_2 = xmlreader.ReadString();
+                                break;
                             case "name":
                                 name = xmlreader.ReadString();
                                 break;
@@ -333,6 +338,7 @@ namespace ArdupilotMega.GCSViews
                                     temp.name = name;
                                     temp.url = url;
                                     temp.url2560 = url2560;
+                                    temp.url2560_2 = url2560_2;
                                     temp.k_format_version = k_format_version;
 
                                     try
@@ -517,6 +523,10 @@ namespace ArdupilotMega.GCSViews
                 else if (board == "1280")
                 {
                     baseurl = temp.url.ToString();
+                }
+                else if (board == "2560-2")
+                {
+                    baseurl = temp.url2560_2.ToString();
                 }
                 else
                 {
