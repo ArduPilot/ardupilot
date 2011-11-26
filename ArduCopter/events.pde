@@ -16,8 +16,7 @@ static void failsafe_on_event()
 			// 2 = Stay in AUTO and ignore failsafe
 
 		default:
-			// not ready to enable yet w/o more testing
-			//set_mode(RTL);
+			set_mode(RTL);
 			break;
 	}
 }
