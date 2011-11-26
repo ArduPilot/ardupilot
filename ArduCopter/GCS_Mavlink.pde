@@ -29,7 +29,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
     mavlink_msg_heartbeat_send(
         chan,
-        MAV_TYPE_QUADROTOR/*mavlink_system.type*/,
+        2 /*mavlink_system.type*/,  //MAV_TYPE_QUADROTOR
         MAV_AUTOPILOT_ARDUPILOTMEGA);
 }
 
