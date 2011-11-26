@@ -42,14 +42,18 @@ def dump_logs(atype):
     mavproxy.expect(']')
     mavproxy.send("logs\n")
     mavproxy.expect("logs enabled:")
+    lognums = []
     i = mavproxy.expect(["No logs", "(\d+) logs"])
     if i == 0:
         numlogs = 0
     else:
         numlogs = int(mavproxy.match.group(1))
+    for i in range(numlogs):
+        mavproxy.expect("Log (\d+),")
+        lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
-        mavproxy.send("dump %u\n" % (i+1))
+        mavproxy.send("dump %u\n" % lognums[i])
         mavproxy.expect("logs enabled:", timeout=400)
         mavproxy.expect("Log]")
     util.pexpect_close(mavproxy)
