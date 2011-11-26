@@ -83,9 +83,14 @@ print_log_menu(void)
 		Serial.printf_P(PSTR("\n%d logs\n"), num_logs);
 
 		for(int i=num_logs;i>=1;i--) {
+            int last_log_start = log_start, last_log_end = log_end;
 			temp = g.log_last_filenumber-i+1;
 			get_log_boundaries(temp, log_start, log_end);
 			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
+            if (last_log_start == log_start && last_log_end == log_end) {
+                // we are printing bogus logs
+                break;
+            }
 		}
 		Serial.println();
 	}
