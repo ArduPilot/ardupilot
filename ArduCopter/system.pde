@@ -164,6 +164,9 @@ static void init_ardupilot()
 		delay(100); // wait for serial send
 		AP_Var::erase_all();
 
+		// clear logs
+		erase_logs(NULL, NULL);
+
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 
