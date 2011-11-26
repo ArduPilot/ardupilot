@@ -66,7 +66,7 @@ static void arm_motors()
 static void init_arm_motors()
 {
 	//Serial.printf("\nARM\n");
-	#if HIL_MODE != HIL_MODE_DISABLED
+    #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
 	gcs_send_text_P(SEVERITY_HIGH, PSTR("ARMING MOTORS"));
 	#endif
 
@@ -107,7 +107,7 @@ static void init_arm_motors()
 static void init_disarm_motors()
 {
 	//Serial.printf("\nDISARM\n");
-	#if HIL_MODE != HIL_MODE_DISABLED
+    #if HIL_MODE != HIL_MODE_DISABLED || defined(DESKTOP_BUILD)
 	gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 	#endif
 
