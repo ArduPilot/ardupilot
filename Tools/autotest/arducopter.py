@@ -9,7 +9,7 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, util.reltopdir('../pymavlink'))
 import mavutil, mavwp
 
-HOME_LOCATION='-35.362938,149.165085,584,270'
+HOME=location(-35.362938,149.165085,584,270)
 
 homeloc = None
 num_wp = 0
@@ -231,6 +231,11 @@ def fly_ArduCopter(viewerip=None):
     '''
     global expect_list, homeloc
 
+    hquad_cmd = util.reltopdir('../HILTest/hil_quad.py') + ' --fgrate=200 --home=%f,%f,%u,%u' % (
+        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    if viewerip:
+        hquad_cmd += ' --fgout=192.168.2.15:9123'
+
     sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
     mavproxy.expect('Please Run Setup')
@@ -239,7 +244,7 @@ def fly_ArduCopter(viewerip=None):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
     sil = util.start_SIL('ArduCopter')
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
@@ -249,8 +254,11 @@ def fly_ArduCopter(viewerip=None):
     # reboot with new parameters
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    sil = util.start_SIL('ArduCopter')
-    options = '--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=1'
+    
+    sil = util.start_SIL('ArduCopter', height=HOME.alt)
+    hquad = pexpect.spawn(hquad_cmd, logfile=sys.stdout, timeout=10)
+    util.pexpect_autoclose(hquad)
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=1'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
@@ -264,18 +272,10 @@ def fly_ArduCopter(viewerip=None):
         os.unlink(buildlog)
     os.link(logfile, buildlog)
 
-    mavproxy.expect("Ready to FLY")
     mavproxy.expect('Received [0-9]+ parameters')
+    mavproxy.expect("Ready to FLY")
 
     util.expect_setup_callback(mavproxy, expect_callback)
-
-    # start hil_quad.py
-    cmd = util.reltopdir('../HILTest/hil_quad.py') + ' --fgrate=200 --home=%s' % HOME_LOCATION
-    if viewerip:
-        cmd += ' --fgout=192.168.2.15:9123'
-    hquad = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
-    util.pexpect_autoclose(hquad)
-    hquad.expect('Starting at')
 
     expect_list.extend([hquad, sil, mavproxy])
 
