@@ -418,7 +418,7 @@ all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
 .PHONY: upload
 upload: $(SKETCHHEX)
-	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
+	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U flash:w:$(SKETCHHEX):i
 
 configure:
 	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
