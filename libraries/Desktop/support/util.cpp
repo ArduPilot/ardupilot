@@ -57,7 +57,7 @@ float swap_float(float f)
 	int i;
 	in.f = f;
 	for (i=0; i<4; i++) {
-		out.b[4-i] = in.b[i];
+		out.b[3-i] = in.b[i];
 	}
 	return out.f;
 }
