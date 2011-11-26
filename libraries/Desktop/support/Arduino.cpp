@@ -72,6 +72,11 @@ size_t strnlen_P(PGM_P str, size_t size)
 	return strnlen(str, size);
 }
 
+size_t strlen_P(PGM_P str)
+{
+	return strlen(str);
+}
+
 int strcasecmp_P(PGM_P str1, PGM_P str2)
 {
 	return strcasecmp(str1, str2);
@@ -80,6 +85,11 @@ int strcasecmp_P(PGM_P str1, PGM_P str2)
 int strcmp_P(PGM_P str1, PGM_P str2)
 {
 	return strcmp(str1, str2);
+}
+
+void *memcpy_P(void *dest, PGM_P src, size_t n)
+{
+	return memcpy(dest, src, n);
 }
 
 
