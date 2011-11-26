@@ -17,8 +17,10 @@ static void failsafe_on_event()
 
 		default:
 			if(home_is_set == true){
-				if (get_distance(&current_loc, &home) > 15){
+				if ((get_distance(&current_loc, &home) > 15) && (current_loc.alt > 400)){
 					set_mode(RTL);
+					// override safety
+					motor_auto_armed = true;
 				}
 			}
 			break;
