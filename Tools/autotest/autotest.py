@@ -157,7 +157,7 @@ def run_step(step):
         return dump_logs('ArduCopter')
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter()
+        return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
 
     if step == 'fly.ArduPlane':
         if not opts.experimental:
