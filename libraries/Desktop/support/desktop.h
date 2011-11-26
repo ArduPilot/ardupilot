@@ -1,6 +1,8 @@
 #ifndef _DESKTOP_H
 #define _DESKTOP_H
 
+#include <unistd.h>
+
 struct desktop_info {
 	bool slider; // slider switch state, True means CLI mode
 	struct timeval sketch_start_time;
