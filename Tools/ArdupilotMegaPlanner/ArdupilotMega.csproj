@@ -168,6 +168,10 @@
     <Reference Include="Microsoft.Scripting.Debugging">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.Debugging.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Scripting.ExtensionAttribute, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
+    </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>

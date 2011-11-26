@@ -625,8 +625,9 @@ namespace ArdupilotMega
                 }
                 if (!(restart.AddMilliseconds(1000) > DateTime.Now))
                 {
+                    rereq.param_id = new byte[] {0x0,0x0};
                     rereq.param_index = (short)nextid;
-                    generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_READ, rereq);
+                    sendPacket(rereq);
                     restart = DateTime.Now;
                 }
 
@@ -2167,7 +2168,7 @@ namespace ArdupilotMega
 
                         if (MainV2.talk != null && MainV2.config["speechenable"] != null && MainV2.config["speechenable"].ToString() == "True")
                         {
-                            MainV2.talk.Speak(logdata);
+                            MainV2.talk.SpeakAsync(logdata);
                         }
 
                     }
