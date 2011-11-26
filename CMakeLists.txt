@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.5)
 
-set(CMAKE_MODULE_PATH    ${CMAKE_SOURCE_DIR}/cmake/modules)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/cmake/toolchains/Arduino.cmake)
 
 # modify flags from default toolchain flags
@@ -31,6 +31,7 @@ set(APPLICATION_VERSION "${APPLICATION_VERSION_MAJOR}.${APPLICATION_VERSION_MINO
 
 # macros
 include(MacroEnsureOutOfSourceBuild)
+include(UseDoxygen)
 
 # disallow in-source build
 macro_ensure_out_of_source_build("${PROJECT_NAME} requires an out of source build.
