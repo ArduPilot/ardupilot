@@ -110,6 +110,11 @@ static inline size_t strlen_P(const prog_char_t *pstr)
     return strlen_P((const prog_char *)pstr);
 }
 
+static inline void *memcpy_P(void *dest, const prog_char_t *src, size_t n)
+{
+    return memcpy_P(dest, (const prog_char *)src, n);
+}
+
 // strlcat_P() in AVR libc seems to be broken 
 static inline size_t strlcat_P(char *d, const prog_char_t *s, size_t bufsize)
 {
