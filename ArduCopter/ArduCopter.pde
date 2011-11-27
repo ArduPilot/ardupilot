@@ -56,7 +56,7 @@ And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>
-#include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
+#include <AP_Baro.h>
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // ArduPilot Mega Inertial Sensor (accel & gyro) Library
@@ -156,10 +156,10 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #endif
 
 #ifdef DESKTOP_BUILD
-    APM_BMP085_HIL_Class    barometer;
+    AP_Baro_BMP085_HIL barometer;
     AP_Compass_HIL          compass;
 #else
-	APM_BMP085_Class        barometer;
+	  AP_Baro_BMP085 barometer;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 #endif
 
@@ -205,7 +205,7 @@ AP_TimerProcess timer_scheduler;
 #elif HIL_MODE == HIL_MODE_SENSORS
 	// sensor emulators
 	AP_ADC_HIL              adc;
-	APM_BMP085_HIL_Class    barometer;
+	AP_Baro_BMP085_HIL      barometer;
 	AP_Compass_HIL          compass;
 	AP_GPS_HIL              g_gps_driver(NULL);
     AP_IMU_Shim imu;
