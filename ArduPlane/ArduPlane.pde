@@ -35,7 +35,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
 #include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess and TimerAperiodicProcess
-#include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
+#include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
@@ -134,10 +134,10 @@ static AP_Int8		*flight_modes = &g.flight_mode1;
 static AP_ADC_ADS7844          adc;
 
 #ifdef DESKTOP_BUILD
-APM_BMP085_HIL_Class    barometer;
+AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
 #else
-static APM_BMP085_Class        barometer;
+static AP_Baro_BMP085          barometer;
 static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 #endif
 
@@ -179,7 +179,7 @@ AP_TimerProcess timer_scheduler;
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL              adc;
-APM_BMP085_HIL_Class    barometer;
+AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
