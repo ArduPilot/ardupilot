@@ -33,7 +33,7 @@
 */
 
 #include <SPI.h>
-#include "APM_MS5611.h"
+#include "AP_Baro_MS5611.h"
 
 
 #define MS5611_CS A2 // Chip select pin  (provisional)
@@ -102,7 +102,7 @@ void MS5611_SPI_write(byte reg)
 }
 
 // The conversion proccess takes 8.2ms since the command
-uint8_t APM_MS5611_Class::MS5611_Ready()
+uint8_t AP_Baro_MS5611::MS5611_Ready()
 {
 	if ((millis()-MS5611_timer)>10)   // wait for more than 10ms
 		return(1);
@@ -110,14 +110,9 @@ uint8_t APM_MS5611_Class::MS5611_Ready()
 		return(0);
 }
 
-// Constructors ////////////////////////////////////////////////////////////////
-APM_MS5611_Class::APM_MS5611_Class()
-{
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 // SPI should be initialized externally
-void APM_MS5611_Class::init()
+void AP_Baro_MS5611::init()
 {
 
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
@@ -146,7 +141,7 @@ void APM_MS5611_Class::init()
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 // temperature does not change so quickly...
-uint8_t APM_MS5611_Class::read()
+uint8_t AP_Baro_MS5611::read()
 {
 	uint8_t result = 0;
 
@@ -182,7 +177,7 @@ uint8_t APM_MS5611_Class::read()
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void APM_MS5611_Class::calculate()
+void AP_Baro_MS5611::calculate()
 {
 	int32_t dT;
 	long long TEMP;  // 64 bits
@@ -214,18 +209,18 @@ void APM_MS5611_Class::calculate()
 	Press = P;
 }
 
-uint32_t APM_MS5611_Class::get_pressure()
+uint32_t AP_Baro_MS5611::get_pressure()
 {
 	return(Press);
 }
 
-uint16_t APM_MS5611_Class::get_temperature()
+uint16_t AP_Baro_MS5611::get_temperature()
 {
 	return(Temp);
 }
 
 // Return altitude using the standard 1013.25 mbar at sea level reference
-float APM_MS5611_Class::get_altitude()
+float AP_Baro_MS5611::get_altitude()
 {
 	float tmp_float;
 	float Altitude;
