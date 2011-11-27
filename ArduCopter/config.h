@@ -52,6 +52,7 @@
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#  define CONFIG_BARO     AP_BARO_MS5611
 #endif
 
 
@@ -131,6 +132,14 @@
 
 #ifndef CONFIG_RELAY
 # define CONFIG_RELAY ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Barometer
+//
+
+#ifndef CONFIG_BARO
+# define CONFIG_BARO AP_BARO_BMP085
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
