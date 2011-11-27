@@ -1,12 +1,15 @@
-#ifndef APM_BMP085_hil_h
-#define APM_BMP085_hil_h
 
-class APM_BMP085_HIL_Class
+#ifndef __AP_BARO_BMP085_HIL_H__
+#define __AP_BARO_BMP085_HIL_H__
+
+#include "AP_Baro.h"
+
+class AP_Baro_BMP085_HIL
 {
   private:
     uint8_t BMP085_State;
   public:
-  	APM_BMP085_HIL_Class();  // Constructor
+    AP_Baro_BMP085_HIL();  // Constructor
 	int32_t RawPress;
 	int32_t RawTemp;
 	int16_t Temp;
@@ -19,4 +22,4 @@ class APM_BMP085_HIL_Class
     int32_t _offset_press;
 };
 
-#endif
+#endif //  __AP_BARO_BMP085_HIL_H__
