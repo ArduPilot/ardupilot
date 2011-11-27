@@ -70,7 +70,7 @@ static uint8_t mav_var_type(AP_Meta_class::Type_id t)
 
 #define MAV_FIXED_WING MAV_TYPE_FIXED_WING
 
-#else
+#else // MAVLINK10
 
 static uint8_t mav_var_type(AP_Meta_class::Type_id t)
 {
@@ -169,4 +169,4 @@ static void mavlink_msg_param_value_send(mavlink_channel_t chan, const char *par
 		param_count,
 		param_index);
 }
-#endif
+#endif // MAVLINK10
