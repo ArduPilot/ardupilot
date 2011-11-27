@@ -60,9 +60,14 @@
 # define CONFIG_RELAY      DISABLED
 # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+# ifdef APM2_BETA_HARDWARE
+#  define CONFIG_BARO     AP_BARO_BMP085
+# else // APM2 Production Hardware (default)
 #  define CONFIG_BARO     AP_BARO_MS5611
+# endif
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
 // LED and IO Pins
 //
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
