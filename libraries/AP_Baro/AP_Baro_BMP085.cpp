@@ -42,15 +42,10 @@ extern "C" {
 }
 
 #include <Wire.h>
-#include "APM_BMP085.h"
+#include "AP_Baro_BMP085.h"
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
 #define BMP085_EOC 30        // End of conversion pin PC7
-
-// Constructors ////////////////////////////////////////////////////////////////
-//APM_BMP085_Class::APM_BMP085_Class()
-//{
-//}
 
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
@@ -60,7 +55,7 @@ extern "C" {
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool APM_BMP085_Class::Init(int initialiseWireLib, bool apm2_hardware)
+bool AP_Baro_BMP085::Init(int initialiseWireLib, bool apm2_hardware)
 {
 	byte buff[22];
 	int i = 0;
@@ -114,7 +109,7 @@ bool APM_BMP085_Class::Init(int initialiseWireLib, bool apm2_hardware)
 /*
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-uint8_t APM_BMP085_Class::Read()
+uint8_t AP_Baro_BMP085::Read()
 {
 	uint8_t result = 0;
 
@@ -149,7 +144,7 @@ uint8_t APM_BMP085_Class::Read()
 */
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-uint8_t APM_BMP085_Class::Read()
+uint8_t AP_Baro_BMP085::Read()
 {
 	uint8_t result = 0;
 
@@ -173,7 +168,7 @@ uint8_t APM_BMP085_Class::Read()
 
 
 // Send command to Read Pressure
-void APM_BMP085_Class::Command_ReadPress()
+void AP_Baro_BMP085::Command_ReadPress()
 {
 	Wire.beginTransmission(BMP085_ADDRESS);
 	Wire.send(0xF4);
@@ -182,7 +177,7 @@ void APM_BMP085_Class::Command_ReadPress()
 }
 
 // Read Raw Pressure values
-void APM_BMP085_Class::ReadPress()
+void AP_Baro_BMP085::ReadPress()
 {
 	byte msb;
 	byte lsb;
@@ -238,7 +233,7 @@ void APM_BMP085_Class::ReadPress()
 }
 
 // Send Command to Read Temperature
-void APM_BMP085_Class::Command_ReadTemp()
+void AP_Baro_BMP085::Command_ReadTemp()
 {
 	Wire.beginTransmission(BMP085_ADDRESS);
 	Wire.send(0xF4);
@@ -247,7 +242,7 @@ void APM_BMP085_Class::Command_ReadTemp()
 }
 
 // Read Raw Temperature values
-void APM_BMP085_Class::ReadTemp()
+void AP_Baro_BMP085::ReadTemp()
 {
 	byte tmp;
 	Wire.beginTransmission(BMP085_ADDRESS);
@@ -291,7 +286,7 @@ void APM_BMP085_Class::ReadTemp()
 }
 
 // Calculate Temperature and Pressure in real units.
-void APM_BMP085_Class::Calculate()
+void AP_Baro_BMP085::Calculate()
 {
 	long x1, x2, x3, b3, b5, b6, p;
 	unsigned long b4, b7;

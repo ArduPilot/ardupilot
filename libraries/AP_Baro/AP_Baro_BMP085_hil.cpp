@@ -1,5 +1,4 @@
 
-
 extern "C" {
   // AVR LibC Includes
   #include <inttypes.h>
@@ -7,15 +6,15 @@ extern "C" {
   #include "WConstants.h"
 }
 
-#include "APM_BMP085_hil.h"
+#include "AP_Baro_BMP085_hil.h"
 
 // Constructors ////////////////////////////////////////////////////////////////
-APM_BMP085_HIL_Class::APM_BMP085_HIL_Class()
+AP_Baro_BMP085_HIL::AP_Baro_BMP085_HIL()
 {
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_BMP085_HIL_Class::Init(int initialiseWireLib, bool apm2_hardware)
+void AP_Baro_BMP085_HIL::Init(int initialiseWireLib, bool apm2_hardware)
 {
   BMP085_State=1;
 }
@@ -23,7 +22,7 @@ void APM_BMP085_HIL_Class::Init(int initialiseWireLib, bool apm2_hardware)
 
 // Read the sensor. This is a state machine
 // We read one time Temperature (state = 1) and then 4 times Pressure (states 2-5)
-uint8_t APM_BMP085_HIL_Class::Read()
+uint8_t AP_Baro_BMP085_HIL::Read()
 {
 	uint8_t result = 0;
 
@@ -42,7 +41,7 @@ uint8_t APM_BMP085_HIL_Class::Read()
 	return(result);
 }
 
-void APM_BMP085_HIL_Class::setHIL(float _Temp, float _Press)
+void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
 {
     // TODO: map floats to raw
 	Temp 	= _Temp;

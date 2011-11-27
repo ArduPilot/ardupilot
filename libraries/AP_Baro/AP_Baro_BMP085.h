@@ -1,15 +1,15 @@
-#ifndef APM_BMP085_h
-#define APM_BMP085_h
+#ifndef __AP_BARO_BMP085_H__
+#define __AP_BARO_BMP085_H__
 
 #define TEMP_FILTER_SIZE 4
 #define PRESS_FILTER_SIZE 8
 
-#include "APM_BMP085_hil.h"
+#include "AP_Baro.h"
 
-class APM_BMP085_Class
+class AP_Baro_BMP085
 {
   public:
-	APM_BMP085_Class():
+	AP_Baro_BMP085():
 			_temp_index(0),
 			_press_index(0){};  // Constructor
 	int32_t RawPress;
@@ -46,4 +46,4 @@ class APM_BMP085_Class
 	void Calculate();
 };
 
-#endif
+#endif // __AP_BARO_BMP085_H__
