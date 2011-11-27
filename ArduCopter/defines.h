@@ -354,4 +354,7 @@ enum gcs_severity {
 #define APM_HARDWARE_APM1 1
 #define APM_HARDWARE_APM2 2
 
+#define AP_BARO_BMP085    1
+#define AP_BARO_MS5611    2
+
 #endif // _DEFINES_H
