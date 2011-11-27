@@ -14,5 +14,7 @@ class AP_Baro
 };
 
 #include "AP_Baro_MS5611.h"
+#include "AP_Baro_BMP085.h"
+#include "AP_Baro_BMP085_hil.h"
 
 #endif // __AP_BARO_H__
