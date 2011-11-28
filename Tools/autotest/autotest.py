@@ -53,6 +53,7 @@ def dump_logs(atype):
         lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
+        print("Dumping log %u (i=%u)" % (lognums[i], i))
         mavproxy.send("dump %u\n" % lognums[i])
         mavproxy.expect("logs enabled:", timeout=400)
         mavproxy.expect("Log]")
