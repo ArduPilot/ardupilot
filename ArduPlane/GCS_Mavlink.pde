@@ -1071,6 +1071,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case MAV_ACTION_SET_AUTO:
                     set_mode(AUTO);
                     result=1;
+                    // clearing failsafe should not be needed
+                    // here. Added based on some puzzling results in
+                    // the simulator (tridge)
+                    failsafe = FAILSAFE_NONE;
                     break;
 
                 case MAV_ACTION_STORAGE_READ:
