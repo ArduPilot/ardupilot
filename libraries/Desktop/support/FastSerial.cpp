@@ -45,6 +45,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include "desktop.h"
+#include "util.h"
 
 #define LISTEN_BASE_PORT 5760
 #define BUFFER_SIZE 128
@@ -129,6 +130,9 @@ static void tcp_start_connection(unsigned int serial_port, bool wait_for_connect
         }
 		setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		s->connected = true;
+		if (!desktop_state.slider) {
+			set_nonblocking(s->fd);
+		}
     }
 }
 
@@ -171,6 +175,9 @@ static void check_connection(struct tcp_state *s)
 			s->connected = true;
 			setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 			printf("New connection on serial port %u\n", s->serial_port);
+			if (!desktop_state.slider) {
+				set_nonblocking(s->fd);
+			}
 		}
 	}
 }
