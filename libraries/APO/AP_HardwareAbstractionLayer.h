@@ -49,7 +49,8 @@ public:
     // initialized
     AP_HardwareAbstractionLayer(halMode_t mode, board_t board,
                                 vehicle_t vehicle, uint8_t heartBeatTimeout) :
-        adc(), gps(), baro(), compass(), rangeFinders(), imu(), batteryMonitor(), rc(), gcs(),
+        adc(), gps(), baro(), compass(), rangeFinders(), imu(), batteryMonitor(), 
+        radio(), rc(), gcs(),
         hil(), debug(), load(), lastHeartBeat(),
         _heartBeatTimeout(heartBeatTimeout), _mode(mode),
         _board(board), _vehicle(vehicle) {
