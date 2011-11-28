@@ -52,16 +52,21 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 	const float _gyro_gain_y = 0.41;
 	const float _gyro_gain_z = 0.41;
 	const float _accel_scale = 9.80665 / 423.8;
-	uint16_t adc[7];
+	float adc[7];
 	float xAccel, yAccel, zAccel, scale;
 	float rollRate, pitchRate, yawRate;
 	static uint32_t last_update;
 	static float last_roll, last_pitch, last_yaw;
 	unsigned long delta_t;
 
+	// 200Hz max
+	if (micros() - last_update < 5000) {
+		return;
+	}
+
 	/* map roll/pitch/yaw to values the accelerometer would see */
-	xAccel = sin(ToRad(pitch));
-	yAccel = -sin(ToRad(roll));
+	xAccel = sin(ToRad(pitch)) * cos(ToRad(roll));
+	yAccel = -sin(ToRad(roll)) * cos(ToRad(pitch));
 	zAccel = -cos(ToRad(roll)) * cos(ToRad(pitch));
 	scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel));
 	xAccel *= scale;
@@ -76,12 +81,13 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 		delta_t = micros();
 	} else {
 		delta_t = micros() - last_update;
-		rollRate  = 1.0e6 * (roll  - last_roll)  / delta_t;
-		pitchRate = 1.0e6 * (pitch - last_pitch) / delta_t;
-		yawRate   = 1.0e6 * (yaw   - last_yaw)   / delta_t;
-		rollRate = normalise(rollRate, -180, 180);
-		pitchRate = normalise(pitchRate, -180, 180);
-		yawRate = normalise(yawRate, -180, 180);
+		float rollChange, pitchChange, yawChange;
+		rollChange  = normalise180(roll - last_roll);
+		pitchChange = normalise180(pitch - last_pitch);
+		yawChange   = normalise180(yaw - last_yaw);
+		rollRate  = 1.0e6 * rollChange  / delta_t;
+		pitchRate = 1.0e6 * pitchChange / delta_t;
+		yawRate   = 1.0e6 * yawChange   / delta_t;
 	}
 	last_update += delta_t;
 
@@ -100,20 +106,30 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 
 	/* tell the UDR2 register emulation what values to give to the driver */
 	for (uint8_t i=0; i<6; i++) {
-		UDR2.set(sensor_map[i], (adc[i]<<3) & 0x7FFF);
+		UDR2.set(sensor_map[i], adc[i]);
 	}
 
 
 	// set the airspeed sensor input
-	UDR2.set(7, airspeed_sensor(airspeed)<<3);
+	UDR2.set(7, airspeed_sensor(airspeed));
 
 	/* FIX: rubbish value for temperature for now */
-	UDR2.set(3, 2000<<3);
+	UDR2.set(3, 2000);
+
+#if 0
+	extern AP_DCM_HIL dcm;
+	dcm.setHil(ToRad(roll), ToRad(pitch), ToRad(yaw),
+		   ToRad(rollRate), ToRad(pitchRate), ToRad(yawRate));
+
+#endif
 
 #if 0
 	extern AP_DCM dcm;
-	printf("roll=%6.1f / %6.1f pitch=%6.1f / %6.1f  rollRate=%6.1f pitchRate=%6.1f\n",
-	       roll, dcm.roll_sensor/100.0, pitch, dcm.pitch_sensor/100.0, rollRate, pitchRate);
+	Vector3f omega = dcm.get_gyro();
+	printf("dt=%5u adc[2]=%6.1f roll=%6.1f / %6.1f yaw=%6.1f / %6.1f  yawRate=%6.3f / %6.3f\n",
+	       (unsigned)delta_t,
+	       adc[2],
+	       roll, dcm.roll_sensor/100.0, yaw, dcm.yaw_sensor/100.0, yawRate, ToDeg(omega.z));
 #endif
 }
 
