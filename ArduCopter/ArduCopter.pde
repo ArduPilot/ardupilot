@@ -748,7 +748,7 @@ static void medium_loop()
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-
+			// test
 			// perform next command
 			// --------------------
 			if(control_mode == AUTO){
