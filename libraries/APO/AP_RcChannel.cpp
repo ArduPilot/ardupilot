@@ -18,7 +18,7 @@
 namespace apo {
 
 AP_RcChannel::AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name,
-                           APM_RC_Class & rc, const uint8_t & ch, const uint16_t & pwmMin,
+                           APM_RC_Class * rc, const uint8_t & ch, const uint16_t & pwmMin,
                            const uint16_t & pwmNeutral, const uint16_t & pwmMax,
                            const rcMode_t & rcMode, const bool & reverse, const float & scale) :
     AP_Var_group(keyValue, name), _ch(this, 1, ch, PSTR("ch")),
@@ -32,7 +32,7 @@ AP_RcChannel::AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name,
     if (rcMode == RC_MODE_IN)
         return;
     //Serial.print("pwm set for ch: "); Serial.println(int(ch));
-    rc.OutputCh(ch, pwmNeutral);
+    rc->OutputCh(ch, pwmNeutral);
 
 }
 
@@ -42,7 +42,7 @@ uint16_t AP_RcChannel::getRadioPwm() {
         Serial.println(int(_ch));
         return _pwmNeutral; // if this happens give a safe value of neutral
     }
-    return _rc.InputCh(_ch);
+    return _rc->InputCh(_ch);
 }
 
 void AP_RcChannel::setPwm(uint16_t pwm) {
@@ -64,7 +64,7 @@ void AP_RcChannel::setPwm(uint16_t pwm) {
     //Serial.print("ch: "); Serial.print(ch); Serial.print(" pwm: "); Serial.println(pwm);
     if (_rcMode == RC_MODE_IN)
         return;
-    _rc.OutputCh(_ch, _pwm);
+    _rc->OutputCh(_ch, _pwm);
 }
 
 uint16_t AP_RcChannel::_positionToPwm(const float & position) {
