@@ -90,3 +90,8 @@ double normalise(double v, double min, double max)
 	}
 	return v;
 }
+
+double normalise180(double v)
+{
+	return normalise(v, -180, 180);
+}
