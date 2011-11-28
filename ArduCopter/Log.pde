@@ -53,8 +53,8 @@ print_log_menu(void)
 {
 	int log_start;
 	int log_end;
-	int temp;	
-	
+	int temp;
+
 	uint16_t num_logs = get_num_logs();
 
 	Serial.printf_P(PSTR("logs enabled: "));
@@ -108,7 +108,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 	last_log_num = g.log_last_filenumber;
-	if (dump_log == -1) {
+	if (dump_log <= 0) {
 		Serial.printf_P(PSTR("dumping all\n"));
 		Log_Read(1, DF_LAST_PAGE);
 		return(-1);
@@ -210,7 +210,7 @@ static byte get_num_logs(void)
 	if(g.log_last_filenumber < 1) return 0;
 
 	DataFlash.StartRead(1);
-	
+
 	if(DataFlash.GetFileNumber() == 0XFFFF) return 0;
 
 	lastpage = find_last();
@@ -251,7 +251,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 {
 	int num = get_num_logs();
 	int look;
-	
+
 	if(num == 1)
 	{
 		DataFlash.StartRead(DF_LAST_PAGE);
@@ -310,14 +310,14 @@ uint32_t top_hash;
 
 		DataFlash.StartRead(bottom);
 		bottom_hash = (long)DataFlash.GetFileNumber()<<16 | DataFlash.GetFilePage();
-		
+
 		while(top-bottom > 1)
 		{
 			look = (top+bottom)/2;
 			DataFlash.StartRead(look);
 			look_hash = (long)DataFlash.GetFileNumber()<<16 | DataFlash.GetFilePage();
 			if (look_hash >= 0xFFFF0000) look_hash = 0;
-			
+
 			if(look_hash < bottom_hash) {
 				// move down
 				top = look;
@@ -327,7 +327,7 @@ uint32_t top_hash;
 				bottom_hash = look_hash;
 			}
 		}
-		
+
 		DataFlash.StartRead(top);
 		top_hash = (long)DataFlash.GetFileNumber()<<16 | DataFlash.GetFilePage();
 		if (top_hash >= 0xFFFF0000) top_hash = 0;
@@ -367,14 +367,14 @@ uint32_t check_hash;
 	}
 
 	check_hash = (long)log_number<<16 | 0xFFFF;
-		
+
 	while(top-bottom > 1)
 	{
 		look = (top+bottom)/2;
 		DataFlash.StartRead(look);
 		look_hash = (long)DataFlash.GetFileNumber()<<16 | DataFlash.GetFilePage();
 		if (look_hash >= 0xFFFF0000) look_hash = 0;
-		
+
 		if(look_hash > check_hash) {
 			// move down
 			top = look;
@@ -383,13 +383,13 @@ uint32_t check_hash;
 			bottom = look;
 		}
 	}
-		
+
 	DataFlash.StartRead(top);
 	if (DataFlash.GetFileNumber() == log_number) return top;
-	
+
 	DataFlash.StartRead(bottom);
 	if (DataFlash.GetFileNumber() == log_number) return bottom;
-	
+
 	return -1;
 }
 
