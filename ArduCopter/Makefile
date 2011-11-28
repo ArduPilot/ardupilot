@@ -22,7 +22,7 @@ apm2:
 	make -f Makefile EXTRAFLAGS="-DCONFIG_APM_HARDWARE=APM_HARDWARE_APM2 -DCLI_SLIDER_ENABLED=DISABLED"
 
 mavlink10:
-	make -f Makefile EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DMAVLINK10 -DCLI_ENABLED=DISABLED -DLOGGING_ENABLED=DISABLED"
+	make -f Makefile EXTRAFLAGS="-DMAVLINK10"
 
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)

@@ -9,3 +9,4 @@ float swap_float(float f);
 void swap_floats(float *f, unsigned count);
 void set_nonblocking(int fd);
 double normalise(double v, double min, double max);
+double normalise180(double v);

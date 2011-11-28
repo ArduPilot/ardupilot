@@ -53,6 +53,7 @@ def dump_logs(atype):
         lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
+        print("Dumping log %u (i=%u)" % (lognums[i], i))
         mavproxy.send("dump %u\n" % lognums[i])
         mavproxy.expect("logs enabled:", timeout=400)
         mavproxy.expect("Log]")
@@ -259,12 +260,11 @@ def run_tests(steps):
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 
-    results.addglob("Google Earth track", '*.kml')
+    results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
     results.addglob('DataFlash Log', '*.flashlog')
     results.addglob("MAVLink log", '*.mavlog')
     results.addglob("GPX track", '*.gpx')
-    results.addglob("KMZ track", '*.kmz')
     results.addfile('ArduPlane build log', 'ArduPlane.txt')
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')

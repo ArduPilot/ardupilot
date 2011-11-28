@@ -41,7 +41,16 @@ struct ADC_UDR2 UDR2;
 struct RC_ICR4 ICR4;
 extern AP_TimerProcess timer_scheduler;
 extern Arduino_Mega_ISR_Registry isr_registry;
-static volatile uint32_t sim_input_count;
+
+static volatile struct {
+	double latitude, longitude; // degrees
+	double altitude; // MSL
+	double heading; // degrees
+	double speedN, speedE; // m/s
+	double roll, pitch, yaw; // degrees
+	double airspeed; // m/s
+	uint32_t update_count;
+} sim_state;
 
 
 /*
@@ -123,14 +132,19 @@ static void sitl_fgear_input(void)
 			return;
 		}
 
-		sitl_update_gps(d.fg_pkt.latitude, d.fg_pkt.longitude,
-				ft2m(d.fg_pkt.altitude),
-				ft2m(d.fg_pkt.speedN), ft2m(d.fg_pkt.speedE), true);
-		sitl_update_adc(d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading, kt2mps(d.fg_pkt.airspeed));
-		sitl_update_barometer(ft2m(d.fg_pkt.altitude));
-		sitl_update_compass(d.fg_pkt.heading, d.fg_pkt.rollDeg, d.fg_pkt.pitchDeg, d.fg_pkt.heading);
+		sim_state.latitude = d.fg_pkt.latitude;
+		sim_state.longitude = d.fg_pkt.longitude;
+		sim_state.altitude  = ft2m(d.fg_pkt.altitude);
+		sim_state.speedN = ft2m(d.fg_pkt.speedN);
+		sim_state.speedE = ft2m(d.fg_pkt.speedE);
+		sim_state.roll = d.fg_pkt.rollDeg;
+		sim_state.pitch = d.fg_pkt.pitchDeg;
+		sim_state.yaw = d.fg_pkt.yawDeg;
+		sim_state.heading = d.fg_pkt.heading;
+		sim_state.airspeed = kt2mps(d.fg_pkt.airspeed);
+		sim_state.update_count++;
+
 		count++;
-		sim_input_count++;
 		if (millis() - last_report > 1000) {
 			printf("SIM %u FPS\n", count);
 			count = 0;
@@ -239,6 +253,8 @@ static void sitl_simulator_output(void)
  */
 static void timer_handler(int signum)
 {
+	static uint32_t last_update_count;
+
 	/* make sure we die if our parent dies */
 	if (kill(parent_pid, 0) != 0) {
 		exit(1);
@@ -258,9 +274,22 @@ static void timer_handler(int signum)
 	// send RC output to flight sim
 	sitl_simulator_output();
 
-	if (sim_input_count == 0) {
+	if (sim_state.update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
+		return;
 	}
+
+	if (sim_state.update_count == last_update_count) {
+		return;
+	}
+	last_update_count = sim_state.update_count;
+
+	sitl_update_gps(sim_state.latitude, sim_state.longitude,
+			sim_state.altitude,
+			sim_state.speedN, sim_state.speedE, true);
+	sitl_update_adc(sim_state.roll, sim_state.pitch, sim_state.heading, sim_state.airspeed);
+	sitl_update_barometer(sim_state.altitude);
+	sitl_update_compass(sim_state.heading, sim_state.roll, sim_state.pitch, sim_state.heading);
 }
 
 
