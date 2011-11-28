@@ -43,20 +43,6 @@ void AP_Controller::setAllRadioChannelsManually() {
 
 void AP_Controller::update(const float dt) {
     if (_armingMechanism) _armingMechanism->update(dt);
-
-    // handle emergencies
-    //
-    // check for heartbeat from gcs, if not found go to failsafe
-    if (_hal->heartBeatLost()) {
-        setMode(MAV_MODE_FAILSAFE);
-        _hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
-        
-    // if battery less than 5%, go to failsafe
-    } else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
-        setMode(MAV_MODE_FAILSAFE);
-        _hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
-    }
-
     // handle modes
     //
     // if in locked mode
@@ -69,10 +55,24 @@ void AP_Controller::update(const float dt) {
     }
     // if not locked
     else {
+
         // if state is not active, set it to active and alert gcs
         if (getState()!=MAV_STATE_ACTIVE) {
             setState(MAV_STATE_ACTIVE);
             _hal->gcs->sendText(SEVERITY_HIGH, PSTR("armed"));
+        }
+
+        // handle emergencies
+        //
+        // check for heartbeat from gcs, if not found go to failsafe
+        if (_hal->heartBeatLost()) {
+            setMode(MAV_MODE_FAILSAFE);
+            _hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
+            
+        // if battery less than 5%, go to failsafe
+        } else if (_hal->batteryMonitor && _hal->batteryMonitor->getPercentage() < 5) {
+            setMode(MAV_MODE_FAILSAFE);
+            _hal->gcs->sendText(SEVERITY_HIGH, PSTR("recharge battery"));
         }
 
         // if in auto mode and manual switch set, change to manual
@@ -84,6 +84,8 @@ void AP_Controller::update(const float dt) {
             manualLoop(dt);
         } else if (getMode()==MAV_MODE_AUTO) {
             autoLoop(dt);
+        } else if (getMode()==MAV_MODE_FAILSAFE) {
+            handleFailsafe();
         } else {
             _hal->gcs->sendText(SEVERITY_HIGH, PSTR("unknown mode"));
             setMode(MAV_MODE_FAILSAFE);
