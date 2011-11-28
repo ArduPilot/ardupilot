@@ -170,8 +170,8 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     '''fly a mission from a file'''
     global homeloc
     global num_wp
-    print("test: Fly a mission from 0 to %u" % num_wp)
-    mavproxy.send('wp set 0\n')
+    print("test: Fly a mission from 1 to %u" % num_wp)
+    mavproxy.send('wp set 1\n')
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     #wait_altitude(mav, 30, 40)
@@ -254,7 +254,7 @@ def fly_ArduCopter(viewerip=None):
     # reboot with new parameters
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    
+
     sil = util.start_SIL('ArduCopter', height=HOME.alt)
     hquad = pexpect.spawn(hquad_cmd, logfile=sys.stdout, timeout=10)
     util.pexpect_autoclose(hquad)
