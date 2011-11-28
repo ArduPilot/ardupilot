@@ -286,6 +286,7 @@ def fly_ArduPlane(viewerip=None):
         print("Failed to start mavlink connection on 127.0.0.1:19550" % msg)
         raise
     mav.message_hooks.append(message_hook)
+    mav.idle_hooks.append(idle_hook)
 
     failed = False
     e = 'None'
