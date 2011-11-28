@@ -753,7 +753,7 @@ static void medium_loop()
 			// --------------------
 			if(control_mode == AUTO){
 				if(home_is_set == true && g.command_total > 1){
-					update_commands(true);
+					update_commands();
 				}
 			}
 
@@ -1374,6 +1374,9 @@ static void update_altitude()
 		current_loc.alt = baro_alt + home.alt;
 		climb_rate 		= baro_rate;
 	}
+
+	// manage bad data
+	climb_rate = constrain(climb_rate, -300, 300);
 }
 
 static void
