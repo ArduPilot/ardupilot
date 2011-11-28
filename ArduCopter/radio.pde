@@ -54,16 +54,8 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-	APM_RC.Init();		// APM Radio initialization
+	APM_RC.Init( &isr_registry );		// APM Radio initialization
 	init_motors_out();
-
-    // fix for crazy output
-    OCR1B = 0xFFFF;     // PB6, OUT3
-    OCR1C = 0xFFFF;     // PB7, OUT4
-    OCR5B = 0xFFFF;     // PL4, OUT1
-    OCR5C = 0xFFFF;     // PL5, OUT2
-    OCR4B = 0xFFFF;     // PH4, OUT6
-    OCR4C = 0xFFFF;     // PH5, OUT5
 
 	// this is the camera pitch5 and roll6
 	APM_RC.OutputCh(CH_5, 1500);
@@ -147,7 +139,7 @@ static void read_radio()
 			g.rc_3.control_in = min(g.rc_3.control_in, 800);
 		#endif
 
-		//throttle_failsafe(g.rc_3.radio_in);
+		throttle_failsafe(g.rc_3.radio_in);
 	}
 }
 
@@ -166,8 +158,8 @@ static void throttle_failsafe(uint16_t pwm)
 			SendDebug("MSG FS ON ");
 			SendDebugln(pwm, DEC);
 		}else if(failsafeCounter == 10) {
-			ch3_failsafe = true;
-			//set_failsafe(true);
+			//ch3_failsafe = true;
+			set_failsafe(true);
 			//failsafeCounter = 10;
 		}else if (failsafeCounter > 10){
 			failsafeCounter = 11;
@@ -184,8 +176,8 @@ static void throttle_failsafe(uint16_t pwm)
 			SendDebug("MSG FS OFF ");
 			SendDebugln(pwm, DEC);
 		}else if(failsafeCounter == 0) {
-			ch3_failsafe = false;
-			//set_failsafe(false);
+			//ch3_failsafe = false;
+			set_failsafe(false);
 			//failsafeCounter = -1;
 		}else if (failsafeCounter <0){
 			failsafeCounter = -1;

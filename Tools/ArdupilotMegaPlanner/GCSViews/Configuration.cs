@@ -65,7 +65,8 @@ namespace ArdupilotMega.GCSViews
             //this.Height = this.Parent.Height;
 
             // fix for dup name
-            XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
+            //XTRK_ANGLE_CD1.Name = "XTRK_ANGLE_CD";
+            XTRK_GAIN_SC1.Name = "XTRK_GAIN_SC";
         }
 
         private void Configuration_Load(object sender, EventArgs e)
@@ -231,6 +232,9 @@ namespace ArdupilotMega.GCSViews
 
             string data = resources.GetString("MAVParam");
 
+            if (data == null)
+                return;
+
             string[] tips = data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var tip in tips)
@@ -290,10 +294,28 @@ namespace ArdupilotMega.GCSViews
             return sb.ToString();
         }
 
+        void disableNumericUpDownControls(Control inctl)
+        {
+            foreach (Control ctl in inctl.Controls)
+            {
+                if (ctl.Controls.Count > 0)
+                {
+                    disableNumericUpDownControls(ctl);
+                }
+                if (ctl.GetType() == typeof(NumericUpDown))
+                {
+                    ctl.Enabled = false;
+                }
+            }
+        }
+
         internal void processToScreen()
         {
             toolTip1.RemoveAll();
             Params.Rows.Clear();
+
+            disableNumericUpDownControls(TabAC2);
+            disableNumericUpDownControls(TabAPM2);
 
             // process hashdefines and update display
             foreach (string value in param.Keys)
@@ -341,6 +363,8 @@ namespace ArdupilotMega.GCSViews
                             thisctl.Increment = (decimal)1;
                             thisctl.DecimalPlaces = 1;
                         }
+
+                        thisctl.Enabled = true;
 
                         thisctl.BackColor = Color.FromArgb(0x43, 0x44, 0x45);
                         thisctl.Validated += null;

@@ -418,13 +418,13 @@ all:	$(SKETCHELF) $(SKETCHEEP) $(SKETCHHEX)
 
 .PHONY: upload
 upload: $(SKETCHHEX)
-	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U $(SKETCHHEX)
+	$(AVRDUDE) -c $(UPLOAD_PROTOCOL) -p $(MCU) -P $(PORT) -b$(UPLOAD_SPEED) -U flash:w:$(SKETCHHEX):i
 
 configure:
 	$(warning WARNING - A $(SKETCHBOOK)/config.mk file has been written)
 	$(warning Please edit the file to match your system configuration, if you use a different board or port)
 	@echo \# Select \'mega\' for the original APM, or \'mega2560\' for the V2 APM. > $(SKETCHBOOK)/config.mk
-	@echo BOARD=mega     >> $(SKETCHBOOK)/config.mk
+	@echo BOARD=mega2560     >> $(SKETCHBOOK)/config.mk
 	@echo \# The communication port used to communicate with the APM. >> $(SKETCHBOOK)/config.mk
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 	@echo PORT=com3 >> $(SKETCHBOOK)/config.mk
@@ -436,6 +436,11 @@ debug:
 	$(AVARICE) --mkII --capture --jtag usb :4242 & \
 	gnome-terminal -x $(GDB) $(SKETCHELF) & \
 	echo -e '\n\nat the gdb prompt type "target remote localhost:4242"'
+
+# this allows you to flash your image via JTAG for when you
+# have completely broken your USB
+jtag-program:
+	$(AVARICE) --mkII --jtag usb --erase --program --file $(SKETCHELF)
 
 clean:
 ifneq ($(findstring CYGWIN, $(SYSTYPE)),)

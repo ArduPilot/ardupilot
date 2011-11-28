@@ -55,6 +55,24 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
+#if USB_MUX_PIN > 0
+    // on the APM2 board we have a mux thet switches UART0 between
+    // USB and the board header. If the right ArduPPM firmware is
+    // installed we can detect if USB is connected using the
+    // USB_MUX_PIN
+    pinMode(USB_MUX_PIN, INPUT);
+
+    usb_connected = !digitalRead(USB_MUX_PIN);
+    if (!usb_connected) {
+        // USB is not connected, this means UART0 may be a Xbee, with
+        // its darned bricking problem. We can't write to it for at
+        // least one second after powering up. Simplest solution for
+        // now is to delay for 1 second. Something more elegant may be
+        // added later
+        delay(1000);
+    }
+#endif
+
 	// Console serial port
 	//
 	// The console port buffers are defined to be sufficiently large to support
@@ -81,6 +99,19 @@ static void init_ardupilot()
 	Serial.printf_P(PSTR("\n\nInit " THISFIRMWARE
 						 "\n\nFree RAM: %u\n"),
                     memcheck_available_memory());
+
+	//
+	// Initialize the ISR registry.
+	//
+    isr_registry.init();
+
+    //
+	// Initialize the timer scheduler to use the ISR registry.
+	//
+
+#if HIL_MODE != HIL_MODE_ATTITUDE
+    timer_scheduler.init( & isr_registry );
+#endif
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -123,22 +154,33 @@ static void init_ardupilot()
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
 
-	// Telemetry port.
-	//
-	// Not used if telemetry is going to the console.
-	//
-	// XXX for unidirectional protocols, we could (should) minimize
-	// the receive buffer, and the transmit buffer could also be
-	// shrunk for protocols that don't send large messages.
-	//
-	Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+	// init the GCS
+	gcs0.init(&Serial);
+
+#if USB_MUX_PIN > 0
+    if (!usb_connected) {
+        // we are not connected via USB, re-init UART0 with right
+        // baud rate
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    }
+#else
+    // we have a 2nd serial port for telemetry
+    Serial3.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+	gcs3.init(&Serial3);
+#endif
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
-	adc.Init();	 		// APM ADC library initialization
-	barometer.Init();	// APM Abs Pressure sensor initialization
+
+    adc.Init(&timer_scheduler);      // APM ADC library initialization
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+	barometer.Init(1, true);
+#else
+	barometer.Init(1, false);
+#endif
 
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
@@ -150,13 +192,6 @@ static void init_ardupilot()
             compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
-	/*
-	Init is depricated - Jason
-	if(g.sonar_enabled){
-		sonar.init(SONAR_PIN, &adc);
-		Serial.print("Sonar init: ");	Serial.println(SONAR_PIN, DEC);
-	}
-	*/
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -168,25 +203,28 @@ static void init_ardupilot()
 	g_gps->init();			// GPS Initialization
     g_gps->callback = mavlink_delay;
 
-	// init the GCS
-	gcs0.init(&Serial);
-	gcs3.init(&Serial3);
-
 	//mavlink_system.sysid = MAV_SYSTEM_ID;				// Using g.sysid_this_mav
 	mavlink_system.compid = 1;	//MAV_COMP_ID_IMU;   // We do not check for comp id
 	mavlink_system.type = MAV_FIXED_WING;
 
 	rc_override_active = APM_RC.setHIL(rc_override);		// Set initial values for no override
+
+    RC_Channel::set_apm_rc( &APM_RC ); // Provide reference to RC outputs.
 	init_rc_in();		// sets up rc channels from radio
 	init_rc_out();		// sets up the timer libs
 
 	pinMode(C_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(A_LED_PIN, OUTPUT);			// GPS status LED
 	pinMode(B_LED_PIN, OUTPUT);			// GPS status LED
+#if SLIDE_SWITCH_PIN > 0
 	pinMode(SLIDE_SWITCH_PIN, INPUT);	// To enter interactive mode
+#endif
+#if CONFIG_PUSHBUTTON == ENABLED
 	pinMode(PUSHBUTTON_PIN, INPUT);		// unused
+#endif
+#if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
-
+#endif
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
@@ -195,7 +233,7 @@ static void init_ardupilot()
 	//
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	if (digitalRead(SLIDE_SWITCH_PIN) == 0) {
-		digitalWrite(A_LED_PIN,HIGH);		// turn on setup-mode LED
+		digitalWrite(A_LED_PIN,LED_ON);		// turn on setup-mode LED
 		Serial.printf_P(PSTR("\n"
 							 "Entering interactive setup mode...\n"
 							 "\n"
@@ -224,7 +262,7 @@ static void init_ardupilot()
 		//----------------
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
-		imu.init(IMU::WARM_START);
+		imu.init(IMU::WARM_START, mavlink_delay, &timer_scheduler);
 		dcm.set_centripetal(1);
 #endif
 
@@ -418,7 +456,7 @@ static void startup_IMU_ground(void)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
 	mavlink_delay(1000);
 
-	imu.init(IMU::COLD_START, mavlink_delay);
+	imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
 	dcm.set_centripetal(1);
 
 	// read Baro pressure at ground
@@ -436,9 +474,9 @@ static void startup_IMU_ground(void)
 
 #endif // HIL_MODE_ATTITUDE
 
-	digitalWrite(B_LED_PIN, HIGH);		// Set LED B high to indicate IMU ready
-	digitalWrite(A_LED_PIN, LOW);
-	digitalWrite(C_LED_PIN, LOW);
+	digitalWrite(B_LED_PIN, LED_ON);		// Set LED B high to indicate IMU ready
+	digitalWrite(A_LED_PIN, LED_OFF);
+	digitalWrite(C_LED_PIN, LED_OFF);
 }
 
 
@@ -448,23 +486,23 @@ static void update_GPS_light(void)
 	// ---------------------------------------------------------------------
 	switch (g_gps->status()) {
 		case(2):
-			digitalWrite(C_LED_PIN, HIGH);  //Turn LED C on when gps has valid fix.
+			digitalWrite(C_LED_PIN, LED_ON);  //Turn LED C on when gps has valid fix.
 			break;
 
 		case(1):
 			if (g_gps->valid_read == true){
 				GPS_light = !GPS_light; // Toggle light on and off to indicate gps messages being received, but no GPS fix lock
 				if (GPS_light){
-					digitalWrite(C_LED_PIN, LOW);
+					digitalWrite(C_LED_PIN, LED_OFF);
 				} else {
-					digitalWrite(C_LED_PIN, HIGH);
+					digitalWrite(C_LED_PIN, LED_ON);
 				}
 				g_gps->valid_read = false;
 			}
 			break;
 
 		default:
-			digitalWrite(C_LED_PIN, LOW);
+			digitalWrite(C_LED_PIN, LED_OFF);
 			break;
 	}
 }
@@ -499,3 +537,22 @@ static uint32_t map_baudrate(int8_t rate, uint32_t default_baud)
     Serial.println_P(PSTR("Invalid SERIAL3_BAUD"));
     return default_baud;
 }
+
+
+#if USB_MUX_PIN > 0
+static void check_usb_mux(void)
+{
+    bool usb_check = !digitalRead(USB_MUX_PIN);
+    if (usb_check == usb_connected) {
+        return;
+    }
+
+    // the user has switched to/from the telemetry port
+    usb_connected = usb_check;
+    if (usb_connected) {
+        Serial.begin(SERIAL0_BAUD, 128, 128);
+    } else {
+        Serial.begin(map_baudrate(g.serial3_baud, SERIAL3_BAUD), 128, 128);
+    }
+}
+#endif

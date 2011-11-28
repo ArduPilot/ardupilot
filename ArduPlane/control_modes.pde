@@ -40,6 +40,7 @@ static void reset_control_switch()
 
 static void update_servo_switches()
 {
+#if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 	if (!g.switch_enable) {
         // switches are disabled in EEPROM (see SWITCH_ENABLE option)
         // this means the EEPROM control of all channel reversal is enabled
@@ -57,4 +58,5 @@ static void update_servo_switches()
 		g.reverse_ch1_elevon = (PINE & 64) ? true : false;
 		g.reverse_ch2_elevon = (PINL & 64) ? true : false;
 	}
+#endif
 }

@@ -43,6 +43,49 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
+// APM HARDWARE
+//
+
+#ifndef CONFIG_APM_HARDWARE
+# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// APM2 HARDWARE DEFAULTS
+//
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+# define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6000
+# define CONFIG_PUSHBUTTON DISABLED
+# define CONFIG_RELAY      DISABLED
+# define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
+# define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+#endif
+
+// LED and IO Pins
+//
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+# define A_LED_PIN        37
+# define B_LED_PIN        36
+# define C_LED_PIN        35
+# define LED_ON           HIGH
+# define LED_OFF          LOW
+# define SLIDE_SWITCH_PIN 40
+# define PUSHBUTTON_PIN   41
+# define USB_MUX_PIN      -1
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+# define A_LED_PIN        27
+# define B_LED_PIN        26
+# define C_LED_PIN        25
+# define LED_ON           LOW
+# define LED_OFF          HIGH
+# define SLIDE_SWITCH_PIN (-1)
+# define PUSHBUTTON_PIN   (-1)
+# define CLI_SLIDER_ENABLED DISABLED
+# define USB_MUX_PIN 23
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // AIRSPEED_SENSOR
 // AIRSPEED_RATIO
 //
@@ -55,21 +98,63 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Sonar
+// IMU Selection
 //
-
-#ifndef SONAR_ENABLED
-# define SONAR_ENABLED         	DISABLED
+#ifndef CONFIG_IMU_TYPE
+# define CONFIG_IMU_TYPE CONFIG_IMU_OILPAN
 #endif
 
-#ifndef SONAR_PIN
-# define SONAR_PIN              AN4				// AN5,  AP_RANGEFINDER_PITOT_TUBE
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+# ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
+#  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// ADC Enable - used to eliminate for systems which don't have ADC.
+//
+#ifndef CONFIG_ADC
+# if CONFIG_IMU_TYPE == CONFIG_IMU_OILPAN
+#   define CONFIG_ADC ENABLED
+# else
+#   define CONFIG_ADC DISABLED
+# endif
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Pitot
+//
+
+#ifndef PITOT_ENABLED
+# define PITOT_ENABLED         	DISABLED
+#endif
+
+#ifndef CONFIG_PITOT_SOURCE
+# define CONFIG_PITOT_SOURCE PITOT_SOURCE_ADC
+#endif
+
+#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
+# ifndef CONFIG_PITOT_SOURCE_ADC_CHANNEL
+#  define CONFIG_PITOT_SOURCE_ADC_CHANNEL 7
+# endif
+#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
+# ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
+#  define CONFIG_PITOT_SOURCE_ANALOG_PIN AN4
+# endif
+#else
+# warning Invalid value for CONFIG_PITOT_SOURCE, disabling sonar
+# undef PITOT_ENABLED
+# define PITOT_ENABLED DISABLED
 #endif
 
 #ifndef SONAR_TYPE
 # define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
 #endif
 
+/* In ArduPlane PITOT usually takes the place of SONAR, but some bits
+ * still depend on SONAR.
+ */
+#define SONAR_ENABLED PITOT_ENABLED
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL

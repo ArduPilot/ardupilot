@@ -6,12 +6,15 @@ import pexpect, os, util, sys, shutil
 import arducopter, arduplane
 import optparse, fnmatch, time, glob, traceback
 
+os.environ['PYTHONUNBUFFERED'] = '1'
+
 os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
     '''get default parameters'''
     sil = util.start_SIL(atype, wipe=True)
     mavproxy = util.start_MAVProxy_SIL(atype)
+    print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
         # we need to restart it after eeprom erase
@@ -35,14 +38,22 @@ def dump_logs(atype):
     logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
+    print("navigating menus")
     mavproxy.expect(']')
     mavproxy.send("logs\n")
     mavproxy.expect("logs enabled:")
-    mavproxy.expect("(\d+) logs")
-    numlogs = int(mavproxy.match.group(1))
+    lognums = []
+    i = mavproxy.expect(["No logs", "(\d+) logs"])
+    if i == 0:
+        numlogs = 0
+    else:
+        numlogs = int(mavproxy.match.group(1))
+    for i in range(numlogs):
+        mavproxy.expect("Log (\d+),")
+        lognums.append(int(mavproxy.match.group(1)))
     mavproxy.expect("Log]")
     for i in range(numlogs):
-        mavproxy.send("dump %u\n" % (i+1))
+        mavproxy.send("dump %u\n" % lognums[i])
         mavproxy.expect("logs enabled:", timeout=400)
         mavproxy.expect("Log]")
     util.pexpect_close(mavproxy)
@@ -150,7 +161,7 @@ def run_step(step):
         return dump_logs('ArduCopter')
 
     if step == 'fly.ArduCopter':
-        return arducopter.fly_ArduCopter()
+        return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
 
     if step == 'fly.ArduPlane':
         if not opts.experimental:
@@ -241,7 +252,8 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
-            pass
+            util.pexpect_close_all()
+            continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:

@@ -30,6 +30,9 @@
 #define SONAR 0
 #define BARO 1
 
+#define PITOT_SOURCE_ADC 1
+#define PITOT_SOURCE_ANALOG_PIN 2
+
 #define T6 1000000
 #define T7 10000000
 
@@ -201,14 +204,6 @@ enum gcs_severity {
 #define AN4			4
 #define AN5			5
 
-// Hardware Parameters
-#define SLIDE_SWITCH_PIN 40
-#define PUSHBUTTON_PIN 41
-
-#define A_LED_PIN 37			//36 = B,	37 = A,	35 = C
-#define B_LED_PIN 36
-#define C_LED_PIN 35
-
 #define SPEEDFILT 400			// centimeters/second; the speed below which a groundstart will be triggered
 
 
@@ -226,5 +221,11 @@ enum gcs_severity {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
+
+#define CONFIG_IMU_OILPAN 1
+#define CONFIG_IMU_MPU6000 2
+
+#define APM_HARDWARE_APM1  1
+#define APM_HARDWARE_APM2 2
 
 #endif // _DEFINES_H

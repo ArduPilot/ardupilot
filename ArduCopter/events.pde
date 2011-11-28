@@ -16,8 +16,13 @@ static void failsafe_on_event()
 			// 2 = Stay in AUTO and ignore failsafe
 
 		default:
-			// not ready to enable yet w/o more testing
-			//set_mode(RTL);
+			if(home_is_set == true){
+				if ((get_distance(&current_loc, &home) > 15) && (current_loc.alt > 400)){
+					set_mode(RTL);
+					// override safety
+					motor_auto_armed = true;
+				}
+			}
 			break;
 	}
 }

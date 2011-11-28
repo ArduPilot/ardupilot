@@ -13,9 +13,10 @@ class APM_BMP085_HIL_Class
 	int32_t Press;
 	//int Altitude;
 	uint8_t oss;
-	void Init(int initialiseWireLib = 1);
+	void Init(int initialiseWireLib = 1, bool apm2_hardware=false);
 	uint8_t Read();
     void setHIL(float Temp, float Press);
+    int32_t _offset_press;
 };
 
 #endif
