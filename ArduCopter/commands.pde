@@ -146,7 +146,17 @@ static void set_next_WP(struct Location *wp)
 
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
-	prev_WP = next_WP;
+	if (next_WP.lat == 0 || command_nav_index <= 1){
+		prev_WP = current_loc;
+	}else{
+		if (get_distance(&current_loc, &next_WP) < 10)
+			prev_WP = next_WP;
+		else
+			prev_WP = current_loc;
+	}
+
+	//Serial.printf("set_next_WP #%d, ", command_nav_index);
+	//print_wp(&prev_WP, command_nav_index -1);
 
 	// Load the next_WP slot
 	// ---------------------
@@ -165,7 +175,7 @@ static void set_next_WP(struct Location *wp)
 	// -----------------------------------
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
-	target_bearing 		= get_bearing(&current_loc, &next_WP);
+	target_bearing 		= get_bearing(&prev_WP, &next_WP);
 
 	// to check if we have missed the WP
 	// ---------------------------------
