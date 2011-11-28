@@ -425,9 +425,6 @@ static void set_mode(byte mode)
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
 
-	// clearing value used to set WP's dynamically.
-	CH7_wp_index = 0;
-
 	Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
