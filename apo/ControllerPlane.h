@@ -47,19 +47,19 @@ public:
         _hal->debug->println_P(PSTR("initializing plane controller"));
 
         _hal->rc.push_back(
-            new AP_RcChannel(k_chMode, PSTR("mode_"), APM_RC, 5, 1100,
+            new AP_RcChannel(k_chMode, PSTR("mode_"), hal->radio, 5, 1100,
                              1500, 1900, RC_MODE_IN, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chRoll, PSTR("roll_"), APM_RC, 0, 1200,
+            new AP_RcChannel(k_chRoll, PSTR("roll_"), hal->radio, 0, 1200,
                              1500, 1800, RC_MODE_INOUT, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chPitch, PSTR("pitch_"), APM_RC, 1, 1200,
+            new AP_RcChannel(k_chPitch, PSTR("pitch_"), hal->radio, 1, 1200,
                              1500, 1800, RC_MODE_INOUT, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chThr, PSTR("thr_"), APM_RC, 2, 1100, 1100,
+            new AP_RcChannel(k_chThr, PSTR("thr_"), hal->radio, 2, 1100, 1100,
                              1900, RC_MODE_INOUT, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chYaw, PSTR("yaw_"), APM_RC, 3, 1200, 1500,
+            new AP_RcChannel(k_chYaw, PSTR("yaw_"), hal->radio, 3, 1200, 1500,
                              1800, RC_MODE_INOUT, false));
     }
 
