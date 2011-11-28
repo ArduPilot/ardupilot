@@ -103,8 +103,8 @@ static void process_now_command()
 	}
 }
 
-static void handle_no_commands()
-{
+//static void handle_no_commands()
+//{
 	/*
 	switch (control_mode){
 		default:
@@ -113,7 +113,7 @@ static void handle_no_commands()
 	}*/
 	//return;
 	//Serial.println("Handle No CMDs");
-}
+//}
 
 /********************************************************************************/
 // Verify command Handlers
@@ -430,10 +430,10 @@ static bool verify_nav_wp()
 	}
 }
 
-static bool verify_loiter_unlim()
-{
-	return false;
-}
+//static bool verify_loiter_unlim()
+//{
+//	return false;
+//}
 
 static bool verify_loiter_time()
 {
