@@ -31,7 +31,7 @@ set(APPLICATION_VERSION "${APPLICATION_VERSION_MAJOR}.${APPLICATION_VERSION_MINO
 
 # macros
 include(MacroEnsureOutOfSourceBuild)
-include(UseDoxygen)
+#include(UseDoxygen)
 
 # disallow in-source build
 macro_ensure_out_of_source_build("${PROJECT_NAME} requires an out of source build.

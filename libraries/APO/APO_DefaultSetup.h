@@ -37,12 +37,14 @@ void setup() {
     hal->debug = &Serial;
     hal->debug->println_P(PSTR("initializing debug line"));
 
+    // initialize radio
+    hal->radio = new APM_RC_APM1;
+
     /*
      * Sensor initialization
      */
     if (hal->getMode() == MODE_LIVE) {
 
-        hal->radio = new APM_RC_APM1;
 
         hal->debug->println_P(PSTR("initializing adc"));
         hal->adc = new ADC_CLASS;
@@ -131,7 +133,7 @@ void setup() {
         /*
          * navigation sensors
          */
-        hal->imu = new AP_IMU_INS(new AP_InertialSensor_Oilpan(hal->adc), k_sensorCalib); 
+        //hal->imu = new AP_IMU_INS(new AP_InertialSensor_Oilpan(hal->adc), k_sensorCalib); 
         //hal->imu = AP_IMU_INS(new AP_InertialSensor_MPU6000(mpu6000SelectPin), k_sensorCalib);
     }
 
