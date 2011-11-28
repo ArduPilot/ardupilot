@@ -272,11 +272,6 @@ namespace ArdupilotMega.GCSViews
                 cell.Value = lng.ToString("0.0000000");
                 cell.DataGridView.EndEdit();
             }
-            if (Commands.Columns[Param1.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][0]/*"Delay"*/))
-            {
-                cell = Commands.Rows[selectedrow].Cells[Param1.Index] as DataGridViewTextBoxCell;
-                cell.Value = 0;
-            }
             if (alt != -1 && Commands.Columns[Alt.Index].HeaderText.Equals(cmdParamNames["WAYPOINT"][6]/*"Alt"*/))
             {
                 cell = Commands.Rows[selectedrow].Cells[Alt.Index] as DataGridViewTextBoxCell;
@@ -628,6 +623,9 @@ namespace ArdupilotMega.GCSViews
 
             quickadd = false;
 
+            if (MainV2.config["WMSserver"] != null)
+                MainMap.Manager.CustomWMSURL = MainV2.config["WMSserver"].ToString();
+
             trackBar1.Value = (int)MainMap.Zoom;
 
             // check for net and set offline if needed
@@ -696,7 +694,8 @@ namespace ArdupilotMega.GCSViews
                 DataGridViewCell tcell = Commands.Rows[e.RowIndex].Cells[i];
                 if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
                 {
-                    tcell.Value = "0";
+                    if (tcell.Value == null)
+                        tcell.Value = "0";
                 }
             }                
 
@@ -1339,10 +1338,8 @@ namespace ArdupilotMega.GCSViews
 
                 }
 
-                int alt = (int)temp.alt;
-
                 cell = Commands.Rows[i].Cells[Alt.Index] as DataGridViewTextBoxCell;
-                cell.Value = (int)((double)alt * MainV2.cs.multiplierdist);
+                cell.Value = Math.Round((temp.alt * MainV2.cs.multiplierdist), 0);
                 cell = Commands.Rows[i].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 cell.Value = (double)temp.lat;
                 cell = Commands.Rows[i].Cells[Lon.Index] as DataGridViewTextBoxCell;
@@ -1784,6 +1781,15 @@ namespace ArdupilotMega.GCSViews
 
             MainMap.ZoomAndCenterMarkers("objects");
 
+            if (type == MapType.CustomWMS)
+            {
+                string url = "";
+                if (MainV2.config["WMSserver"] != null)
+                    url = MainV2.config["WMSserver"].ToString();
+                Common.InputBox("WMS Server", "Enter the WMS server URL", ref url);
+                MainV2.config["WMSserver"] = url;
+                MainMap.Manager.CustomWMSURL = url;
+            }
         }
 
         void MainMap_MouseUp(object sender, MouseEventArgs e)
@@ -2632,7 +2638,7 @@ namespace ArdupilotMega.GCSViews
         {
             selectedrow = Commands.Rows.Add();
 
-            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_UNLIM;
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_UNLIM.ToString();
 
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
         }
@@ -2644,7 +2650,7 @@ namespace ArdupilotMega.GCSViews
 
             int row = Commands.Rows.Add();
 
-            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP;
+            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
 
             Commands.Rows[row].Cells[Param1.Index].Value = 1;
 
@@ -2660,7 +2666,7 @@ namespace ArdupilotMega.GCSViews
 
             int row = Commands.Rows.Add();
 
-            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP;
+            Commands.Rows[row].Cells[Command.Index].Value = MAVLink.MAV_CMD.DO_JUMP.ToString();
 
             Commands.Rows[row].Cells[Param1.Index].Value = wp;
 
@@ -2707,7 +2713,7 @@ namespace ArdupilotMega.GCSViews
 
             selectedrow = Commands.Rows.Add();
 
-            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TIME;
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TIME.ToString();
 
             Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
 
@@ -2721,7 +2727,7 @@ namespace ArdupilotMega.GCSViews
 
             selectedrow = Commands.Rows.Add();
 
-            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TURNS;
+            Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_TURNS.ToString();
 
             Commands.Rows[selectedrow].Cells[Param1.Index].Value = turns;
 

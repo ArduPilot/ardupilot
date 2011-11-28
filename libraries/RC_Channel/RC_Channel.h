@@ -7,6 +7,7 @@
 #define RC_Channel_h
 
 #include <AP_Common.h>
+#include <APM_RC.h>
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
@@ -93,6 +94,8 @@ class RC_Channel{
 	int16_t		range_to_pwm();
 
 	float		scale_output;
+    static void set_apm_rc(APM_RC_Class * apm_rc);
+    static APM_RC_Class *_apm_rc;
 
   private:
 	bool		_filter;

@@ -5,6 +5,7 @@
 
 #include <AP_RangeFinder.h>     // Range finder library
 #include <AP_ADC.h>				// ArduPilot Mega Analog to Digital Converter Library
+#include <AP_AnalogSource.h>
 #include <ModeFilter.h>			// mode filter
 
 #define RF_PIN AP_RANGEFINDER_PITOT_TUBE // the pitot tube on the front of the oilpan
@@ -12,11 +13,12 @@
 
 // declare global instances for reading pitot tube
 AP_ADC_ADS7844	adc;
+AP_AnalogSource_ADC	adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);
 ModeFilter mode_filter;
 
 // create the range finder object
-//AP_RangeFinder_SharpGP2Y aRF(&adc, &mode_filter);
-AP_RangeFinder_MaxsonarXL aRF(&adc, &mode_filter);
+//AP_RangeFinder_SharpGP2Y aRF(&adc_source, &mode_filter);
+AP_RangeFinder_MaxsonarXL aRF(&adc_source, &mode_filter);
 
 void setup()
 {

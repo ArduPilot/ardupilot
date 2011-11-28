@@ -1,9 +1,7 @@
-#ifndef APM_RC_h
-#define APM_RC_h
+#ifndef __APM_RC_H__
+#define __APM_RC_H__
 
-#define NUM_CHANNELS 8
-#define MIN_PULSEWIDTH 900
-#define MAX_PULSEWIDTH 2100
+#include <inttypes.h>
 
 // Radio channels
 // Note channels are from 0!
@@ -15,30 +13,39 @@
 #define CH_6 5
 #define CH_7 6
 #define CH_8 7
-#define CH_10 9    //PB5
-#define CH_11 10   //PE3
+#define CH_9 8
+#define CH_10 9
+#define CH_11 10
 
-#include <inttypes.h>
+#define MSK_CH_1 (1 << CH_1)
+#define MSK_CH_2 (1 << CH_2)
+#define MSK_CH_3 (1 << CH_3)
+#define MSK_CH_4 (1 << CH_4)
+#define MSK_CH_5 (1 << CH_5)
+#define MSK_CH_6 (1 << CH_6)
+#define MSK_CH_7 (1 << CH_7)
+#define MSK_CH_8 (1 << CH_8)
+#define MSK_CH_9 (1 << CH_9)
+#define MSK_CH_10 (1 << CH_10)
+#define MSK_CH_11 (1 << CH_11)
+
+
+
+#define NUM_CHANNELS 8
 
 class APM_RC_Class
 {
-  private:
   public:
-	APM_RC_Class();
-	void Init();
-	void OutputCh(uint8_t ch, uint16_t pwm);
-	uint16_t InputCh(uint8_t ch);
-	uint8_t GetState();
-	void Force_Out0_Out1(void);
-	void Force_Out2_Out3(void);
-	void Force_Out6_Out7(void);
-	bool setHIL(int16_t v[NUM_CHANNELS]);
-	void clearOverride(void);
-
-  private:
-	int16_t _HIL_override[NUM_CHANNELS];
+	APM_RC_Class() {}
+	virtual void OutputCh(uint8_t ch, uint16_t pwm) = 0;
+	virtual uint16_t InputCh(uint8_t ch) = 0;
+	virtual uint8_t GetState() = 0;
+	virtual void clearOverride(void) = 0;
+    virtual void Force_Out() = 0;
+    virtual void SetFastOutputChannels( uint32_t channelmask ) = 0;
 };
 
-extern APM_RC_Class APM_RC;
+#include "APM_RC_APM1.h"
+#include "APM_RC_APM2.h"
 
 #endif

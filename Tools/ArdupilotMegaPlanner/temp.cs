@@ -865,6 +865,11 @@ namespace ArdupilotMega
 
             Console.WriteLine("Removed {0} images",removed);
         }
+
+        private void BUT_lang_edit_Click(object sender, EventArgs e)
+        {
+            new resedit.Form1().Show();
+        }
     }
 
 }

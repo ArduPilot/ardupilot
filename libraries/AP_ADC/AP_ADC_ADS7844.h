@@ -14,13 +14,14 @@
 #define ADC_ACCEL_FILTER_SIZE 8
 
 #include "AP_ADC.h"
+#include "../AP_PeriodicProcess/AP_PeriodicProcess.h"
 #include <inttypes.h>
 
 class AP_ADC_ADS7844 : public AP_ADC
 {
 	public:
 	AP_ADC_ADS7844();  // Constructor
-	void 	Init();
+	void Init( AP_PeriodicProcess * scheduler );
 
 	// Read 1 sensor value
 	uint16_t Ch(unsigned char ch_num);
@@ -34,6 +35,7 @@ class AP_ADC_ADS7844 : public AP_ADC
 	uint16_t 		_prev_gyro[3];
 	uint16_t 		_prev_accel[3];
 	uint8_t			_filter_index_accel;
+	static void read( void );
 
 };
 

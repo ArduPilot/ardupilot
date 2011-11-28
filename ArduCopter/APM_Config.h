@@ -7,8 +7,6 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 
-//#define BROKEN_SLIDER		0		// 1 = yes (use Yaw to enter CLI mode)
-
 #define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
@@ -65,3 +63,5 @@
 #define USERHOOK_VARIABLES "UserVariables.h"
 
 
+// enable this for the new 'APM2' hardware
+// #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2

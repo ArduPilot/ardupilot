@@ -11,7 +11,7 @@ class AP_RangeFinder_MaxsonarXL : public RangeFinder
  // public:
 	//AP_GPS_MTK(Stream *s);
   public:
-	AP_RangeFinder_MaxsonarXL(AP_ADC *adc, ModeFilter *filter);
+	AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, ModeFilter *filter);
 
 	int convert_raw_to_distance(int _raw_value) { return _raw_value; }   // read value from analog port and return distance in cm
 };

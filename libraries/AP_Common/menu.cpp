@@ -102,10 +102,12 @@ Menu::run(void)
             i++;
         }
 
+		bool cmd_found = false;
         // look for a command matching the first word (note that it may be empty)
         for (i = 0; i < _entries; i++) {
             if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
                 ret = _call(i, argc);
+                cmd_found=true;
                 if (-2 == ret)
                     return;
                 break;
@@ -116,10 +118,17 @@ Menu::run(void)
         if (i == _entries) {
             if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
                 _help();
+                cmd_found=true;
             } else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
                 return;
             }
         }
+        
+        if (cmd_found==false)
+        {
+    		Serial.println("Invalid command, type 'help'");
+    	}
+        	
     }
 }
 

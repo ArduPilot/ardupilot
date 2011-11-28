@@ -29,7 +29,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
 {
     mavlink_msg_heartbeat_send(
         chan,
-        mavlink_system.type,
+        2 /*mavlink_system.type*/,  //MAV_TYPE_QUADROTOR
         MAV_AUTOPILOT_ARDUPILOTMEGA);
 }
 
@@ -1383,27 +1383,32 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 				// handle variables with standard type IDs
 				if (var_type == AP_Var::k_typeid_float) {
 					((AP_Float *)vp)->set_and_save(packet.param_value);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(1, (float)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_float16) {
 					((AP_Float16 *)vp)->set_and_save(packet.param_value);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(2, (float)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int32) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int32 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(3, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int16) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int16 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(4, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else if (var_type == AP_Var::k_typeid_int8) {
 					if (packet.param_value < 0) rounding_addition = -rounding_addition;
 					((AP_Int8 *)vp)->set_and_save(packet.param_value+rounding_addition);
+#if LOGGING_ENABLED == ENABLED
 					Log_Write_Data(5, (int32_t)((AP_Float *)vp)->get());
-
+#endif
 				} else {
 					// we don't support mavlink set on this parameter
 					break;
@@ -1653,6 +1658,7 @@ GCS_MAVLINK::queued_param_send()
     value = vp->cast_to_float();
     if (!isnan(value)) {
         char param_name[ONBOARD_PARAM_NAME_LENGTH];         /// XXX HACK
+        memset(param_name, 0, sizeof(param_name));
         vp->copy_name(param_name, sizeof(param_name));
 
         mavlink_msg_param_value_send(
@@ -1716,6 +1722,9 @@ static void mavlink_delay(unsigned long t)
             gcs_update();
         }
         delay(1);
+#if USB_MUX_PIN > 0
+        check_usb_mux();
+#endif
     } while (millis() - tstart < t);
 
 	in_mavlink_delay = false;
@@ -1727,7 +1736,9 @@ static void mavlink_delay(unsigned long t)
 static void gcs_send_message(enum ap_message id)
 {
     gcs0.send_message(id);
+    if (gcs3.initialised) {
     gcs3.send_message(id);
+}
 }
 
 /*
@@ -1736,7 +1747,9 @@ static void gcs_send_message(enum ap_message id)
 static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
 {
     gcs0.data_stream_send(freqMin, freqMax);
+    if (gcs3.initialised) {
     gcs3.data_stream_send(freqMin, freqMax);
+}
 }
 
 /*
@@ -1745,19 +1758,25 @@ static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
 static void gcs_update(void)
 {
 	gcs0.update();
+    if (gcs3.initialised) {
     gcs3.update();
+}
 }
 
 static void gcs_send_text(gcs_severity severity, const char *str)
 {
     gcs0.send_text(severity, str);
+    if (gcs3.initialised) {
     gcs3.send_text(severity, str);
+}
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
+    if (gcs3.initialised) {
     gcs3.send_text(severity, str);
+}
 }
 
 /*

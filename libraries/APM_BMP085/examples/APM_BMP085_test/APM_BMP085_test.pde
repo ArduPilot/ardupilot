@@ -3,6 +3,7 @@
 	Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
 */
 
+#include <FastSerial.h>
 #include <Wire.h>
 #include <APM_BMP085.h> // ArduPilot Mega BMP085 Library
 
@@ -10,12 +11,22 @@ APM_BMP085_Class APM_BMP085;
 
 unsigned long timer;
 
+FastSerialPort0(Serial);
+
+#ifdef APM2_HARDWARE
+static bool apm2_hardware = true;
+#else
+static bool apm2_hardware = false;
+#endif
+
 void setup()
 {	
 	Serial.begin(115200);
 	Serial.println("ArduPilot Mega BMP085 library test");
 	Serial.println("Initialising barometer..."); delay(100);
-	APM_BMP085.Init();	 // APM ADC initialization
+	if (!APM_BMP085.Init(1, apm2_hardware)) {
+		Serial.println("Barometer initialisation FAILED\n");
+	}
 	Serial.println("initialisation complete."); delay(100);
 	delay(1000);
 	timer = millis();

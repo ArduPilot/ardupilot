@@ -1,8 +1,8 @@
 #ifndef APM_BMP085_h
 #define APM_BMP085_h
 
-#define TEMP_FILTER_SIZE 2
-#define PRESS_FILTER_SIZE 4
+#define TEMP_FILTER_SIZE 4
+#define PRESS_FILTER_SIZE 8
 
 #include "APM_BMP085_hil.h"
 
@@ -19,9 +19,10 @@ class APM_BMP085_Class
 	int32_t Press;
 	//int Altitude;
 	uint8_t oss;
+	bool _apm2_hardware;
 	//int32_t Press0;  // Pressure at sea level
 
-	void Init(int initialiseWireLib = 1);
+	bool Init(int initialiseWireLib = 1, bool apm2_hardware=false);
 	uint8_t Read();
 
   private:

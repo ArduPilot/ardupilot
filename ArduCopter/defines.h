@@ -29,6 +29,9 @@
 #define SONAR 0
 #define BARO 1
 
+#define SONAR_SOURCE_ADC 1
+#define SONAR_SOURCE_ANALOG_PIN 2
+
 // CH 7 control
 #define CH7_DO_NOTHING 0
 #define CH7_SET_HOVER 1
@@ -330,14 +333,6 @@ enum gcs_severity {
 // sonar
 //#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
-// Hardware Parameters
-#define SLIDE_SWITCH_PIN 40
-#define PUSHBUTTON_PIN 41
-
-#define A_LED_PIN 37			//36 = B,	37 = A,	35 = C
-#define B_LED_PIN 36
-#define C_LED_PIN 35
-
 // RADIANS
 #define RADX100 0.000174533
 
@@ -352,5 +347,13 @@ enum gcs_severity {
 
 // mark a function as not to be inlined
 #define NOINLINE __attribute__((noinline))
+
+// IMU selection
+#define CONFIG_IMU_OILPAN 1
+#define CONFIG_IMU_MPU6000 2
+
+// APM Hardware selection
+#define APM_HARDWARE_APM1 1
+#define APM_HARDWARE_APM2 2
 
 #endif // _DEFINES_H

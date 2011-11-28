@@ -43,7 +43,7 @@ static void init_rc_out()
 	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
 	APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
 
-	APM_RC.Init();		// APM Radio initialization
+	APM_RC.Init( &isr_registry );		// APM Radio initialization
 
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);

@@ -21,6 +21,7 @@ using System.Threading;
 using System.Net.Sockets;
 using IronPython.Hosting;
 
+
 namespace ArdupilotMega
 {
     public partial class MainV2 : Form
@@ -86,6 +87,17 @@ namespace ArdupilotMega
 
         public MainV2()
         {
+            Form splash = new Splash();
+            splash.Show();
+
+            string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            strVersion = "";
+            splash.Text = "APM Planner " + Application.ProductVersion + " " + strVersion + " By Michael Oborne";
+
+            splash.Refresh();
+
+            Application.DoEvents();
+
             //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
             //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
@@ -108,17 +120,6 @@ namespace ArdupilotMega
             Console.WriteLine(DateTime.Now.Millisecond);
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
-
-            Form splash = new Splash();
-            splash.Show();
-
-            string strVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            strVersion = "";
-            splash.Text = "APM Planner " + Application.ProductVersion + " " + strVersion + " By Michael Oborne";
-
-            splash.Refresh();
-
-            Application.DoEvents();
 
             //talk.SpeakAsync("Welcome to APM Planner");
 
@@ -767,6 +768,7 @@ namespace ArdupilotMega
             else
             {
                 CMB_baudrate.Enabled = true;
+                MainV2.comPort.BaseStream = new ArdupilotMega.SerialPort();
             }
 
             try
@@ -774,7 +776,13 @@ namespace ArdupilotMega
                 comPort.BaseStream.PortName = CMB_serialport.Text;
 
                 if (config[CMB_serialport.Text + "_BAUD"] != null)
+                {
                     CMB_baudrate.Text = config[CMB_serialport.Text + "_BAUD"].ToString();
+                }
+                else
+                {
+                    MainV2.comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+                }
             }
             catch { }
         }
@@ -1449,6 +1457,17 @@ namespace ArdupilotMega
             }
             catch (Exception ex) { MessageBox.Show("Update Failed " + ex.Message); }
         }
+
+        private static void updatelabel(Label loadinglabel,string text)
+        {
+            MainV2.instance.Invoke((MethodInvoker)delegate
+            {
+                loadinglabel.Text = text;
+            });
+
+            Application.DoEvents();
+        }
+
         private static bool updatecheck(Label loadinglabel, string baseurl, string subdir)
         {
             bool update = false;
@@ -1508,7 +1527,7 @@ namespace ArdupilotMega
                     continue;
                 }
                 if (loadinglabel != null)
-                    loadinglabel.Text = "Checking " + file;
+                    updatelabel(loadinglabel, "Checking " + file);
 
                 string path = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + subdir + file;
 
@@ -1572,7 +1591,7 @@ namespace ArdupilotMega
                         }
                     }
                     if (loadinglabel != null)
-                        loadinglabel.Text = "Getting " + file;
+                        updatelabel(loadinglabel,"Getting " + file);
 
                     // Create a request using a URL that can receive a post. 
                     request = WebRequest.Create(baseurl + file);
@@ -1604,7 +1623,7 @@ namespace ArdupilotMega
                             if (dt.Second != DateTime.Now.Second)
                             {
                                 if (loadinglabel != null)
-                                    loadinglabel.Text = "Getting " + file + ": " + Math.Abs(bytes) + " bytes";//(((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
+                                    updatelabel(loadinglabel,"Getting " + file + ": " + Math.Abs(bytes) + " bytes");//(((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
                                 dt = DateTime.Now;
                             }
                         }

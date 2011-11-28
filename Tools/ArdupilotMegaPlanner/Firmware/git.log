@@ -1,1 +1,362 @@
-Already up-to-date.
+From https://code.google.com/p/ardupilot-mega
+   0b42d33..e4850de  master     -> origin/master
+ * [new tag]         2.0.50_Beta -> 2.0.50_Beta
+From https://code.google.com/p/ardupilot-mega
+ * [new tag]         ArduCopter-2.1.0-Alpha -> ArduCopter-2.1.0-Alpha
+ * [new tag]         ArduPlane-2.27-Alpha -> ArduPlane-2.27-Alpha
+ * [new tag]         pre-apm2-support -> pre-apm2-support
+Updating 0b42d33..e4850de
+Fast-forward
+ .gitignore                                         |    2 +
+ ArduBoat/ControllerBoat.h                          |   10 +-
+ ArduCopter/APM_Config.h                            |    7 +-
+ ArduCopter/ArduCopter.pde                          |   98 +-
+ ArduCopter/GCS.h                                   |    8 +-
+ ArduCopter/GCS_Mavlink.pde                         |   29 +-
+ ArduCopter/Log.pde                                 |  395 +-
+ ArduCopter/Makefile                                |   27 +
+ ArduCopter/config.h                                |  126 +-
+ ArduCopter/defines.h                               |   19 +-
+ ArduCopter/heli.pde                                |    4 +-
+ ArduCopter/leds.pde                                |   32 +-
+ ArduCopter/motors.pde                              |    4 +-
+ ArduCopter/motors_hexa.pde                         |    5 +-
+ ArduCopter/motors_octa.pde                         |    5 +-
+ ArduCopter/motors_octa_quad.pde                    |    5 +-
+ ArduCopter/motors_quad.pde                         |    4 +-
+ ArduCopter/motors_tri.pde                          |    4 +-
+ ArduCopter/motors_y6.pde                           |    5 +-
+ ArduCopter/planner.pde                             |    2 +
+ ArduCopter/radio.pde                               |   48 +-
+ ArduCopter/setup.pde                               |   26 -
+ ArduCopter/system.pde                              |  154 +-
+ ArduCopter/test.pde                                |  164 +-
+ ArduPlane/APM_Config.h                             |    1 -
+ ArduPlane/ArduPlane.pde                            |   83 +-
+ ArduPlane/GCS.h                                    |    8 +-
+ ArduPlane/GCS_Mavlink.pde                          |   29 +-
+ ArduPlane/Log.pde                                  |  265 +-
+ ArduPlane/Makefile                                 |   27 +
+ ArduPlane/config.h                                 |   95 +-
+ ArduPlane/control_modes.pde                        |    2 +
+ ArduPlane/defines.h                                |   17 +-
+ ArduPlane/planner.pde                              |    9 +-
+ ArduPlane/radio.pde                                |    2 +-
+ ArduPlane/sensors.pde                              |   12 +-
+ ArduPlane/system.pde                               |  146 +-
+ ArduPlane/test.pde                                 |   68 +-
+ ArduRover/ControllerCar.h                          |    8 +-
+ ArduRover/ControllerTank.h                         |    2 +-
+ CMakeLists.txt                                     |   12 +-
+ README.txt                                         |   20 +-
+ Tools/ArduPPM/ATMega328p/Encoder-PPM.c             |   18 +-
+ Tools/ArduPPM/ATMega328p/Encoder-PPM.hex           |  111 -
+ Tools/ArduPPM/ATMega328p/manual.txt                |   24 +-
+ Tools/ArdupilotMegaPlanner/ArduinoDetect.cs        |    4 +-
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.csproj    |   48 +-
+ .../ArdupilotMegaPlanner/ArdupilotMega.csproj.user |    3 +
+ Tools/ArdupilotMegaPlanner/ArdupilotMega.sln       |   14 -
+ Tools/ArdupilotMegaPlanner/Common.cs               |   14 +-
+ .../GCSViews/Configuration.Designer.cs             |  464 +-
+ .../ArdupilotMegaPlanner/GCSViews/Configuration.cs |   26 +-
+ .../GCSViews/Configuration.resx                    | 5322 ++++++++++++-----
+ .../GCSViews/Configuration.zh-Hans.resx            |   88 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Firmware.cs    |    4 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/FlightData.cs  |    2 +-
+ .../GCSViews/FlightData.zh-Hans.resx               |  140 +-
+ .../GCSViews/FlightPlanner.Designer.cs             |   11 +
+ .../ArdupilotMegaPlanner/GCSViews/FlightPlanner.cs |   53 +-
+ .../GCSViews/FlightPlanner.resx                    |  110 +-
+ .../GCSViews/FlightPlanner.zh-Hans.resx            |    4 +
+ .../GCSViews/Simulation.zh-Hans.resx               |   30 +-
+ Tools/ArdupilotMegaPlanner/GCSViews/Terminal.cs    |    7 -
+ Tools/ArdupilotMegaPlanner/HIL/Aircraft.cs         |    1 -
+ Tools/ArdupilotMegaPlanner/HIL/QuadCopter.cs       |    5 +
+ Tools/ArdupilotMegaPlanner/MAVLink.cs              |  116 +-
+ Tools/ArdupilotMegaPlanner/MainV2.cs               |   92 +-
+ Tools/ArdupilotMegaPlanner/MavlinkLog.cs           |    9 +-
+ .../Properties/AssemblyInfo.cs                     |    2 +-
+ .../Properties/Resources.Designer.cs               |    2 +-
+ Tools/ArdupilotMegaPlanner/ResEdit.Designer.cs     |  162 +
+ Tools/ArdupilotMegaPlanner/ResEdit.cs              |  284 +
+ .../{bin/Release/HUD.resx => ResEdit.resx}         |  326 +-
+ Tools/ArdupilotMegaPlanner/Script.cs               |  135 +
+ Tools/ArdupilotMegaPlanner/Setup/Setup.cs          |    4 +-
+ .../ArdupilotMegaPlanner/Setup/Setup.zh-Hans.resx  |  261 +-
+ Tools/ArdupilotMegaPlanner/Splash.cs               |    1 -
+ Tools/ArdupilotMegaPlanner/app.config              |    7 +-
+ .../bin/Release/ArduCopter.exe                     |  Bin 681422 -> 746255 bytes
+ .../ArdupilotMegaPlanner/bin/Release/ArduPlane.exe |  Bin 676470 -> 782630 bytes
+ .../bin/Release/ArdupilotMegaPlanner.application   |    4 +-
+ .../bin/Release/ArdupilotMegaPlanner.exe           |  Bin 2214400 -> 2191360 bytes
+ .../bin/Release/ArdupilotMegaPlanner.exe.config    |    7 +-
+ .../bin/Release/BSE.Windows.Forms.dll              |  Bin 141824 -> 141824 bytes
+ .../bin/Release/GCSViews/Configuration.resx        | 6431 --------------------
+ .../bin/Release/GCSViews/Firmware.resx             |  705 ---
+ .../bin/Release/GCSViews/FlightData.resx           | 1828 ------
+ .../bin/Release/GCSViews/FlightPlanner.resx        | 2110 -------
+ .../bin/Release/GCSViews/Help.resx                 |  228 -
+ .../bin/Release/GCSViews/Simulation.resx           | 2100 -------
+ .../bin/Release/GCSViews/Terminal.resx             |  289 -
+ .../bin/Release/GMap.NET.Core.dll                  |  Bin 183808 -> 184320 bytes
+ .../bin/Release/GMap.NET.WindowsForms.dll          |  Bin 77824 -> 77824 bytes
+ .../bin/Release/IronPython.Modules.dll             |  Bin 0 -> 464728 bytes
+ .../bin/Release/IronPython.dll                     |  Bin 0 -> 1496920 bytes
+ .../bin/Release/JoystickSetup.resx                 | 1807 ------
+ .../bin/Release/Microsoft.Dynamic.dll              |  Bin 0 -> 956248 bytes
+ .../bin/Release/Microsoft.Scripting.Core.dll       |  Bin 0 -> 403288 bytes
+ .../bin/Release/Microsoft.Scripting.Debugging.dll  |  Bin 0 -> 58200 bytes
+ .../Microsoft.Scripting.ExtensionAttribute.dll     |  Bin 0 -> 11096 bytes
+ .../bin/Release/Microsoft.Scripting.dll            |  Bin 0 -> 178008 bytes
+ .../bin/Release/Setup/Setup.resx                   | 3751 ------------
+ .../ArdupilotMegaPlanner/bin/Release/SharpKml.dll  |  Bin 124928 -> 124928 bytes
+ Tools/ArdupilotMegaPlanner/bin/Release/Updater.exe |  Bin 8192 -> 8192 bytes
+ .../bin/Release/arducopter-xplane.zip              |  Bin 0 -> 169744 bytes
+ .../bin/Release/dataflashlog.xml                   |  260 +-
+ Tools/ArdupilotMegaPlanner/bin/Release/mavcmd.xml  |  532 ++-
+ Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe |  Bin 20480 -> 0 bytes
+ .../bin/Release/resedit.exe.config                 |    3 -
+ .../ru-RU/ArdupilotMegaPlanner.resources.dll       |  Bin 53248 -> 53248 bytes
+ .../zh-Hans/ArdupilotMegaPlanner.resources.dll     |  Bin 380928 -> 417792 bytes
+ Tools/ArdupilotMegaPlanner/dataflashlog.xml        |  260 +-
+ Tools/ArdupilotMegaPlanner/hires.cs                |   48 +
+ Tools/ArdupilotMegaPlanner/mavcmd.xml              |  532 ++-
+ Tools/ArdupilotMegaPlanner/mykey.snk               |  Bin 0 -> 596 bytes
+ Tools/ArdupilotMegaPlanner/resedit/Form1.cs        |   18 +
+ Tools/ArdupilotMegaPlanner/temp.Designer.cs        |   13 +
+ Tools/ArdupilotMegaPlanner/temp.cs                 |    5 +
+ Tools/PPMEncoder/ap_ppm_encoder.aps                |    1 -
+ Tools/PPMEncoder/ap_ppm_encoder.aws                |    1 -
+ Tools/PPMEncoder/ap_ppm_encoder.c                  | 1286 ----
+ Tools/PPMEncoder/default/Makefile                  |   77 -
+ Tools/PPMEncoder/default/ap_ppm_encoder.eep        |    5 -
+ Tools/PPMEncoder/default/ap_ppm_encoder.elf        |  Bin 16459 -> 0 bytes
+ Tools/PPMEncoder/default/ap_ppm_encoder.hex        |  197 -
+ Tools/PPMEncoder/default/ap_ppm_encoder.lss        | 2636 --------
+ Tools/PPMEncoder/default/ap_ppm_encoder.map        |  419 --
+ Tools/PPMEncoder/default/dep/ap_ppm_encoder.o.d    |   46 -
+ Tools/PPMEncoder/default/ppm_enconder_at328.bat    |   17 -
+ Tools/PPMEncoder/servo2ppm_settings.h              |  128 -
+ Tools/autotest/ArduCopter.parm                     |    1 +
+ Tools/autotest/arducopter.py                       |   26 +-
+ Tools/autotest/autotest.py                         |   22 +-
+ Tools/autotest/common.py                           |    3 +-
+ Tools/autotest/util.py                             |    6 +-
+ Tools/scripts/build_all.sh                         |   25 +
+ apo/ControllerPlane.h                              |   10 +-
+ apo/ControllerQuad.h                               |   53 +-
+ apo/QuadArducopter.h                               |   25 +-
+ apo/apo.pde                                        |    5 +-
+ cmake/modules/FindArduino.cmake                    |  227 +-
+ cmake/toolchains/Arduino.cmake                     |    6 +-
+ cmake/updated-arduino-cmake.sh                     |    2 +-
+ libraries/APM_BMP085/APM_BMP085.cpp                |   32 +-
+ libraries/APM_BMP085/APM_BMP085.h                  |    7 +-
+ libraries/APM_BMP085/APM_BMP085_hil.cpp            |    2 +-
+ libraries/APM_BMP085/APM_BMP085_hil.h              |    3 +-
+ .../examples/APM_BMP085_test/APM_BMP085_test.pde   |   13 +-
+ .../APM_BMP085/examples/APM_BMP085_test/Makefile   |    3 +
+ libraries/APM_RC/APM_RC.h                          |   53 +-
+ libraries/APM_RC/{APM_RC.cpp => APM_RC_APM1.cpp}   |  548 +-
+ libraries/APM_RC/APM_RC_APM1.h                     |   43 +
+ libraries/APM_RC/APM_RC_APM2.cpp                   |  289 +
+ libraries/APM_RC/APM_RC_APM2.h                     |   42 +
+ .../APM_radio.pde => APM1_radio/APM1_radio.pde}    |   11 +-
+ .../AP_IMU => APM_RC/examples/APM1_radio}/Makefile |    2 +-
+ .../APM_RC/examples/{APM_radio => APM2}/Makefile   |    2 +-
+ .../APM_radio.pde => APM2/Purple_radio.pde}        |   11 +-
+ libraries/APO/APO.h                                |    1 +
+ libraries/APO/AP_ArmingMechanism.cpp               |   16 +-
+ libraries/APO/AP_ArmingMechanism.h                 |    8 +-
+ libraries/APO/AP_Autopilot.cpp                     |    7 +-
+ libraries/APO/AP_CommLink.cpp                      |  139 +-
+ libraries/APO/AP_Controller.cpp                    |  104 +-
+ libraries/APO/AP_Controller.h                      |  368 +-
+ libraries/APO/AP_ControllerBlock.cpp               |  179 +
+ libraries/APO/AP_ControllerBlock.h                 |  237 +
+ libraries/APO/AP_Guide.cpp                         |   37 +-
+ libraries/APO/AP_Guide.h                           |   26 +-
+ libraries/APO/AP_HardwareAbstractionLayer.h        |   10 +-
+ libraries/APO/AP_MavlinkCommand.cpp                |    4 +-
+ libraries/APO/AP_Navigator.cpp                     |    5 +-
+ libraries/APO/AP_Navigator.h                       |  103 +-
+ libraries/AP_ADC/AP_ADC.h                          |    4 +-
+ libraries/AP_ADC/AP_ADC_ADS7844.cpp                |   76 +-
+ libraries/AP_ADC/AP_ADC_ADS7844.h                  |    4 +-
+ libraries/AP_ADC/AP_ADC_HIL.cpp                    |    2 +-
+ libraries/AP_ADC/AP_ADC_HIL.h                      |    2 +-
+ .../AP_ADC/examples/AP_ADC_test/AP_ADC_test.pde    |   14 +-
+ libraries/AP_ADC/examples/AP_ADC_test/Makefile     |    2 +-
+ libraries/AP_AnalogSource/AP_AnalogSource.h        |    8 +
+ libraries/AP_AnalogSource/AP_AnalogSource_ADC.cpp  |    9 +
+ libraries/AP_AnalogSource/AP_AnalogSource_ADC.h    |   21 +
+ .../AP_AnalogSource/AP_AnalogSource_Arduino.cpp    |    8 +
+ .../AP_AnalogSource/AP_AnalogSource_Arduino.h      |   17 +
+ libraries/AP_AnalogSource/AnalogSource.h           |   11 +
+ libraries/AP_Common/AP_Common.h                    |   34 +-
+ libraries/AP_Common/AP_Vector.h                    |    1 +
+ libraries/AP_Common/Arduino.mk                     |    7 +-
+ libraries/AP_Common/include/menu.h                 |    2 +
+ libraries/AP_Compass/AP_Compass_HMC5843.h          |    1 +
+ libraries/AP_IMU/AP_IMU.h                          |    3 +-
+ libraries/AP_IMU/AP_IMU_INS.cpp                    |  250 +
+ libraries/AP_IMU/AP_IMU_INS.h                      |   84 +
+ libraries/AP_IMU/AP_IMU_Oilpan.cpp                 |  302 -
+ libraries/AP_IMU/AP_IMU_Oilpan.h                   |  109 -
+ libraries/AP_IMU/AP_IMU_Shim.h                     |    5 +-
+ libraries/AP_IMU/IMU.cpp                           |   34 +
+ libraries/AP_IMU/IMU.h                             |   23 +-
+ .../examples/AP_IMU_MPU6000/AP_IMU_MPU6000.pde     |   55 +
+ .../examples/AP_IMU_MPU6000}/Makefile              |    0
+ .../examples/IMU_MPU6000_test/IMU_MPU6000_test.pde |   50 +
+ .../examples/IMU_MPU6000_test}/Makefile            |    2 +-
+ .../IMU_Oilpan_test.pde}                           |   22 +-
+ .../examples/IMU_Oilpan_test}/Makefile             |    2 +-
+ libraries/AP_InertialSensor/AP_InertialSensor.h    |   62 +
+ .../AP_InertialSensor_MPU6000.cpp                  |  298 +
+ .../AP_InertialSensor/AP_InertialSensor_MPU6000.h  |   67 +
+ .../AP_InertialSensor/AP_InertialSensor_Oilpan.cpp |  122 +
+ .../AP_InertialSensor/AP_InertialSensor_Oilpan.h   |   60 +
+ .../AP_InertialSensor/AP_InertialSensor_Stub.cpp   |   26 +
+ .../AP_InertialSensor/AP_InertialSensor_Stub.h     |   35 +
+ libraries/AP_PeriodicProcess/AP_PeriodicProcess.h  |   10 +
+ .../AP_PeriodicProcess/AP_PeriodicProcessStub.cpp  |    6 +
+ .../AP_PeriodicProcess/AP_PeriodicProcessStub.h    |   21 +
+ .../AP_TimerAperiodicProcess.cpp                   |   39 +
+ .../AP_PeriodicProcess/AP_TimerAperiodicProcess.h  |   19 +
+ libraries/AP_PeriodicProcess/AP_TimerProcess.cpp   |   43 +
+ libraries/AP_PeriodicProcess/AP_TimerProcess.h     |   23 +
+ libraries/AP_PeriodicProcess/PeriodicProcess.h     |   11 +
+ .../AP_RangeFinder/AP_RangeFinder_MaxsonarXL.cpp   |    5 +-
+ .../AP_RangeFinder/AP_RangeFinder_MaxsonarXL.h     |    2 +-
+ .../AP_RangeFinder/AP_RangeFinder_SharpGP2Y.cpp    |    5 +-
+ .../AP_RangeFinder/AP_RangeFinder_SharpGP2Y.h      |    2 +-
+ libraries/AP_RangeFinder/RangeFinder.cpp           |   17 +-
+ libraries/AP_RangeFinder/RangeFinder.h             |   14 +-
+ .../AP_RangeFinder_test/AP_RangeFinder_test.pde    |    6 +-
+ libraries/AP_RangeFinder/keywords.txt              |    3 +-
+ .../Arduino_Mega_ISR_Registry.cpp                  |   48 +
+ .../Arduino_Mega_ISR_Registry.h                    |   22 +
+ libraries/DataFlash/DataFlash.h                    |  155 +-
+ .../{DataFlash.cpp => DataFlash_APM1.cpp}          |  939 ++--
+ libraries/DataFlash/DataFlash_APM1.h               |   67 +
+ libraries/DataFlash/DataFlash_APM2.cpp             |  495 ++
+ libraries/DataFlash/DataFlash_APM2.h               |   72 +
+ libraries/Desktop/Desktop.mk                       |    4 +-
+ libraries/Desktop/include/avr/iomxx0_1.h           |   10 +
+ libraries/Desktop/include/avr/pgmspace.h           |    4 +
+ libraries/Desktop/support/Arduino.cpp              |   17 +-
+ .../support/{DataFlash.cpp => DataFlash_APM1.cpp}  |  122 +-
+ libraries/Desktop/support/FastSerial.cpp           |   36 +-
+ libraries/Desktop/support/desktop.h                |   22 +-
+ libraries/Desktop/support/main.cpp                 |   47 +-
+ libraries/Desktop/support/sitl.cpp                 |  310 +
+ libraries/Desktop/support/sitl_adc.cpp             |  129 +
+ libraries/Desktop/support/sitl_adc.h               |   68 +
+ libraries/Desktop/support/sitl_barometer.cpp       |   36 +
+ libraries/Desktop/support/sitl_compass.cpp         |   69 +
+ libraries/Desktop/support/sitl_gps.cpp             |  159 +
+ libraries/Desktop/support/sitl_rc.h                |   52 +
+ libraries/Desktop/support/util.cpp                 |   92 +
+ libraries/Desktop/support/util.h                   |   11 +
+ libraries/RC_Channel/RC_Channel.cpp                |    6 +
+ libraries/RC_Channel/RC_Channel.h                  |    3 +
+ libraries/RC_Channel/RC_Channel_aux.cpp            |    2 +-
+ 255 files changed, 14009 insertions(+), 29401 deletions(-)
+ delete mode 100644 Tools/ArduPPM/ATMega328p/Encoder-PPM.hex
+ create mode 100644 Tools/ArdupilotMegaPlanner/ResEdit.Designer.cs
+ create mode 100644 Tools/ArdupilotMegaPlanner/ResEdit.cs
+ rename Tools/ArdupilotMegaPlanner/{bin/Release/HUD.resx => ResEdit.resx} (70%)
+ create mode 100644 Tools/ArdupilotMegaPlanner/Script.cs
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/Configuration.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/Firmware.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/FlightData.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/FlightPlanner.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/Help.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/Simulation.resx
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/GCSViews/Terminal.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/IronPython.Modules.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/IronPython.dll
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/JoystickSetup.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Microsoft.Dynamic.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Microsoft.Scripting.Core.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Microsoft.Scripting.Debugging.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Microsoft.Scripting.ExtensionAttribute.dll
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Microsoft.Scripting.dll
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/Setup/Setup.resx
+ create mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/arducopter-xplane.zip
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe
+ delete mode 100644 Tools/ArdupilotMegaPlanner/bin/Release/resedit.exe.config
+ create mode 100644 Tools/ArdupilotMegaPlanner/hires.cs
+ create mode 100644 Tools/ArdupilotMegaPlanner/mykey.snk
+ delete mode 100644 Tools/PPMEncoder/ap_ppm_encoder.aps
+ delete mode 100644 Tools/PPMEncoder/ap_ppm_encoder.aws
+ delete mode 100644 Tools/PPMEncoder/ap_ppm_encoder.c
+ delete mode 100644 Tools/PPMEncoder/default/Makefile
+ delete mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.eep
+ delete mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.elf
+ delete mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.hex
+ delete mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.lss
+ delete mode 100644 Tools/PPMEncoder/default/ap_ppm_encoder.map
+ delete mode 100644 Tools/PPMEncoder/default/dep/ap_ppm_encoder.o.d
+ delete mode 100644 Tools/PPMEncoder/default/ppm_enconder_at328.bat
+ delete mode 100644 Tools/PPMEncoder/servo2ppm_settings.h
+ create mode 100755 Tools/scripts/build_all.sh
+ rename libraries/APM_RC/{APM_RC.cpp => APM_RC_APM1.cpp} (65%)
+ create mode 100644 libraries/APM_RC/APM_RC_APM1.h
+ create mode 100644 libraries/APM_RC/APM_RC_APM2.cpp
+ create mode 100644 libraries/APM_RC/APM_RC_APM2.h
+ copy libraries/APM_RC/examples/{APM_radio/APM_radio.pde => APM1_radio/APM1_radio.pde} (75%)
+ rename libraries/{AP_IMU/examples/AP_IMU => APM_RC/examples/APM1_radio}/Makefile (69%)
+ copy libraries/APM_RC/examples/{APM_radio => APM2}/Makefile (69%)
+ rename libraries/APM_RC/examples/{APM_radio/APM_radio.pde => APM2/Purple_radio.pde} (75%)
+ create mode 100644 libraries/APO/AP_ControllerBlock.cpp
+ create mode 100644 libraries/APO/AP_ControllerBlock.h
+ create mode 100644 libraries/AP_AnalogSource/AP_AnalogSource.h
+ create mode 100644 libraries/AP_AnalogSource/AP_AnalogSource_ADC.cpp
+ create mode 100644 libraries/AP_AnalogSource/AP_AnalogSource_ADC.h
+ create mode 100644 libraries/AP_AnalogSource/AP_AnalogSource_Arduino.cpp
+ create mode 100644 libraries/AP_AnalogSource/AP_AnalogSource_Arduino.h
+ create mode 100644 libraries/AP_AnalogSource/AnalogSource.h
+ create mode 100644 libraries/AP_IMU/AP_IMU_INS.cpp
+ create mode 100644 libraries/AP_IMU/AP_IMU_INS.h
+ delete mode 100644 libraries/AP_IMU/AP_IMU_Oilpan.cpp
+ delete mode 100644 libraries/AP_IMU/AP_IMU_Oilpan.h
+ create mode 100644 libraries/AP_IMU/IMU.cpp
+ create mode 100644 libraries/AP_IMU/examples/AP_IMU_MPU6000/AP_IMU_MPU6000.pde
+ copy libraries/{APM_RC/examples/APM_radio => AP_IMU/examples/AP_IMU_MPU6000}/Makefile (100%)
+ create mode 100644 libraries/AP_IMU/examples/IMU_MPU6000_test/IMU_MPU6000_test.pde
+ copy libraries/{APM_RC/examples/APM_radio => AP_IMU/examples/IMU_MPU6000_test}/Makefile (69%)
+ rename libraries/AP_IMU/examples/{AP_IMU/AP_IMU.pde => IMU_Oilpan_test/IMU_Oilpan_test.pde} (53%)
+ rename libraries/{APM_RC/examples/APM_radio => AP_IMU/examples/IMU_Oilpan_test}/Makefile (69%)
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor.h
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_MPU6000.cpp
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_MPU6000.h
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_Oilpan.cpp
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_Oilpan.h
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_Stub.cpp
+ create mode 100644 libraries/AP_InertialSensor/AP_InertialSensor_Stub.h
+ create mode 100644 libraries/AP_PeriodicProcess/AP_PeriodicProcess.h
+ create mode 100644 libraries/AP_PeriodicProcess/AP_PeriodicProcessStub.cpp
+ create mode 100644 libraries/AP_PeriodicProcess/AP_PeriodicProcessStub.h
+ create mode 100644 libraries/AP_PeriodicProcess/AP_TimerAperiodicProcess.cpp
+ create mode 100644 libraries/AP_PeriodicProcess/AP_TimerAperiodicProcess.h
+ create mode 100644 libraries/AP_PeriodicProcess/AP_TimerProcess.cpp
+ create mode 100644 libraries/AP_PeriodicProcess/AP_TimerProcess.h
+ create mode 100644 libraries/AP_PeriodicProcess/PeriodicProcess.h
+ create mode 100644 libraries/Arduino_Mega_ISR_Registry/Arduino_Mega_ISR_Registry.cpp
+ create mode 100644 libraries/Arduino_Mega_ISR_Registry/Arduino_Mega_ISR_Registry.h
+ rename libraries/DataFlash/{DataFlash.cpp => DataFlash_APM1.cpp} (66%)
+ create mode 100644 libraries/DataFlash/DataFlash_APM1.h
+ create mode 100644 libraries/DataFlash/DataFlash_APM2.cpp
+ create mode 100644 libraries/DataFlash/DataFlash_APM2.h
+ rename libraries/Desktop/support/{DataFlash.cpp => DataFlash_APM1.cpp} (53%)
+ create mode 100644 libraries/Desktop/support/sitl.cpp
+ create mode 100644 libraries/Desktop/support/sitl_adc.cpp
+ create mode 100644 libraries/Desktop/support/sitl_adc.h
+ create mode 100644 libraries/Desktop/support/sitl_barometer.cpp
+ create mode 100644 libraries/Desktop/support/sitl_compass.cpp
+ create mode 100644 libraries/Desktop/support/sitl_gps.cpp
+ create mode 100644 libraries/Desktop/support/sitl_rc.h
+ create mode 100644 libraries/Desktop/support/util.cpp
+ create mode 100644 libraries/Desktop/support/util.h

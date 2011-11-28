@@ -11,7 +11,13 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
+
+#if HIL_MODE != HIL_MODE_ATTITUDE
+static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_dcm_eulers(uint8_t argc, 			const Menu::arg *argv);
+#endif // HIL_MODE
+
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
@@ -59,11 +65,14 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 //	{"failsafe",	test_failsafe},
 //	{"stabilize",	test_stabilize},
 	{"gps",			test_gps},
-#if HIL_MODE != HIL_MODE_ATTITUDE
+#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
 //	{"adc", 		test_adc},
 #endif
+#if HIL_MODE != HIL_MODE_ATTITUDE
+	{"ins", 		test_ins},
 	{"imu",			test_imu},
-	//{"dcm",			test_dcm},
+	{"dcm",			test_dcm_eulers},
+#endif
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
@@ -75,7 +84,9 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	{"altitude",	test_baro},
 #endif
+#if CONFIG_SONAR == ENABLED
 	{"sonar",		test_sonar},
+#endif
 	//{"compass",		test_mag},
 #ifdef OPTFLOW_ENABLED
 	{"optflow",		test_optflow},
@@ -391,13 +402,18 @@ static int8_t
 }
 */
 
-/*#if HIL_MODE != HIL_MODE_ATTITUDE
+
+/*#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
 static int8_t
 //test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	Serial.printf_P(PSTR("ADC\n"));
 	delay(1000);
+
+  adc.Init(&timer_scheduler);
+
+  delay(50);
 
 	while(1){
 		for(int i = 0; i < 9; i++){
@@ -413,13 +429,97 @@ static int8_t
 #endif
 */
 
+#if HIL_MODE != HIL_MODE_ATTITUDE
+static int8_t
+test_ins(uint8_t argc, const Menu::arg *argv)
+{
+    float gyro[3], accel[3], temp;
+	print_hit_enter();
+	Serial.printf_P(PSTR("InertialSensor\n"));
+	delay(1000);
+
+    ins.init(&timer_scheduler);
+
+    delay(50);
+
+	while(1){
+        ins.update();
+        ins.get_gyros(gyro);
+        ins.get_accels(accel);
+        temp = ins.temperature();
+
+        Serial.printf_P(PSTR("g"));
+
+        for (int i = 0; i < 3; i++) {
+            Serial.printf_P(PSTR(" %7.4f"), gyro[i]);
+        }
+
+        Serial.printf_P(PSTR(" a"));
+
+        for (int i = 0; i < 3; i++) {
+            Serial.printf_P(PSTR(" %7.4f"),accel[i]);
+        }
+        Serial.printf_P(PSTR(" t %7.4f \n"), temp);
+		delay(40);
+		if(Serial.available() > 0){
+			return (0);
+		}
+	}
+}
+#endif // HIL_MODE
+
+
+#if HIL_MODE != HIL_MODE_ATTITUDE
+/*
+  test the IMU interface
+ */
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
+{
+  Vector3f gyro;
+  Vector3f accel;
+
+  imu.init(IMU::WARM_START, delay, &timer_scheduler);
+
+	report_imu();
+	imu.init_gyro();
+	report_imu();
+
+	print_hit_enter();
+	delay(1000);
+
+	while(1){
+		delay(40);
+
+        imu.update();
+        gyro = imu.get_gyro();
+        accel = imu.get_accel();
+
+        Serial.printf_P(PSTR("g %8.4f %8.4f %8.4f"), gyro.x, gyro.y, gyro.z);
+        Serial.printf_P(PSTR("  a %8.4f %8.4f %8.4f\n"), accel.x, accel.y, accel.z);
+
+		if(Serial.available() > 0){
+			return (0);
+		}
+    }
+  return 0;
+}
+#endif // HIL_MODE
+
+
+#if HIL_MODE != HIL_MODE_ATTITUDE
+/*
+   test the DCM code, printing Euler angles
+ */
+static int8_t
+test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
 
 	//dcm.kp_yaw(0.02);
 	//dcm.ki_yaw(0);
+
+    imu.init(IMU::WARM_START, delay, &timer_scheduler);
 
 	report_imu();
 	imu.init_gyro();
@@ -444,7 +544,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			//Vector3f accel_filt	= imu.get_accel_filtered();
 			//accels_rot 	= dcm.get_dcm_matrix() * accel_filt;
 
-
 			medium_loopCounter++;
 
 			if(medium_loopCounter == 4){
@@ -452,57 +551,28 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			}
 
 			if(medium_loopCounter == 1){
-				//read_radio();
 				medium_loopCounter = 0;
-				//tuning();
-				//dcm.kp_roll_pitch((float)g.rc_6.control_in / 2000.0);
-
-				/*
-				Serial.printf_P(PSTR("r: %ld\tp: %ld\t y: %ld, kp:%1.4f, kp:%1.4f \n"),
-								dcm.roll_sensor,
-								dcm.pitch_sensor,
-								dcm.yaw_sensor,
-								dcm.kp_roll_pitch(),
-								(float)g.rc_6.control_in / 2000.0);
-				*/
-				Serial.printf_P(PSTR("%ld, %ld, %ld,  |  %ld, %ld, %ld\n"),
-								dcm.roll_sensor,
-								dcm.pitch_sensor,
-								dcm.yaw_sensor,
-								(long)(degrees(omega.x) * 100.0),
-								(long)(degrees(omega.y) * 100.0),
-								(long)(degrees(omega.z) * 100.0));
+				Serial.printf_P(PSTR("dcm: %6.1f, %6.1f, %6.1f   omega: %6.1f, %6.1f, %6.1f\n"),
+								dcm.roll_sensor/100.0,
+								dcm.pitch_sensor/100.0,
+								dcm.yaw_sensor/100.0,
+								degrees(omega.x),
+								degrees(omega.y),
+								degrees(omega.z));
 
 				if(g.compass_enabled){
 					compass.read();		 				// Read magnetometer
 					compass.calculate(dcm.get_dcm_matrix());
 				}
 			}
-
-			// We are using the IMU
-			// ---------------------
-			/*
-			Serial.printf_P(PSTR("A: %4.4f, %4.4f, %4.4f\t"
-								 "G: %4.4f, %4.4f, %4.4f\t"),
-								accels.x, accels.y, accels.z,
-								gyros.x,  gyros.y,  gyros.z);
-			*/
-			/*
-			Serial.printf_P(PSTR("cp: %1.2f, sp: %1.2f, cr: %1.2f, sr: %1.2f, cy: %1.2f, sy: %1.2f,\n"),
-								cos_pitch_x,
-								sin_pitch_y,
-								cos_roll_x,
-								sin_roll_y,
-								cos_yaw_x,	// x
-								sin_yaw_y);	// y
-			//*/
-			//Log_Write_Raw();
+            fast_loopTimer = millis();
 		}
 		if(Serial.available() > 0){
 			return (0);
 		}
 	}
 }
+#endif // HIL_MODE
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
@@ -763,14 +833,14 @@ test_wp(uint8_t argc, const Menu::arg *argv)
    delay(1000);
     while(1){
            if (Serial3.available()){
-                   digitalWrite(B_LED_PIN, HIGH); // Blink Yellow LED if we are sending data to GPS
+                   digitalWrite(B_LED_PIN, LED_ON); // Blink Yellow LED if we are sending data to GPS
                    Serial1.write(Serial3.read());
-                   digitalWrite(B_LED_PIN, LOW);
+                   digitalWrite(B_LED_PIN, LED_OFF);
            }
            if (Serial1.available()){
-                   digitalWrite(C_LED_PIN, HIGH); // Blink Red LED if we are receiving data from GPS
+                   digitalWrite(C_LED_PIN, LED_ON); // Blink Red LED if we are receiving data from GPS
                    Serial3.write(Serial1.read());
-                   digitalWrite(C_LED_PIN, LOW);
+                   digitalWrite(C_LED_PIN, LED_OFF);
            }
            if(Serial.available() > 0){
                    return (0);
@@ -898,6 +968,7 @@ static int8_t
 /*
   test the sonar
  */
+#if CONFIG_SONAR == ENABLED
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
@@ -920,6 +991,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
 	return (0);
 }
+#endif
 
 #ifdef OPTFLOW_ENABLED
 static int8_t

@@ -15,7 +15,7 @@ APM_BMP085_HIL_Class::APM_BMP085_HIL_Class()
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void APM_BMP085_HIL_Class::Init(int initialiseWireLib)
+void APM_BMP085_HIL_Class::Init(int initialiseWireLib, bool apm2_hardware)
 {
   BMP085_State=1;
 }

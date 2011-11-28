@@ -4,16 +4,20 @@ import util, pexpect, time, math
 # messages. This keeps the output to stdout flowing
 expect_list = []
 
-def message_hook(mav, msg):
-    '''called as each mavlink msg is received'''
+def idle_hook(mav):
+    '''called when waiting for a mavlink message'''
     global expect_list
-#    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
-#        print(msg)
     for p in expect_list:
         try:
             p.read_nonblocking(100, timeout=0)
         except pexpect.TIMEOUT:
             pass
+
+def message_hook(mav, msg):
+    '''called as each mavlink msg is received'''
+#    if msg.get_type() in [ 'NAV_CONTROLLER_OUTPUT', 'GPS_RAW' ]:
+#        print(msg)
+    idle_hook(mav)
 
 def expect_callback(e):
     '''called when waiting for a expect pattern'''
@@ -30,10 +34,11 @@ def expect_callback(e):
 
 class location(object):
     '''represent a GPS coordinate'''
-    def __init__(self, lat, lng, alt=0):
+    def __init__(self, lat, lng, alt=0, heading=0):
         self.lat = lat
         self.lng = lng
         self.alt = alt
+        self.heading = heading
 
     def __str__(self):
         return "lat=%.6f,lon=%.6f,alt=%.1f" % (self.lat, self.lng, self.alt)

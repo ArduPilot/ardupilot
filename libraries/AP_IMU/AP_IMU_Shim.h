@@ -6,6 +6,8 @@
 #ifndef AP_IMU_Shim_h
 #define AP_IMU_Shim_h
 
+#include "IMU.h"
+
 class AP_IMU_Shim : public IMU
 {
 public:
@@ -13,7 +15,8 @@ public:
 
 	/// @name IMU protocol
 	//@{
-    virtual void	init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay) {};
+    virtual void	init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay,
+						 AP_PeriodicProcess *scheduler = NULL) {};
 	virtual void	init_accel(void (*callback)(unsigned long t) = delay) {};
 	virtual void	init_gyro(void (*callback)(unsigned long t) = delay) {};
 	virtual bool	update(void) {

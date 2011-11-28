@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.26"
+#define THISFIRMWARE "ArduPlane V2.27 Alpha"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short
 Thanks to:  Chris Anderson, HappyKillMore, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi
@@ -26,15 +26,19 @@ version 2.1 of the License, or (at your option) any later version.
 // Libraries
 #include <FastSerial.h>
 #include <AP_Common.h>
+#include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <Wire.h>			// Arduino I2C lib
 #include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
+#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess and TimerAperiodicProcess
 #include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
 #include <AP_DCM.h>         // ArduPilot Mega DCM Library
 #include <PID.h>            // PID library
@@ -65,6 +69,31 @@ version 2.1 of the License, or (at your option) any later version.
 FastSerialPort0(Serial);        // FTDI/console
 FastSerialPort1(Serial1);       // GPS port
 FastSerialPort3(Serial3);       // Telemetry port
+
+////////////////////////////////////////////////////////////////////////////////
+// ISR Registry
+////////////////////////////////////////////////////////////////////////////////
+Arduino_Mega_ISR_Registry isr_registry;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// APM_RC_Class Instance
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    APM_RC_APM2 APM_RC;
+#else
+    APM_RC_APM1 APM_RC;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// Dataflash
+////////////////////////////////////////////////////////////////////////////////
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    DataFlash_APM2 DataFlash;
+#else
+    DataFlash_APM1   DataFlash;
+#endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parameters
@@ -103,8 +132,14 @@ static AP_Int8		*flight_modes = &g.flight_mode1;
 
 // real sensors
 static AP_ADC_ADS7844          adc;
+
+#ifdef DESKTOP_BUILD
+APM_BMP085_HIL_Class    barometer;
+AP_Compass_HIL          compass;
+#else
 static APM_BMP085_Class        barometer;
 static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
+#endif
 
 // real GPS selection
 #if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
@@ -132,12 +167,25 @@ AP_GPS_None     g_gps_driver(NULL);
  #error Unrecognised GPS_PROTOCOL setting.
 #endif // GPS PROTOCOL
 
+# if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
+  AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+# else
+  AP_InertialSensor_Oilpan ins( &adc );
+#endif // CONFIG_IMU_TYPE
+AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
+AP_DCM  dcm(&imu, g_gps);
+AP_TimerProcess timer_scheduler;
+
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
 AP_ADC_HIL              adc;
 APM_BMP085_HIL_Class    barometer;
 AP_Compass_HIL          compass;
 AP_GPS_HIL              g_gps_driver(NULL);
+AP_InertialSensor_Oilpan ins( &adc );
+AP_IMU_Shim imu;
+AP_DCM  dcm(&imu, g_gps);
+AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
@@ -150,17 +198,6 @@ AP_IMU_Shim             imu; // never used
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
-	#if HIL_MODE != HIL_MODE_SENSORS
-		// Normal
-		AP_IMU_Oilpan imu(&adc, Parameters::k_param_IMU_calibration);
-	#else
-		// hil imu
-		AP_IMU_Shim imu;
-	#endif
-	// normal dcm
-	AP_DCM  dcm(&imu, g_gps);
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
@@ -170,17 +207,24 @@ GCS_MAVLINK	gcs0(Parameters::k_param_streamrates_port0);
 GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
 
 ////////////////////////////////////////////////////////////////////////////////
-// SONAR selection
+// PITOT selection
 ////////////////////////////////////////////////////////////////////////////////
 //
 ModeFilter sonar_mode_filter;
 
+#if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
+AP_AnalogSource_ADC pitot_analog_source( &adc,
+                        CONFIG_PITOT_SOURCE_ADC_CHANNEL, 0.25);
+#elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
+AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN);
+#endif
+
 #if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #elif SONAR_TYPE == MAX_SONAR_LV
 	// XXX honestly I think these output the same values
 	// If someone knows, can they confirm it?
-	AP_RangeFinder_MaxsonarXL sonar(&adc, &sonar_mode_filter);//(SONAR_PORT, &adc);
+	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,6 +234,10 @@ ModeFilter sonar_mode_filter;
 byte    control_mode        = INITIALISING;
 byte    oldSwitchPosition;              // for remembering the control mode switch
 bool    inverted_flight     = false;
+
+#if USB_MUX_PIN > 0
+static bool usb_connected;
+#endif
 
 static const char *comma = ",";
 
@@ -694,6 +742,11 @@ static void slow_loop()
 
             mavlink_system.sysid = g.sysid_this_mav;		// This is just an ugly hack to keep mavlink_system.sysid sync'd with our parameter
             gcs_data_stream_send(3,5);
+
+#if USB_MUX_PIN > 0
+            check_usb_mux();
+#endif
+
 			break;
 	}
 }

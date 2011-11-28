@@ -592,7 +592,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_param_send();
-        } else {
+        } else if (gcs3.initialised) {
             gcs3.queued_param_send();
         }
         break;
@@ -601,7 +601,7 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         CHECK_PAYLOAD_SIZE(WAYPOINT_REQUEST);
         if (chan == MAVLINK_COMM_0) {
             gcs0.queued_waypoint_send();
-        } else {
+        } else if (gcs3.initialised) {
             gcs3.queued_waypoint_send();
         }
         break;
@@ -2022,6 +2022,9 @@ static void mavlink_delay(unsigned long t)
             gcs_update();
         }
         delay(1);
+#if USB_MUX_PIN > 0
+        check_usb_mux();
+#endif
     } while (millis() - tstart < t);
 
     in_mavlink_delay = false;
@@ -2033,7 +2036,9 @@ static void mavlink_delay(unsigned long t)
 static void gcs_send_message(enum ap_message id)
 {
     gcs0.send_message(id);
-    gcs3.send_message(id);
+    if (gcs3.initialised) {
+        gcs3.send_message(id);
+    }
 }
 
 /*
@@ -2042,7 +2047,9 @@ static void gcs_send_message(enum ap_message id)
 static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
 {
     gcs0.data_stream_send(freqMin, freqMax);
-    gcs3.data_stream_send(freqMin, freqMax);
+    if (gcs3.initialised) {
+        gcs3.data_stream_send(freqMin, freqMax);
+    }
 }
 
 /*
@@ -2051,19 +2058,25 @@ static void gcs_data_stream_send(uint16_t freqMin, uint16_t freqMax)
 static void gcs_update(void)
 {
 	gcs0.update();
-    gcs3.update();
+    if (gcs3.initialised) {
+        gcs3.update();
+    }
 }
 
 static void gcs_send_text(gcs_severity severity, const char *str)
 {
     gcs0.send_text(severity, str);
-    gcs3.send_text(severity, str);
+    if (gcs3.initialised) {
+        gcs3.send_text(severity, str);
+    }
 }
 
 static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     gcs0.send_text(severity, str);
-    gcs3.send_text(severity, str);
+    if (gcs3.initialised) {
+        gcs3.send_text(severity, str);
+    }
 }
 
 /*

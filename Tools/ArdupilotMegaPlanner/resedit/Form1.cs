@@ -12,6 +12,8 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Reflection;
+using System.Xml;
 
 namespace resedit
 {
@@ -40,6 +42,22 @@ namespace resedit
         private void Form1_Load(object sender, EventArgs e)
         {
 
+
+
+            Assembly thisAssembly = Assembly.GetExecutingAssembly();
+
+            string[] test = Assembly.get .GetExecutingAssembly().GetManifestResourceNames();
+
+            foreach (string file in test)
+            {
+                Stream rgbxml = thisAssembly.GetManifestResourceStream(
+            file);
+                XmlDocument doc = new XmlDocument();
+                doc.Load(rgbxml);
+
+                doc.PreserveWhitespace = true;
+                doc.Save(file);
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
