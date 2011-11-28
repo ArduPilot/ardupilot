@@ -687,7 +687,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 	switch (msg->msgid) {
 
-	case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
+	case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: //66
 		{
 			// decode
 			mavlink_request_data_stream_t packet;
@@ -762,7 +762,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_ACTION:
+	case MAVLINK_MSG_ID_ACTION: //10
 		{
 			// decode
 			mavlink_action_t packet;
@@ -895,7 +895,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_SET_MODE:
+	case MAVLINK_MSG_ID_SET_MODE:  //11
 		{
 			// decode
 			mavlink_set_mode_t packet;
@@ -934,7 +934,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 	*/
-	case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST:
+	case MAVLINK_MSG_ID_WAYPOINT_REQUEST_LIST: //43
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint request list"));
 
@@ -959,7 +959,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 		}
 
 	// XXX read a WP from EEPROM and send it to the GCS
-	case MAVLINK_MSG_ID_WAYPOINT_REQUEST:
+	case MAVLINK_MSG_ID_WAYPOINT_REQUEST: // 40
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint request"));
 
@@ -1081,7 +1081,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_ACK:
+	case MAVLINK_MSG_ID_WAYPOINT_ACK: //47
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint ack"));
 
@@ -1095,7 +1095,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+	case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: // 21
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("param request list"));
 
@@ -1112,7 +1112,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL:
+	case MAVLINK_MSG_ID_WAYPOINT_CLEAR_ALL: // 45
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint clear all"));
 
@@ -1132,7 +1132,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT:
+	case MAVLINK_MSG_ID_WAYPOINT_SET_CURRENT: // 41
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint set current"));
 
@@ -1148,7 +1148,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_WAYPOINT_COUNT:
+	case MAVLINK_MSG_ID_WAYPOINT_COUNT: // 44
 		{
 			//send_text_P(SEVERITY_LOW,PSTR("waypoint count"));
 
@@ -1183,7 +1183,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 
 	// XXX receive a WP from GCS and store in EEPROM
-	case MAVLINK_MSG_ID_WAYPOINT:
+	case MAVLINK_MSG_ID_WAYPOINT: //39
 		{
 			// decode
 			mavlink_waypoint_t packet;
@@ -1347,7 +1347,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		}
 
-	case MAVLINK_MSG_ID_PARAM_SET:
+	case MAVLINK_MSG_ID_PARAM_SET: // 23
 		{
 			AP_Var				  *vp;
 			AP_Meta_class::Type_id  var_type;
@@ -1430,7 +1430,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			break;
 		} // end case
 
-    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
+    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: //70
         {
             // allow override of RC channel values for HIL
             // or for complete GCS control of switch position
@@ -1458,7 +1458,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #if HIL_MODE != HIL_MODE_DISABLED
         // This is used both as a sensor and to pass the location
         // in HIL_ATTITUDE mode.
-	case MAVLINK_MSG_ID_GPS_RAW:
+	case MAVLINK_MSG_ID_GPS_RAW: //32
         {
             // decode
             mavlink_gps_raw_t packet;
@@ -1479,7 +1479,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 #if HIL_MODE == HIL_MODE_ATTITUDE
-    case MAVLINK_MSG_ID_ATTITUDE:
+    case MAVLINK_MSG_ID_ATTITUDE: //30
         {
             // decode
             mavlink_attitude_t packet;
@@ -1546,7 +1546,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 */
 #if HIL_MODE == HIL_MODE_SENSORS
 
-    case MAVLINK_MSG_ID_RAW_IMU:
+    case MAVLINK_MSG_ID_RAW_IMU: // 28
         {
             // decode
             mavlink_raw_imu_t packet;
@@ -1578,7 +1578,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    case MAVLINK_MSG_ID_RAW_PRESSURE:
+    case MAVLINK_MSG_ID_RAW_PRESSURE: //29
         {
             // decode
             mavlink_raw_pressure_t packet;

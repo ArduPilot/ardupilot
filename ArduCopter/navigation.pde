@@ -67,7 +67,6 @@ static void calc_loiter(int x_error, int y_error)
 	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
 
 	// find the rates:
-	//float temp		= radians((float)g_gps->ground_course/100.0);
 	float temp		= g_gps->ground_course * RADX100;
 
 	#ifdef OPTFLOW_ENABLED
@@ -255,7 +254,8 @@ static int32_t get_altitude_error()
 	return next_WP.alt - current_loc.alt;
 }
 
-/*static int get_loiter_angle()
+/*
+//static int get_loiter_angle()
 {
 	float power;
 	int angle;
@@ -288,7 +288,7 @@ static int32_t wrap_180(int32_t error)
 }
 
 /*
-static int32_t get_crosstrack_correction(void)
+//static int32_t get_crosstrack_correction(void)
 {
 	// Crosstrack Error
 	// ----------------
@@ -307,19 +307,20 @@ static int32_t get_crosstrack_correction(void)
 }
 */
 /*
-static int32_t cross_track_test()
+//static int32_t cross_track_test()
 {
 	int32_t temp = wrap_180(target_bearing - crosstrack_bearing);
 	return abs(temp);
 }
 */
 /*
-static void reset_crosstrack()
+//static void reset_crosstrack()
 {
 	crosstrack_bearing 	= get_bearing(&current_loc, &next_WP);	// Used for track following
 }
 */
-/*static int32_t get_altitude_above_home(void)
+/*
+//static int32_t get_altitude_above_home(void)
 {
 	// This is the altitude above the home location
 	// The GPS gives us altitude at Sea Level

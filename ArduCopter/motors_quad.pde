@@ -126,7 +126,7 @@ static void output_motors_disarmed()
 }
 
 /*
-static void debug_motors()
+//static void debug_motors()
 {
 	Serial.printf("1:%d\t2:%d\t3:%d\t4:%d\n",
 				motor_out[CH_1],

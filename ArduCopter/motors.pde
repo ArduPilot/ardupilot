@@ -82,7 +82,7 @@ static void init_arm_motors()
 	init_simple_bearing();
 
 	// Reset home position
-	// ----------------------
+	// -------------------
 	if(home_is_set)
 		init_home();
 
