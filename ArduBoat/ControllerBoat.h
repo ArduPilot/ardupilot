@@ -26,13 +26,13 @@ public:
         _hal->debug->println_P(PSTR("initializing boat controller"));
 
         _hal->rc.push_back(
-            new AP_RcChannel(k_chMode, PSTR("MODE_"), APM_RC, 5, 1100,
+            new AP_RcChannel(k_chMode, PSTR("MODE_"), hal->radio, 5, 1100,
                              1500, 1900, RC_MODE_IN, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chStr, PSTR("STR_"), APM_RC, 3, 1100, 1500,
+            new AP_RcChannel(k_chStr, PSTR("STR_"), hal->radio, 3, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chThrust, PSTR("THR_"), APM_RC, 2, 1100, 1500,
+            new AP_RcChannel(k_chThrust, PSTR("THR_"), hal->radio, 2, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
     }
 

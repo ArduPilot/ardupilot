@@ -19,6 +19,8 @@ class Compass;
 class BetterStream;
 class RangeFinder;
 class FastSerial;
+class AP_IMU_INS;
+class APM_RC_Class;
 
 namespace apo {
 
@@ -105,8 +107,13 @@ public:
     APM_BMP085_Class * baro;
     Compass * compass;
     Vector<RangeFinder *> rangeFinders;
-    IMU * imu;
     AP_BatteryMonitor * batteryMonitor;
+    AP_IMU_INS * imu;
+
+    /**
+     * Actuators
+     */
+    APM_RC_Class * radio;
 
     /**
      * Radio Channels

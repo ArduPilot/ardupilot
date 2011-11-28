@@ -14,7 +14,8 @@
 #include <APM_BMP085.h>
 #include <ModeFilter.h>
 #include <APO.h>
-#include <WProgram.h>
+#include <AP_AnalogSource.h>
+#include <AP_InertialSensor.h>
 
 // Vehicle Configuration
 #include "CarStampede.h"

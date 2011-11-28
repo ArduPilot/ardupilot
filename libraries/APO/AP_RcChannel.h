@@ -24,7 +24,7 @@ class AP_RcChannel: public AP_Var_group {
 public:
 
     /// Constructor
-    AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name, APM_RC_Class & rc,
+    AP_RcChannel(AP_Var::Key keyValue, const prog_char_t * name, APM_RC_Class * rc,
                  const uint8_t & ch, const uint16_t & pwmMin,
                  const uint16_t & pwmNeutral, const uint16_t & pwmMax,
                  const rcMode_t & rcMode,
@@ -69,7 +69,7 @@ public:
 protected:
 
     // configuration
-    APM_RC_Class & _rc;
+    APM_RC_Class * _rc;
 
     // internal states
     uint16_t _pwm; // this is the internal state, position is just created when needed

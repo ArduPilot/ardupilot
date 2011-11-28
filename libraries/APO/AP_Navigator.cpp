@@ -15,6 +15,7 @@
 #include "AP_Var_keys.h"
 #include "../AP_RangeFinder/AP_RangeFinder.h"
 #include "../AP_IMU/AP_IMU.h"
+#include "../AP_InertialSensor/AP_InertialSensor.h"
 #include "../APM_BMP085/APM_BMP085_hil.h"
 #include "../APM_BMP085/APM_BMP085.h"
 
@@ -71,10 +72,6 @@ DcmNavigator::DcmNavigator(AP_HardwareAbstractionLayer * hal) :
     }
 
     if (_hal->getMode() == MODE_LIVE) {
-
-        if (_hal->adc) {
-            _hal->imu = new AP_IMU_Oilpan(_hal->adc, k_sensorCalib);
-        }
 
         if (_hal->imu) {
             _dcm = new AP_DCM(_hal->imu, _hal->gps, _hal->compass);

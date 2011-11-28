@@ -35,7 +35,6 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
      * Radio setup
      */
     hal->debug->println_P(PSTR("initializing radio"));
-    APM_RC.Init(); // APM Radio initialization,
 
     /*
      * Calibration

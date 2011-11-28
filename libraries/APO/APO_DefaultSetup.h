@@ -42,6 +42,8 @@ void setup() {
      */
     if (hal->getMode() == MODE_LIVE) {
 
+        hal->radio = new APM_RC_APM1;
+
         hal->debug->println_P(PSTR("initializing adc"));
         hal->adc = new ADC_CLASS;
         hal->adc->Init();
@@ -86,52 +88,51 @@ void setup() {
 
         if (rangeFinderFrontEnabled) {
             hal->debug->println_P(PSTR("initializing front range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(NULL,new ModeFilter);
-            rangeFinder->set_analog_port(1);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(1),new ModeFilter);
             rangeFinder->set_orientation(1, 0, 0);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
         if (rangeFinderBackEnabled) {
             hal->debug->println_P(PSTR("initializing back range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
-            rangeFinder->set_analog_port(2);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(2),new ModeFilter);
             rangeFinder->set_orientation(-1, 0, 0);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
         if (rangeFinderLeftEnabled) {
             hal->debug->println_P(PSTR("initializing left range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
-            rangeFinder->set_analog_port(3);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(3),new ModeFilter);
             rangeFinder->set_orientation(0, -1, 0);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
         if (rangeFinderRightEnabled) {
             hal->debug->println_P(PSTR("initializing right range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
-            rangeFinder->set_analog_port(4);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(4),new ModeFilter);
             rangeFinder->set_orientation(0, 1, 0);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
         if (rangeFinderUpEnabled) {
             hal->debug->println_P(PSTR("initializing up range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
-            rangeFinder->set_analog_port(5);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(5),new ModeFilter);
             rangeFinder->set_orientation(0, 0, -1);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
         if (rangeFinderDownEnabled) {
             hal->debug->println_P(PSTR("initializing down range finder"));
-            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(hal->adc,new ModeFilter);
-            rangeFinder->set_analog_port(6);
+            RangeFinder * rangeFinder = new RANGE_FINDER_CLASS(new AP_AnalogSource_Arduino(6),new ModeFilter);
             rangeFinder->set_orientation(0, 0, 1);
             hal->rangeFinders.push_back(rangeFinder);
         }
 
+        /*
+         * navigation sensors
+         */
+        hal->imu = new AP_IMU_INS(new AP_InertialSensor_Oilpan(hal->adc), k_sensorCalib); 
+        //hal->imu = AP_IMU_INS(new AP_InertialSensor_MPU6000(mpu6000SelectPin), k_sensorCalib);
     }
 
     /*

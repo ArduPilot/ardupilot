@@ -13,6 +13,8 @@
 #include <APM_BMP085.h>
 #include <ModeFilter.h>
 #include <APO.h>
+#include <AP_AnalogSource.h>
+#include <AP_InertialSensor.h>
 
 // Vehicle Configuration
 #include "QuadArducopter.h"
