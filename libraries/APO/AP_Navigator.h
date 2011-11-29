@@ -146,6 +146,15 @@ public:
         return atan2(getVE(),getVN());
     }
 
+    float getRelativeCourseOverGround() const {
+        float y = getCourseOverGround() - getYaw();
+        if (y > 180 * deg2Rad)
+            y -= 360 * deg2Rad;
+        if (y < -180 * deg2Rad)
+            y += 360 * deg2Rad;
+        return y;
+    }
+
     float getSpeedOverGround() const {
         return sqrt(getVN()*getVN()+getVE()*getVE());
     }
