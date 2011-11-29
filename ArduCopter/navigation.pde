@@ -169,7 +169,6 @@ static void calc_nav_rate(int max_speed)
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
-	// XXX target_angle should be the original  desired target angle!
 	//float temp		= radians((target_bearing - g_gps->ground_course)/100.0);
 	float temp 		= (target_bearing - g_gps->ground_course) * RADX100;
 
@@ -187,8 +186,6 @@ static void calc_nav_rate(int max_speed)
 	y_rate_error 	= max_speed - y_actual_speed; // 413
 	y_rate_error 	= constrain(y_rate_error, -800, 800);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
-	// 400cm/s * 3 = 1200 or 12 deg pitch
-	// 800cm/s * 3 = 2400 or 24 deg pitch MAX
 
 
 	// nav_lat and nav_lon will be rotated to the angle of the quad in calc_nav_pitch_roll()
@@ -227,7 +224,7 @@ static int32_t cross_track_test()
 // nav_roll, nav_pitch
 static void calc_nav_pitch_roll()
 {
-	float temp	 = (9000l - (dcm.yaw_sensor - original_target_bearing)) * RADX100;
+	float temp	 = (9000l - (dcm.yaw_sensor - target_bearing)) * RADX100;
 	//t: 1.5465, t1: -10.9451, t2: 1.5359, t3: 1.5465
 
 	float _cos_yaw_x = cos(temp);
