@@ -342,7 +342,7 @@ namespace ArdupilotMega.GCSViews
         {
             TXT_mouselat.Text = lat.ToString();
             TXT_mouselong.Text = lng.ToString();
-            TXT_mousealt.Text = srtm.getAltitude(lat, lng).ToString("0");
+            TXT_mousealt.Text = srtm.getAltitude(lat, lng, MainMap.Zoom).ToString("0");
 
             try
             {
@@ -2754,16 +2754,18 @@ namespace ArdupilotMega.GCSViews
         private void BUT_zoomto_Click(object sender, EventArgs e)
         {
             string place = "Perth, Australia";
-            Common.InputBox("Location", "Enter your location", ref place);
+            if (DialogResult.OK == Common.InputBox("Location", "Enter your location", ref place))
+            {
 
-            GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
-            if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
-            {
-                MessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-            }
-            else
-            {
-                MainMap.Zoom = 15;
+                GeoCoderStatusCode status = MainMap.SetCurrentPositionByKeywords(place);
+                if (status != GeoCoderStatusCode.G_GEO_SUCCESS)
+                {
+                    MessageBox.Show("Google Maps Geocoder can't find: '" + place + "', reason: " + status.ToString(), "GMap.NET", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
+                else
+                {
+                    MainMap.Zoom = 15;
+                }
             }
         }
     }

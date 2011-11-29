@@ -42,17 +42,19 @@
       <F7>Nav Throttle</F7>
       <F8>Angle boost</F8>
       <F9>Manual boost</F9>
+      <F10>climb rate</F10>
+      <F11></F11>
       <F10>rc3 servo out</F10>
       <F11>alt hold int</F11>
       <F12>thro int</F12>
     </CTUN>
     <PM>
-      <F1>control mode</F1>
-      <F2>yaw mode</F2>
-      <F3>r p mode</F3>
-      <F4>thro mode</F4>
-      <F5>thro cruise</F5>
-      <F6>thro int</F6>
+      <F1>time</F1>
+      <F2>gyro sat</F2>
+      <F3>adc const</F3>
+      <F4>renorm sqrt</F4>
+      <F5>renorm blowup</F5>
+      <F6>fix count</F6>
     </PM>
     <RAW>
       <F1>Gyro X</F1>

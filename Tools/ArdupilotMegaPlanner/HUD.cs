@@ -264,7 +264,7 @@ namespace hud
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
-                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
+                //Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
                 count = 0;
                 huddrawtime = 0;
             }
