@@ -14,7 +14,7 @@ Building using cmake
 -----------------------------------------------
  - mkdir build
  - cd build
- - cmake .. -DBOARD=mega -PORT=/dev/ttyUSB0
+ - cmake .. -DBOARD=mega -DPORT=/dev/ttyUSB0
     You can select from mega/mega2560.
     If you have arduino installed in a non-standard location you by specify it by using:
         -DARDUINO_SDK_PATH=/path/to/arduino ..

@@ -31,6 +31,8 @@ public:
         pidYawRate(new AP_Var_group(k_pidYawRate, PSTR("YAWRT_")), 1,
                    PID_YAWSPEED_P, PID_YAWSPEED_I, PID_YAWSPEED_D,
                    PID_YAWSPEED_AWU, PID_YAWSPEED_LIM, PID_YAWSPEED_DFCUT),
+        pidSpeed(new AP_Var_group(k_pidSpeed, PSTR("SPD_")), 1, PID_SPD_P,
+              PID_SPD_I, PID_SPD_D, PID_SPD_AWU, PID_SPD_LIM, PID_SPD_DFCUT),
         pidTilt(new AP_Var_group(k_pidTilt, PSTR("TILT_")), 1, PID_TILT_P,
               PID_TILT_I, PID_TILT_D, PID_TILT_AWU, PID_TILT_LIM, PID_TILT_DFCUT),
         pidPD(new AP_Var_group(k_pidPD, PSTR("DOWN_")), 1, PID_POS_Z_P,
@@ -88,15 +90,19 @@ private:
         autoAttitudeLoop(dt);
     }
     void autoPositionLoop(float dt) {
-        // XXX need to add waypoint coordinates
-        //float cmdNorthTilt = pidPN.update(_guide->getPNError(),_nav->getVN(),dt);
-        //float cmdEastTilt = pidPE.update(_guide->getPEError(),_nav->getVE(),dt);
-        float cmdTilt = pidTilt.update(_guide->getDistanceToNextWaypoint(),dt);
+        float cmdSpeed = pidSpeed.update(_guide->getGroundSpeedError(),dt);
         float cmdDown = pidPD.update(_guide->getPDError(),_nav->getVD(),dt);
 
+        // tilt based control
+        float cmdTilt = pidTilt.update(_guide->getDistanceToNextWaypoint(),dt);
         _cmdPitch = -cmdTilt*cos(_guide->getHeadingError());
         _cmdRoll = cmdTilt*sin(_guide->getHeadingError());
-        _cmdYawRate = pidYaw.update(_guide->getHeadingError(),_nav->getYawRate(),dt); // always points to next waypoint
+        
+        // add velocity based control
+        _cmdPitch -= cmdSpeed*cos(_nav->getRelativeCourseOverGround()); 
+        _cmdRoll += cmdSpeed*sin(_nav->getRelativeCourseOverGround());
+
+        _cmdYawRate = pidYaw.update(_guide->getYawError(),_nav->getYawRate(),dt); // always points to next waypoint
         _thrustMix = THRUST_HOVER_OFFSET - cmdDown;
 
         // "thrust-trim-adjust"
@@ -107,7 +113,7 @@ private:
         else _thrustMix /= cos(_cmdPitch);
 
         // debug for position loop
-        _hal->debug->printf_P(PSTR("cmd: tilt(%f), down(%f), pitch(%f), roll(%f)\n"),cmdTilt,cmdDown,_cmdPitch,_cmdRoll);
+        //_hal->debug->printf_P(PSTR("cmd: tilt(%f), down(%f), pitch(%f), roll(%f)\n"),cmdTilt,cmdDown,_cmdPitch,_cmdRoll);
     }
     void autoAttitudeLoop(float dt) {
         _rollMix = pidRoll.update(_cmdRoll - _nav->getRoll(),
@@ -165,6 +171,7 @@ private:
         k_pidGroundSpeed2Throttle = k_controllersStart,
         k_pidStr,
         k_pidTilt,
+        k_pidSpeed,
         k_pidPD,
         k_pidRoll,
         k_pidPitch,
@@ -173,7 +180,7 @@ private:
     };
     BlockPIDDfb pidRoll, pidPitch, pidYaw;
     BlockPID pidYawRate;
-    BlockPID pidTilt;
+    BlockPID pidTilt, pidSpeed;
     BlockPIDDfb pidPD;
     float _thrustMix, _pitchMix, _rollMix, _yawMix;
     float _cmdRoll, _cmdPitch, _cmdYawRate;

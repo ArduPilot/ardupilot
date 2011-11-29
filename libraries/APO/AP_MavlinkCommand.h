@@ -125,7 +125,7 @@ public:
     }
 
     float getYawCommand() const {
-        return getParam4();
+        return deg2Rad*getParam4();
     }
 
     float getLatDeg() const {
@@ -370,7 +370,7 @@ public:
     float crossTrack(const AP_MavlinkCommand & previous, int32_t lat_degInt, int32_t lon_degInt) const;
 
     // calculates along  track distance of a current location
-    float alongTrack(const AP_MavlinkCommand & previous, int32_t lat_degInt, int32_t lon_degInt) const;
+    float alongTrack(const AP_MavlinkCommand & previous, const AP_MavlinkCommand & next, int32_t lat_degInt, int32_t lon_degInt) const;
 };
 
 } // namespace apo
