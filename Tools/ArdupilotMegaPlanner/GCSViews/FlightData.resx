@@ -208,7 +208,7 @@
     <value>hud1</value>
   </data>
   <data name="&gt;&gt;hud1.Type" xml:space="preserve">
-    <value>hud.HUD, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>hud.HUD, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;hud1.Parent" xml:space="preserve">
     <value>SubMainLeft.Panel1</value>
@@ -226,6 +226,33 @@
     <value>SubMainLeft</value>
   </data>
   <data name="&gt;&gt;SubMainLeft.Panel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="BUT_script.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_script.Location" type="System.Drawing.Point, System.Drawing">
+    <value>17, 93</value>
+  </data>
+  <data name="BUT_script.Size" type="System.Drawing.Size, System.Drawing">
+    <value>66, 23</value>
+  </data>
+  <data name="BUT_script.TabIndex" type="System.Int32, mscorlib">
+    <value>78</value>
+  </data>
+  <data name="BUT_script.Text" xml:space="preserve">
+    <value>Script</value>
+  </data>
+  <data name="&gt;&gt;BUT_script.Name" xml:space="preserve">
+    <value>BUT_script</value>
+  </data>
+  <data name="&gt;&gt;BUT_script.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+  </data>
+  <data name="&gt;&gt;BUT_script.Parent" xml:space="preserve">
+    <value>tabActions</value>
+  </data>
+  <data name="&gt;&gt;BUT_script.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <data name="BUT_joystick.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
@@ -253,13 +280,13 @@
     <value>BUT_joystick</value>
   </data>
   <data name="&gt;&gt;BUT_joystick.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_joystick.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_joystick.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>1</value>
   </data>
   <data name="BUT_quickmanual.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -283,13 +310,13 @@
     <value>BUT_quickmanual</value>
   </data>
   <data name="&gt;&gt;BUT_quickmanual.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_quickmanual.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_quickmanual.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>2</value>
   </data>
   <data name="BUT_quickrtl.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -313,13 +340,13 @@
     <value>BUT_quickrtl</value>
   </data>
   <data name="&gt;&gt;BUT_quickrtl.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_quickrtl.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_quickrtl.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>3</value>
   </data>
   <data name="BUT_quickauto.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -343,13 +370,13 @@
     <value>BUT_quickauto</value>
   </data>
   <data name="&gt;&gt;BUT_quickauto.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_quickauto.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_quickauto.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="CMB_setwp.Items" xml:space="preserve">
     <value>0 (Home)</value>
@@ -373,7 +400,7 @@
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;CMB_setwp.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="BUT_setwp.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -397,13 +424,13 @@
     <value>BUT_setwp</value>
   </data>
   <data name="&gt;&gt;BUT_setwp.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_setwp.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_setwp.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="CMB_modes.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 64</value>
@@ -424,7 +451,7 @@
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;CMB_modes.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="BUT_setmode.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -448,13 +475,13 @@
     <value>BUT_setmode</value>
   </data>
   <data name="&gt;&gt;BUT_setmode.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_setmode.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_setmode.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="BUT_clear_track.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -478,13 +505,13 @@
     <value>BUT_clear_track</value>
   </data>
   <data name="&gt;&gt;BUT_clear_track.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_clear_track.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_clear_track.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>9</value>
   </data>
   <data name="CMB_action.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 6</value>
@@ -505,7 +532,7 @@
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;CMB_action.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>10</value>
   </data>
   <data name="BUT_Homealt.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -529,13 +556,13 @@
     <value>BUT_Homealt</value>
   </data>
   <data name="&gt;&gt;BUT_Homealt.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_Homealt.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_Homealt.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>11</value>
   </data>
   <data name="BUT_RAWSensor.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -559,13 +586,13 @@
     <value>BUT_RAWSensor</value>
   </data>
   <data name="&gt;&gt;BUT_RAWSensor.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_RAWSensor.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUT_RAWSensor.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>12</value>
   </data>
   <data name="BUTrestartmission.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -589,13 +616,13 @@
     <value>BUTrestartmission</value>
   </data>
   <data name="&gt;&gt;BUTrestartmission.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUTrestartmission.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUTrestartmission.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>13</value>
   </data>
   <data name="BUTactiondo.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -619,13 +646,13 @@
     <value>BUTactiondo</value>
   </data>
   <data name="&gt;&gt;BUTactiondo.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUTactiondo.Parent" xml:space="preserve">
     <value>tabActions</value>
   </data>
   <data name="&gt;&gt;BUTactiondo.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>14</value>
   </data>
   <data name="tabActions.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 22</value>
@@ -673,7 +700,7 @@
     <value>Gvspeed</value>
   </data>
   <data name="&gt;&gt;Gvspeed.Type" xml:space="preserve">
-    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;Gvspeed.Parent" xml:space="preserve">
     <value>tabGauges</value>
@@ -703,7 +730,7 @@
     <value>Gheading</value>
   </data>
   <data name="&gt;&gt;Gheading.Type" xml:space="preserve">
-    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;Gheading.Parent" xml:space="preserve">
     <value>tabGauges</value>
@@ -733,7 +760,7 @@
     <value>Galt</value>
   </data>
   <data name="&gt;&gt;Galt.Type" xml:space="preserve">
-    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;Galt.Parent" xml:space="preserve">
     <value>tabGauges</value>
@@ -766,7 +793,7 @@
     <value>Gspeed</value>
   </data>
   <data name="&gt;&gt;Gspeed.Type" xml:space="preserve">
-    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>AGaugeApp.AGauge, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;Gspeed.Parent" xml:space="preserve">
     <value>tabGauges</value>
@@ -847,7 +874,7 @@
     <value>lbl_logpercent</value>
   </data>
   <data name="&gt;&gt;lbl_logpercent.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;lbl_logpercent.Parent" xml:space="preserve">
     <value>tabTLogs</value>
@@ -898,7 +925,7 @@
     <value>BUT_log2kml</value>
   </data>
   <data name="&gt;&gt;BUT_log2kml.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_log2kml.Parent" xml:space="preserve">
     <value>tabTLogs</value>
@@ -949,7 +976,7 @@
     <value>BUT_playlog</value>
   </data>
   <data name="&gt;&gt;BUT_playlog.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_playlog.Parent" xml:space="preserve">
     <value>tabTLogs</value>
@@ -976,7 +1003,7 @@
     <value>BUT_loadtelem</value>
   </data>
   <data name="&gt;&gt;BUT_loadtelem.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_loadtelem.Parent" xml:space="preserve">
     <value>tabTLogs</value>
@@ -1162,7 +1189,7 @@
     <value>lbl_winddir</value>
   </data>
   <data name="&gt;&gt;lbl_winddir.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;lbl_winddir.Parent" xml:space="preserve">
     <value>splitContainer1.Panel2</value>
@@ -1192,7 +1219,7 @@
     <value>lbl_windvel</value>
   </data>
   <data name="&gt;&gt;lbl_windvel.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;lbl_windvel.Parent" xml:space="preserve">
     <value>splitContainer1.Panel2</value>
@@ -1427,7 +1454,7 @@
     <value>TXT_lat</value>
   </data>
   <data name="&gt;&gt;TXT_lat.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;TXT_lat.Parent" xml:space="preserve">
     <value>panel1</value>
@@ -1484,7 +1511,7 @@
     <value>label1</value>
   </data>
   <data name="&gt;&gt;label1.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;label1.Parent" xml:space="preserve">
     <value>panel1</value>
@@ -1514,7 +1541,7 @@
     <value>TXT_long</value>
   </data>
   <data name="&gt;&gt;TXT_long.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;TXT_long.Parent" xml:space="preserve">
     <value>panel1</value>
@@ -1544,7 +1571,7 @@
     <value>TXT_alt</value>
   </data>
   <data name="&gt;&gt;TXT_alt.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;TXT_alt.Parent" xml:space="preserve">
     <value>panel1</value>
@@ -1745,7 +1772,7 @@
     <value>label6</value>
   </data>
   <data name="&gt;&gt;label6.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;label6.Parent" xml:space="preserve">
     <value>$this</value>
@@ -1823,6 +1850,6 @@
     <value>FlightData</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
 </root>

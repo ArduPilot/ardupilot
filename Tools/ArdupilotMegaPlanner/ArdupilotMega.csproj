@@ -581,6 +581,7 @@
     <None Include="Resources\new frames-09.png" />
     <Content Include="dataflashlog.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <None Include="Resources\plane2.png" />
     <None Include="Resources\quad2.png" />

@@ -136,6 +136,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	for(int j = 1; j <= DF_LAST_PAGE; j++) {
 		DataFlash.PageErase(j);
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
+		if(j%128 == 0) Serial.printf_P(PSTR("+"));
 	}
 	g.log_last_filenumber.set_and_save(0);
 
@@ -233,13 +234,9 @@ static byte get_num_logs(void)
 // This function starts a new log file in the DataFlash
 static void start_new_log()
 {
-	uint16_t	last_page;
-
-	if(g.log_last_filenumber < 1) {
-		last_page = 0;
-	} else {
-		last_page = find_last();
-	}
+	uint16_t	last_page = find_last();
+	if(last_page == 1) last_page = 0;
+	
 	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
 	DataFlash.SetFileNumber(g.log_last_filenumber);
 	DataFlash.StartWrite(last_page + 1);
@@ -724,30 +721,20 @@ static void Log_Write_Control_Tuning()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CONTROL_TUNING_MSG);
 
-	// yaw
-	DataFlash.WriteInt(dcm.yaw_sensor/100);				//1
-	DataFlash.WriteInt(nav_yaw/100);					//2
-	DataFlash.WriteInt(yaw_error/100);					//3
-
-	// Alt hold
-	DataFlash.WriteInt(sonar_alt);						//4
-	DataFlash.WriteInt(baro_alt);						//5
-	DataFlash.WriteInt(next_WP.alt);					//6
-
-	DataFlash.WriteInt(nav_throttle);					//7
-	DataFlash.WriteInt(angle_boost);					//8
-	DataFlash.WriteInt(manual_boost);					//9
-	DataFlash.WriteInt(climb_rate);						//10
-
-#if HIL_MODE == HIL_MODE_ATTITUDE
-	DataFlash.WriteInt(0);								//11
-#else
-	DataFlash.WriteInt((int)(barometer.RawPress - barometer._offset_press));//11
-#endif
-
-	DataFlash.WriteInt(g.rc_3.servo_out);				//12
-	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	//13
-	DataFlash.WriteInt(g.pi_throttle.get_integrator());	//14
+	DataFlash.WriteInt(g.rc_1.control_in);				// 0
+	DataFlash.WriteInt(g.rc_2.control_in);				// 1
+	DataFlash.WriteInt(g.rc_3.control_in);				// 2
+	DataFlash.WriteInt(g.rc_4.control_in);				// 3
+	DataFlash.WriteInt(sonar_alt);						// 4
+	DataFlash.WriteInt(baro_alt);						// 5
+	DataFlash.WriteInt(next_WP.alt);					// 6
+	DataFlash.WriteInt(nav_throttle);					// 7
+	DataFlash.WriteInt(angle_boost);					// 8
+	DataFlash.WriteInt(manual_boost);					// 9
+	DataFlash.WriteInt(climb_rate);						// 10
+	DataFlash.WriteInt(g.rc_3.servo_out);				// 11
+	DataFlash.WriteInt(g.pi_alt_hold.get_integrator());	// 12
+	DataFlash.WriteInt(g.pi_throttle.get_integrator());	// 13
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -759,11 +746,11 @@ static void Log_Read_Control_Tuning()
 
 	Serial.printf_P(PSTR("CTUN, "));
 
-	for(int8_t i = 1; i < 14; i++ ){
+	for(int8_t i = 0; i < 13; i++ ){
 		temp = DataFlash.ReadInt();
 		Serial.printf("%d, ", temp);
 	}
-
+	// read 13
 	temp = DataFlash.ReadInt();
 	Serial.printf("%d\n", temp);
 }

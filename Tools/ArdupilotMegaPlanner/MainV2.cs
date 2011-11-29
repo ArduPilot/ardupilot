@@ -21,7 +21,6 @@ using System.Threading;
 using System.Net.Sockets;
 using IronPython.Hosting;
 
-
 namespace ArdupilotMega
 {
     public partial class MainV2 : Form
@@ -109,15 +108,10 @@ namespace ArdupilotMega
 
             //return;
 
-            var engine = Python.CreateEngine();
-            var scope = engine.CreateScope();
 
-            scope.SetVariable("MainV2",this);
-            Console.WriteLine(DateTime.Now.Millisecond);
-            engine.CreateScriptSourceFromString("print 'hello world from python'").Execute(scope);
-            Console.WriteLine(DateTime.Now.Millisecond);
-            engine.CreateScriptSourceFromString("MainV2.testpython()").Execute(scope);
-            Console.WriteLine(DateTime.Now.Millisecond);
+            // preload
+            Python.CreateEngine();
+
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
 
@@ -678,7 +672,7 @@ namespace ArdupilotMega
                         comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".tlog", FileMode.CreateNew));
                     }
                     catch { MessageBox.Show("Failed to create log - wont log this session"); } // soft fail
-
+                    
                     comPort.BaseStream.PortName = CMB_serialport.Text;
                     comPort.Open(true);
 
@@ -1100,7 +1094,7 @@ namespace ArdupilotMega
 
                     if (heatbeatsend.Second != DateTime.Now.Second)
                     {
-                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
+//                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
                         MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
 

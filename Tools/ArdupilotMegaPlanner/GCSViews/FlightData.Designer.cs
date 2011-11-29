@@ -22,6 +22,7 @@
             this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabActions = new System.Windows.Forms.TabPage();
+            this.BUT_script = new ArdupilotMega.MyButton();
             this.BUT_joystick = new ArdupilotMega.MyButton();
             this.BUT_quickmanual = new ArdupilotMega.MyButton();
             this.BUT_quickrtl = new ArdupilotMega.MyButton();
@@ -236,6 +237,7 @@
             // 
             // tabActions
             // 
+            this.tabActions.Controls.Add(this.BUT_script);
             this.tabActions.Controls.Add(this.BUT_joystick);
             this.tabActions.Controls.Add(this.BUT_quickmanual);
             this.tabActions.Controls.Add(this.BUT_quickrtl);
@@ -253,6 +255,13 @@
             resources.ApplyResources(this.tabActions, "tabActions");
             this.tabActions.Name = "tabActions";
             this.tabActions.UseVisualStyleBackColor = true;
+            // 
+            // BUT_script
+            // 
+            resources.ApplyResources(this.BUT_script, "BUT_script");
+            this.BUT_script.Name = "BUT_script";
+            this.BUT_script.UseVisualStyleBackColor = true;
+            this.BUT_script.Click += new System.EventHandler(this.BUT_script_Click);
             // 
             // BUT_joystick
             // 
@@ -1331,5 +1340,6 @@
         private MyLabel lbl_logpercent;
         private System.Windows.Forms.ToolStripMenuItem pointCameraHereToolStripMenuItem;
         private System.Windows.Forms.SplitContainer splitContainer1;
+        private MyButton BUT_script;
     }
 }
