@@ -37,7 +37,7 @@ public:
      * This is the constructor, which requires a link to the navigator.
      * @param navigator This is the navigator pointer.
      */
-    AP_Guide(AP_Navigator * navigator, AP_HardwareAbstractionLayer * hal);
+    AP_Guide(AP_Navigator * nav, AP_HardwareAbstractionLayer * hal);
 
     virtual void update() = 0;
 
@@ -89,16 +89,27 @@ public:
     float getHeadingCommand() {
         return _headingCommand;
     }
-    /// the yaw attitude command of the vehicle
-    float getYawCommand(){
-        return _yawCommand;
+
+    /// wrap an angle between -180 and 180
+    float wrapAngle(float y) {
+        if (y > 180 * deg2Rad)
+            y -= 360 * deg2Rad;
+        if (y < -180 * deg2Rad)
+            y += 360 * deg2Rad;
+        return y;
     }
+
+    /// the yaw attitude error of the vehicle
+    float getYawError();
+
     float getAirSpeedCommand() {
         return _airSpeedCommand;
     }
     float getGroundSpeedCommand() {
         return _groundSpeedCommand;
     }
+    float getGroundSpeedError();
+
     float getAltitudeCommand() {
         return _altitudeCommand;
     }
@@ -116,7 +127,7 @@ public:
     }
 
 protected:
-    AP_Navigator * _navigator;
+    AP_Navigator * _nav;
     AP_HardwareAbstractionLayer * _hal;
     AP_MavlinkCommand _command, _previousCommand;
     float _headingCommand;
@@ -133,7 +144,7 @@ protected:
 
 class MavlinkGuide: public AP_Guide {
 public:
-    MavlinkGuide(AP_Navigator * navigator,
+    MavlinkGuide(AP_Navigator * nav,
                  AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim);
     virtual void update();
     void nextCommand();

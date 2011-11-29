@@ -14,8 +14,8 @@
 
 namespace apo {
 
-AP_Guide::AP_Guide(AP_Navigator * navigator, AP_HardwareAbstractionLayer * hal) :
-    _navigator(navigator), _hal(hal), _command(AP_MavlinkCommand::home),
+AP_Guide::AP_Guide(AP_Navigator * nav, AP_HardwareAbstractionLayer * hal) :
+    _nav(nav), _hal(hal), _command(AP_MavlinkCommand::home),
     _previousCommand(AP_MavlinkCommand::home),
     _headingCommand(0), _airSpeedCommand(0),
     _groundSpeedCommand(0), _altitudeCommand(0),
@@ -33,27 +33,30 @@ void AP_Guide::setCurrentIndex(uint8_t val) {
 }
 
 float AP_Guide::getHeadingError() {
-    float headingError = getHeadingCommand()
-                         - _navigator->getYaw();
-    if (headingError > 180 * deg2Rad)
-        headingError -= 360 * deg2Rad;
-    if (headingError < -180 * deg2Rad)
-        headingError += 360 * deg2Rad;
-    return headingError;
+    return wrapAngle(getHeadingCommand()
+                         - _nav->getYaw());
 }
 
 float AP_Guide::getDistanceToNextWaypoint() {
-    return _command.distanceTo(_navigator->getLat_degInt(),
-        _navigator->getLon_degInt());
+    return _command.distanceTo(_nav->getLat_degInt(),
+        _nav->getLon_degInt());
 }
 
-MavlinkGuide::MavlinkGuide(AP_Navigator * navigator,
+float AP_Guide::getGroundSpeedError() {
+    return _groundSpeedCommand - _nav->getGroundSpeed();
+}
+
+MavlinkGuide::MavlinkGuide(AP_Navigator * nav,
                            AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim) :
-    AP_Guide(navigator, hal),
+    AP_Guide(nav, hal),
     _group(k_guide, PSTR("guide_")),
     _velocityCommand(&_group, 1, velCmd, PSTR("velCmd")),
     _crossTrackGain(&_group, 2, xt, PSTR("xt")),
     _crossTrackLim(&_group, 3, xtLim, PSTR("xtLim")) {
+}
+
+float AP_Guide::getYawError(){
+    return wrapAngle(_yawCommand - _nav->getYaw());
 }
 
 void MavlinkGuide::update() {
@@ -62,13 +65,13 @@ void MavlinkGuide::update() {
 }
 
 float MavlinkGuide::getPNError() {
-    return -_command.getPN(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+    return -_command.getPN(_nav->getLat_degInt(), _nav->getLon_degInt());
 }
 float MavlinkGuide::getPEError() {
-    return -_command.getPE(_navigator->getLat_degInt(), _navigator->getLon_degInt());
+    return -_command.getPE(_nav->getLat_degInt(), _nav->getLon_degInt());
 }
 float MavlinkGuide::getPDError() {
-    return -_command.getPD(_navigator->getAlt_intM());
+    return -_command.getPD(_nav->getAlt_intM());
 }
 
 void MavlinkGuide::nextCommand() {
@@ -167,12 +170,13 @@ void MavlinkGuide::handleCommand() {
 
         // check for along track next waypoint requirement
         float alongTrack = _command.alongTrack(_previousCommand,
-                                               _navigator->getLat_degInt(),
-                                               _navigator->getLon_degInt());
+                                               _command,
+                                               _nav->getLat_degInt(),
+                                               _nav->getLon_degInt());
         float segmentLength = _previousCommand.distanceTo(_command);
         if (alongTrack > segmentLength) {
             _hal->gcs->sendText(SEVERITY_LOW,PSTR("waypoint reached (along track)"));
-            _hal->debug->printf_P(PSTR("waypoint reached (along track)"));
+            _hal->debug->printf_P(PSTR("waypoint reached (along track) segmentLength: %f\t alongTrack: %f\n"),segmentLength,alongTrack);
             nextCommand();
             return;
         }
@@ -180,8 +184,8 @@ void MavlinkGuide::handleCommand() {
         // calculate altitude and heading commands
         _altitudeCommand = _command.getAlt();
         float dXt = _command.crossTrack(_previousCommand,
-                                        _navigator->getLat_degInt(),
-                                        _navigator->getLon_degInt());
+                                        _nav->getLat_degInt(),
+                                        _nav->getLon_degInt());
         float temp = dXt * _crossTrackGain * deg2Rad; // crosstrack gain, rad/m
         if (temp > _crossTrackLim * deg2Rad)
             temp = _crossTrackLim * deg2Rad;
@@ -190,9 +194,9 @@ void MavlinkGuide::handleCommand() {
         float bearing = _previousCommand.bearingTo(_command);
         _headingCommand = bearing - temp;
         _yawCommand = _command.getYawCommand();
-        //_hal->debug->printf_P(
-        //	PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
-        //	bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
+        _hal->debug->printf_P(
+        	PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\tyaw command: %f\n"),
+        	bearing * rad2Deg, dXt, _headingCommand * rad2Deg, getDistanceToNextWaypoint(), alongTrack, _yawCommand*rad2Deg);
 
         // for these modes just head to current command
     } else if (
@@ -200,7 +204,7 @@ void MavlinkGuide::handleCommand() {
         _mode == MAV_NAV_RETURNING) {
         _altitudeCommand = AP_MavlinkCommand::home.getAlt();
         _headingCommand = AP_MavlinkCommand::home.bearingTo(
-                              _navigator->getLat_degInt(), _navigator->getLon_degInt())
+                              _nav->getLat_degInt(), _nav->getLon_degInt())
                           + 180 * deg2Rad;
         if (_headingCommand > 360 * deg2Rad)
             _headingCommand -= 360 * deg2Rad;
