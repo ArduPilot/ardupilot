@@ -189,6 +189,7 @@ void MavlinkGuide::handleCommand() {
             temp = -_crossTrackLim * deg2Rad;
         float bearing = _previousCommand.bearingTo(_command);
         _headingCommand = bearing - temp;
+        _yawCommand = _command.getYawCommand();
         //_hal->debug->printf_P(
         //	PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\n"),
         //	bearing * rad2Deg, dXt, _headingCommand * rad2Deg, distanceToNext, alongTrack);
