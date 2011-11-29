@@ -25,14 +25,16 @@ uint8_t MavlinkComm::_nChannels = 0;
 uint8_t MavlinkComm::_paramNameLengthMax = 13;
 
 AP_CommLink::AP_CommLink(FastSerial * link, AP_Navigator * navigator, AP_Guide * guide,
-                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal) :
+                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
+                         const uint16_t heartBeatTimeout) :
     _link(link), _navigator(navigator), _guide(guide),
-    _controller(controller), _hal(hal) {
+    _controller(controller), _hal(hal), _heartBeatTimeout(heartBeatTimeout), _lastHeartBeat(0) {
 }
 
 MavlinkComm::MavlinkComm(FastSerial * link, AP_Navigator * nav, AP_Guide * guide,
-                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal) :
-    AP_CommLink(link, nav, guide, controller, hal),
+                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
+                         const uint16_t heartBeatTimeout) :
+    AP_CommLink(link, nav, guide, controller, hal,heartBeatTimeout),
 
     // options
     _useRelativeAlt(true),
@@ -83,7 +85,7 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
     switch (id) {
 
     case MAVLINK_MSG_ID_HEARTBEAT: {
-        mavlink_msg_heartbeat_send(_channel, mavlink_system.type,
+        mavlink_msg_heartbeat_send(_channel, _hal->getVehicle(),
                                    MAV_AUTOPILOT_ARDUPILOTMEGA);
         break;
     }
@@ -311,7 +313,7 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
     case MAVLINK_MSG_ID_HEARTBEAT: {
         mavlink_heartbeat_t packet;
         mavlink_msg_heartbeat_decode(msg, &packet);
-        _hal->lastHeartBeat = micros();
+        _lastHeartBeat = micros();
         break;
     }
 

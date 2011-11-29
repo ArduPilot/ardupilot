@@ -9,7 +9,7 @@
 #define PLANEEASYSTAR_H_
 
 // vehicle options
-static const apo::vehicle_t vehicle = apo::VEHICLE_PLANE;
+static const MAV_TYPE vehicle = MAV_TYPE_FIXED_WING;
 static const apo::halMode_t halMode = apo::MODE_LIVE;
 static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 3;
@@ -30,7 +30,7 @@ static const uint8_t heartBeatTimeout = 3;
 static const uint32_t debugBaud = 57600;
 static const uint32_t telemBaud = 57600;
 static const uint32_t gpsBaud = 38400;
-static const uint32_t hilBaud = 57600;
+static const uint32_t hilBaud = 115200;
 
 // optional sensors
 static const bool gpsEnabled = false;
