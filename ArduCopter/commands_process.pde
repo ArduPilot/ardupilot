@@ -53,6 +53,8 @@ static void update_commands()
 				// this is a conditional command so we skip it
 				command_nav_queue.id = NO_COMMAND;
 			}
+		}else{
+			command_nav_index == 255;
 		}
 	}
 
