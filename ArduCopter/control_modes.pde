@@ -14,11 +14,11 @@ static void read_control_switch()
 
 			set_mode(flight_modes[switchPosition]);
 
-			#if CH7_OPTION != CH7_SIMPLE_MODE
+			if(g.ch7_option == CH7_SIMPLE_MODE){
 				// setup Simple mode
 				// do we enable simple mode?
 	            do_simple = (g.simple_modes & (1 << switchPosition));
-			#endif
+			}
 		}else{
 			switch_debouncer 	= true;
 		}

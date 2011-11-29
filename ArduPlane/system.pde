@@ -116,31 +116,26 @@ static void init_ardupilot()
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
 	//
-	if (!g.format_version.load()) {
-
-        Serial.println_P(PSTR("\nEEPROM blank - resetting all parameters to defaults...\n"));
-        delay(100); // wait for serial msg to flush
-
-		AP_Var::erase_all();
-
-		// save the current format version
-		g.format_version.set_and_save(Parameters::k_format_version);
-
-    } else if (g.format_version != Parameters::k_format_version) {
-
-		Serial.printf_P(PSTR("\n\nEEPROM format version %d not compatible with this firmware (requires %d)"
-		                     "\n\nForcing complete parameter reset..."),
-		                     g.format_version.get(), Parameters::k_format_version);
-		delay(100); // wait for serial msg to flush
+	
+	if (!g.format_version.load() ||
+	     g.format_version != Parameters::k_format_version) {
 
 		// erase all parameters
+		Serial.printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+		delay(100); // wait for serial send
 		AP_Var::erase_all();
-
-		// save the new format version
+		
+		// erase DataFlash on format version change
+		#if LOGGING_ENABLED == ENABLED
+		DataFlash.Init(); 
+		erase_logs(NULL, NULL);
+		#endif
+		
+		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
-
 		Serial.println_P(PSTR("done."));
-	} else {
+
+    } else {
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Var::load_all();

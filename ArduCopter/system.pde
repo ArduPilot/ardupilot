@@ -164,8 +164,11 @@ static void init_ardupilot()
 		delay(100); // wait for serial send
 		AP_Var::erase_all();
 
-		// clear logs
+		// erase DataFlash on format version change
+		#if LOGGING_ENABLED == ENABLED
+		DataFlash.Init();
 		erase_logs(NULL, NULL);
+		#endif
 
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);

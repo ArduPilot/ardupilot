@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IronPython.Hosting;
 
 namespace ArdupilotMega
 {
@@ -9,12 +10,27 @@ namespace ArdupilotMega
     {
         DateTime timeout = DateTime.Now;
         List<string> items = new List<string>();
+        Microsoft.Scripting.Hosting.ScriptEngine engine;
+        Microsoft.Scripting.Hosting.ScriptScope scope;
 
         // keeps history
         MAVLink.__mavlink_rc_channels_override_t rc = new MAVLink.__mavlink_rc_channels_override_t();
 
         public Script()
         {
+            engine = Python.CreateEngine();
+            scope = engine.CreateScope();
+
+            scope.SetVariable("cs", MainV2.cs);
+            scope.SetVariable("Script", this);
+
+            Console.WriteLine(DateTime.Now.Millisecond);
+            engine.CreateScriptSourceFromString("print 'hello world from python'").Execute(scope);
+            Console.WriteLine(DateTime.Now.Millisecond);
+            engine.CreateScriptSourceFromString("print cs.roll").Execute(scope);
+            Console.WriteLine(DateTime.Now.Millisecond);
+
+
             object thisBoxed = MainV2.cs;
             Type test = thisBoxed.GetType();
 
@@ -33,7 +49,24 @@ namespace ArdupilotMega
 
                 items.Add(field.Name);
             }
-        }        
+        }
+
+
+        public void Sleep(int ms) {
+            System.Threading.Thread.Sleep(ms);
+        }
+
+        public void runScript(string script)
+        {
+            try
+            {
+                engine.CreateScriptSourceFromString(script).Execute(scope);
+            }
+            catch (Exception e)
+            {
+                System.Windows.Forms.MessageBox.Show("Error running script " + e.Message);
+            }
+        }
 
         public enum Conditional
         {
@@ -51,36 +84,34 @@ namespace ArdupilotMega
             return MainV2.comPort.setParam(param, value);
         }
 
+        public float GetParam(string param)
+        {
+            if (MainV2.comPort.param[param] != null)
+                return (float)MainV2.comPort.param[param];
+
+            return 0.0f;
+        }
+
         public bool ChangeMode(string mode)
         {
             MainV2.comPort.setMode(mode);
             return true;
         }
 
-        public bool WaitFor(string message)
+        public bool WaitFor(string message, int timeout)
         {
-            while (MainV2.cs.message != message) {
+            int timein = 0;
+            while (!MainV2.cs.message.Contains(message)) {
                 System.Threading.Thread.Sleep(5);
+                timein += 5;
+                if (timein > timeout)
+                    return false;
             }
 
             return true;
         }
-
-        public bool WaitFor(string item, Conditional cond,double value ,int timeoutms)
-        {
-            timeout = DateTime.Now;
-            while (DateTime.Now < timeout.AddMilliseconds(timeoutms))
-            {
-                //if (item)
-                {
-
-                }
-            }
-
-            return false;
-        }
-
-        public bool sendRC(int channel, ushort pwm)
+        
+        public bool SendRC(int channel, ushort pwm,bool sendnow)
         {
             switch (channel)
             {
@@ -118,18 +149,18 @@ namespace ArdupilotMega
                     break;
             }
 
-            MainV2.comPort.sendPacket(rc);
-            System.Threading.Thread.Sleep(20);
-            MainV2.comPort.sendPacket(rc);
-            MainV2.comPort.sendPacket(rc);
+            rc.target_component = MainV2.comPort.compid;
+            rc.target_system = MainV2.comPort.sysid;
+
+            if (sendnow)
+            {
+                MainV2.comPort.sendPacket(rc);
+                System.Threading.Thread.Sleep(20);
+                MainV2.comPort.sendPacket(rc);
+                MainV2.comPort.sendPacket(rc);
+            }
 
             return true;
         }
-
-        void convertItemtoMessage()
-        {
-
-        }
-
     }
 }

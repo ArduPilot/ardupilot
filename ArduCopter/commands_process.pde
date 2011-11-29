@@ -4,6 +4,7 @@
 //----------------------------------------
 static void change_command(uint8_t cmd_index)
 {
+	//Serial.printf("change_command: %d\n",cmd_index );
 	// limit range
 	cmd_index = min(g.command_total-1, cmd_index);
 
@@ -17,18 +18,21 @@ static void change_command(uint8_t cmd_index)
 		//gcs_send_text_P(SEVERITY_LOW,PSTR("error: non-Nav cmd"));
 
 	} else {
-		//Serial.printf("APM:New cmd Index: %d\n", cmd_index);
+		// clear out command queue
 		init_commands();
+
+		// copy command to the queue
+		command_nav_queue		= temp;
 		command_nav_index 		= cmd_index;
-		prev_nav_index 			= command_nav_index;
-		update_commands(false);
+		execute_nav_command();
 	}
 }
 
 // called by 10 Hz loop
 // --------------------
-static void update_commands(bool increment)
+static void update_commands()
 {
+	//Serial.printf("update_commands: %d\n",increment );
 	// A: if we do not have any commands there is nothing to do
 	// B: We have completed the mission, don't redo the mission
 	if (g.command_total <= 1 || g.command_index == 255)
@@ -40,31 +44,17 @@ static void update_commands(bool increment)
 		// -------------------------------------------------------------------
 		if (command_nav_index < (g.command_total -1)) {
 
-			// load next index
-			if (increment)
-				command_nav_index++;
-
+			command_nav_index++;
 			command_nav_queue = get_cmd_with_index(command_nav_index);
 
 			if (command_nav_queue.id <= MAV_CMD_NAV_LAST ){
-				// This is what we report to MAVLINK
-				g.command_index  = command_nav_index;
-
-				// Save CMD to Log
-				if (g.log_bitmask & MASK_LOG_CMD)
-					Log_Write_Cmd(g.command_index + 1, &command_nav_queue);
-
-				// Act on the new command
-				process_nav_command();
-
-				// clear May indexes to force loading of more commands
-				// existing May commands are tossed.
-				command_cond_index	= NO_COMMAND;
-
+				execute_nav_command();
 			} else{
 				// this is a conditional command so we skip it
 				command_nav_queue.id = NO_COMMAND;
 			}
+		}else{
+			command_nav_index == 255;
 		}
 	}
 
@@ -117,6 +107,26 @@ static void update_commands(bool increment)
 
 		}
 	}
+}
+
+static void execute_nav_command(void)
+{
+	// This is what we report to MAVLINK
+	g.command_index  = command_nav_index;
+
+	// Save CMD to Log
+	if (g.log_bitmask & MASK_LOG_CMD)
+		Log_Write_Cmd(g.command_index, &command_nav_queue);
+
+	// Act on the new command
+	process_nav_command();
+
+	// clear navigation prameters
+	reset_nav();
+
+	// clear May indexes to force loading of more commands
+	// existing May commands are tossed.
+	command_cond_index	= NO_COMMAND;
 }
 
 // called with GPS navigation update - not constantly
