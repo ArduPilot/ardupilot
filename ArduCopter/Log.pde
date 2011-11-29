@@ -136,6 +136,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 	for(int j = 1; j <= DF_LAST_PAGE; j++) {
 		DataFlash.PageErase(j);
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
+		if(j%128 == 0) Serial.printf_P(PSTR("+"));
 	}
 	g.log_last_filenumber.set_and_save(0);
 

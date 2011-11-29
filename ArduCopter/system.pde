@@ -163,6 +163,12 @@ static void init_ardupilot()
 		Serial.printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
 		delay(100); // wait for serial send
 		AP_Var::erase_all();
+		
+		// erase DataFlash on format version change
+		#if LOGGING_ENABLED == ENABLED
+		DataFlash.Init(); 
+		erase_logs(NULL, NULL);
+		#endif
 
 		// clear logs - createing infinate lockup
 		//erase_logs(NULL, NULL);
