@@ -234,13 +234,9 @@ static byte get_num_logs(void)
 // This function starts a new log file in the DataFlash
 static void start_new_log()
 {
-	uint16_t	last_page;
-
-	if(g.log_last_filenumber < 1) {
-		last_page = 0;
-	} else {
-		last_page = find_last();
-	}
+	uint16_t	last_page = find_last();
+	if(last_page == 1) last_page = 0;
+	
 	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
 	DataFlash.SetFileNumber(g.log_last_filenumber);
 	DataFlash.StartWrite(last_page + 1);
