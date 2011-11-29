@@ -123,6 +123,11 @@ public:
     void setZ(float val) {
         _data.get().z = val;
     }
+
+    float getYawCommand() const {
+        return getParam4();
+    }
+
     float getLatDeg() const {
         switch (getFrame()) {
         case MAV_FRAME_GLOBAL:

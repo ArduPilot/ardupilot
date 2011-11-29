@@ -85,8 +85,13 @@ public:
 
     float getHeadingError();
 
+    /// the commanded course over ground for the vehicle
     float getHeadingCommand() {
         return _headingCommand;
+    }
+    /// the yaw attitude command of the vehicle
+    float getYawCommand(){
+        return _yawCommand;
     }
     float getAirSpeedCommand() {
         return _airSpeedCommand;
@@ -115,6 +120,7 @@ protected:
     AP_HardwareAbstractionLayer * _hal;
     AP_MavlinkCommand _command, _previousCommand;
     float _headingCommand;
+    float _yawCommand;
     float _airSpeedCommand;
     float _groundSpeedCommand;
     float _altitudeCommand;
