@@ -67,6 +67,14 @@ static const float PID_TILT_D = 0.1;
 static const float PID_TILT_LIM = 0.04; // about 2 deg
 static const float PID_TILT_AWU = 0.02; // about 1 deg
 static const float PID_TILT_DFCUT = 10; // cut derivative feedback at 10 hz
+
+static const float PID_SPD_P = 0.1;
+static const float PID_SPD_I = 0;
+static const float PID_SPD_D = 0.1;
+static const float PID_SPD_LIM = 0.04; // about 2 deg
+static const float PID_SPD_AWU = 0.02; // about 1 deg
+static const float PID_SPD_DFCUT = 10; // cut derivative feedback at 10 hz
+
 static const float PID_POS_Z_P = 0.1;
 static const float PID_POS_Z_I = 0;
 static const float PID_POS_Z_D = 0.2;
