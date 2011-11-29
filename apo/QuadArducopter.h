@@ -9,7 +9,7 @@
 #define QUADARDUCOPTER_H_
 
 // vehicle options
-static const apo::vehicle_t vehicle = apo::VEHICLE_QUAD;
+static const MAV_TYPE vehicle = MAV_QUADROTOR;
 static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
 static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
 static const uint8_t heartBeatTimeout = 0;

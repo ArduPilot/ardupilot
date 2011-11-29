@@ -65,7 +65,7 @@ void AP_Controller::update(const float dt) {
         // handle emergencies
         //
         // check for heartbeat from gcs, if not found go to failsafe
-        if (_hal->heartBeatLost()) {
+        if (_hal->gcs->heartBeatLost()) {
             setMode(MAV_MODE_FAILSAFE);
             _hal->gcs->sendText(SEVERITY_HIGH, PSTR("configure gcs to send heartbeat"));
             

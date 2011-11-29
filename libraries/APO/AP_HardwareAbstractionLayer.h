@@ -36,9 +36,6 @@ enum halMode_t {
 enum board_t {
     BOARD_ARDUPILOTMEGA_1280, BOARD_ARDUPILOTMEGA_2560, BOARD_ARDUPILOTMEGA_2
 };
-enum vehicle_t {
-    VEHICLE_CAR, VEHICLE_QUAD, VEHICLE_PLANE, VEHICLE_BOAT, VEHICLE_TANK
-};
 
 class AP_HardwareAbstractionLayer {
 
@@ -47,12 +44,10 @@ public:
     // default ctors on pointers called on pointers here, this
     // allows NULL to be used as a boolean for if the device was
     // initialized
-    AP_HardwareAbstractionLayer(halMode_t mode, board_t board,
-                                vehicle_t vehicle, uint8_t heartBeatTimeout) :
+    AP_HardwareAbstractionLayer(halMode_t mode, board_t board, MAV_TYPE vehicle) :
         adc(), gps(), baro(), compass(), rangeFinders(), imu(), batteryMonitor(), 
         radio(), rc(), gcs(),
-        hil(), debug(), load(), lastHeartBeat(),
-        _heartBeatTimeout(heartBeatTimeout), _mode(mode),
+        hil(), debug(), load(), _mode(mode),
         _board(board), _vehicle(vehicle) {
 
         /*
@@ -132,7 +127,6 @@ public:
      * data
      */
     uint8_t load;
-    uint32_t lastHeartBeat;
 
     /**
      * settings
@@ -151,23 +145,16 @@ public:
     board_t getBoard() {
         return _board;
     }
-    vehicle_t getVehicle() {
+    MAV_TYPE getVehicle() {
         return _vehicle;
-    }
-    bool heartBeatLost() {
-        if (_heartBeatTimeout == 0)
-            return false;
-        else
-            return ((micros() - lastHeartBeat) / 1e6) > _heartBeatTimeout;
     }
 
 private:
 
     // enumerations
-    uint8_t _heartBeatTimeout;
     halMode_t _mode;
     board_t _board;
-    vehicle_t _vehicle;
+    MAV_TYPE _vehicle;
 };
 
 } // namespace apo

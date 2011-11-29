@@ -16,8 +16,10 @@
  * ArduPilotOne does not use any global
  * variables.
  */
+
 namespace apo {
 
+// enumerations
 // forward declarations
 class AP_Navigator;
 class AP_Guide;

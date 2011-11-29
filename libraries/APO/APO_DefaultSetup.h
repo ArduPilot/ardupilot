@@ -30,8 +30,7 @@ void setup() {
     Serial.begin(debugBaud, 128, 128); // debug
 
     // hardware abstraction layer
-    hal = new AP_HardwareAbstractionLayer(
-        halMode, board, vehicle, heartBeatTimeout);
+    hal = new AP_HardwareAbstractionLayer(halMode, board, vehicle);
 
     // debug serial
     hal->debug = &Serial;
@@ -150,12 +149,12 @@ void setup() {
     if (board==BOARD_ARDUPILOTMEGA_2)
     {
         Serial2.begin(telemBaud, 128, 128); // gcs
-        hal->gcs = new COMMLINK_CLASS(&Serial2, navigator, guide, controller, hal);
+        hal->gcs = new COMMLINK_CLASS(&Serial2, navigator, guide, controller, hal, heartBeatTimeout);
     }
     else
     {
         Serial3.begin(telemBaud, 128, 128); // gcs
-        hal->gcs = new COMMLINK_CLASS(&Serial3, navigator, guide, controller, hal);
+        hal->gcs = new COMMLINK_CLASS(&Serial3, navigator, guide, controller, hal, heartBeatTimeout);
     }
 
     /*
@@ -166,7 +165,7 @@ void setup() {
         Serial1.begin(hilBaud, 128, 128);
         delay(1000);
         Serial1.println("starting hil");
-        hal->hil = new COMMLINK_CLASS(&Serial1, navigator, guide, controller, hal);
+        hal->hil = new COMMLINK_CLASS(&Serial1, navigator, guide, controller, hal, heartBeatTimeout);
     }
 
     /*
