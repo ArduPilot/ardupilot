@@ -148,6 +148,7 @@ uint8_t AP_Baro_MS5611::read()
 	if (MS5611_State == 1){
 		if (MS5611_Ready()){
 			D2=MS5611_SPI_read_ADC();  				 // On state 1 we read temp
+            _raw_temp = D2;
 			MS5611_State++;
 			MS5611_SPI_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
 			MS5611_timer = millis();
@@ -156,6 +157,7 @@ uint8_t AP_Baro_MS5611::read()
 		if (MS5611_State == 5){
 			if (MS5611_Ready()){
 				D1=MS5611_SPI_read_ADC();
+                _raw_press = D1;
 				calculate();
 				MS5611_State = 1;			                // Start again from state = 1
 				MS5611_SPI_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
@@ -165,6 +167,7 @@ uint8_t AP_Baro_MS5611::read()
 		}else{
 			if (MS5611_Ready()){
 				D1=MS5611_SPI_read_ADC();
+                _raw_press = D1;
 				calculate();
 				MS5611_State++;
 				MS5611_SPI_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
@@ -209,12 +212,12 @@ void AP_Baro_MS5611::calculate()
 	Press = P;
 }
 
-uint32_t AP_Baro_MS5611::get_pressure()
+int32_t AP_Baro_MS5611::get_pressure()
 {
 	return(Press);
 }
 
-uint16_t AP_Baro_MS5611::get_temperature()
+int16_t AP_Baro_MS5611::get_temperature()
 {
 	return(Temp);
 }
@@ -231,4 +234,13 @@ float AP_Baro_MS5611::get_altitude()
 
 	return (Altitude);
 }
+
+int32_t AP_Baro_MS5611::get_raw_pressure() {
+	return _raw_press;
+}
+
+int32_t AP_Baro_MS5611::get_raw_temp() {
+	return _raw_temp;
+}
+
 
