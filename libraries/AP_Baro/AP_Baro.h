@@ -6,11 +6,13 @@ class AP_Baro
 {
     public:
     AP_Baro() {}
-    virtual void    init() = 0;
-    virtual uint8_t update() = 0;
+    virtual uint8_t read() = 0;
     virtual int32_t get_pressure() = 0;
-    virtual float   get_temp() = 0;
+    virtual int16_t get_temperature() = 0;
+    virtual float   get_altitude() = 0;
 
+    virtual int32_t get_raw_pressure() = 0;
+    virtual int32_t get_raw_temp() = 0;
 };
 
 #include "AP_Baro_MS5611.h"
