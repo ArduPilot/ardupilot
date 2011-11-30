@@ -875,17 +875,14 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		delay(100);
-		barometer.Read();
-		delay(100);
-		baro_alt 		= read_barometer();
-
-		int temp_alt	= (barometer._offset_press - barometer.RawPress) << 1; // invert and scale
-		baro_rate 		= (temp_alt - old_baro_alt) * 10;
-		old_baro_alt	= temp_alt;
-
-						//			1			2	3	4	 5		 1        2				3   				4					5
-		Serial.printf_P(PSTR("Baro: %dcm, rate:%d, %ld, %ld, %d\n"), baro_alt, climb_rate, barometer.RawTemp, barometer.RawPress, temp_alt);
-		//Serial.printf_P(PSTR("Baro, %d, %ld, %ld, %ld, %ld\n"), baro_alt, barometer.RawTemp, barometer.RawTemp2, barometer.RawPress, barometer.RawPress2);
+		int32_t alt = read_barometer(); /* calls barometer.read() */
+        int32_t pres = barometer.get_pressure();
+        int16_t temp = barometer.get_temperature();
+        int32_t raw_pres = barometer.get_raw_pressure();
+        int32_t raw_temp = barometer.get_raw_temp();
+        Serial.printf_P(PSTR("alt: %ldcm, pres: %ldmbar, temp: %d/100degC,"
+                             " raw pres: %ld, raw temp: %ld\n"),
+                             alt, pres ,temp, raw_pres, raw_temp);
 		if(Serial.available() > 0){
 			return (0);
 		}
