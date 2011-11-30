@@ -106,42 +106,6 @@ bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
 	return true;
 }
 
-/*
-// Read the sensor. This is a state machine
-// We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-uint8_t AP_Baro_BMP085::Read()
-{
-	uint8_t result = 0;
-
-	if (BMP085_State == 1){
-		if (BMP_DATA_READY()) {
-			ReadTemp();						 // On state 1 we read temp
-			BMP085_State++;
-			Command_ReadPress();
-		}
-	}else{
-		if (BMP085_State == 5){
-			if (BMP_DATA_READY()){
-				ReadPress();
-				Calculate();
-
-				BMP085_State = 1;			// Start again from state = 1
-				Command_ReadTemp();			// Read Temp
-				result = 1;					// New pressure reading
-			}
-		}else{
-			if (BMP_DATA_READY()){
-				ReadPress();
-				Calculate();
-				BMP085_State++;
-				Command_ReadPress();
-				result = 1;					// New pressure reading
-			}
-		}
-	}
-	return(result);
-}
-*/
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 uint8_t AP_Baro_BMP085::read()
