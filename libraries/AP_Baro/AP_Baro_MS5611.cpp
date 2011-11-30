@@ -36,7 +36,8 @@
 #include "AP_Baro_MS5611.h"
 
 
-#define MS5611_CS A2 // Chip select pin  (provisional)
+/* on APM v.24 MS5661_CS is PG1 (Arduino pin 40) */
+#define MS5611_CS 40
 
 #define CMD_MS5611_RESET 0x1E
 #define CMD_MS5611_PROM_Setup 0xA0
