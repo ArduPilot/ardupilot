@@ -6,12 +6,25 @@
 
 #include "AP_Baro.h"
 
-class AP_Baro_BMP085
+class AP_Baro_BMP085 : public AP_Baro
 {
   public:
 	AP_Baro_BMP085():
 			_temp_index(0),
 			_press_index(0){};  // Constructor
+
+    bool init(int initialiseWireLib = 1, bool apm2_hardware=false);
+
+    /* AP_Baro public interface: */
+    uint8_t read();
+    int32_t get_pressure();
+    int16_t get_temperature();
+    float   get_altitude();
+
+    int32_t get_raw_pressure();
+    int32_t get_raw_temp();
+
+  private:
 	int32_t RawPress;
 	int32_t	_offset_press;
 	int32_t RawTemp;
@@ -22,10 +35,7 @@ class AP_Baro_BMP085
 	bool _apm2_hardware;
 	//int32_t Press0;  // Pressure at sea level
 
-	bool Init(int initialiseWireLib = 1, bool apm2_hardware=false);
-	uint8_t Read();
 
-  private:
     // State machine
     uint8_t BMP085_State;
 	// Internal calibration registers
