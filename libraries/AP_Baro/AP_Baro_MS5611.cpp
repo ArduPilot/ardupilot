@@ -115,8 +115,15 @@ uint8_t AP_Baro_MS5611::MS5611_Ready()
 // SPI should be initialized externally
 void AP_Baro_MS5611::init()
 {
-
+    SPI.begin();
+    #if F_CPU == 16000000
+    SPI.setClockDivider(SPI_CLOCK_DIV16);
+    #else
+    # error MS5611 requires SPI at 1MHZ! Need appropriate SPI clock divider
+    #endif
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
+    digitalWrite(MS5611_CS, HIGH);
+    delay(1);
 
 	MS5611_SPI_write(CMD_MS5611_RESET);
 	delay(4);
