@@ -55,7 +55,7 @@ extern "C" {
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Baro_BMP085::Init(int initialiseWireLib, bool apm2_hardware)
+bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
 {
 	byte buff[22];
 	int i = 0;
@@ -144,7 +144,7 @@ uint8_t AP_Baro_BMP085::Read()
 */
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
-uint8_t AP_Baro_BMP085::Read()
+uint8_t AP_Baro_BMP085::read()
 {
 	uint8_t result = 0;
 
@@ -166,6 +166,27 @@ uint8_t AP_Baro_BMP085::Read()
 	return(result);
 }
 
+int32_t AP_Baro_BMP085::get_pressure() {
+    return Press;
+}
+
+int16_t AP_Baro_BMP085::get_temperature() {
+    return Temp;
+}
+
+float AP_Baro_BMP085::get_altitude() {
+    return 0.0; // TODO
+}
+
+int32_t AP_Baro_BMP085::get_raw_pressure() {
+    return RawPress;
+}
+
+int32_t AP_Baro_BMP085::get_raw_temp() {
+    return RawTemp;
+}
+
+// Private functions: /////////////////////////////////////////////////////////
 
 // Send command to Read Pressure
 void AP_Baro_BMP085::Command_ReadPress()
