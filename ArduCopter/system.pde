@@ -244,11 +244,16 @@ static void init_ardupilot()
         adc.Init(&timer_scheduler);       // APM ADC library initialization
 #endif // CONFIG_ADC
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-        barometer.Init(1, true);
-#else
-        barometer.Init(1, false);
-#endif // CONFIG_APM_HARDWARE
+#if CONFIG_BARO == AP_BARO_MS5611
+        barometer.init();
+#elif CONFIG_BARO == AP_BARO_BMP085
+# if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+        #warning bmp085 for apm2
+        barometer.init(1, true);
+# else
+        barometer.init(1, false);
+# endif // CONFIG_APM_HARDWARE
+#endif // CONFIG_BARO
 
 #endif // HIL_MODE
 
