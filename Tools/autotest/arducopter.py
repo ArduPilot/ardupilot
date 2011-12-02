@@ -233,7 +233,7 @@ def fly_ArduCopter(viewerip=None):
     simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     if viewerip:
-        simquad_cmd += ' --fgout=192.168.2.15:9123'
+        simquad_cmd += ' --fgout=%s:5503' % viewerip
 
     sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
