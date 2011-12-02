@@ -50,7 +50,12 @@ def setup_home(home):
 
 def process_sitl_input(buf):
     '''process control changes from SITL sim'''
-    (aileron, elevator, rudder, throttle) = struct.unpack('<4d', buf)
+    pwm = list(struct.unpack('<11H', buf))
+    aileron  = (pwm[0]-1500)/500.0
+    elevator = (pwm[1]-1500)/500.0
+    throttle = (pwm[2]-1000)/1000.0
+    rudder   = (pwm[3]-1500)/500.0
+               
     if aileron != sitl_state.aileron:
         jsb_set('fcs/aileron-cmd-norm', aileron)
         sitl_state.aileron = aileron
@@ -212,7 +217,7 @@ def main_loop():
             frame_count += 1
 
         if sim_in.fileno() in rin:
-            simbuf = sim_in.recv(32)
+            simbuf = sim_in.recv(22)
             process_sitl_input(simbuf)
 
         # show any jsbsim console output

@@ -13,7 +13,7 @@ for d in [ 'pymavlink',
 import mavlink
 
 
-def sim_send(m, a, r):
+def sim_send(m, a):
     '''send flight information to mavproxy and flightgear'''
     global fdm
 
@@ -53,7 +53,7 @@ def sim_send(m, a, r):
             raise
 
 
-def sim_recv(m, a, r):
+def sim_recv(m, a):
     '''receive control information from SITL'''
     while True:
         fd = sim_in.fileno()
@@ -66,15 +66,12 @@ def sim_recv(m, a, r):
         if fd in rin:
             break
         util.check_parent()
-    buf = sim_in.recv(32)
-    if len(buf) != 32:
+    buf = sim_in.recv(22)
+    if len(buf) != 22:
         return
-    (m0, m1, m2, m3,
-     r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]) = struct.unpack('<4f8H', buf)
-    m[0] = m0
-    m[1] = m1
-    m[2] = m2
-    m[3] = m3
+    pwm = list(struct.unpack('<11H', buf))
+    for i in range(4):
+        m[i] = (pwm[i]-1000)/1000.0
 
 
 def interpret_address(addrstr):
@@ -133,9 +130,6 @@ a.update_frequency = opts.rate
 # motors initially off
 m = [0, 0, 0, 0]
 
-# raw PWM
-r = [0, 0, 0, 0, 0, 0, 0, 0]
-
 lastt = time.time()
 frame_count = 0
 
@@ -162,13 +156,12 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.yaw))
 
 while True:
-    sim_recv(m, a, r)
+    sim_recv(m, a)
 
-    # allow for adding inbalance in flight
     m2 = m[:]
 
     a.update(m2)
-    sim_send(m, a, r)
+    sim_send(m, a)
     frame_count += 1
     t = time.time()
     if t - lastt > 1.0:
