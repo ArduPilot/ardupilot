@@ -38,14 +38,14 @@ def sim_send(m, a, r):
         if not e.errno in [ errno.ECONNREFUSED ]:
             raise
 
-    buf = struct.pack('>ddddddddddddddddI',
-                      a.latitude, a.longitude, util.m2ft(a.altitude), a.yaw,
-                      util.m2ft(a.velocity.x), util.m2ft(a.velocity.y),
-                      util.m2ft(a.accelerometer.x), util.m2ft(a.accelerometer.y), util.m2ft(a.accelerometer.z),
+    buf = struct.pack('<16dI',
+                      a.latitude, a.longitude, a.altitude, a.yaw,
+                      a.velocity.x, a.velocity.y,
+                      a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
                       a.roll_rate, a.pitch_rate, a.yaw_rate,
                       a.roll, a.pitch, a.yaw,
-                      util.m2ft(math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y)),
-                      0x4c56414d)
+                      math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
+                      0x4c56414e)
     try:
         sim_out.send(buf)
     except socket.error as e:
@@ -70,7 +70,7 @@ def sim_recv(m, a, r):
     if len(buf) != 32:
         return
     (m0, m1, m2, m3,
-     r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]) = struct.unpack('>ffffHHHHHHHH', buf)
+     r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]) = struct.unpack('<4f8H', buf)
     m[0] = m0
     m[1] = m1
     m[2] = m2

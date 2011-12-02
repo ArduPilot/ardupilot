@@ -50,7 +50,7 @@ def setup_home(home):
 
 def process_sitl_input(buf):
     '''process control changes from SITL sim'''
-    (aileron, elevator, rudder, throttle) = struct.unpack('>dddd', buf)
+    (aileron, elevator, rudder, throttle) = struct.unpack('<4d', buf)
     if aileron != sitl_state.aileron:
         jsb_set('fcs/aileron-cmd-norm', aileron)
         sitl_state.aileron = aileron
@@ -78,24 +78,24 @@ def process_jsb_input(buf):
             if e.errno not in [ 111 ]:
                 raise
 
-    simbuf = struct.pack('>ddddddddddddddddI',
+    simbuf = struct.pack('<16dI',
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
-                         fdm.get('altitude', units='feet'),
+                         fdm.get('altitude', units='meters'),
                          fdm.get('psi', units='degrees'),
-                         fdm.get('v_north', units='fps'),
-                         fdm.get('v_east', units='fps'),
-                         fdm.get('A_X_pilot', units='fpss'),
-                         fdm.get('A_Y_pilot', units='fpss'),
-                         fdm.get('A_Z_pilot', units='fpss'),
+                         fdm.get('v_north', units='mps'),
+                         fdm.get('v_east', units='mps'),
+                         fdm.get('A_X_pilot', units='mpss'),
+                         fdm.get('A_Y_pilot', units='mpss'),
+                         fdm.get('A_Z_pilot', units='mpss'),
                          fdm.get('phidot', units='dps'),
                          fdm.get('thetadot', units='dps'),
                          fdm.get('psidot', units='dps'),
                          fdm.get('phi', units='degrees'),
                          fdm.get('theta', units='degrees'),
                          fdm.get('psi', units='degrees'),
-                         fdm.get('vcas', units='knots'),
-                         0x4c56414d)
+                         fdm.get('vcas', units='mps'),
+                         0x4c56414e)
     try:
         sim_out.send(simbuf)
     except socket.error as e:

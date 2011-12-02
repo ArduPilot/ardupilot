@@ -119,11 +119,8 @@ static void sitl_fgear_input(void)
 		static uint32_t last_report;
 		static uint32_t count;
 
-		/* sigh, its big-endian */
-		swap_doubles(&d.fg_pkt.latitude, 16);
-		d.fg_pkt.magic = ntohl(d.fg_pkt.magic);
-		if (d.fg_pkt.magic != 0x4c56414d) {
-			printf("Bad fgear packet - magic=0x%08x\n", d.fg_pkt.magic);
+		if (d.fg_pkt.magic != 0x4c56414e) {
+			printf("Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
 			return;
 		}
 
@@ -136,20 +133,20 @@ static void sitl_fgear_input(void)
 
 		sim_state.latitude = d.fg_pkt.latitude;
 		sim_state.longitude = d.fg_pkt.longitude;
-		sim_state.altitude  = ft2m(d.fg_pkt.altitude);
-		sim_state.speedN = ft2m(d.fg_pkt.speedN);
-		sim_state.speedE = ft2m(d.fg_pkt.speedE);
+		sim_state.altitude  = d.fg_pkt.altitude;
+		sim_state.speedN = d.fg_pkt.speedN;
+		sim_state.speedE = d.fg_pkt.speedE;
 		sim_state.roll = d.fg_pkt.rollDeg;
 		sim_state.pitch = d.fg_pkt.pitchDeg;
 		sim_state.yaw = d.fg_pkt.yawDeg;
 		sim_state.rollRate = d.fg_pkt.rollRate;
 		sim_state.pitchRate = d.fg_pkt.pitchRate;
 		sim_state.yawRate = d.fg_pkt.yawRate;
-		sim_state.xAccel = ft2m(d.fg_pkt.xAccel);
-		sim_state.yAccel = ft2m(d.fg_pkt.yAccel);
-		sim_state.zAccel = ft2m(d.fg_pkt.zAccel);
+		sim_state.xAccel = d.fg_pkt.xAccel;
+		sim_state.yAccel = d.fg_pkt.yAccel;
+		sim_state.zAccel = d.fg_pkt.zAccel;
 		sim_state.heading = d.fg_pkt.heading;
-		sim_state.airspeed = kt2mps(d.fg_pkt.airspeed);
+		sim_state.airspeed = d.fg_pkt.airspeed;
 		sim_state.update_count++;
 
 		count++;
@@ -189,7 +186,7 @@ static void sitl_quadcopter_output(uint16_t pwm[8])
 		pkt.pwm[i] = htonl(pwm[i]);
 	}
 	for (uint8_t i=0; i<4; i++) {
-		pkt.throttle[i] = swap_float((pwm[i]-1000) / 1000.0);
+		pkt.throttle[i] = (pwm[i]-1000) / 1000.0;
 	}
 	sendto(sitl_fd, &pkt, sizeof(pkt), MSG_DONTWAIT, (const sockaddr *)&fgout_addr, sizeof(fgout_addr));
 }
@@ -205,7 +202,6 @@ static void sitl_plane_output(uint16_t pwm[8])
 	servo[1] = (((int)pwm[1]) - 1500)/500.0;
 	servo[2] = (((int)pwm[3]) - 1500)/500.0;
 	servo[3] = (pwm[2] - 1000) / 1000.0;
-	swap_doubles(servo, 4);
 	sendto(sitl_fd, &servo, sizeof(servo), MSG_DONTWAIT, (const sockaddr *)&fgout_addr, sizeof(fgout_addr));
 }
 
