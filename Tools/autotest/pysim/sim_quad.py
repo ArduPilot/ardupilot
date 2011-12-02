@@ -3,7 +3,7 @@
 from quadcopter import QuadCopter
 import euclid, util, time, os, sys, math
 import socket, struct
-import select, fgFDM
+import select, fgFDM, errno
 
 # find the mavlink.py module
 for d in [ 'pymavlink',
@@ -32,7 +32,11 @@ def sim_send(m, a, r):
     fdm.set('num_engines', 4)
     for i in range(4):
         fdm.set('rpm', 1000*m[i], idx=i)
-    fg_out.send(fdm.pack())
+    try:
+        fg_out.send(fdm.pack())
+    except socket.error as e:
+        if not e.errno in [ errno.ECONNREFUSED ]:
+            raise
 
     buf = struct.pack('>ddddddddddddddddI',
                       a.latitude, a.longitude, util.m2ft(a.altitude), a.yaw,
@@ -42,7 +46,11 @@ def sim_send(m, a, r):
                       a.roll, a.pitch, a.yaw,
                       util.m2ft(math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y)),
                       0x4c56414d)
-    sim_out.send(buf)
+    try:
+        sim_out.send(buf)
+    except socket.error as e:
+        if not e.errno in [ errno.ECONNREFUSED ]:
+            raise
 
 
 def sim_recv(m, a, r):
