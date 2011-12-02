@@ -123,6 +123,8 @@ for m in [ 'home', 'script' ]:
         parser.print_help()
         sys.exit(1)
 
+os.chdir(util.reltopdir('Tools/autotest'))
+
 # kill off child when we exit
 atexit.register(util.pexpect_close_all)
 
@@ -144,7 +146,6 @@ jsb.expect("Creating UDP socket on port (\d+)")
 jsb_in_address = interpret_address("127.0.0.1:%u" % int(jsb.match.group(1)))
 jsb.expect("Successfully connected to socket for output")
 jsb.expect("JSBSim Execution beginning")
-print(dir(jsb))
 
 # setup output to jsbsim
 print("JSBSim console on %s" % str(jsb_out_address))

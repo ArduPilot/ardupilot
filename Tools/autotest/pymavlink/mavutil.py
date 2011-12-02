@@ -64,6 +64,10 @@ class mavfile(object):
         '''default recv method'''
         raise RuntimeError('no recv() method supplied')
 
+    def close(self, n=None):
+        '''default close method'''
+        raise RuntimeError('no close() method supplied')
+
     def write(self, buf):
         '''default write method'''
         raise RuntimeError('no write() method supplied')
@@ -219,6 +223,9 @@ class mavserial(mavfile):
             fd = None
         mavfile.__init__(self, fd, device, source_system=source_system)
 
+    def close(self):
+        self.port.close()
+
     def recv(self,n=None):
         if n is None:
             n = self.mav.bytes_needed()
@@ -270,6 +277,9 @@ class mavudp(mavfile):
         self.last_address = None
         mavfile.__init__(self, self.port.fileno(), device, source_system=source_system)
 
+    def close(self):
+        self.port.close()
+
     def recv(self,n=None):
         try:
             data, self.last_address = self.port.recvfrom(300)
@@ -315,6 +325,9 @@ class mavtcp(mavfile):
         self.port.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         mavfile.__init__(self, self.port.fileno(), device, source_system=source_system)
 
+    def close(self):
+        self.port.close()
+
     def recv(self,n=None):
         if n is None:
             n = self.mav.bytes_needed()
@@ -354,6 +367,9 @@ class mavlogfile(mavfile):
                 mode = 'wb'
         self.f = open(filename, mode)
         mavfile.__init__(self, None, filename, source_system=source_system)
+
+    def close(self):
+        self.f.close()
 
     def recv(self,n=None):
         if n is None:
@@ -412,6 +428,9 @@ class mavchildexec(mavfile):
         fcntl.fcntl(self.child.stdout.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
         mavfile.__init__(self, self.fd, filename, source_system=source_system)
+
+    def close(self):
+        self.child.close()
 
     def recv(self,n=None):
         try:

@@ -2,12 +2,11 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
+import mavutil
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-sys.path.insert(0, util.reltopdir('../pymavlink'))
-import mavutil
 
 HOME_LOCATION='-35.362938,149.165085,584,270'
 
@@ -21,8 +20,8 @@ def takeoff(mavproxy, mav):
     # some rudder to counteract the prop torque
     mavproxy.send('rc 4 1600\n')
 
-    # get it moving a bit first to avoid bad fgear ground physics
-    mavproxy.send('rc 3 1150\n')
+    # get it moving a bit first to avoid bad JSBSim ground physics
+    mavproxy.send('rc 3 1040\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>3', blocking=True)
 
     # a bit faster
@@ -35,7 +34,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 3 1800\n')
 
     # gain a bit of altitude
-    wait_altitude(mav, homeloc.alt+30, homeloc.alt+40, timeout=30)
+    wait_altitude(mav, homeloc.alt+30, homeloc.alt+60, timeout=30)
 
     # level off
     mavproxy.send('rc 2 1500\n')
@@ -47,6 +46,7 @@ def fly_left_circuit(mavproxy, mav):
     '''fly a left circuit, 200m on a side'''
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
+    mavproxy.send('rc 3 2000\n')
     wait_level_flight(mavproxy, mav)
 
     print("Flying left circuit")
@@ -64,15 +64,17 @@ def fly_left_circuit(mavproxy, mav):
 
 def fly_RTL(mavproxy, mav):
     '''fly to home'''
+    print("Flying home in RTL")
     mavproxy.send('switch 2\n')
     wait_mode(mav, 'RTL')
-    wait_location(mav, homeloc, accuracy=30,
+    wait_location(mav, homeloc, accuracy=80,
                   target_altitude=100, height_accuracy=10)
     print("RTL Complete")
     return True
 
 def fly_LOITER(mavproxy, mav):
     '''loiter where we are'''
+    print("Testing LOITER")
     mavproxy.send('switch 3\n')
     wait_mode(mav, 'LOITER')
     while True:
@@ -193,11 +195,11 @@ def fly_ArduPlane(viewerip=None):
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
     '''
-    global expect_list, homeloc
+    global homeloc
 
-    options = '--fgout=127.0.0.1:5502 --fgin=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
-        options += ' --out=%s:14550' % viewerip
+        options += " --out=%s:14550" % viewerip
 
     sil = util.start_SIL('ArduPlane', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
@@ -210,6 +212,17 @@ def fly_ArduPlane(viewerip=None):
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
+
+    cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
+    cmd += " --home=%s --script=%s/rascal_test.xml" % (
+        HOME_LOCATION, util.reltopdir("Tools/autotest/jsbsim"))
+    if viewerip:
+        cmd += " --fgout=%s:5503" % viewerip
+
+    runsim = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
+    runsim.delaybeforesend = 0
+    util.pexpect_autoclose(runsim)
+    runsim.expect('Simulator ready to fly')
 
     sil = util.start_SIL('ArduPlane')
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
@@ -227,57 +240,10 @@ def fly_ArduPlane(viewerip=None):
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
-    fg_scenery = os.getenv("FG_SCENERY")
-    if not fg_scenery:
-        raise RuntimeError("You must set the FG_SCENERY environment variable")
+    expect_list_clear()
+    expect_list_extend([runsim, sil, mavproxy])
 
-    fgear_options = '''
-    --generic=socket,in,25,,5502,udp,MAVLink \
-    --generic=socket,out,50,,5501,udp,MAVLink \
-    --aircraft=Rascal110-JSBSim \
-    --control=mouse \
-    --disable-intro-music \
-    --airport=YKRY \
-    --lat=-35.362851 \
-    --lon=149.165223 \
-    --heading=350 \
-    --altitude=0 \
-    --geometry=650x550 \
-    --jpg-httpd=5502 \
-    --disable-anti-alias-hud \
-    --disable-hud-3d \
-    --disable-enhanced-lighting \
-    --disable-distance-attenuation \
-    --disable-horizon-effect \
-    --shading-flat \
-    --disable-textures \
-    --timeofday=noon \
-    --fdm=jsb \
-    --disable-sound \
-    --disable-fullscreen \
-    --disable-random-objects \
-    --disable-ai-models \
-    --shading-flat \
-    --fog-disable \
-    --disable-specular-highlight \
-    --disable-skyblend \
-    --fg-scenery=%s \
-    --disable-anti-alias-hud \
-    --wind=0@0 \
-''' % fg_scenery
-    # start fgear
-    if os.getenv('DISPLAY'):
-        cmd = 'fgfs %s' % fgear_options
-        fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
-    else:
-        cmd = "xvfb-run --server-num=42 -s '-screen 0 800x600x24' fgfs --enable-wireframe %s" % fgear_options
-        util.kill_xvfb(42)
-        fgear = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
-        fgear.xvfb_server_num = 42
-    util.pexpect_autoclose(fgear)
-    fgear.expect('creating 3D noise', timeout=30)
-
-    expect_list.extend([fgear, sil, mavproxy])
+    print("Started simulator")
 
     # get a mavlink connection going
     try:
@@ -293,7 +259,8 @@ def fly_ArduPlane(viewerip=None):
     try:
         mav.wait_heartbeat()
         setup_rc(mavproxy)
-        mav.recv_match(type='GPS_RAW', condition='GPS_RAW.lat != 0 and GPS_RAW.alt != 0 and VFR_HUD.alt != 0',
+        mavproxy.expect('APM: init home')
+        mav.recv_match(type='GPS_RAW', condition='MAV.flightmode!="INITIALISING" and GPS_RAW.fix_type==2 and GPS_RAW.lat != 0 and GPS_RAW.alt != 0 and VFR_HUD.alt > 10',
                        blocking=True)
         homeloc = current_location(mav)
         print("Home location: %s" % homeloc)
@@ -319,9 +286,10 @@ def fly_ArduPlane(viewerip=None):
     except pexpect.TIMEOUT, e:
         failed = True
 
+    mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(fgear)
+    util.pexpect_close(runsim)
 
     if os.path.exists('ArduPlane-valgrind.log'):
         os.chmod('ArduPlane-valgrind.log', 0644)
