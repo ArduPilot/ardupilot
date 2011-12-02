@@ -55,18 +55,13 @@ def sim_send(m, a):
 
 def sim_recv(m, a):
     '''receive control information from SITL'''
-    while True:
-        fd = sim_in.fileno()
-        rin = [fd]
-        try:
-            (rin, win, xin) = select.select(rin, [], [], 1.0)
-        except select.error:
-            util.check_parent()
-            continue
-        if fd in rin:
-            break
-        util.check_parent()
-    buf = sim_in.recv(22)
+    try:
+        buf = sim_in.recv(22)
+    except socket.error as e:
+        if not e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
+            raise
+        return
+        
     if len(buf) != 22:
         return
     pwm = list(struct.unpack('<11H', buf))
@@ -88,7 +83,7 @@ parser.add_option("--fgout", dest="fgout",  help="flightgear output (IP:port)", 
 parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       default="127.0.0.1:5502")
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
-parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=50)
+parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=1000)
 
 (opts, args) = parser.parse_args()
 
@@ -125,7 +120,6 @@ fdm = fgFDM.fgFDM()
 
 # create the quadcopter model
 a = QuadCopter()
-a.update_frequency = opts.rate
 
 # motors initially off
 m = [0, 0, 0, 0]
@@ -155,7 +149,11 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_altitude,
     a.yaw))
 
+frame_time = 1.0/opts.rate
+
+
 while True:
+    frame_start = time.time()
     sim_recv(m, a)
 
     m2 = m[:]
@@ -171,3 +169,6 @@ while True:
             a.yaw, a.yaw_rate))
         lastt = t
         frame_count = 0
+    frame_end = time.time()
+    if frame_end - frame_start < frame_time:
+        time.sleep(frame_time - (frame_end - frame_start))
