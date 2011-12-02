@@ -2,7 +2,7 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
-import mavutil, mavwp
+import mavutil, mavwp, random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
@@ -247,6 +247,7 @@ def fly_ArduCopter(viewerip=None):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
+    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
