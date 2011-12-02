@@ -48,6 +48,8 @@ static volatile struct {
 	double heading; // degrees
 	double speedN, speedE; // m/s
 	double roll, pitch, yaw; // degrees
+	double rollRate, pitchRate, yawRate; // degrees per second
+	double xAccel, yAccel, zAccel; // meters/s/s
 	double airspeed; // m/s
 	uint32_t update_count;
 } sim_state;
@@ -140,6 +142,12 @@ static void sitl_fgear_input(void)
 		sim_state.roll = d.fg_pkt.rollDeg;
 		sim_state.pitch = d.fg_pkt.pitchDeg;
 		sim_state.yaw = d.fg_pkt.yawDeg;
+		sim_state.rollRate = d.fg_pkt.rollRate;
+		sim_state.pitchRate = d.fg_pkt.pitchRate;
+		sim_state.yawRate = d.fg_pkt.yawRate;
+		sim_state.xAccel = ft2m(d.fg_pkt.xAccel);
+		sim_state.yAccel = ft2m(d.fg_pkt.yAccel);
+		sim_state.zAccel = ft2m(d.fg_pkt.zAccel);
 		sim_state.heading = d.fg_pkt.heading;
 		sim_state.airspeed = kt2mps(d.fg_pkt.airspeed);
 		sim_state.update_count++;
@@ -287,7 +295,10 @@ static void timer_handler(int signum)
 	sitl_update_gps(sim_state.latitude, sim_state.longitude,
 			sim_state.altitude,
 			sim_state.speedN, sim_state.speedE, true);
-	sitl_update_adc(sim_state.roll, sim_state.pitch, sim_state.heading, sim_state.airspeed);
+	sitl_update_adc(sim_state.roll, sim_state.pitch, sim_state.yaw,
+			sim_state.rollRate, sim_state.pitchRate, sim_state.yawRate,
+			sim_state.xAccel, sim_state.yAccel, sim_state.zAccel,
+			sim_state.airspeed);
 	sitl_update_barometer(sim_state.altitude);
 	sitl_update_compass(sim_state.heading, sim_state.roll, sim_state.pitch, sim_state.heading);
 }
@@ -333,7 +344,7 @@ void sitl_setup(void)
 
 	// setup some initial values
 	sitl_update_barometer(desktop_state.initial_height);
-	sitl_update_adc(0, 0, 0, 0);
+	sitl_update_adc(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0);
 	sitl_update_compass(0, 0, 0, 0);
 	sitl_update_gps(0, 0, 0, 0, 0, false);
 }
