@@ -268,6 +268,7 @@ showsources:
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS) $(CORELIB)
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	@echo Built $@
 
 #
 # Build sketch objects
