@@ -61,7 +61,7 @@ rollDeg = 0.0
 pitchDeg = 0.0
 yawDeg = 0.0
 airspeed = 0
-magic = 0x4c56414d
+magic = 0x4c56414e
 
 deltaT = 0.005
 rollDeg = 45
@@ -80,12 +80,12 @@ while True:
     xAccel = sin(radians(pitchDeg)) * cos(radians(rollDeg))
     yAccel = -sin(radians(rollDeg)) * cos(radians(pitchDeg))
     zAccel = -cos(radians(rollDeg)) * cos(radians(pitchDeg))
-    scale = m2ft(9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel)))
+    scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel))
     xAccel *= scale;
     yAccel *= scale;
     zAccel *= scale;
 
-    buf = struct.pack('>ddddddddddddddddI',
+    buf = struct.pack('<16dI',
                       latitude, longitude, altitude, heading,
                       speedN, speedE,
                       xAccel, yAccel, zAccel,
