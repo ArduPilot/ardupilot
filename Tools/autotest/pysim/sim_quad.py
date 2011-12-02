@@ -150,7 +150,7 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.yaw))
 
 frame_time = 1.0/opts.rate
-
+sleep_overhead = 0
 
 while True:
     frame_start = time.time()
@@ -171,4 +171,8 @@ while True:
         frame_count = 0
     frame_end = time.time()
     if frame_end - frame_start < frame_time:
-        time.sleep(frame_time - (frame_end - frame_start))
+        dt = frame_time - (frame_end - frame_start)
+        dt -= sleep_overhead
+        if dt > 0:
+            time.sleep(dt)
+        sleep_overhead = 0.99*sleep_overhead + 0.01*(time.time() - frame_end)
