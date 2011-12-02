@@ -31,34 +31,43 @@
 #include "desktop.h"
 #include "util.h"
 
-#define FGIN_PORT 5501
-#define FGOUT_PORT 5502
+/*
+  the sitl_fdm packet is received by the SITL build from the flight
+  simulator. This is used to feed the internal sensor emulation
+ */
+struct sitl_fdm {
+	// little-endian packet format
+	double latitude, longitude; // degrees
+	double altitude;  // MSL
+	double heading;   // degrees
+	double speedN, speedE; // m/s
+	double xAccel, yAccel, zAccel;       // m/s/s in body frame
+	double rollRate, pitchRate, yawRate; // degrees/s/s in earth frame
+	double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
+	double airspeed; // m/s
+	uint32_t magic; // 0x4c56414e
+};
+
+
+#define SIMIN_PORT 5501
+#define RCOUT_PORT 5502
 
 static int sitl_fd;
-struct sockaddr_in fgout_addr;
+struct sockaddr_in rcout_addr;
 static pid_t parent_pid;
 struct ADC_UDR2 UDR2;
 struct RC_ICR4 ICR4;
 extern AP_TimerProcess timer_scheduler;
 extern Arduino_Mega_ISR_Registry isr_registry;
 
-static volatile struct {
-	double latitude, longitude; // degrees
-	double altitude; // MSL
-	double heading; // degrees
-	double speedN, speedE; // m/s
-	double roll, pitch, yaw; // degrees
-	double rollRate, pitchRate, yawRate; // degrees per second
-	double xAccel, yAccel, zAccel; // meters/s/s
-	double airspeed; // m/s
-	uint32_t update_count;
-} sim_state;
+static struct sitl_fdm sim_state;
+static uint32_t update_count;
 
 
 /*
-  setup a FGear listening UDP port, using protocol from MAVLink.xml
+  setup a SITL FDM listening UDP port
  */
-static void setup_fgear(void)
+static void setup_fdm(void)
 {
 	int one=1, ret;
 	struct sockaddr_in sockaddr;
@@ -68,7 +77,7 @@ static void setup_fgear(void)
 #ifdef HAVE_SOCK_SIN_LEN
 	sockaddr.sin_len = sizeof(sockaddr);
 #endif
-	sockaddr.sin_port = htons(FGIN_PORT);
+	sockaddr.sin_port = htons(SIMIN_PORT);
 	sockaddr.sin_family = AF_INET;
 
 	sitl_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -91,25 +100,16 @@ static void setup_fgear(void)
 }
 
 /*
-  check for a fgear packet
+  check for a SITL FDM packet
  */
-static void sitl_fgear_input(void)
+static void sitl_fdm_input(void)
 {
 	ssize_t size;
-	struct fg_mavlink {
-		double latitude, longitude, altitude, heading,
-			speedN, speedE,
-			xAccel, yAccel, zAccel,
-			rollRate, pitchRate, yawRate,
-			rollDeg, pitchDeg, yawDeg,
-			airspeed;
-		uint32_t magic;
-	};
 	struct pwm_packet {
 		uint16_t pwm[8];
 	};
 	union {
-		struct fg_mavlink fg_pkt;
+		struct sitl_fdm fg_pkt;
 		struct pwm_packet pwm_pkt;
 	} d;
 
@@ -131,23 +131,8 @@ static void sitl_fgear_input(void)
 			return;
 		}
 
-		sim_state.latitude = d.fg_pkt.latitude;
-		sim_state.longitude = d.fg_pkt.longitude;
-		sim_state.altitude  = d.fg_pkt.altitude;
-		sim_state.speedN = d.fg_pkt.speedN;
-		sim_state.speedE = d.fg_pkt.speedE;
-		sim_state.roll = d.fg_pkt.rollDeg;
-		sim_state.pitch = d.fg_pkt.pitchDeg;
-		sim_state.yaw = d.fg_pkt.yawDeg;
-		sim_state.rollRate = d.fg_pkt.rollRate;
-		sim_state.pitchRate = d.fg_pkt.pitchRate;
-		sim_state.yawRate = d.fg_pkt.yawRate;
-		sim_state.xAccel = d.fg_pkt.xAccel;
-		sim_state.yAccel = d.fg_pkt.yAccel;
-		sim_state.zAccel = d.fg_pkt.zAccel;
-		sim_state.heading = d.fg_pkt.heading;
-		sim_state.airspeed = d.fg_pkt.airspeed;
-		sim_state.update_count++;
+		sim_state = d.fg_pkt;
+		update_count++;
 
 		count++;
 		if (millis() - last_report > 1000) {
@@ -176,43 +161,10 @@ static void sitl_fgear_input(void)
 /*
   send RC outputs to simulator for a quadcopter
  */
-static void sitl_quadcopter_output(uint16_t pwm[8])
-{
-	struct fg_output {
-		float throttle[4];
-		uint16_t pwm[8];
-	} pkt;
-	for (uint8_t i=0; i<8; i++) {
-		pkt.pwm[i] = htonl(pwm[i]);
-	}
-	for (uint8_t i=0; i<4; i++) {
-		pkt.throttle[i] = (pwm[i]-1000) / 1000.0;
-	}
-	sendto(sitl_fd, &pkt, sizeof(pkt), MSG_DONTWAIT, (const sockaddr *)&fgout_addr, sizeof(fgout_addr));
-}
-
-/*
-  send RC outputs to simulator for a plane
- */
-static void sitl_plane_output(uint16_t pwm[8])
-{
-	double servo[4];
-
-	servo[0] = (((int)pwm[0]) - 1500)/500.0;
-	servo[1] = (((int)pwm[1]) - 1500)/500.0;
-	servo[2] = (((int)pwm[3]) - 1500)/500.0;
-	servo[3] = (pwm[2] - 1000) / 1000.0;
-	sendto(sitl_fd, &servo, sizeof(servo), MSG_DONTWAIT, (const sockaddr *)&fgout_addr, sizeof(fgout_addr));
-}
-
-
-/*
-  send RC outputs to simulator for a quadcopter
- */
 static void sitl_simulator_output(void)
 {
 	static uint32_t last_update;
-	uint16_t pwm[8];
+	uint16_t pwm[11];
 	/* this maps the registers used for PWM outputs. The RC
 	 * driver updates these whenever it wants the channel output
 	 * to change */
@@ -222,14 +174,12 @@ static void sitl_simulator_output(void)
 	uint8_t i;
 
 	if (last_update == 0) {
-		if (desktop_state.quadcopter) {
-			for (i=0; i<8; i++) {
-				(*reg[i]) = 1000*2;
-			}
-		} else {
+		for (i=0; i<11; i++) {
+			(*reg[i]) = 1000*2;
+		}
+		if (!desktop_state.quadcopter) {
 			(*reg[0]) = (*reg[1]) = (*reg[3]) = 1500*2;
-			(*reg[2]) = (*reg[4]) = (*reg[6]) = 1000*2;
-			(*reg[5]) = (*reg[7]) = 1800*2;
+			(*reg[7]) = 1800*2;
 		}
 	}
 
@@ -239,17 +189,11 @@ static void sitl_simulator_output(void)
 	}
 	last_update = millis();
 
-	for (i=0; i<8; i++) {
+	for (i=0; i<11; i++) {
 		// the registers are 2x the PWM value
 		pwm[i] = (*reg[i])/2;
 	}
-
-	if (desktop_state.quadcopter) {
-		sitl_quadcopter_output(pwm);
-	} else {
-		sitl_plane_output(pwm);
-	}
-
+	sendto(sitl_fd, (void*)pwm, sizeof(pwm), MSG_DONTWAIT, (const sockaddr *)&rcout_addr, sizeof(rcout_addr));
 }
 
 /*
@@ -265,7 +209,7 @@ static void timer_handler(int signum)
 	}
 
 	/* check for packet from flight sim */
-	sitl_fgear_input();
+	sitl_fdm_input();
 
 	// trigger all timers
 	timer_scheduler.run();
@@ -278,25 +222,25 @@ static void timer_handler(int signum)
 	// send RC output to flight sim
 	sitl_simulator_output();
 
-	if (sim_state.update_count == 0) {
+	if (update_count == 0) {
 		sitl_update_gps(0, 0, 0, 0, 0, false);
 		return;
 	}
 
-	if (sim_state.update_count == last_update_count) {
+	if (update_count == last_update_count) {
 		return;
 	}
-	last_update_count = sim_state.update_count;
+	last_update_count = update_count;
 
 	sitl_update_gps(sim_state.latitude, sim_state.longitude,
 			sim_state.altitude,
 			sim_state.speedN, sim_state.speedE, true);
-	sitl_update_adc(sim_state.roll, sim_state.pitch, sim_state.yaw,
+	sitl_update_adc(sim_state.rollDeg, sim_state.pitchDeg, sim_state.yawDeg,
 			sim_state.rollRate, sim_state.pitchRate, sim_state.yawRate,
 			sim_state.xAccel, sim_state.yAccel, sim_state.zAccel,
 			sim_state.airspeed);
 	sitl_update_barometer(sim_state.altitude);
-	sitl_update_compass(sim_state.heading, sim_state.roll, sim_state.pitch, sim_state.heading);
+	sitl_update_compass(sim_state.heading, sim_state.rollDeg, sim_state.pitchDeg, sim_state.heading);
 }
 
 
@@ -329,12 +273,12 @@ void sitl_setup(void)
 {
 	parent_pid = getppid();
 
-	fgout_addr.sin_family = AF_INET;
-	fgout_addr.sin_port = htons(FGOUT_PORT);
-	inet_pton(AF_INET, "127.0.0.1", &fgout_addr.sin_addr);
+	rcout_addr.sin_family = AF_INET;
+	rcout_addr.sin_port = htons(RCOUT_PORT);
+	inet_pton(AF_INET, "127.0.0.1", &rcout_addr.sin_addr);
 
 	setup_timer();
-	setup_fgear();
+	setup_fdm();
 	sitl_setup_adc();
 	printf("Starting SITL input\n");
 
