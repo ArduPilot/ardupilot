@@ -2,9 +2,12 @@
 # APM automatic test suite
 # Andrew Tridgell, October 2011
 
-import pexpect, os, util, sys, shutil
-import arducopter, arduplane
+import pexpect, os, sys, shutil, atexit
 import optparse, fnmatch, time, glob, traceback
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pysim'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pymavlink'))
+import util, arducopter, arduplane
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
@@ -165,9 +168,6 @@ def run_step(step):
         return arducopter.fly_ArduCopter(viewerip=opts.viewerip)
 
     if step == 'fly.ArduPlane':
-        if not opts.experimental:
-            print("DISABLED: use --experimental to enable fly.ArduPlane")
-            return True
         return arduplane.fly_ArduPlane(viewerip=opts.viewerip)
 
     if step == 'convertgpx':
@@ -235,6 +235,7 @@ def run_tests(steps):
     passed = True
     failed = []
     for step in steps:
+        util.pexpect_close_all()
         if skip_step(step):
             continue
 
@@ -253,12 +254,13 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
-            util.pexpect_close_all()
             continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
+
+    util.pexpect_close_all()
 
     results.addglob("Google Earth track", '*.kmz')
     results.addfile('Full Logs', 'autotest-output.txt')
@@ -283,6 +285,8 @@ lck = util.lock_file(util.reltopdir('../buildlogs/autotest.lck'))
 if lck is None:
     print("autotest is locked - exiting")
     sys.exit(0)
+
+atexit.register(util.pexpect_close_all)
 
 try:
     if not run_tests(steps):
