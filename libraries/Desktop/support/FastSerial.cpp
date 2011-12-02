@@ -128,6 +128,7 @@ static void tcp_start_connection(unsigned int serial_port, bool wait_for_connect
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
         }
+		setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 		setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		s->connected = true;
 		if (!desktop_state.slider) {
@@ -174,6 +175,7 @@ static void check_connection(struct tcp_state *s)
 			int one = 1;
 			s->connected = true;
 			setsockopt(s->fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+			setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 			printf("New connection on serial port %u\n", s->serial_port);
 			if (!desktop_state.slider) {
 				set_nonblocking(s->fd);
