@@ -155,23 +155,20 @@ float BlockPD::update(const float & input, const float & dt) {
 }
 
 BlockPIDDfb::BlockPIDDfb(AP_Var_group * group, uint8_t groupStart, float kP, float kI,
-            float kD, float iMax, float yMax, float dFCut,
-            const prog_char_t * dFCutLabel,
+            float kD, float iMax, float yMax,
             const prog_char_t * dLabel) :
     AP_ControllerBlock(group, groupStart, 5),
     _blockP(group, groupStart, kP),
     _blockI(group, _blockP.getGroupEnd(), kI, iMax),
     _blockSaturation(group, _blockI.getGroupEnd(), yMax),
-    _blockLowPass(group, _blockSaturation.getGroupEnd(), dFCut,
-                  dFCutLabel ? : PSTR("dFCut")),
-    _kD(group, _blockLowPass.getGroupEnd(), kD, dLabel ? : PSTR("d"))
+    _kD(group, _blockSaturation.getGroupEnd(), kD, dLabel ? : PSTR("d"))
 {
 }
 float BlockPIDDfb::update(const float & input, const float & derivative,
              const float & dt) {
 
-    float y = _blockP.update(input) + _blockI.update(input, dt) - _kD
-              * _blockLowPass.update(derivative,dt);
+    float y = _blockP.update(input) + _blockI.update(input, dt) + _kD
+              * derivative;
     return _blockSaturation.update(y);
 }
 
