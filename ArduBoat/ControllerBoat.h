@@ -18,10 +18,9 @@ public:
                    AP_HardwareAbstractionLayer * hal) :
         AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
-               steeringI, steeringD, steeringIMax, steeringYMax,steeringDFCut),
+               steeringI, steeringD, steeringIMax, steeringYMax),
         pidThrust(new AP_Var_group(k_pidThrust, PSTR("THR_")), 1, throttleP,
-                  throttleI, throttleD, throttleIMax, throttleYMax,
-                  throttleDFCut), _strCmd(0), _thrustCmd(0)
+                  throttleI, throttleD, throttleIMax, throttleYMax, throttleDFCut), _strCmd(0), _thrustCmd(0)
     {
         _hal->debug->println_P(PSTR("initializing boat controller"));
 
@@ -44,7 +43,8 @@ private:
         _thrustCmd = _hal->rc[ch_thrust]->getRadioPosition();
     }
     void autoLoop(const float dt) {
-        _strCmd = pidStr.update(_guide->getHeadingError(), _nav->getYawRate(), dt);
+        // neglects heading command derivative
+        _strCmd = pidStr.update(_guide->getHeadingError(), -_nav->getYawRate(), dt);
         _thrustCmd = pidThrust.update(
                          _guide->getGroundSpeedCommand()
                          - _nav->getGroundSpeed(), dt);

@@ -18,7 +18,7 @@ public:
                    AP_HardwareAbstractionLayer * hal) :
         AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,ch_thrust,ch_str,0.1,-0.9,0.9),ch_mode,k_cntrl),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
-               steeringI, steeringD, steeringIMax, steeringYMax, steeringDFCut),
+               steeringI, steeringD, steeringIMax, steeringYMax),
         pidThr(new AP_Var_group(k_pidThr, PSTR("THR_")), 1, throttleP,
                throttleI, throttleD, throttleIMax, throttleYMax,
                throttleDFCut), _headingOutput(0), _throttleOutput(0) {
@@ -55,7 +55,7 @@ private:
             headingError -= 360 * deg2Rad;
         if (headingError < -180 * deg2Rad)
             headingError += 360 * deg2Rad;
-        _headingOutput = pidStr.update(headingError, _nav->getYawRate(), dt);
+        _headingOutput = pidStr.update(headingError, -_nav->getYawRate(), dt);
         _throttleOutput = pidThr.update(_guide->getGroundSpeedCommand()
                                         - _nav->getGroundSpeed(), dt);
     }

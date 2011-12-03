@@ -218,8 +218,7 @@ protected:
 class BlockPIDDfb: public AP_ControllerBlock {
 public:
     BlockPIDDfb(AP_Var_group * group, uint8_t groupStart, float kP, float kI,
-                float kD, float iMax, float yMax, float dFCut,
-                const prog_char_t * dFCutLabel = NULL,
+                float kD, float iMax, float yMax,
                 const prog_char_t * dLabel = NULL);
     float update(const float & input, const float & derivative,
                  const float & dt);
@@ -227,7 +226,6 @@ protected:
     BlockP _blockP;                     /// The proportional block.
     BlockI _blockI;                     /// The integral block.
     BlockSaturation _blockSaturation;   /// The saturation block.
-    BlockLowPass _blockLowPass;         /// The low-pass filter block.
     AP_Float _kD;                       /// derivative gain
 };
 
