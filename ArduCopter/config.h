@@ -369,8 +369,6 @@
 #ifndef THROTTLE_FAILSAFE_ACTION
 # define THROTTLE_FAILSAFE_ACTION	2
 #endif
-
-
 #ifndef MINIMUM_THROTTLE
 # define MINIMUM_THROTTLE	130
 #endif
@@ -485,11 +483,11 @@
 // and charachteristics changes.
 #ifdef MOTORS_JD880
 # define STABILIZE_ROLL_P 		3.6
-# define STABILIZE_ROLL_I 		0.06
-# define STABILIZE_ROLL_IMAX 	        2.0		// degrees
+# define STABILIZE_ROLL_I 		0.08
+# define STABILIZE_ROLL_IMAX 	40.0		// degrees
 # define STABILIZE_PITCH_P		3.6
-# define STABILIZE_PITCH_I		0.06
-# define STABILIZE_PITCH_IMAX	        2.0		// degrees
+# define STABILIZE_PITCH_I		0.08
+# define STABILIZE_PITCH_IMAX	40.0		// degrees
 #endif
 
 // Jasons default values that are good for smaller payload motors.
@@ -497,20 +495,20 @@
 # define STABILIZE_ROLL_P 		4.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.0
+# define STABILIZE_ROLL_I 		0.08
 #endif
 #ifndef STABILIZE_ROLL_IMAX
-# define STABILIZE_ROLL_IMAX 	1.5		// degrees
+# define STABILIZE_ROLL_IMAX 	40		// degrees
 #endif
 
 #ifndef STABILIZE_PITCH_P
 # define STABILIZE_PITCH_P		4.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.0
+# define STABILIZE_PITCH_I		0.08
 #endif
 #ifndef STABILIZE_PITCH_IMAX
-# define STABILIZE_PITCH_IMAX	1.5		// degrees
+# define STABILIZE_PITCH_IMAX	40		// degrees
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -580,15 +578,6 @@
 #endif
 #ifndef RATE_YAW_IMAX
 # define RATE_YAW_IMAX   50
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Autopilot control limits
-//
-// how much to we pitch towards the target
-#ifndef PITCH_MAX
-# define PITCH_MAX				22			// degrees
 #endif
 
 
@@ -670,14 +659,19 @@
 # define DEBUG_LEVEL SEVERITY_LOW
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED               ENABLED
+#ifdef LOGGING_ENABLED
+	#undef LOGGING_ENABLED
 #endif
+
+#if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
+	#define LOGGING_ENABLED		ENABLED
+#else
+	#define LOGGING_ENABLED     DISABLED
+#endif
+
 
 #ifndef LOG_ATTITUDE_FAST
 # define LOG_ATTITUDE_FAST		DISABLED
@@ -723,17 +717,17 @@
 #define LOGBIT(_s)     (LOG_##_s ? MASK_LOG_##_s : 0)
 
 #define DEFAULT_LOG_BITMASK \
-               LOGBIT(ATTITUDE_FAST)   | \
-               LOGBIT(ATTITUDE_MED)    | \
-               LOGBIT(GPS)                             | \
-               LOGBIT(PM)                              | \
-               LOGBIT(CTUN)                    | \
-               LOGBIT(NTUN)                    | \
-               LOGBIT(MODE)                    | \
-               LOGBIT(RAW)                             | \
-               LOGBIT(CMD)                             | \
-               LOGBIT(CUR)						| \
-               LOGBIT(MOTORS)					| \
+               LOGBIT(ATTITUDE_FAST)	| \
+               LOGBIT(ATTITUDE_MED)		| \
+               LOGBIT(GPS)				| \
+               LOGBIT(PM)               | \
+               LOGBIT(CTUN)				| \
+               LOGBIT(NTUN)				| \
+               LOGBIT(MODE)             | \
+               LOGBIT(RAW)              | \
+               LOGBIT(CMD)              | \
+               LOGBIT(CUR)				| \
+               LOGBIT(MOTORS)			| \
                LOGBIT(OPTFLOW)
 
 // if we are using fast, Disable Medium
