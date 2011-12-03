@@ -20,7 +20,10 @@ class BetterStream;
 class RangeFinder;
 class FastSerial;
 class AP_IMU_INS;
+class AP_InertialSensor;
 class APM_RC_Class;
+class AP_TimerProcess;
+class Arduino_Mega_ISR_Registry;
 
 namespace apo {
 
@@ -105,6 +108,13 @@ public:
     Vector<RangeFinder *> rangeFinders;
     AP_BatteryMonitor * batteryMonitor;
     AP_IMU_INS * imu;
+    AP_InertialSensor * ins;
+
+    /**
+     * Scheduler
+     */
+    AP_TimerProcess * scheduler;
+    Arduino_Mega_ISR_Registry * isr_registry;
 
     /**
      * Actuators
