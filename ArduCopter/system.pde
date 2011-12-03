@@ -214,6 +214,9 @@ static void init_ardupilot()
 	gcs3.init(&Serial3);
 #endif
 
+    // identify ourselves correctly with the ground station
+	mavlink_system.sysid = g.sysid_this_mav;
+
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
 		int16_t rc_override[8] = RADIO_OVERRIDE_DEFAULTS;

@@ -1,12 +1,109 @@
-# utility code for autotest
-
+import euclid, math
 import os, pexpect, sys, time
 from subprocess import call, check_call,Popen, PIPE
 
+def RPY_to_XYZ(roll, pitch, yaw, length):
+    '''convert roll, pitch and yaw in degrees to
+       Vector3 in X, Y and Z
+
+       inputs:
+
+       roll, pitch and yaw are in degrees
+       yaw == 0 when pointing North
+       roll == zero when horizontal. +ve roll means tilting to the right
+       pitch == zero when horizontal, +ve pitch means nose is pointing upwards
+       length is in an arbitrary linear unit.
+       When RPY is (0, 0, 0) then length represents distance upwards
+
+       outputs:
+       Vector3:
+       X is in units along latitude. +ve X means going North
+       Y is in units along longitude +ve Y means going East
+       Z is altitude in units (+ve is up)
+
+       test suite:
+
+       >>> RPY_to_XYZ(0, 0, 0, 1)
+       Vector3(0.00, 0.00, 1.00)
+
+       >>> RPY_to_XYZ(0, 0, 0, 2)
+       Vector3(0.00, 0.00, 2.00)
+
+       >>> RPY_to_XYZ(90, 0, 0, 1)
+       Vector3(0.00, 1.00, 0.00)
+
+       >>> RPY_to_XYZ(-90, 0, 0, 1)
+       Vector3(0.00, -1.00, 0.00)
+
+       >>> RPY_to_XYZ(0, 90, 0, 1)
+       Vector3(-1.00, 0.00, 0.00)
+
+       >>> RPY_to_XYZ(0, -90, 0, 1)
+       Vector3(1.00, 0.00, 0.00)
+
+       >>> RPY_to_XYZ(90, 0, 180, 1)
+       Vector3(-0.00, -1.00, 0.00)
+
+       >>> RPY_to_XYZ(-90, 0, 180, 1)
+       Vector3(0.00, 1.00, 0.00)
+
+       >>> RPY_to_XYZ(0, 90, 180, 1)
+       Vector3(1.00, -0.00, 0.00)
+
+       >>> RPY_to_XYZ(0, -90, 180, 1)
+       Vector3(-1.00, 0.00, 0.00)
+
+       >>> RPY_to_XYZ(90, 0, 90, 1)
+       Vector3(-1.00, 0.00, 0.00)
+
+       >>> RPY_to_XYZ(-90, 0, 90, 1)
+       Vector3(1.00, -0.00, 0.00)
+
+       >>> RPY_to_XYZ(90, 0, 270, 1)
+       Vector3(1.00, -0.00, 0.00)
+
+       >>> RPY_to_XYZ(-90, 0, 270, 1)
+       Vector3(-1.00, 0.00, 0.00)
+
+       >>> RPY_to_XYZ(0, 90, 90, 1)
+       Vector3(-0.00, -1.00, 0.00)
+
+       >>> RPY_to_XYZ(0, -90, 90, 1)
+       Vector3(0.00, 1.00, 0.00)
+
+       >>> RPY_to_XYZ(0, 90, 270, 1)
+       Vector3(0.00, 1.00, 0.00)
+
+       >>> RPY_to_XYZ(0, -90, 270, 1)
+       Vector3(-0.00, -1.00, 0.00)
+
+       '''
+
+    v = euclid.Vector3(0, 0, length)
+    v = euclid.Quaternion.new_rotate_euler(-math.radians(pitch), 0,  -math.radians(roll)) * v
+    v = euclid.Quaternion.new_rotate_euler(0, math.radians(yaw), 0) * v
+    return v
+
+
+def m2ft(x):
+    '''meters to feet'''
+    return float(x) / 0.3048
+
+def ft2m(x):
+    '''feet to meters'''
+    return float(x) * 0.3048
+
+def kt2mps(x):
+    return x * 0.514444444
+
+def mps2kt(x):
+    return x / 0.514444444
 
 def topdir():
     '''return top of git tree where autotest is running from'''
     d = os.path.dirname(os.path.realpath(__file__))
+    assert(os.path.basename(d)=='pysim')
+    d = os.path.dirname(d)
     assert(os.path.basename(d)=='autotest')
     d = os.path.dirname(d)
     assert(os.path.basename(d)=='Tools')
@@ -74,14 +171,10 @@ def pexpect_close(p):
     '''close a pexpect child'''
     global close_list
 
-    xvfb_server_num = getattr(p, 'xvfb_server_num', None)
-    if xvfb_server_num is not None:
-        kill_xvfb(xvfb_server_num)
     try:
         p.close()
     except Exception:
         pass
-    time.sleep(1)
     try:
         p.close(force=True)
     except Exception:
@@ -94,6 +187,13 @@ def pexpect_close_all():
     global close_list
     for p in close_list[:]:
         pexpect_close(p)
+
+def pexpect_drain(p):
+    '''drain any pending input'''
+    try:
+        p.read_nonblocking(1000, timeout=0)
+    except pexpect.TIMEOUT:
+        pass
 
 def start_SIL(atype, valgrind=False, wipe=False, CLI=False, height=None):
     '''launch a SIL instance'''
@@ -108,6 +208,7 @@ def start_SIL(atype, valgrind=False, wipe=False, CLI=False, height=None):
     if height is not None:
         cmd += ' -H %u' % height
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
+    ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     ret.expect('Waiting for connection')
     return ret
@@ -127,6 +228,7 @@ def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:
     if options is not None:
         cmd += ' ' + options
     ret = pexpect.spawn(cmd, logfile=logfile, timeout=60)
+    ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
 
@@ -179,12 +281,15 @@ def lock_file(fname):
         return None
     return f
 
-def kill_xvfb(server_num):
-    '''Xvfb is tricky to kill!'''
+def check_parent(parent_pid=os.getppid()):
+    '''check our parent process is still alive'''
     try:
-        import signal
-        pid = int(open('/tmp/.X%s-lock' % server_num).read().strip())
-        print("Killing Xvfb process %u" % pid)
-        os.kill(pid, signal.SIGINT)
-    except Exception, msg:
-        print("failed to kill Xvfb process - %s" % msg)
+        os.kill(parent_pid, 0)
+    except Exception:
+        print("Parent had finished - exiting")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
