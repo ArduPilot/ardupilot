@@ -151,10 +151,10 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 
 #if HIL_MODE == HIL_MODE_DISABLED
 
-	// real sensors
-    #if CONFIG_ADC == ENABLED
+// real sensors
+#if CONFIG_ADC == ENABLED
 	AP_ADC_ADS7844          adc;
-    #endif
+#endif
 
 #ifdef DESKTOP_BUILD
     APM_BMP085_HIL_Class    barometer;
@@ -164,35 +164,35 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 #endif
 
-  #ifdef OPTFLOW_ENABLED
-    AP_OpticalFlow_ADNS3080 optflow;
-  #endif
+#ifdef OPTFLOW_ENABLED
+	AP_OpticalFlow_ADNS3080 optflow;
+#endif
 
-	// real GPS selection
-	#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
-		AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
+// real GPS selection
+#if   GPS_PROTOCOL == GPS_PROTOCOL_AUTO
+	AP_GPS_Auto     g_gps_driver(&Serial1, &g_gps);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
-		AP_GPS_NMEA     g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_NMEA
+	AP_GPS_NMEA     g_gps_driver(&Serial1);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
-		AP_GPS_SIRF     g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_SIRF
+	AP_GPS_SIRF     g_gps_driver(&Serial1);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
-		AP_GPS_UBLOX    g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_UBLOX
+	AP_GPS_UBLOX    g_gps_driver(&Serial1);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
-		AP_GPS_MTK      g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK
+	AP_GPS_MTK      g_gps_driver(&Serial1);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
-		AP_GPS_MTK16    g_gps_driver(&Serial1);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_MTK16
+	AP_GPS_MTK16    g_gps_driver(&Serial1);
 
-	#elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
-		AP_GPS_None     g_gps_driver(NULL);
+#elif GPS_PROTOCOL == GPS_PROTOCOL_NONE
+	AP_GPS_None     g_gps_driver(NULL);
 
-	#else
-		#error Unrecognised GPS_PROTOCOL setting.
-	#endif // GPS PROTOCOL
+#else
+	#error Unrecognised GPS_PROTOCOL setting.
+#endif // GPS PROTOCOL
 
 #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
@@ -246,19 +246,16 @@ GCS_MAVLINK	gcs3(Parameters::k_param_streamrates_port3);
 //
 ModeFilter sonar_mode_filter;
 #if CONFIG_SONAR == ENABLED
-
-#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
-AP_AnalogSource_ADC sonar_analog_source( &adc,
-                        CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
-#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
-AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
-#endif
-
-#if SONAR_TYPE == MAX_SONAR_XL
-	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
-#else
-    #error Unrecognised SONAR_TYPE setting.
-#endif
+	#if CONFIG_SONAR_SOURCE == SONAR_SOURCE_ADC
+	AP_AnalogSource_ADC sonar_analog_source( &adc, CONFIG_SONAR_SOURCE_ADC_CHANNEL, 0.25);
+	#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
+		AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
+	#endif
+	#if SONAR_TYPE == MAX_SONAR_XL
+		AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
+	#else
+		#error Unrecognised SONAR_TYPE setting.
+	#endif
 #endif
 
 // agmatthews USERHOOKS
@@ -560,7 +557,7 @@ static bool				new_radio_frame;
 AP_Relay relay;
 
 #if USB_MUX_PIN > 0
-static bool usb_connected;
+	static bool usb_connected;
 #endif
 
 
@@ -748,7 +745,7 @@ static void medium_loop()
 		//-------------------------------------------------
 		case 3:
 			medium_loopCounter++;
-			// test
+
 			// perform next command
 			// --------------------
 			if(control_mode == AUTO){
@@ -923,9 +920,9 @@ static void slow_loop()
 				update_motor_leds();
 			#endif
 
-#if USB_MUX_PIN > 0
+			#if USB_MUX_PIN > 0
             check_usb_mux();
-#endif
+			#endif
 			break;
 
 		default:
@@ -1270,7 +1267,7 @@ static void read_AHRS(void)
 	#endif
 
 	dcm.update_DCM_fast();
-	omega = dcm.get_gyro();
+	omega = imu.get_gyro();
 }
 
 static void update_trig(void){
