@@ -30,7 +30,7 @@ static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
-//static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
+static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 #ifdef OPTFLOW_ENABLED
 static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
@@ -87,7 +87,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 #if CONFIG_SONAR == ENABLED
 	{"sonar",		test_sonar},
 #endif
-	//{"compass",		test_mag},
+	{"compass",		test_mag},
 #ifdef OPTFLOW_ENABLED
 	{"optflow",		test_optflow},
 #endif
@@ -894,9 +894,9 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-/*
+
 static int8_t
-//test_mag(uint8_t argc, const Menu::arg *argv)
+test_mag(uint8_t argc, const Menu::arg *argv)
 {
 	if(g.compass_enabled) {
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);
@@ -924,7 +924,7 @@ static int8_t
 		return (0);
 	}
 }
-*/
+
 /*
 static int8_t
 //test_reverse(uint8_t argc, 		const Menu::arg *argv)
