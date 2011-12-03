@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+
+<!-- The cub doesn't really have an electrical system but let's give -->
+<!-- it a little bit of something since we don't have a virtual ground -->
+<!-- crew to go out and flip the prop for us. -->
+
+<PropertyList>
+
+  <!-- Supplier list -->
+
+  <supplier>
+    <name>Battery 1</name>
+    <prop>/systems/electrical/suppliers/battery[0]</prop>
+    <kind>battery</kind>
+    <volts>28</volts> <!-- needs to be > 24.5, but this is a guess -->
+    <amps>60</amps>   <!-- I have no idea! -->
+  </supplier>
+
+  <supplier>
+    <name>Alternator 1</name>
+    <prop>/systems/electrical/suppliers/alternator[0]</prop>
+    <kind>alternator</kind>
+    <rpm-source>/engines/engine[0]/rpm</rpm-source>
+    <volts>28</volts> <!-- stubbed in -->
+    <amps>60</amps>   <!-- from the 172S Skyhawk Information Manual -->
+  </supplier>
+
+  <!-- Bus list -->
+
+  <bus>
+    <name>Master Bus</name>
+    <prop>/systems/electrical/outputs/bus[0]</prop>
+    <prop>/systems/electrical/outputs/transponder</prop>
+  </bus>
+
+  <!-- Generic Outputs -->
+
+  <output>
+    <name>Starter 1 Power</name>
+    <prop>/systems/electrical/outputs/starter[0]</prop>
+  </output>
+
+  <output>
+    <name>Landing Light Power</name>
+    <prop>/systems/electrical/outputs/landing-light</prop>
+  </output>
+
+  <output>
+    <name>Beacon Power</name>
+    <prop>/systems/electrical/outputs/beacon</prop>
+  </output>
+
+  <output>
+    <name>Strobe Lights Power</name>
+    <prop>/systems/electrical/outputs/strobe-lights</prop>
+  </output>
+
+  <output>
+    <name>Taxi Lights Power</name>
+    <prop>/systems/electrical/outputs/taxi-lights</prop>
+  </output>
+
+  <output>
+    <name>Pitot Heat Power</name>
+    <prop>/systems/electrical/outputs/pitot-heat</prop>
+  </output>
+
+
+  <!-- connect in power sources -->
+
+  <connector>
+    <input>Alternator 1</input>
+    <output>Master Bus</output>
+    <switch>
+      <prop>/controls/engines/engine[0]/master-alt</prop>
+    </switch>
+  </connector>
+
+  <connector>
+    <input>Battery 1</input>
+    <output>Master Bus</output>
+    <switch>
+      <prop>/controls/engines/engine[0]/master-bat</prop>
+    </switch>
+  </connector>
+
+  <!-- connect starter output -->
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Starter 1 Power</output>
+    <switch>
+      <prop>/controls/engines/engine[0]/starter</prop>
+      <initial-state>off</initial-state>
+    </switch>
+  </connector>
+
+  <!-- connect master bus outputs -->
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Landing Light Power</output>
+    <switch>
+      <prop>/controls/switches/landing-light</prop>
+    </switch>
+  </connector>
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Beacon Power</output>
+    <switch>
+      <prop>/controls/switches/flashing-beacon</prop>
+    </switch>
+  </connector>
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Strobe Lights Power</output>
+    <switch>
+      <prop>/controls/switches/strobe-lights</prop>
+    </switch>
+  </connector>
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Taxi Lights Power</output>
+    <switch>
+      <prop>/controls/switches/taxi-lights</prop>
+    </switch>
+  </connector>
+
+  <connector>
+    <input>Master Bus</input>
+    <output>Pitot Heat Power</output>
+    <switch>
+      <prop>/controls/switches/pitot-heat</prop>
+    </switch>
+  </connector>
+
+</PropertyList>

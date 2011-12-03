@@ -41,64 +41,41 @@ static uint16_t airspeed_sensor(float airspeed)
 
   inputs are in degrees
  */
-void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
+void sitl_update_adc(float roll, float pitch, float yaw,
+		     float rollRate, float pitchRate, float yawRate,
+		     float xAccel, float yAccel, float zAccel,
+		     float airspeed)
 {
 	static const uint8_t sensor_map[6] = { 1, 2, 0, 4, 5, 6 };
 	static const float _sensor_signs[6] = { 1, -1, -1, 1, -1, -1 };
 	const float accel_offset = 2041;
 	const float gyro_offset = 1658;
 #define ToRad(x) (x*0.01745329252)  // *pi/180
-	const float _gyro_gain_x = 0.4;
-	const float _gyro_gain_y = 0.41;
-	const float _gyro_gain_z = 0.41;
+	const float _gyro_gain_x = ToRad(0.4);
+	const float _gyro_gain_y = ToRad(0.41);
+	const float _gyro_gain_z = ToRad(0.41);
 	const float _accel_scale = 9.80665 / 423.8;
 	float adc[7];
-	float xAccel, yAccel, zAccel, scale;
-	float rollRate, pitchRate, yawRate;
-	static uint32_t last_update;
-	static float last_roll, last_pitch, last_yaw;
-	unsigned long delta_t;
+	float phi, theta, phiDot, thetaDot, psiDot;
+	float p, q, r;
 
-	// 200Hz max
-	if (micros() - last_update < 5000) {
-		return;
-	}
+	/* convert the angular velocities from earth frame to
+	   body frame. Thanks to James Goppert for the formula
+	*/
+	phi = ToRad(roll);
+	theta = ToRad(pitch);
+	phiDot = ToRad(rollRate);
+	thetaDot = ToRad(pitchRate);
+	psiDot = ToRad(yawRate);
 
-	/* map roll/pitch/yaw to values the accelerometer would see */
-	xAccel = sin(ToRad(pitch)) * cos(ToRad(roll));
-	yAccel = -sin(ToRad(roll)) * cos(ToRad(pitch));
-	zAccel = -cos(ToRad(roll)) * cos(ToRad(pitch));
-	scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel));
-	xAccel *= scale;
-	yAccel *= scale;
-	zAccel *= scale;
-
-	/* map roll/pitch/yaw to values the gyro would see */
-	if (last_update == 0) {
-		rollRate = 0;
-		pitchRate = 0;
-		yawRate = 0;
-		delta_t = micros();
-	} else {
-		delta_t = micros() - last_update;
-		float rollChange, pitchChange, yawChange;
-		rollChange  = normalise180(roll - last_roll);
-		pitchChange = normalise180(pitch - last_pitch);
-		yawChange   = normalise180(yaw - last_yaw);
-		rollRate  = 1.0e6 * rollChange  / delta_t;
-		pitchRate = 1.0e6 * pitchChange / delta_t;
-		yawRate   = 1.0e6 * yawChange   / delta_t;
-	}
-	last_update += delta_t;
-
-	last_roll = roll;
-	last_pitch = pitch;
-	last_yaw = yaw;
+	p = phiDot - psiDot*sin(theta);
+	q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
+	r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;
 
 	/* work out the ADC channel values */
-	adc[0] =  (rollRate  / (_gyro_gain_x * _sensor_signs[0])) + gyro_offset;
-	adc[1] =  (pitchRate / (_gyro_gain_y * _sensor_signs[1])) + gyro_offset;
-	adc[2] =  (yawRate   / (_gyro_gain_z * _sensor_signs[2])) + gyro_offset;
+	adc[0] =  (p   / (_gyro_gain_x * _sensor_signs[0])) + gyro_offset;
+	adc[1] =  (q   / (_gyro_gain_y * _sensor_signs[1])) + gyro_offset;
+	adc[2] =  (r   / (_gyro_gain_z * _sensor_signs[2])) + gyro_offset;
 
 	adc[3] =  (xAccel / (_accel_scale * _sensor_signs[3])) + accel_offset;
 	adc[4] =  (yAccel / (_accel_scale * _sensor_signs[4])) + accel_offset;
@@ -123,14 +100,22 @@ void sitl_update_adc(float roll, float pitch, float yaw, float airspeed)
 
 #endif
 
-#if 0
+	static uint32_t last_report;
+	uint32_t tnow = millis();
 	extern AP_DCM dcm;
 	Vector3f omega = dcm.get_gyro();
-	printf("dt=%5u adc[2]=%6.1f roll=%6.1f / %6.1f yaw=%6.1f / %6.1f  yawRate=%6.3f / %6.3f\n",
-	       (unsigned)delta_t,
-	       adc[2],
-	       roll, dcm.roll_sensor/100.0, yaw, dcm.yaw_sensor/100.0, yawRate, ToDeg(omega.z));
-#endif
+	// report roll/pitch discrepancies
+	if (tnow - last_report > 5000 ||
+	    (tnow - last_report > 1000 &&
+	     (fabs(roll - dcm.roll_sensor/100.0) > 5.0 ||
+	      fabs(pitch - dcm.pitch_sensor/100.0) > 5.0))) {
+		last_report = tnow;
+		printf("roll=%5.1f / %5.1f  pitch=%5.1f / %5.1f  rr=%5.2f / %5.2f  pr=%5.2f / %5.2f\n",
+		       roll, dcm.roll_sensor/100.0,
+		       pitch, dcm.pitch_sensor/100.0,
+		       rollRate, ToDeg(omega.x),
+		       pitchRate, ToDeg(omega.y));
+	}
 }
 
 

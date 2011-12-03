@@ -2,12 +2,11 @@
 
 import util, pexpect, sys, time, math, shutil, os
 from common import *
+import mavutil, mavwp, random
 
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-sys.path.insert(0, util.reltopdir('../pymavlink'))
-import mavutil, mavwp
 
 HOME=location(-35.362938,149.165085,584,270)
 
@@ -229,12 +228,12 @@ def fly_ArduCopter(viewerip=None):
     you can pass viewerip as an IP address to optionally send fg and
     mavproxy packets too for local viewing of the flight in real time
     '''
-    global expect_list, homeloc
+    global homeloc
 
-    hquad_cmd = util.reltopdir('../HILTest/hil_quad.py') + ' --fgrate=200 --home=%f,%f,%u,%u' % (
+    simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     if viewerip:
-        hquad_cmd += ' --fgout=192.168.2.15:9123'
+        simquad_cmd += ' --fgout=%s:5503' % viewerip
 
     sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter')
@@ -248,6 +247,7 @@ def fly_ArduCopter(viewerip=None):
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
+    mavproxy.send('param set SYSID_THISMAV %u\n' % random.randint(100, 200))
     mavproxy.send("param load %s/ArduCopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
@@ -256,8 +256,9 @@ def fly_ArduCopter(viewerip=None):
     util.pexpect_close(sil)
 
     sil = util.start_SIL('ArduCopter', height=HOME.alt)
-    hquad = pexpect.spawn(hquad_cmd, logfile=sys.stdout, timeout=10)
-    util.pexpect_autoclose(hquad)
+    simquad = pexpect.spawn(simquad_cmd, logfile=sys.stdout, timeout=10)
+    simquad.delaybeforesend = 0
+    util.pexpect_autoclose(simquad)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=1'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -277,7 +278,8 @@ def fly_ArduCopter(viewerip=None):
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
-    expect_list.extend([hquad, sil, mavproxy])
+    expect_list_clear()
+    expect_list_extend([simquad, sil, mavproxy])
 
     # get a mavlink connection going
     try:
@@ -351,9 +353,10 @@ def fly_ArduCopter(viewerip=None):
     except pexpect.TIMEOUT, e:
         failed = True
 
+    mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(hquad)
+    util.pexpect_close(simquad)
 
     if os.path.exists('ArduCopter-valgrind.log'):
         os.chmod('ArduCopter-valgrind.log', 0644)

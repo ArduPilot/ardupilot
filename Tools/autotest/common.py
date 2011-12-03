@@ -4,14 +4,22 @@ import util, pexpect, time, math
 # messages. This keeps the output to stdout flowing
 expect_list = []
 
+def expect_list_clear():
+    '''clear the expect list'''
+    global expect_list
+    for p in expect_list[:]:
+        expect_list.remove(p)
+
+def expect_list_extend(list):
+    '''extend the expect list'''
+    global expect_list
+    expect_list.extend(list)
+
 def idle_hook(mav):
     '''called when waiting for a mavlink message'''
     global expect_list
     for p in expect_list:
-        try:
-            p.read_nonblocking(100, timeout=0)
-        except pexpect.TIMEOUT:
-            pass
+        util.pexpect_drain(p)
 
 def message_hook(mav, msg):
     '''called as each mavlink msg is received'''
@@ -25,12 +33,7 @@ def expect_callback(e):
     for p in expect_list:
         if p == e:
             continue
-        try:
-            while p.read_nonblocking(100, timeout=0):
-                pass
-        except pexpect.TIMEOUT:
-            pass
-
+        util.pexpect_drain(p)
 
 class location(object):
     '''represent a GPS coordinate'''
