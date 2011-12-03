@@ -16,9 +16,9 @@
       <F1>Roll</F1>
       <F2>Pitch</F2>
       <F3>Yaw</F3>
-      <F4>rc1 servo</F4>
-      <F5>rc2 servo</F5>
-      <F6>rc3 servo</F6>
+      <F4>CH1 out</F4>
+      <F5>CH2 out</F5>
+      <F6>CH4 out</F6>
     </ATT>
     <NTUN>
       <F1>WP Dist</F1>
@@ -33,28 +33,28 @@
       <F10>Loiter Lat I</F10>
     </NTUN>
     <CTUN>
-      <F1>Yaw Sensor</F1>
-      <F2>Nav Yaw</F2>
-      <F3>Yaw Error</F3>
-      <F4>Sonar Alt</F4>
-      <F5>Baro Alt</F5>
-      <F6>Next WP Alt</F6>
-      <F7>Nav Throttle</F7>
-      <F8>Angle boost</F8>
-      <F9>Manual boost</F9>
-      <F10>climb rate</F10>
-      <F11></F11>
-      <F10>rc3 servo out</F10>
-      <F11>alt hold int</F11>
-      <F12>thro int</F12>
+      <F1>Roll IN</F1>
+      <F2>Pitch IN</F2>
+      <F3>Thr IN</F3>
+      <F4>Yaw IN</F4>
+      <F5>Sonar Alt</F5>
+      <F6>Baro Alt</F6>
+      <F7>Next WP Alt</F7>
+      <F8>Nav Throttle</F8>
+      <F9>Angle boost</F9>
+      <F10>Manual boost</F10>
+      <F11>Climb Rate</F11>
+      <F12>rc3 servo out</F12>
+      <F13>alt hold int</F13>
+      <F14>Thr int</F14>
     </CTUN>
     <PM>
-      <F1>time</F1>
-      <F2>gyro sat</F2>
-      <F3>adc const</F3>
-      <F4>renorm sqrt</F4>
-      <F5>renorm blowup</F5>
-      <F6>fix count</F6>
+      <F1>Perf Timer</F1>
+      <F2>Gyro Saturation</F2>
+      <F3>ADC Constraints</F3>
+      <F4>DCM renorms</F4>
+      <F5>DCM Blowups</F5>
+      <F6>GPS Fix Count</F6>
     </PM>
     <RAW>
       <F1>Gyro X</F1>
@@ -71,6 +71,17 @@
       <F4>Current</F4>
       <F5>Current total</F5>
     </CURR>
+    <CMD>
+      <F1>Cmmd Total</F1>
+      <F2>Current #</F2>
+      <F3>ID</F3>
+      <F4>options</F4>
+      <F5></F5>
+    </CMD>
+    <MOD>
+      <F1>FlightMode</F1>
+      <F2>Thr Cruise</F2>
+    </MOD>
   </AC2>
   <!-- -->
   <APM>
