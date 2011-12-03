@@ -24,20 +24,25 @@ void setup() {
     AP_Controller * controller = NULL;
     AP_HardwareAbstractionLayer * hal = NULL;
 
-    /*
+    /*/
      * Communications
      */
     Serial.begin(debugBaud, 128, 128); // debug
 
-    // hardware abstraction layer
+    //// hardware abstraction layer
     hal = new AP_HardwareAbstractionLayer(halMode, board, vehicle);
 
-    // debug serial
+    //// debug serial
     hal->debug = &Serial;
     hal->debug->println_P(PSTR("initializing debug line"));
 
     // initialize radio
     hal->radio = new APM_RC_APM1;
+
+    // initialize scheduler
+    hal->isr_registry = new Arduino_Mega_ISR_Registry;
+    hal->scheduler = new AP_TimerProcess;
+    hal->scheduler->init(hal->isr_registry);
 
     /*
      * Sensor initialization
@@ -47,7 +52,7 @@ void setup() {
 
         hal->debug->println_P(PSTR("initializing adc"));
         hal->adc = new ADC_CLASS;
-        hal->adc->Init();
+        hal->adc->Init(hal->scheduler);
 
         if (batteryMonitorEnabled) {
             hal->batteryMonitor = new AP_BatteryMonitor(batteryPin,batteryVoltageDivRatio,batteryMinVolt,batteryMaxVolt);
@@ -81,7 +86,7 @@ void setup() {
         /**
          * Initialize ultrasonic sensors. If sensors are not plugged in, the navigator will not
          * initialize them and NULL will be assigned to those corresponding pointers.
-         * On detecting NULL assigned to any ultrasonic sensor, its corresponding block of code
+         * On detecting NU/LL assigned to any ultrasonic sensor, its corresponding block of code
          * will not be executed by the navigator.
          * The coordinate system is assigned by the right hand rule with the thumb pointing down.
          * In set_orientation, it is defined as (front/back,left/right,down,up)
@@ -132,8 +137,15 @@ void setup() {
         /*
          * navigation sensors
          */
-        //hal->imu = new AP_IMU_INS(new AP_InertialSensor_Oilpan(hal->adc), k_sensorCalib); 
-        //hal->imu = AP_IMU_INS(new AP_InertialSensor_MPU6000(mpu6000SelectPin), k_sensorCalib);
+        hal->debug->println_P(PSTR("initializing imu"));
+        hal->ins = new AP_InertialSensor_Oilpan(hal->adc);
+        hal->ins->init(hal->scheduler);
+        //hal->ins = new AP_InertialSensor_MPU6000(mpu6000SelectPin)
+        hal->debug->println_P(PSTR("initializing ins"));
+        delay(2000);
+        hal->imu = new AP_IMU_INS(hal->ins, k_sensorCalib); 
+        hal->imu->init(IMU::WARM_START,delay,hal->scheduler);
+        hal->debug->println_P(PSTR("setup completed"));
     }
 
     /*
@@ -169,7 +181,7 @@ void setup() {
     }
 
     /*
-     * Start the autopilot
+     * Start the autopil/ot
      */
     hal->debug->printf_P(PSTR("initializing autopilot\n"));
     hal->debug->printf_P(PSTR("free ram: %d bytes\n"),freeMemory());

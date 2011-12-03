@@ -96,7 +96,7 @@ void DcmNavigator::calibrate() {
 
     // TODO: handle cold/warm restart
     if (_hal->imu) {
-        _hal->imu->init(IMU::COLD_START,delay);
+        _hal->imu->init(IMU::COLD_START,delay,_hal->scheduler);
     }
 }
 void DcmNavigator::updateFast(float dt) {
