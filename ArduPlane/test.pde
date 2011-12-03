@@ -13,7 +13,6 @@ static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 #endif
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_gyro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
@@ -57,7 +56,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"gps",			test_gps},
 	{"rawgps",		test_rawgps},
 	{"imu",			test_imu},
-	{"gyro",		test_gyro},
 	{"airspeed",	test_airspeed},
 	{"airpressure",	test_pressure},
 	{"compass",		test_mag},
@@ -66,7 +64,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"adc", 		test_adc},
 	{"gps",			test_gps},
 	{"imu",			test_imu},
-	{"gyro",		test_gyro},
 	{"compass",		test_mag},
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
@@ -535,10 +532,14 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 
 			// We are using the IMU
 			// ---------------------
-			Serial.printf_P(PSTR("r: %d\tp: %d\t y: %d\n"),
-								(int)dcm.roll_sensor / 100,
-								(int)dcm.pitch_sensor / 100,
-								(uint16_t)dcm.yaw_sensor / 100);
+            Vector3f gyros 	= imu.get_gyro();
+            Vector3f accels = imu.get_accel();
+			Serial.printf_P(PSTR("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n"),
+                            (int)dcm.roll_sensor / 100,
+                            (int)dcm.pitch_sensor / 100,
+                            (uint16_t)dcm.yaw_sensor / 100,
+                            gyros.x, gyros.y, gyros.z,
+                            accels.x, accels.y, accels.z);
 		}
 		if(Serial.available() > 0){
 			return (0);
@@ -546,36 +547,6 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-
-static int8_t
-test_gyro(uint8_t argc, const Menu::arg *argv)
-{
-	print_hit_enter();
-    isr_registry.init();
-    timer_scheduler.init(&isr_registry);
-	adc.Init(&timer_scheduler);
-	delay(1000);
-	Serial.printf_P(PSTR("Gyro | Accel\n"));
-	delay(1000);
-
-	while(1){
-		imu.update();	// need this because we are not calling the DCM
-		Vector3f gyros 	= imu.get_gyro();
-		Vector3f accels = imu.get_accel();
-		Serial.printf_P(PSTR("%d\t%d\t%d\t|\t%d\t%d\t%d\n"),
-						(int)gyros.x,
-						(int)gyros.y,
-						(int)gyros.z,
-						(int)accels.x,
-						(int)accels.y,
-						(int)accels.z);
-		delay(100);
-
-		if(Serial.available() > 0){
-			return (0);
-		}
-	}
-}
 
 static int8_t
 test_mag(uint8_t argc, const Menu::arg *argv)
