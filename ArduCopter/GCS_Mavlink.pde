@@ -1722,9 +1722,9 @@ static void mavlink_delay(unsigned long t)
             gcs_update();
         }
         delay(1);
-#if USB_MUX_PIN > 0
+		#if USB_MUX_PIN > 0
         check_usb_mux();
-#endif
+		#endif
     } while (millis() - tstart < t);
 
 	in_mavlink_delay = false;
