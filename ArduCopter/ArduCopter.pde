@@ -913,8 +913,8 @@ static void slow_loop()
 			update_lights();
 
             // send all requested output streams with rates requested
-            // between 1 and 5 Hz
-            gcs_data_stream_send(1,5);
+            // between 3 and 5 Hz
+            gcs_data_stream_send(3,5);
 
 			if(g.radio_tuning > 0)
 				tuning();
@@ -947,6 +947,7 @@ static void super_slow_loop()
 		Log_Write_Current();
 
     gcs_send_message(MSG_HEARTBEAT);
+    gcs_data_stream_send(1,3);
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_SUPERSLOWLOOP
 	   USERHOOK_SUPERSLOWLOOP
