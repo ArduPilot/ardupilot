@@ -334,7 +334,9 @@ enum gcs_severity {
 //#define SonarToCm(x) (x*1.26)   // Sonar raw value to centimeters
 
 // RADIANS
-#define RADX100 0.000174533
+#define RADX100 0.000174532925
+#define DEGX100 5729.57795
+
 
 // EEPROM addresses
 #define EEPROM_MAX_ADDR		4096

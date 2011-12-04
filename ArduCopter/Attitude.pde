@@ -1,28 +1,34 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 static int
 get_stabilize_roll(int32_t target_angle)
 {
 	int32_t error;
 	int32_t rate;
 
+	// angle error
 	error 		= wrap_180(target_angle - dcm.roll_sensor);
 
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -2500, 2500);
 
-	// desired Rate:
+	// conver to desired Rate:
 	rate 		= g.pi_stabilize_roll.get_pi(error, G_Dt);
-	//Serial.printf("%d\t%d\t%d ", (int)target_angle, (int)error, (int)rate);
+
+	// experiment to pipe iterm directly into the output
+	int16_t iterm = g.pi_stabilize_roll.get_integrator();
+
+	// remove iterm from PI output
+	rate -= iterm;
 
 #if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
-	// Rate P:
-	error 		= rate - (degrees(omega.x) * 100.0);
+	error 		= rate - (omega.x * DEGX100);
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
-	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
 #endif
 
 	// output control:
-	return (int)constrain(rate, -2500, 2500);
+	rate = constrain(rate, -2500, 2500);
+	return (int)rate + iterm;
 }
 
 static int
@@ -31,24 +37,29 @@ get_stabilize_pitch(int32_t target_angle)
 	int32_t error;
 	int32_t rate;
 
+	// angle error
 	error 		= wrap_180(target_angle - dcm.pitch_sensor);
 
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -2500, 2500);
 
-	// desired Rate:
+	// conver to desired Rate:
 	rate 		= g.pi_stabilize_pitch.get_pi(error, G_Dt);
-	//Serial.printf("%d\t%d\t%d ", (int)target_angle, (int)error, (int)rate);
+
+	// experiment to pipe iterm directly into the output
+	int16_t iterm = g.pi_stabilize_roll.get_integrator();
+
+	// remove iterm from PI output
+	rate -= iterm;
 
 #if FRAME_CONFIG != HELI_FRAME  // cannot use rate control for helicopters
-	// Rate P:
-	error 		= rate - (degrees(omega.y) * 100.0);
+	error 		= rate - (omega.y * DEGX100);
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
-	//Serial.printf("%d\t%d\n", (int)error, (int)rate);
 #endif
 
 	// output control:
-	return (int)constrain(rate, -2500, 2500);
+	rate = constrain(rate, -2500, 2500);
+	return (int)rate + iterm;
 }
 
 

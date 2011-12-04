@@ -1722,9 +1722,9 @@ static void mavlink_delay(unsigned long t)
             gcs_update();
         }
         delay(1);
-#if USB_MUX_PIN > 0
+		#if USB_MUX_PIN > 0
         check_usb_mux();
-#endif
+		#endif
     } while (millis() - tstart < t);
 
 	in_mavlink_delay = false;
@@ -1799,5 +1799,7 @@ static void gcs_send_text_fmt(const prog_char_t *fmt, ...)
     vsnprintf((char *)pending_status.text, sizeof(pending_status.text), fmtstr, ap);
     va_end(ap);
     mavlink_send_message(MAVLINK_COMM_0, MSG_STATUSTEXT, 0);
-    mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
+    if (gcs3.initialised) {
+        mavlink_send_message(MAVLINK_COMM_1, MSG_STATUSTEXT, 0);
+    }
 }
