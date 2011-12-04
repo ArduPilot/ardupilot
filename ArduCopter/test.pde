@@ -125,7 +125,8 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-/*static int8_t
+/*
+//static int8_t
 //test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -157,7 +158,8 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 	}
 }*/
 
-/*static int8_t
+/*
+//static int8_t
 //test_tri(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -185,7 +187,7 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 }*/
 
 /*
-static int8_t
+//static int8_t
 //test_nav(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -258,7 +260,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 }
 
 /*
-static int8_t
+//static int8_t
 //test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
 
@@ -313,7 +315,8 @@ static int8_t
 }
 */
 
-/*static int8_t
+/*
+//static int8_t
 //test_stabilize(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
@@ -404,7 +407,7 @@ static int8_t
 
 
 /*#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
-static int8_t
+//static int8_t
 //test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -538,12 +541,6 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 			// IMU
 			// ---
 			read_AHRS();
-
-			//Vector3f accels 	= imu.get_accel();
-			//Vector3f gyros 		= imu.get_gyro();
-			//Vector3f accel_filt	= imu.get_accel_filtered();
-			//accels_rot 	= dcm.get_dcm_matrix() * accel_filt;
-
 			medium_loopCounter++;
 
 			if(medium_loopCounter == 4){
@@ -606,8 +603,8 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 }
 
 /*
-static int8_t
-test_dcm(uint8_t argc, const Menu::arg *argv)
+//static int8_t
+//test_dcm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -657,8 +654,8 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 }
 */
 /*
-static int8_t
-test_dcm(uint8_t argc, const Menu::arg *argv)
+//static int8_t
+//test_dcm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -681,7 +678,7 @@ test_dcm(uint8_t argc, const Menu::arg *argv)
 */
 
 /*static int8_t
-test_omega(uint8_t argc, const Menu::arg *argv)
+//test_omega(uint8_t argc, const Menu::arg *argv)
 {
 	static byte ts_num;
 	float old_yaw;
@@ -782,7 +779,7 @@ test_current(uint8_t argc, const Menu::arg *argv)
 }
 
 /*
-static int8_t
+//static int8_t
 //test_relay(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
