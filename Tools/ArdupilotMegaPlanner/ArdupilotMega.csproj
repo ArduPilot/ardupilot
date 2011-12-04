@@ -172,9 +172,18 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IronPython 2.7.1\IronPython-2.6.1\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
     </Reference>
+    <Reference Include="OpenGlobe.Core">
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\virtualglobebook-OpenGlobe-ddf1d7e\Source\Examples\Chapter13\ClipmapTerrainOnGlobe\bin\Debug\OpenGlobe.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGlobe.Renderer">
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\virtualglobebook-OpenGlobe-ddf1d7e\Source\Examples\Chapter13\ClipmapTerrainOnGlobe\bin\Debug\OpenGlobe.Renderer.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenGlobe.Scene">
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\virtualglobebook-OpenGlobe-ddf1d7e\Source\Examples\Chapter13\ClipmapTerrainOnGlobe\bin\Debug\OpenGlobe.Scene.dll</HintPath>
+    </Reference>
     <Reference Include="OpenTK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\DIYDrones\opentk\trunk\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\virtualglobebook-OpenGlobe-ddf1d7e\ThirdParty\OpenTKGL4\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="OpenTK.GLControl, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

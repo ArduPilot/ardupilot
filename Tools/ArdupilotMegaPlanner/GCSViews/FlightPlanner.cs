@@ -18,6 +18,8 @@ using System.Resources;
 using System.Reflection;
 using System.ComponentModel;
 using System.Threading;
+using SharpKml.Base;
+
 
 
 namespace ArdupilotMega.GCSViews
@@ -440,6 +442,10 @@ namespace ArdupilotMega.GCSViews
             trackBar1.Minimum = MainMap.MinZoom;
             trackBar1.Maximum = MainMap.MaxZoom + 0.99;
 
+            // draw this layer first
+            kmlpolygons = new GMapOverlay(MainMap, "kmlpolygons");
+            MainMap.Overlays.Add(kmlpolygons);
+
             routes = new GMapOverlay(MainMap, "routes");
             MainMap.Overlays.Add(routes);
 
@@ -451,6 +457,8 @@ namespace ArdupilotMega.GCSViews
 
             drawnpolygons = new GMapOverlay(MainMap, "drawnpolygons");
             MainMap.Overlays.Add(drawnpolygons);
+
+
 
             top = new GMapOverlay(MainMap, "top");
             //MainMap.Overlays.Add(top);
@@ -646,6 +654,23 @@ namespace ArdupilotMega.GCSViews
             panelMap_Resize(null,null);
 
             writeKML();
+        }
+
+        void parser_ElementAdded(object sender, SharpKml.Base.ElementEventArgs e)
+        {
+
+            SharpKml.Dom.Polygon polygon = e.Element as SharpKml.Dom.Polygon;
+                if (polygon != null)
+                {
+                    GMapPolygon kmlpolygon = new GMapPolygon(new List<PointLatLng>(), "kmlpolygon");
+
+                    foreach (var loc in polygon.OuterBoundary.LinearRing.Coordinates)
+                    {
+                        kmlpolygon.Points.Add(new PointLatLng(loc.Latitude,loc.Longitude));
+                    }
+
+                    kmlpolygons.Polygons.Add(kmlpolygon);
+                }
         }
 
         private void ChangeColumnHeader(string command)
@@ -1721,7 +1746,9 @@ namespace ArdupilotMega.GCSViews
         // polygons
         GMapPolygon polygon;
         GMapPolygon drawnpolygon;
+
         //static GMapRoute route;
+        GMapOverlay kmlpolygons;
 
         // layers
         GMapOverlay top;
@@ -2070,7 +2097,7 @@ namespace ArdupilotMega.GCSViews
         }
 
         private void comboBoxMapType_SelectedValueChanged(object sender, EventArgs e)
-        {
+        {   
             MainMap.MapType = (MapType)comboBoxMapType.SelectedItem;
             FlightData.mymap.MapType = (MapType)comboBoxMapType.SelectedItem;
             MainV2.config["MapType"] = comboBoxMapType.Text;
@@ -2101,7 +2128,8 @@ namespace ArdupilotMega.GCSViews
                     DataGridViewCell tcell = Commands.Rows[selectedrow].Cells[i];
                     if (tcell.GetType() == typeof(DataGridViewTextBoxCell))
                     {
-                        tcell.Value = "0";
+                        if (tcell.Value.ToString() == "?")
+                            tcell.Value = "0";
                     }
                 }
             }
@@ -2625,6 +2653,8 @@ namespace ArdupilotMega.GCSViews
             drawnpolygon.Points.Clear();
             drawnpolygons.Markers.Clear();
             MainMap.Invalidate();
+
+            writeKML();
         }
 
         private void clearMissionToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2640,7 +2670,11 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[selectedrow].Cells[Command.Index].Value = MAVLink.MAV_CMD.LOITER_UNLIM.ToString();
 
+            ChangeColumnHeader(MAVLink.MAV_CMD.LOITER_UNLIM.ToString());
+
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+
+            writeKML();
         }
 
         private void jumpstartToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2655,6 +2689,8 @@ namespace ArdupilotMega.GCSViews
             Commands.Rows[row].Cells[Param1.Index].Value = 1;
 
             Commands.Rows[row].Cells[Param2.Index].Value = repeat;
+
+            writeKML();
         }
 
         private void jumpwPToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2671,6 +2707,8 @@ namespace ArdupilotMega.GCSViews
             Commands.Rows[row].Cells[Param1.Index].Value = wp;
 
             Commands.Rows[row].Cells[Param2.Index].Value = repeat;
+
+            writeKML();
         }
 
         private void deleteWPToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2717,7 +2755,11 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[selectedrow].Cells[Param1.Index].Value = time;
 
+            ChangeColumnHeader(MAVLink.MAV_CMD.LOITER_TIME.ToString());
+
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+
+            writeKML();
         }
 
         private void loitercirclesToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2731,7 +2773,11 @@ namespace ArdupilotMega.GCSViews
 
             Commands.Rows[selectedrow].Cells[Param1.Index].Value = turns;
 
+            ChangeColumnHeader(MAVLink.MAV_CMD.LOITER_TURNS.ToString());
+
             setfromGE(end.Lat, end.Lng, (int)float.Parse(TXT_DefaultAlt.Text));
+
+            writeKML();
         }
 
         private void BUT_Camera_Click(object sender, EventArgs e)
@@ -2767,6 +2813,30 @@ namespace ArdupilotMega.GCSViews
                     MainMap.Zoom = 15;
                 }
             }
+        }
+
+        private void BUT_loadkml_Click(object sender, EventArgs e)
+        {
+
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.Filter = "Google Earth KML (*.kml)|*.kml";
+            fd.DefaultExt = ".kml";
+            DialogResult result = fd.ShowDialog();
+            string file = fd.FileName;
+            if (file != "")
+            {
+                try
+                {
+                    kmlpolygons.Polygons.Clear();
+
+                    var parser = new SharpKml.Base.Parser();
+
+                    parser.ElementAdded += new EventHandler<SharpKml.Base.ElementEventArgs>(parser_ElementAdded);
+                    parser.Parse(File.OpenRead(file));
+                }
+                catch (Exception ex) { MessageBox.Show("Bad KML File :" + ex.ToString()); }
+            }
+
         }
     }
 }

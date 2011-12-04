@@ -9,12 +9,14 @@ using System.Text.RegularExpressions;
 using System.IO.Ports;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Net;
 
 using GMap.NET.WindowsForms;
 using GMap.NET.CacheProviders;
 
-//using SharpVectors.Renderers.Forms;
-//using SharpVectors.Converters;
+using OpenGlobe.Core;
+using OpenGlobe.Renderer;
+using OpenGlobe.Scene;
 
 
 namespace ArdupilotMega
@@ -870,6 +872,217 @@ namespace ArdupilotMega
         {
             new resedit.Form1().Show();
         }
+
+        GraphicsWindow _window;
+        SceneState _sceneState;
+        CameraLookAtPoint _lookCamera;
+        CameraFly _flyCamera;
+        ClearState _clearState;
+        GlobeClipmapTerrain _clipmap;
+        HeadsUpDisplay _hud;
+        Font _hudFont;
+        RayCastedGlobe _globe;
+        ClearState _clearDepth;
+        Ellipsoid _ellipsoid;
+
+        private void myButton1_Click(object sender, EventArgs e)
+        {
+
+
+            _window = Device.CreateWindow(800, 600, "Chapter 13:  Clipmap Terrain on a Globe");
+
+            _ellipsoid = Ellipsoid.Wgs84;
+
+            WorldWindTerrainSource terrainSource = new WorldWindTerrainSource();
+            GMapRestImagery imagery = new GMapRestImagery();
+            _clipmap = new GlobeClipmapTerrain(_window.Context, terrainSource, imagery, _ellipsoid, 511);
+            _clipmap.HeightExaggeration = 1.0f;
+
+
+
+            IList<GridResolution> gridResolutions = new List<GridResolution>();
+            gridResolutions.Add(new GridResolution(
+                new Interval(0, 1000000, IntervalEndpoint.Closed, IntervalEndpoint.Open),
+                new Vector2D(0.005, 0.005)));
+            gridResolutions.Add(new GridResolution(
+                new Interval(1000000, 2000000, IntervalEndpoint.Closed, IntervalEndpoint.Open),
+                new Vector2D(0.01, 0.01)));
+            gridResolutions.Add(new GridResolution(
+                new Interval(2000000, 20000000, IntervalEndpoint.Closed, IntervalEndpoint.Open),
+                new Vector2D(0.05, 0.05)));
+            gridResolutions.Add(new GridResolution(
+                new Interval(20000000, double.MaxValue, IntervalEndpoint.Closed, IntervalEndpoint.Open),
+                new Vector2D(0.1, 0.1)));
+
+
+
+            _sceneState = new SceneState();
+            _sceneState.DiffuseIntensity = 0.90f;
+            _sceneState.SpecularIntensity = 0.05f;
+            _sceneState.AmbientIntensity = 0.05f;
+            _sceneState.Camera.FieldOfViewY = Math.PI / 3.0;
+
+            _clearState = new ClearState();
+            _clearState.Color = Color.White;
+
+            _sceneState.Camera.PerspectiveNearPlaneDistance = 0.000001 * _ellipsoid.MaximumRadius;
+            _sceneState.Camera.PerspectiveFarPlaneDistance = 10.0 * _ellipsoid.MaximumRadius;
+            _sceneState.SunPosition = new Vector3D(200000, 300000, 200000) * _ellipsoid.MaximumRadius;
+
+            _lookCamera = new CameraLookAtPoint(_sceneState.Camera, _window, _ellipsoid);
+            _lookCamera.Range = 1.5 * _ellipsoid.MaximumRadius;
+
+            _globe = new RayCastedGlobe(_window.Context);
+            _globe.Shape = _ellipsoid;
+            Bitmap bitmap = new Bitmap("NE2_50M_SR_W_4096.jpg");
+            _globe.Texture = Device.CreateTexture2D(bitmap, TextureFormat.RedGreenBlue8, false);
+            //_globe.GridResolutions = new GridResolutionCollection(gridResolutions);
+
+            _clearDepth = new ClearState();
+            _clearDepth.Buffers = ClearBuffers.DepthBuffer | ClearBuffers.StencilBuffer;
+
+            //_window.Keyboard.KeyDown += OnKeyDown;
+
+            _window.Resize += OnResize;
+            _window.RenderFrame += OnRenderFrame;
+            _window.PreRenderFrame += OnPreRenderFrame;
+
+            _hudFont = new Font("Arial", 16);
+            _hud = new HeadsUpDisplay();
+            _hud.Color = Color.Blue;
+
+            //_flyCamera = new CameraFly(_sceneState.Camera, _window);
+            //_flyCamera.MovementRate = 1200.0;
+            //_flyCamera.InputEnabled = true;
+
+            _sceneState.Camera.Target = new Vector3D(115, -35, 100.0);
+
+            _window.Run(30);
+
+
+        }
+
+        private void OnResize()
+        {
+            _window.Context.Viewport = new Rectangle(0, 0, _window.Width, _window.Height);
+            _sceneState.Camera.AspectRatio = _window.Width / (double)_window.Height;
+        }
+
+        private void OnRenderFrame()
+        {
+            Context context = _window.Context;
+            context.Clear(_clearState);
+
+            _globe.Render(context, _sceneState);
+
+            context.Clear(_clearDepth);
+
+            _clipmap.Render(context, _sceneState);
+
+            //_sceneState.Camera.Target = new Vector3D(115000, -350000, 100000.0);
+
+            if (_hud != null)
+            {
+                //_hud.Render(context, _sceneState);
+            }
+        }
+
+        private void OnPreRenderFrame()
+        {
+            Context context = _window.Context;
+            _clipmap.PreRender(context, _sceneState);
+        }
     }
 
+
+    public class GMapRestImagery : RasterSource
+    {
+        GMapControl MainMap;
+        public GMapRestImagery()
+        {
+            //_baseUri = baseUri;
+
+            _levels = new RasterLevel[NumberOfLevels];
+            _levelsCollection = new RasterLevelCollection(_levels);
+
+            double deltaLongitude = LevelZeroDeltaLongitudeDegrees;
+            double deltaLatitude = LevelZeroDeltaLatitudeDegrees;
+            for (int i = 0; i < _levels.Length; ++i)
+            {
+                int longitudePosts = (int)Math.Round(360.0 / deltaLongitude) * TileLongitudePosts + 1;
+                int latitudePosts = (int)Math.Round(180 / deltaLatitude) * TileLatitudePosts + 1;
+                _levels[i] = new RasterLevel(this, i, _extent, longitudePosts, latitudePosts, TileLongitudePosts, TileLatitudePosts);
+                deltaLongitude /= 2.0;
+                deltaLatitude /= 2.0;
+            }
+
+            MainMap = new GMapControl();
+            MainMap.MapType = GMap.NET.MapType.GoogleSatellite;
+
+            MainMap.CacheLocation = Path.GetDirectoryName(Application.ExecutablePath) + "/gmapcache/";
+        }
+
+        public override GeodeticExtent Extent
+        {
+            get { return _extent; }
+        }
+
+        public int TileLongitudePosts
+        {
+            get { return 256; }
+        }
+
+        public int TileLatitudePosts
+        {
+            get { return 256; }
+        }
+
+        public override RasterLevelCollection Levels
+        {
+            get { return _levelsCollection; }
+        }
+
+        public override Texture2D LoadTileTexture(RasterTileIdentifier identifier)
+        {
+            //if (identifier.Level > 4)
+                //return null;
+            int level = identifier.Level; // 0 is -180 long
+            int longitudeIndex = ((_levels[level].LongitudePosts / _levels[level].LongitudePostsPerTile) / 2 / 2) + identifier.X; //  (_levels[level].LongitudePosts / _levels[level].LongitudePostsPerTile) - 
+            int latitudeIndex = identifier.Y; // (_levels[level].LatitudePosts / _levels[level].LatitudePostsPerTile) - 
+
+            int damn = (1 << level) - latitudeIndex - 1;
+
+            Console.WriteLine(" z {0} lat {1} lon {2} ", level, damn, longitudeIndex);
+
+            GMap.NET.PureImage img = MainMap.Manager.ImageCacheLocal.GetImageFromCache(GMap.NET.MapType.GoogleSatellite, new GMap.NET.GPoint(longitudeIndex, damn), level);
+
+            Application.DoEvents();
+
+            try
+            {
+                Bitmap bitmap = new Bitmap(new Bitmap(img.Data), 256, 256);
+                Graphics e = Graphics.FromImage(bitmap);
+                e.DrawString(level + " " +longitudeIndex + "," + damn, new Font("Arial", 20), Brushes.White, new PointF(0, 0));
+
+                return Device.CreateTexture2DRectangle(bitmap, TextureFormat.RedGreenBlue8);
+            }
+            catch {
+                try
+                {
+                    return null; 
+                }
+                catch { return null; }
+            }
+        }
+
+        private Uri _baseUri;
+        private GeodeticExtent _extent = new GeodeticExtent(-0, -90, 360, 90);
+        private int _tilesLoaded;
+        private RasterLevel[] _levels;
+        private RasterLevelCollection _levelsCollection;
+
+        private const int NumberOfLevels = 20;
+        private const double LevelZeroDeltaLongitudeDegrees = 180;
+        private const double LevelZeroDeltaLatitudeDegrees = 180;
+    }
 }
