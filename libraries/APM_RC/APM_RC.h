@@ -33,10 +33,13 @@
 
 #define NUM_CHANNELS 8
 
+
+class Arduino_Mega_ISR_Registry;
+
 class APM_RC_Class
 {
   public:
-	APM_RC_Class() {}
+	virtual void Init( Arduino_Mega_ISR_Registry * isr_reg );
 	virtual void OutputCh(uint8_t ch, uint16_t pwm) = 0;
 	virtual uint16_t InputCh(uint8_t ch) = 0;
 	virtual uint8_t GetState() = 0;
