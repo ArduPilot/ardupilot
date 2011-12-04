@@ -14,9 +14,9 @@ static void read_control_switch()
 
 			set_mode(flight_modes[switchPosition]);
 
-			if(g.ch7_option == CH7_SIMPLE_MODE){
-				// setup Simple mode
-				// do we enable simple mode?
+			if(g.ch7_option != CH7_SIMPLE_MODE){
+				// set Simple mode using stored paramters from Mission planner
+				// rather than by the control switch
 	            do_simple = (g.simple_modes & (1 << switchPosition));
 			}
 		}else{
