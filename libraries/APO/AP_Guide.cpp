@@ -170,7 +170,6 @@ void MavlinkGuide::handleCommand() {
 
         // check for along track next waypoint requirement
         float alongTrack = _command.alongTrack(_previousCommand,
-                                               _command,
                                                _nav->getLat_degInt(),
                                                _nav->getLon_degInt());
         float segmentLength = _previousCommand.distanceTo(_command);
