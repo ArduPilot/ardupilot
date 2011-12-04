@@ -196,10 +196,13 @@ float AP_MavlinkCommand::crossTrack(const AP_MavlinkCommand & previous,
 // calculates along  track distance of a current location
 float AP_MavlinkCommand::alongTrack(const AP_MavlinkCommand & previous,
                                     int32_t lat_degInt, int32_t lon_degInt) const {
-    // ignores lat/lon since single prec.
     float dXt = crossTrack(previous,lat_degInt,lon_degInt);
     float d = previous.distanceTo(getLat_degInt(),getLon_degInt());
-    return acos(cos(d/rEarth)/cos(dXt/rEarth))*rEarth;
+    float bCurrent = previous.bearingTo(lat_degInt, lon_degInt);
+    float bNext = previous.bearingTo(*this);
+    float y = acos(cos(d/rEarth)/cos(dXt/rEarth))*rEarth;
+    if (cos(bCurrent-bNext) < 0) y = -y;
+    return y;
 }
 
 
