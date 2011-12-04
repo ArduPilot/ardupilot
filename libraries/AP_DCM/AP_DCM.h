@@ -35,7 +35,8 @@ public:
 		_ki_roll_pitch(0.00001278),
 		_kp_yaw(0.8), // .8
 		_ki_yaw(0.00004), // 0.00004
-		_toggle(0)
+		_toggle(0),
+		_clamp(3)
 	{}
 
 	// Accessors
@@ -44,7 +45,7 @@ public:
 	Matrix3f	get_dcm_matrix(void) {return _dcm_matrix; }
 	Matrix3f	get_dcm_transposed(void) {Matrix3f temp = _dcm_matrix;  return temp.transpose();}
 	Vector3f	get_integrator(void) {return _omega_I; }		// We return the current drift correction integrator values
-	
+
 	float		get_health(void) {return _health;}
 	void		set_centripetal(bool b) {_centripetal = b;}
 	bool		get_centripetal(void) {return _centripetal;}
@@ -81,6 +82,7 @@ public:
 	static const float kDCM_kp_rp_high 		= 0.15;
 	static const float kDCM_kp_rp_medium	= 0.05967;
 	static const float kDCM_kp_rp_low		= 0.01;
+	int8_t		_clamp;
 
 
 private:
