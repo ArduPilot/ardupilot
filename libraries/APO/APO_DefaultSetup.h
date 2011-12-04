@@ -36,11 +36,14 @@ void setup() {
     hal->debug = &Serial;
     hal->debug->println_P(PSTR("initializing debug line"));
 
+    // isr
+    hal->isr_registry = new Arduino_Mega_ISR_Registry;
+
     // initialize radio
     hal->radio = new APM_RC_APM1;
+    hal->radio->Init(hal->isr_registry);
 
     // initialize scheduler
-    hal->isr_registry = new Arduino_Mega_ISR_Registry;
     hal->scheduler = new AP_TimerProcess;
     hal->scheduler->init(hal->isr_registry);
 
