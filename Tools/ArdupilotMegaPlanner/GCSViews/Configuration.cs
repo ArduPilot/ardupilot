@@ -380,6 +380,15 @@ namespace ArdupilotMega.GCSViews
                     }
                     catch { }
 
+                    try
+                    {
+                        ComboBox thisctl = ((ComboBox)ctl);
+
+                        thisctl.SelectedIndex = (int)(float)param[value];
+
+                        thisctl.Validated += new EventHandler(ComboBox_Validated);
+                    } catch {}
+
                 }
                 if (text.Length == 0)
                 {
@@ -388,6 +397,11 @@ namespace ArdupilotMega.GCSViews
 
             }
             Params.Sort(Params.Columns[0], ListSortDirection.Ascending);
+        }
+
+        void ComboBox_Validated(object sender, EventArgs e)
+        {
+            EEPROM_View_float_TextChanged(sender, e);
         }
 
         void Configuration_Validating(object sender, CancelEventArgs e)
@@ -403,8 +417,16 @@ namespace ArdupilotMega.GCSViews
             // do domainupdown state check
             try
             {
-                value = float.Parse(((Control)sender).Text);
-                changes[name] = value;
+                if (sender.GetType() == typeof(NumericUpDown))
+                {
+                    value = float.Parse(((Control)sender).Text);
+                    changes[name] = value;
+                }
+                else if (sender.GetType() == typeof(ComboBox))
+                {
+                    value = ((ComboBox)sender).SelectedIndex;
+                    changes[name] = value;
+                }
                 ((Control)sender).BackColor = Color.Green;
             }
             catch (Exception)
@@ -481,7 +503,14 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (row.Cells[0].Value.ToString() == name)
                     {
-                        row.Cells[1].Value = float.Parse(((Control)sender).Text);
+                        if (sender.GetType() == typeof(NumericUpDown))
+                        {
+                            row.Cells[1].Value = float.Parse(((Control)sender).Text);
+                        }
+                        else if (sender.GetType() == typeof(ComboBox))
+                        {
+                            row.Cells[1].Value = ((ComboBox)sender).SelectedIndex;
+                        }
                         break;
                     }
                 }
@@ -516,12 +545,21 @@ namespace ArdupilotMega.GCSViews
             {
                 if (text.Length > 0)
                 {
-                    decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
-                        ((NumericUpDown)text[0]).Value = option;
-                        ((NumericUpDown)text[0]).BackColor = Color.Green;
+                        if (sender.GetType() == typeof(NumericUpDown))
+                        {
+                            decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                            ((NumericUpDown)text[0]).Value = option;
+                            ((NumericUpDown)text[0]).BackColor = Color.Green;
+                        }
+                        else if (sender.GetType() == typeof(ComboBox))
+                        {
+                            int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
+                            ((ComboBox)text[0]).SelectedIndex = option;
+                            ((ComboBox)text[0]).BackColor = Color.Green;
+                        }
                 }
             }
-            catch { ((NumericUpDown)text[0]).BackColor = Color.Red; }
+            catch { ((Control)text[0]).BackColor = Color.Red; }
 
             Params.Focus();
         }        

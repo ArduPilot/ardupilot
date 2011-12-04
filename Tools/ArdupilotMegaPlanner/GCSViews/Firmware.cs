@@ -615,7 +615,7 @@ namespace ArdupilotMega.GCSViews
                 //port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }
-            else if (board == "2560")
+            else if (board == "2560" || board == "2560-2")
             {
                 port = new ArduinoSTKv2();
                 port.BaudRate = 115200;
@@ -691,7 +691,7 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
 
-                    lbl_status.Text = "Write Done... Waiting";
+                    lbl_status.Text = "Write Done... Waiting (60 sec)";
                 }
                 else
                 {
@@ -704,7 +704,7 @@ namespace ArdupilotMega.GCSViews
 
                 Application.DoEvents();
 
-                System.Threading.Thread.Sleep(10000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
+                System.Threading.Thread.Sleep(60000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
 
                 lbl_status.Text = "Done";
             }

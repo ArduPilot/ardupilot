@@ -544,6 +544,8 @@ namespace ArdupilotMega.Setup
                     }
                     catch { MessageBox.Show("Invalid input!"); return; }
 
+                    TXT_declination.Text = dec.ToString();
+
                     MainV2.comPort.setParam("COMPASS_DEC", dec * deg2rad);
                 }
             }
@@ -786,11 +788,11 @@ namespace ArdupilotMega.Setup
             }
             catch (Exception ex) { MainV2.givecomport = false; MessageBox.Show("Invalid Comport Settings : " + ex.Message); return; }
 
-            BUT_reset.Text = "Rebooting (20 sec)";
+            BUT_reset.Text = "Rebooting (60 sec)";
             BUT_reset.Refresh();
             Application.DoEvents();
 
-            Sleep(20000, comPortT); // wait for boot/reset
+            Sleep(60000, comPortT); // wait for boot/reset
 
             comPortT.DtrEnable = false;
 
