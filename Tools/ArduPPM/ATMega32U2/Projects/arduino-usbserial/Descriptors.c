@@ -105,7 +105,7 @@ USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 				
 			.ConfigAttributes       = (USB_CONFIG_ATTR_BUSPOWERED | USB_CONFIG_ATTR_SELFPOWERED),
 			
-			.MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
+			.MaxPowerConsumption    = USB_CONFIG_POWER_MA(400)
 		},
 		
 	.CDC_CCI_Interface = 
