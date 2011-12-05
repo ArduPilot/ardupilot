@@ -1,26 +1,24 @@
 /*
  * ControllerBoat.h
  *
- *  Created on: Nov 1, 2011
+ *  Created on: Jun 30, 2011
  *      Author: jgoppert
  */
 
 #ifndef CONTROLLERBOAT_H_
 #define CONTROLLERBOAT_H_
 
-#include "../APO/APO.h"
+#include "../APO/AP_Controller.h"
 
 namespace apo {
 
 class ControllerBoat: public AP_Controller {
 public:
     ControllerBoat(AP_Navigator * nav, AP_Guide * guide,
-                   AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_thrust,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
+                  AP_HardwareAbstractionLayer * hal) :
+        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_sail,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
-               steeringI, steeringD, steeringIMax, steeringYMax),
-        pidThrust(new AP_Var_group(k_pidThrust, PSTR("THR_")), 1, throttleP,
-                  throttleI, throttleD, throttleIMax, throttleYMax, throttleDFCut), _strCmd(0), _thrustCmd(0)
+               steeringI, steeringD, steeringIMax, steeringYMax)
     {
         _hal->debug->println_P(PSTR("initializing boat controller"));
 
@@ -31,51 +29,49 @@ public:
             new AP_RcChannel(k_chStr, PSTR("STR_"), hal->radio, 3, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
         _hal->rc.push_back(
-            new AP_RcChannel(k_chThrust, PSTR("THR_"), hal->radio, 2, 1100, 1500,
+            new AP_RcChannel(k_chSail, PSTR("SAIL_"), hal->radio, 2, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
     }
 
 private:
-    // methdos
+    // methods
     void manualLoop(const float dt) {
-        setAllRadioChannelsManually();
         _strCmd = _hal->rc[ch_str]->getRadioPosition();
-        _thrustCmd = _hal->rc[ch_thrust]->getRadioPosition();
+        _sailCmd = _hal->rc[ch_sail]->getRadioPosition();
     }
     void autoLoop(const float dt) {
+
+        // insert tacking logic here
+        
         // neglects heading command derivative
-        _strCmd = pidStr.update(_guide->getHeadingError(), -_nav->getYawRate(), dt);
-        _thrustCmd = pidThrust.update(
-                         _guide->getGroundSpeedCommand()
-                         - _nav->getGroundSpeed(), dt);
+        float steering = pidStr.update(_guide->getHeadingError(), -_nav->getYawRate(), dt);
+        _strCmd = steering;
+
+        // insert sail command calculation based on sensor position here
+        _sailCmd = 0; 
     }
     void setMotors() {
-        // turn all motors off if below 0.1 throttle
-        if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
-            setAllRadioChannelsToNeutral();
-        } else {
-            _hal->rc[ch_thrust]->setPosition(_thrustCmd);
-            _hal->rc[ch_str]->setPosition(_strCmd);
-        }
+        _hal->rc[ch_str]->setPosition(_strCmd);
+        _hal->rc[ch_sail]->setPosition(_sailCmd);
     }
     void handleFailsafe() {
-        // failsafe is to turn off
+        // turn off
         setMode(MAV_MODE_LOCKED);
     }
 
     // attributes
     enum {
-        ch_mode = 0, ch_str, ch_thrust
+        ch_mode = 0, ch_str, ch_sail
     };
     enum {
-        k_chMode = k_radioChannelsStart, k_chStr, k_chThrust
+        k_chMode = k_radioChannelsStart, k_chStr, k_chSail
     };
     enum {
-        k_pidStr = k_controllersStart, k_pidThrust
+        k_pidStr = k_controllersStart
     };
     BlockPIDDfb pidStr;
-    BlockPID pidThrust;
-    float _strCmd, _thrustCmd;
+    float _strCmd;
+    float _sailCmd;
 };
 
 } // namespace apo
