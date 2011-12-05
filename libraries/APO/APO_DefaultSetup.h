@@ -47,15 +47,16 @@ void setup() {
     hal->scheduler = new AP_TimerProcess;
     hal->scheduler->init(hal->isr_registry);
 
+
+    // initialize the adc
+    hal->debug->println_P(PSTR("initializing adc"));
+    hal->adc = new ADC_CLASS;
+    hal->adc->Init(hal->scheduler);
+
     /*
      * Sensor initialization
      */
     if (hal->getMode() == MODE_LIVE) {
-
-
-        hal->debug->println_P(PSTR("initializing adc"));
-        hal->adc = new ADC_CLASS;
-        hal->adc->Init(hal->scheduler);
 
         if (batteryMonitorEnabled) {
             hal->batteryMonitor = new AP_BatteryMonitor(batteryPin,batteryVoltageDivRatio,batteryMinVolt,batteryMaxVolt);
