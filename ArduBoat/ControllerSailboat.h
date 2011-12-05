@@ -44,6 +44,8 @@ private:
     }
     void autoLoop(const float dt) {
         //_hal->debug->printf_P(PSTR("cont: ch1: %f\tch2: %f\n"),_hal->rc[ch_sail]->getRadioPosition(), _hal->rc[ch_str]->getRadioPosition());
+        float windDir = analogRead(1);
+        _hal->debug->printf_P(PSTR("wind directiono: %f\n"),windDir);
         // neglects heading command derivative
         float steering = pidStr.update(_guide->getHeadingError(), -_nav->getYawRate(), dt);
         float sail = 0;
