@@ -34,15 +34,21 @@ class QuadCopter(Aircraft):
         delta_time = t - self.last_time
         self.last_time = t
 
-        # rotational acceleration, in degrees/s/s
+        # rotational acceleration, in degrees/s/s, in body frame
         roll_accel  = (m[1] - m[0]) * 5000.0
         pitch_accel = (m[2] - m[3]) * 5000.0
         yaw_accel   = -((m[2]+m[3]) - (m[0]+m[1])) * 400.0
 
-        # update rotational rates
-        self.roll_rate  += roll_accel * delta_time
-        self.pitch_rate += pitch_accel * delta_time
-        self.yaw_rate   += yaw_accel * delta_time
+        # update rotational rates in body frame
+        self.pDeg  += roll_accel * delta_time
+        self.qDeg  += pitch_accel * delta_time
+        self.rDeg  += yaw_accel * delta_time
+
+        # calculate rates in earth frame
+        (self.roll_rate,
+         self.pitch_rate,
+         self.yaw_rate) =  util.BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
+                                                      self.pDeg, self.qDeg, self.rDeg)
 
         # update rotation
         self.roll   += self.roll_rate  * delta_time
