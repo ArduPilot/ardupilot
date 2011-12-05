@@ -1145,9 +1145,9 @@ void update_throttle_mode(void)
 
 				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost + get_z_damping());
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost);
 				#else
-					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
+					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost;
 				#endif
 
 				// reset next_WP.alt
@@ -1397,14 +1397,14 @@ adjust_altitude()
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
-		g.throttle_cruise += (g.pi_alt_hold.get_integrator());
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
 	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
-		g.throttle_cruise += (g.pi_alt_hold.get_integrator());
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
