@@ -17,9 +17,17 @@ class Aircraft(object):
         self.pitch = 0.0        # degrees
         self.roll = 0.0         # degrees
         self.yaw = 0.0          # degrees
+
+        # rates in earth frame
         self.pitch_rate = 0.0   # degrees/s
         self.roll_rate = 0.0    # degrees/s
         self.yaw_rate = 0.0     # degrees/s
+
+        # rates in body frame
+        self.pDeg = 0.0   # degrees/s
+        self.qDeg = 0.0   # degrees/s
+        self.rDeg = 0.0   # degrees/s
+
         self.velocity = euclid.Vector3(0, 0, 0) # m/s, North, East, Up
         self.position = euclid.Vector3(0, 0, 0) # m North, East, Up
         self.accel    = euclid.Vector3(0, 0, 0) # m/s/s North, East, Up
