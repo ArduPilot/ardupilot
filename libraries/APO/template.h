@@ -24,7 +24,7 @@ namespace apo {
 /// Class description
 class Class {
 public:
-}
+};
 
 } // namespace apo
 
