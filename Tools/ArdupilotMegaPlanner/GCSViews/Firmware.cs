@@ -258,6 +258,18 @@ namespace ArdupilotMega.GCSViews
                 findfirmware("AC2-QUADHIL");
                 return true;
             }
+
+            if (keyData == (Keys.Control | Keys.C))
+            {
+                OpenFileDialog fd = new OpenFileDialog();
+                fd.Filter = "Firmware (*.hex)|*.hex";
+                fd.ShowDialog();
+                if (File.Exists(fd.FileName))
+                {
+                    UploadFlash(fd.FileName, ArduinoDetect.DetectVersion(MainV2.comportname));
+                }
+                return true;
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -533,6 +545,8 @@ namespace ArdupilotMega.GCSViews
                     MessageBox.Show("Invalid Board Type");
                     return;
                 }
+
+                Console.WriteLine("Using "+baseurl);
 
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(baseurl);
