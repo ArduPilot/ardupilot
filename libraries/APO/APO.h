@@ -8,6 +8,7 @@
 #ifndef APO_H_
 #define APO_H_
 
+#include <FastSerial.h>
 #include "AP_Autopilot.h"
 #include "AP_Guide.h"
 #include "AP_Controller.h"
@@ -20,6 +21,7 @@
 #include "AP_ArmingMechanism.h"
 #include "AP_CommLink.h"
 #include "AP_Var_keys.h"
+#include "DcmNavigator.h"
 #include "constants.h"
 
 #endif /* APO_H_ */

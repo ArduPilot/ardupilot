@@ -34,7 +34,7 @@ static const uint32_t gpsBaud = 38400;
 static const uint32_t hilBaud = 115200;
 
 // optional sensors
-static const bool gpsEnabled = false;
+static const bool gpsEnabled = true;
 static const bool baroEnabled = true;
 static const bool compassEnabled = true;
 static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD;

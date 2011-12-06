@@ -49,6 +49,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
      * Look for valid initial state
      */
     while (_navigator) {
+
         // letc gcs known we are alive
         hal->gcs->sendMessage(MAVLINK_MSG_ID_HEARTBEAT);
         hal->gcs->sendMessage(MAVLINK_MSG_ID_SYS_STATUS);
@@ -98,10 +99,11 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
                           AP_MavlinkCommand::home.getLat()*rad2Deg,
                           AP_MavlinkCommand::home.getLon()*rad2Deg,
                           AP_MavlinkCommand::home.getCommand());
+
     guide->setCurrentIndex(0);
     controller->setMode(MAV_MODE_LOCKED);
     controller->setState(MAV_STATE_STANDBY);
-
+  
     /*
      * Attach loops, stacking for priority
      */
@@ -117,7 +119,7 @@ AP_Autopilot::AP_Autopilot(AP_Navigator * navigator, AP_Guide * guide,
 
 void AP_Autopilot::callback(void * data) {
     AP_Autopilot * apo = (AP_Autopilot *) data;
-    //apo->hal()->debug->println_P(PSTR("callback"));
+    //apo->getHal()->debug->println_P(PSTR("callback"));
 
     /*
      * ahrs update
@@ -178,6 +180,7 @@ void AP_Autopilot::callback1(void * data) {
      */
     if (apo->getHal()->gcs) {
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_ATTITUDE);
+        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
     }
 
     /*
@@ -218,11 +221,10 @@ void AP_Autopilot::callback2(void * data) {
      */
     if (apo->getHal()->gcs) {
         // send messages
-        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW);
+        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW_INT);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
-        //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GLOBAL_POSITION);
-        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_LOCAL_POSITION);
+        //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_LOCAL_POSITION);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
     }
 

@@ -22,10 +22,6 @@
 #include "constants.h"
 #include <inttypes.h>
 
-class RangeFinder;
-class IMU;
-class AP_DCM;
-
 namespace apo {
 
 class AP_HardwareAbstractionLayer;
@@ -34,9 +30,14 @@ class AP_HardwareAbstractionLayer;
 class AP_Navigator {
 public:
     AP_Navigator(AP_HardwareAbstractionLayer * hal);
-    virtual void calibrate();
-    virtual void updateFast(float dt) = 0;
-    virtual void updateSlow(float dt) = 0;
+
+    // note, override these with derived navigator functionality
+    virtual void calibrate() {};
+    virtual void updateFast(float dt) {};
+    virtual void updateSlow(float dt) {};
+
+
+    // accessors
     float getPD() const;
     float getPE() const;
     float getPN() const;
@@ -85,6 +86,7 @@ public:
 
     float getLon() const {
         return _lon_degInt * degInt2Rad;
+
     }
 
     void setLon(float _lon) {
@@ -154,6 +156,7 @@ public:
             y += 360 * deg2Rad;
         return y;
     }
+
 
     float getSpeedOverGround() const {
         return sqrt(getVN()*getVN()+getVE()*getVE());
@@ -264,22 +267,6 @@ public:
         _windSpeed = windSpeed;
     }
 
-    float getGroundPressure() const {
-        return _groundPressure;
-    }
-
-    void setGroundPressure(long groundPressure) {
-        _groundPressure = groundPressure;
-    }
-
-    float getGroundTemperature() const {
-        return _groundTemperature;
-    }
-
-    void setGroundTemperature(long groundTemperature) {
-        _groundTemperature = groundTemperature;
-    }
-
 protected:
     AP_HardwareAbstractionLayer * _hal;
 private:
@@ -302,27 +289,6 @@ private:
     int32_t _lat_degInt; // deg / 1e7
     int32_t _lon_degInt; // deg / 1e7
     int32_t _alt_intM; // meters / 1e3
-    float _groundTemperature; // XXX units?
-    float _groundPressure; // XXX units?
-};
-
-class DcmNavigator: public AP_Navigator {
-private:
-    /**
-     * Sensors
-     */
-
-    RangeFinder * _rangeFinderDown;
-    AP_DCM * _dcm;
-    IMU * _imu;
-    uint16_t _imuOffsetAddress;
-
-public:
-    DcmNavigator(AP_HardwareAbstractionLayer * hal);
-    virtual void calibrate();
-    virtual void updateFast(float dt);
-    virtual void updateSlow(float dt);
-    void updateGpsLight(void);
 };
 
 } // namespace apo
