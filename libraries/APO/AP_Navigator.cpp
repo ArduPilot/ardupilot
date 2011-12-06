@@ -179,12 +179,12 @@ void DcmNavigator::updateFast(float dt) {
 
             _hal->baro->Read();		// Get new data from absolute pressure sensor
 
-            //abs_pressure 			= (abs_pressure + barometer.Press) >> 1;		// Small filtering
-            float abs_pressure 		= (getGroundPressure() * .7) + (_hal->baro->Press * .3);		// large filtering
-            scaling 				= getGroundPressure() / (float)abs_pressure;
-            temp 					= (getGroundTemperature()) + 273.15f;
+            float abs_pressure 		= getGroundPressure() * .7 + _hal->baro->Press * .3;		// large filtering
+            scaling 				= getGroundPressure()/abs_pressure;
+            temp 					= getGroundTemperature() + 273.15f;
             x 						= log(scaling) * temp * 29271.267f;
-            setAlt(x / 10);
+            _hal->debug->printf_P(PSTR("Ground Pressure %f\tAbsolute Pressure = %f\tGround Temperature = %f\tscaling= %f\n"),getGroundPressure(),abs_pressure,temp,log(scaling));
+            setAlt_intM(x / 10); //changed this from 10 to 100
        }
     }
 
@@ -221,7 +221,13 @@ void DcmNavigator::updateSlow(float dt) {
         if (_hal->gps->fix && _hal->gps->new_data) {
             setLat_degInt(_hal->gps->latitude);
             setLon_degInt(_hal->gps->longitude);
-            setAlt_intM(_hal->gps->altitude * 10); // gps in cm, intM in mm
+            //Preferential Barometer Altitude 
+            if (_hal->baro) {
+                setAlt_intM(getAlt_intM());
+            }
+            else {
+                setAlt_intM(_hal->gps->altitude * 10); // gps in cm, intM in mm
+            }
             setGroundSpeed(_hal->gps->ground_speed / 100.0); // gps is in cm/s
         }
     }
