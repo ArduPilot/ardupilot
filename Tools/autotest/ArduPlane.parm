@@ -10,6 +10,7 @@ KFF_RDDRMIX     0
 KFF_PTCHCOMP    0.2
 THR_MAX		100
 RC2_REV		-1
+RC4_REV		-1
 RC1_MAX         2000
 RC1_MIN         1000
 RC1_TRIM        1500
@@ -18,7 +19,7 @@ RC2_MIN         1000
 RC2_TRIM        1500
 RC3_MAX         2000
 RC3_MIN         1000
-RC3_TRIM        1500
+RC3_TRIM        1000
 RC4_MAX         2000
 RC4_MIN         1000
 RC4_TRIM        1500
