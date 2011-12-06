@@ -201,7 +201,9 @@ print("Simulator ready to fly")
 def main_loop():
     '''run main loop'''
     last_report = time.time()
+    last_sim_input = time.time()
     frame_count = 0
+    paused = False
 
     while True:
         rin = [jsb_in.fileno(), sim_in.fileno(), jsb_console.fileno(), jsb.fileno()]
@@ -211,6 +213,8 @@ def main_loop():
             util.check_parent()
             continue
 
+        tnow = time.time()
+
         if jsb_in.fileno() in rin:
             buf = jsb_in.recv(fdm.packet_size())
             process_jsb_input(buf)
@@ -219,6 +223,7 @@ def main_loop():
         if sim_in.fileno() in rin:
             simbuf = sim_in.recv(22)
             process_sitl_input(simbuf)
+            last_sim_input = tnow
 
         # show any jsbsim console output
         if jsb_console.fileno() in rin:
@@ -226,7 +231,18 @@ def main_loop():
         if jsb.fileno() in rin:
             util.pexpect_drain(jsb)
 
-        if time.time() - last_report > 0.5:
+        if tnow - last_sim_input > 0.2:
+            if not paused:
+                print("PAUSING SIMULATION")
+                paused = True
+                jsb_console.send('hold\n')
+        else:
+            if paused:
+                print("RESUMING SIMULATION")
+                paused = False
+                jsb_console.send('resume\n')
+
+        if tnow - last_report > 0.5:
             print("FPS %u asl=%.1f agl=%.1f roll=%.1f pitch=%.1f a=(%.2f %.2f %.2f)" % (
                 frame_count / (time.time() - last_report),
                 fdm.get('altitude', units='meters'),
