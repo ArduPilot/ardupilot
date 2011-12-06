@@ -264,6 +264,21 @@ public:
         _windSpeed = windSpeed;
     }
 
+    float getGroundPressure() const {
+        return _groundPressure;
+    }
+
+    void setGroundPressure(long groundPressure) {
+        _groundPressure = groundPressure;
+    }
+
+    float getGroundTemperature() const {
+        return _groundTemperature;
+    }
+
+    void setGroundTemperature(long groundTemperature) {
+        _groundTemperature = groundTemperature;
+    }
 
 protected:
     AP_HardwareAbstractionLayer * _hal;
@@ -287,6 +302,8 @@ private:
     int32_t _lat_degInt; // deg / 1e7
     int32_t _lon_degInt; // deg / 1e7
     int32_t _alt_intM; // meters / 1e3
+    float _groundTemperature; // XXX units?
+    float _groundPressure; // XXX units?
 };
 
 class DcmNavigator: public AP_Navigator {

@@ -5,8 +5,9 @@
  *      Author: jgoppert
  */
 
-#include "AP_Navigator.h"
 #include "../FastSerial/FastSerial.h"
+#include "AP_Navigator.h"
+#include "AP_CommLink.h"
 #include "AP_HardwareAbstractionLayer.h"
 #include "../AP_DCM/AP_DCM.h"
 #include "../AP_Math/AP_Math.h"
@@ -98,7 +99,58 @@ void DcmNavigator::calibrate() {
     if (_hal->imu) {
         _hal->imu->init(IMU::COLD_START,delay,_hal->scheduler);
     }
+
+    if (_hal->baro) {
+        // XXX should be moved to hal ctor
+        _hal->baro->Init(1,false);
+        // for apm 2 _hal->baro->Init(1,true);
+        int flashcount = 0;
+
+        while(getGroundPressure() == 0){
+            _hal->baro->Read(); 					// Get initial data from absolute pressure sensor
+            setGroundPressure(_hal->baro->Press);
+            setGroundTemperature(_hal->baro->Temp);
+            //mavlink_delay(20);
+            delay(20);
+            //Serial.printf("_hal->baro->Press %ld\n", _hal->baro->Press);
+        }
+
+        for(int i = 0; i < 30; i++){		// We take some readings...
+
+            //#if HIL_MODE == HIL_MODE_SENSORS
+                //gcs_update(); 				// look for inbound hil packets
+            //#endif
+
+            _hal->baro->Read(); 				// Get initial data from absolute pressure sensor
+            setGroundPressure((getGroundPressure() * 9l   + _hal->baro->Press) / 10l);
+            setGroundTemperature((getGroundTemperature() * 9 + _hal->baro->Temp) / 10);
+
+            //mavlink_delay(20);
+            delay(20);
+            if(flashcount == 5) {
+                digitalWrite(_hal->cLedPin, LOW);
+                digitalWrite(_hal->aLedPin, HIGH);
+                digitalWrite(_hal->bLedPin, LOW);
+            }
+
+            if(flashcount >= 10) {
+                flashcount = 0;
+                digitalWrite(_hal->cLedPin, LOW);
+                digitalWrite(_hal->aLedPin, HIGH);
+                digitalWrite(_hal->bLedPin, LOW);
+            }
+            flashcount++;
+        }
+        
+        // TODO implement
+        //saveGroundPressure();
+        //saveGroundTemperature();
+        //
+        _hal->debug->printf_P(PSTR("abs_pressure %ld\n"),getGroundPressure());
+        _hal->gcs->sendText(SEVERITY_LOW, PSTR("barometer calibration complete\n"));
+    }
 }
+
 void DcmNavigator::updateFast(float dt) {
 
     if (_hal->getMode() != MODE_LIVE)
@@ -123,11 +175,17 @@ void DcmNavigator::updateFast(float dt) {
             setAlt(_rangeFinderDown->distance);
 
         else {
-            float tmp = (_hal->baro->Press / 101325.0);
-            tmp = pow(tmp, 0.190295);
-            //setAlt(44330 * (1.0 - tmp)); //sets the altitude in meters XXX wrong, baro reads 0 press
-            setAlt(0.0);
-        }
+            float x, scaling, temp;
+
+            _hal->baro->Read();		// Get new data from absolute pressure sensor
+
+            //abs_pressure 			= (abs_pressure + barometer.Press) >> 1;		// Small filtering
+            float abs_pressure 		= (getGroundPressure() * .7) + (_hal->baro->Press * .3);		// large filtering
+            scaling 				= getGroundPressure() / (float)abs_pressure;
+            temp 					= (getGroundTemperature()) + 273.15f;
+            x 						= log(scaling) * temp * 29271.267f;
+            setAlt(x / 10);
+       }
     }
 
     // dcm class for attitude
