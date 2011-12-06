@@ -86,7 +86,14 @@ namespace ArdupilotMega
 
                                 if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
                                 {
-                                    return "2560-2";
+                                    if (DialogResult.Yes == MessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
+                                    {
+                                        return "2560-2";
+                                    }
+                                    else
+                                    {
+                                        return "2560";
+                                    }
                                 }
                             }
 
@@ -103,6 +110,7 @@ namespace ArdupilotMega
                                 return "2560";
                             }
                         }
+                        
                     }
                 }
                 catch { }
