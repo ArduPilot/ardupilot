@@ -183,8 +183,9 @@ void DcmNavigator::updateFast(float dt) {
             scaling 				= getGroundPressure()/abs_pressure;
             temp 					= getGroundTemperature() + 273.15f;
             x 						= log(scaling) * temp * 29271.267f;
-            _hal->debug->printf_P(PSTR("Ground Pressure %f\tAbsolute Pressure = %f\tGround Temperature = %f\tscaling= %f\n"),getGroundPressure(),abs_pressure,temp,log(scaling));
-            setAlt_intM(x / 10); //changed this from 10 to 100
+            //Barometer Debug
+            //_hal->debug->printf_P(PSTR("Ground Pressure %f\tAbsolute Pressure = %f\tGround Temperature = %f\tscaling= %f\n"),getGroundPressure(),abs_pressure,temp,log(scaling));
+            setAlt_intM(x / 10); 
        }
     }
 
