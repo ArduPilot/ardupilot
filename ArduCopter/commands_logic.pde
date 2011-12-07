@@ -470,8 +470,8 @@ static bool verify_RTL()
 {
 	// loiter at the WP
 	wp_control 	= WP_MODE;
-	// Did we pass the WP?	// Distance checking
 
+	// Did we pass the WP?	// Distance checking
 	if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 		wp_control 	= LOITER_MODE;
 
