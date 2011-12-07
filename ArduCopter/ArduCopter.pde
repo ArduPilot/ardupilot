@@ -392,7 +392,6 @@ static int16_t		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-static int32_t 	yaw_error;							// how off are we pointed
 static int32_t	long_error, lat_error;				// temp for debugging
 
 // Battery Sensors
@@ -1438,7 +1437,7 @@ static void tuning(){
 			break;
 
 		case CH6_RATE_KP:
-			g.rc_6.set_range(0,300);		 // 0 to .3
+			g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pi_rate_roll.kP(tuning_value);
 			g.pi_rate_pitch.kP(tuning_value);
 			break;
