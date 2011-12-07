@@ -135,7 +135,7 @@ void DcmNavigator::updateFast(float dt) {
         _hal->baro->Read();		// Get new data from absolute pressure sensor
         float reference = 44330 * (1.0 - (pow(_groundPressure.get()/101325.0,0.190295)));
         setAlt(_baroLowPass.update((44330 * (1.0 - (pow((_hal->baro->Press/101325.0),0.190295)))) - reference,dt));
-        _hal->debug->printf_P(PSTR("Ground Pressure %f\tAltitude = %f\tGround Temperature = %f\tPress = %ld\tTemp = %d\n"),_groundPressure.get(),getAlt(),_groundTemperature.get(),_hal->baro->Press,_hal->baro->Temp);
+        //_hal->debug->printf_P(PSTR("Ground Pressure %f\tAltitude = %f\tGround Temperature = %f\tPress = %ld\tTemp = %d\n"),_groundPressure.get(),getAlt(),_groundTemperature.get(),_hal->baro->Press,_hal->baro->Temp);
         
     // last resort, use gps altitude
     } else if (_hal->gps && _hal->gps->fix) {
@@ -151,6 +151,9 @@ void DcmNavigator::updateFast(float dt) {
     setRollRate(_dcm.get_gyro().x);
     setPitchRate(_dcm.get_gyro().y);
     setYawRate(_dcm.get_gyro().z);
+    setXAccel(_dcm.get_accel().x);
+    setYAccel(_dcm.get_accel().y);
+    setZAccel(_dcm.get_accel().z);
 
     /*
      * accel/gyro debug

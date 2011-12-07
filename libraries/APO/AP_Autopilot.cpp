@@ -221,10 +221,10 @@ void AP_Autopilot::callback2(void * data) {
      */
     if (apo->getHal()->gcs) {
         // send messages
-        apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW_INT);
+        //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_GPS_RAW_INT);
+        //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_LOCAL_POSITION);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_SCALED);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_RC_CHANNELS_RAW);
-        //apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_LOCAL_POSITION);
         apo->getHal()->gcs->sendMessage(MAVLINK_MSG_ID_SCALED_IMU);
     }
 
