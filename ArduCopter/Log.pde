@@ -108,7 +108,16 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 	last_log_num = g.log_last_filenumber;
-	if (dump_log <= 0) {
+	
+	if (dump_log == -2) {
+		for(int count=1; count<=DF_LAST_PAGE; count++) {
+			DataFlash.StartRead(count);
+			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
+			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
+			Serial.printf_P(PSTR("%d\n"), DataFlash.GetFilePage());
+		}
+		return(-1);
+	} else if (dump_log <= 0) {
 		Serial.printf_P(PSTR("dumping all\n"));
 		Log_Read(1, DF_LAST_PAGE);
 		return(-1);
