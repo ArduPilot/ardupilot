@@ -61,8 +61,10 @@ static void calc_loiter(int x_error, int y_error)
 	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	int x_target_speed = g.pi_loiter_lon.get_pi(x_error, dTnav);
-	int y_target_speed = g.pi_loiter_lat.get_pi(y_error, dTnav);
+	int x_target_speed = g.pi_loiter_lon.get_p(x_error);
+	int y_target_speed = g.pi_loiter_lat.get_p(y_error);
+	int x_iterm = g.pi_loiter_lon.get_i(x_error, dTnav);
+	int y_iterm = g.pi_loiter_lon.get_i(y_error, dTnav);
 
 	// find the rates:
 	float temp		= g_gps->ground_course * RADX100;
@@ -85,11 +87,13 @@ static void calc_loiter(int x_error, int y_error)
 	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
 	nav_lat			= constrain(nav_lat, -3500, 3500);
+	nav_lat			+= y_iterm;
 
 	x_rate_error 	= x_target_speed - x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -250, 250);
 	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
 	nav_lon			= constrain(nav_lon, -3500, 3500);
+	nav_lon			+= x_iterm;
 }
 
 static void calc_loiter2(int x_error, int y_error)
