@@ -117,9 +117,9 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
     case MAVLINK_MSG_ID_GPS_RAW: {
         mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
                                  _hal->gps->latitude/1.0e7,
-                                 _hal->gps->longitude/1.0e7, _hal->gps->altitude/10.0, 0, 0,
-                                 _hal->gps->ground_speed*10.0,
-                                 _hal->gps->ground_course*10.0);
+                                 _hal->gps->longitude/1.0e7, _hal->gps->altitude/100.0, 0, 0,
+                                 _hal->gps->ground_speed/100.0,
+                                 _hal->gps->ground_course/10.0);
         break;
     }
 
@@ -127,8 +127,8 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
         mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
                                  _hal->gps->latitude,
                                  _hal->gps->longitude, _hal->gps->altitude*10.0, 0, 0,
-                                 _hal->gps->ground_speed*10.0,
-                                 _hal->gps->ground_course*10.0);
+                                 _hal->gps->ground_speed/100.0,
+                                 _hal->gps->ground_course/10.0);
         break;
      }
 
