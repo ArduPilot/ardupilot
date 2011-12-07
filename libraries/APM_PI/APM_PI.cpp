@@ -7,10 +7,14 @@
 
 #include "APM_PI.h"
 
-long
-APM_PI::get_pi(int32_t error, float dt, bool calc_i)
+int32_t APM_PI::get_p(int32_t error)
 {
-	if(calc_i){
+	return (float)error * _kp;
+}
+
+int32_t APM_PI::get_i(int32_t error, float dt)
+{
+	if(dt != 0){
 		_integrator += ((float)error * _ki) * dt;
 
 		if (_integrator < -_imax) {
@@ -19,7 +23,12 @@ APM_PI::get_pi(int32_t error, float dt, bool calc_i)
 			_integrator = _imax;
 		}
 	}
-	return (float)error * _kp + _integrator;
+	return _integrator;
+}
+
+int32_t APM_PI::get_pi(int32_t error, float dt)
+{
+	return get_p(error) + get_i(error, dt);
 }
 
 void
