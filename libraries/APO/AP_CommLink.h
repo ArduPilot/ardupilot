@@ -31,7 +31,7 @@ namespace apo {
 class AP_Controller;
 class AP_Navigator;
 class AP_Guide;
-class AP_HardwareAbstractionLayer;
+class AP_Board;
 
 enum {
     SEVERITY_LOW, SEVERITY_MED, SEVERITY_HIGH
@@ -46,7 +46,7 @@ class AP_CommLink {
 public:
 
     AP_CommLink(FastSerial * link, AP_Navigator * navigator, AP_Guide * guide,
-                AP_Controller * controller, AP_HardwareAbstractionLayer * hal, const uint16_t heartBeatTimeout);
+                AP_Controller * controller, AP_Board * board, const uint16_t heartBeatTimeout);
     virtual void send() = 0;
     virtual void receive() = 0;
     virtual void sendMessage(uint8_t id, uint32_t param = 0) = 0;
@@ -69,7 +69,7 @@ protected:
     AP_Navigator * _navigator;
     AP_Guide * _guide;
     AP_Controller * _controller;
-    AP_HardwareAbstractionLayer * _hal;
+    AP_Board * _board;
     uint16_t _heartBeatTimeout;              /// vehicle heartbeat timeout, s
     uint32_t _lastHeartBeat;                 /// time of last heartbeat, s
 };
@@ -77,7 +77,7 @@ protected:
 class MavlinkComm: public AP_CommLink {
 public:
     MavlinkComm(FastSerial * link, AP_Navigator * nav, AP_Guide * guide,
-                AP_Controller * controller, AP_HardwareAbstractionLayer * hal, uint16_t heartBeatTimeout);
+                AP_Controller * controller, AP_Board * board, uint16_t heartBeatTimeout);
 
     virtual void send();
     void sendMessage(uint8_t id, uint32_t param = 0);

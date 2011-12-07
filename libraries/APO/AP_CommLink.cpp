@@ -11,7 +11,7 @@
 #include "AP_Guide.h"
 #include "AP_Controller.h"
 #include "AP_MavlinkCommand.h"
-#include "AP_HardwareAbstractionLayer.h"
+#include "AP_Board.h"
 #include "AP_RcChannel.h"
 #include "../AP_GPS/AP_GPS.h"
 #include "../AP_Math/AP_Math.h"
@@ -25,16 +25,16 @@ uint8_t MavlinkComm::_nChannels = 0;
 uint8_t MavlinkComm::_paramNameLengthMax = 13;
 
 AP_CommLink::AP_CommLink(FastSerial * link, AP_Navigator * navigator, AP_Guide * guide,
-                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
+                         AP_Controller * controller, AP_Board * board,
                          const uint16_t heartBeatTimeout) :
     _link(link), _navigator(navigator), _guide(guide),
-    _controller(controller), _hal(hal), _heartBeatTimeout(heartBeatTimeout), _lastHeartBeat(0) {
+    _controller(controller), _board(board), _heartBeatTimeout(heartBeatTimeout), _lastHeartBeat(0) {
 }
 
 MavlinkComm::MavlinkComm(FastSerial * link, AP_Navigator * nav, AP_Guide * guide,
-                         AP_Controller * controller, AP_HardwareAbstractionLayer * hal,
+                         AP_Controller * controller, AP_Board * board,
                          const uint16_t heartBeatTimeout) :
-    AP_CommLink(link, nav, guide, controller, hal,heartBeatTimeout),
+    AP_CommLink(link, nav, guide, controller, board,heartBeatTimeout),
 
     // options
     _useRelativeAlt(true),
@@ -74,7 +74,7 @@ void MavlinkComm::send() {
 }
 
 void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
-    //_hal->debug->printf_P(PSTR("send message\n"));
+    //_board->debug->printf_P(PSTR("send message\n"));
 
     // if number of channels exceeded return
     if (_channel == MAVLINK_COMM_3)
@@ -85,7 +85,7 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
     switch (id) {
 
     case MAVLINK_MSG_ID_HEARTBEAT: {
-        mavlink_msg_heartbeat_send(_channel, _hal->getVehicle(),
+        mavlink_msg_heartbeat_send(_channel, _board->getVehicle(),
                                    MAV_AUTOPILOT_ARDUPILOTMEGA);
         break;
     }
@@ -115,31 +115,31 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
     }
 
     case MAVLINK_MSG_ID_GPS_RAW: {
-        mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
-                                 _hal->gps->latitude/1.0e7,
-                                 _hal->gps->longitude/1.0e7, _hal->gps->altitude/100.0, 0, 0,
-                                 _hal->gps->ground_speed/100.0,
-                                 _hal->gps->ground_course/10.0);
+        mavlink_msg_gps_raw_send(_channel, timeStamp, _board->gps->status(),
+                                 _board->gps->latitude/1.0e7,
+                                 _board->gps->longitude/1.0e7, _board->gps->altitude/100.0, 0, 0,
+                                 _board->gps->ground_speed/100.0,
+                                 _board->gps->ground_course/10.0);
         break;
     }
 
     case MAVLINK_MSG_ID_GPS_RAW_INT: {
-        mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
-                                 _hal->gps->latitude,
-                                 _hal->gps->longitude, _hal->gps->altitude*10.0, 0, 0,
-                                 _hal->gps->ground_speed/100.0,
-                                 _hal->gps->ground_course/10.0);
+        mavlink_msg_gps_raw_send(_channel, timeStamp, _board->gps->status(),
+                                 _board->gps->latitude,
+                                 _board->gps->longitude, _board->gps->altitude*10.0, 0, 0,
+                                 _board->gps->ground_speed/100.0,
+                                 _board->gps->ground_course/10.0);
         break;
      }
 
     case MAVLINK_MSG_ID_SCALED_IMU: {
         int16_t xmag, ymag, zmag;
         xmag = ymag = zmag = 0;
-        if (_hal->compass) {
+        if (_board->compass) {
             // XXX THIS IS NOT SCALED
-            xmag = _hal->compass->mag_x;
-            ymag = _hal->compass->mag_y;
-            zmag = _hal->compass->mag_z;
+            xmag = _board->compass->mag_x;
+            ymag = _board->compass->mag_y;
+            zmag = _board->compass->mag_z;
         }
         mavlink_msg_scaled_imu_send(_channel, timeStamp,
             _navigator->getXAccel()*1e3,
@@ -156,9 +156,9 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
         int16_t ch[8];
         for (int i = 0; i < 8; i++)
             ch[i] = 0;
-        for (uint8_t i = 0; i < 8 && i < _hal->rc.getSize(); i++) {
-            ch[i] = 10000 * _hal->rc[i]->getPosition();
-            //_hal->debug->printf_P(PSTR("ch: %d position: %d\n"),i,ch[i]);
+        for (uint8_t i = 0; i < 8 && i < _board->rc.getSize(); i++) {
+            ch[i] = 10000 * _board->rc[i]->getPosition();
+            //_board->debug->printf_P(PSTR("ch: %d position: %d\n"),i,ch[i]);
         }
         mavlink_msg_rc_channels_scaled_send(_channel, ch[0], ch[1], ch[2],
                                             ch[3], ch[4], ch[5], ch[6], ch[7], 255);
@@ -169,8 +169,8 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
         int16_t ch[8];
         for (int i = 0; i < 8; i++)
             ch[i] = 0;
-        for (uint8_t i = 0; i < 8 && i < _hal->rc.getSize(); i++)
-            ch[i] = _hal->rc[i]->getPwm();
+        for (uint8_t i = 0; i < 8 && i < _board->rc.getSize(); i++)
+            ch[i] = _board->rc[i]->getPwm();
         mavlink_msg_rc_channels_raw_send(_channel, ch[0], ch[1], ch[2],
                                          ch[3], ch[4], ch[5], ch[6], ch[7], 255);
         break;
@@ -180,12 +180,12 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
 
         uint16_t batteryVoltage = 0; // (milli volts)
         uint16_t batteryPercentage = 1000; // times 10
-        if (_hal->batteryMonitor) {
-            batteryPercentage = _hal->batteryMonitor->getPercentage()*10;
-            batteryVoltage = _hal->batteryMonitor->getVoltage()*1000;
+        if (_board->batteryMonitor) {
+            batteryPercentage = _board->batteryMonitor->getPercentage()*10;
+            batteryVoltage = _board->batteryMonitor->getVoltage()*1000;
         }
         mavlink_msg_sys_status_send(_channel, _controller->getMode(),
-                                    _guide->getMode(), _controller->getState(), _hal->load * 10,
+                                    _guide->getMode(), _controller->getState(), _board->load * 10,
                                     batteryVoltage, batteryPercentage, _packetDrops);
         break;
     }
@@ -218,7 +218,7 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
 } // send message
 
 void MavlinkComm::receive() {
-    //_hal->debug->printf_P(PSTR("receive\n"));
+    //_board->debug->printf_P(PSTR("receive\n"));
     // if number of channels exceeded return
     //
     if (_channel == MAVLINK_COMM_3)
@@ -264,7 +264,7 @@ void MavlinkComm::acknowledge(uint8_t id, uint8_t sum1, uint8_t sum2) {
  * sends parameters one at a time
  */
 void MavlinkComm::sendParameters() {
-    //_hal->debug->printf_P(PSTR("send parameters\n"));
+    //_board->debug->printf_P(PSTR("send parameters\n"));
     // Check to see if we are sending parameters
     while (NULL != _queuedParameter) {
         AP_Var *vp;
@@ -295,7 +295,7 @@ void MavlinkComm::sendParameters() {
  * request commands one at a time
  */
 void MavlinkComm::requestCmds() {
-    //_hal->debug->printf_P(PSTR("requesting commands\n"));
+    //_board->debug->printf_P(PSTR("requesting commands\n"));
     // request cmds one by one
     if (_receivingCmds && _cmdRequestIndex <= _cmdNumberRequested) {
         mavlink_msg_waypoint_request_send(_channel, _cmdDestSysId,
@@ -308,7 +308,7 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
     uint32_t timeStamp = micros();
 
     switch (msg->msgid) {
-        _hal->debug->printf_P(PSTR("message received: %d"), msg->msgid);
+        _board->debug->printf_P(PSTR("message received: %d"), msg->msgid);
 
     case MAVLINK_MSG_ID_HEARTBEAT: {
         mavlink_heartbeat_t packet;
@@ -329,9 +329,9 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
         _navigator->setYaw(packet.hdg * deg2Rad);
         _navigator->setGroundSpeed(packet.v);
         _navigator->setAirSpeed(packet.v);
-        //_hal->debug->printf_P(PSTR("received hil gps raw packet\n"));
+        //_board->debug->printf_P(PSTR("received hil gps raw packet\n"));
         /*
-         _hal->debug->printf_P(PSTR("received lat: %f deg\tlon: %f deg\talt: %f m\n"),
+         _board->debug->printf_P(PSTR("received lat: %f deg\tlon: %f deg\talt: %f m\n"),
          packet.lat,
          packet.lon,
          packet.alt);
@@ -375,7 +375,7 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
         _navigator->setRollRate(packet.rollspeed);
         _navigator->setPitchRate(packet.pitchspeed);
         _navigator->setYawRate(packet.yawspeed);
-        //_hal->debug->printf_P(PSTR("received hil attitude packet\n"));
+        //_board->debug->printf_P(PSTR("received hil attitude packet\n"));
         break;
     }
 
@@ -502,7 +502,7 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
         if (_checkTarget(packet.target_system, packet.target_component))
             break;
 
-        _hal->debug->printf_P(PSTR("sequence: %d\n"),packet.seq);
+        _board->debug->printf_P(PSTR("sequence: %d\n"),packet.seq);
         AP_MavlinkCommand cmd(packet.seq);
 
         mavlink_waypoint_t wp = cmd.convert(_guide->getCurrentIndex());
@@ -638,7 +638,7 @@ void MavlinkComm::_handleMessage(mavlink_message_t * msg) {
             break;
         }
 
-        _hal->debug->printf_P(PSTR("received waypoint x: %f\ty: %f\tz: %f\n"),
+        _board->debug->printf_P(PSTR("received waypoint x: %f\ty: %f\tz: %f\n"),
                               packet.x,
                               packet.y,
                               packet.z);

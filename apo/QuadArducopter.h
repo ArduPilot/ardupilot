@@ -8,40 +8,35 @@
 #ifndef QUADARDUCOPTER_H_
 #define QUADARDUCOPTER_H_
 
+using namespace apo;
+
 // vehicle options
+static const AP_Board::options_t options = AP_Board::opt_gps | AP_Board::opt_baro | AP_Board::opt_compass;
 static const MAV_TYPE vehicle = MAV_QUADROTOR;
-//static const apo::halMode_t halMode = apo::MODE_HIL_CNTL;
-static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
+//static const apo::AP_Board::mode_e boardMode = apo::AP_Board::MODE_HIL_CNTL;
+static const apo::AP_Board::mode_e boardMode = apo::AP_Board::MODE_LIVE;
 static const uint8_t heartBeatTimeout = 0;
 
 // algorithm selection
 #define CONTROLLER_CLASS ControllerQuad
 #define GUIDE_CLASS MavlinkGuide
-#define NAVIGATOR_CLASS DcmNavigator
-#define COMMLINK_CLASS MavlinkComm
+#define NAVIGATOR_CLASS Navigator_Dcm
 
-// hardware selection
-#define ADC_CLASS AP_ADC_ADS7844
-#define COMPASS_CLASS AP_Compass_HMC5843
-#define BARO_CLASS APM_BMP085_Class
-#define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
+//// hardware selection
+//#define BOARD_TYPE Board_APM1
+//#define BOARD_TYPE Board_APM1_2560
+#define BOARD_TYPE Board_APM2
 
 // baud rates
-static const uint32_t debugBaud = 57600;
-static const uint32_t telemBaud = 57600;
-static const uint32_t gpsBaud = 38400;
-static const uint32_t hilBaud = 115200;
-
 // optional sensors
-static const bool gpsEnabled = true;
+static const bool gpsEnabled = false;
 static const bool baroEnabled = true;
 static const bool compassEnabled = true;
 static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD;
 // compass orientation: See AP_Compass_HMC5843.h for possible values
 
 // battery monitoring
-static const bool batteryMonitorEnabled = true;
+static const bool batteryMonitorEnabled = false;
 static const uint8_t batteryPin = 0;
 static const float batteryVoltageDivRatio = 6;
 static const float batteryMinVolt = 10.0;
@@ -55,7 +50,7 @@ static const bool rangeFinderUpEnabled = false;
 static const bool rangeFinderDownEnabled = false;
 
 // loop rates
-static const float loopRate = 200; // attitude nav
+static const float loopRate = 250; // attitude nav
 static const float loop0Rate = 50; // controller
 static const float loop1Rate = 10; 	// pos nav/ gcs fast
 static const float loop2Rate = 1; 	// gcs slow

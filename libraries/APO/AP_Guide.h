@@ -27,7 +27,7 @@
 namespace apo {
 
 class AP_Navigator;
-class AP_HardwareAbstractionLayer;
+class AP_Board;
 
 /// Guide class
 class AP_Guide {
@@ -37,7 +37,7 @@ public:
      * This is the constructor, which requires a link to the navigator.
      * @param navigator This is the navigator pointer.
      */
-    AP_Guide(AP_Navigator * nav, AP_HardwareAbstractionLayer * hal);
+    AP_Guide(AP_Navigator * nav, AP_Board * board);
 
     virtual void update() = 0;
 
@@ -128,7 +128,7 @@ public:
 
 protected:
     AP_Navigator * _nav;
-    AP_HardwareAbstractionLayer * _hal;
+    AP_Board * _board;
     AP_MavlinkCommand _command, _previousCommand;
     float _headingCommand;
     float _yawCommand;
@@ -145,7 +145,7 @@ protected:
 class MavlinkGuide: public AP_Guide {
 public:
     MavlinkGuide(AP_Navigator * nav,
-                 AP_HardwareAbstractionLayer * hal, float velCmd, float xt, float xtLim);
+                 AP_Board * board, float velCmd, float xt, float xtLim);
     virtual void update();
     void nextCommand();
     void handleCommand();

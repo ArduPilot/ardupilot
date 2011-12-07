@@ -17,8 +17,8 @@ namespace apo {
 class ControllerQuad: public AP_Controller {
 public:
     ControllerQuad(AP_Navigator * nav, AP_Guide * guide,
-                   AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal, new AP_ArmingMechanism(hal,this,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode, k_cntrl),
+                   AP_Board * board) :
+        AP_Controller(nav, guide, board, new AP_ArmingMechanism(board,this,ch_thrust,ch_yaw,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidRoll(new AP_Var_group(k_pidRoll, PSTR("ROLL_")), 1,
                 PID_ATT_P, PID_ATT_I, PID_ATT_D, PID_ATT_AWU,
                 PID_ATT_LIM),
@@ -39,39 +39,39 @@ public:
               PID_POS_Z_I, PID_POS_Z_D, PID_POS_Z_AWU, PID_POS_Z_LIM),
         _thrustMix(0), _pitchMix(0), _rollMix(0), _yawMix(0),
         _cmdRoll(0), _cmdPitch(0), _cmdYawRate(0) {
-        _hal->debug->println_P(PSTR("initializing quad controller"));
+        _board->debug->println_P(PSTR("initializing quad controller"));
 
         /*
          * allocate radio channels
          * the order of the channels has to match the enumeration above
          */
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chMode, PSTR("MODE_"), hal->radio, 5, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chMode, PSTR("MODE_"), board->radio, 5, 1100,
                              1500, 1900, RC_MODE_IN, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chRight, PSTR("RIGHT_"), hal->radio, 0, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chRight, PSTR("RIGHT_"), board->radio, 0, 1100,
                              1100, 1900, RC_MODE_OUT, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chLeft, PSTR("LEFT_"), hal->radio, 1, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chLeft, PSTR("LEFT_"), board->radio, 1, 1100,
                              1100, 1900, RC_MODE_OUT, false));
 
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chFront, PSTR("FRONT_"), hal->radio, 2, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chFront, PSTR("FRONT_"), board->radio, 2, 1100,
                              1100, 1900, RC_MODE_OUT, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chBack, PSTR("BACK_"), hal->radio, 3, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chBack, PSTR("BACK_"), board->radio, 3, 1100,
                              1100, 1900, RC_MODE_OUT, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chRoll, PSTR("ROLL_"), hal->radio, 0, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chRoll, PSTR("ROLL_"), board->radio, 0, 1100,
                              1500, 1900, RC_MODE_IN, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chPitch, PSTR("PITCH_"), hal->radio, 1, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chPitch, PSTR("PITCH_"), board->radio, 1, 1100,
                              1500, 1900, RC_MODE_IN, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chThr, PSTR("THRUST_"), hal->radio, 2, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chThr, PSTR("THRUST_"), board->radio, 2, 1100,
                              1100, 1900, RC_MODE_IN, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chYaw, PSTR("YAW_"), hal->radio, 3, 1100, 1500,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chYaw, PSTR("YAW_"), board->radio, 3, 1100, 1500,
                              1900, RC_MODE_IN, false));
     }
 
@@ -79,10 +79,10 @@ private:
     // methods
     void manualLoop(const float dt) {
         setAllRadioChannelsManually();
-        _cmdRoll = -0.5 * _hal->rc[ch_roll]->getPosition();
-        _cmdPitch = -0.5 * _hal->rc[ch_pitch]->getPosition();
-        _cmdYawRate = -1 * _hal->rc[ch_yaw]->getPosition();
-        _thrustMix = _hal->rc[ch_thrust]->getPosition();
+        _cmdRoll = -0.5 * _board->rc[ch_roll]->getPosition();
+        _cmdPitch = -0.5 * _board->rc[ch_pitch]->getPosition();
+        _cmdYawRate = -1 * _board->rc[ch_yaw]->getPosition();
+        _thrustMix = _board->rc[ch_thrust]->getPosition();
         autoAttitudeLoop(dt);
     }
     void autoLoop(const float dt) {
@@ -113,7 +113,7 @@ private:
         else _thrustMix /= cos(_cmdPitch);
 
         // debug for position loop
-        //_hal->debug->printf_P(PSTR("cmd: tilt(%f), down(%f), pitch(%f), roll(%f)\n"),cmdTilt,cmdDown,_cmdPitch,_cmdRoll);
+        //_board->debug->printf_P(PSTR("cmd: tilt(%f), down(%f), pitch(%f), roll(%f)\n"),cmdTilt,cmdDown,_cmdPitch,_cmdRoll);
     }
     void autoAttitudeLoop(float dt) {
         _rollMix = pidRoll.update(_cmdRoll - _nav->getRoll(),
@@ -124,13 +124,13 @@ private:
     }
     void setMotors() {
         // turn all motors off if below 0.1 throttle
-        if (fabs(_hal->rc[ch_thrust]->getRadioPosition()) < 0.1) {
+        if (fabs(_board->rc[ch_thrust]->getRadioPosition()) < 0.1) {
             setAllRadioChannelsToNeutral();
         } else {
-            _hal->rc[ch_right]->setPosition(_thrustMix - _rollMix + _yawMix);
-            _hal->rc[ch_left]->setPosition(_thrustMix + _rollMix + _yawMix);
-            _hal->rc[ch_front]->setPosition(_thrustMix + _pitchMix - _yawMix);
-            _hal->rc[ch_back]->setPosition(_thrustMix - _pitchMix - _yawMix);
+            _board->rc[ch_right]->setPosition(_thrustMix - _rollMix + _yawMix);
+            _board->rc[ch_left]->setPosition(_thrustMix + _rollMix + _yawMix);
+            _board->rc[ch_front]->setPosition(_thrustMix + _pitchMix - _yawMix);
+            _board->rc[ch_back]->setPosition(_thrustMix - _pitchMix - _yawMix);
         }
     }
 
@@ -142,7 +142,7 @@ private:
     // attributes
     /**
      * note that these are not the controller radio channel numbers, they are just
-     * unique keys so they can be reaccessed from the hal rc vector
+     * unique keys so they can be reaccessed from the board rc vector
      */
     enum {
         ch_mode = 0, // note scicoslab channels set mode, left, right, front, back order
