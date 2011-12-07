@@ -10,8 +10,8 @@
 
 namespace apo {
 
-AP_Navigator::AP_Navigator(AP_HardwareAbstractionLayer * hal) :
-    _hal(hal), _timeStamp(0), _roll(0), _rollRate(0), _pitch(0),
+AP_Navigator::AP_Navigator(AP_Board * board) :
+    _board(board), _timeStamp(0), _roll(0), _rollRate(0), _pitch(0),
     _pitchRate(0), _yaw(0), _yawRate(0), 
     _windSpeed(0), _windDirection(0),
     _vN(0), _vE(0), _vD(0), _lat_degInt(0),
