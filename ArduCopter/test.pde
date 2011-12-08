@@ -923,7 +923,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 }
 
 /*
-static int8_t
+//static int8_t
 //test_reverse(uint8_t argc, 		const Menu::arg *argv)
 {
 	print_hit_enter();

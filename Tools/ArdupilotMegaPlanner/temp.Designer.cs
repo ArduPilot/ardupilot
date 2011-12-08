@@ -44,6 +44,7 @@
             this.BUT_geinjection = new ArdupilotMega.MyButton();
             this.BUT_clearcustommaps = new ArdupilotMega.MyButton();
             this.BUT_lang_edit = new ArdupilotMega.MyButton();
+            this.myButton1 = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // button1
@@ -202,11 +203,22 @@
             this.BUT_lang_edit.UseVisualStyleBackColor = true;
             this.BUT_lang_edit.Click += new System.EventHandler(this.BUT_lang_edit_Click);
             // 
+            // myButton1
+            // 
+            this.myButton1.Location = new System.Drawing.Point(30, 174);
+            this.myButton1.Name = "myButton1";
+            this.myButton1.Size = new System.Drawing.Size(75, 23);
+            this.myButton1.TabIndex = 17;
+            this.myButton1.Text = "myButton1";
+            this.myButton1.UseVisualStyleBackColor = true;
+            this.myButton1.Click += new System.EventHandler(this.myButton1_Click);
+            // 
             // temp
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(731, 281);
+            this.Controls.Add(this.myButton1);
             this.Controls.Add(this.BUT_lang_edit);
             this.Controls.Add(this.BUT_clearcustommaps);
             this.Controls.Add(this.BUT_geinjection);
@@ -249,6 +261,7 @@
         private MyButton BUT_geinjection;
         private MyButton BUT_clearcustommaps;
         private MyButton BUT_lang_edit;
+        private MyButton myButton1;
         //private SharpVectors.Renderers.Forms.SvgPictureBox svgPictureBox1;
 
     }

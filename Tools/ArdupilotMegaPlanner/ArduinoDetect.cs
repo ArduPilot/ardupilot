@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Management;
+using System.Windows.Forms;
 
 namespace ArdupilotMega
 {
@@ -55,26 +56,6 @@ namespace ArdupilotMega
 
             System.Threading.Thread.Sleep(500);
 
-            //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
-            if (!MainV2.MONO)
-            {
-                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-                foreach (ManagementObject obj2 in searcher.Get())
-                {
-                    Console.WriteLine("Dependant : " + obj2["Dependent"]);
-
-                    if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
-                    {
-                        //return "2560-2";
-                    }
-                }
-            }
-            else
-            {
-                int fixme;
-            }
-
             serialPort.DtrEnable = true;
             serialPort.BaudRate = 115200;
             serialPort.Open();
@@ -94,7 +75,42 @@ namespace ArdupilotMega
                     if (temp[0] == 6 && temp[1] == 0 && temp.Length == 2)
                     {
                         serialPort.Close();
-                        return "2560";
+                        //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
+                        if (!MainV2.MONO)
+                        {
+                            ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
+                            ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+                            foreach (ManagementObject obj2 in searcher.Get())
+                            {
+                                Console.WriteLine("Dependant : " + obj2["Dependent"]);
+
+                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
+                                {
+                                    if (DialogResult.Yes == MessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
+                                    {
+                                        return "2560-2";
+                                    }
+                                    else
+                                    {
+                                        return "2560";
+                                    }
+                                }
+                            }
+
+                            return "2560";
+                        }
+                        else
+                        {
+                            if (DialogResult.Yes == MessageBox.Show("APM 2.0", "Is this a APM 2?", MessageBoxButtons.YesNo))
+                            {
+                                return "2560-2";
+                            }
+                            else
+                            {
+                                return "2560";
+                            }
+                        }
+                        
                     }
                 }
                 catch { }
@@ -103,7 +119,7 @@ namespace ArdupilotMega
             serialPort.Close();
             Console.WriteLine("Not a 2560");
             return "";
-        }
+        }  
 
         public static int decodeApVar(string comport, string version)
         {
