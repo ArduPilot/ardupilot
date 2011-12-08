@@ -29,7 +29,7 @@
 namespace apo {
 
 // forward declarations within apo
-class AP_HardwareAbstractionLayer;
+class AP_Board;
 class AP_Guide;
 class AP_Navigator;
 class Menu;
@@ -48,13 +48,13 @@ public:
     // Creates the control system.
     // @nav the navigation system
     // @guide the guidance system
-    // @hal the hardware abstraction layer
+    // @board the hardware abstraction layer
     // @armingMechanism the device that controls arming/ disarming
     // @chMode the channel that the mode switch is on
     // @key the unique key for the control system saved AP_Var variables
     // @name the name of the control system
     AP_Controller(AP_Navigator * nav, AP_Guide * guide,
-                  AP_HardwareAbstractionLayer * hal,
+                  AP_Board * board,
                   AP_ArmingMechanism * armingMechanism,
                   const uint8_t _chMode,
                   const uint16_t key,
@@ -134,7 +134,7 @@ public:
 protected:
     AP_Navigator * _nav;                    /// navigator
     AP_Guide * _guide;                      /// guide
-    AP_HardwareAbstractionLayer * _hal;     /// hardware abstraction layer
+    AP_Board * _board;     /// hardware abstraction layer
     AP_ArmingMechanism * _armingMechanism;  /// controls arming/ disarming
     uint8_t _chMode;                        /// the channel the mode switch is on
     AP_Var_group _group;                    /// holds controller parameters

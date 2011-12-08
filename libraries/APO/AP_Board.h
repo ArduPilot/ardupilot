@@ -1,12 +1,12 @@
 /*
- * AP_HardwareAbstractionLayer.h
+ * AP_Board.h
  *
  *  Created on: Apr 4, 2011
  *
  */
 
-#ifndef AP_HARDWAREABSTRACTIONLAYER_H_
-#define AP_HARDWAREABSTRACTIONLAYER_H_
+#ifndef AP_BOARD_H_
+#define AP_BOARD_H_
 
 #include "../AP_Common/AP_Vector.h"
 #include "../GCS_MAVLink/GCS_MAVLink.h"
@@ -24,6 +24,7 @@ class AP_InertialSensor;
 class APM_RC_Class;
 class AP_TimerProcess;
 class Arduino_Mega_ISR_Registry;
+class DataFlash_Class;
 
 namespace apo {
 
@@ -31,23 +32,38 @@ class AP_RcChannel;
 class AP_CommLink;
 class AP_BatteryMonitor;
 
-// enumerations
-enum halMode_t {
-    MODE_LIVE, MODE_HIL_CNTL,
-    /*MODE_HIL_NAV*/
-};
-enum board_t {
-    BOARD_ARDUPILOTMEGA_1280, BOARD_ARDUPILOTMEGA_2560, BOARD_ARDUPILOTMEGA_2
-};
-
-class AP_HardwareAbstractionLayer {
+class AP_Board {
 
 public:
+
+    typedef uint32_t options_t;
+    options_t _options;
+
+    // enumerations
+    enum mode_e {
+        MODE_LIVE, MODE_HIL_CNTL,
+        /*MODE_HIL_NAV*/
+    };
+
+
+    enum options_e {
+        opt_gps                 = 0<<1,
+        opt_baro                = 1<<1,
+        opt_compass             = 2<<1,
+        opt_batteryMonitor      = 3<<1,
+        opt_rangeFinderFront    = 4<<1,
+        opt_rangeFinderBack     = 5<<1,
+        opt_rangeFinderLeft     = 6<<1,
+        opt_rangeFinderRight    = 7<<1,
+        opt_rangeFinderUp       = 8<<1,
+        opt_rangeFinderDown     = 9<<1,
+    };
 
     // default ctors on pointers called on pointers here, this
     // allows NULL to be used as a boolean for if the device was
     // initialized
-    AP_HardwareAbstractionLayer(halMode_t mode, board_t board, MAV_TYPE vehicle);
+    AP_Board(mode_e mode, MAV_TYPE vehicle, options_t options): _mode(mode), _vehicle(vehicle), _options(options) {
+    }
 
     /**
      * Sensors
@@ -83,10 +99,13 @@ public:
     AP_CommLink * gcs;
     AP_CommLink * hil;
     FastSerial * debug;
+    FastSerial * gcsPort;
+    FastSerial * hilPort;
 
     /**
      * data
      */
+    DataFlash_Class * dataFlash;
     uint8_t load;
 
     /**
@@ -100,11 +119,8 @@ public:
     uint16_t eepromMaxAddr;
 
     // accessors
-    halMode_t getMode() {
+    mode_e getMode() {
         return _mode;
-    }
-    board_t getBoard() {
-        return _board;
     }
     MAV_TYPE getVehicle() {
         return _vehicle;
@@ -113,8 +129,7 @@ public:
 private:
 
     // enumerations
-    halMode_t _mode;
-    board_t _board;
+    mode_e _mode;
     MAV_TYPE _vehicle;
 };
 

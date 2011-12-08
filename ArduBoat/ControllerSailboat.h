@@ -15,24 +15,24 @@ namespace apo {
 class ControllerSailboat: public AP_Controller {
 public:
     ControllerSailboat(AP_Navigator * nav, AP_Guide * guide,
-                  AP_HardwareAbstractionLayer * hal) :
-        AP_Controller(nav, guide, hal,new AP_ArmingMechanism(hal,this,ch_sail,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
+                  AP_Board * board) :
+        AP_Controller(nav, guide, board,new AP_ArmingMechanism(board,this,ch_sail,ch_str,0.1,-0.9,0.9), ch_mode, k_cntrl),
         pidStr(new AP_Var_group(k_pidStr, PSTR("STR_")), 1, steeringP,
                steeringI, steeringD, steeringIMax, steeringYMax),
         pidSail(new AP_Var_group(k_pidSail, PSTR("SAIL_")), 1, throttleP,
                   throttleI, throttleD, throttleIMax, throttleYMax,
                   throttleDFCut), _strCmd(0), _sailCmd(0)
     {
-        _hal->debug->println_P(PSTR("initializing sailboat controller"));
+        _board->debug->println_P(PSTR("initializing sailboat controller"));
 
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chMode, PSTR("MODE_"), hal->radio, 5, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chMode, PSTR("MODE_"), board->radio, 5, 1100,
                              1500, 1900, RC_MODE_IN, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chStr, PSTR("STR_"), hal->radio, 3, 1100, 1500,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chStr, PSTR("STR_"), board->radio, 3, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
-        _hal->rc.push_back(
-            new AP_RcChannel(k_chSail, PSTR("SAIL_"), hal->radio, 2, 1100, 1100,
+        _board->rc.push_back(
+            new AP_RcChannel(k_chsail, PSTR("SAIL_"), board->radio, 2, 1100, 1500,
                              1900, RC_MODE_INOUT, false));
     }
 
@@ -79,8 +79,13 @@ private:
         _sailCmd = sail;
     }
     void setMotors() {
+<<<<<<< HEAD
         _hal->rc[ch_str]->setPosition(_strCmd);
         _hal->rc[ch_sail]->setPosition(_sailCmd);
+=======
+        _board->rc[ch_str]->setPosition(_strCmd);
+        _board->rc[ch_sail]->setPosition(fabs(_sailCmd) < 0.1 ? 0 : _sailCmd);
+>>>>>>> 8265597d37c8ae9fb88f59dfe89b6077dc14c0d8
     }
     void handleFailsafe() {
         // turn off

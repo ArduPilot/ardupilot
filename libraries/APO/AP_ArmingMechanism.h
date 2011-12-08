@@ -11,7 +11,7 @@
 
 namespace apo {
 
-class AP_HardwareAbstractionLayer;
+class AP_Board;
 class AP_Controller;
 
 class AP_ArmingMechanism {
@@ -26,9 +26,9 @@ public:
      * @param ch2Min: disarms below this
      * @param ch2Max: arms above this
      */
-    AP_ArmingMechanism(AP_HardwareAbstractionLayer * hal, AP_Controller * controller,
+    AP_ArmingMechanism(AP_Board * board, AP_Controller * controller,
                        uint8_t ch1, uint8_t ch2, float ch1Min, float ch2Min,
-                       float ch2Max) : _armingClock(0), _hal(hal), _controller(controller), 
+                       float ch2Max) : _armingClock(0), _board(board), _controller(controller), 
         _ch1(ch1), _ch2(ch2), _ch1Min(ch1Min), _ch2Min(ch2Min), _ch2Max(ch2Max) {
     }
 
@@ -52,7 +52,7 @@ public:
 
 private:
 
-    AP_HardwareAbstractionLayer * _hal;
+    AP_Board * _board;
     AP_Controller * _controller;
     int8_t _armingClock;
     uint8_t _ch1; /// typically throttle channel

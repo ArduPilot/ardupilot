@@ -1,5 +1,5 @@
 /*
- * DcmNavigator.h
+ * Navigator_Dcm.h
  * Copyright (C) James Goppert/ Wenyao Xie 2011 james.goppert@gmail.com/ wenyaoxie@gmail.com 
  *
  * This file is free software: you can redistribute it and/or modify it
@@ -16,8 +16,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DcmNavigator_H
-#define DcmNavigator_H
+#ifndef Navigator_Dcm_H
+#define Navigator_Dcm_H
 
 #include "AP_Navigator.h"
 #include <FastSerial.h>
@@ -28,9 +28,9 @@ class RangeFinder;
 
 namespace apo {
 
-class DcmNavigator: public AP_Navigator {
+class Navigator_Dcm: public AP_Navigator {
 public:
-    DcmNavigator(AP_HardwareAbstractionLayer * hal, const uint16_t key, const prog_char_t * name = NULL);
+    Navigator_Dcm(AP_Board * board, const uint16_t key, const prog_char_t * name = NULL);
     virtual void calibrate();
     virtual void updateFast(float dt);
     virtual void updateSlow(float dt);
@@ -47,5 +47,5 @@ private:
 
 } // namespace apo
 
-#endif // DcmNavigator_H
+#endif // Navigator_Dcm_H
 // vim:ts=4:sw=4:expandtab

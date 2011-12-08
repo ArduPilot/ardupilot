@@ -39,8 +39,8 @@ Please create a separate build directory and run 'cmake /path/to/${PROJECT_NAME}
 
 # options
 if (NOT DEFINED BOARD)
-	message(STATUS "please define the board type (for example: cmake -DBOARD=mega, assuming mega")
-	set(BOARD "mega")
+	message(STATUS "please define the board type (for example: cmake -DBOARD=mega, assuming mega2560")
+	set(BOARD "mega2560")
 endif()
 
 if (NOT DEFINED PORT)

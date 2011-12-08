@@ -24,12 +24,12 @@
 
 namespace apo {
 
-class AP_HardwareAbstractionLayer;
+class AP_Board;
 
 /// Navigator class
 class AP_Navigator {
 public:
-    AP_Navigator(AP_HardwareAbstractionLayer * hal);
+    AP_Navigator(AP_Board * board);
 
     // note, override these with derived navigator functionality
     virtual void calibrate() {};
@@ -268,7 +268,7 @@ public:
     }
 
 protected:
-    AP_HardwareAbstractionLayer * _hal;
+    AP_Board * _board;
 private:
     int32_t _timeStamp;     /// time stamp for navigation data, micros clock
     float _roll;            /// roll angle, radians

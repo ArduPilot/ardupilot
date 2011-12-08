@@ -9,52 +9,25 @@
 #ifndef BOATGENERIC_H_
 #define BOATGENERIC_H_
 
+using namespace apo;
+
 // vehicle options
+static const AP_Board::options_t options = AP_Board::opt_gps | AP_Board::opt_baro | AP_Board::opt_compass;
 static const MAV_TYPE vehicle = UGV_SURFACE_SHIP; 
 static const apo::halMode_t halMode = apo::MODE_LIVE;
-static const apo::board_t board = apo::BOARD_ARDUPILOTMEGA_1280;
-static const uint8_t heartBeatTimeout = 3;
+//static const apo::AP_Board::mode_e = apo::AP_Board::MODE_HIL_CNTL;
+static const apo::AP_Board::mode_e = apo::AP_Board::MODE_LIVE;
+static const uint8_t heartBeatTimeout = 0;
 
 // algorithm selection
 #define CONTROLLER_CLASS ControllerBoat
 #define GUIDE_CLASS MavlinkGuide
-#define NAVIGATOR_CLASS DcmNavigator
-#define COMMLINK_CLASS MavlinkComm
+#define NAVIGATOR_CLASS Navigator_Dcm
 
 // hardware selection
-#define COMPASS_CLASS AP_Compass_HMC5843
-#define BARO_CLASS APM_BMP085_Class
-#define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL
-
-// baud rates
-static const uint32_t debugBaud = 57600;
-static const uint32_t telemBaud = 57600;
-static const uint32_t gpsBaud = 38400;
-static const uint32_t hilBaud = 115200;
-
-// optional sensors
-static const bool gpsEnabled = false;
-static const bool baroEnabled = false;
-static const bool compassEnabled = true;
-static const Matrix3f compassOrientation = AP_COMPASS_COMPONENTS_UP_PINS_FORWARD;
-// compass orientation: See AP_Compass_HMC5843.h for possible values
-
-// battery monitoring
-static const bool batteryMonitorEnabled = false;
-static const uint8_t batteryPin = 0;
-static const float batteryVoltageDivRatio = 6;
-static const float batteryMinVolt = 10.0;
-static const float batteryMaxVolt = 12.4;
-
-
-static const bool useForwardReverseSwitch = true;
-
-static const bool rangeFinderFrontEnabled = false;
-static const bool rangeFinderBackEnabled = false;
-static const bool rangeFinderLeftEnabled = false;
-static const bool rangeFinderRightEnabled = false;
-static const bool rangeFinderUpEnabled = false;
-static const bool rangeFinderDownEnabled = false;
+//#define BOARD_TYPE Board_APM1
+//#define BOARD_TYPE Board_APM1_2560
+#define BOARD_TYPE Board_APM2
 
 // loop rates
 static const float loopRate = 150; // attitude nav
@@ -62,6 +35,9 @@ static const float loop0Rate = 50; // controller
 static const float loop1Rate = 5; 	// pos nav/ gcs fast
 static const float loop2Rate = 1; 	// gcs slow
 static const float loop3Rate = 0.1;
+
+// controller
+static const bool useForwardReverseSwitch = true;
 
 // gains
 static const float steeringP = 0.1;
