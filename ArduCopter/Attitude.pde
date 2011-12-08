@@ -66,7 +66,7 @@ get_stabilize_pitch(int32_t target_angle)
 	rate 		= g.pi_stabilize_pitch.get_p(error);
 
 	// experiment to pipe iterm directly into the output
-	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
+	int16_t iterm = g.pi_stabilize_pitch.get_i(error, G_Dt);
 
 	error 		= rate - (omega.y * DEGX100);
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
@@ -91,31 +91,28 @@ get_stabilize_yaw(int32_t target_angle)
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -YAW_ERROR_MAX, YAW_ERROR_MAX);
 
-#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
-	// convert to desired Rate:
-	rate 		= g.pi_stabilize_yaw.get_pi(error, G_Dt);
-	
-	if(!g.heli_ext_gyro_enabled ) {
-		error 	= rate - (degrees(omega.z) * 100.0);
-		rate 	= g.pi_rate_yaw.get_pi(error, G_Dt);
-	}
-	// output control:
-	rate = constrain(rate, -4500, 4500);
-	return (int)rate;
-#else
 	// convert to desired Rate:
 	rate 		= g.pi_stabilize_yaw.get_p(error);
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_yaw.get_i(error, G_Dt);
 	
-	error 		= rate - (omega.z * DEGX100);;
+#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters	
+	if( !g.heli_ext_gyro_enabled ) {
+		error 	= rate - (omega.z * DEGX100);
+		rate 	= g.pi_rate_yaw.get_pi(error, G_Dt);
+	}
+	// output control:
+	rate = constrain(rate, -4500, 4500);
+#else
+	error 		= rate - (omega.z * DEGX100);
 	rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 
 	// output control:
 	rate = constrain(rate, -2500, 2500);
-	return (int)rate + iterm;
 #endif
+
+	return (int)rate + iterm;
 }
 
 #define ALT_ERROR_MAX 300
