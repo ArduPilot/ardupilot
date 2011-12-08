@@ -47,15 +47,19 @@ Board_APM2::Board_APM2(mode_e mode, MAV_TYPE vehicle, options_t options) : AP_Bo
     // debug
     Serial.begin(debugBaud, 128, 128);
     debug = &Serial;
-    debug->println_P(PSTR("initializing debug line"));
+    debug->println_P(PSTR("initialized debug port"));
 
     // gcs
     Serial2.begin(telemBaud, 128, 128);
     gcsPort = &Serial2;
+    gcsPort->println_P(PSTR("initialized gcs port"));
+    delay(1000);
 
     // hil
     Serial1.begin(hilBaud, 128, 128);
     hilPort = &Serial1;
+    hilPort->println_P(PSTR("initialized hil port"));
+    delay(1000);
 
     slideSwitchPin = 40;
     pushButtonPin = 41;
@@ -170,9 +174,8 @@ Board_APM2::Board_APM2(mode_e mode, MAV_TYPE vehicle, options_t options) : AP_Bo
      * navigation sensors
      */
     debug->println_P(PSTR("initializing imu"));
-    ins = new AP_InertialSensor_Oilpan(adc);
+    ins = new AP_InertialSensor_MPU6000(53);
     ins->init(scheduler);
-    //ins = new AP_InertialSensor_MPU6000(mpu6000SelectPin)
     debug->println_P(PSTR("initializing ins"));
     imu = new AP_IMU_INS(ins, k_sensorCalib); 
     imu->init(IMU::WARM_START,delay,scheduler);
