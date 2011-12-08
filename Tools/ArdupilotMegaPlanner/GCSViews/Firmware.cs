@@ -258,6 +258,18 @@ namespace ArdupilotMega.GCSViews
                 findfirmware("AC2-QUADHIL");
                 return true;
             }
+
+            if (keyData == (Keys.Control | Keys.C))
+            {
+                OpenFileDialog fd = new OpenFileDialog();
+                fd.Filter = "Firmware (*.hex)|*.hex";
+                fd.ShowDialog();
+                if (File.Exists(fd.FileName))
+                {
+                    UploadFlash(fd.FileName, ArduinoDetect.DetectVersion(MainV2.comportname));
+                }
+                return true;
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -534,6 +546,8 @@ namespace ArdupilotMega.GCSViews
                     return;
                 }
 
+                Console.WriteLine("Using "+baseurl);
+
                 // Create a request using a URL that can receive a post. 
                 WebRequest request = WebRequest.Create(baseurl);
                 request.Timeout = 10000;
@@ -615,7 +629,7 @@ namespace ArdupilotMega.GCSViews
                 //port = new ArduinoSTK();
                 port.BaudRate = 57600;
             }
-            else if (board == "2560")
+            else if (board == "2560" || board == "2560-2")
             {
                 port = new ArduinoSTKv2();
                 port.BaudRate = 115200;
@@ -691,7 +705,7 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
 
-                    lbl_status.Text = "Write Done... Waiting";
+                    lbl_status.Text = "Write Done... Waiting (60 sec)";
                 }
                 else
                 {
@@ -704,7 +718,7 @@ namespace ArdupilotMega.GCSViews
 
                 Application.DoEvents();
 
-                System.Threading.Thread.Sleep(10000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
+                System.Threading.Thread.Sleep(60000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
 
                 lbl_status.Text = "Done";
             }

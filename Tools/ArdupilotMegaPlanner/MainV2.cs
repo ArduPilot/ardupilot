@@ -79,13 +79,12 @@ namespace ArdupilotMega
         GCSViews.Firmware Firmware;
         GCSViews.Terminal Terminal;
 
-        public void testpython()
-        {
-            Console.WriteLine("hello world from c# via python");
-        }
-
         public MainV2()
         {
+            //new temp().ShowDialog();
+            //return;
+
+
             Form splash = new Splash();
             splash.Show();
 
@@ -107,10 +106,6 @@ namespace ArdupilotMega
             //temp.dowork(244 + 60*60*24 * -1 );
 
             //return;
-
-
-            // preload
-            Python.CreateEngine();
 
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
@@ -176,6 +171,9 @@ namespace ArdupilotMega
                 Simulation = new GCSViews.Simulation();
                 Firmware = new GCSViews.Firmware();
                 //Terminal = new GCSViews.Terminal();
+
+                // preload
+                Python.CreateEngine();
             }
             catch (Exception e) { MessageBox.Show("A Major error has occured : " + e.ToString()); this.Close(); }
 

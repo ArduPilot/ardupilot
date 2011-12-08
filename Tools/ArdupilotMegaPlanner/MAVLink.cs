@@ -34,6 +34,7 @@ namespace ArdupilotMega
         bool oldlogformat = false;
 
         byte mavlinkversion = 0;
+        public byte aptype = 0;
         byte[] readingpacket = new byte[256];
 
         public PointLatLngAlt[] wps = new PointLatLngAlt[200];
@@ -190,6 +191,7 @@ namespace ArdupilotMega
                         hb = (MAVLink.__mavlink_heartbeat_t)(temp);
 
                         mavlinkversion = hb.mavlink_version;
+                        aptype = hb.type;
 
                         sysid = buffer[3];
                         compid = buffer[4];

@@ -628,7 +628,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.5			//
+# define THROTTLE_P		0.4			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.0			//

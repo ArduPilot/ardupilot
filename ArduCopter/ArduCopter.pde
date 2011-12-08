@@ -7,7 +7,6 @@ Authors:	Jason Short
 Based on code and ideas from the Arducopter team: Jose Julio, Randy Mackay, Jani Hirvinen
 Thanks to:	Chris Anderson, Mike Smith, Jordi Munoz, Doug Weibel, James Goppert, Benjamin Pelletier
 
-
 This firmware is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
@@ -393,7 +392,6 @@ static int16_t		airspeed;							// m/s * 100
 
 // Location Errors
 // ---------------
-static int32_t 	yaw_error;							// how off are we pointed
 static int32_t	long_error, lat_error;				// temp for debugging
 
 // Battery Sensors
@@ -440,32 +438,32 @@ static byte		throttle_mode;
 static boolean	takeoff_complete;					// Flag for using take-off controls
 static boolean	land_complete;
 static int32_t 	old_alt;							// used for managing altitude rates
-static int16_t		velocity_land;
+static int16_t	velocity_land;
 static byte 	yaw_tracking = MAV_ROI_WPNEXT;		// no tracking, point at next wp, or at a target
-static int16_t 		manual_boost;						// used in adjust altitude to make changing alt faster
-static int16_t 		angle_boost;						// used in adjust altitude to make changing alt faster
+static int16_t 	manual_boost;						// used in adjust altitude to make changing alt faster
+static int16_t 	angle_boost;						// used in adjust altitude to make changing alt faster
 
 // Loiter management
 // -----------------
 static int32_t 	original_target_bearing;			// deg * 100, used to check we are not passing the WP
 static int32_t 	old_target_bearing;					// used to track difference in angle
 
-static int16_t		loiter_total; 						// deg : how many times to loiter * 360
-static int16_t		loiter_sum;							// deg : how far we have turned around a waypoint
+static int16_t	loiter_total; 						// deg : how many times to loiter * 360
+static int16_t	loiter_sum;							// deg : how far we have turned around a waypoint
 static uint32_t loiter_time;       			// millis : when we started LOITER mode
 static unsigned loiter_time_max;					// millis : how long to stay in LOITER mode
 
 
 // these are the values for navigation control functions
 // ----------------------------------------------------
-static int32_t		nav_roll;							// deg * 100 : target roll angle
-static int32_t		nav_pitch;							// deg * 100 : target pitch angle
-static int32_t		nav_yaw;							// deg * 100 : target yaw angle
-static int32_t		auto_yaw;							// deg * 100 : target yaw angle
-static int32_t		nav_lat;							// for error calcs
-static int32_t		nav_lon;							// for error calcs
-static int16_t		nav_throttle;						// 0-1000 for throttle control
-static int16_t		crosstrack_error;
+static int32_t	nav_roll;							// deg * 100 : target roll angle
+static int32_t	nav_pitch;							// deg * 100 : target pitch angle
+static int32_t	nav_yaw;							// deg * 100 : target yaw angle
+static int32_t	auto_yaw;							// deg * 100 : target yaw angle
+static int32_t	nav_lat;							// for error calcs
+static int32_t	nav_lon;							// for error calcs
+static int16_t	nav_throttle;						// 0-1000 for throttle control
+static int16_t	crosstrack_error;
 
 static uint32_t throttle_integrator;				// used to integrate throttle output to predict battery life
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
@@ -490,12 +488,12 @@ static int32_t	wp_totalDistance;					// meters - distance between old and next w
 
 // repeating event control
 // -----------------------
-static byte    	    event_id; 							// what to do - see defines
-static uint32_t 	event_timer; 						// when the event was asked for in ms
-static uint16_t 	event_delay; 						// how long to delay the next firing of event in millis
-static int16_t 		event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
-static int16_t 		event_value; 						// per command value, such as PWM for servos
-static int16_t 		event_undo_value;					// the value used to undo commands
+static byte    	event_id; 							// what to do - see defines
+static uint32_t event_timer; 						// when the event was asked for in ms
+static uint16_t event_delay; 						// how long to delay the next firing of event in millis
+static int16_t 	event_repeat;						// how many times to fire : 0 = forever, 1 = do once, 2 = do twice
+static int16_t 	event_value; 						// per command value, such as PWM for servos
+static int16_t 	event_undo_value;					// the value used to undo commands
 //static byte 	repeat_forever;
 //static byte 	undo_event;							// counter for timing the undo
 
@@ -1146,9 +1144,9 @@ void update_throttle_mode(void)
 
 				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost + get_z_damping());
+					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost);
 				#else
-					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost + get_z_damping();
+					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost;
 				#endif
 
 				// reset next_WP.alt
@@ -1398,14 +1396,14 @@ adjust_altitude()
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
-		g.throttle_cruise += (g.pi_alt_hold.get_integrator() * g.pi_throttle.kP() + g.pi_throttle.get_integrator());
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
 	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
-		g.throttle_cruise += (g.pi_alt_hold.get_integrator() * g.pi_throttle.kP() + g.pi_throttle.get_integrator());
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
@@ -1439,7 +1437,7 @@ static void tuning(){
 			break;
 
 		case CH6_RATE_KP:
-			g.rc_6.set_range(0,300);		 // 0 to .3
+			g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pi_rate_roll.kP(tuning_value);
 			g.pi_rate_pitch.kP(tuning_value);
 			break;

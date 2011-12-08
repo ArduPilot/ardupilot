@@ -290,6 +290,55 @@ def check_parent(parent_pid=os.getppid()):
         sys.exit(1)
 
 
+def EarthRatesToBodyRates(roll, pitch, yaw,
+                          rollRate, pitchRate, yawRate):
+    '''convert the angular velocities from earth frame to
+    body frame. Thanks to James Goppert for the formula
+
+    all inputs and outputs are in degrees
+
+    returns a tuple, (p,q,r)
+    '''
+    from math import radians, degrees, sin, cos, tan
+
+    phi      = radians(roll)
+    theta    = radians(pitch)
+    phiDot   = radians(rollRate)
+    thetaDot = radians(pitchRate)
+    psiDot   = radians(yawRate)
+
+    p = phiDot - psiDot*sin(theta)
+    q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta)
+    r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot
+
+    return (degrees(p), degrees(q), degrees(r))
+
+def BodyRatesToEarthRates(roll, pitch, yaw, pDeg, qDeg, rDeg):
+    '''convert the angular velocities from body frame to
+    earth frame.
+
+    all inputs and outputs are in degrees
+
+    returns a tuple, (rollRate,pitchRate,yawRate)
+    '''
+    from math import radians, degrees, sin, cos, tan, fabs
+
+    p      = radians(pDeg)
+    q      = radians(qDeg)
+    r      = radians(rDeg)
+
+    phi      = radians(roll)
+    theta    = radians(pitch)
+
+    phiDot   = p + tan(theta)*(q*sin(phi) + r*cos(phi))
+    thetaDot = q*cos(phi) - r*sin(phi)
+    if fabs(cos(theta)) < 1.0e-20:
+        theta += 1.0e-10
+    psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
+
+    return (degrees(phiDot), degrees(thetaDot), degrees(psiDot))
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
