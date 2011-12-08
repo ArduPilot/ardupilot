@@ -173,7 +173,10 @@ void
 AP_DCM::accel_adjust(void)
 {
 	Vector3f veloc, temp;
-	veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
+
+	if (_gps) {
+		veloc.x = _gps->ground_speed / 100;		// We are working with acceleration in m/s^2 units
+	}
 
 	// We are working with a modified version of equation 26 as our IMU object reports acceleration in the positive axis direction as positive
 
@@ -301,7 +304,7 @@ AP_DCM::drift_correction(void)
 		// We make the gyro YAW drift correction based on compass magnetic heading
 		error_course = (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);	// Equation 23, Calculating YAW error
 
-	} else {
+	} else if (_gps) {
 
 		// Use GPS Ground course to correct yaw gyro drift
 		if (_gps->ground_speed >= SPEEDFILT) {

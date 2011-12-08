@@ -116,21 +116,21 @@ void MavlinkComm::sendMessage(uint8_t id, uint32_t param) {
 
     case MAVLINK_MSG_ID_GPS_RAW: {
         mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
-                                 _navigator->getLat() * rad2Deg,
-                                 _navigator->getLon() * rad2Deg, _navigator->getAlt(), 0, 0,
-                                 _navigator->getGroundSpeed()*1000.0,
-                                 _navigator->getYaw() * rad2Deg);
+                                 _hal->gps->latitude/1.0e7,
+                                 _hal->gps->longitude/1.0e7, _hal->gps->altitude/100.0, 0, 0,
+                                 _hal->gps->ground_speed/100.0,
+                                 _hal->gps->ground_course/10.0);
         break;
     }
 
-    /*
-     case MAVLINK_MSG_ID_GPS_RAW_INT: {
-     mavlink_msg_gps_raw_int_send(_channel,timeStamp,_hal->gps->status(),
-     _navigator->getLat_degInt(), _navigator->getLon_degInt(),_navigator->getAlt_intM(), 0,0,
-     _navigator->getGroundSpeed(),_navigator->getYaw()*rad2Deg);
-     break;
+    case MAVLINK_MSG_ID_GPS_RAW_INT: {
+        mavlink_msg_gps_raw_send(_channel, timeStamp, _hal->gps->status(),
+                                 _hal->gps->latitude,
+                                 _hal->gps->longitude, _hal->gps->altitude*10.0, 0, 0,
+                                 _hal->gps->ground_speed/100.0,
+                                 _hal->gps->ground_course/10.0);
+        break;
      }
-     */
 
     case MAVLINK_MSG_ID_SCALED_IMU: {
         int16_t xmag, ymag, zmag;

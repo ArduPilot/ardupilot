@@ -22,7 +22,6 @@ static const uint8_t heartBeatTimeout = 3;
 #define COMMLINK_CLASS MavlinkComm
 
 // hardware selection
-#define ADC_CLASS AP_ADC_ADS7844
 #define COMPASS_CLASS AP_Compass_HMC5843
 #define BARO_CLASS APM_BMP085_Class
 #define RANGE_FINDER_CLASS AP_RangeFinder_MaxsonarXL

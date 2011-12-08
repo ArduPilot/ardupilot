@@ -16,7 +16,7 @@ void setup() {
 
     using namespace apo;
 
-    AP_Var::load_all();
+    Wire.begin();
 
     // Declare all parts of the system
     AP_Navigator * navigator = NULL;
@@ -35,23 +35,6 @@ void setup() {
     //// debug serial
     hal->debug = &Serial;
     hal->debug->println_P(PSTR("initializing debug line"));
-
-    // isr
-    hal->isr_registry = new Arduino_Mega_ISR_Registry;
-
-    // initialize radio
-    hal->radio = new APM_RC_APM1;
-    hal->radio->Init(hal->isr_registry);
-
-    // initialize scheduler
-    hal->scheduler = new AP_TimerProcess;
-    hal->scheduler->init(hal->isr_registry);
-
-
-    // initialize the adc
-    hal->debug->println_P(PSTR("initializing adc"));
-    hal->adc = new ADC_CLASS;
-    hal->adc->Init(hal->scheduler);
 
     /*
      * Sensor initialization
@@ -74,11 +57,14 @@ void setup() {
         if (baroEnabled) {
             hal->debug->println_P(PSTR("initializing baro"));
             hal->baro = new BARO_CLASS;
-            hal->baro->Init();
+            if (board==BOARD_ARDUPILOTMEGA_2) {
+                hal->baro->Init(0,true);
+            } else {
+                hal->baro->Init(0,false);
+            }
         }
 
         if (compassEnabled) {
-            Wire.begin();
             hal->debug->println_P(PSTR("initializing compass"));
             hal->compass = new COMPASS_CLASS;
             hal->compass->set_orientation(compassOrientation);
@@ -155,7 +141,11 @@ void setup() {
     /*
      * Select guidance, navigation, control algorithms
      */
-    navigator = new NAVIGATOR_CLASS(hal);
+    if (hal->getMode() == MODE_LIVE) {
+        navigator = new NAVIGATOR_CLASS(hal,k_nav);
+    } else {
+        navigator = new AP_Navigator(hal);
+    }
     guide = new GUIDE_CLASS(navigator, hal, velCmd, xt, xtLim);
     controller = new CONTROLLER_CLASS(navigator,guide,hal);
 
