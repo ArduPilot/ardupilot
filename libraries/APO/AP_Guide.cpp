@@ -193,9 +193,9 @@ void MavlinkGuide::handleCommand() {
         float bearing = _previousCommand.bearingTo(_command);
         _headingCommand = bearing - temp;
         _yawCommand = _command.getYawCommand();
-        //_board->debug->printf_P(
-        	//PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\tyaw command: %f\n"),
-        	//bearing * rad2Deg, dXt, _headingCommand * rad2Deg, getDistanceToNextWaypoint(), alongTrack, _yawCommand*rad2Deg);
+        _board->debug->printf_P(
+        	PSTR("nav: bCurrent2Dest: %f\tdXt: %f\tcmdHeading: %f\tnextWpDistance: %f\talongTrack: %f\tyaw command: %f\n"),
+        	bearing * rad2Deg, dXt, _headingCommand * rad2Deg, getDistanceToNextWaypoint(), alongTrack, _yawCommand*rad2Deg);
 
         // for these modes just head to current command
     } else if (
