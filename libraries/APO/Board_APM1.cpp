@@ -47,15 +47,17 @@ Board_APM1::Board_APM1(mode_e mode, MAV_TYPE vehicle, options_t options) : AP_Bo
     // debug
     Serial.begin(debugBaud, 128, 128);
     debug = &Serial;
-    debug->println_P(PSTR("initializing debug line"));
+    debug->println_P(PSTR("initialized debug port"));
 
     // gcs
     Serial3.begin(telemBaud, 128, 128);
     gcsPort = &Serial3;
+    gcsPort->println_P(PSTR("initialized gcs port"));
 
     // hil
     Serial1.begin(hilBaud, 128, 128);
     hilPort = &Serial1;
+    hilPort->println_P(PSTR("initialized hil port"));
 
     slideSwitchPin = 40;
     pushButtonPin = 41;
