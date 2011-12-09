@@ -137,7 +137,17 @@ static AP_ADC_ADS7844          adc;
 AP_Baro_BMP085_HIL      barometer;
 AP_Compass_HIL          compass;
 #else
-static AP_Baro_BMP085          barometer;
+
+#if CONFIG_BARO == AP_BARO_BMP085
+# if CONFIG_HARDWARE == CONFIG_HARDWARE_APM2
+static AP_Baro_BMP085          barometer(true);
+# else
+static AP_Baro_BMP085          barometer(false);
+# endif
+#elif CONFIG_BARO == AP_BARO_MS5611
+static AP_Baro_MS5611          barometer;
+#endif
+
 static AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 #endif
 
