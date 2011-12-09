@@ -662,14 +662,20 @@
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-#ifdef LOGGING_ENABLED
-	#undef LOGGING_ENABLED
-#endif
 
-#if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
-	#define LOGGING_ENABLED		ENABLED
+// Logging must be disabled for 1280 build.
+#if defined( __AVR_ATmega1280__ )
+# if LOGGING_ENABLED == ENABLED
+// If logging was enabled in APM_Config or command line, warn the user.
+#  warning "Logging is not supported on ATmega1280"
+#  undef LOGGING_ENABLED
+# endif
+# ifndef LOGGING_ENABLED
+#  define LOGGING_ENABLED    DISABLED
+# endif
 #else
-	#define LOGGING_ENABLED     DISABLED
+// Logging is enabled by default for all other builds.
+# define LOGGING_ENABLED		ENABLED
 #endif
 
 
