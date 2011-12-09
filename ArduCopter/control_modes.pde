@@ -111,6 +111,22 @@ static void read_trim_switch()
 		}else{ // switch is disengaged
 			if(trim_flag){
 				trim_flag = false;
+
+				if(CH7_wp_index == 0){
+					// this is our first WP, let's save WP 1 as a takeoff
+					// increment index
+					CH7_wp_index = 1;
+
+					// set our location ID to 16, MAV_CMD_NAV_WAYPOINT
+					current_loc.id = MAV_CMD_NAV_TAKEOFF;
+
+					// save command:
+					// we use the current altitude to be the target for takeoff.
+					// only altitude will matter to the AP mission script for takeoff.
+					// If we are above the altitude, we will skip the command.
+					set_cmd_with_index(current_loc, CH7_wp_index);
+				}
+
 				// increment index
 				CH7_wp_index++;
 
@@ -142,6 +158,7 @@ static void auto_trim()
 		auto_level_counter--;
 		trim_accel();
 		led_mode = AUTO_TRIM_LEDS;
+		do_simple = false;
 
 		if(auto_level_counter == 1){
 			//g.rc_1.dead_zone = 0;		// 60 = .6 degrees
@@ -149,6 +166,8 @@ static void auto_trim()
 			led_mode = NORMAL_LEDS;
 			clear_leds();
 			imu.save();
+
+			reset_control_switch();
 
 			//Serial.println("Done");
 			auto_level_counter = 0;
@@ -160,22 +179,45 @@ static void auto_trim()
 }
 
 
+/*
+How this works:
+Level Example:
+A_off: -14.00, -20.59, -30.80
+
+Right roll Example:
+A_off: -6.73, 89.05, -46.02
+
+Left Roll Example:
+A_off: -18.11, -160.31, -56.42
+
+Pitch Forward:
+A_off: -127.00, -22.16, -50.09
+
+Pitch Back:
+A_off: 201.95, -24.00, -88.56
+*/
 
 static void trim_accel()
 {
 	g.pi_stabilize_roll.reset_I();
 	g.pi_stabilize_pitch.reset_I();
 
-	if(g.rc_1.control_in > 0){ // Roll RIght
-		imu.ay(imu.ay() + 1);
-	}else if (g.rc_1.control_in < 0){
-		imu.ay(imu.ay() - 1);
+	float trim_roll  = (float)g.rc_1.control_in / 3000;
+	float trim_pitch = (float)g.rc_2.control_in / 3000;
+
+	trim_roll 	= constrain(trim_roll, -1.5, 1.5);
+	trim_pitch 	= constrain(trim_pitch, -1.5, 1.5);
+
+	if(g.rc_1.control_in > 200){ // Roll RIght
+		imu.ay(imu.ay() + trim_roll);
+	}else if (g.rc_1.control_in < -200){
+		imu.ay(imu.ay() + trim_roll);
 	}
 
-	if(g.rc_2.control_in > 0){ // Pitch Back
-		imu.ax(imu.ax() + 1);
-	}else if (g.rc_2.control_in < 0){
-		imu.ax(imu.ax() - 1);
+	if(g.rc_2.control_in > 200){ // Pitch Back
+		imu.ax(imu.ax() + trim_pitch);
+	}else if (g.rc_2.control_in < -200){
+		imu.ax(imu.ax() + trim_pitch);
 	}
 
 	/*
