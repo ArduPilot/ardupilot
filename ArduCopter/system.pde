@@ -104,6 +104,12 @@ static void init_ardupilot()
                     memcheck_available_memory());
 
 	//
+	// Initialize Wire and SPI libraries
+	//
+    Wire.begin();
+    SPI.begin();
+    SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
+	//
 	// Initialize the isr_registry.
 	//
     isr_registry.init();
