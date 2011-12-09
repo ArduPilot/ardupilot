@@ -279,7 +279,8 @@ static const char* flight_mode_strings[] = {
 	"LOITER",
 	"RTL",
 	"CIRCLE",
-	"POSITION"};
+	"POSITION",
+	"LAND"};
 
 /* Radio values
 		Channel assignments
@@ -424,8 +425,8 @@ static int16_t		sonar_alt;
 static int16_t 		old_sonar_alt;
 static int16_t		sonar_rate;
 
-static int16_t		baro_alt;
-static int16_t 		old_baro_alt;
+static int32_t		baro_alt;
+static int32_t 		old_baro_alt;
 static int16_t		baro_rate;
 
 
@@ -460,6 +461,7 @@ static unsigned loiter_time_max;					// millis : how long to stay in LOITER mode
 static int32_t	nav_roll;							// deg * 100 : target roll angle
 static int32_t	nav_pitch;							// deg * 100 : target pitch angle
 static int32_t	nav_yaw;							// deg * 100 : target yaw angle
+static int32_t	home_to_copter_bearing;				// deg * 100 : target yaw angle
 static int32_t	auto_yaw;							// deg * 100 : target yaw angle
 static int32_t	nav_lat;							// for error calcs
 static int32_t	nav_lon;							// for error calcs
@@ -483,6 +485,7 @@ static int16_t 	auto_level_counter;
 
 // Waypoints
 // ---------
+static int32_t	home_distance;						// meters - distance between plane and next waypoint
 static int32_t	wp_distance;						// meters - distance between plane and next waypoint
 static int32_t	wp_totalDistance;					// meters - distance between old and next waypoint
 //static byte	next_wp_index;						// Current active command index
@@ -1210,8 +1213,12 @@ static void update_navigation()
 
 		case RTL:
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
-				// lets just jump to Loiter Mode after RTL
+				//lets just jump to Loiter Mode after RTL
+				//if(land after RTL)
+				//set_mode(LAND);
+				//else
 				set_mode(LOITER);
+
 			}else{
 				// calculates desired Yaw
 				// XXX this is an experiment
@@ -1229,6 +1236,7 @@ static void update_navigation()
 			// switch passthrough to LOITER
 		case LOITER:
 		case POSITION:
+		case LAND:
 			wp_control 		= LOITER_MODE;
 
 			// calculates the desired Roll and Pitch
@@ -1244,6 +1252,16 @@ static void update_navigation()
 			update_nav_wp();
 			break;
 
+	}
+
+	// are we in SIMPLE mode?
+	if(do_simple){
+		// get distance to home
+		if(home_distance > 1000){
+			// 10m
+			// we reset the angular offset to be a vector from home to the quad
+			initial_simple_bearing = home_to_copter_bearing;
+		}
 	}
 
 	if(yaw_mode == YAW_LOOK_AT_HOME){
