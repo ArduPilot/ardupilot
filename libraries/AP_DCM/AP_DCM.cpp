@@ -264,7 +264,7 @@ AP_DCM::drift_correction(void)
 	//Compensation the Roll, Pitch and Yaw drift.
 	//float mag_heading_x;
 	//float mag_heading_y;
-	float error_course;
+	float error_course = 0;
 	float accel_magnitude;
 	float accel_weight;
 	float integrator_magnitude;
