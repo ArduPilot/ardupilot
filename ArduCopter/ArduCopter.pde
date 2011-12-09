@@ -160,11 +160,15 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
     AP_Compass_HIL          compass;
 #else
 
-    #if CONFIG_BARO == AP_BARO_BMP085
-	AP_Baro_BMP085 barometer;
-    #elif CONFIG_BARO == AP_BARO_MS5611
+#if CONFIG_BARO == AP_BARO_BMP085
+# if CONFIG_HARDWARE == CONFIG_HARDWARE_APM2
+	AP_Baro_BMP085 barometer(true);
+# else
+	AP_Baro_BMP085 barometer(false);
+# endif
+#elif CONFIG_BARO == AP_BARO_MS5611
     AP_Baro_MS5611 barometer;
-    #endif
+#endif
 
     AP_Compass_HMC5843      compass(Parameters::k_param_compass);
 #endif
