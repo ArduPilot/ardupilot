@@ -59,11 +59,8 @@ bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
 {
 	byte buff[22];
 	int i = 0;
-
-	_apm2_hardware = apm2_hardware;
-
-	pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
-
+	
+    pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
 
 	oss = 3;					 // Over Sampling setting 3 = High resolution
 	BMP085_State = 0;		 // Initial state
