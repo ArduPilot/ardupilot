@@ -19,6 +19,7 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Threading;
 using SharpKml.Base;
+using SharpKml.Dom;
 
 
 
@@ -658,19 +659,65 @@ namespace ArdupilotMega.GCSViews
 
         void parser_ElementAdded(object sender, SharpKml.Base.ElementEventArgs e)
         {
+            processKML(e.Element);
+        }
 
-            SharpKml.Dom.Polygon polygon = e.Element as SharpKml.Dom.Polygon;
-                if (polygon != null)
+        private void processKML(SharpKml.Dom.Element Element)
+        {
+            try
+            {
+                Console.WriteLine(Element.ToString() + " " + Element.Parent);
+            }
+            catch { }
+
+            SharpKml.Dom.Document doc = Element as SharpKml.Dom.Document;
+            SharpKml.Dom.Placemark pm = Element as SharpKml.Dom.Placemark;
+            SharpKml.Dom.Folder folder = Element as SharpKml.Dom.Folder;
+            SharpKml.Dom.Polygon polygon = Element as SharpKml.Dom.Polygon;
+            SharpKml.Dom.LineString ls = Element as SharpKml.Dom.LineString;
+
+            if (doc != null)
+            {
+                foreach (var feat in doc.Features)
                 {
-                    GMapPolygon kmlpolygon = new GMapPolygon(new List<PointLatLng>(), "kmlpolygon");
-
-                    foreach (var loc in polygon.OuterBoundary.LinearRing.Coordinates)
-                    {
-                        kmlpolygon.Points.Add(new PointLatLng(loc.Latitude,loc.Longitude));
-                    }
-
-                    kmlpolygons.Polygons.Add(kmlpolygon);
+                    //Console.WriteLine("feat " + feat.GetType());
+                    //processKML((Element)feat);
                 }
+            } else
+            if (folder != null )
+            {
+                foreach (Feature feat in folder.Features)
+                {
+                    //Console.WriteLine("feat "+feat.GetType());
+                    //processKML(feat);
+                }
+            }
+            else if (pm != null)
+            {
+
+            }
+            else if (polygon != null)
+            {
+                GMapPolygon kmlpolygon = new GMapPolygon(new List<PointLatLng>(), "kmlpolygon");
+
+                foreach (var loc in polygon.OuterBoundary.LinearRing.Coordinates)
+                {
+                    kmlpolygon.Points.Add(new PointLatLng(loc.Latitude, loc.Longitude));
+                }
+
+                kmlpolygons.Polygons.Add(kmlpolygon);
+            }
+            else if (ls != null)
+            {
+                GMapRoute kmlroute = new GMapRoute(new List<PointLatLng>(), "kmlroute");
+
+                foreach (var loc in ls.Coordinates)
+                {
+                    kmlroute.Points.Add(new PointLatLng(loc.Latitude, loc.Longitude));
+                }
+
+                kmlpolygons.Routes.Add(kmlroute);
+            }
         }
 
         private void ChangeColumnHeader(string command)
@@ -2792,9 +2839,9 @@ namespace ArdupilotMega.GCSViews
             // this is a mono fix for the zoom bar
             Console.WriteLine("panelmap "+panelMap.Size.ToString());
             MainMap.Size = new Size(panelMap.Size.Width - 50,panelMap.Size.Height);
-            trackBar1.Location = new Point(panelMap.Size.Width - 50,trackBar1.Location.Y);
+            trackBar1.Location = new System.Drawing.Point(panelMap.Size.Width - 50,trackBar1.Location.Y);
             trackBar1.Size = new System.Drawing.Size(trackBar1.Size.Width, panelMap.Size.Height - trackBar1.Location.Y);
-            label11.Location = new Point(panelMap.Size.Width - 50, label11.Location.Y);
+            label11.Location = new System.Drawing.Point(panelMap.Size.Width - 50, label11.Location.Y);
         }
 
         private void BUT_zoomto_Click(object sender, EventArgs e)
@@ -2828,11 +2875,17 @@ namespace ArdupilotMega.GCSViews
                 try
                 {
                     kmlpolygons.Polygons.Clear();
+                    kmlpolygons.Routes.Clear();
+
+                    string kml = new StreamReader(File.OpenRead(file)).ReadToEnd();
+
+                    kml = kml.Replace("<Snippet/>", "");
 
                     var parser = new SharpKml.Base.Parser();
 
-                    parser.ElementAdded += new EventHandler<SharpKml.Base.ElementEventArgs>(parser_ElementAdded);
-                    parser.Parse(File.OpenRead(file));
+                    parser.ElementAdded += parser_ElementAdded;
+                    parser.ParseString(kml,true);
+
                 }
                 catch (Exception ex) { MessageBox.Show("Bad KML File :" + ex.ToString()); }
             }

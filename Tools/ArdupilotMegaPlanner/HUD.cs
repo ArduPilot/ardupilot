@@ -243,19 +243,26 @@ namespace hud
 
             starttime = DateTime.Now;
 
-            if (opengl)
+            try
             {
-                MakeCurrent();
 
-                GL.Clear(ClearBufferMask.ColorBufferBit);
+                if (opengl)
+                {
+                    MakeCurrent();
+
+                    GL.Clear(ClearBufferMask.ColorBufferBit);
+
+                }
+
+                doPaint(e);
+
+                if (opengl)
+                {
+                    this.SwapBuffers();
+                }
 
             }
-
-            doPaint(e);
-
-            if (opengl) {
-                this.SwapBuffers();
-            }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
 
             count++;
 

@@ -41,6 +41,7 @@ namespace ArdupilotMega
             public Model model;
             public string[] ntun;
             public string[] ctun;
+            public int datetime;
         }
 
         enum serialstatus
@@ -364,15 +365,23 @@ namespace ArdupilotMega
                 {
                     try
                     {
-                        if (lastpos.X != 0 && oldlastpos != lastpos)
+                        if (lastpos.X != 0 && oldlastpos.X != lastpos.X && oldlastpos.Y != lastpos.Y)
                         {
                             Data dat = new Data();
+
+                            try
+                            {
+                                dat.datetime = int.Parse(lastline.Split(',', ':')[1]);
+                            }
+                            catch { }
 
                             runmodel = new Model();
 
                             runmodel.Location.longitude = lastpos.X;
                             runmodel.Location.latitude = lastpos.Y;
                             runmodel.Location.altitude = lastpos.Z;
+
+                            oldlastpos = lastpos;
 
                             runmodel.Orientation.roll = double.Parse(items[1], new System.Globalization.CultureInfo("en-US")) / -100;
                             runmodel.Orientation.tilt = double.Parse(items[2], new System.Globalization.CultureInfo("en-US")) / -100;
@@ -398,9 +407,51 @@ namespace ArdupilotMega
         List<Core.Geometry.Point3D>[] position = new List<Core.Geometry.Point3D>[200];
         int positionindex = 0;
 
+        private void writeGPX(string filename)
+        {
+            System.Xml.XmlTextWriter xw = new System.Xml.XmlTextWriter(Path.GetDirectoryName(filename) + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(filename) + ".gpx",Encoding.ASCII);
+
+            xw.WriteStartElement("gpx");
+
+            xw.WriteStartElement("trk");
+
+            xw.WriteStartElement("trkseg");
+
+            DateTime start = new DateTime(DateTime.Now.Year,DateTime.Now.Month,DateTime.Now.Day,0,0,0);
+
+            foreach (Data mod in flightdata)
+            {
+                xw.WriteStartElement("trkpt");
+                xw.WriteAttributeString("lat",mod.model.Location.latitude.ToString());
+                xw.WriteAttributeString("lon", mod.model.Location.longitude.ToString());
+
+                xw.WriteElementString("ele", mod.model.Location.altitude.ToString());
+                xw.WriteElementString("time", start.AddMilliseconds(mod.datetime).ToString("yyyy-MM-ddTHH:mm:sszzzzzz"));
+                xw.WriteElementString("course", (mod.model.Orientation.heading).ToString());
+
+                xw.WriteElementString("roll", mod.model.Orientation.roll.ToString());
+                xw.WriteElementString("pitch", mod.model.Orientation.tilt.ToString());
+                //xw.WriteElementString("speed", mod.model.Orientation.);
+                //xw.WriteElementString("fix", mod.model.Location.altitude);
+
+                xw.WriteEndElement();
+            }
+
+            xw.WriteEndElement();
+            xw.WriteEndElement();
+            xw.WriteEndElement();
+
+            xw.Close();
+        }
 
         private void writeKML(string filename)
         {
+            try
+            {
+                writeGPX(filename);
+            }
+            catch { }
+
             Color[] colours = { Color.Red, Color.Orange, Color.Yellow, Color.Green, Color.Blue, Color.Indigo, Color.Violet, Color.Pink };
 
             AltitudeMode altmode = AltitudeMode.absolute;

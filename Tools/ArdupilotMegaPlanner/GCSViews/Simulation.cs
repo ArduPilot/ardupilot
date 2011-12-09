@@ -22,7 +22,8 @@ namespace ArdupilotMega.GCSViews
         UdpClient XplanesSEND;
         UdpClient MavLink;
         Socket SimulatorRECV;
-        //TcpClient FlightGearSEND;
+        TcpClient JSBSimSEND;
+        UdpClient SITLSEND;
         EndPoint Remote = (EndPoint)(new IPEndPoint(IPAddress.Any, 0));
         byte[] udpdata = new byte[113 * 9 + 5]; // 113 types - 9 items per type (index+8) + 5 byte header
         float[][] DATA = new float[113][];
@@ -246,7 +247,22 @@ namespace ArdupilotMega.GCSViews
                     }
                     else
                     {
-                        //SetupTcpFlightGear(); // old style
+                        if (RAD_JSBSim.Checked)
+                        {
+                            System.Diagnostics.ProcessStartInfo _procstartinfo = new System.Diagnostics.ProcessStartInfo();
+                            _procstartinfo.WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath);
+                            _procstartinfo.Arguments = "--realtime --suspend --nice --simulation-rate=1000 --logdirectivefile=jsbsim/fgout.xml --script=jsbsim/rascal_test.xml";
+                            _procstartinfo.FileName = "JSBSim.exe";
+                            // Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar +
+
+                            _procstartinfo.UseShellExecute = true;
+
+                            System.Diagnostics.Process.Start(_procstartinfo);
+
+                            SITLSEND = new UdpClient(simIP, 5501);
+                        }
+
+                        SetupTcpJSBSim(); // old style
                         SetupUDPXplanes(); // fg udp style
                         SetupUDPMavLink(); // pass traffic - raw
                     }
@@ -560,14 +576,14 @@ namespace ArdupilotMega.GCSViews
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {
-                    //                    Console.WriteLine("SIM hz {0}", hzcount);
+                                        //Console.WriteLine("SIM hz {0}", hzcount);
                     hzcount = 0;
                     hzcounttime = DateTime.Now;
                 }
 
 
 
-                System.Threading.Thread.Sleep(5); // this controls send speed  to sim                
+                System.Threading.Thread.Sleep(1); // this controls send speed  to sim                
             }
 
         }
@@ -587,7 +603,25 @@ namespace ArdupilotMega.GCSViews
 
             SimulatorRECV.Bind(ipep);
 
-            OutputLog.AppendText("Listerning on port " + recvPort + " (sim->planner)\n");
+            OutputLog.AppendText("Listerning on port UDP " + recvPort + " (sim->planner)\n");
+        }
+
+        private void SetupTcpJSBSim()
+        {
+            try
+            {
+                JSBSimSEND = new TcpClient();
+                JSBSimSEND.Client.NoDelay = true;
+                JSBSimSEND.Connect(simIP, simPort);
+                OutputLog.AppendText("Sending to port TCP " + simPort + " (planner->sim)\n");
+
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("info\n"));
+
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set attitude/phi-rad 0\n"));
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set attitude/theta-rad 0\n"));
+                JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("resume\n"));
+            }
+            catch { }
         }
 
         private void SetupUDPXplanes()
@@ -595,7 +629,7 @@ namespace ArdupilotMega.GCSViews
             // setup sender
             XplanesSEND = new UdpClient(simIP, simPort);
 
-            OutputLog.AppendText("Sending to port " + simPort + " (planner->sim)\n");
+            OutputLog.AppendText("Sending to port UDP " + simPort + " (planner->sim)\n");
         }
 
         private void SetupUDPMavLink()
@@ -944,7 +978,7 @@ namespace ArdupilotMega.GCSViews
                 asp.airspeed = ((float)Math.Sqrt((yvec * yvec) + (xvec * xvec)));
 
             }
-            else if (receviedbytes > 0x100)
+            else if (receviedbytes == 408)
             {
 
                 FGNetFDM fdm = new FGNetFDM();
@@ -997,7 +1031,7 @@ namespace ArdupilotMega.GCSViews
                 gps.v = ((float)Math.Sqrt((fdm.v_north * fdm.v_north) + (fdm.v_east * fdm.v_east)) * ft2m);
 
 #endif
-                asp.airspeed = fdm.vcas * kts2fps * ft2m;
+                asp.airspeed = fdm.vcas * ft2m;
             }
             else
             {
@@ -1077,6 +1111,37 @@ namespace ArdupilotMega.GCSViews
             // write arduimu to ardupilot
             if (CHK_quad.Checked) // quad does its own
             {
+                return;
+            }
+
+            if (RAD_JSBSim.Checked && chkSensor.Checked)
+            {
+
+                byte[] sitlout = new byte[16 * 8 + 1 * 4]; // 16 * double + 1 * int
+                int a = 0;
+
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.latitude), a, sitlout, a, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.longitude), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.altitude), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.psi), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.v_north), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.v_east), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.A_X_pilot), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.A_Y_pilot), 0, sitlout, a += 8, 8);
+
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.A_Z_pilot), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.phidot), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.thetadot), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.psidot), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.phi), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.theta), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.psi), 0, sitlout, a += 8, 8);
+                Array.Copy(BitConverter.GetBytes((double)lastfdmdata.vcas), 0, sitlout, a += 8, 8);
+
+                Array.Copy(BitConverter.GetBytes((int)0x4c56414e), 0, sitlout, a += 8, 4);
+
+                SITLSEND.Send(sitlout, sitlout.Length);
+
                 return;
             }
 
@@ -1354,7 +1419,7 @@ namespace ArdupilotMega.GCSViews
                         updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[18][1] * deg2rad, DATA[18][0] * deg2rad, DATA[19][2] * deg2rad, DATA[18][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
                     }
 
-                    if (RAD_softFlightGear.Checked)
+                    if (RAD_softFlightGear.Checked || RAD_JSBSim.Checked)
                     {
                         updateScreenDisplay(lastfdmdata.latitude, lastfdmdata.longitude, lastfdmdata.altitude * .3048, lastfdmdata.phi, lastfdmdata.theta, lastfdmdata.psi, lastfdmdata.psi, roll_out, pitch_out, rudder_out, throttle_out);
                     }
@@ -1390,6 +1455,23 @@ namespace ArdupilotMega.GCSViews
                     SimulatorRECV.SendTo(AeroSimRC, Remote);
                 }
                 catch { }
+            }
+
+            //JSBSim
+
+            if (RAD_JSBSim.Checked)
+            {
+                roll_out = Constrain(roll_out * REV_roll, -1f, 1f);
+                pitch_out = Constrain(-pitch_out * REV_pitch, -1f,1f);
+                rudder_out = Constrain(rudder_out * REV_rudder, -1f, 1f);
+
+                throttle_out = Constrain(throttle_out, -0.0f, 1f);
+
+                string cmd = string.Format("set fcs/aileron-cmd-norm {0}\r\nset fcs/elevator-cmd-norm {1}\r\nset fcs/rudder-cmd-norm {2}\r\nset fcs/throttle-cmd-norm {3}\r\n",roll_out,pitch_out,rudder_out,throttle_out);
+
+                //Console.Write(cmd);
+                byte[] data = System.Text.Encoding.ASCII.GetBytes(cmd);
+                JSBSimSEND.Client.Send(data);
             }
 
             // Flightgear
@@ -1974,6 +2056,11 @@ namespace ArdupilotMega.GCSViews
                 RAD_softXplanes.Checked = false;
                 RAD_softFlightGear.Checked = false;
             }
+        }
+
+        private void RAD_JSBSim_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
