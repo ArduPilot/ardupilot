@@ -1,0 +1,30 @@
+AC3Db
+MATERIAL "ac3dmat9" rgb 0 0 1  amb 0 0 1  emis 0 0 1  spec 0 0 1  shi 0  trans 0
+MATERIAL "ac3dmat3" rgb 1 0 0  amb 1 0 0  emis 1 0 0  spec 1 0 0  shi 0  trans 0
+OBJECT world
+kids 2
+OBJECT poly
+name "line"
+loc 0 0.5 0
+numvert 2
+0 0.5 0
+0 -0.5 0
+numsurf 1
+SURF 0x22
+mat 0
+refs 2
+0 0 1
+1 0 0
+kids 0
+OBJECT poly
+name "line"
+numvert 2
+0 0 -3
+0 0 3
+numsurf 1
+SURF 0x22
+mat 1
+refs 2
+0 0 1
+1 0 0
+kids 0

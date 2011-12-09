@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+
+ <path>Rascal110-000-013.ac</path>
+
+ <model>
+   <path>Aircraft/Rascal/Models/smokeW.xml</path>
+   <offsets>
+     <x-m> 2.0</x-m>
+     <y-m> 0.0</y-m>
+     <z-m> 0.0</z-m>
+     <roll-deg>   0</roll-deg>
+     <pitch-deg>  0</pitch-deg>
+     <heading-deg>0</heading-deg>
+   </offsets>
+ </model>
+
+ <animation>
+  <type>rotate</type>
+  <object-name>L_Aileron</object-name>
+  <property>/surface-positions/left-aileron-pos-norm</property>
+  <factor>20.0</factor> <!-- fixme -->
+  <center>
+   <x-m>0.735</x-m>
+   <y-m>-0.450</y-m>
+   <z-m>0.139</z-m>
+  </center>
+  <axis>
+   <x>0.037</x>
+   <y>1.0</y>
+   <z>-0.029</z>
+  </axis>
+ </animation>
+
+ <animation>
+  <type>rotate</type>
+  <object-name>R_Aileron</object-name>
+  <property>/surface-positions/right-aileron-pos-norm</property>
+  <factor>20.0</factor> <!-- fixme -->
+  <center>
+   <x-m>0.735</x-m>
+   <y-m>0.450</y-m>
+   <z-m>0.139</z-m>
+  </center>
+  <axis>
+   <x>-0.037</x>
+   <y>1.0</y>
+   <z>0.029</z>
+  </axis>
+ </animation>
+
+ <animation>
+  <type>rotate</type>
+  <object-name>Elevator</object-name>
+  <property>/surface-positions/elevator-pos-norm</property>
+  <factor>35.0</factor> <!-- fixme -->
+  <center>
+   <x-m>1.752</x-m>
+   <y-m>0.0</y-m>
+   <z-m>0.051</z-m>
+  </center>
+  <axis>
+   <x>0.0</x>
+   <y>1.0</y>
+   <z>0.0</z>
+  </axis>
+ </animation>
+
+ <animation>
+  <type>rotate</type>
+  <object-name>Rudder</object-name>
+  <property>/surface-positions/rudder-pos-norm</property>
+  <factor>35.0</factor> <!-- fixme -->
+  <center>
+   <x-m>1.752</x-m>
+   <y-m>0.0</y-m>
+   <z-m>0.0</z-m>
+  </center>
+  <axis>
+   <x>0.0</x>
+   <y>0.0</y>
+   <z>1.0</z>
+  </axis>
+ </animation>
+
+</PropertyList>
