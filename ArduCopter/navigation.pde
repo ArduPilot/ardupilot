@@ -12,6 +12,7 @@ static byte navigate()
 	// waypoint distance from plane
 	// ----------------------------
 	wp_distance = get_distance(&current_loc, &next_WP);
+	home_distance = get_distance(&current_loc, &home);
 
 	if (wp_distance < 0){
 		//gcs_send_text_P(SEVERITY_HIGH,PSTR("<navigate> WP error - distance < 0"));
@@ -23,6 +24,7 @@ static byte navigate()
 	// target_bearing is where we should be heading
 	// --------------------------------------------
 	target_bearing 	= get_bearing(&current_loc, &next_WP);
+	home_to_copter_bearing 	= get_bearing(&home, &current_loc);
 	return 1;
 }
 
