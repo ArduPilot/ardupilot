@@ -517,6 +517,16 @@
 //
 
 //////////////////////////////////////////////////////////////////////////////
+// MIN_GNDSPEED                             OPTIONAL
+//
+// The minimum ground speed in metres per second to maintain during
+// cruise. A value of 0 will disable any attempt to maintain a minumum
+// speed over ground.
+//
+#define MIN_GNDSPEED	0
+//
+
+//////////////////////////////////////////////////////////////////////////////
 // FLY_BY_WIRE_B airspeed control (also used for throttle "nudging" in AUTO)
 //
 // AIRSPEED_FBW_MIN                         OPTIONAL

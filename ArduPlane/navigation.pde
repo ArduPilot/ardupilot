@@ -64,14 +64,43 @@ void calc_distance_error()
 
 static void calc_airspeed_errors()
 {
-    // XXX excess casting here
-	if(control_mode>=AUTO && airspeed_nudge > 0) {
-		airspeed_error = g.airspeed_cruise + airspeed_nudge - airspeed;
-		airspeed_energy_error = (long)(((long)(g.airspeed_cruise + airspeed_nudge) * (long)(g.airspeed_cruise + airspeed_nudge)) - ((long)airspeed * (long)airspeed))/20000; //Changed 0.00005f * to / 20000 to avoid floating point calculation
-	} else {
-		airspeed_error = g.airspeed_cruise - airspeed;
-		airspeed_energy_error = (long)(((long)g.airspeed_cruise * (long)g.airspeed_cruise) - ((long)airspeed * (long)airspeed))/20000; //Changed 0.00005f * to / 20000 to avoid floating point calculation
-	}
+    // Normal airspeed target
+    target_airspeed = g.airspeed_cruise;
+
+    // FBW_B airspeed target
+    if (control_mode == FLY_BY_WIRE_B) {
+        target_airspeed = ((int)(g.flybywire_airspeed_max -
+                                 g.flybywire_airspeed_min) *
+                           g.channel_throttle.servo_out) +
+                          ((int)g.flybywire_airspeed_min * 100);
+    }
+
+    // Set target to current airspeed + ground speed undershoot,
+    // but only when this is faster than the target airspeed commanded
+    // above.
+    if (control_mode >= FLY_BY_WIRE_B && (g.min_gndspeed > 0)) {
+        long min_gnd_target_airspeed = airspeed + groundspeed_undershoot;
+        if (min_gnd_target_airspeed > target_airspeed)
+            target_airspeed = min_gnd_target_airspeed;
+    }
+
+    // Bump up the target airspeed based on throttle nudging
+    if (control_mode >= AUTO && airspeed_nudge > 0) {
+        target_airspeed += airspeed_nudge;
+    }
+
+    // Apply airspeed limit
+    if (target_airspeed > (g.flybywire_airspeed_max * 100))
+        target_airspeed = (g.flybywire_airspeed_max * 100);
+
+    airspeed_error = target_airspeed - airspeed;
+    airspeed_energy_error = ((target_airspeed * target_airspeed) - ((long)airspeed * (long)airspeed))/20000; //Changed 0.00005f * to / 20000 to avoid floating point calculation
+}
+
+static void calc_gndspeed_undershoot()
+{
+    // Function is overkill, but here in case we want to add filtering later
+    groundspeed_undershoot = (g.min_gndspeed > 0) ? (g.min_gndspeed - g_gps->ground_speed) : 0;
 }
 
 static void calc_bearing_error()
@@ -156,7 +185,7 @@ static void update_loiter()
 	}else{
 		update_crosstrack();
 		loiter_time = millis();			// keep start time for loiter updating till we get within LOITER_RANGE of orbit
-		
+
 	}
 /*
 	if (wp_distance < g.loiter_radius){

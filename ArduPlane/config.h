@@ -456,6 +456,16 @@
 #endif
 #define AIRSPEED_CRUISE_CM AIRSPEED_CRUISE*100
 
+
+//////////////////////////////////////////////////////////////////////////////
+// MIN_GNDSPEED
+//
+#ifndef MIN_GNDSPEED
+# define MIN_GNDSPEED			0 // m/s (0 disables)
+#endif
+#define MIN_GNDSPEED_CM MIN_GNDSPEED*100
+
+
 //////////////////////////////////////////////////////////////////////////////
 // FLY_BY_WIRE_B airspeed control
 //

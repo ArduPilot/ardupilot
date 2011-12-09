@@ -498,9 +498,16 @@ static void do_jump()
 
 static void do_change_speed()
 {
-	// Note: we have no implementation for commanded ground speed, only air speed and throttle
-	if(next_nonnav_command.alt > 0)
-		g.airspeed_cruise.set_and_save(next_nonnav_command.alt * 100);
+	switch (next_nonnav_command.p1)
+	{
+		case 0: // Airspeed
+			if(next_nonnav_command.alt > 0)
+				g.airspeed_cruise.set_and_save(next_nonnav_command.alt * 100);
+			break;
+		case 1: // Ground speed
+			g.min_gndspeed.set_and_save(next_nonnav_command.alt * 100);
+			break;
+	}
 
 	if(next_nonnav_command.lat > 0)
 		g.throttle_cruise.set_and_save(next_nonnav_command.lat);

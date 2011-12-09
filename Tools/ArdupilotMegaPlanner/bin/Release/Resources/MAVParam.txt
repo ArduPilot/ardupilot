@@ -102,7 +102,8 @@ It includes both fixed wing (APM) and rotary wing (!ArduCopter) parameters. Some
 ||LOG_BITMASK||0||65535||334||1||1||LOG_BITMASK||
 ||TRIM_ELEVON||900||2100||1500||1||1||TRIM_ELEVON||
 ||THR_FS_VALUE||850||1000||950||1||1||THROTTLE_FS_VALUE - If the throttle failsafe is enabled, THROTTLE_FS_VALUE sets the channel value below which the failsafe engages.  The default is 975ms, which is a very low throttle setting.  Most transmitters will let you trim the manual throttle position up so that you cannot engage the failsafe with a regular stick movement. Configure your receiver's failsafe setting for the throttle channel to the absolute minimum, and use the !ArduPilotMega_demo program to check that you cannot reach that value with the throttle control.  Leave a margin of at least 50 microseconds between the lowest throttle setting and THROTTLE_FS_VALUE.||
-||TRIM_ARSPD_CM||500||5000||1200||100||1||AIRSPEED_CRUISE_CM - The speed in metres per second to maintain during cruise.  The default is 10m/s, which is a conservative value suitable for relatively small, light aircraft.||
+||TRIM_ARSPD_CM||500||5000||1200||100||1||AIRSPEED_CRUISE_CM - The speed in cm/s to maintain during cruise.  The default is 12m/s, which is a conservative value suitable for relatively small, light aircraft.||
+||MIN_GNDSPD_CM||0||5000||0||100||1||MIN_GNDSPEED_CM - The minimum ground in cm/s to maintain during cruise. The default value of 0 will disable any attempt to maintain a minimum speed over ground.||
 ||GND_TEMP||-10||50||28||1||1||GND_TEMP - Ground Temperature||
 ||AP_OFFSET|| || ||0|| || ||AP_OFFSET||
 ||TRIM_PITCH_CD|| || ||0|| || ||TRIM_PITCH_CD||
