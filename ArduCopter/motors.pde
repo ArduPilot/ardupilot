@@ -22,7 +22,7 @@ static void arm_motors()
 		if (arming_counter == LEVEL_DELAY){
 			//Serial.printf("\nAL\n");
 			// begin auto leveling
-			auto_level_counter = 200;
+			auto_level_counter = 250;
 			arming_counter = 0;
 
 		}else if (arming_counter == ARM_DELAY){
