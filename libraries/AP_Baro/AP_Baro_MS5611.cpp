@@ -113,7 +113,7 @@ uint8_t AP_Baro_MS5611::MS5611_Ready()
 
 // Public Methods //////////////////////////////////////////////////////////////
 // SPI should be initialized externally
-void AP_Baro_MS5611::init()
+void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 {
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
     digitalWrite(MS5611_CS, HIGH);

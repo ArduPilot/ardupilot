@@ -55,7 +55,7 @@ extern "C" {
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
+void AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 {
 	byte buff[22];
 	int i = 0;
@@ -69,7 +69,8 @@ bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
 	Wire.beginTransmission(BMP085_ADDRESS);
 	Wire.send(0xAA);
 	if (Wire.endTransmission() != 0) {
-		return false;
+        // Error!
+		return;
 	}
 
 	Wire.requestFrom(BMP085_ADDRESS, 22);
@@ -80,7 +81,8 @@ bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
 		i++;
 	}
 	if (i != 22) {
-		return false;
+        // Error!
+		return;
 	}
 
 	ac1 = ((int)buff[0] << 8) | buff[1];
@@ -98,7 +100,7 @@ bool AP_Baro_BMP085::init(int initialiseWireLib, bool apm2_hardware)
   //Send a command to read Temp
 	Command_ReadTemp();
 	BMP085_State = 1;
-	return true;
+	return;
 }
 
 // Read the sensor. This is a state machine
