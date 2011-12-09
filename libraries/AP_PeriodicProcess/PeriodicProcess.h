@@ -2,6 +2,8 @@
 #ifndef __PERIODICPROCESS_H__
 #define __PERIODICPROCESS_H__
 
+typedef void (*ap_procedure)(void);
+
 class AP_PeriodicProcess
 {
     public:

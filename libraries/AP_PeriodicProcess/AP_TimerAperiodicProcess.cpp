@@ -34,6 +34,8 @@ void AP_TimerAperiodicProcess::run(void)
     _timer_offset = (_timer_offset + 49) % 32;
     _period = TCNT2_781_HZ + _timer_offset;
     TCNT2 = _period;
-    if (_proc != NULL)
-        _proc();
+    for (int i = 0; i < _pidx; i++) {
+        if (_proc[i] != NULL)
+            _proc[i]();
+    }
 }
