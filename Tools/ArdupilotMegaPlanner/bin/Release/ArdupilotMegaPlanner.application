@@ -4,14 +4,14 @@
   <description asmv2:publisher="Michael Oborne" asmv2:product="ArdupilotMegaPlanner" xmlns="urn:schemas-microsoft-com:asm.v1" />
   <deployment install="true" />
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="ArdupilotMegaPlanner.exe.manifest" size="25308">
+    <dependentAssembly dependencyType="install" codebase="ArdupilotMegaPlanner.exe.manifest" size="23682">
       <assemblyIdentity name="ArdupilotMegaPlanner.exe" version="0.0.0.1" publicKeyToken="0000000000000000" language="en-US" processorArchitecture="x86" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>mN7pjMOs48ZdF2S8vaEAJbtq8b4=</dsig:DigestValue>
+        <dsig:DigestValue>+BB2J7z2to1UULmX82O0PxoC594=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

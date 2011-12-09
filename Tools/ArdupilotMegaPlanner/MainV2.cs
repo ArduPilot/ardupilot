@@ -81,10 +81,6 @@ namespace ArdupilotMega
 
         public MainV2()
         {
-            //new temp().ShowDialog();
-            //return;
-
-
             Form splash = new Splash();
             splash.Show();
 
@@ -96,16 +92,7 @@ namespace ArdupilotMega
 
             Application.DoEvents();
 
-            //System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en-US");
-            //System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
             srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "srtm";
-
-            georefimage temp = new georefimage();
-
-            //temp.dowork(244 + 60*60*24 * -1 );
-
-            //return;
 
             var t = Type.GetType("Mono.Runtime");
             MONO = (t != null);
