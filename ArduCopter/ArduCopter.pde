@@ -1260,7 +1260,7 @@ static void update_navigation()
 		if(home_distance > 1000){
 			// 10m
 			// we reset the angular offset to be a vector from home to the quad
-			initial_simple_bearing = home_to_copter_bearing;
+			//initial_simple_bearing = home_to_copter_bearing;
 		}
 	}
 
