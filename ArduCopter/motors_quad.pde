@@ -99,6 +99,8 @@ static void output_motors_armed()
 	APM_RC.Force_Out0_Out1();
 	APM_RC.Force_Out2_Out3();
 	#endif
+
+	//debug_motors();
 }
 
 static void output_motors_disarmed()
@@ -134,7 +136,7 @@ static void output_motors_disarmed()
 				motor_out[CH_3],
 				motor_out[CH_4]);
 }
-*/
+//*/
 
 static void output_motor_test()
 {
