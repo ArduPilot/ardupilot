@@ -12,11 +12,11 @@ static void init_barometer(void)
 	int 			ground_temperature;
 
 	while(ground_pressure == 0){
-		barometer.Read(); 					// Get initial data from absolute pressure sensor
-		ground_pressure 	= barometer.Press;
-		ground_temperature 	= barometer.Temp;
+		barometer.read(); 					// Get initial data from absolute pressure sensor
+		ground_pressure 	= barometer.get_pressure();
+		ground_temperature 	= barometer.get_temperature();
 		mavlink_delay(20);
-		//Serial.printf("barometer.Press %ld\n", barometer.Press);
+		//Serial.printf("barometer.Press %ld\n", barometer.get_pressure());
 	}
 
 	for(int i = 0; i < 30; i++){		// We take some readings...
@@ -25,9 +25,9 @@ static void init_barometer(void)
 			gcs_update(); 				// look for inbound hil packets
 		#endif
 
-		barometer.Read(); 				// Get initial data from absolute pressure sensor
-		ground_pressure		= (ground_pressure * 9l   + barometer.Press) / 10l;
-		ground_temperature	= (ground_temperature * 9 + barometer.Temp) / 10;
+		barometer.read(); 				// Get initial data from absolute pressure sensor
+		ground_pressure		= (ground_pressure * 9l   + barometer.get_pressure()) / 10l;
+		ground_temperature	= (ground_temperature * 9 + barometer.get_temperature()) / 10;
 
 		mavlink_delay(20);
 		if(flashcount == 5) {
@@ -57,11 +57,11 @@ static long read_barometer(void)
 {
  	float x, scaling, temp;
 
-	barometer.Read();		// Get new data from absolute pressure sensor
+	barometer.read();		// Get new data from absolute pressure sensor
 
 
-	//abs_pressure 			= (abs_pressure + barometer.Press) >> 1;		// Small filtering
-	abs_pressure 			= ((float)abs_pressure * .7) + ((float)barometer.Press * .3);		// large filtering
+	//abs_pressure 			= (abs_pressure + barometer.get_pressure()) >> 1;		// Small filtering
+	abs_pressure 			= ((float)abs_pressure * .7) + ((float)barometer.get_pressure() * .3);		// large filtering
 	scaling 				= (float)g.ground_pressure / (float)abs_pressure;
 	temp 					= ((float)g.ground_temperature) + 273.15f;
 	x 						= log(scaling) * temp * 29271.267f;
