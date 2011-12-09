@@ -17,7 +17,7 @@
 
 	Methods:
 		init() : Initialization and sensor reset
-		read() : Read sensor data and calculate Temperature, Pressure and Altitude
+		read() : Read sensor data and _calculate Temperature, Pressure and Altitude
 		         This function is optimized so the main host don´t need to wait
 				 You can call this function in your main loop
 				 Maximun data output frequency 100Hz
@@ -27,7 +27,7 @@
 		get_altitude() : return altitude in meters
 
 	Internal functions:
-		calculate() : Calculate Temperature and Pressure (temperature compensated) in real units
+		_calculate() : Calculate Temperature and Pressure (temperature compensated) in real units
 
 
 */
@@ -51,38 +51,44 @@
 #define CMD_CONVERT_D1_OSR4096 0x48   // Maximun resolution
 #define CMD_CONVERT_D2_OSR4096 0x58   // Maximun resolution
 
+uint32_t AP_Baro_MS5611::_s_D1;
+uint32_t AP_Baro_MS5611::_s_D2;
+uint8_t  AP_Baro_MS5611::_state;
+long     AP_Baro_MS5611::_timer;
+bool     AP_Baro_MS5611::_sync_access;
+bool     AP_Baro_MS5611::_updated;
 
-uint8_t MS5611_SPI_read(byte reg)
+uint8_t AP_Baro_MS5611::_spi_read(uint8_t reg)
 {
-  byte dump;
+  uint8_t dump;
   uint8_t return_value;
-  byte addr = reg; // | 0x80; // Set most significant bit
+  uint8_t addr = reg; // | 0x80; // Set most significant bit
   digitalWrite(MS5611_CS, LOW);
   dump = SPI.transfer(addr);
   return_value = SPI.transfer(0);
   digitalWrite(MS5611_CS, HIGH);
-  return(return_value);
+  return return_value;
 }
 
-uint16_t MS5611_SPI_read_16bits(byte reg)
+uint16_t AP_Baro_MS5611::_spi_read_16bits(uint8_t reg)
 {
-  byte dump,byteH,byteL;
+  uint8_t dump, byteH, byteL;
   uint16_t return_value;
-  byte addr = reg; // | 0x80; // Set most significant bit
+  uint8_t addr = reg; // | 0x80; // Set most significant bit
   digitalWrite(MS5611_CS, LOW);
   dump = SPI.transfer(addr);
   byteH = SPI.transfer(0);
   byteL = SPI.transfer(0);
   digitalWrite(MS5611_CS, HIGH);
   return_value = ((uint16_t)byteH<<8) | (byteL);
-  return(return_value);
+  return return_value;
 }
 
-uint32_t MS5611_SPI_read_ADC()
+uint32_t AP_Baro_MS5611::_spi_read_adc()
 {
-  byte dump,byteH,byteM,byteL;
+  uint8_t dump,byteH,byteM,byteL;
   uint32_t return_value;
-  byte addr = 0x00;
+  uint8_t addr = 0x00;
   digitalWrite(MS5611_CS, LOW);
   dump = SPI.transfer(addr);
   byteH = SPI.transfer(0);
@@ -90,25 +96,22 @@ uint32_t MS5611_SPI_read_ADC()
   byteL = SPI.transfer(0);
   digitalWrite(MS5611_CS, HIGH);
   return_value = (((uint32_t)byteH)<<16) | (((uint32_t)byteM)<<8) | (byteL);
-  return(return_value);
+  return return_value;
 }
 
 
-void MS5611_SPI_write(byte reg)
+void AP_Baro_MS5611::_spi_write(uint8_t reg)
 {
-  byte dump;
+  uint8_t dump;
   digitalWrite(MS5611_CS, LOW);
   dump = SPI.transfer(reg);
   digitalWrite(MS5611_CS, HIGH);
 }
 
 // The conversion proccess takes 8.2ms since the command
-uint8_t AP_Baro_MS5611::MS5611_Ready()
+bool AP_Baro_MS5611::_ready()
 {
-	if ((millis()-MS5611_timer)>10)   // wait for more than 10ms
-		return(1);
-	else
-		return(0);
+	return ( ( millis() - _timer ) > 10 );   // wait for more than 10ms
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -119,70 +122,81 @@ void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
     digitalWrite(MS5611_CS, HIGH);
     delay(1);
 
-	MS5611_SPI_write(CMD_MS5611_RESET);
+	_spi_write(CMD_MS5611_RESET);
 	delay(4);
 
 	// We read the factory calibration
-	C1 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C1);
-	C2 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C2);
-	C3 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C3);
-	C4 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C4);
-	C5 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C5);
-	C6 = MS5611_SPI_read_16bits(CMD_MS5611_PROM_C6);
+	C1 = _spi_read_16bits(CMD_MS5611_PROM_C1);
+	C2 = _spi_read_16bits(CMD_MS5611_PROM_C2);
+	C3 = _spi_read_16bits(CMD_MS5611_PROM_C3);
+	C4 = _spi_read_16bits(CMD_MS5611_PROM_C4);
+	C5 = _spi_read_16bits(CMD_MS5611_PROM_C5);
+	C6 = _spi_read_16bits(CMD_MS5611_PROM_C6);
 
 
   //Send a command to read Temp first
-	MS5611_SPI_write(CMD_CONVERT_D2_OSR4096);
-	MS5611_timer = millis();
-	MS5611_State = 1;
+	_spi_write(CMD_CONVERT_D2_OSR4096);
+	_timer = millis();
+	_state = 1;
     Temp=0;
     Press=0;
+
+    scheduler->register_process( AP_Baro_MS5611::_update );
 }
 
 
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 // temperature does not change so quickly...
-uint8_t AP_Baro_MS5611::read()
+void AP_Baro_MS5611::_update(void)
 {
-	uint8_t result = 0;
-
-	if (MS5611_State == 1){
-		if (MS5611_Ready()){
-			D2=MS5611_SPI_read_ADC();  				 // On state 1 we read temp
-            _raw_temp = D2;
-			MS5611_State++;
-			MS5611_SPI_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-			MS5611_timer = millis();
+    if (_sync_access) return;
+	if (_state == 1){
+		if (_ready()){
+			_s_D2 = _spi_read_adc();  				 // On state 1 we read temp
+			_state++;
+			_spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
+			_timer = millis();
 		}
 	}else{
-		if (MS5611_State == 5){
-			if (MS5611_Ready()){
-				D1=MS5611_SPI_read_ADC();
-                _raw_press = D1;
-				calculate();
-				MS5611_State = 1;			                // Start again from state = 1
-				MS5611_SPI_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
-				MS5611_timer = millis();
-				result = 1;					                // New pressure reading
+		if (_state == 5){
+			if (_ready()){
+				_s_D1 = _spi_read_adc();
+				_state = 1;			                // Start again from state = 1
+				_spi_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
+				_timer = millis();
+				_updated = true;					                // New pressure reading
 			}
 		}else{
-			if (MS5611_Ready()){
-				D1=MS5611_SPI_read_ADC();
-                _raw_press = D1;
-				calculate();
-				MS5611_State++;
-				MS5611_SPI_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-				MS5611_timer = millis();
-				result = 1;					               // New pressure reading
+			if (_ready()){
+				_s_D1 = _spi_read_adc();
+				_state++;
+				_spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
+				_timer = millis();
+				_updated = true;					               // New pressure reading
 			}
 		}
 	}
-	return(result);
+}
+
+uint8_t AP_Baro_MS5611::read()
+{
+    _sync_access = true;
+    bool updated = _updated;
+    _updated = 0;
+    if (updated > 0) {
+        D1 = _s_D1;
+        D2 = _s_D2;
+        _raw_press = D1;
+        _raw_temp = D2;
+    }
+    _sync_access = false;
+    _calculate();
+    return updated ? 1 : 0;
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
-void AP_Baro_MS5611::calculate()
+void AP_Baro_MS5611::_calculate()
 {
 	int32_t dT;
 	long long TEMP;  // 64 bits
