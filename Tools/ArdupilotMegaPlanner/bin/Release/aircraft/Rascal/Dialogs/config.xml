@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+
+<PropertyList>
+  <name>rascal-config</name>
+  <layout>vbox</layout>
+  <x>40</x>
+  <y>40</y>
+
+  <group>
+    <layout>hbox</layout>
+
+    <empty><stretch>true</stretch></empty>
+
+    <text>
+      <label>Rascal Configuration</label>
+    </text>
+
+    <empty><stretch>true</stretch></empty>
+
+    <button>
+      <pref-width>16</pref-width>
+      <pref-height>16</pref-height>
+      <legend></legend>
+      <default>1</default>
+      <keynum>27</keynum>
+      <border>2</border>
+
+      <binding>
+        <command>nasal</command>
+        <script>rascal.dialog.close()</script>
+      </binding>
+    </button>
+  </group>
+
+  <hrule/>
+
+  <group>
+    <layout>table</layout>
+
+    <!-- row zero -->
+    <checkbox>
+      <row>0</row> <col>0</col>
+      <halign>left</halign>
+      <label>External Autopilot Enable</label>
+      <property>/ugear/settings/ap-enable</property>
+      <live>true</live>
+      <binding>
+        <command>dialog-apply</command>
+      </binding>
+    </checkbox>
+
+    <!-- row one -->
+    <checkbox>
+      <row>1</row> <col>0</col>
+      <halign>left</halign>
+      <label>External Turret Control Enable</label>
+      <property>/ugear/settings/turret-enable</property>
+      <live>true</live>
+      <binding>
+        <command>dialog-apply</command>
+      </binding>
+    </checkbox>
+
+    <!-- row two -->
+    <checkbox>
+      <row>2</row> <col>0</col>
+      <halign>left</halign>
+      <label>Smoke</label>
+      <property>/sim/multiplay/generic/int[0]</property>
+      <live>true</live>
+      <binding>
+        <command>dialog-apply</command>
+      </binding>
+    </checkbox>
+
+    <!-- row three -->
+    <checkbox>
+      <row>3</row> <col>0</col>
+      <halign>left</halign>
+      <label>Trajectory Markers</label>
+      <property>/sim/multiplay/generic/int[1]</property>
+      <live>true</live>
+      <binding>
+        <command>dialog-apply</command>
+      </binding>
+    </checkbox>
+
+  </group>
+
+  <hrule/>
+
+</PropertyList>

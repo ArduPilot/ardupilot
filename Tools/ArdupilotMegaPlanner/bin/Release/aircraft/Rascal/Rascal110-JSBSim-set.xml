@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<!--
+************************************************************************
+Rascal 110 R/C airplane config. This files ties together all the components
+used by FGFS to represent the Rascal 110 (by Sig Mfg) including the flight
+dynamics model, and external 3D model.
+************************************************************************
+-->
+
+<PropertyList>
+ <sim>
+
+  <description>Rascal 110 (R/C)</description>
+  <author>Lee Elliot (3D) Dave Culp (JSBsim dynamics) and Curt Olson</author>
+  <aircraft-version>0.1</aircraft-version>
+  <model-hz>400</model-hz>
+
+  <startup>
+    <splash-texture>Aircraft/Rascal/Rascal110-splash.rgb</splash-texture>
+  </startup>
+
+  <flight-model>jsb</flight-model>
+  <aero>Rascal110-JSBSim</aero>
+  <fuel-fraction>0.8</fuel-fraction>
+
+  <systems>
+   <autopilot>
+    <path>Aircraft/Rascal/Systems/110-autopilot.xml</path>
+   </autopilot>
+   <electrical>
+    <path>Aircraft/Rascal/Systems/electrical.xml</path>
+   </electrical>
+  </systems>
+
+  <sound>
+   <path>Aircraft/Generic/generic-sound.xml</path>
+  </sound>
+
+  <panel>
+   <visibility archive="n">false</visibility>
+  </panel>
+
+  <model>
+   <path archive="y">Aircraft/Rascal/Models/Rascal110.xml</path>
+  </model>
+
+  <view>
+   <internal archive="y">true</internal>
+   <config>
+     <x-offset-m archive="y">0.0</x-offset-m>
+     <y-offset-m archive="y">-0.15</y-offset-m>
+     <z-offset-m archive="y">0.9</z-offset-m>
+     <pitch-offset-deg>0</pitch-offset-deg>
+   </config>
+  </view>
+
+  <submodels>
+    <serviceable type="bool">1</serviceable>
+    <path>Aircraft/Rascal/Rascal-submodels.xml</path>
+  </submodels>
+
+  <view n="1">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <view n="2">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <view n="3">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <view n="4">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <view n="5">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <view n="6">
+   <config>
+    <target-z-offset-m archive="y" type="double">0.5</target-z-offset-m>
+   </config>
+  </view>
+
+  <multiplay>
+    <chat_display>1</chat_display>
+    <generic>
+      <int type="bool">0</int>  <!-- smoke -->
+      <int type="bool">0</int>  <!-- trajectory markers -->
+    </generic>
+  </multiplay>
+
+  <help>
+    <title>Rascal 110 (Sig Mfg)</title>
+    <line>Cruise speed: 60 kts</line>
+    <line>Never-exceed (Vne): 85 kts</line>
+    <line>Best Glide (Vglide): 20 kts</line>
+    <line>Maneuvering (Va): 50 kts</line>
+    <line>Approach speed: 20-25 kts</line>
+    <line>Stall speed (Vs): 15 kts</line>
+  </help>
+
+ </sim>
+
+ <nasal>
+  <rascal>
+   <file>Aircraft/Rascal/Systems/main.nas</file>
+   <file>Aircraft/Rascal/Systems/airdata.nas</file>
+   <file>Aircraft/Rascal/Systems/ugear.nas</file>
+      <script>
+         setlistener("/sim/signals/fdm-initialized", func {
+             var left  = screen.display.new(20, 10);
+             left.add("/surface-positions/right-aileron-pos-norm");
+             left.add("/surface-positions/elevator-pos-norm");
+             left.add("/surface-positions/rudder-pos-norm");
+             left.add("/engines/engine/rpm");
+
+             var right = screen.display.new(-250, 20);
+             right.add("/orientation/pitch-deg");
+             right.add("/orientation/roll-deg");
+             right.add("/position/altitude-agl-ft");
+             right.add("/velocities/airspeed-kt");
+         });
+        </script>
+  </rascal>
+ </nasal>
+
+ <yasim>
+  <Rascal110>
+   <pilot-lb>2</pilot-lb>
+  </Rascal110>
+ </yasim>
+
+ <input>
+   <keyboard include="Rascal-keyboard.xml"/>
+ </input>
+
+ <controls>
+  <flight>
+   <aileron-trim>-0.01</aileron-trim>   <!-- fixed -->
+   <elevator-trim>0.00</elevator-trim> <!-- controllable -->
+   <rudder-trim>0.00</rudder-trim>     <!-- fixed -->
+  </flight>
+  <engines>
+   <engine n="0">
+    <magnetos>3</magnetos>
+   </engine>
+  </engines>
+  <smoke alias="/sim/multiplay/generic/int[0]"/>
+  <trajectory-markers alias="/sim/multiplay/generic/int[1]"/>
+ </controls>
+
+ <engines>
+  <engine>
+   <rpm type="double">700</rpm>
+  </engine>
+ </engines>
+
+</PropertyList>
