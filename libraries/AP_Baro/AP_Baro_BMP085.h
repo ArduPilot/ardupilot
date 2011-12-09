@@ -9,11 +9,11 @@
 class AP_Baro_BMP085 : public AP_Baro
 {
   public:
-	AP_Baro_BMP085():
+	AP_Baro_BMP085(bool apm2_hardware):
 			_temp_index(0),
-			_press_index(0){};  // Constructor
+			_press_index(0),
+            _apm2_hardware(apm2_hardware){};  // Constructor
 
-    bool init(int initialiseWireLib = 1, bool apm2_hardware=false);
 
     /* AP_Baro public interface: */
     uint8_t read();
