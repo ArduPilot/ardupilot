@@ -501,6 +501,14 @@ static void set_mode(byte mode)
 			set_next_WP(&guided_WP);
 			break;
 
+		case LAND:
+			yaw_mode 		= YAW_HOLD;
+			roll_pitch_mode = ROLL_PITCH_AUTO;
+			throttle_mode 	= THROTTLE_AUTO;
+			next_WP 		= current_loc;
+			next_WP.alt 	= 0;
+			break;
+
 		case RTL:
 			yaw_mode 		= RTL_YAW;
 			roll_pitch_mode = RTL_RP;
