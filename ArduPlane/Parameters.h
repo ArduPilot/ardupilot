@@ -116,6 +116,7 @@ public:
         k_param_airspeed_cruise,
         k_param_RTL_altitude,
         k_param_inverted_flight_ch,
+        k_param_min_gndspeed,
 
         //
         // 170: Radio settings
@@ -308,6 +309,7 @@ public:
     AP_Int16    log_bitmask;
     AP_Int16	log_last_filenumber;
     AP_Int16    airspeed_cruise;
+    AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
     AP_Int16    RTL_altitude;
     AP_Int16    ground_temperature;
@@ -414,6 +416,7 @@ public:
         log_bitmask             (DEFAULT_LOG_BITMASK,		k_param_log_bitmask,            PSTR("LOG_BITMASK")),
         log_last_filenumber     (0,							k_param_log_last_filenumber,    PSTR("LOG_LASTFILE")),
         airspeed_cruise         (AIRSPEED_CRUISE_CM,        k_param_airspeed_cruise,        PSTR("TRIM_ARSPD_CM")),
+        min_gndspeed            (MIN_GNDSPEED_CM,        	k_param_min_gndspeed,           PSTR("MIN_GNDSPD_CM")),
         pitch_trim              (0,                         k_param_pitch_trim,             PSTR("TRIM_PITCH_CD")),
         RTL_altitude            (ALT_HOLD_HOME_CM,          k_param_RTL_altitude,           PSTR("ALT_HOLD_RTL")),
         FBWB_min_altitude       (ALT_HOLD_FBW_CM,           k_param_FBWB_min_altitude,      PSTR("ALT_HOLD_FBWCM")),

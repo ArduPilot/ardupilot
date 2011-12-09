@@ -325,10 +325,14 @@ static byte	non_nav_command_ID	= NO_COMMAND;	// active non-nav command ID
 // --------
 static int		airspeed;							// m/s * 100
 static int		airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
+static long		target_airspeed;					// m/s * 100 (used for Auto-flap deployment in FBW_B mode)
 static float	airspeed_error;						// m/s * 100
-static float	airspeed_fbwB;						// m/s * 100
 static long 	energy_error;                       // energy state error (kinetic + potential) for altitude hold
-static long		airspeed_energy_error;              // kinetic portion of energy error
+static long		airspeed_energy_error;              // kinetic portion of energy error (m^2/s^2)
+
+// Ground speed
+static long		groundspeed_undershoot = 0;				// m/s * 100  (>=0, where > 0 => amount below min ground speed)
+
 
 // Location Errors
 // ---------------
@@ -523,21 +527,21 @@ static void fast_loop()
 	read_radio();
 
     // try to send any deferred messages if the serial port now has
-    // some space available    
+    // some space available
     gcs_send_message(MSG_RETRY_DEFERRED);
 
 	// check for loss of control signal failsafe condition
 	// ------------------------------------
 	check_short_failsafe();
-	
-		// Read Airspeed
-		// -------------
+
+	// Read Airspeed
+	// -------------
 	if (g.airspeed_enabled == true) {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 		read_airspeed();
-#endif
-	} else if (g.airspeed_enabled == true && HIL_MODE == HIL_MODE_ATTITUDE) {
+#else
 		calc_airspeed_errors();
+#endif
 	}
 
 	#if HIL_MODE == HIL_MODE_SENSORS
@@ -599,7 +603,10 @@ static void medium_loop()
 		//-------------------------------
 		case 0:
 			medium_loopCounter++;
-			if(GPS_enabled)		update_GPS();
+			if(GPS_enabled){
+                update_GPS();
+                calc_gndspeed_undershoot();
+            }
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
 				if(g.compass_enabled){
@@ -888,23 +895,10 @@ static void update_current_flight_mode(void)
 				if ((current_loc.alt>=home.alt+g.FBWB_min_altitude) || (g.FBWB_min_altitude == -1)) {
 	 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 				} else {
-					if (g.channel_pitch.norm_input()<0) 
-						altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) + g.channel_pitch.norm_input() * g.pitch_limit_min ; 
-					else altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) ;                                    
+					if (g.channel_pitch.norm_input()<0)
+						altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) + g.channel_pitch.norm_input() * g.pitch_limit_min ;
+					else altitude_error =( (home.alt + g.FBWB_min_altitude) - current_loc.alt) ;
 				}
- 
-				if (g.airspeed_enabled == true)
-									{
-					airspeed_fbwB = ((int)(g.flybywire_airspeed_max -
-							g.flybywire_airspeed_min) *
-							g.channel_throttle.servo_out) +
-							((int)g.flybywire_airspeed_min * 100);
-					airspeed_energy_error = (long)(((long)airspeed_fbwB *
-								(long)airspeed_fbwB) -
-							((long)airspeed * (long)airspeed))/20000;
-					airspeed_error = (airspeed_error - airspeed);
-									}
-
 				calc_throttle();
 				calc_nav_pitch();
 				break;
