@@ -64,7 +64,7 @@ static void calc_loiter(int x_error, int y_error)
 	int x_target_speed = g.pi_loiter_lon.get_p(x_error);
 	int y_target_speed = g.pi_loiter_lat.get_p(y_error);
 	int x_iterm = g.pi_loiter_lon.get_i(x_error, dTnav);
-	int y_iterm = g.pi_loiter_lon.get_i(y_error, dTnav);
+	int y_iterm = g.pi_loiter_lat.get_i(y_error, dTnav);
 
 	// find the rates:
 	float temp		= g_gps->ground_course * RADX100;
