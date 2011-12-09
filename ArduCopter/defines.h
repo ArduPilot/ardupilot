@@ -121,7 +121,8 @@
 #define RTL 6				// AUTO control
 #define CIRCLE 7			// AUTO control
 #define POSITION 8			// AUTO control
-#define NUM_MODES 9
+#define LAND 9				// AUTO control
+#define NUM_MODES 10
 
 #define INITIALISING 9     // in startup routines
 
