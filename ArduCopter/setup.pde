@@ -1014,9 +1014,9 @@ static void
 print_accel_offsets(void)
 {
 	Serial.printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\n"),
-						(float)imu.ax(),
-						(float)imu.ay(),
-						(float)imu.az());
+						(float)imu.ax(),	// Pitch
+						(float)imu.ay(),	// Roll
+						(float)imu.az());	// YAW
 }
 
 static void
