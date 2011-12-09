@@ -177,11 +177,7 @@ static void init_ardupilot()
 
     adc.Init(&timer_scheduler);      // APM ADC library initialization
 
-#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-	barometer.Init(1, true);
-#else
-	barometer.Init(1, false);
-#endif
+	barometer.init(&timer_scheduler);
 
 	if (g.compass_enabled==true) {
         compass.set_orientation(MAG_ORIENTATION);							// set compass's orientation on aircraft
