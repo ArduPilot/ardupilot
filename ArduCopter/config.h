@@ -136,10 +136,6 @@
 // Sonar
 //
 
-#ifndef SONAR_PORT
-# define SONAR_PORT		AP_RANGEFINDER_PITOT_TUBE
-#endif
-
 #ifndef CONFIG_SONAR_SOURCE
 # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ADC
 #endif
@@ -167,18 +163,6 @@
 
 #ifndef SONAR_TYPE
 # define SONAR_TYPE		MAX_SONAR_XL
-#endif
-
-// It seems that MAX_SONAR_XL depends on an ADC. For systems without an
-// ADC, we need to disable the sonar
-#if SONAR_TYPE == MAX_SONAR_XL
-# if CONFIG_ADC == DISABLED
-#   if defined(CONFIG_SONAR)
-#      warning "MAX_SONAR_XL requires a valid ADC. This system does not have an ADC enabled."
-#      undef CONFIG_SONAR
-#   endif
-#   define CONFIG_SONAR DISABLED
-#  endif
 #endif
 
 #ifndef CONFIG_SONAR
