@@ -361,7 +361,11 @@ static void set_servos(void)
 		#endif
 		*/
 
-		throttle_slew_limit();
+        if (control_mode >= FLY_BY_WIRE_B) {
+            /* only do throttle slew limiting in modes where throttle
+               control is automatic */
+            throttle_slew_limit();
+        }
 	}
 
 	// Auto flap deployment
