@@ -19,7 +19,7 @@ ModeFilter mode_filter;
 
 // uncomment the appropriate line corresponding to where sonar is connected 
 AP_AnalogSource_ADC	adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // uncomment this line to use Pitot tube
-//AP_AnalogSource_Arduino adc_source(A5);   // uncomment this line to use A5 analog pin (far back-right pin on the oilpan near the CLI switch
+//AP_AnalogSource_Arduino adc_source(A4);   // uncomment this line to use A5 analog pin (far back-right pin on the oilpan near the CLI switch
 
 // create the range finder object
 //AP_RangeFinder_SharpGP2Y aRF(&adc_source, &mode_filter);
