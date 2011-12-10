@@ -80,9 +80,9 @@ static void read_airspeed(void)
             airspeed_raw = (float)adc.Ch(AIRSPEED_CH);
             g.airspeed_offset.set_and_save(airspeed_raw);
 		}
-		airspeed_raw 		= ((float)adc.Ch(AIRSPEED_CH) * .25) + (airspeed_raw * .75);
-		airspeed_pressure 	= max(((int)airspeed_raw - g.airspeed_offset), 0);
-		airspeed 			= sqrt((float)airspeed_pressure * g.airspeed_ratio) * 100;
+		airspeed_raw 		= (adc.Ch(AIRSPEED_CH) * 0.25) + (airspeed_raw * 0.75);
+		airspeed_pressure 	= max((airspeed_raw - g.airspeed_offset), 0);
+		airspeed 			= sqrt(airspeed_pressure * g.airspeed_ratio) * 100;
 	#endif
 
 	calc_airspeed_errors();
@@ -90,12 +90,15 @@ static void read_airspeed(void)
 
 static void zero_airspeed(void)
 {
-	airspeed_raw = (float)adc.Ch(AIRSPEED_CH);
-	for(int c = 0; c < 10; c++){
-		delay(20);
-		airspeed_raw = (airspeed_raw * .90) + ((float)adc.Ch(AIRSPEED_CH) * .10);
+    float sum = 0;
+    int c;
+	airspeed_raw = adc.Ch(AIRSPEED_CH);
+	for(c = 0; c < 250; c++) {
+		delay(2);
+		sum += adc.Ch(AIRSPEED_CH);
 	}
-	g.airspeed_offset.set_and_save(airspeed_raw);
+    sum /= c;
+	g.airspeed_offset.set_and_save((int16_t)sum);
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE

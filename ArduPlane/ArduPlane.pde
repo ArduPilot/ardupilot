@@ -364,7 +364,7 @@ static float	current_total;
 // Airspeed Sensors
 // ----------------
 static float   airspeed_raw;                       // Airspeed Sensor - is a float to better handle filtering
-static int     airspeed_pressure;					// airspeed as a pressure value
+static float   airspeed_pressure;					// airspeed as a pressure value
 
 // Barometer Sensor variables
 // --------------------------
