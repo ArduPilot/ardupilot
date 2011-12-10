@@ -40,7 +40,6 @@ AP_IMU_INS::init( Start_style style,
 
         // do cold-start calibration for both accel and gyro
         _init_gyro(delay_cb);
-        _init_accel(delay_cb);
 
         // save calibration
         _sensor_cal.save();
