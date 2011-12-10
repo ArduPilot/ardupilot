@@ -32,7 +32,7 @@ class AP_ADC_HIL : public AP_ADC
 
 	///
 	// Read the sensor, part of public AP_ADC interface
-	uint16_t Ch(unsigned char ch_num);
+	float Ch(unsigned char ch_num);
 
 	///
 	// Read 6 sensors at once
