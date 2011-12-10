@@ -80,7 +80,7 @@ static void read_airspeed(void)
             airspeed_raw = (float)adc.Ch(AIRSPEED_CH);
             g.airspeed_offset.set_and_save(airspeed_raw);
 		}
-		airspeed_raw 		= (adc.Ch(AIRSPEED_CH) * 0.25) + (airspeed_raw * 0.75);
+		airspeed_raw 		= (adc.Ch(AIRSPEED_CH) * 0.1) + (airspeed_raw * 0.9);
 		airspeed_pressure 	= max((airspeed_raw - g.airspeed_offset), 0);
 		airspeed 			= sqrt(airspeed_pressure * g.airspeed_ratio) * 100;
 	#endif
