@@ -380,7 +380,7 @@ static void startup_ground(void)
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// Warm up and read Gyro offsets
 		// -----------------------------
-		imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
+		imu.init_gyro(mavlink_delay);
 		#if CLI_ENABLED == ENABLED
 			report_imu();
 		#endif
