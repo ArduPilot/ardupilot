@@ -121,10 +121,6 @@ static void output_motors_disarmed()
 	APM_RC.OutputCh(CH_2, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_3, g.rc_3.radio_min);
 	APM_RC.OutputCh(CH_4, g.rc_3.radio_min);
-
-	// InstantPWM
-	APM_RC.Force_Out0_Out1();
-	APM_RC.Force_Out2_Out3();
 }
 
 /*
