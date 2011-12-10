@@ -162,7 +162,7 @@ void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
 }
 
 // Read one channel value
-uint16_t AP_ADC_ADS7844::Ch(uint8_t ch_num)
+float AP_ADC_ADS7844::Ch(uint8_t ch_num)
 {
 	uint16_t count;
 	uint32_t sum;
@@ -178,7 +178,7 @@ uint16_t AP_ADC_ADS7844::Ch(uint8_t ch_num)
 	_sum[ch_num]   = 0;
 	sei();
 
-	return sum/count;
+	return ((float)sum)/count;
 }
 
 // Read 6 channel values

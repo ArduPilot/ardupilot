@@ -24,7 +24,7 @@ class AP_ADC_ADS7844 : public AP_ADC
 	void Init( AP_PeriodicProcess * scheduler );
 
 	// Read 1 sensor value
-	uint16_t Ch(unsigned char ch_num);
+	float Ch(unsigned char ch_num);
 
 	// Read 6 sensors at once
 	uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result);
