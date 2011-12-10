@@ -422,7 +422,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 
 	while(1){
 		for(int i = 0; i < 9; i++){
-			Serial.printf_P(PSTR("%u,"),adc.Ch(i));
+			Serial.printf_P(PSTR("%.1f,"),adc.Ch(i));
 		}
 		Serial.println();
 		delay(20);

@@ -459,7 +459,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		for (int i=0;i<9;i++) Serial.printf_P(PSTR("%u\t"),adc.Ch(i));
+		for (int i=0;i<9;i++) Serial.printf_P(PSTR("%.1f\t"),adc.Ch(i));
 		Serial.println();
 		delay(100);
 		if(Serial.available() > 0){
@@ -630,9 +630,9 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    unsigned airspeed_ch = adc.Ch(AIRSPEED_CH);
+    float airspeed_ch = adc.Ch(AIRSPEED_CH);
 	// Serial.println(adc.Ch(AIRSPEED_CH));
-    Serial.printf_P(PSTR("airspeed_ch: %u\n"), airspeed_ch);
+    Serial.printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
 
 	if (g.airspeed_enabled == false){
 		Serial.printf_P(PSTR("airspeed: "));
@@ -648,7 +648,7 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 		while(1){
 			delay(20);
 			read_airspeed();
-			Serial.printf_P(PSTR("%fm/s\n"), airspeed / 100.0);
+			Serial.printf_P(PSTR("%.1f m/s\n"), airspeed / 100.0);
 
 			if(Serial.available() > 0){
 				return (0);
