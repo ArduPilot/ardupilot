@@ -8,8 +8,6 @@
 
 class AP_RangeFinder_MaxsonarXL : public RangeFinder
 {
- // public:
-	//AP_GPS_MTK(Stream *s);
   public:
 	AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source, ModeFilter *filter);
 
