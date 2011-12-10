@@ -202,16 +202,16 @@ static void trim_accel()
 	g.pi_stabilize_roll.reset_I();
 	g.pi_stabilize_pitch.reset_I();
 
-	float trim_roll  = (float)g.rc_1.control_in / 3000;
-	float trim_pitch = (float)g.rc_2.control_in / 3000;
+	float trim_roll  = (float)g.rc_1.control_in / 30000.0;
+	float trim_pitch = (float)g.rc_2.control_in / 30000.0;
 
 	trim_roll 	= constrain(trim_roll, -1.5, 1.5);
 	trim_pitch 	= constrain(trim_pitch, -1.5, 1.5);
 
 	if(g.rc_1.control_in > 200){ // Roll RIght
-		imu.ay(imu.ay() + trim_roll);
+		imu.ay(imu.ay() - trim_roll);
 	}else if (g.rc_1.control_in < -200){
-		imu.ay(imu.ay() + trim_roll);
+		imu.ay(imu.ay() - trim_roll);
 	}
 
 	if(g.rc_2.control_in > 200){ // Pitch Back
@@ -221,12 +221,11 @@ static void trim_accel()
 	}
 
 	/*
-	Serial.printf_P(PSTR("r:%ld p:%ld ax:%f, ay:%f, az:%f\n"),
-							dcm.roll_sensor,
-							dcm.pitch_sensor,
-							(float)imu.ax(),
+	Serial.printf_P(PSTR("r:%1.2f  %1.2f \t| p:%1.2f  %1.2f\n"),
+							trim_roll,
 							(float)imu.ay(),
-							(float)imu.az());
+							trim_pitch,
+							(float)imu.ax());
 	//*/
 }
 
