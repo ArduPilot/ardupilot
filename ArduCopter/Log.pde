@@ -108,7 +108,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
 	last_log_num = g.log_last_filenumber;
-	
+
 	if (dump_log == -2) {
 		for(int count=1; count<=DF_LAST_PAGE; count++) {
 			DataFlash.StartRead(count);
@@ -245,7 +245,7 @@ static void start_new_log()
 {
 	uint16_t	last_page = find_last();
 	if(last_page == 1) last_page = 0;
-	
+
 	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
 	DataFlash.SetFileNumber(g.log_last_filenumber);
 	DataFlash.StartWrite(last_page + 1);
@@ -417,7 +417,7 @@ static void Log_Write_GPS()
 	DataFlash.WriteLong(g_gps->altitude);					// 6
 
 	DataFlash.WriteInt(g_gps->ground_speed);				// 7
-	DataFlash.WriteInt((uint16_t)g_gps->ground_course);		// 8
+	DataFlash.WriteLong(g_gps->ground_course);		// 8
 
 	DataFlash.WriteByte(END_BYTE);
 }
@@ -432,10 +432,10 @@ static void Log_Read_GPS()
 	float temp5 	= DataFlash.ReadLong() / 100.0;	// 5 gps alt
 	float temp6 	= DataFlash.ReadLong() / 100.0;	// 6 sensor alt
 	int16_t temp7 	= DataFlash.ReadInt();			// 7 ground speed
-	uint32_t temp8 	= (unsigned)DataFlash.ReadInt();// 8 ground course
+	int32_t temp8 	= DataFlash.ReadLong();// 8 ground course
 
 							//  1   2    3      4     5      6      7    8
-	Serial.printf_P(PSTR("GPS, %ld, %d, %4.7f, %4.7f, %4.4f, %4.4f, %d, %u\n"),
+	Serial.printf_P(PSTR("GPS, %ld, %d, %4.7f, %4.7f, %4.4f, %4.4f, %d, %ld\n"),
 							temp1,		// 1 time
 							temp2,		// 2 sats
 							temp3,		// 3 lat
@@ -700,6 +700,8 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(nav_lat);							// 6
 	DataFlash.WriteInt(g.pi_nav_lon.get_integrator());		// 7
 	DataFlash.WriteInt(g.pi_nav_lat.get_integrator());	    // 8
+	//crosstrack_error
+	//DataFlash.WriteInt(crosstrack_error);	// 9
 	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
 	DataFlash.WriteInt(g.pi_loiter_lat.get_integrator());	// 10
 
