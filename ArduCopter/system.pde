@@ -335,7 +335,7 @@ static void init_ardupilot()
 	#endif
 	
 	// initialise sonar
-	#if CONFIG_SONAR == ENABLED
+	#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
 	init_sonar();
 	#endif
 
