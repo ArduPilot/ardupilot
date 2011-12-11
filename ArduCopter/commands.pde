@@ -220,8 +220,8 @@ static void init_home()
 	// Save prev loc this makes the calcs look better before commands are loaded
 	prev_WP = home;
 
-	// this is dangerous since we can get GPS lock at any time.
-	//next_WP = home;
+	//
+	next_WP = home;
 
 	// Load home for a default guided_WP
 	// -------------
