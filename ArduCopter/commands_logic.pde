@@ -351,8 +351,8 @@ static bool verify_takeoff()
 
 static bool verify_land()
 {
-	// land at 1 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 20);			// condition_value = our initial
+	// land at .62 meter per second
+	next_WP.alt  = original_alt - ((millis() - land_start) / 16);			// condition_value = our initial
 
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
@@ -372,6 +372,7 @@ static bool verify_land()
 
 	if(velocity_land <= 0){
 		land_complete = true;
+		// commented out to prevent tragedy
 		//return true;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
