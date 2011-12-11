@@ -12,10 +12,10 @@ get_stabilize_roll(int32_t target_angle)
 #if FRAME_CONFIG == HELI_FRAME
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -4500, 4500);
-	
+
 	// convert to desired Rate:
 	rate 		= g.pi_stabilize_roll.get_pi(error, G_Dt);
-	
+
 	// output control:
 	rate = constrain(rate, -4500, 4500);
 	return (int)rate;
@@ -28,7 +28,7 @@ get_stabilize_roll(int32_t target_angle)
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
-	
+
 	// rate control
 	error 		= rate - (omega.x * DEGX100);
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
@@ -51,7 +51,7 @@ get_stabilize_pitch(int32_t target_angle)
 #if FRAME_CONFIG == HELI_FRAME
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -4500, 4500);
-	
+
 	// convert to desired Rate:
 	rate 		= g.pi_stabilize_pitch.get_pi(error, G_Dt);
 
@@ -96,8 +96,8 @@ get_stabilize_yaw(int32_t target_angle)
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_yaw.get_i(error, G_Dt);
-	
-#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters	
+
+#if FRAME_CONFIG == HELI_FRAME  // cannot use rate control for helicopters
 	if( !g.heli_ext_gyro_enabled ) {
 		error 	= rate - (omega.z * DEGX100);
 		rate 	= g.pi_rate_yaw.get_pi(error, G_Dt);
@@ -121,7 +121,8 @@ get_nav_throttle(int32_t z_error)
 {
 	int16_t rate_error;
 
-	float dt = (abs(z_error) < 200) ? .1 : 0.0;
+	float dt = (abs(z_error) < 400) ? .1 : 0.0;
+	//float dt = .1;
 
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
