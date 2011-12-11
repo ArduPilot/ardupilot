@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
-#include <APM_BMP085.h>     // ArduPilot Mega BMP085 Library
+#include <AP_Baro.h>     // ArduPilot Mega BMP085 Library
 #include "desktop.h"
 #include "util.h"
 
@@ -20,7 +20,7 @@
  */
 void sitl_update_barometer(float altitude)
 {
-	extern APM_BMP085_HIL_Class barometer;
+	extern AP_Baro_BMP085_HIL barometer;
 	double Temp, Press, y;
 
 	Temp = 312;
