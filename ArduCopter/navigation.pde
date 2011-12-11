@@ -5,9 +5,6 @@
 //****************************************************************
 static byte navigate()
 {
-	if(next_WP.lat == 0){
-		return 0;
-	}
 
 	// waypoint distance from plane
 	// ----------------------------
@@ -90,7 +87,14 @@ static void calc_loiter(int x_error, int y_error)
 	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
 	nav_lat			= constrain(nav_lat, -3500, 3500);
 	nav_lat			+= y_iterm;
-
+	/*Serial.printf("loiter x_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
+					x_actual_speed,
+					x_rate_error,
+					nav_lon,
+					y_actual_speed,
+					y_rate_error,
+					nav_lat);
+	*/
 	x_rate_error 	= x_target_speed - x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -250, 250);
 	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
@@ -144,6 +148,9 @@ static void calc_loiter_pitch_roll()
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
+
+	//Serial.printf("nav_roll %d, nav_pitch %d\n",
+	//				nav_roll, nav_pitch);
 }
 
 static void calc_nav_rate(int max_speed)
@@ -186,6 +193,15 @@ static void calc_nav_rate(int max_speed)
 	x_rate_error 	= crosstrack_error -x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -800, 800);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
+	/*Serial.printf("max_speed %d,\tx_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
+					max_speed,
+					x_actual_speed,
+					x_rate_error,
+					nav_lon,
+					y_actual_speed,
+					y_rate_error,
+					nav_lat);
+	*/
 
 	// heading towards target
 	y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
@@ -210,7 +226,7 @@ static void update_crosstrack(void)
 {
 	// Crosstrack Error
 	// ----------------
-	if (cross_track_test() < 5000) {	 // If we are too far off or too close we don't do track following
+	if (cross_track_test() < 4000) {	 // If we are too far off or too close we don't do track following
 		float temp = (target_bearing - original_target_bearing) * RADX100;
 		//radians((target_bearing - original_target_bearing) / 100)
 		crosstrack_error = sin(temp) * wp_distance;	 // Meters we are off track line
