@@ -14,7 +14,7 @@ AP_Baro_BMP085_HIL::AP_Baro_BMP085_HIL()
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_Baro_BMP085_HIL::Init(int initialiseWireLib, bool apm2_hardware)
+void AP_Baro_BMP085_HIL::init(AP_PeriodicProcess * scheduler)
 {
   BMP085_State=1;
 }
@@ -22,7 +22,7 @@ void AP_Baro_BMP085_HIL::Init(int initialiseWireLib, bool apm2_hardware)
 
 // Read the sensor. This is a state machine
 // We read one time Temperature (state = 1) and then 4 times Pressure (states 2-5)
-uint8_t AP_Baro_BMP085_HIL::Read()
+uint8_t AP_Baro_BMP085_HIL::read()
 {
 	uint8_t result = 0;
 
@@ -46,4 +46,24 @@ void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
     // TODO: map floats to raw
 	Temp 	= _Temp;
 	Press 	= _Press;
+}
+
+int32_t AP_Baro_BMP085_HIL::get_pressure() {
+    return Press;
+}
+
+int16_t AP_Baro_BMP085_HIL::get_temperature() {
+    return Temp;
+}
+
+float AP_Baro_BMP085_HIL::get_altitude() {
+    return 0.0; // TODO
+}
+
+int32_t AP_Baro_BMP085_HIL::get_raw_pressure() {
+    return Press;
+}
+
+int32_t AP_Baro_BMP085_HIL::get_raw_temp() {
+    return Temp;
 }
