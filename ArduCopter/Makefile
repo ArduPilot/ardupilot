@@ -27,5 +27,9 @@ apm2beta:
 mavlink10:
 	make -f Makefile EXTRAFLAGS="-DMAVLINK10"
 
+sitl:
+	make -f ../libraries/Desktop/Makefile.desktop
+
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
+
