@@ -51,9 +51,6 @@ static void read_trim_switch()
 			do_flip = true;
 		}
 
-	#elif CH7_OPTION == CH7_SIMPLE_MODE
-		//Serial.println(g.rc_7.control_in, DEC);
-
 	#elif CH7_OPTION == CH7_SET_HOVER
 		// switch is engaged
 		if (g.rc_7.control_in > 800){
