@@ -112,6 +112,12 @@ static void read_trim_switch()
 			if(trim_flag){
 				trim_flag = false;
 
+				if(control_mode == AUTO){
+					CH7_wp_index = 0;
+					g.command_total.set_and_save(1);
+					return;
+				}
+
 				if(CH7_wp_index == 0){
 					// this is our first WP, let's save WP 1 as a takeoff
 					// increment index
