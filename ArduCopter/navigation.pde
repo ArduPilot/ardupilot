@@ -246,9 +246,9 @@ static int32_t cross_track_test()
 // nav_roll, nav_pitch
 static void calc_nav_pitch_roll()
 {
-	float temp	 = (9000l - (dcm.yaw_sensor - target_bearing)) * RADX100;
+	int32_t angle = wrap_360(dcm.yaw_sensor - target_bearing);
+	float temp	 = (9000l - angle) * RADX100;
 	//t: 1.5465, t1: -10.9451, t2: 1.5359, t3: 1.5465
-
 	float _cos_yaw_x = cos(temp);
 	float _sin_yaw_y = sin(temp);
 
@@ -259,7 +259,10 @@ static void calc_nav_pitch_roll()
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
 
-	/*Serial.printf("_cos_yaw_x:%1.4f, _sin_yaw_y:%1.4f, nav_roll:%ld, nav_pitch:%ld\n",
+	/*Serial.printf("Yaw %d, Tbear:%d, \tangle: %d, \t_cos_yaw_x:%1.4f, _sin_yaw_y:%1.4f, nav_roll:%d, nav_pitch:%d\n",
+					dcm.yaw_sensor,
+					target_bearing,
+					angle,
 					_cos_yaw_x,
 					_sin_yaw_y,
 					nav_roll,
