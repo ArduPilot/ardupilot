@@ -90,16 +90,11 @@
 #define GPS_PROTOCOL_MTK16	6
 #define GPS_PROTOCOL_AUTO	7
 
-// SONAR types:
-#define MAX_SONAR_UNKNOWN	0
-#define MAX_SONAR_XL		1
-
 #define CH_ROLL CH_1
 #define CH_PITCH CH_2
 #define CH_THROTTLE CH_3
 #define CH_RUDDER CH_4
 #define CH_YAW CH_4
-
 
 #define RC_CHANNEL_ANGLE 0
 #define RC_CHANNEL_RANGE 1

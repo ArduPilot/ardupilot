@@ -33,10 +33,33 @@
 
 AP_RangeFinder_MaxsonarXL::AP_RangeFinder_MaxsonarXL(AP_AnalogSource *source,
                                                      ModeFilter *filter) :
-	RangeFinder(source, filter)
+	RangeFinder(source, filter), _scaler(AP_RANGEFINDER_MAXSONARXL_SCALER)
 {
     max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
 	min_distance = AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
+float AP_RangeFinder_MaxsonarXL::calculate_scaler(int sonar_type, float adc_refence_voltage)
+{
+    float type_scaler = 1.0;
+	switch(sonar_type) {
+		case AP_RANGEFINDER_MAXSONARXL:
+		    type_scaler = AP_RANGEFINDER_MAXSONARXL_SCALER;
+		    min_distance = AP_RANGEFINDER_MAXSONARXL_MIN_DISTANCE;
+		    max_distance = AP_RANGEFINDER_MAXSONARXL_MAX_DISTANCE;
+			break;
+		case AP_RANGEFINDER_MAXSONARLV:
+		    type_scaler = AP_RANGEFINDER_MAXSONARLV_SCALER;
+		    min_distance = AP_RANGEFINDER_MAXSONARLV_MIN_DISTANCE;
+		    max_distance = AP_RANGEFINDER_MAXSONARLV_MAX_DISTANCE;
+			break;
+		case AP_RANGEFINDER_MAXSONARXLL:
+		    type_scaler = AP_RANGEFINDER_MAXSONARXLL_SCALER;
+		    min_distance = AP_RANGEFINDER_MAXSONARXLL_MIN_DISTANCE;
+		    max_distance = AP_RANGEFINDER_MAXSONARXLL_MAX_DISTANCE;
+			break;
+    }
+	_scaler = type_scaler * adc_refence_voltage / 5.0;
+	return _scaler;
+}

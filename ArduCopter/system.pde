@@ -333,6 +333,11 @@ static void init_ardupilot()
 	//-----------------------------
 	init_barometer();
 	#endif
+	
+	// initialise sonar
+	#if CONFIG_SONAR == ENABLED
+	init_sonar();
+	#endif
 
 	// initialize commands
 	// -------------------

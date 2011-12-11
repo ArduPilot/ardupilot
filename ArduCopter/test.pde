@@ -973,6 +973,9 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 		Serial.printf_P(PSTR("Sonar disabled\n"));
 		return (0);
 	}
+	
+	// make sure sonar is initialised
+	init_sonar();
 
 	print_hit_enter();
 	while(1) {
