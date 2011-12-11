@@ -19,13 +19,9 @@
 #define AP_RANGEFINDER_ORIENTATION_FRONT_LEFT 	  5,  5,  0
 */
 
-// define Pitot tube's ADC Channel
-#define AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL 7
-
 class RangeFinder
 {
   protected:
-	//GPS(Stream *s) : _port(s) {};
 	RangeFinder(AP_AnalogSource * source, ModeFilter *filter) :
 		_analog_source(source),
 		_mode_filter(filter)

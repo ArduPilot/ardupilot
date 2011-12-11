@@ -161,10 +161,6 @@
 # define SONAR_ENABLED DISABLED
 #endif
 
-#ifndef SONAR_TYPE
-# define SONAR_TYPE		MAX_SONAR_XL
-#endif
-
 #ifndef CONFIG_SONAR
 # define CONFIG_SONAR ENABLED
 #endif

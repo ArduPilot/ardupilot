@@ -30,17 +30,17 @@ void RangeFinder::set_orientation(int x, int y, int z)
 // Read Sensor data - only the raw_value is filled in by this parent class
 int RangeFinder::read()
 {
+    int temp_dist;
+	
 	raw_value = _analog_source->read();
 
-	raw_value = convert_raw_to_distance(raw_value);
-
 	// convert analog value to distance in cm (using child implementation most likely)
-	raw_value = convert_raw_to_distance(raw_value);
+	temp_dist = convert_raw_to_distance(raw_value);
 
 	// ensure distance is within min and max
-	raw_value = constrain(raw_value, min_distance, max_distance);
+	temp_dist = constrain(temp_dist, min_distance, max_distance);
 
-	distance = _mode_filter->get_filtered_with_sample(raw_value);
+	distance = _mode_filter->get_filtered_with_sample(temp_dist);
 	return distance;
 }
 

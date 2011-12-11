@@ -250,11 +250,7 @@ ModeFilter sonar_mode_filter;
 	#elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 		AP_AnalogSource_Arduino sonar_analog_source(CONFIG_SONAR_SOURCE_ANALOG_PIN);
 	#endif
-	#if SONAR_TYPE == MAX_SONAR_XL
-		AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
-	#else
-		#error Unrecognised SONAR_TYPE setting.
-	#endif
+	AP_RangeFinder_MaxsonarXL sonar(&sonar_analog_source, &sonar_mode_filter);
 #endif
 
 // agmatthews USERHOOKS

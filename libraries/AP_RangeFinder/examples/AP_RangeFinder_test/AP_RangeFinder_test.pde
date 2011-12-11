@@ -11,15 +11,27 @@
 #include <AP_AnalogSource.h>
 #include <ModeFilter.h>			// mode filter
 
+// comment out line below if using APM2 or analog pin instead of APM1's built in ADC
+#define USE_ADC_ADS7844  // use APM1's built in ADC and connect sonar to pitot tube
+
+// uncomment appropriate line corresponding to your sonar
+#define SONAR_TYPE AP_RANGEFINDER_MAXSONARXL   // 0 - XL (default)
+//#define SONAR_TYPE AP_RANGEFINDER_MAXSONARLV   // 1 - LV (cheaper)
+//#define SONAR_TYPE AP_RANGEFINDER_MAXSONARXLL   // 2 - XLL (XL with 10m range)
+
+// define Pitot tube's ADC Channel
+#define AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL 7
+
 // declare global instances
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerProcess  adc_scheduler;
-AP_ADC_ADS7844	adc;
 ModeFilter mode_filter;
-
-// uncomment the appropriate line corresponding to where sonar is connected 
-AP_AnalogSource_ADC	adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // uncomment this line to use Pitot tube
-//AP_AnalogSource_Arduino adc_source(A4);   // uncomment this line to use A5 analog pin (far back-right pin on the oilpan near the CLI switch
+#ifdef USE_ADC_ADS7844
+    AP_TimerProcess  adc_scheduler;
+    AP_ADC_ADS7844 adc;
+    AP_AnalogSource_ADC adc_source(&adc, AP_RANGEFINDER_PITOT_TYPE_ADC_CHANNEL, 0.25);    // use Pitot tube
+#else
+    AP_AnalogSource_Arduino adc_source(A4);   // use AN4 analog pin (APM1: on oilpan at back right near the CLI switch.  APM2: on left)
+#endif
 
 // create the range finder object
 //AP_RangeFinder_SharpGP2Y aRF(&adc_source, &mode_filter);
@@ -29,10 +41,19 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("Range Finder Test v1.1");
+	Serial.print("Sonar Type: ");
+	Serial.println(SONAR_TYPE);
+	
+#ifdef USE_ADC_ADS7844
     isr_registry.init();
     adc_scheduler.init(&isr_registry);
     adc.filter_result = true;
     adc.Init(&adc_scheduler);   // APM ADC initialization
+    aRF.calculate_scaler(SONAR_TYPE,3.3);   // setup scaling for sonar
+#else
+    aRF.calculate_scaler(SONAR_TYPE,5.0);   // setup scaling for sonar
+#endif
+	
 }
 
 void loop()
