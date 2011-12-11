@@ -108,6 +108,7 @@
 # define SLIDE_SWITCH_PIN 40
 # define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
+# define CLI_SLIDER_ENABLED DISABLED
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -578,7 +579,7 @@
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.05		// Lowerd from .25 - saw lots of overshoot.
+# define NAV_I				0.03		// Lowerd from .25 - saw lots of overshoot.
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			20			// degrees
