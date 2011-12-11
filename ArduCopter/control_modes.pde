@@ -134,8 +134,13 @@ static void read_trim_switch()
 				// max out at 100 since I think we need to stay under the EEPROM limit
 				CH7_wp_index = constrain(CH7_wp_index, 1, 100);
 
-				// set our location ID to 16, MAV_CMD_NAV_WAYPOINT
-				current_loc.id = MAV_CMD_NAV_WAYPOINT;
+				if(g.rc_3.control_in > 0){
+					// set our location ID to 16, MAV_CMD_NAV_WAYPOINT
+					current_loc.id = MAV_CMD_NAV_WAYPOINT;
+				}else{
+					// set our location ID to 21, MAV_CMD_NAV_LAND
+					current_loc.id = MAV_CMD_NAV_LAND;
+				}
 
 				// save command
 				set_cmd_with_index(current_loc, CH7_wp_index);
