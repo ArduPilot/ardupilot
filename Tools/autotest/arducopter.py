@@ -308,59 +308,72 @@ def fly_ArduCopter(viewerip=None):
         homeloc = current_location(mav)
 
         if not calibrate_level(mavproxy, mav):
+            print("calibrate_level failed")
             failed = True
 
         if not arm_motors(mavproxy, mav):
+            print("arm_motors failed")
             failed = True
 
         if not takeoff(mavproxy, mav):
+            print("takeoff failed")
             failed = True
 
         print("# Fly A square")
         if not fly_square(mavproxy, mav):
+            print("fly_square failed")
             failed = True
 
         # save the stored mission
         print("# Save out the C7 mission")
         if not save_mission_to_file(mavproxy, mav, os.path.join(testdir, "ch7_mission.txt")):
+            print("save_mission_to_file failed")
             failed = True
 
         # Loiter for 10 seconds
         print("# Loiter for 10 seconds")
         if not loiter(mavproxy, mav):
+            print("loiter failed")
             failed = True
 
         #Fly a circle for 60 seconds
         print("# Fly a Circle")
         if not circle(mavproxy, mav):
+            print("circle failed")
             failed = True
 
         # save the stored mission
         print("# Fly CH 7 saved mission")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+            print("fly_mission failed")
             failed = True
 
         print("# Upload mission1")
         if not upload_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
+            print("upload_mission_from_file failed")
             failed = True
 
         # this grabs our mission count
         print("# store mission1 locally")
         if not load_mission_from_file(mavproxy, mav, os.path.join(testdir, "mission2.txt")):
+            print("load_mission_from_file failed")
             failed = True
 
         print("# Fly mission 2")
         if not fly_mission(mavproxy, mav,height_accuracy = 0.5, target_altitude=10):
+            print("fly_mission failed")
             failed = True
         else:
             print("Flew mission2 OK")
 
         print("# Land")
         if not land(mavproxy, mav):
+            print("land failed")
             failed = True
 
         print("# disarm motors")
         if not disarm_motors(mavproxy, mav):
+            print("disarm_motors failed")
             failed = True
     except pexpect.TIMEOUT, e:
         failed = True
