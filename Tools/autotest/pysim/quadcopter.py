@@ -12,6 +12,7 @@ class QuadCopter(Aircraft):
         self.mass = 1.0 # Kg
         self.hover_throttle = 0.37
         self.terminal_velocity = 30.0
+        self.terminal_rotation_rate = 4*360.0
         self.frame_height = 0.1
 
         # scaling from total motor power to Newtons. Allows the copter
@@ -38,6 +39,11 @@ class QuadCopter(Aircraft):
         roll_accel  = (m[1] - m[0]) * 5000.0
         pitch_accel = (m[2] - m[3]) * 5000.0
         yaw_accel   = -((m[2]+m[3]) - (m[0]+m[1])) * 400.0
+
+        # rotational resistance
+        roll_accel  -= (self.pDeg / self.terminal_rotation_rate) * 5000.0
+        pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0
+        yaw_accel   -= (self.rDeg / self.terminal_rotation_rate) * 400.0
 
         # update rotational rates in body frame
         self.pDeg  += roll_accel * delta_time
