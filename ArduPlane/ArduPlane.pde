@@ -139,7 +139,7 @@ AP_Compass_HIL          compass;
 #else
 
 #if CONFIG_BARO == AP_BARO_BMP085
-# if CONFIG_HARDWARE == CONFIG_HARDWARE_APM2
+# if CONFIG_APM_HARDWARE == CONFIG_HARDWARE_APM2
 static AP_Baro_BMP085          barometer(true);
 # else
 static AP_Baro_BMP085          barometer(false);
