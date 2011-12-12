@@ -468,6 +468,10 @@
 # define RTL_THR			THROTTLE_HOLD
 #endif
 
+#ifndef RESET_SIMPLE
+# define RESET_SIMPLE		DISABLED
+#endif
+
 
 
 

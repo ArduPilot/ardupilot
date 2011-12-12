@@ -568,6 +568,8 @@ AP_Relay relay;
 	static bool usb_connected;
 #endif
 
+static float roll_I;
+static float pitch_I;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Top-level logic
@@ -1261,10 +1263,9 @@ static void update_navigation()
 	}
 
 	// are we in SIMPLE mode?
-	if(do_simple){
+	if(do_simple && g.reset_simple){
 		// get distance to home
-		if(home_distance > 10){
-			// 10m
+		if(home_distance > 10){ // 10m from home
 			// we reset the angular offset to be a vector from home to the quad
 			initial_simple_bearing = home_to_copter_bearing;
 			//Serial.printf("ISB: %d\n", initial_simple_bearing);
