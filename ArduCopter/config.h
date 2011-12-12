@@ -669,7 +669,7 @@
 # ifndef LOGGING_ENABLED
 #  define LOGGING_ENABLED    DISABLED
 # endif
-#elif LOGGING_ENABLED != DISABLED
+#elif !defined(LOGGING_ENABLED)
 // Logging is enabled by default for all other builds.
 # define LOGGING_ENABLED		ENABLED
 #endif
