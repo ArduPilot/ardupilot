@@ -240,6 +240,7 @@ def fly_ArduCopter(viewerip=None):
 
     simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    simquad_cmd += ' --wind=2,90,0.2'
     if viewerip:
         simquad_cmd += ' --fgout=%s:5503' % viewerip
 
