@@ -267,7 +267,7 @@ def fly_ArduCopter(viewerip=None):
     simquad = pexpect.spawn(simquad_cmd, logfile=sys.stdout, timeout=10)
     simquad.delaybeforesend = 0
     util.pexpect_autoclose(simquad)
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=1'
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
