@@ -106,7 +106,9 @@ static void init_ardupilot()
 	//
 	// Initialize Wire and SPI libraries
 	//
+#ifndef DESKTOP_BUILD
     Wire.begin();
+#endif
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
 	//
