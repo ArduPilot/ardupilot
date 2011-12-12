@@ -22,8 +22,8 @@ var update_quad = func( ) {
     # airspeed-kt is actually in feet per second (FDM NET bug)
     setprop("/apm/airspeed", round10(0.3048*getprop("/velocities/airspeed-kt")));
 
-    setprop("/apm/motor_left",   round10(getprop("/engines/engine[0]/rpm")/10.0));
-    setprop("/apm/motor_right",  round10(getprop("/engines/engine[1]/rpm")/10.0));
+    setprop("/apm/motor_right",  round10(getprop("/engines/engine[0]/rpm")/10.0));
+    setprop("/apm/motor_left",   round10(getprop("/engines/engine[1]/rpm")/10.0));
     setprop("/apm/motor_front",  round10(getprop("/engines/engine[2]/rpm")/10.0));
     setprop("/apm/motor_back",   round10(getprop("/engines/engine[3]/rpm")/10.0));
 }
