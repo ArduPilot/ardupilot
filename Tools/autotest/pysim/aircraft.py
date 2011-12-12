@@ -65,6 +65,14 @@ class Aircraft(object):
         self.latitude  = self.home_latitude + dlat
         self.longitude = self.home_longitude + dlon
 
+        from math import sin, cos, sqrt, radians
+        
         # work out what the accelerometer would see
-        self.accelerometer = util.RPY_to_XYZ(self.roll, self.pitch, self.yaw, 1) * -self.gravity
-        self.accelerometer -= self.accel
+        xAccel = sin(radians(self.pitch)) * cos(radians(self.roll))
+        yAccel = -sin(radians(self.roll)) * cos(radians(self.pitch))
+        zAccel = -cos(radians(self.roll)) * cos(radians(self.pitch))
+        scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel))
+        xAccel *= scale;
+        yAccel *= scale;
+        zAccel *= scale;
+        self.accelerometer = euclid.Vector3(xAccel, yAccel, zAccel)
