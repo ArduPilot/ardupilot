@@ -13,6 +13,14 @@ HOME=location(-35.362938,149.165085,584,270)
 homeloc = None
 num_wp = 0
 
+def calibrate_level(mavproxy, mav):
+    '''init the accelerometers'''
+    print("Initialising accelerometers")
+    MAV_ACTION_CALIBRATE_ACC = 19
+    mav.mav.action_send(mav.target_system, mav.target_component, MAV_ACTION_CALIBRATE_ACC)
+    mavproxy.expect('APM: action received')
+    return True
+
 def arm_motors(mavproxy, mav):
     '''arm motors'''
     print("Arming motors")
@@ -298,6 +306,10 @@ def fly_ArduCopter(viewerip=None):
         mav.recv_match(type='GPS_RAW', blocking=True)
         setup_rc(mavproxy)
         homeloc = current_location(mav)
+
+        if not calibrate_level(mavproxy, mav):
+            failed = True
+
         if not arm_motors(mavproxy, mav):
             failed = True
 
