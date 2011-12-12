@@ -54,7 +54,7 @@ static void update_commands()
 				command_nav_queue.id = NO_COMMAND;
 			}
 		}else{
-			command_nav_index == 255;
+			command_nav_index = 255;
 		}
 	}
 
