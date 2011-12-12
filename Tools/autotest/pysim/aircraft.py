@@ -36,6 +36,8 @@ class Aircraft(object):
         self.gravity = 9.8 # m/s/s
         self.accelerometer = euclid.Vector3(0, 0, -self.gravity)
 
+        self.wind = util.Wind('0,0,0')
+
     def normalise(self):
         '''normalise roll, pitch and yaw
 

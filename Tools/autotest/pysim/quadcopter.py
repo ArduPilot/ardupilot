@@ -74,6 +74,9 @@ class QuadCopter(Aircraft):
         accel3D += euclid.Vector3(0, 0, -self.gravity)
         accel3D += air_resistance
 
+        # add in some wind
+        accel3D += self.wind.accel(self.velocity)
+
         # new velocity vector
         self.velocity += accel3D * delta_time
         self.accel     = accel3D

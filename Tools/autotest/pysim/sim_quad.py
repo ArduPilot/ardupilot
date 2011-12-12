@@ -84,6 +84,7 @@ parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=1000)
+parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
 (opts, args) = parser.parse_args()
 
@@ -141,7 +142,7 @@ a.altitude = a.home_altitude
 a.yaw = float(v[3])
 a.ground_level = a.home_altitude
 a.position.z = 0
-
+a.wind = util.Wind(opts.wind)
 
 print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_latitude,
