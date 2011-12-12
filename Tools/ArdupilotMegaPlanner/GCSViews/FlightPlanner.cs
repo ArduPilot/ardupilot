@@ -630,6 +630,16 @@ namespace ArdupilotMega.GCSViews
 
             config(false);
 
+            if (MainV2.HomeLocation.Lat != 0 && MainV2.HomeLocation.Lng != 0)
+            {
+                TXT_homelat.Text = MainV2.HomeLocation.Lat.ToString();
+
+                TXT_homelng.Text = MainV2.HomeLocation.Lng.ToString();
+
+                TXT_homealt.Text = MainV2.HomeLocation.Alt.ToString();
+            }
+
+
             quickadd = false;
 
             if (MainV2.config["WMSserver"] != null)
@@ -700,6 +710,8 @@ namespace ArdupilotMega.GCSViews
             {
                 GMapPolygon kmlpolygon = new GMapPolygon(new List<PointLatLng>(), "kmlpolygon");
 
+                kmlpolygon.Stroke.Color = Color.Purple;
+
                 foreach (var loc in polygon.OuterBoundary.LinearRing.Coordinates)
                 {
                     kmlpolygon.Points.Add(new PointLatLng(loc.Latitude, loc.Longitude));
@@ -710,6 +722,8 @@ namespace ArdupilotMega.GCSViews
             else if (ls != null)
             {
                 GMapRoute kmlroute = new GMapRoute(new List<PointLatLng>(), "kmlroute");
+
+                kmlroute.Stroke.Color = Color.Purple;
 
                 foreach (var loc in ls.Coordinates)
                 {
@@ -1514,15 +1528,6 @@ namespace ArdupilotMega.GCSViews
                 {
                     switch (key)
                     {
-                        case "TXT_homelat":
-                            TXT_homelat.Text = ArdupilotMega.MainV2.config[key].ToString();
-                            break;
-                        case "TXT_homelng":
-                            TXT_homelng.Text = ArdupilotMega.MainV2.config[key].ToString();
-                            break;
-                        case "TXT_homealt":
-                            TXT_homealt.Text = ArdupilotMega.MainV2.config[key].ToString();
-                            break;
                         case "TXT_WPRad":
                             TXT_WPRad.Text = ArdupilotMega.MainV2.config[key].ToString();
                             break;
@@ -1652,18 +1657,34 @@ namespace ArdupilotMega.GCSViews
         private void TXT_homelat_TextChanged(object sender, EventArgs e)
         {
             sethome = false;
+            try
+            {
+                MainV2.HomeLocation.Lat = double.Parse(TXT_homelat.Text);
+            }
+            catch { }
             writeKML();
+
         }
 
         private void TXT_homelng_TextChanged(object sender, EventArgs e)
         {
             sethome = false;
+            try
+            {
+                MainV2.HomeLocation.Lng = double.Parse(TXT_homelng.Text);
+            }
+            catch { }
             writeKML();
         }
 
         private void TXT_homealt_TextChanged(object sender, EventArgs e)
         {
             sethome = false;
+            try
+            {
+                MainV2.HomeLocation.Alt = double.Parse(TXT_homealt.Text);
+            }
+            catch { }
             writeKML();
         }
 
@@ -1793,8 +1814,6 @@ namespace ArdupilotMega.GCSViews
         // polygons
         GMapPolygon polygon;
         GMapPolygon drawnpolygon;
-
-        //static GMapRoute route;
         GMapOverlay kmlpolygons;
 
         // layers
@@ -2877,6 +2896,9 @@ namespace ArdupilotMega.GCSViews
                     kmlpolygons.Polygons.Clear();
                     kmlpolygons.Routes.Clear();
 
+                    FlightData.kmlpolygons.Routes.Clear();
+                    FlightData.kmlpolygons.Polygons.Clear();
+
                     string kml = new StreamReader(File.OpenRead(file)).ReadToEnd();
 
                     kml = kml.Replace("<Snippet/>", "");
@@ -2885,6 +2907,18 @@ namespace ArdupilotMega.GCSViews
 
                     parser.ElementAdded += parser_ElementAdded;
                     parser.ParseString(kml,true);
+
+                    if (DialogResult.Yes == MessageBox.Show("Do you want to load this into the flight data screen?", "Load data", MessageBoxButtons.YesNo))
+                    {
+                        foreach (var temp in kmlpolygons.Polygons)
+                        {
+                            FlightData.kmlpolygons.Polygons.Add(temp);
+                        }
+                        foreach (var temp in kmlpolygons.Routes)
+                        {
+                            FlightData.kmlpolygons.Routes.Add(temp);
+                        }
+                    }
 
                 }
                 catch (Exception ex) { MessageBox.Show("Bad KML File :" + ex.ToString()); }

@@ -374,6 +374,11 @@ namespace ArdupilotMega.Setup
 
                 if (MainV2.comPort.param["COMPASS_DEC"] != null)
                     TXT_declination.Text = (float.Parse(MainV2.comPort.param["COMPASS_DEC"].ToString()) * rad2deg).ToString();
+
+                if (MainV2.comPort.param["SONAR_TYPE"] != null)
+                    CMB_sonartype.SelectedIndex = int.Parse(MainV2.comPort.param["SONAR_TYPE"].ToString());
+                
+
                 startup = false;
             }
 
@@ -1192,7 +1197,8 @@ namespace ArdupilotMega.Setup
                     HS4_MIN.Text = HS4.minline.ToString();
                 if (int.Parse(HS4_MAX.Text) < HS4.maxline)
                     HS4_MAX.Text = HS4.maxline.ToString();
-            } catch {}
+            }
+            catch { }
         }
 
         private void HS3_Paint(object sender, PaintEventArgs e)
@@ -1261,6 +1267,43 @@ namespace ArdupilotMega.Setup
         {
             timer.Stop();
             timer.Dispose();
+        }
+
+        private void CHK_enableoptflow_CheckedChanged(object sender, EventArgs e)
+        {
+
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["FLOW_ENABLE"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("FLOW_ENABLE", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set FLOW_ENABLE Failed"); }
+        }
+
+        private void CMB_sonartype_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["SONAR_TYPE"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("SONAR_TYPE", ((ComboBox)sender).SelectedIndex);
+                }
+            }
+            catch { MessageBox.Show("Set SONAR_TYPE Failed"); }
         }
     }
 }

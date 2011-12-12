@@ -109,6 +109,13 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap BR_0016_01_3T {
+            get {
+                object obj = ResourceManager.GetObject("BR_0016_01_3T", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap compass {
             get {
                 object obj = ResourceManager.GetObject("compass", resourceCulture);

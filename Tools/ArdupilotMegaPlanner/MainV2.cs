@@ -33,6 +33,11 @@ namespace ArdupilotMega
         const int SW_SHOWNORMAL = 1;
         const int SW_HIDE = 0;
 
+        /// <summary>
+        /// Home Location
+        /// </summary>
+        public static PointLatLngAlt HomeLocation = new PointLatLngAlt();
+
         public static MAVLink comPort = new MAVLink();
         public static string comportname = "";
         public static Hashtable config = new Hashtable();
@@ -167,17 +172,23 @@ namespace ArdupilotMega
             if (MainV2.config["CHK_GDIPlus"] != null)
                 GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
 
-            changeunits();
+            changeunits(); 
 
             try
             {
+                if (config["MainLocX"] != null && config["MainLocY"] != null)
+                {
+                    this.StartPosition = FormStartPosition.Manual;
+                    Point startpos = new Point(int.Parse(config["MainLocX"].ToString()), int.Parse(config["MainLocY"].ToString()));
+                    this.Location = startpos;
+                }
+
                 if (config["MainHeight"] != null)
                     this.Height = int.Parse(config["MainHeight"].ToString());
                 if (config["MainWidth"] != null)
                     this.Width = int.Parse(config["MainWidth"].ToString());
                 if (config["MainMaximised"] != null)
                     this.WindowState = (FormWindowState)Enum.Parse(typeof(FormWindowState), config["MainMaximised"].ToString());
-
 
                 if (config["CMB_rateattitude"] != null)
                     MainV2.cs.rateattitude = byte.Parse(config["CMB_rateattitude"].ToString());
@@ -190,6 +201,20 @@ namespace ArdupilotMega
 
                 if (config["speechenable"] != null)
                     MainV2.speechenable = bool.Parse(config["speechenable"].ToString());
+
+
+                try
+                {
+                    if (config["TXT_homelat"] != null)
+                        HomeLocation.Lat = double.Parse(config["TXT_homelat"].ToString());
+
+                    if (config["TXT_homelng"] != null)
+                        HomeLocation.Lng = double.Parse(config["TXT_homelng"].ToString());
+
+                    if (config["TXT_homealt"] != null)
+                        HomeLocation.Alt = double.Parse(config["TXT_homealt"].ToString());
+                }
+                catch { }
 
             }
             catch { }
@@ -834,7 +859,7 @@ namespace ArdupilotMega
                     {
                         try
                         {
-                            if (key == "")
+                            if (key == "" || key.Contains("/")) // "/dev/blah"
                                 continue;
                             xmlwriter.WriteElementString(key, config[key].ToString());
 
@@ -1212,6 +1237,24 @@ namespace ArdupilotMega
             t11.Start();
         }
 
+        public static String ComputeWebSocketHandshakeSecurityHash09(String secWebSocketKey)
+        {
+            const String MagicKEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+            String secWebSocketAccept = String.Empty;
+
+            // 1. Combine the request Sec-WebSocket-Key with magic key.
+            String ret = secWebSocketKey + MagicKEY;
+
+            // 2. Compute the SHA1 hash
+            System.Security.Cryptography.SHA1 sha = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+            byte[] sha1Hash = sha.ComputeHash(Encoding.UTF8.GetBytes(ret));
+
+            // 3. Base64 encode the hash
+            secWebSocketAccept = Convert.ToBase64String(sha1Hash);
+
+            return secWebSocketAccept;
+        }
+
         /// <summary>          
         /// little web server for sending network link kml's          
         /// </summary>          
@@ -1263,29 +1306,54 @@ namespace ArdupilotMega
 
                     if (url.Contains("websocket"))
                     {
-                        using (var writer = new StreamWriter(stream))
+                        using (var writer = new StreamWriter(stream,Encoding.Default))
                         {
-                            writer.WriteLine("HTTP/1.1 101 Web Socket Protocol Handshake");
+                            writer.WriteLine("HTTP/1.1 101 WebSocket Protocol Handshake");
                             writer.WriteLine("Upgrade: WebSocket");
                             writer.WriteLine("Connection: Upgrade");
-                            writer.WriteLine("WebSocket-Origin: http://localhost:56781/");
                             writer.WriteLine("WebSocket-Location: ws://localhost:56781/websocket/server");
+
+                            int start = head.IndexOf("Sec-WebSocket-Key:") + 19;
+                            int end = head.IndexOf('\r', start);
+                            if (end == -1)
+                                end = head.IndexOf('\n', start);
+                            string accept = ComputeWebSocketHandshakeSecurityHash09(head.Substring(start,end-start));
+
+                            writer.WriteLine("Sec-WebSocket-Accept: " + accept);
+
+                            writer.WriteLine("Server: APM Planner");
+
                             writer.WriteLine("");
+
+                            writer.Flush();
 
                             while (client.Connected)
                             {
                                 System.Threading.Thread.Sleep(200);
                                 Console.WriteLine(stream.DataAvailable + " " + client.Available);
-                                stream.WriteByte(0x00);
-                                writer.WriteLine("test from planner");
-                                stream.WriteByte(0xff);
+
+                                while (client.Available > 0)
+                                {
+                                    Console.Write(stream.ReadByte());
+                                }
+
+                                byte[] packet = new byte[256];
+
+                                string sendme = cs.roll + "," + cs.pitch + "," + cs.yaw;
+
+                                packet[0] = 0x81; // fin - binary
+                                packet[1] = (byte)sendme.Length;
+
+                                int i = 2;
+                                foreach (char ch in sendme)
+                                {
+                                    packet[i++] = (byte)ch;
+                                }
+
+                                stream.Write(packet,0,i);
 
                                 //break;
                             }
-
-                            stream.WriteByte(0x00);
-                            //message
-                            stream.WriteByte(0xff);
                         }
                     }
                     else if (url.Contains(".html"))
@@ -1656,9 +1724,13 @@ namespace ArdupilotMega
                 frm.Show();
                 return true;
             }
-            if (keyData == (Keys.Control | Keys.T)) // for ryan beall
+            if (keyData == (Keys.Control | Keys.T)) // for override connect
             {
-                MainV2.comPort.Open(false);
+                try
+                {
+                    MainV2.comPort.Open(false);
+                }
+                catch (Exception ex) { MessageBox.Show(ex.ToString()); }
                 return true;
             }
             if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
@@ -1700,6 +1772,7 @@ namespace ArdupilotMega
 
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
         }
+
         public void changelanguage(CultureInfo ci)
         {
             if (ci != null && !Thread.CurrentThread.CurrentUICulture.Equals(ci))
@@ -1769,6 +1842,9 @@ namespace ArdupilotMega
             config["MainHeight"] = this.Height;
             config["MainWidth"] = this.Width;
             config["MainMaximised"] = this.WindowState.ToString();
+
+            config["MainLocX"] = this.Location.X.ToString();
+            config["MainLocY"] = this.Location.Y.ToString();
 
             try
             {

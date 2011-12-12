@@ -20,6 +20,7 @@ namespace ArdupilotMega.HIL
 
         double hover_throttle;
         double terminal_velocity;
+        double terminal_rotation_rate;
 
         Vector3d old_position;
 
@@ -37,6 +38,7 @@ namespace ArdupilotMega.HIL
             motor_speed = new double[] { 0.0, 0.0, 0.0, 0.0 };
             hover_throttle = 0.37;
             terminal_velocity = 30.0;
+            terminal_rotation_rate = 4 * 360.0;
 
             thrust_scale = (mass * gravity) / (4.0 * hover_throttle);
 
@@ -112,7 +114,12 @@ namespace ArdupilotMega.HIL
             double pitch_accel = (m[2] - m[3]) * 5000.0;
             double yaw_accel = -((m[2] + m[3]) - (m[0] + m[1])) * 400.0;
 
-             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+            //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+
+            // rotational resistance   
+            roll_accel -= (roll_rate / terminal_rotation_rate) * 5000.0;
+            pitch_accel -= (pitch_rate / terminal_rotation_rate) * 5000.0;
+            yaw_accel -= (yaw_rate / terminal_rotation_rate) * 400.0;
 
             //# update rotational rates
             roll_rate += roll_accel * delta_time.TotalSeconds;
@@ -148,7 +155,7 @@ namespace ArdupilotMega.HIL
 
             Random rand = new Random();
             int fixme;
-            
+
             //velocity.X += .02 + rand.NextDouble() * .03;
             //velocity.Y += .02 + rand.NextDouble() * .03;
 
