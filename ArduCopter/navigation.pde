@@ -191,7 +191,7 @@ static void calc_nav_rate(int max_speed)
 	// heading laterally, we want a zero speed here
 	x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
 	x_rate_error 	= crosstrack_error -x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -800, 800);
+	x_rate_error 	= constrain(x_rate_error, -1400, 1400);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
 	/*Serial.printf("max_speed %d,\tx_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
 					max_speed,
@@ -206,7 +206,7 @@ static void calc_nav_rate(int max_speed)
 	// heading towards target
 	y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
 	y_rate_error 	= max_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -800, 800);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -1400, 1400);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= constrain(g.pi_nav_lat.get_pi(y_rate_error, dTnav), -3500, 3500);
 
 
