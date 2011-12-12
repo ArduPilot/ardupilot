@@ -106,6 +106,7 @@ public:
 	k_param_low_voltage,
 	k_param_ch7_option,
 	k_param_sonar_type,  // 153
+	k_param_reset_simple,
 
 	//
 	// 160: Navigation parameters
@@ -200,6 +201,8 @@ public:
     AP_Int8		optflow_enabled;
     AP_Float	input_voltage;
 	AP_Float	low_voltage;
+	AP_Int8		reset_simple;
+
 
 	// Waypoints
 	//
@@ -315,6 +318,7 @@ public:
 	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
 	input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,					PSTR("IN_VOLT")),
 	low_voltage				(LOW_VOLTAGE,				k_param_low_voltage,					PSTR("LOW_VOLT")),
+	reset_simple			(RESET_SIMPLE,				k_param_reset_simple,					PSTR("RST_SIMPL")),
 
 	waypoint_mode			(0,							k_param_waypoint_mode,					PSTR("WP_MODE")),
 	command_total			(0,							k_param_command_total,					PSTR("WP_TOTAL")),
