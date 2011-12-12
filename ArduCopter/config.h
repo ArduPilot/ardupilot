@@ -597,7 +597,7 @@
 # define NAV_I				0.03		// Lowerd from .25 - saw lots of overshoot.
 #endif
 #ifndef NAV_IMAX
-# define NAV_IMAX			20			// degrees
+# define NAV_IMAX			30			// degrees
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
