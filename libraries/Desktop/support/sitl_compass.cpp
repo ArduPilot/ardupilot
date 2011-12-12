@@ -44,7 +44,7 @@ static Vector3f heading_to_mag(float heading, float roll, float pitch, float yaw
 		cos_pitch = 1.0e-10;
 	}
 
-	v.z = 0;
+	v.z = -0.4;
 	v.y = (headY + v.z*sin_roll) / cos_roll;
 	v.x = (headX - (v.y*sin_roll*sin_pitch + v.z*cos_roll*sin_pitch)) / cos_pitch;
 	scale = magnitude / sqrt((v.x*v.x) + (v.y*v.y) + (v.z*v.z));
