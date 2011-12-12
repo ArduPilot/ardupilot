@@ -213,6 +213,8 @@
  # undef GPS_PROTOCOL
  # define GPS_PROTOCOL GPS_PROTOCOL_NONE
 
+ #undef CONFIG_SONAR
+ #define CONFIG_SONAR DISABLED
 #endif
 
 
@@ -667,7 +669,7 @@
 # ifndef LOGGING_ENABLED
 #  define LOGGING_ENABLED    DISABLED
 # endif
-#else
+#elif LOGGING_ENABLED != DISABLED
 // Logging is enabled by default for all other builds.
 # define LOGGING_ENABLED		ENABLED
 #endif
