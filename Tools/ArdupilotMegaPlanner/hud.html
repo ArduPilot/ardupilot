@@ -19,7 +19,16 @@
     socket = new WebSocket(host);
     //log('WebSocket - status '+socket.readyState);
     socket.onopen    = function(msg){ socket.send("onopen");  alert("Welcome - status "+this.readyState); };
-    socket.onmessage = function(msg){ alert("Received: "+msg.data); };
+    socket.onmessage = function(msg){
+      var b1 = msg.data.indexOf(",",0);
+      var b2 = msg.data.indexOf(",",b1+1);
+      
+      roll = parseFloat( msg.data.substr(0,b1));
+      pitch = parseFloat( msg.data.substr(b1+1,b2 - b1));
+      yaw = parseFloat( msg.data.substr(b2+1));
+      
+      //alert("Received: "+msg.data);
+    };
     socket.onerror   = function(msg){ alert("Error: "+msg.data); };
     socket.onclose   = function(msg){ alert("Disconnected - status "+this.readyState); };
     }
@@ -27,17 +36,16 @@
     } else {
     alert("This browser doesnt support websockets");
     }
-
-
+    
     function draw() {
 
-    pitch -= 1.2;
-    roll += .75;
+    //pitch -= 1.2;
+    //roll += .75;
 
-    if (pitch < -90)
-	pitch = 90;
-	if (roll > 180)
-	roll = -180;
+    //if (pitch < -90)
+	//pitch = 90;
+	//if (roll > 180)
+	//roll = -180;
 	
       var canvas = document.getElementById("canvas");
       if (canvas.getContext) {
@@ -157,7 +165,7 @@
 	  
 	  try {
 	  
-	  socket.send("test "+pitch+"\n");
+	  //socket.send("test "+pitch+"\n");
 	  } catch (ex){ }// alert(ex); }
 	  	
 	setTimeout ( "draw()", 33 );

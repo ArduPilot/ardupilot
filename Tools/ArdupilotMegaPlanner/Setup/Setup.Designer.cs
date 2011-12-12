@@ -40,7 +40,6 @@
             this.CHK_revch1 = new System.Windows.Forms.CheckBox();
             this.BUT_Calibrateradio = new ArdupilotMega.MyButton();
             this.BAR8 = new ArdupilotMega.HorizontalProgressBar2();
-            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.BAR7 = new ArdupilotMega.HorizontalProgressBar2();
             this.BAR6 = new ArdupilotMega.HorizontalProgressBar2();
             this.BAR5 = new ArdupilotMega.HorizontalProgressBar2();
@@ -85,9 +84,6 @@
             this.CHK_enableairspeed = new System.Windows.Forms.CheckBox();
             this.CHK_enablesonar = new System.Windows.Forms.CheckBox();
             this.CHK_enablecompass = new System.Windows.Forms.CheckBox();
-            this.pictureBox4 = new System.Windows.Forms.PictureBox();
-            this.pictureBox3 = new System.Windows.Forms.PictureBox();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tabBattery = new System.Windows.Forms.TabPage();
             this.TXT_ampspervolt = new System.Windows.Forms.TextBox();
             this.TXT_divider = new System.Windows.Forms.TextBox();
@@ -104,13 +100,10 @@
             this.label30 = new System.Windows.Forms.Label();
             this.TXT_battcapacity = new System.Windows.Forms.TextBox();
             this.CMB_batmontype = new System.Windows.Forms.ComboBox();
-            this.pictureBox5 = new System.Windows.Forms.PictureBox();
             this.tabArducopter = new System.Windows.Forms.TabPage();
             this.label28 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
-            this.pictureBoxQuadX = new System.Windows.Forms.PictureBox();
-            this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
             this.BUT_levelac2 = new ArdupilotMega.MyButton();
             this.tabHeli = new System.Windows.Forms.TabPage();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -162,22 +155,25 @@
             this.BUT_swash_manual = new ArdupilotMega.MyButton();
             this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
             this.HS3 = new ArdupilotMega.VerticalProgressBar2();
-            this.Gservoloc = new AGaugeApp.AGauge();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.currentStateBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.pictureBox4 = new System.Windows.Forms.PictureBox();
+            this.pictureBox3 = new System.Windows.Forms.PictureBox();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.pictureBox5 = new System.Windows.Forms.PictureBox();
+            this.pictureBoxQuadX = new System.Windows.Forms.PictureBox();
+            this.pictureBoxQuad = new System.Windows.Forms.PictureBox();
+            this.Gservoloc = new AGaugeApp.AGauge();
+            this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
+            this.pictureBox2 = new System.Windows.Forms.PictureBox();
+            this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.tabControl1.SuspendLayout();
             this.tabReset.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.tabModes.SuspendLayout();
             this.tabHardware.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tabBattery.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
             this.tabArducopter.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
             this.tabHeli.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -186,6 +182,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -285,10 +289,6 @@
             this.BAR8.Name = "BAR8";
             this.BAR8.Value = 1500;
             this.BAR8.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            // 
-            // currentStateBindingSource
-            // 
-            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
             // 
             // BAR7
             // 
@@ -611,6 +611,9 @@
             // tabHardware
             // 
             this.tabHardware.BackColor = System.Drawing.Color.DarkRed;
+            this.tabHardware.Controls.Add(this.CMB_sonartype);
+            this.tabHardware.Controls.Add(this.CHK_enableoptflow);
+            this.tabHardware.Controls.Add(this.pictureBox2);
             this.tabHardware.Controls.Add(this.linkLabelmagdec);
             this.tabHardware.Controls.Add(this.label100);
             this.tabHardware.Controls.Add(this.TXT_declination);
@@ -662,32 +665,6 @@
             this.CHK_enablecompass.Name = "CHK_enablecompass";
             this.CHK_enablecompass.UseVisualStyleBackColor = true;
             this.CHK_enablecompass.CheckedChanged += new System.EventHandler(this.CHK_enablecompass_CheckedChanged);
-            // 
-            // pictureBox4
-            // 
-            this.pictureBox4.BackColor = System.Drawing.Color.White;
-            this.pictureBox4.BackgroundImage = global::ArdupilotMega.Properties.Resources.airspeed;
-            resources.ApplyResources(this.pictureBox4, "pictureBox4");
-            this.pictureBox4.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox4.Name = "pictureBox4";
-            this.pictureBox4.TabStop = false;
-            // 
-            // pictureBox3
-            // 
-            this.pictureBox3.BackColor = System.Drawing.Color.White;
-            this.pictureBox3.BackgroundImage = global::ArdupilotMega.Properties.Resources.sonar;
-            resources.ApplyResources(this.pictureBox3, "pictureBox3");
-            this.pictureBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox3.Name = "pictureBox3";
-            this.pictureBox3.TabStop = false;
-            // 
-            // pictureBox1
-            // 
-            this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.compass;
-            resources.ApplyResources(this.pictureBox1, "pictureBox1");
-            this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.TabStop = false;
             // 
             // tabBattery
             // 
@@ -807,23 +784,14 @@
             this.CMB_batmontype.Name = "CMB_batmontype";
             this.CMB_batmontype.SelectedIndexChanged += new System.EventHandler(this.CMB_batmontype_SelectedIndexChanged);
             // 
-            // pictureBox5
-            // 
-            this.pictureBox5.BackColor = System.Drawing.Color.White;
-            this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
-            resources.ApplyResources(this.pictureBox5, "pictureBox5");
-            this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBox5.Name = "pictureBox5";
-            this.pictureBox5.TabStop = false;
-            // 
             // tabArducopter
             // 
             this.tabArducopter.Controls.Add(this.label28);
             this.tabArducopter.Controls.Add(this.label16);
             this.tabArducopter.Controls.Add(this.label15);
+            this.tabArducopter.Controls.Add(this.BUT_levelac2);
             this.tabArducopter.Controls.Add(this.pictureBoxQuadX);
             this.tabArducopter.Controls.Add(this.pictureBoxQuad);
-            this.tabArducopter.Controls.Add(this.BUT_levelac2);
             resources.ApplyResources(this.tabArducopter, "tabArducopter");
             this.tabArducopter.Name = "tabArducopter";
             this.tabArducopter.UseVisualStyleBackColor = true;
@@ -842,24 +810,6 @@
             // 
             resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
-            // 
-            // pictureBoxQuadX
-            // 
-            this.pictureBoxQuadX.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.pictureBoxQuadX.Image = global::ArdupilotMega.Properties.Resources.frames_04;
-            resources.ApplyResources(this.pictureBoxQuadX, "pictureBoxQuadX");
-            this.pictureBoxQuadX.Name = "pictureBoxQuadX";
-            this.pictureBoxQuadX.TabStop = false;
-            this.pictureBoxQuadX.Click += new System.EventHandler(this.pictureBoxQuadX_Click);
-            // 
-            // pictureBoxQuad
-            // 
-            this.pictureBoxQuad.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.pictureBoxQuad.Image = global::ArdupilotMega.Properties.Resources.frames_03;
-            resources.ApplyResources(this.pictureBoxQuad, "pictureBoxQuad");
-            this.pictureBoxQuad.Name = "pictureBoxQuad";
-            this.pictureBoxQuad.TabStop = false;
-            this.pictureBoxQuad.Click += new System.EventHandler(this.pictureBoxQuad_Click);
             // 
             // BUT_levelac2
             // 
@@ -1294,6 +1244,63 @@
             this.HS3.ValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(193)))), ((int)(((byte)(31)))));
             this.HS3.Paint += new System.Windows.Forms.PaintEventHandler(this.HS3_Paint);
             // 
+            // currentStateBindingSource
+            // 
+            this.currentStateBindingSource.DataSource = typeof(ArdupilotMega.CurrentState);
+            // 
+            // pictureBox4
+            // 
+            this.pictureBox4.BackColor = System.Drawing.Color.White;
+            this.pictureBox4.BackgroundImage = global::ArdupilotMega.Properties.Resources.airspeed;
+            resources.ApplyResources(this.pictureBox4, "pictureBox4");
+            this.pictureBox4.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox4.Name = "pictureBox4";
+            this.pictureBox4.TabStop = false;
+            // 
+            // pictureBox3
+            // 
+            this.pictureBox3.BackColor = System.Drawing.Color.White;
+            this.pictureBox3.BackgroundImage = global::ArdupilotMega.Properties.Resources.sonar;
+            resources.ApplyResources(this.pictureBox3, "pictureBox3");
+            this.pictureBox3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox3.Name = "pictureBox3";
+            this.pictureBox3.TabStop = false;
+            // 
+            // pictureBox1
+            // 
+            this.pictureBox1.BackgroundImage = global::ArdupilotMega.Properties.Resources.compass;
+            resources.ApplyResources(this.pictureBox1, "pictureBox1");
+            this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.TabStop = false;
+            // 
+            // pictureBox5
+            // 
+            this.pictureBox5.BackColor = System.Drawing.Color.White;
+            this.pictureBox5.BackgroundImage = global::ArdupilotMega.Properties.Resources.attocurrent;
+            resources.ApplyResources(this.pictureBox5, "pictureBox5");
+            this.pictureBox5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox5.Name = "pictureBox5";
+            this.pictureBox5.TabStop = false;
+            // 
+            // pictureBoxQuadX
+            // 
+            this.pictureBoxQuadX.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.pictureBoxQuadX.Image = global::ArdupilotMega.Properties.Resources.frames_04;
+            resources.ApplyResources(this.pictureBoxQuadX, "pictureBoxQuadX");
+            this.pictureBoxQuadX.Name = "pictureBoxQuadX";
+            this.pictureBoxQuadX.TabStop = false;
+            this.pictureBoxQuadX.Click += new System.EventHandler(this.pictureBoxQuadX_Click);
+            // 
+            // pictureBoxQuad
+            // 
+            this.pictureBoxQuad.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.pictureBoxQuad.Image = global::ArdupilotMega.Properties.Resources.frames_03;
+            resources.ApplyResources(this.pictureBoxQuad, "pictureBoxQuad");
+            this.pictureBoxQuad.Name = "pictureBoxQuad";
+            this.pictureBoxQuad.TabStop = false;
+            this.pictureBoxQuad.Click += new System.EventHandler(this.pictureBoxQuad_Click);
+            // 
             // Gservoloc
             // 
             this.Gservoloc.BackColor = System.Drawing.Color.Transparent;
@@ -1437,6 +1444,33 @@
             this.Gservoloc.Value2 = 180F;
             this.Gservoloc.Value3 = 0F;
             // 
+            // CHK_enableoptflow
+            // 
+            resources.ApplyResources(this.CHK_enableoptflow, "CHK_enableoptflow");
+            this.CHK_enableoptflow.Name = "CHK_enableoptflow";
+            this.CHK_enableoptflow.UseVisualStyleBackColor = true;
+            this.CHK_enableoptflow.CheckedChanged += new System.EventHandler(this.CHK_enableoptflow_CheckedChanged);
+            // 
+            // pictureBox2
+            // 
+            this.pictureBox2.BackColor = System.Drawing.Color.White;
+            this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.BR_0016_01_3T;
+            resources.ApplyResources(this.pictureBox2, "pictureBox2");
+            this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBox2.Name = "pictureBox2";
+            this.pictureBox2.TabStop = false;
+            // 
+            // CMB_sonartype
+            // 
+            this.CMB_sonartype.FormattingEnabled = true;
+            this.CMB_sonartype.Items.AddRange(new object[] {
+            resources.GetString("CMB_sonartype.Items"),
+            resources.GetString("CMB_sonartype.Items1"),
+            resources.GetString("CMB_sonartype.Items2")});
+            resources.ApplyResources(this.CMB_sonartype, "CMB_sonartype");
+            this.CMB_sonartype.Name = "CMB_sonartype";
+            this.CMB_sonartype.SelectedIndexChanged += new System.EventHandler(this.CMB_sonartype_SelectedIndexChanged);
+            // 
             // Setup
             // 
             resources.ApplyResources(this, "$this");
@@ -1450,21 +1484,14 @@
             this.tabReset.ResumeLayout(false);
             this.tabRadioIn.ResumeLayout(false);
             this.tabRadioIn.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.tabModes.ResumeLayout(false);
             this.tabModes.PerformLayout();
             this.tabHardware.ResumeLayout(false);
             this.tabHardware.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.tabBattery.ResumeLayout(false);
             this.tabBattery.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
             this.tabArducopter.ResumeLayout(false);
             this.tabArducopter.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
             this.tabHeli.ResumeLayout(false);
             this.tabHeli.PerformLayout();
             this.groupBox3.ResumeLayout(false);
@@ -1477,6 +1504,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox5)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuadX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxQuad)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1617,6 +1652,9 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Label label46;
         private System.Windows.Forms.Label label45;
+        private System.Windows.Forms.CheckBox CHK_enableoptflow;
+        private System.Windows.Forms.PictureBox pictureBox2;
+        private System.Windows.Forms.ComboBox CMB_sonartype;
 
     }
 }

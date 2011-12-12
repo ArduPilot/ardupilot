@@ -467,6 +467,10 @@ namespace ArdupilotMega
 
         private void CHK_elevons_CheckedChanged(object sender, EventArgs e)
         {
+            if (MainV2.joystick == null)
+            {
+                return;
+            }
             MainV2.joystick.elevons = CHK_elevons.Checked;
         }
 

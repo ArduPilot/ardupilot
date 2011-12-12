@@ -59,6 +59,8 @@ namespace ArdupilotMega.GCSViews
         CurveItem list9curve;
         CurveItem list10curve;
 
+        internal static GMapOverlay kmlpolygons;
+
         bool huddropout = false;
         bool huddropoutresize = false;
 
@@ -153,6 +155,12 @@ namespace ArdupilotMega.GCSViews
             gMapControl1.OnMapZoomChanged += new MapZoomChanged(gMapControl1_OnMapZoomChanged);
 
             gMapControl1.Zoom = 3;
+
+            gMapControl1.RoutesEnabled = true;
+            gMapControl1.PolygonsEnabled = true;
+
+            kmlpolygons = new GMapOverlay(gMapControl1, "kmlpolygons");
+            gMapControl1.Overlays.Add(kmlpolygons);
 
             polygons = new GMapOverlay(gMapControl1, "polygons");
             gMapControl1.Overlays.Add(polygons);

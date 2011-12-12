@@ -234,7 +234,7 @@ namespace ArdupilotMega
             this.TXT_offsetseconds.Name = "TXT_offsetseconds";
             this.TXT_offsetseconds.Size = new System.Drawing.Size(100, 20);
             this.TXT_offsetseconds.TabIndex = 4;
-            this.TXT_offsetseconds.Text = "-86156";
+            this.TXT_offsetseconds.Text = "0";
             // 
             // BUT_doit
             // 

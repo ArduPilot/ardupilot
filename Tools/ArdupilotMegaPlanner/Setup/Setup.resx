@@ -711,6 +711,90 @@
   <data name="&gt;&gt;tabModes.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
+  <data name="CMB_sonartype.Items" xml:space="preserve">
+    <value>XL-EZ0</value>
+  </data>
+  <data name="CMB_sonartype.Items1" xml:space="preserve">
+    <value>LV-EZ0</value>
+  </data>
+  <data name="CMB_sonartype.Items2" xml:space="preserve">
+    <value>XL-EXL0</value>
+  </data>
+  <data name="CMB_sonartype.Location" type="System.Drawing.Point, System.Drawing">
+    <value>308, 134</value>
+  </data>
+  <data name="CMB_sonartype.Size" type="System.Drawing.Size, System.Drawing">
+    <value>121, 21</value>
+  </data>
+  <data name="CMB_sonartype.TabIndex" type="System.Int32, mscorlib">
+    <value>31</value>
+  </data>
+  <data name="&gt;&gt;CMB_sonartype.Name" xml:space="preserve">
+    <value>CMB_sonartype</value>
+  </data>
+  <data name="&gt;&gt;CMB_sonartype.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CMB_sonartype.Parent" xml:space="preserve">
+    <value>tabHardware</value>
+  </data>
+  <data name="&gt;&gt;CMB_sonartype.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="CHK_enableoptflow.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="CHK_enableoptflow.Location" type="System.Drawing.Point, System.Drawing">
+    <value>162, 297</value>
+  </data>
+  <data name="CHK_enableoptflow.Size" type="System.Drawing.Size, System.Drawing">
+    <value>134, 19</value>
+  </data>
+  <data name="CHK_enableoptflow.TabIndex" type="System.Int32, mscorlib">
+    <value>30</value>
+  </data>
+  <data name="CHK_enableoptflow.Text" xml:space="preserve">
+    <value>Enable Optical Flow</value>
+  </data>
+  <data name="&gt;&gt;CHK_enableoptflow.Name" xml:space="preserve">
+    <value>CHK_enableoptflow</value>
+  </data>
+  <data name="&gt;&gt;CHK_enableoptflow.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;CHK_enableoptflow.Parent" xml:space="preserve">
+    <value>tabHardware</value>
+  </data>
+  <data name="&gt;&gt;CHK_enableoptflow.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBox2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBox2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>78, 271</value>
+  </data>
+  <data name="pictureBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>75, 75</value>
+  </data>
+  <data name="pictureBox2.TabIndex" type="System.Int32, mscorlib">
+    <value>29</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Name" xml:space="preserve">
+    <value>pictureBox2</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Parent" xml:space="preserve">
+    <value>tabHardware</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
   <data name="linkLabelmagdec.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -739,7 +823,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;linkLabelmagdec.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>3</value>
   </data>
   <data name="label100.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -766,7 +850,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;label100.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>4</value>
   </data>
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>214, 17</value>
@@ -793,7 +877,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;TXT_declination.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>5</value>
   </data>
   <data name="CHK_enableairspeed.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -820,7 +904,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enableairspeed.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>6</value>
   </data>
   <data name="CHK_enablesonar.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -847,7 +931,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enablesonar.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>7</value>
   </data>
   <data name="CHK_enablecompass.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -874,7 +958,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enablecompass.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>8</value>
   </data>
   <data name="pictureBox4.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -901,7 +985,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;pictureBox4.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>9</value>
   </data>
   <data name="pictureBox3.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -928,7 +1012,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;pictureBox3.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>10</value>
   </data>
   <data name="pictureBox1.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
@@ -961,7 +1045,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;pictureBox1.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>11</value>
   </data>
   <data name="tabHardware.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 22</value>
@@ -1245,6 +1329,18 @@
   <data name="&gt;&gt;label15.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
+  <data name="&gt;&gt;BUT_levelac2.Name" xml:space="preserve">
+    <value>BUT_levelac2</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.Parent" xml:space="preserve">
+    <value>tabArducopter</value>
+  </data>
+  <data name="&gt;&gt;BUT_levelac2.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
   <data name="&gt;&gt;pictureBoxQuadX.Name" xml:space="preserve">
     <value>pictureBoxQuadX</value>
   </data>
@@ -1255,7 +1351,7 @@
     <value>tabArducopter</value>
   </data>
   <data name="&gt;&gt;pictureBoxQuadX.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="&gt;&gt;pictureBoxQuad.Name" xml:space="preserve">
     <value>pictureBoxQuad</value>
@@ -1267,18 +1363,6 @@
     <value>tabArducopter</value>
   </data>
   <data name="&gt;&gt;pictureBoxQuad.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Name" xml:space="preserve">
-    <value>BUT_levelac2</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.Parent" xml:space="preserve">
-    <value>tabArducopter</value>
-  </data>
-  <data name="&gt;&gt;BUT_levelac2.ZOrder" xml:space="preserve">
     <value>5</value>
   </data>
   <data name="tabArducopter.Location" type="System.Drawing.Point, System.Drawing">
@@ -1983,9 +2067,6 @@
   <data name="&gt;&gt;BAR8.ZOrder" xml:space="preserve">
     <value>5</value>
   </data>
-  <metadata name="currentStateBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <data name="BAR7.Location" type="System.Drawing.Point, System.Drawing">
     <value>446, 185</value>
   </data>
@@ -3414,33 +3495,6 @@
   <data name="&gt;&gt;CMB_batmontype.ZOrder" xml:space="preserve">
     <value>14</value>
   </data>
-  <data name="pictureBox5.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBox5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBox5.Location" type="System.Drawing.Point, System.Drawing">
-    <value>31, 21</value>
-  </data>
-  <data name="pictureBox5.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 75</value>
-  </data>
-  <data name="pictureBox5.TabIndex" type="System.Int32, mscorlib">
-    <value>2</value>
-  </data>
-  <data name="&gt;&gt;pictureBox5.Name" xml:space="preserve">
-    <value>pictureBox5</value>
-  </data>
-  <data name="&gt;&gt;pictureBox5.Type" xml:space="preserve">
-    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;pictureBox5.Parent" xml:space="preserve">
-    <value>tabBattery</value>
-  </data>
-  <data name="&gt;&gt;pictureBox5.ZOrder" xml:space="preserve">
-    <value>15</value>
-  </data>
   <data name="label28.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -3532,60 +3586,6 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;label15.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
-  <data name="pictureBoxQuadX.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBoxQuadX.Location" type="System.Drawing.Point, System.Drawing">
-    <value>319, 140</value>
-  </data>
-  <data name="pictureBoxQuadX.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 190</value>
-  </data>
-  <data name="pictureBoxQuadX.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBoxQuadX.TabIndex" type="System.Int32, mscorlib">
-    <value>5</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuadX.Name" xml:space="preserve">
-    <value>pictureBoxQuadX</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuadX.Type" xml:space="preserve">
-    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuadX.Parent" xml:space="preserve">
-    <value>tabArducopter</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuadX.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="pictureBoxQuad.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBoxQuad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>112, 140</value>
-  </data>
-  <data name="pictureBoxQuad.Size" type="System.Drawing.Size, System.Drawing">
-    <value>190, 190</value>
-  </data>
-  <data name="pictureBoxQuad.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBoxQuad.TabIndex" type="System.Int32, mscorlib">
-    <value>4</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuad.Name" xml:space="preserve">
-    <value>pictureBoxQuad</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuad.Type" xml:space="preserve">
-    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuad.Parent" xml:space="preserve">
-    <value>tabArducopter</value>
-  </data>
-  <data name="&gt;&gt;pictureBoxQuad.ZOrder" xml:space="preserve">
-    <value>4</value>
-  </data>
   <data name="BUT_levelac2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
   </data>
@@ -3611,7 +3611,7 @@ will work with hexa's etc</value>
     <value>tabArducopter</value>
   </data>
   <data name="&gt;&gt;BUT_levelac2.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>3</value>
   </data>
   <data name="&gt;&gt;label46.Name" xml:space="preserve">
     <value>label46</value>
@@ -5083,6 +5083,93 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;HS3.ZOrder" xml:space="preserve">
     <value>34</value>
   </data>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>214, 17</value>
+  </metadata>
+  <metadata name="currentStateBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="pictureBox5.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBox5.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBox5.Location" type="System.Drawing.Point, System.Drawing">
+    <value>31, 21</value>
+  </data>
+  <data name="pictureBox5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>75, 75</value>
+  </data>
+  <data name="pictureBox5.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;pictureBox5.Name" xml:space="preserve">
+    <value>pictureBox5</value>
+  </data>
+  <data name="&gt;&gt;pictureBox5.Type" xml:space="preserve">
+    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pictureBox5.Parent" xml:space="preserve">
+    <value>tabBattery</value>
+  </data>
+  <data name="&gt;&gt;pictureBox5.ZOrder" xml:space="preserve">
+    <value>15</value>
+  </data>
+  <data name="pictureBoxQuadX.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBoxQuadX.Location" type="System.Drawing.Point, System.Drawing">
+    <value>319, 140</value>
+  </data>
+  <data name="pictureBoxQuadX.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 190</value>
+  </data>
+  <data name="pictureBoxQuadX.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBoxQuadX.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuadX.Name" xml:space="preserve">
+    <value>pictureBoxQuadX</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuadX.Type" xml:space="preserve">
+    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuadX.Parent" xml:space="preserve">
+    <value>tabArducopter</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuadX.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="pictureBoxQuad.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBoxQuad.Location" type="System.Drawing.Point, System.Drawing">
+    <value>112, 140</value>
+  </data>
+  <data name="pictureBoxQuad.Size" type="System.Drawing.Size, System.Drawing">
+    <value>190, 190</value>
+  </data>
+  <data name="pictureBoxQuad.SizeMode" type="System.Windows.Forms.PictureBoxSizeMode, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBoxQuad.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuad.Name" xml:space="preserve">
+    <value>pictureBoxQuad</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuad.Type" xml:space="preserve">
+    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuad.Parent" xml:space="preserve">
+    <value>tabArducopter</value>
+  </data>
+  <data name="&gt;&gt;pictureBoxQuad.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
   <data name="Gservoloc.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
     <value>Zoom</value>
   </data>
@@ -5113,9 +5200,6 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;Gservoloc.ZOrder" xml:space="preserve">
     <value>35</value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>214, 17</value>
-  </metadata>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
@@ -5128,17 +5212,17 @@ will work with hexa's etc</value>
   <data name="$this.Text" xml:space="preserve">
     <value>APMSetup</value>
   </data>
-  <data name="&gt;&gt;currentStateBindingSource.Name" xml:space="preserve">
-    <value>currentStateBindingSource</value>
-  </data>
-  <data name="&gt;&gt;currentStateBindingSource.Type" xml:space="preserve">
-    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
     <value>toolTip1</value>
   </data>
   <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;currentStateBindingSource.Name" xml:space="preserve">
+    <value>currentStateBindingSource</value>
+  </data>
+  <data name="&gt;&gt;currentStateBindingSource.Type" xml:space="preserve">
+    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>Setup</value>

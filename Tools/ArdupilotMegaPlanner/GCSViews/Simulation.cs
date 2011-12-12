@@ -251,7 +251,7 @@ namespace ArdupilotMega.GCSViews
                         {
                             System.Diagnostics.ProcessStartInfo _procstartinfo = new System.Diagnostics.ProcessStartInfo();
                             _procstartinfo.WorkingDirectory = Path.GetDirectoryName(Application.ExecutablePath);
-                            _procstartinfo.Arguments = "--realtime --suspend --nice --simulation-rate=1000 --logdirectivefile=jsbsim/fgout.xml --script=jsbsim/rascal_test.xml";
+                            _procstartinfo.Arguments = "--realtime --suspend --nice --simulation-rate=50 --logdirectivefile=jsbsim/fgout.xml --script=jsbsim/rascal_test.xml";
                             _procstartinfo.FileName = "JSBSim.exe";
                             // Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar +
 
