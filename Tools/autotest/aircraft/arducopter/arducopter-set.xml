@@ -71,20 +71,21 @@ Arducotper UAV Model
   </payload>
   <nasal>
     <arducopter>
+      <file>Aircraft/arducopter/quad.nas</file>
       <script>
          setlistener("/sim/signals/fdm-initialized", func {
              var left  = screen.display.new(20, 10);
-             left.add("/engines/engine[0]/rpm");
-             left.add("/engines/engine[1]/rpm");
-             left.add("/engines/engine[2]/rpm");
-             left.add("/engines/engine[3]/rpm");
+             left.add("/apm/motor_right");
+             left.add("/apm/motor_left");
+             left.add("/apm/motor_front");
+             left.add("/apm/motor_back");
 
              var right = screen.display.new(-250, 20);
-             right.add("/position/altitude-agl-ft");
-             right.add("/orientation/roll-deg");
-             right.add("/orientation/pitch-deg");
-             right.add("/orientation/heading-deg");
-             right.add("/instrumentation/gps/indicated-ground-speed-kt");
+             right.add("/apm/altitude");
+             right.add("/apm/roll");
+             right.add("/apm/pitch");
+             right.add("/apm/heading");
+             right.add("/apm/airspeed");
          });
         </script>
     </arducopter>
