@@ -41,6 +41,7 @@ def dump_logs(atype):
     logfile = util.reltopdir('../buildlogs/%s.flashlog' % atype)
     log = open(logfile, mode='w')
     mavproxy = util.start_MAVProxy_SIL(atype, setup=True, logfile=log)
+    mavproxy.send('\n\n\n')
     print("navigating menus")
     mavproxy.expect(']')
     mavproxy.send("logs\n")
@@ -58,7 +59,7 @@ def dump_logs(atype):
     for i in range(numlogs):
         print("Dumping log %u (i=%u)" % (lognums[i], i))
         mavproxy.send("dump %u\n" % lognums[i])
-        mavproxy.expect("logs enabled:", timeout=400)
+        mavproxy.expect("logs enabled:", timeout=120)
         mavproxy.expect("Log]")
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
