@@ -141,7 +141,7 @@ def deltree(path):
 
 def build_SIL(atype):
     '''build desktop SIL'''
-    run_cmd("make -f ../libraries/Desktop/Makefile.desktop clean all",
+    run_cmd("make clean sitl",
             dir=reltopdir(atype),
             checkfail=True)
     return True
