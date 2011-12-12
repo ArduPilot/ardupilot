@@ -43,13 +43,13 @@ static void output_motors_armed()
 		roll_out 	 	= g.rc_1.pwm_out;
 		pitch_out 	 	= g.rc_2.pwm_out;
 
-		// left
+		// right motor
 		motor_out[CH_1]		= g.rc_3.radio_out - roll_out;
-		// right
+		// left motor
 		motor_out[CH_2]		= g.rc_3.radio_out + roll_out;
-		// front
+		// front motor
 		motor_out[CH_3]		= g.rc_3.radio_out + pitch_out;
-		// back
+		// back motor
 		motor_out[CH_4] 	= g.rc_3.radio_out - pitch_out;
 	}
 
