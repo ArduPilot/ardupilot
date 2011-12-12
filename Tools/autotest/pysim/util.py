@@ -1,5 +1,5 @@
 import euclid, math
-import os, pexpect, sys, time
+import os, pexpect, sys, time, random
 from subprocess import call, check_call,Popen, PIPE
 
 def RPY_to_XYZ(roll, pitch, yaw, length):
@@ -337,6 +337,62 @@ def BodyRatesToEarthRates(roll, pitch, yaw, pDeg, qDeg, rDeg):
     psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
 
     return (degrees(phiDot), degrees(thetaDot), degrees(psiDot))
+
+
+class Wind(object):
+    '''a wind generation object'''
+    def __init__(self, windstring, cross_section=0.1):
+        a = windstring.split(',')
+        if len(a) != 3:
+            raise RuntimeError("Expected wind in speed,direction,turbulance form, not %s" % windstring)
+        self.speed     = float(a[0]) # m/s
+        self.direction = float(a[1]) # direction the wind is coming from
+        self.turbulance= float(a[2]) # turbulance factor (standard deviation)
+
+        # the cross-section of the aircraft to wind. This is multiplied by the
+        # difference in the wind and the velocity of the aircraft to give the acceleration
+        self.cross_section = cross_section
+
+        # the time constant for the turbulance - the average period of the
+        # changes over time
+        self.turbulance_time_constant = 5.0
+
+        # wind time record
+        self.tlast = time.time()
+
+        # initial turbulance multiplier
+        self.turbulance_mul = 1.0
+        
+
+    def accel(self, velocity, deltat=None):
+        '''return current wind acceleration in ground frame.  The
+           velocity is a Vector3 of the current velocity of the aircraft
+           in earth frame, m/s'''
+
+        if deltat is None:
+            tnow = time.time()
+            deltat = tnow - self.tlast
+            self.tlast = tnow
+
+        # wind vector
+        v = euclid.Vector3(-self.speed, 0, 0)
+        wind = euclid.Quaternion.new_rotate_euler(0, math.radians(self.direction), 0) * v
+
+        # update turbulance random walk
+        w_delta = math.sqrt(deltat)*(1.0-random.gauss(1.0, self.turbulance))
+        w_delta -= (self.turbulance_mul-1.0)*(deltat/self.turbulance_time_constant)
+        self.turbulance_mul += w_delta
+        
+        # add in turbulance
+        wind *= self.turbulance_mul
+
+        # relative wind vector
+        relwind = wind - velocity
+
+        # we ignore turbulance for now
+        a = relwind * self.cross_section
+
+        return a
 
 
 if __name__ == "__main__":
