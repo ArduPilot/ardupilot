@@ -21,3 +21,6 @@ tags
 *.o
 .*.swp
 .*.swo
+mav.log
+mav.log.raw
+status.txt
