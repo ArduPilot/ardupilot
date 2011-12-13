@@ -845,7 +845,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					break;
 
 				case MAV_ACTION_CALIBRATE_ACC:
-					imu.init_accel(mavlink_delay);
+					imu.init_accel(mavlink_delay, flash_leds);
 					result=1;
 					break;
 

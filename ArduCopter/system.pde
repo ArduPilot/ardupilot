@@ -389,7 +389,7 @@ static void startup_ground(void)
 	#if HIL_MODE != HIL_MODE_ATTITUDE
 		// Warm up and read Gyro offsets
 		// -----------------------------
-		imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
+        imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
 		#if CLI_ENABLED == ENABLED
 			report_imu();
 		#endif
@@ -655,3 +655,13 @@ static void check_usb_mux(void)
     }
 }
 #endif
+
+/*
+  called by gyro/accel init to flash LEDs so user
+  has some mesmerising lights to watch while waiting
+ */
+void flash_leds(bool on)
+{
+    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
+    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
+}

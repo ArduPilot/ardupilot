@@ -261,7 +261,7 @@ static void init_ardupilot()
 		//----------------
 		//read_EEPROM_airstart_critical();
 #if HIL_MODE != HIL_MODE_ATTITUDE
-		imu.init(IMU::WARM_START, mavlink_delay, &timer_scheduler);
+		imu.init(IMU::WARM_START, mavlink_delay, flash_leds, &timer_scheduler);
 		dcm.set_centripetal(1);
 #endif
 
@@ -455,8 +455,8 @@ static void startup_IMU_ground(void)
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning IMU calibration; do not move plane"));
 	mavlink_delay(1000);
 
-	imu.init(IMU::COLD_START, mavlink_delay, &timer_scheduler);
-	imu.init_accel(mavlink_delay);
+	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
+	imu.init_accel(mavlink_delay, flash_leds);
 	dcm.set_centripetal(1);
 
 	// read Baro pressure at ground
@@ -556,3 +556,14 @@ static void check_usb_mux(void)
     }
 }
 #endif
+
+
+/*
+  called by gyro/accel init to flash LEDs so user
+  has some mesmerising lights to watch while waiting
+ */
+void flash_leds(bool on)
+{
+    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
+    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
+}
