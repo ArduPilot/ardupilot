@@ -787,6 +787,7 @@ GCS_MAVLINK::update(void)
     if (waypoint_receiving &&
         waypoint_request_i <= (unsigned)g.command_total &&
         tnow > waypoint_timelast_request + 500) {
+        waypoint_timelast_request = tnow;
         send_message(MSG_NEXT_WAYPOINT);
     }
 
