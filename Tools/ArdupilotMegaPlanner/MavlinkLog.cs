@@ -53,16 +53,32 @@ namespace ArdupilotMega
             style.Id = "yellowLineGreenPoly";
             style.Line = new LineStyle(new Color32(HexStringToColor("7f00ffff")), 4);
 
+
+
             PolygonStyle pstyle = new PolygonStyle();
             pstyle.Color = new Color32(HexStringToColor("7f00ff00"));
             style.Polygon = pstyle;
 
             kml.AddStyle(style);
 
+            Style stylet = new Style();
+            stylet.Id = "track";
+            SharpKml.Dom.IconStyle ico = new SharpKml.Dom.IconStyle();
+            stylet.Icon = ico;
+            ico.Icon = new IconStyle.IconLink(new Uri("http://earth.google.com/images/kml-icons/track-directional/track-none.png"));
+            stylet.Icon.Scale = 0.5;
+            //stylet.Label.Scale = 0;
+
+            kml.AddStyle(stylet);
+
             // create sub folders
             Folder planes = new Folder();
             planes.Name = "Planes";
             kml.AddFeature(planes);
+
+            Folder points = new Folder();
+            points.Name = "Points";
+            kml.AddFeature(points);
 
 
             // coords for line string
@@ -157,7 +173,7 @@ namespace ArdupilotMega
 
 
                 Placemark pmplane = new Placemark();
-                pmplane.Name = "Plane " + a;
+                pmplane.Name = "Point " + a;
 
 
 
@@ -169,6 +185,9 @@ namespace ArdupilotMega
                 loc.Latitude = cs.lat;
                 loc.Longitude = cs.lng;
                 loc.Altitude = cs.alt;
+
+                if (loc.Altitude < 0)
+                    loc.Altitude = 0.01;
 
                 SharpKml.Dom.Orientation ori = new SharpKml.Dom.Orientation();
                 ori.Heading = cs.yaw;
@@ -192,10 +211,10 @@ namespace ArdupilotMega
                     Description desc = new Description();
                     desc.Text = @"<![CDATA[
               <table>
-                <tr><td>Roll: " + model.Orientation.Roll + @" </td></tr>
-                <tr><td>Pitch: " + model.Orientation.Tilt + @" </td></tr>
-                <tr><td>Yaw: " + model.Orientation.Heading + @" </td></tr>
-
+                <tr><td>Roll: " + model.Orientation.Roll.Value.ToString("0.00") + @" </td></tr>
+                <tr><td>Pitch: " + model.Orientation.Tilt.Value.ToString("0.00") + @" </td></tr>
+                <tr><td>Yaw: " + model.Orientation.Heading.Value.ToString("0.00") + @" </td></tr>
+                <tr><td>Time: " + cs.datetime.ToString("HH:mm:sszzzzzz") + @" </td></tr>
               </table>
             ]]>";
 
@@ -211,6 +230,25 @@ namespace ArdupilotMega
                 pmplane.Geometry = model;
 
                 planes.AddFeature(pmplane);
+
+                ///
+
+                Placemark pmt = new Placemark();
+
+                SharpKml.Dom.Point pnt = new SharpKml.Dom.Point();
+                pnt.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                pnt.Coordinate = new Vector(cs.lat,cs.lng,cs.alt);
+
+                pmt.Name = "" + a;
+
+                pmt.Description = pmplane.Description;
+
+                pmt.Time = tstamp;
+
+                pmt.Geometry = pnt;
+                pmt.StyleUrl = new Uri("#track", UriKind.Relative);
+
+                points.AddFeature(pmt);
 
                 a++;
             }
@@ -274,8 +312,6 @@ namespace ArdupilotMega
             zipStream.IsStreamOwner = true;	// Makes the Close also Close the underlying stream
             zipStream.Close();
 
-            File.Delete(filename);
-
             flightdata.Clear();
         }
 
@@ -335,6 +371,11 @@ namespace ArdupilotMega
 
                         cs.UpdateCurrentSettings(null, true, mine);
 
+                        if (cs.datetime.Second % 5 == 0)
+                        {
+                            //Application.DoEvents();
+                        }
+
                         try
                         {
                             if (MainV2.talk != null)
@@ -345,7 +386,7 @@ namespace ArdupilotMega
                         if ((float)(cs.lat + cs.lng) != oldlatlngalt
                             && cs.lat != 0 && cs.lng != 0)
                         {
-                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng + cs.alt) + "!=" + oldlatlngalt);
+                            Console.WriteLine(cs.lat + " " + cs.lng + " " + cs.alt + "   lah " + (float)(cs.lat + cs.lng) + "!=" + oldlatlngalt);
                             CurrentState cs2 = (CurrentState)cs.Clone();
 
                             flightdata.Add(cs2);

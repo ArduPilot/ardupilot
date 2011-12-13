@@ -123,7 +123,7 @@ namespace ArdupilotMega
 
             comPort.BaseStream.BaudRate = 115200;
 
-            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            CMB_serialport.Items.AddRange(GetPortNames());
             CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Count > 0)
@@ -248,6 +248,25 @@ namespace ArdupilotMega
             splash.Close();
         }
 
+        private string[] GetPortNames()
+        {
+            string[] devs = new string[0];
+
+            if (MONO)
+            {
+                devs = Directory.GetFiles("/dev/","*ACM*");
+            }
+
+            string[] ports = SerialPort.GetPortNames();
+
+            string[] all = new string[devs.Length + ports.Length];
+
+            devs.CopyTo(all, 0);
+            ports.CopyTo(all, devs.Length);
+
+            return all;
+        }
+
         internal void ScreenShot()
         {
             Rectangle bounds = Screen.GetBounds(Point.Empty);
@@ -268,7 +287,7 @@ namespace ArdupilotMega
         {
             string oldport = CMB_serialport.Text;
             CMB_serialport.Items.Clear();
-            CMB_serialport.Items.AddRange(SerialPort.GetPortNames());
+            CMB_serialport.Items.AddRange(GetPortNames());
             CMB_serialport.Items.Add("TCP");
             CMB_serialport.Items.Add("UDP");
             if (CMB_serialport.Items.Contains(oldport))
@@ -1736,10 +1755,12 @@ namespace ArdupilotMega
             if (keyData == (Keys.Control | Keys.Y)) // for ryan beall
             {
 #if MAVLINK10
-                int fixme;
-                //MainV2.comPort.doCommand(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+                // write
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+                //read
+                ///////MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 #else
-				MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
+                MainV2.comPort.doAction(MAVLink.MAV_ACTION.MAV_ACTION_STORAGE_WRITE);
 #endif
                 MessageBox.Show("Done MAV_ACTION_STORAGE_WRITE");
                 return true;

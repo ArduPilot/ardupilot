@@ -154,7 +154,6 @@ namespace ArdupilotMega.HIL
             accel3D += air_resistance;
 
             Random rand = new Random();
-            int fixme;
 
             //velocity.X += .02 + rand.NextDouble() * .03;
             //velocity.Y += .02 + rand.NextDouble() * .03;
