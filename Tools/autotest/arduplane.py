@@ -68,8 +68,8 @@ def fly_RTL(mavproxy, mav):
     print("Flying home in RTL")
     mavproxy.send('switch 2\n')
     wait_mode(mav, 'RTL')
-    wait_location(mav, homeloc, accuracy=80,
-                  target_altitude=100, height_accuracy=10)
+    wait_location(mav, homeloc, accuracy=90,
+                  target_altitude=100, height_accuracy=20)
     print("RTL Complete")
     return True
 
