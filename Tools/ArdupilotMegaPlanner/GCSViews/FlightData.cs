@@ -664,7 +664,11 @@ namespace ArdupilotMega.GCSViews
             }
             catch { }
             // Force a redraw
-            zg1.Invalidate();
+            try
+            {
+                zg1.Invalidate();
+            }
+            catch { }
 
         }
 
