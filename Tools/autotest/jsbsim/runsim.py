@@ -69,6 +69,13 @@ def process_sitl_input(buf):
         jsb_set('fcs/throttle-cmd-norm', throttle)
         sitl_state.throttle = throttle
 
+def update_wind(wind):
+    '''update wind simulation'''
+    (speed, direction) = wind.current()
+    jsb_set('atmosphere/psiw-rad', math.radians(direction))
+    jsb_set('atmosphere/wind-mag-fps', speed/0.3048)
+    
+
 def process_jsb_input(buf):
     '''process FG FDM input from JSBSim'''
     global fdm, fg_out, sim_out
@@ -119,6 +126,7 @@ parser.add_option("--fgout",   help="FG display output (IP:port)",   default="12
 parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (required)")
 parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
+parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
 (opts, args) = parser.parse_args()
 
@@ -186,6 +194,10 @@ if opts.fgout:
     fg_out.connect(interpret_address(opts.fgout))
 
 
+# setup wind generator
+wind = util.Wind(opts.wind)
+
+
 setup_home(opts.home)
 
 fdm = fgFDM.fgFDM()
@@ -200,8 +212,10 @@ print("Simulator ready to fly")
 
 def main_loop():
     '''run main loop'''
-    last_report = time.time()
-    last_sim_input = time.time()
+    tnow = time.time()
+    last_report = tnow
+    last_sim_input = tnow
+    last_wind_update = tnow
     frame_count = 0
     paused = False
 
@@ -241,6 +255,10 @@ def main_loop():
                 print("RESUMING SIMULATION")
                 paused = False
                 jsb_console.send('resume\n')
+
+        if tnow - last_wind_update > 0.1:
+            update_wind(wind)
+            last_wind_update = tnow
 
         if tnow - last_report > 0.5:
             print("FPS %u asl=%.1f agl=%.1f roll=%.1f pitch=%.1f a=(%.2f %.2f %.2f)" % (
