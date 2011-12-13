@@ -458,6 +458,7 @@ static void startup_IMU_ground(void)
 	imu.init(IMU::COLD_START, mavlink_delay, flash_leds, &timer_scheduler);
 	imu.init_accel(mavlink_delay, flash_leds);
 	dcm.set_centripetal(1);
+    dcm.matrix_reset();
 
 	// read Baro pressure at ground
 	//-----------------------------
