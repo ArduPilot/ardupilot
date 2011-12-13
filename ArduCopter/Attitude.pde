@@ -23,8 +23,11 @@ get_stabilize_roll(int32_t target_angle)
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -2500, 2500);
 
+	roll_I		+= (float)error * .03;
+	roll_I 		= constrain(roll_I,-120,120);     //+- 1200
+
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_roll.get_p(error);
+	rate 		= g.pi_stabilize_roll.get_p(error + roll_I);
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
@@ -61,6 +64,12 @@ get_stabilize_pitch(int32_t target_angle)
 #else
 	// angle error
 	error 		= constrain(error, -2500, 2500);
+
+	pitch_I		+= (float)error * .03;
+	pitch_I 	= constrain(pitch_I, -120, 120); // +- 1200
+
+	// conver to desired Rate:
+	rate 		= g.pi_stabilize_roll.get_p(error + pitch_I);
 
 	// convert to desired Rate:
 	rate 		= g.pi_stabilize_pitch.get_p(error);
