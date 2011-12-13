@@ -9,6 +9,7 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 
 
 HOME_LOCATION='-35.362938,149.165085,584,270'
+WIND="5,180,0.2" # speed,direction,variance
 
 homeloc = None
 
@@ -215,8 +216,7 @@ def fly_ArduPlane(viewerip=None):
     util.pexpect_close(sil)
 
     cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
-    cmd += " --home=%s --wind=5,180,0.2" % (
-        HOME_LOCATION, util.reltopdir("Tools/autotest/jsbsim"))
+    cmd += " --home=%s --wind=%s" % (HOME_LOCATION, WIND)
     if viewerip:
         cmd += " --fgout=%s:5503" % viewerip
 
