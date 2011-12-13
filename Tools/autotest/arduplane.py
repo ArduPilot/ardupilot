@@ -215,7 +215,7 @@ def fly_ArduPlane(viewerip=None):
     util.pexpect_close(sil)
 
     cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
-    cmd += " --home=%s --script=%s/rascal_test.xml" % (
+    cmd += " --home=%s --wind=5,180,0.2" % (
         HOME_LOCATION, util.reltopdir("Tools/autotest/jsbsim"))
     if viewerip:
         cmd += " --fgout=%s:5503" % viewerip
