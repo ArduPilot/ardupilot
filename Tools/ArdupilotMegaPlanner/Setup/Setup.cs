@@ -273,6 +273,20 @@ namespace ArdupilotMega.Setup
             if (tabControl1.SelectedTab == tabRadioIn)
             {
                 startup = true;
+
+                if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+                {
+                    groupBoxElevons.Visible = false;
+                }
+
+                try
+                {
+                    CHK_mixmode.Checked = MainV2.comPort.param["ELEVON_MIXING"].ToString() == "1";
+                    CHK_elevonrev.Checked = MainV2.comPort.param["ELEVON_REVERSE"].ToString() == "1";
+                    CHK_elevonch1rev.Checked = MainV2.comPort.param["ELEVON_CH1_REV"].ToString() == "1";
+                    CHK_elevonch2rev.Checked = MainV2.comPort.param["ELEVON_CH2_REV"].ToString() == "1";
+                }
+                catch {  } // this will fail on arducopter
                 try
                 {
                     CHK_revch1.Checked = MainV2.comPort.param["RC1_REV"].ToString() == "-1";
@@ -280,7 +294,7 @@ namespace ArdupilotMega.Setup
                     CHK_revch3.Checked = MainV2.comPort.param["RC3_REV"].ToString() == "-1";
                     CHK_revch4.Checked = MainV2.comPort.param["RC4_REV"].ToString() == "-1";
                 }
-                catch { MessageBox.Show("Missing RC rev Param"); }
+                catch (Exception ex) { MessageBox.Show("Missing RC rev Param "+ex.ToString()); }
                 startup = false;
             }
 
@@ -1304,6 +1318,78 @@ namespace ArdupilotMega.Setup
                 }
             }
             catch { MessageBox.Show("Set SONAR_TYPE Failed"); }
+        }
+
+        private void CHK_mixmode_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["ELEVON_MIXING"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("ELEVON_MIXING", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set ELEVON_MIXING Failed"); }
+        }
+
+        private void CHK_elevonrev_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["ELEVON_REVERSE"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("ELEVON_REVERSE", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set ELEVON_REVERSE Failed"); }
+        }
+
+        private void CHK_elevonch1rev_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["ELEVON_CH1_REV"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("ELEVON_CH1_REV", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set ELEVON_CH1_REV Failed"); }
+        }
+
+        private void CHK_elevonch2rev_CheckedChanged(object sender, EventArgs e)
+        {
+            if (startup)
+                return;
+            try
+            {
+                if (MainV2.comPort.param["ELEVON_CH2_REV"] == null)
+                {
+                    MessageBox.Show("Not Available on " + MainV2.cs.firmware.ToString());
+                }
+                else
+                {
+                    MainV2.comPort.setParam("ELEVON_CH2_REV", ((CheckBox)sender).Checked == true ? 1 : 0);
+                }
+            }
+            catch { MessageBox.Show("Set ELEVON_CH2_REV Failed"); }
         }
     }
 }
