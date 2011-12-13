@@ -161,7 +161,7 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #else
 
 #if CONFIG_BARO == AP_BARO_BMP085
-# if CONFIG_APM_HARDWARE == CONFIG_HARDWARE_APM2
+# if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 	AP_Baro_BMP085 barometer(true);
 # else
 	AP_Baro_BMP085 barometer(false);
