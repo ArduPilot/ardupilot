@@ -45,17 +45,17 @@ def disarm_motors(mavproxy, mav):
     return True
 
 
-def takeoff(mavproxy, mav):
+def takeoff(mavproxy, mav, alt_min = 30, alt_max = 40):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1500\n')
-    wait_altitude(mav, 30, 40)
+    wait_altitude(mav, alt_min, alt_max)
     print("TAKEOFF COMPLETE")
     return True
 
 
-def loiter(mavproxy, mav, maxaltchange=10, holdtime=10, timeout=60):
+def loiter(mavproxy, mav, holdtime=120, maxaltchange=10, timeout=60):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -316,7 +316,7 @@ def fly_ArduCopter(viewerip=None):
             print("arm_motors failed")
             failed = True
 
-        if not takeoff(mavproxy, mav):
+        if not takeoff(mavproxy, mav, 10, 15):
             print("takeoff failed")
             failed = True
 
@@ -333,7 +333,7 @@ def fly_ArduCopter(viewerip=None):
 
         # Loiter for 10 seconds
         print("# Loiter for 10 seconds")
-        if not loiter(mavproxy, mav):
+        if not loiter(mavproxy, mav, 120):
             print("loiter failed")
             failed = True
 
