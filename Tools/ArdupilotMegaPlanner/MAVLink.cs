@@ -2319,7 +2319,7 @@ namespace ArdupilotMega
 
             date1 = date1.AddMilliseconds(dateint / 1000);
 
-            lastlogread = date1;
+            lastlogread = date1.ToLocalTime();
 
             MainV2.cs.datetime = lastlogread;
 

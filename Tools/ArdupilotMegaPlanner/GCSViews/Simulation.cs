@@ -615,6 +615,8 @@ namespace ArdupilotMega.GCSViews
                 JSBSimSEND.Connect(simIP, simPort);
                 OutputLog.AppendText("Sending to port TCP " + simPort + " (planner->sim)\n");
 
+                System.Threading.Thread.Sleep(2000);
+
                 JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("info\n"));
 
                 JSBSimSEND.Client.Send(System.Text.Encoding.ASCII.GetBytes("set attitude/phi-rad 0\n"));
