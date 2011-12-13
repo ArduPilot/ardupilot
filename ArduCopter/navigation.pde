@@ -83,10 +83,11 @@ static void calc_loiter(int x_error, int y_error)
 	#endif
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
 	nav_lat			= constrain(nav_lat, -3500, 3500);
 	nav_lat			+= y_iterm;
+
 	/*Serial.printf("loiter x_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
 					x_actual_speed,
 					x_rate_error,
@@ -96,7 +97,7 @@ static void calc_loiter(int x_error, int y_error)
 					nav_lat);
 	*/
 	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -250, 250);
+	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
 	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
 	nav_lon			= constrain(nav_lon, -3500, 3500);
 	nav_lon			+= x_iterm;
@@ -122,12 +123,12 @@ static void calc_loiter2(int x_error, int y_error)
 	last_y_error	= y_error;
 
 	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -250, 250);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
 	nav_lat			= constrain(nav_lat, -3500, 3500);
 
 	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -250, 250);
+	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
 	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
 	nav_lon			= constrain(nav_lon, -3500, 3500);
 }
