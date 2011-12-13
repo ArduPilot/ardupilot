@@ -1086,27 +1086,4 @@ static int Log_Read_Process(int start_page, int end_page)
 	return packet_count;
 }
 
-#else // LOGGING_ENABLED
-
-static void Log_Write_Startup() {}
-static void Log_Read_Startup() {}
-static void Log_Read(int start_page, int end_page) {}
-static void Log_Write_Cmd(byte num, struct Location *wp) {}
-static void Log_Write_Mode(byte mode) {}
-static void start_new_log() {}
-static void Log_Write_Raw() {}
-static void Log_Write_GPS() {}
-static void Log_Write_Current() {}
-static void Log_Write_Attitude() {}
-static void Log_Write_Data(int8_t _type, float _data){}
-static void Log_Write_Data(int8_t _type, int32_t _data){}
-#ifdef OPTFLOW_ENABLED
-static void Log_Write_Optflow() {}
-#endif
-static void Log_Write_Nav_Tuning() {}
-static void Log_Write_Control_Tuning() {}
-static void Log_Write_Motors() {}
-static void Log_Write_Performance() {}
-static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-
 #endif // LOGGING_ENABLED
