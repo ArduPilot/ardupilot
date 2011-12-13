@@ -53,7 +53,7 @@ def sim_send(m, a):
             raise
 
 
-def sim_recv(m, a):
+def sim_recv(m):
     '''receive control information from SITL'''
     try:
         buf = sim_in.recv(22)
@@ -83,7 +83,7 @@ parser.add_option("--fgout", dest="fgout",  help="flightgear output (IP:port)", 
 parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       default="127.0.0.1:5502")
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
-parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=1000)
+parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=400)
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 
 (opts, args) = parser.parse_args()
@@ -155,7 +155,7 @@ sleep_overhead = 0
 
 while True:
     frame_start = time.time()
-    sim_recv(m, a)
+    sim_recv(m)
 
     m2 = m[:]
 
