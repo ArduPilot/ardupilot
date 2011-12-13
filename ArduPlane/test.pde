@@ -451,8 +451,6 @@ static int8_t
 test_adc(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
-    isr_registry.init();
-    timer_scheduler.init( &isr_registry );
 	adc.Init(&timer_scheduler);
 	delay(1000);
 	Serial.printf_P(PSTR("ADC\n"));
@@ -503,8 +501,6 @@ static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
 	//Serial.printf_P(PSTR("Calibrating."));
-    isr_registry.init();
-    timer_scheduler.init( &isr_registry );
 	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
 
 	print_hit_enter();
@@ -566,8 +562,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the DCM initialised for this test
-    isr_registry.init();
-    timer_scheduler.init( &isr_registry );
 	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
 
 	int counter = 0;
