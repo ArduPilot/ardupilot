@@ -21,15 +21,11 @@
 
 #include "AP_IMU_INS.h"
 
-// XXX secret knowledge about the APM/oilpan wiring
-//
-#define A_LED_PIN   37
-#define C_LED_PIN   35
-
 void
 AP_IMU_INS::init( Start_style style,
-                     void (*delay_cb)(unsigned long t),
-                     AP_PeriodicProcess * scheduler )
+                  void (*delay_cb)(unsigned long t),
+                  void (*flash_leds_cb)(bool on),
+                  AP_PeriodicProcess * scheduler )
 {
     _ins->init(scheduler);
     // if we are warm-starting, load the calibration data from EEPROM and go
@@ -39,7 +35,7 @@ AP_IMU_INS::init( Start_style style,
     } else {
 
         // do cold-start calibration for both accel and gyro
-        _init_gyro(delay_cb);
+        _init_gyro(delay_cb, flash_leds_cb);
 
         // save calibration
         _sensor_cal.save();
@@ -49,21 +45,23 @@ AP_IMU_INS::init( Start_style style,
 /**************************************************/
 
 void
-AP_IMU_INS::init_gyro(void (*delay_cb)(unsigned long t))
+AP_IMU_INS::init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
-    _init_gyro(delay_cb);
+    _init_gyro(delay_cb, flash_leds_cb);
     _sensor_cal.save();
 }
 
+#define FLASH_LEDS(on) do { if (flash_leds_cb != NULL) flash_leds_cb(on); } while (0)
+
 void
-AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t))
+AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
 	int flashcount = 0;
 	float adc_in;
 	float prev[3] = {0,0,0};
 	float total_change;
 	float max_offset;
-  float ins_gyro[6];
+    float ins_gyro[6];
 
 	// cold start
 	delay_cb(500);
@@ -72,15 +70,13 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t))
 	for(int c = 0; c < 25; c++){
     // Mostly we are just flashing the LED's here
     // to tell the user to keep the IMU still
-		digitalWrite(A_LED_PIN, LOW);
-		digitalWrite(C_LED_PIN, HIGH);
+        FLASH_LEDS(true);
 		delay_cb(20);
 
         _ins->update();
         _ins->get_gyros(ins_gyro);
 
-		digitalWrite(A_LED_PIN, HIGH);
-		digitalWrite(C_LED_PIN, LOW);
+        FLASH_LEDS(false);
 		delay_cb(20);
 	}
 
@@ -112,14 +108,12 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t))
 			delay_cb(20);
 			if(flashcount == 5) {
 				Serial.printf_P(PSTR("*"));
-				digitalWrite(A_LED_PIN, LOW);
-				digitalWrite(C_LED_PIN, HIGH);
+                FLASH_LEDS(true);
 			}
 
 			if(flashcount >= 10) {
 				flashcount = 0;
-				digitalWrite(C_LED_PIN, LOW);
-			    digitalWrite(A_LED_PIN, HIGH);
+                FLASH_LEDS(false);
 			}
 			flashcount++;
 		}
@@ -138,21 +132,21 @@ AP_IMU_INS::save()
 }
 
 void
-AP_IMU_INS::init_accel(void (*delay_cb)(unsigned long t))
+AP_IMU_INS::init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
-    _init_accel(delay_cb);
+    _init_accel(delay_cb, flash_leds_cb);
     _sensor_cal.save();
 }
 
 void
-AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t))
+AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 {
 	int flashcount = 0;
 	float adc_in;
 	float prev[6] = {0,0,0};
 	float total_change;
 	float max_offset;
-  float ins_accel[3];
+    float ins_accel[3];
 
 
 	// cold start
@@ -185,14 +179,12 @@ AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t))
 
 			if(flashcount == 5) {
 				Serial.printf_P(PSTR("*"));
-				digitalWrite(A_LED_PIN, LOW);
-				digitalWrite(C_LED_PIN, HIGH);
+                FLASH_LEDS(true);
 			}
 
 			if(flashcount >= 10) {
 				flashcount = 0;
-				digitalWrite(C_LED_PIN, LOW);
-				digitalWrite(A_LED_PIN, HIGH);
+                FLASH_LEDS(false);
 			}
 			flashcount++;
 		}

@@ -15,10 +15,14 @@ public:
 
 	/// @name IMU protocol
 	//@{
-    virtual void	init(Start_style style = COLD_START, void (*callback)(unsigned long t) = delay,
+    virtual void	init(Start_style style = COLD_START, 
+						 void (*callback)(unsigned long t) = delay,
+						 void (*flash_leds_cb)(bool on) = NULL,
 						 AP_PeriodicProcess *scheduler = NULL) {};
-	virtual void	init_accel(void (*callback)(unsigned long t) = delay) {};
-	virtual void	init_gyro(void (*callback)(unsigned long t) = delay) {};
+	virtual void	init_accel(void (*callback)(unsigned long t) = delay,
+							   void (*flash_leds_cb)(bool on) = NULL) {};
+	virtual void	init_gyro(void (*callback)(unsigned long t) = delay,
+							  void (*flash_leds_cb)(bool on) = NULL) {};
 	virtual bool	update(void) {
 		bool updated = _updated;
 		_updated = false;
