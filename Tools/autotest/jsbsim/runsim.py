@@ -115,9 +115,9 @@ from optparse import OptionParser
 parser = OptionParser("hil_quad.py [options]")
 parser.add_option("--simin",   help="SITL input (IP:port)",          default="127.0.0.1:5502")
 parser.add_option("--simout",  help="SITL output (IP:port)",         default="127.0.0.1:5501")
-parser.add_option("--fgout",   help="FG display output (IP:port)")
+parser.add_option("--fgout",   help="FG display output (IP:port)",   default="127.0.0.1:5503")
 parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (required)")
-parser.add_option("--script",  type='string', help='jsbsim model script (required)')
+parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
 
 (opts, args) = parser.parse_args()
