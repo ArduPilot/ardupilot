@@ -495,7 +495,7 @@
 # define STABILIZE_ROLL_P 		4.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.08
+# define STABILIZE_ROLL_I 		0.02
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	40		// degrees
@@ -505,7 +505,7 @@
 # define STABILIZE_PITCH_P		4.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.08
+# define STABILIZE_PITCH_I		0.02
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	40		// degrees
@@ -588,24 +588,24 @@
 # define LOITER_P			.3		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.0	//
+# define LOITER_I			0.05	//
 #endif
 #ifndef LOITER_IMAX
-# define LOITER_IMAX		12		// degrees°
+# define LOITER_IMAX		30		// degrees°
 #endif
 
 #ifndef NAV_P
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.03		// Lowerd from .25 - saw lots of overshoot.
+# define NAV_I				0.14		// Lowerd from .25 - saw lots of overshoot.
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
 #endif
 
 #ifndef WAYPOINT_SPEED_MAX
-# define WAYPOINT_SPEED_MAX			400			// for 6m/s error = 13mph
+# define WAYPOINT_SPEED_MAX			600			// for 6m/s error = 13mph
 #endif
 
 
@@ -675,7 +675,7 @@
 # endif
 #elif !defined(LOGGING_ENABLED)
 // Logging is enabled by default for all other builds.
-# define LOGGING_ENABLED		ENABLED
+# define LOGGING_ENABLED		DISABLED
 #endif
 
 
