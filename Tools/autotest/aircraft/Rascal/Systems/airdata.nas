@@ -64,6 +64,9 @@ var update_vars = func( dt ) {
     setprop("/apm/elevator", round100(getprop("/surface-positions/elevator-pos-norm"))); 
     setprop("/apm/rudder",   round100(getprop("/surface-positions/rudder-pos-norm"))); 
     setprop("/apm/throttle", round10(getprop("/engines/engine/rpm")));
+
+    setprop("/apm/groundspeed", round10(0.514444444*getprop("/instrumentation/gps/indicated-ground-speed-kt")));
+
     # airspeed-kt is actually in feet per second (FDM NET bug)
     setprop("/apm/airspeed", round10(0.3048*getprop("/velocities/airspeed-kt")));
 }

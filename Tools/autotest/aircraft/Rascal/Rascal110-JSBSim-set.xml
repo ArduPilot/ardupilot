@@ -134,6 +134,7 @@ dynamics model, and external 3D model.
              right.add("/apm/altitude");
              right.add("/apm/heading");
              right.add("/apm/airspeed");
+             right.add("/apm/groundspeed");
          });
         </script>
   </rascal>
