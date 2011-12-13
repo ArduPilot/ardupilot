@@ -346,7 +346,7 @@ class Wind(object):
         if len(a) != 3:
             raise RuntimeError("Expected wind in speed,direction,turbulance form, not %s" % windstring)
         self.speed     = float(a[0]) # m/s
-        self.direction = float(a[1]) # direction the wind is coming from
+        self.direction = float(a[1]) # direction the wind is going in
         self.turbulance= float(a[2]) # turbulance factor (standard deviation)
 
         # the cross-section of the aircraft to wind. This is multiplied by the
@@ -362,34 +362,39 @@ class Wind(object):
 
         # initial turbulance multiplier
         self.turbulance_mul = 1.0
-        
 
-    def accel(self, velocity, deltat=None):
-        '''return current wind acceleration in ground frame.  The
-           velocity is a Vector3 of the current velocity of the aircraft
-           in earth frame, m/s'''
-
+    def current(self, deltat=None):
+        '''return current wind speed and direction as a tuple
+        speed is in m/s, direction in degrees
+        '''
         if deltat is None:
             tnow = time.time()
             deltat = tnow - self.tlast
             self.tlast = tnow
-
-        # wind vector
-        v = euclid.Vector3(-self.speed, 0, 0)
-        wind = euclid.Quaternion.new_rotate_euler(0, math.radians(self.direction), 0) * v
 
         # update turbulance random walk
         w_delta = math.sqrt(deltat)*(1.0-random.gauss(1.0, self.turbulance))
         w_delta -= (self.turbulance_mul-1.0)*(deltat/self.turbulance_time_constant)
         self.turbulance_mul += w_delta
         
-        # add in turbulance
-        wind *= self.turbulance_mul
+        speed = self.speed * self.turbulance_mul
+        return (speed, self.direction)
+
+    def accel(self, velocity, deltat=None):
+        '''return current wind acceleration in ground frame.  The
+           velocity is a Vector3 of the current velocity of the aircraft
+           in earth frame, m/s'''
+
+        (speed, direction) = self.current(deltat=deltat)
+
+        # wind vector
+        v = euclid.Vector3(speed, 0, 0)
+        wind = euclid.Quaternion.new_rotate_euler(0, math.radians(direction), 0) * v
 
         # relative wind vector
         relwind = wind - velocity
 
-        # we ignore turbulance for now
+        # add in cross-section effect
         a = relwind * self.cross_section
 
         return a
