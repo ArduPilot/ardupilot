@@ -73,6 +73,11 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
     }
 
     uint8_t status 		= MAV_STATE_ACTIVE;
+    
+    if (!motor_armed) {
+        status 		= MAV_STATE_STANDBY;
+    }
+    
     uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
 
     mavlink_msg_sys_status_send(
