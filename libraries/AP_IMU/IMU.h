@@ -38,6 +38,7 @@ public:
 	///
 	virtual void	init( Start_style style,
                           void (*delay_cb)(unsigned long t),
+						  void (*flash_leds_cb)(bool on),
                           AP_PeriodicProcess * scheduler );
 
 	/// Perform cold startup initialisation for just the accelerometers.
@@ -45,14 +46,14 @@ public:
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work.
 	///
-	virtual void	init_accel(void (*callback)(unsigned long t));
+	virtual void	init_accel(void (*callback)(unsigned long t), void (*flash_leds_cb)(bool on));
 
 	/// Perform cold-start initialisation for just the gyros.
 	///
 	/// @note This should not be called unless ::init has previously
 	///       been called, as ::init may perform other work
 	///
-	virtual void	init_gyro(void (*callback)(unsigned long t));
+	virtual void	init_gyro(void (*callback)(unsigned long t), void (*flash_leds_cb)(bool on));
 
 	/// Give the IMU some cycles to perform/fetch an update from its
 	/// sensors.

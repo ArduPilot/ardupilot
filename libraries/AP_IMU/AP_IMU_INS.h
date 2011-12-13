@@ -43,11 +43,14 @@ public:
 	///
 	virtual void		init( Start_style style = COLD_START,
                               void (*delay_cb)(unsigned long t) = delay,
+                              void (*flash_leds_cb)(bool on) = NULL,
                               AP_PeriodicProcess *scheduler = NULL );
 
 	virtual void		save();
-	virtual void		init_accel(void (*delay_cb)(unsigned long t) = delay);
-	virtual void		init_gyro(void (*delay_cb)(unsigned long t) = delay);
+	virtual void		init_accel(void (*delay_cb)(unsigned long t) = delay,
+                                   void (*flash_leds_cb)(bool on) = NULL);
+	virtual void		init_gyro(void (*delay_cb)(unsigned long t) = delay,
+                                  void (*flash_leds_cb)(bool on) = NULL);
 	virtual bool		update(void);
 
 	// for jason
@@ -67,8 +70,10 @@ private:
     AP_InertialSensor   *_ins;          ///< INS provides an axis and unit correct sensor source.
     AP_VarA<float,6>    _sensor_cal;    ///< Calibrated sensor offsets
 
-    virtual void        _init_accel(void (*delay_cb)(unsigned long t));  ///< no-save implementation
-    virtual void        _init_gyro(void (*delay_cb)(unsigned long t));   ///< no-save implementation
+    virtual void        _init_accel(void (*delay_cb)(unsigned long t),
+                                    void (*flash_leds_cb)(bool on) = NULL);  ///< no-save implementation
+    virtual void        _init_gyro(void (*delay_cb)(unsigned long t),
+                                   void (*flash_leds_cb)(bool on) = NULL);   ///< no-save implementation
 
     float _calibrated(uint8_t channel, float ins_value);
 

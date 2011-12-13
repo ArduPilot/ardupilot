@@ -11,14 +11,15 @@ IMU::IMU () {}
 
 
 void IMU::init( Start_style style,
-                   void (*delay_cb)(unsigned long t),
-                   AP_PeriodicProcess * scheduler )
+		void (*delay_cb)(unsigned long t),
+		void (*flash_leds_cb)(bool on),
+		AP_PeriodicProcess * scheduler )
 { }
 
-void IMU::init_accel(void (*delay_cb)(unsigned long t))
+void IMU::init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 { }
 
-void IMU::init_gyro(void (*delay_cb)(unsigned long t))
+void IMU::init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(bool on))
 { }
 
 bool IMU::update(void) { return false; }
