@@ -42,7 +42,7 @@ static void arm_motors()
 			//Serial.printf("\nLEV\n");
 
 			// begin manual leveling
-			imu.init_accel(mavlink_delay);
+			imu.init_accel(mavlink_delay, flash_leds);
 			arming_counter = 0;
 
 		}else if (arming_counter == DISARM_DELAY){

@@ -484,10 +484,10 @@ test_imu(uint8_t argc, const Menu::arg *argv)
   Vector3f gyro;
   Vector3f accel;
 
-  imu.init(IMU::WARM_START, delay, &timer_scheduler);
+  imu.init(IMU::WARM_START, delay, flash_leds, &timer_scheduler);
 
 	report_imu();
-	imu.init_gyro();
+	imu.init_gyro(delay, flash_leds);
 	report_imu();
 
 	print_hit_enter();
@@ -524,10 +524,10 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 	//dcm.kp_yaw(0.02);
 	//dcm.ki_yaw(0);
 
-    imu.init(IMU::WARM_START, delay, &timer_scheduler);
+    imu.init(IMU::WARM_START, delay, flash_leds, &timer_scheduler);
 
 	report_imu();
-	imu.init_gyro();
+	imu.init_gyro(delay, flash_leds);
 	report_imu();
 
 	print_hit_enter();

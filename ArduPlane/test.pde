@@ -505,7 +505,7 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 	//Serial.printf_P(PSTR("Calibrating."));
     isr_registry.init();
     timer_scheduler.init( &isr_registry );
-	imu.init(IMU::COLD_START, delay, &timer_scheduler);
+	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
 
 	print_hit_enter();
 	delay(1000);
@@ -568,7 +568,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     // we need the DCM initialised for this test
     isr_registry.init();
     timer_scheduler.init( &isr_registry );
-	imu.init(IMU::COLD_START, delay, &timer_scheduler);
+	imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
 
 	int counter = 0;
 		//Serial.printf_P(PSTR("MAG_ORIENTATION: %d\n"), MAG_ORIENTATION);

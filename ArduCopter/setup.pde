@@ -245,8 +245,8 @@ setup_motors(uint8_t argc, const Menu::arg *argv)
 static int8_t
 setup_accel(uint8_t argc, const Menu::arg *argv)
 {
-  imu.init(IMU::COLD_START, delay, &timer_scheduler);
-	imu.init_accel();
+    imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
+	imu.init_accel(delay, flash_leds);
 	print_accel_offsets();
 	report_imu();
 	return(0);
