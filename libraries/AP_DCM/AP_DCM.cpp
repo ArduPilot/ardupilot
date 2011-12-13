@@ -188,6 +188,26 @@ AP_DCM::accel_adjust(void)
 	_accel_vector -= temp;
 }
 
+/*
+  reset the DCM matrix and omega. Used on ground start, and on
+  extreme errors in the matrix
+ */
+void
+AP_DCM::matrix_reset(void)
+{
+	_dcm_matrix.a.x = 1.0f;
+	_dcm_matrix.a.y = 0.0f;
+	_dcm_matrix.a.z = 0.0f;
+	_dcm_matrix.b.x = 0.0f;
+	_dcm_matrix.b.y = 1.0f;
+	_dcm_matrix.b.z = 0.0f;
+	_dcm_matrix.c.x = 0.0f;
+	_dcm_matrix.c.y = 0.0f;
+	_dcm_matrix.c.z = 1.0f;
+	_omega_I.x = 0.0f;
+	_omega_I.y = 0.0f;
+	_omega_I.z = 0.0f;
+}
 
 /*************************************************
 Direction Cosine Matrix IMU: Theory
@@ -221,18 +241,7 @@ AP_DCM::normalize(void)
 	_dcm_matrix.c = renorm(temporary[2], problem);
 
 	if (problem == 1) {		// Our solution is blowing up and we will force back to initial condition.	Hope we are not upside down!
-		_dcm_matrix.a.x = 1.0f;
-		_dcm_matrix.a.y = 0.0f;
-		_dcm_matrix.a.z = 0.0f;
-		_dcm_matrix.b.x = 0.0f;
-		_dcm_matrix.b.y = 1.0f;
-		_dcm_matrix.b.z = 0.0f;
-		_dcm_matrix.c.x = 0.0f;
-		_dcm_matrix.c.y = 0.0f;
-		_dcm_matrix.c.z = 1.0f;
-		_omega_I.x = 0.0f;
-		_omega_I.y = 0.0f;
-		_omega_I.z = 0.0f;
+		matrix_reset();
 	}
 }
 
