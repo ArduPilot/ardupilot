@@ -214,12 +214,11 @@ def start_SIL(atype, valgrind=False, wipe=False, CLI=False, height=None):
     return ret
 
 def start_MAVProxy_SIL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                       fgrate=200,
                        options=None, logfile=sys.stdout):
     '''launch mavproxy connected to a SIL instance'''
     global close_list
     MAVPROXY = reltopdir('../MAVProxy/mavproxy.py')
-    cmd = MAVPROXY + ' --master=%s --fgrate=%u --out=127.0.0.1:14550' % (master, fgrate)
+    cmd = MAVPROXY + ' --master=%s --out=127.0.0.1:14550' % master
     if setup:
         cmd += ' --setup'
     if aircraft is None:
