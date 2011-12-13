@@ -69,10 +69,7 @@ get_stabilize_pitch(int32_t target_angle)
 	pitch_I 	= constrain(pitch_I, -120, 120); // +- 1200
 
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_roll.get_p(error + pitch_I);
-
-	// convert to desired Rate:
-	rate 		= g.pi_stabilize_pitch.get_p(error);
+	rate 		= g.pi_stabilize_pitch.get_p(error + pitch_I);
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_pitch.get_i(error, G_Dt);
