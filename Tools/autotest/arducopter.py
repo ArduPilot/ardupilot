@@ -55,7 +55,7 @@ def takeoff(mavproxy, mav, alt_min = 30, alt_max = 40):
     return True
 
 
-def loiter(mavproxy, mav, holdtime=120, maxaltchange=10, timeout=60):
+def loiter(mavproxy, mav, holdtime=20, maxaltchange=10, timeout=60):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -332,8 +332,8 @@ def fly_ArduCopter(viewerip=None):
             failed = True
 
         # Loiter for 10 seconds
-        print("# Loiter for 10 seconds")
-        if not loiter(mavproxy, mav, 120):
+        print("# Loiter for 20 seconds")
+        if not loiter(mavproxy, mav, 20):
             print("loiter failed")
             failed = True
 
