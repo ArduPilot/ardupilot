@@ -301,12 +301,10 @@ static const char* flight_mode_strings[] = {
 */
 
 // temp
-static int16_t y_actual_speed;
-static int16_t y_rate_error;
-
-// calc the
 static int16_t x_actual_speed;
+static int16_t y_actual_speed;
 static int16_t x_rate_error;
+static int16_t y_rate_error;
 
 // Radio
 // -----
@@ -903,10 +901,12 @@ static void slow_loop()
 
 			#if AUTO_RESET_LOITER == 1
 			if(control_mode == LOITER){
-				//if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1500){
+				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1000){
 					// reset LOITER to current position
-					//next_WP 	= current_loc;
-				//}
+					next_WP 	= current_loc;
+					// clear Loiter Iterms
+					reset_nav();
+				}
 			}
 			#endif
 
@@ -1419,7 +1419,7 @@ adjust_altitude()
 		//manual_boost = (g.rc_3.control_in == 800) ? 20 : 0;
 	}*/
 
-	if(g.rc_3.control_in <= 180){
+	if(g.rc_3.control_in <= 180 && !failsafe){
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
@@ -1427,7 +1427,7 @@ adjust_altitude()
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
-	}else if  (g.rc_3.control_in >= 650){
+	}else if  (g.rc_3.control_in >= 650 && !failsafe){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
 		g.throttle_cruise += g.pi_alt_hold.get_integrator();
