@@ -54,6 +54,7 @@ print_log_menu(void)
 	int log_start;
 	int log_end;
 	int temp;
+	int last_log_num = find_last_log();
 
 	uint16_t num_logs = get_num_logs();
 
@@ -84,7 +85,7 @@ print_log_menu(void)
 
 		for(int i=num_logs;i>=1;i--) {
             int last_log_start = log_start, last_log_end = log_end;
-			temp = g.log_last_filenumber-i+1;
+			temp = last_log_num-i+1;
 			get_log_boundaries(temp, log_start, log_end);
 			Serial.printf_P(PSTR("Log %d,    start %d,   end %d\n"), temp, log_start, log_end);
             if (last_log_start == log_start && last_log_end == log_end) {
@@ -107,7 +108,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 
 	// check that the requested log number can be read
 	dump_log = argv[1].i;
-	last_log_num = g.log_last_filenumber;
+	last_log_num = find_last_log();
 
 	if (dump_log == -2) {
 		for(int count=1; count<=DF_LAST_PAGE; count++) {
@@ -147,7 +148,6 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
 		if(j%128 == 0) Serial.printf_P(PSTR("+"));
 	}
-	g.log_last_filenumber.set_and_save(0);
 
 	Serial.printf_P(PSTR("\nLog erased.\n"));
 	DataFlash.FinishWrite();
@@ -217,13 +217,13 @@ static byte get_num_logs(void)
 	uint16_t last;
 	uint16_t first;
 
-	if(g.log_last_filenumber < 1) return 0;
+	if(find_last_page() == 1) return 0;
 
 	DataFlash.StartRead(1);
 
 	if(DataFlash.GetFileNumber() == 0XFFFF) return 0;
 
-	lastpage = find_last();
+	lastpage = find_last_page();
 	DataFlash.StartRead(lastpage);
 	last = DataFlash.GetFileNumber();
 	DataFlash.StartRead(lastpage + 2);
@@ -243,12 +243,31 @@ static byte get_num_logs(void)
 // This function starts a new log file in the DataFlash
 static void start_new_log()
 {
-	uint16_t	last_page = find_last();
-	if(last_page == 1) last_page = 0;
-
-	g.log_last_filenumber.set_and_save(g.log_last_filenumber+1);
-	DataFlash.SetFileNumber(g.log_last_filenumber);
-	DataFlash.StartWrite(last_page + 1);
+	uint16_t	last_page = find_last_page();
+	
+	DataFlash.StartRead(last_page);
+	//Serial.print("last page: ");	Serial.println(last_page);
+	//Serial.print("file #: ");	Serial.println(DataFlash.GetFileNumber());
+	//Serial.print("file page: ");	Serial.println(DataFlash.GetFilePage());
+	
+	if(find_last_log() == 0 || DataFlash.GetFileNumber() == 0xFFFF) {
+		DataFlash.SetFileNumber(1);
+		DataFlash.StartWrite(1);
+		//Serial.println("start log from 0");
+		return;
+	}
+	
+	// Check for log of length 1 page and suppress
+	if(DataFlash.GetFilePage() <= 1) {
+		DataFlash.SetFileNumber(DataFlash.GetFileNumber());		// Last log too short, reuse its number
+		DataFlash.StartWrite(last_page);					// and overwrite it
+		//Serial.println("start log from short");
+	} else {
+		if(last_page == 0xFFFF) last_page=0;
+		DataFlash.SetFileNumber(DataFlash.GetFileNumber()+1);
+		DataFlash.StartWrite(last_page + 1);
+		//Serial.println("start log normal");
+	}
 }
 
 // This function finds the first and last pages of a log file
@@ -257,16 +276,15 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 {
 	int num = get_num_logs();
 	int look;
-
 	if(num == 1)
 	{
 		DataFlash.StartRead(DF_LAST_PAGE);
 		if(DataFlash.GetFileNumber() == 0xFFFF)
 		{
 			start_page = 1;
-			end_page = find_last_log_page((uint16_t)log_num);
+			end_page = find_last_page_of_log((uint16_t)log_num);
 		} else {
-			end_page = find_last_log_page((uint16_t)log_num);
+			end_page = find_last_page_of_log((uint16_t)log_num);
 			start_page = end_page + 1;
 		}
 
@@ -276,22 +294,22 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 			if(DataFlash.GetFileNumber() == 0xFFFF) {
 				start_page = 1;
 			} else {
-				start_page = find_last() + 1;
+				start_page = find_last_page() + 1;
 			}
 		 } else {
-			if(log_num == g.log_last_filenumber - num + 1) {
-				start_page = find_last() + 1;
+			if(log_num == find_last_log() - num + 1) {
+				start_page = find_last_page() + 1;
 			} else {
 				look = log_num-1;
 				do {
-				start_page = find_last_log_page(look) + 1;
+				start_page = find_last_page_of_log(look) + 1;
 				look--;
-				} while (start_page <= 0);
+				} while (start_page <= 0 && look >=1);
 			}
 		}
 	}
 	if(start_page == DF_LAST_PAGE+1 || start_page == 0) start_page=1;
-	end_page = find_last_log_page((uint16_t)log_num);
+	end_page = find_last_page_of_log((uint16_t)log_num);
 	if(end_page <= 0) end_page = start_page;
 }
 
@@ -304,8 +322,16 @@ static bool check_wrapped(void)
 		return 1;
 }
 
+// This funciton finds the last log number
+static int find_last_log(void)
+{
+	int last_page = find_last_page();
+	DataFlash.StartRead(last_page);
+	return DataFlash.GetFileNumber();
+}
+	
 // This function finds the last page of the last file
-static int find_last(void)
+static int find_last_page(void)
 {
 uint16_t look;
 uint16_t bottom = 1;
@@ -346,7 +372,7 @@ uint32_t top_hash;
 }
 
 // This function finds the last page of a particular log file
-static int find_last_log_page(uint16_t log_number)
+static int find_last_page_of_log(uint16_t log_number)
 {
 
 uint16_t look;
@@ -361,19 +387,18 @@ uint32_t check_hash;
 		bottom = DataFlash.GetFileNumber();
 		if (bottom > log_number)
 		{
-			bottom = find_last();
+			bottom = find_last_page();
 			top = DF_LAST_PAGE;
 		} else {
 			bottom = 1;
-			top = find_last();
+			top = find_last_page();
 		}
 	} else {
 		bottom = 1;
-		top = find_last();
+		top = find_last_page();
 	}
 
 	check_hash = (long)log_number<<16 | 0xFFFF;
-
 	while(top-bottom > 1)
 	{
 		look = (top+bottom)/2;
