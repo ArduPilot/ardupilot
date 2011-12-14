@@ -56,7 +56,7 @@ public:
 	// Misc
 	//
 	k_param_log_bitmask = 20,
-    k_param_log_last_filenumber,
+    k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
 
 	#if FRAME_CONFIG ==	HELI_FRAME
 	//
@@ -237,7 +237,7 @@ public:
 	// Misc
 	//
 	AP_Int16	log_bitmask;
-    AP_Int16	log_last_filenumber;
+    AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
 
 	AP_Int8		esc_calibrate;
 	AP_Int8		radio_tuning;
