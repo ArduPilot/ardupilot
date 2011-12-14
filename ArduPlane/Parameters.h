@@ -69,7 +69,7 @@ public:
         k_param_flap_2_percent,
         k_param_flap_2_speed,
         k_param_num_resets,
-        k_param_log_last_filenumber,
+        k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
 
 
 		// 110: Telemetry control
@@ -307,7 +307,7 @@ public:
     AP_Int8     reverse_ch2_elevon;
     AP_Int16    num_resets;
     AP_Int16    log_bitmask;
-    AP_Int16	log_last_filenumber;
+    AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
     AP_Int16    airspeed_cruise;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
