@@ -337,7 +337,7 @@ static void init_ardupilot()
 	//-----------------------------
 	init_barometer();
 	#endif
-	
+
 	// initialise sonar
 	#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
 	init_sonar();
@@ -436,7 +436,7 @@ static void set_mode(byte mode)
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
-	motor_auto_armed = (g.rc_3.control_in > 0);
+	motor_auto_armed = (g.rc_3.control_in > 0) || failsafe;
 
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
