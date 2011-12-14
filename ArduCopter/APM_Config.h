@@ -65,3 +65,6 @@
 
 // enable this for the new 'APM2' hardware
 // #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+
+#define LOITER_METHOD 0
+// set to 1 to try an alternative Loiter control method
