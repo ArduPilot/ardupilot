@@ -123,7 +123,7 @@
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="pictureBoxAPM.Location" type="System.Drawing.Point, System.Drawing">
-    <value>45, -9</value>
+    <value>7, -9</value>
   </data>
   <data name="pictureBoxAPM.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -151,7 +151,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxAPMHIL.Location" type="System.Drawing.Point, System.Drawing">
-    <value>45, 184</value>
+    <value>7, 184</value>
   </data>
   <data name="pictureBoxAPMHIL.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -340,7 +340,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_AP.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 168</value>
+    <value>4, 168</value>
   </data>
   <data name="lbl_AP.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -400,7 +400,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_APHil.Location" type="System.Drawing.Point, System.Drawing">
-    <value>42, 361</value>
+    <value>4, 361</value>
   </data>
   <data name="lbl_APHil.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -679,7 +679,7 @@
     <value>BUT_setup</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_setup.Parent" xml:space="preserve">
     <value>$this</value>
@@ -700,6 +700,6 @@
     <value>Firmware</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
 </root>

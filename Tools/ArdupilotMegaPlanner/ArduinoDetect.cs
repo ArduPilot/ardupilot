@@ -82,7 +82,7 @@ namespace ArdupilotMega
                             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
                             foreach (ManagementObject obj2 in searcher.Get())
                             {
-                                Console.WriteLine("Dependant : " + obj2["Dependent"]);
+                                //Console.WriteLine("Dependant : " + obj2["Dependent"]);
 
                                 if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
                                 {
