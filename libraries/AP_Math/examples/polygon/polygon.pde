@@ -33,12 +33,14 @@ static const struct {
 	Vector2f point;
 	bool outside;
 } test_points[] = {
-	{ Vector2f(-26.639887, 151.822281), true },
+	{ Vector2f(-26.639887, 151.822000), true },
 	{ Vector2f(-26.641870, 151.870926), false },
 	{ Vector2f(-35.0,      149.0),      true },
 	{ Vector2f(0, 0),                   true },
 	{ Vector2f(-26.576815, 151.840825), false },
 	{ Vector2f(-26.577406, 151.840586), true },
+	{ Vector2f(-26.643563, 151.830344), true },
+	{ Vector2f(-26.643565, 151.831354), false },
 };
 
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
@@ -67,7 +69,7 @@ void setup(void)
 
     for (i=0; i<ARRAY_LENGTH(test_points); i++) {
         bool result;
-        result = Polygon_outside(&test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
+        result = Polygon_outside(test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
         Serial.printf_P(PSTR("%10f,%10f  %s  %s\n"),
                         test_points[i].point.x, test_points[i].point.y,
                         result?"OUTSIDE":"INSIDE ",
@@ -83,7 +85,7 @@ void setup(void)
     for (count=0; count<1000; count++) {
         for (i=0; i<ARRAY_LENGTH(test_points); i++) {
             bool result;
-            result = Polygon_outside(&test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
+            result = Polygon_outside(test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
             if (result != test_points[i].outside) {
                 all_passed = false;
             }
