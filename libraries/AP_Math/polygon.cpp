@@ -76,3 +76,15 @@ bool Polygon_outside(const Vector2f *P, const Vector2f *V, unsigned n)
     }
     return wn == 0;
 }
+
+/*
+  check if a polygon is complete. 
+
+  We consider a polygon to be complete if we have at least 4 points,
+  and the first point is the same as the last point. That is the
+  minimum requirement for the Polygon_outside function to work
+ */
+bool Polygon_complete(const Vector2f *V, unsigned n)
+{
+    return (n >= 4 && V[n-1].x == V[0].x && V[n-1].y == V[0].y);
+}

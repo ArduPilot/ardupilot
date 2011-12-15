@@ -55,6 +55,16 @@ void setup(void)
 	Serial.begin(115200);
 	Serial.println("polygon unit tests\n");
 
+    if (!Polygon_complete(OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+        Serial.println("OBC boundary is not complete!");
+        all_passed = false;
+    }
+
+    if (Polygon_complete(OBC_boundary, ARRAY_LENGTH(OBC_boundary)-1)) {
+        Serial.println("Polygon_complete test failed");
+        all_passed = false;
+    }
+
     for (i=0; i<ARRAY_LENGTH(test_points); i++) {
         bool result;
         result = Polygon_outside(&test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
@@ -79,7 +89,7 @@ void setup(void)
             }
         }
     }    
-    Serial.printf("%u usec/call\n", (micros() - start_time)/(count*ARRAY_LENGTH(test_points)));
+    Serial.printf("%u usec/call\n", (unsigned)((micros() - start_time)/(count*ARRAY_LENGTH(test_points))));
     Serial.println(all_passed?"ALL TESTS PASSED":"TEST FAILED");                  
 }
 
