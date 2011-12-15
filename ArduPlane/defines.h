@@ -213,8 +213,14 @@ enum gcs_severity {
 #define WP_START_BYTE 0x400 // where in memory home WP is stored + all other WP
 #define WP_SIZE 15
 
+// fence points are stored at the end of the EEPROM
+#define MAX_FENCEPOINTS 20
+#define FENCE_WP_SIZE sizeof(Vector2f)
+#define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
+
+#define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
+
 #define ONBOARD_PARAM_NAME_LENGTH 15
-#define MAX_WAYPOINTS  ((EEPROM_MAX_ADDR - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
 
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
