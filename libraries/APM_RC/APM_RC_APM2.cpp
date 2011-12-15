@@ -87,8 +87,6 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   ICR1 = 40000; // 0.5us tick => 50hz freq
   OCR1A = 0xFFFF; // Init OCR registers to nil output signal
   OCR1B = 0xFFFF;
-  OutputCh(1, 1100);
-  OutputCh(2, 1100);
 
   // --------------- TIMER4: OUT3, OUT4, and OUT5 ---------------------
   pinMode(8,OUTPUT); // OUT3 (PH5/OC4C)
@@ -105,10 +103,6 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   OCR4C = 0xFFFF;
   ICR4 = 40000; // 0.5us tick => 50hz freq
 
-  OutputCh(3, 1100);
-  OutputCh(4, 1100);
-  OutputCh(5, 1100);
-
   //--------------- TIMER3: OUT6, OUT7, and OUT8 ----------------------
   pinMode(3,OUTPUT); // OUT6 (PE5/OC3C)
   pinMode(2,OUTPUT); // OUT7 (PE4/OC3B)
@@ -123,10 +117,6 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   OCR3B = 0xFFFF;
   OCR3C = 0xFFFF;
   ICR3 = 40000; // 0.5us tick => 50hz freq
-
-  OutputCh(6, 1100);
-  OutputCh(7, 1100);
-  OutputCh(8, 1100);
 
   //--------------- TIMER5: PPM INPUT ---------------------------------
   // Init PPM input on Timer 5
