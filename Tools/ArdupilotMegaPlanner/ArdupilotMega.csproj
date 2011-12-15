@@ -145,6 +145,9 @@
     <Reference Include="KMLib">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\kml-library\KmlTestbed\bin\Release\KMLib.dll</HintPath>
     </Reference>
+    <Reference Include="MetaDataExtractor">
+      <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\MetaDataExtractorCSharp240d\bin\Release\MetaDataExtractor.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.DirectX, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.dll</HintPath>

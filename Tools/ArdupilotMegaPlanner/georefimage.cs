@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
+using com.drew.imaging.jpg;
+using com.drew.metadata;
 
 namespace ArdupilotMega
 {
@@ -21,6 +23,7 @@ namespace ArdupilotMega
         private FolderBrowserDialog folderBrowserDialog1;
         private Label label1;
         private TextBox TXT_outputlog;
+        private MyButton BUT_estoffset;
 
         internal georefimage() {
             InitializeComponent();
@@ -32,6 +35,38 @@ namespace ArdupilotMega
 
             try
             {
+                
+                Metadata lcMetadata = null;
+                try
+                {
+                    FileInfo lcImgFile = new FileInfo(fn);
+                    // Loading all meta data
+                    lcMetadata = JpegMetadataReader.ReadMetadata(lcImgFile);
+                }
+                catch (JpegProcessingException e)
+                {
+                    Console.Error.WriteLine(e.Message);
+                    return dtaken;
+                }
+
+                foreach (AbstractDirectory lcDirectory in lcMetadata)
+                {
+
+                    if (lcDirectory.ContainsTag(0x9003))
+                    {
+                        dtaken = lcDirectory.GetDate(0x9003);
+                        Console.WriteLine("does " + lcDirectory.GetTagName(0x9003) + " " + dtaken);
+                        break;
+                    }
+
+                }
+
+
+                
+
+
+                ////// old method, works, just slow
+                /*
                 Image myImage = Image.FromFile(fn);
                 PropertyItem propItem = myImage.GetPropertyItem(36867); // 36867  // 306
 
@@ -44,6 +79,7 @@ namespace ArdupilotMega
                 dtaken = DateTime.Parse(sdate);
 
                 myImage.Dispose();
+                 */
             }
             catch { }
 
@@ -81,7 +117,7 @@ namespace ArdupilotMega
             return list;
         }
 
-        public void dowork(string logFile, string dirWithImages, float offsetseconds)
+        public void dowork(string logFile, string dirWithImages, float offsetseconds,bool dooffset)
         {
             DateTime localmin = DateTime.MaxValue;
             DateTime localmax = DateTime.MinValue;
@@ -104,6 +140,7 @@ namespace ArdupilotMega
             sw.WriteLine("#name	utc	longitude	latitude	height");
 
             int first = 0;
+            int matchs = 0;
 
             foreach (string file in files)
             {
@@ -133,7 +170,7 @@ namespace ArdupilotMega
 
                     foreach (string[] arr in list)
                     {
-                        Application.DoEvents();
+                        //Application.DoEvents();
 
                         DateTime crap = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
 
@@ -144,14 +181,19 @@ namespace ArdupilotMega
 
                                 TXT_outputlog.AppendText("offset should be about " + (dt  -crap).TotalSeconds + "\r\n");
 
+                                if (dooffset)
+                                    return;
+
                                 first++;
                             }
 
-                        Console.Write("ph " + dt + " log " + crap + "         \r");
+                        //Console.Write("ph " + dt + " log " + crap + "         \r");
 
                         if (dt.Equals(crap))
                         {
                             TXT_outputlog.AppendText("MATCH Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + "\r\n");
+
+                            matchs++;
 
                             sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[7]);
                             sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") +"\t"+ arr[5] + "\t" + arr[4] + "\t" + arr[7]);
@@ -170,7 +212,7 @@ namespace ArdupilotMega
             sw2.Close();
             sw.Close();
 
-            MessageBox.Show("Done");
+            MessageBox.Show("Done " + matchs + " matchs");
 
         }
 
@@ -186,6 +228,7 @@ namespace ArdupilotMega
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.TXT_outputlog = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.BUT_estoffset = new ArdupilotMega.MyButton();
             this.SuspendLayout();
             // 
             // openFileDialog1
@@ -268,9 +311,20 @@ namespace ArdupilotMega
             this.label1.TabIndex = 7;
             this.label1.Text = "Seconds offset";
             // 
+            // BUT_estoffset
+            // 
+            this.BUT_estoffset.Location = new System.Drawing.Point(286, 67);
+            this.BUT_estoffset.Name = "BUT_estoffset";
+            this.BUT_estoffset.Size = new System.Drawing.Size(75, 23);
+            this.BUT_estoffset.TabIndex = 8;
+            this.BUT_estoffset.Text = "Estimate Offset";
+            this.BUT_estoffset.UseVisualStyleBackColor = true;
+            this.BUT_estoffset.Click += new System.EventHandler(this.BUT_estoffset_Click);
+            // 
             // georefimage
             // 
             this.ClientSize = new System.Drawing.Size(453, 299);
+            this.Controls.Add(this.BUT_estoffset);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.TXT_outputlog);
             this.Controls.Add(this.BUT_doit);
@@ -319,10 +373,15 @@ namespace ArdupilotMega
             BUT_doit.Enabled = false;
             try
             {
-                dowork(TXT_logfile.Text, TXT_jpgdir.Text, seconds);
+                dowork(TXT_logfile.Text, TXT_jpgdir.Text, seconds, false);
             }
             catch { }
             BUT_doit.Enabled = true;
+        }
+
+        private void BUT_estoffset_Click(object sender, EventArgs e)
+        {
+            dowork(TXT_logfile.Text, TXT_jpgdir.Text, 0, true);
         }
     }
 }

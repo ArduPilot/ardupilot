@@ -39,12 +39,22 @@ namespace ArdupilotMega
 
         private void writeKML(string filename)
         {
+            SharpKml.Dom.AltitudeMode altmode = SharpKml.Dom.AltitudeMode.Absolute;
+
+            if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
+            {
+                altmode = SharpKml.Dom.AltitudeMode.Absolute;
+            }
+            else if (MainV2.cs.firmware == MainV2.Firmwares.ArduCopter2)
+            {
+                altmode = SharpKml.Dom.AltitudeMode.RelativeToGround;
+            }
+
             Color[] colours = { Color.Red, Color.Orange, Color.Yellow, Color.Green, Color.Blue, Color.Indigo, Color.Violet, Color.Pink };
 
             Document kml = new Document();
 
-            Tour tour = new Tour();
-            tour.Name = "First Person View";
+            Tour tour = new Tour() { Name = "First Person View" };
             Playlist tourplaylist = new Playlist();
 
             AddNamespace(kml, "gx", "http://www.google.com/kml/ext/2.2");
@@ -64,10 +74,12 @@ namespace ArdupilotMega
             Style stylet = new Style();
             stylet.Id = "track";
             SharpKml.Dom.IconStyle ico = new SharpKml.Dom.IconStyle();
+            LabelStyle lst = new LabelStyle();
+            lst.Scale = 0;
             stylet.Icon = ico;
             ico.Icon = new IconStyle.IconLink(new Uri("http://earth.google.com/images/kml-icons/track-directional/track-none.png"));
             stylet.Icon.Scale = 0.5;
-            //stylet.Label.Scale = 0;
+            stylet.Label = lst;
 
             kml.AddStyle(stylet);
 
@@ -110,7 +122,7 @@ namespace ArdupilotMega
                     c++;
 
                     LineString ls = new LineString();
-                    ls.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                    ls.AltitudeMode = altmode;
                     ls.Extrude = true;
 
                     ls.Coordinates = coords;
@@ -154,7 +166,7 @@ namespace ArdupilotMega
 
                 flyto.Mode = FlyToMode.Smooth;
                 SharpKml.Dom.Camera cam = new SharpKml.Dom.Camera();
-                cam.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                cam.AltitudeMode = altmode;
                 cam.Latitude = cs.lat;
                 cam.Longitude = cs.lng;
                 cam.Altitude = cs.alt;
@@ -203,7 +215,7 @@ namespace ArdupilotMega
                 Model model = new Model();
                 model.Location = loc;
                 model.Orientation = ori;
-                model.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                model.AltitudeMode = altmode;
                 model.Scale = sca;
 
                 try
@@ -236,7 +248,7 @@ namespace ArdupilotMega
                 Placemark pmt = new Placemark();
 
                 SharpKml.Dom.Point pnt = new SharpKml.Dom.Point();
-                pnt.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                pnt.AltitudeMode = altmode;
                 pnt.Coordinate = new Vector(cs.lat,cs.lng,cs.alt);
 
                 pmt.Name = "" + a;

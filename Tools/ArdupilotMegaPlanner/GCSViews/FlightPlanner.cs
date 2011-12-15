@@ -2609,7 +2609,7 @@ namespace ArdupilotMega.GCSViews
             }
             else
             {
-                MessageBox.Show("Please Connect/wait for lock, and click here to set your home to your current location");
+                MessageBox.Show("If you're at the field, connect to your APM and wait for GPS lock. Then click 'Home Location' link to set home to your location");
             }
         }
 
@@ -2865,7 +2865,7 @@ namespace ArdupilotMega.GCSViews
 
         private void BUT_zoomto_Click(object sender, EventArgs e)
         {
-            string place = "Perth, Australia";
+            string place = "Perth Airport, Australia";
             if (DialogResult.OK == Common.InputBox("Location", "Enter your location", ref place))
             {
 
@@ -2931,6 +2931,9 @@ namespace ArdupilotMega.GCSViews
             try
             {
                 routes.Markers.Clear();
+
+                if (MainV2.cs.lat == 0 || MainV2.cs.lng == 0)
+                    return;
 
                 PointLatLng currentloc = new PointLatLng(MainV2.cs.lat, MainV2.cs.lng);
 
