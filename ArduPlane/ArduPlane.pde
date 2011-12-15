@@ -325,7 +325,6 @@ static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of pla
 static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 
-static byte	command_index;						// current command memory location
 static byte	nav_command_index;					// active nav command memory location
 static byte	non_nav_command_index;				// active non-nav command memory location
 static byte	nav_command_ID		= NO_COMMAND;	// active nav command ID
