@@ -119,7 +119,7 @@ def process_jsb_input(buf):
 ##################
 # main program
 from optparse import OptionParser
-parser = OptionParser("hil_quad.py [options]")
+parser = OptionParser("runsim.py [options]")
 parser.add_option("--simin",   help="SITL input (IP:port)",          default="127.0.0.1:5502")
 parser.add_option("--simout",  help="SITL output (IP:port)",         default="127.0.0.1:5501")
 parser.add_option("--fgout",   help="FG display output (IP:port)",   default="127.0.0.1:5503")
