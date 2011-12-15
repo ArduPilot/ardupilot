@@ -794,3 +794,13 @@
 #ifndef MAVLINK_TELEMETRY_PORT_DELAY
 # define MAVLINK_TELEMETRY_PORT_DELAY 2000
 #endif
+
+// use this to disable gen-fencing
+#ifndef GEOFENCE_ENABLED
+# define GEOFENCE_ENABLED ENABLED
+#endif
+
+// pwm value on FENCE_CHANNEL to use to enable fenced mode
+#ifndef FENCE_ENABLE_PWM
+# define FENCE_ENABLE_PWM 1750
+#endif
