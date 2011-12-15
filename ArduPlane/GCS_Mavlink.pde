@@ -1631,6 +1631,38 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+#if GEOFENCE_ENABLED == ENABLED
+	// receive a fence point from GCS and store in EEPROM
+    case MAVLINK_MSG_ID_FENCE_POINT: {
+        mavlink_fence_point_t packet;
+        mavlink_msg_fence_point_decode(msg, &packet);
+        if (g.fence_action != FENCE_ACTION_NONE) {
+            send_text(SEVERITY_LOW,PSTR("fencing must be disabled"));
+        } else if (packet.count != g.fence_total) {
+            send_text(SEVERITY_LOW,PSTR("bad fence point"));
+        } else {
+            Vector2f point;
+            point.x = packet.lat;
+            point.y = packet.lng;
+            set_fence_point_with_index(point, packet.idx);
+        }
+        break;
+    }
+
+	// send a fence point to GCS
+    case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
+        mavlink_fence_fetch_point_t packet;
+        mavlink_msg_fence_fetch_point_decode(msg, &packet);
+        if (packet.idx >= g.fence_total) {
+            send_text(SEVERITY_LOW,PSTR("bad fence point"));
+        } else {
+            Vector2f point = get_fence_point_with_index(packet.idx);
+            mavlink_msg_fence_point_send(chan, packet.idx, g.fence_total, point.x, point.y);
+        }
+        break;
+    }
+#endif // GEOFENCE_ENABLED
+
     case MAVLINK_MSG_ID_PARAM_SET:
         {
             AP_Var                  *vp;

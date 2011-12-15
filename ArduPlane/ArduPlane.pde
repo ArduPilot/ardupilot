@@ -818,6 +818,8 @@ static void update_GPS(void)
 		current_loc.lng = g_gps->longitude;    // Lon * 10**7
 		current_loc.lat = g_gps->latitude;     // Lat * 10**7
 
+        // see if we've breached the geo-fence
+        geofence_check();
 	}
 }
 

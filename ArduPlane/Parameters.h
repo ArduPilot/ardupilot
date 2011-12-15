@@ -265,11 +265,13 @@ public:
     AP_Int8     command_index;
     AP_Int8     waypoint_radius;
     AP_Int8     loiter_radius;
+#if GEOFENCE_ENABLED == ENABLED
     AP_Int8     fence_action;
     AP_Int8     fence_total;
     AP_Int8     fence_channel;
     AP_Int16    fence_minalt; // meters
     AP_Int16    fence_maxalt; // meters
+#endif
 
     // Fly-by-wire
     //
@@ -389,11 +391,14 @@ public:
         command_index           (0,                         k_param_command_index,         PSTR("CMD_INDEX")),
         waypoint_radius         (WP_RADIUS_DEFAULT,         k_param_waypoint_radius,        PSTR("WP_RADIUS")),
         loiter_radius           (LOITER_RADIUS_DEFAULT,     k_param_loiter_radius,          PSTR("WP_LOITER_RAD")),
+
+#if GEOFENCE_ENABLED == ENABLED
         fence_action            (0,                         k_param_fence_action,           PSTR("FENCE_ACTION")),
         fence_total             (0,                         k_param_fence_total,            PSTR("FENCE_TOTAL")),
         fence_channel           (0,                         k_param_fence_channel,          PSTR("FENCE_CHANNEL")),
         fence_minalt            (0,                         k_param_fence_minalt,           PSTR("FENCE_MINALT")),
         fence_maxalt            (0,                         k_param_fence_maxalt,           PSTR("FENCE_MAXALT")),
+#endif
 
         flybywire_airspeed_min  (AIRSPEED_FBW_MIN,          k_param_flybywire_airspeed_min, PSTR("ARSPD_FBW_MIN")),
         flybywire_airspeed_max  (AIRSPEED_FBW_MAX,          k_param_flybywire_airspeed_max, PSTR("ARSPD_FBW_MAX")),
