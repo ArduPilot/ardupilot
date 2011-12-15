@@ -357,12 +357,13 @@ static bool verify_land()
 	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
 	old_alt = current_loc.alt;
 
+	if (current_loc.alt < 250){
+		wp_control = NO_NAV_MODE;
+		next_WP.alt = -200; // force us down
+	}
+
 	if(g.sonar_enabled){
 		// decide which sensor we're using
-		if(sonar_alt < 300){
-			next_WP = current_loc; // don't pitch or roll
-			next_WP.alt = -200; // force us down
-		}
 		if(sonar_alt < 40){
 			land_complete = true;
 			//Serial.println("Y");
@@ -377,7 +378,6 @@ static bool verify_land()
 	}
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);
-
 	return false;
 }
 
