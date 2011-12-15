@@ -18,4 +18,5 @@
  */
 
 bool Polygon_outside(const Vector2f *P, const Vector2f *V, unsigned n);
+bool Polygon_complete(const Vector2f *V, unsigned n);
 
