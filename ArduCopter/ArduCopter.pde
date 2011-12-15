@@ -1244,9 +1244,19 @@ static void update_navigation()
 			// switch passthrough to LOITER
 		case LOITER:
 		case POSITION:
+			wp_control 		= LOITER_MODE;
+
+			// calculates the desired Roll and Pitch
+			update_nav_wp();
+			break;
+
 		case LAND:
 			wp_control 		= LOITER_MODE;
 
+			if (current_loc.alt < 250){
+				wp_control = NO_NAV_MODE;
+				next_WP.alt = -200; // force us down
+			}
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
@@ -1589,11 +1599,16 @@ static void update_nav_wp()
 		//int nroll = nav_roll;
 		//int npitch = nav_pitch;
 		//Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
-	} else {
+
+	}else if(wp_control == WP_MODE){
 		// use error as the desired rate towards the target
 		calc_nav_rate(g.waypoint_speed_max);
 		// rotate pitch and roll to the copter frame of reference
 		calc_nav_pitch_roll();
+
+	}else if(wp_control == NO_NAV_MODE){
+		nav_roll = 0;
+		nav_pitch = 0;
 	}
 }
 
