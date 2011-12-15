@@ -204,6 +204,12 @@ static void geofence_check(void)
         guided_WP.options = 0;
         guided_WP.lat = geofence_state->boundary[0].x * 1.0e7;
         guided_WP.lng = geofence_state->boundary[0].y * 1.0e7;
+
+        if (control_mode == MANUAL && g.auto_trim) {
+            // make sure we don't auto trim the surfaces on this change
+            control_mode = STABILIZE;
+        }
+
         set_mode(GUIDED);
         break;
     }
