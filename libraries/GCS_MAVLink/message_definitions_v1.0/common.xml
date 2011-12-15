@@ -604,20 +604,6 @@
                     <param index="6">Empty</param>
                     <param index="7">Empty</param>
                </entry>
-               <entry value="201" name="MAV_CMD_DO_SET_ROI">
-                    <description>Sets the region of interest (ROI) for a sensor set or the
-                    vehicle itself. This can then be used by the vehicles control
-                    system to control the vehicle attitude and the attitude of various
-                    devices such as cameras.
-                </description>
-                    <param index="1">Region of interest mode. (see MAV_ROI enum)</param>
-                    <param index="2">Waypoint index/ target ID. (see MAV_ROI enum)</param>
-                    <param index="3">ROI index (allows a vehicle to manage multiple cameras etc.)</param>
-                    <param index="4">Empty</param>
-                    <param index="5">The location of the fixed ROI (see MAV_FRAME)</param>
-                    <param index="6">Empty</param>
-                    <param index="7">Empty</param>
-               </entry>
                <entry value="240" name="MAV_CMD_DO_LAST">
                     <description>NOP - This command is only used to mark the upper limit of the DO commands in the enumeration</description>
                     <param index="1">Empty</param>

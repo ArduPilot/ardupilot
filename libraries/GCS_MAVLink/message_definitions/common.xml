@@ -271,9 +271,9 @@
                     <param index="2">Waypoint index/ target ID. (see MAV_ROI enum)</param>
                     <param index="3">ROI index (allows a vehicle to manage multiple cameras etc.)</param>
                     <param index="4">Empty</param>
-                    <param index="5">The location of the fixed ROI (see MAV_FRAME)</param>
-                    <param index="6">Empty</param>
-                    <param index="7">Empty</param>
+                    <param index="5">x the location of the fixed ROI (see MAV_FRAME)</param>
+                    <param index="6">y</param>
+                    <param index="7">z</param>
                </entry>
                <entry value="240" name="MAV_CMD_DO_LAST">
                     <description>NOP - This command is only used to mark the upper limit of the DO commands in the enumeration</description>

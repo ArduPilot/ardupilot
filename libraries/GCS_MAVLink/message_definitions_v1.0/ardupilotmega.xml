@@ -68,6 +68,16 @@
 	      <param index="7">Empty</param>
 	    </entry>
 	  </enum>
+
+	  <!-- fenced mode enums -->
+	  <enum name="FENCE_ACTION">
+	    <entry name="FENCE_ACTION_NONE" value="0">
+	      <description>Disable fenced mode</description>
+	    </entry>
+	    <entry name="FENCE_ACTION_GUIDED" value="1">
+	      <description>Switched to guided mode to return point (fence point 0)</description>
+	    </entry>
+	  </enum>
 	</enums>
 
      <messages>
@@ -173,5 +183,19 @@
 	    <field name="pointing_c" type="int32_t">yaw(deg*100) or alt (in cm) depending on mount mode</field>
 	  </message>
 
+	  <!-- geo-fence messages -->
+	  <message name="FENCE_POINT" id="160">
+	    <description>A fence point. Used to set a point when from
+	      GCS -> MAV. Also used to return a point from MAV -> GCS</description>
+	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
+	    <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
+	    <field name="lat" type="float">Latitude of point</field>
+	    <field name="lng" type="float">Longitude of point</field>
+	  </message>
+
+	  <message name="FENCE_FETCH_POINT" id="161">
+	    <description>Request a current fence point from MAV</description>
+	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
+	  </message>
      </messages>
 </mavlink>

@@ -519,6 +519,98 @@ static void mavlink_test_mount_status(uint8_t system_id, uint8_t component_id, m
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_fence_point(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_fence_point_t packet_in = {
+		5,
+	72,
+	31.0,
+	59.0,
+	};
+	mavlink_fence_point_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+		packet1.idx = packet_in.idx;
+		packet1.count = packet_in.count;
+		packet1.lat = packet_in.lat;
+		packet1.lng = packet_in.lng;
+
+
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_point_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_fence_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_point_pack(system_id, component_id, &msg , packet1.idx , packet1.count , packet1.lat , packet1.lng );
+	mavlink_msg_fence_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_point_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.idx , packet1.count , packet1.lat , packet1.lng );
+	mavlink_msg_fence_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_fence_point_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_point_send(MAVLINK_COMM_1 , packet1.idx , packet1.count , packet1.lat , packet1.lng );
+	mavlink_msg_fence_point_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
+static void mavlink_test_fence_fetch_point(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_fence_fetch_point_t packet_in = {
+		5,
+	};
+	mavlink_fence_fetch_point_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+		packet1.idx = packet_in.idx;
+
+
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_fetch_point_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_fence_fetch_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_fetch_point_pack(system_id, component_id, &msg , packet1.idx );
+	mavlink_msg_fence_fetch_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_fetch_point_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.idx );
+	mavlink_msg_fence_fetch_point_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+		comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_fence_fetch_point_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_fence_fetch_point_send(MAVLINK_COMM_1 , packet1.idx );
+	mavlink_msg_fence_fetch_point_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_test_sensor_offsets(system_id, component_id, last_msg);
@@ -530,6 +622,8 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_mount_configure(system_id, component_id, last_msg);
 	mavlink_test_mount_control(system_id, component_id, last_msg);
 	mavlink_test_mount_status(system_id, component_id, last_msg);
+	mavlink_test_fence_point(system_id, component_id, last_msg);
+	mavlink_test_fence_fetch_point(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus
