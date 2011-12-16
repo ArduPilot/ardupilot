@@ -216,7 +216,7 @@ enum gcs_severity {
 
 // fence points are stored at the end of the EEPROM
 #define MAX_FENCEPOINTS 20
-#define FENCE_WP_SIZE sizeof(Vector2f)
+#define FENCE_WP_SIZE sizeof(Vector2l)
 #define FENCE_START_BYTE (EEPROM_MAX_ADDR-(MAX_FENCEPOINTS*FENCE_WP_SIZE))
 
 #define MAX_WAYPOINTS  ((FENCE_START_BYTE - WP_START_BYTE) / WP_SIZE) - 1 // - 1 to be safe
