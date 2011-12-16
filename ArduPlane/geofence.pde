@@ -209,6 +209,9 @@ static void geofence_check(bool altitude_check_only)
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
             gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
+#if FENCE_TRIGGERED_PIN > 0
+            digitalWrite(FENCE_TRIGGERED_PIN, LOW);
+#endif
         }
         // we're inside, all is good with the world
         return;
@@ -227,6 +230,11 @@ static void geofence_check(bool altitude_check_only)
     geofence_state->breach_count++;
     geofence_state->breach_time = millis();
     geofence_state->breach_type = breach_type;
+
+#if FENCE_TRIGGERED_PIN > 0
+    digitalWrite(FENCE_TRIGGERED_PIN, HIGH);
+#endif
+
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
 
     // see what action the user wants

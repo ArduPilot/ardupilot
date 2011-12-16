@@ -809,3 +809,9 @@
 #ifndef FENCE_ENABLE_PWM
 # define FENCE_ENABLE_PWM 1750
 #endif
+
+// a digital pin to set high when the geo-fence triggers. Defaults
+// to -1, which means don't activate a pin
+#ifndef FENCE_TRIGGERED_PIN
+# define FENCE_TRIGGERED_PIN -1
+#endif
