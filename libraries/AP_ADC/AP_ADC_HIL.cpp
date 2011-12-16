@@ -49,11 +49,6 @@ float AP_ADC_HIL::Ch(unsigned char ch_num)
 	return adcValue[ch_num];
 }
 
-// enable a channel
-void AP_ADC_HIL::enable_channel(uint8_t ch)
-{
-}
-
 // Read 6 channel values
 uint32_t AP_ADC_HIL::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 {
