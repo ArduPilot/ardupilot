@@ -5,7 +5,7 @@
 class AP_AnalogSource
 {
     public:
-    virtual int read(void) = 0;
+    virtual float read(void) = 0;
 };
 
 #endif // __ANALOG_SOURCE_H__
