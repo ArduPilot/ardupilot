@@ -32,7 +32,7 @@ void eeprom_write_word(uint16_t *p, uint16_t value)
 	pwrite(eeprom_fd, &value, 2, ofs);
 }
 
-void eeprom_write_dword(uint16_t *p, uint32_t value)
+void eeprom_write_dword(uint32_t *p, uint32_t value)
 {
 	intptr_t ofs = (intptr_t)p;
 	assert(ofs < 4096);
