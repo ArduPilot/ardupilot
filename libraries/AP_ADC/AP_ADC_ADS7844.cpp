@@ -100,7 +100,6 @@ void AP_ADC_ADS7844::read(void)
 		return;
 	}
 
-	// build a sequence of commands to use to fetch the channels
 	for (ch = 0; ch < 8; ch++) {
 		if (enable_mask & (1<<ch)) {
 			enable_cmd[num_enabled++] = adc_cmd[ch];
@@ -188,13 +187,6 @@ void AP_ADC_ADS7844::Init( AP_PeriodicProcess * scheduler )
 
 }
 
-
-// enable a channel
-void AP_ADC_ADS7844::enable_channel(uint8_t ch)
-{
-	enable_mask |= (1<<ch);
-}
-
 // Read one channel value
 float AP_ADC_ADS7844::Ch(uint8_t ch_num)
 {
@@ -227,6 +219,10 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	uint16_t count[6];
 	uint32_t sum[6];
 	uint8_t i;
+
+	for (i=0; i<6; i++) {
+		enable_mask |= (1<<channel_numbers[i]);
+	}
 
 	// ensure we have at least one value
 	for (i=0; i<6; i++) {
