@@ -751,7 +751,7 @@ GCS_MAVLINK::update(void)
 #if CLI_ENABLED == ENABLED
         /* allow CLI to be started by hitting enter 3 times, if no
            heartbeat packets have been received */
-        if (mavlink_active == 0) {
+        if (mavlink_active == 0 && millis() < 20000) {
             if (c == '\n' || c == '\r') {
                 crlf_count++;
             } else {
