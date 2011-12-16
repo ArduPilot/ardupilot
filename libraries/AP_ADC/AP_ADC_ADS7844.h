@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef AP_ADC_ADS7844_H
 #define AP_ADC_ADS7844_H
 
