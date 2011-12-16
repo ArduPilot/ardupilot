@@ -120,6 +120,14 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
+#if GEOFENCE_ENABLED == ENABLED
+static NOINLINE void send_fence_status(mavlink_channel_t chan)
+{
+    geofence_send_status(chan);
+}
+#endif
+
+
 static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t packet_drops)
 {
 #ifdef MAVLINK10
@@ -612,6 +620,13 @@ static bool mavlink_try_send_message(mavlink_channel_t chan, enum ap_message id,
         send_statustext(chan);
         break;
 
+#if GEOFENCE_ENABLED == ENABLED
+    case MSG_FENCE_STATUS:
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        send_fence_status(chan);
+        break;
+#endif
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
 	}
@@ -820,6 +835,7 @@ GCS_MAVLINK::data_stream_send(uint16_t freqMin, uint16_t freqMax)
 			send_message(MSG_CURRENT_WAYPOINT);
 			send_message(MSG_GPS_RAW);            // TODO - remove this message after location message is working
 			send_message(MSG_NAV_CONTROLLER_OUTPUT);
+			send_message(MSG_FENCE_STATUS);
 		}
 
 		if (freqLoopMatch(streamRatePosition, freqMin, freqMax)) {
@@ -1635,6 +1651,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// receive a fence point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_FENCE_POINT: {
         mavlink_fence_point_t packet;
+        if (mavlink_check_target(packet.target_system, packet.target_component))
+            break;
         mavlink_msg_fence_point_decode(msg, &packet);
         if (g.fence_action != FENCE_ACTION_NONE) {
             send_text(SEVERITY_LOW,PSTR("fencing must be disabled"));
@@ -1652,12 +1670,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// send a fence point to GCS
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
         mavlink_fence_fetch_point_t packet;
+        if (mavlink_check_target(packet.target_system, packet.target_component))
+            break;
         mavlink_msg_fence_fetch_point_decode(msg, &packet);
         if (packet.idx >= g.fence_total) {
             send_text(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
             Vector2f point = get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, packet.idx, g.fence_total, point.x, point.y);
+            mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total, point.x, point.y);
         }
         break;
     }

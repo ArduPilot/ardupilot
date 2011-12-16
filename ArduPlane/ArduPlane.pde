@@ -819,7 +819,7 @@ static void update_GPS(void)
 		current_loc.lat = g_gps->latitude;     // Lat * 10**7
 
         // see if we've breached the geo-fence
-        geofence_check();
+        geofence_check(false);
 	}
 }
 
@@ -979,6 +979,8 @@ static void update_alt()
 		current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;			// alt_MSL centimeters (meters * 100)
 		current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
 	#endif
+
+        geofence_check(true);
 
 		// Calculate new climb rate
 		//if(medium_loopCounter == 0 && slow_loopCounter == 0)

@@ -19,6 +19,9 @@ static struct geofence_state {
     uint8_t num_points;
     bool boundary_uptodate;
     bool fence_triggered;
+    uint16_t breach_count;
+    uint8_t breach_type;
+    uint32_t breach_time;
     /* point 0 is the return point */
     Vector2f boundary[MAX_FENCEPOINTS];
 } *geofence_state;
@@ -29,10 +32,10 @@ static struct geofence_state {
  */
 static Vector2f get_fence_point_with_index(unsigned i)
 {
-	uint32_t mem;
+    uint32_t mem;
     Vector2f ret;
 
-	if (i > (unsigned)g.fence_total) {
+    if (i > (unsigned)g.fence_total) {
         return Vector2f(0,0);
     }
 
@@ -42,24 +45,24 @@ static Vector2f get_fence_point_with_index(unsigned i)
     mem += sizeof(float);
     eeprom_read_block(&ret.y, (void *)mem, sizeof(float));
 
-	return ret;
+    return ret;
 }
 
 // save a fence point
 static void set_fence_point_with_index(Vector2f &point, unsigned i)
 {
-	uint32_t mem;
+    uint32_t mem;
 
-	if (i >= (unsigned)g.fence_total.get()) {
+    if (i >= (unsigned)g.fence_total.get()) {
         // not allowed
         return;
     }
 
     mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
 
-	eeprom_write_block(&point.x, (void *)mem, sizeof(float));
-	mem += 4;
-	eeprom_write_block(&point.y, (void *)mem, sizeof(float));
+    eeprom_write_block(&point.x, (void *)mem, sizeof(float));
+    mem += 4;
+    eeprom_write_block(&point.y, (void *)mem, sizeof(float));
 
     if (geofence_state != NULL) {
         geofence_state->boundary_uptodate = false;
@@ -136,9 +139,38 @@ static bool geofence_enabled(void)
 
 
 /*
+  return true if we have breached the geo-fence minimum altiude
+ */
+static bool geofence_check_minalt(void)
+{
+    if (g.fence_maxalt <= g.fence_minalt) {
+        return false;
+    }
+    if (g.fence_minalt == 0) {
+        return false;
+    }
+    return (current_loc.alt < (g.fence_minalt*100) + home.alt);
+}
+
+/*
+  return true if we have breached the geo-fence maximum altiude
+ */
+static bool geofence_check_maxalt(void)
+{
+    if (g.fence_maxalt <= g.fence_minalt) {
+        return false;
+    }
+    if (g.fence_maxalt == 0) {
+        return false;
+    }
+    return (current_loc.alt > (g.fence_maxalt*100) + home.alt);
+}
+
+
+/*
   check if we have breached the geo-fence
  */
-static void geofence_check(void)
+static void geofence_check(bool altitude_check_only)
 {
     if (!geofence_enabled()) {
         return;
@@ -147,30 +179,36 @@ static void geofence_check(void)
     /* allocate the geo-fence state if need be */
     if (geofence_state == NULL || !geofence_state->boundary_uptodate) {
         geofence_load();
-        if (g.fence_action == FENCE_ACTION_NONE) {
+        if (!geofence_enabled()) {
             // may have been disabled by load
             return;
         }
     }
 
     bool outside = false;
+    uint8_t breach_type = FENCE_BREACH_NONE;
 
-    if (g.fence_maxalt > g.fence_minalt &&
-        ((g.fence_minalt != 0 && current_loc.alt < (g.fence_minalt*100) + home.alt) ||
-          (current_loc.alt > (g.fence_maxalt*100) + home.alt))) {
-        // we are too high or low
+    if (geofence_check_minalt()) {
         outside = true;
-    } else {
+        breach_type = FENCE_BREACH_MINALT;
+    } else if (geofence_check_maxalt()) {
+        outside = true;
+        breach_type = FENCE_BREACH_MAXALT;
+    } else if (!altitude_check_only) {
         Vector2f location;
         location.x = 1.0e-7 * current_loc.lat;
         location.y = 1.0e-7 * current_loc.lng;
         outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
+        if (outside) {
+            breach_type = FENCE_BREACH_BOUNDARY;
+        }
     }
 
     if (!outside) {
-        if (geofence_state->fence_triggered) {
+        if (geofence_state->fence_triggered && !altitude_check_only) {
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
+            gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
         }
         // we're inside, all is good with the world
         return;
@@ -186,6 +224,9 @@ static void geofence_check(void)
 
     // we are outside, and have not previously triggered.
     geofence_state->fence_triggered = true;
+    geofence_state->breach_count++;
+    geofence_state->breach_time = millis();
+    geofence_state->breach_type = breach_type;
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
 
     // see what action the user wants
@@ -234,9 +275,24 @@ static bool geofence_stickmixing(void) {
     return true;
 }
 
+/*
+
+ */
+static void geofence_send_status(mavlink_channel_t chan)
+{
+    if (geofence_enabled() && geofence_state != NULL) {
+        mavlink_msg_fence_status_send(chan,
+                                      (int8_t)geofence_state->fence_triggered,
+                                      geofence_state->breach_count,
+                                      geofence_state->breach_type,
+                                      geofence_state->breach_time);
+    }
+}
+
 #else // GEOFENCE_ENABLED
 
-static void geofence_check(void) { }
+static void geofence_check(bool altitude_check_only) { }
 static bool geofence_stickmixing(void) { return true; }
+static bool geofence_enabled(void) { return false; }
 
 #endif // GEOFENCE_ENABLED
