@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<options>
-  <Firmware>
-    <url>http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/Firmware/crap-1280.hex</url>
-    <url2560>http://ardupilot-mega.googlecode.com/svn/Tools/trunk/ArdupilotMegaPlanner/Firmware/crap-2560.hex</url2560>
-    <name>Please Update</name>
-    <desc>Please Update</desc>
-  </Firmware>
-</options>
