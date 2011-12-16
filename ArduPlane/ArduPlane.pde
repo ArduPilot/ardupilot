@@ -34,7 +34,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AnalogSource.h>// ArduPilot Mega polymorphic analog getter
-#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess and TimerAperiodicProcess
+#include <AP_PeriodicProcess.h> // ArduPilot Mega TimerProcess
 #include <AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library

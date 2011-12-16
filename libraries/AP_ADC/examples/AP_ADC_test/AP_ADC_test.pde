@@ -12,7 +12,7 @@
 FastSerialPort0(Serial);        // FTDI/console
 
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerAperiodicProcess  adc_scheduler;
+AP_PeriodicProcess  adc_scheduler;
 
 
 unsigned long timer;

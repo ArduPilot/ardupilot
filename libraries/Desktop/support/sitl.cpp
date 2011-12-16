@@ -25,7 +25,6 @@
 #include <wiring.h>
 #include <AP_PeriodicProcess.h>
 #include <AP_TimerProcess.h>
-#include <AP_TimerAperiodicProcess.h>
 #include "sitl_adc.h"
 #include "sitl_rc.h"
 #include "desktop.h"
