@@ -2,6 +2,7 @@
 
 // Assorted useful math operations for ArduPilot(Mega)
 
+#include <stdint.h>
 #include "vector2.h"
 #include "vector3.h"
 #include "matrix3.h"

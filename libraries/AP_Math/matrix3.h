@@ -126,10 +126,10 @@ public:
 
 };
 
-typedef Matrix3<int>			Matrix3i;
-typedef Matrix3<unsigned int>	Matrix3ui;
-typedef Matrix3<long>			Matrix3l;
-typedef Matrix3<unsigned long>	Matrix3ul;
+typedef Matrix3<int16_t>		Matrix3i;
+typedef Matrix3<uint16_t>		Matrix3ui;
+typedef Matrix3<int32_t>		Matrix3l;
+typedef Matrix3<uint32_t>		Matrix3ul;
 typedef Matrix3<float>			Matrix3f;
 
 #endif // MATRIX3_H
