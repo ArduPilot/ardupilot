@@ -131,7 +131,9 @@ static AP_Int8		*flight_modes = &g.flight_mode1;
 #if HIL_MODE == HIL_MODE_DISABLED
 
 // real sensors
+#if CONFIG_ADC == ENABLED
 static AP_ADC_ADS7844          adc;
+#endif
 
 #ifdef DESKTOP_BUILD
 AP_Baro_BMP085_HIL      barometer;
@@ -224,9 +226,9 @@ ModeFilter sonar_mode_filter;
 
 #if CONFIG_PITOT_SOURCE == PITOT_SOURCE_ADC
 AP_AnalogSource_ADC pitot_analog_source( &adc,
-                        CONFIG_PITOT_SOURCE_ADC_CHANNEL, 0.25);
+                        CONFIG_PITOT_SOURCE_ADC_CHANNEL, 1.0);
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
-AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN);
+AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0);
 #endif
 
 #if SONAR_TYPE == MAX_SONAR_XL

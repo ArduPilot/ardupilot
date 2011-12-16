@@ -626,8 +626,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
-    float airspeed_ch = adc.Ch(AIRSPEED_CH);
-	// Serial.println(adc.Ch(AIRSPEED_CH));
+    float airspeed_ch = pitot_analog_source.read();
+	// Serial.println(pitot_analog_source.read());
     Serial.printf_P(PSTR("airspeed_ch: %.1f\n"), airspeed_ch);
 
 	if (g.airspeed_enabled == false){
