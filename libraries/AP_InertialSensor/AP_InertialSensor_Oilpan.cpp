@@ -50,6 +50,11 @@ AP_InertialSensor_Oilpan::AP_InertialSensor_Oilpan( AP_ADC * adc ) :
 void AP_InertialSensor_Oilpan::init( AP_PeriodicProcess * scheduler)
 {
   _adc->Init(scheduler);
+
+  // tell the ADC driver that we will be needed some channels
+  for (uint8_t ch=0; ch<6; ch++) {
+	  _adc->enable_channel(_sensors[ch]);
+  }
 }
 
 bool AP_InertialSensor_Oilpan::update()
