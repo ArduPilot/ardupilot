@@ -121,7 +121,7 @@ get_stabilize_yaw(int32_t target_angle)
 	return (int)rate + iterm;
 }
 
-#define ALT_ERROR_MAX 300
+#define ALT_ERROR_MAX 400
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
@@ -143,7 +143,7 @@ get_nav_throttle(int32_t z_error)
 	rate_error 		= rate_error - climb_rate;
 
 	// limit the rate
-	rate_error =  constrain((int)g.pi_throttle.get_pi(rate_error, .1), -120, 180);
+	rate_error =  constrain((int)g.pi_throttle.get_pi(rate_error, .1), -160, 180);
 
 	// output control:
 	return rate_error + iterm;
