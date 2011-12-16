@@ -468,8 +468,8 @@
 # define RTL_THR			THROTTLE_HOLD
 #endif
 
-#ifndef RESET_SIMPLE
-# define RESET_SIMPLE		DISABLED
+#ifndef SUPER_SIMPLE
+# define SUPER_SIMPLE		DISABLED
 #endif
 
 
@@ -634,7 +634,7 @@
 # define THROTTLE_I		0.0			//
 #endif
 #ifndef THROTTLE_IMAX
-# define THROTTLE_IMAX	50
+# define THROTTLE_IMAX	300
 #endif
 
 
