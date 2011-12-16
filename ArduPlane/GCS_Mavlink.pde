@@ -1651,17 +1651,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// receive a fence point from GCS and store in EEPROM
     case MAVLINK_MSG_ID_FENCE_POINT: {
         mavlink_fence_point_t packet;
+        mavlink_msg_fence_point_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
-        mavlink_msg_fence_point_decode(msg, &packet);
         if (g.fence_action != FENCE_ACTION_NONE) {
             send_text(SEVERITY_LOW,PSTR("fencing must be disabled"));
         } else if (packet.count != g.fence_total) {
             send_text(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
-            Vector2f point;
-            point.x = packet.lat;
-            point.y = packet.lng;
+            Vector2l point;
+            point.x = packet.lat*1.0e7;
+            point.y = packet.lng*1.0e7;
             set_fence_point_with_index(point, packet.idx);
         }
         break;
@@ -1670,14 +1670,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// send a fence point to GCS
     case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
         mavlink_fence_fetch_point_t packet;
+        mavlink_msg_fence_fetch_point_decode(msg, &packet);
         if (mavlink_check_target(packet.target_system, packet.target_component))
             break;
-        mavlink_msg_fence_fetch_point_decode(msg, &packet);
         if (packet.idx >= g.fence_total) {
             send_text(SEVERITY_LOW,PSTR("bad fence point"));
         } else {
-            Vector2f point = get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total, point.x, point.y);
+            Vector2l point = get_fence_point_with_index(packet.idx);
+            mavlink_msg_fence_point_send(chan, 0, 0, packet.idx, g.fence_total,
+                                         point.x*1.0e-7, point.y*1.0e-7);
         }
         break;
     }

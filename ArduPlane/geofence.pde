@@ -23,33 +23,33 @@ static struct geofence_state {
     uint8_t breach_type;
     uint32_t breach_time;
     /* point 0 is the return point */
-    Vector2f boundary[MAX_FENCEPOINTS];
+    Vector2l boundary[MAX_FENCEPOINTS];
 } *geofence_state;
 
 
 /*
   fence boundaries fetch/store
  */
-static Vector2f get_fence_point_with_index(unsigned i)
+static Vector2l get_fence_point_with_index(unsigned i)
 {
     uint32_t mem;
-    Vector2f ret;
+    Vector2l ret;
 
     if (i > (unsigned)g.fence_total) {
-        return Vector2f(0,0);
+        return Vector2l(0,0);
     }
 
     // read fence point
     mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
-    eeprom_read_block(&ret.x, (void *)mem, sizeof(float));
-    mem += sizeof(float);
-    eeprom_read_block(&ret.y, (void *)mem, sizeof(float));
+    ret.x = eeprom_read_dword((uint32_t *)mem);
+    mem += sizeof(uint32_t);
+    ret.y = eeprom_read_dword((uint32_t *)mem);
 
     return ret;
 }
 
 // save a fence point
-static void set_fence_point_with_index(Vector2f &point, unsigned i)
+static void set_fence_point_with_index(Vector2l &point, unsigned i)
 {
     uint32_t mem;
 
@@ -60,9 +60,9 @@ static void set_fence_point_with_index(Vector2f &point, unsigned i)
 
     mem = FENCE_START_BYTE + (i * FENCE_WP_SIZE);
 
-    eeprom_write_block(&point.x, (void *)mem, sizeof(float));
-    mem += 4;
-    eeprom_write_block(&point.y, (void *)mem, sizeof(float));
+    eeprom_write_dword((uint32_t *)mem, point.x);
+    mem += sizeof(uint32_t);
+    eeprom_write_dword((uint32_t *)mem, point.y);
 
     if (geofence_state != NULL) {
         geofence_state->boundary_uptodate = false;
@@ -77,7 +77,7 @@ static void geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (memcheck_available_memory() < 1024 + sizeof(struct geofence_state)) {
+        if (memcheck_available_memory() < 512 + sizeof(struct geofence_state)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
@@ -195,9 +195,9 @@ static void geofence_check(bool altitude_check_only)
         outside = true;
         breach_type = FENCE_BREACH_MAXALT;
     } else if (!altitude_check_only) {
-        Vector2f location;
-        location.x = 1.0e-7 * current_loc.lat;
-        location.y = 1.0e-7 * current_loc.lng;
+        Vector2l location;
+        location.x = current_loc.lat;
+        location.y = current_loc.lng;
         outside = Polygon_outside(location, &geofence_state->boundary[1], geofence_state->num_points-1);
         if (outside) {
             breach_type = FENCE_BREACH_BOUNDARY;
@@ -243,8 +243,8 @@ static void geofence_check(bool altitude_check_only)
         guided_WP.id = 0;
         guided_WP.p1  = 0;
         guided_WP.options = 0;
-        guided_WP.lat = geofence_state->boundary[0].x * 1.0e7;
-        guided_WP.lng = geofence_state->boundary[0].y * 1.0e7;
+        guided_WP.lat = geofence_state->boundary[0].x;
+        guided_WP.lng = geofence_state->boundary[0].y;
 
         if (control_mode == MANUAL && g.auto_trim) {
             // make sure we don't auto trim the surfaces on this change

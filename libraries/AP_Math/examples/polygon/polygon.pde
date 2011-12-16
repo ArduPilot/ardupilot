@@ -14,33 +14,35 @@ FastSerialPort(Serial, 0);
   Note that the last point must be the same as the first for the
   Polygon_outside() algorithm
  */
-static const Vector2f OBC_boundary[] = {
-	Vector2f(-26.569564000, 151.837373000),
-	Vector2f(-26.569956000, 151.839405000),
-	Vector2f(-26.576823000, 151.841142000),
-	Vector2f(-26.577308000, 151.840344000),
-	Vector2f(-26.581511000, 151.841950000),
-	Vector2f(-26.578486000, 151.847469000),
-	Vector2f(-26.599489000, 151.852886000),
-	Vector2f(-26.609211000, 151.874742000),
-	Vector2f(-26.645478000, 151.882053000),
-	Vector2f(-26.643572000, 151.830350000),
-	Vector2f(-26.587599000, 151.834405000),
-	Vector2f(-26.569564000, 151.837373000)
+static const Vector2l OBC_boundary[] = {
+    Vector2l(-265695640, 1518373730),
+    Vector2l(-265699560, 1518394050),
+    Vector2l(-265768230, 1518411420),
+    Vector2l(-265773080, 1518403440),
+    Vector2l(-265815110, 1518419500),
+    Vector2l(-265784860, 1518474690),
+    Vector2l(-265994890, 1518528860),
+    Vector2l(-266092110, 1518747420),
+    Vector2l(-266454780, 1518820530),
+    Vector2l(-266435720, 1518303500),
+    Vector2l(-265875990, 1518344050),
+    Vector2l(-265695640, 1518373730)
 };
 
 static const struct {
-	Vector2f point;
-	bool outside;
+    Vector2l point;
+    bool outside;
 } test_points[] = {
-	{ Vector2f(-26.639887, 151.822000), true },
-	{ Vector2f(-26.641870, 151.870926), false },
-	{ Vector2f(-35.0,      149.0),      true },
-	{ Vector2f(0, 0),                   true },
-	{ Vector2f(-26.576815, 151.840825), false },
-	{ Vector2f(-26.577406, 151.840586), true },
-	{ Vector2f(-26.643563, 151.830344), true },
-	{ Vector2f(-26.643565, 151.831354), false },
+    { Vector2l(-266398870, 1518220000), true },
+    { Vector2l(-266418700, 1518709260), false },
+    { Vector2l(-350000000, 1490000000), true },
+    { Vector2l(0, 0),                   true },
+    { Vector2l(-265768150, 1518408250), false },
+    { Vector2l(-265774060, 1518405860), true },
+    { Vector2l(-266435630, 1518303440), true },
+    { Vector2l(-266435650, 1518313540), false },
+    { Vector2l(-266435690, 1518303530), false },
+    { Vector2l(-266435690, 1518303490), true },
 };
 
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
@@ -50,12 +52,12 @@ static const struct {
  */
 void setup(void)
 {
-	unsigned i, count;
+    unsigned i, count;
     bool all_passed = true;
     uint32_t start_time;
 
-	Serial.begin(115200);
-	Serial.println("polygon unit tests\n");
+    Serial.begin(115200);
+    Serial.println("polygon unit tests\n");
 
     if (!Polygon_complete(OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
         Serial.println("OBC boundary is not complete!");
@@ -71,7 +73,8 @@ void setup(void)
         bool result;
         result = Polygon_outside(test_points[i].point, OBC_boundary, ARRAY_LENGTH(OBC_boundary));
         Serial.printf_P(PSTR("%10f,%10f  %s  %s\n"),
-                        test_points[i].point.x, test_points[i].point.y,
+                        1.0e-7*test_points[i].point.x,
+                        1.0e-7*test_points[i].point.y,
                         result?"OUTSIDE":"INSIDE ",
                         result == test_points[i].outside?"PASS":"FAIL");
         if (result != test_points[i].outside) {

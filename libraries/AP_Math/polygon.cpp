@@ -30,15 +30,29 @@
       Input:   P = a point,
                V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
       Return:  true if P is outside the polygon
+
+  This does not take account of the curvature of the earth, but we
+  expect that to be very small over the distances involved in the
+  fence boundary
 */
-bool Polygon_outside(const Vector2f &P, const Vector2f *V, unsigned n)
+bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
 {
     unsigned i, j;
     bool outside = true;
     for (i = 0, j = n-1; i < n; j = i++) {
-        if ( ((V[i].y > P.y) != (V[j].y > P.y)) &&
-             (P.x < (V[j].x - V[i].x) * (P.y - V[i].y) / (V[j].y - V[i].y) + V[i].x) )
-            outside = !outside;
+	    if ((V[i].y > P.y) == (V[j].y > P.y)) {
+		    continue;
+	    }
+	    float dx1, dx2, dy1, dy2;
+	    // we convert the deltas to floating point numbers to
+	    // prevent integer overflow while maintaining maximum precision
+	    dx1 = P.x - V[i].x;
+	    dx2 = V[j].x - V[i].x;
+	    dy1 = P.y - V[i].y;
+	    dy2 = V[j].y - V[i].y;
+	    if ( dx1 < dx2 * dy1 / dy2 ) {
+		    outside = !outside;
+	    }
     }
     return outside;
 }
@@ -50,7 +64,7 @@ bool Polygon_outside(const Vector2f &P, const Vector2f *V, unsigned n)
   and the first point is the same as the last point. That is the
   minimum requirement for the Polygon_outside function to work
  */
-bool Polygon_complete(const Vector2f *V, unsigned n)
+bool Polygon_complete(const Vector2l *V, unsigned n)
 {
     return (n >= 4 && V[n-1].x == V[0].x && V[n-1].y == V[0].y);
 }
