@@ -1,9 +1,9 @@
 
 #include "AP_AnalogSource_ADC.h"
 
-int AP_AnalogSource_ADC::read(void)
+float AP_AnalogSource_ADC::read(void)
 {
-    int fullscale = _adc->Ch(_ch);
-    int scaled = _prescale * fullscale;
+    float fullscale = _adc->Ch(_ch);
+    float scaled = _prescale * fullscale;
     return scaled;
 }
