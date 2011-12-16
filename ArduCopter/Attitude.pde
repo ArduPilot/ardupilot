@@ -128,7 +128,7 @@ get_nav_throttle(int32_t z_error)
 	int16_t rate_error;
 
 	// XXX HACK, need a better way not to ramp this i term in large altitude changes.
-	float dt = (abs(z_error) < 400) ? .1 : 0.01;
+	float dt = (abs(z_error) < 400) ? .1 : 0.0;
 
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
