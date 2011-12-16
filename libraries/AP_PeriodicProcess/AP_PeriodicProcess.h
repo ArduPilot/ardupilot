@@ -5,6 +5,5 @@
 #include "PeriodicProcess.h"
 #include "AP_PeriodicProcessStub.h"
 #include "AP_TimerProcess.h"
-#include "AP_TimerAperiodicProcess.h"
 
 #endif // __AP_PERIODIC_PROCESS_H__

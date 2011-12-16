@@ -7,10 +7,9 @@
 #include <FastSerial.h>
 #include <AP_IMU.h>
 #include <AP_IMU_MPU6000.h>             // Experimental MPU6000 IMU library
-#include <AP_PeriodicProcess.h>         // Parent header of Timer and TimerAperiodic
+#include <AP_PeriodicProcess.h>         // Parent header of Timer
                                         // (only included for makefile libpath to work)
 #include <AP_TimerProcess.h>            // TimerProcess is the scheduler for MPU6000 reads.
-#include <AP_TimerAperiodicProcess.h>   // TimerAperiodicProcess is the scheduler for ADC reads.
 #include <AP_ADC.h>
 #include <AP_Math.h>
 #include <AP_Common.h>

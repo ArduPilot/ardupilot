@@ -17,7 +17,7 @@
 FastSerialPort(Serial, 0);
 
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerAperiodicProcess  adc_scheduler;
+AP_TimerPeriodicProcess  adc_scheduler;
 
 AP_ADC_ADS7844	adc;
 AP_InertialSensor_Oilpan oilpan_ins(&adc);
