@@ -26,8 +26,26 @@ RC8_MAX         2000.000000
 RC8_MIN         1000.000000
 RC8_TRIM        1500.000000
 FLTMODE1        7
-FLTMODE2        1
-FLTMODE3        2
+FLTMODE2        9
+FLTMODE3        6
 FLTMODE4        3
 FLTMODE5        5
-FLTMODE6	0
+FLTMODE6		0
+SUPER_SIMPLE	1
+# flightmodes
+# switch 1 Circle
+# switch 2 LAND
+# switch 3 RTL
+# switch 4 Auto
+# switch 5 Loiter
+# switch 6 Stab
+# STABILIZE 	0 !
+# ACRO 			1
+# ALT_HOLD 		2
+# AUTO 			3 !
+# GUIDED 		4
+# LOITER 		5 !
+# RTL 			6 !
+# CIRCLE 		7 !
+# POSITION 		8
+# LAND 			9 !
