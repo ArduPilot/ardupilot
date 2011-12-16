@@ -78,6 +78,21 @@
 	      <description>Switched to guided mode to return point (fence point 0)</description>
 	    </entry>
 	  </enum>
+
+	  <enum name="FENCE_BREACH">
+	    <entry name="FENCE_BREACH_NONE" value="0">
+	      <description>No last fence breach</description>
+	    </entry>
+	    <entry name="FENCE_BREACH_MINALT" value="1">
+	      <description>Breached minimum altitude</description>
+	    </entry>
+	    <entry name="FENCE_BREACH_MAXALT" value="2">
+	      <description>Breached minimum altitude</description>
+	    </entry>
+	    <entry name="FENCE_BREACH_BOUNDARY" value="3">
+	      <description>Breached fence boundary</description>
+	    </entry>
+	  </enum>
 	</enums>
 
      <messages>
@@ -187,6 +202,8 @@
 	  <message name="FENCE_POINT" id="160">
 	    <description>A fence point. Used to set a point when from
 	      GCS -> MAV. Also used to return a point from MAV -> GCS</description>
+	    <field name="target_system" type="uint8_t">System ID</field>
+	    <field name="target_component" type="uint8_t">Component ID</field>
 	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
 	    <field name="count" type="uint8_t">total number of points (for sanity checking)</field>
 	    <field name="lat" type="float">Latitude of point</field>
@@ -195,7 +212,18 @@
 
 	  <message name="FENCE_FETCH_POINT" id="161">
 	    <description>Request a current fence point from MAV</description>
+	    <field name="target_system" type="uint8_t">System ID</field>
+	    <field name="target_component" type="uint8_t">Component ID</field>
 	    <field name="idx" type="uint8_t">point index (first point is 1, 0 is for return point)</field>
+	  </message>
+
+	  <message name="FENCE_STATUS" id="162">
+	    <description>Status of geo-fencing. Sent in extended
+	    status stream when fencing enabled</description>
+	    <field name="breach_status" type="uint8_t">0 if currently inside fence, 1 if outside</field>
+	    <field name="breach_count" type="uint16_t">number of fence breaches</field>
+	    <field name="breach_type" type="uint8_t">last breach type (see FENCE_BREACH_* enum)</field>
+	    <field name="breach_time" type="uint32_t">time of last breach in milliseconds since boot</field>
 	  </message>
      </messages>
 </mavlink>
