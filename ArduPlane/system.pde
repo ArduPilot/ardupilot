@@ -224,6 +224,13 @@ static void init_ardupilot()
 #if CONFIG_RELAY == ENABLED
 	DDRL |= B00000100;					// Set Port L, pin 2 to output for the relay
 #endif
+
+#if FENCE_TRIGGERED_PIN > 0
+    pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
+    digitalWrite(FENCE_TRIGGERED_PIN, LOW);
+#endif
+
+
 	// If the switch is in 'menu' mode, run the main menu.
 	//
 	// Since we can't be sure that the setup or test mode won't leave
