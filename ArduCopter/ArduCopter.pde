@@ -473,6 +473,7 @@ static int16_t	nav_throttle;						// 0-1000 for throttle control
 static int16_t	crosstrack_error;
 
 static uint32_t throttle_integrator;				// used to integrate throttle output to predict battery life
+static float	throttle_avg = THROTTLE_CRUISE;
 static bool 	invalid_throttle;					// used to control when we calculate nav_throttle
 //static bool 	set_throttle_cruise_flag = false;	// used to track the throttle crouse value
 
@@ -959,6 +960,19 @@ static void super_slow_loop()
 	#ifdef USERHOOK_SUPERSLOWLOOP
 	   USERHOOK_SUPERSLOWLOOP
 	#endif
+
+	/*
+	Serial.printf("alt %d, next.alt %d, alt_err: %d, cruise: %d, Alt_I:%1.2f, wp_dist %d, tar_bear %d, home_d %d, homebear %d\n",
+					current_loc.alt,
+					next_WP.alt,
+					altitude_error,
+					g.throttle_cruise.get(),
+					g.pi_alt_hold.get_integrator(),
+					wp_distance,
+					target_bearing,
+					home_distance,
+					home_to_copter_bearing);
+	*/
 }
 
 static void update_GPS(void)
@@ -1132,6 +1146,11 @@ void update_throttle_mode(void)
 					angle_boost = get_angle_boost(g.rc_3.control_in);
 					g.rc_3.servo_out = g.rc_3.control_in + angle_boost;
 				#endif
+				// calc average throttle
+				if ((g.rc_3.control_in > MINIMUM_THROTTLE)){
+					//throttle_avg = throttle_avg * .98 + rc_3.control_in * .02;
+					//g.throttle_cruise = throttle_avg;
+				}
 			}else{
 				g.pi_stabilize_roll.reset_I();
 				g.pi_stabilize_pitch.reset_I();
@@ -1273,7 +1292,7 @@ static void update_navigation()
 	}
 
 	// are we in SIMPLE mode?
-	if(do_simple && g.reset_simple){
+	if(do_simple && g.super_simple){
 		// get distance to home
 		if(home_distance > 10){ // 10m from home
 			// we reset the angular offset to be a vector from home to the quad
