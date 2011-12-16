@@ -155,8 +155,6 @@ namespace ArdupilotMega.GCSViews
 
         private void Terminal_Load(object sender, EventArgs e)
         {
-            MessageBox.Show("Set your APM into LOG/SETUP mode!! (switch towards the servo header)");
-
             try
             {
                 MainV2.givecomport = true;
@@ -175,6 +173,11 @@ namespace ArdupilotMega.GCSViews
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate()
                 {
                     threadrun = true;
+
+                    System.Threading.Thread.Sleep(2000);
+
+                    comPort.Write("\n\n\n\n\n");
+
                     while (threadrun)
                     {
                         try

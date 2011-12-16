@@ -266,7 +266,7 @@ namespace ArdupilotMega.GCSViews
                 fd.ShowDialog();
                 if (File.Exists(fd.FileName))
                 {
-                    UploadFlash(fd.FileName, ArduinoDetect.DetectVersion(MainV2.comportname));
+                    UploadFlash(fd.FileName, ArduinoDetect.DetectBoard(MainV2.comportname));
                 }
                 return true;
             }
@@ -498,7 +498,7 @@ namespace ArdupilotMega.GCSViews
 
                 this.Refresh();
 
-                board = ArduinoDetect.DetectVersion(MainV2.comportname);
+                board = ArduinoDetect.DetectBoard(MainV2.comportname);
 
                 if (board == "")
                 {

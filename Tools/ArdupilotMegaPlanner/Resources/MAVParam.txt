@@ -116,7 +116,7 @@ It includes both fixed wing (APM) and rotary wing (!ArduCopter) parameters. Some
 ||LIM_PITCH_MIN||-6000||0||-2500||100||1||PITCH_MIN_DEGREE - The maximum commanded pitch down angle.  Note that this value must be negative.  The default is -25 degrees.  Care should be taken not to set this value too large as it may result in overspeeding the aircraft.||
 ||GND_ALT_CM||0||500000||0||100||1||GND_ALT_CM||
 ||GND_ABS_PRESS|| || ||0|| || ||GND_ABS_PRESS||
-||COMPASS_DEC||-1.57075||1.57075||0||1|| ||COMPASS_DEC - Compass Declination||
+||COMPASS_DEC||-1.57075||1.57075||0||1|| ||COMPASS_DEC - Compass Declination in RADIANS||
 ||SR0_EXT_STAT||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - Enable GPS_STATUS, CONTROL_STATUS, AUX_STATUS||
 ||SR0_EXTRA1||0||50||10||1||1||TELEMETRY_ENABLE Port 0 - Enable MSG_ATTITUDE||
 ||SR0_EXTRA2||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - Enable MSG_VFR_HUD||

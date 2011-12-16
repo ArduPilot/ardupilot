@@ -686,11 +686,6 @@ namespace ArdupilotMega
                 if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
                     comPort.BaseStream.DtrEnable = true;
 
-                if (DialogResult.OK != Common.MessageShowAgain("Mavlink Connect", "Make sure your APM slider switch is in Flight Mode (away from RC pins)"))
-                {
-                    return;
-                }
-
                 try
                 {
                     if (comPort.logfile != null)
@@ -771,7 +766,7 @@ namespace ArdupilotMega
                         }
                     }
                     catch { }
-                    MessageBox.Show("Is your CLI switch in Flight position?\n(this is required for MAVlink comms)\n\n" + ex.ToString());
+                    MessageBox.Show("Can not establish a connection\n\n" + ex.ToString());
                     return;
                 }
             }

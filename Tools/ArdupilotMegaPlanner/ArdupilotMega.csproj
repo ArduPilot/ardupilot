@@ -440,9 +440,11 @@
     </EmbeddedResource>
     <EmbeddedResource Include="RAW_Sensor.resx">
       <DependentUpon>RAW_Sensor.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.resx">
       <DependentUpon>MavlinkLog.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Configuration.resx">
       <DependentUpon>Configuration.cs</DependentUpon>
@@ -490,6 +492,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="JoystickSetup.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="JoystickSetup.zh-Hans.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
@@ -514,9 +517,11 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Log.resx">
       <DependentUpon>Log.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="LogBrowse.resx">
       <DependentUpon>LogBrowse.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
@@ -533,6 +538,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.resx">
       <DependentUpon>Setup.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.zh-Hans.resx">
       <DependentUpon>Setup.cs</DependentUpon>

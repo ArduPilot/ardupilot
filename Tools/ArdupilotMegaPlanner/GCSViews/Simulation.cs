@@ -1359,19 +1359,8 @@ namespace ArdupilotMega.GCSViews
                 throttle_out = ((float)MainV2.cs.hilch3 + 5000) / throttlegain;
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
             }
-            /*
-            if ((roll_out == -1 || roll_out == 1) && (pitch_out == -1 || pitch_out == 1))
-            {
-                this.Invoke((MethodInvoker)delegate
-                {
-                    try
-                    {
-                        OutputLog.AppendText("Please check your radio setup - CLI -> setup -> radio!!!\n");
-                    }
-                    catch { }
-                });
-            }
-            */
+
+
             // Limit min and max
             roll_out = Constrain(roll_out, -1, 1);
             pitch_out = Constrain(pitch_out, -1, 1);

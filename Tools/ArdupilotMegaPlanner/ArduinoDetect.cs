@@ -10,11 +10,90 @@ namespace ArdupilotMega
     class ArduinoDetect
     {
         /// <summary>
-        /// detects a 1280 or a 2560 board
+        /// detects STK version 1 or 2
         /// </summary>
         /// <param name="port">comportname</param>
         /// <returns>string either (1280/2560) or "" for none</returns>
         public static string DetectVersion(string port)
+        {
+            SerialPort serialPort = new SerialPort();
+            serialPort.PortName = port;
+
+            if (serialPort.IsOpen)
+                serialPort.Close();
+
+            serialPort.DtrEnable = true;
+            serialPort.BaudRate = 57600;
+            serialPort.Open();
+
+            System.Threading.Thread.Sleep(100);
+
+            int a = 0;
+            while (a < 20) // 20 * 50 = 1 sec
+            {
+                //Console.WriteLine("write " + DateTime.Now.Millisecond);
+                serialPort.DiscardInBuffer();
+                serialPort.Write(new byte[] { (byte)'0', (byte)' ' }, 0, 2);
+                a++;
+                System.Threading.Thread.Sleep(50);
+
+                //Console.WriteLine("btr {0}", serialPort.BytesToRead);
+                if (serialPort.BytesToRead >= 2)
+                {
+                    byte b1 = (byte)serialPort.ReadByte();
+                    byte b2 = (byte)serialPort.ReadByte();
+                    if (b1 == 0x14 && b2 == 0x10)
+                    {
+                        serialPort.Close();
+                        return "1280";
+                    }
+                }
+            }
+
+            serialPort.Close();
+
+            Console.WriteLine("Not a 1280");
+
+            System.Threading.Thread.Sleep(500);
+
+            serialPort.DtrEnable = true;
+            serialPort.BaudRate = 115200;
+            serialPort.Open();
+
+            System.Threading.Thread.Sleep(100);
+
+            a = 0;
+            while (a < 4)
+            {
+                byte[] temp = new byte[] { 0x6, 0, 0, 0, 0 };
+                temp = ArduinoDetect.genstkv2packet(serialPort, temp);
+                a++;
+                System.Threading.Thread.Sleep(50);
+
+                try
+                {
+                    if (temp[0] == 6 && temp[1] == 0 && temp.Length == 2)
+                    {
+                        serialPort.Close();
+
+                        return "2560";
+
+                    }
+                }
+                catch { }
+            }
+
+            serialPort.Close();
+            Console.WriteLine("Not a 2560");
+            return "";
+        }
+
+        /// <summary>
+        /// Detects APM board version
+        /// </summary>
+        /// <param name="port"></param>
+        /// <returns> (1280/2560/2560-2)</returns>
+        public static string DetectBoard(string port)
         {
             SerialPort serialPort = new SerialPort();
             serialPort.PortName = port;
@@ -101,7 +180,7 @@ namespace ArdupilotMega
                         }
                         else
                         {
-                            if (DialogResult.Yes == MessageBox.Show("APM 2.0", "Is this a APM 2?", MessageBoxButtons.YesNo))
+                            if (DialogResult.Yes == MessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
                             {
                                 return "2560-2";
                             }
@@ -110,7 +189,7 @@ namespace ArdupilotMega
                                 return "2560";
                             }
                         }
-                        
+
                     }
                 }
                 catch { }
@@ -119,7 +198,8 @@ namespace ArdupilotMega
             serialPort.Close();
             Console.WriteLine("Not a 2560");
             return "";
-        }  
+        }
+
 
         public static int decodeApVar(string comport, string version)
         {
@@ -170,10 +250,10 @@ namespace ArdupilotMega
                         if (key == 0)
                         {
                             //Array.Reverse(buffer, pos, 2);
-                            return BitConverter.ToUInt16(buffer,pos);
+                            return BitConverter.ToUInt16(buffer, pos);
                         }
 
-                        
+
                         for (int i = 0; i <= size; i++)
                         {
                             Console.Write(" {0:X2}", buffer[pos]);
