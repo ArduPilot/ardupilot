@@ -148,10 +148,10 @@ struct Vector2
 
 };
 
-typedef Vector2<int>			Vector2i;
-typedef Vector2<unsigned int>	Vector2ui;
-typedef Vector2<long>			Vector2l;
-typedef Vector2<unsigned long>	Vector2ul;
-typedef Vector2<float>			Vector2f;
+typedef Vector2<int16_t>	Vector2i;
+typedef Vector2<uint16_t>	Vector2ui;
+typedef Vector2<int32_t>	Vector2l;
+typedef Vector2<uint32_t>	Vector2ul;
+typedef Vector2<float>		Vector2f;
 
 #endif // VECTOR2_H
