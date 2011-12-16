@@ -301,10 +301,15 @@ static void do_loiter_turns()
 {
 	wp_control = CIRCLE_MODE;
 
-	if(command_nav_queue.lat == 0)
+	if(command_nav_queue.lat == 0){
+		// allow user to specify just the altitude
+		if(command_nav_queue.alt > 0){
+			current_loc.alt = command_nav_queue.alt;
+		}
 		set_next_WP(&current_loc);
-	else
+	}else{
 		set_next_WP(&command_nav_queue);
+	}
 
 	loiter_total = command_nav_queue.p1 * 360;
 	loiter_sum	 = 0;
@@ -367,7 +372,7 @@ static bool verify_land()
 		if(sonar_alt < 40){
 			land_complete = true;
 			//Serial.println("Y");
-			//return true;
+			return true;
 		}
 	}
 
