@@ -1,4 +1,4 @@
-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   Example of APM_ADC library.
   Code by Jordi Muñoz and Jose Julio. DIYDrones.com
@@ -18,6 +18,8 @@ AP_TimerAperiodicProcess  adc_scheduler;
 unsigned long timer;
 AP_ADC_ADS7844 adc;
 
+static const uint8_t channel_map[6] = { 1, 2, 0, 4, 5, 6};
+
 void setup()
 {
 	Serial.begin(115200, 128, 128);
@@ -30,9 +32,12 @@ void setup()
 	adc.Init(&adc_scheduler);   // APM ADC initialization
 	delay(1000);
 	timer = millis();
+
+	for (uint8_t ch=0; ch<6; ch++) {
+		adc.enable_channel(channel_map[ch]);
+	}
 }
 
-static const uint8_t channel_map[6] = { 1, 2, 0, 4, 5, 6};
 float v;
 uint32_t last_usec = 0;
 

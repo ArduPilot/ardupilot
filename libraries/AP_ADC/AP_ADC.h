@@ -37,8 +37,13 @@ class AP_ADC
 
 	   The function returns the amount of time (in microseconds)
 	   since the last call to Ch6().
+
+	   NOTE: You must enable the channels using enable_channel()
+	   before use
 	*/
 	virtual uint32_t Ch6(const uint8_t *channel_numbers, uint16_t *result) = 0;
+
+	virtual void enable_channel(const uint8_t ch) = 0;
 
   private:
 };
