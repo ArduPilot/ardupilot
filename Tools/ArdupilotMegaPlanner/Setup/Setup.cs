@@ -377,6 +377,7 @@ namespace ArdupilotMega.Setup
             if (tabControl1.SelectedTab == tabHardware)
             {
                 startup = true;
+
                 if (MainV2.comPort.param["ARSPD_ENABLE"] != null)
                     CHK_enableairspeed.Checked = MainV2.comPort.param["ARSPD_ENABLE"].ToString() == "1" ? true : false;
 
@@ -391,6 +392,9 @@ namespace ArdupilotMega.Setup
 
                 if (MainV2.comPort.param["SONAR_TYPE"] != null)
                     CMB_sonartype.SelectedIndex = int.Parse(MainV2.comPort.param["SONAR_TYPE"].ToString());
+
+                if (MainV2.comPort.param["FLOW_ENABLE"] != null)
+                    CHK_enableoptflow.Checked = MainV2.comPort.param["FLOW_ENABLE"].ToString() == "1" ? true : false;
                 
 
                 startup = false;

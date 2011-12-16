@@ -291,7 +291,7 @@ namespace ArdupilotMega
                     }
                     catch
                     {
-                        MessageBox.Show("Comport open failed - Please try again and make sure your not in CLI mode");
+                        MessageBox.Show("Comport open failed");
                         return;
                     }
                 timer1.Start();

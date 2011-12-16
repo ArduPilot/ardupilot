@@ -136,8 +136,7 @@
     <value>0</value>
   </data>
   <data name="TXT_terminal.Text" xml:space="preserve">
-    <value>NOTE: You must disconnect and move the slider switch when done to use other tabs
-</value>
+    <value />
   </data>
   <data name="&gt;&gt;TXT_terminal.Name" xml:space="preserve">
     <value>TXT_terminal</value>
@@ -167,7 +166,7 @@
     <value>BUTsetupshow</value>
   </data>
   <data name="&gt;&gt;BUTsetupshow.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUTsetupshow.Parent" xml:space="preserve">
     <value>$this</value>
@@ -191,7 +190,7 @@
     <value>BUTradiosetup</value>
   </data>
   <data name="&gt;&gt;BUTradiosetup.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUTradiosetup.Parent" xml:space="preserve">
     <value>$this</value>
@@ -215,7 +214,7 @@
     <value>BUTtests</value>
   </data>
   <data name="&gt;&gt;BUTtests.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUTtests.Parent" xml:space="preserve">
     <value>$this</value>
@@ -239,7 +238,7 @@
     <value>Logs</value>
   </data>
   <data name="&gt;&gt;Logs.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;Logs.Parent" xml:space="preserve">
     <value>$this</value>
@@ -263,7 +262,7 @@
     <value>BUT_logbrowse</value>
   </data>
   <data name="&gt;&gt;BUT_logbrowse.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.4199.27022, Culture=neutral, PublicKeyToken=ff91852278f5092c</value>
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;BUT_logbrowse.Parent" xml:space="preserve">
     <value>$this</value>
@@ -284,6 +283,6 @@
     <value>Terminal</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
-    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
 </root>

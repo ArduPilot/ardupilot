@@ -87,6 +87,10 @@ namespace ArdupilotMega
 
                 threadrun = true;
 
+                System.Threading.Thread.Sleep(2000);
+
+                comPort.Write("\n\n\n\n");
+
                 while (threadrun)
                 {
                     try
@@ -175,7 +179,7 @@ namespace ArdupilotMega
                     {
                         case serialstatus.Connecting:
 
-                            if (line.Contains("reset to FLY") || line.Contains("interactive setup") || line.Contains("CLI:"))
+                            if (line.Contains("reset to FLY") || line.Contains("interactive setup") || line.Contains("CLI:") || line.Contains("Ardu"))
                             {
                                 comPort.Write("logs\r");
                             }

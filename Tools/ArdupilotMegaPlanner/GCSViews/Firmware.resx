@@ -178,7 +178,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxQuad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>563, -10</value>
+    <value>399, -9</value>
   </data>
   <data name="pictureBoxQuad.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -205,7 +205,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxHexa.Location" type="System.Drawing.Point, System.Drawing">
-    <value>770, -10</value>
+    <value>595, -8</value>
   </data>
   <data name="pictureBoxHexa.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -232,7 +232,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxTri.Location" type="System.Drawing.Point, System.Drawing">
-    <value>563, 184</value>
+    <value>399, 185</value>
   </data>
   <data name="pictureBoxTri.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -259,7 +259,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxY6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>770, 184</value>
+    <value>595, 186</value>
   </data>
   <data name="pictureBoxY6.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -430,7 +430,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_ACQuad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>560, 168</value>
+    <value>396, 169</value>
   </data>
   <data name="lbl_ACQuad.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -460,7 +460,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_ACHexa.Location" type="System.Drawing.Point, System.Drawing">
-    <value>767, 168</value>
+    <value>592, 170</value>
   </data>
   <data name="lbl_ACHexa.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -490,7 +490,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_ACTri.Location" type="System.Drawing.Point, System.Drawing">
-    <value>560, 361</value>
+    <value>396, 362</value>
   </data>
   <data name="lbl_ACTri.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -520,7 +520,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_ACY6.Location" type="System.Drawing.Point, System.Drawing">
-    <value>767, 361</value>
+    <value>592, 363</value>
   </data>
   <data name="lbl_ACY6.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -550,7 +550,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_Heli.Location" type="System.Drawing.Point, System.Drawing">
-    <value>310, 167</value>
+    <value>200, 167</value>
   </data>
   <data name="lbl_Heli.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -580,7 +580,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxHeli.Location" type="System.Drawing.Point, System.Drawing">
-    <value>313, -9</value>
+    <value>203, -9</value>
   </data>
   <data name="pictureBoxHeli.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
@@ -607,7 +607,7 @@
     <value>NoControl</value>
   </data>
   <data name="lbl_ACHil.Location" type="System.Drawing.Point, System.Drawing">
-    <value>310, 361</value>
+    <value>200, 361</value>
   </data>
   <data name="lbl_ACHil.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 13</value>
@@ -637,7 +637,7 @@
     <value>NoControl</value>
   </data>
   <data name="pictureBoxQuadHil.Location" type="System.Drawing.Point, System.Drawing">
-    <value>313, 184</value>
+    <value>203, 184</value>
   </data>
   <data name="pictureBoxQuadHil.Size" type="System.Drawing.Size, System.Drawing">
     <value>190, 190</value>
