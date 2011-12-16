@@ -5,6 +5,7 @@ extern "C" {
 #include <inttypes.h>
 #include <stdint.h>
 #include "WConstants.h"
+#include <avr/interrupt.h>
 }
 
 int AP_TimerProcess::_period;
@@ -40,9 +41,17 @@ void AP_TimerProcess::register_process(void (*proc)(void) )
 
 void AP_TimerProcess::run(void)
 {
-    TCNT2 = _period;
-    for (int i = 0; i < _pidx; i++) {
-        if (_proc[i] != NULL)
-            _proc[i]();
-    }
+	// we re-enable interrupts here as some of these functions
+	// take a long time, and we don't want to block other critical
+	// interrupts, especially the serial interrupt
+	sei();
+
+	for (int i = 0; i < _pidx; i++) {
+		if (_proc[i] != NULL)
+			_proc[i]();
+	}
+
+	// to prevent recursion, we don't enable the timer interrupt
+	// again until we've completed the tasks
+	TCNT2 = _period;
 }
