@@ -14,7 +14,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Diagnostics;
-using System.Runtime.InteropServices; 
+using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 using System.Globalization;
 using System.Threading;
@@ -172,7 +172,7 @@ namespace ArdupilotMega
             if (MainV2.config["CHK_GDIPlus"] != null)
                 GCSViews.FlightData.myhud.UseOpenGL = !bool.Parse(MainV2.config["CHK_GDIPlus"].ToString());
 
-            changeunits(); 
+            changeunits();
 
             try
             {
@@ -254,7 +254,7 @@ namespace ArdupilotMega
 
             if (MONO)
             {
-                devs = Directory.GetFiles("/dev/","*ACM*");
+                devs = Directory.GetFiles("/dev/", "*ACM*");
             }
 
             string[] ports = SerialPort.GetPortNames();
@@ -701,7 +701,7 @@ namespace ArdupilotMega
                         comPort.logfile = new BinaryWriter(File.Open(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"logs" + Path.DirectorySeparatorChar + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".tlog", FileMode.CreateNew));
                     }
                     catch { MessageBox.Show("Failed to create log - wont log this session"); } // soft fail
-                    
+
                     comPort.BaseStream.PortName = CMB_serialport.Text;
                     comPort.Open(true);
 
@@ -1123,7 +1123,7 @@ namespace ArdupilotMega
 
                     if (heatbeatsend.Second != DateTime.Now.Second)
                     {
-//                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
+                        //                        Console.WriteLine("remote lost {0}", cs.packetdropremote);
 
                         MAVLink.__mavlink_heartbeat_t htb = new MAVLink.__mavlink_heartbeat_t();
 
@@ -1325,7 +1325,7 @@ namespace ArdupilotMega
 
                     if (url.Contains("websocket"))
                     {
-                        using (var writer = new StreamWriter(stream,Encoding.Default))
+                        using (var writer = new StreamWriter(stream, Encoding.Default))
                         {
                             writer.WriteLine("HTTP/1.1 101 WebSocket Protocol Handshake");
                             writer.WriteLine("Upgrade: WebSocket");
@@ -1336,7 +1336,7 @@ namespace ArdupilotMega
                             int end = head.IndexOf('\r', start);
                             if (end == -1)
                                 end = head.IndexOf('\n', start);
-                            string accept = ComputeWebSocketHandshakeSecurityHash09(head.Substring(start,end-start));
+                            string accept = ComputeWebSocketHandshakeSecurityHash09(head.Substring(start, end - start));
 
                             writer.WriteLine("Sec-WebSocket-Accept: " + accept);
 
@@ -1369,14 +1369,98 @@ namespace ArdupilotMega
                                     packet[i++] = (byte)ch;
                                 }
 
-                                stream.Write(packet,0,i);
+                                stream.Write(packet, 0, i);
 
                                 //break;
                             }
                         }
                     }
-                    else if (url.Contains(".html"))
+                    else if (url.Contains("network.kml"))
                     {
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.google-earth.kml+xml\n\n";
+                        byte[] temp = encoding.GetBytes(header);
+                        stream.Write(temp, 0, temp.Length);
+
+                        SharpKml.Dom.Document kml = new SharpKml.Dom.Document();
+
+                        SharpKml.Dom.Placemark pmplane = new SharpKml.Dom.Placemark();
+                        pmplane.Name = "P/Q ";
+
+                        pmplane.Visibility = true;
+
+                        SharpKml.Dom.Location loc = new SharpKml.Dom.Location();
+                        loc.Latitude = cs.lat;
+                        loc.Longitude = cs.lng;
+                        loc.Altitude = cs.alt;
+
+                        if (loc.Altitude < 0)
+                            loc.Altitude = 0.01;
+
+                        SharpKml.Dom.Orientation ori = new SharpKml.Dom.Orientation();
+                        ori.Heading = cs.yaw;
+                        ori.Roll = -cs.roll;
+                        ori.Tilt = -cs.pitch;
+
+                        SharpKml.Dom.Scale sca = new SharpKml.Dom.Scale();
+
+                        sca.X = 2;
+                        sca.Y = 2;
+                        sca.Z = 2;
+
+                        SharpKml.Dom.Model model = new SharpKml.Dom.Model();
+                        model.Location = loc;
+                        model.Orientation = ori;
+                        model.AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute;
+                        model.Scale = sca;
+
+                        SharpKml.Dom.Link link = new SharpKml.Dom.Link();
+                        link.Href = new Uri("block_plane_0.dae", UriKind.Relative);
+
+                        model.Link = link;
+
+                        pmplane.Geometry = model;
+
+                        SharpKml.Dom.LookAt la = new SharpKml.Dom.LookAt() 
+                        { Altitude = loc.Altitude.Value, Latitude = loc.Latitude.Value, Longitude = loc.Longitude.Value, Tilt = 80,
+                            Heading = cs.yaw, AltitudeMode = SharpKml.Dom.AltitudeMode.Absolute, Range = 50};
+
+                        kml.Viewpoint = la;
+                        
+                        kml.AddFeature(pmplane);
+
+                        SharpKml.Base.Serializer serializer = new SharpKml.Base.Serializer();
+                        serializer.Serialize(kml);
+
+                        byte[] buffer = Encoding.ASCII.GetBytes(serializer.Xml);
+
+                        stream.Write(buffer, 0, buffer.Length);
+
+                        stream.Close();
+                    }
+                    else if (url.Contains("block_plane_0.dae"))
+                    {
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\n\n";
+                        byte[] temp = encoding.GetBytes(header);
+                        stream.Write(temp, 0, temp.Length);
+
+                        BinaryReader file = new BinaryReader(File.Open("block_plane_0.dae", FileMode.Open, FileAccess.Read, FileShare.Read));
+                        byte[] buffer = new byte[1024];
+                        while (file.PeekChar() != -1)
+                        {
+
+                            int leng = file.Read(buffer, 0, buffer.Length);
+
+                            stream.Write(buffer, 0, leng);
+                        }
+                        file.Close();
+                        stream.Close();
+                    }
+                    else if (url.Contains("hud.html"))
+                    {
+                        string header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\n\n";
+                        byte[] temp = encoding.GetBytes(header);
+                        stream.Write(temp, 0, temp.Length);
+
                         BinaryReader file = new BinaryReader(File.Open("hud.html", FileMode.Open, FileAccess.Read, FileShare.Read));
                         byte[] buffer = new byte[1024];
                         while (file.PeekChar() != -1)
@@ -1524,7 +1608,7 @@ namespace ArdupilotMega
             catch (Exception ex) { MessageBox.Show("Update Failed " + ex.Message); }
         }
 
-        private static void updatelabel(Label loadinglabel,string text)
+        private static void updatelabel(Label loadinglabel, string text)
         {
             MainV2.instance.Invoke((MethodInvoker)delegate
             {
@@ -1589,7 +1673,7 @@ namespace ArdupilotMega
                 }
                 if (file.EndsWith("/"))
                 {
-                    update = updatecheck(loadinglabel, baseurl + file, file) && update;
+                    update = updatecheck(loadinglabel, baseurl + file, subdir.Replace("/", "\\") + file) && update;
                     continue;
                 }
                 if (loadinglabel != null)
@@ -1657,7 +1741,7 @@ namespace ArdupilotMega
                         }
                     }
                     if (loadinglabel != null)
-                        updatelabel(loadinglabel,"Getting " + file);
+                        updatelabel(loadinglabel, "Getting " + file);
 
                     // Create a request using a URL that can receive a post. 
                     request = WebRequest.Create(baseurl + file);
@@ -1689,7 +1773,7 @@ namespace ArdupilotMega
                             if (dt.Second != DateTime.Now.Second)
                             {
                                 if (loadinglabel != null)
-                                    updatelabel(loadinglabel,"Getting " + file + ": " + Math.Abs(bytes) + " bytes");//(((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
+                                    updatelabel(loadinglabel, "Getting " + file + ": " + Math.Abs(bytes) + " bytes");//(((double)(contlen - bytes) / (double)contlen) * 100).ToString("0.0") + "%";
                                 dt = DateTime.Now;
                             }
                         }

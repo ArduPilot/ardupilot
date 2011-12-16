@@ -556,6 +556,9 @@
     <None Include="defines.h">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="m3u\networklink.kml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="MAC\Info.plist" />
     <None Include="MAC\run.sh" />
     <None Include="mykey.snk" />
