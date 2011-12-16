@@ -50,6 +50,11 @@
 # define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 #endif
 
+#if defined( __AVR_ATmega1280__ )
+#define CLI_ENABLED DISABLED
+#define LOGGING_ENABLED DISABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // APM2 HARDWARE DEFAULTS
 //
