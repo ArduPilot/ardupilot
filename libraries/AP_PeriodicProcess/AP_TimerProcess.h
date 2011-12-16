@@ -5,8 +5,8 @@
 #include "PeriodicProcess.h"
 #include "../Arduino_Mega_ISR_Registry/Arduino_Mega_ISR_Registry.h"
 
-/* XXX this value is a total guess, will look up. */
-#define TIMERPROCESS_PER_DEFAULT (256)
+// default to 1kHz timer interrupt
+#define TIMERPROCESS_PER_DEFAULT (256-62) // 1kHz
 
 #define AP_TIMERPROCESS_MAX_PROCS 3
 
