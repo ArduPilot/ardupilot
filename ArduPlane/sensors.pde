@@ -77,10 +77,10 @@ static void read_airspeed(void)
             // calibration before we can use it. This isn't as
             // accurate as the 50 point average in zero_airspeed(),
             // but it is better than using it uncalibrated
-            airspeed_raw = (float)adc.Ch(AIRSPEED_CH);
+            airspeed_raw = pitot_analog_source.read();
             g.airspeed_offset.set_and_save(airspeed_raw);
 		}
-		airspeed_raw 		= (adc.Ch(AIRSPEED_CH) * 0.1) + (airspeed_raw * 0.9);
+		airspeed_raw 		= (pitot_analog_source.read() * 0.1) + (airspeed_raw * 0.9);
 		airspeed_pressure 	= max((airspeed_raw - g.airspeed_offset), 0);
 		airspeed 			= sqrt(airspeed_pressure * g.airspeed_ratio) * 100;
 	#endif
@@ -92,10 +92,10 @@ static void zero_airspeed(void)
 {
     float sum = 0;
     int c;
-	airspeed_raw = adc.Ch(AIRSPEED_CH);
+	airspeed_raw = pitot_analog_source.read();
 	for(c = 0; c < 250; c++) {
 		delay(2);
-		sum += adc.Ch(AIRSPEED_CH);
+		sum += pitot_analog_source.read();
 	}
     sum /= c;
 	g.airspeed_offset.set_and_save((int16_t)sum);

@@ -177,7 +177,9 @@ static void init_ardupilot()
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
+#if CONFIG_ADC == ENABLED
     adc.Init(&timer_scheduler);      // APM ADC library initialization
+#endif
 
 	barometer.init(&timer_scheduler);
 
