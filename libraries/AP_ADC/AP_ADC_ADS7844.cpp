@@ -63,6 +63,11 @@ static volatile uint32_t _sum[8];
 // how many values we've accumulated since last read
 static volatile uint16_t _count[8];
 
+// a mask of what channels are actually being read. If a channel has
+// never been read, then don't bother gathering it. That saves us a
+// lot of cycles in the timer call
+static uint8_t enable_mask;
+
 static uint32_t last_ch6_micros;
 
 // TCNT2 values for various interrupt rates,
@@ -87,15 +92,35 @@ static inline unsigned char ADC_SPI_transfer(unsigned char data)
 void AP_ADC_ADS7844::read(void)
 {
 	uint8_t ch;
+	unsigned char enable_cmd[9];
+	uint8_t num_enabled = 0;
+
+	if (enable_mask == 0) {
+		// no channels to read
+		return;
+	}
+
+	for (ch = 0; ch < 8; ch++) {
+		if (enable_mask & (1<<ch)) {
+			enable_cmd[num_enabled++] = adc_cmd[ch];
+		}
+	}
+	enable_cmd[num_enabled] = 0;
+
+	num_enabled = 0;
 
 	bit_clear(PORTC, 4);							// Enable Chip Select (PIN PC4)
-	ADC_SPI_transfer(adc_cmd[0]);						// Command to read the first channel
+	ADC_SPI_transfer(enable_cmd[0]);					// Command to read the first channel
 
 	for (ch = 0; ch < 8; ch++) {
 		uint16_t v;
 
+		if ((enable_mask & (1<<ch)) == 0) {
+			continue;
+		}
+		
 		v = ADC_SPI_transfer(0) << 8;	         // Read first byte
-		v |= ADC_SPI_transfer(adc_cmd[ch + 1]);  // Read second byte and send next command
+		v |= ADC_SPI_transfer(enable_cmd[++num_enabled]);  // Read second byte and send next command
 
 		if (v & 0x8007) {
 			// this is a 12-bit ADC, shifted by 3 bits.
@@ -168,6 +193,8 @@ float AP_ADC_ADS7844::Ch(uint8_t ch_num)
 	uint16_t count;
 	uint32_t sum;
 
+	enable_mask |= (1<<ch_num);
+
 	// ensure we have at least one value
 	while (_count[ch_num] == 0)  /* noop */ ;
 
@@ -192,6 +219,10 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	uint16_t count[6];
 	uint32_t sum[6];
 	uint8_t i;
+
+	for (i=0; i<6; i++) {
+		enable_mask |= (1<<channel_numbers[i]);
+	}
 
 	// ensure we have at least one value
 	for (i=0; i<6; i++) {
