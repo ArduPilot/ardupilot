@@ -601,6 +601,7 @@ def mode_string_v09(msg):
         (101,             MAV_NAV_VECTOR)    : "ACRO",
         (102,             MAV_NAV_VECTOR)    : "ALT_HOLD",
         (107,             MAV_NAV_VECTOR)    : "CIRCLE",
+        (109,             MAV_NAV_VECTOR)    : "LAND",
         }
     if cmode in mapping:
         return mapping[cmode]
