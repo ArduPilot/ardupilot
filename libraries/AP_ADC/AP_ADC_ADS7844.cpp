@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
 	AP_ADC_ADS7844.cpp - ADC ADS7844 Library for Ardupilot Mega
 	Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
