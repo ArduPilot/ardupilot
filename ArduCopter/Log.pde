@@ -244,19 +244,19 @@ static byte get_num_logs(void)
 static void start_new_log()
 {
 	uint16_t	last_page = find_last_page();
-	
+
 	DataFlash.StartRead(last_page);
 	//Serial.print("last page: ");	Serial.println(last_page);
 	//Serial.print("file #: ");	Serial.println(DataFlash.GetFileNumber());
 	//Serial.print("file page: ");	Serial.println(DataFlash.GetFilePage());
-	
+
 	if(find_last_log() == 0 || DataFlash.GetFileNumber() == 0xFFFF) {
 		DataFlash.SetFileNumber(1);
 		DataFlash.StartWrite(1);
 		//Serial.println("start log from 0");
 		return;
 	}
-	
+
 	// Check for log of length 1 page and suppress
 	if(DataFlash.GetFilePage() <= 1) {
 		DataFlash.SetFileNumber(DataFlash.GetFileNumber());		// Last log too short, reuse its number
@@ -329,7 +329,7 @@ static int find_last_log(void)
 	DataFlash.StartRead(last_page);
 	return DataFlash.GetFileNumber();
 }
-	
+
 // This function finds the last page of the last file
 static int find_last_page(void)
 {
@@ -1008,7 +1008,7 @@ static void Log_Read(int start_page, int end_page)
     	packet_count = Log_Read_Process(start_page, end_page);
     }
 
-	Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
+	//Serial.printf_P(PSTR("Number of packets read: %d\n"), packet_count);
 }
 
 // Read the DataFlash log memory : Packet Parser
