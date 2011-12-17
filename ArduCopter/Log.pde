@@ -138,8 +138,8 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-static int8_t
-erase_logs(uint8_t argc, const Menu::arg *argv)
+static void
+do_erase_logs(void (*delay_cb)(unsigned long))
 {
 	Serial.printf_P(PSTR("\nErasing log...\n"));
 	DataFlash.SetFileNumber(0xFFFF);
@@ -147,10 +147,17 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
 		DataFlash.PageErase(j);
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
 		if(j%128 == 0) Serial.printf_P(PSTR("+"));
+        delay_cb(1);
 	}
 
 	Serial.printf_P(PSTR("\nLog erased.\n"));
 	DataFlash.FinishWrite();
+}
+
+static int8_t
+erase_logs(uint8_t argc, const Menu::arg *argv)
+{
+    do_erase_logs(delay);
     return 0;
 }
 
