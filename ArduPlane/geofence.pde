@@ -22,6 +22,7 @@ static struct geofence_state {
     uint16_t breach_count;
     uint8_t breach_type;
     uint32_t breach_time;
+    byte old_switch_position;
     /* point 0 is the return point */
     Vector2l boundary[MAX_FENCEPOINTS];
 } *geofence_state;
@@ -173,6 +174,20 @@ static bool geofence_check_maxalt(void)
 static void geofence_check(bool altitude_check_only)
 {
     if (!geofence_enabled()) {
+        // switch back to the chosen control mode if still in
+        // GUIDED to the return point
+        if (geofence_state != NULL &&
+            g.fence_action == FENCE_ACTION_GUIDED &&
+            g.fence_channel != 0 &&
+            control_mode == GUIDED &&
+            g.fence_total >= 5 &&
+            geofence_state->boundary_uptodate &&
+            geofence_state->old_switch_position == oldSwitchPosition &&
+            guided_WP.lat == geofence_state->boundary[0].x &&
+            guided_WP.lng == geofence_state->boundary[0].y) {
+            geofence_state->old_switch_position = 0;
+            reset_control_switch();
+        }
         return;
     }
 
@@ -253,6 +268,8 @@ static void geofence_check(bool altitude_check_only)
         guided_WP.options = 0;
         guided_WP.lat = geofence_state->boundary[0].x;
         guided_WP.lng = geofence_state->boundary[0].y;
+
+        geofence_state->old_switch_position = oldSwitchPosition;
 
         if (control_mode == MANUAL && g.auto_trim) {
             // make sure we don't auto trim the surfaces on this change
