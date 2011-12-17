@@ -55,6 +55,8 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
+    bool need_log_erase = false;
+
 #if USB_MUX_PIN > 0
     // on the APM2 board we have a mux thet switches UART0 between
     // USB and the board header. If the right ArduPPM firmware is
@@ -175,30 +177,15 @@ static void init_ardupilot()
 		// erase DataFlash on format version change
 		#if LOGGING_ENABLED == ENABLED
 		DataFlash.Init();
-		erase_logs(NULL, NULL);
 		#endif
+
+		need_log_erase = true;
 
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 
 		// save default radio values
 		default_dead_zones();
-
-		Serial.printf_P(PSTR("Please Run Setup...\n"));
-		while (true) {
-			delay(1000);
-			if(motor_light){
-				digitalWrite(A_LED_PIN, LED_ON);
-				digitalWrite(B_LED_PIN, LED_ON);
-				digitalWrite(C_LED_PIN, LED_ON);
-			}else{
-				digitalWrite(A_LED_PIN, LED_OFF);
-				digitalWrite(B_LED_PIN, LED_OFF);
-				digitalWrite(C_LED_PIN, LED_OFF);
-			}
-			motor_light = !motor_light;
-		}
-
 	}else{
 		// save default radio values
 		//default_dead_zones();
@@ -224,6 +211,28 @@ static void init_ardupilot()
 
     // identify ourselves correctly with the ground station
 	mavlink_system.sysid = g.sysid_this_mav;
+
+    if (need_log_erase) {
+        uint8_t count = 0;
+        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        do_erase_logs(mavlink_delay);
+		while (true) {
+            if (count++ % 20 == 0) {
+                Serial.printf_P(PSTR("Please Run Setup...\n"));
+            }
+			mavlink_delay(100);
+			if(motor_light){
+				digitalWrite(A_LED_PIN, LED_ON);
+				digitalWrite(B_LED_PIN, LED_ON);
+				digitalWrite(C_LED_PIN, LED_ON);
+			}else{
+				digitalWrite(A_LED_PIN, LED_OFF);
+				digitalWrite(B_LED_PIN, LED_OFF);
+				digitalWrite(C_LED_PIN, LED_OFF);
+			}
+			motor_light = !motor_light;
+		}
+    }
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
