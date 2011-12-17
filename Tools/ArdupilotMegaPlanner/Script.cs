@@ -18,7 +18,13 @@ namespace ArdupilotMega
 
         public Script()
         {
-            engine = Python.CreateEngine();
+            Dictionary<string, object> options = new Dictionary<string, object>();
+            options["Debug"] = true;
+
+            if (engine != null)
+                engine.Runtime.Shutdown();
+
+            engine = Python.CreateEngine(options); 
             scope = engine.CreateScope();
 
             scope.SetVariable("cs", MainV2.cs);

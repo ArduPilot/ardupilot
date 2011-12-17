@@ -109,13 +109,6 @@ namespace ArdupilotMega.Properties {
             }
         }
         
-        public static System.Drawing.Bitmap BR_0016_01_3T {
-            get {
-                object obj = ResourceManager.GetObject("BR_0016_01_3T", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
         public static System.Drawing.Bitmap compass {
             get {
                 object obj = ResourceManager.GetObject("compass", resourceCulture);
@@ -165,44 +158,9 @@ namespace ArdupilotMega.Properties {
             }
         }
         
-        public static System.Drawing.Bitmap frames_03 {
-            get {
-                object obj = ResourceManager.GetObject("frames_03", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        public static System.Drawing.Bitmap frames_04 {
-            get {
-                object obj = ResourceManager.GetObject("frames_04", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        public static System.Drawing.Bitmap frames_05 {
-            get {
-                object obj = ResourceManager.GetObject("frames_05", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
         public static System.Drawing.Bitmap frames_06 {
             get {
                 object obj = ResourceManager.GetObject("frames_06", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        public static System.Drawing.Bitmap frames_07 {
-            get {
-                object obj = ResourceManager.GetObject("frames_07", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        public static System.Drawing.Bitmap frames_08 {
-            get {
-                object obj = ResourceManager.GetObject("frames_08", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -221,23 +179,65 @@ namespace ArdupilotMega.Properties {
             }
         }
         
-        public static System.Drawing.Bitmap new_frames_09 {
+        public static System.Drawing.Bitmap hexa {
             get {
-                object obj = ResourceManager.GetObject("new_frames_09", resourceCulture);
+                object obj = ResourceManager.GetObject("hexa", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
         
-        public static System.Drawing.Bitmap plane2 {
+        public static System.Drawing.Bitmap hil {
             get {
-                object obj = ResourceManager.GetObject("plane2", resourceCulture);
+                object obj = ResourceManager.GetObject("hil", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
         
-        public static System.Drawing.Bitmap planetracker {
+        public static System.Drawing.Bitmap hilheli {
             get {
-                object obj = ResourceManager.GetObject("planetracker", resourceCulture);
+                object obj = ResourceManager.GetObject("hilheli", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap hilplane {
+            get {
+                object obj = ResourceManager.GetObject("hilplane", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap hilquad {
+            get {
+                object obj = ResourceManager.GetObject("hilquad", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap octo {
+            get {
+                object obj = ResourceManager.GetObject("octo", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap octov {
+            get {
+                object obj = ResourceManager.GetObject("octov", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap opticalflow {
+            get {
+                object obj = ResourceManager.GetObject("opticalflow", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap planeicon {
+            get {
+                object obj = ResourceManager.GetObject("planeicon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -256,9 +256,16 @@ namespace ArdupilotMega.Properties {
             }
         }
         
-        public static System.Drawing.Bitmap quad2 {
+        public static System.Drawing.Bitmap quadicon {
             get {
-                object obj = ResourceManager.GetObject("quad2", resourceCulture);
+                object obj = ResourceManager.GetObject("quadicon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap quadx {
+            get {
+                object obj = ResourceManager.GetObject("quadx", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -284,9 +291,23 @@ namespace ArdupilotMega.Properties {
             }
         }
         
+        public static System.Drawing.Bitmap tri {
+            get {
+                object obj = ResourceManager.GetObject("tri", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         public static System.Drawing.Bitmap up {
             get {
                 object obj = ResourceManager.GetObject("up", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        public static System.Drawing.Bitmap y6 {
+            get {
+                object obj = ResourceManager.GetObject("y6", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

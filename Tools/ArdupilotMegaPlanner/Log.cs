@@ -57,8 +57,6 @@ namespace ArdupilotMega
         public Log()
         {
             InitializeComponent();
-
-            Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
         }
 
         private void Log_Load(object sender, EventArgs e)
@@ -140,7 +138,10 @@ namespace ArdupilotMega
         {
             if (start.Second != DateTime.Now.Second)
             {
-                TXT_status.Text = status.ToString() + " " + receivedbytes + " " + comPort.BytesToRead;
+                this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
+{
+    TXT_status.Text = status.ToString() + " " + receivedbytes + " " + comPort.BytesToRead;
+});
                 start = DateTime.Now;
             }
         }
@@ -206,7 +207,10 @@ namespace ArdupilotMega
 
                             MainV2.cs.firmware = MainV2.Firmwares.ArduPlane;
 
-                            TXT_seriallog.AppendText("Createing KML for " + logfile);
+                            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+{
+    TXT_seriallog.AppendText("Createing KML for " + logfile);
+});
 
                             while (tr.Peek() != -1)
                             {
@@ -230,7 +234,10 @@ namespace ArdupilotMega
                             status = serialstatus.Waiting;
                             lock (thisLock)
                             {
-                                TXT_seriallog.Clear();
+                                this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+{
+    TXT_seriallog.Clear();
+});
                             }
                             //if (line.Contains("Dumping Log"))
                             {
@@ -257,7 +264,7 @@ namespace ArdupilotMega
                     }
                     lock (thisLock)
                     {
-                        this.BeginInvoke((System.Threading.ThreadStart)delegate()
+                        this.BeginInvoke((MethodInvoker)delegate()
                         {
 
                             Console.Write(line);

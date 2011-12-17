@@ -102,7 +102,7 @@ namespace ArdupilotMega
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
 
-        static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.planetracker.Width, global::ArdupilotMega.Properties.Resources.planetracker.Height);
+        static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.planeicon.Width, global::ArdupilotMega.Properties.Resources.planeicon.Height);
         float heading = 0;
         float cog = -1;
         float target = -1;
@@ -131,7 +131,7 @@ namespace ArdupilotMega
             g.DrawLine(new Pen(Color.Orange, 2), 0.0f, 0.0f, (float)Math.Cos((target - 90) * deg2rad) * length, (float)Math.Sin((target - 90) * deg2rad) * length);
 
             g.RotateTransform(heading);
-            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.planetracker, global::ArdupilotMega.Properties.Resources.planetracker.Width / -2, global::ArdupilotMega.Properties.Resources.planetracker.Height / -2);
+            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.planeicon, global::ArdupilotMega.Properties.Resources.planeicon.Width / -2, global::ArdupilotMega.Properties.Resources.planeicon.Height / -2);
 
             g.Transform = temp;
         }
@@ -143,7 +143,7 @@ namespace ArdupilotMega
         const float rad2deg = (float)(180 / Math.PI);
         const float deg2rad = (float)(1.0 / rad2deg);
 
-        static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.quad2.Width, global::ArdupilotMega.Properties.Resources.quad2.Height);
+        static readonly System.Drawing.Size SizeSt = new System.Drawing.Size(global::ArdupilotMega.Properties.Resources.quadicon.Width, global::ArdupilotMega.Properties.Resources.quadicon.Height);
         float heading = 0;
         float cog = -1;
         float target = -1;
@@ -171,7 +171,7 @@ namespace ArdupilotMega
 
 
             g.RotateTransform(heading);
-            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.quad2, global::ArdupilotMega.Properties.Resources.quad2.Width / -2 + 2, global::ArdupilotMega.Properties.Resources.quad2.Height / -2);
+            g.DrawImageUnscaled(global::ArdupilotMega.Properties.Resources.quadicon, global::ArdupilotMega.Properties.Resources.quadicon.Width / -2 + 2, global::ArdupilotMega.Properties.Resources.quadicon.Height / -2);
 
             g.Transform = temp;
         }

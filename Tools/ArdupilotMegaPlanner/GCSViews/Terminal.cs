@@ -27,8 +27,6 @@ namespace ArdupilotMega.GCSViews
                 threadrun = false;
 
             InitializeComponent();
-
-            Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
         }
 
         void comPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -39,19 +37,31 @@ namespace ArdupilotMega.GCSViews
             {
                 lock (thisLock)
                 {
-                    TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
                     string data = comPort.ReadExisting();
-                    data = data.TrimEnd('\r'); // else added \n all by itself
-                    TXT_terminal.AppendText(data);
-                    if (data.Contains("\b"))
-                    {
-                        TXT_terminal.Text = TXT_terminal.Text.Remove(TXT_terminal.Text.IndexOf('\b'));
-                        TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
-                    }
-                    inputStartPos = TXT_terminal.SelectionStart;
+                    //Console.Write(data);
+
+                    addText(data);
                 }
             }
             catch (Exception) { if (!threadrun) return; TXT_terminal.AppendText("Error reading com port\r\n"); }
+        }
+
+        void addText(string data)
+        {
+            this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+            {
+                TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
+
+                data = data.TrimEnd('\r'); // else added \n all by itself
+                data = data.Replace("\0", " ");
+                TXT_terminal.AppendText(data);
+                if (data.Contains("\b"))
+                {
+                    TXT_terminal.Text = TXT_terminal.Text.Remove(TXT_terminal.Text.IndexOf('\b'));
+                    TXT_terminal.SelectionStart = TXT_terminal.Text.Length;
+                }
+                inputStartPos = TXT_terminal.SelectionStart;
+            });
         }
 
         private void TXT_terminal_Click(object sender, EventArgs e)
@@ -174,9 +184,17 @@ namespace ArdupilotMega.GCSViews
                 {
                     threadrun = true;
 
-                    System.Threading.Thread.Sleep(2000);
+                    DateTime start = DateTime.Now;
 
-                    comPort.Write("\n\n\n\n\n");
+                    while ((DateTime.Now - start).TotalMilliseconds < 2000)
+                    {
+                        if (comPort.BytesToRead > 0)
+                        {
+                            comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
+                        }
+                    }
+
+                        comPort.Write("\n\n\n");
 
                     while (threadrun)
                     {
@@ -194,6 +212,9 @@ namespace ArdupilotMega.GCSViews
                         }
                         catch { }
                     }
+
+                    comPort.DtrEnable = false;
+
                     if (threadrun == false)
                     {
                         comPort.Close();

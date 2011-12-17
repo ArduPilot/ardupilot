@@ -28,7 +28,13 @@ namespace ArdupilotMega
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainV2());
+            try
+            {
+
+                Application.Run(new MainV2());
+
+            }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }
 
         static void Application_Idle(object sender, EventArgs e)

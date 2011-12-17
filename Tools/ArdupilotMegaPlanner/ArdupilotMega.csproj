@@ -207,7 +207,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AGauge.cs">
+    <Compile Include="Controls\AGauge.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="ArduinoDetect.cs" />
@@ -225,6 +225,12 @@
     </Compile>
     <Compile Include="CommsTCPSerial.cs" />
     <Compile Include="CommsUdpSerial.cs" />
+    <Compile Include="Controls\ImageLabel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ImageLabel.Designer.cs">
+      <DependentUpon>ImageLabel.cs</DependentUpon>
+    </Compile>
     <Compile Include="ResEdit.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -267,14 +273,14 @@
     </Compile>
     <Compile Include="MAVLinkTypes.cs" />
     <Compile Include="MAVLinkTypesenum.cs" />
-    <Compile Include="MyButton.cs">
+    <Compile Include="Controls\MyButton.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Common.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ArduinoComms.cs" />
-    <Compile Include="MyLabel.cs">
+    <Compile Include="Controls\MyLabel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="MyUserControl.cs">
@@ -337,7 +343,7 @@
     <Compile Include="GCSViews\Simulation.Designer.cs">
       <DependentUpon>Simulation.cs</DependentUpon>
     </Compile>
-    <Compile Include="MyTrackBar.cs">
+    <Compile Include="Controls\MyTrackBar.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="CurrentState.cs" />
@@ -392,12 +398,15 @@
     <Compile Include="temp.Designer.cs">
       <DependentUpon>temp.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="AGauge.resx">
+    <EmbeddedResource Include="Controls\AGauge.resx">
       <DependentUpon>AGauge.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Camera.resx">
       <DependentUpon>Camera.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\ImageLabel.resx">
+      <DependentUpon>ImageLabel.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="georefimage.resx">
       <DependentUpon>georefimage.cs</DependentUpon>
@@ -590,6 +599,12 @@
     <Content Include="mavcmd.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="Resources\new frames-13.png" />
+    <None Include="Resources\new frames-12.png" />
+    <None Include="Resources\new frames-11.png" />
+    <None Include="Resources\new frames-10.png" />
+    <None Include="Resources\new frames-06.png" />
+    <None Include="Resources\new frames-05.png" />
     <None Include="Resources\BR-0016-01-3T.jpg" />
     <Content Include="Resources\MAVCmd.zh-Hans.txt" />
     <None Include="Resources\MAVParam.txt" />

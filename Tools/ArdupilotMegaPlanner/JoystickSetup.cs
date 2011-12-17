@@ -241,6 +241,8 @@ namespace ArdupilotMega
 
                         joy.AcquireJoystick(CMB_joysticks.Text);
 
+                        joy.name = CMB_joysticks.Text;
+
                         noButtons = joy.getNumButtons();
 
                         for (int f = 0; f < noButtons; f++)
@@ -289,10 +291,11 @@ namespace ArdupilotMega
                 for (int f = 0; f < noButtons; f++)
                 {
                     string name = (f + 1).ToString();
-                    ((HorizontalProgressBar)this.Controls.Find("hbar" + name, false)[0]).Value = MainV2.joystick.isButtonPressed(f) ? 100 : 0;
+
+                        ((HorizontalProgressBar)this.Controls.Find("hbar" + name, false)[0]).Value = MainV2.joystick.isButtonPressed(f) ? 100 : 0;
                 }
             }
-            catch { }
+            catch (Exception ex) {  }
 
         }
 

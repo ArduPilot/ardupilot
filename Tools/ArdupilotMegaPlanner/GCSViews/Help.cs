@@ -14,6 +14,12 @@ namespace ArdupilotMega.GCSViews
         public Help()
         {
             InitializeComponent();
+
+            try
+            {
+                CHK_showconsole.Checked = MainV2.config["showconsole"].ToString() == "True";
+            }
+            catch { }
         }
 
         private void BUT_updatecheck_Click(object sender, EventArgs e)

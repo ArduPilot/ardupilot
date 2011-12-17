@@ -20,6 +20,11 @@ namespace ArdupilotMega
         public float groundcourse { get { return _groundcourse; } set { if (value < 0) { _groundcourse = value + 360; } else { _groundcourse = value; } } }
         private float _groundcourse = 0;
 
+        /// <summary>
+        /// time over target in seconds
+        /// </summary>
+        public int tot { get { if (groundspeed <= 0) return 0; return (int)(wp_dist / groundspeed); } }
+
         // speeds
         public float airspeed { get { return _airspeed * multiplierspeed; } set { _airspeed = value; } }
         public float groundspeed { get { return _groundspeed * multiplierspeed; } set { _groundspeed = value; } }

@@ -163,16 +163,11 @@ namespace ArdupilotMega
                             {
                                 //Console.WriteLine("Dependant : " + obj2["Dependent"]);
 
+                                // all apm 1-1.4 use a ftdi on the imu board.
+
                                 if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
                                 {
-                                    if (DialogResult.Yes == MessageBox.Show("Is this a APM 2?", "APM 2", MessageBoxButtons.YesNo))
-                                    {
                                         return "2560-2";
-                                    }
-                                    else
-                                    {
-                                        return "2560";
-                                    }
                                 }
                             }
 
