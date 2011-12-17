@@ -243,6 +243,12 @@ CFLAGS			=	-g -mmcu=$(MCU) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS) $(DEPFLAGS) $(
 ASFLAGS			=	-g -mmcu=$(MCU) $(DEFINES)     $(LISTOPTS) $(DEPFLAGS) $(ASOPTS)
 LDFLAGS			=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--relax,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 
+ifeq ($(BOARD),mega)
+  LDFLAGS		=	-g -mmcu=$(MCU) $(OPTFLAGS) -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
+endif
+
+
+
 LIBS			=	-lm
 
 SRCSUFFIXES		=	*.cpp *.c *.S
