@@ -55,6 +55,8 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
+    bool need_log_erase = false;
+
 #if USB_MUX_PIN > 0
     // on the APM2 board we have a mux thet switches UART0 between
     // USB and the board header. If the right ArduPPM firmware is
@@ -136,7 +138,7 @@ static void init_ardupilot()
 		// erase DataFlash on format version change
 		#if LOGGING_ENABLED == ENABLED
 		DataFlash.Init(); 
-		erase_logs(NULL, NULL);
+		need_log_erase = true;
 		#endif
 		
 		// save the current format version
@@ -174,6 +176,10 @@ static void init_ardupilot()
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
+    if (need_log_erase) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+		do_erase_logs(mavlink_delay);
+    }
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
