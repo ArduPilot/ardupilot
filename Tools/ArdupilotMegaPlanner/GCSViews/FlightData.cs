@@ -60,6 +60,7 @@ namespace ArdupilotMega.GCSViews
         CurveItem list10curve;
 
         internal static GMapOverlay kmlpolygons;
+        internal static GMapOverlay geofence;
 
         bool huddropout = false;
         bool huddropoutresize = false;
@@ -91,9 +92,6 @@ namespace ArdupilotMega.GCSViews
             mymap = gMapControl1;
             myhud = hud1;
             MainHcopy = MainH;
-
-            int checkme;
-            //Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
 
             // setup default tuning graph
             if (MainV2.config["Tuning_Graph_Selected"] != null)
@@ -163,6 +161,9 @@ namespace ArdupilotMega.GCSViews
 
             kmlpolygons = new GMapOverlay(gMapControl1, "kmlpolygons");
             gMapControl1.Overlays.Add(kmlpolygons);
+
+            geofence = new GMapOverlay(gMapControl1, "geofence");
+            gMapControl1.Overlays.Add(geofence);
 
             polygons = new GMapOverlay(gMapControl1, "polygons");
             gMapControl1.Overlays.Add(polygons);

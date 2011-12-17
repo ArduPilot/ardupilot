@@ -685,7 +685,7 @@ namespace ArdupilotMega.GCSViews
                         }
                     }
 
-                    lbl_status.Text = "Write Done... Waiting (60 sec)";
+                    lbl_status.Text = "Write Done... Waiting (90 sec)";
                 }
                 else
                 {
@@ -698,8 +698,32 @@ namespace ArdupilotMega.GCSViews
 
                 Application.DoEvents();
 
-                System.Threading.Thread.Sleep(60000); // 10 seconds - new apvar erases eeprom on new format version, this should buy us some time.
+                try
+                {
+                    ((SerialPort)port).Open();
+                }
+                catch { }
 
+                DateTime startwait = DateTime.Now;
+
+                while ((DateTime.Now - startwait).TotalSeconds < 90)
+                {
+                    try
+                    {
+                        Console.Write(((SerialPort)port).ReadExisting().Replace("\0"," "));
+                    }
+                    catch { }
+                    System.Threading.Thread.Sleep(1000);
+                    progress.Value = (int)((DateTime.Now - startwait).TotalSeconds / 90.0 * 100);
+                    progress.Refresh();
+                }
+                try
+                {
+                    ((SerialPort)port).Close();
+                }
+                catch { }
+
+                progress.Value = 100;
                 lbl_status.Text = "Done";
             }
             catch (Exception ex) { lbl_status.Text = "Failed upload"; MessageBox.Show("Check port settings or Port in use? " + ex.ToString()); port.Close(); }

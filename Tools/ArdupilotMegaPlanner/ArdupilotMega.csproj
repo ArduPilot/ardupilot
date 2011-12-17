@@ -187,20 +187,36 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\sharpkml\SharpKml\bin\Release\SharpKml.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.configuration" />
-    <Reference Include="System.Data" />
+    <Reference Include="System">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.configuration">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Data">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Data.SQLite">
       <HintPath>..\..\..\..\..\Desktop\DIYDrones\myquad\greatmaps_e1bb830a18a3\Demo.WindowsForms\bin\Debug\x86\System.Data.SQLite.DLL</HintPath>
     </Reference>
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
+    <Reference Include="System.Drawing">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Management">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Speech">
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Web" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Web">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ZedGraph, Version=5.1.2.878, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\ArdupilotSim\ArdupilotSim\bin\Release\ZedGraph.dll</HintPath>

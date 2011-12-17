@@ -295,7 +295,7 @@ namespace ArdupilotMega
                         ((HorizontalProgressBar)this.Controls.Find("hbar" + name, false)[0]).Value = MainV2.joystick.isButtonPressed(f) ? 100 : 0;
                 }
             }
-            catch (Exception ex) {  }
+            catch {  } // this is for buttons - silent fail
 
         }
 

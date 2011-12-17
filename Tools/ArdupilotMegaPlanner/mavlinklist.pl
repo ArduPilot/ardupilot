@@ -1,9 +1,24 @@
-$dir = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/common/";
-$dir2 = "C:/Users/hog/Documents/Arduino/libraries/GCS_MAVLink/include/ardupilotmega/";
+$dir = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/common/";
+$dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include/ardupilotmega/";
+
+$fname = "MAVLinkTypes0.9.cs";
+
+&doit();
 
 # mavlink 1.0 with old structs
 $dir = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include_v1.0/common/";
 $dir2 = "C:/Users/hog/Desktop/DIYDrones/ardupilot-mega/libraries/GCS_MAVLink/include_v1.0/ardupilotmega/";
+
+$fname = "MAVLinkTypes.cs";
+
+&doit();
+
+<STDIN>;
+
+exit;
+
+sub doit
+{
 
 opendir(DIR,$dir) || die print $!;
 @files2 = readdir(DIR);
@@ -18,9 +33,11 @@ push(@files,@files2);
 
 push(@files,"../mavlink_types.h");
 
-open(OUT,">MAVLinkTypes.cs");
+open(OUT,">$fname");
 
 $crcs = 0;
+
+%done = {};
 
 print OUT <<EOF;
 using System;
@@ -135,6 +152,8 @@ EOF
 
 close OUT;
 
-<STDIN>;
+}
+
+
 
 1;

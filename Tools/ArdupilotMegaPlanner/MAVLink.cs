@@ -2252,6 +2252,95 @@ namespace ArdupilotMega
             }
         }
 
+        public PointLatLngAlt getFencePoint(int no, ref int total)
+        {
+            byte[] buffer;
+
+            MainV2.givecomport = true;
+
+            PointLatLngAlt plla = new PointLatLngAlt();
+            __mavlink_fence_fetch_point_t req = new __mavlink_fence_fetch_point_t();
+
+            req.idx = (byte)no;
+            req.target_component = compid;
+            req.target_system = sysid;
+
+            // request point
+            generatePacket(MAVLINK_MSG_ID_FENCE_FETCH_POINT, req);
+
+            DateTime start = DateTime.Now;
+            int retrys = 3;
+
+            while (true)
+            {
+                if (!(start.AddMilliseconds(500) > DateTime.Now))
+                {
+                    if (retrys > 0)
+                    {
+                        Console.WriteLine("getFencePoint Retry " + retrys + " - giv com " + MainV2.givecomport);
+                        generatePacket(MAVLINK_MSG_ID_FENCE_FETCH_POINT, req);
+                        start = DateTime.Now;
+                        retrys--;
+                        continue;
+                    }
+                    MainV2.givecomport = false;
+                    throw new Exception("Timeout on read - getFencePoint");
+                }
+
+                buffer = readPacket();
+                if (buffer.Length > 5)
+                {
+                    if (buffer[5] == MAVLINK_MSG_ID_FENCE_POINT)
+                    {
+                        MainV2.givecomport = false;
+
+                        __mavlink_fence_point_t fp = new __mavlink_fence_point_t();
+
+                        object structtemp = (object)fp;
+
+                        ByteArrayToStructure(buffer, ref structtemp, 6);
+
+                        fp = (__mavlink_fence_point_t)(structtemp);
+
+                        plla.Lat = fp.lat;
+                        plla.Lng = fp.lng;
+                        plla.Tag = fp.idx.ToString();
+
+                        total = fp.count;
+
+                        return plla;
+                    }
+                }
+            }
+        }
+
+        public bool setFencePoint(byte index, PointLatLngAlt plla,byte fencepointcount)
+        {
+            __mavlink_fence_point_t fp = new __mavlink_fence_point_t();
+
+            fp.idx = index;
+            fp.count = fencepointcount;
+            fp.lat = (float)plla.Lat;
+            fp.lng = (float)plla.Lng;
+            fp.target_component = compid;
+            fp.target_system = sysid;
+
+            int retry = 3;
+
+            while (retry > 0)
+            {
+                generatePacket(MAVLINK_MSG_ID_FENCE_POINT, fp);
+                int counttemp = 0;
+                PointLatLngAlt newfp = getFencePoint(fp.idx, ref counttemp);
+
+                if (newfp.Lat == plla.Lat && newfp.Lng == fp.lng)
+                    return true;
+                retry--;
+            }
+
+            return false;
+        }
+
         byte[] readlogPacket()
         {
             byte[] temp = new byte[300];
