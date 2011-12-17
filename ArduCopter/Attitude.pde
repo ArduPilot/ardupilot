@@ -23,11 +23,8 @@ get_stabilize_roll(int32_t target_angle)
 	// limit the error we're feeding to the PID
 	error 		= constrain(error, -2500, 2500);
 
-	roll_I		+= (float)error * .03;
-	roll_I 		= constrain(roll_I,-120,120);     //+- 1200
-
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_roll.get_p(error + roll_I);
+	rate 		= g.pi_stabilize_roll.get_p(error);
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
@@ -65,11 +62,8 @@ get_stabilize_pitch(int32_t target_angle)
 	// angle error
 	error 		= constrain(error, -2500, 2500);
 
-	pitch_I		+= (float)error * .03;
-	pitch_I 	= constrain(pitch_I, -120, 120); // +- 1200
-
 	// conver to desired Rate:
-	rate 		= g.pi_stabilize_pitch.get_p(error + pitch_I);
+	rate 		= g.pi_stabilize_pitch.get_p(error);
 
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_pitch.get_i(error, G_Dt);
@@ -152,22 +146,22 @@ get_nav_throttle(int32_t z_error)
 static int
 get_rate_roll(int32_t target_rate)
 {
-	int32_t error	= (target_rate * 3.5) - (degrees(omega.x) * 100.0);
+	int32_t error	= (target_rate * 3.5) - (omega.x * DEGX100);
 	return g.pi_acro_roll.get_pi(error, G_Dt);
 }
 
 static int
 get_rate_pitch(int32_t target_rate)
 {
-	int32_t error	= (target_rate * 3.5) - (degrees(omega.y) * 100.0);
+	int32_t error	= (target_rate * 3.5) - (omega.y * DEGX100);
 	return  g.pi_acro_pitch.get_pi(error, G_Dt);
 }
 
 static int
 get_rate_yaw(int32_t target_rate)
 {
-	int32_t error;
-	error		= (target_rate * 4.5) - (degrees(omega.z) * 100.0);
+
+	int32_t error	= (target_rate * 4.5) - (omega.z * DEGX100);
 	target_rate = g.pi_rate_yaw.get_pi(error, G_Dt);
 
 	// output control:
