@@ -238,6 +238,12 @@ namespace ArdupilotMega.GCSViews
                 {
                     quad = new HIL.QuadCopter();
 
+                    if (RAD_JSBSim.Checked)
+                    {
+                        simPort = 5124;
+                        recvPort = 5123;
+                    }
+
                     SetupUDPRecv();
 
                     if (RAD_softXplanes.Checked)
@@ -1002,11 +1008,11 @@ namespace ArdupilotMega.GCSViews
 				#else
 				imu.usec = ((ulong)DateTime.Now.ToBinary());
 				#endif
-                imu.xgyro = (short)(fdm.phidot * 1150); // roll - yes
+                imu.xgyro = (short)(fdm.phidot); // roll - yes
                 //imu.xmag = (short)(Math.Sin(head * deg2rad) * 1000);
-                imu.ygyro = (short)(fdm.thetadot * 1150); // pitch - yes
+                imu.ygyro = (short)(fdm.thetadot); // pitch - yes
                 //imu.ymag = (short)(Math.Cos(head * deg2rad) * 1000);
-                imu.zgyro = (short)(fdm.psidot * 1150);
+                imu.zgyro = (short)(fdm.psidot);
                 imu.zmag = 0;
 
                 imu.xacc = (Int16)Math.Min(Int16.MaxValue, Math.Max(Int16.MinValue, (fdm.A_X_pilot * 9808 / 32.2))); // pitch
@@ -1906,22 +1912,18 @@ namespace ArdupilotMega.GCSViews
             if (File.Exists(@"C:\Program Files (x86)\FlightGear\bin\Win32\fgfs.exe"))
             {
                 ofd.InitialDirectory = @"C:\Program Files (x86)\FlightGear\bin\Win32\";
-                extra = " --fg-root=\"C:\\Program Files (x86)\\FlightGear\\data\"";
             }
             else if (File.Exists(@"C:\Program Files\FlightGear\bin\Win32\fgfs.exe"))
             {
                 ofd.InitialDirectory = @"C:\Program Files\FlightGear\bin\Win32\";
-                extra = " --fg-root=\"C:\\Program Files\\FlightGear\\data\"";
             }
             else if (File.Exists(@"C:\Program Files\FlightGear 2.4.0\bin\Win32\fgfs.exe"))
             {
                 ofd.InitialDirectory = @"C:\Program Files\FlightGear 2.4.0\bin\Win32\";
-                extra = " --fg-root=\"C:\\Program Files\\FlightGear 2.4.0\\data\"";
             }
             else if (File.Exists(@"C:\Program Files (x86)\FlightGear 2.4.0\bin\Win32\fgfs.exe"))
             {
                 ofd.InitialDirectory = @"C:\Program Files (x86)\FlightGear 2.4.0\bin\Win32\";
-                extra = " --fg-root=\"C:\\Program Files (x86)\\FlightGear 2.4.0\\data\"";
             }
             else if (File.Exists(@"/usr/games/fgfs"))
             {
@@ -1939,6 +1941,11 @@ namespace ArdupilotMega.GCSViews
                     ofd.FileName = MainV2.config["fgexe"].ToString();
                 }
 
+                if (!MainV2.MONO)
+                {
+                    extra = " --fg-root=\"" + Path.GetDirectoryName(ofd.FileName.ToLower().Replace("bin\\win32\\","")) + "\\data\"";
+                }
+                    
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 P.StartInfo.FileName = ofd.FileName;
                 P.StartInfo.Arguments = extra + @" --geometry=400x300         --native-fdm=socket,out,50,127.0.0.1,49005,udp 	--generic=socket,in,50,127.0.0.1,49000,udp,MAVLink		   --roll=0       --pitch=0       --wind=0@0       --turbulence=0.0       --prop:/sim/frame-rate-throttle-hz=30       --timeofday=noon       --shading-flat       --fog-disable       --disable-specular-highlight       --disable-skyblend       --disable-random-objects       --disable-panel       --disable-horizon-effect       --disable-clouds       --disable-anti-alias-hud ";

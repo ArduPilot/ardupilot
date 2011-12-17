@@ -31,9 +31,7 @@ namespace ArdupilotMega
         {
             InitializeComponent();
 
-            Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
-
-                CreateChart(zg1, "Raw Sensors", "Time", "Raw Data");
+            CreateChart(zg1, "Raw Sensors", "Time", "Raw Data");
         }
 
         public struct plot

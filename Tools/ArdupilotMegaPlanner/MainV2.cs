@@ -254,7 +254,8 @@ namespace ArdupilotMega
 
             if (MONO)
             {
-                devs = Directory.GetFiles("/dev/", "*ACM*");
+                if (Directory.Exists("/dev/"))
+                    devs = Directory.GetFiles("/dev/", "*ACM*");
             }
 
             string[] ports = SerialPort.GetPortNames();
@@ -1298,7 +1299,12 @@ namespace ArdupilotMega
                     // makesure we have valid image
                     GCSViews.FlightData.mymap.streamjpgenable = true;
                     GCSViews.FlightData.myhud.streamjpgenable = true;
-                    GCSViews.FlightData.mymap.Refresh();
+
+                    MethodInvoker m = delegate()
+                    {
+                        GCSViews.FlightData.mymap.Refresh();
+                    };
+                    this.Invoke(m);
 
                     NetworkStream stream = client.GetStream();
 

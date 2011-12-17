@@ -79,6 +79,7 @@ namespace ArdupilotMega.GCSViews
 
         protected override void Dispose(bool disposing)
         {
+            threadrun = 0;
             MainV2.config["FlightSplitter"] = MainH.SplitterDistance.ToString();
             base.Dispose(disposing);
         }
@@ -91,7 +92,8 @@ namespace ArdupilotMega.GCSViews
             myhud = hud1;
             MainHcopy = MainH;
 
-            Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
+            int checkme;
+            //Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
 
             // setup default tuning graph
             if (MainV2.config["Tuning_Graph_Selected"] != null)
@@ -292,7 +294,10 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.comPort.logreadmode && MainV2.comPort.logplaybackfile != null)
                 {
-                    BUT_playlog.Text = "Pause";
+                    this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+{
+    BUT_playlog.Text = "Pause";
+});
 
                     if (comPort.BaseStream.IsOpen)
                         MainV2.comPort.logreadmode = false;
@@ -311,12 +316,12 @@ namespace ArdupilotMega.GCSViews
                     if (act > 9999 || act < 0)
                         act = 1;
 
-                    int ts = 1;
+                    int ts = 0;
                     try
                     {
                         ts = (int)(act / (double)NUM_playbackspeed.Value);
                     }
-                    catch { } // cross thread
+                    catch { }
                     if (ts > 0)
                         System.Threading.Thread.Sleep(ts);
 
@@ -336,7 +341,15 @@ namespace ArdupilotMega.GCSViews
                 }
                 else
                 {
-                    BUT_playlog.Text = "Play";
+                    if (threadrun == 0) { return; }
+                    try
+                    {
+                        this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+    {
+        BUT_playlog.Text = "Play";
+    });
+                    }
+                    catch { }
                 }
 
                 try

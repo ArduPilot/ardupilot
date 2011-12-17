@@ -700,7 +700,7 @@
             // pictureBox2
             // 
             this.pictureBox2.BackColor = System.Drawing.Color.White;
-            this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.BR_0016_01_3T;
+            this.pictureBox2.BackgroundImage = global::ArdupilotMega.Properties.Resources.opticalflow;
             resources.ApplyResources(this.pictureBox2, "pictureBox2");
             this.pictureBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBox2.Name = "pictureBox2";
@@ -936,7 +936,7 @@
             // pictureBoxQuadX
             // 
             this.pictureBoxQuadX.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.pictureBoxQuadX.Image = global::ArdupilotMega.Properties.Resources.frames_04;
+            this.pictureBoxQuadX.Image = global::ArdupilotMega.Properties.Resources.quadx;
             resources.ApplyResources(this.pictureBoxQuadX, "pictureBoxQuadX");
             this.pictureBoxQuadX.Name = "pictureBoxQuadX";
             this.pictureBoxQuadX.TabStop = false;
@@ -945,7 +945,7 @@
             // pictureBoxQuad
             // 
             this.pictureBoxQuad.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.pictureBoxQuad.Image = global::ArdupilotMega.Properties.Resources.frames_03;
+            this.pictureBoxQuad.Image = global::ArdupilotMega.Properties.Resources.quad;
             resources.ApplyResources(this.pictureBoxQuad, "pictureBoxQuad");
             this.pictureBoxQuad.Name = "pictureBoxQuad";
             this.pictureBoxQuad.TabStop = false;

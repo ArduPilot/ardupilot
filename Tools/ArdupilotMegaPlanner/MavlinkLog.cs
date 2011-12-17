@@ -33,8 +33,6 @@ namespace ArdupilotMega
         public MavlinkLog()
         {
             InitializeComponent();
-
-            Control.CheckForIllegalCrossThreadCalls = false; // so can update display from another thread
         }
 
         private void writeKML(string filename)
@@ -371,10 +369,13 @@ namespace ArdupilotMega
 
                     float oldlatlngalt = 0;
 
+                    DateTime appui = DateTime.Now;
+
                     while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
                     {
                         // bar moves to 50 % in this step
                         progressBar1.Value = (int)((float)mine.logplaybackfile.BaseStream.Position / (float)mine.logplaybackfile.BaseStream.Length * 100.0f / 2.0f);
+                        progressBar1.Invalidate();
                         progressBar1.Refresh();
 
                         byte[] packet = mine.readPacket();
@@ -383,9 +384,11 @@ namespace ArdupilotMega
 
                         cs.UpdateCurrentSettings(null, true, mine);
 
-                        if (cs.datetime.Second % 5 == 0)
+                        if (appui != DateTime.Now)
                         {
-                            //Application.DoEvents();
+                            // cant do entire app as mixes with flightdata timer
+                            this.Refresh();
+                            appui = DateTime.Now;
                         }
 
                         try
@@ -411,6 +414,7 @@ namespace ArdupilotMega
                     mine.logplaybackfile.Close();
                     mine.logplaybackfile = null;
 
+                    Application.DoEvents();
 
                     writeKML(logfile + ".kml");
 
