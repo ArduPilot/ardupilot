@@ -966,7 +966,7 @@ namespace ArdupilotMega
             byte[] buffer = new byte[4096];
             using (FileStream streamReader = File.OpenRead(filename))
             {
-                StreamUtils.Copy(streamReader, zipStream, buffer);
+               StreamUtils.Copy(streamReader, zipStream, buffer);
             }
             zipStream.CloseEntry();
 

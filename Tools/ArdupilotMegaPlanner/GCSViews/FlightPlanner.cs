@@ -447,6 +447,9 @@ namespace ArdupilotMega.GCSViews
             kmlpolygons = new GMapOverlay(MainMap, "kmlpolygons");
             MainMap.Overlays.Add(kmlpolygons);
 
+            geofence = new GMapOverlay(MainMap, "geofence");
+            MainMap.Overlays.Add(geofence);
+
             routes = new GMapOverlay(MainMap, "routes");
             MainMap.Overlays.Add(routes);
 
@@ -1814,7 +1817,11 @@ namespace ArdupilotMega.GCSViews
         // polygons
         GMapPolygon polygon;
         GMapPolygon drawnpolygon;
+        GMapPolygon gf;
+
         GMapOverlay kmlpolygons;
+        GMapOverlay geofence;
+
 
         // layers
         GMapOverlay top;
@@ -2947,6 +2954,72 @@ namespace ArdupilotMega.GCSViews
                 }
             }
             catch { }
+        }
+
+        private void GeoFenceuploadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //FENCE_TOTAL
+            if (MainV2.comPort.param["FENCE_ACTION"] == null)
+            {
+                MessageBox.Show("Not Supported");
+                return;
+            }
+
+            if (MainV2.comPort.param["FENCE_ACTION"].ToString() != "0")
+                MainV2.comPort.setParam("FENCE_ACTION", 0);
+
+            MainV2.comPort.setParam("FENCE_TOTAL", drawnpolygon.Points.Count);
+
+            byte a = 0;
+
+            foreach (var pll in drawnpolygon.Points)
+            {
+                MainV2.comPort.setFencePoint(a, new PointLatLngAlt(pll), (byte)drawnpolygon.Points.Count);
+                a++;
+            }
+
+            drawnpolygons.Polygons.Clear();
+            drawnpolygons.Markers.Clear();
+
+            MainMap.Invalidate();
+        }
+
+        private void GeoFencedownloadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int count = 1;
+
+            if (MainV2.comPort.param["FENCE_ACTION"] == null || MainV2.comPort.param["FENCE_TOTAL"] == null)
+            {
+                MessageBox.Show("Not Supported");
+                return;
+            }
+
+            if (int.Parse(MainV2.comPort.param["FENCE_TOTAL"].ToString()) == 0)
+            {
+                MessageBox.Show("Nothing to download");
+                return;
+            }
+
+            geofence.Polygons.Clear();
+
+            List<PointLatLng> polygonPoints = new List<PointLatLng>();
+
+            gf = new GMapPolygon(polygonPoints, "geofence");
+            gf.Stroke = new Pen(Color.Pink, 5);
+            geofence.Polygons.Add(gf);
+
+            FlightData.geofence.Polygons.Clear();
+            FlightData.geofence.Polygons.Add(gf);
+
+            for (int a = 0; a < count; a++)
+            {
+                PointLatLngAlt plla = MainV2.comPort.getFencePoint(a, ref count);
+                gf.Points.Add(new PointLatLng(plla.Lat, plla.Lng));
+            }
+
+            MainMap.UpdatePolygonLocalPosition(gf);
+
+            MainMap.Invalidate();
         }
     }
 }

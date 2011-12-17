@@ -197,6 +197,12 @@ namespace ArdupilotMega
 
         }
 
+        public PointLatLngAlt(GMap.NET.PointLatLng pll)
+        {
+            this.Lat = pll.Lat;
+            this.Lng = pll.Lng;
+        }
+
         public PointLatLng Point()
         {
             return new PointLatLng(Lat, Lng);
