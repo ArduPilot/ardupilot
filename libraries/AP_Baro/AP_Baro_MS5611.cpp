@@ -235,7 +235,8 @@ int32_t AP_Baro_MS5611::get_pressure()
 
 int16_t AP_Baro_MS5611::get_temperature()
 {
-	return(Temp);
+	// callers want the temperature in 0.1C units
+	return(Temp/10);
 }
 
 // Return altitude using the standard 1013.25 mbar at sea level reference
