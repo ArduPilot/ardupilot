@@ -40,19 +40,25 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
     unsigned i, j;
     bool outside = true;
     for (i = 0, j = n-1; i < n; j = i++) {
-	    if ((V[i].y > P.y) == (V[j].y > P.y)) {
-		    continue;
-	    }
-	    float dx1, dx2, dy1, dy2;
-	    // we convert the deltas to floating point numbers to
-	    // prevent integer overflow while maintaining maximum precision
-	    dx1 = P.x - V[i].x;
-	    dx2 = V[j].x - V[i].x;
-	    dy1 = P.y - V[i].y;
-	    dy2 = V[j].y - V[i].y;
-	    if ( dx1 < dx2 * dy1 / dy2 ) {
-		    outside = !outside;
-	    }
+        if ((V[i].y > P.y) == (V[j].y > P.y)) {
+            continue;
+        }
+        float dx1, dx2, dy1, dy2;
+        // use floating point to cope with possible integer overflow
+        // this still results in precision of better than 1m
+        dx1 = P.x - V[i].x;
+        dx2 = V[j].x - V[i].x;
+        dy1 = P.y - V[i].y;
+        dy2 = V[j].y - V[i].y;
+        if (dy2 < 0) {
+            if ( dx1 * dy2 > dx2 * dy1 ) {
+                outside = !outside;
+            }
+        } else {
+            if ( dx1 * dy2 < dx2 * dy1 ) {
+                outside = !outside;
+            }
+        }            
     }
     return outside;
 }

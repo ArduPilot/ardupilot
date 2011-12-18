@@ -47,6 +47,86 @@ static const struct {
 
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
 
+static float point_distance(Vector2l &p1, Vector2l &p2)
+{
+	float rads 			= (fabs(p1.x)*1.0e-7) * 0.0174532925;
+	float lng_scale		= cos(rads);
+
+	float dlat 		= (float)(p1.x - p2.x);
+	float dlong		= ((float)(p1.y - p2.y)) * lng_scale;
+	return sqrt((dlat*dlat) + (dlong*dlong)) * .01113195;
+}
+
+/*
+  test precision of the calculation 
+ */
+static void precision_test(void)
+{
+    Vector2l p1, p2, p;
+    float r;
+    int32_t dx, dy;
+    float worst_precision = 0.0;
+    const float delta = 0.5;
+    const float base = 0.9;
+
+    Serial.println("Precision test:");
+
+    p1 = OBC_boundary[8];
+    p2 = OBC_boundary[10];
+    dx = p2.x - p1.x;
+    dy = p2.y - p1.y;
+    
+    // first come from the left
+    for (r=-base; r<0.0; r *= delta) {
+        p.x = p1.x + r*dx;
+        p.y = p1.y + r*dy;
+        if (!Polygon_outside(p, OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+            float precision = point_distance(p, p1);
+            if (precision > worst_precision) {
+                worst_precision = precision;
+            }
+        }
+    }
+
+    // in the middle
+    for (r=base; r>0.0; r *= delta) {
+        p.x = p1.x + r*dx;
+        p.y = p1.y + r*dy;
+        if (Polygon_outside(p, OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+            float precision = point_distance(p, p1);
+            if (precision > worst_precision) {
+                worst_precision = precision;
+            }
+        }
+    }
+
+    // from the left on other side
+    for (r=-base; r<0.0; r *= delta) {
+        p.x = p2.x + r*dx;
+        p.y = p2.y + r*dy;
+        if (Polygon_outside(p, OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+            float precision = point_distance(p, p2);
+            if (precision > worst_precision) {
+                worst_precision = precision;
+            }
+        }
+    }
+
+    // from the right 
+    for (r=base; r>0.0; r *= delta) {
+        p.x = p2.x + r*dx;
+        p.y = p2.y + r*dy;
+        if (!Polygon_outside(p, OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+            float precision = point_distance(p, p2);
+            if (precision > worst_precision) {
+                worst_precision = precision;
+            }
+        }
+    }
+
+    Serial.printf_P(PSTR("worst precision: %f meters\n"), worst_precision);
+}
+
 /*
   polygon tests
  */
@@ -82,6 +162,8 @@ void setup(void)
         }
     }
     Serial.println(all_passed?"TEST PASSED":"TEST FAILED");
+
+    precision_test();
 
     Serial.println("Speed test:");
     start_time = micros();
