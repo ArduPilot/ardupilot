@@ -19,15 +19,15 @@ def takeoff(mavproxy, mav):
     wait_mode(mav, 'FBWA')
 
     # some rudder to counteract the prop torque
-    mavproxy.send('rc 4 1600\n')
+    mavproxy.send('rc 4 1650\n')
 
-    # get it moving a bit first to avoid bad JSBSim ground physics
-    mavproxy.send('rc 3 1040\n')
-    mav.recv_match(condition='VFR_HUD.groundspeed>3', blocking=True)
+    # get it moving a bit first
+    mavproxy.send('rc 3 1100\n')
+    mav.recv_match(condition='VFR_HUD.groundspeed>2', blocking=True)
 
     # a bit faster
     mavproxy.send('rc 3 1600\n')
-    mav.recv_match(condition='VFR_HUD.groundspeed>10', blocking=True)
+    mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
     # hit the gas harder now, and give it some elevator
     mavproxy.send('rc 4 1500\n')
@@ -182,9 +182,9 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n') # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_distance(mav, 30, timeout=120):
+    if not wait_waypoint(mav, 1, 6, max_dist=60):
         return False
-    if not wait_location(mav, homeloc, accuracy=50, timeout=600, target_altitude=target_altitude, height_accuracy=height_accuracy):
+    if not wait_groundspeed(mav, 0, 0.5):
         return False
     print("Mission OK")
     return True
