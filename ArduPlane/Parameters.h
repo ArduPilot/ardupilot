@@ -70,6 +70,7 @@ public:
         k_param_flap_2_speed,
         k_param_num_resets,
         k_param_log_last_filenumber,		// *** Deprecated - remove with next eeprom number change
+        k_param_reset_switch_chan,
 
 
 		// 110: Telemetry control
@@ -320,6 +321,7 @@ public:
     AP_Int16    num_resets;
     AP_Int16    log_bitmask;
     AP_Int16	log_last_filenumber;		// *** Deprecated - remove with next eeprom number change
+    AP_Int8		reset_switch_chan;
     AP_Int16    airspeed_cruise;
     AP_Int16    min_gndspeed;
     AP_Int16    pitch_trim;
@@ -435,6 +437,7 @@ public:
         num_resets              (0,                         k_param_num_resets,             PSTR("SYS_NUM_RESETS")),
         log_bitmask             (DEFAULT_LOG_BITMASK,		k_param_log_bitmask,            PSTR("LOG_BITMASK")),
         log_last_filenumber     (0,							k_param_log_last_filenumber,    PSTR("LOG_LASTFILE")),
+        reset_switch_chan		(0,							k_param_reset_switch_chan,		PSTR("RST_SWITCH_CH")),
         airspeed_cruise         (AIRSPEED_CRUISE_CM,        k_param_airspeed_cruise,        PSTR("TRIM_ARSPD_CM")),
         min_gndspeed            (MIN_GNDSPEED_CM,        	k_param_min_gndspeed,           PSTR("MIN_GNDSPD_CM")),
         pitch_trim              (0,                         k_param_pitch_trim,             PSTR("TRIM_PITCH_CD")),
