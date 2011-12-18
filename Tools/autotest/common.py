@@ -1,4 +1,4 @@
-import util, pexpect, time, math
+import util, pexpect, time, math, mavwp
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -88,6 +88,18 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
     print("Failed to attain altitude range")
     return False
 
+def wait_groundspeed(mav, gs_min, gs_max, timeout=30):
+    '''wait for a given ground speed range'''
+    tstart = time.time()
+    print("Waiting for groundspeed between %.1f and %.1f" % (gs_min, gs_max))
+    while time.time() < tstart + timeout:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        print("Wait groundspeed %.1f, target:%.1f" % (m.groundspeed, gs_min))
+        if m.groundspeed >= gs_min and m.groundspeed <= gs_max:
+            return True
+    print("Failed to attain groundspeed range")
+    return False
+
 
 def wait_roll(mav, roll, accuracy, timeout=30):
     '''wait for a given roll in degrees'''
@@ -164,7 +176,7 @@ def wait_location(mav, loc, accuracy=5, timeout=30, target_altitude=None, height
     print("Failed to attain location")
     return False
 
-def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=400):
+def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, timeout=400):
     '''wait for waypoint ranges'''
     tstart = time.time()
     # this message arrives after we set the current WP
@@ -191,7 +203,7 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, timeout=400):
             # the wp_dist check is a hack until we can sort out the right seqnum
             # for end of mission
         #if current_wp == wpnum_end or (current_wp == wpnum_end-1 and wp_dist < 2):
-        if (current_wp == wpnum_end and wp_dist < 2):
+        if (current_wp == wpnum_end and wp_dist < max_dist):
             print("Reached final waypoint %u" % seq)
             return True
         if (current_wp == 255):
@@ -212,3 +224,10 @@ def save_wp(mavproxy, mav):
 def wait_mode(mav, mode):
     '''wait for a flight mode to be engaged'''
     mav.recv_match(condition='MAV.flightmode=="%s"' % mode, blocking=True)
+
+def mission_count(filename):
+    '''load a mission from a file and return number of waypoints'''
+    wploader = mavwp.MAVWPLoader()
+    wploader.load(filename)
+    num_wp = wploader.count()
+    return num_wp
