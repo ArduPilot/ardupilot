@@ -55,14 +55,14 @@
         <contact type="BOGEY" name="LEFT_MLG">
             <location unit="IN">
                 <x> 33.1 </x>
-                <y> -9.9 </y>
+                <y> -12.9 </y>
                 <z> -13.1 </z>
             </location>
-            <static_friction> 1.0 </static_friction>
-            <dynamic_friction> 0.8 </dynamic_friction>
-            <rolling_friction> 0.02 </rolling_friction>
+            <static_friction> 4.0 </static_friction>
+            <dynamic_friction> 1.8 </dynamic_friction>
+            <rolling_friction> 0.001 </rolling_friction>
             <spring_coeff unit="LBS/FT"> 12 </spring_coeff>
-            <damping_coeff unit="LBS/FT/SEC"> 1 </damping_coeff>
+            <damping_coeff unit="LBS/FT/SEC"> 3 </damping_coeff>
             <max_steer unit="DEG"> 0.0 </max_steer>
             <brake_group> NONE </brake_group>
             <retractable>0</retractable>
@@ -70,14 +70,14 @@
         <contact type="BOGEY" name="RIGHT_MLG">
             <location unit="IN">
                 <x> 33.1 </x>
-                <y> 9.9 </y>
+                <y> 12.9 </y>
                 <z> -13.1 </z>
             </location>
-            <static_friction> 1.0 </static_friction>
-            <dynamic_friction> 0.8 </dynamic_friction>
-            <rolling_friction> 0.02 </rolling_friction>
+            <static_friction> 4.0 </static_friction>
+            <dynamic_friction> 1.8 </dynamic_friction>
+            <rolling_friction> 0.001 </rolling_friction>
             <spring_coeff unit="LBS/FT"> 12 </spring_coeff>
-            <damping_coeff unit="LBS/FT/SEC"> 1 </damping_coeff>
+            <damping_coeff unit="LBS/FT/SEC"> 3 </damping_coeff>
             <max_steer unit="DEG"> 0.0 </max_steer>
             <brake_group> NONE </brake_group>
             <retractable>0</retractable>
@@ -91,13 +91,13 @@
 		     zero pitch, which makes for a better simulation
 		     of ground start on the accelerometers/gyros in
 		     ArduPlane -->
-                <z> -7.8 </z>
+                <z> -3 </z>
             </location>
-            <static_friction> 1.0 </static_friction>
-            <dynamic_friction> 0.8 </dynamic_friction>
-            <rolling_friction> 0.02 </rolling_friction>
+            <static_friction> 4.0 </static_friction>
+            <dynamic_friction> 1.8 </dynamic_friction>
+            <rolling_friction> 0.05 </rolling_friction>
             <spring_coeff unit="LBS/FT"> 12 </spring_coeff>
-            <damping_coeff unit="LBS/FT/SEC"> 1 </damping_coeff>
+            <damping_coeff unit="LBS/FT/SEC"> 3 </damping_coeff>
             <max_steer unit="DEG"> 360.0 </max_steer>
             <brake_group> NONE </brake_group>
             <retractable>0</retractable>

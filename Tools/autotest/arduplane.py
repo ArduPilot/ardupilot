@@ -9,7 +9,7 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 
 
 HOME_LOCATION='-35.362938,149.165085,584,270'
-WIND="5,180,0.2" # speed,direction,variance
+WIND="0,180,0.2" # speed,direction,variance
 
 homeloc = None
 
@@ -19,19 +19,26 @@ def takeoff(mavproxy, mav):
     wait_mode(mav, 'FBWA')
 
     # some rudder to counteract the prop torque
-    mavproxy.send('rc 4 1650\n')
+    mavproxy.send('rc 4 1700\n')
+
+    # some up elevator to keep the tail down
+    mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1100\n')
+    mavproxy.send('rc 3 1050\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>2', blocking=True)
 
     # a bit faster
+    mavproxy.send('rc 3 1300\n')
+    mav.recv_match(condition='VFR_HUD.groundspeed>6', blocking=True)
+
+    # a bit faster again, straighten rudder
     mavproxy.send('rc 3 1600\n')
+    mavproxy.send('rc 4 1500\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>12', blocking=True)
 
-    # hit the gas harder now, and give it some elevator
-    mavproxy.send('rc 4 1500\n')
-    mavproxy.send('rc 2 1200\n')
+    # hit the gas harder now, and give it some more elevator
+    mavproxy.send('rc 2 1100\n')
     mavproxy.send('rc 3 1800\n')
 
     # gain a bit of altitude
