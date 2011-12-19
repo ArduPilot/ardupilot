@@ -87,7 +87,11 @@ namespace ArdupilotMega
 
                 System.Threading.Thread.Sleep(2000);
 
-                comPort.Write("\n\n\n\n");
+                try
+                {
+                    comPort.Write("\n\n\n\n");
+                }
+                catch {  }
 
                 while (threadrun)
                 {
@@ -140,7 +144,11 @@ namespace ArdupilotMega
             {
                 this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
 {
-    TXT_status.Text = status.ToString() + " " + receivedbytes + " " + comPort.BytesToRead;
+    try
+    {
+        TXT_status.Text = status.ToString() + " " + receivedbytes + " " + comPort.BytesToRead;
+    }
+    catch { }
 });
                 start = DateTime.Now;
             }

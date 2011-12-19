@@ -256,7 +256,7 @@ namespace ArdupilotMega.GCSViews
                 // re-request servo data
                 if (!(lastdata.AddSeconds(8) > DateTime.Now) && comPort.BaseStream.IsOpen)
                 {
-                    Console.WriteLine("REQ streams - flightdata");
+                    //Console.WriteLine("REQ streams - flightdata");
                     try
                     {
                         //System.Threading.Thread.Sleep(1000);
