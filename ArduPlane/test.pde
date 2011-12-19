@@ -668,9 +668,9 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
 		delay(100);
 		current_loc.alt = read_barometer() + home.alt;
 
-		Serial.printf_P(PSTR("Alt: %0.2fm, Raw: %ld\n"),
+		Serial.printf_P(PSTR("Alt: %0.2fm, Raw: %ld Temperature: %.1f\n"),
 						current_loc.alt / 100.0,
-						abs_pressure);
+						abs_pressure, 0.1*barometer.get_temperature());
 
 		if(Serial.available() > 0){
 			return (0);
