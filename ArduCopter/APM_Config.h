@@ -46,6 +46,7 @@
 //#define RATE_ROLL_I 	0.18
 //#define RATE_PITCH_I	0.18
 //#define MOTORS_JD880
+//#define MOTORS_JD850
 
 
 // agmatthews USERHOOKS
