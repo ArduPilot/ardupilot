@@ -25,7 +25,7 @@ def takeoff(mavproxy, mav):
     mavproxy.send('rc 2 1200\n')
 
     # get it moving a bit first
-    mavproxy.send('rc 3 1050\n')
+    mavproxy.send('rc 3 1150\n')
     mav.recv_match(condition='VFR_HUD.groundspeed>2', blocking=True)
 
     # a bit faster
@@ -189,9 +189,9 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n') # auto mode
     wait_mode(mav, 'AUTO')
-    if not wait_waypoint(mav, 1, 6, max_dist=60):
+    if not wait_waypoint(mav, 1, 7, max_dist=60):
         return False
-    if not wait_groundspeed(mav, 0, 0.5):
+    if not wait_groundspeed(mav, 0, 0.5, timeout=60):
         return False
     print("Mission OK")
     return True
