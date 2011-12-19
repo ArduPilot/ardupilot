@@ -69,7 +69,7 @@ static void output_motors_armed()
 	// Tridge's stability patch
     for (int i = CH_1; i<=CH_8; i++) {
     	if(i == CH_5 || i == CH_6)
-    		break;
+    		continue;
         if (motor_out[i] > out_max) {
             // note that i^1 is the opposite motor
             motor_out[i^1] -= motor_out[i] - out_max;
