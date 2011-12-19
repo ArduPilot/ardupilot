@@ -107,6 +107,7 @@ static void geofence_load(void)
     geofence_state->fence_triggered = false;
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence loaded"));
+    gcs_send_message(MSG_FENCE_STATUS);
     return;
 
 failed:
@@ -227,6 +228,7 @@ static void geofence_check(bool altitude_check_only)
 #if FENCE_TRIGGERED_PIN > 0
             digitalWrite(FENCE_TRIGGERED_PIN, LOW);
 #endif
+            gcs_send_message(MSG_FENCE_STATUS);
         }
         // we're inside, all is good with the world
         return;
@@ -251,6 +253,7 @@ static void geofence_check(bool altitude_check_only)
 #endif
 
     gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
+    gcs_send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants
     switch (g.fence_action) {
