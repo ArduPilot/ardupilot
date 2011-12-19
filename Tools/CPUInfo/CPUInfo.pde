@@ -52,6 +52,8 @@ volatile uint16_t v_out_16 = 1;
 volatile uint8_t v_8 = 1;
 volatile uint8_t v_out_8 = 1;
 volatile uint8_t mbuf1[128], mbuf2[128];
+volatile uint64_t v_64 = 1;
+volatile uint64_t v_out_64 = 1;
 
 static void show_timings(void)
 {
@@ -106,6 +108,11 @@ static void show_timings(void)
 	TIMEIT("isub32", v_out_32 -= v_32, 100);
 	TIMEIT("imul32", v_out_32 *= v_32, 100);
 	TIMEIT("idiv32", v_out_32 /= v_32, 100);
+
+	TIMEIT("iadd64", v_out_64 += v_64, 100);
+	TIMEIT("isub64", v_out_64 -= v_64, 100);
+	TIMEIT("imul64", v_out_64 *= v_64, 100);
+	TIMEIT("idiv64", v_out_64 /= v_64, 100);
 
 	TIMEIT("memcpy128", memcpy((void*)mbuf1, (const void *)mbuf2, sizeof(mbuf1)), 20);
 	TIMEIT("memset128", memset((void*)mbuf1, 1, sizeof(mbuf1)), 20);
