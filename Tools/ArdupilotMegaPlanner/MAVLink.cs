@@ -2073,7 +2073,7 @@ namespace ArdupilotMega
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
-                Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
+//                Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
                 bps2 = bps1; // prev sec
                 bps1 = 0; // current sec
                 bpstime = DateTime.Now;
@@ -2170,7 +2170,7 @@ namespace ArdupilotMega
 
                         if (MainV2.talk != null && MainV2.config["speechenable"] != null && MainV2.config["speechenable"].ToString() == "True")
                         {
-                            MainV2.talk.SpeakAsync(logdata);
+                            //MainV2.talk.SpeakAsync(logdata);
                         }
 
                     }

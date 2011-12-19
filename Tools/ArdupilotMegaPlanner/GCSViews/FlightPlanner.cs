@@ -2863,7 +2863,7 @@ namespace ArdupilotMega.GCSViews
         private void panelMap_Resize(object sender, EventArgs e)
         {
             // this is a mono fix for the zoom bar
-            Console.WriteLine("panelmap "+panelMap.Size.ToString());
+            //Console.WriteLine("panelmap "+panelMap.Size.ToString());
             MainMap.Size = new Size(panelMap.Size.Width - 50,panelMap.Size.Height);
             trackBar1.Location = new System.Drawing.Point(panelMap.Size.Width - 50,trackBar1.Location.Y);
             trackBar1.Size = new System.Drawing.Size(trackBar1.Size.Width, panelMap.Size.Height - trackBar1.Location.Y);
@@ -2967,6 +2967,12 @@ namespace ArdupilotMega.GCSViews
 
             if (MainV2.comPort.param["FENCE_ACTION"].ToString() != "0")
                 MainV2.comPort.setParam("FENCE_ACTION", 0);
+
+            if (drawnpolygon == null)
+            {
+                MessageBox.Show("No polygon to upload");
+                return;
+            }
 
             MainV2.comPort.setParam("FENCE_TOTAL", drawnpolygon.Points.Count);
 
