@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
-// Unit tests for the AP_Meta_class and AP_Var classes.
+// Unit tests for the AP_Math polygon code
 //
 
 #include <FastSerial.h>
