@@ -86,15 +86,10 @@
             <location unit="IN">
                 <x> 68.9 </x>
                 <y> 0 </y>
-		<!-- this sets the position of the tail wheel much
-		     lower than it should be, so that we start with
-		     zero pitch, which makes for a better simulation
-		     of ground start on the accelerometers/gyros in
-		     ArduPlane -->
                 <z> -3 </z>
             </location>
-            <static_friction> 0.8 </static_friction>
-            <dynamic_friction> 0.5 </dynamic_friction>
+            <static_friction> 8.0 </static_friction>
+            <dynamic_friction> 5.0 </dynamic_friction>
             <rolling_friction> 0.1 </rolling_friction>
             <spring_coeff unit="LBS/FT"> 480 </spring_coeff>
             <damping_coeff unit="LBS/FT/SEC"> 100 </damping_coeff>
