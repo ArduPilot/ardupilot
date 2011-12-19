@@ -43,19 +43,33 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
         if ((V[i].y > P.y) == (V[j].y > P.y)) {
             continue;
         }
-        float dx1, dx2, dy1, dy2;
-        // use floating point to cope with possible integer overflow
-        // this still results in precision of better than 1m
+        int32_t dx1, dx2, dy1, dy2;
         dx1 = P.x - V[i].x;
         dx2 = V[j].x - V[i].x;
         dy1 = P.y - V[i].y;
         dy2 = V[j].y - V[i].y;
+        int8_t dx1s, dx2s, dy1s, dy2s, m1, m2;
+#define sign(x) ((x)<0?-1:1)
+        dx1s = sign(dx1);
+        dx2s = sign(dx2);
+        dy1s = sign(dy1);
+        dy2s = sign(dy2);
+        m1 = dx1s * dy2s;
+        m2 = dx2s * dy1s;
         if (dy2 < 0) {
-            if ( dx1 * dy2 > dx2 * dy1 ) {
+            if (m1 > m2) {
+                outside = !outside;
+            } else if (m1 < m2) {
+                continue;
+            } else if ( dx1 * (int64_t)dy2 > dx2 * (int64_t)dy1 ) {
                 outside = !outside;
             }
         } else {
-            if ( dx1 * dy2 < dx2 * dy1 ) {
+            if (m1 < m2) {
+                outside = !outside;
+            } else if (m1 > m2) {
+                continue;
+            } else if ( dx1 * (int64_t)dy2 < dx2 * (int64_t)dy1 ) {
                 outside = !outside;
             }
         }            
