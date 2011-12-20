@@ -318,7 +318,7 @@ namespace ArdupilotMega.GCSViews
         /// <param name="write">true/false</param>
         private void xmlconfig(bool write)
         {
-            int fixme;
+            int fixme; // add profiles?
             if (write)
             {
                 ArdupilotMega.MainV2.config["REV_roll"] = CHKREV_roll.Checked.ToString();

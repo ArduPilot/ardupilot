@@ -706,7 +706,7 @@ namespace ArdupilotMega.GCSViews
 
                 DateTime startwait = DateTime.Now;
 
-                while ((DateTime.Now - startwait).TotalSeconds < 90)
+                while ((DateTime.Now - startwait).TotalSeconds < 75)
                 {
                     try
                     {
@@ -714,7 +714,7 @@ namespace ArdupilotMega.GCSViews
                     }
                     catch { }
                     System.Threading.Thread.Sleep(1000);
-                    progress.Value = (int)((DateTime.Now - startwait).TotalSeconds / 90.0 * 100);
+                    progress.Value = (int)((DateTime.Now - startwait).TotalSeconds / 75 * 100);
                     progress.Refresh();
                 }
                 try

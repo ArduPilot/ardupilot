@@ -9,6 +9,10 @@ using System.Windows.Forms;
 using com.drew.imaging.jpg;
 using com.drew.metadata;
 
+using SharpKml.Base;
+using SharpKml.Dom;
+using SharpKml.Dom.GX;
+
 namespace ArdupilotMega
 {
     class georefimage : Form
@@ -24,6 +28,8 @@ namespace ArdupilotMega
         private Label label1;
         private TextBox TXT_outputlog;
         private MyButton BUT_estoffset;
+
+        int latpos = 5, lngpos = 4, altpos = 7;
 
         internal georefimage() {
             InitializeComponent();
@@ -117,7 +123,7 @@ namespace ArdupilotMega
             return list;
         }
 
-        public void dowork(string logFile, string dirWithImages, float offsetseconds,bool dooffset)
+        public void dowork(string logFile, string dirWithImages, float offsetseconds, bool dooffset)
         {
             DateTime localmin = DateTime.MaxValue;
             DateTime localmax = DateTime.MinValue;
@@ -131,6 +137,10 @@ namespace ArdupilotMega
             //dirWithImages = @"C:\Users\hog\Pictures\farm 1-10-2011\100SSCAM";
 
             string[] files = Directory.GetFiles(dirWithImages);
+
+            Document kml = new Document();
+
+            StreamWriter sw3 = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "location.kml");
 
             StreamWriter sw2 = new StreamWriter(dirWithImages + Path.DirectorySeparatorChar + "location.txt");
 
@@ -174,18 +184,18 @@ namespace ArdupilotMega
 
                         DateTime crap = startTime.AddMilliseconds(int.Parse(arr[1])).AddSeconds(offsetseconds);
 
-                        
-                            if (first == 0)
-                            {
-                                TXT_outputlog.AppendText("Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + " vs Log " + crap + "\r\n");
 
-                                TXT_outputlog.AppendText("offset should be about " + (dt  -crap).TotalSeconds + "\r\n");
+                        if (first == 0)
+                        {
+                            TXT_outputlog.AppendText("Photo " + Path.GetFileNameWithoutExtension(file) + " " + dt + " vs Log " + crap + "\r\n");
 
-                                if (dooffset)
-                                    return;
+                            TXT_outputlog.AppendText("offset should be about " + (dt - crap).TotalSeconds + "\r\n");
 
-                                first++;
-                            }
+                            if (dooffset)
+                                return;
+
+                            first++;
+                        }
 
                         //Console.Write("ph " + dt + " log " + crap + "         \r");
 
@@ -195,25 +205,41 @@ namespace ArdupilotMega
 
                             matchs++;
 
-                            sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[7]);
-                            sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") +"\t"+ arr[5] + "\t" + arr[4] + "\t" + arr[7]);
+                            kml.AddFeature(
+                                new Placemark()
+                                {
+                                    Name = Path.GetFileNameWithoutExtension(file),
+                                    Geometry = new SharpKml.Dom.Point()
+                                    {
+                                        Coordinate = new Vector(double.Parse(arr[lngpos]), double.Parse(arr[latpos]), double.Parse(arr[altpos]))
+                                    }
+                                }
+                            );
+
+                            sw2.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos]);
+                            sw.WriteLine(Path.GetFileNameWithoutExtension(file) + "\t" + crap.ToString("yyyy:MM:dd HH:mm:ss") + "\t" + arr[lngpos] + "\t" + arr[latpos] + "\t" + arr[altpos]);
                             sw.Flush();
                             sw2.Flush();
-                            Console.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[5] + " " + arr[4] + " " + arr[7] + "           ");
+                            Console.WriteLine(Path.GetFileNameWithoutExtension(file) + " " + arr[lngpos] + " " + arr[latpos] + " " + arr[altpos] + "           ");
                             break;
                         }
                         //Console.WriteLine(crap);
                     }
                 }
 
-                
+
             }
+
+            Serializer serializer = new Serializer();
+            serializer.Serialize(kml);
+            sw3.Write(serializer.Xml);
+            sw3.Close();
+
 
             sw2.Close();
             sw.Close();
 
             MessageBox.Show("Done " + matchs + " matchs");
-
         }
 
         private void InitializeComponent()

@@ -1860,25 +1860,6 @@ namespace ArdupilotMega
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        private void starttest()
-        {
-            MyView.Controls.Clear();
-
-            UserControl temp = new GCSViews.test();
-
-            fixtheme(temp);
-
-            temp.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
-
-            temp.Dock = DockStyle.Fill;
-
-            MyView.Controls.Add(temp);
-
-            temp.ForeColor = Color.White;
-
-            temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
-        }
-
         public void changelanguage(CultureInfo ci)
         {
             if (ci != null && !Thread.CurrentThread.CurrentUICulture.Equals(ci))
