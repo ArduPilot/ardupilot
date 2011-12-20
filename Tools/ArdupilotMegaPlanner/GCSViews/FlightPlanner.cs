@@ -660,6 +660,11 @@ namespace ArdupilotMega.GCSViews
                 isonline = false;
             }
 
+
+            List<PointLatLng> polygonPoints = new List<PointLatLng>();
+            gf = new GMapPolygon(polygonPoints, "geofence");
+            gf.Stroke = new Pen(Color.Pink, 5);
+
             updateCMDParams();
 
             // mono
@@ -2958,6 +2963,7 @@ namespace ArdupilotMega.GCSViews
 
         private void GeoFenceuploadToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            polygongridmode = false;
             //FENCE_TOTAL
             if (MainV2.comPort.param["FENCE_ACTION"] == null)
             {
@@ -2965,33 +2971,101 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (MainV2.comPort.param["FENCE_ACTION"].ToString() != "0")
-                MainV2.comPort.setParam("FENCE_ACTION", 0);
-
             if (drawnpolygon == null)
             {
                 MessageBox.Show("No polygon to upload");
                 return;
             }
 
-            MainV2.comPort.setParam("FENCE_TOTAL", drawnpolygon.Points.Count);
+            if (geofence.Markers.Count == 0)
+            {
+                MessageBox.Show("No return location set");
+                return;
+            }
+
+            if (drawnpolygon.Points.Count == 0)
+            {
+                MessageBox.Show("No polygon drawn");
+                return;
+            }
+
+            string minalts = (int.Parse(MainV2.comPort.param["FENCE_MINALT"].ToString()) * MainV2.cs.multiplierdist).ToString("0");
+            Common.InputBox("Min Alt", "Box Minimum Altitude?", ref minalts);
+
+            string maxalts = (int.Parse(MainV2.comPort.param["FENCE_MAXALT"].ToString()) * MainV2.cs.multiplierdist).ToString("0");
+            Common.InputBox("Max Alt", "Box Maximum Altitude?", ref maxalts);
+
+            int minalt = 0;
+            int maxalt = 0;
+
+            if (!int.TryParse(minalts,out minalt))
+            {
+                MessageBox.Show("Bad Min Alt");
+                return;
+            }
+
+            if (!int.TryParse(maxalts,out maxalt))
+            {
+                MessageBox.Show("Bad Max Alt");
+                return;
+            }
+
+            try
+            {
+                MainV2.comPort.setParam("FENCE_MINALT", minalt);
+                MainV2.comPort.setParam("FENCE_MAXALT", maxalt);
+            }
+            catch { 
+                MessageBox.Show("Failed to set min/max fence alt"); 
+                return; 
+            }
+
+            try
+            {
+                if (MainV2.comPort.param["FENCE_ACTION"].ToString() != "0")
+                    MainV2.comPort.setParam("FENCE_ACTION", 0);
+            }
+            catch
+            {
+                MessageBox.Show("Failed to set FENCE_ACTION");
+                return;
+            }
+
+            // points + return + close
+            byte pointcount = (byte)(drawnpolygon.Points.Count + 2);
+
+            MainV2.comPort.setParam("FENCE_TOTAL", pointcount);
 
             byte a = 0;
 
+            // add return loc
+            MainV2.comPort.setFencePoint(a, new PointLatLngAlt(geofence.Markers[0].Position), pointcount);
+            a++;
+
+            // add points
             foreach (var pll in drawnpolygon.Points)
             {
-                MainV2.comPort.setFencePoint(a, new PointLatLngAlt(pll), (byte)drawnpolygon.Points.Count);
+                MainV2.comPort.setFencePoint(a, new PointLatLngAlt(pll), pointcount);
                 a++;
             }
+            // add polygon close
+            MainV2.comPort.setFencePoint(a, new PointLatLngAlt(drawnpolygon.Points[0]), pointcount);
 
             drawnpolygons.Polygons.Clear();
             drawnpolygons.Markers.Clear();
+            gf.Points.Clear();
+            gf.Points.AddRange(drawnpolygon.Points);
+
+            drawnpolygon.Points.Clear();
+
+            MainMap.UpdatePolygonLocalPosition(gf);
 
             MainMap.Invalidate();
         }
 
         private void GeoFencedownloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            polygongridmode = false;
             int count = 1;
 
             if (MainV2.comPort.param["FENCE_ACTION"] == null || MainV2.comPort.param["FENCE_TOTAL"] == null)
@@ -3000,18 +3074,16 @@ namespace ArdupilotMega.GCSViews
                 return;
             }
 
-            if (int.Parse(MainV2.comPort.param["FENCE_TOTAL"].ToString()) == 0)
+            if (int.Parse(MainV2.comPort.param["FENCE_TOTAL"].ToString()) <= 1)
             {
                 MessageBox.Show("Nothing to download");
                 return;
             }
 
             geofence.Polygons.Clear();
+            geofence.Markers.Clear();
 
-            List<PointLatLng> polygonPoints = new List<PointLatLng>();
-
-            gf = new GMapPolygon(polygonPoints, "geofence");
-            gf.Stroke = new Pen(Color.Pink, 5);
+            gf.Points.Clear();
             geofence.Polygons.Add(gf);
 
             FlightData.geofence.Polygons.Clear();
@@ -3023,7 +3095,19 @@ namespace ArdupilotMega.GCSViews
                 gf.Points.Add(new PointLatLng(plla.Lat, plla.Lng));
             }
 
+            // do return location
+            geofence.Markers.Add(new GMapMarkerGoogleRed(new PointLatLng(gf.Points[0].Lat, gf.Points[0].Lng)) { ToolTipMode = MarkerTooltipMode.OnMouseOver, ToolTipText = "GeoFence Return" });
+            gf.Points.RemoveAt(0);
+
             MainMap.UpdatePolygonLocalPosition(gf);
+
+            MainMap.Invalidate();
+        }
+
+        private void setReturnLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            geofence.Markers.Clear();
+            geofence.Markers.Add(new GMapMarkerGoogleRed(start));
 
             MainMap.Invalidate();
         }

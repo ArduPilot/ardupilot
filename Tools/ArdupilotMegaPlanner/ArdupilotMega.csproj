@@ -274,12 +274,6 @@
     <Compile Include="GCSViews\FlightPlanner.Designer.cs">
       <DependentUpon>FlightPlanner.cs</DependentUpon>
     </Compile>
-    <Compile Include="GCSViews\test.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="GCSViews\test.Designer.cs">
-      <DependentUpon>test.cs</DependentUpon>
-    </Compile>
     <Compile Include="Joystick.cs" />
     <Compile Include="JoystickSetup.cs">
       <SubType>Form</SubType>
@@ -508,9 +502,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Terminal.zh-Hans.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GCSViews\test.resx">
-      <DependentUpon>test.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="HUD.resx">
       <DependentUpon>HUD.cs</DependentUpon>
