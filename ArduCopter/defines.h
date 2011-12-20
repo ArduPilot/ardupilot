@@ -358,4 +358,7 @@ enum gcs_severity {
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2
 
+#define LOGGING_SIMPLE    1
+#define LOGGING_VERBOSE   2
+
 #endif // _DEFINES_H

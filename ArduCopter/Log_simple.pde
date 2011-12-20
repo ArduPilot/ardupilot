@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if LOGGING_ENABLED == DISABLED
+#if LOGGING_ENABLED == ENABLED && CONFIG_LOGGING == LOGGING_SIMPLE
 
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
