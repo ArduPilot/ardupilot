@@ -56,6 +56,7 @@ bool Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n)
         dy2s = sign(dy2);
         m1 = dx1s * dy2s;
         m2 = dx2s * dy1s;
+        // we avoid the 64 bit multiplies if we can based on sign checks.
         if (dy2 < 0) {
             if (m1 > m2) {
                 outside = !outside;
