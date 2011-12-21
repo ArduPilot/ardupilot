@@ -178,10 +178,12 @@ static void init_ardupilot()
 
 	mavlink_system.sysid = g.sysid_this_mav;
 
+#if LOGGING_ENABLED == ENABLED
     if (need_log_erase) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
 		do_erase_logs(mavlink_delay);
     }
+#endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
 
