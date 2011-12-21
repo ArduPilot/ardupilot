@@ -36,7 +36,7 @@ class AP_ADC_ADS7844 : public AP_ADC
 	uint16_t 		_prev_gyro[3];
 	uint16_t 		_prev_accel[3];
 	uint8_t			_filter_index_accel;
-	static void read( void );
+	static void read(uint32_t);
 
 };
 
