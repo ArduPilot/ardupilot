@@ -124,11 +124,17 @@
   <data name="CHKREV_roll.Text" xml:space="preserve">
     <value>横滚舵反向</value>
   </data>
+  <data name="CHKREV_roll.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="CHKREV_pitch.Size" type="System.Drawing.Size, System.Drawing">
     <value>86, 17</value>
   </data>
   <data name="CHKREV_pitch.Text" xml:space="preserve">
     <value>俯仰舵反向</value>
+  </data>
+  <data name="CHKREV_pitch.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="CHKREV_rudder.Size" type="System.Drawing.Size, System.Drawing">
     <value>86, 17</value>
@@ -136,11 +142,65 @@
   <data name="CHKREV_rudder.Text" xml:space="preserve">
     <value>方向舵反向</value>
   </data>
+  <data name="CHKREV_rudder.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="GPSrate.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="ConnectComPort.Text" xml:space="preserve">
     <value>模拟链接启动/停止</value>
   </data>
+  <data name="ConnectComPort.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="OutputLog.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_roll.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_pitch.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_heading.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_wpdist.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_bererror.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_alterror.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_lat.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_long.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_alt.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="SaveSettings.Text" xml:space="preserve">
     <value>保存设置</value>
+  </data>
+  <data name="SaveSettings.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_servoroll.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_servopitch.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_servorudder.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_servothrottle.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
     <value>56, 13</value>
@@ -148,11 +208,17 @@
   <data name="label4.Text" xml:space="preserve">
     <value>飞机 GPS</value>
   </data>
+  <data name="label4.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
   </data>
   <data name="label3.Text" xml:space="preserve">
     <value>高度</value>
+  </data>
+  <data name="label3.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -160,11 +226,20 @@
   <data name="label2.Text" xml:space="preserve">
     <value>经度</value>
   </data>
+  <data name="label2.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
   </data>
   <data name="label1.Text" xml:space="preserve">
     <value>纬度</value>
+  </data>
+  <data name="label1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel1.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -172,17 +247,32 @@
   <data name="label30.Text" xml:space="preserve">
     <value>偏航</value>
   </data>
+  <data name="label30.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_yaw.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label11.Size" type="System.Drawing.Size, System.Drawing">
     <value>54, 13</value>
   </data>
   <data name="label11.Text" xml:space="preserve">
     <value>飞机 IMU</value>
   </data>
+  <data name="label11.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label7.Text" xml:space="preserve">
-    <value>朝向</value>
+    <value>航向</value>
+  </data>
+  <data name="label7.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label6.Text" xml:space="preserve">
     <value>俯仰</value>
+  </data>
+  <data name="label6.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -190,11 +280,20 @@
   <data name="label5.Text" xml:space="preserve">
     <value>横滚</value>
   </data>
+  <data name="label5.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel2.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label8.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label8.Text" xml:space="preserve">
     <value>航点距离</value>
+  </data>
+  <data name="label8.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label9.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
@@ -202,11 +301,17 @@
   <data name="label9.Text" xml:space="preserve">
     <value>方位偏移</value>
   </data>
+  <data name="label9.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label10.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label10.Text" xml:space="preserve">
     <value>高度偏移</value>
+  </data>
+  <data name="label10.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
     <value>75, 13</value>
@@ -214,11 +319,17 @@
   <data name="label16.Text" xml:space="preserve">
     <value>Ardupilot 输出</value>
   </data>
+  <data name="label16.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
   </data>
   <data name="label15.Text" xml:space="preserve">
     <value>油门</value>
+  </data>
+  <data name="label15.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -226,8 +337,14 @@
   <data name="label14.Text" xml:space="preserve">
     <value>偏航</value>
   </data>
+  <data name="label14.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label13.Text" xml:space="preserve">
     <value>俯仰</value>
+  </data>
+  <data name="label13.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label12.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -235,11 +352,20 @@
   <data name="label12.Text" xml:space="preserve">
     <value>横滚</value>
   </data>
+  <data name="label12.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel3.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label20.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
   </data>
   <data name="label20.Text" xml:space="preserve">
     <value>模式</value>
+  </data>
+  <data name="label20.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label19.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
@@ -247,11 +373,26 @@
   <data name="label19.Text" xml:space="preserve">
     <value>航点</value>
   </data>
+  <data name="label19.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_control_mode.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_WP.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label18.Size" type="System.Drawing.Size, System.Drawing">
     <value>67, 13</value>
   </data>
   <data name="label18.Text" xml:space="preserve">
     <value>自驾仪状态</value>
+  </data>
+  <data name="label18.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel4.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
     <value>68, 13</value>
@@ -259,11 +400,26 @@
   <data name="label17.Text" xml:space="preserve">
     <value>GPS 刷新率</value>
   </data>
+  <data name="label17.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel5.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="zg1.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
     <value>43, 13</value>
   </data>
   <data name="label28.Text" xml:space="preserve">
     <value>中使用</value>
+  </data>
+  <data name="label28.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label29.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label27.Size" type="System.Drawing.Size, System.Drawing">
     <value>43, 13</value>
@@ -271,11 +427,20 @@
   <data name="label27.Text" xml:space="preserve">
     <value>模拟器</value>
   </data>
+  <data name="label27.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label25.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label25.Text" xml:space="preserve">
     <value>油门增益</value>
+  </data>
+  <data name="label25.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_throttlegain.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
@@ -283,11 +448,17 @@
   <data name="label24.Text" xml:space="preserve">
     <value>方向增益</value>
   </data>
+  <data name="label24.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
   </data>
   <data name="label23.Text" xml:space="preserve">
     <value>俯仰增益</value>
+  </data>
+  <data name="label23.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
     <value>55, 13</value>
@@ -295,11 +466,35 @@
   <data name="label22.Text" xml:space="preserve">
     <value>横滚增益</value>
   </data>
+  <data name="label22.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>模拟器权值 - 用于不同飞机</value>
+  </data>
+  <data name="label21.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_ruddergain.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_pitchgain.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="TXT_rollgain.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="panel6.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="label26.Size" type="System.Drawing.Size, System.Drawing">
     <value>31, 13</value>
   </data>
   <data name="label26.Text" xml:space="preserve">
     <value>仅  在</value>
+  </data>
+  <data name="label26.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="CHKdisplayall.Size" type="System.Drawing.Size, System.Drawing">
     <value>77, 17</value>
@@ -307,8 +502,26 @@
   <data name="CHKdisplayall.Text" xml:space="preserve">
     <value>显示所有 </value>
   </data>
+  <data name="CHKdisplayall.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHKgraphroll.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHKgraphpitch.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHKgraphrudder.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="CHKgraphthrottle.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="but_advsettings.Text" xml:space="preserve">
     <value>高级设置</value>
+  </data>
+  <data name="but_advsettings.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="chkSensor.Size" type="System.Drawing.Size, System.Drawing">
     <value>62, 17</value>
@@ -316,25 +529,46 @@
   <data name="chkSensor.Text" xml:space="preserve">
     <value>传感器</value>
   </data>
+  <data name="chkSensor.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="CHK_quad.Size" type="System.Drawing.Size, System.Drawing">
     <value>56, 17</value>
   </data>
   <data name="CHK_quad.Text" xml:space="preserve">
     <value>四  轴</value>
   </data>
+  <data name="CHK_quad.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="BUT_startfgquad.Text" xml:space="preserve">
     <value>启动 FG    四轴</value>
+  </data>
+  <data name="BUT_startfgquad.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="BUT_startfgplane.Text" xml:space="preserve">
     <value>启动 FG    固定翼</value>
   </data>
+  <data name="BUT_startfgplane.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="BUT_startxplane.Text" xml:space="preserve">
     <value>启动 Xplane</value>
+  </data>
+  <data name="BUT_startxplane.ToolTip" xml:space="preserve">
+    <value />
   </data>
   <data name="CHK_heli.Size" type="System.Drawing.Size, System.Drawing">
     <value>62, 17</value>
   </data>
   <data name="CHK_heli.Text" xml:space="preserve">
     <value>直升机</value>
+  </data>
+  <data name="CHK_heli.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="$this.ToolTip" xml:space="preserve">
+    <value />
   </data>
 </root>

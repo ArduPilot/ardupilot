@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Management;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace ArdupilotMega
 {
@@ -165,7 +166,8 @@ namespace ArdupilotMega
 
                                 // all apm 1-1.4 use a ftdi on the imu board.
 
-                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
+                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010")
+                                    && Thread.CurrentThread.CurrentUICulture.Name != "zh-Hans") //temporarily fix for capm
                                 {
                                         return "2560-2";
                                 }

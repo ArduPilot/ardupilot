@@ -151,6 +151,15 @@
   <data name="Param4.HeaderText" xml:space="preserve">
     <value>参数4</value>
   </data>
+  <data name="Lat.HeaderText" xml:space="preserve">
+    <value>纬度</value>
+  </data>
+  <data name="Lon.HeaderText" xml:space="preserve">
+    <value>经度</value>
+  </data>
+  <data name="Alt.HeaderText" xml:space="preserve">
+    <value>高度</value>
+  </data>
   <data name="Delete.HeaderText" xml:space="preserve">
     <value>删除</value>
   </data>
@@ -185,7 +194,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_WPRad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>66, 31</value>
+    <value>24, 40</value>
   </data>
   <data name="TXT_WPRad.ToolTip" xml:space="preserve">
     <value />
@@ -194,7 +203,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_DefaultAlt.Location" type="System.Drawing.Point, System.Drawing">
-    <value>278, 31</value>
+    <value>162, 40</value>
   </data>
   <data name="TXT_DefaultAlt.ToolTip" xml:space="preserve">
     <value />
@@ -227,7 +236,7 @@
     <value>Microsoft Sans Serif, 8.25pt</value>
   </data>
   <data name="TXT_loiterrad.Location" type="System.Drawing.Point, System.Drawing">
-    <value>170, 31</value>
+    <value>90, 40</value>
   </data>
   <data name="TXT_loiterrad.ToolTip" xml:space="preserve">
     <value />
@@ -457,6 +466,24 @@
   <data name="splitter1.ToolTip" xml:space="preserve">
     <value />
   </data>
+  <data name="BUT_loadkml.Text" xml:space="preserve">
+    <value>KML叠加</value>
+  </data>
+  <data name="BUT_loadkml.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_zoomto.Text" xml:space="preserve">
+    <value>缩放至</value>
+  </data>
+  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
+    <value />
+  </data>
+  <data name="BUT_Camera.Text" xml:space="preserve">
+    <value>相机</value>
+  </data>
+  <data name="BUT_Camera.ToolTip" xml:space="preserve">
+    <value />
+  </data>
   <data name="BUT_grid.Text" xml:space="preserve">
     <value>网格</value>
   </data>
@@ -518,19 +545,19 @@
     <value>删除航点</value>
   </data>
   <data name="loiterForeverToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
     <value>永久</value>
   </data>
   <data name="loitertimeToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loitertimeToolStripMenuItem.Text" xml:space="preserve">
     <value>时间</value>
   </data>
   <data name="loitercirclesToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>98, 22</value>
   </data>
   <data name="loitercirclesToolStripMenuItem.Text" xml:space="preserve">
     <value>圈数</value>
@@ -540,12 +567,6 @@
   </data>
   <data name="loiterToolStripMenuItem.Text" xml:space="preserve">
     <value>盘旋</value>
-  </data>
-  <data name="jumpstartToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
-  </data>
-  <data name="jumpwPToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
   </data>
   <data name="jumpToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>122, 22</value>
@@ -569,22 +590,16 @@
     <value>旋转地图</value>
   </data>
   <data name="addPolygonPointToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>122, 22</value>
   </data>
   <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
     <value>增加顶点</value>
   </data>
   <data name="clearPolygonToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>152, 22</value>
+    <value>122, 22</value>
   </data>
   <data name="clearPolygonToolStripMenuItem.Text" xml:space="preserve">
     <value>清除区域</value>
-  </data>
-  <data name="gridToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>122, 22</value>
-  </data>
-  <data name="gridToolStripMenuItem.Text" xml:space="preserve">
-    <value>网格</value>
   </data>
   <data name="clearMissionToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>122, 22</value>
@@ -766,9 +781,5 @@
   </data>
   <data name="$this.ToolTip" xml:space="preserve">
     <value />
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="MAVCmd" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\MAVCmd.zh-Hans.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
 </root>
