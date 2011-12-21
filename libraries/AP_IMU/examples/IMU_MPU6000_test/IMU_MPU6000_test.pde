@@ -21,6 +21,17 @@ AP_TimerProcess  mpu_scheduler;
 AP_InertialSensor_MPU6000 mpu6000( 53 ); /* chip select is pin 53 */
 AP_IMU_INS imu(&mpu6000, 0); /* second arg is for Parameters. Can we leave it null?*/
 
+#define A_LED_PIN        27
+#define C_LED_PIN        25
+#define LED_ON           LOW
+#define LED_OFF          HIGH
+
+static void flash_leds(bool on)
+{
+    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
+    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
+}
+
 void setup(void)
 {
   pinMode(53, OUTPUT);
@@ -32,7 +43,7 @@ void setup(void)
     isr_registry.init();
     mpu_scheduler.init(&isr_registry);
 
-	imu.init(IMU::COLD_START, delay, &mpu_scheduler);
+	imu.init(IMU::COLD_START, delay, flash_leds, &mpu_scheduler);
 }
 
 void loop(void)
