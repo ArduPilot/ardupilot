@@ -46,6 +46,9 @@ MENU(main_menu, THISFIRMWARE, main_menu_commands);
 // the user wants the CLI. It never exits
 static void run_cli(void)
 {
+    // disable the failsafe code in the CLI
+    timer_scheduler.set_failsafe(NULL);
+
     while (1) {
         main_menu.run();
     }
@@ -119,9 +122,8 @@ static void init_ardupilot()
 	// Initialize the timer scheduler to use the ISR registry.
 	//
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
     timer_scheduler.init( & isr_registry );
-#endif
+    timer_scheduler.set_failsafe(failsafe_check);
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
