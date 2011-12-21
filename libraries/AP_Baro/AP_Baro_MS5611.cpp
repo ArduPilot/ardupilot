@@ -108,12 +108,6 @@ void AP_Baro_MS5611::_spi_write(uint8_t reg)
   digitalWrite(MS5611_CS, HIGH);
 }
 
-// The conversion proccess takes 8.2ms since the command
-bool AP_Baro_MS5611::_ready()
-{
-	return ( ( millis() - _timer ) > 10 );   // wait for more than 10ms
-}
-
 // Public Methods //////////////////////////////////////////////////////////////
 // SPI should be initialized externally
 void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
@@ -136,7 +130,7 @@ void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 
   //Send a command to read Temp first
 	_spi_write(CMD_CONVERT_D2_OSR4096);
-	_timer = millis();
+	_timer = micros();
 	_state = 1;
     Temp=0;
     Press=0;
@@ -148,35 +142,31 @@ void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 // Read the sensor. This is a state machine
 // We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
 // temperature does not change so quickly...
-void AP_Baro_MS5611::_update(void)
+void AP_Baro_MS5611::_update(uint32_t tnow)
 {
     if (_sync_access) return;
-	if (_state == 1){
-		if (_ready()){
-			_s_D2 = _spi_read_adc();  				 // On state 1 we read temp
-			_state++;
-			_spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-			_timer = millis();
-		}
-	}else{
-		if (_state == 5){
-			if (_ready()){
-				_s_D1 = _spi_read_adc();
-				_state = 1;			                // Start again from state = 1
-				_spi_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
-				_timer = millis();
-				_updated = true;					                // New pressure reading
-			}
-		}else{
-			if (_ready()){
-				_s_D1 = _spi_read_adc();
-				_state++;
-				_spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
-				_timer = millis();
-				_updated = true;					               // New pressure reading
-			}
-		}
-	}
+
+    if (tnow - _timer < 10000) {
+	    return; // wait for more than 10ms
+    }
+
+    _timer = tnow;
+		
+    if (_state == 1) {
+	    _s_D2 = _spi_read_adc();  				 // On state 1 we read temp
+	    _state++;
+	    _spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
+    } else if (_state == 5) {
+	    _s_D1 = _spi_read_adc();
+	    _state = 1;			                // Start again from state = 1
+	    _spi_write(CMD_CONVERT_D2_OSR4096);	// Command to read temperature
+	    _updated = true;					                // New pressure reading
+    } else {
+	    _s_D1 = _spi_read_adc();
+	    _state++;
+	    _spi_write(CMD_CONVERT_D1_OSR4096);  // Command to read pressure
+	    _updated = true;					               // New pressure reading
+    }
 }
 
 uint8_t AP_Baro_MS5611::read()
