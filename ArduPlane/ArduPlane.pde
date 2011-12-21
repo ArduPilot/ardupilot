@@ -186,7 +186,6 @@ AP_GPS_None     g_gps_driver(NULL);
 #endif // CONFIG_IMU_TYPE
 AP_IMU_INS imu( &ins, Parameters::k_param_IMU_calibration );
 AP_DCM  dcm(&imu, g_gps);
-AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_SENSORS
 // sensor emulators
@@ -197,7 +196,6 @@ AP_GPS_HIL              g_gps_driver(NULL);
 AP_InertialSensor_Oilpan ins( &adc );
 AP_IMU_Shim imu;
 AP_DCM  dcm(&imu, g_gps);
-AP_TimerProcess timer_scheduler;
 
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 AP_ADC_HIL              adc;
@@ -209,6 +207,9 @@ AP_IMU_Shim             imu; // never used
 #else
  #error Unrecognised HIL_MODE setting.
 #endif // HIL MODE
+
+// we always have a timer scheduler
+AP_TimerProcess timer_scheduler;
 
 
 ////////////////////////////////////////////////////////////////////////////////
