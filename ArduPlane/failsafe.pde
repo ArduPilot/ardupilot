@@ -38,6 +38,7 @@ void failsafe_check(uint32_t tnow)
     if (in_failsafe && tnow - last_timestamp > 20000) {
         // pass RC inputs to outputs every 20ms        
         last_timestamp = tnow;
+        APM_RC.clearOverride();
         for (uint8_t ch=0; ch<8; ch++) {
             APM_RC.OutputCh(ch, APM_RC.InputCh(ch));
         }
