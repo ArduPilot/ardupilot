@@ -452,7 +452,7 @@ static int		pmTest1 = 0;
 static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
 static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
 static uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
-static int 			mainLoop_count;
+static uint16_t			mainLoop_count;
 
 static unsigned long 	medium_loopTimer;			// Time in miliseconds of medium loop
 static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops

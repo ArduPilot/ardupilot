@@ -455,7 +455,7 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
 	DataFlash.WriteLong(millis()- perf_mon_timer);
-	DataFlash.WriteInt(mainLoop_count);
+	DataFlash.WriteInt((int16_t)mainLoop_count);
 	DataFlash.WriteInt(G_Dt_max);
 	DataFlash.WriteByte(dcm.gyro_sat_count);
 	DataFlash.WriteByte(imu.adc_constraints);
