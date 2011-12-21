@@ -200,7 +200,7 @@
             // 
             // tabControl1
             // 
-            this.tabControl1.Controls.Add(this.tabReset);
+            //this.tabControl1.Controls.Add(this.tabReset);
             this.tabControl1.Controls.Add(this.tabRadioIn);
             this.tabControl1.Controls.Add(this.tabModes);
             this.tabControl1.Controls.Add(this.tabHardware);
