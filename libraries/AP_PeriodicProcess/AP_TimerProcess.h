@@ -15,12 +15,15 @@ class AP_TimerProcess : public AP_PeriodicProcess
     public:
         AP_TimerProcess(int period = TIMERPROCESS_PER_DEFAULT);
         void init( Arduino_Mega_ISR_Registry * isr_reg );
-        void register_process(void (* proc)(void));
+        void register_process(ap_procedure proc);
+        void set_failsafe(ap_procedure proc);
         static void run(void);
     protected:
         static int _period;
         static ap_procedure _proc[AP_TIMERPROCESS_MAX_PROCS];
+        static ap_procedure _failsafe;
         static int _pidx;
+	static bool _in_timer_call;
 };
 
 #endif // __AP_TIMERPROCESS_H__
