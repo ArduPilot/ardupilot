@@ -33,7 +33,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
   uint32_t sample_time();
   void reset_sample_time();
 
-  static void read();
+  static void read(uint32_t);
   static uint8_t register_read( uint8_t reg );
   static void register_write( uint8_t reg, uint8_t val );
   static void hardware_init();

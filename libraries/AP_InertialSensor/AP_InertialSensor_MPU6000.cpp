@@ -200,7 +200,7 @@ static int16_t spi_transfer_16(void)
 	return (((int16_t)byte_H)<<8) | byte_L;
 }
 
-void AP_InertialSensor_MPU6000::read()
+void AP_InertialSensor_MPU6000::read(uint32_t )
 {
   // We start a multibyte SPI read of sensors
   byte addr = MPUREG_ACCEL_XOUT_H | 0x80;      // Set most significant bit
