@@ -154,7 +154,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly a square, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\   n')
+    mavproxy.send('rc 3 1430\n')
     tstart = time.time()
     failed = False
 
