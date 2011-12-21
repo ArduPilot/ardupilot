@@ -79,7 +79,7 @@ namespace System.IO.Ports
 
             client = new UdpClient(int.Parse(Port));
 
-                         int timeout = 5;  
+            int timeout = 5;  
             while (timeout > 0) 
             { 
                 if (BytesToRead > 0)  
@@ -123,7 +123,13 @@ namespace System.IO.Ports
 
                 if (rbufferread == rbuffer.Length)
                 {
-                    rbuffer = client.Receive(ref RemoteIpEndPoint);
+                    MemoryStream r = new MemoryStream();
+                    while (client.Available > 0)
+                    {
+                        Byte[] b = client.Receive(ref RemoteIpEndPoint);
+                        r.Write(b, 0, b.Length);
+                    }
+                    rbuffer = r.ToArray();
                     rbufferread = 0;
                 }
 
