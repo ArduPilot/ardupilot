@@ -180,7 +180,6 @@ float AP_InertialSensor_MPU6000::temperature() { return _temp; }
 uint32_t AP_InertialSensor_MPU6000::sample_time()
 {
   uint32_t us = micros();
-  /* XXX rollover creates a major bug */
   uint32_t delta = us - _last_sample_micros;
   reset_sample_time();
   return delta;
