@@ -233,6 +233,8 @@ namespace ArdupilotMega.GCSViews
                 inputStartPos = TXT_terminal.SelectionStart;
             }
             catch (Exception) { TXT_terminal.AppendText("Cant open serial port\r\n"); return; }
+
+            TXT_terminal.Focus();
         }
 
         private void BUTsetupshow_Click(object sender, EventArgs e)

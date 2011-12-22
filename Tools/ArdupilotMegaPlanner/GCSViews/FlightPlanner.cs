@@ -2999,7 +2999,7 @@ namespace ArdupilotMega.GCSViews
             // close it
             plll.Add(plll[0]);
             // check it
-            if (!pnpoly(plll.ToArray(), start.Lat, start.Lng))
+            if (!pnpoly(plll.ToArray(), geofence.Markers[0].Position.Lat, geofence.Markers[0].Position.Lng))
             {
                 MessageBox.Show("Your return location is outside the polygon");
                 return;
@@ -3068,11 +3068,13 @@ namespace ArdupilotMega.GCSViews
             // add polygon close
             MainV2.comPort.setFencePoint(a, new PointLatLngAlt(drawnpolygon.Points[0]), pointcount);
 
+            // clear everything
             drawnpolygons.Polygons.Clear();
             drawnpolygons.Markers.Clear();
             geofence.Polygons.Clear();
-
             gf.Points.Clear();
+
+            // add polygon
             gf.Points.AddRange(drawnpolygon.Points.ToArray());
 
             drawnpolygon.Points.Clear();
@@ -3086,6 +3088,7 @@ namespace ArdupilotMega.GCSViews
             FlightData.geofence.Markers.Add(geofence.Markers[0]);
 
             MainMap.UpdatePolygonLocalPosition(gf);
+            MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
 
             MainMap.Invalidate();
         }
@@ -3131,13 +3134,16 @@ namespace ArdupilotMega.GCSViews
             FlightData.geofence.Polygons.Add(gf);
             FlightData.geofence.Markers.Add(geofence.Markers[0]);
 
+            MainMap.UpdatePolygonLocalPosition(gf);
+            MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
+
             MainMap.Invalidate();
         }
 
         private void setReturnLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             geofence.Markers.Clear();
-            geofence.Markers.Add(new GMapMarkerGoogleRed(start));
+            geofence.Markers.Add(new GMapMarkerGoogleRed(new PointLatLng(start.Lat, start.Lng)) { ToolTipMode = MarkerTooltipMode.OnMouseOver, ToolTipText = "GeoFence Return" });
 
             MainMap.Invalidate();
         }
@@ -3191,7 +3197,9 @@ namespace ArdupilotMega.GCSViews
 
                         if (a == 0)
                         {
+                            geofence.Markers.Clear();
                             geofence.Markers.Add(new GMapMarkerGoogleRed(new PointLatLng( double.Parse(items[0]),double.Parse(items[1]))) { ToolTipMode = MarkerTooltipMode.OnMouseOver, ToolTipText = "GeoFence Return" });
+                            MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
                         }
                         else
                         {
@@ -3202,7 +3210,15 @@ namespace ArdupilotMega.GCSViews
                     }
                 }
 
+                // remove loop close
+                if (drawnpolygon.Points[0] == drawnpolygon.Points[drawnpolygon.Points.Count - 1])
+                {
+                    drawnpolygon.Points.RemoveAt(drawnpolygon.Points.Count - 1);
+                }
+
                 drawnpolygons.Polygons.Add(drawnpolygon);
+
+                MainMap.UpdatePolygonLocalPosition(drawnpolygon);
 
                 MainMap.Invalidate();
             }
@@ -3235,6 +3251,10 @@ namespace ArdupilotMega.GCSViews
                         {
                             sw.WriteLine(pll.Lat + " " + pll.Lng);
                         }
+
+                        PointLatLng pll2 = drawnpolygon.Points[0];
+
+                        sw.WriteLine(pll2.Lat + " " + pll2.Lng);
                     }
                     else
                     {
@@ -3242,6 +3262,10 @@ namespace ArdupilotMega.GCSViews
                         {
                             sw.WriteLine(pll.Lat + " " + pll.Lng);
                         }
+
+                        PointLatLng pll2 = gf.Points[0];
+
+                        sw.WriteLine(pll2.Lat + " " + pll2.Lng);
                     }
 
                     sw.Close();
