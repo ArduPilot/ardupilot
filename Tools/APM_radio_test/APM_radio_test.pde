@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h> 		// ArduPilot Mega RC Library
  /*
 ArduPilotMega radio test tool
@@ -26,10 +27,13 @@ int radio_in[8];								// current values from the transmitter - microseconds
 float servo_out[] 	= 	{0,0,0,0,0,0,0};
 unsigned long fast_loopTimer		= 0;			// current values to the servos - -45 to 45 degrees, except [3] is 0 to 100
 
+Arduino_Mega_ISR_Registry isr_registry;
+APM_RC_APM1 APM_RC;
 
 void setup() {
 	Serial.begin(115200);
-	APM_RC.Init();    // APM Radio initialization
+    isr_registry.init();
+	APM_RC.Init(&isr_registry);    // APM Radio initialization
 }
 
 
