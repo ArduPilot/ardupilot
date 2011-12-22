@@ -156,7 +156,7 @@ namespace ArdupilotMega
                     {
                         serialPort.Close();
                         //HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB\VID_2341&PID_0010\640333439373519060F0\Device Parameters
-                        if (!MainV2.MONO)
+                        if (!MainV2.MONO || Thread.CurrentThread.CurrentUICulture.Name != "zh-Hans")
                         {
                             ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_USBControllerDevice");
                             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
@@ -166,8 +166,7 @@ namespace ArdupilotMega
 
                                 // all apm 1-1.4 use a ftdi on the imu board.
 
-                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010")
-                                    && Thread.CurrentThread.CurrentUICulture.Name != "zh-Hans") //temporarily fix for capm
+                                if (obj2["Dependent"].ToString().Contains(@"USB\\VID_2341&PID_0010"))
                                 {
                                         return "2560-2";
                                 }
