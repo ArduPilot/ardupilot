@@ -2,7 +2,7 @@
 # run a jsbsim model as a child process
 
 import sys, os, pexpect, fdpexpect, socket
-import math, time, select, struct, signal
+import math, time, select, struct, signal, errno
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'pysim'))
 
@@ -87,7 +87,7 @@ def process_jsb_input(buf):
             fdm.set('rpm', sitl_state.throttle*1000)
             fg_out.send(fdm.pack())
         except socket.error as e:
-            if e.errno not in [ 111 ]:
+            if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
     simbuf = struct.pack('<16dI',
@@ -111,7 +111,7 @@ def process_jsb_input(buf):
     try:
         sim_out.send(simbuf)
     except socket.error as e:
-        if e.errno not in [ 111 ]:
+        if e.errno not in [ errno.ECONNREFUSED ]:
             raise
 
 
