@@ -80,7 +80,7 @@ def wait_altitude(mav, alt_min, alt_max, timeout=30):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         climb_rate =  m.alt - previous_alt
         previous_alt = m.alt
-        print("Wait Altitude %u, alt:%u, rate: %u" % (m.alt, alt_min , climb_rate))
+        print("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u" % (m.alt, alt_min , climb_rate))
         if abs(climb_rate) > 0:
             tstart = time.time();
         if m.alt >= alt_min and m.alt <= alt_max:
