@@ -782,7 +782,7 @@
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT		3
+# define WP_RADIUS_DEFAULT		1
 #endif
 
 #ifndef LOITER_RADIUS
