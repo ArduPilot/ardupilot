@@ -540,7 +540,7 @@ Vector3f accels_rot;
 
 // this is just me playing with the sensors
 // the 2 code is not functioning and you should try 1 instead
-#elif ACCEL_ALT_HOLD == 2
+#if ACCEL_ALT_HOLD == 2
 	static float Z_integrator;
 	static float Z_gain = 3;
 	static float Z_offset = 0;
