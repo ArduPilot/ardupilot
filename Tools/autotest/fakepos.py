@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import socket, struct, time
+import socket, struct, time, errno
 from math import *
 
 class udp_out(object):
@@ -19,7 +19,7 @@ class udp_out(object):
         try:
             data, self.last_address = self.port.recvfrom(300)
         except socket.error as e:
-            if e.errno in [ 11, 35 ]:
+            if e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 return ""
             raise
         return data

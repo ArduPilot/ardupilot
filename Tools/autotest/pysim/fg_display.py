@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import socket, struct, time, math
+import socket, struct, time, math, errno
 import fgFDM
 
 class udp_socket(object):
@@ -24,7 +24,7 @@ class udp_socket(object):
         try:
             data, self.last_address = self.port.recvfrom(n)
         except socket.error as e:
-            if e.errno in [ 11, 35 ]:
+            if e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 return ""
             raise
         return data
