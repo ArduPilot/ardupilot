@@ -53,6 +53,7 @@ def takeoff(mavproxy, mav, alt_min = 30):
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
+    mavproxy.send('rc 3 1430\n')
     print("TAKEOFF COMPLETE")
     return True
 
