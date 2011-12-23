@@ -6,7 +6,7 @@ Copyright Andrew Tridgell 2011
 Released under GNU GPL version 3 or later
 '''
 
-import socket, math, struct, time, os, fnmatch, array, sys
+import socket, math, struct, time, os, fnmatch, array, sys, errno
 from math import *
 from mavextra import *
 
@@ -115,7 +115,7 @@ class mavfile(object):
             if msg:
                 self.post_message(msg)
                 return msg
-
+                
     def recv_match(self, condition=None, type=None, blocking=False):
         '''recv the next MAVLink message that matches the given condition'''
         while True:
@@ -242,7 +242,7 @@ class mavserial(mavfile):
             if self.autoreconnect:
                 self.reset()
             return -1
-
+            
     def reset(self):
         import serial
         self.port.close()
@@ -258,7 +258,7 @@ class mavserial(mavfile):
             except Exception:
                 print("Failed to reopen %s" % self.device)
                 time.sleep(1)
-
+        
 
 class mavudp(mavfile):
     '''a UDP mavlink socket'''
@@ -284,7 +284,7 @@ class mavudp(mavfile):
         try:
             data, self.last_address = self.port.recvfrom(300)
         except socket.error as e:
-            if e.errno in [ 11, 35 ]:
+            if e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 return ""
             raise
         return data
@@ -305,10 +305,12 @@ class mavudp(mavfile):
         s = self.recv()
         if len(s) == 0:
             return None
-        msg = self.mav.decode(s)
-        if msg:
-            self.post_message(msg)
-        return msg
+        msg = self.mav.parse_buffer(s)
+        if msg is not None:
+            for m in msg:
+                self.post_message(m)
+            return msg[0]
+        return None
 
 
 class mavtcp(mavfile):
@@ -334,7 +336,7 @@ class mavtcp(mavfile):
         try:
             data = self.port.recv(n)
         except socket.error as e:
-            if e.errno in [ 11, 35 ]:
+            if e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 return ""
             raise
         return data
@@ -416,7 +418,7 @@ class mavchildexec(mavfile):
     def __init__(self, filename, source_system=255):
         from subprocess import Popen, PIPE
         import fcntl
-
+        
         self.filename = filename
         self.child = Popen(filename, shell=True, stdout=PIPE, stdin=PIPE)
         self.fd = self.child.stdout.fileno()
@@ -451,7 +453,7 @@ def mavlink_connection(device, baud=115200, source_system=255,
         return mavtcp(device[4:], source_system=source_system)
     if device.startswith('udp:'):
         return mavudp(device[4:], input=input, source_system=source_system)
-    if device.find(':') != -1:
+    if device.find(':') != -1 and not device.endswith('log'):
         return mavudp(device, source_system=source_system, input=input)
     if os.path.isfile(device):
         if device.endswith(".elf"):
@@ -487,7 +489,11 @@ def is_printable(c):
     global have_ascii
     if have_ascii:
         return ascii.isprint(c)
-    return ord(c) >= 32 and ord(c) <= 126
+    if isinstance(c, int):
+        ic = c
+    else:
+        ic = ord(c)
+    return ic >= 32 and ic <= 126
 
 def all_printable(buf):
     '''see if a string is all printable'''
@@ -529,9 +535,9 @@ def auto_detect_serial_win32(preferred_list=['*']):
     for order, port, desc, hwid in list:
         ret.append(SerialPort(port, description=desc, hwid=hwid))
     return ret
+        
 
-
-
+        
 
 def auto_detect_serial_unix(preferred_list=['*']):
     '''try to auto-detect serial ports on win32'''
@@ -554,7 +560,7 @@ def auto_detect_serial_unix(preferred_list=['*']):
 
 def auto_detect_serial(preferred_list=['*']):
     '''try to auto-detect serial port'''
-    # see if
+    # see if 
     if os.name == 'nt':
         return auto_detect_serial_win32(preferred_list=preferred_list)
     return auto_detect_serial_unix(preferred_list=preferred_list)
@@ -581,7 +587,7 @@ def mode_string_v09(msg):
     MAV_NAV_LANDING = 6
     MAV_NAV_LOST = 7
     MAV_NAV_LOITER = 8
-
+    
     cmode = (mode, nav_mode)
     mapping = {
         (MAV_MODE_UNINIT, MAV_NAV_GROUNDED)  : "INITIALISING",
@@ -630,7 +636,7 @@ def mode_string_v10(msg):
         return mapping[msg.custom_mode]
     return "Mode(%u)" % msg.custom_mode
 
-
+    
 
 class x25crc(object):
     '''x25 CRC - based on checksum.h from mavlink library'''
