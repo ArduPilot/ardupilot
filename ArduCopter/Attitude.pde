@@ -119,7 +119,10 @@ get_stabilize_yaw(int32_t target_angle)
 static int16_t
 get_nav_throttle(int32_t z_error)
 {
+	static int16_t old_output = 0;
+
 	int16_t rate_error;
+	int16_t output;
 
 	// XXX HACK, need a better way not to ramp this i term in large altitude changes.
 	float dt = (abs(z_error) < 400) ? .1 : 0.0;
@@ -137,10 +140,16 @@ get_nav_throttle(int32_t z_error)
 	rate_error 		= rate_error - climb_rate;
 
 	// limit the rate
-	rate_error =  constrain((int)g.pi_throttle.get_pi(rate_error, .1), -160, 180);
+	output =  constrain((int)g.pi_throttle.get_pi(rate_error, .1), -160, 180);
+
+	// light filter of output
+	output = (old_output * 3 + output) / 4;
+
+	// save our output
+	old_output  = output;
 
 	// output control:
-	return rate_error + iterm;
+	return output + iterm;
 }
 
 static int
@@ -239,10 +248,46 @@ static int get_angle_boost(int value)
 	return (int)(temp * value);
 }
 
+#define NUM_G_SAMPLES 40
+
+#if ACCEL_ALT_HOLD == 2
+// z -14.4306 = going up
+// z -6.4306 = going down
+static int get_z_damping()
+{
+	int output;
+
+	Z_integrator 	+= get_world_Z_accel() - Z_offset;
+	output 			= Z_integrator * 3;
+	Z_integrator 	= Z_integrator * .8;
+	output = constrain(output, -100, 100);
+	return output;
+}
+
+float get_world_Z_accel()
+{
+	accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
+	//Serial.printf("z %1.4f\n", accels_rot.z);
+	return accels_rot.z;
+}
+
+static void init_z_damper()
+{
+	Z_offset = 0;
+	for (int i = 0; i < NUM_G_SAMPLES; i++){
+		delay(5);
+		read_AHRS();
+		Z_offset += get_world_Z_accel();
+	}
+	Z_offset /= (float)NUM_G_SAMPLES;
+}
+
+
+
+
 // Accelerometer Z dampening by Aurelio R. Ramos
 // ---------------------------------------------
-
-#if ACCEL_ALT_HOLD == 1
+#elif ACCEL_ALT_HOLD == 1
 
 // contains G and any other DC offset
 static float estimatedAccelOffset = 0;
@@ -263,22 +308,22 @@ static float maxVeloCorrection = 5 * dt_50hz;
 static float maxSensedVelo = 1;
 static float synPosFilter = 0.5;
 
-#define NUM_G_SAMPLES 200
 
 // Z damping term.
 static float fullDampP = 0.100;
 
 float get_world_Z_accel()
 {
-	Vector3f accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
+	accels_rot = dcm.get_dcm_matrix() * imu.get_accel();
 	return accels_rot.z;
 }
-
 
 static void init_z_damper()
 {
 	estimatedAccelOffset = 0;
 	for (int i = 0; i < NUM_G_SAMPLES; i++){
+		delay(5);
+		read_AHRS();
 		estimatedAccelOffset += get_world_Z_accel();
 	}
 	estimatedAccelOffset /= (float)NUM_G_SAMPLES;
@@ -333,4 +378,7 @@ static int get_z_damping()
 	return 0;
 }
 
+static void init_z_damper()
+{
+}
 #endif
