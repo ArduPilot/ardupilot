@@ -11,18 +11,13 @@ static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_tri(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
-
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_dcm_eulers(uint8_t argc, 			const Menu::arg *argv);
-#endif // HIL_MODE
-
+//static int8_t	test_dcm_eulers(uint8_t argc, 	const Menu::arg *argv);
 //static int8_t	test_dcm(uint8_t argc, 			const Menu::arg *argv);
 //static int8_t	test_omega(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_nav(uint8_t argc, 			const Menu::arg *argv);
-
 //static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
@@ -31,12 +26,8 @@ static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
-#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
 static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
-#endif
-#ifdef OPTFLOW_ENABLED
 static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
-#endif
 //static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -67,14 +58,10 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 //	{"failsafe",	test_failsafe},
 //	{"stabilize",	test_stabilize},
 	{"gps",			test_gps},
-#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
 //	{"adc", 		test_adc},
-#endif
-#if HIL_MODE != HIL_MODE_ATTITUDE
 	{"ins", 		test_ins},
 	{"imu",			test_imu},
-	{"dcm",			test_dcm_eulers},
-#endif
+//	{"dcm",			test_dcm_eulers},
 	//{"omega",		test_omega},
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
@@ -83,16 +70,10 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 //	{"relay",		test_relay},
 	{"wp",			test_wp},
 	//{"nav",			test_nav},
-#if HIL_MODE != HIL_MODE_ATTITUDE
 	{"altitude",	test_baro},
-#endif
-#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
 	{"sonar",		test_sonar},
-#endif
 	{"compass",		test_mag},
-#ifdef OPTFLOW_ENABLED
 	{"optflow",		test_optflow},
-#endif
 	//{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
 //	{"rawgps",		test_rawgps},
@@ -408,7 +389,8 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 */
 
 
-/*#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
+/*
+#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_ADC == ENABLED
 //static int8_t
 //test_adc(uint8_t argc, const Menu::arg *argv)
 {
@@ -434,7 +416,6 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 #endif
 */
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
@@ -470,11 +451,10 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+return (0);
 }
-#endif // HIL_MODE
 
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 /*
   test the IMU interface
  */
@@ -509,16 +489,15 @@ test_imu(uint8_t argc, const Menu::arg *argv)
     }
   return 0;
 }
-#endif // HIL_MODE
 
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 /*
    test the DCM code, printing Euler angles
  */
-static int8_t
-test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
+/*static int8_t
+//test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 {
+
 	//Serial.printf_P(PSTR("Calibrating."));
 
 	//dcm.kp_yaw(0.02);
@@ -570,12 +549,13 @@ test_dcm_eulers(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
-}
-#endif // HIL_MODE
+	return (0);
+}*/
 
 static int8_t
 test_gps(uint8_t argc, const Menu::arg *argv)
 {
+/*
 	print_hit_enter();
 	delay(1000);
 
@@ -602,6 +582,8 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+	*/
+	return 0;
 }
 
 /*
@@ -757,6 +739,7 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_current(uint8_t argc, const Menu::arg *argv)
 {
+
 	print_hit_enter();
 	//delta_ms_medium_loop = 100;
 
@@ -778,6 +761,7 @@ test_current(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+	return 0;
 }
 
 /*
@@ -866,29 +850,33 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 }
 */
 
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
+
 	print_hit_enter();
 	init_barometer();
 
 	while(1){
 		delay(100);
-		int32_t alt = read_barometer(); /* calls barometer.read() */
+		int32_t alt = read_barometer(); // calls barometer.read()
         int32_t pres = barometer.get_pressure();
         int16_t temp = barometer.get_temperature();
         int32_t raw_pres = barometer.get_raw_pressure();
         int32_t raw_temp = barometer.get_raw_temp();
+		#if defined( __AVR_ATmega1280__ )
+        Serial.printf_P(PSTR("alt: %ldcm\n"),alt);
+        #else
         Serial.printf_P(PSTR("alt: %ldcm, pres: %ldmbar, temp: %d/100degC,"
                              " raw pres: %ld, raw temp: %ld\n"),
                              alt, pres ,temp, raw_pres, raw_temp);
+        #endif
 		if(Serial.available() > 0){
 			return (0);
 		}
 	}
+	return 0;
 }
-#endif
 
 
 static int8_t
@@ -919,6 +907,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 		print_enabled(false);
 		return (0);
 	}
+	return (0);
 }
 
 /*
@@ -964,7 +953,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 /*
   test the sonar
  */
-#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
+
 static int8_t
 test_sonar(uint8_t argc, const Menu::arg *argv)
 {
@@ -972,7 +961,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 		Serial.printf_P(PSTR("Sonar disabled\n"));
 		return (0);
 	}
-	
+
 	// make sure sonar is initialised
 	init_sonar();
 
@@ -990,13 +979,12 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
 	return (0);
 }
-#endif
 
-#ifdef OPTFLOW_ENABLED
+
 static int8_t
 test_optflow(uint8_t argc, const Menu::arg *argv)
 {
-	///*
+	#ifdef OPTFLOW_ENABLED
 	if(g.optflow_enabled) {
 		Serial.printf_P(PSTR("man id: %d\t"),optflow.read_register(ADNS3080_PRODUCT_ID));
 		print_hit_enter();
@@ -1021,8 +1009,10 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 		print_enabled(false);
 		return (0);
 	}
+	#endif
+	return (0);
 }
-#endif
+
 
 /*
 static int8_t
