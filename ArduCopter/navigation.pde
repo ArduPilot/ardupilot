@@ -5,7 +5,6 @@
 //****************************************************************
 static byte navigate()
 {
-
 	// waypoint distance from plane
 	// ----------------------------
 	wp_distance = get_distance(&current_loc, &next_WP);
@@ -22,6 +21,7 @@ static byte navigate()
 	// --------------------------------------------
 	target_bearing 	= get_bearing(&current_loc, &next_WP);
 	home_to_copter_bearing 	= get_bearing(&home, &current_loc);
+
 	return 1;
 }
 
@@ -33,6 +33,29 @@ static bool check_missed_wp()
 }
 
 // ------------------------------
+
+static void calc_XY_velocity(){
+	// offset calculation of GPS speed:
+	// used for estimations below 1.5m/s
+	// our GPS is about 1m per
+	static int last_longitude = 0;
+	static int last_latutude  = 0;
+
+	// this speed is ~ in cm because we are using 10^7 numbers from GPS
+	x_GPS_speed		= (last_longitude - g_gps->longitude) * dTnav;
+	y_GPS_speed		= (last_latutude  - g_gps->latitude) * dTnav;
+	last_longitude 	= g_gps->longitude;
+	last_latutude 	= g_gps->latitude;
+
+	if(g_gps->ground_speed > 150){
+		// Derive X/Y speed from GPS
+		// this is far more accurate when traveling about 1.5m/s
+		float temp		= g_gps->ground_course * RADX100;
+		x_GPS_speed 	= sin(temp) * (float)g_gps->ground_speed;
+		y_GPS_speed 	= cos(temp) * (float)g_gps->ground_speed;
+	}
+	//Serial.printf("GS: %d  \tx:%d \ty:%d\n", g_gps->ground_speed, x_GPS_speed, y_GPS_speed);
+}
 
 // long_error, lat_error
 static void calc_location_error(struct Location *next_loc)
@@ -55,40 +78,21 @@ static void calc_location_error(struct Location *next_loc)
 }
 
 #define NAV_ERR_MAX 800
-
-#if LOITER_METHOD == 0
 static void calc_loiter(int x_error, int y_error)
 {
-	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	x_error 			= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	y_error 			= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	int x_target_speed = g.pi_loiter_lon.get_p(x_error);
-	int y_target_speed = g.pi_loiter_lat.get_p(y_error);
-	int x_iterm = g.pi_loiter_lon.get_i(x_error, dTnav);
-	int y_iterm = g.pi_loiter_lat.get_i(y_error, dTnav);
+	int x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
+	int y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
+	int x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
+	int y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
 
-	// find the rates:
-	float temp		= g_gps->ground_course * RADX100;
-
-	#ifdef OPTFLOW_ENABLED
-		// calc the cos of the error to tell how fast we are moving towards the target in cm
-		if(g.optflow_enabled && current_loc.alt < 500 &&  g_gps->ground_speed < 150){
-			x_actual_speed 	= optflow.vlon * 10;
-			y_actual_speed 	= optflow.vlat * 10;
-		}else{
-			x_actual_speed 	= (float)g_gps->ground_speed * sin(temp);
-			y_actual_speed 	= (float)g_gps->ground_speed * cos(temp);
-		}
-	#else
-		x_actual_speed 	= (float)g_gps->ground_speed * sin(temp);
-		y_actual_speed 	= (float)g_gps->ground_speed * cos(temp);
-	#endif
-
-	y_rate_error 	= y_target_speed - y_actual_speed; // 413
-	y_rate_error 	= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
-	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
-	nav_lat			= constrain(nav_lat, -3500, 3500);
-	nav_lat			+= y_iterm;
+	y_rate_error 		= y_target_speed - y_actual_speed; // 413
+	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat		 		= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
+	nav_lat				= constrain(nav_lat, -3500, 3500);
+	nav_lat				+= y_iterm;
 
 	/*Serial.printf("loiter x_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
 					x_actual_speed,
@@ -98,67 +102,64 @@ static void calc_loiter(int x_error, int y_error)
 					y_rate_error,
 					nav_lat);
 	*/
-	x_rate_error 	= x_target_speed - x_actual_speed;
-	x_rate_error 	= constrain(x_rate_error, -1000, 1000);
-	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
-	nav_lon			= constrain(nav_lon, -3500, 3500);
-	nav_lon			+= x_iterm;
+
+	x_rate_error 		= x_target_speed - x_actual_speed;
+	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
+	nav_lon		 		= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
+	nav_lon				= constrain(nav_lon, -3500, 3500);
+	nav_lon				+= x_iterm;
 }
 
-#else
-static void calc_loiter2(int x_error, int y_error)
+#define ERR_GAIN .01
+// called at 50hz
+static void esitmate_velocity()
 {
-	static int last_x_error = 0;
-	static int last_y_error = 0;
+	// for now we assume copter is pointing due north
+	// use roll to calculate the x velocity
+	//float scale = sin((float)nav_lon * RADX100)); // guess our X location based tilt of copter
 
-	x_error = constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX); //1200
-	y_error = constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	// we need to extimate velocity when below GPS threshold of 1.5m/s
+	if(g_gps->ground_speed < 150){
+		// calc the cos of the error to tell how fast we are moving towards the target in cm
+		//if(g.optflow_enabled && current_loc.alt < 500){
+			// optflow wont be enabled on 1280's
+		//	#ifdef OPTFLOW_ENABLED
+			//x_actual_speed 	= optflow.vlon * 10;
+			//y_actual_speed 	= optflow.vlat * 10;
+		//	#endif
+		//}else{
 
-	int x_target_speed = g.pi_loiter_lon.get_p(x_error);
-	int y_target_speed = g.pi_loiter_lat.get_p(y_error);
+		// this area will have future IMU based velocity navigation,
+		// ignore these sketches.
 
-	int x_iterm = g.pi_loiter_lon.get_i(x_error, dTnav);
-	int y_iterm = g.pi_loiter_lat.get_i(y_error, dTnav);
+		// need to take into account the wind based on loiter's iterms
+		//	x_actual_speed += thrust * sin_roll_y; // thrust is a guess, needs to be calibrated whith CH6
+		//	x_actual_speed -= ERR_GAIN * (float)(x_actual_speed - x_GPS_speed); // error correction
 
-	// find the rates:
-	x_actual_speed 	= (float)(last_x_error - x_error)/dTnav;
-	y_actual_speed 	= (float)(last_y_error - y_error)/dTnav;
+		//	y_actual_speed += thrust * sin_pitch_y; // thrust is a guess, needs to be calibrated whith CH6
+		//	y_actual_speed -= ERR_GAIN * (float)(y_actual_speed - y_GPS_speed); // error correction
+		//}
 
-	// save speeds
-	last_x_error	= x_error;
-	last_y_error	= y_error;
-
-	y_rate_error 	= y_target_speed - y_actual_speed;
-	nav_lat		 	= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
-	nav_lat			= constrain(nav_lat, -2200, 2200);
-	nav_lat			+= y_iterm;
-
-	x_rate_error 	= x_target_speed - x_actual_speed;
-	nav_lon		 	= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
-	nav_lon			= constrain(nav_lon, -2200, 2200);
-	nav_lon			+= x_iterm;
+		// for now
+		x_actual_speed = x_GPS_speed;
+		y_actual_speed = y_GPS_speed;
+	}else{
+		x_actual_speed = x_GPS_speed;
+		y_actual_speed = y_GPS_speed;
+	}
 }
-#endif
 
-// nav_roll, nav_pitch
+// this calculation rotates our World frame of reference to the copter's frame of reference
+// We use the DCM's matrix to precalculate these trig values at 50hz
 static void calc_loiter_pitch_roll()
 {
-
-	//float temp  	 = radians((float)(9000 - (dcm.yaw_sensor))/100.0);
-	//float _cos_yaw_x = cos(temp);
-	//float _sin_yaw_y = sin(temp);
-
 	//Serial.printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
-
 	// rotate the vector
 	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
 	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
-
-	//Serial.printf("nav_roll %d, nav_pitch %d\n",
-	//				nav_roll, nav_pitch);
 }
 
 static void calc_nav_rate(int max_speed)
@@ -190,7 +191,6 @@ static void calc_nav_rate(int max_speed)
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
-	//float temp		= radians((target_bearing - g_gps->ground_course)/100.0);
 	float temp 		= (target_bearing - g_gps->ground_course) * RADX100;
 
 	// push us towards the original track
@@ -201,15 +201,16 @@ static void calc_nav_rate(int max_speed)
 	x_rate_error 	= crosstrack_error -x_actual_speed;
 	x_rate_error 	= constrain(x_rate_error, -1400, 1400);
 	nav_lon		 	= constrain(g.pi_nav_lon.get_pi(x_rate_error, dTnav), -3500, 3500);
-	/*Serial.printf("max_speed %d,\tx_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
+	/*Serial.printf("max_sp %d,\tx_actual_sp %d,\tx_rate_err: %d, Xtrack %d, \tnav_lon: %d,\ty_actual_sp %d,\ty_rate_err: %d,\tnav_lat: %d,\n",
 					max_speed,
 					x_actual_speed,
 					x_rate_error,
+					crosstrack_error,
 					nav_lon,
 					y_actual_speed,
 					y_rate_error,
 					nav_lat);
-	*/
+	//*/
 
 	// heading towards target
 	y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
@@ -236,22 +237,23 @@ static void update_crosstrack(void)
 	// ----------------
 	if (cross_track_test() < 4000) {	 // If we are too far off or too close we don't do track following
 		float temp = (target_bearing - original_target_bearing) * RADX100;
-		//radians((target_bearing - original_target_bearing) / 100)
-		crosstrack_error = sin(temp) * wp_distance;	 // Meters we are off track line
-
-		crosstrack_error = constrain(crosstrack_error * g.crosstrack_gain, -1200, 1200);
+		crosstrack_error = sin(temp) * (wp_distance * g.crosstrack_gain);	 // Meters we are off track line
+		crosstrack_error = constrain(crosstrack_error, -1200, 1200);
 	}
 }
 
+// used to generate the offset angle for testing crosstrack viability
 static int32_t cross_track_test()
 {
-	int32_t temp 	= target_bearing - original_target_bearing;
-	temp 		= wrap_180(temp);
+	int32_t temp;
+	temp 	= target_bearing - original_target_bearing;
+	temp 	= wrap_180(temp);
 	return abs(temp);
 }
 
 
-// nav_roll, nav_pitch
+// this calculation is different than loiter above because we are in a different Frame of Reference.
+// nav_lat is pointed towards the target, where as in Loiter, nav_lat is pointed north!
 static void calc_nav_pitch_roll()
 {
 	int32_t angle = wrap_360(dcm.yaw_sensor - target_bearing);
@@ -331,7 +333,7 @@ static int32_t wrap_180(int32_t error)
 		// constrain answer to 30° to avoid overshoot
 		return constrain(_crosstrack_correction, -g.crosstrack_entry_angle.get(), g.crosstrack_entry_angle.get());
 	}
-    return 0;
+	return 0;
 }
 */
 /*
