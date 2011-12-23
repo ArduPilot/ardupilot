@@ -684,6 +684,7 @@ static void Log_Read_Motors()
 // Write an optical flow packet. Total length : 18 bytes
 static void Log_Write_Optflow()
 {
+	#ifdef OPTFLOW_ENABLED
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_OPTFLOW_MSG);
@@ -700,6 +701,7 @@ static void Log_Write_Optflow()
 
 static void Log_Read_Optflow()
 {
+	#ifdef OPTFLOW_ENABLED
 	int16_t temp1 	= DataFlash.ReadInt();			// 1
 	int16_t temp2 	= DataFlash.ReadInt();			// 2
 	int16_t temp3 	= DataFlash.ReadInt();			// 3
@@ -712,6 +714,7 @@ static void Log_Read_Optflow()
 			temp3,
 			temp4,
 			temp5);
+	#endif
 }
 
 static void Log_Write_Nav_Tuning()
