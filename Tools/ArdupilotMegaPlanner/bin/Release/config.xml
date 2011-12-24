@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<Config>
+  <comport>COM18</comport>
+  <baudrate>115200</baudrate>
+  <APMFirmware>ArduPlane</APMFirmware>
+  <showconsole>True</showconsole>
+  <FlightSplitter>417</FlightSplitter>
+  <Tuning_Graph_Selected>roll|pitch|nav_roll|nav_pitch|</Tuning_Graph_Selected>
+  <NUM_tracklength>200</NUM_tracklength>
+  <MainLocY>94</MainLocY>
+  <MainMaximised>Normal</MainMaximised>
+  <COM24_BAUD>115200</COM24_BAUD>
+  <MainHeight>575</MainHeight>
+  <MainLocX>203</MainLocX>
+  <MainWidth>1024</MainWidth>
+</Config>
