@@ -249,7 +249,6 @@ static void throttle_slew_limit()
 	if(g.throttle_slewrate) {		// if slew limit rate is set to zero then do not slew limit
 
 		float temp = g.throttle_slewrate * G_Dt * 10.f;		//  * 10 to scale % to pwm range of 1000 to 2000
-Serial.print("radio ");	Serial.print(g.channel_throttle.radio_out); Serial.print("   temp "); Serial.print(temp); Serial.print("   last "); Serial.println(last);
 		g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
 		last = g.channel_throttle.radio_out;
 	}
