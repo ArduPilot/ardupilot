@@ -419,39 +419,43 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_ins(uint8_t argc, const Menu::arg *argv)
 {
-    float gyro[3], accel[3], temp;
-	print_hit_enter();
-	Serial.printf_P(PSTR("InertialSensor\n"));
-	delay(1000);
+	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+		print_test_disabled();
+		return (0);
+	#else
+		float gyro[3], accel[3], temp;
+		print_hit_enter();
+		Serial.printf_P(PSTR("InertialSensor\n"));
+		delay(1000);
 
-    ins.init(&timer_scheduler);
+		ins.init(&timer_scheduler);
 
-    delay(50);
+		delay(50);
 
-	while(1){
-        ins.update();
-        ins.get_gyros(gyro);
-        ins.get_accels(accel);
-        temp = ins.temperature();
+		while(1){
+			ins.update();
+			ins.get_gyros(gyro);
+			ins.get_accels(accel);
+			temp = ins.temperature();
 
-        Serial.printf_P(PSTR("g"));
+			Serial.printf_P(PSTR("g"));
 
-        for (int i = 0; i < 3; i++) {
-            Serial.printf_P(PSTR(" %7.4f"), gyro[i]);
-        }
+			for (int i = 0; i < 3; i++) {
+				Serial.printf_P(PSTR(" %7.4f"), gyro[i]);
+			}
 
-        Serial.printf_P(PSTR(" a"));
+			Serial.printf_P(PSTR(" a"));
 
-        for (int i = 0; i < 3; i++) {
-            Serial.printf_P(PSTR(" %7.4f"),accel[i]);
-        }
-        Serial.printf_P(PSTR(" t %7.4f \n"), temp);
-		delay(40);
-		if(Serial.available() > 0){
-			return (0);
+			for (int i = 0; i < 3; i++) {
+				Serial.printf_P(PSTR(" %7.4f"),accel[i]);
+			}
+			Serial.printf_P(PSTR(" t %7.4f \n"), temp);
+			delay(40);
+			if(Serial.available() > 0){
+				return (0);
+			}
 		}
-	}
-return (0);
+	#endif
 }
 
 
@@ -461,33 +465,37 @@ return (0);
 static int8_t
 test_imu(uint8_t argc, const Menu::arg *argv)
 {
-  Vector3f gyro;
-  Vector3f accel;
+ 	#if defined( __AVR_ATmega1280__ )  // determines if optical flow code is included
+		print_test_disabled();
+		return (0);
+	#else
+		Vector3f gyro;
+		Vector3f accel;
 
-  imu.init(IMU::WARM_START, delay, flash_leds, &timer_scheduler);
+		imu.init(IMU::WARM_START, delay, flash_leds, &timer_scheduler);
 
-	report_imu();
-	imu.init_gyro(delay, flash_leds);
-	report_imu();
+		report_imu();
+		imu.init_gyro(delay, flash_leds);
+		report_imu();
 
-	print_hit_enter();
-	delay(1000);
+		print_hit_enter();
+		delay(1000);
 
-	while(1){
-		delay(40);
+		while(1){
+			delay(40);
 
-        imu.update();
-        gyro = imu.get_gyro();
-        accel = imu.get_accel();
+			imu.update();
+			gyro = imu.get_gyro();
+			accel = imu.get_accel();
 
-        Serial.printf_P(PSTR("g %8.4f %8.4f %8.4f"), gyro.x, gyro.y, gyro.z);
-        Serial.printf_P(PSTR("  a %8.4f %8.4f %8.4f\n"), accel.x, accel.y, accel.z);
+			Serial.printf_P(PSTR("g %8.4f %8.4f %8.4f"), gyro.x, gyro.y, gyro.z);
+			Serial.printf_P(PSTR("  a %8.4f %8.4f %8.4f\n"), accel.x, accel.y, accel.z);
 
-		if(Serial.available() > 0){
-			return (0);
+			if(Serial.available() > 0){
+				return (0);
+			}
 		}
-    }
-  return 0;
+	#endif
 }
 
 
@@ -739,7 +747,6 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_current(uint8_t argc, const Menu::arg *argv)
 {
-
 	print_hit_enter();
 	//delta_ms_medium_loop = 100;
 
@@ -761,7 +768,7 @@ test_current(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
-	return 0;
+	return (0);
 }
 
 /*
@@ -853,7 +860,6 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_baro(uint8_t argc, const Menu::arg *argv)
 {
-
 	print_hit_enter();
 	init_barometer();
 
@@ -1007,10 +1013,13 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 	} else {
 		Serial.printf_P(PSTR("OptFlow: "));
 		print_enabled(false);
-		return (0);
 	}
-	#endif
 	return (0);
+
+	#else
+		print_test_disabled();
+		return (0);
+	#endif
 }
 
 
@@ -1078,6 +1087,11 @@ static int8_t
 static void print_hit_enter()
 {
 	Serial.printf_P(PSTR("Hit Enter to exit.\n\n"));
+}
+
+static void print_test_disabled()
+{
+	Serial.printf_P(PSTR("Sorry, not 1280 compat.\n"));
 }
 
 /*
