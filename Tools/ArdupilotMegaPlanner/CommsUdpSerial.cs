@@ -79,7 +79,7 @@ namespace System.IO.Ports
 
             client = new UdpClient(int.Parse(Port));
 
-            int timeout = 5;  
+                         int timeout = 5;  
             while (timeout > 0) 
             { 
                 if (BytesToRead > 0)  

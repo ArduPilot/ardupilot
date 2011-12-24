@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#if LOGGING_ENABLED == ENABLED && CONFIG_LOGGING == LOGGING_VERBOSE
+#if LOGGING_ENABLED == ENABLED
 
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
@@ -479,7 +479,6 @@ static void Log_Read_GPS()
 }
 
 // Write an raw accel/gyro data packet. Total length : 28 bytes
-#if HIL_MODE != HIL_MODE_ATTITUDE
 static void Log_Write_Raw()
 {
 	Vector3f gyro = imu.get_gyro();
@@ -509,7 +508,6 @@ static void Log_Write_Raw()
 
 	DataFlash.WriteByte(END_BYTE);
 }
-#endif
 
 // Read a raw accel/gyro packet
 static void Log_Read_Raw()
@@ -683,10 +681,10 @@ static void Log_Read_Motors()
 	#endif
 }
 
-#ifdef OPTFLOW_ENABLED
 // Write an optical flow packet. Total length : 18 bytes
 static void Log_Write_Optflow()
 {
+	#ifdef OPTFLOW_ENABLED
 	DataFlash.WriteByte(HEAD_BYTE1);
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_OPTFLOW_MSG);
@@ -696,12 +694,14 @@ static void Log_Write_Optflow()
 	DataFlash.WriteLong(optflow.vlat);//optflow_offset.lat + optflow.lat);
 	DataFlash.WriteLong(optflow.vlon);//optflow_offset.lng + optflow.lng);
 	DataFlash.WriteByte(END_BYTE);
+	#endif
 }
-#endif
+
 
 
 static void Log_Read_Optflow()
 {
+	#ifdef OPTFLOW_ENABLED
 	int16_t temp1 	= DataFlash.ReadInt();			// 1
 	int16_t temp2 	= DataFlash.ReadInt();			// 2
 	int16_t temp3 	= DataFlash.ReadInt();			// 3
@@ -714,6 +714,7 @@ static void Log_Read_Optflow()
 			temp3,
 			temp4,
 			temp5);
+	#endif
 }
 
 static void Log_Write_Nav_Tuning()
@@ -1118,9 +1119,8 @@ static int Log_Read_Process(int start_page, int end_page)
 	return packet_count;
 }
 
-#endif // LOGGING_ENABLED
 
-#if LOGGING_ENABLED == DISABLED
+#else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
 static void Log_Read_Startup() {}
@@ -1134,14 +1134,11 @@ static void Log_Write_Current() {}
 static void Log_Write_Attitude() {}
 static void Log_Write_Data(int8_t _type, float _data){}
 static void Log_Write_Data(int8_t _type, int32_t _data){}
-#ifdef OPTFLOW_ENABLED
 static void Log_Write_Optflow() {}
-#endif
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_Control_Tuning() {}
 static void Log_Write_Motors() {}
 static void Log_Write_Performance() {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-static void do_erase_logs(void (*delay_cb)(unsigned long)) {}
 
-#endif
+#endif // LOGGING_DISABLED

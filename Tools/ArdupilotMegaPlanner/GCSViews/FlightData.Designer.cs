@@ -10,6 +10,9 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FlightData));
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.goHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pointCameraHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainH = new System.Windows.Forms.SplitContainer();
             this.SubMainLeft = new System.Windows.Forms.SplitContainer();
             this.hud1 = new hud.HUD();
@@ -53,9 +56,6 @@
             this.lbl_winddir = new ArdupilotMega.MyLabel();
             this.lbl_windvel = new ArdupilotMega.MyLabel();
             this.gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
-            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.goHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.pointCameraHereToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panel1 = new System.Windows.Forms.Panel();
             this.TXT_lat = new ArdupilotMega.MyLabel();
             this.Zoomlevel = new System.Windows.Forms.NumericUpDown();
@@ -69,6 +69,7 @@
             this.ZedGraphTimer = new System.Windows.Forms.Timer(this.components);
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.label6 = new ArdupilotMega.MyLabel();
+            this.contextMenuStrip1.SuspendLayout();
             this.MainH.Panel1.SuspendLayout();
             this.MainH.Panel2.SuspendLayout();
             this.MainH.SuspendLayout();
@@ -87,10 +88,29 @@
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.contextMenuStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).BeginInit();
             this.SuspendLayout();
+            // 
+            // contextMenuStrip1
+            // 
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.goHereToolStripMenuItem,
+            this.pointCameraHereToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            resources.ApplyResources(this.contextMenuStrip1, "contextMenuStrip1");
+            // 
+            // goHereToolStripMenuItem
+            // 
+            this.goHereToolStripMenuItem.Name = "goHereToolStripMenuItem";
+            resources.ApplyResources(this.goHereToolStripMenuItem, "goHereToolStripMenuItem");
+            this.goHereToolStripMenuItem.Click += new System.EventHandler(this.goHereToolStripMenuItem_Click);
+            // 
+            // pointCameraHereToolStripMenuItem
+            // 
+            this.pointCameraHereToolStripMenuItem.Name = "pointCameraHereToolStripMenuItem";
+            resources.ApplyResources(this.pointCameraHereToolStripMenuItem, "pointCameraHereToolStripMenuItem");
+            this.pointCameraHereToolStripMenuItem.Click += new System.EventHandler(this.pointCameraHereToolStripMenuItem_Click);
             // 
             // MainH
             // 
@@ -1107,26 +1127,6 @@
             this.gMapControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseDown);
             this.gMapControl1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.gMapControl1_MouseMove);
             // 
-            // contextMenuStrip1
-            // 
-            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.goHereToolStripMenuItem,
-            this.pointCameraHereToolStripMenuItem});
-            this.contextMenuStrip1.Name = "contextMenuStrip1";
-            resources.ApplyResources(this.contextMenuStrip1, "contextMenuStrip1");
-            // 
-            // goHereToolStripMenuItem
-            // 
-            this.goHereToolStripMenuItem.Name = "goHereToolStripMenuItem";
-            resources.ApplyResources(this.goHereToolStripMenuItem, "goHereToolStripMenuItem");
-            this.goHereToolStripMenuItem.Click += new System.EventHandler(this.goHereToolStripMenuItem_Click);
-            // 
-            // pointCameraHereToolStripMenuItem
-            // 
-            this.pointCameraHereToolStripMenuItem.Name = "pointCameraHereToolStripMenuItem";
-            resources.ApplyResources(this.pointCameraHereToolStripMenuItem, "pointCameraHereToolStripMenuItem");
-            this.pointCameraHereToolStripMenuItem.Click += new System.EventHandler(this.pointCameraHereToolStripMenuItem_Click);
-            // 
             // panel1
             // 
             this.panel1.Controls.Add(this.TXT_lat);
@@ -1255,6 +1255,7 @@
             this.Load += new System.EventHandler(this.FlightData_Load);
             this.Resize += new System.EventHandler(this.FlightData_Resize);
             this.ParentChanged += new System.EventHandler(this.FlightData_ParentChanged);
+            this.contextMenuStrip1.ResumeLayout(false);
             this.MainH.Panel1.ResumeLayout(false);
             this.MainH.Panel2.ResumeLayout(false);
             this.MainH.ResumeLayout(false);
@@ -1274,7 +1275,6 @@
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
-            this.contextMenuStrip1.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Zoomlevel)).EndInit();

@@ -79,18 +79,13 @@ namespace ArdupilotMega
             if (Pen.Color == Color.Blue)
                 Pen.Color = Color.White;
 
-            {
+            
                 double width = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Width, 0)) * 1000.0);
                 double height = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Height, 0)) * 1000.0);
                 double m2pixelwidth = MainMap.Width / width;
                 double m2pixelheight = MainMap.Height / height;
 
-                wpradposition = MainMap.FromLocalToLatLng((int)(LocalPosition.X - (m2pixelwidth * wprad * 2)), LocalPosition.Y);
-            }
-
-            Matrix temp = g.Transform;
-
-            GPoint loc = MainMap.FromLatLngToLocal(wpradposition);
+            GPoint loc = new GPoint((int)(LocalPosition.X - (m2pixelwidth * wprad * 2)), LocalPosition.Y);// MainMap.FromLatLngToLocal(wpradposition);
 
             g.DrawArc(Pen, new System.Drawing.Rectangle(LocalPosition.X - Offset.X - (Math.Abs(loc.X - LocalPosition.X) / 2), LocalPosition.Y - Offset.Y - Math.Abs(loc.X - LocalPosition.X) / 2, Math.Abs(loc.X - LocalPosition.X), Math.Abs(loc.X - LocalPosition.X)), 0, 360);
        

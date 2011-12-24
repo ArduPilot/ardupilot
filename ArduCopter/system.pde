@@ -215,7 +215,11 @@ static void init_ardupilot()
     if (need_log_erase) {
         uint8_t count = 0;
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+
+        #if LOGGING_ENABLED == ENABLED
         do_erase_logs(mavlink_delay);
+        #endif
+
 		while (true) {
             if (count++ % 20 == 0) {
                 Serial.printf_P(PSTR("Please Run Setup...\n"));
@@ -273,12 +277,11 @@ static void init_ardupilot()
 	if(g.compass_enabled)
 		init_compass();
 
-	#ifdef OPTFLOW_ENABLED
 	// init the optical flow sensor
 	if(g.optflow_enabled) {
 		init_optflow();
 	}
-	#endif
+
 
 // agmatthews USERHOOKS
 #ifdef USERHOOK_INIT
@@ -370,7 +373,7 @@ static void init_ardupilot()
 
 	// init the Z damopener
 	// --------------------
-	#if ACCEL_ALT_HOLD == 1
+	#if ACCEL_ALT_HOLD != 0
 	init_z_damper();
 	#endif
 
@@ -436,6 +439,12 @@ static void set_mode(byte mode)
 	if(home_is_set == false){
 		// our max mode should be
 		if (mode > ALT_HOLD)
+			mode = STABILIZE;
+	}
+
+	// nothing but Loiter for OptFlow only
+	if (g.optflow_enabled && GPS_enabled == false){
+		if (mode > ALT_HOLD && mode != LOITER)
 			mode = STABILIZE;
 	}
 
@@ -592,18 +601,18 @@ init_compass()
 	compass.get_offsets();					// load offsets to account for airframe magnetic interference
 }
 
-#ifdef OPTFLOW_ENABLED
 static void
 init_optflow()
 {
+	#ifdef OPTFLOW_ENABLED
 	if( optflow.init() == false ) {
 	    g.optflow_enabled = false;
 	    //SendDebug("\nFailed to Init OptFlow ");
 	}
 	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
 	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
+	#endif
 }
-#endif
 
 static void
 init_simple_bearing()

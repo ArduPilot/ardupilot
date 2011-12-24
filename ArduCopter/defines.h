@@ -152,6 +152,9 @@
 
 // altitude controller
 #define CH6_THR_HOLD_KP 14
+#define CH6_Z_GAIN 15
+#define CH6_THRUST 16
+
 
 // nav byte mask
 // -------------

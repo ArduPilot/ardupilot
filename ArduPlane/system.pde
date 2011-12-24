@@ -123,7 +123,6 @@ static void init_ardupilot()
 	//
 
     timer_scheduler.init( & isr_registry );
-    timer_scheduler.set_failsafe(failsafe_check);
 
 	//
 	// Check the EEPROM format version before loading any parameters from EEPROM.
@@ -241,6 +240,12 @@ static void init_ardupilot()
     pinMode(FENCE_TRIGGERED_PIN, OUTPUT);
     digitalWrite(FENCE_TRIGGERED_PIN, LOW);
 #endif
+
+    /*
+      setup the 'main loop is dead' check. Note that this relies on
+      the RC library being initialised.
+     */
+    timer_scheduler.set_failsafe(failsafe_check);
 
 
 	// If the switch is in 'menu' mode, run the main menu.

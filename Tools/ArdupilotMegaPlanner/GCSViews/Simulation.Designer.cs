@@ -126,7 +126,6 @@
             // 
             resources.ApplyResources(this.CHKREV_roll, "CHKREV_roll");
             this.CHKREV_roll.Name = "CHKREV_roll";
-            this.toolTip1.SetToolTip(this.CHKREV_roll, resources.GetString("CHKREV_roll.ToolTip"));
             this.CHKREV_roll.UseVisualStyleBackColor = true;
             this.CHKREV_roll.CheckedChanged += new System.EventHandler(this.CHKREV_roll_CheckedChanged);
             // 
@@ -134,7 +133,6 @@
             // 
             resources.ApplyResources(this.CHKREV_pitch, "CHKREV_pitch");
             this.CHKREV_pitch.Name = "CHKREV_pitch";
-            this.toolTip1.SetToolTip(this.CHKREV_pitch, resources.GetString("CHKREV_pitch.ToolTip"));
             this.CHKREV_pitch.UseVisualStyleBackColor = true;
             this.CHKREV_pitch.CheckedChanged += new System.EventHandler(this.CHKREV_pitch_CheckedChanged);
             // 
@@ -142,13 +140,11 @@
             // 
             resources.ApplyResources(this.CHKREV_rudder, "CHKREV_rudder");
             this.CHKREV_rudder.Name = "CHKREV_rudder";
-            this.toolTip1.SetToolTip(this.CHKREV_rudder, resources.GetString("CHKREV_rudder.ToolTip"));
             this.CHKREV_rudder.UseVisualStyleBackColor = true;
             this.CHKREV_rudder.CheckedChanged += new System.EventHandler(this.CHKREV_rudder_CheckedChanged);
             // 
             // GPSrate
             // 
-            resources.ApplyResources(this.GPSrate, "GPSrate");
             this.GPSrate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.GPSrate.FormattingEnabled = true;
             this.GPSrate.Items.AddRange(new object[] {
@@ -160,8 +156,8 @@
             resources.GetString("GPSrate.Items5"),
             resources.GetString("GPSrate.Items6"),
             resources.GetString("GPSrate.Items7")});
+            resources.ApplyResources(this.GPSrate, "GPSrate");
             this.GPSrate.Name = "GPSrate";
-            this.toolTip1.SetToolTip(this.GPSrate, resources.GetString("GPSrate.ToolTip"));
             this.GPSrate.SelectedIndexChanged += new System.EventHandler(this.GPSrate_SelectedIndexChanged);
             this.GPSrate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.GPSrate_KeyDown);
             this.GPSrate.Leave += new System.EventHandler(this.GPSrate_Leave);
@@ -170,7 +166,6 @@
             // 
             resources.ApplyResources(this.ConnectComPort, "ConnectComPort");
             this.ConnectComPort.Name = "ConnectComPort";
-            this.toolTip1.SetToolTip(this.ConnectComPort, resources.GetString("ConnectComPort.ToolTip"));
             this.ConnectComPort.UseVisualStyleBackColor = true;
             this.ConnectComPort.Click += new System.EventHandler(this.ConnectComPort_Click);
             // 
@@ -178,7 +173,6 @@
             // 
             resources.ApplyResources(this.OutputLog, "OutputLog");
             this.OutputLog.Name = "OutputLog";
-            this.toolTip1.SetToolTip(this.OutputLog, resources.GetString("OutputLog.ToolTip"));
             this.OutputLog.TextChanged += new System.EventHandler(this.OutputLog_TextChanged);
             // 
             // TXT_roll
@@ -186,28 +180,24 @@
             resources.ApplyResources(this.TXT_roll, "TXT_roll");
             this.TXT_roll.Name = "TXT_roll";
             this.TXT_roll.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_roll, resources.GetString("TXT_roll.ToolTip"));
             // 
             // TXT_pitch
             // 
             resources.ApplyResources(this.TXT_pitch, "TXT_pitch");
             this.TXT_pitch.Name = "TXT_pitch";
             this.TXT_pitch.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_pitch, resources.GetString("TXT_pitch.ToolTip"));
             // 
             // TXT_heading
             // 
             resources.ApplyResources(this.TXT_heading, "TXT_heading");
             this.TXT_heading.Name = "TXT_heading";
             this.TXT_heading.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_heading, resources.GetString("TXT_heading.ToolTip"));
             // 
             // TXT_wpdist
             // 
             resources.ApplyResources(this.TXT_wpdist, "TXT_wpdist");
             this.TXT_wpdist.Name = "TXT_wpdist";
             this.TXT_wpdist.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_wpdist, resources.GetString("TXT_wpdist.ToolTip"));
             // 
             // currentStateBindingSource
             // 
@@ -218,41 +208,35 @@
             resources.ApplyResources(this.TXT_bererror, "TXT_bererror");
             this.TXT_bererror.Name = "TXT_bererror";
             this.TXT_bererror.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_bererror, resources.GetString("TXT_bererror.ToolTip"));
             // 
             // TXT_alterror
             // 
             resources.ApplyResources(this.TXT_alterror, "TXT_alterror");
             this.TXT_alterror.Name = "TXT_alterror";
             this.TXT_alterror.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_alterror, resources.GetString("TXT_alterror.ToolTip"));
             // 
             // TXT_lat
             // 
             resources.ApplyResources(this.TXT_lat, "TXT_lat");
             this.TXT_lat.Name = "TXT_lat";
             this.TXT_lat.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_lat, resources.GetString("TXT_lat.ToolTip"));
             // 
             // TXT_long
             // 
             resources.ApplyResources(this.TXT_long, "TXT_long");
             this.TXT_long.Name = "TXT_long";
             this.TXT_long.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_long, resources.GetString("TXT_long.ToolTip"));
             // 
             // TXT_alt
             // 
             resources.ApplyResources(this.TXT_alt, "TXT_alt");
             this.TXT_alt.Name = "TXT_alt";
             this.TXT_alt.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_alt, resources.GetString("TXT_alt.ToolTip"));
             // 
             // SaveSettings
             // 
             resources.ApplyResources(this.SaveSettings, "SaveSettings");
             this.SaveSettings.Name = "SaveSettings";
-            this.toolTip1.SetToolTip(this.SaveSettings, resources.GetString("SaveSettings.ToolTip"));
             this.SaveSettings.UseVisualStyleBackColor = true;
             this.SaveSettings.Click += new System.EventHandler(this.SaveSettings_Click);
             // 
@@ -279,32 +263,27 @@
             resources.ApplyResources(this.TXT_servoroll, "TXT_servoroll");
             this.TXT_servoroll.Name = "TXT_servoroll";
             this.TXT_servoroll.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_servoroll, resources.GetString("TXT_servoroll.ToolTip"));
             // 
             // TXT_servopitch
             // 
             resources.ApplyResources(this.TXT_servopitch, "TXT_servopitch");
             this.TXT_servopitch.Name = "TXT_servopitch";
             this.TXT_servopitch.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_servopitch, resources.GetString("TXT_servopitch.ToolTip"));
             // 
             // TXT_servorudder
             // 
             resources.ApplyResources(this.TXT_servorudder, "TXT_servorudder");
             this.TXT_servorudder.Name = "TXT_servorudder";
             this.TXT_servorudder.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_servorudder, resources.GetString("TXT_servorudder.ToolTip"));
             // 
             // TXT_servothrottle
             // 
             resources.ApplyResources(this.TXT_servothrottle, "TXT_servothrottle");
             this.TXT_servothrottle.Name = "TXT_servothrottle";
             this.TXT_servothrottle.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_servothrottle, resources.GetString("TXT_servothrottle.ToolTip"));
             // 
             // panel1
             // 
-            resources.ApplyResources(this.panel1, "panel1");
             this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.label2);
@@ -312,40 +291,35 @@
             this.panel1.Controls.Add(this.TXT_lat);
             this.panel1.Controls.Add(this.TXT_long);
             this.panel1.Controls.Add(this.TXT_alt);
+            resources.ApplyResources(this.panel1, "panel1");
             this.panel1.Name = "panel1";
-            this.toolTip1.SetToolTip(this.panel1, resources.GetString("panel1.ToolTip"));
             // 
             // label4
             // 
             resources.ApplyResources(this.label4, "label4");
             this.label4.Name = "label4";
             this.label4.resize = false;
-            this.toolTip1.SetToolTip(this.label4, resources.GetString("label4.ToolTip"));
             // 
             // label3
             // 
             resources.ApplyResources(this.label3, "label3");
             this.label3.Name = "label3";
             this.label3.resize = false;
-            this.toolTip1.SetToolTip(this.label3, resources.GetString("label3.ToolTip"));
             // 
             // label2
             // 
             resources.ApplyResources(this.label2, "label2");
             this.label2.Name = "label2";
             this.label2.resize = false;
-            this.toolTip1.SetToolTip(this.label2, resources.GetString("label2.ToolTip"));
             // 
             // label1
             // 
             resources.ApplyResources(this.label1, "label1");
             this.label1.Name = "label1";
             this.label1.resize = false;
-            this.toolTip1.SetToolTip(this.label1, resources.GetString("label1.ToolTip"));
             // 
             // panel2
             // 
-            resources.ApplyResources(this.panel2, "panel2");
             this.panel2.Controls.Add(this.label30);
             this.panel2.Controls.Add(this.TXT_yaw);
             this.panel2.Controls.Add(this.label11);
@@ -355,75 +329,65 @@
             this.panel2.Controls.Add(this.TXT_roll);
             this.panel2.Controls.Add(this.TXT_pitch);
             this.panel2.Controls.Add(this.TXT_heading);
+            resources.ApplyResources(this.panel2, "panel2");
             this.panel2.Name = "panel2";
-            this.toolTip1.SetToolTip(this.panel2, resources.GetString("panel2.ToolTip"));
             // 
             // label30
             // 
             resources.ApplyResources(this.label30, "label30");
             this.label30.Name = "label30";
             this.label30.resize = false;
-            this.toolTip1.SetToolTip(this.label30, resources.GetString("label30.ToolTip"));
             // 
             // TXT_yaw
             // 
             resources.ApplyResources(this.TXT_yaw, "TXT_yaw");
             this.TXT_yaw.Name = "TXT_yaw";
             this.TXT_yaw.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_yaw, resources.GetString("TXT_yaw.ToolTip"));
             // 
             // label11
             // 
             resources.ApplyResources(this.label11, "label11");
             this.label11.Name = "label11";
             this.label11.resize = false;
-            this.toolTip1.SetToolTip(this.label11, resources.GetString("label11.ToolTip"));
             // 
             // label7
             // 
             resources.ApplyResources(this.label7, "label7");
             this.label7.Name = "label7";
             this.label7.resize = false;
-            this.toolTip1.SetToolTip(this.label7, resources.GetString("label7.ToolTip"));
             // 
             // label6
             // 
             resources.ApplyResources(this.label6, "label6");
             this.label6.Name = "label6";
             this.label6.resize = false;
-            this.toolTip1.SetToolTip(this.label6, resources.GetString("label6.ToolTip"));
             // 
             // label5
             // 
             resources.ApplyResources(this.label5, "label5");
             this.label5.Name = "label5";
             this.label5.resize = false;
-            this.toolTip1.SetToolTip(this.label5, resources.GetString("label5.ToolTip"));
             // 
             // label8
             // 
             resources.ApplyResources(this.label8, "label8");
             this.label8.Name = "label8";
             this.label8.resize = false;
-            this.toolTip1.SetToolTip(this.label8, resources.GetString("label8.ToolTip"));
             // 
             // label9
             // 
             resources.ApplyResources(this.label9, "label9");
             this.label9.Name = "label9";
             this.label9.resize = false;
-            this.toolTip1.SetToolTip(this.label9, resources.GetString("label9.ToolTip"));
             // 
             // label10
             // 
             resources.ApplyResources(this.label10, "label10");
             this.label10.Name = "label10";
             this.label10.resize = false;
-            this.toolTip1.SetToolTip(this.label10, resources.GetString("label10.ToolTip"));
             // 
             // panel3
             // 
-            resources.ApplyResources(this.panel3, "panel3");
             this.panel3.Controls.Add(this.label16);
             this.panel3.Controls.Add(this.label15);
             this.panel3.Controls.Add(this.label14);
@@ -433,47 +397,41 @@
             this.panel3.Controls.Add(this.TXT_servopitch);
             this.panel3.Controls.Add(this.TXT_servorudder);
             this.panel3.Controls.Add(this.TXT_servothrottle);
+            resources.ApplyResources(this.panel3, "panel3");
             this.panel3.Name = "panel3";
-            this.toolTip1.SetToolTip(this.panel3, resources.GetString("panel3.ToolTip"));
             // 
             // label16
             // 
             resources.ApplyResources(this.label16, "label16");
             this.label16.Name = "label16";
             this.label16.resize = false;
-            this.toolTip1.SetToolTip(this.label16, resources.GetString("label16.ToolTip"));
             // 
             // label15
             // 
             resources.ApplyResources(this.label15, "label15");
             this.label15.Name = "label15";
             this.label15.resize = false;
-            this.toolTip1.SetToolTip(this.label15, resources.GetString("label15.ToolTip"));
             // 
             // label14
             // 
             resources.ApplyResources(this.label14, "label14");
             this.label14.Name = "label14";
             this.label14.resize = false;
-            this.toolTip1.SetToolTip(this.label14, resources.GetString("label14.ToolTip"));
             // 
             // label13
             // 
             resources.ApplyResources(this.label13, "label13");
             this.label13.Name = "label13";
             this.label13.resize = false;
-            this.toolTip1.SetToolTip(this.label13, resources.GetString("label13.ToolTip"));
             // 
             // label12
             // 
             resources.ApplyResources(this.label12, "label12");
             this.label12.Name = "label12";
             this.label12.resize = false;
-            this.toolTip1.SetToolTip(this.label12, resources.GetString("label12.ToolTip"));
             // 
             // panel4
             // 
-            resources.ApplyResources(this.panel4, "panel4");
             this.panel4.Controls.Add(this.label20);
             this.panel4.Controls.Add(this.label19);
             this.panel4.Controls.Add(this.TXT_control_mode);
@@ -485,57 +443,50 @@
             this.panel4.Controls.Add(this.TXT_wpdist);
             this.panel4.Controls.Add(this.TXT_bererror);
             this.panel4.Controls.Add(this.TXT_alterror);
+            resources.ApplyResources(this.panel4, "panel4");
             this.panel4.Name = "panel4";
-            this.toolTip1.SetToolTip(this.panel4, resources.GetString("panel4.ToolTip"));
             // 
             // label20
             // 
             resources.ApplyResources(this.label20, "label20");
             this.label20.Name = "label20";
             this.label20.resize = false;
-            this.toolTip1.SetToolTip(this.label20, resources.GetString("label20.ToolTip"));
             // 
             // label19
             // 
             resources.ApplyResources(this.label19, "label19");
             this.label19.Name = "label19";
             this.label19.resize = false;
-            this.toolTip1.SetToolTip(this.label19, resources.GetString("label19.ToolTip"));
             // 
             // TXT_control_mode
             // 
             resources.ApplyResources(this.TXT_control_mode, "TXT_control_mode");
             this.TXT_control_mode.Name = "TXT_control_mode";
             this.TXT_control_mode.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_control_mode, resources.GetString("TXT_control_mode.ToolTip"));
             // 
             // TXT_WP
             // 
             resources.ApplyResources(this.TXT_WP, "TXT_WP");
             this.TXT_WP.Name = "TXT_WP";
             this.TXT_WP.resize = false;
-            this.toolTip1.SetToolTip(this.TXT_WP, resources.GetString("TXT_WP.ToolTip"));
             // 
             // label18
             // 
             resources.ApplyResources(this.label18, "label18");
             this.label18.Name = "label18";
             this.label18.resize = false;
-            this.toolTip1.SetToolTip(this.label18, resources.GetString("label18.ToolTip"));
             // 
             // label17
             // 
             resources.ApplyResources(this.label17, "label17");
             this.label17.Name = "label17";
             this.label17.resize = false;
-            this.toolTip1.SetToolTip(this.label17, resources.GetString("label17.ToolTip"));
             // 
             // panel5
             // 
-            resources.ApplyResources(this.panel5, "panel5");
             this.panel5.Controls.Add(this.ConnectComPort);
+            resources.ApplyResources(this.panel5, "panel5");
             this.panel5.Name = "panel5";
-            this.toolTip1.SetToolTip(this.panel5, resources.GetString("panel5.ToolTip"));
             // 
             // zg1
             // 
@@ -548,7 +499,6 @@
             this.zg1.ScrollMinX = 0D;
             this.zg1.ScrollMinY = 0D;
             this.zg1.ScrollMinY2 = 0D;
-            this.toolTip1.SetToolTip(this.zg1, resources.GetString("zg1.ToolTip"));
             // 
             // timer1
             // 
@@ -556,7 +506,6 @@
             // 
             // panel6
             // 
-            resources.ApplyResources(this.panel6, "panel6");
             this.panel6.Controls.Add(this.label28);
             this.panel6.Controls.Add(this.label29);
             this.panel6.Controls.Add(this.label27);
@@ -569,42 +518,37 @@
             this.panel6.Controls.Add(this.TXT_ruddergain);
             this.panel6.Controls.Add(this.TXT_pitchgain);
             this.panel6.Controls.Add(this.TXT_rollgain);
+            resources.ApplyResources(this.panel6, "panel6");
             this.panel6.Name = "panel6";
-            this.toolTip1.SetToolTip(this.panel6, resources.GetString("panel6.ToolTip"));
             // 
             // label28
             // 
             resources.ApplyResources(this.label28, "label28");
             this.label28.Name = "label28";
             this.label28.resize = false;
-            this.toolTip1.SetToolTip(this.label28, resources.GetString("label28.ToolTip"));
             // 
             // label29
             // 
             resources.ApplyResources(this.label29, "label29");
             this.label29.Name = "label29";
             this.label29.resize = false;
-            this.toolTip1.SetToolTip(this.label29, resources.GetString("label29.ToolTip"));
             // 
             // label27
             // 
             resources.ApplyResources(this.label27, "label27");
             this.label27.Name = "label27";
             this.label27.resize = false;
-            this.toolTip1.SetToolTip(this.label27, resources.GetString("label27.ToolTip"));
             // 
             // label25
             // 
             resources.ApplyResources(this.label25, "label25");
             this.label25.Name = "label25";
             this.label25.resize = false;
-            this.toolTip1.SetToolTip(this.label25, resources.GetString("label25.ToolTip"));
             // 
             // TXT_throttlegain
             // 
             resources.ApplyResources(this.TXT_throttlegain, "TXT_throttlegain");
             this.TXT_throttlegain.Name = "TXT_throttlegain";
-            this.toolTip1.SetToolTip(this.TXT_throttlegain, resources.GetString("TXT_throttlegain.ToolTip"));
             this.TXT_throttlegain.TextChanged += new System.EventHandler(this.TXT_throttlegain_TextChanged);
             // 
             // label24
@@ -612,48 +556,41 @@
             resources.ApplyResources(this.label24, "label24");
             this.label24.Name = "label24";
             this.label24.resize = false;
-            this.toolTip1.SetToolTip(this.label24, resources.GetString("label24.ToolTip"));
             // 
             // label23
             // 
             resources.ApplyResources(this.label23, "label23");
             this.label23.Name = "label23";
             this.label23.resize = false;
-            this.toolTip1.SetToolTip(this.label23, resources.GetString("label23.ToolTip"));
             // 
             // label22
             // 
             resources.ApplyResources(this.label22, "label22");
             this.label22.Name = "label22";
             this.label22.resize = false;
-            this.toolTip1.SetToolTip(this.label22, resources.GetString("label22.ToolTip"));
             // 
             // label21
             // 
             resources.ApplyResources(this.label21, "label21");
             this.label21.Name = "label21";
             this.label21.resize = false;
-            this.toolTip1.SetToolTip(this.label21, resources.GetString("label21.ToolTip"));
             // 
             // TXT_ruddergain
             // 
             resources.ApplyResources(this.TXT_ruddergain, "TXT_ruddergain");
             this.TXT_ruddergain.Name = "TXT_ruddergain";
-            this.toolTip1.SetToolTip(this.TXT_ruddergain, resources.GetString("TXT_ruddergain.ToolTip"));
             this.TXT_ruddergain.TextChanged += new System.EventHandler(this.TXT_ruddergain_TextChanged);
             // 
             // TXT_pitchgain
             // 
             resources.ApplyResources(this.TXT_pitchgain, "TXT_pitchgain");
             this.TXT_pitchgain.Name = "TXT_pitchgain";
-            this.toolTip1.SetToolTip(this.TXT_pitchgain, resources.GetString("TXT_pitchgain.ToolTip"));
             this.TXT_pitchgain.TextChanged += new System.EventHandler(this.TXT_pitchgain_TextChanged);
             // 
             // TXT_rollgain
             // 
             resources.ApplyResources(this.TXT_rollgain, "TXT_rollgain");
             this.TXT_rollgain.Name = "TXT_rollgain";
-            this.toolTip1.SetToolTip(this.TXT_rollgain, resources.GetString("TXT_rollgain.ToolTip"));
             this.TXT_rollgain.TextChanged += new System.EventHandler(this.TXT_rollgain_TextChanged);
             // 
             // label26
@@ -661,13 +598,11 @@
             resources.ApplyResources(this.label26, "label26");
             this.label26.Name = "label26";
             this.label26.resize = false;
-            this.toolTip1.SetToolTip(this.label26, resources.GetString("label26.ToolTip"));
             // 
             // CHKdisplayall
             // 
             resources.ApplyResources(this.CHKdisplayall, "CHKdisplayall");
             this.CHKdisplayall.Name = "CHKdisplayall";
-            this.toolTip1.SetToolTip(this.CHKdisplayall, resources.GetString("CHKdisplayall.ToolTip"));
             this.CHKdisplayall.UseVisualStyleBackColor = true;
             this.CHKdisplayall.CheckedChanged += new System.EventHandler(this.CHKdisplayall_CheckedChanged);
             // 
@@ -677,7 +612,6 @@
             this.CHKgraphroll.Checked = true;
             this.CHKgraphroll.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHKgraphroll.Name = "CHKgraphroll";
-            this.toolTip1.SetToolTip(this.CHKgraphroll, resources.GetString("CHKgraphroll.ToolTip"));
             this.CHKgraphroll.UseVisualStyleBackColor = true;
             // 
             // CHKgraphpitch
@@ -686,7 +620,6 @@
             this.CHKgraphpitch.Checked = true;
             this.CHKgraphpitch.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHKgraphpitch.Name = "CHKgraphpitch";
-            this.toolTip1.SetToolTip(this.CHKgraphpitch, resources.GetString("CHKgraphpitch.ToolTip"));
             this.CHKgraphpitch.UseVisualStyleBackColor = true;
             // 
             // CHKgraphrudder
@@ -695,7 +628,6 @@
             this.CHKgraphrudder.Checked = true;
             this.CHKgraphrudder.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHKgraphrudder.Name = "CHKgraphrudder";
-            this.toolTip1.SetToolTip(this.CHKgraphrudder, resources.GetString("CHKgraphrudder.ToolTip"));
             this.CHKgraphrudder.UseVisualStyleBackColor = true;
             // 
             // CHKgraphthrottle
@@ -704,14 +636,12 @@
             this.CHKgraphthrottle.Checked = true;
             this.CHKgraphthrottle.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHKgraphthrottle.Name = "CHKgraphthrottle";
-            this.toolTip1.SetToolTip(this.CHKgraphthrottle, resources.GetString("CHKgraphthrottle.ToolTip"));
             this.CHKgraphthrottle.UseVisualStyleBackColor = true;
             // 
             // but_advsettings
             // 
             resources.ApplyResources(this.but_advsettings, "but_advsettings");
             this.but_advsettings.Name = "but_advsettings";
-            this.toolTip1.SetToolTip(this.but_advsettings, resources.GetString("but_advsettings.ToolTip"));
             this.but_advsettings.UseVisualStyleBackColor = true;
             this.but_advsettings.Click += new System.EventHandler(this.but_advsettings_Click);
             // 
@@ -719,14 +649,12 @@
             // 
             resources.ApplyResources(this.chkSensor, "chkSensor");
             this.chkSensor.Name = "chkSensor";
-            this.toolTip1.SetToolTip(this.chkSensor, resources.GetString("chkSensor.ToolTip"));
             this.chkSensor.UseVisualStyleBackColor = true;
             // 
             // CHK_quad
             // 
             resources.ApplyResources(this.CHK_quad, "CHK_quad");
             this.CHK_quad.Name = "CHK_quad";
-            this.toolTip1.SetToolTip(this.CHK_quad, resources.GetString("CHK_quad.ToolTip"));
             this.CHK_quad.UseVisualStyleBackColor = true;
             this.CHK_quad.CheckedChanged += new System.EventHandler(this.CHK_quad_CheckedChanged);
             // 
@@ -734,7 +662,6 @@
             // 
             resources.ApplyResources(this.BUT_startfgquad, "BUT_startfgquad");
             this.BUT_startfgquad.Name = "BUT_startfgquad";
-            this.toolTip1.SetToolTip(this.BUT_startfgquad, resources.GetString("BUT_startfgquad.ToolTip"));
             this.BUT_startfgquad.UseVisualStyleBackColor = true;
             this.BUT_startfgquad.Click += new System.EventHandler(this.BUT_startfgquad_Click);
             // 
@@ -742,7 +669,6 @@
             // 
             resources.ApplyResources(this.BUT_startfgplane, "BUT_startfgplane");
             this.BUT_startfgplane.Name = "BUT_startfgplane";
-            this.toolTip1.SetToolTip(this.BUT_startfgplane, resources.GetString("BUT_startfgplane.ToolTip"));
             this.BUT_startfgplane.UseVisualStyleBackColor = true;
             this.BUT_startfgplane.Click += new System.EventHandler(this.BUT_startfgplane_Click);
             // 
@@ -750,7 +676,6 @@
             // 
             resources.ApplyResources(this.BUT_startxplane, "BUT_startxplane");
             this.BUT_startxplane.Name = "BUT_startxplane";
-            this.toolTip1.SetToolTip(this.BUT_startxplane, resources.GetString("BUT_startxplane.ToolTip"));
             this.BUT_startxplane.UseVisualStyleBackColor = true;
             this.BUT_startxplane.Click += new System.EventHandler(this.BUT_startxplane_Click);
             // 
@@ -758,7 +683,6 @@
             // 
             resources.ApplyResources(this.CHK_heli, "CHK_heli");
             this.CHK_heli.Name = "CHK_heli";
-            this.toolTip1.SetToolTip(this.CHK_heli, resources.GetString("CHK_heli.ToolTip"));
             this.CHK_heli.UseVisualStyleBackColor = true;
             // 
             // RAD_aerosimrc
@@ -813,7 +737,6 @@
             this.Controls.Add(this.CHKREV_pitch);
             this.Controls.Add(this.CHKREV_roll);
             this.Name = "Simulation";
-            this.toolTip1.SetToolTip(this, resources.GetString("$this.ToolTip"));
             this.Load += new System.EventHandler(this.Simulation_Load);
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).EndInit();
             this.panel1.ResumeLayout(false);

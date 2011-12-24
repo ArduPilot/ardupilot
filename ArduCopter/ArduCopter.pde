@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.1.0r"
+#define THISFIRMWARE "ArduCopter V2.1.1 alpha"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -32,6 +32,9 @@ Oliver				:Piezo support
 Guntars				:Arming safety suggestion
 
 And much more so PLEASE PM me on DIYDRONES to add your contribution to the List
+
+Requires modified "mrelax" version of Arduino, which can be found here:
+http://code.google.com/p/ardupilot-mega/downloads/list
 
 */
 
@@ -300,6 +303,8 @@ static const char* flight_mode_strings[] = {
 */
 
 // temp
+static int16_t x_GPS_speed;
+static int16_t y_GPS_speed;
 static int16_t x_actual_speed;
 static int16_t y_actual_speed;
 static int16_t x_rate_error;
@@ -311,6 +316,7 @@ static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
 static int16_t  motor_out[8];
+static int16_t  motor_filtered[8];					// added to try and deal with biger motors
 static bool		do_simple 			= false;
 
 static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
@@ -393,7 +399,8 @@ static int8_t CH7_wp_index;
 
 // Airspeed
 // --------
-static int16_t		airspeed;							// m/s * 100
+static int16_t		airspeed;						// m/s * 100
+static float 		thrust = .005;					// for estimating the velocity
 
 // Location Errors
 // ---------------
@@ -529,6 +536,16 @@ static struct   Location guided_WP;					// guided mode waypoint
 static int32_t 	target_altitude;					// used for
 static boolean	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
 
+Vector3f accels_rot;
+
+// this is just me playing with the sensors
+// the 2 code is not functioning and you should try 1 instead
+#if ACCEL_ALT_HOLD == 2
+	static float Z_integrator;
+	static float Z_gain = 3;
+	static float Z_offset = 0;
+#endif
+
 // IMU variables
 // -------------
 static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
@@ -598,10 +615,16 @@ void loop()
 		// reads all of the necessary trig functions for cameras, throttle, etc.
 		update_trig();
 
+		// update our velocity estimate based on IMU at 50hz
+		// -------------------------------------------------
+		esitmate_velocity();
+
 		// perform 10hz tasks
+		// ------------------
 		medium_loop();
 
-		// Stuff to run at full 50hz, but after the loops
+		// Stuff to run at full 50hz, but after the med loops
+		// --------------------------------------------------
 		fifty_hz_loop();
 
 		counter_one_herz++;
@@ -668,22 +691,15 @@ static void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			#ifdef OPTFLOW_ENABLED
-			if(g.optflow_enabled){
-				optflow.read();
-				optflow.update_position(dcm.roll, dcm.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
-
-				// write to log
-				if (g.log_bitmask & MASK_LOG_OPTFLOW){
-					Log_Write_Optflow();
-				}
-			}
-			#endif
-
 			if(GPS_enabled){
 				update_GPS();
 			}
 
+			#ifdef OPTFLOW_ENABLED
+			if(g.optflow_enabled){
+				update_optical_flow();
+			}
+			#endif
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
@@ -715,9 +731,24 @@ static void medium_loop()
 				// -------------------
 				g_gps->new_data 	= false;
 
+
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
 				if(navigate()){
+
+					// this calculates the velocity for Loiter
+					// only called when there is new data
+					// ----------------------------------
+					calc_XY_velocity();
+
+					// If we have optFlow enabled we can grab a more accurate speed
+					// here and override the speed from the GPS
+					// ----------------------------------------
+					if(g.optflow_enabled && current_loc.alt < 500){
+						// optflow wont be enabled on 1280's
+						x_GPS_speed 	= optflow.x_cm;
+						y_GPS_speed 	= optflow.y_cm;
+					}
 
 					// control mode specific updates
 					// -----------------------------
@@ -898,7 +929,7 @@ static void slow_loop()
 
 			#if AUTO_RESET_LOITER == 1
 			if(control_mode == LOITER){
-				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 1000){
+				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
 					// reset LOITER to current position
 					next_WP 	= current_loc;
 					// clear Loiter Iterms
@@ -971,6 +1002,39 @@ static void super_slow_loop()
 	*/
 }
 
+// updated at 10 Hz
+#ifdef OPTFLOW_ENABLED
+static void update_optical_flow(void)
+{
+	optflow.read();
+	optflow.update_position(dcm.roll, dcm.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
+
+	// write to log
+	if (g.log_bitmask & MASK_LOG_OPTFLOW){
+		Log_Write_Optflow();
+	}
+
+	if(g.optflow_enabled && current_loc.alt < 500){
+		if(GPS_enabled){
+			// if we have a GPS, we add some detail to the GPS
+			// XXX this may not ne right
+			current_loc.lng += optflow.vlon;
+			current_loc.lat += optflow.vlat;
+
+			// some sort of error correction routine
+			//current_loc.lng -= ERR_GAIN * (float)(current_loc.lng - x_GPS_speed); // error correction
+			//current_loc.lng -= ERR_GAIN * (float)(current_loc.lng - x_GPS_speed); // error correction
+		}else{
+			// if we do not have a GPS, use relative from 0 for lat and lon
+			current_loc.lng = optflow.vlon;
+			current_loc.lat = optflow.vlat;
+		}
+		// OK to run the nav routines
+		nav_ok = true;
+	}
+}
+#endif
+
 static void update_GPS(void)
 {
 	g_gps->update();
@@ -1017,6 +1081,14 @@ static void update_GPS(void)
 				ground_start_count = 5;
 
 			}else{
+				// block until we get a good fix
+				// -----------------------------
+				while (!g_gps->new_data || !g_gps->fix) {
+					g_gps->update();
+					// we need GCS update while waiting for GPS, to ensure
+					// we react to HIL mavlink
+					gcs_update();
+				}
 				init_home();
 				ground_start_count = 0;
 			}
@@ -1129,11 +1201,14 @@ void update_roll_pitch_mode(void)
 	}
 }
 
+#define THROTTLE_FILTER_SIZE 4
+
 // 50 hz update rate, not 250
 void update_throttle_mode(void)
 {
-	switch(throttle_mode){
+	int16_t throttle_out;
 
+	switch(throttle_mode){
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
 			    #if FRAME_CONFIG == HELI_FRAME
@@ -1162,21 +1237,18 @@ void update_throttle_mode(void)
 			// fall through
 
 		case THROTTLE_AUTO:
-
 			// calculate angle boost
 			angle_boost = get_angle_boost(g.throttle_cruise);
 
 			// manual command up or down?
 			if(manual_boost != 0){
-
-				//remove alt_hold_velocity when implemented
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + manual_boost);
+					throttle_out = heli_get_angle_boost(g.throttle_cruise + manual_boost);
 				#else
-					g.rc_3.servo_out = g.throttle_cruise + angle_boost + manual_boost;
+					throttle_out = g.throttle_cruise + angle_boost + manual_boost;
 				#endif
 
-				// reset next_WP.alt
+				// reset next_WP.alt and don't go below 1 meter
 				next_WP.alt = max(current_loc.alt, 100);
 
 			}else{
@@ -1191,14 +1263,26 @@ void update_throttle_mode(void)
 
 					// clear the new data flag
 					invalid_throttle = false;
+					/*
+					Serial.printf("tar_alt: %d, actual_alt: %d \talt_err: %d, \tnav_thr: %d, \talt Int: %d, \trate_int %d \n",
+										next_WP.alt,
+										current_loc.alt,
+										altitude_error,
+										nav_throttle,
+										(int16_t)g.pi_alt_hold.get_integrator(),
+										(int16_t) g.pi_throttle.get_integrator());
+					*/
 				}
 
 				#if FRAME_CONFIG == HELI_FRAME
-					g.rc_3.servo_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
+					throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
 				#else
-					g.rc_3.servo_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
+					throttle_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
 				#endif
 			}
+
+			// light filter of output
+			g.rc_3.servo_out = (g.rc_3.servo_out * (THROTTLE_FILTER_SIZE - 1) + throttle_out) / THROTTLE_FILTER_SIZE;
 			break;
 	}
 }
@@ -1210,8 +1294,8 @@ static void update_navigation()
 	// ------------------------------------------------------------------------
 	switch(control_mode){
 		case AUTO:
-			verify_commands();
 			// note: wp_control is handled by commands_logic
+			verify_commands();
 
 			// calculates desired Yaw
 			update_auto_yaw();
@@ -1244,7 +1328,6 @@ static void update_navigation()
 
 			}else{
 				// calculates desired Yaw
-				// XXX this is an experiment
 				#if FRAME_CONFIG ==	HELI_FRAME
 				update_auto_yaw();
 				#endif
@@ -1329,14 +1412,14 @@ static void update_trig(void){
 	yawvector.normalize();
 
 
-	sin_pitch_y 	= -temp.c.x;
-	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));
+	sin_pitch_y 	= -temp.c.x;						// level = 0
+	cos_pitch_x 	= sqrt(1 - (temp.c.x * temp.c.x));	// level = 1
 
-	cos_roll_x 		= temp.c.z / cos_pitch_x;
-	sin_roll_y 		= temp.c.y / cos_pitch_x;
+	sin_roll_y 		= temp.c.y / cos_pitch_x;			// level = 0
+	cos_roll_x 		= temp.c.z / cos_pitch_x;			// level = 1
 
-	cos_yaw_x 		= yawvector.y;	// 0 x = north
-	sin_yaw_y 		= yawvector.x;	// 1 y
+	sin_yaw_y 		= yawvector.x;						// 1y = north
+	cos_yaw_x 		= yawvector.y;						// 0x = north
 
 	//flat:
 	// 0 ° = cos_yaw:  0.00, sin_yaw:  1.00,
@@ -1410,7 +1493,7 @@ static void update_altitude()
 			climb_rate 		= ((float)sonar_rate * (1.0 - scale)) + (float)baro_rate * scale;
 
 		}else{
-			// we must be higher than sonar, don't get tricked by bad sonar reads
+			// we must be higher than sonar (>800), don't get tricked by bad sonar reads
 			current_loc.alt = baro_alt + home.alt; // home alt = 0
 			// dont blend, go straight baro
 			climb_rate 		= baro_rate;
@@ -1469,10 +1552,11 @@ static void tuning(){
 
 	switch(g.radio_tuning){
 
-		/*case CH6_STABILIZE_KP:
-			g.rc_6.set_range(0,2000); 		// 0 to 8
-			tuning_value = (float)g.rc_6.control_in / 100.0;
-			alt_hold_gain = tuning_value;
+		/*
+		case CH6_THRUST:
+			g.rc_6.set_range(0,1000); 		// 0 to 1
+			//Z_gain = tuning_value * 5;
+			thrust	= tuning_value * .2;
 			break;*/
 
 		case CH6_STABILIZE_KP:

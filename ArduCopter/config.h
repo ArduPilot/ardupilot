@@ -598,7 +598,7 @@
 # define LOITER_P			.3		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.05	//
+# define LOITER_I			0.01	//
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
@@ -630,7 +630,7 @@
 # define THR_HOLD_P		0.4			//
 #endif
 #ifndef THR_HOLD_I
-# define THR_HOLD_I		0.02		// with 4m error, 12.5s windup
+# define THR_HOLD_I		0.01		// with 4m error, 12.5s windup
 #endif
 #ifndef THR_HOLD_IMAX
 # define THR_HOLD_IMAX	300
@@ -652,7 +652,7 @@
 // Crosstrack compensation
 //
 #ifndef CROSSTRACK_GAIN
-# define CROSSTRACK_GAIN		4
+# define CROSSTRACK_GAIN		40
 #endif
 
 
@@ -782,7 +782,7 @@
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT		3
+# define WP_RADIUS_DEFAULT		1
 #endif
 
 #ifndef LOITER_RADIUS
