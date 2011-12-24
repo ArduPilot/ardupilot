@@ -213,29 +213,11 @@ static void init_ardupilot()
 	mavlink_system.sysid = g.sysid_this_mav;
 
     if (need_log_erase) {
-        uint8_t count = 0;
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
 
         #if LOGGING_ENABLED == ENABLED
         do_erase_logs(mavlink_delay);
         #endif
-
-		while (true) {
-            if (count++ % 20 == 0) {
-                Serial.printf_P(PSTR("Please Run Setup...\n"));
-            }
-			mavlink_delay(100);
-			if(motor_light){
-				digitalWrite(A_LED_PIN, LED_ON);
-				digitalWrite(B_LED_PIN, LED_ON);
-				digitalWrite(C_LED_PIN, LED_ON);
-			}else{
-				digitalWrite(A_LED_PIN, LED_OFF);
-				digitalWrite(B_LED_PIN, LED_OFF);
-				digitalWrite(C_LED_PIN, LED_OFF);
-			}
-			motor_light = !motor_light;
-		}
     }
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
