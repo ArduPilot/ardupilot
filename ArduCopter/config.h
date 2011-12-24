@@ -672,22 +672,21 @@
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
-
+// Logging must be disabled for 1280 build.
 #if defined( __AVR_ATmega1280__ )
-# ifndef CONFIG_LOGGING
-#  define CONFIG_LOGGING LOGGING_SIMPLE
-# elif CONFIG_LOGGING != LOGGING_SIMPLE
-#  warning "Simple Logging is the only officially supported mode on mega 1280"
+# if LOGGING_ENABLED == ENABLED
+// If logging was enabled in APM_Config or command line, warn the user.
+#  warning "Logging is not supported on ATmega1280"
+#  undef LOGGING_ENABLED
 # endif
+# ifndef LOGGING_ENABLED
+#  define LOGGING_ENABLED    DISABLED
+# endif
+#elif !defined(LOGGING_ENABLED)
+// Logging is enabled by default for all other builds.
+# define LOGGING_ENABLED		ENABLED
 #endif
 
-#ifndef CONFIG_LOGGING
-# define CONFIG_LOGGING LOGGING_VERBOSE
-#endif
-
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED ENABLED
-#endif
 
 #ifndef LOG_ATTITUDE_FAST
 # define LOG_ATTITUDE_FAST		DISABLED
@@ -782,7 +781,7 @@
 // Navigation defaults
 //
 #ifndef WP_RADIUS_DEFAULT
-# define WP_RADIUS_DEFAULT		1
+# define WP_RADIUS_DEFAULT	1
 #endif
 
 #ifndef LOITER_RADIUS
