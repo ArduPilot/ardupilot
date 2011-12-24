@@ -173,7 +173,7 @@ static void calc_nav_yaw(float speed_scaler)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	Vector3f temp = imu.get_accel();
-	long error = -temp.y;
+	long error = (long)(-temp.y*100.0);
 
 	// Control is a feedforward from the aileron control + a PID to coordinate the turn (drive y axis accel to zero)
 	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out + g.pidServoRudder.get_pid(error, delta_ms_fast_loop, speed_scaler);
