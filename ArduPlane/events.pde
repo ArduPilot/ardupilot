@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 
-static void failsafe_short_on_event()
+static void failsafe_short_on_event(int fstype)
 {
 	// This is how to handle a short loss of control signal failsafe.
-	failsafe = FAILSAFE_SHORT;
+	failsafe = fstype;
 	ch3_failsafe_timer = millis();
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
 	switch(control_mode)
@@ -32,11 +32,12 @@ static void failsafe_short_on_event()
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
-static void failsafe_long_on_event()
+static void failsafe_long_on_event(int fstype)
 {
 	// This is how to handle a long loss of control signal failsafe.
 	gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
 	APM_RC.clearOverride();		//  If the GCS is locked up we allow control to revert to RC
+	failsafe = fstype;
 	switch(control_mode)
 	{
 		case MANUAL: 
