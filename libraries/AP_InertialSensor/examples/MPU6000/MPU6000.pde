@@ -31,6 +31,10 @@ void setup(void)
     isr_registry.init();
     scheduler.init(&isr_registry);
 
+	// we need to stop the barometer from holding the SPI bus
+	pinMode(40, OUTPUT);
+    digitalWrite(40, HIGH);
+
 	ins.init(&scheduler);
 }
 
