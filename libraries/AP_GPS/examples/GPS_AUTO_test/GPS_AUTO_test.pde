@@ -16,6 +16,15 @@ AP_GPS_Auto GPS(&Serial1, &gps);
 #define T6 1000000
 #define T7 10000000
 
+// print_latlon - prints an latitude or longitude value held in an int32_t 
+// probably this should be moved to AP_Common
+void print_latlon(BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion = lat_or_lon / T7;
+	int32_t frac_portion = labs(lat_or_lon - dec_portion*T7);
+	s->printf("%ld.%07ld",dec_portion,frac_portion);
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -31,9 +40,11 @@ void loop()
     gps->update();
     if (gps->new_data) {
         if (gps->fix) {
-            Serial.printf("\nLat: %.7f Lon: %.7f Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
-                          (float)gps->latitude / T7,
-                          (float)gps->longitude / T7,
+            Serial.print("\nLat: ");
+            print_latlon(&Serial,gps->latitude);
+            Serial.print(" Lon: ");
+            print_latlon(&Serial,gps->longitude);
+            Serial.printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %lu",
                           (float)gps->altitude / 100.0,
                           (float)gps->ground_speed / 100.0,
                           (int)gps->ground_course / 100,

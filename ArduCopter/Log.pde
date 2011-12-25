@@ -431,7 +431,14 @@ uint32_t check_hash;
 	return -1;
 }
 
-
+// print_latlon - prints an latitude or longitude value held in an int32_t 
+// probably this should be moved to AP_Common
+void print_latlon(BetterStream *s, int32_t lat_or_lon)
+{
+    int32_t dec_portion = lat_or_lon / T7;
+    int32_t frac_portion = labs(lat_or_lon - dec_portion*T7);
+    s->printf("%ld.%07ld",dec_portion,frac_portion);
+}
 
 // Write an GPS packet. Total length : 30 bytes
 static void Log_Write_GPS()
@@ -459,19 +466,21 @@ static void Log_Read_GPS()
 {
 	int32_t temp1 	= DataFlash.ReadLong();			// 1 time
 	int8_t temp2 	= DataFlash.ReadByte();			// 2 sats
-	float temp3 	= DataFlash.ReadLong() / t7;	// 3 lat
-	float temp4 	= DataFlash.ReadLong() / t7;	// 4 lon
+	int32_t temp3 	= DataFlash.ReadLong();			// 3 lat
+	int32_t temp4 	= DataFlash.ReadLong();			// 4 lon
 	float temp5 	= DataFlash.ReadLong() / 100.0;	// 5 gps alt
 	float temp6 	= DataFlash.ReadLong() / 100.0;	// 6 sensor alt
 	int16_t temp7 	= DataFlash.ReadInt();			// 7 ground speed
 	int32_t temp8 	= DataFlash.ReadLong();// 8 ground course
 
 							//  1   2    3      4     5      6      7    8
-	Serial.printf_P(PSTR("GPS, %ld, %d, %4.7f, %4.7f, %4.4f, %4.4f, %d, %ld\n"),
+	Serial.printf_P(PSTR("GPS, %ld, %d, "),
 							temp1,		// 1 time
-							temp2,		// 2 sats
-							temp3,		// 3 lat
-							temp4,		// 4 lon
+							temp2);		// 2 sats
+	print_latlon(&Serial, temp3);
+	Serial.print_P(PSTR(", "));
+	print_latlon(&Serial, temp4);
+	Serial.printf_P(PSTR(", %4.4f, %4.4f, %d, %ld\n"),
 							temp5,		// 5 gps alt
 							temp6,		// 6 sensor alt
 							temp7,		// 7 ground speed

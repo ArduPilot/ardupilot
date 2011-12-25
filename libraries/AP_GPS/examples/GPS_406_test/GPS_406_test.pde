@@ -7,8 +7,8 @@
 */
 
 #include <FastSerial.h>
+#include <AP_Common.h>
 #include <AP_GPS.h>
-#include <stdio.h>
 
 FastSerialPort0(Serial);
 FastSerialPort1(Serial1);

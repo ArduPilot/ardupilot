@@ -28,8 +28,8 @@ AP_GPS_MTK::init(void)
     // XXX should assume binary, let GPS_AUTO handle dynamic config?
     _port->print(MTK_SET_BINARY);
 
-    // set 4Hz update rate
-    _port->print(MTK_OUTPUT_4HZ);
+    // set 10Hz update rate
+    _port->print(MTK_OUTPUT_10HZ);
 
     // set initial epoch code
     _epoch = TIME_OF_DAY;
