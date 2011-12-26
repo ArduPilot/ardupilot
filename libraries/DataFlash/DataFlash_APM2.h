@@ -42,6 +42,7 @@ class DataFlash_APM2 : public DataFlash_Class
 	unsigned char df_device_0;
 	unsigned char df_device_1;
 	uint16_t df_PageSize;
+	uint16_t df_NumPages;
 
 	DataFlash_APM2(); // Constructor
 	void Init();

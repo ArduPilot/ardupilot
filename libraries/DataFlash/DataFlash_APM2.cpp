@@ -53,7 +53,7 @@ extern "C" {
 	# error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #endif
 
-#define DF_MAX_PAGE 8192
+#define DF_LAST_PAGE 8192
 
 // AT45DB321D Commands (from Datasheet)
 #define DF_TRANSFER_PAGE_TO_BUFFER_1   0x53
@@ -75,8 +75,6 @@ extern "C" {
 #define DF_CHIP_ERASE_2   0x80
 #define DF_CHIP_ERASE_3   0x9A
 
-
-#define OVERWRITE_DATA 0 // 0: When reach the end page stop, 1: Start overwritten from page 1
 
 // *** INTERNAL FUNCTIONS ***
 unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
@@ -136,6 +134,7 @@ void DataFlash_APM2::Init(void)
 
   // get page size: 512 or 528  (by default: 528)
   df_PageSize=PageSize();
+  df_NumPages = DF_LAST_PAGE;
 }
 
 // This function is mainly to test the device
@@ -335,14 +334,14 @@ void DataFlash_APM2::FinishWrite(void)
 	df_BufferIdx=0;
 	BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
 	df_PageAdr++;
-	if (OVERWRITE_DATA==1)
+	if (DF_OVERWRITE_DATA==1)
 	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
+        if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, start from the begining
 		  df_PageAdr = 1;
 	    }
 	else
 	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, stop here
+        if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, stop here
 		  df_Stop_Write=1;
 	    }
 
@@ -364,14 +363,14 @@ void DataFlash_APM2::WriteByte(byte data)
 	  df_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
 	  BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
       df_PageAdr++;
-	  if (OVERWRITE_DATA==1)
+	  if (DF_OVERWRITE_DATA==1)
 	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
+        if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, start from the begining
 		  df_PageAdr = 1;
 	    }
       else
 	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, stop here
+        if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, stop here
 		  df_Stop_Write=1;
 	    }
 
@@ -437,13 +436,14 @@ byte DataFlash_APM2::ReadByte()
 
   WaitReady();
   result = BufferRead(df_Read_BufferNum,df_Read_BufferIdx);
+
   df_Read_BufferIdx++;
   if (df_Read_BufferIdx >= df_PageSize)  // End of buffer?
     {
     df_Read_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
     PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write memory page to Buffer
     df_Read_PageAdr++;
-    if (df_Read_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
+    if (df_Read_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, start from the begining
       {
       df_Read_PageAdr = 0;
       df_Read_END = true;

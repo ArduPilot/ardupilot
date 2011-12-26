@@ -6,9 +6,6 @@
 
 #include "DataFlash.h"
 
-// flash size
-#define DF_LAST_PAGE 4096
-
 class DataFlash_APM1 : public DataFlash_Class
 {
   private:
@@ -38,6 +35,7 @@ class DataFlash_APM1 : public DataFlash_Class
 	unsigned char df_device_0;
 	unsigned char df_device_1;
 	uint16_t df_PageSize;
+	uint16_t df_NumPages;
 
 	DataFlash_APM1(); // Constructor
 	void Init();
