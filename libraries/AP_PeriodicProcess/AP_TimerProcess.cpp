@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AP_TimerProcess.h"
 
@@ -8,13 +9,13 @@ extern "C" {
 #include <avr/interrupt.h>
 }
 
-int AP_TimerProcess::_period;
+uint8_t AP_TimerProcess::_period;
 ap_procedure AP_TimerProcess::_proc[AP_TIMERPROCESS_MAX_PROCS];
 ap_procedure AP_TimerProcess::_failsafe;
 bool AP_TimerProcess::_in_timer_call;
-int AP_TimerProcess::_pidx = 0;
+uint8_t AP_TimerProcess::_pidx = 0;
 
-AP_TimerProcess::AP_TimerProcess(int period)
+AP_TimerProcess::AP_TimerProcess(uint8_t period)
 {
     _period = period;
 }
