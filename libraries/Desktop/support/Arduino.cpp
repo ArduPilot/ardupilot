@@ -156,3 +156,28 @@ char *ltoa(long __val, char *__s, int __radix)
 	return __s;
 }
 
+#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
+
+static struct {
+	void (*call)(void);
+} interrupt_table[7];
+
+void attachInterrupt(uint8_t inum, void (*call)(void), int mode)
+{
+	if (inum >= ARRAY_LENGTH(interrupt_table)) {
+		fprintf(stderr, "Bad attachInterrupt to interrupt %u\n", inum);
+		exit(1);
+	}
+	interrupt_table[inum].call = call;
+}
+
+void runInterrupt(uint8_t inum)
+{
+	if (inum >= ARRAY_LENGTH(interrupt_table)) {
+		fprintf(stderr, "Bad runInterrupt to interrupt %u\n", inum);
+		exit(1);
+	}
+	if (interrupt_table[inum].call != NULL) {
+		interrupt_table[inum].call();
+	}
+}
