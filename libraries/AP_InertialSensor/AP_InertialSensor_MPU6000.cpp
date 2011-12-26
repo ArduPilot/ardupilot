@@ -289,8 +289,8 @@ void AP_InertialSensor_MPU6000::hardware_init()
     // SAMPLE RATE
     register_write(MPUREG_SMPLRT_DIV,0x04);     // Sample rate = 200Hz    Fsample= 1Khz/(4+1) = 200Hz
     delay(1);
-    // FS & DLPF   FS=2000º/s, DLPF = 42Hz (low pass filter)
-    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_42HZ);
+    // FS & DLPF   FS=2000º/s, DLPF = 98Hz (low pass filter)
+    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_98HZ);
     delay(1);
     register_write(MPUREG_GYRO_CONFIG,BITS_FS_2000DPS);  // Gyro scale 2000º/s
     delay(1);
