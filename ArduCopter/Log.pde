@@ -111,7 +111,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	last_log_num = find_last_log();
 
 	if (dump_log == -2) {
-		for(int count=1; count<=DF_LAST_PAGE; count++) {
+		for(int count=1; count<=DataFlash.df_NumPages; count++) {
 			DataFlash.StartRead(count);
 			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
 			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
@@ -120,7 +120,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 		return(-1);
 	} else if (dump_log <= 0) {
 		Serial.printf_P(PSTR("dumping all\n"));
-		Log_Read(1, DF_LAST_PAGE);
+		Log_Read(1, DataFlash.df_NumPages);
 		return(-1);
 	} else if ((argc != 2) || (dump_log <= (last_log_num - get_num_logs())) || (dump_log > last_log_num)) {
 		Serial.printf_P(PSTR("bad log number\n"));
@@ -143,7 +143,7 @@ do_erase_logs(void (*delay_cb)(unsigned long))
 {
 	Serial.printf_P(PSTR("\nErasing log...\n"));
 	DataFlash.SetFileNumber(0xFFFF);
-	for(int j = 1; j <= DF_LAST_PAGE; j++) {
+	for(int j = 1; j <= DataFlash.df_NumPages; j++) {
 		DataFlash.PageErase(j);
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
 		if(j%128 == 0) Serial.printf_P(PSTR("+"));
@@ -285,7 +285,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 	int look;
 	if(num == 1)
 	{
-		DataFlash.StartRead(DF_LAST_PAGE);
+		DataFlash.StartRead(DataFlash.df_NumPages);
 		if(DataFlash.GetFileNumber() == 0xFFFF)
 		{
 			start_page = 1;
@@ -297,7 +297,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 
 	} else {
 		if(log_num==1) {
-			DataFlash.StartRead(DF_LAST_PAGE);
+			DataFlash.StartRead(DataFlash.df_NumPages);
 			if(DataFlash.GetFileNumber() == 0xFFFF) {
 				start_page = 1;
 			} else {
@@ -315,14 +315,14 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 			}
 		}
 	}
-	if(start_page == DF_LAST_PAGE+1 || start_page == 0) start_page=1;
+	if(start_page == DataFlash.df_NumPages+1 || start_page == 0) start_page=1;
 	end_page = find_last_page_of_log((uint16_t)log_num);
 	if(end_page <= 0) end_page = start_page;
 }
 
 static bool check_wrapped(void)
 {
-	DataFlash.StartRead(DF_LAST_PAGE);
+	DataFlash.StartRead(DataFlash.df_NumPages);
 	if(DataFlash.GetFileNumber() == 0xFFFF)
 		return 0;
 	else
@@ -342,7 +342,7 @@ static int find_last_page(void)
 {
 uint16_t look;
 uint16_t bottom = 1;
-uint16_t top = DF_LAST_PAGE;
+uint16_t top = DataFlash.df_NumPages;
 uint32_t look_hash;
 uint32_t bottom_hash;
 uint32_t top_hash;
@@ -395,7 +395,7 @@ uint32_t check_hash;
 		if (bottom > log_number)
 		{
 			bottom = find_last_page();
-			top = DF_LAST_PAGE;
+			top = DataFlash.df_NumPages;
 		} else {
 			bottom = 1;
 			top = find_last_page();
@@ -1019,7 +1019,7 @@ static void Log_Read(int start_page, int end_page)
 
     if(start_page > end_page)
     {
-    	packet_count = Log_Read_Process(start_page, DF_LAST_PAGE);
+	packet_count = Log_Read_Process(start_page, DataFlash.df_NumPages);
     	packet_count += Log_Read_Process(1, end_page);
     } else {
     	packet_count = Log_Read_Process(start_page, end_page);
