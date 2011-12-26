@@ -38,12 +38,12 @@ static void calc_XY_velocity(){
 	// offset calculation of GPS speed:
 	// used for estimations below 1.5m/s
 	// our GPS is about 1m per
-	static int last_longitude = 0;
-	static int last_latutude  = 0;
+	static long last_longitude = 0;
+	static long last_latutude  = 0;
 
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
-	x_GPS_speed		= (last_longitude - g_gps->longitude) * dTnav;
-	y_GPS_speed		= (last_latutude  - g_gps->latitude) * dTnav;
+	x_GPS_speed		= (last_longitude - g_gps->longitude) / dTnav;
+	y_GPS_speed		= (last_latutude  - g_gps->latitude) / dTnav;
 	last_longitude 	= g_gps->longitude;
 	last_latutude 	= g_gps->latitude;
 

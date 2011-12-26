@@ -7,7 +7,7 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 
-# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
+//# define CONFIG_APM_HARDWARE APM_HARDWARE_APM1
 
 #define FRAME_CONFIG QUAD_FRAME
 	/*
@@ -67,7 +67,7 @@
 
 
 // enable this for the new 'APM2' hardware
-// #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 // #define APM2_BETA_HARDWARE  // for developers who received an early beta board with the older BMP085
 
 #define LOITER_METHOD 0
