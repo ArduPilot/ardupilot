@@ -33,14 +33,22 @@ void AP_TimerProcess::init( Arduino_Mega_ISR_Registry * isr_reg )
 	_failsafe = NULL;
 	_in_timer_call = false;
 
-	for (int i = 0; i < AP_TIMERPROCESS_MAX_PROCS; i++)
+	for (uint8_t i = 0; i < AP_TIMERPROCESS_MAX_PROCS; i++)
 		_proc[i] = NULL;
 
 	isr_reg->register_signal( ISR_REGISTRY_TIMER2_OVF, AP_TimerProcess::run);
 }
 
+/*
+  register a process to be called at the timer interrupt rate
+ */
 void AP_TimerProcess::register_process(ap_procedure proc)
 {
+    // see if its already registered (due to double initialisation
+    // of a driver)
+    for (uint8_t i=0; i<_pidx; i++) {
+        if (_proc[i] == proc) return;
+    }
     if (_pidx < AP_TIMERPROCESS_MAX_PROCS)
         _proc[_pidx++] = proc;
 }
