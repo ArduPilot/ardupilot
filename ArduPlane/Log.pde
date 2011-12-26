@@ -744,10 +744,10 @@ static void Log_Read_GPS()
     l[4] = DataFlash.ReadLong();
     l[5] = DataFlash.ReadLong();
     l[6] = DataFlash.ReadLong();
-	Serial.printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %4.4f, %4.4f, %4.4f, %4.4f, %4.4f\n"),
-                    l[0], b[0], b[1], 
+	Serial.printf_P(PSTR("GPS: %ld, %d, %d, %4.7f, %4.7f, %d, %4.4f, %4.4f, %4.4f, %4.4f\n"),
+                    (long)l[0], (int)b[0], (int)b[1],
                     l[1]/t7, l[2]/t7, 
-                    i, 
+                    (int)i,
                     l[3]/100.0, l[4]/100.0, l[5]/100.0, l[6]/100.0);
 }
 
