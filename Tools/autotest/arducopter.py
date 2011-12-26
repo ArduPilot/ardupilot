@@ -287,13 +287,6 @@ def fly_ArduCopter(viewerip=None):
         simquad_cmd += ' --fgout=%s:5503' % viewerip
 
     sil = util.start_SIL('ArduCopter', wipe=True)
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter')
-    mavproxy.expect('Please Run Setup')
-
-    # we need to restart it after eeprom erase
-    util.pexpect_close(mavproxy)
-    util.pexpect_close(sil)
-    sil = util.start_SIL('ArduCopter')
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
     mavproxy.expect('Received [0-9]+ parameters')
 
