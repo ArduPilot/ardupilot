@@ -86,6 +86,7 @@ void sitl_update_adc(float roll, float pitch, float yaw,
 		UDR2.set(sensor_map[i], adc[i]);
 	}
 
+	runInterrupt(6);
 
 	// set the airspeed sensor input
 	UDR2.set(7, airspeed_sensor(airspeed));
