@@ -590,12 +590,6 @@ namespace ArdupilotMega
         public Hashtable getParamList()
         {
             MainV2.givecomport = true;
-            List<int> missed = new List<int>();
-
-            // ryan - re start
-            __mavlink_param_request_read_t rereq = new __mavlink_param_request_read_t();
-            rereq.target_system = sysid;
-            rereq.target_component = compid;
 
             __mavlink_param_request_list_t req = new __mavlink_param_request_list_t();
             req.target_system = sysid;
@@ -607,10 +601,9 @@ namespace ArdupilotMega
             DateTime restart = DateTime.Now;
 
             int retrys = 3;
-            int nextid = 0;
-            int a = 0;
-            int z = 5;
-            while (a < z)
+            int param_counter = 0;
+            int total_params = 9999;
+            while (param_counter < total_params-1)
             {
                 if (!(start.AddMilliseconds(5000) > DateTime.Now))
                 {
@@ -622,23 +615,17 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    MainV2.givecomport = false;
-                    throw new Exception("Timeout on read - getParamList");
-                }
-                if (!(restart.AddMilliseconds(1000) > DateTime.Now))
-                {
-                    rereq.param_id = new byte[] {0x0,0x0};
-                    rereq.param_index = (short)nextid;
-                    sendPacket(rereq);
-                    restart = DateTime.Now;
-                }
+                    else
+                    {
+                        MainV2.givecomport = false;
+                        throw new Exception("Timeout on read - getParamList");
+                    }
+                }              
 
                 System.Windows.Forms.Application.DoEvents();
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
-                    //stopwatch.Reset();
-                    //stopwatch.Start();
                     if (buffer[5] == MAVLINK_MSG_ID_PARAM_VALUE)
                     {
                         restart = DateTime.Now;
@@ -652,26 +639,7 @@ namespace ArdupilotMega
 
                         par = (__mavlink_param_value_t)temp;
 
-                        z = (par.param_count);
-
-                        if (nextid == (par.param_index))
-                        {
-                            nextid++;
-                        }
-                        else
-                        {
-                            if (retrys > 0)
-                            {
-                                generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_LIST, req);
-                                a = 0;
-                                nextid = 0;
-                                retrys--;
-                                continue;
-                            }
-                            missed.Add(nextid); // for later devel
-                            MainV2.givecomport = false;
-                            throw new Exception("Missed ID expecting " + nextid + " got " + (par.param_index) + "\nPlease try loading again");
-                        }
+                        total_params = (par.param_count);
 
                         string st = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
 
@@ -682,20 +650,14 @@ namespace ArdupilotMega
                             st = st.Substring(0, pos);
                         }
 
-                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (z - 1) + " name: " + st);
+                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (total_params - 1) + " name: " + st);
 
                         modifyParamForDisplay(true, st, ref par.param_value);
 
                         param[st] = (par.param_value);
 
-                        a++;
+                        param_counter = param.Count;
                     }
-                    else
-                    {
-                        //Console.WriteLine(DateTime.Now + " PC paramlist " + buffer[5] + " " + this.BytesToRead);
-                    }
-                    //stopwatch.Stop();
-                    //Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
                 }
             }
             MainV2.givecomport = false;
