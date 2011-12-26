@@ -194,7 +194,7 @@ void FastSerial::flush(void)
 	// don't reverse this or there may be problems if the TX interrupt
 	// occurs after reading the value of _txBuffer->tail but before writing
 	// the value to _txBuffer->head.
-	_txBuffer->tail = _rxBuffer->head;
+	_txBuffer->tail = _txBuffer->head;
 }
 
 void FastSerial::write(uint8_t c)
