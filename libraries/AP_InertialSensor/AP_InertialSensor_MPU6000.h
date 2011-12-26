@@ -64,6 +64,9 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 
   /* TODO deprecate _cs_pin */
   static uint8_t _cs_pin;
+
+  // ensure we can't initialise twice
+  unsigned _initialised:1;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__

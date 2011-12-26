@@ -100,10 +100,13 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
   _accel.y = 0;
   _accel.z = 0;
   _temp = 0;
+  _initialised = 0;
 }
 
 void AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
+    if (_initialised) return;
+    _initialised = 1;
     hardware_init();
     scheduler->register_process( &AP_InertialSensor_MPU6000::read );
 }
