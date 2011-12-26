@@ -115,7 +115,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	last_log_num = find_last_log();
 	
 	if (dump_log == -2) {
-		for(int count=1; count<=DataFlash.df_NumPages; count++) {
+		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
 			DataFlash.StartRead(count);
 			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
 			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
@@ -147,7 +147,7 @@ do_erase_logs(void (*delay_cb)(unsigned long))
 {
 	Serial.printf_P(PSTR("\nErasing log...\n"));
 	DataFlash.SetFileNumber(0xFFFF);
-	for(int j = 1; j <= DataFlash.df_NumPages; j++) {
+	for(uint16_t j = 1; j <= DataFlash.df_NumPages; j++) {
 		DataFlash.PageErase(j);
 		DataFlash.StartWrite(j);		// We need this step to clean FileNumbers
 		if(j%128 == 0) Serial.printf_P(PSTR("+"));
@@ -316,7 +316,7 @@ static void get_log_boundaries(byte log_num, int & start_page, int & end_page)
 			}
 		}
 	}
-	if(start_page == DataFlash.df_NumPages+1 || start_page == 0) start_page=1;
+	if(start_page == (int)DataFlash.df_NumPages+1 || start_page == 0) start_page=1;
 	end_page = find_last_page_of_log((uint16_t)log_num);
 	if(end_page <= 0) end_page = start_page;
 }
