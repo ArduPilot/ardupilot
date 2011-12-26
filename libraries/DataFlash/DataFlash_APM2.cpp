@@ -53,7 +53,7 @@ extern "C" {
 	# error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #endif
 
-#define DF_MAX_PAGE 8192
+#define DF_LAST_PAGE 8192
 
 // AT45DB321D Commands (from Datasheet)
 #define DF_TRANSFER_PAGE_TO_BUFFER_1   0x53
@@ -75,8 +75,6 @@ extern "C" {
 #define DF_CHIP_ERASE_2   0x80
 #define DF_CHIP_ERASE_3   0x9A
 
-
-#define OVERWRITE_DATA 0 // 0: When reach the end page stop, 1: Start overwritten from page 1
 
 // *** INTERNAL FUNCTIONS ***
 unsigned char DataFlash_APM2::SPI_transfer(unsigned char data)
@@ -120,8 +118,6 @@ void DataFlash_APM2::Init(void)
   delay(1);
   digitalWrite(DF_RESET,HIGH);
 
-  df_Read_END=false;
-
   CS_inactive();     //disable device
 
   // Setup Serial Port3 in SPI mode (MSPI), Mode 0, Clock: 8Mhz
@@ -136,6 +132,7 @@ void DataFlash_APM2::Init(void)
 
   // get page size: 512 or 528  (by default: 528)
   df_PageSize=PageSize();
+  df_NumPages = DF_LAST_PAGE;
 }
 
 // This function is mainly to test the device
@@ -312,184 +309,4 @@ void DataFlash_APM2::ChipErase ()
   CS_inactive();               //initiate flash page erase
   CS_active();
   while(!ReadStatus());
-}
-
-// *** DATAFLASH PUBLIC FUNCTIONS ***
-void DataFlash_APM2::StartWrite(int16_t PageAdr)
-{
-  df_BufferNum=1;
-  df_BufferIdx=4;
-  df_PageAdr=PageAdr;
-  df_Stop_Write=0;
-  WaitReady();
-
-  // We are starting a new page - write FileNumber and FilePage
-  BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
-  BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
-  BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
-  BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
-}
-
-void DataFlash_APM2::FinishWrite(void)
-{
-	df_BufferIdx=0;
-	BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
-	df_PageAdr++;
-	if (OVERWRITE_DATA==1)
-	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
-		  df_PageAdr = 1;
-	    }
-	else
-	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, stop here
-		  df_Stop_Write=1;
-	    }
-
-	if (df_BufferNum==1)  // Change buffer to continue writing...
-        df_BufferNum=2;
-	else
-        df_BufferNum=1;
-}
-
-
-void DataFlash_APM2::WriteByte(byte data)
-{
-  if (!df_Stop_Write)
-    {
-    BufferWrite(df_BufferNum,df_BufferIdx,data);
-    df_BufferIdx++;
-    if (df_BufferIdx >= df_PageSize)  // End of buffer?
-      {
-	  df_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
-	  BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
-      df_PageAdr++;
-	  if (OVERWRITE_DATA==1)
-	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
-		  df_PageAdr = 1;
-	    }
-      else
-	    {
-        if (df_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, stop here
-		  df_Stop_Write=1;
-	    }
-
-      if (df_BufferNum==1)  // Change buffer to continue writing...
-        df_BufferNum=2;
-      else
-        df_BufferNum=1;
-      // We are starting a new page - write FileNumber and FilePage
-      BufferWrite(df_BufferNum,0,df_FileNumber>>8);   // High byte
-      BufferWrite(df_BufferNum,1,df_FileNumber&0xFF); // Low byte
-      df_FilePage++;
-      BufferWrite(df_BufferNum,2,df_FilePage>>8);   // High byte
-      BufferWrite(df_BufferNum,3,df_FilePage&0xFF); // Low byte
-      }
-    }
-}
-
-void DataFlash_APM2::WriteInt(int16_t data)
-{
-  WriteByte(data>>8);   // High byte
-  WriteByte(data&0xFF); // Low byte
-}
-
-void DataFlash_APM2::WriteLong(int32_t data)
-{
-  WriteByte(data>>24);   // First byte
-  WriteByte(data>>16);
-  WriteByte(data>>8);
-  WriteByte(data&0xFF);  // Last byte
-}
-
-// Get the last page written to
-int16_t DataFlash_APM2::GetWritePage()
-{
-  return(df_PageAdr);
-}
-
-// Get the last page read
-int16_t DataFlash_APM2::GetPage()
-{
-  return(df_Read_PageAdr-1);
-}
-
-void DataFlash_APM2::StartRead(int16_t PageAdr)
-{
-  df_Read_BufferNum=1;
-  df_Read_BufferIdx=4;
-  df_Read_PageAdr=PageAdr;
-  WaitReady();
-  PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write Memory page to buffer
-  df_Read_PageAdr++;
-
-  // We are starting a new page - read FileNumber and FilePage
-  df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
-  df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
-  df_FilePage = BufferRead(df_Read_BufferNum,2);   // High byte
-  df_FilePage = (df_FilePage<<8) | BufferRead(df_Read_BufferNum,3); // Low byte
-}
-
-byte DataFlash_APM2::ReadByte()
-{
-  byte result;
-
-  WaitReady();
-  result = BufferRead(df_Read_BufferNum,df_Read_BufferIdx);
-  df_Read_BufferIdx++;
-  if (df_Read_BufferIdx >= df_PageSize)  // End of buffer?
-    {
-    df_Read_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
-    PageToBuffer(df_Read_BufferNum,df_Read_PageAdr);  // Write memory page to Buffer
-    df_Read_PageAdr++;
-    if (df_Read_PageAdr>=DF_MAX_PAGE)  // If we reach the end of the memory, start from the begining
-      {
-      df_Read_PageAdr = 0;
-      df_Read_END = true;
-      }
-
-    // We are starting a new page - read FileNumber and FilePage
-    df_FileNumber = BufferRead(df_Read_BufferNum,0);   // High byte
-    df_FileNumber = (df_FileNumber<<8) | BufferRead(df_Read_BufferNum,1); // Low byte
-    df_FilePage = BufferRead(df_Read_BufferNum,2);   // High byte
-    df_FilePage = (df_FilePage<<8) | BufferRead(df_Read_BufferNum,3); // Low byte
-    }
-  return result;
-}
-
-int16_t DataFlash_APM2::ReadInt()
-{
-  uint16_t result;
-
-  result = ReadByte();               // High byte
-  result = (result<<8) | ReadByte(); // Low byte
-  return (int16_t)result;
-}
-
-int32_t DataFlash_APM2::ReadLong()
-{
-  uint32_t result;
-
-  result = ReadByte();               // First byte
-  result = (result<<8) | ReadByte();
-  result = (result<<8) | ReadByte();
-  result = (result<<8) | ReadByte(); // Last byte
-  return (int32_t)result;
-}
-
-void DataFlash_APM2::SetFileNumber(uint16_t FileNumber)
-{
-	df_FileNumber = FileNumber;
-	df_FilePage = 1;
-}
-
-uint16_t DataFlash_APM2::GetFileNumber()
-{
-	return df_FileNumber;
-}
-
-uint16_t DataFlash_APM2::GetFilePage()
-{
-	return df_FilePage;
 }

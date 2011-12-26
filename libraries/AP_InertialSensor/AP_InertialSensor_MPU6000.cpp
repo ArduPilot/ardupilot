@@ -12,8 +12,10 @@
 #define MPUREG_CONFIG 0x1A //
 #define MPUREG_GYRO_CONFIG 0x1B
 #define MPUREG_ACCEL_CONFIG 0x1C
+#define MPUREG_FIFO_EN 0x23
 #define MPUREG_INT_PIN_CFG 0x37
 #define MPUREG_INT_ENABLE 0x38
+#define MPUREG_INT_STATUS 0x3A
 #define MPUREG_ACCEL_XOUT_H 0x3B //
 #define MPUREG_ACCEL_XOUT_L 0x3C //
 #define MPUREG_ACCEL_YOUT_H 0x3D //
@@ -31,6 +33,10 @@
 #define MPUREG_USER_CTRL 0x6A //
 #define MPUREG_PWR_MGMT_1 0x6B //
 #define MPUREG_PWR_MGMT_2 0x6C //
+#define MPUREG_FIFO_COUNTH 0x72
+#define MPUREG_FIFO_COUNTL 0x73
+#define MPUREG_FIFO_R_W 0x74
+
 
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
 #define BIT_SLEEP 0x40
@@ -56,6 +62,7 @@
 #define BIT_INT_ANYRD_2CLEAR      0x10
 #define BIT_RAW_RDY_EN        0x01
 #define BIT_I2C_IF_DIS              0x10
+#define BIT_INT_STATUS_DATA   0x01
 
 int     AP_InertialSensor_MPU6000::_cs_pin;
 
@@ -80,6 +87,8 @@ const uint8_t AP_InertialSensor_MPU6000::_accel_data_index[3] = { 1, 0, 2 };
 const int8_t  AP_InertialSensor_MPU6000::_accel_data_sign[3]  = { 1, 1, -1 };
 
 const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
+
+static volatile uint8_t _new_data;
 
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( int cs_pin )
 {
@@ -200,25 +209,33 @@ static int16_t spi_transfer_16(void)
 	return (((int16_t)byte_H)<<8) | byte_L;
 }
 
+/*
+  this is called from a timer interrupt to read data from the MPU6000
+  and add it to _sum[]
+ */
 void AP_InertialSensor_MPU6000::read(uint32_t )
 {
-  // We start a multibyte SPI read of sensors
-  byte addr = MPUREG_ACCEL_XOUT_H | 0x80;      // Set most significant bit
+    if (_new_data == 0) {
+        // no new data is ready from the MPU6000
+        return;
+    }
+    _new_data = 0;
 
-  digitalWrite(_cs_pin, LOW);
+    // now read the data
+    digitalWrite(_cs_pin, LOW);
+    byte addr = MPUREG_ACCEL_XOUT_H | 0x80;
+    SPI.transfer(addr);
+    for (uint8_t i=0; i<7; i++) {
+        _sum[i] += spi_transfer_16();
+    }
 
-  SPI.transfer(addr);
+    _count++;
+    if (_count == 0) {
+        // rollover - v unlikely
+        memset((void*)_sum, 0, sizeof(_sum));
+    }
 
-  for (uint8_t i=0; i<7; i++) {
-	  _sum[i] += spi_transfer_16();
-  }
-  _count++;
-  if (_count == 0) {
-	  // rollover - v unlikely
-	  memset((void*)_sum, 0, sizeof(_sum));
-  }
-
-  digitalWrite(_cs_pin, HIGH);
+    digitalWrite(_cs_pin, HIGH);
 }
 
 uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
@@ -246,6 +263,13 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
   digitalWrite(_cs_pin, HIGH);
 }
 
+// MPU6000 new data interrupt on INT6
+void AP_InertialSensor_MPU6000::data_interrupt(void)
+{
+    // tell the timer routine that there is data to be read
+    _new_data = 1;
+}
+
 void AP_InertialSensor_MPU6000::hardware_init()
 {
     // MPU6000 chip select setup
@@ -265,13 +289,14 @@ void AP_InertialSensor_MPU6000::hardware_init()
     // SAMPLE RATE
     register_write(MPUREG_SMPLRT_DIV,0x04);     // Sample rate = 200Hz    Fsample= 1Khz/(4+1) = 200Hz
     delay(1);
-    // FS & DLPF   FS=2000º/s, DLPF = 42Hz (low pass filter)
-    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_42HZ);
+    // FS & DLPF   FS=2000º/s, DLPF = 98Hz (low pass filter)
+    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_98HZ);
     delay(1);
     register_write(MPUREG_GYRO_CONFIG,BITS_FS_2000DPS);  // Gyro scale 2000º/s
     delay(1);
     register_write(MPUREG_ACCEL_CONFIG,0x08);           // Accel scele 4g (4096LSB/g)
     delay(1);
+
     // INT CFG => Interrupt on Data Ready
     register_write(MPUREG_INT_ENABLE,BIT_RAW_RDY_EN);         // INT: Raw data ready
     delay(1);
@@ -281,6 +306,7 @@ void AP_InertialSensor_MPU6000::hardware_init()
     // register_write(MPUREG_PWR_MGMT_1,MPU_CLK_SEL_PLLGYROZ);
     delay(1);
 
+    attachInterrupt(6,data_interrupt,RISING);
 }
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
