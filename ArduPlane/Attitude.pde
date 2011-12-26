@@ -173,7 +173,7 @@ static void calc_nav_yaw(float speed_scaler)
 {
 #if HIL_MODE != HIL_MODE_ATTITUDE
 	Vector3f temp = imu.get_accel();
-	long error = -temp.y;
+	long error = (long)(-temp.y*100.0);
 
 	// Control is a feedforward from the aileron control + a PID to coordinate the turn (drive y axis accel to zero)
 	g.channel_rudder.servo_out = g.kff_rudder_mix * g.channel_roll.servo_out + g.pidServoRudder.get_pid(error, delta_ms_fast_loop, speed_scaler);
@@ -249,7 +249,6 @@ static void throttle_slew_limit()
 	if(g.throttle_slewrate) {		// if slew limit rate is set to zero then do not slew limit
 
 		float temp = g.throttle_slewrate * G_Dt * 10.f;		//  * 10 to scale % to pwm range of 1000 to 2000
-Serial.print("radio ");	Serial.print(g.channel_throttle.radio_out); Serial.print("   temp "); Serial.print(temp); Serial.print("   last "); Serial.println(last);
 		g.channel_throttle.radio_out = constrain(g.channel_throttle.radio_out, last - (int)temp, last + (int)temp);
 		last = g.channel_throttle.radio_out;
 	}

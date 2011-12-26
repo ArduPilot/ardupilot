@@ -430,16 +430,13 @@ static void check_long_failsafe()
 	// -------------------
 	if(failsafe != FAILSAFE_LONG  && failsafe != FAILSAFE_GCS){
 		if(rc_override_active && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe = FAILSAFE_LONG;
-			failsafe_long_on_event();
+			failsafe_long_on_event(FAILSAFE_LONG);
 		}
 		if(! rc_override_active && failsafe == FAILSAFE_SHORT && millis() - ch3_failsafe_timer > FAILSAFE_LONG_TIME) {
-			failsafe = FAILSAFE_LONG;
-			failsafe_long_on_event();
+			failsafe_long_on_event(FAILSAFE_LONG);
 		}
 		if(g.gcs_heartbeat_fs_enabled && millis() - rc_override_fs_timer > FAILSAFE_LONG_TIME) {
-			failsafe = FAILSAFE_GCS;
-			failsafe_long_on_event();
+			failsafe_long_on_event(FAILSAFE_GCS);
 		}
 	} else {
 		// We do not change state but allow for user to change mode
@@ -455,7 +452,7 @@ static void check_short_failsafe()
 	// -------------------
 	if(failsafe == FAILSAFE_NONE){
 		if(ch3_failsafe) {					// The condition is checked and the flag ch3_failsafe is set in radio.pde
-			failsafe_short_on_event();
+			failsafe_short_on_event(FAILSAFE_SHORT);
 		}
 	}
 

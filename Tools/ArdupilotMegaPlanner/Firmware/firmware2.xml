@@ -4,7 +4,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560-2.hex</url2560-2>
-    <name>ArduPlane V2.26</name>
+    <name>ArduPlane V2.27 Alpha  </name>
     <desc></desc>
     <format_version>12</format_version>
   </Firmware>

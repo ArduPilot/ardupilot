@@ -38,14 +38,8 @@ static void calc_XY_velocity(){
 	// offset calculation of GPS speed:
 	// used for estimations below 1.5m/s
 	// our GPS is about 1m per
-	static long last_longitude = 0;
-	static long last_latutude  = 0;
-
-	// this speed is ~ in cm because we are using 10^7 numbers from GPS
-	x_GPS_speed		= (last_longitude - g_gps->longitude) / dTnav;
-	y_GPS_speed		= (last_latutude  - g_gps->latitude) / dTnav;
-	last_longitude 	= g_gps->longitude;
-	last_latutude 	= g_gps->latitude;
+	static int32_t last_longitude = 0;
+	static int32_t last_latutude  = 0;
 
 	if(g_gps->ground_speed > 150){
 		// Derive X/Y speed from GPS
@@ -53,7 +47,25 @@ static void calc_XY_velocity(){
 		float temp		= g_gps->ground_course * RADX100;
 		x_GPS_speed 	= sin(temp) * (float)g_gps->ground_speed;
 		y_GPS_speed 	= cos(temp) * (float)g_gps->ground_speed;
+	}else{
+		// this speed is ~ in cm because we are using 10^7 numbers from GPS
+		int16_t	x_diff	= (last_longitude - g_gps->longitude);
+		int16_t	y_diff	= (last_latutude  - g_gps->latitude);
+
+		if(x_diff == 0)
+			x_GPS_speed = x_GPS_speed /2;
+		else
+			x_GPS_speed = x_diff;
+
+		if(y_diff == 0)
+			y_GPS_speed = y_GPS_speed /2;
+		else
+			y_GPS_speed = y_diff;
 	}
+
+	last_longitude 	= g_gps->longitude;
+	last_latutude 	= g_gps->latitude;
+
 	//Serial.printf("GS: %d  \tx:%d \ty:%d\n", g_gps->ground_speed, x_GPS_speed, y_GPS_speed);
 }
 
@@ -83,10 +95,10 @@ static void calc_loiter(int x_error, int y_error)
 	x_error 			= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	y_error 			= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 
-	int x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
-	int y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
-	int x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
-	int y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
+	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
+	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
+	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
+	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
 
 	y_rate_error 		= y_target_speed - y_actual_speed; // 413
 	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
@@ -94,20 +106,21 @@ static void calc_loiter(int x_error, int y_error)
 	nav_lat				= constrain(nav_lat, -3500, 3500);
 	nav_lat				+= y_iterm;
 
-	/*Serial.printf("loiter x_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\t",
+	x_rate_error 		= x_target_speed - x_actual_speed;
+	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
+	nav_lon		 		= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
+	nav_lon				= constrain(nav_lon, -3500, 3500);
+	nav_lon				+= x_iterm;
+
+	/*Serial.printf("WP_dist: %d, loiter x_actual_speed %d,\tx_rate_error: %d,\tnav_lon: %d,\ty_actual_speed %d,\ty_rate_error: %d,\tnav_lat: %d,\n",
+					wp_distance,
 					x_actual_speed,
 					x_rate_error,
 					nav_lon,
 					y_actual_speed,
 					y_rate_error,
 					nav_lat);
-	*/
-
-	x_rate_error 		= x_target_speed - x_actual_speed;
-	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
-	nav_lon		 		= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
-	nav_lon				= constrain(nav_lon, -3500, 3500);
-	nav_lon				+= x_iterm;
+	//*/
 }
 
 #define ERR_GAIN .01
@@ -141,11 +154,13 @@ static void esitmate_velocity()
 		//}
 
 		// for now
-		x_actual_speed = x_GPS_speed;
-		y_actual_speed = y_GPS_speed;
+
+		// light filter of output
+		x_actual_speed = (x_actual_speed * 3 + x_GPS_speed) / 4;
+		y_actual_speed = (y_actual_speed * 3 + y_GPS_speed) / 4;
 	}else{
-		x_actual_speed = x_GPS_speed;
-		y_actual_speed = y_GPS_speed;
+		x_actual_speed = (x_actual_speed * 3 + x_GPS_speed) / 4;
+		y_actual_speed = (y_actual_speed * 3 + y_GPS_speed) / 4;
 	}
 }
 

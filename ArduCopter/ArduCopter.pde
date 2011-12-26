@@ -744,12 +744,13 @@ static void medium_loop()
 					// If we have optFlow enabled we can grab a more accurate speed
 					// here and override the speed from the GPS
 					// ----------------------------------------
+					#ifdef OPTFLOW_ENABLED
 					if(g.optflow_enabled && current_loc.alt < 500){
 						// optflow wont be enabled on 1280's
 						x_GPS_speed 	= optflow.x_cm;
 						y_GPS_speed 	= optflow.y_cm;
 					}
-
+					#endif
 					// control mode specific updates
 					// -----------------------------
 					update_navigation();
