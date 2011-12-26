@@ -102,28 +102,28 @@ static void update_motor_leds(void)
 			static bool blink = false;
 
 			if (blink){
-				digitalWrite(RE_LED, HIGH);
-				digitalWrite(FR_LED, HIGH);
-				digitalWrite(RI_LED, LOW);
-				digitalWrite(LE_LED, LOW);
+				digitalWrite(RE_LED, LED_ON);
+				digitalWrite(FR_LED, LED_ON);
+				digitalWrite(RI_LED, LED_OFF);
+				digitalWrite(LE_LED, LED_OFF);
 			}else{
-				digitalWrite(RE_LED, LOW);
-				digitalWrite(FR_LED, LOW);
-				digitalWrite(RI_LED, HIGH);
-				digitalWrite(LE_LED, HIGH);
+				digitalWrite(RE_LED, LED_OFF);
+				digitalWrite(FR_LED, LED_OFF);
+				digitalWrite(RI_LED, LED_ON);
+				digitalWrite(LE_LED, LED_ON);
 			}
 			blink = !blink;
 		}else{
-			digitalWrite(RE_LED, HIGH);
-			digitalWrite(FR_LED, HIGH);
-			digitalWrite(RI_LED, HIGH);
-			digitalWrite(LE_LED, HIGH);
+			digitalWrite(RE_LED, LED_ON);
+			digitalWrite(FR_LED, LED_ON);
+			digitalWrite(RI_LED, LED_ON);
+			digitalWrite(LE_LED, LED_ON);
 		}
 	}else {
-		digitalWrite(RE_LED, LOW);
-		digitalWrite(FR_LED, LOW);
-		digitalWrite(RI_LED, LOW);
-		digitalWrite(LE_LED, LOW);
+		digitalWrite(RE_LED, LED_OFF);
+		digitalWrite(FR_LED, LED_OFF);
+		digitalWrite(RI_LED, LED_OFF);
+		digitalWrite(LE_LED, LED_OFF);
 	}
 }
 #endif

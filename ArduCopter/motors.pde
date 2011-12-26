@@ -102,7 +102,7 @@ static void init_arm_motors()
 
 	// temp hack
 	motor_light = true;
-	digitalWrite(A_LED_PIN, HIGH);
+	digitalWrite(A_LED_PIN, LED_ON);
 }
 
 
