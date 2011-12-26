@@ -6,19 +6,21 @@
 
 #include <stdint.h>
 
+#define DF_OVERWRITE_DATA 1 // 0: When reach the end page stop, 1: Start overwriting from page 1
+
 class DataFlash_Class
 {
   public:
 	DataFlash_Class() {} // Constructor
 
-  virtual void Init() = 0;
+	virtual void Init() = 0;
 	virtual void ReadManufacturerID() = 0;
 	virtual int16_t GetPage() = 0;
 	virtual int16_t GetWritePage() = 0;
 	virtual void PageErase (uint16_t PageAdr) = 0;
 	virtual void ChipErase () = 0;
 
-  // Write methods
+	// Write methods
 	virtual void StartWrite(int16_t PageAdr) = 0;
 	virtual void FinishWrite() = 0;
 	virtual void WriteByte(unsigned char data) = 0;

@@ -36,7 +36,8 @@
 #include "DataFlash.h"
 #include <SPI.h>
 
-#define OVERWRITE_DATA 1 // 0: When reach the end page stop, 1: Start overwriting from page 1
+// flash size
+#define DF_LAST_PAGE 4096
 
 // arduino mega SPI pins
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -116,6 +117,7 @@ void DataFlash_APM1::Init(void)
 
   // get page size: 512 or 528
   df_PageSize=PageSize();
+  df_NumPages = DF_LAST_PAGE;
 }
 
 // This function is mainly to test the device
@@ -323,7 +325,7 @@ void DataFlash_APM1::FinishWrite(void)
 	df_BufferIdx=0;
 	BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
 	df_PageAdr++;
-	if (OVERWRITE_DATA==1)
+	if (DF_OVERWRITE_DATA==1)
 	    {
         if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, start from the begining
 		  df_PageAdr = 1;
@@ -352,7 +354,7 @@ void DataFlash_APM1::WriteByte(byte data)
       df_BufferIdx=4;		//(4 bytes for FileNumber, FilePage)
 	  BufferToPage(df_BufferNum,df_PageAdr,0);  // Write Buffer to memory, NO WAIT
       df_PageAdr++;
-	  if (OVERWRITE_DATA==1)
+	  if (DF_OVERWRITE_DATA==1)
 	    {
         if (df_PageAdr>DF_LAST_PAGE)  // If we reach the end of the memory, start from the begining
 		  df_PageAdr = 1;
