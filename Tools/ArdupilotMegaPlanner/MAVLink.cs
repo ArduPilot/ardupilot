@@ -206,13 +206,16 @@ namespace ArdupilotMega
                 if (getparams == true)
                     getParamList();
             }
-            catch (Exception e) { 
-                try { 
-                    BaseStream.Close(); 
-                } catch { } 
-                MainV2.givecomport = false; 
-                frm.Close(); 
-                throw e; 
+            catch (Exception e)
+            {
+                try
+                {
+                    BaseStream.Close();
+                }
+                catch { }
+                MainV2.givecomport = false;
+                frm.Close();
+                throw e;
             }
 
             frm.Close();
@@ -590,6 +593,12 @@ namespace ArdupilotMega
         public Hashtable getParamList()
         {
             MainV2.givecomport = true;
+            List<int> missed = new List<int>();
+
+            // ryan - re start
+            __mavlink_param_request_read_t rereq = new __mavlink_param_request_read_t();
+            rereq.target_system = sysid;
+            rereq.target_component = compid;
 
             __mavlink_param_request_list_t req = new __mavlink_param_request_list_t();
             req.target_system = sysid;
@@ -601,9 +610,10 @@ namespace ArdupilotMega
             DateTime restart = DateTime.Now;
 
             int retrys = 3;
-            int param_counter = 0;
-            int total_params = 9999;
-            while (param_counter < total_params-1)
+            int nextid = 0;
+            int param_count = 0;
+            int param_total = 5;
+            while (param_count < param_total)
             {
                 if (!(start.AddMilliseconds(5000) > DateTime.Now))
                 {
@@ -615,17 +625,23 @@ namespace ArdupilotMega
                         retrys--;
                         continue;
                     }
-                    else
-                    {
-                        MainV2.givecomport = false;
-                        throw new Exception("Timeout on read - getParamList");
-                    }
-                }              
+                    MainV2.givecomport = false;
+                    throw new Exception("Timeout on read - getParamList");
+                }
+                if (!(restart.AddMilliseconds(1000) > DateTime.Now))
+                {
+                    rereq.param_id = new byte[] { 0x0, 0x0 };
+                    rereq.param_index = (short)nextid;
+                    sendPacket(rereq);
+                    restart = DateTime.Now;
+                }
 
                 System.Windows.Forms.Application.DoEvents();
                 byte[] buffer = readPacket();
                 if (buffer.Length > 5)
                 {
+                    //stopwatch.Reset();
+                    //stopwatch.Start();
                     if (buffer[5] == MAVLINK_MSG_ID_PARAM_VALUE)
                     {
                         restart = DateTime.Now;
@@ -639,7 +655,31 @@ namespace ArdupilotMega
 
                         par = (__mavlink_param_value_t)temp;
 
-                        total_params = (par.param_count);
+                        param_total = (par.param_count);
+
+                        // for out of order udp packets
+                        if (BaseStream.GetType() != typeof(UdpSerial))
+                        {
+                            if (nextid == (par.param_index))
+                            {
+                                nextid++;
+                            }
+                            else
+                            {
+
+                                if (retrys > 0)
+                                {
+                                    generatePacket(MAVLINK_MSG_ID_PARAM_REQUEST_LIST, req);
+                                    param_count = 0;
+                                    nextid = 0;
+                                    retrys--;
+                                    continue;
+                                }
+                                missed.Add(nextid); // for later devel
+                                MainV2.givecomport = false;
+                                throw new Exception("Missed ID expecting " + nextid + " got " + (par.param_index) + "\nPlease try loading again");
+                            }
+                        }                        
 
                         string st = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
 
@@ -650,14 +690,20 @@ namespace ArdupilotMega
                             st = st.Substring(0, pos);
                         }
 
-                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (total_params - 1) + " name: " + st);
+                        Console.WriteLine(DateTime.Now.Millisecond + " got param " + (par.param_index) + " of " + (param_total - 1) + " name: " + st);
 
                         modifyParamForDisplay(true, st, ref par.param_value);
 
                         param[st] = (par.param_value);
 
-                        param_counter = param.Count;
+                        param_count++;
                     }
+                    else
+                    {
+                        //Console.WriteLine(DateTime.Now + " PC paramlist " + buffer[5] + " " + this.BytesToRead);
+                    }
+                    //stopwatch.Stop();
+                    //Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
                 }
             }
             MainV2.givecomport = false;
@@ -702,7 +748,7 @@ namespace ArdupilotMega
             // reset all
             if (forget)
             {
-                    streams = new byte[streams.Length];
+                streams = new byte[streams.Length];
             }
 
             // no error on bad
@@ -973,7 +1019,7 @@ namespace ArdupilotMega
 
         public void requestDatastream(byte id, byte hzrate)
         {
-                streams[id] = hzrate;
+            streams[id] = hzrate;
 
             double pps = 0;
 
@@ -2035,7 +2081,7 @@ namespace ArdupilotMega
 
             if (bpstime.Second != DateTime.Now.Second && !logreadmode)
             {
-//                Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
+                //                Console.Write("bps {0} loss {1} left {2} mem {3}      \n", bps1, synclost, BaseStream.BytesToRead, System.GC.GetTotalMemory(false));
                 bps2 = bps1; // prev sec
                 bps1 = 0; // current sec
                 bpstime = DateTime.Now;
@@ -2169,7 +2215,7 @@ namespace ArdupilotMega
         /// Used to extract mission from log file
         /// </summary>
         /// <param name="temp">packet</param>
-        void getWPsfromstream(ref byte[] temp )
+        void getWPsfromstream(ref byte[] temp)
         {
 #if MAVLINK10
                     if (temp[5] == MAVLINK_MSG_ID_MISSION_COUNT)
@@ -2276,7 +2322,7 @@ namespace ArdupilotMega
             }
         }
 
-        public bool setFencePoint(byte index, PointLatLngAlt plla,byte fencepointcount)
+        public bool setFencePoint(byte index, PointLatLngAlt plla, byte fencepointcount)
         {
             __mavlink_fence_point_t fp = new __mavlink_fence_point_t();
 

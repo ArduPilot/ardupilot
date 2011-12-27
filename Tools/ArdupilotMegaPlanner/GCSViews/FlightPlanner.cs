@@ -1236,8 +1236,6 @@ namespace ArdupilotMega.GCSViews
                     });
                 }
                 catch (Exception exx) { Console.WriteLine(exx.ToString()); }
-
-                BUT_read.Enabled = true;
             });
             t12.IsBackground = true;
             t12.Name = "Read wps";
@@ -3084,8 +3082,8 @@ namespace ArdupilotMega.GCSViews
             // update flightdata
             FlightData.geofence.Markers.Clear();
             FlightData.geofence.Polygons.Clear();
-            FlightData.geofence.Polygons.Add(gf);
-            FlightData.geofence.Markers.Add(geofence.Markers[0]);
+            FlightData.geofence.Polygons.Add(new GMapPolygon(gf.Points, "gf fd") { Stroke = gf.Stroke });
+            FlightData.geofence.Markers.Add(new GMapMarkerGoogleRed(geofence.Markers[0].Position) { ToolTipText = geofence.Markers[0].ToolTipText, ToolTipMode = geofence.Markers[0].ToolTipMode });
 
             MainMap.UpdatePolygonLocalPosition(gf);
             MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
@@ -3131,8 +3129,8 @@ namespace ArdupilotMega.GCSViews
             // update flight data
             FlightData.geofence.Markers.Clear();
             FlightData.geofence.Polygons.Clear();
-            FlightData.geofence.Polygons.Add(gf);
-            FlightData.geofence.Markers.Add(geofence.Markers[0]);
+            FlightData.geofence.Polygons.Add(new GMapPolygon(gf.Points, "gf fd") { Stroke = gf.Stroke });
+            FlightData.geofence.Markers.Add(new GMapMarkerGoogleRed(geofence.Markers[0].Position) { ToolTipText = geofence.Markers[0].ToolTipText, ToolTipMode = geofence.Markers[0].ToolTipMode });
 
             MainMap.UpdatePolygonLocalPosition(gf);
             MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
@@ -3198,7 +3196,7 @@ namespace ArdupilotMega.GCSViews
                         if (a == 0)
                         {
                             geofence.Markers.Clear();
-                            geofence.Markers.Add(new GMapMarkerGoogleRed(new PointLatLng( double.Parse(items[0]),double.Parse(items[1]))) { ToolTipMode = MarkerTooltipMode.OnMouseOver, ToolTipText = "GeoFence Return" });
+                            geofence.Markers.Add(new GMapMarkerGoogleRed(new PointLatLng(double.Parse(items[0]), double.Parse(items[1]))) { ToolTipMode = MarkerTooltipMode.OnMouseOver, ToolTipText = "GeoFence Return" });
                             MainMap.UpdateMarkerLocalPosition(geofence.Markers[0]);
                         }
                         else
@@ -3271,6 +3269,20 @@ namespace ArdupilotMega.GCSViews
                     sw.Close();
                 }
                 catch { MessageBox.Show("Failed to write fence file"); }
+            }
+        }
+
+        public T DeepClone<T>(T obj)
+        {
+            using (var ms = new System.IO.MemoryStream())
+            {
+                var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+
+                formatter.Serialize(ms, obj);
+
+                ms.Position = 0;
+
+                return (T)formatter.Deserialize(ms);
             }
         }
     }
