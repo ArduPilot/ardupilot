@@ -31,8 +31,6 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Setup));
             this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabReset = new System.Windows.Forms.TabPage();
-            this.BUT_reset = new ArdupilotMega.MyButton();
             this.tabRadioIn = new System.Windows.Forms.TabPage();
             this.groupBoxElevons = new System.Windows.Forms.GroupBox();
             this.CHK_mixmode = new System.Windows.Forms.CheckBox();
@@ -171,9 +169,11 @@
             this.HS4 = new ArdupilotMega.HorizontalProgressBar2();
             this.HS3 = new ArdupilotMega.VerticalProgressBar2();
             this.Gservoloc = new AGaugeApp.AGauge();
+            this.tabReset = new System.Windows.Forms.TabPage();
+            this.BUT_reset = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.label27 = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
-            this.tabReset.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
             this.groupBoxElevons.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
@@ -196,11 +196,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).BeginInit();
+            this.tabReset.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
-            //this.tabControl1.Controls.Add(this.tabReset);
             this.tabControl1.Controls.Add(this.tabRadioIn);
             this.tabControl1.Controls.Add(this.tabModes);
             this.tabControl1.Controls.Add(this.tabHardware);
@@ -211,21 +211,6 @@
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
-            // 
-            // tabReset
-            // 
-            this.tabReset.Controls.Add(this.BUT_reset);
-            resources.ApplyResources(this.tabReset, "tabReset");
-            this.tabReset.Name = "tabReset";
-            this.tabReset.UseVisualStyleBackColor = true;
-            // 
-            // BUT_reset
-            // 
-            resources.ApplyResources(this.BUT_reset, "BUT_reset");
-            this.BUT_reset.Name = "BUT_reset";
-            this.BUT_reset.Tag = "";
-            this.BUT_reset.UseVisualStyleBackColor = true;
-            this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
             // 
             // tabRadioIn
             // 
@@ -664,6 +649,7 @@
             // tabHardware
             // 
             this.tabHardware.BackColor = System.Drawing.Color.DarkRed;
+            this.tabHardware.Controls.Add(this.label27);
             this.tabHardware.Controls.Add(this.CMB_sonartype);
             this.tabHardware.Controls.Add(this.CHK_enableoptflow);
             this.tabHardware.Controls.Add(this.pictureBox2);
@@ -1520,6 +1506,26 @@
             this.Gservoloc.Value2 = 180F;
             this.Gservoloc.Value3 = 0F;
             // 
+            // tabReset
+            // 
+            this.tabReset.Controls.Add(this.BUT_reset);
+            resources.ApplyResources(this.tabReset, "tabReset");
+            this.tabReset.Name = "tabReset";
+            this.tabReset.UseVisualStyleBackColor = true;
+            // 
+            // BUT_reset
+            // 
+            resources.ApplyResources(this.BUT_reset, "BUT_reset");
+            this.BUT_reset.Name = "BUT_reset";
+            this.BUT_reset.Tag = "";
+            this.BUT_reset.UseVisualStyleBackColor = true;
+            this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
+            // 
+            // label27
+            // 
+            resources.ApplyResources(this.label27, "label27");
+            this.label27.Name = "label27";
+            // 
             // Setup
             // 
             resources.ApplyResources(this, "$this");
@@ -1530,7 +1536,6 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Setup_FormClosing);
             this.Load += new System.EventHandler(this.Setup_Load);
             this.tabControl1.ResumeLayout(false);
-            this.tabReset.ResumeLayout(false);
             this.tabRadioIn.ResumeLayout(false);
             this.tabRadioIn.PerformLayout();
             this.groupBoxElevons.ResumeLayout(false);
@@ -1563,6 +1568,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.HS3_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS2_TRIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.HS1_TRIM)).EndInit();
+            this.tabReset.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1711,6 +1717,7 @@
         private System.Windows.Forms.CheckBox CHK_elevonch1rev;
         private System.Windows.Forms.CheckBox CHK_elevonrev;
         private System.Windows.Forms.GroupBox groupBoxElevons;
+        private System.Windows.Forms.Label label27;
 
     }
 }
