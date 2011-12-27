@@ -32,6 +32,7 @@ namespace ArdupilotMega.GCSViews
         private PictureBox pictureBoxACHil;
         private PictureBox pictureBoxACHHil;
         private ImageLabel pictureBoxOcta;
+        private Label label1;
         private ImageLabel pictureBoxOctav;
 
         private void InitializeComponent()
@@ -53,6 +54,7 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxACHHil = new System.Windows.Forms.PictureBox();
             this.pictureBoxOcta = new ArdupilotMega.ImageLabel();
             this.pictureBoxOctav = new ArdupilotMega.ImageLabel();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxHilimage)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxAPHil)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxACHil)).BeginInit();
@@ -186,10 +188,16 @@ namespace ArdupilotMega.GCSViews
             this.pictureBoxOctav.TabStop = false;
             this.pictureBoxOctav.Click += new System.EventHandler(this.pictureBoxOctav_Click);
             // 
+            // label1
+            // 
+            resources.ApplyResources(this.label1, "label1");
+            this.label1.Name = "label1";
+            // 
             // Firmware
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBoxOctav);
             this.Controls.Add(this.pictureBoxOcta);
             this.Controls.Add(this.pictureBoxACHHil);

@@ -54,7 +54,6 @@ namespace ArdupilotMega
 
         public int wprad = 0;
         public GMapControl MainMap;
-        PointLatLng wpradposition;
 
         public GMapMarkerRect(PointLatLng p)
             : base(p)
