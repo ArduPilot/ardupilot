@@ -188,10 +188,14 @@ namespace ArdupilotMega.GCSViews
 
                     while ((DateTime.Now - start).TotalMilliseconds < 2000)
                     {
-                        if (comPort.BytesToRead > 0)
+                        try
                         {
-                            comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
+                            if (comPort.BytesToRead > 0)
+                            {
+                                comPort_DataReceived((object)null, (SerialDataReceivedEventArgs)null);
+                            }
                         }
+                        catch { return; }
                     }
 
                         comPort.Write("\n\n\n");
