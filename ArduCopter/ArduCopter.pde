@@ -315,8 +315,8 @@ static int16_t y_rate_error;
 static byte 	control_mode		= STABILIZE;
 static byte 	old_control_mode	= STABILIZE;
 static byte 	oldSwitchPosition;					// for remembering the control mode switch
-static int16_t  motor_out[8];
-static int16_t  motor_filtered[8];					// added to try and deal with biger motors
+static int16_t  motor_out[11];
+static int16_t  motor_filtered[11];					// added to try and deal with biger motors
 static bool		do_simple 			= false;
 
 static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
