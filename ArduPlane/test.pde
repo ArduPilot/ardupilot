@@ -432,6 +432,7 @@ test_dipswitches(uint8_t argc, const Menu::arg *argv)
 				(int)g.reverse_elevons,
 				(int)g.reverse_ch1_elevon,
 				(int)g.reverse_ch2_elevon);
+				//(int)g.channel_rudder.get_reverse()); No reversing switch for rudder in elevon mode.
 		}
 		if(Serial.available() > 0){
 			return (0);
