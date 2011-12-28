@@ -11,7 +11,7 @@ static void init_barometer(void)
 	long 			ground_pressure = 0;
 	int 			ground_temperature;
 
-	while(ground_pressure == 0){
+	while (ground_pressure == 0 || !barometer.healthy) {
 		barometer.read(); 					// Get initial data from absolute pressure sensor
 		ground_pressure 	= barometer.get_pressure();
 		ground_temperature 	= barometer.get_temperature();
@@ -22,10 +22,12 @@ static void init_barometer(void)
 	for(int i = 0; i < 30; i++){		// We take some readings...
 
 		#if HIL_MODE == HIL_MODE_SENSORS
-			gcs_update(); 				// look for inbound hil packets
+        gcs_update(); 				// look for inbound hil packets
 		#endif
-
-		barometer.read(); 				// Get initial data from absolute pressure sensor
+        
+        do {
+            barometer.read(); 				// Get pressure sensor
+        } while (!barometer.healthy);
 		ground_pressure		= (ground_pressure * 9l   + barometer.get_pressure()) / 10l;
 		ground_temperature	= (ground_temperature * 9 + barometer.get_temperature()) / 10;
 
@@ -58,7 +60,6 @@ static long read_barometer(void)
  	float x, scaling, temp;
 
 	barometer.read();		// Get new data from absolute pressure sensor
-
 
 	//abs_pressure 			= (abs_pressure + barometer.get_pressure()) >> 1;		// Small filtering
 	abs_pressure 			= ((float)abs_pressure * .7) + ((float)barometer.get_pressure() * .3);		// large filtering
