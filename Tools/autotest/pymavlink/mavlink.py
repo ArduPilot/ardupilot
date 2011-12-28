@@ -69,7 +69,7 @@ class MAVLink_message(object):
             v = getattr(self, a)
             ret += '%s : %s, ' % (a, v)
         ret = ret[0:-2] + '}'
-        return ret
+        return ret            
 
     def pack(self, mav, crc_extra, payload):
         self._payload = payload
@@ -95,7 +95,7 @@ MAV_MOUNT_MODE_MAVLINK_TARGETING = 2 # Load neutral position and start MAVLink R
 MAV_MOUNT_MODE_RC_TARGETING = 3 # Load neutral position and start RC Roll,Pitch,Yaw control with
                         # stabilization
 MAV_MOUNT_MODE_GPS_POINT = 4 # Load neutral position and start to point to Lat,Lon,Alt
-MAV_MOUNT_MODE_ENUM_END = 5 #
+MAV_MOUNT_MODE_ENUM_END = 5 # 
 
 # MAV_CMD
 MAV_CMD_NAV_WAYPOINT = 16 # Navigate to waypoint.
@@ -154,7 +154,19 @@ MAV_CMD_PREFLIGHT_CALIBRATION = 241 # Trigger calibration. This command will be 
                         # flight mode.
 MAV_CMD_PREFLIGHT_STORAGE = 245 # Request storage of different parameter values and logs. This command
                         # will be only accepted if in pre-flight mode.
-MAV_CMD_ENUM_END = 246 #
+MAV_CMD_ENUM_END = 246 # 
+
+# FENCE_ACTION
+FENCE_ACTION_NONE = 0 # Disable fenced mode
+FENCE_ACTION_GUIDED = 1 # Switched to guided mode to return point (fence point 0)
+FENCE_ACTION_ENUM_END = 2 # 
+
+# FENCE_BREACH
+FENCE_BREACH_NONE = 0 # No last fence breach
+FENCE_BREACH_MINALT = 1 # Breached minimum altitude
+FENCE_BREACH_MAXALT = 2 # Breached minimum altitude
+FENCE_BREACH_BOUNDARY = 3 # Breached fence boundary
+FENCE_BREACH_ENUM_END = 4 # 
 
 # MAV_DATA_STREAM
 MAV_DATA_STREAM_ALL = 0 # Enable all data streams
@@ -167,7 +179,7 @@ MAV_DATA_STREAM_POSITION = 6 # Enable LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POS
 MAV_DATA_STREAM_EXTRA1 = 10 # Dependent on the autopilot
 MAV_DATA_STREAM_EXTRA2 = 11 # Dependent on the autopilot
 MAV_DATA_STREAM_EXTRA3 = 12 # Dependent on the autopilot
-MAV_DATA_STREAM_ENUM_END = 13 #
+MAV_DATA_STREAM_ENUM_END = 13 # 
 
 # MAV_ROI
 MAV_ROI_NONE = 0 # No region of interest.
@@ -175,7 +187,7 @@ MAV_ROI_WPNEXT = 1 # Point toward next waypoint.
 MAV_ROI_WPINDEX = 2 # Point toward given waypoint.
 MAV_ROI_LOCATION = 3 # Point toward fixed location.
 MAV_ROI_TARGET = 4 # Point toward of given id.
-MAV_ROI_ENUM_END = 5 #
+MAV_ROI_ENUM_END = 5 # 
 
 # message IDs
 MAVLINK_MSG_ID_BAD_DATA = -1
@@ -188,6 +200,9 @@ MAVLINK_MSG_ID_DIGICAM_CONTROL = 155
 MAVLINK_MSG_ID_MOUNT_CONFIGURE = 156
 MAVLINK_MSG_ID_MOUNT_CONTROL = 157
 MAVLINK_MSG_ID_MOUNT_STATUS = 158
+MAVLINK_MSG_ID_FENCE_POINT = 160
+MAVLINK_MSG_ID_FENCE_FETCH_POINT = 161
+MAVLINK_MSG_ID_FENCE_STATUS = 162
 MAVLINK_MSG_ID_HEARTBEAT = 0
 MAVLINK_MSG_ID_BOOT = 1
 MAVLINK_MSG_ID_SYSTEM_TIME = 2
@@ -422,6 +437,54 @@ class MAVLink_mount_status_message(MAVLink_message):
 
         def pack(self, mav):
                 return MAVLink_message.pack(self, mav, 233, struct.pack('>BBiii', self.target_system, self.target_component, self.pointing_a, self.pointing_b, self.pointing_c))
+
+class MAVLink_fence_point_message(MAVLink_message):
+        '''
+        A fence point. Used to set a point when from               GCS
+        -> MAV. Also used to return a point from MAV -> GCS
+        '''
+        def __init__(self, target_system, target_component, idx, count, lat, lng):
+                MAVLink_message.__init__(self, MAVLINK_MSG_ID_FENCE_POINT, 'FENCE_POINT')
+                self._fieldnames = ['target_system', 'target_component', 'idx', 'count', 'lat', 'lng']
+                self.target_system = target_system
+                self.target_component = target_component
+                self.idx = idx
+                self.count = count
+                self.lat = lat
+                self.lng = lng
+
+        def pack(self, mav):
+                return MAVLink_message.pack(self, mav, 18, struct.pack('>BBBBff', self.target_system, self.target_component, self.idx, self.count, self.lat, self.lng))
+
+class MAVLink_fence_fetch_point_message(MAVLink_message):
+        '''
+        Request a current fence point from MAV
+        '''
+        def __init__(self, target_system, target_component, idx):
+                MAVLink_message.__init__(self, MAVLINK_MSG_ID_FENCE_FETCH_POINT, 'FENCE_FETCH_POINT')
+                self._fieldnames = ['target_system', 'target_component', 'idx']
+                self.target_system = target_system
+                self.target_component = target_component
+                self.idx = idx
+
+        def pack(self, mav):
+                return MAVLink_message.pack(self, mav, 68, struct.pack('>BBB', self.target_system, self.target_component, self.idx))
+
+class MAVLink_fence_status_message(MAVLink_message):
+        '''
+        Status of geo-fencing. Sent in extended             status
+        stream when fencing enabled
+        '''
+        def __init__(self, breach_status, breach_count, breach_type, breach_time):
+                MAVLink_message.__init__(self, MAVLINK_MSG_ID_FENCE_STATUS, 'FENCE_STATUS')
+                self._fieldnames = ['breach_status', 'breach_count', 'breach_type', 'breach_time']
+                self.breach_status = breach_status
+                self.breach_count = breach_count
+                self.breach_type = breach_type
+                self.breach_time = breach_time
+
+        def pack(self, mav):
+                return MAVLink_message.pack(self, mav, 136, struct.pack('>BHBI', self.breach_status, self.breach_count, self.breach_type, self.breach_time))
 
 class MAVLink_heartbeat_message(MAVLink_message):
         '''
@@ -1718,6 +1781,9 @@ mavlink_map = {
         MAVLINK_MSG_ID_MOUNT_CONFIGURE : ( '>BBBBBB', MAVLink_mount_configure_message, [0, 1, 2, 3, 4, 5], 19 ),
         MAVLINK_MSG_ID_MOUNT_CONTROL : ( '>BBiiiB', MAVLink_mount_control_message, [0, 1, 2, 3, 4, 5], 97 ),
         MAVLINK_MSG_ID_MOUNT_STATUS : ( '>BBiii', MAVLink_mount_status_message, [0, 1, 2, 3, 4], 233 ),
+        MAVLINK_MSG_ID_FENCE_POINT : ( '>BBBBff', MAVLink_fence_point_message, [0, 1, 2, 3, 4, 5], 18 ),
+        MAVLINK_MSG_ID_FENCE_FETCH_POINT : ( '>BBB', MAVLink_fence_fetch_point_message, [0, 1, 2], 68 ),
+        MAVLINK_MSG_ID_FENCE_STATUS : ( '>BHBI', MAVLink_fence_status_message, [0, 1, 2, 3], 136 ),
         MAVLINK_MSG_ID_HEARTBEAT : ( '>BBB', MAVLink_heartbeat_message, [0, 1, 2], 72 ),
         MAVLINK_MSG_ID_BOOT : ( '>I', MAVLink_boot_message, [0], 39 ),
         MAVLINK_MSG_ID_SYSTEM_TIME : ( '>Q', MAVLink_system_time_message, [0], 190 ),
@@ -1816,7 +1882,7 @@ class MAVLink_bad_data(MAVLink_message):
                 self.data = data
                 self.reason = reason
                 self._msgbuf = data
-
+            
 class MAVLink(object):
         '''MAVLink protocol handling class'''
         def __init__(self, file, srcSystem=0, srcComponent=0):
@@ -1846,7 +1912,7 @@ class MAVLink(object):
             self.callback = callback
             self.callback_args = args
             self.callback_kwargs = kwargs
-
+            
         def send(self, mavmsg):
                 '''send a MAVLink message'''
                 buf = mavmsg.pack(self)
@@ -1883,7 +1949,7 @@ class MAVLink(object):
                     return None
                 self.have_prefix_error = True
                 self.total_receive_errors += 1
-                raise MAVError("invalid MAVLink prefix '%s'" % magic)
+                raise MAVError("invalid MAVLink prefix '%s'" % magic) 
             self.have_prefix_error = False
             if len(self.buf) >= 2:
                 (magic, self.expected_length) = struct.unpack('BB', self.buf[0:2])
@@ -1944,7 +2010,7 @@ class MAVLink(object):
                 except struct.error as emsg:
                     raise MAVError('Unable to unpack MAVLink CRC: %s' % emsg)
                 crc2 = mavutil.x25crc(msgbuf[1:-2])
-                if False: # using CRC extra
+                if False: # using CRC extra 
                     crc2.accumulate(chr(crc_extra))
                 if crc != crc2.crc:
                     raise MAVError('invalid MAVLink CRC in msgID %u 0x%04x should be 0x%04x' % (msgId, crc, crc2.crc))
@@ -1999,7 +2065,7 @@ class MAVLink(object):
                 msg = MAVLink_sensor_offsets_message(mag_ofs_x, mag_ofs_y, mag_ofs_z, mag_declination, raw_press, raw_temp, gyro_cal_x, gyro_cal_y, gyro_cal_z, accel_cal_x, accel_cal_y, accel_cal_z)
                 msg.pack(self)
                 return msg
-
+            
         def sensor_offsets_send(self, mag_ofs_x, mag_ofs_y, mag_ofs_z, mag_declination, raw_press, raw_temp, gyro_cal_x, gyro_cal_y, gyro_cal_z, accel_cal_x, accel_cal_y, accel_cal_z):
                 '''
                 Offsets and calibrations values for hardware         sensors. This
@@ -2020,7 +2086,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.sensor_offsets_encode(mag_ofs_x, mag_ofs_y, mag_ofs_z, mag_declination, raw_press, raw_temp, gyro_cal_x, gyro_cal_y, gyro_cal_z, accel_cal_x, accel_cal_y, accel_cal_z))
-
+            
         def set_mag_offsets_encode(self, target_system, target_component, mag_ofs_x, mag_ofs_y, mag_ofs_z):
                 '''
                 set the magnetometer offsets
@@ -2035,7 +2101,7 @@ class MAVLink(object):
                 msg = MAVLink_set_mag_offsets_message(target_system, target_component, mag_ofs_x, mag_ofs_y, mag_ofs_z)
                 msg.pack(self)
                 return msg
-
+            
         def set_mag_offsets_send(self, target_system, target_component, mag_ofs_x, mag_ofs_y, mag_ofs_z):
                 '''
                 set the magnetometer offsets
@@ -2048,7 +2114,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.set_mag_offsets_encode(target_system, target_component, mag_ofs_x, mag_ofs_y, mag_ofs_z))
-
+            
         def meminfo_encode(self, brkval, freemem):
                 '''
                 state of APM memory
@@ -2060,7 +2126,7 @@ class MAVLink(object):
                 msg = MAVLink_meminfo_message(brkval, freemem)
                 msg.pack(self)
                 return msg
-
+            
         def meminfo_send(self, brkval, freemem):
                 '''
                 state of APM memory
@@ -2070,7 +2136,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.meminfo_encode(brkval, freemem))
-
+            
         def ap_adc_encode(self, adc1, adc2, adc3, adc4, adc5, adc6):
                 '''
                 raw ADC output
@@ -2086,7 +2152,7 @@ class MAVLink(object):
                 msg = MAVLink_ap_adc_message(adc1, adc2, adc3, adc4, adc5, adc6)
                 msg.pack(self)
                 return msg
-
+            
         def ap_adc_send(self, adc1, adc2, adc3, adc4, adc5, adc6):
                 '''
                 raw ADC output
@@ -2100,7 +2166,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.ap_adc_encode(adc1, adc2, adc3, adc4, adc5, adc6))
-
+            
         def digicam_configure_encode(self, target_system, target_component, mode, shutter_speed, aperture, iso, exposure_type, command_id, engine_cut_off, extra_param, extra_value):
                 '''
                 Configure on-board Camera Control System.
@@ -2121,7 +2187,7 @@ class MAVLink(object):
                 msg = MAVLink_digicam_configure_message(target_system, target_component, mode, shutter_speed, aperture, iso, exposure_type, command_id, engine_cut_off, extra_param, extra_value)
                 msg.pack(self)
                 return msg
-
+            
         def digicam_configure_send(self, target_system, target_component, mode, shutter_speed, aperture, iso, exposure_type, command_id, engine_cut_off, extra_param, extra_value):
                 '''
                 Configure on-board Camera Control System.
@@ -2140,7 +2206,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.digicam_configure_encode(target_system, target_component, mode, shutter_speed, aperture, iso, exposure_type, command_id, engine_cut_off, extra_param, extra_value))
-
+            
         def digicam_control_encode(self, target_system, target_component, session, zoom_pos, zoom_step, focus_lock, shot, command_id, extra_param, extra_value):
                 '''
                 Control on-board Camera Control System to take shots.
@@ -2160,7 +2226,7 @@ class MAVLink(object):
                 msg = MAVLink_digicam_control_message(target_system, target_component, session, zoom_pos, zoom_step, focus_lock, shot, command_id, extra_param, extra_value)
                 msg.pack(self)
                 return msg
-
+            
         def digicam_control_send(self, target_system, target_component, session, zoom_pos, zoom_step, focus_lock, shot, command_id, extra_param, extra_value):
                 '''
                 Control on-board Camera Control System to take shots.
@@ -2178,7 +2244,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.digicam_control_encode(target_system, target_component, session, zoom_pos, zoom_step, focus_lock, shot, command_id, extra_param, extra_value))
-
+            
         def mount_configure_encode(self, target_system, target_component, mount_mode, stab_roll, stab_pitch, stab_yaw):
                 '''
                 Message to configure a camera mount, directional antenna, etc.
@@ -2194,7 +2260,7 @@ class MAVLink(object):
                 msg = MAVLink_mount_configure_message(target_system, target_component, mount_mode, stab_roll, stab_pitch, stab_yaw)
                 msg.pack(self)
                 return msg
-
+            
         def mount_configure_send(self, target_system, target_component, mount_mode, stab_roll, stab_pitch, stab_yaw):
                 '''
                 Message to configure a camera mount, directional antenna, etc.
@@ -2208,7 +2274,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.mount_configure_encode(target_system, target_component, mount_mode, stab_roll, stab_pitch, stab_yaw))
-
+            
         def mount_control_encode(self, target_system, target_component, input_a, input_b, input_c, save_position):
                 '''
                 Message to control a camera mount, directional antenna, etc.
@@ -2224,7 +2290,7 @@ class MAVLink(object):
                 msg = MAVLink_mount_control_message(target_system, target_component, input_a, input_b, input_c, save_position)
                 msg.pack(self)
                 return msg
-
+            
         def mount_control_send(self, target_system, target_component, input_a, input_b, input_c, save_position):
                 '''
                 Message to control a camera mount, directional antenna, etc.
@@ -2238,7 +2304,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.mount_control_encode(target_system, target_component, input_a, input_b, input_c, save_position))
-
+            
         def mount_status_encode(self, target_system, target_component, pointing_a, pointing_b, pointing_c):
                 '''
                 Message with some status from APM to GCS about camera or antenna mount
@@ -2253,7 +2319,7 @@ class MAVLink(object):
                 msg = MAVLink_mount_status_message(target_system, target_component, pointing_a, pointing_b, pointing_c)
                 msg.pack(self)
                 return msg
-
+            
         def mount_status_send(self, target_system, target_component, pointing_a, pointing_b, pointing_c):
                 '''
                 Message with some status from APM to GCS about camera or antenna mount
@@ -2266,7 +2332,91 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.mount_status_encode(target_system, target_component, pointing_a, pointing_b, pointing_c))
+            
+        def fence_point_encode(self, target_system, target_component, idx, count, lat, lng):
+                '''
+                A fence point. Used to set a point when from               GCS -> MAV.
+                Also used to return a point from MAV -> GCS
 
+                target_system             : System ID (uint8_t)
+                target_component          : Component ID (uint8_t)
+                idx                       : point index (first point is 1, 0 is for return point) (uint8_t)
+                count                     : total number of points (for sanity checking) (uint8_t)
+                lat                       : Latitude of point (float)
+                lng                       : Longitude of point (float)
+
+                '''
+                msg = MAVLink_fence_point_message(target_system, target_component, idx, count, lat, lng)
+                msg.pack(self)
+                return msg
+            
+        def fence_point_send(self, target_system, target_component, idx, count, lat, lng):
+                '''
+                A fence point. Used to set a point when from               GCS -> MAV.
+                Also used to return a point from MAV -> GCS
+
+                target_system             : System ID (uint8_t)
+                target_component          : Component ID (uint8_t)
+                idx                       : point index (first point is 1, 0 is for return point) (uint8_t)
+                count                     : total number of points (for sanity checking) (uint8_t)
+                lat                       : Latitude of point (float)
+                lng                       : Longitude of point (float)
+
+                '''
+                return self.send(self.fence_point_encode(target_system, target_component, idx, count, lat, lng))
+            
+        def fence_fetch_point_encode(self, target_system, target_component, idx):
+                '''
+                Request a current fence point from MAV
+
+                target_system             : System ID (uint8_t)
+                target_component          : Component ID (uint8_t)
+                idx                       : point index (first point is 1, 0 is for return point) (uint8_t)
+
+                '''
+                msg = MAVLink_fence_fetch_point_message(target_system, target_component, idx)
+                msg.pack(self)
+                return msg
+            
+        def fence_fetch_point_send(self, target_system, target_component, idx):
+                '''
+                Request a current fence point from MAV
+
+                target_system             : System ID (uint8_t)
+                target_component          : Component ID (uint8_t)
+                idx                       : point index (first point is 1, 0 is for return point) (uint8_t)
+
+                '''
+                return self.send(self.fence_fetch_point_encode(target_system, target_component, idx))
+            
+        def fence_status_encode(self, breach_status, breach_count, breach_type, breach_time):
+                '''
+                Status of geo-fencing. Sent in extended             status stream when
+                fencing enabled
+
+                breach_status             : 0 if currently inside fence, 1 if outside (uint8_t)
+                breach_count              : number of fence breaches (uint16_t)
+                breach_type               : last breach type (see FENCE_BREACH_* enum) (uint8_t)
+                breach_time               : time of last breach in milliseconds since boot (uint32_t)
+
+                '''
+                msg = MAVLink_fence_status_message(breach_status, breach_count, breach_type, breach_time)
+                msg.pack(self)
+                return msg
+            
+        def fence_status_send(self, breach_status, breach_count, breach_type, breach_time):
+                '''
+                Status of geo-fencing. Sent in extended             status stream when
+                fencing enabled
+
+                breach_status             : 0 if currently inside fence, 1 if outside (uint8_t)
+                breach_count              : number of fence breaches (uint16_t)
+                breach_type               : last breach type (see FENCE_BREACH_* enum) (uint8_t)
+                breach_time               : time of last breach in milliseconds since boot (uint32_t)
+
+                '''
+                return self.send(self.fence_status_encode(breach_status, breach_count, breach_type, breach_time))
+            
         def heartbeat_encode(self, type, autopilot, mavlink_version=2):
                 '''
                 The heartbeat message shows that a system is present and responding.
@@ -2283,7 +2433,7 @@ class MAVLink(object):
                 msg = MAVLink_heartbeat_message(type, autopilot, mavlink_version)
                 msg.pack(self)
                 return msg
-
+            
         def heartbeat_send(self, type, autopilot, mavlink_version=2):
                 '''
                 The heartbeat message shows that a system is present and responding.
@@ -2298,7 +2448,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.heartbeat_encode(type, autopilot, mavlink_version))
-
+            
         def boot_encode(self, version):
                 '''
                 The boot message indicates that a system is starting. The onboard
@@ -2311,7 +2461,7 @@ class MAVLink(object):
                 msg = MAVLink_boot_message(version)
                 msg.pack(self)
                 return msg
-
+            
         def boot_send(self, version):
                 '''
                 The boot message indicates that a system is starting. The onboard
@@ -2322,7 +2472,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.boot_encode(version))
-
+            
         def system_time_encode(self, time_usec):
                 '''
                 The system time is the time of the master clock, typically the
@@ -2334,7 +2484,7 @@ class MAVLink(object):
                 msg = MAVLink_system_time_message(time_usec)
                 msg.pack(self)
                 return msg
-
+            
         def system_time_send(self, time_usec):
                 '''
                 The system time is the time of the master clock, typically the
@@ -2344,7 +2494,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.system_time_encode(time_usec))
-
+            
         def ping_encode(self, seq, target_system, target_component, time):
                 '''
                 A ping message either requesting or responding to a ping. This allows
@@ -2360,7 +2510,7 @@ class MAVLink(object):
                 msg = MAVLink_ping_message(seq, target_system, target_component, time)
                 msg.pack(self)
                 return msg
-
+            
         def ping_send(self, seq, target_system, target_component, time):
                 '''
                 A ping message either requesting or responding to a ping. This allows
@@ -2374,7 +2524,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.ping_encode(seq, target_system, target_component, time))
-
+            
         def system_time_utc_encode(self, utc_date, utc_time):
                 '''
                 UTC date and time from GPS module
@@ -2386,7 +2536,7 @@ class MAVLink(object):
                 msg = MAVLink_system_time_utc_message(utc_date, utc_time)
                 msg.pack(self)
                 return msg
-
+            
         def system_time_utc_send(self, utc_date, utc_time):
                 '''
                 UTC date and time from GPS module
@@ -2396,7 +2546,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.system_time_utc_encode(utc_date, utc_time))
-
+            
         def change_operator_control_encode(self, target_system, control_request, version, passkey):
                 '''
                 Request to control this MAV
@@ -2410,7 +2560,7 @@ class MAVLink(object):
                 msg = MAVLink_change_operator_control_message(target_system, control_request, version, passkey)
                 msg.pack(self)
                 return msg
-
+            
         def change_operator_control_send(self, target_system, control_request, version, passkey):
                 '''
                 Request to control this MAV
@@ -2422,7 +2572,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.change_operator_control_encode(target_system, control_request, version, passkey))
-
+            
         def change_operator_control_ack_encode(self, gcs_system_id, control_request, ack):
                 '''
                 Accept / deny control of this MAV
@@ -2435,7 +2585,7 @@ class MAVLink(object):
                 msg = MAVLink_change_operator_control_ack_message(gcs_system_id, control_request, ack)
                 msg.pack(self)
                 return msg
-
+            
         def change_operator_control_ack_send(self, gcs_system_id, control_request, ack):
                 '''
                 Accept / deny control of this MAV
@@ -2446,7 +2596,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.change_operator_control_ack_encode(gcs_system_id, control_request, ack))
-
+            
         def auth_key_encode(self, key):
                 '''
                 Emit an encrypted signature / key identifying this system. PLEASE
@@ -2460,7 +2610,7 @@ class MAVLink(object):
                 msg = MAVLink_auth_key_message(key)
                 msg.pack(self)
                 return msg
-
+            
         def auth_key_send(self, key):
                 '''
                 Emit an encrypted signature / key identifying this system. PLEASE
@@ -2472,7 +2622,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.auth_key_encode(key))
-
+            
         def action_ack_encode(self, action, result):
                 '''
                 This message acknowledges an action. IMPORTANT: The acknowledgement
@@ -2488,7 +2638,7 @@ class MAVLink(object):
                 msg = MAVLink_action_ack_message(action, result)
                 msg.pack(self)
                 return msg
-
+            
         def action_ack_send(self, action, result):
                 '''
                 This message acknowledges an action. IMPORTANT: The acknowledgement
@@ -2502,7 +2652,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.action_ack_encode(action, result))
-
+            
         def action_encode(self, target, target_component, action):
                 '''
                 An action message allows to execute a certain onboard action. These
@@ -2518,7 +2668,7 @@ class MAVLink(object):
                 msg = MAVLink_action_message(target, target_component, action)
                 msg.pack(self)
                 return msg
-
+            
         def action_send(self, target, target_component, action):
                 '''
                 An action message allows to execute a certain onboard action. These
@@ -2532,7 +2682,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.action_encode(target, target_component, action))
-
+            
         def set_mode_encode(self, target, mode):
                 '''
                 Set the system mode, as defined by enum MAV_MODE in
@@ -2547,7 +2697,7 @@ class MAVLink(object):
                 msg = MAVLink_set_mode_message(target, mode)
                 msg.pack(self)
                 return msg
-
+            
         def set_mode_send(self, target, mode):
                 '''
                 Set the system mode, as defined by enum MAV_MODE in
@@ -2560,7 +2710,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.set_mode_encode(target, mode))
-
+            
         def set_nav_mode_encode(self, target, nav_mode):
                 '''
                 Set the system navigation mode, as defined by enum MAV_NAV_MODE in
@@ -2574,7 +2724,7 @@ class MAVLink(object):
                 msg = MAVLink_set_nav_mode_message(target, nav_mode)
                 msg.pack(self)
                 return msg
-
+            
         def set_nav_mode_send(self, target, nav_mode):
                 '''
                 Set the system navigation mode, as defined by enum MAV_NAV_MODE in
@@ -2586,7 +2736,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.set_nav_mode_encode(target, nav_mode))
-
+            
         def param_request_read_encode(self, target_system, target_component, param_id, param_index):
                 '''
                 Request to read the onboard parameter with the param_id string id.
@@ -2608,7 +2758,7 @@ class MAVLink(object):
                 msg = MAVLink_param_request_read_message(target_system, target_component, param_id, param_index)
                 msg.pack(self)
                 return msg
-
+            
         def param_request_read_send(self, target_system, target_component, param_id, param_index):
                 '''
                 Request to read the onboard parameter with the param_id string id.
@@ -2628,7 +2778,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.param_request_read_encode(target_system, target_component, param_id, param_index))
-
+            
         def param_request_list_encode(self, target_system, target_component):
                 '''
                 Request all parameters of this component. After his request, all
@@ -2641,7 +2791,7 @@ class MAVLink(object):
                 msg = MAVLink_param_request_list_message(target_system, target_component)
                 msg.pack(self)
                 return msg
-
+            
         def param_request_list_send(self, target_system, target_component):
                 '''
                 Request all parameters of this component. After his request, all
@@ -2652,7 +2802,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.param_request_list_encode(target_system, target_component))
-
+            
         def param_value_encode(self, param_id, param_value, param_count, param_index):
                 '''
                 Emit the value of a onboard parameter. The inclusion of param_count
@@ -2669,7 +2819,7 @@ class MAVLink(object):
                 msg = MAVLink_param_value_message(param_id, param_value, param_count, param_index)
                 msg.pack(self)
                 return msg
-
+            
         def param_value_send(self, param_id, param_value, param_count, param_index):
                 '''
                 Emit the value of a onboard parameter. The inclusion of param_count
@@ -2684,7 +2834,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.param_value_encode(param_id, param_value, param_count, param_index))
-
+            
         def param_set_encode(self, target_system, target_component, param_id, param_value):
                 '''
                 Set a parameter value TEMPORARILY to RAM. It will be reset to default
@@ -2707,7 +2857,7 @@ class MAVLink(object):
                 msg = MAVLink_param_set_message(target_system, target_component, param_id, param_value)
                 msg.pack(self)
                 return msg
-
+            
         def param_set_send(self, target_system, target_component, param_id, param_value):
                 '''
                 Set a parameter value TEMPORARILY to RAM. It will be reset to default
@@ -2728,7 +2878,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.param_set_encode(target_system, target_component, param_id, param_value))
-
+            
         def gps_raw_int_encode(self, usec, fix_type, lat, lon, alt, eph, epv, v, hdg):
                 '''
                 The global position, as returned by the Global Positioning System
@@ -2752,7 +2902,7 @@ class MAVLink(object):
                 msg = MAVLink_gps_raw_int_message(usec, fix_type, lat, lon, alt, eph, epv, v, hdg)
                 msg.pack(self)
                 return msg
-
+            
         def gps_raw_int_send(self, usec, fix_type, lat, lon, alt, eph, epv, v, hdg):
                 '''
                 The global position, as returned by the Global Positioning System
@@ -2774,7 +2924,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.gps_raw_int_encode(usec, fix_type, lat, lon, alt, eph, epv, v, hdg))
-
+            
         def scaled_imu_encode(self, usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag):
                 '''
                 The RAW IMU readings for the usual 9DOF sensor setup. This message
@@ -2796,7 +2946,7 @@ class MAVLink(object):
                 msg = MAVLink_scaled_imu_message(usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag)
                 msg.pack(self)
                 return msg
-
+            
         def scaled_imu_send(self, usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag):
                 '''
                 The RAW IMU readings for the usual 9DOF sensor setup. This message
@@ -2816,7 +2966,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.scaled_imu_encode(usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag))
-
+            
         def gps_status_encode(self, satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr):
                 '''
                 The positioning status, as reported by GPS. This message is intended
@@ -2836,7 +2986,7 @@ class MAVLink(object):
                 msg = MAVLink_gps_status_message(satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr)
                 msg.pack(self)
                 return msg
-
+            
         def gps_status_send(self, satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr):
                 '''
                 The positioning status, as reported by GPS. This message is intended
@@ -2854,7 +3004,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.gps_status_encode(satellites_visible, satellite_prn, satellite_used, satellite_elevation, satellite_azimuth, satellite_snr))
-
+            
         def raw_imu_encode(self, usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag):
                 '''
                 The RAW IMU readings for the usual 9DOF sensor setup. This message
@@ -2876,7 +3026,7 @@ class MAVLink(object):
                 msg = MAVLink_raw_imu_message(usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag)
                 msg.pack(self)
                 return msg
-
+            
         def raw_imu_send(self, usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag):
                 '''
                 The RAW IMU readings for the usual 9DOF sensor setup. This message
@@ -2896,7 +3046,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.raw_imu_encode(usec, xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag))
-
+            
         def raw_pressure_encode(self, usec, press_abs, press_diff1, press_diff2, temperature):
                 '''
                 The RAW pressure readings for the typical setup of one absolute
@@ -2913,7 +3063,7 @@ class MAVLink(object):
                 msg = MAVLink_raw_pressure_message(usec, press_abs, press_diff1, press_diff2, temperature)
                 msg.pack(self)
                 return msg
-
+            
         def raw_pressure_send(self, usec, press_abs, press_diff1, press_diff2, temperature):
                 '''
                 The RAW pressure readings for the typical setup of one absolute
@@ -2928,7 +3078,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.raw_pressure_encode(usec, press_abs, press_diff1, press_diff2, temperature))
-
+            
         def scaled_pressure_encode(self, usec, press_abs, press_diff, temperature):
                 '''
                 The pressure readings for the typical setup of one absolute and
@@ -2944,7 +3094,7 @@ class MAVLink(object):
                 msg = MAVLink_scaled_pressure_message(usec, press_abs, press_diff, temperature)
                 msg.pack(self)
                 return msg
-
+            
         def scaled_pressure_send(self, usec, press_abs, press_diff, temperature):
                 '''
                 The pressure readings for the typical setup of one absolute and
@@ -2958,7 +3108,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.scaled_pressure_encode(usec, press_abs, press_diff, temperature))
-
+            
         def attitude_encode(self, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed):
                 '''
                 The attitude in the aeronautical frame (right-handed, Z-down, X-front,
@@ -2976,7 +3126,7 @@ class MAVLink(object):
                 msg = MAVLink_attitude_message(usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed)
                 msg.pack(self)
                 return msg
-
+            
         def attitude_send(self, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed):
                 '''
                 The attitude in the aeronautical frame (right-handed, Z-down, X-front,
@@ -2992,7 +3142,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.attitude_encode(usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed))
-
+            
         def local_position_encode(self, usec, x, y, z, vx, vy, vz):
                 '''
                 The filtered local position (e.g. fused computer vision and
@@ -3011,7 +3161,7 @@ class MAVLink(object):
                 msg = MAVLink_local_position_message(usec, x, y, z, vx, vy, vz)
                 msg.pack(self)
                 return msg
-
+            
         def local_position_send(self, usec, x, y, z, vx, vy, vz):
                 '''
                 The filtered local position (e.g. fused computer vision and
@@ -3028,7 +3178,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.local_position_encode(usec, x, y, z, vx, vy, vz))
-
+            
         def global_position_encode(self, usec, lat, lon, alt, vx, vy, vz):
                 '''
                 The filtered global position (e.g. fused GPS and accelerometers).
@@ -3047,7 +3197,7 @@ class MAVLink(object):
                 msg = MAVLink_global_position_message(usec, lat, lon, alt, vx, vy, vz)
                 msg.pack(self)
                 return msg
-
+            
         def global_position_send(self, usec, lat, lon, alt, vx, vy, vz):
                 '''
                 The filtered global position (e.g. fused GPS and accelerometers).
@@ -3064,7 +3214,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.global_position_encode(usec, lat, lon, alt, vx, vy, vz))
-
+            
         def gps_raw_encode(self, usec, fix_type, lat, lon, alt, eph, epv, v, hdg):
                 '''
                 The global position, as returned by the Global Positioning System
@@ -3088,7 +3238,7 @@ class MAVLink(object):
                 msg = MAVLink_gps_raw_message(usec, fix_type, lat, lon, alt, eph, epv, v, hdg)
                 msg.pack(self)
                 return msg
-
+            
         def gps_raw_send(self, usec, fix_type, lat, lon, alt, eph, epv, v, hdg):
                 '''
                 The global position, as returned by the Global Positioning System
@@ -3110,7 +3260,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.gps_raw_encode(usec, fix_type, lat, lon, alt, eph, epv, v, hdg))
-
+            
         def sys_status_encode(self, mode, nav_mode, status, load, vbat, battery_remaining, packet_drop):
                 '''
                 The general system state. If the system is following the MAVLink
@@ -3145,7 +3295,7 @@ class MAVLink(object):
                 msg = MAVLink_sys_status_message(mode, nav_mode, status, load, vbat, battery_remaining, packet_drop)
                 msg.pack(self)
                 return msg
-
+            
         def sys_status_send(self, mode, nav_mode, status, load, vbat, battery_remaining, packet_drop):
                 '''
                 The general system state. If the system is following the MAVLink
@@ -3178,7 +3328,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.sys_status_encode(mode, nav_mode, status, load, vbat, battery_remaining, packet_drop))
-
+            
         def rc_channels_raw_encode(self, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw, rssi):
                 '''
                 The RAW values of the RC channels received. The standard PPM
@@ -3200,7 +3350,7 @@ class MAVLink(object):
                 msg = MAVLink_rc_channels_raw_message(chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw, rssi)
                 msg.pack(self)
                 return msg
-
+            
         def rc_channels_raw_send(self, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw, rssi):
                 '''
                 The RAW values of the RC channels received. The standard PPM
@@ -3220,7 +3370,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.rc_channels_raw_encode(chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw, rssi))
-
+            
         def rc_channels_scaled_encode(self, chan1_scaled, chan2_scaled, chan3_scaled, chan4_scaled, chan5_scaled, chan6_scaled, chan7_scaled, chan8_scaled, rssi):
                 '''
                 The scaled values of the RC channels received. (-100%) -10000, (0%) 0,
@@ -3240,7 +3390,7 @@ class MAVLink(object):
                 msg = MAVLink_rc_channels_scaled_message(chan1_scaled, chan2_scaled, chan3_scaled, chan4_scaled, chan5_scaled, chan6_scaled, chan7_scaled, chan8_scaled, rssi)
                 msg.pack(self)
                 return msg
-
+            
         def rc_channels_scaled_send(self, chan1_scaled, chan2_scaled, chan3_scaled, chan4_scaled, chan5_scaled, chan6_scaled, chan7_scaled, chan8_scaled, rssi):
                 '''
                 The scaled values of the RC channels received. (-100%) -10000, (0%) 0,
@@ -3258,7 +3408,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.rc_channels_scaled_encode(chan1_scaled, chan2_scaled, chan3_scaled, chan4_scaled, chan5_scaled, chan6_scaled, chan7_scaled, chan8_scaled, rssi))
-
+            
         def servo_output_raw_encode(self, servo1_raw, servo2_raw, servo3_raw, servo4_raw, servo5_raw, servo6_raw, servo7_raw, servo8_raw):
                 '''
                 The RAW values of the servo outputs (for RC input from the remote, use
@@ -3279,7 +3429,7 @@ class MAVLink(object):
                 msg = MAVLink_servo_output_raw_message(servo1_raw, servo2_raw, servo3_raw, servo4_raw, servo5_raw, servo6_raw, servo7_raw, servo8_raw)
                 msg.pack(self)
                 return msg
-
+            
         def servo_output_raw_send(self, servo1_raw, servo2_raw, servo3_raw, servo4_raw, servo5_raw, servo6_raw, servo7_raw, servo8_raw):
                 '''
                 The RAW values of the servo outputs (for RC input from the remote, use
@@ -3298,7 +3448,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.servo_output_raw_encode(servo1_raw, servo2_raw, servo3_raw, servo4_raw, servo5_raw, servo6_raw, servo7_raw, servo8_raw))
-
+            
         def waypoint_encode(self, target_system, target_component, seq, frame, command, current, autocontinue, param1, param2, param3, param4, x, y, z):
                 '''
                 Message encoding a waypoint. This message is emitted to announce
@@ -3327,7 +3477,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_message(target_system, target_component, seq, frame, command, current, autocontinue, param1, param2, param3, param4, x, y, z)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_send(self, target_system, target_component, seq, frame, command, current, autocontinue, param1, param2, param3, param4, x, y, z):
                 '''
                 Message encoding a waypoint. This message is emitted to announce
@@ -3354,7 +3504,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_encode(target_system, target_component, seq, frame, command, current, autocontinue, param1, param2, param3, param4, x, y, z))
-
+            
         def waypoint_request_encode(self, target_system, target_component, seq):
                 '''
                 Request the information of the waypoint with the sequence number seq.
@@ -3369,7 +3519,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_request_message(target_system, target_component, seq)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_request_send(self, target_system, target_component, seq):
                 '''
                 Request the information of the waypoint with the sequence number seq.
@@ -3382,7 +3532,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_request_encode(target_system, target_component, seq))
-
+            
         def waypoint_set_current_encode(self, target_system, target_component, seq):
                 '''
                 Set the waypoint with sequence number seq as current waypoint. This
@@ -3398,7 +3548,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_set_current_message(target_system, target_component, seq)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_set_current_send(self, target_system, target_component, seq):
                 '''
                 Set the waypoint with sequence number seq as current waypoint. This
@@ -3412,7 +3562,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_set_current_encode(target_system, target_component, seq))
-
+            
         def waypoint_current_encode(self, seq):
                 '''
                 Message that announces the sequence number of the current active
@@ -3424,7 +3574,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_current_message(seq)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_current_send(self, seq):
                 '''
                 Message that announces the sequence number of the current active
@@ -3434,7 +3584,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_current_encode(seq))
-
+            
         def waypoint_request_list_encode(self, target_system, target_component):
                 '''
                 Request the overall list of waypoints from the system/component.
@@ -3446,7 +3596,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_request_list_message(target_system, target_component)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_request_list_send(self, target_system, target_component):
                 '''
                 Request the overall list of waypoints from the system/component.
@@ -3456,7 +3606,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_request_list_encode(target_system, target_component))
-
+            
         def waypoint_count_encode(self, target_system, target_component, count):
                 '''
                 This message is emitted as response to WAYPOINT_REQUEST_LIST by the
@@ -3472,7 +3622,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_count_message(target_system, target_component, count)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_count_send(self, target_system, target_component, count):
                 '''
                 This message is emitted as response to WAYPOINT_REQUEST_LIST by the
@@ -3486,7 +3636,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_count_encode(target_system, target_component, count))
-
+            
         def waypoint_clear_all_encode(self, target_system, target_component):
                 '''
                 Delete all waypoints at once.
@@ -3498,7 +3648,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_clear_all_message(target_system, target_component)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_clear_all_send(self, target_system, target_component):
                 '''
                 Delete all waypoints at once.
@@ -3508,7 +3658,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_clear_all_encode(target_system, target_component))
-
+            
         def waypoint_reached_encode(self, seq):
                 '''
                 A certain waypoint has been reached. The system will either hold this
@@ -3522,7 +3672,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_reached_message(seq)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_reached_send(self, seq):
                 '''
                 A certain waypoint has been reached. The system will either hold this
@@ -3534,7 +3684,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_reached_encode(seq))
-
+            
         def waypoint_ack_encode(self, target_system, target_component, type):
                 '''
                 Ack message during waypoint handling. The type field states if this
@@ -3549,7 +3699,7 @@ class MAVLink(object):
                 msg = MAVLink_waypoint_ack_message(target_system, target_component, type)
                 msg.pack(self)
                 return msg
-
+            
         def waypoint_ack_send(self, target_system, target_component, type):
                 '''
                 Ack message during waypoint handling. The type field states if this
@@ -3562,7 +3712,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.waypoint_ack_encode(target_system, target_component, type))
-
+            
         def gps_set_global_origin_encode(self, target_system, target_component, latitude, longitude, altitude):
                 '''
                 As local waypoints exist, the global waypoint reference allows to
@@ -3581,7 +3731,7 @@ class MAVLink(object):
                 msg = MAVLink_gps_set_global_origin_message(target_system, target_component, latitude, longitude, altitude)
                 msg.pack(self)
                 return msg
-
+            
         def gps_set_global_origin_send(self, target_system, target_component, latitude, longitude, altitude):
                 '''
                 As local waypoints exist, the global waypoint reference allows to
@@ -3598,7 +3748,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.gps_set_global_origin_encode(target_system, target_component, latitude, longitude, altitude))
-
+            
         def gps_local_origin_set_encode(self, latitude, longitude, altitude):
                 '''
                 Once the MAV sets a new GPS-Local correspondence, this message
@@ -3612,7 +3762,7 @@ class MAVLink(object):
                 msg = MAVLink_gps_local_origin_set_message(latitude, longitude, altitude)
                 msg.pack(self)
                 return msg
-
+            
         def gps_local_origin_set_send(self, latitude, longitude, altitude):
                 '''
                 Once the MAV sets a new GPS-Local correspondence, this message
@@ -3624,7 +3774,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.gps_local_origin_set_encode(latitude, longitude, altitude))
-
+            
         def local_position_setpoint_set_encode(self, target_system, target_component, x, y, z, yaw):
                 '''
                 Set the setpoint for a local position controller. This is the position
@@ -3646,7 +3796,7 @@ class MAVLink(object):
                 msg = MAVLink_local_position_setpoint_set_message(target_system, target_component, x, y, z, yaw)
                 msg.pack(self)
                 return msg
-
+            
         def local_position_setpoint_set_send(self, target_system, target_component, x, y, z, yaw):
                 '''
                 Set the setpoint for a local position controller. This is the position
@@ -3666,7 +3816,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.local_position_setpoint_set_encode(target_system, target_component, x, y, z, yaw))
-
+            
         def local_position_setpoint_encode(self, x, y, z, yaw):
                 '''
                 Transmit the current local setpoint of the controller to other MAVs
@@ -3681,7 +3831,7 @@ class MAVLink(object):
                 msg = MAVLink_local_position_setpoint_message(x, y, z, yaw)
                 msg.pack(self)
                 return msg
-
+            
         def local_position_setpoint_send(self, x, y, z, yaw):
                 '''
                 Transmit the current local setpoint of the controller to other MAVs
@@ -3694,10 +3844,10 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.local_position_setpoint_encode(x, y, z, yaw))
-
+            
         def control_status_encode(self, position_fix, vision_fix, gps_fix, ahrs_health, control_att, control_pos_xy, control_pos_z, control_pos_yaw):
                 '''
-
+                
 
                 position_fix              : Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix (uint8_t)
                 vision_fix                : Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix (uint8_t)
@@ -3712,10 +3862,10 @@ class MAVLink(object):
                 msg = MAVLink_control_status_message(position_fix, vision_fix, gps_fix, ahrs_health, control_att, control_pos_xy, control_pos_z, control_pos_yaw)
                 msg.pack(self)
                 return msg
-
+            
         def control_status_send(self, position_fix, vision_fix, gps_fix, ahrs_health, control_att, control_pos_xy, control_pos_z, control_pos_yaw):
                 '''
-
+                
 
                 position_fix              : Position fix: 0: lost, 2: 2D position fix, 3: 3D position fix (uint8_t)
                 vision_fix                : Vision position fix: 0: lost, 1: 2D local position hold, 2: 2D global position fix, 3: 3D global position fix (uint8_t)
@@ -3728,7 +3878,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.control_status_encode(position_fix, vision_fix, gps_fix, ahrs_health, control_att, control_pos_xy, control_pos_z, control_pos_yaw))
-
+            
         def safety_set_allowed_area_encode(self, target_system, target_component, frame, p1x, p1y, p1z, p2x, p2y, p2z):
                 '''
                 Set a safety zone (volume), which is defined by two corners of a cube.
@@ -3751,7 +3901,7 @@ class MAVLink(object):
                 msg = MAVLink_safety_set_allowed_area_message(target_system, target_component, frame, p1x, p1y, p1z, p2x, p2y, p2z)
                 msg.pack(self)
                 return msg
-
+            
         def safety_set_allowed_area_send(self, target_system, target_component, frame, p1x, p1y, p1z, p2x, p2y, p2z):
                 '''
                 Set a safety zone (volume), which is defined by two corners of a cube.
@@ -3772,7 +3922,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.safety_set_allowed_area_encode(target_system, target_component, frame, p1x, p1y, p1z, p2x, p2y, p2z))
-
+            
         def safety_allowed_area_encode(self, frame, p1x, p1y, p1z, p2x, p2y, p2z):
                 '''
                 Read out the safety zone the MAV currently assumes.
@@ -3789,7 +3939,7 @@ class MAVLink(object):
                 msg = MAVLink_safety_allowed_area_message(frame, p1x, p1y, p1z, p2x, p2y, p2z)
                 msg.pack(self)
                 return msg
-
+            
         def safety_allowed_area_send(self, frame, p1x, p1y, p1z, p2x, p2y, p2z):
                 '''
                 Read out the safety zone the MAV currently assumes.
@@ -3804,7 +3954,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.safety_allowed_area_encode(frame, p1x, p1y, p1z, p2x, p2y, p2z))
-
+            
         def set_roll_pitch_yaw_thrust_encode(self, target_system, target_component, roll, pitch, yaw, thrust):
                 '''
                 Set roll, pitch and yaw.
@@ -3820,7 +3970,7 @@ class MAVLink(object):
                 msg = MAVLink_set_roll_pitch_yaw_thrust_message(target_system, target_component, roll, pitch, yaw, thrust)
                 msg.pack(self)
                 return msg
-
+            
         def set_roll_pitch_yaw_thrust_send(self, target_system, target_component, roll, pitch, yaw, thrust):
                 '''
                 Set roll, pitch and yaw.
@@ -3834,7 +3984,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.set_roll_pitch_yaw_thrust_encode(target_system, target_component, roll, pitch, yaw, thrust))
-
+            
         def set_roll_pitch_yaw_speed_thrust_encode(self, target_system, target_component, roll_speed, pitch_speed, yaw_speed, thrust):
                 '''
                 Set roll, pitch and yaw.
@@ -3850,7 +4000,7 @@ class MAVLink(object):
                 msg = MAVLink_set_roll_pitch_yaw_speed_thrust_message(target_system, target_component, roll_speed, pitch_speed, yaw_speed, thrust)
                 msg.pack(self)
                 return msg
-
+            
         def set_roll_pitch_yaw_speed_thrust_send(self, target_system, target_component, roll_speed, pitch_speed, yaw_speed, thrust):
                 '''
                 Set roll, pitch and yaw.
@@ -3864,7 +4014,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.set_roll_pitch_yaw_speed_thrust_encode(target_system, target_component, roll_speed, pitch_speed, yaw_speed, thrust))
-
+            
         def roll_pitch_yaw_thrust_setpoint_encode(self, time_us, roll, pitch, yaw, thrust):
                 '''
                 Setpoint in roll, pitch, yaw currently active on the system.
@@ -3879,7 +4029,7 @@ class MAVLink(object):
                 msg = MAVLink_roll_pitch_yaw_thrust_setpoint_message(time_us, roll, pitch, yaw, thrust)
                 msg.pack(self)
                 return msg
-
+            
         def roll_pitch_yaw_thrust_setpoint_send(self, time_us, roll, pitch, yaw, thrust):
                 '''
                 Setpoint in roll, pitch, yaw currently active on the system.
@@ -3892,7 +4042,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.roll_pitch_yaw_thrust_setpoint_encode(time_us, roll, pitch, yaw, thrust))
-
+            
         def roll_pitch_yaw_speed_thrust_setpoint_encode(self, time_us, roll_speed, pitch_speed, yaw_speed, thrust):
                 '''
                 Setpoint in rollspeed, pitchspeed, yawspeed currently active on the
@@ -3908,7 +4058,7 @@ class MAVLink(object):
                 msg = MAVLink_roll_pitch_yaw_speed_thrust_setpoint_message(time_us, roll_speed, pitch_speed, yaw_speed, thrust)
                 msg.pack(self)
                 return msg
-
+            
         def roll_pitch_yaw_speed_thrust_setpoint_send(self, time_us, roll_speed, pitch_speed, yaw_speed, thrust):
                 '''
                 Setpoint in rollspeed, pitchspeed, yawspeed currently active on the
@@ -3922,7 +4072,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.roll_pitch_yaw_speed_thrust_setpoint_encode(time_us, roll_speed, pitch_speed, yaw_speed, thrust))
-
+            
         def nav_controller_output_encode(self, nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error, xtrack_error):
                 '''
                 Outputs of the APM navigation controller. The primary use of this
@@ -3943,7 +4093,7 @@ class MAVLink(object):
                 msg = MAVLink_nav_controller_output_message(nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error, xtrack_error)
                 msg.pack(self)
                 return msg
-
+            
         def nav_controller_output_send(self, nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error, xtrack_error):
                 '''
                 Outputs of the APM navigation controller. The primary use of this
@@ -3962,7 +4112,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.nav_controller_output_encode(nav_roll, nav_pitch, nav_bearing, target_bearing, wp_dist, alt_error, aspd_error, xtrack_error))
-
+            
         def position_target_encode(self, x, y, z, yaw):
                 '''
                 The goal position of the system. This position is the input to any
@@ -3978,7 +4128,7 @@ class MAVLink(object):
                 msg = MAVLink_position_target_message(x, y, z, yaw)
                 msg.pack(self)
                 return msg
-
+            
         def position_target_send(self, x, y, z, yaw):
                 '''
                 The goal position of the system. This position is the input to any
@@ -3992,7 +4142,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.position_target_encode(x, y, z, yaw))
-
+            
         def state_correction_encode(self, xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr):
                 '''
                 Corrects the systems state by adding an error correction term to the
@@ -4013,7 +4163,7 @@ class MAVLink(object):
                 msg = MAVLink_state_correction_message(xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr)
                 msg.pack(self)
                 return msg
-
+            
         def state_correction_send(self, xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr):
                 '''
                 Corrects the systems state by adding an error correction term to the
@@ -4032,10 +4182,10 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.state_correction_encode(xErr, yErr, zErr, rollErr, pitchErr, yawErr, vxErr, vyErr, vzErr))
-
+            
         def set_altitude_encode(self, target, mode):
                 '''
-
+                
 
                 target                    : The system setting the altitude (uint8_t)
                 mode                      : The new altitude in meters (uint32_t)
@@ -4044,20 +4194,20 @@ class MAVLink(object):
                 msg = MAVLink_set_altitude_message(target, mode)
                 msg.pack(self)
                 return msg
-
+            
         def set_altitude_send(self, target, mode):
                 '''
-
+                
 
                 target                    : The system setting the altitude (uint8_t)
                 mode                      : The new altitude in meters (uint32_t)
 
                 '''
                 return self.send(self.set_altitude_encode(target, mode))
-
+            
         def request_data_stream_encode(self, target_system, target_component, req_stream_id, req_message_rate, start_stop):
                 '''
-
+                
 
                 target_system             : The target requested to send the message stream. (uint8_t)
                 target_component          : The target requested to send the message stream. (uint8_t)
@@ -4069,10 +4219,10 @@ class MAVLink(object):
                 msg = MAVLink_request_data_stream_message(target_system, target_component, req_stream_id, req_message_rate, start_stop)
                 msg.pack(self)
                 return msg
-
+            
         def request_data_stream_send(self, target_system, target_component, req_stream_id, req_message_rate, start_stop):
                 '''
-
+                
 
                 target_system             : The target requested to send the message stream. (uint8_t)
                 target_component          : The target requested to send the message stream. (uint8_t)
@@ -4082,7 +4232,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.request_data_stream_encode(target_system, target_component, req_stream_id, req_message_rate, start_stop))
-
+            
         def hil_state_encode(self, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, lat, lon, alt, vx, vy, vz, xacc, yacc, zacc):
                 '''
                 This packet is useful for high throughput                 applications
@@ -4109,7 +4259,7 @@ class MAVLink(object):
                 msg = MAVLink_hil_state_message(usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, lat, lon, alt, vx, vy, vz, xacc, yacc, zacc)
                 msg.pack(self)
                 return msg
-
+            
         def hil_state_send(self, usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, lat, lon, alt, vx, vy, vz, xacc, yacc, zacc):
                 '''
                 This packet is useful for high throughput                 applications
@@ -4134,7 +4284,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.hil_state_encode(usec, roll, pitch, yaw, rollspeed, pitchspeed, yawspeed, lat, lon, alt, vx, vy, vz, xacc, yacc, zacc))
-
+            
         def hil_controls_encode(self, time_us, roll_ailerons, pitch_elevator, yaw_rudder, throttle, mode, nav_mode):
                 '''
                 Hardware in the loop control outputs
@@ -4151,7 +4301,7 @@ class MAVLink(object):
                 msg = MAVLink_hil_controls_message(time_us, roll_ailerons, pitch_elevator, yaw_rudder, throttle, mode, nav_mode)
                 msg.pack(self)
                 return msg
-
+            
         def hil_controls_send(self, time_us, roll_ailerons, pitch_elevator, yaw_rudder, throttle, mode, nav_mode):
                 '''
                 Hardware in the loop control outputs
@@ -4166,10 +4316,10 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.hil_controls_encode(time_us, roll_ailerons, pitch_elevator, yaw_rudder, throttle, mode, nav_mode))
-
+            
         def manual_control_encode(self, target, roll, pitch, yaw, thrust, roll_manual, pitch_manual, yaw_manual, thrust_manual):
                 '''
-
+                
 
                 target                    : The system to be controlled (uint8_t)
                 roll                      : roll (float)
@@ -4185,10 +4335,10 @@ class MAVLink(object):
                 msg = MAVLink_manual_control_message(target, roll, pitch, yaw, thrust, roll_manual, pitch_manual, yaw_manual, thrust_manual)
                 msg.pack(self)
                 return msg
-
+            
         def manual_control_send(self, target, roll, pitch, yaw, thrust, roll_manual, pitch_manual, yaw_manual, thrust_manual):
                 '''
-
+                
 
                 target                    : The system to be controlled (uint8_t)
                 roll                      : roll (float)
@@ -4202,7 +4352,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.manual_control_encode(target, roll, pitch, yaw, thrust, roll_manual, pitch_manual, yaw_manual, thrust_manual))
-
+            
         def rc_channels_override_encode(self, target_system, target_component, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw):
                 '''
                 The RAW values of the RC channels sent to the MAV to override info
@@ -4229,7 +4379,7 @@ class MAVLink(object):
                 msg = MAVLink_rc_channels_override_message(target_system, target_component, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw)
                 msg.pack(self)
                 return msg
-
+            
         def rc_channels_override_send(self, target_system, target_component, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw):
                 '''
                 The RAW values of the RC channels sent to the MAV to override info
@@ -4254,7 +4404,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.rc_channels_override_encode(target_system, target_component, chan1_raw, chan2_raw, chan3_raw, chan4_raw, chan5_raw, chan6_raw, chan7_raw, chan8_raw))
-
+            
         def global_position_int_encode(self, lat, lon, alt, vx, vy, vz):
                 '''
                 The filtered global position (e.g. fused GPS and accelerometers). The
@@ -4271,7 +4421,7 @@ class MAVLink(object):
                 msg = MAVLink_global_position_int_message(lat, lon, alt, vx, vy, vz)
                 msg.pack(self)
                 return msg
-
+            
         def global_position_int_send(self, lat, lon, alt, vx, vy, vz):
                 '''
                 The filtered global position (e.g. fused GPS and accelerometers). The
@@ -4286,7 +4436,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.global_position_int_encode(lat, lon, alt, vx, vy, vz))
-
+            
         def vfr_hud_encode(self, airspeed, groundspeed, heading, throttle, alt, climb):
                 '''
                 Metrics typically displayed on a HUD for fixed wing aircraft
@@ -4302,7 +4452,7 @@ class MAVLink(object):
                 msg = MAVLink_vfr_hud_message(airspeed, groundspeed, heading, throttle, alt, climb)
                 msg.pack(self)
                 return msg
-
+            
         def vfr_hud_send(self, airspeed, groundspeed, heading, throttle, alt, climb):
                 '''
                 Metrics typically displayed on a HUD for fixed wing aircraft
@@ -4316,7 +4466,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.vfr_hud_encode(airspeed, groundspeed, heading, throttle, alt, climb))
-
+            
         def command_encode(self, target_system, target_component, command, confirmation, param1, param2, param3, param4):
                 '''
                 Send a command with up to four parameters to the MAV
@@ -4334,7 +4484,7 @@ class MAVLink(object):
                 msg = MAVLink_command_message(target_system, target_component, command, confirmation, param1, param2, param3, param4)
                 msg.pack(self)
                 return msg
-
+            
         def command_send(self, target_system, target_component, command, confirmation, param1, param2, param3, param4):
                 '''
                 Send a command with up to four parameters to the MAV
@@ -4350,7 +4500,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.command_encode(target_system, target_component, command, confirmation, param1, param2, param3, param4))
-
+            
         def command_ack_encode(self, command, result):
                 '''
                 Report status of a command. Includes feedback wether the command was
@@ -4363,7 +4513,7 @@ class MAVLink(object):
                 msg = MAVLink_command_ack_message(command, result)
                 msg.pack(self)
                 return msg
-
+            
         def command_ack_send(self, command, result):
                 '''
                 Report status of a command. Includes feedback wether the command was
@@ -4374,7 +4524,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.command_ack_encode(command, result))
-
+            
         def optical_flow_encode(self, time, sensor_id, flow_x, flow_y, quality, ground_distance):
                 '''
                 Optical flow from a flow sensor (e.g. optical mouse sensor)
@@ -4390,7 +4540,7 @@ class MAVLink(object):
                 msg = MAVLink_optical_flow_message(time, sensor_id, flow_x, flow_y, quality, ground_distance)
                 msg.pack(self)
                 return msg
-
+            
         def optical_flow_send(self, time, sensor_id, flow_x, flow_y, quality, ground_distance):
                 '''
                 Optical flow from a flow sensor (e.g. optical mouse sensor)
@@ -4404,7 +4554,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.optical_flow_encode(time, sensor_id, flow_x, flow_y, quality, ground_distance))
-
+            
         def object_detection_event_encode(self, time, object_id, type, name, quality, bearing, distance):
                 '''
                 Object has been detected
@@ -4421,7 +4571,7 @@ class MAVLink(object):
                 msg = MAVLink_object_detection_event_message(time, object_id, type, name, quality, bearing, distance)
                 msg.pack(self)
                 return msg
-
+            
         def object_detection_event_send(self, time, object_id, type, name, quality, bearing, distance):
                 '''
                 Object has been detected
@@ -4436,10 +4586,10 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.object_detection_event_encode(time, object_id, type, name, quality, bearing, distance))
-
+            
         def debug_vect_encode(self, name, usec, x, y, z):
                 '''
-
+                
 
                 name                      : Name (char)
                 usec                      : Timestamp (uint64_t)
@@ -4451,10 +4601,10 @@ class MAVLink(object):
                 msg = MAVLink_debug_vect_message(name, usec, x, y, z)
                 msg.pack(self)
                 return msg
-
+            
         def debug_vect_send(self, name, usec, x, y, z):
                 '''
-
+                
 
                 name                      : Name (char)
                 usec                      : Timestamp (uint64_t)
@@ -4464,7 +4614,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.debug_vect_encode(name, usec, x, y, z))
-
+            
         def named_value_float_encode(self, name, value):
                 '''
                 Send a key-value pair as float. The use of this message is discouraged
@@ -4479,7 +4629,7 @@ class MAVLink(object):
                 msg = MAVLink_named_value_float_message(name, value)
                 msg.pack(self)
                 return msg
-
+            
         def named_value_float_send(self, name, value):
                 '''
                 Send a key-value pair as float. The use of this message is discouraged
@@ -4492,7 +4642,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.named_value_float_encode(name, value))
-
+            
         def named_value_int_encode(self, name, value):
                 '''
                 Send a key-value pair as integer. The use of this message is
@@ -4507,7 +4657,7 @@ class MAVLink(object):
                 msg = MAVLink_named_value_int_message(name, value)
                 msg.pack(self)
                 return msg
-
+            
         def named_value_int_send(self, name, value):
                 '''
                 Send a key-value pair as integer. The use of this message is
@@ -4520,7 +4670,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.named_value_int_encode(name, value))
-
+            
         def statustext_encode(self, severity, text):
                 '''
                 Status text message. These messages are printed in yellow in the COMM
@@ -4537,7 +4687,7 @@ class MAVLink(object):
                 msg = MAVLink_statustext_message(severity, text)
                 msg.pack(self)
                 return msg
-
+            
         def statustext_send(self, severity, text):
                 '''
                 Status text message. These messages are printed in yellow in the COMM
@@ -4552,7 +4702,7 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.statustext_encode(severity, text))
-
+            
         def debug_encode(self, ind, value):
                 '''
                 Send a debug value. The index is used to discriminate between values.
@@ -4566,7 +4716,7 @@ class MAVLink(object):
                 msg = MAVLink_debug_message(ind, value)
                 msg.pack(self)
                 return msg
-
+            
         def debug_send(self, ind, value):
                 '''
                 Send a debug value. The index is used to discriminate between values.
@@ -4578,3 +4728,4 @@ class MAVLink(object):
 
                 '''
                 return self.send(self.debug_encode(ind, value))
+            

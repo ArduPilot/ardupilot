@@ -2,7 +2,12 @@
 module for loading/saving waypoints
 '''
 
-import mavlink
+import os
+
+if os.getenv('MAVLINK10'):
+    import mavlinkv10 as mavlink
+else:
+    import mavlink
 
 class MAVWPError(Exception):
         '''MAVLink WP error class'''
@@ -69,7 +74,7 @@ class MAVWPLoader(object):
                                              )
         if not w.command in cmdmap:
             raise MAVWPError("Unknown v100 waypoint action %u" % w.command)
-
+    
         w.command = cmdmap[w.command]
         return w
 
@@ -132,4 +137,64 @@ class MAVWPLoader(object):
                 w.seq, w.current, w.frame, w.command,
                 w.param1, w.param2, w.param3, w.param4,
                 w.x, w.y, w.z, w.autocontinue))
+        f.close()
+
+
+class MAVFenceError(Exception):
+        '''MAVLink fence error class'''
+        def __init__(self, msg):
+            Exception.__init__(self, msg)
+            self.message = msg
+
+class MAVFenceLoader(object):
+    '''MAVLink geo-fence loader'''
+    def __init__(self, target_system=0, target_component=0):
+        self.points = []
+        self.target_system = target_system
+        self.target_component = target_component
+
+    def count(self):
+        '''return number of points'''
+        return len(self.points)
+
+    def point(self, i):
+        '''return a point'''
+        return self.points[i]
+
+    def add(self, p):
+        '''add a point'''
+        self.points.append(p)
+
+    def clear(self):
+        '''clear point list'''
+        self.points = []
+
+    def load(self, filename):
+        '''load points from a file.
+        returns number of points loaded'''
+        f = open(filename, mode='r')
+        self.clear()
+        for line in f:
+            if line.startswith('#'):
+                continue
+            line = line.strip()
+            if not line:
+                continue
+            a = line.split()
+            if len(a) != 2:
+                raise MAVFenceError("invalid fence point line: %s" % line)
+            p = mavlink.MAVLink_fence_point_message(self.target_system, self.target_component,
+                                                    self.count(), 0, float(a[0]), float(a[1]))
+            self.add(p)
+        f.close()
+        for i in range(self.count()):
+            self.points[i].count = self.count()
+        return len(self.points)
+
+
+    def save(self, filename):
+        '''save fence points to a file'''
+        f = open(filename, mode='w')
+        for p in self.points:
+            f.write("%f\t%f\n" % (p.lat, p.lng))
         f.close()
