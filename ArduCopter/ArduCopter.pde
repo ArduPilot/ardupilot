@@ -703,9 +703,10 @@ static void medium_loop()
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
-					compass.read();		 						// Read magnetometer
-					compass.calculate(dcm.get_dcm_matrix());  	// Calculate heading
-					compass.null_offsets(dcm.get_dcm_matrix());
+					if (compass.read()) {
+                        compass.calculate(dcm.get_dcm_matrix());  	// Calculate heading
+                        compass.null_offsets(dcm.get_dcm_matrix());
+                    }
 				}
 			#endif
 
