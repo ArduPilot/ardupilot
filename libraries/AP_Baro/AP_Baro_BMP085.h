@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef __AP_BARO_BMP085_H__
 #define __AP_BARO_BMP085_H__
 
@@ -16,7 +17,7 @@ class AP_Baro_BMP085 : public AP_Baro
 
 
     /* AP_Baro public interface: */
-    void    init(AP_PeriodicProcess * scheduler);
+    bool    init(AP_PeriodicProcess * scheduler);
     uint8_t read();
     int32_t get_pressure();
     int16_t get_temperature();

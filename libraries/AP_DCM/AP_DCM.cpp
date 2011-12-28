@@ -309,7 +309,7 @@ AP_DCM::drift_correction(void)
 
 	//*****YAW***************
 
-	if (_compass) {
+	if (_compass && _compass->healthy) {
 		// We make the gyro YAW drift correction based on compass magnetic heading
 		error_course = (_dcm_matrix.a.x * _compass->heading_y) - (_dcm_matrix.b.x * _compass->heading_x);	// Equation 23, Calculating YAW error
 

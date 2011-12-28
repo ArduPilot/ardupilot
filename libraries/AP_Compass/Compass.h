@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef Compass_h
 #define Compass_h
 
@@ -40,6 +41,7 @@ public:
 	float           heading_x;      ///< compass vector X magnitude
 	float           heading_y;      ///< compass vector Y magnitude
 	unsigned long   last_update;    ///< millis() time of last update
+	bool		healthy;        ///< true if last read OK
 
 	/// Constructor
 	///
@@ -56,7 +58,7 @@ public:
 	
 	/// Read the compass and update the mag_ variables.
 	///
-	virtual void read() = 0;
+	virtual bool read(void) = 0;
 
 	/// Calculate the tilt-compensated heading_ variables.
 	///
@@ -98,21 +100,21 @@ public:
 	///
 	virtual Vector3f &get_offsets();
 
-    /// Program new offset values.
-    ///
-    /// XXX DEPRECATED
-    ///
-    /// @param  x                   Offset to the raw mag_x value.
-    /// @param  y                   Offset to the raw mag_y value.
-    /// @param  z                   Offset to the raw mag_z value.
-    ///
-    void set_offsets(int x, int y, int z) { set_offsets(Vector3f(x, y, z)); }
+	/// Program new offset values.
+	///
+	/// XXX DEPRECATED
+	///
+	/// @param  x                   Offset to the raw mag_x value.
+	/// @param  y                   Offset to the raw mag_y value.
+	/// @param  z                   Offset to the raw mag_z value.
+	///
+	void set_offsets(int x, int y, int z) { set_offsets(Vector3f(x, y, z)); }
 
-    /// Perform automatic offset updates using the results of the DCM matrix.
-    ///
-    /// @param  dcm_matrix          The DCM result matrix.
-    ///
-    void null_offsets(const Matrix3f &dcm_matrix);
+	/// Perform automatic offset updates using the results of the DCM matrix.
+	///
+	/// @param  dcm_matrix          The DCM result matrix.
+	///
+	void null_offsets(const Matrix3f &dcm_matrix);
 
 
 	/// Sets the local magnetic field declination.
@@ -129,7 +131,7 @@ protected:
 	AP_Float            _declination;
 
 	bool                _null_init_done;        ///< first-time-around flag used by offset nulling
-    Matrix3f            _last_dcm_matrix;       ///< previous DCM matrix used by offset nulling
-    Vector3f            _mag_body_last;         ///< ?? used by offset nulling
+	Matrix3f            _last_dcm_matrix;       ///< previous DCM matrix used by offset nulling
+	Vector3f            _mag_body_last;         ///< ?? used by offset nulling
 };
 #endif

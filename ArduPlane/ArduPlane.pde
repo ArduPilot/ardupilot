@@ -29,7 +29,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
-#include <Wire.h>			// Arduino I2C lib
+#include <I2C.h>			// Wayne Truchsess I2C lib
 #include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
@@ -621,11 +621,10 @@ static void medium_loop()
             }
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if(g.compass_enabled){
-					compass.read();     // Read magnetometer
-					compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
-					compass.null_offsets(dcm.get_dcm_matrix());
-				}
+            if (g.compass_enabled && compass.read()) {
+                compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
+                compass.null_offsets(dcm.get_dcm_matrix());
+            }
 			#endif
 /*{
 Serial.print(dcm.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
@@ -979,8 +978,12 @@ static void update_alt()
 		// this function is in place to potentially add a sonar sensor in the future
 		//altitude_sensor = BARO;
 
-		current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;			// alt_MSL centimeters (meters * 100)
-		current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        if (barometer.healthy) {
+            current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;			// alt_MSL centimeters (meters * 100)
+            current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        } else if (g_gps->fix) {
+            current_loc.alt = g_gps->altitude; // alt_MSL centimeters (meters * 100)            
+        }
 	#endif
 
         geofence_check(true);

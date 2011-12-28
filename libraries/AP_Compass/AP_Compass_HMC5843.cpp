@@ -16,8 +16,9 @@
 // AVR LibC Includes
 #include <math.h>
 #include "WConstants.h"
+#include <FastSerial.h>
 
-#include <Wire.h>
+#include <I2C.h>
 #include "AP_Compass_HMC5843.h"
 
 #define COMPASS_ADDRESS       0x1E
@@ -47,40 +48,23 @@
 #define DataOutputRate_75HZ   0x06
 
 // read_register - read a register value
-static bool
-read_register(int address, byte *value)
+bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
-  bool ret = false;
-
-  *value = 0;
-
-  Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.send(address);     //sends address to read from
-  if (0 != Wire.endTransmission())
-	 return false;
-
-  Wire.requestFrom(COMPASS_ADDRESS, 1);    // request 1 byte from device
-  if( Wire.available() ) {
-      *value = Wire.receive();  // receive one byte
-	  ret = true;
-  }
-  if (0 != Wire.endTransmission())
-	 return false;
-  
-  return ret;
+   if (I2c.read((uint8_t)COMPASS_ADDRESS, address, 1, value) != 0) {
+	  healthy = false;
+	  return false;
+   }
+   return true;
 }
 
 // write_register - update a register value
-static bool
-write_register(int address, byte value)
+bool AP_Compass_HMC5843::write_register(uint8_t address, byte value)
 {
-  Wire.beginTransmission(COMPASS_ADDRESS);
-  Wire.send(address);
-  Wire.send(value);
-  if (0 != Wire.endTransmission())
-	 return false;
-  delay(10);
-  return true;
+   if (I2c.write((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+	  healthy = false;
+	  return false;
+   }
+   return true;
 }
 
 /*
@@ -96,25 +80,10 @@ static void rotate_for_5883L(AP_VarS<Matrix3f> *_orientation_matrix)
 // Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
-   int i = 0;
-   byte buff[6];
+   uint8_t buff[6];
 
-   Wire.beginTransmission(COMPASS_ADDRESS);
-   Wire.send(0x03);        //sends address to read from
-   if (0 != Wire.endTransmission())
-	  return false;
-
-   Wire.requestFrom(COMPASS_ADDRESS, 6);    // request 6 bytes from device
-   while (Wire.available()) {
-	  buff[i] = Wire.receive();  // receive one byte
-	  i++;
-   }
-
-   if (0 != Wire.endTransmission())
-	  return false;
-
-   if (i != 6) {
-	  /* we didn't get enough bytes */
+   if (I2c.read(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
+	  healthy = false;
 	  return false;
    }
 
@@ -140,13 +109,26 @@ bool AP_Compass_HMC5843::read_raw()
 }
 
 
+
+/*
+  re-initialise after a IO error
+ */
+bool AP_Compass_HMC5843::re_initialise()
+{
+   if (! write_register(ConfigRegA, _base_config) ||
+	   ! write_register(ConfigRegB, magGain) ||
+	   ! write_register(ModeRegister, ContinuousConversion))
+	  return false;
+   return true;
+}
+
+
 // Public Methods //////////////////////////////////////////////////////////////
 bool 
 AP_Compass_HMC5843::init()
 {
   int numAttempts = 0, good_count = 0;
   bool success = false;
-  byte base_config;  // used to test compass type
   byte calibration_gain = 0x20;
   uint16_t expected_x = 715;
   uint16_t expected_yz = 715;
@@ -156,10 +138,11 @@ AP_Compass_HMC5843::init()
 
   // determine if we are using 5843 or 5883L
   if (! write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
-	  ! read_register(ConfigRegA, &base_config)) {
+	  ! read_register(ConfigRegA, &_base_config)) {
+	 healthy = false;
 	 return false;
   }
-  if ( base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
+  if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
 	 // a 5883L supports the sample averaging config
 	 int old_product_id = product_id;
 
@@ -175,7 +158,7 @@ AP_Compass_HMC5843::init()
 		 */
 		rotate_for_5883L(&_orientation_matrix);
 	 }
-  } else if (base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
+  } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
       product_id = AP_COMPASS_TYPE_HMC5843;
   } else {
 	 // not behaving like either supported compass type
@@ -253,23 +236,22 @@ AP_Compass_HMC5843::init()
   }
 
   // leave test mode
-  if (! write_register(ConfigRegA, base_config))
+  if (!re_initialise()) {
 	 return false;
-  delay(50);
-  if (! write_register(ConfigRegB, magGain) ||
-	  ! write_register(ModeRegister, ContinuousConversion))
-	 return false;
-  delay(50);
+  }
 
   return success;
 }
 
 // Read Sensor data
-void 
-AP_Compass_HMC5843::read()
+bool AP_Compass_HMC5843::read()
 {
+   if (!healthy && !re_initialise()) {
+	  return false;
+   }
+
    if (!read_raw()) {
-	  return;
+	  return false;
    }
 
    mag_x *= calibration[0];
@@ -285,6 +267,9 @@ AP_Compass_HMC5843::read()
    mag_x = rot_mag.x;
    mag_y = rot_mag.y;
    mag_z = rot_mag.z;
+   healthy = true;
+
+   return true;
 }
 
 // set orientation

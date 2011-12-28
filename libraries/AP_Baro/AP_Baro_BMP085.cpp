@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
 	APM_BMP085.cpp - Arduino Library for BMP085 absolute pressure sensor
 	Code by Jordi Mu�oz and Jose Julio. DIYDrones.com
@@ -41,7 +42,9 @@ extern "C" {
   #include "WConstants.h"
 }
 
-#include <Wire.h>
+#include <AP_Common.h>
+#include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
+#include <I2C.h>
 #include "AP_Baro_BMP085.h"
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
@@ -55,34 +58,19 @@ extern "C" {
 
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
+bool AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 {
 	byte buff[22];
-	int i = 0;
 	
-    pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
+	pinMode(BMP085_EOC, INPUT);	 // End Of Conversion (PC7) input
 
 	oss = 3;					 // Over Sampling setting 3 = High resolution
 	BMP085_State = 0;		 // Initial state
 
-  // We read the calibration data registers
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.send(0xAA);
-	if (Wire.endTransmission() != 0) {
-        // Error!
-		return;
-	}
-
-	Wire.requestFrom(BMP085_ADDRESS, 22);
-
-  //Wire.endTransmission();
-	while(Wire.available()){
-		buff[i] = Wire.receive();	// receive one byte
-		i++;
-	}
-	if (i != 22) {
-        // Error!
-		return;
+	// We read the calibration data registers
+	if (I2c.read(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
+		healthy = false;
+		return false;
 	}
 
 	ac1 = ((int)buff[0] << 8) | buff[1];
@@ -97,10 +85,12 @@ void AP_Baro_BMP085::init( AP_PeriodicProcess * scheduler )
 	mc = ((int)buff[18] << 8) | buff[19];
 	md = ((int)buff[20] << 8) | buff[21];
 
-  //Send a command to read Temp
+	//Send a command to read Temp
 	Command_ReadTemp();
 	BMP085_State = 1;
-	return;
+
+	healthy = true;
+	return true;
 }
 
 // Read the sensor. This is a state machine
@@ -152,48 +142,27 @@ int32_t AP_Baro_BMP085::get_raw_temp() {
 // Send command to Read Pressure
 void AP_Baro_BMP085::Command_ReadPress()
 {
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.send(0xF4);
-	Wire.send(0x34+(oss << 6));	// write_register(0xF4, 0x34+(oversampling_setting << 6));
-	Wire.endTransmission();
+	if (I2c.write(BMP085_ADDRESS, 0xF4, 0x34+(oss << 6)) != 0) {
+		healthy = false;
+	}
 }
 
 // Read Raw Pressure values
 void AP_Baro_BMP085::ReadPress()
 {
-	byte msb;
-	byte lsb;
-	byte xlsb;
+	uint8_t buf[3];
 
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.send(0xF6);
-	Wire.endTransmission();
-
-	Wire.requestFrom(BMP085_ADDRESS, 3); // read a byte
-
-	while(!Wire.available()) {
-    // waiting
+	if (I2c.read(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
+		healthy = false;
+		return;
 	}
 
-	msb = Wire.receive();
-
-	while(!Wire.available()) {
-    // waiting
-	}
-
-	lsb = Wire.receive();
-
-	while(!Wire.available()) {
-    // waiting
-	}
-
-	xlsb = Wire.receive();
-	RawPress = (((long)msb << 16) | ((long)lsb << 8) | ((long)xlsb)) >> (8 - oss);
+	RawPress = (((long)buf[0] << 16) | ((long)buf[1] << 8) | ((long)buf[2])) >> (8 - oss);
 
 	if(_offset_press == 0){
 		_offset_press = RawPress;
 		RawPress = 0;
-	}else{
+	} else{
 		RawPress -= _offset_press;
 	}
 	// filter
@@ -203,8 +172,9 @@ void AP_Baro_BMP085::ReadPress()
 		_press_index = 0;
 
 	RawPress = 0;
+
 	// sum our filter
-	for(uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
+	for (uint8_t i = 0; i < PRESS_FILTER_SIZE; i++){
 		RawPress += _press_filter[i];
 	}
 
@@ -217,35 +187,27 @@ void AP_Baro_BMP085::ReadPress()
 // Send Command to Read Temperature
 void AP_Baro_BMP085::Command_ReadTemp()
 {
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.send(0xF4);
-	Wire.send(0x2E);
-	Wire.endTransmission();
+	if (I2c.write(BMP085_ADDRESS, 0xF4, 0x2E) != 0) {
+		healthy = false;
+	}
 }
 
 // Read Raw Temperature values
 void AP_Baro_BMP085::ReadTemp()
 {
-	byte tmp;
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.send(0xF6);
-	Wire.endTransmission();
+	uint8_t buf[2];
 
-	Wire.beginTransmission(BMP085_ADDRESS);
-	Wire.requestFrom(BMP085_ADDRESS,2);
+	if (I2c.read(BMP085_ADDRESS, 0xF6, 2, buf) != 0) {
+		healthy = false;
+		return;
+	}
+	RawTemp = buf[0];
+	RawTemp = (RawTemp << 8) | buf[1];
 
-	while(!Wire.available());	// wait
-	RawTemp = Wire.receive();
-
-	while(!Wire.available());	// wait
-	tmp 	= Wire.receive();
-
-	RawTemp = RawTemp << 8 | tmp;
-
-	if(_offset_temp == 0){
+	if (_offset_temp == 0){
 		_offset_temp = RawTemp;
 		RawTemp = 0;
-	}else{
+	} else {
 		RawTemp -= _offset_temp;
 	}
 
