@@ -978,8 +978,12 @@ static void update_alt()
 		// this function is in place to potentially add a sonar sensor in the future
 		//altitude_sensor = BARO;
 
-		current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;			// alt_MSL centimeters (meters * 100)
-		current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        if (barometer.healthy) {
+            current_loc.alt = (1 - g.altitude_mix) * g_gps->altitude;			// alt_MSL centimeters (meters * 100)
+            current_loc.alt += g.altitude_mix * (read_barometer() + home.alt);
+        } else if (g_gps->fix) {
+            current_loc.alt = g_gps->altitude; // alt_MSL centimeters (meters * 100)            
+        }
 	#endif
 
         geofence_check(true);
