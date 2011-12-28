@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #ifndef __AP_BARO_BMP085_HIL_H__
 #define __AP_BARO_BMP085_HIL_H__
@@ -6,16 +7,18 @@
 
 class AP_Baro_BMP085_HIL
 {
-  private:
-    uint8_t BMP085_State;
+private:
+	uint8_t BMP085_State;
     int16_t Temp;
     int32_t Press;
-
-  public:
+    
+public:
     AP_Baro_BMP085_HIL();  // Constructor
 	//int Altitude;
+    bool healthy;
+
 	uint8_t oss;
-	void init(AP_PeriodicProcess * scheduler);
+	bool init(AP_PeriodicProcess * scheduler);
 	uint8_t read();
 	int32_t get_pressure();
 	int16_t get_temperature();

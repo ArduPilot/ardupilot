@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
 	APM_MS5611.cpp - Arduino Library for MS5611-01BA01 absolute pressure sensor
 	Code by Jose Julio, Pat Hickey and Jordi Muñoz. DIYDrones.com
@@ -110,12 +111,12 @@ void AP_Baro_MS5611::_spi_write(uint8_t reg)
 
 // Public Methods //////////////////////////////////////////////////////////////
 // SPI should be initialized externally
-void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
+bool AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 {
 	pinMode(MS5611_CS, OUTPUT);	 // Chip select Pin
-    digitalWrite(MS5611_CS, HIGH);
-    delay(1);
-
+	digitalWrite(MS5611_CS, HIGH);
+	delay(1);
+	
 	_spi_write(CMD_MS5611_RESET);
 	delay(4);
 
@@ -128,14 +129,17 @@ void AP_Baro_MS5611::init( AP_PeriodicProcess *scheduler )
 	C6 = _spi_read_16bits(CMD_MS5611_PROM_C6);
 
 
-  //Send a command to read Temp first
+	//Send a command to read Temp first
 	_spi_write(CMD_CONVERT_D2_OSR4096);
 	_timer = micros();
 	_state = 1;
-    Temp=0;
-    Press=0;
+	Temp=0;
+	Press=0;
+	
+	scheduler->register_process( AP_Baro_MS5611::_update );
 
-    scheduler->register_process( AP_Baro_MS5611::_update );
+	healthy = true;
+    return true;
 }
 
 
