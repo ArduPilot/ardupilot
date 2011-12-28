@@ -27,6 +27,7 @@ static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 #if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
 static int8_t	test_dipswitches(uint8_t argc, 		const Menu::arg *argv);
 #endif
+static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -67,6 +68,7 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"compass",		test_mag},
 #elif HIL_MODE == HIL_MODE_ATTITUDE
 #endif
+	{"logging",		test_logging},
 
 };
 
@@ -405,6 +407,30 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 	}
+}
+
+/*
+  test the dataflash is working
+ */
+static int8_t
+test_logging(uint8_t argc, const Menu::arg *argv)
+{
+	Serial.println_P(PSTR("Testing dataflash logging"));
+    if (!DataFlash.CardInserted()) {
+        Serial.println_P(PSTR("ERR: No dataflash inserted"));
+        return 0;
+    }
+    DataFlash.ReadManufacturerID();
+    Serial.printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+                    (unsigned)DataFlash.df_manufacturer,
+                    (unsigned)DataFlash.df_device);
+    Serial.printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+                    (unsigned)DataFlash.df_NumPages+1,
+                    (unsigned)DataFlash.df_PageSize);
+    DataFlash.StartRead(DataFlash.df_NumPages+1);
+    Serial.printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
+                    (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
+    return 0;
 }
 
 #if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
