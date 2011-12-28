@@ -49,8 +49,10 @@ void AP_TimerProcess::register_process(ap_procedure proc)
     for (uint8_t i=0; i<_pidx; i++) {
         if (_proc[i] == proc) return;
     }
+    cli();
     if (_pidx < AP_TIMERPROCESS_MAX_PROCS)
         _proc[_pidx++] = proc;
+    sei();
 }
 
 void AP_TimerProcess::set_failsafe(ap_procedure proc)
