@@ -29,7 +29,7 @@ version 2.1 of the License, or (at your option) any later version.
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 #include <AP_GPS.h>         // ArduPilot GPS library
-#include <Wire.h>			// Arduino I2C lib
+#include <I2C.h>			// Wayne Truchsess I2C lib
 #include <SPI.h>			// Arduino SPI lib
 #include <DataFlash.h>      // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
