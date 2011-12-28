@@ -18,14 +18,15 @@ class DataFlash_APM1 : public DataFlash_Class
 	unsigned char ReadStatusReg();
 	unsigned char ReadStatus();
 	uint16_t PageSize();
+	void PageErase (uint16_t PageAdr);
+	void ChipErase ();
 
   public:
 
 	DataFlash_APM1(); // Constructor
 	void Init();
 	void ReadManufacturerID();
-	void PageErase (uint16_t PageAdr);
-	void ChipErase ();
+	bool CardInserted(void);
 };
 
 #endif // __DATAFLASH_APM1_H__
