@@ -5,7 +5,6 @@
 //
 
 #include <FastSerial.h>
-#include <Wire.h>
 #include <SPI.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <AP_PeriodicProcess.h>
@@ -24,7 +23,6 @@ void setup(void)
 	Serial.begin(115200);
 	Serial.println("Doing INS startup...");
 
-	Wire.begin();
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
 

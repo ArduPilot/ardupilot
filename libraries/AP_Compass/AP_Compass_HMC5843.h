@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef AP_Compass_HMC5843_H
 #define AP_Compass_HMC5843_H
 
@@ -47,11 +48,16 @@ class AP_Compass_HMC5843 : public Compass
 {
   private:
 	float calibration[3];
+	virtual bool read_raw(void);
+    uint8_t _base_config;
+	virtual bool re_initialise(void);
+    bool read_register(uint8_t address, uint8_t *value);
+    bool write_register(uint8_t address, byte value);
+
   public:
 	AP_Compass_HMC5843(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}
-	virtual bool init();
-	virtual void read();
-	virtual bool read_raw();
+	virtual bool init(void);
+	virtual bool read(void);
 	virtual void set_orientation(const Matrix3f &rotation_matrix);
 
 };

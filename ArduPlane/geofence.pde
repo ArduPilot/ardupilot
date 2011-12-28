@@ -235,12 +235,11 @@ static void geofence_check(bool altitude_check_only)
     }
 
     // we are outside the fence
-    if (geofence_state->fence_triggered) {
+    if (geofence_state->fence_triggered && control_mode == GUIDED) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
     }
-
 
     // we are outside, and have not previously triggered.
     geofence_state->fence_triggered = true;

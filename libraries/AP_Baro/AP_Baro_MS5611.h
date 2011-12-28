@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #ifndef __AP_BARO_MS5611_H__
 #define __AP_BARO_MS5611_H__
@@ -10,7 +11,7 @@ class AP_Baro_MS5611 : public AP_Baro
   AP_Baro_MS5611() {}  // Constructor
 
   /* AP_Baro public interface: */
-  void init(AP_PeriodicProcess *scheduler);
+  bool init(AP_PeriodicProcess *scheduler);
   uint8_t read();
   int32_t get_pressure();     // in mbar*100 units
   int16_t get_temperature();  // in celsius degrees * 100 units
