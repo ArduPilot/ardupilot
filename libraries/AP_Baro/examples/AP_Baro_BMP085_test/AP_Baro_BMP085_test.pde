@@ -36,6 +36,8 @@ void setup()
 	I2c.begin();
 	I2c.timeOut(20);
 
+	//I2c.setSpeed(true);
+
 	isr_registry.init();
 	scheduler.init(&isr_registry);
 
@@ -44,7 +46,7 @@ void setup()
 	}
 	Serial.println("initialisation complete."); delay(100);
 	delay(1000);
-	timer = millis();
+	timer = micros();
 }
 
 void loop()
@@ -52,9 +54,10 @@ void loop()
 	float tmp_float;
 	float Altitude;
 	
-	if((millis()- timer) > 50){
-		timer = millis();
+	if((micros()- timer) > 50000L){
+		timer = micros();
 		APM_BMP085.read();
+		unsigned long read_time = micros() - timer;
 		if (!APM_BMP085.healthy) {
 			Serial.println("not healthy");
 			return;
@@ -68,6 +71,7 @@ void loop()
 		tmp_float = pow(tmp_float, 0.190295);
 		Altitude = 44330 * (1.0 - tmp_float);
 		Serial.print(Altitude);
+		Serial.printf(" t=%u", (unsigned)read_time);
 		Serial.println();
 	}
 }
