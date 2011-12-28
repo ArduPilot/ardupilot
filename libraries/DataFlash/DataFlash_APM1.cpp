@@ -115,7 +115,9 @@ void DataFlash_APM1::Init(void)
 
   // get page size: 512 or 528
   df_PageSize=PageSize();
-  df_NumPages = DF_LAST_PAGE;
+
+  // the last page is reserved for config information
+  df_NumPages = DF_LAST_PAGE - 1;
 }
 
 // This function is mainly to test the device
@@ -127,11 +129,17 @@ void DataFlash_APM1::ReadManufacturerID()
   SPI.transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
 
   df_manufacturer = SPI.transfer(0xff);
-  df_device_0 = SPI.transfer(0xff);
-  df_device_1 = SPI.transfer(0xff);
+  df_device = SPI.transfer(0xff);
+  df_device = (df_device<<8) | SPI.transfer(0xff);
   SPI.transfer(0xff);
 
   dataflash_CS_inactive();    // Reset dataflash command decoder
+}
+
+
+bool DataFlash_APM1::CardInserted(void)
+{
+    return true;
 }
 
 // Read the status register

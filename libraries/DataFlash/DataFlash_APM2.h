@@ -22,15 +22,14 @@ class DataFlash_APM2 : public DataFlash_Class
 	unsigned char SPI_transfer(unsigned char data);
 	void CS_inactive();
 	void CS_active();
-
+	void PageErase (uint16_t PageAdr);
+	void ChipErase ();
 
   public:
 	DataFlash_APM2(); // Constructor
 	void Init();
 	void ReadManufacturerID();
 	bool CardInserted();
-	void PageErase (uint16_t PageAdr);
-	void ChipErase ();
 };
 
 #endif

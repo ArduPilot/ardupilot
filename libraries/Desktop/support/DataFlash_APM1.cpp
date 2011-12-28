@@ -32,15 +32,21 @@ void DataFlash_APM1::Init(void)
 		}
 	}
 	df_PageSize = DF_PAGE_SIZE;
-    df_NumPages   = DF_NUM_PAGES;
+
+    // reserve last page for config information
+    df_NumPages   = DF_NUM_PAGES - 1;
 }
 
 // This function is mainly to test the device
 void DataFlash_APM1::ReadManufacturerID()
 {
 	df_manufacturer = 1;
-	df_device_0 = 2;
-	df_device_1 = 3;
+	df_device = 0x0203;
+}
+
+bool DataFlash_APM1::CardInserted(void)
+{
+    return true;
 }
 
 // Read the status register

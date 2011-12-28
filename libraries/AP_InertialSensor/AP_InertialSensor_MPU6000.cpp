@@ -64,7 +64,7 @@
 #define BIT_I2C_IF_DIS              0x10
 #define BIT_INT_STATUS_DATA   0x01
 
-int     AP_InertialSensor_MPU6000::_cs_pin;
+uint8_t AP_InertialSensor_MPU6000::_cs_pin;
 
 /* pch: by the data sheet, the gyro scale should be 16.4LSB per DPS
  *      Given the radians conversion factor (0.174532), the gyro scale factor
@@ -90,7 +90,7 @@ const uint8_t AP_InertialSensor_MPU6000::_temp_data_index = 3;
 
 static volatile uint8_t _new_data;
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( int cs_pin )
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
 {
   _cs_pin = cs_pin; /* can't use initializer list,  is static */
   _gyro.x = 0;
@@ -100,10 +100,13 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( int cs_pin )
   _accel.y = 0;
   _accel.z = 0;
   _temp = 0;
+  _initialised = 0;
 }
 
 void AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
+    if (_initialised) return;
+    _initialised = 1;
     hardware_init();
     scheduler->register_process( &AP_InertialSensor_MPU6000::read );
 }

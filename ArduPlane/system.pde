@@ -58,8 +58,6 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
-    bool need_log_erase = false;
-
 #if USB_MUX_PIN > 0
     // on the APM2 board we have a mux thet switches UART0 between
     // USB and the board header. If the right ArduPPM firmware is
@@ -136,12 +134,6 @@ static void init_ardupilot()
 		delay(100); // wait for serial send
 		AP_Var::erase_all();
 		
-		// erase DataFlash on format version change
-		#if LOGGING_ENABLED == ENABLED
-		DataFlash.Init(); 
-		need_log_erase = true;
-		#endif
-		
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 		Serial.println_P(PSTR("done."));
@@ -178,10 +170,17 @@ static void init_ardupilot()
 	mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-    if (need_log_erase) {
+	DataFlash.Init(); 	// DataFlash log initialization
+    if (!DataFlash.CardInserted()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
+        g.log_bitmask.set(0);
+    } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
-		do_erase_logs(mavlink_delay);
+		do_erase_logs();
     }
+	if (g.log_bitmask != 0) {
+		DataFlash.start_new_log();
+	}
 #endif
 
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -202,10 +201,6 @@ static void init_ardupilot()
             compass.get_offsets();						// load offsets to account for airframe magnetic interference
         }
 	}
-#endif
-
-#if LOGGING_ENABLED == ENABLED
-	DataFlash.Init(); 	// DataFlash log initialization
 #endif
 
 	// Do GPS init
@@ -269,10 +264,6 @@ static void init_ardupilot()
 #else
     Serial.printf_P(PSTR("\nPress ENTER 3 times to start interactive setup\n\n"));
 #endif // CLI_ENABLED
-
-	if(g.log_bitmask != 0){
-		start_new_log();
-	}
 
 	// read in the flight switches
 	update_servo_switches();
