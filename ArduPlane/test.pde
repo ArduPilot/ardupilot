@@ -547,9 +547,10 @@ test_imu(uint8_t argc, const Menu::arg *argv)
 			if(g.compass_enabled) {
 				medium_loopCounter++;
 				if(medium_loopCounter == 5){
-					compass.read();		 				// Read magnetometer
-					compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
-					medium_loopCounter = 0;
+					if (compass.read()) {
+                        compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+                    }
+                    medium_loopCounter = 0;
 				}
 			}
 
@@ -610,23 +611,28 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 
             medium_loopCounter++;
             if(medium_loopCounter == 5){
-                compass.read();		 				// Read magnetometer
-                compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
-                compass.null_offsets(dcm.get_dcm_matrix());
+                if (compass.read()) {
+                    compass.calculate(dcm.get_dcm_matrix());		// Calculate heading
+                    compass.null_offsets(dcm.get_dcm_matrix());
+                }
                 medium_loopCounter = 0;
             }
 
 			counter++;
 			if (counter>20) {
-                Vector3f maggy = compass.get_offsets();
-                Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
-                                (wrap_360(ToDeg(compass.heading) * 100)) /100,
-                                compass.mag_x,
-                                compass.mag_y,
-                                compass.mag_z,
-                                maggy.x,
-                                maggy.y,
-                                maggy.z);
+                if (compass.healthy) {
+                    Vector3f maggy = compass.get_offsets();
+                    Serial.printf_P(PSTR("Heading: %ld, XYZ: %d, %d, %d,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+                                    (wrap_360(ToDeg(compass.heading) * 100)) /100,
+                                    compass.mag_x,
+                                    compass.mag_y,
+                                    compass.mag_z,
+                                    maggy.x,
+                                    maggy.y,
+                                    maggy.z);
+                } else {
+                    Serial.println_P(PSTR("compass not healthy"));
+                }
                 counter=0;
             }
 		}
