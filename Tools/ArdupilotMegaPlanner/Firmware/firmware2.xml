@@ -4,7 +4,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-2560-2.hex</url2560-2>
-    <name>ArduPlane V2.27 Alpha  </name>
+    <name>ArduPlane V2.27  </name>
     <desc></desc>
     <format_version>12</format_version>
   </Firmware>
@@ -12,7 +12,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/APHIL-2560-2.hex</url2560-2>
-    <name>ArduPlane V2.27 Alpha HIL</name>
+    <name>ArduPlane V2.27 HIL</name>
     <desc>
 #define FLIGHT_MODE_CHANNEL	8
 #define FLIGHT_MODE_1		AUTO
@@ -47,7 +47,7 @@
     <url>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-1280.hex</url>
     <url2560>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-2560.hex</url2560>
     <url2560-2>http://meee146-planner.googlecode.com/git/Tools/ArdupilotMegaPlanner/Firmware/AP-trunk-2560-2.hex</url2560-2>
-    <name>ArduPlane V2.27 Alpha APM trunk</name>
+    <name>ArduPlane V2.27 APM trunk</name>
     <desc></desc>
     <format_version>12</format_version>
   </Firmware>

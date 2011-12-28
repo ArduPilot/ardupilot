@@ -14,7 +14,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
 {
   public:
 
-  AP_InertialSensor_MPU6000( int cs_pin );
+  AP_InertialSensor_MPU6000( uint8_t cs_pin );
 
   void init( AP_PeriodicProcess * scheduler );
 
@@ -33,13 +33,13 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
   uint32_t sample_time();
   void reset_sample_time();
 
+  private:
+
   static void read(uint32_t);
   static void data_interrupt(void);
   static uint8_t register_read( uint8_t reg );
   static void register_write( uint8_t reg, uint8_t val );
   static void hardware_init();
-
-  private:
 
   Vector3f _gyro;
   Vector3f _accel;
@@ -63,7 +63,10 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor
   static int16_t _data[7];
 
   /* TODO deprecate _cs_pin */
-  static int _cs_pin;
+  static uint8_t _cs_pin;
+
+  // ensure we can't initialise twice
+  unsigned _initialised:1;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__

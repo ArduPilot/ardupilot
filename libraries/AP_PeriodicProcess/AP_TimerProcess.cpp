@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AP_TimerProcess.h"
 
@@ -8,13 +9,13 @@ extern "C" {
 #include <avr/interrupt.h>
 }
 
-int AP_TimerProcess::_period;
+uint8_t AP_TimerProcess::_period;
 ap_procedure AP_TimerProcess::_proc[AP_TIMERPROCESS_MAX_PROCS];
 ap_procedure AP_TimerProcess::_failsafe;
 bool AP_TimerProcess::_in_timer_call;
-int AP_TimerProcess::_pidx = 0;
+uint8_t AP_TimerProcess::_pidx = 0;
 
-AP_TimerProcess::AP_TimerProcess(int period)
+AP_TimerProcess::AP_TimerProcess(uint8_t period)
 {
     _period = period;
 }
@@ -32,16 +33,26 @@ void AP_TimerProcess::init( Arduino_Mega_ISR_Registry * isr_reg )
 	_failsafe = NULL;
 	_in_timer_call = false;
 
-	for (int i = 0; i < AP_TIMERPROCESS_MAX_PROCS; i++)
+	for (uint8_t i = 0; i < AP_TIMERPROCESS_MAX_PROCS; i++)
 		_proc[i] = NULL;
 
 	isr_reg->register_signal( ISR_REGISTRY_TIMER2_OVF, AP_TimerProcess::run);
 }
 
+/*
+  register a process to be called at the timer interrupt rate
+ */
 void AP_TimerProcess::register_process(ap_procedure proc)
 {
+    // see if its already registered (due to double initialisation
+    // of a driver)
+    for (uint8_t i=0; i<_pidx; i++) {
+        if (_proc[i] == proc) return;
+    }
+    cli();
     if (_pidx < AP_TIMERPROCESS_MAX_PROCS)
         _proc[_pidx++] = proc;
+    sei();
 }
 
 void AP_TimerProcess::set_failsafe(ap_procedure proc)

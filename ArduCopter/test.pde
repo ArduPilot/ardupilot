@@ -30,6 +30,7 @@ static int8_t	test_sonar(uint8_t argc, 		const Menu::arg *argv);
 #endif
 static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_optflow(uint8_t argc, 		const Menu::arg *argv);
+static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_xbee(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_eedump(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_rawgps(uint8_t argc, 		const Menu::arg *argv);
@@ -80,6 +81,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"optflow",		test_optflow},
 	//{"xbee",		test_xbee},
 	{"eedump",		test_eedump},
+	{"logging",		test_logging},
 //	{"rawgps",		test_rawgps},
 //	{"mission",		test_mission},
 	//{"reverse",		test_reverse},
@@ -1027,6 +1029,31 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 		print_test_disabled();
 		return (0);
 	#endif
+}
+
+
+/*
+  test the dataflash is working
+ */
+static int8_t
+test_logging(uint8_t argc, const Menu::arg *argv)
+{
+	Serial.println_P(PSTR("Testing dataflash logging"));
+    if (!DataFlash.CardInserted()) {
+        Serial.println_P(PSTR("ERR: No dataflash inserted"));
+        return 0;
+    }
+    DataFlash.ReadManufacturerID();
+    Serial.printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+                    (unsigned)DataFlash.df_manufacturer,
+                    (unsigned)DataFlash.df_device);
+    Serial.printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+                    (unsigned)DataFlash.df_NumPages+1,
+                    (unsigned)DataFlash.df_PageSize);
+    DataFlash.StartRead(DataFlash.df_NumPages+1);
+    Serial.printf_P(PSTR("Format version: %lx  Expected format version: %lx\n"),
+                    (unsigned long)DataFlash.ReadLong(), (unsigned long)DF_LOGGING_FORMAT);
+    return 0;
 }
 
 

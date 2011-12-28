@@ -132,7 +132,9 @@ void DataFlash_APM2::Init(void)
 
   // get page size: 512 or 528  (by default: 528)
   df_PageSize=PageSize();
-  df_NumPages = DF_LAST_PAGE;
+
+  // the last page is reserved for config information
+  df_NumPages = DF_LAST_PAGE - 1;
 }
 
 // This function is mainly to test the device
@@ -145,15 +147,15 @@ void DataFlash_APM2::ReadManufacturerID()
   SPI_transfer(DF_READ_MANUFACTURER_AND_DEVICE_ID);
 
   df_manufacturer = SPI_transfer(0xff);
-  df_device_0 = SPI_transfer(0xff);
-  df_device_1 = SPI_transfer(0xff);
+  df_device = SPI_transfer(0xff);
+  df_device = (df_device<<8) | SPI_transfer(0xff);
   SPI_transfer(0xff);
 }
 
 // This function return 1 if Card is inserted on SD slot
 bool DataFlash_APM2::CardInserted()
 {
-    return (digitalRead(DF_CARDDETECT) != 0);
+    return (digitalRead(DF_CARDDETECT) == 0);
 }
 
 // Read the status register

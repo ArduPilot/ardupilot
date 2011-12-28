@@ -55,8 +55,6 @@ static void run_cli(void)
 
 static void init_ardupilot()
 {
-    bool need_log_erase = false;
-
 #if USB_MUX_PIN > 0
     // on the APM2 board we have a mux thet switches UART0 between
     // USB and the board header. If the right ArduPPM firmware is
@@ -174,13 +172,6 @@ static void init_ardupilot()
 		delay(100); // wait for serial send
 		AP_Var::erase_all();
 
-		// erase DataFlash on format version change
-		#if LOGGING_ENABLED == ENABLED
-		DataFlash.Init();
-		#endif
-
-		need_log_erase = true;
-
 		// save the new format version
 		g.format_version.set_and_save(Parameters::k_format_version);
 
@@ -212,13 +203,19 @@ static void init_ardupilot()
     // identify ourselves correctly with the ground station
 	mavlink_system.sysid = g.sysid_this_mav;
 
-    if (need_log_erase) {
+#if LOGGING_ENABLED == ENABLED
+    DataFlash.Init();
+    if (!DataFlash.CardInserted()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash inserted"));
+        g.log_bitmask.set(0);
+    } else if (DataFlash.NeedErase()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
-
-        #if LOGGING_ENABLED == ENABLED
-        do_erase_logs(mavlink_delay);
-        #endif
+		do_erase_logs();
     }
+	if (g.log_bitmask != 0){
+		DataFlash.start_new_log();
+	}
+#endif
 
 	#ifdef RADIO_OVERRIDE_DEFAULTS
 	{
@@ -270,10 +267,6 @@ static void init_ardupilot()
    USERHOOK_INIT
 #endif
 
-	#if LOGGING_ENABLED == ENABLED
-	DataFlash.Init();
-	#endif
-
 #if CLI_ENABLED == ENABLED && CLI_SLIDER_ENABLED == ENABLED
 	// If the switch is in 'menu' mode, run the main menu.
 	//
@@ -289,14 +282,6 @@ static void init_ardupilot()
 #else
     Serial.printf_P(PSTR("\nPress ENTER 3 times for CLI\n\n"));
 #endif // CLI_ENABLED
-
-	#if LOGGING_ENABLED == ENABLED
-	if(g.log_bitmask != 0){
-		//	TODO - Here we will check  on the length of the last log
-		//  We don't want to create a bunch of little logs due to powering on and off
-		start_new_log();
-	}
-	#endif
 
     GPS_enabled = false;
 
