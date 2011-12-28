@@ -7,7 +7,7 @@
 #include <AP_Common.h>
 #include <AP_Compass.h> // Compass Library
 #include <AP_Math.h>		// ArduPilot Mega Vector/Matrix math Library
-#include <Wire.h>
+#include <I2C.h>
 
 FastSerialPort0(Serial);
 
@@ -23,7 +23,8 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Compass library test (HMC5843 and HMC5883L)");
-  Wire.begin();
+  I2c.begin();
+  I2c.timeOut(20);
   if (!compass.init()) {
 	  Serial.println("compass initialisation failed!");
 	  while (1) ;
@@ -61,6 +62,11 @@ void loop()
   {
     timer = millis();
     compass.read();
+
+    if (!compass.healthy) {
+	    Serial.println("not healthy");
+	    return;
+    }
     compass.calculate(0,0);  // roll = 0, pitch = 0 for this example
 
     // capture min
