@@ -13,9 +13,10 @@
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void AP_Compass_HIL::read()
+bool AP_Compass_HIL::read()
 {
-    // values set by setHIL function
+	// values set by setHIL function
+	return true;
 }
 
 // Update raw magnetometer values from HIL data
@@ -26,4 +27,5 @@ void AP_Compass_HIL::setHIL(float _mag_x, float _mag_y, float _mag_z)
     mag_x = _mag_x;
     mag_y = _mag_y;
     mag_z = _mag_z;
+    healthy = true;
 }
