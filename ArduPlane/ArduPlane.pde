@@ -621,11 +621,10 @@ static void medium_loop()
             }
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE
-				if(g.compass_enabled){
-					compass.read();     // Read magnetometer
-					compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
-					compass.null_offsets(dcm.get_dcm_matrix());
-				}
+            if (g.compass_enabled && compass.read()) {
+                compass.calculate(dcm.get_dcm_matrix());  // Calculate heading
+                compass.null_offsets(dcm.get_dcm_matrix());
+            }
 			#endif
 /*{
 Serial.print(dcm.roll_sensor, DEC);	Serial.printf_P(PSTR("\t"));
