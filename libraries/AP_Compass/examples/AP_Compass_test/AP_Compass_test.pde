@@ -25,6 +25,9 @@ void setup()
   Serial.println("Compass library test (HMC5843 and HMC5883L)");
   I2c.begin();
   I2c.timeOut(20);
+
+  // I2c.setSpeed(true);
+
   if (!compass.init()) {
 	  Serial.println("compass initialisation failed!");
 	  while (1) ;
@@ -51,17 +54,18 @@ void setup()
   }
   
   delay(3000);
-  timer = millis();
+  timer = micros();
 }
 
 void loop()
 {
   static float min[3], max[3], offset[3];
 
-  if((millis()- timer) > 100)
+  if((micros()- timer) > 100000L)
   {
-    timer = millis();
+    timer = micros();
     compass.read();
+    unsigned long read_time = micros() - timer;
 
     if (!compass.healthy) {
 	    Serial.println("not healthy");
@@ -91,24 +95,17 @@ void loop()
     offset[2] = -(max[2]+min[2])/2;
 
     // display all to user
-    Serial.print("Heading:");
-    Serial.print(ToDeg(compass.heading));
-    Serial.print("  (");
-    Serial.print(compass.mag_x);
-    Serial.print(",");
-    Serial.print(compass.mag_y);
-    Serial.print(",");
-    Serial.print(compass.mag_z);
-    Serial.print(")");
+    Serial.printf("Heading: %.2f (%3u,%3u,%3u) ",
+		  ToDeg(compass.heading),
+		  compass.mag_x,
+		  compass.mag_y,
+		  compass.mag_z);
 
     // display offsets
-    Serial.print("\t offsets(");
-    Serial.print(offset[0]);
-    Serial.print(",");
-    Serial.print(offset[1]);
-    Serial.print(",");
-    Serial.print(offset[2]);
-    Serial.print(")");
+    Serial.printf("\t offsets(%.2f, %.2f, %.2f)",
+		  offset[0], offset[1], offset[2]);
+
+    Serial.printf(" t=%u", (unsigned)read_time);
 
     Serial.println();
   }
