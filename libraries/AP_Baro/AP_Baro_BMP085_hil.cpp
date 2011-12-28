@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 extern "C" {
   // AVR LibC Includes
@@ -14,9 +15,10 @@ AP_Baro_BMP085_HIL::AP_Baro_BMP085_HIL()
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
-void AP_Baro_BMP085_HIL::init(AP_PeriodicProcess * scheduler)
+bool AP_Baro_BMP085_HIL::init(AP_PeriodicProcess * scheduler)
 {
-  BMP085_State=1;
+	BMP085_State=1;
+	return true;
 }
 
 
@@ -46,6 +48,7 @@ void AP_Baro_BMP085_HIL::setHIL(float _Temp, float _Press)
     // TODO: map floats to raw
 	Temp 	= _Temp;
 	Press 	= _Press;
+	healthy = true;
 }
 
 int32_t AP_Baro_BMP085_HIL::get_pressure() {
