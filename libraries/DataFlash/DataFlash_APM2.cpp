@@ -153,7 +153,7 @@ void DataFlash_APM2::ReadManufacturerID()
 // This function return 1 if Card is inserted on SD slot
 bool DataFlash_APM2::CardInserted()
 {
-    return (digitalRead(DF_CARDDETECT) != 0);
+    return (digitalRead(DF_CARDDETECT) == 0);
 }
 
 // Read the status register
