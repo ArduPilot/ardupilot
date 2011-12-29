@@ -35,6 +35,10 @@ namespace System.IO.Ports
             Port = "5760";
         }
 
+        public void toggleDTR()
+        {
+        }
+
         public string Port { get; set; }
 
         public int ReadTimeout

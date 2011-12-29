@@ -685,7 +685,7 @@ namespace ArdupilotMega
                 comPort.BaseStream.DtrEnable = false;
 
                 if (config["CHK_resetapmonconnect"] == null || bool.Parse(config["CHK_resetapmonconnect"].ToString()) == true)
-                    comPort.BaseStream.DtrEnable = true;
+                    comPort.BaseStream.toggleDTR();
 
                 try
                 {
@@ -1047,6 +1047,8 @@ namespace ArdupilotMega
                                 {
                                     this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.disconnect;
                                     this.MenuConnect.BackgroundImage.Tag = "Disconnect";
+                                    CMB_baudrate.Enabled = false;
+                                    CMB_serialport.Enabled = false;
                                 });
                             }
                         }
@@ -1058,6 +1060,8 @@ namespace ArdupilotMega
                                 {
                                     this.MenuConnect.BackgroundImage = global::ArdupilotMega.Properties.Resources.connect;
                                     this.MenuConnect.BackgroundImage.Tag = "Connect";
+                                    CMB_baudrate.Enabled = true;
+                                    CMB_serialport.Enabled = true;
                                 });
                             }
                         }

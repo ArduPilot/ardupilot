@@ -172,13 +172,13 @@ namespace ArdupilotMega.GCSViews
                 if (comPort.IsOpen)
                     comPort.Close();
 
-                comPort.DtrEnable = true;
-
                 comPort.ReadBufferSize = 1024 * 1024;
 
                 comPort.PortName = MainV2.comportname;
 
                 comPort.Open();
+
+                comPort.toggleDTR();
 
                 System.Threading.Thread t11 = new System.Threading.Thread(delegate()
                 {

@@ -359,8 +359,6 @@ class mavlogfile(mavfile):
         self.planner_format = planner_format
         self.notimestamps = notimestamps
         self._two64 = math.pow(2.0, 63)
-        if planner_format is None and self.filename.endswith(".tlog"):
-            self.planner_format = True
         mode = 'rb'
         if self.writeable:
             if append:

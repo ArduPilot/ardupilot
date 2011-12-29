@@ -264,6 +264,9 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
             mode 		= MAV_MODE_UNINIT;
             nav_mode 	= MAV_NAV_GROUNDED;
             break;
+        case CIRCLE:
+            mode        = MAV_MODE_TEST3;
+            break;
         }
 
         uint8_t status 		= MAV_STATE_ACTIVE;
