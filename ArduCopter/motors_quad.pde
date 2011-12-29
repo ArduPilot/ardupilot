@@ -16,7 +16,7 @@ static void output_motors_armed()
 	int out_max = g.rc_3.radio_max;
 
 	// Throttle is 0 to 1000 only
-	g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, 1000);
+	g.rc_3.servo_out 	= constrain(g.rc_3.servo_out, 0, MAXIMUM_THROTTLE);
 
 	if(g.rc_3.servo_out > 0)
 		out_min = g.rc_3.radio_min + MINIMUM_THROTTLE;
@@ -25,6 +25,8 @@ static void output_motors_armed()
 	g.rc_2.calc_pwm();
 	g.rc_3.calc_pwm();
 	g.rc_4.calc_pwm();
+
+
 
 	if(g.frame_orientation == X_FRAME){
 		roll_out 	 	= g.rc_1.pwm_out * .707;
