@@ -138,9 +138,9 @@
       <Z></Z>
     </DO_JUMP>
     <DO_CHANGE_SPEED>
-      <P1>Type (0=as 1=gs)</P1>
-      <P2>Throttle(%)</P2>
-      <P3>Speed (m/s)</P3>
+      <P1>speed m/s</P1>
+      <P2></P2>
+      <P3></P3>
       <P4></P4>
       <X></X>
       <Y></Y>

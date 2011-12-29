@@ -12,9 +12,9 @@ namespace ArdupilotMega
 
         public void toggleDTR()
         {
-            DtrEnable = true;
-            System.Threading.Thread.Sleep(100);
             DtrEnable = false;
+            System.Threading.Thread.Sleep(100);
+            DtrEnable = true;
         }
     }
 }
