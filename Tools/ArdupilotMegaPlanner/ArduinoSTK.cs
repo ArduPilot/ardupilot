@@ -304,7 +304,7 @@ namespace ArdupilotMega
 
             if (base.IsOpen)
                 base.Close();
-            this.DtrEnable = false;
+            //this.DtrEnable = false;
             return true;
         }
     }
