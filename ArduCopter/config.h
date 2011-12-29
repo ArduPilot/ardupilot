@@ -370,6 +370,11 @@
 #ifndef MINIMUM_THROTTLE
 # define MINIMUM_THROTTLE	130
 #endif
+#ifndef MAXIMUM_THROTTLE
+# define MAXIMUM_THROTTLE	1000
+#endif
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -600,7 +605,7 @@
 # define LOITER_P			.3		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.01	//
+# define LOITER_I			0.05	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
@@ -610,7 +615,7 @@
 # define NAV_P				3.0			//
 #endif
 #ifndef NAV_I
-# define NAV_I				0.14		// Lowerd from .25 - saw lots of overshoot.
+# define NAV_I				0.15			// Lowerd from .25 - saw lots of overshoot.
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
