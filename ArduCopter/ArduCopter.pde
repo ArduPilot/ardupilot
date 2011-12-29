@@ -325,7 +325,6 @@ static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
 static bool rc_override_active = false;
 static uint32_t rc_override_fs_timer = 0;
 
-
 // Heli
 // ----
 #if FRAME_CONFIG ==	HELI_FRAME
@@ -450,6 +449,7 @@ static byte		roll_pitch_mode;
 static byte		throttle_mode;
 
 static boolean	takeoff_complete;					// Flag for using take-off controls
+static int32_t	takeoff_timer;						// time since we throttled up
 static boolean	land_complete;
 static int32_t 	old_alt;							// used for managing altitude rates
 static int16_t	velocity_land;
@@ -464,7 +464,7 @@ static int32_t 	old_target_bearing;					// used to track difference in angle
 
 static int16_t	loiter_total; 						// deg : how many times to loiter * 360
 static int16_t	loiter_sum;							// deg : how far we have turned around a waypoint
-static uint32_t loiter_time;       			// millis : when we started LOITER mode
+static uint32_t loiter_time;       					// millis : when we started LOITER mode
 static unsigned loiter_time_max;					// millis : how long to stay in LOITER mode
 
 
@@ -518,7 +518,6 @@ static int16_t 	event_undo_value;					// the value used to undo commands
 // --------------
 static int32_t 	condition_value;					// used in condition commands (eg delay, change alt, etc.)
 static int32_t 	condition_start;
-//static int16_t 		condition_rate;
 
 // land command
 // ------------
@@ -608,13 +607,19 @@ void loop()
 		// ---------------------
 		fast_loop();
 	}
+
+	// port manipulation for external timing of main loops
 	//PORTK &= B11101111;
 
 	if ((timer - fiftyhz_loopTimer) >= 20000) {
+		// store the micros for the 50 hz timer
 		fiftyhz_loopTimer		= timer;
+
+		// port manipulation for external timing of main loops
 		//PORTK |= B01000000;
 
 		// reads all of the necessary trig functions for cameras, throttle, etc.
+		// --------------------------------------------------------------------
 		update_trig();
 
 		// update our velocity estimate based on IMU at 50hz
@@ -631,7 +636,7 @@ void loop()
 
 		counter_one_herz++;
 
-		if(counter_one_herz == 50){
+		if(counter_one_herz >= 50){
 			super_slow_loop();
 			counter_one_herz = 0;
 		}
@@ -675,10 +680,10 @@ static void fast_loop()
 	//if(motor_armed)
 		//Log_Write_Attitude();
 
-// agmatthews - USERHOOKS
-#ifdef USERHOOK_FASTLOOP
-   USERHOOK_FASTLOOP
-#endif
+	// agmatthews - USERHOOKS
+	#ifdef USERHOOK_FASTLOOP
+	   USERHOOK_FASTLOOP
+	#endif
 
 }
 
@@ -925,21 +930,9 @@ static void slow_loop()
 			// -------------------------------
 			read_control_switch();
 
-			// Read main battery voltage if hooked up - does not read the 5v from radio
-			// ------------------------------------------------------------------------
-			//#if BATTERY_EVENT == 1
-			//	read_battery();
-			//#endif
-
-			#if AUTO_RESET_LOITER == 1
-			if(control_mode == LOITER){
-				if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
-					// reset LOITER to current position
-					next_WP 	= current_loc;
-					// clear Loiter Iterms
-					reset_nav();
-				}
-			}
+			// agmatthews - USERHOOKS
+			#ifdef USERHOOK_SLOWLOOP
+			   USERHOOK_SLOWLOOP
 			#endif
 
 			break;
@@ -972,11 +965,6 @@ static void slow_loop()
 			break;
 
 	}
-	// agmatthews - USERHOOKS
-	#ifdef USERHOOK_SLOWLOOP
-	   USERHOOK_SLOWLOOP
-	#endif
-
 }
 
 // 1Hz loop
@@ -1208,6 +1196,7 @@ void update_roll_pitch_mode(void)
 #define THROTTLE_FILTER_SIZE 4
 
 // 50 hz update rate, not 250
+// controls all throttle behavior
 void update_throttle_mode(void)
 {
 	int16_t throttle_out;
@@ -1226,11 +1215,43 @@ void update_throttle_mode(void)
 					//throttle_avg = throttle_avg * .98 + rc_3.control_in * .02;
 					//g.throttle_cruise = throttle_avg;
 				}
+
+				// Code to manage the Copter state
+				if ((millis() - takeoff_timer) > 5000){
+					// we must be in the air by now
+					// stop resetting rate_I()
+					takeoff_complete = true;
+
+				}else{
+					// reset these I terms to prevent flips on takeoff
+					g.pi_rate_roll.reset_I();
+					g.pi_rate_pitch.reset_I();
+				}
 			}else{
+				// we are on the ground
+				takeoff_complete = false;
+
+				// reset baro data if we are near home
+				if(home_distance < 4  || GPS_enabled == false){
+					// causes Baro to do a quick recalibration
+					// XXX commented until further testing
+					// reset_baro();
+				}
+
+				// reset out i terms and takeoff timer
+				// -----------------------------------
 				g.pi_stabilize_roll.reset_I();
 				g.pi_stabilize_pitch.reset_I();
 				g.pi_rate_roll.reset_I();
 				g.pi_rate_pitch.reset_I();
+
+				// remember our time since takeoff
+				// -------------------------------
+				takeoff_timer = millis();
+
+				// make sure we also request 0 throttle out
+				// so the props stop ... properly
+				// ----------------------------------------
 				g.rc_3.servo_out = 0;
 			}
 			break;
@@ -1238,6 +1259,7 @@ void update_throttle_mode(void)
 		case THROTTLE_HOLD:
 			// allow interactive changing of atitude
 			adjust_altitude();
+
 			// fall through
 
 		case THROTTLE_AUTO:
@@ -1254,6 +1276,14 @@ void update_throttle_mode(void)
 
 				// reset next_WP.alt and don't go below 1 meter
 				next_WP.alt = max(current_loc.alt, 100);
+
+				/*
+				Serial.printf("tar_alt: %d, actual_alt: %d \talt_err: %d, \t manb: %d\n",
+									next_WP.alt,
+									current_loc.alt,
+									altitude_error,
+									manual_boost);
+				//*/
 
 			}else{
 				// 10hz, 			don't run up i term
@@ -1346,7 +1376,21 @@ static void update_navigation()
 			// switch passthrough to LOITER
 		case LOITER:
 		case POSITION:
-			wp_control 		= LOITER_MODE;
+			// This feature allows us to reposition the quad when the user lets
+			// go of the sticks
+			if((abs(g.rc_2.control_in) + abs(g.rc_1.control_in)) > 500){
+				// this sets the copter to not try and nav while we control it
+				wp_control = NO_NAV_MODE;
+
+				// reset LOITER to current position
+				next_WP 	= current_loc;
+
+				// clear Loiter Iterms
+				reset_nav();
+			}else{
+				// this is also set by GPS in update_nav
+				wp_control = LOITER_MODE;
+			}
 
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
@@ -1461,7 +1505,7 @@ static void update_altitude()
 		baro_rate 			= (temp + baro_rate) >> 1;
 		old_baro_alt		= baro_alt;
 
-		// sonar_alt is calculaed in a faster loop and filtered with a mode filter
+		// sonar_alt is calculated in a faster loop and filtered with a mode filter
 	#endif
 
 
@@ -1562,6 +1606,12 @@ static void tuning(){
 			//Z_gain = tuning_value * 5;
 			thrust	= tuning_value * .2;
 			break;*/
+
+		case CH6_DAMP:
+			g.rc_6.set_range(0,1500); 		// 0 to 1
+			//thrust	= tuning_value * .2;
+			g.stablize_d.set(tuning_value);
+			break;
 
 		case CH6_STABILIZE_KP:
 			g.rc_6.set_range(0,8000); 		// 0 to 8
