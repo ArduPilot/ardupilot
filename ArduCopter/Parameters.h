@@ -161,8 +161,9 @@ public:
 	k_param_waypoint_speed_max,
 
 	//
-	// 240: PI/D Controllers
+	// 235: PI/D Controllers
 	//
+	k_param_stablize_d = 234,
 	k_param_pi_rate_roll = 235,
 	k_param_pi_rate_pitch,
 	k_param_pi_rate_yaw,
@@ -274,6 +275,7 @@ public:
 
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
+	AP_Float	stablize_d;
 
 	// PI/D controllers
 	APM_PI		pi_rate_roll;
@@ -390,6 +392,8 @@ public:
 	//-------------------------------------------------------------------------------------------------------------------
 	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_camera_pitch_gain, 				PSTR("CAM_P_G")),
 	camera_roll_gain 		(CAM_ROLL_GAIN, 			k_param_camera_roll_gain,	 			PSTR("CAM_R_G")),
+
+	stablize_d 				(STABILIZE_D, 				k_param_stablize_d,	 					PSTR("STAB_D")),
 
 	// PI controller	group key						name				initial P			initial I			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
