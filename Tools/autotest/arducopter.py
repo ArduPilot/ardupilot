@@ -57,7 +57,7 @@ def takeoff(mavproxy, mav, alt_min = 30):
     print("TAKEOFF COMPLETE")
     return True
 
-def loiter(mavproxy, mav, holdtime=20, maxaltchange=10, timeout=60):
+def loiter(mavproxy, mav, holdtime=60, maxaltchange=20):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -67,7 +67,7 @@ def loiter(mavproxy, mav, holdtime=20, maxaltchange=10, timeout=60):
     tstart = time.time()
     tholdstart = time.time()
     print("Holding loiter at %u meters for %u seconds" % (start_altitude, holdtime))
-    while time.time() < tstart + timeout:
+    while time.time() < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = current_location(mav)
         delta = get_distance(start, pos)
@@ -282,7 +282,7 @@ def fly_ArduCopter(viewerip=None):
 
     simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    simquad_cmd += ' --wind=2,90,0.2'
+    simquad_cmd += ' --wind=6,45,.3'
     if viewerip:
         simquad_cmd += ' --fgout=%s:5503' % viewerip
 
@@ -358,9 +358,9 @@ def fly_ArduCopter(viewerip=None):
             print("takeoff failed")
             failed = True
 
-        # Loiter for 10 seconds
+        # Loiter for 30 seconds
         print("# Loiter for 30 seconds")
-        if not loiter(mavproxy, mav, 10):
+        if not loiter(mavproxy, mav, 30):
             print("loiter failed")
             failed = True
 
@@ -461,10 +461,4 @@ def fly_ArduCopter(viewerip=None):
         print("FAILED: %s" % e)
         return False
     return True
-
-        #Fly a circle for 60 seconds
-        #print("# Fly a Circle")
-        #if not circle(mavproxy, mav):
-        #    print("circle failed")
-        #    failed = True
 
