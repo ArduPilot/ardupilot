@@ -507,6 +507,10 @@
 #endif
 
 
+#ifndef STABILIZE_D
+# define STABILIZE_D 		.25
+#endif
+
 // Jasons default values that are good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.6
@@ -578,7 +582,7 @@
 // YAW Control
 //
 #ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		7			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define STABILIZE_YAW_P		10			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
 # define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
