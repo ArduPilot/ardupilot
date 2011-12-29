@@ -69,9 +69,7 @@ namespace ArdupilotMega
             //comPort.ReadBufferSize = 1024 * 1024;
             try
             {
-                comPort.DtrEnable = false;
-                System.Threading.Thread.Sleep(100);
-                comPort.DtrEnable = true;
+                comPort.toggleDTR();
                 //comPort.Open();
             }
             catch (Exception)

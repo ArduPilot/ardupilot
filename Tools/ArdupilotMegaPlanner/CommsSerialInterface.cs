@@ -27,6 +27,8 @@ namespace ArdupilotMega
          //void Write(char[] buffer, int offset, int count);
          void WriteLine(string text);
 
+         void toggleDTR();
+
         // Properties
          //Stream BaseStream { get; }
          int BaudRate { get; set; }
