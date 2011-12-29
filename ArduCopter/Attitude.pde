@@ -5,6 +5,21 @@ get_stabilize_roll(int32_t target_angle)
 {
 	int32_t error;
 	int32_t rate;
+	int32_t current_rate;
+
+	int16_t rate_d1 = 0;
+	static int16_t rate_d2 = 0;
+	static int16_t rate_d3 = 0;
+	static int32_t last_rate = 0;
+
+	current_rate 	= (omega.x * DEGX100);
+
+	// playing with double derivatives.
+	// History of last 3 dir
+	rate_d3			= rate_d2;
+	rate_d2			= rate_d1;
+	rate_d1 		= current_rate - last_rate;
+	last_rate 		= current_rate;
 
 	// angle error
 	error 		= wrap_180(target_angle - dcm.roll_sensor);
@@ -30,8 +45,16 @@ get_stabilize_roll(int32_t target_angle)
 	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
 
 	// rate control
-	error 		= rate - (omega.x * DEGX100);
+	error 		= rate - current_rate;
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
+
+	// D term
+	// I had tried this before with little result. Recently, someone mentioned to me that
+	// MultiWii uses a filter of the last three to get around noise and get a stronger signal.
+	// Works well! Thanks!
+	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stablize_d;
+
+	rate -= d_temp;
 
 	// output control:
 	rate = constrain(rate, -2500, 2500);
@@ -44,6 +67,21 @@ get_stabilize_pitch(int32_t target_angle)
 {
 	int32_t error;
 	int32_t rate;
+	int32_t current_rate;
+
+	int16_t rate_d1 = 0;
+	static int16_t rate_d2 = 0;
+	static int16_t rate_d3 = 0;
+	static int32_t last_rate = 0;
+
+	current_rate 	= (omega.y * DEGX100);
+
+	// playing with double derivatives.
+	// History of last 3 dir
+	rate_d3			= rate_d2;
+	rate_d2			= rate_d1;
+	rate_d1 		= current_rate - last_rate;
+	last_rate 		= current_rate;
 
 	// angle error
 	error 		= wrap_180(target_angle - dcm.pitch_sensor);
@@ -68,8 +106,14 @@ get_stabilize_pitch(int32_t target_angle)
 	// experiment to pipe iterm directly into the output
 	int16_t iterm = g.pi_stabilize_pitch.get_i(error, G_Dt);
 
+	// rate control
 	error 		= rate - (omega.y * DEGX100);
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
+
+	// D term testing
+	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stablize_d;
+
+	rate -= d_temp;
 
 	// output control:
 	rate = constrain(rate, -2500, 2500);
@@ -109,7 +153,9 @@ get_stabilize_yaw(int32_t target_angle)
 	rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 
 	// output control:
-	rate = constrain(rate, -2500, 2500);
+	int16_t yaw_input = 1200 + abs(g.rc_4.control_in);
+	// smoother Yaw control:
+	rate = constrain(rate, -yaw_input, yaw_input);
 #endif
 
 	return (int)rate + iterm;
