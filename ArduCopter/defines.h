@@ -154,6 +154,7 @@
 #define CH6_THR_HOLD_KP 14
 #define CH6_Z_GAIN 15
 #define CH6_THRUST 16
+#define CH6_DAMP 17
 
 
 // nav byte mask
