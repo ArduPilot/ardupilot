@@ -98,10 +98,7 @@ namespace ArdupilotMega
 
                     BaseStream.DiscardInBuffer();
 
-                    System.Threading.Thread.Sleep(200); // allow reset to work
-
-                    if (BaseStream.DtrEnable)
-                        BaseStream.DtrEnable = false;
+                    BaseStream.toggleDTR();
 
                     // allow 2560 connect timeout on usb
                     System.Threading.Thread.Sleep(1000);

@@ -461,7 +461,7 @@ namespace ArdupilotMega
                             }
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_TEST3:
-                            mode = "FBW B";
+                            mode = "Circle";
                             break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_AUTO:
                             switch (sysstatus.nav_mode)

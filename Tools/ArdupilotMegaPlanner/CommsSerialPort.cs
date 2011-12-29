@@ -9,5 +9,12 @@ namespace ArdupilotMega
     class SerialPort : System.IO.Ports.SerialPort,ICommsSerial
     {
 
+
+        public void toggleDTR()
+        {
+            DtrEnable = true;
+            System.Threading.Thread.Sleep(100);
+            DtrEnable = false;
+        }
     }
 }
