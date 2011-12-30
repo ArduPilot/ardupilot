@@ -475,8 +475,12 @@ static int32_t	nav_pitch;							// deg * 100 : target pitch angle
 static int32_t	nav_yaw;							// deg * 100 : target yaw angle
 static int32_t	home_to_copter_bearing;				// deg * 100 : target yaw angle
 static int32_t	auto_yaw;							// deg * 100 : target yaw angle
-static int32_t	nav_lat;							// for error calcs
-static int32_t	nav_lon;							// for error calcs
+
+static int16_t	nav_lat;							// for error calcs
+static int16_t	nav_lon;							// for error calcs
+static int16_t	nav_lat_p;							// for error calcs
+static int16_t	nav_lon_p;							// for error calcs
+
 static int16_t	nav_throttle;						// 0-1000 for throttle control
 static int16_t	crosstrack_error;
 
@@ -759,6 +763,7 @@ static void medium_loop()
 						y_GPS_speed 	= optflow.y_cm;
 					}
 					#endif
+
 					// control mode specific updates
 					// -----------------------------
 					update_navigation();
