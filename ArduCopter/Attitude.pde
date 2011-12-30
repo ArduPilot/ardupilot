@@ -153,7 +153,7 @@ get_stabilize_yaw(int32_t target_angle)
 	rate 		= g.pi_rate_yaw.get_pi(error, G_Dt);
 
 	// output control:
-	int16_t yaw_input = 1200 + abs(g.rc_4.control_in);
+	int16_t yaw_input = 1400 + abs(g.rc_4.control_in);
 	// smoother Yaw control:
 	rate = constrain(rate, -yaw_input, yaw_input);
 #endif
