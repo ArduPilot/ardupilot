@@ -21,6 +21,7 @@
 FastSerialPort0(Serial);        // FTDI/console
 
 AP_OpticalFlow_ADNS3080 flowSensor;
+//AP_OpticalFlow_ADNS3080 flowSensor(A6);  // override chip select pin to use A6 if using APM2
 
 void setup()
 {  
@@ -309,7 +310,7 @@ void display_motion()
 	delay(1000);
 	
 	while( !Serial.available() ) {
-	    flowSensor.read();
+	    flowSensor.update();
 		flowSensor.update_position(0,0,0,1,100);
 
 		// x,y,squal

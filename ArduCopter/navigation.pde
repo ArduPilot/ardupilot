@@ -125,7 +125,7 @@ static void calc_loiter(int x_error, int y_error)
 
 #define ERR_GAIN .01
 // called at 50hz
-static void esitmate_velocity()
+static void estimate_velocity()
 {
 	// for now we assume copter is pointing due north
 	// use roll to calculate the x velocity

@@ -176,7 +176,9 @@ static AP_Int8                *flight_modes = &g.flight_mode1;
 #endif
 
 #ifdef OPTFLOW_ENABLED
-	AP_OpticalFlow_ADNS3080 optflow;
+	AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
+#else
+    AP_OpticalFlow optflow;
 #endif
 
 // real GPS selection
@@ -236,7 +238,7 @@ AP_TimerProcess timer_scheduler;
     AP_InertialSensor_Stub ins;
     AP_PeriodicProcessStub timer_scheduler;
 	#ifdef OPTFLOW_ENABLED
-		AP_OpticalFlow_ADNS3080 optflow;
+		AP_OpticalFlow_ADNS3080 optflow(OPTFLOW_CS_PIN);
 	#endif
     static int32_t          gps_base_alt;
 #else
@@ -617,7 +619,7 @@ void loop()
 
 		// update our velocity estimate based on IMU at 50hz
 		// -------------------------------------------------
-		esitmate_velocity();
+		estimate_velocity();
 
 		// perform 10hz tasks
 		// ------------------
@@ -1008,7 +1010,7 @@ static void super_slow_loop()
 #ifdef OPTFLOW_ENABLED
 static void update_optical_flow(void)
 {
-	optflow.read();
+	optflow.update();
 	optflow.update_position(dcm.roll, dcm.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
 
 	// write to log

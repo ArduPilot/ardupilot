@@ -891,7 +891,6 @@ static void report_flight_modes()
 	print_blanks(2);
 }
 
-
 void report_optflow()
 {
 	#ifdef OPTFLOW_ENABLED
@@ -907,7 +906,6 @@ void report_optflow()
 	print_blanks(2);
 	#endif
 }
-
 
 #if FRAME_CONFIG == HELI_FRAME
 static void report_heli()

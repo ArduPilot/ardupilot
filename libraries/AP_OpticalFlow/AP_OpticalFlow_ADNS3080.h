@@ -1,9 +1,6 @@
 #ifndef AP_OPTICALFLOW_ADNS3080_H
 #define AP_OPTICALFLOW_ADNS3080_H
 
-//#include <AP_Math.h>
-//#include <Stream.h>
-//#include <AP_Common.h>
 #include "AP_OpticalFlow.h"
 
 // orientations for ADNS3080 sensor
@@ -28,7 +25,7 @@
 	#define AP_SPI_DATAOUT     51    // MOSI  // PB2
 	#define AP_SPI_CLOCK       52    // SCK   // PB1
 	#define ADNS3080_CHIP_SELECT 34  // PC3
-	#define ADNS3080_RESET       40  // PG1  was 35 / PC2
+	#define ADNS3080_RESET       0   // reset pin is unattached by default
 #else  // normal arduino SPI pins...these need to be checked
 	#define AP_SPI_DATAIN  12        //MISO
 	#define AP_SPI_DATAOUT 11        //MOSI
@@ -75,15 +72,18 @@
 #define ADNS3080_MOTION_BURST          0x50
 #define ADNS3080_SROM_LOAD             0x60
 
+// Configuration Bits
 #define ADNS3080_LED_MODE_ALWAYS_ON        0x00
 #define ADNS3080_LED_MODE_WHEN_REQUIRED    0x01
 
 #define ADNS3080_RESOLUTION_400			400
 #define ADNS3080_RESOLUTION_1200		1200
 
+// Extended Configuration bits
+#define ADNS3080_SERIALNPU_OFF	0x02
+
 #define ADNS3080_FRAME_RATE_MAX         6469
 #define ADNS3080_FRAME_RATE_MIN         2000
-
 
 
 class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
@@ -97,20 +97,24 @@ class AP_OpticalFlow_ADNS3080 : public AP_OpticalFlow
 	byte backup_spi_settings();
 	byte restore_spi_settings();
 
+  public:
+	int _cs_pin;     // pin used for chip select
+	int _reset_pin;  // pin used for chip reset
 	bool _motion;  	// true if there has been motion
 
   public:
-  	AP_OpticalFlow_ADNS3080();
-	//AP_OpticalFlow_ADNS3080();  // Constructor
+  	AP_OpticalFlow_ADNS3080(int cs_pin = ADNS3080_CHIP_SELECT, int reset_pin = ADNS3080_RESET);
 	bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	byte read_register(byte address);
 	void write_register(byte address, byte value);
 	void reset();         // reset sensor by holding a pin high (or is it low?) for 10us.
-	int read();           // read latest values from sensor and fill in x,y and totals, return OPTICALFLOW_SUCCESS on successful read
+	bool update();        // read latest values from sensor and fill in x,y and totals, return true on successful read
 
 	// ADNS3080 specific features
 	bool motion() { if( _motion ) { _motion = false; return true; }else{ return false; } }			// return true if there has been motion since the last time this was called
 
+	void disable_serial_pullup();
+	
 	bool get_led_always_on();                    // returns true if LED is always on, false if only on when required
 	void set_led_always_on( bool alwaysOn );     // set parameter to true if you want LED always on, otherwise false for only when required
 

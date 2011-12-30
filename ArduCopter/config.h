@@ -115,6 +115,7 @@
 # define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
 # define CLI_SLIDER_ENABLED DISABLED
+# define OPTFLOW_CS_PIN   34
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -124,7 +125,8 @@
 # define SLIDE_SWITCH_PIN (-1)
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN 23
+# define USB_MUX_PIN      23
+# define OPTFLOW_CS_PIN   A6
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -311,7 +313,6 @@
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
   #define OPTFLOW_ENABLED
 #endif
-
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
 #endif
