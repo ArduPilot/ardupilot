@@ -44,6 +44,16 @@ static void calc_XY_velocity(){
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
 
+	// this speed is ~ in cm because we are using 10^7 numbers from GPS
+	float tmp = 1.0/dTnav;
+	//int8_t tmp = 5;
+	int16_t	x_diff	= (g_gps->longitude - last_longitude) * tmp;
+	int16_t	y_diff	= (g_gps->latitude  - last_latutude) * tmp;
+
+	// filter
+	x_GPS_speed = (x_GPS_speed * 3 + x_diff) / 4;
+	y_GPS_speed = (y_GPS_speed * 3 + y_diff) / 4;
+
 	if(g_gps->ground_speed > 150){
 		// Derive X/Y speed from GPS
 		// this is far more accurate when traveling about 1.5m/s
@@ -51,16 +61,6 @@ static void calc_XY_velocity(){
 		x_GPS_speed 	= sin(temp) * (float)g_gps->ground_speed;
 		y_GPS_speed 	= cos(temp) * (float)g_gps->ground_speed;
 
-	}else{
-		// this speed is ~ in cm because we are using 10^7 numbers from GPS
-		float tmp = 1.0/dTnav;
-		//int8_t tmp = 5;
-		int16_t	x_diff	= (g_gps->longitude - last_longitude) * tmp;
-		int16_t	y_diff	= (g_gps->latitude  - last_latutude) * tmp;
-
-		// filter
-		x_GPS_speed = (x_GPS_speed * 3 + x_diff) / 4;
-		y_GPS_speed = (y_GPS_speed * 3 + y_diff) / 4;
 	}
 
 	last_longitude 	= g_gps->longitude;
@@ -78,7 +78,6 @@ static void calc_location_error(struct Location *next_loc)
 	1800 	= 19.80m = 60 feet
 	3000 	= 33m
 	10000 	= 111m
-	pitch_max = 22° (2200)
 	*/
 
 	// X Error
@@ -91,25 +90,24 @@ static void calc_location_error(struct Location *next_loc)
 #define NAV_ERR_MAX 800
 static void calc_loiter(int x_error, int y_error)
 {
-	x_error 			= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
-	y_error 			= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
+
+	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
+	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
+	y_rate_error 			= y_target_speed - y_actual_speed; // 413
+	y_rate_error 			= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
+	nav_lat		 			= g.pi_nav_lat.get_p(y_rate_error);
+	nav_lat					= constrain(nav_lat, -3500, 3500);
+	nav_lat					+= y_iterm;
 
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
-	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
-	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
-
-	y_rate_error 		= y_target_speed - y_actual_speed; // 413
-	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
-	nav_lat		 		= g.pi_nav_lat.get_pi(y_rate_error, dTnav);
-	nav_lat				= constrain(nav_lat, -3500, 3500);
-	nav_lat				+= y_iterm;
-
-	x_rate_error 		= x_target_speed - x_actual_speed;
-	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
-	nav_lon		 		= g.pi_nav_lon.get_pi(x_rate_error, dTnav);
-	nav_lon				= constrain(nav_lon, -3500, 3500);
-	nav_lon				+= x_iterm;
+	x_rate_error 			= x_target_speed - x_actual_speed;
+	x_rate_error 			= constrain(x_rate_error, -1000, 1000);
+	nav_lon		 			= g.pi_nav_lon.get_p(x_rate_error);
+	nav_lon					= constrain(nav_lon, -3500, 3500);
+	nav_lon					+= x_iterm;
 
 	/*
 	int8_t ttt = 1.0/dTnav;
