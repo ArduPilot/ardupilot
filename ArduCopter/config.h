@@ -606,10 +606,10 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.2		//
+# define LOITER_P			.2		// .3 was too aggressive
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.03	// Wind control
+# define LOITER_I			0.05	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
