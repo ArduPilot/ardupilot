@@ -1,10 +1,14 @@
 #ifndef __APM_RC_H__
 #define __APM_RC_H__
 
+
 #include <inttypes.h>
 
+
 // Radio channels
+
 // Note channels are from 0!
+
 #define CH_1 0
 #define CH_2 1
 #define CH_3 2
@@ -31,14 +35,19 @@
 
 
 
+
 #define NUM_CHANNELS 8
+
 
 
 class Arduino_Mega_ISR_Registry;
 
 class APM_RC_Class
+
 {
+
   public:
+
 	virtual void Init( Arduino_Mega_ISR_Registry * isr_reg ) = 0;
 	virtual void OutputCh(uint8_t ch, uint16_t pwm) = 0;
 	virtual uint16_t InputCh(uint8_t ch) = 0;
@@ -48,7 +57,11 @@ class APM_RC_Class
     virtual void SetFastOutputChannels( uint32_t channelmask ) = 0;
 };
 
+
+
 #include "APM_RC_APM1.h"
 #include "APM_RC_APM2.h"
 
+
 #endif
+

@@ -22,7 +22,7 @@ static void init_rc_in()
 	// set rc channel ranges
 	g.rc_1.set_angle(4500);
 	g.rc_2.set_angle(4500);
-	g.rc_3.set_range(0,1000);
+	g.rc_3.set_range(0, MAXIMUM_THROTTLE);
     #if FRAME_CONFIG !=	HELI_FRAME
 	g.rc_3.scale_output = .9;
 	#endif

@@ -45,7 +45,7 @@ static void init_barometer(void)
 		// Get initial data from absolute pressure sensor
 		barometer.read();
 		ground_pressure = barometer.get_pressure();
-		ground_temperature	= (ground_temperature * 9 + barometer.get_temperature()) / 10;
+		ground_temperature	= (ground_temperature * 7 + barometer.get_temperature()) / 8;
 		//Serial.printf("init %ld, %d, -, %ld, %ld, -, %d, %ld\n", barometer.RawTemp, barometer.Temp, barometer.RawPress,  barometer.Press, ground_temperature, ground_pressure);
 	}
 
@@ -55,37 +55,12 @@ static void init_barometer(void)
 	//SendDebugln("barometer calibration complete.");
 }
 
-/*
-static int32_t read_baro_filtered(void)
+static void reset_baro(void)
 {
-
-	// get new data from absolute pressure sensor
-	barometer.Read();
-
-	return barometer.Press;
-
-	int32_t pressure = 0;
-	// add new data into our filter
-	baro_filter[baro_filter_index] = barometer.Press;
-	baro_filter_index++;
-
-	// loop our filter
-	if(baro_filter_index >= BARO_FILTER_SIZE)
-		baro_filter_index = 0;
-
-	// zero out our accumulator
-
-	// sum our filter
-	for(byte i = 0; i < BARO_FILTER_SIZE; i++){
-		pressure += baro_filter[i];
-	}
-
-
-	// average our sampels
-	return pressure /= BARO_FILTER_SIZE;
-	//
+		ground_pressure 	= barometer.get_pressure();
+		ground_temperature	= barometer.get_temperature();
 }
-*/
+
 static int32_t read_barometer(void)
 {
  	float x, scaling, temp;
@@ -111,6 +86,28 @@ static void read_airspeed(void)
 static void zero_airspeed(void)
 {
 
+}
+
+static void init_compass()
+{
+	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
+	dcm.set_compass(&compass);
+	compass.init();
+	compass.get_offsets();					// load offsets to account for airframe magnetic interference
+}
+
+static void init_optflow()
+{
+#ifdef OPTFLOW_ENABLED
+	if( optflow.init(false) == false ) {
+	    g.optflow_enabled = false;
+	    SendDebug("\nFailed to Init OptFlow ");
+	}
+	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
+	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
+	// setup timed read of sensor
+	//timer_scheduler.register_process(&AP_OpticalFlow::read);
+#endif
 }
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE

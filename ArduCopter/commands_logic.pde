@@ -230,9 +230,6 @@ static void do_takeoff()
 		//Serial.printf("abs alt: %ld",temp.alt);
 	}
 
-	takeoff_complete = false;
-	// set flag to use g_gps ground course during TO.  IMU will be doing yaw drift correction
-
 	// Set our waypoint
 	set_next_WP(&temp);
 }
@@ -341,17 +338,8 @@ static bool verify_takeoff()
 	if(g.rc_3.control_in == 0){
 		return false;
 	}
-
-	if (current_loc.alt > next_WP.alt){
-		//Serial.println("Y");
-		takeoff_complete = true;
-		return true;
-
-	}else{
-
-		//Serial.println("N");
-		return false;
-	}
+	// are we above our target altitude?
+	return (current_loc.alt > next_WP.alt);
 }
 
 static bool verify_land()
