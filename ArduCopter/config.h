@@ -115,6 +115,7 @@
 # define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
 # define CLI_SLIDER_ENABLED DISABLED
+# define OPTFLOW_CS_PIN   34
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -124,7 +125,8 @@
 # define SLIDE_SWITCH_PIN (-1)
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
-# define USB_MUX_PIN 23
+# define USB_MUX_PIN      23
+# define OPTFLOW_CS_PIN   A6
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -289,7 +291,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
-# define MAGNETOMETER			DISABLED
+# define MAGNETOMETER			ENABLED
 #endif
 #ifndef MAG_ORIENTATION
 # define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
@@ -311,7 +313,6 @@
 #if defined( __AVR_ATmega2560__ )  // determines if optical flow code is included
   #define OPTFLOW_ENABLED
 #endif
-
 #ifndef OPTFLOW					// sets global enabled/disabled flag for optflow (as seen in CLI)
 # define OPTFLOW				DISABLED
 #endif
@@ -369,6 +370,11 @@
 #ifndef MINIMUM_THROTTLE
 # define MINIMUM_THROTTLE	130
 #endif
+#ifndef MAXIMUM_THROTTLE
+# define MAXIMUM_THROTTLE	1000
+#endif
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -501,6 +507,10 @@
 #endif
 
 
+#ifndef STABILIZE_D
+# define STABILIZE_D 		.25
+#endif
+
 // Jasons default values that are good for smaller payload motors.
 #ifndef STABILIZE_ROLL_P
 # define STABILIZE_ROLL_P 		4.6
@@ -526,7 +536,7 @@
 // Acro Rate Control
 //
 #ifndef ACRO_ROLL_P
-# define ACRO_ROLL_P         0.145
+# define ACRO_ROLL_P         0.155
 #endif
 #ifndef ACRO_ROLL_I
 # define ACRO_ROLL_I         0.0
@@ -536,7 +546,7 @@
 #endif
 
 #ifndef ACRO_PITCH_P
-# define ACRO_PITCH_P       0.145
+# define ACRO_PITCH_P       0.155
 #endif
 #ifndef ACRO_PITCH_I
 # define ACRO_PITCH_I		0 //0.18
@@ -549,7 +559,7 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         0.145
+# define RATE_ROLL_P         0.155
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -559,7 +569,7 @@
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.145
+# define RATE_PITCH_P       0.155
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0 //0.18
@@ -572,7 +582,7 @@
 // YAW Control
 //
 #ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		7			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define STABILIZE_YAW_P		9.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
 # define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
@@ -596,20 +606,20 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.3		//
+# define LOITER_P			.2		// .3 was too aggressive
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.01	//
+# define LOITER_I			0.05	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
 #endif
 
 #ifndef NAV_P
-# define NAV_P				3.0			//
+# define NAV_P				1.5			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
-# define NAV_I				0.14		// Lowerd from .25 - saw lots of overshoot.
+# define NAV_I				0.15		// used in traverals
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees

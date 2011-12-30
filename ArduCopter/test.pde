@@ -873,13 +873,15 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 	while(1){
 		delay(100);
 		int32_t alt = read_barometer(); // calls barometer.read()
+
+		#if defined( __AVR_ATmega1280__ )
+        Serial.printf_P(PSTR("alt: %ldcm\n"),alt);
+
+        #else
         int32_t pres = barometer.get_pressure();
         int16_t temp = barometer.get_temperature();
         int32_t raw_pres = barometer.get_raw_pressure();
         int32_t raw_temp = barometer.get_raw_temp();
-		#if defined( __AVR_ATmega1280__ )
-        Serial.printf_P(PSTR("alt: %ldcm\n"),alt);
-        #else
         Serial.printf_P(PSTR("alt: %ldcm, pres: %ldmbar, temp: %d/100degC,"
                              " raw pres: %ld, raw temp: %ld\n"),
                              alt, pres ,temp, raw_pres, raw_temp);
@@ -1009,7 +1011,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 
 		while(1){
 			delay(200);
-			optflow.read();
+			optflow.update();
 			Log_Write_Optflow();
 			Serial.printf_P(PSTR("x/dx: %d/%d\t y/dy %d/%d\t squal:%d\n"),
 						optflow.x,
