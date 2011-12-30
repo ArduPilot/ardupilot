@@ -21,10 +21,6 @@
 #include <AP_DCM.h>
 #include <AP_Common.h>
 
-// return value definition
-#define OPTICALFLOW_FAIL 0
-#define OPTICALFLOW_SUCCESS 1
-
 // standard rotation matrices
 #define AP_OPTICALFLOW_ROTATION_NONE               Matrix3f(1, 0, 0, 0, 1, 0, 0 ,0, 1)
 #define AP_OPTICALFLOW_ROTATION_YAW_45             Matrix3f(0.70710678, -0.70710678, 0, 0.70710678, 0.70710678, 0, 0, 0, 1)
@@ -52,18 +48,19 @@ class AP_OpticalFlow
     float change_x, change_y;
 	float x_cm, y_cm;
 
-	//AP_OpticalFlow(AP_DCM *dcm);
+	AP_OpticalFlow() { _sensor = this; };
+	~AP_OpticalFlow() { _sensor = NULL; };
 	virtual bool init(bool initCommAPI = true); // parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 	virtual byte read_register(byte address);
 	virtual void write_register(byte address, byte value);
 	virtual void set_orientation(const Matrix3f &rotation_matrix); // Rotation vector to transform sensor readings to the body frame.
 	virtual void set_field_of_view(const float fov) { field_of_view = fov; update_conversion_factors(); };  // sets field of view of sensor
-    virtual int read(); // read latest values from sensor and fill in x,y and totals
+    static void read(uint32_t ) { if( _sensor != NULL ) _sensor->update(); }; // call to update all attached sensors
+    virtual bool update(); // read latest values from sensor and fill in x,y and totals.  returns true on success
 	virtual void update_position(float roll, float pitch, float cos_yaw_x, float sin_yaw_y, float altitude);  // updates internal lon and lat with estimation based on optical flow
 
-
-
-//protected:
+protected:
+    static AP_OpticalFlow *_sensor;  // pointer to the last instantiated optical flow sensor.  Will be turned into a table if we ever add support for more than one sensor
 	Matrix3f   _orientation_matrix;
 	float conv_factor; // multiply this number by altitude and pixel change to get horizontal move (in same units as altitude)
     float radians_to_pixels;

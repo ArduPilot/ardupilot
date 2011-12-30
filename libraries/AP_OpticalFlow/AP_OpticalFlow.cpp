@@ -12,6 +12,8 @@
 
 #define FORTYFIVE_DEGREES 0.78539816
 
+AP_OpticalFlow* AP_OpticalFlow::_sensor = NULL;  // pointer to the last instantiated optical flow sensor.  Will be turned into a table if we ever add support for more than one sensor
+
 // init - initCommAPI parameter controls whether I2C/SPI interface is initialised (set to false if other devices are on the I2C/SPI bus and have already initialised the interface)
 bool
 AP_OpticalFlow::init(bool initCommAPI)
@@ -28,10 +30,11 @@ AP_OpticalFlow::set_orientation(const Matrix3f &rotation_matrix)
     _orientation_matrix = rotation_matrix;
 }
 
-// read latest values from sensor and fill in x,y and totals
-int AP_OpticalFlow::read()
+// read value from the sensor.  Should be overridden by derived class
+bool
+AP_OpticalFlow::update()
 {
-	return 0;
+	return true;
 }
 
 // reads a value from the sensor (will be sensor specific)

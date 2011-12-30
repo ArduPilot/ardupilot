@@ -491,7 +491,6 @@ static void Log_Write_Optflow()
 }
 
 
-
 static void Log_Read_Optflow()
 {
 	#ifdef OPTFLOW_ENABLED

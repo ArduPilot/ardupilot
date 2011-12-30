@@ -2,6 +2,7 @@ AP_OpticalFlow	KEYWORD1
 AP_OpticalFlow_ADNS3080	KEYWORD1
 init	KEYWORD2
 read	KEYWORD2
+update	KEYWORD2
 read_register	KEYWORD2
 write_register	KEYWORD2
 reset	KEYWORD2

@@ -113,6 +113,28 @@ static void zero_airspeed(void)
 
 }
 
+static void init_compass()
+{
+	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
+	dcm.set_compass(&compass);
+	compass.init();
+	compass.get_offsets();					// load offsets to account for airframe magnetic interference
+}
+
+static void init_optflow()
+{
+#ifdef OPTFLOW_ENABLED
+	if( optflow.init(false) == false ) {
+	    g.optflow_enabled = false;
+	    SendDebug("\nFailed to Init OptFlow ");
+	}
+	optflow.set_orientation(OPTFLOW_ORIENTATION);			// set optical flow sensor's orientation on aircraft
+	optflow.set_field_of_view(OPTFLOW_FOV);					// set optical flow sensor's field of view
+	// setup timed read of sensor
+	//timer_scheduler.register_process(&AP_OpticalFlow::read);
+#endif
+}
+
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 static void read_battery(void)
