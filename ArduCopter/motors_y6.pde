@@ -7,8 +7,8 @@
 static void init_motors_out()
 {
 	#if INSTANT_PWM == 0
-    APM_RC.SetFastOutputChannels( MSK_CH_1 | MSK_CH_2 | MSK_CH_3 | MSK_CH_4
-                                | MSK_CH_7 | MSK_CH_8 );
+    APM_RC.SetFastOutputChannels( _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4)
+                                | _BV(CH_7) | _BV(CH_8) );
 	#endif
 }
 
