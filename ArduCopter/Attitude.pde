@@ -242,8 +242,9 @@ static void reset_nav(void)
 	g.pi_nav_lat.reset_I();
 	g.pi_nav_lon.reset_I();
 
-	g.pi_loiter_lat.reset_I();
-	g.pi_loiter_lon.reset_I();
+	// considering not reseting wind control
+	//g.pi_loiter_lat.reset_I();
+	//g.pi_loiter_lon.reset_I();
 
 	circle_angle			= 0;
 	crosstrack_error 		= 0;
