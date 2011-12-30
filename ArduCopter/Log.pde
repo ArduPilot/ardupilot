@@ -213,9 +213,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 }
 
 
-
-
-// print_latlon - prints an latitude or longitude value held in an int32_t 
+// print_latlon - prints an latitude or longitude value held in an int32_t
 // probably this should be moved to AP_Common
 void print_latlon(BetterStream *s, int32_t lat_or_lon)
 {
@@ -525,8 +523,6 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteInt(nav_lat);							// 6
 	DataFlash.WriteInt(g.pi_nav_lon.get_integrator());		// 7
 	DataFlash.WriteInt(g.pi_nav_lat.get_integrator());	    // 8
-	//crosstrack_error
-	//DataFlash.WriteInt(crosstrack_error);	// 9
 	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
 	DataFlash.WriteInt(g.pi_loiter_lat.get_integrator());	// 10
 
