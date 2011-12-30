@@ -536,7 +536,7 @@
 // Acro Rate Control
 //
 #ifndef ACRO_ROLL_P
-# define ACRO_ROLL_P         0.145
+# define ACRO_ROLL_P         0.155
 #endif
 #ifndef ACRO_ROLL_I
 # define ACRO_ROLL_I         0.0
@@ -546,7 +546,7 @@
 #endif
 
 #ifndef ACRO_PITCH_P
-# define ACRO_PITCH_P       0.145
+# define ACRO_PITCH_P       0.155
 #endif
 #ifndef ACRO_PITCH_I
 # define ACRO_PITCH_I		0 //0.18
@@ -559,7 +559,7 @@
 // Stabilize Rate Control
 //
 #ifndef RATE_ROLL_P
-# define RATE_ROLL_P         0.145
+# define RATE_ROLL_P         0.155
 #endif
 #ifndef RATE_ROLL_I
 # define RATE_ROLL_I         0.0
@@ -569,7 +569,7 @@
 #endif
 
 #ifndef RATE_PITCH_P
-# define RATE_PITCH_P       0.145
+# define RATE_PITCH_P       0.155
 #endif
 #ifndef RATE_PITCH_I
 # define RATE_PITCH_I		0 //0.18
@@ -606,20 +606,20 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.3		//
+# define LOITER_P			.2		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.05	// Wind control
+# define LOITER_I			0.03	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
 #endif
 
 #ifndef NAV_P
-# define NAV_P				3.0			//
+# define NAV_P				1.5			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
-# define NAV_I				0.15			// Lowerd from .25 - saw lots of overshoot.
+# define NAV_I				0.15		// used in traverals
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
