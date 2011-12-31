@@ -122,7 +122,7 @@ static void execute_nav_command(void)
 	process_nav_command();
 
 	// clear navigation prameters
-	reset_nav();
+	//reset_nav();
 
 	// clear May indexes to force loading of more commands
 	// existing May commands are tossed.
