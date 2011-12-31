@@ -582,7 +582,7 @@
 // YAW Control
 //
 #ifndef  STABILIZE_YAW_P
-# define STABILIZE_YAW_P		9.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
+# define STABILIZE_YAW_P		7.5			// increase for more aggressive Yaw Hold, decrease if it's bouncy
 #endif
 #ifndef  STABILIZE_YAW_I
 # define STABILIZE_YAW_I		0.01		// set to .0001 to try and get over user's steady state error caused by poor balance
