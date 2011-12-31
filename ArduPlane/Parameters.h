@@ -85,7 +85,7 @@ public:
         //
         k_param_flybywire_airspeed_min = 120,
         k_param_flybywire_airspeed_max,
-        k_param_FBWB_min_altitude,  // -1=disabled, minimum value for altitude in cm (default 30m)
+        k_param_FBWB_min_altitude,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
 
         //
         // 130: Sensor parameters
