@@ -94,6 +94,17 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 500 - 0 = 500 Go North
 }
 
+
+static void calc_position_hold()
+{
+	// only if we are not moving
+	//if (x_actual_speed == 0){
+	//	// what is the error?
+	//	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
+	//}
+}
+
+
 #define NAV_ERR_MAX 800
 static void calc_loiter(int x_error, int y_error)
 {
@@ -102,20 +113,20 @@ static void calc_loiter(int x_error, int y_error)
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
 	x_rate_error 			= x_target_speed - x_actual_speed;
-	x_rate_error 			= constrain(x_rate_error, -1000, 1000);
 	nav_lon_p		 		= g.pi_nav_lon.get_p(x_rate_error);
-	nav_lon_p				= constrain(nav_lon_p, -3500, 3500);
+	nav_lon_p				= constrain(nav_lon_p, -1200, 1200);
 	nav_lon					= nav_lon_p + x_iterm;
+	nav_lon					= constrain(nav_lon, -2500, 2500);
 
 	// North/South
 	y_error 				= constrain(y_error, -NAV_ERR_MAX, NAV_ERR_MAX);
 	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
-	y_rate_error 			= y_target_speed - y_actual_speed; // 413
-	y_rate_error 			= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 			= y_target_speed - y_actual_speed;
 	nav_lat_p	 			= g.pi_nav_lat.get_p(y_rate_error);
-	nav_lat_p				= constrain(nav_lat_p, -3500, 3500);
+	nav_lat_p				= constrain(nav_lat_p, -1200, 1200);
 	nav_lat					= nav_lat_p + y_iterm;
+	nav_lat					= constrain(nav_lat, -2500, 2500);
 
 	/*
 	int8_t ttt = 1.0/dTnav;
@@ -232,23 +243,23 @@ static void calc_nav_rate(int max_speed)
 	//x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
 
 	x_rate_error 		= (cos(temp) * max_speed) - x_actual_speed; // 413
-	x_rate_error 		= constrain(x_rate_error, -1400, 1400);
+	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
 	int16_t x_iterm 	= g.pi_loiter_lon.get_i(x_rate_error, dTnav);
 
 	nav_lon_p		 	= g.pi_nav_lon.get_p(x_rate_error);
-	nav_lon_p			= constrain(nav_lon_p, -3500, 3500);
 	nav_lon				= nav_lon_p + x_iterm;
+	nav_lon				= constrain(nav_lon, -3000, 3000);
 
 	// heading towards target
 	//y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
 
 	y_rate_error 		= (sin(temp) * max_speed) - y_actual_speed; // 413
-	y_rate_error 		= constrain(y_rate_error, -1400, 1400);	// added a rate error limit to keep pitching down to a minimum
+	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
 
 	nav_lat_p		 	= g.pi_nav_lat.get_p(y_rate_error);
-	nav_lat_p			= constrain(nav_lat_p, -3500, 3500);
 	nav_lat				= nav_lat_p + y_iterm;
+	nav_lat				= constrain(nav_lat, -3000, 3000);
 
 	/*
 	Serial.printf("max_sp %d,\t x_sp %d, y_sp %d,\t x_re: %d, y_re: %d, \tnav_lon: %d, nav_lat: %d, Xi:%d, Yi:%d, \t XE %d \n",
