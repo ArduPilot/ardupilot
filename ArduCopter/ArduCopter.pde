@@ -1391,8 +1391,6 @@ static void update_navigation()
 				// reset LOITER to current position
 				next_WP 	= current_loc;
 
-				// clear Loiter Iterms
-				//reset_nav();
 			}else{
 				// this is also set by GPS in update_nav
 				wp_control = LOITER_MODE;
