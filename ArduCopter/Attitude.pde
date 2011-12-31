@@ -239,8 +239,8 @@ static void reset_nav(void)
 	nav_throttle 			= 0;
 	invalid_throttle 		= true;
 
-	g.pi_nav_lat.reset_I();
-	g.pi_nav_lon.reset_I();
+	//g.pi_nav_lat.reset_I();
+	//g.pi_nav_lon.reset_I();
 
 	// considering not reseting wind control
 	//g.pi_loiter_lat.reset_I();
