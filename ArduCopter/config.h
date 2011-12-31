@@ -508,7 +508,7 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		.25
+# define STABILIZE_D 		.2
 #endif
 
 // Jasons default values that are good for smaller payload motors.
@@ -606,17 +606,17 @@
 // Navigation control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.2		// .3 was too aggressive
+# define LOITER_P			.25		//
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.05	// Wind control
+# define LOITER_I			0.1	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
 #endif
 
 #ifndef NAV_P
-# define NAV_P				1.5			// 3 was causing rapid oscillations in Loiter
+# define NAV_P				2.2			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
 # define NAV_I				0.15		// used in traverals
@@ -649,7 +649,7 @@
 
 // RATE control
 #ifndef THROTTLE_P
-# define THROTTLE_P		0.4			//
+# define THROTTLE_P		0.5			//
 #endif
 #ifndef THROTTLE_I
 # define THROTTLE_I		0.0			//
@@ -663,7 +663,7 @@
 // Crosstrack compensation
 //
 #ifndef CROSSTRACK_GAIN
-# define CROSSTRACK_GAIN		40
+# define CROSSTRACK_GAIN		1
 #endif
 
 
