@@ -8,6 +8,9 @@ static void init_commands()
 	prev_nav_index 			= NO_COMMAND;
 	command_cond_queue.id 	= NO_COMMAND;
 	command_nav_queue.id 	= NO_COMMAND;
+
+	// default Yaw tracking
+	yaw_tracking 			= MAV_ROI_WPNEXT;
 }
 
 // Getters
@@ -176,6 +179,7 @@ static void set_next_WP(struct Location *wp)
 	wp_totalDistance 	= get_distance(&current_loc, &next_WP);
 	wp_distance 		= wp_totalDistance;
 	target_bearing 		= get_bearing(&prev_WP, &next_WP);
+	nav_bearing 		= target_bearing;
 
 	// to check if we have missed the WP
 	// ---------------------------------
