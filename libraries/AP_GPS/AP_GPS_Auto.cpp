@@ -117,7 +117,6 @@ AP_GPS_Auto::_detect(void)
         _port->flush();
         then = millis();
         do {
-            callback(1);
             if (_port->available()) {
                 then = millis();
                 _port->read();
