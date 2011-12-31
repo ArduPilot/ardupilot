@@ -367,7 +367,6 @@ static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
 static int32_t	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 static int32_t	nav_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
-
 static int32_t 	home_bearing;						// used to track difference in angle
 
 static byte	wp_control;								// used to control - navgation or loiter
