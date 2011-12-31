@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.1.1r3 alpha"
+#define THISFIRMWARE "ArduCopter V2.1.1r4 alpha"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -366,6 +366,7 @@ static bool	nav_ok;
 static const float radius_of_earth 	= 6378100;		// meters
 static const float gravity 			= 9.81;			// meters/ sec^2
 static int32_t	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
+static int32_t	nav_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
 static int32_t 	home_bearing;						// used to track difference in angle
 
 static byte	wp_control;								// used to control - navgation or loiter
@@ -1390,8 +1391,6 @@ static void update_navigation()
 				// reset LOITER to current position
 				next_WP 	= current_loc;
 
-				// clear Loiter Iterms
-				reset_nav();
 			}else{
 				// this is also set by GPS in update_nav
 				wp_control = LOITER_MODE;
@@ -1762,7 +1761,8 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(g.waypoint_speed_max);
 		// rotate pitch and roll to the copter frame of reference
-		calc_nav_pitch_roll();
+		//calc_nav_pitch_roll();
+		calc_loiter_pitch_roll();
 
 	}else if(wp_control == NO_NAV_MODE){
 		nav_roll = 0;
@@ -1772,11 +1772,16 @@ static void update_nav_wp()
 
 static void update_auto_yaw()
 {
+	// If we Loiter, don't start Yawing, allow Yaw control
+	if(wp_control == LOITER_MODE)
+		return;
+
 	// this tracks a location so the copter is always pointing towards it.
 	if(yaw_tracking == MAV_ROI_LOCATION){
 		auto_yaw = get_bearing(&current_loc, &target_WP);
 
 	}else if(yaw_tracking == MAV_ROI_WPNEXT){
+		// Point towards next WP
 		auto_yaw = target_bearing;
 	}
 	// MAV_ROI_NONE = basic Yaw hold
