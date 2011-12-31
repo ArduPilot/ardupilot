@@ -99,6 +99,7 @@ AP_GPS_Auto::_detect(void)
     unsigned long then;
     int		fingerprint[4];
     int		tries;
+    int     charcount;
     GPS		*gps;
 
     //
@@ -114,15 +115,16 @@ AP_GPS_Auto::_detect(void)
         // XXX We can detect babble by counting incoming characters, but
         //     what would we do about it?
         //
+        charcount = 0;
         _port->flush();
         then = millis();
         do {
-            callback(1);
             if (_port->available()) {
                 then = millis();
                 _port->read();
+                charcount++;
             }
-        } while ((millis() - then) < 50);
+        } while ((millis() - then) < 50 && charcount < 5000);
 
         //
         // Collect four characters to fingerprint a device
