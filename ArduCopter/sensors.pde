@@ -88,6 +88,8 @@ static void zero_airspeed(void)
 
 }
 
+#endif // HIL_MODE != HIL_MODE_ATTITUDE
+
 static void init_compass()
 {
 	compass.set_orientation(MAG_ORIENTATION);						// set compass's orientation on aircraft
@@ -109,8 +111,6 @@ static void init_optflow()
 	//timer_scheduler.register_process(&AP_OpticalFlow::read);
 #endif
 }
-
-#endif // HIL_MODE != HIL_MODE_ATTITUDE
 
 static void read_battery(void)
 {
