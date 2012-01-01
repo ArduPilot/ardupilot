@@ -67,13 +67,12 @@ static void output_motors_armed()
 
 
 	// Tridge's stability patch
-    for (int i = CH_1; i<=CH_8; i++) {
-    	if(i == CH_5 || i == CH_6)
-    		continue;
-        if (motor_out[i] > out_max) {
-            // note that i^1 is the opposite motor
-            motor_out[i^1] -= motor_out[i] - out_max;
-            motor_out[i] = out_max;
+    for (int m = 0; m <= 6; m++) {
+        int c = ch_of_mot(m);
+        int c_opp = ch_of_mot(m^1); // m^1 is the opposite motor. c_opp is channel of opposite motor.
+        if (motor_out[c] > out_max) {
+            motor_out[c_opp] -= motor_out[c] - out_max;
+            motor_out[c] = out_max;
         }
     }
 
@@ -99,14 +98,13 @@ static void output_motors_armed()
 
 	// this filter slows the acceleration of motors vs the deceleration
 	// Idea by Denny Rowland to help with his Yaw issue
-	for(int8_t i = CH_1; i <= CH_8; i++ ) {
-    	if(i == CH_5 || i == CH_6)
-    		continue;
-		if(motor_filtered[i] < motor_out[i]){
-			motor_filtered[i] = (motor_out[i] + motor_filtered[i]) / 2;
+	for(int8_t m = 0; m <= 6; m++ ) {
+      int c = ch_of_mot(m);
+		if(motor_filtered[c] < motor_out[c]){
+			motor_filtered[c] = (motor_out[c] + motor_filtered[c]) / 2;
 		}else{
 			// don't filter
-			motor_filtered[i] = motor_out[i];
+			motor_filtered[c] = motor_out[c];
 		}
 	}
 
