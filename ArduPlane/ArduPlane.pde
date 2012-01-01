@@ -905,7 +905,7 @@ static void update_current_flight_mode(void)
 				nav_roll = g.channel_roll.norm_input() * g.roll_limit;
 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 
-				if ((current_loc.alt>=home.alt+g.FBWB_min_altitude) || (g.FBWB_min_altitude == -1)) {
+				if ((current_loc.alt>=home.alt+g.FBWB_min_altitude) || (g.FBWB_min_altitude == 0)) {
 	 				altitude_error = g.channel_pitch.norm_input() * g.pitch_limit_min;
 				} else {
 					if (g.channel_pitch.norm_input()<0)
