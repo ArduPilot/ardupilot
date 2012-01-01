@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.1.1r4 alpha"
+#define THISFIRMWARE "ArduCopter V2.1.1r5 alpha"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -744,7 +744,6 @@ static void medium_loop()
 				// -------------------
 				g_gps->new_data 	= false;
 
-
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
 				if(navigate()){
@@ -1060,11 +1059,13 @@ static void update_GPS(void)
 		// ---------------
 		gps_fix_count++;
 
-		// we are not tracking I term on navigation, so this isn't needed
+		// used to calculate speed in X and Y, iterms
+		// ------------------------------------------
 		dTnav 				= (float)(millis() - nav_loopTimer)/ 1000.0;
 		nav_loopTimer 		= millis();
 
 		// prevent runup from bad GPS
+		// --------------------------
 		dTnav = min(dTnav, 1.0);
 
 		if(ground_start_count > 1){
@@ -1420,6 +1421,12 @@ static void update_navigation()
 			update_nav_wp();
 			break;
 
+		case STABILIZE:
+			//wp_control = NO_NAV_MODE;
+			//update_nav_wp();
+
+			break;
+
 	}
 
 	// are we in SIMPLE mode?
@@ -1767,6 +1774,10 @@ static void update_nav_wp()
 	}else if(wp_control == NO_NAV_MODE){
 		nav_roll = 0;
 		nav_pitch = 0;
+
+		// calc the Iterms for Loiter based on velicity
+		//calc_position_hold();
+
 	}
 }
 
