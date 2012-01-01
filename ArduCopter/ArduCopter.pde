@@ -80,7 +80,7 @@ http://code.google.com/p/ardupilot-mega/downloads/list
 // Configuration
 #include "defines.h"
 #include "config.h"
-#include "config_motors.h"
+#include "config_channels.h"
 
 // Local modules
 #include "Parameters.h"
