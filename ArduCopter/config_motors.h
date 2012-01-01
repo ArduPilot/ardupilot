@@ -37,11 +37,11 @@
 # define MOT_2 CH_2
 # define MOT_3 CH_3
 # define MOT_4 CH_4
-/* XXX Placeholders: These need to be changed XXX */
-# define MOT_5 CH_5
-# define MOT_6 CH_6
-# define MOT_7 CH_7
-# define MOT_8 CH_8
+# define MOT_5 CH_7
+# define MOT_6 CH_8
+# define MOT_7 CH_10
+# define MOT_8 CH_11
+#endif
 #endif
 
 #endif // __ARDUCOPTER_CONFIG_MOTORS_H__
