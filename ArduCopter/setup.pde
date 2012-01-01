@@ -1102,16 +1102,16 @@ init_esc()
 		read_radio();
 		delay(100);
 		dancing_light();
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_7, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_8, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_4, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_5, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_6, g.rc_3.radio_in);
 
 		#if FRAME_CONFIG ==	OCTA_FRAME
-		APM_RC.OutputCh(CH_10,   g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_11,   g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_7,   g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_8,   g.rc_3.radio_in);
 		#endif
 
 	}
