@@ -45,6 +45,18 @@
 
 //
 //
+// Output CH mapping for TRI_FRAME yaw servo
+//
+//
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+/* TODO find out correct channel for APM2 TRI_YAW */
+# define CH_TRI_YAW   (-1)
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+# define CH_TRI_YAW   CH_7
+#endif
+
+//
+//
 // Output CH mapping for Aux channels
 //
 //
