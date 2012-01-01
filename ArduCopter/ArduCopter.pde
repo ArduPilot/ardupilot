@@ -1130,7 +1130,7 @@ static void fifty_hz_loop()
 	#if FRAME_CONFIG == TRI_FRAME
 		// servo Yaw
 		g.rc_4.calc_pwm();
-		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+		APM_RC.OutputCh(CH_TRI_YAW, g.rc_4.radio_out);
 	#endif
 }
 
