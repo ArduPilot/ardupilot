@@ -42,6 +42,20 @@
 # define MOT_7 CH_10
 # define MOT_8 CH_11
 #endif
+
+//
+//
+// Output CH mapping for Aux channels
+//
+//
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+/* Camera Pitch and Camera Roll: Not yet defined for APM2 
+ * They will likely be dependent on the frame config */
+# define CH_CAM_PITCH (-1)
+# define CH_CAM_ROLL  (-1)
+#elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
+# define CH_CAM_PITCH CH_5
+# define CH_CAM_ROLL  CH_6
 #endif
 
 #endif // __ARDUCOPTER_CONFIG_MOTORS_H__
