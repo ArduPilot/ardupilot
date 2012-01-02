@@ -129,26 +129,15 @@
   <metadata name="colOtherLang.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
-  <metadata name="colFile.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
-  <metadata name="colInternal.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
-  <metadata name="colEnglish.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
-  <metadata name="colOtherLang.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>True</value>
-  </metadata>
   <data name="richTextBox1.Text" xml:space="preserve">
     <value>How to use:
-First time
-if this is the first load, simple click load (ensure box next to it is blank)
-before you save ensure you pick your language and click save.
-More uses
-Pick your language and click load.
-before you save ensure you pick your language and click save.
+First time, if this is the first load, just pick your language down the bottom and edit. click save.
+
+More uses, Pick your language, and it will autoload, existing for that language
+
+if you get halfway though, click the load trans button
+
+NOTE, the autoload only works after Michael has added it to the planner. otherwise you will need to use load trans
 </value>
   </data>
 </root>

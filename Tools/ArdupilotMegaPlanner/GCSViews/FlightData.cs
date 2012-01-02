@@ -297,7 +297,11 @@ namespace ArdupilotMega.GCSViews
                 {
                     this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
 {
-    BUT_playlog.Text = "Pause";
+    try
+    {
+        BUT_playlog.Text = "Pause";
+    }
+    catch { }
 });
 
                     if (comPort.BaseStream.IsOpen)

@@ -190,7 +190,7 @@
     <value>I</value>
   </data>
   <data name="label23.Text" xml:space="preserve">
-    <value>Longeur du trajet</value>
+    <value>Longeur de trace</value>
   </data>
   <data name="label87.Text" xml:space="preserve">
     <value>P</value>
@@ -226,7 +226,7 @@
     <value>Position</value>
   </data>
   <data name="groupBox8.Text" xml:space="preserve">
-    <value>Servo Roll Pid</value>
+    <value>Servo Roulis Pid</value>
   </data>
   <data name="label57.Text" xml:space="preserve">
     <value>INT_MAX</value>
@@ -238,7 +238,7 @@
     <value>Attitude</value>
   </data>
   <data name="groupBox9.Text" xml:space="preserve">
-    <value>Servo Pitch Pid</value>
+    <value>Servo Tangage Pid</value>
   </data>
   <data name="label52.Text" xml:space="preserve">
     <value>P</value>
@@ -310,7 +310,7 @@
     <value>Activ. HUD Superposé</value>
   </data>
   <data name="groupBox3.Text" xml:space="preserve">
-    <value>Accél 0-100%</value>
+    <value>Vitesse 0-100%</value>
   </data>
   <data name="BUT_load.Text" xml:space="preserve">
     <value>Charger</value>
@@ -361,7 +361,7 @@
     <value>INT_MAX</value>
   </data>
   <data name="groupBox18.Text" xml:space="preserve">
-    <value>Acro Lateral</value>
+    <value>Acro Roulis</value>
   </data>
   <data name="label98.Text" xml:space="preserve">
     <value>Unitées de vitesse</value>
@@ -391,10 +391,10 @@
     <value>Energie/Alt Pid</value>
   </data>
   <data name="groupBox17.Text" xml:space="preserve">
-    <value>Acro Longitudinal</value>
+    <value>Acro Tangage</value>
   </data>
   <data name="groupBox12.Text" xml:space="preserve">
-    <value>Nav Pitch AS Pid</value>
+    <value>Nav Tangage AS Pid</value>
   </data>
   <data name="label92.Text" xml:space="preserve">
     <value>Appareil Video</value>
@@ -481,25 +481,25 @@
     <value>Config manette</value>
   </data>
   <data name="groupBox25.Text" xml:space="preserve">
-    <value>Taux lateral</value>
+    <value>Taux Roulis</value>
   </data>
   <data name="label39.Text" xml:space="preserve">
-    <value>Longitudinal Min</value>
+    <value>Tangage Min</value>
   </data>
   <data name="CHK_mavdebug.Text" xml:space="preserve">
     <value>Analyse des message MAVLink</value>
   </data>
   <data name="groupBox20.Text" xml:space="preserve">
-    <value>Stabilise Rotation</value>
+    <value>Stabilise Lacet</value>
   </data>
   <data name="groupBox21.Text" xml:space="preserve">
-    <value>Stabilise Longitudinal</value>
+    <value>Stabilise Tangage</value>
   </data>
   <data name="groupBox22.Text" xml:space="preserve">
-    <value>Stabilise Lateral</value>
+    <value>Stabilise Roulis</value>
   </data>
   <data name="groupBox23.Text" xml:space="preserve">
-    <value>Taux Rotation</value>
+    <value>Taux Lacet</value>
   </data>
   <data name="label74.Text" xml:space="preserve">
     <value>D</value>
@@ -526,7 +526,7 @@
     <value>P</value>
   </data>
   <data name="CHK_lockrollpitch.Text" xml:space="preserve">
-    <value>Barrer valeurs Lateral et Long.</value>
+    <value>Barrer val. Roulis/Tangage</value>
   </data>
   <data name="label71.Text" xml:space="preserve">
     <value>I</value>

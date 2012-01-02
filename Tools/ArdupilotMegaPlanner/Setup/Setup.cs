@@ -37,6 +37,8 @@ namespace ArdupilotMega.Setup
                 rctrim[a] = 1500;
             }
 
+            MainV2.comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, MainV2.cs.raterc);
+
             timer.Tick += new EventHandler(timer_Tick);
 
             timer.Enabled = true;

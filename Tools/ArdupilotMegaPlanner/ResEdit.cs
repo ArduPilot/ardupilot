@@ -172,7 +172,7 @@ namespace resedit
                     {
                         if (writer != null)
                             writer.Close();
-                        writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resx", "." + ci + ".resx"));
+                        writer = new ResXResourceWriter("translation/" + row.Cells[colFile.Index].Value.ToString().Replace(".resources", "." + ci + ".resx"));
                     }
 
                     writer.AddResource(row.Cells[colInternal.Index].Value.ToString(), row.Cells[colOtherLang.Index].Value.ToString());
@@ -190,34 +190,41 @@ namespace resedit
                 writer.Close();
             sw.Write("</table></html>");
             sw.Close();
+
+            MessageBox.Show("Saved");
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            StreamReader sr1 = new StreamReader("translation/output.txt");
+            StreamReader sr1 = new StreamReader("translation/output.html");
 
-            StreamReader sr2 = new StreamReader("translation/output.ru.txt", Encoding.Unicode);
+            string file = sr1.ReadToEnd();
 
-            while (!sr1.EndOfStream)
+
+            Regex regex = new Regex("<tr><td>([^<]*)</td><td>([^<]*)</td><td>([^<]*)</td></tr>",RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+            MatchCollection matches = regex.Matches(file);
+
+            int a = 0;
+
+            foreach (Match mat in matches)
             {
-                string line1 = sr1.ReadLine();
-                string line1a = sr2.ReadLine();
-
-                int index1 = line1.IndexOf(' ', line1.IndexOf(' ') + 1) + 1;
-
-                int index1a = line1a.IndexOf(' ',line1a.IndexOf(' ')+1)+1;
-
                 foreach (DataGridViewRow row in dataGridView1.Rows)
                 {
-                    if (line1.Contains(row.Cells[colFile.Index].Value.ToString()) && line1.Contains(row.Cells[colInternal.Index].Value.ToString()))
+                    if (mat.Groups.Count == 4)
                     {
-                        row.Cells[colOtherLang.Index].Value = line1a.Substring(index1a);
+                        if (row.Cells[0].Value.ToString() == mat.Groups[1].Value.ToString() && row.Cells[1].Value.ToString() == mat.Groups[2].Value.ToString())
+                        {
+                            row.Cells[3].Value = mat.Groups[3].Value.ToString();
+                            a++;
+                        }
                     }
                 }
             }
 
             sr1.Close();
-            sr2.Close();
+
+            MessageBox.Show("Modified "+a+" entries");
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -278,6 +285,8 @@ namespace resedit
                 }
                 catch { }
             }
+
+            MessageBox.Show("Loaded Existing");
         }
     }
 }
