@@ -196,7 +196,12 @@ namespace ArdupilotMega
             return "";
         }
 
-
+        /// <summary>
+        /// return the software id from eeprom
+        /// </summary>
+        /// <param name="comport">Port</param>
+        /// <param name="version">Board type</param>
+        /// <returns></returns>
         public static int decodeApVar(string comport, string version)
         {
             ArduinoComms port = new ArduinoSTK();
@@ -262,6 +267,12 @@ namespace ArdupilotMega
             return -1;
         }
 
+        /// <summary>
+        /// STK v2 generate packet
+        /// </summary>
+        /// <param name="serialPort"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
         static byte[] genstkv2packet(SerialPort serialPort, byte[] message)
         {
             byte[] data = new byte[300];
@@ -301,6 +312,11 @@ namespace ArdupilotMega
             return ret;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="serialPort"></param>
+        /// <returns></returns>
         static byte[] readpacket(SerialPort serialPort)
         {
             byte[] temp = new byte[4000];

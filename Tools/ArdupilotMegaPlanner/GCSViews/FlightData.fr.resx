@@ -190,7 +190,7 @@
     <value>Jauges</value>
   </data>
   <data name="CHK_autopan.Text" xml:space="preserve">
-    <value>Centrer auto.</value>
+    <value>Centré</value>
   </data>
   <data name="BUT_joystick.Text" xml:space="preserve">
     <value>Manette</value>
@@ -199,7 +199,7 @@
     <value>Change niveau du Zoom</value>
   </data>
   <data name="CB_tuning.Text" xml:space="preserve">
-    <value>Mise à point</value>
+    <value>M.à point</value>
   </data>
   <data name="dataGridViewImageColumn2.HeaderText" xml:space="preserve">
     <value>Bas</value>
@@ -214,7 +214,7 @@
     <value>Changement du Mode à Manuel/Stabilisé</value>
   </data>
   <data name="BUT_RAWSensor.ToolTip" xml:space="preserve">
-    <value>Affiche valeurs cru Gyro et Accel, aussi entrée/sorti du Radio</value>
+    <value>Affiche valeurs brut Gyro et Accel, aussi entrée/sorti du Radio</value>
   </data>
   <data name="Gspeed.ToolTip" xml:space="preserve">
     <value>Double click pour changer Max</value>
@@ -229,7 +229,7 @@
     <value>Execute l'action a gauche</value>
   </data>
   <data name="BUT_Homealt.Text" xml:space="preserve">
-    <value>Definir altitude d'origine</value>
+    <value>Definir alt. d'origine</value>
   </data>
   <data name="lbl_winddir.Text" xml:space="preserve">
     <value>Dir: 0</value>

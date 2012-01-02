@@ -1,0 +1,369 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Down.HeaderText" xml:space="preserve">
+    <value>Dół</value>
+  </data>
+  <data name="CHK_geheight.Text" xml:space="preserve">
+    <value>Weryfikuj wysokość</value>
+  </data>
+  <data name="BUT_Camera.Text" xml:space="preserve">
+    <value>Kamera</value>
+  </data>
+  <data name="ContextMeasure.Text" xml:space="preserve">
+    <value>Zmierz odległość</value>
+  </data>
+  <data name="BUT_Prefetch.Text" xml:space="preserve">
+    <value>Prefetch</value>
+  </data>
+  <data name="Param3.HeaderText" xml:space="preserve">
+    <value>P3</value>
+  </data>
+  <data name="Command.ToolTipText" xml:space="preserve">
+    <value>Polecenie APM</value>
+  </data>
+  <data name="clearMissionToolStripMenuItem.Text" xml:space="preserve">
+    <value>Wyczyść misję</value>
+  </data>
+  <data name="button1.Text" xml:space="preserve">
+    <value>Wykres wysokości</value>
+  </data>
+  <data name="CHK_holdalt.Text" xml:space="preserve">
+    <value>Utrzymuj domyślną wysokość</value>
+  </data>
+  <data name="loadFromFileToolStripMenuItem.Text" xml:space="preserve">
+    <value>Załaduj z pliku</value>
+  </data>
+  <data name="BUT_zoomto.Text" xml:space="preserve">
+    <value>Powiększ do</value>
+  </data>
+  <data name="BUT_grid.ToolTip" xml:space="preserve">
+    <value>Rysuje siatkę na wybranym obszarze z podanym odstępem</value>
+  </data>
+  <data name="panelWaypoints.Text" xml:space="preserve">
+    <value>Punkty zwrotne</value>
+  </data>
+  <data name="deleteWPToolStripMenuItem.Text" xml:space="preserve">
+    <value>Usuń PZ</value>
+  </data>
+  <data name="LBL_defalutalt.Text" xml:space="preserve">
+    <value>Domyślna wysokość</value>
+  </data>
+  <data name="loitercirclesToolStripMenuItem.Text" xml:space="preserve">
+    <value>Okręgi</value>
+  </data>
+  <data name="Delete.HeaderText" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Up.HeaderText" xml:space="preserve">
+    <value>Góra</value>
+  </data>
+  <data name="Up.ToolTipText" xml:space="preserve">
+    <value>Przesuń wiersz w GÓRĘ</value>
+  </data>
+  <data name="TXT_WPRad.Text" xml:space="preserve">
+    <value>30</value>
+  </data>
+  <data name="saveToFileToolStripMenuItem.Text" xml:space="preserve">
+    <value>Zapis do pliku</value>
+  </data>
+  <data name="geoFenceToolStripMenuItem.Text" xml:space="preserve">
+    <value>Geo-Fence</value>
+  </data>
+  <data name="TXT_DefaultAlt.Text" xml:space="preserve">
+    <value>100</value>
+  </data>
+  <data name="jumpToolStripMenuItem.Text" xml:space="preserve">
+    <value>Skok</value>
+  </data>
+  <data name="polygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>Rysuj wielokąt</value>
+  </data>
+  <data name="Lon.HeaderText" xml:space="preserve">
+    <value>Lon</value>
+  </data>
+  <data name="dataGridViewImageColumn2.HeaderText" xml:space="preserve">
+    <value>Dół</value>
+  </data>
+  <data name="BUT_loadkml.Text" xml:space="preserve">
+    <value>Nakładka KML</value>
+  </data>
+  <data name="BUT_write.Text" xml:space="preserve">
+    <value>Zapisz punkty zwrotne</value>
+  </data>
+  <data name="Down.ToolTipText" xml:space="preserve">
+    <value>Przesuń wiersz w DÓŁ</value>
+  </data>
+  <data name="lbl_distance.Text" xml:space="preserve">
+    <value>Odległość</value>
+  </data>
+  <data name="jumpwPToolStripMenuItem.Text" xml:space="preserve">
+    <value>PD #</value>
+  </data>
+  <data name="BUT_Camera.ToolTip" xml:space="preserve">
+    <value>Pobierz ustawienia kamery do nakładki</value>
+  </data>
+  <data name="GeoFenceuploadToolStripMenuItem.Text" xml:space="preserve">
+    <value>Wyślij</value>
+  </data>
+  <data name="addPolygonPointToolStripMenuItem.Text" xml:space="preserve">
+    <value>Dodaj punkt wielokątu</value>
+  </data>
+  <data name="BUT_zoomto.ToolTip" xml:space="preserve">
+    <value>Pobierz ustawienia kamery do nakładki</value>
+  </data>
+  <data name="Delete.ToolTipText" xml:space="preserve">
+    <value>Usuń wiersz</value>
+  </data>
+  <data name="BUT_Prefetch.ToolTip" xml:space="preserve">
+    <value>Wstępnie pobiera część mapy z zaznaczonego obszaru</value>
+  </data>
+  <data name="button1.ToolTip" xml:space="preserve">
+    <value>Narysuj aktualną misję na danych z Google Earth</value>
+  </data>
+  <data name="Param1.HeaderText" xml:space="preserve">
+    <value>P1</value>
+  </data>
+  <data name="panelAction.Text" xml:space="preserve">
+    <value>Akcja</value>
+  </data>
+  <data name="clearPolygonToolStripMenuItem.Text" xml:space="preserve">
+    <value>Wyczyść wielokąt</value>
+  </data>
+  <data name="panelMap.Text" xml:space="preserve">
+    <value>panel6</value>
+  </data>
+  <data name="setReturnLocationToolStripMenuItem.Text" xml:space="preserve">
+    <value>Ustaw miejsce powrotu</value>
+  </data>
+  <data name="lbl_status.Text" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Label1.Text" xml:space="preserve">
+    <value>Lat</value>
+  </data>
+  <data name="Command.HeaderText" xml:space="preserve">
+    <value>Polecenie</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>Long</value>
+  </data>
+  <data name="LBL_WPRad.Text" xml:space="preserve">
+    <value>Promień punktu zwrotnego</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Wys</value>
+  </data>
+  <data name="Param2.HeaderText" xml:space="preserve">
+    <value>P2</value>
+  </data>
+  <data name="BUT_read.Text" xml:space="preserve">
+    <value>Odczytaj punkty zwrotne</value>
+  </data>
+  <data name="jumpstartToolStripMenuItem.Text" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Promień krążenia</value>
+  </data>
+  <data name="BUT_loadwpfile.Text" xml:space="preserve">
+    <value>Załaduj plik punktów zwrotnych</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Położenie startu</value>
+  </data>
+  <data name="dataGridViewImageColumn1.HeaderText" xml:space="preserve">
+    <value>Góra</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Położenie kursora</value>
+  </data>
+  <data name="comboBoxMapType.ToolTip" xml:space="preserve">
+    <value>Zmień typ mapy</value>
+  </data>
+  <data name="loiterForeverToolStripMenuItem.Text" xml:space="preserve">
+    <value>Na zawsze</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>Wys (bezwzgl)</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>Long</value>
+  </data>
+  <data name="SaveFile.Text" xml:space="preserve">
+    <value>Zapisz plik punktów zwrotnych</value>
+  </data>
+  <data name="textBox1.Text" xml:space="preserve">
+    <value>1. Połącz
+2. Odczytaj punkty zwrotne jeśli potrzebujesz.
+3. Upewnij się że wysokość i położenie punktu startu są ustawione
+4. Kliknij na mapie żeby dodać punkty zwrotne</value>
+  </data>
+  <data name="Lat.HeaderText" xml:space="preserve">
+    <value>Lat</value>
+  </data>
+  <data name="rotateMapToolStripMenuItem.Text" xml:space="preserve">
+    <value>Obróć mapę</value>
+  </data>
+  <data name="GeoFencedownloadToolStripMenuItem.Text" xml:space="preserve">
+    <value>Pobierz</value>
+  </data>
+  <data name="lbl_homedist.Text" xml:space="preserve">
+    <value>Punkt startu</value>
+  </data>
+  <data name="BUT_grid.Text" xml:space="preserve">
+    <value>Siatka</value>
+  </data>
+  <data name="label10.Text" xml:space="preserve">
+    <value>Lat</value>
+  </data>
+  <data name="CHK_altmode.Text" xml:space="preserve">
+    <value>Wys. bezwzględna</value>
+  </data>
+  <data name="lbl_prevdist.Text" xml:space="preserve">
+    <value>Poprz</value>
+  </data>
+  <data name="label11.Text" xml:space="preserve">
+    <value>Powiększenie</value>
+  </data>
+  <data name="TXT_loiterrad.Text" xml:space="preserve">
+    <value>45</value>
+  </data>
+  <data name="Param4.HeaderText" xml:space="preserve">
+    <value>P4</value>
+  </data>
+  <data name="loitertimeToolStripMenuItem.Text" xml:space="preserve">
+    <value>Czas</value>
+  </data>
+  <data name="loiterToolStripMenuItem.Text" xml:space="preserve">
+    <value>Krążenie</value>
+  </data>
+  <data name="BUT_Add.Text" xml:space="preserve">
+    <value>Dodaj poniżej</value>
+  </data>
+  <data name="Alt.HeaderText" xml:space="preserve">
+    <value>Wys</value>
+  </data>
+  <data name="BUT_Add.ToolTip" xml:space="preserve">
+    <value>Dodaj linię do siatki poniżej</value>
+  </data>
+  <data name="BUT_loadkml.ToolTip" xml:space="preserve">
+    <value>Pobierz ustawienia kamery do nakładki</value>
+  </data>
+</root>

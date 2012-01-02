@@ -722,7 +722,7 @@ namespace ArdupilotMega.GCSViews
                     }
                     catch { }
                     System.Threading.Thread.Sleep(1000);
-                    progress.Value = (int)((DateTime.Now - startwait).TotalSeconds / 17 * 100);
+                    progress.Value = (int)Math.Min(((DateTime.Now - startwait).TotalSeconds / 17 * 100),100);
                     progress.Refresh();
                 }
                 try
