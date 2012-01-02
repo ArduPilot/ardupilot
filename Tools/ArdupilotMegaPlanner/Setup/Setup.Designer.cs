@@ -82,6 +82,7 @@
             this.CMB_fmode1 = new System.Windows.Forms.ComboBox();
             this.BUT_SaveModes = new ArdupilotMega.MyButton();
             this.tabHardware = new System.Windows.Forms.TabPage();
+            this.label27 = new System.Windows.Forms.Label();
             this.CMB_sonartype = new System.Windows.Forms.ComboBox();
             this.CHK_enableoptflow = new System.Windows.Forms.CheckBox();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
@@ -172,7 +173,6 @@
             this.tabReset = new System.Windows.Forms.TabPage();
             this.BUT_reset = new ArdupilotMega.MyButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.label27 = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabRadioIn.SuspendLayout();
             this.groupBoxElevons.SuspendLayout();
@@ -664,6 +664,11 @@
             this.tabHardware.Controls.Add(this.pictureBox1);
             resources.ApplyResources(this.tabHardware, "tabHardware");
             this.tabHardware.Name = "tabHardware";
+            // 
+            // label27
+            // 
+            resources.ApplyResources(this.label27, "label27");
+            this.label27.Name = "label27";
             // 
             // CMB_sonartype
             // 
@@ -1520,11 +1525,6 @@
             this.BUT_reset.Tag = "";
             this.BUT_reset.UseVisualStyleBackColor = true;
             this.BUT_reset.Click += new System.EventHandler(this.BUT_reset_Click);
-            // 
-            // label27
-            // 
-            resources.ApplyResources(this.label27, "label27");
-            this.label27.Name = "label27";
             // 
             // Setup
             // 

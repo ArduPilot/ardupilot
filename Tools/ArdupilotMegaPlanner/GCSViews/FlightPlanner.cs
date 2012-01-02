@@ -1405,8 +1405,8 @@ namespace ArdupilotMega.GCSViews
                 {
                     Commands.Rows.Add();
                 }
-                if (i == 0 && temp.alt == 0) // skip 0 home
-                    continue;
+                //if (i == 0 && temp.alt == 0) // skip 0 home
+                  //  continue;
                 DataGridViewTextBoxCell cell;
                 DataGridViewComboBoxCell cellcmd;
                 cellcmd = Commands.Rows[i].Cells[Command.Index] as DataGridViewComboBoxCell;
@@ -1458,7 +1458,7 @@ namespace ArdupilotMega.GCSViews
                 cellhome = Commands.Rows[0].Cells[Lat.Index] as DataGridViewTextBoxCell;
                 if (cellhome.Value != null)
                 {
-                    if (cellhome.Value.ToString() != TXT_homelat.Text)
+                    if (cellhome.Value.ToString() != TXT_homelat.Text && cellhome.Value.ToString() != "0")
                     {
                         DialogResult dr = MessageBox.Show("Reset Home to loaded coords", "Reset Home Coords", MessageBoxButtons.YesNo);
 

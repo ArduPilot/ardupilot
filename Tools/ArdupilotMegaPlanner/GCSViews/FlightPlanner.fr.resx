@@ -154,7 +154,7 @@
     <value>Temps</value>
   </data>
   <data name="CHK_altmode.Text" xml:space="preserve">
-    <value>Alt absolu</value>
+    <value>Alt absolue</value>
   </data>
   <data name="BUT_loadkml.ToolTip" xml:space="preserve">
     <value>Charger Param. du camera pour superpos.</value>
@@ -205,13 +205,13 @@
     <value>Charger plan de vol</value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Radius à musarder</value>
+    <value>Rad. musarder</value>
   </data>
   <data name="jumpstartToolStripMenuItem.Text" xml:space="preserve">
     <value>Démarrer</value>
   </data>
   <data name="BUT_read.Text" xml:space="preserve">
-    <value>Lecture WPs</value>
+    <value>Lecture PNs</value>
   </data>
   <data name="GeoFenceuploadToolStripMenuItem.Text" xml:space="preserve">
     <value>Téléchager vers</value>
@@ -220,7 +220,7 @@
     <value>Alt</value>
   </data>
   <data name="LBL_WPRad.Text" xml:space="preserve">
-    <value>WP Radius</value>
+    <value>Radius PNs</value>
   </data>
   <data name="label9.Text" xml:space="preserve">
     <value>Long</value>
@@ -268,7 +268,7 @@
     <value>Musarder</value>
   </data>
   <data name="Command.ToolTipText" xml:space="preserve">
-    <value>APM Command</value>
+    <value>Commande APM</value>
   </data>
   <data name="BUT_Add.Text" xml:space="preserve">
     <value>Inser. après</value>
@@ -295,7 +295,7 @@
     <value>Dessiner Polygon</value>
   </data>
   <data name="jumpToolStripMenuItem.Text" xml:space="preserve">
-    <value>Jump</value>
+    <value>Saut</value>
   </data>
   <data name="TXT_DefaultAlt.Text" xml:space="preserve">
     <value>100</value>

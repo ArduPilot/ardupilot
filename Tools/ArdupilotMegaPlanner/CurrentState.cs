@@ -68,6 +68,10 @@ namespace ArdupilotMega
         public  float gx { get; set; }
         public  float gy { get; set; }
         public  float gz { get; set; }
+        // mag
+        public float mx { get; set; }
+        public float my { get; set; }
+        public float mz { get; set; }
 
         // calced turn rate
         public float turnrate { get { if (groundspeed <= 1) return 0; return (roll * 9.8f) / groundspeed; } }
@@ -436,6 +440,9 @@ namespace ArdupilotMega
                         case (byte)(100 + Common.ac2modes.CIRCLE):
                             mode = "Circle";
                             break;
+                        case (byte)(100 + Common.ac2modes.POSITION):
+                            mode = "Position";
+                            break;
                         case (byte)ArdupilotMega.MAVLink.MAV_MODE.MAV_MODE_MANUAL:
                             mode = "Manual";
                             break;
@@ -722,6 +729,10 @@ namespace ArdupilotMega
                     ax = imu.xacc;
                     ay = imu.yacc;
                     az = imu.zacc;
+
+                    mx = imu.xmag;
+                    my = imu.ymag;
+                    mz = imu.zmag;
 
                     //MAVLink.packets[MAVLink.MAVLINK_MSG_ID_RAW_IMU] = null;
                 }
