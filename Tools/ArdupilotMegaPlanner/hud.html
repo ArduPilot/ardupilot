@@ -11,6 +11,7 @@
     var yaw = 200;
 
     var socket;
+    function init() {
 
     if (window["WebSocket"]) {
     var host = "ws://localhost:56781/websocket/server";
@@ -37,7 +38,13 @@
     alert("This browser doesnt support websockets");
     }
     
+    draw();
+    
+    }
+    
     function draw() {
+
+	setTimeout ( "draw()", 100 );
 
     //pitch -= 1.2;
     //roll += .75;
@@ -168,7 +175,7 @@
 	  //socket.send("test "+pitch+"\n");
 	  } catch (ex){ }// alert(ex); }
 	  	
-	setTimeout ( "draw()", 33 );
+
 	  
 	  
     }
@@ -223,7 +230,7 @@
 	-->
   </script>
  </head>
- <body onload="draw();">
+ <body onload="init();">
    <canvas id="canvas" width="640" height="480">
      <p>This example requires a browser that supports the
      <a href="http://www.w3.org/html/wg/html5/">HTML5</a> 

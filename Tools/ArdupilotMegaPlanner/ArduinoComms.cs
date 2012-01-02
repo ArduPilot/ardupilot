@@ -8,6 +8,9 @@ namespace ArdupilotMega
 {
     public delegate void ProgressEventHandler(int progress);
 
+    /// <summary>
+    /// Arduino STK interface
+    /// </summary>
     interface ArduinoComms
     {
          bool connectAP();
