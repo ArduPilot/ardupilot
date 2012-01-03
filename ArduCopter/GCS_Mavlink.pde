@@ -210,7 +210,7 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
         chan,
-        (float)airspeed / 100.0,
+        (float)g_gps->ground_speed / 100.0,
         (float)g_gps->ground_speed / 100.0,
         (dcm.yaw_sensor / 100) % 360,
         g.rc_3.servo_out/10,
@@ -279,7 +279,7 @@ static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_waypoint_current_send(
         chan,
-        g.command_index);
+        (uint16_t)g.command_index);
 }
 
 static void NOINLINE send_statustext(mavlink_channel_t chan)
