@@ -153,8 +153,7 @@
 // altitude controller
 #define CH6_THR_HOLD_KP 14
 #define CH6_Z_GAIN 15
-#define CH6_THRUST 16
-#define CH6_DAMP 17
+#define CH6_DAMP 16
 
 
 // nav byte mask
@@ -322,7 +321,6 @@ enum gcs_severity {
 
 #define RELAY_PIN 47
 
-#define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
 #define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
 #define BATTERY_PIN2 1
 #define BATTERY_PIN3 2
