@@ -35,6 +35,10 @@ static void update_commands()
 	//Serial.printf("update_commands: %d\n",increment );
 	// A: if we do not have any commands there is nothing to do
 	// B: We have completed the mission, don't redo the mission
+	// XXX debug
+	//uint8_t tmp = g.command_index.get();
+	//Serial.printf("command_index %u \n", tmp);
+
 	if (g.command_total <= 1 || g.command_index == 255)
 		return;
 
@@ -54,7 +58,7 @@ static void update_commands()
 				command_nav_queue.id = NO_COMMAND;
 			}
 		}else{
-			command_nav_index = 255;
+			g.command_index  = command_nav_index = 255;
 		}
 	}
 
@@ -118,11 +122,11 @@ static void execute_nav_command(void)
 	if (g.log_bitmask & MASK_LOG_CMD)
 		Log_Write_Cmd(g.command_index, &command_nav_queue);
 
+	// clear navigation prameters
+	reset_nav();
+
 	// Act on the new command
 	process_nav_command();
-
-	// clear navigation prameters
-	//reset_nav();
 
 	// clear May indexes to force loading of more commands
 	// existing May commands are tossed.
