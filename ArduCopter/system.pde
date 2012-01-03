@@ -440,6 +440,7 @@ static void set_mode(byte mode)
 			yaw_mode 		= YAW_ACRO;
 			roll_pitch_mode = ROLL_PITCH_ACRO;
 			throttle_mode 	= THROTTLE_MANUAL;
+			reset_rate_I();
 			break;
 
 		case STABILIZE:
@@ -454,6 +455,8 @@ static void set_mode(byte mode)
 			throttle_mode 	= ALT_HOLD_THR;
 
 			next_WP = current_loc;
+			// 1m is the alt hold limit
+			next_WP.alt = max(next_WP.alt, 100);
 			break;
 
 		case AUTO:
@@ -469,15 +472,16 @@ static void set_mode(byte mode)
 			yaw_mode 		= CIRCLE_YAW;
 			roll_pitch_mode = CIRCLE_RP;
 			throttle_mode 	= CIRCLE_THR;
-
 			next_WP 		= current_loc;
+
+			// reset the desired circle angle
+			circle_angle 	= 0;
 			break;
 
 		case LOITER:
 			yaw_mode 		= LOITER_YAW;
 			roll_pitch_mode = LOITER_RP;
 			throttle_mode 	= LOITER_THR;
-
 			next_WP 		= current_loc;
 			break;
 
@@ -485,7 +489,6 @@ static void set_mode(byte mode)
 			yaw_mode 		= YAW_HOLD;
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_MANUAL;
-
 			next_WP 		= current_loc;
 			break;
 
@@ -493,12 +496,12 @@ static void set_mode(byte mode)
 			yaw_mode 		= YAW_AUTO;
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_AUTO;
-
-			next_WP = current_loc;
+			next_WP 		= current_loc;
 			set_next_WP(&guided_WP);
 			break;
 
 		case LAND:
+			land_complete 	= false;
 			yaw_mode 		= YAW_HOLD;
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_AUTO;
@@ -530,8 +533,11 @@ static void set_mode(byte mode)
 
 	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
 		// We are under manual attitude control
-		// reset out nav parameters
+		// removes the navigation from roll and pitch commands, but leaves the wind compensation
 		reset_nav();
+
+		// removes the navigation from roll and pitch commands, but leaves the wind compensation
+		calc_wind_compensation();
 	}
 
 	Log_Write_Mode(control_mode);
