@@ -105,24 +105,6 @@ static void set_cmd_with_index(struct Location temp, int i)
 		g.command_total.set_and_save(i+1);
 }
 
-/*
-//static void increment_WP_index()
-{
-    if (g.command_index < (g.command_total-1)) {
-        g.command_index++;
-	}
-
-    SendDebugln(g.command_index,DEC);
-}
-*/
-/*
-//static void decrement_WP_index()
-{
-    if (g.command_index > 0) {
-        g.command_index.set_and_save(g.command_index - 1);
-    }
-}*/
-
 static int32_t read_alt_to_hold()
 {
 	if(g.RTL_altitude <= 0)
