@@ -594,55 +594,30 @@ static void Log_Write_Performance()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_PERFORMANCE_MSG);
 
-	//DataFlash.WriteByte(	delta_ms_fast_loop);
-	//DataFlash.WriteByte(	loop_step);
-
-
-
-	DataFlash.WriteLong(	millis()- perf_mon_timer);			//1
 	DataFlash.WriteByte(	dcm.gyro_sat_count);				//2
 	DataFlash.WriteByte(	imu.adc_constraints);				//3
 	DataFlash.WriteByte(	dcm.renorm_sqrt_count);				//4
 	DataFlash.WriteByte(	dcm.renorm_blowup_count);			//5
 	DataFlash.WriteByte(	gps_fix_count);						//6
 	DataFlash.WriteByte(END_BYTE);
-
-
-	//DataFlash.WriteInt (	(int)(dcm.get_health() * 1000));	//7
-
-
-
-	// control_mode
-	/*
-	DataFlash.WriteByte(control_mode);					//1
-	DataFlash.WriteByte(yaw_mode);						//2
-	DataFlash.WriteByte(roll_pitch_mode);				//3
-	DataFlash.WriteByte(throttle_mode);					//4
-	DataFlash.WriteInt(g.throttle_cruise.get());		//5
-	DataFlash.WriteLong(throttle_integrator);			//6
-	DataFlash.WriteByte(END_BYTE);
-	*/
-
 }
 
 // Read a performance packet
 static void Log_Read_Performance()
 {
-	int32_t temp1 	= DataFlash.ReadLong();
-	int8_t  temp2 	= DataFlash.ReadByte();
-	int8_t  temp3 	= DataFlash.ReadByte();
-	int8_t  temp4 	= DataFlash.ReadByte();
-	int8_t 	temp5 	= DataFlash.ReadByte();
-	int8_t	temp6 	= DataFlash.ReadByte();
+	int8_t temp1 	= DataFlash.ReadByte();
+	int8_t temp2 	= DataFlash.ReadByte();
+	int8_t temp3 	= DataFlash.ReadByte();
+	int8_t temp4 	= DataFlash.ReadByte();
+	int8_t temp5 	= DataFlash.ReadByte();
 
-							 //1   2   3   4   5   6
-	Serial.printf_P(PSTR("PM, %ld, %d, %d, %d, %d, %d\n"),
+							 //1   2   3   4   5
+	Serial.printf_P(PSTR("PM, %d, %d, %d, %d, %d\n"),
 		temp1,
 		temp2,
 		temp3,
 		temp4,
-		temp5,
-		temp6);
+		temp5);
 }
 
 // Write a command processing packet.
