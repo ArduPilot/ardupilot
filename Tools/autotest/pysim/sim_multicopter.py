@@ -124,6 +124,8 @@ fdm = fgFDM.fgFDM()
 # create the quadcopter model
 a = MultiCopter(frame=opts.frame)
 
+print("Simulating %u motors for frame %s" % (len(a.motors), opts.frame))
+
 # motors initially off
 m = [0.0] * 11
 
