@@ -246,11 +246,20 @@ AP_Compass_HMC5843::init()
 // Read Sensor data
 bool AP_Compass_HMC5843::read()
 {
-   if (!healthy && !re_initialise()) {
-	  return false;
+   if (!healthy) {
+	  if (millis() < _retry_time) {
+		 return false;
+	  }
+	  if (!re_initialise()) {
+		 _retry_time = millis() + 1000;
+		 return false;
+	  }
    }
 
    if (!read_raw()) {
+	  // try again in 1 second, and set I2c clock speed slower
+	  _retry_time = millis() + 1000;
+	  I2c.setSpeed(false);
 	  return false;
    }
 

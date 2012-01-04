@@ -108,7 +108,9 @@ static void init_ardupilot()
 	//
 #ifndef DESKTOP_BUILD
     I2c.begin();
-    I2c.timeOut(20);
+    I2c.timeOut(5);
+    // initially set a fast I2c speed, and drop it on first failures
+    I2c.setSpeed(true);
 #endif
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV16); // 1MHZ SPI rate
