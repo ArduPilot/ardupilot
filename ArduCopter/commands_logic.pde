@@ -356,13 +356,16 @@ static bool verify_land()
 	if (velocity_land == -1)
 		velocity_land = 2000;
 
-	// a LP filter used to tell if we have landed
-	// will drive to 0 if we are on the ground - maybe, the baro is noisy
-	velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
 
+	if (current_loc.alt < 500){
+		// a LP filter used to tell if we have landed
+		// will drive to 0 if we are on the ground - maybe, the baro is noisy
+		velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
+	}
 	old_alt = current_loc.alt;
 
 	if (current_loc.alt < 300){
+
 		wp_control = NO_NAV_MODE;
 
 		// Update by JLN for a safe AUTO landing
@@ -381,12 +384,12 @@ static bool verify_land()
 		}
 	}
 
-	if(velocity_land <= 0){
+	if(current_loc.alt  < 300 && velocity_land <= 100){
 		land_complete = true;
 		// reset old_alt
 		old_alt == 0;
-		// commented out to prevent tragedy
-		//return true;
+		init_disarm_motors();
+		return true;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);
