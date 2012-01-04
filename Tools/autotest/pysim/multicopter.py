@@ -50,7 +50,7 @@ def build_motors(frame):
             Motor(270, False,  2),
             Motor(330, True,   3),
             ]
-    elif frame in ["octa", "octa+"]:
+    elif frame in ["octa", "octa+", "octax" ]:
         motors = [
             Motor(0,    True,  1),
             Motor(180,  True,  2),
@@ -61,6 +61,9 @@ def build_motors(frame):
             Motor(270,  True, 10),
             Motor(90,   True, 11),
             ]
+        if frame == 'octax':
+            for i in range(8):
+                motors[i].angle += 22.5
     else:
         raise RuntimeError("Unknown multicopter frame type '%s'" % frame)
 
