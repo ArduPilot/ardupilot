@@ -50,6 +50,7 @@ class AP_Baro_BMP085 : public AP_Baro
 
 	uint8_t	_temp_index;
 	uint8_t	_press_index;
+    uint32_t _retry_time;
 
 	void Command_ReadPress();
 	void Command_ReadTemp();
