@@ -17,5 +17,14 @@ heli:
 helihil:
 	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=HELI_FRAME -DHIL_MODE=HIL_MODE_ATTITUDE"
 
+octa:
+	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=OCTA_FRAME"
+
+hexa:
+	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=HEXA_FRAME"
+
+y6:
+	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DFRAME_CONFIG=Y6_FRAME"
+
 mavlink10:
 	make -f $(DESKTOP)/Makefile.desktop EXTRAFLAGS="-DHIL_MODE=HIL_MODE_ATTITUDE -DMAVLINK10"
