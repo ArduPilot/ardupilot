@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from quadcopter import QuadCopter
+from multicopter import MultiCopter
 import euclid, util, time, os, sys, math
 import socket, struct
 import select, fgFDM, errno
@@ -29,6 +29,7 @@ def sim_send(m, a):
     fdm.set('vcas', math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y), units='mps')
     fdm.set('v_north', a.velocity.x, units='mps')
     fdm.set('v_east', a.velocity.y, units='mps')
+    # FG FDM protocol only supports 4 motors for display :(
     fdm.set('num_engines', 4)
     for i in range(4):
         fdm.set('rpm', 1000*m[i], idx=i)
@@ -65,7 +66,7 @@ def sim_recv(m):
     if len(buf) != 22:
         return
     pwm = list(struct.unpack('<11H', buf))
-    for i in range(4):
+    for i in range(11):
         m[i] = (pwm[i]-1000)/1000.0
 
 
@@ -85,6 +86,7 @@ parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
 parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=400)
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
+parser.add_option("--frame", dest="frame", help="frame type (+,X,octo)", default='+')
 
 (opts, args) = parser.parse_args()
 
@@ -120,10 +122,10 @@ sim_out.setblocking(0)
 fdm = fgFDM.fgFDM()
 
 # create the quadcopter model
-a = QuadCopter()
+a = MultiCopter(frame=opts.frame)
 
 # motors initially off
-m = [0, 0, 0, 0]
+m = [0.0] * 11
 
 lastt = time.time()
 frame_count = 0
