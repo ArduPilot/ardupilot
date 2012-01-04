@@ -53,6 +53,7 @@ class AP_Compass_HMC5843 : public Compass
 	virtual bool re_initialise(void);
     bool read_register(uint8_t address, uint8_t *value);
     bool write_register(uint8_t address, byte value);
+    uint32_t _retry_time; // when unhealthy the millis() value to retry at
 
   public:
 	AP_Compass_HMC5843(AP_Var::Key key = AP_Var::k_key_none) : Compass(key) {}

@@ -152,7 +152,13 @@ void AP_Baro_BMP085::ReadPress()
 {
 	uint8_t buf[3];
 
+    if (!healthy && millis() < _retry_time) {
+        return;
+    }
+
 	if (I2c.read(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
+        _retry_time = millis() + 1000;
+        I2c.setSpeed(false);
 		healthy = false;
 		return;
 	}
@@ -197,7 +203,13 @@ void AP_Baro_BMP085::ReadTemp()
 {
 	uint8_t buf[2];
 
+    if (!healthy && millis() < _retry_time) {
+        return;
+    }
+
 	if (I2c.read(BMP085_ADDRESS, 0xF6, 2, buf) != 0) {
+        _retry_time = millis() + 1000;
+        I2c.setSpeed(false);
 		healthy = false;
 		return;
 	}
