@@ -53,8 +53,6 @@ extern "C" {
 	# error Please check the Tools/Board menu to ensure you have selected Arduino Mega as your target.
 #endif
 
-#define DF_LAST_PAGE 8192
-
 // AT45DB321D Commands (from Datasheet)
 #define DF_TRANSFER_PAGE_TO_BUFFER_1   0x53
 #define DF_TRANSFER_PAGE_TO_BUFFER_2   0x55
@@ -133,8 +131,23 @@ void DataFlash_APM2::Init(void)
   // get page size: 512 or 528  (by default: 528)
   df_PageSize=PageSize();
 
-  // the last page is reserved for config information
-  df_NumPages = DF_LAST_PAGE - 1;
+  ReadManufacturerID();
+
+  // see page 22 of the spec for the density code
+  uint8_t density_code = (df_device >> 8) & 0x1F;
+  
+  // note that we set df_NumPages to one lower than the highest, as
+  // the last page is reserved for a config page
+  if (density_code == 0x7) {
+      // 32 Mbit
+      df_NumPages = 8191;
+  } else if (density_code == 0x6) {
+      // 16 Mbit
+      df_NumPages = 4095;
+  } else {
+      // what is this??? card not inserted perhaps?
+      df_NumPages = 0;
+  }
 }
 
 // This function is mainly to test the device
@@ -155,7 +168,7 @@ void DataFlash_APM2::ReadManufacturerID()
 // This function return 1 if Card is inserted on SD slot
 bool DataFlash_APM2::CardInserted()
 {
-    return (digitalRead(DF_CARDDETECT) == 0);
+    return (df_NumPages >= 4095 && digitalRead(DF_CARDDETECT) == 0);
 }
 
 // Read the status register
