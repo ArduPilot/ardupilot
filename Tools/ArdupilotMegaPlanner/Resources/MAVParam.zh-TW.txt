@@ -1,0 +1,221 @@
+﻿== MAVLink Parameters ==
+
+This is a list of all the user-modifiable MAVLink parameters and what they do. You can modify them via the MAVLink parameters window in any compatible GCS, such as the Mission Planner, HK GCS or !QGroundControl.
+
+It includes both fixed wing (APM) and rotary wing (!ArduCopter) parameters. Some may only be relevant for one platform or another.
+
+|| *EEPROM 變量名* || *最小值* || *最大值* || *默認值* || *Multiplier* || *Enabled (0 = no, 1 = yes)* || *Comment* | |
+||MAH|| || ||1|| || || ||
+||CURRENT_ENABLE|| || ||1|| || || ||
+||AOA|| || ||1|| || || ||
+||MAG_ENABLE|| || ||1|| || || ||
+||HDNG2RLL_P||0||5||0.7||1||1||NAV_ROLL_P - 導航控制感度- 用於導航PID控制循環。 P 項是主要調整項，決定控制偏差與所需修正之間的比例||
+||HDNG2RLL_I||0||1||0.01||1||1||NAV_ROLL_I - 導航控制感度- 用於導航PID控制循環。 I 項用於控制漂移||
+||HDNG2RLL_D||0||1||0.02||1||1||NAV_ROLL_D - 導航控制感度- 用於導航PID控制循環。 D 項用於控製過衝。如果不熟悉調整PID參數的話，不要調整該項||
+||HDNG2RLL_IMAX||0||3000||500||100||1||NAV_ROLL_INT_MAX_CENTIDEGREE - 單位角度- 積分的最大控制偏移。它防止控制輸出因為一個持續的偏移而過驅動。 (eg native flight AoA). 如果你發現該值不足以調節，考慮調整AOA 參數||
+||RLL2SRV_P||0||5||0.4||1||1||SERVO_ROLL_P - 姿態控制感度- 用於姿態PID控制循環。 P 項是主要調整項，決定控制偏差與所需修正之間的比例||
+||RLL2SRV_I||0||1||0||1||1||SERVO_ROLL_I - 姿態控制感度- 用於姿態PID控制循環。 I 項用戶控制水平波動。正常情況下應該是一個較小的數||
+||RLL2SRV_D||0||1||0||1||1||SERVO_ROLL_D - 姿態控制感度- 用於姿態PID控制循環。 D 項用於控製過衝。如果不熟悉調整PID參數的話，不要調整該項。對於多數飛機通常應該是 0||
+||RLL2SRV_IMAX||0||3000||500||100||1||SERVO_ROLL_INT_MAX_CENTIDEGREE - 單位角度- 積分的最大控制偏移。它防止控制輸出因為一個持續的偏移（例如偏航矩）而過驅動。默認值為 5 度||
+||PTCH2SRV_P||0||5||0.6||1||1||SERVO_PITCH_P - 姿態控制感度- 用於姿態PID控制循環。 P 項是主要調整項，決定控制偏差與所需修正之間的比例||
+||PTCH2SRV_I||0||1||0||1||1||SERVO_PITCH_I - 姿態控制感度- 用於姿態PID控制循環。 I 項用戶控制水平波動。正常情況下應該是一個較小的數||
+||PTCH2SRV_D||0||1||0||1||1||SERVO_PITCH_D - 姿態控制感度- 用於姿態PID控制循環。 D 項用於控製過衝。如果不熟悉調整PID參數的話，不要調整該項。對於多數飛機通常應該是 0||
+||PTCH2SRV_IMAX||0||3000||500||100||1||SERVO_PITCH_INT_MAX_CENTIDEGREE - 單位角度- 積分的最大控制偏移。它防止控制輸出因為一個持續的偏移（例如偏航矩）而過驅動。默認值為 5 度||
+||ARSPD2PTCH_P||0||5||0.65||1||1||NAV_PITCH_ASP_P - 用於調整螺距，控制空速||
+||ARSPD2PTCH_I||0||1||0||1||1||NAV_PITCH_ASP_I - 用於調整螺距，控制空速||
+||ARSPD2PTCH_D||0||1||0||1||1||NAV_PITCH_ASP_D - 用於調整螺距，控制空速||
+||ARSPD2PTCH_IMA||0||3000||500||100||1||NAV_PITCH_ASP_INT_MAX_CMSEC - 單位角度- 積分的最大控制偏移。它防止控制輸出因為一個持續的偏移而過驅動。 (eg. inability to maintain the programmed airspeed).||
+||YW2SRV_P||0||5||0||1||1||SERVO_YAW_P - 用於偏航控制。注意這個控制循環的單位與眾不同。 PID輸入單位是 m/s**2||
+||YW2SRV_I||0||1||0||1||1||SERVO_YAW_I - 用於偏航控制。注意這個控制循環的單位與眾不同。 PID輸入單位是 m/s**2||
+||YW2SRV_D||0||1||0||1||1||SERVO_YAW_D - 用於偏航控制。注意這個控制循環的單位與眾不同。 PID輸入單位是 m/s**2||
+||YW2SRV_IMAX||0||3000||0||100||1||SERVO_YAW_INT_MAX - 單位角度- 積分的最大控制偏移。它防止控制輸出因為一個持續的偏移（例如偏航矩）而過驅動。 ||
+||ENRGY2THR_P||0||5||0.5||1||1||THROTTLE_TE_P - 用於調整油門，控制高度||
+||ENRGY2THR_I||0||1||0||1||1||THROTTLE_TE_I - 用於調整油門，控制高度||
+||ENRGY2THR_D||0||1||0||1||1||THROTTLE_TE_D - 用於調整油門，控制高度||
+||ENRGY2THR_IMAX||0||100||20||1||1||THROTTLE_TE_INT_MAX - 單位為百分比- 積分的最大油門。它防止油門因為一個持續的偏移而過驅動。 (eg inability to maintain the programmed altitude).||
+||ALT2PTCH_P||0||5||0.65||1||1||NAV_PITCH_ALT_P - 用於調整螺距，控制高度||
+||ALT2PTCH_I||0||1||0||1||1||NAV_PITCH_ALT_I - 用於調整螺距，控制高度||
+||ALT2PTCH_D||0||1||0||1||1||NAV_PITCH_ALT_D - 用於調整螺距，控制高度||
+||ALT2PTCH_IMAX||0||3000||500||100||1||NAV_PITCH_ALT_INT_MAX_CM - 單位米- 積分的最大螺距偏移。它防止控制輸出因為一個持續的偏移（例如偏航矩）而過驅動(eg. inability to maintain the programmed altitude).||
+||KFF_PTCHCOMP||-3||3||0.2||0.01||1||PITCH_COMP - 單位為百分比- 增加螺距輸入，補償因為橫滾控制帶來的損失||
+||KFF_RDDRMIX||-3||3||0.5||0.01||1||RUDDER_MIX - 橫滾至偏航混控。用於協調轉向||
+||KFF_PTCH2THR||-3||3||0||1||1||P_TO_T - 螺距至油門前饋增益||
+||KFF_THR2PTCH||-3||3||0||1||1||T_TO_P - 油門至螺距前饋增益||
+||XTRK_GAIN_SC||0||100||100||100||1||XTRACK_GAIN_SCALED - 默認值為1.0 度/米。小於 0.001 將禁用偏航矩補償||
+||ALT_MIX||0||1||1||0.01||1||ALTITUDE_MIX - 單位為百分比- 配置GPS 和氣壓計的混合比。 0 = GPS 高度, 1 = 氣壓計高度, 0.5 = 對半, 等等||
+||ARSPD_RATIO||0||5||1.9936||1||1||AIRSPEED_RATIO - 小幅調整AIRSPEED_RATIO，根據GPS 矯正空速傳感器。默認值和計算是為12 m/s 左右的空速優化的||
+||WP_RADIUS||0||200||30||1||1||WP_RADIUS_DEFAULT - 當用戶將APM 重置為​​出廠設置時，航點半徑（APM認為到達一個航點的最小距離）被設為這個值，單位是米。主要目的是允許用戶在沒有編寫任務前可以使用APM||
+||WP_LOITER_RAD||0||200||60||1||1||LOITER_RADIUS_DEFAULT - 當用戶將APM 重置為​​出廠設置時，盤旋半徑（APM圍繞一個航點盤旋的距離）被設為這個值，單位是米。主要目的是允許用戶在沒有編寫任務前可以使用APM||
+||ARSPD_FBW_MIN||5||50||6||1||1||AIRSPEED_FBW_MIN - 單位m/s - 線控B 模式下最小油門空速||
+||ARSPD_FBW_MAX||5||50||22||1||1||AIRSPEED_FBW_MAX - 單位m/s - 線控B 模式下最小油門空速。若設置了ENABLE_STICK_MIXING，AIRSPEED_FBW_MAX 也同時設置飛機在自動模式下可以推進的最大巡航速度。在自動模式下，如果把油門搖桿放在上半行程，巡航速度可以在AIRSPEED_CRUISE 和AIRSPEED_FBW_MAX 之間增加。油門搖桿放在下半行程則提供普通的自動控制||
+||THR_MIN||0||100||0||1||1||THROTTLE_MIN - 飛機下降時自駕儀的最小油門設置。默認值是0，對於可以維持無動力滑翔的飛機來說是合適的。如果你的飛機水平下降時需要一定油門，增加這個值||
+||THR_MAX||0||100||75||1||1||THROTTLE_MAX - 自駕儀的最大油門設置。默認值是 75%。如果飛機動力過強或者在高油門時飛行特性比較複雜，減小這個值||
+||THR_FAILSAFE||0||0||1|| || ||THROTTLE_FAILSAFE - 油門失控保護允許你配置一個軟件失控保護，由油門通道（通道三）輸入設置激發。這允許設置一個遙控失效時的保護行為，而不用犧牲一個飛行模式。因為油門失控會覆蓋開關選擇的模式。將THROTTLE_FAILSAFE 設為1 可以啟用油門失控保護||
+||THR_FS_ACTION||0||2||1||1|| ||THROTTLE_FAILSAFE_ACTION - FAILSAFE_ACTION 設置決定了APM 在自動模式下進入油門失控保護時的動作。這對於避免飛機暫時飛出遙控範圍時意外的保護行為非常重要。若FAILSAFE_ACTION 為1，當飛機在自動或盤旋模式下進入失控保護時，飛機將返航。當油門恢復時，將返回自動或盤旋模式。默認行為是忽略自動和盤旋模式下的油門失控保護||
+||TRIM_THROTTLE||0||90||45||1||1||THROTTLE_CRUISE - 單位為百分比- 水平飛行下達到AIRSPEED_CRUISE 的近似油門設置。默認值是45%，對於動力適當的飛機來說比較合理||
+||TRIM_AUTO||0||1||1||1||1||AUTO_TRIM - ArduPilot Mega 可以根據切出手動模式時的遙控輸入自動更新微調值。這意味著你可以在切換到輔助模式之前手動微調飛機，同時也意味著在切換的時候所有搖桿都不能有偏差||
+||FLTMODE_CH||5||8||8||1||1||FLIGHT_MODE_CHANNEL - 讀取分配飛行模式的輸入通道。使用舵機測試儀或ArduPilotMega_demo 測試程序檢查你的開關設置。注意：一些APM 板子遙控通道標為0-7，另一些標為1-8。該設置使用1-8 的標法（默認值為8）。如果你只有一個三段開關，或者只想要三個設置，將你的開關設置成輸出1165, 1425, 1815 毫秒，並把飛行模式1 & 2、3 & 4、5 & 6 設成一樣的。如果你把FLIGHT_MODE_CHANNEL 設成8 (默認值) 並且控制通道連到輸入通道8，當輸入超過1750 毫秒時，硬件失控保護將會啟動||
+||FLIGHT_MODE_1||0||14||11||1|| ||FLIGHT_MODE_1 - 可用的標準飛行模式包括：MANUAL = 通過硬件復用器完全手動控制。 STABILIZE = 盡量保持水平飛行，但可以由遙控控制。 FLY_BY_WIRE_A = 用戶輸入的自動駕駛控制，手動控製油門。 FLY_BY_WIRE_B = 用戶輸入的自動駕駛控制，油門控制空速。 RTL = 返回出發點兵在安全高度盤旋。 AUTO = 基於編程的航點自主飛行。 ||
+||FLIGHT_MODE_2||0||14||11||1|| ||FLIGHT_MODE_2||
+||FLIGHT_MODE_3||0||14||5||1|| ||FLIGHT_MODE_3||
+||FLIGHT_MODE_4||0||14||5||1|| ||FLIGHT_MODE_4||
+||FLIGHT_MODE_5||0||14||0||1|| ||FLIGHT_MODE_5||
+||FLIGHT_MODE_6||0||14||0||1|| ||FLIGHT_MODE_6||
+||RC1_MIN||900||2100||1500||1||1||PWM_RC1_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC1_MAX||900||2100||1500||1||1||PWM_RC1_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC1_TRIM||900||2100||1200||1||1||PWM_RC1_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC2_MIN||900||2100||1500||1||1||PWM_RC2_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC2_MAX||900||2100||1500||1||1||PWM_RC2_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC2_TRIM||900||2100||1200||1||1||PWM_RC2_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC3_MIN||900||2100||1500||1||1||PWM_RC3_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC3_MAX||900||2100||1500||1||1||PWM_RC3_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC3_TRIM||900||2100||1500||1||1||PWM_RC3_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC4_MIN||900||2100||1500||1||1||PWM_RC4_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC4_MAX||900||2100||1500||1||1||PWM_RC4_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC4_TRIM||900||2100||1200||1||1||PWM_RC4_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC5_MIN||900||2100||1500||1||1||PWM_CH5_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC5_MAX||900||2100||1500||1||1||PWM_CH5_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC5_MAX||900||2100||1500||1||1||PWM_CH5_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC5_TRIM||900||2100||1500||1||1||PWM_CH5_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC6_MIN||900||2100||1500||1||1||PWM_CH6_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC6_MAX||900||2100||1500||1||1||PWM_CH6_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC6_TRIM||900||2100||1500||1||1||PWM_CH6_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC7_MIN||900||2100||1500||1||1||PWM_CH7_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC7_MAX||900||2100||1500||1||1||PWM_CH7_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC7_TRIM||900||2100||1500||1||1||PWM_CH7_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC8_MIN||900||2100||1500||1||1||PWM_CH8_MIN - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC8_MAX||900||2100||1500||1||1||PWM_CH8_MAX - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||RC8_TRIM||900||2100||1500||1||1||PWM_CH8_TRIM - 遙控設置- 所有遙控設置都是調製信號脈寬值。通常1000 ms是最低值，1500 是中點，2000 是最高值||
+||IMU_OFFSET_0||0||0||0|| || ||IMU_OFFSET_0 - IMU 校準||
+||IMU_OFFSET_1||0||0||0|| || ||IMU_OFFSET_1 - IMU 校準||
+||IMU_OFFSET_2||0||0||0|| || ||IMU_OFFSET_2 - IMU 校準||
+||IMU_OFFSET_3||0||0||0|| || ||IMU_OFFSET_3 - IMU 校準||
+||IMU_OFFSET_4||0||0||0|| || ||IMU_OFFSET_4 - IMU 校準||
+||IMU_OFFSET_5||0||0||0|| || ||IMU_OFFSET_5 - IMU 校準||
+||YAW_MODE|| || ||0|| || ||YAW_MODE||
+||WP_MODE|| || ||0|| || ||WP_MODE||
+||WP_TOTAL||0||255|| ||0|| ||WP_TOTAL||
+||WP_INDEX||0||255|| ||0|| ||WP_INDEX||
+||CONFIG|| || ||1|| || ||CONFIG_OPTIONS||
+||SWITCH_ENABLE||0||1||1||1||1||REVERS_SWITCH_ENABLE - 0 = 關閉, 1 = 開啟, 啟用/禁用APM 板上的硬件逆轉開關||
+||FIRMWARE_VER|| || ||0|| || ||FIRMWARE_VER||
+||LOG_BITMASK||0||65535||334||1||1||LOG_BITMASK||
+||TRIM_ELEVON||900||2100||1500||1||1||TRIM_ELEVON||
+||THR_FS_VALUE||850||1000||950||1||1||THROTTLE_FS_VALUE - 如果啟用了油門失控保護，當油門低於THROTTLE_FS_VALUE 時將進入失控保護。默認值是975ms, 一個非常低的油門設置。多數發射器允許你調高油門位置，以便正常的搖桿動作不會引發失控保護。將你的接收機油門的失控保護設為非常小的值，並用ArduPilotMega_demo 程​​序檢查正常的油門會不會到該值。在最小的油門設置和THROTTLE_FS_VALUE 之間需要留有50ms 的間隔||
+||TRIM_ARSPD_CM||500||5000||1200||100||1||AIRSPEED_CRUISE_CM - 巡航時維持的速度，單位m/s。默認值是10m/s，適合比較小的輕型飛機||
+||GND_TEMP||-10||50||28||1||1||GND_TEMP - 地面溫度||
+||AP_OFF​​SET|| || ||0|| || ||AP_OFF​​SET||
+||TRIM_PITCH_CD|| || ||0|| || ||TRIM_PITCH_CD||
+||ALT_HOLD_RTL||0||20000||10000||100||1||ALT_HOLD_HOME_CM - When the user performs a factory reset on the APM. Sets the flag for weather the current altitude or ALT_HOLD_HOME altitude should be used for Return To Launch. Also sets the value of USE_CURRENT_ALT in meters. This is mainly intended to allow users to start using the APM without programming a mission first.||
+||XTRK_ANGLE_CD||0||6000||3000||100||1||XTRACK_ENTRY_ANGLE_CENTIDEGREE - 航線跟踪修正的最大角度||
+||ROLL_SRV_MAX||0||100||4500||100||0||ROLL_SERVO_MAX_CENTIDEGREE||
+||PITCH_SRV_MAX||0||100||4500||100||0||PITCH_SERVO_MAX_CENTIDEGREE||
+||RUDER_SRV_MAX||0||100||4500||100||0||RUDDER_SERVO_MAX_CENTIDEGREE||
+||LIM_ROLL_CD||0||6000||4500||100||1||HEAD_MAX_CENTIDEGREE - 各方向側傾轉彎的最大角度。默認值是 45 度。如果你的飛機不夠穩定，或者在大傾角下難以保持高度，減小這個值||
+||LIM_PITCH_MAX||0||6000||1500||100||1||PITCH_MAX_CENTIDEGREE - 最大仰角。默認值是 15 度。注意不要設得太大，以免飛機失速||
+||LIM_PITCH_MIN||-6000||0||-2500||100||1||PITCH_MIN_CENTIDEGREE - 最大俯角。注意該值必須是負值。默認值是 -25 度。注意不要設得太大，否則飛機會超速||
+||GND_ALT_CM||0||500000||0||100||1||GND_ALT_CM||
+||GND_ABS_PRESS|| || ||0|| || ||GND_ABS_PRESS||
+||COMPASS_DEC||-1.57075||1.57075||0||1|| ||COMPASS_DEC - 羅盤磁偏角||
+||SR0_EXT_STAT||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用GPS_STATUS, CONTROL_STATUS, AUX_STATUS||
+||SR0_EXTRA1||0||50||10||1||1||TELEMETRY_ENABLE Port 0 - 啟用MSG_ATTITUDE||
+||SR0_EXTRA2||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用MSG_VFR_HUD||
+||SR0_EXTRA3||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - Not currently used||
+||SR0_POSITION||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT messages||
+||SR0_RAW_CTRL||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT, NAV_CONTROLLER_OUTPUT||
+||SR0_RAW_SENS||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用IMU_RAW, GPS_RAW, GPS_STATUS 數據包||
+||SR0_RC_CHAN||0||50||3||1||1||TELEMETRY_ENABLE Port 0 - 啟用RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW||
+||SR3_EXT_STAT||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用GPS_STATUS, CONTROL_STATUS, AUX_STATUS||
+||SR3_EXTRA1||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用MSG_ATTITUDE||
+||SR3_EXTRA2||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用MSG_VFR_HUD||
+||SR3_EXTRA3||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - Not currently used||
+||SR3_POSITION||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT 消息||
+||SR3_RAW_CTRL||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT, NAV_CONTROLLER_OUTPUT||
+||SR3_RAW_SENS||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用IMU_RAW, GPS_RAW, GPS_STATUS 數據包||
+||SR3_RC_CHAN||0||50||0||1||1||TELEMETRY_ENABLE Port 3 - 啟用RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW||
+||MAG_ENABLE||0||1||0||1||1||MAG_ENABLE - 0 = 關閉, 1 = 開啟, 啟用羅盤||
+||ARSPD_ENABLE||0||1||0||1||1||AIRSPEED_ENABLE - 0 = 關閉, 1 = 開啟, 啟用空速傳感器||
+||BATT_CAPACITY||0||10000||1760||1||1||BATTERY_MAH - 電池容量（mAh）||
+||BATT_MONITOR||0||4||0||1||1||BATTERY_MONITOR - 0 為禁止電池監測，1 為監測3s 電池每電芯電壓，2 為監測4s 電池每電芯電壓，3 為（只）監測輸入1 的總電池電壓，4 為監測輸入1 的總電池電壓和輸入2 的電流||
+||FS_GCS_ENABL||0||1||0||1||1||FS_GCS_ENABLE - 0 = 關閉, 1 = 開啟, 如果GCS 心跳丟失20 秒，飛機將返航||
+||FS_LONG_ACTN||0||1||0||1||1||FS_LONG_ACTION - 0 = 關閉, 1 = 開啟, 如果心跳丟失20 秒，飛機將返航||
+||FS_SHORT_ACTN||0||1||0||1||1||FS_SHORT_ACTION - 0 = 關閉, 1 = 開啟, 如果心跳丟失1.5 秒, 飛機將盤旋，直至找到心跳信號，或超過20 秒| |
+||SYSID_MYGCS||0||255||255||1||1||SYSID_MYGCS - The system ID of the GCS||
+||SYSID_THISMAV||0||255||1||1||1||SYSID_THISMAV - The system ID of the MAVlink vehicle||
+||AOA|| || ||0|| ||
+||ACR_PIT_D|| || ||1|| || ||Description coming soon||
+||ACR_PIT_I|| || ||1|| || ||Description coming soon||
+||ACR_PIT_IMAX|| || ||1|| || ||Description coming soon||
+||ACR_PIT_P|| || ||1|| || ||Description coming soon||
+||ACR_RLL_D|| || ||1|| || ||Description coming soon||
+||ACR_RLL_I|| || ||1|| || ||Description coming soon||
+||ACR_RLL_IMAX|| || ||1|| || ||Description coming soon||
+||ACR_RLL_P|| || ||1|| || ||Description coming soon||
+||ACR_YAW_D|| || ||1|| || ||Description coming soon||
+||ACR_YAW_I|| || ||1|| || ||Description coming soon||
+||ACR_YAW_IMAX|| || ||1|| || ||Description coming soon||
+||ACR_YAW_P|| || ||1|| || ||Description coming soon||
+||ESC|| || ||1|| || ||ESC_CALIBRATE_MODE||
+||FRAME|| || ||1|| || ||FRAME_ORIENTATION ||
+||LOITER_RADIUS|| || ||1|| || ||Description coming soon||
+||NAV_LAT_D|| || ||1|| || ||Description coming soon||
+||NAV_LAT_I|| || ||1|| || ||Description coming soon||
+||NAV_LAT_IMAX|| || ||1|| || ||Description coming soon||
+||NAV_LAT_P|| || ||1|| || ||Description coming soon||
+||NAV_LON_D|| || ||1|| || ||Description coming soon||
+||NAV_LON_I|| || ||1|| || ||Description coming soon||
+||NAV_LON_IM​​AX|| || ||1|| || ||Description coming soon||
+||NAV_LON_P|| || ||1|| || ||Description coming soon||
+||NAV_WP_D|| || ||1|| || ||Description coming soon||
+||NAV_WP_I|| || ||1|| || ||Description coming soon||
+||NAV_WP_IMAX|| || ||1|| || ||Description coming soon||
+||NAV_WP_P|| || ||1|| || ||Description coming soon||
+||PITCH_MAX|| || ||1|| || ||Description coming soon||
+||SONAR_ENABLE||0||1||0||1||1||SONAR_ENABLE - 0 = 關閉, 1 = 開啟, 啟用聲納||
+||STB_PIT_D|| || ||1|| || ||Description coming soon||
+||STB_PIT_I|| || ||1|| || ||Description coming soon||
+||STB_PIT_IMAX|| || ||1|| || ||Description coming soon||
+||STB_PIT_P|| || ||1|| || ||Description coming soon||
+||STB_RLL_D|| || ||1|| || ||Description coming soon||
+||STB_RLL_I|| || ||1|| || ||Description coming soon||
+||STB_RLL_IMAX|| || ||1|| || ||Description coming soon||
+||STB_RLL_P|| || ||1|| || ||Description coming soon||
+||STB_YAW_D|| || ||1|| || ||Description coming soon||
+||STB_YAW_I|| || ||1|| || ||Description coming soon||
+||STB_YAW_IMAX|| || ||1|| || ||Description coming soon||
+||STB_YAW_P|| || ||1|| || ||Description coming soon||
+||THR_BAR_D|| || ||1|| || ||Description coming soon||
+||THR_BAR_I|| || ||1|| || ||Description coming soon||
+||THR_BAR_IMAX|| || ||1|| || ||Description coming soon||
+||THR_BAR_P|| || ||1|| || ||Description coming soo||
+||THR_SON_D|| || ||1|| || ||Description coming soon||
+||THR_SON_I|| || ||1|| || ||Description coming soon||
+||THR_SON_IM​​AX|| || ||1|| || ||Description coming soon||
+||THR_SON_P|| || ||1|| || ||Description coming soon||
+||WP_MODE|| || ||1|| || ||Description coming soon||
+||WP_MUST_INDEX|| || ||1|| || ||Description coming soon||
+||XTRACK_ANGLE|| || ||1|| || ||Description coming soon||
+||XTRK_GAIN|| || ||1|| || ||Description coming soon||
+||ARSPD_OFFSET|| || ||0|| || ||Description coming soon||
+||ELEVON_CH1_REV||0||1||0||1||1||ELEVON_CHANNEL1_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||ELEVON_CH2_REV||0||1||0||1||1||ELEVON_CHANNEL2_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||ELEVON_MIXING||0||1||0||1||1||ELEVON_MIXING - 0 = 禁用, 1 = 啟用||
+||ELEVON_REVERSE||0||1||0||1||1||ELEVON_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||INVERTEDFLT_CH||0||8||0||1||1||INVERTED_FLIGHT_CHANNEL - 選擇倒飛的通道, 0 = 禁用||
+||RC1_REV||0||1||1||1||1||RC_CHANNEL1_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC2_REV||0||1||1||1||1||RC_CHANNEL2_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC3_REV||0||1||1||1||1||RC_CHANNEL3_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC4_REV||0||1||1||1||1||RC_CHANNEL4_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC5_REV||0||1||1||1||1||RC_CHANNEL5_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC6_REV||0||1||1||1||1||RC_CHANNEL6_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC7_REV||0||1||1||1||1||RC_CHANNEL7_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||RC8_REV||0||1||1||1||1||RC_CHANNEL8_REVERSE - 通道逆轉(將來用於APM 2.0 板) - 不會覆蓋開關設置||
+||SYSID_SW_MREV|| || ||0|| || ||Description coming soon||
+||SYSID_SW_TYPE|| || ||0|| || ||Description coming soon||
+||THR_SLEWRATE||0||100||0||1||1||THROTTLE_SLEW_RATE - 0 = 禁用, 否則它會限製油門運動速率。單位是 % 每秒。這是一個測試特性，可能會去掉||
+||FLTMODE1||0||20||1||1|| ||FLIGHT_MODE_1 - 模式開關設置1 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
+||FLTMODE2||0||20||1||1|| ||FLIGHT_MODE_2 - 模式開關設置2 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
+||FLTMODE3||0||20||1||1|| ||FLIGHT_MODE_3 - 模式開關設置3 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
+||FLTMODE4||0||20||1||1|| ||FLIGHT_MODE_4 - 模式開關設置4 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
+||FLTMODE5||0||20||1||1|| ||FLIGHT_MODE_5 - 模式開關設置5 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
+||FLTMODE6||0||20||1||1|| ||FLIGHT_MODE_6 - 模式開關設置6 - APM: 0 = 手動, 2 = 穩定, 5 - 線控-A, 6 = 線控-B, 7 = 線控-C, 10 = 自動- 任務, 11 = 返航, 12 = 盤旋, 13 = 起飛, 14 = 著陸, 15= 指導; ACM2: 0 = 穩定, 2 = Acro, 3 = 簡單, 4 = 自動, 5 = 指導, 6 = 懸停, 7 = 返航||
