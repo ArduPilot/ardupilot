@@ -109,7 +109,7 @@ dump_log(uint8_t argc, const Menu::arg *argv)
 	last_log_num = DataFlash.find_last_log();
 
 	if (dump_log == -2) {
-		for(int count=1; count<=DataFlash.df_NumPages; count++) {
+		for(uint16_t count=1; count<=DataFlash.df_NumPages; count++) {
 			DataFlash.StartRead(count);
 			Serial.printf_P(PSTR("DF page, log file #, log page: %d,\t"), count);
 			Serial.printf_P(PSTR("%d,\t"), DataFlash.GetFileNumber());
