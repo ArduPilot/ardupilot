@@ -1,0 +1,460 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="tabReset.Text" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="tabRadioIn.Text" xml:space="preserve">
+    <value>遙控輸入</value>
+  </data>
+  <data name="tabModes.Text" xml:space="preserve">
+    <value>模式</value>
+  </data>
+  <data name="tabHardware.Text" xml:space="preserve">
+    <value>硬件</value>
+  </data>
+  <data name="tabBattery.Text" xml:space="preserve">
+    <value>電池</value>
+  </data>
+  <data name="BUT_reset.Text" xml:space="preserve">
+    <value>重置 APM 為默認設置</value>
+  </data>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="CHK_revch3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 17</value>
+  </data>
+  <data name="CHK_revch3.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="CHK_revch4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 17</value>
+  </data>
+  <data name="CHK_revch4.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="CHK_revch2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 17</value>
+  </data>
+  <data name="CHK_revch2.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="CHK_revch1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>50, 17</value>
+  </data>
+  <data name="CHK_revch1.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="BUT_Calibrateradio.Text" xml:space="preserve">
+    <value>校準遙控</value>
+  </data>
+  <data name="CB_simple6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple6.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="CB_simple5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple5.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="CB_simple4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple4.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="CB_simple3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple3.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="CB_simple2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple2.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="CB_simple1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>74, 17</value>
+  </data>
+  <data name="CB_simple1.Text" xml:space="preserve">
+    <value>簡單模式</value>
+  </data>
+  <data name="label14.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>當前 PWM:</value>
+  </data>
+  <data name="label13.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>當前模式:</value>
+  </data>
+  <data name="label6.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>飛行模式 6</value>
+  </data>
+  <data name="label5.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>飛行模式 5</value>
+  </data>
+  <data name="label4.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>飛行模式 4</value>
+  </data>
+  <data name="label3.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>飛行模式 3</value>
+  </data>
+  <data name="label2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>飛行模式 2</value>
+  </data>
+  <data name="label1.Size" type="System.Drawing.Size, System.Drawing">
+    <value>64, 13</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>飛行模式 1</value>
+  </data>
+  <data name="BUT_SaveModes.Text" xml:space="preserve">
+    <value>保存模式</value>
+  </data>
+  <data name="linkLabelmagdec.Size" type="System.Drawing.Size, System.Drawing">
+    <value>67, 13</value>
+  </data>
+  <data name="linkLabelmagdec.Text" xml:space="preserve">
+    <value>磁偏角網站</value>
+  </data>
+  <data name="label100.Text" xml:space="preserve">
+    <value>磁偏角</value>
+  </data>
+  <data name="CHK_enableairspeed.Text" xml:space="preserve">
+    <value>啟用空速計</value>
+  </data>
+  <data name="CHK_enablesonar.Text" xml:space="preserve">
+    <value>啟用聲納</value>
+  </data>
+  <data name="CHK_enablecompass.Text" xml:space="preserve">
+    <value>啟用羅盤</value>
+  </data>
+  <data name="label35.Size" type="System.Drawing.Size, System.Drawing">
+    <value>63, 13</value>
+  </data>
+  <data name="label35.Text" xml:space="preserve">
+    <value>安培/伏特:</value>
+  </data>
+  <data name="label34.Size" type="System.Drawing.Size, System.Drawing">
+    <value>52, 13</value>
+  </data>
+  <data name="label34.Text" xml:space="preserve">
+    <value>分 壓 比:</value>
+  </data>
+  <data name="label33.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label33.Text" xml:space="preserve">
+    <value>電池電壓:</value>
+  </data>
+  <data name="label32.Size" type="System.Drawing.Size, System.Drawing">
+    <value>94, 13</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>測量的電池電壓:</value>
+  </data>
+  <data name="label31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 13</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>輸入電壓:</value>
+  </data>
+  <data name="textBox3.Text" xml:space="preserve">
+    <value>電壓傳感器校準:
+1. 測量APM輸入電壓，輸入到下方的文本框中
+2. 測量電池電壓，輸入到下方的文本框中
+3. 從當前的傳感器的數據表中找到安培/伏特，輸入到下方的文本框中</value>
+  </data>
+  <data name="label29.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>容量</value>
+  </data>
+  <data name="label30.Size" type="System.Drawing.Size, System.Drawing">
+    <value>48, 13</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>監控器</value>
+  </data>
+  <data name="label28.Size" type="System.Drawing.Size, System.Drawing">
+    <value>175, 13</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>設置水平面的默認加速度計偏移</value>
+  </data>
+  <data name="label16.Size" type="System.Drawing.Size, System.Drawing">
+    <value>261, 13</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>注: 圖片只是用於展示，設置可以用於六軸等機架</value>
+  </data>
+  <data name="label15.Size" type="System.Drawing.Size, System.Drawing">
+    <value>93, 13</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>機架設置 (+ 或 x)</value>
+  </data>
+  <data name="BUT_levelac2.Text" xml:space="preserve">
+    <value>找平</value>
+  </data>
+  <data name="label46.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label46.Text" xml:space="preserve">
+    <value>感度</value>
+  </data>
+  <data name="label45.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>啟用</value>
+  </data>
+  <data name="label44.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label44.Text" xml:space="preserve">
+    <value>微調</value>
+  </data>
+  <data name="label43.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="label42.Size" type="System.Drawing.Size, System.Drawing">
+    <value>43, 13</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>方向舵</value>
+  </data>
+  <data name="BUT_HS4save.Text" xml:space="preserve">
+    <value>手動</value>
+  </data>
+  <data name="label24.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>最大</value>
+  </data>
+  <data name="label40.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label40.Text" xml:space="preserve">
+    <value>最小</value>
+  </data>
+  <data name="BUT_swash_manual.Text" xml:space="preserve">
+    <value>手動</value>
+  </data>
+  <data name="label41.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value>最低</value>
+  </data>
+  <data name="label21.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>最高</value>
+  </data>
+  <data name="BUT_0collective.Text" xml:space="preserve">
+    <value>0度</value>
+  </data>
+  <data name="label39.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label39.Text" xml:space="preserve">
+    <value>微調</value>
+  </data>
+  <data name="label38.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>逆轉</value>
+  </data>
+  <data name="label37.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="label36.Size" type="System.Drawing.Size, System.Drawing">
+    <value>31, 13</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>舵機</value>
+  </data>
+  <data name="label26.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label26.Text" xml:space="preserve">
+    <value>最大俯仰</value>
+  </data>
+  <data name="label25.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>最大側傾</value>
+  </data>
+  <data name="label23.Size" type="System.Drawing.Size, System.Drawing">
+    <value>55, 13</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>舵機行程</value>
+  </data>
+  <data name="label22.Size" type="System.Drawing.Size, System.Drawing">
+    <value>79, 13</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>斜盤水平微調</value>
+  </data>
+  <data name="label17.Size" type="System.Drawing.Size, System.Drawing">
+    <value>79, 13</value>
+  </data>
+  <data name="label17.Text" xml:space="preserve">
+    <value>斜盤舵機位置</value>
+  </data>
+  <data name="$this.Text" xml:space="preserve">
+    <value>APM設置</value>
+  </data>
+</root>

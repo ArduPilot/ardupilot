@@ -424,10 +424,16 @@
     <EmbeddedResource Include="GCSViews\Configuration.pl.resx">
       <DependentUpon>Configuration.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Configuration.zh-TW.resx">
+      <DependentUpon>Configuration.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.fr.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Firmware.pl.resx">
+      <DependentUpon>Firmware.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Firmware.zh-TW.resx">
       <DependentUpon>Firmware.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightData.fr.resx">
@@ -436,10 +442,16 @@
     <EmbeddedResource Include="GCSViews\FlightData.pl.resx">
       <DependentUpon>FlightData.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightData.zh-TW.resx">
+      <DependentUpon>FlightData.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightPlanner.fr.resx">
       <DependentUpon>FlightPlanner.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\FlightPlanner.pl.resx">
+      <DependentUpon>FlightPlanner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\FlightPlanner.zh-TW.resx">
       <DependentUpon>FlightPlanner.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Help.fr.resx">
@@ -448,16 +460,25 @@
     <EmbeddedResource Include="GCSViews\Help.pl.resx">
       <DependentUpon>Help.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Help.zh-TW.resx">
+      <DependentUpon>Help.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.fr.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Simulation.pl.resx">
       <DependentUpon>Simulation.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Simulation.zh-TW.resx">
+      <DependentUpon>Simulation.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Terminal.fr.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Terminal.pl.resx">
+      <DependentUpon>Terminal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\Terminal.zh-TW.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="georefimage.resx">
@@ -469,16 +490,25 @@
     <EmbeddedResource Include="JoystickSetup.pl.resx">
       <DependentUpon>JoystickSetup.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="JoystickSetup.zh-TW.resx">
+      <DependentUpon>JoystickSetup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Log.fr.resx">
       <DependentUpon>Log.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Log.pl.resx">
       <DependentUpon>Log.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Log.zh-TW.resx">
+      <DependentUpon>Log.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LogBrowse.fr.resx">
       <DependentUpon>LogBrowse.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="LogBrowse.pl.resx">
+      <DependentUpon>LogBrowse.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LogBrowse.zh-TW.resx">
       <DependentUpon>LogBrowse.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MavlinkLog.fr.resx">
@@ -635,6 +665,9 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Setup\Setup.zh-Hans.resx">
+      <DependentUpon>Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Setup\Setup.zh-TW.resx">
       <DependentUpon>Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Splash.resx">
