@@ -1,0 +1,25 @@
+﻿WAYPOINT;航點;延遲;高度;緯度;經度
+LOITER_UNLIM;盤旋_無限制;N/A;高度;緯度;經度
+LOITER_TURNS;盤旋_圈數;圈數;高度;緯度;經度
+LOITER_TIME;盤旋_時間;時間s*10;高度;緯度;經度
+RETURN_TO_LAUNCH;返航;N/A;高度;緯度;經度
+LAND;著陸;N/A;高度;緯度;經度
+TAKEOFF;起飛;角度;高度;N/A;N/A
+PATHPLANNING;路徑規劃
+CONDITION_DELAY;條件_延遲;N/A;N/A;時間(秒);N/A
+CONDITION_CHANGE_ALT;條件_高度;速率(厘米/秒);高度;N/A;N/A
+CONDITION_DISTANCE;條件_距離;N/A;N/A;距離(米);N/A
+CONDITION_YAW;條件_偏航;角度;速度(度/秒);方向(1,-1);相對(1)/絕對(0)
+DO_SET_MODE;設置模式
+DO_JUMP;執行跳轉;WP #;N/A;重複次數;N/A
+DO_CHANGE_SPEED;改變速度;類型(0=空速1=地速);速度(米/秒);油門(%);N/A
+DO_SET_HOME;設置起始點;當前(1) 指定(0);高度(m);緯度;經度
+DO_SET_PARAMETER;設置參數;參數編號;參數值;N/A;N/A
+DO_REPEAT_RELAY;重複繼電器;N/A;重複次數;延遲(sec);N/A
+DO_SET_RELAY;設置繼電器;關(0)/開(1);N/A;N/A;N/A
+DO_SET_SERVO;設置舵機;舵機號;PWM;N/A;N/A
+DO_REPEAT_SERVO;重複舵機;舵機編號;PWM;重複次數;延遲(秒)
+DO_CONTROL_VIDEO;控制相機
+DO_SET_ROI;設置興趣點
+PREFLIGHT_CALIBRATION;飛行前校準
+PREFLIGHT_STORAG​​E;飛行前保存
