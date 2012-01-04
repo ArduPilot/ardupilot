@@ -12,16 +12,44 @@ class Motor(object):
 
 def build_motors(frame):
     '''build a motors list given a frame type'''
-    if frame in [ '+', 'X' ]:
+    frame = frame.lower()
+    if frame in [ 'quad', '+', 'x' ]:
         motors = [
             Motor(90,  False,  1),
             Motor(270, False,  2),
             Motor(0,   True,   3),
             Motor(180, True,   4),
             ]
-        if frame == 'X':
+        if frame in [ 'x', 'quadx' ]:
             for i in range(4):
                 motors[i].angle -= 45.0
+    elif frame in ["y6"]:
+        motors = [
+            Motor(60,   False, 1),
+            Motor(60,   True,  7),
+            Motor(180,  True,  4),
+            Motor(180,  False, 8),
+            Motor(-60,  True,  2),
+            Motor(-60,  False, 3),
+            ]
+    elif frame in ["hexa", "hexa+"]:
+        motors = [
+            Motor(0,   True,  1),
+            Motor(60,  False, 4),
+            Motor(120, True,  8),
+            Motor(180, False, 2),
+            Motor(240, True,  3),
+            Motor(300, False, 7),
+            ]
+    elif frame in ["hexax"]:
+        motors = [
+            Motor(30,  False,  7),
+            Motor(90,  True,   1),
+            Motor(150, False,  4),
+            Motor(210, True,   8),
+            Motor(270, False,  2),
+            Motor(330, True,   3),
+            ]
     elif frame in ["octa", "octa+"]:
         motors = [
             Motor(0,    True,  1),
