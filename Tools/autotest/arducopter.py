@@ -7,7 +7,8 @@ import mavutil, mavwp, random
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-
+FRAME='octa'
+TARGET='sitl-octa'
 HOME=location(-35.362938,149.165085,584,270)
 
 homeloc = None
@@ -280,8 +281,11 @@ def fly_ArduCopter(viewerip=None):
     '''
     global homeloc
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
-        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    if TARGET != 'sitl':
+        util.build_SIL('ArduCopter', target=TARGET)
+
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --rate=400 --home=%f,%f,%u,%u' % (
+        FRAME, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sim_cmd += ' --wind=6,45,.3'
     if viewerip:
         sim_cmd += ' --fgout=%s:5503' % viewerip
