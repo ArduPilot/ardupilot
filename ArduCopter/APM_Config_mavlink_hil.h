@@ -39,5 +39,4 @@
 // The magnetometer is not used in
 // HIL_MODE_ATTITUDE but you may leave it
 // enabled if you wish.
-#define AIRSPEED_SENSOR     ENABLED
 #define MAGNETOMETER        ENABLED
