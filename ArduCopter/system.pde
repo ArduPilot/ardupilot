@@ -525,8 +525,9 @@ static void set_mode(byte mode)
 		// reset all of the throttle iterms
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
-	}else { // an automatic throttle
 
+	}else {
+		// an automatic throttle
 		// todo: replace with a throttle cruise estimator
 		init_throttle_cruise();
 	}
@@ -537,7 +538,10 @@ static void set_mode(byte mode)
 		reset_nav();
 
 		// removes the navigation from roll and pitch commands, but leaves the wind compensation
-		calc_wind_compensation();
+		if(GPS_enabled)
+			wp_control = NO_NAV_MODE;
+			update_nav_wp();
+
 	}
 
 	Log_Write_Mode(control_mode);
