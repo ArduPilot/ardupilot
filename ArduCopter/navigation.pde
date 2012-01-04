@@ -243,6 +243,7 @@ static void reduce_wind_compensation()
 	tmp *= .98;
 	g.pi_loiter_lat.set_integrator(tmp);		// Y
 
+#if 0
 	// debug
 	int16_t t1 = g.pi_loiter_lon.get_integrator();
 	int16_t t2 = g.pi_loiter_lon.get_integrator();
@@ -250,6 +251,7 @@ static void reduce_wind_compensation()
 	//Serial.printf("reduce wind iterm X:%d  Y:%d \n",
 	//				t1,
 	//				t2);
+#endif
 }
 
 static int16_t calc_desired_speed(int16_t max_speed)
