@@ -1,32 +1,73 @@
 #!/usr/bin/env python
 
 from aircraft import Aircraft
-import euclid, util, time
+import euclid, util, time, math
+
+class Motor(object):
+    def __init__(self, angle, clockwise, servo):
+        self.angle = angle # angle in degrees from front
+        self.clockwise = clockwise # clockwise == true, anti-clockwise == false
+        self.servo = servo # what servo output drives this motor
 
 
-class QuadCopter(Aircraft):
-    '''a QuadCopter'''
-    def __init__(self):
+def build_motors(frame):
+    '''build a motors list given a frame type'''
+    if frame in [ '+', 'X' ]:
+        motors = [
+            Motor(90,  False,  1),
+            Motor(270, False,  2),
+            Motor(0,   True,   3),
+            Motor(180, True,   4),
+            ]
+        if frame == 'X':
+            for i in range(4):
+                motors[i].angle -= 45.0
+    elif frame in ["octa", "octa+"]:
+        motors = [
+            Motor(0,    True,  1),
+            Motor(180,  True,  2),
+            Motor(45,   False, 3),
+            Motor(135,  False, 4),
+            Motor(-45,  False, 7),
+            Motor(-135, False, 8),
+            Motor(270,  True, 10),
+            Motor(90,   True, 11),
+            ]
+    else:
+        raise RuntimeError("Unknown multicopter frame type '%s'" % frame)
+
+    return motors
+
+
+class MultiCopter(Aircraft):
+    '''a MultiCopter'''
+    def __init__(self, frame='+',
+                 hover_throttle=0.37,
+                 terminal_velocity=30.0,
+                 frame_height=0.1,
+                 mass=1.0):
         Aircraft.__init__(self)
-        self.motor_speed = [ 0.0, 0.0, 0.0, 0.0 ]
-        self.mass = 1.0 # Kg
-        self.hover_throttle = 0.37
-        self.terminal_velocity = 30.0
+        self.motors = build_motors(frame)
+        self.motor_speed = [ 0.0 ] * len(self.motors)
+        self.mass = mass # Kg
+        self.hover_throttle = hover_throttle
+        self.terminal_velocity = terminal_velocity
         self.terminal_rotation_rate = 4*360.0
-        self.frame_height = 0.1
+        self.frame_height = frame_height
 
         # scaling from total motor power to Newtons. Allows the copter
         # to hover against gravity when each motor is at hover_throttle
-        self.thrust_scale = (self.mass * self.gravity) / (4.0 * self.hover_throttle)
+        self.thrust_scale = (self.mass * self.gravity) / (len(self.motors) * self.hover_throttle)
 
         self.last_time = time.time()
 
     def update(self, servos):
-        for i in range(0, 4):
-            if servos[i] <= 0.0:
+        for i in range(0, len(self.motors)):
+            servo = servos[self.motors[i].servo-1]
+            if servo <= 0.0:
                 self.motor_speed[i] = 0
             else:
-                self.motor_speed[i] = servos[i]
+                self.motor_speed[i] = servo
 
         m = self.motor_speed
 
@@ -36,9 +77,18 @@ class QuadCopter(Aircraft):
         self.last_time = t
 
         # rotational acceleration, in degrees/s/s, in body frame
-        roll_accel  = (m[1] - m[0]) * 5000.0
-        pitch_accel = (m[2] - m[3]) * 5000.0
-        yaw_accel   = -((m[2]+m[3]) - (m[0]+m[1])) * 400.0
+        roll_accel = 0.0
+        pitch_accel = 0.0
+        yaw_accel = 0.0
+        thrust = 0.0
+        for i in range(len(self.motors)):
+            roll_accel  += -5000.0 * math.sin(math.radians(self.motors[i].angle)) * m[i]
+            pitch_accel += 5000.0 * math.cos(math.radians(self.motors[i].angle)) * m[i]
+            if self.motors[i].clockwise:
+                yaw_accel -= m[i] * 400.0
+            else:
+                yaw_accel += m[i] * 400.0
+            thrust += m[i] * self.thrust_scale # newtons
 
         # rotational resistance
         roll_accel  -= (self.pDeg / self.terminal_rotation_rate) * 5000.0
@@ -67,7 +117,6 @@ class QuadCopter(Aircraft):
         # normalise rotations
         self.normalise()
 
-        thrust = (m[0] + m[1] + m[2] + m[3]) * self.thrust_scale # Newtons
         accel = thrust / self.mass
 
         accel3D = util.RPY_to_XYZ(self.roll, self.pitch, self.yaw, accel)
@@ -101,3 +150,4 @@ class QuadCopter(Aircraft):
 
         # update lat/lon/altitude
         self.update_position()
+
