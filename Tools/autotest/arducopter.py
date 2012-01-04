@@ -225,7 +225,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     #wait_altitude(mav, 30, 40)
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
+    ret = wait_waypoint(mav, 0, num_wp, timeout=500)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')
@@ -466,3 +466,36 @@ def fly_ArduCopter(viewerip=None):
         return False
     return True
 
+
+
+
+
+
+#!	        mavproxy.send('rc 2 1390\n')
+#!	        #adjust till the rate is 0;
+#!
+#!	        mavproxy.send('rc 4 1610\n')
+#!	        if not wait_heading(mav, 0):
+#!	            return False
+#!	        mavproxy.send('rc 4 1500\n')
+#!
+#!	        mavproxy.send('rc 2 1455\n')
+#!	        #adjust till the rate is 0;
+#!	        pitch_test = 1455
+#!	        roll_test = 1500
+#!	        old_lat = 0
+#!	        old_lon = 0
+#!
+#!	        while(1):
+#!	            pos = current_location(mav)
+#!	            tmp = (pos.lat *10e7) - (old_lat *10e7)
+#!	            print("tmp %d " % tmp)
+#!	            if(tmp > 0 ):
+#!	                print("higher tmp %d " % (tmp))
+#!	                pitch_test += 1
+#!	            if(tmp < 0 ):
+#!	                print("lower tmp %d " % (tmp))
+#!	                pitch_test -= 1
+#!	            mavproxy.send('rc 2 %u\n' % math.floor(pitch_test))
+#!	            old_lat = pos.lat
+#!	            #old_lon = pos.lon
