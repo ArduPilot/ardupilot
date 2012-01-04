@@ -357,14 +357,14 @@ static bool verify_land()
 		velocity_land = 2000;
 
 
-	if (current_loc.alt < 500){
+	if ((current_loc.alt - home.alt) < 500){
 		// a LP filter used to tell if we have landed
 		// will drive to 0 if we are on the ground - maybe, the baro is noisy
 		velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
 	}
 	old_alt = current_loc.alt;
 
-	if (current_loc.alt < 300){
+	if ((current_loc.alt - home.alt) < 300){
 
 		wp_control = NO_NAV_MODE;
 
@@ -384,7 +384,7 @@ static bool verify_land()
 		}
 	}
 
-	if(current_loc.alt  < 300 && velocity_land <= 100){
+	if((current_loc.alt - home.alt)  < 300 && velocity_land <= 100){
 		land_complete = true;
 		// reset old_alt
 		old_alt == 0;
