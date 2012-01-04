@@ -243,7 +243,6 @@ static void reset_nav(void)
 	crosstrack_error 		= 0;
 	target_bearing 			= 0;
 	wp_distance 			= 0;
-	wp_totalDistance 		= 0;
 	long_error 				= 0;
 	lat_error  				= 0;
 }
