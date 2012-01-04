@@ -280,11 +280,11 @@ def fly_ArduCopter(viewerip=None):
     '''
     global homeloc
 
-    simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    simquad_cmd += ' --wind=6,45,.3'
+    sim_cmd += ' --wind=6,45,.3'
     if viewerip:
-        simquad_cmd += ' --fgout=%s:5503' % viewerip
+        sim_cmd += ' --fgout=%s:5503' % viewerip
 
     sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
@@ -300,9 +300,9 @@ def fly_ArduCopter(viewerip=None):
     util.pexpect_close(sil)
 
     sil = util.start_SIL('ArduCopter', height=HOME.alt)
-    simquad = pexpect.spawn(simquad_cmd, logfile=sys.stdout, timeout=10)
-    simquad.delaybeforesend = 0
-    util.pexpect_autoclose(simquad)
+    sim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
+    sim.delaybeforesend = 0
+    util.pexpect_autoclose(sim)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -323,7 +323,7 @@ def fly_ArduCopter(viewerip=None):
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([simquad, sil, mavproxy])
+    expect_list_extend([sim, sil, mavproxy])
 
     # get a mavlink connection going
     try:
@@ -451,7 +451,7 @@ def fly_ArduCopter(viewerip=None):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(simquad)
+    util.pexpect_close(sim)
 
     if os.path.exists('ArduCopter-valgrind.log'):
         os.chmod('ArduCopter-valgrind.log', 0644)
