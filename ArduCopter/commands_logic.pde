@@ -387,7 +387,7 @@ static bool verify_land()
 	if((current_loc.alt - home.alt)  < 300 && velocity_land <= 100){
 		land_complete = true;
 		// reset old_alt
-		old_alt == 0;
+		old_alt = 0;
 		init_disarm_motors();
 		return true;
 	}

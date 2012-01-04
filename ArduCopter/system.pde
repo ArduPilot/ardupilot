@@ -361,6 +361,28 @@ static void init_ardupilot()
 	SendDebug("\nReady to FLY ");
 }
 
+/*
+  reset all I integrators
+ */
+static void reset_I_all(void)
+{
+	g.pi_rate_roll.reset_I();
+	g.pi_rate_pitch.reset_I();
+	g.pi_rate_yaw.reset_I();
+	g.pi_stabilize_roll.reset_I();
+	g.pi_stabilize_pitch.reset_I();
+	g.pi_stabilize_yaw.reset_I();
+	g.pi_loiter_lat.reset_I();
+	g.pi_loiter_lon.reset_I();
+	g.pi_nav_lat.reset_I();
+	g.pi_nav_lon.reset_I();
+	g.pi_alt_hold.reset_I();
+	g.pi_throttle.reset_I();
+	g.pi_acro_roll.reset_I();
+	g.pi_acro_pitch.reset_I();
+}
+
+
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //********************************************************************************
@@ -380,6 +402,10 @@ static void startup_ground(void)
 	// reset the leds
 	// ---------------------------
 	clear_leds();
+
+    // when we re-calibrate the gyros, all previous I values now
+    // make no sense
+    reset_I_all();
 }
 
 /*
