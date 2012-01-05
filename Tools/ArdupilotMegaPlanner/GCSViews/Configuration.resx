@@ -121,28 +121,28 @@
   <data name="Params.Anchor" type="System.Windows.Forms.AnchorStyles, System.Windows.Forms">
     <value>Top, Bottom, Left</value>
   </data>
-  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="Command.UserAddedColumn" type="System.Boolean, mscorlib">
+  <metadata name="Command.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </data>
+  </metadata>
   <data name="Command.HeaderText" xml:space="preserve">
     <value>Command</value>
   </data>
+  <assembly alias="mscorlib" name="mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="Command.Width" type="System.Int32, mscorlib">
     <value>150</value>
   </data>
-  <data name="Value.UserAddedColumn" type="System.Boolean, mscorlib">
+  <metadata name="Value.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </data>
+  </metadata>
   <data name="Value.HeaderText" xml:space="preserve">
     <value>Value</value>
   </data>
   <data name="Value.Width" type="System.Int32, mscorlib">
     <value>80</value>
   </data>
-  <data name="Default.UserAddedColumn" type="System.Boolean, mscorlib">
+  <metadata name="Default.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </data>
+  </metadata>
   <data name="Default.HeaderText" xml:space="preserve">
     <value>Default</value>
   </data>
@@ -155,9 +155,9 @@
   <data name="mavScale.Visible" type="System.Boolean, mscorlib">
     <value>False</value>
   </data>
-  <data name="RawValue.UserAddedColumn" type="System.Boolean, mscorlib">
+  <metadata name="RawValue.UserAddedColumn" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </data>
+  </metadata>
   <data name="RawValue.HeaderText" xml:space="preserve">
     <value>RawValue</value>
   </data>
@@ -403,7 +403,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox3.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox3.ZOrder" xml:space="preserve">
     <value>0</value>
@@ -619,7 +619,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox1.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
     <value>1</value>
@@ -787,7 +787,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox2.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
     <value>2</value>
@@ -907,7 +907,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox15.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox15.ZOrder" xml:space="preserve">
     <value>3</value>
@@ -1075,7 +1075,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox16.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox16.ZOrder" xml:space="preserve">
     <value>4</value>
@@ -1291,7 +1291,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox14.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox14.ZOrder" xml:space="preserve">
     <value>5</value>
@@ -1507,7 +1507,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox13.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox13.ZOrder" xml:space="preserve">
     <value>6</value>
@@ -1723,7 +1723,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox12.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox12.ZOrder" xml:space="preserve">
     <value>7</value>
@@ -1939,7 +1939,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox11.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox11.ZOrder" xml:space="preserve">
     <value>8</value>
@@ -2155,7 +2155,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox10.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox10.ZOrder" xml:space="preserve">
     <value>9</value>
@@ -2371,7 +2371,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox9.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox9.ZOrder" xml:space="preserve">
     <value>10</value>
@@ -2587,36 +2587,36 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox8.Parent" xml:space="preserve">
-    <value>TabAPM2</value>
+    <value>TabAP</value>
   </data>
   <data name="&gt;&gt;groupBox8.ZOrder" xml:space="preserve">
     <value>11</value>
   </data>
-  <data name="TabAPM2.Location" type="System.Drawing.Point, System.Drawing">
+  <data name="TabAP.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 22</value>
   </data>
-  <data name="TabAPM2.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+  <data name="TabAP.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>0, 0, 0, 0</value>
   </data>
-  <data name="TabAPM2.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="TabAP.Size" type="System.Drawing.Size, System.Drawing">
     <value>722, 434</value>
   </data>
-  <data name="TabAPM2.TabIndex" type="System.Int32, mscorlib">
+  <data name="TabAP.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
   </data>
-  <data name="TabAPM2.Text" xml:space="preserve">
-    <value>APM 2.x</value>
+  <data name="TabAP.Text" xml:space="preserve">
+    <value>ArduPlane</value>
   </data>
-  <data name="&gt;&gt;TabAPM2.Name" xml:space="preserve">
-    <value>TabAPM2</value>
+  <data name="&gt;&gt;TabAP.Name" xml:space="preserve">
+    <value>TabAP</value>
   </data>
-  <data name="&gt;&gt;TabAPM2.Type" xml:space="preserve">
+  <data name="&gt;&gt;TabAP.Type" xml:space="preserve">
     <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;TabAPM2.Parent" xml:space="preserve">
+  <data name="&gt;&gt;TabAP.Parent" xml:space="preserve">
     <value>ConfigTabs</value>
   </data>
-  <data name="&gt;&gt;TabAPM2.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;TabAP.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
   <data name="myLabel1.Location" type="System.Drawing.Point, System.Drawing">
@@ -2638,7 +2638,7 @@
     <value>ArdupilotMega.MyLabel, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
   </data>
   <data name="&gt;&gt;myLabel1.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;myLabel1.ZOrder" xml:space="preserve">
     <value>0</value>
@@ -2683,7 +2683,7 @@
     <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;CH7_OPT.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;CH7_OPT.ZOrder" xml:space="preserve">
     <value>1</value>
@@ -2851,7 +2851,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox17.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox17.ZOrder" xml:space="preserve">
     <value>2</value>
@@ -3019,7 +3019,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox5.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox5.ZOrder" xml:space="preserve">
     <value>3</value>
@@ -3187,7 +3187,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox18.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox18.ZOrder" xml:space="preserve">
     <value>4</value>
@@ -3214,7 +3214,7 @@
     <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;CHK_lockrollpitch.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;CHK_lockrollpitch.ZOrder" xml:space="preserve">
     <value>5</value>
@@ -3430,7 +3430,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox4.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox4.ZOrder" xml:space="preserve">
     <value>6</value>
@@ -3502,7 +3502,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox6.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox6.ZOrder" xml:space="preserve">
     <value>7</value>
@@ -3670,7 +3670,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox7.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox7.ZOrder" xml:space="preserve">
     <value>8</value>
@@ -3838,7 +3838,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox19.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox19.ZOrder" xml:space="preserve">
     <value>9</value>
@@ -4006,7 +4006,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox20.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox20.ZOrder" xml:space="preserve">
     <value>10</value>
@@ -4174,7 +4174,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox21.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox21.ZOrder" xml:space="preserve">
     <value>11</value>
@@ -4342,7 +4342,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox22.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox22.ZOrder" xml:space="preserve">
     <value>12</value>
@@ -4510,7 +4510,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox23.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox23.ZOrder" xml:space="preserve">
     <value>13</value>
@@ -4678,7 +4678,7 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox24.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox24.ZOrder" xml:space="preserve">
     <value>14</value>
@@ -4846,36 +4846,36 @@
     <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;groupBox25.Parent" xml:space="preserve">
-    <value>TabAC2</value>
+    <value>TabAC</value>
   </data>
   <data name="&gt;&gt;groupBox25.ZOrder" xml:space="preserve">
     <value>15</value>
   </data>
-  <data name="TabAC2.Location" type="System.Drawing.Point, System.Drawing">
+  <data name="TabAC.Location" type="System.Drawing.Point, System.Drawing">
     <value>4, 22</value>
   </data>
-  <data name="TabAC2.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+  <data name="TabAC.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>3, 3, 3, 3</value>
   </data>
-  <data name="TabAC2.Size" type="System.Drawing.Size, System.Drawing">
+  <data name="TabAC.Size" type="System.Drawing.Size, System.Drawing">
     <value>722, 434</value>
   </data>
-  <data name="TabAC2.TabIndex" type="System.Int32, mscorlib">
+  <data name="TabAC.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
   </data>
-  <data name="TabAC2.Text" xml:space="preserve">
-    <value>AC2</value>
+  <data name="TabAC.Text" xml:space="preserve">
+    <value>ArduCopter</value>
   </data>
-  <data name="&gt;&gt;TabAC2.Name" xml:space="preserve">
-    <value>TabAC2</value>
+  <data name="&gt;&gt;TabAC.Name" xml:space="preserve">
+    <value>TabAC</value>
   </data>
-  <data name="&gt;&gt;TabAC2.Type" xml:space="preserve">
+  <data name="&gt;&gt;TabAC.Type" xml:space="preserve">
     <value>System.Windows.Forms.TabPage, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;TabAC2.Parent" xml:space="preserve">
+  <data name="&gt;&gt;TabAC.Parent" xml:space="preserve">
     <value>ConfigTabs</value>
   </data>
-  <data name="&gt;&gt;TabAC2.ZOrder" xml:space="preserve">
+  <data name="&gt;&gt;TabAC.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
   <data name="label26.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
@@ -4968,9 +4968,9 @@
   <data name="CHK_GDIPlus.Text" xml:space="preserve">
     <value>GDI+ (old type)</value>
   </data>
-  <data name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing">
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
-  </data>
+  </metadata>
   <data name="CHK_GDIPlus.ToolTip" xml:space="preserve">
     <value>OpenGL = Disabled
 GDI+ = Enabled</value>
@@ -6299,9 +6299,9 @@ GDI+ = Enabled</value>
   <data name="&gt;&gt;BUT_compare.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
-  <data name="$this.Localizable" type="System.Boolean, mscorlib">
+  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
-  </data>
+  </metadata>
   <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
     <value>6, 13</value>
   </data>
@@ -6349,8 +6349,5 @@ GDI+ = Enabled</value>
   </data>
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
     <value>System.Windows.Forms.MyUserControl, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
-  </data>
-  <data name="MAVParam" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\MAVParam.txt;System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
 </root>
