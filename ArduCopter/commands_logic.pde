@@ -103,17 +103,17 @@ static void process_now_command()
 	}
 }
 
+
 //static void handle_no_commands()
-//{
-	/*
+/*{
 	switch (control_mode){
 		default:
 			set_mode(RTL);
 			break;
-	}*/
-	//return;
-	//Serial.println("Handle No CMDs");
-//}
+	}
+	return;
+	Serial.println("Handle No CMDs");
+}*/
 
 /********************************************************************************/
 // Verify command Handlers
@@ -270,9 +270,6 @@ static void do_land()
 	// not really used right now, might be good for debugging
 	land_complete		= false;
 
-	// A value that drives to 0 when the altitude doesn't change
-	velocity_land		= 2000;
-
 	// used to limit decent rate
 	land_start 			= millis();
 
@@ -297,6 +294,9 @@ static void do_loiter_unlimited()
 static void do_loiter_turns()
 {
 	wp_control = CIRCLE_MODE;
+
+	// reset desired location
+	circle_angle = 0;
 
 	if(command_nav_queue.lat == 0){
 		// allow user to specify just the altitude
@@ -344,15 +344,35 @@ static bool verify_takeoff()
 
 static bool verify_land()
 {
+	static int32_t 	old_alt = 0;
+	static int16_t	velocity_land = -1;
+
 	// land at .62 meter per second
 	next_WP.alt  = original_alt - ((millis() - land_start) / 16);			// condition_value = our initial
 
-	velocity_land  = ((old_alt - current_loc.alt) *.2) + (velocity_land * .8);
+	if (old_alt == 0)
+		old_alt = current_loc.alt;
+
+	if (velocity_land == -1)
+		velocity_land = 2000;
+
+
+	if ((current_loc.alt - home.alt) < 500){
+		// a LP filter used to tell if we have landed
+		// will drive to 0 if we are on the ground - maybe, the baro is noisy
+		velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
+	}
 	old_alt = current_loc.alt;
 
-	if (current_loc.alt < 250){
+	if ((current_loc.alt - home.alt) < 300){
+
 		wp_control = NO_NAV_MODE;
-		next_WP.alt = -200; // force us down
+
+		// Update by JLN for a safe AUTO landing
+		manual_boost = -10;
+		g.throttle_cruise += g.pi_alt_hold.get_integrator();
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
 	}
 
 	if(g.sonar_enabled){
@@ -364,10 +384,12 @@ static bool verify_land()
 		}
 	}
 
-	if(velocity_land <= 0){
+	if((current_loc.alt - home.alt)  < 300 && velocity_land <= 100){
 		land_complete = true;
-		// commented out to prevent tragedy
-		//return true;
+		// reset old_alt
+		old_alt = 0;
+		init_disarm_motors();
+		return true;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);
@@ -654,6 +676,11 @@ static void do_loiter_at_location()
 
 static void do_jump()
 {
+	// Used to track the state of the jump command in Mission scripting
+	// -10 is a value that means the register is unused
+	// when in use, it contains the current remaining jumps
+	static int8_t jump = -10;								// used to track loops in jump command
+
 	//Serial.printf("do Jump: %d\n", jump);
 
 	if(jump == -10){

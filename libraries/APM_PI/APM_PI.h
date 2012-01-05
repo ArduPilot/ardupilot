@@ -113,6 +113,7 @@ public:
 	void	kI(const float v)		{ _ki.set(v); }
 	void	imax(const int16_t v)	{ _imax.set(abs(v)); }
 	float	get_integrator() const	{ return _integrator; }
+	void	set_integrator(float i)	{ _integrator = i; }
 
 private:
 	AP_Var_group	    _group;

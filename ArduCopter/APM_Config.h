@@ -9,7 +9,7 @@
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
 //#define HIL_MODE				HIL_MODE_ATTITUDE
 
-#define FRAME_CONFIG QUAD_FRAME
+//#define FRAME_CONFIG QUAD_FRAME
 	/*
 	options:
 	QUAD_FRAME
@@ -20,7 +20,7 @@
 	HELI_FRAME
 	*/
 
-#define FRAME_ORIENTATION X_FRAME
+//#define FRAME_ORIENTATION X_FRAME
 	/*
 	PLUS_FRAME
 	X_FRAME
@@ -69,3 +69,7 @@
 // enable this for the new 'APM2' hardware
 // #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 // #define APM2_BETA_HARDWARE  // for developers who received an early beta board with the older BMP085
+
+
+// This is experimental!!, be caureful, effects stable mode
+#define WIND_COMP_STAB 0

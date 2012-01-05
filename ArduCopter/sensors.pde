@@ -48,11 +48,6 @@ static void init_barometer(void)
 		ground_temperature	= (ground_temperature * 7 + barometer.get_temperature()) / 8;
 		//Serial.printf("init %ld, %d, -, %ld, %ld, -, %d, %ld\n", barometer.RawTemp, barometer.Temp, barometer.RawPress,  barometer.Press, ground_temperature, ground_pressure);
 	}
-
-	abs_pressure  		= ground_pressure;
-
-	//Serial.printf("init %ld\n", abs_pressure);
-	//SendDebugln("barometer calibration complete.");
 }
 
 static void reset_baro(void)
@@ -66,27 +61,17 @@ static int32_t read_barometer(void)
  	float x, scaling, temp;
 
 	barometer.read();
-	abs_pressure = barometer.get_pressure();
+	float abs_pressure = barometer.get_pressure();
 
 
 	//Serial.printf("%ld, %ld, %ld, %ld\n", barometer.RawTemp, barometer.RawPress, barometer.Press, abs_pressure);
 
-	scaling 				= (float)ground_pressure / (float)abs_pressure;
+	scaling 				= (float)ground_pressure / abs_pressure;
 	temp 					= ((float)ground_temperature / 10.0f) + 273.15f;
 	x 						= log(scaling) * temp * 29271.267f;
 	return 	(x / 10);
 }
 
-// in M/S * 100
-static void read_airspeed(void)
-{
-
-}
-
-static void zero_airspeed(void)
-{
-
-}
 
 #endif // HIL_MODE != HIL_MODE_ATTITUDE
 
