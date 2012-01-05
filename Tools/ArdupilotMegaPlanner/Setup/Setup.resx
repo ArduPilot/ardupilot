@@ -2566,6 +2566,60 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;tabArducopter.ZOrder" xml:space="preserve">
     <value>4</value>
   </data>
+  <data name="BUT_HS4save.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_HS4save.Location" type="System.Drawing.Point, System.Drawing">
+    <value>479, 131</value>
+  </data>
+  <data name="BUT_HS4save.Size" type="System.Drawing.Size, System.Drawing">
+    <value>69, 23</value>
+  </data>
+  <data name="BUT_HS4save.TabIndex" type="System.Int32, mscorlib">
+    <value>131</value>
+  </data>
+  <data name="BUT_HS4save.Text" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="&gt;&gt;BUT_HS4save.Name" xml:space="preserve">
+    <value>BUT_HS4save</value>
+  </data>
+  <data name="&gt;&gt;BUT_HS4save.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+  </data>
+  <data name="&gt;&gt;BUT_HS4save.Parent" xml:space="preserve">
+    <value>tabHeli</value>
+  </data>
+  <data name="&gt;&gt;BUT_HS4save.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="BUT_swash_manual.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="BUT_swash_manual.Location" type="System.Drawing.Point, System.Drawing">
+    <value>298, 40</value>
+  </data>
+  <data name="BUT_swash_manual.Size" type="System.Drawing.Size, System.Drawing">
+    <value>69, 23</value>
+  </data>
+  <data name="BUT_swash_manual.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="BUT_swash_manual.Text" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="&gt;&gt;BUT_swash_manual.Name" xml:space="preserve">
+    <value>BUT_swash_manual</value>
+  </data>
+  <data name="&gt;&gt;BUT_swash_manual.Type" xml:space="preserve">
+    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
+  </data>
+  <data name="&gt;&gt;BUT_swash_manual.Parent" xml:space="preserve">
+    <value>tabHeli</value>
+  </data>
+  <data name="&gt;&gt;BUT_swash_manual.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
   <data name="label46.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -2699,7 +2753,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;groupBox3.ZOrder" xml:space="preserve">
-    <value>0</value>
+    <value>2</value>
   </data>
   <data name="label44.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2729,7 +2783,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label44.ZOrder" xml:space="preserve">
-    <value>1</value>
+    <value>3</value>
   </data>
   <data name="label43.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2759,7 +2813,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label43.ZOrder" xml:space="preserve">
-    <value>2</value>
+    <value>4</value>
   </data>
   <data name="label42.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2789,7 +2843,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label42.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>5</value>
   </data>
   <data name="label24.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -2918,7 +2972,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;groupBox2.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>6</value>
   </data>
   <data name="label41.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3098,7 +3152,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;groupBox1.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>7</value>
   </data>
   <data name="HS4_TRIM.Location" type="System.Drawing.Point, System.Drawing">
     <value>535, 241</value>
@@ -3119,7 +3173,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS4_TRIM.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>8</value>
   </data>
   <data name="HS3_TRIM.Location" type="System.Drawing.Point, System.Drawing">
     <value>122, 271</value>
@@ -3140,7 +3194,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS3_TRIM.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>9</value>
   </data>
   <data name="HS2_TRIM.Location" type="System.Drawing.Point, System.Drawing">
     <value>122, 245</value>
@@ -3161,7 +3215,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS2_TRIM.ZOrder" xml:space="preserve">
-    <value>8</value>
+    <value>10</value>
   </data>
   <data name="HS1_TRIM.Location" type="System.Drawing.Point, System.Drawing">
     <value>122, 219</value>
@@ -3182,7 +3236,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS1_TRIM.ZOrder" xml:space="preserve">
-    <value>9</value>
+    <value>11</value>
   </data>
   <data name="label39.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3212,7 +3266,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label39.ZOrder" xml:space="preserve">
-    <value>10</value>
+    <value>12</value>
   </data>
   <data name="label38.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3242,7 +3296,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label38.ZOrder" xml:space="preserve">
-    <value>11</value>
+    <value>13</value>
   </data>
   <data name="label37.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3272,7 +3326,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label37.ZOrder" xml:space="preserve">
-    <value>12</value>
+    <value>14</value>
   </data>
   <data name="label36.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3302,7 +3356,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label36.ZOrder" xml:space="preserve">
-    <value>13</value>
+    <value>15</value>
   </data>
   <data name="label26.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3332,7 +3386,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label26.ZOrder" xml:space="preserve">
-    <value>14</value>
+    <value>16</value>
   </data>
   <data name="PIT_MAX_.Location" type="System.Drawing.Point, System.Drawing">
     <value>310, 342</value>
@@ -3356,7 +3410,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;PIT_MAX_.ZOrder" xml:space="preserve">
-    <value>15</value>
+    <value>17</value>
   </data>
   <data name="label25.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3386,7 +3440,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label25.ZOrder" xml:space="preserve">
-    <value>16</value>
+    <value>18</value>
   </data>
   <data name="ROL_MAX_.Location" type="System.Drawing.Point, System.Drawing">
     <value>310, 316</value>
@@ -3410,7 +3464,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;ROL_MAX_.ZOrder" xml:space="preserve">
-    <value>17</value>
+    <value>19</value>
   </data>
   <data name="label23.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3440,7 +3494,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label23.ZOrder" xml:space="preserve">
-    <value>18</value>
+    <value>20</value>
   </data>
   <data name="label22.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3470,7 +3524,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label22.ZOrder" xml:space="preserve">
-    <value>19</value>
+    <value>21</value>
   </data>
   <data name="HS4_REV.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3497,7 +3551,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS4_REV.ZOrder" xml:space="preserve">
-    <value>20</value>
+    <value>22</value>
   </data>
   <data name="label20.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3527,7 +3581,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label20.ZOrder" xml:space="preserve">
-    <value>21</value>
+    <value>23</value>
   </data>
   <data name="label19.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3557,7 +3611,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label19.ZOrder" xml:space="preserve">
-    <value>22</value>
+    <value>24</value>
   </data>
   <data name="label18.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3587,7 +3641,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label18.ZOrder" xml:space="preserve">
-    <value>23</value>
+    <value>25</value>
   </data>
   <data name="SV3_POS_.Location" type="System.Drawing.Point, System.Drawing">
     <value>53, 271</value>
@@ -3611,7 +3665,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;SV3_POS_.ZOrder" xml:space="preserve">
-    <value>24</value>
+    <value>26</value>
   </data>
   <data name="SV2_POS_.Location" type="System.Drawing.Point, System.Drawing">
     <value>53, 245</value>
@@ -3635,7 +3689,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;SV2_POS_.ZOrder" xml:space="preserve">
-    <value>25</value>
+    <value>27</value>
   </data>
   <data name="SV1_POS_.Location" type="System.Drawing.Point, System.Drawing">
     <value>53, 219</value>
@@ -3659,7 +3713,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;SV1_POS_.ZOrder" xml:space="preserve">
-    <value>26</value>
+    <value>28</value>
   </data>
   <data name="HS3_REV.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3686,7 +3740,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS3_REV.ZOrder" xml:space="preserve">
-    <value>27</value>
+    <value>29</value>
   </data>
   <data name="HS2_REV.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3713,7 +3767,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS2_REV.ZOrder" xml:space="preserve">
-    <value>28</value>
+    <value>30</value>
   </data>
   <data name="HS1_REV.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3740,7 +3794,7 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;HS1_REV.ZOrder" xml:space="preserve">
-    <value>29</value>
+    <value>31</value>
   </data>
   <data name="label17.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
@@ -3770,60 +3824,6 @@ will work with hexa's etc</value>
     <value>tabHeli</value>
   </data>
   <data name="&gt;&gt;label17.ZOrder" xml:space="preserve">
-    <value>30</value>
-  </data>
-  <data name="BUT_HS4save.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_HS4save.Location" type="System.Drawing.Point, System.Drawing">
-    <value>479, 138</value>
-  </data>
-  <data name="BUT_HS4save.Size" type="System.Drawing.Size, System.Drawing">
-    <value>69, 23</value>
-  </data>
-  <data name="BUT_HS4save.TabIndex" type="System.Int32, mscorlib">
-    <value>131</value>
-  </data>
-  <data name="BUT_HS4save.Text" xml:space="preserve">
-    <value>Manual</value>
-  </data>
-  <data name="&gt;&gt;BUT_HS4save.Name" xml:space="preserve">
-    <value>BUT_HS4save</value>
-  </data>
-  <data name="&gt;&gt;BUT_HS4save.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
-  </data>
-  <data name="&gt;&gt;BUT_HS4save.Parent" xml:space="preserve">
-    <value>tabHeli</value>
-  </data>
-  <data name="&gt;&gt;BUT_HS4save.ZOrder" xml:space="preserve">
-    <value>31</value>
-  </data>
-  <data name="BUT_swash_manual.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="BUT_swash_manual.Location" type="System.Drawing.Point, System.Drawing">
-    <value>298, 47</value>
-  </data>
-  <data name="BUT_swash_manual.Size" type="System.Drawing.Size, System.Drawing">
-    <value>69, 23</value>
-  </data>
-  <data name="BUT_swash_manual.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="BUT_swash_manual.Text" xml:space="preserve">
-    <value>Manual</value>
-  </data>
-  <data name="&gt;&gt;BUT_swash_manual.Name" xml:space="preserve">
-    <value>BUT_swash_manual</value>
-  </data>
-  <data name="&gt;&gt;BUT_swash_manual.Type" xml:space="preserve">
-    <value>ArdupilotMega.MyButton, ArdupilotMegaPlanner, Version=1.0.0.0, Culture=neutral, PublicKeyToken=38326cb7e06851fc</value>
-  </data>
-  <data name="&gt;&gt;BUT_swash_manual.Parent" xml:space="preserve">
-    <value>tabHeli</value>
-  </data>
-  <data name="&gt;&gt;BUT_swash_manual.ZOrder" xml:space="preserve">
     <value>32</value>
   </data>
   <data name="HS4.Location" type="System.Drawing.Point, System.Drawing">
