@@ -794,13 +794,11 @@ namespace ArdupilotMega
             {
                 comPort.BaseStream.PortName = CMB_serialport.Text;
 
+                MainV2.comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
+
                 if (config[CMB_serialport.Text + "_BAUD"] != null)
                 {
                     CMB_baudrate.Text = config[CMB_serialport.Text + "_BAUD"].ToString();
-                }
-                else
-                {
-                    MainV2.comPort.BaseStream.BaudRate = int.Parse(CMB_baudrate.Text);
                 }
             }
             catch { }

@@ -39,7 +39,7 @@
             this.mavScale = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.RawValue = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.ConfigTabs = new System.Windows.Forms.TabControl();
-            this.TabAPM2 = new System.Windows.Forms.TabPage();
+            this.TabAP = new System.Windows.Forms.TabPage();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.THR_FS_VALUE = new System.Windows.Forms.NumericUpDown();
             this.label5 = new System.Windows.Forms.Label();
@@ -140,7 +140,7 @@
             this.label51 = new System.Windows.Forms.Label();
             this.RLL2SRV_P = new System.Windows.Forms.NumericUpDown();
             this.label52 = new System.Windows.Forms.Label();
-            this.TabAC2 = new System.Windows.Forms.TabPage();
+            this.TabAC = new System.Windows.Forms.TabPage();
             this.myLabel1 = new ArdupilotMega.MyLabel();
             this.CH7_OPT = new System.Windows.Forms.ComboBox();
             this.groupBox17 = new System.Windows.Forms.GroupBox();
@@ -287,7 +287,7 @@
             this.BUT_compare = new ArdupilotMega.MyButton();
             ((System.ComponentModel.ISupportInitialize)(this.Params)).BeginInit();
             this.ConfigTabs.SuspendLayout();
-            this.TabAPM2.SuspendLayout();
+            this.TabAP.SuspendLayout();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).BeginInit();
@@ -344,7 +344,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_D)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_I)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).BeginInit();
-            this.TabAC2.SuspendLayout();
+            this.TabAC.SuspendLayout();
             this.groupBox17.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_IMAX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_I)).BeginInit();
@@ -461,31 +461,31 @@
             // ConfigTabs
             // 
             resources.ApplyResources(this.ConfigTabs, "ConfigTabs");
-            this.ConfigTabs.Controls.Add(this.TabAPM2);
-            this.ConfigTabs.Controls.Add(this.TabAC2);
+            this.ConfigTabs.Controls.Add(this.TabAP);
+            this.ConfigTabs.Controls.Add(this.TabAC);
             this.ConfigTabs.Controls.Add(this.TabPlanner);
             this.ConfigTabs.Controls.Add(this.TabSetup);
             this.ConfigTabs.Name = "ConfigTabs";
             this.ConfigTabs.SelectedIndex = 0;
             this.ConfigTabs.SelectedIndexChanged += new System.EventHandler(this.Planner_TabIndexChanged);
             // 
-            // TabAPM2
+            // TabAP
             // 
-            this.TabAPM2.BackColor = System.Drawing.Color.Transparent;
-            this.TabAPM2.Controls.Add(this.groupBox3);
-            this.TabAPM2.Controls.Add(this.groupBox1);
-            this.TabAPM2.Controls.Add(this.groupBox2);
-            this.TabAPM2.Controls.Add(this.groupBox15);
-            this.TabAPM2.Controls.Add(this.groupBox16);
-            this.TabAPM2.Controls.Add(this.groupBox14);
-            this.TabAPM2.Controls.Add(this.groupBox13);
-            this.TabAPM2.Controls.Add(this.groupBox12);
-            this.TabAPM2.Controls.Add(this.groupBox11);
-            this.TabAPM2.Controls.Add(this.groupBox10);
-            this.TabAPM2.Controls.Add(this.groupBox9);
-            this.TabAPM2.Controls.Add(this.groupBox8);
-            resources.ApplyResources(this.TabAPM2, "TabAPM2");
-            this.TabAPM2.Name = "TabAPM2";
+            this.TabAP.BackColor = System.Drawing.Color.Transparent;
+            this.TabAP.Controls.Add(this.groupBox3);
+            this.TabAP.Controls.Add(this.groupBox1);
+            this.TabAP.Controls.Add(this.groupBox2);
+            this.TabAP.Controls.Add(this.groupBox15);
+            this.TabAP.Controls.Add(this.groupBox16);
+            this.TabAP.Controls.Add(this.groupBox14);
+            this.TabAP.Controls.Add(this.groupBox13);
+            this.TabAP.Controls.Add(this.groupBox12);
+            this.TabAP.Controls.Add(this.groupBox11);
+            this.TabAP.Controls.Add(this.groupBox10);
+            this.TabAP.Controls.Add(this.groupBox9);
+            this.TabAP.Controls.Add(this.groupBox8);
+            resources.ApplyResources(this.TabAP, "TabAP");
+            this.TabAP.Name = "TabAP";
             // 
             // groupBox3
             // 
@@ -1087,26 +1087,26 @@
             resources.ApplyResources(this.label52, "label52");
             this.label52.Name = "label52";
             // 
-            // TabAC2
+            // TabAC
             // 
-            this.TabAC2.Controls.Add(this.myLabel1);
-            this.TabAC2.Controls.Add(this.CH7_OPT);
-            this.TabAC2.Controls.Add(this.groupBox17);
-            this.TabAC2.Controls.Add(this.groupBox5);
-            this.TabAC2.Controls.Add(this.groupBox18);
-            this.TabAC2.Controls.Add(this.CHK_lockrollpitch);
-            this.TabAC2.Controls.Add(this.groupBox4);
-            this.TabAC2.Controls.Add(this.groupBox6);
-            this.TabAC2.Controls.Add(this.groupBox7);
-            this.TabAC2.Controls.Add(this.groupBox19);
-            this.TabAC2.Controls.Add(this.groupBox20);
-            this.TabAC2.Controls.Add(this.groupBox21);
-            this.TabAC2.Controls.Add(this.groupBox22);
-            this.TabAC2.Controls.Add(this.groupBox23);
-            this.TabAC2.Controls.Add(this.groupBox24);
-            this.TabAC2.Controls.Add(this.groupBox25);
-            resources.ApplyResources(this.TabAC2, "TabAC2");
-            this.TabAC2.Name = "TabAC2";
+            this.TabAC.Controls.Add(this.myLabel1);
+            this.TabAC.Controls.Add(this.CH7_OPT);
+            this.TabAC.Controls.Add(this.groupBox17);
+            this.TabAC.Controls.Add(this.groupBox5);
+            this.TabAC.Controls.Add(this.groupBox18);
+            this.TabAC.Controls.Add(this.CHK_lockrollpitch);
+            this.TabAC.Controls.Add(this.groupBox4);
+            this.TabAC.Controls.Add(this.groupBox6);
+            this.TabAC.Controls.Add(this.groupBox7);
+            this.TabAC.Controls.Add(this.groupBox19);
+            this.TabAC.Controls.Add(this.groupBox20);
+            this.TabAC.Controls.Add(this.groupBox21);
+            this.TabAC.Controls.Add(this.groupBox22);
+            this.TabAC.Controls.Add(this.groupBox23);
+            this.TabAC.Controls.Add(this.groupBox24);
+            this.TabAC.Controls.Add(this.groupBox25);
+            resources.ApplyResources(this.TabAC, "TabAC");
+            this.TabAC.Name = "TabAC";
             // 
             // myLabel1
             // 
@@ -2108,7 +2108,7 @@
             this.Load += new System.EventHandler(this.Configuration_Load);
             ((System.ComponentModel.ISupportInitialize)(this.Params)).EndInit();
             this.ConfigTabs.ResumeLayout(false);
-            this.TabAPM2.ResumeLayout(false);
+            this.TabAP.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.THR_FS_VALUE)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.THR_MAX)).EndInit();
@@ -2165,8 +2165,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_D)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_I)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.RLL2SRV_P)).EndInit();
-            this.TabAC2.ResumeLayout(false);
-            this.TabAC2.PerformLayout();
+            this.TabAC.ResumeLayout(false);
+            this.TabAC.PerformLayout();
             this.groupBox17.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_IMAX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.ACRO_PIT_I)).EndInit();
@@ -2231,8 +2231,8 @@
         private System.Windows.Forms.DataGridView Params;
         private MyButton BUT_writePIDS;
         private System.Windows.Forms.TabControl ConfigTabs;
-        private System.Windows.Forms.TabPage TabAPM2;
-        private System.Windows.Forms.TabPage TabAC2;
+        private System.Windows.Forms.TabPage TabAP;
+        private System.Windows.Forms.TabPage TabAC;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.NumericUpDown THR_FS_VALUE;
         private System.Windows.Forms.Label label5;
