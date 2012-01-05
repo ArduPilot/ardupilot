@@ -817,7 +817,7 @@ void setup() {
 
 void loop()
 {
-	int32_t timer 			= micros();
+	uint32_t timer 			= micros();
 	// We want this to execute fast
 	// ----------------------------
 	if ((timer - fast_loopTimer) >= 5000) {
