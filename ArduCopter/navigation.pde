@@ -19,7 +19,7 @@ static byte navigate()
 
 	// target_bearing is where we should be heading
 	// --------------------------------------------
-	target_bearing 	= get_bearing(&current_loc, &next_WP);
+	target_bearing 			= get_bearing(&current_loc, &next_WP);
 	home_to_copter_bearing 	= get_bearing(&home, &current_loc);
 
 	// nav_bearing will includes xtrac correction
@@ -31,8 +31,9 @@ static byte navigate()
 
 static bool check_missed_wp()
 {
-	int32_t temp 	= target_bearing - original_target_bearing;
-	temp 		= wrap_180(temp);
+	int32_t temp;
+	temp = target_bearing - original_target_bearing;
+	temp = wrap_180(temp);
 	return (abs(temp) > 10000);	//we pased the waypoint by 10 °
 }
 
@@ -92,16 +93,6 @@ static void calc_location_error(struct Location *next_loc)
 
 	// Y Error
 	lat_error	= next_loc->lat - current_loc.lat;							// 500 - 0 = 500 Go North
-}
-
-
-static void calc_position_hold()
-{
-	// only if we are not moving
-	//if (x_actual_speed == 0){
-	//	// what is the error?
-	//	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
-	//}
 }
 
 
@@ -197,14 +188,73 @@ static void calc_loiter_pitch_roll()
 {
 	//Serial.printf("ys %ld, cx %1.4f, _cx %1.4f | sy %1.4f, _sy %1.4f\n", dcm.yaw_sensor, cos_yaw_x, _cos_yaw_x, sin_yaw_y, _sin_yaw_y);
 	// rotate the vector
-	nav_roll 	=  (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
-	nav_pitch 	=  (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
+	nav_roll 	= (float)nav_lon * sin_yaw_y - (float)nav_lat * cos_yaw_x;
+	nav_pitch 	= (float)nav_lon * cos_yaw_x + (float)nav_lat * sin_yaw_y;
 
 	// flip pitch because forward is negative
 	nav_pitch = -nav_pitch;
 }
 
-static void calc_nav_rate(int max_speed)
+// what's the update rate? 10hz GPS?
+static void calc_wind_compensation()
+{
+	// this idea is a function that converts user input into I term for position hold
+	// the concept is simple. The iterms always act upon flight no matter what mode were in.
+	// when our velocity is 0, we call this function to update our iterms
+	// otherwise we slowly reduce out iterms to 0
+
+	// take the pitch and roll of the copter and,
+	float roll 	=  dcm.roll_sensor;
+	float pitch = -dcm.pitch_sensor; // flip pitch to make positive pitch forward
+
+	// rotate it to eliminate yaw of Copter
+	int32_t roll_tmp 	= roll *  sin_yaw_y  - pitch * -cos_yaw_x;
+	int32_t pitch_tmp 	= roll * -cos_yaw_x  + pitch *  sin_yaw_y;
+
+	roll_tmp  = constrain(roll_tmp, -2000, 2000);
+	pitch_tmp = constrain(pitch_tmp, -2000, 2000);
+
+	// filter the input and apply it to out integrator value
+	// nav_lon and nav_lat will be applied to normal flight
+	nav_lon = ((int32_t)g.pi_loiter_lon.get_integrator() * 15 + roll_tmp) / 16;
+	nav_lat = ((int32_t)g.pi_loiter_lat.get_integrator() * 15 + pitch_tmp) / 16;
+
+	// save smoothed input to integrator
+	g.pi_loiter_lon.set_integrator(nav_lon);		// X
+	g.pi_loiter_lat.set_integrator(nav_lat);		// Y
+
+	//Serial.printf("build wind iterm X:%d  Y:%d, r:%d, p:%d\n",
+	//				nav_lon,
+	//				nav_lat,
+	//				nav_roll,
+	//				nav_pitch);
+}
+
+static void reduce_wind_compensation()
+{
+	//slow degradation of iterms
+	float tmp;
+
+	tmp = g.pi_loiter_lon.get_integrator();
+	tmp *= .98;
+	g.pi_loiter_lon.set_integrator(tmp);		// X
+
+	tmp = g.pi_loiter_lat.get_integrator();
+	tmp *= .98;
+	g.pi_loiter_lat.set_integrator(tmp);		// Y
+
+#if 0
+	// debug
+	int16_t t1 = g.pi_loiter_lon.get_integrator();
+	int16_t t2 = g.pi_loiter_lon.get_integrator();
+
+	//Serial.printf("reduce wind iterm X:%d  Y:%d \n",
+	//				t1,
+	//				t2);
+#endif
+}
+
+static int16_t calc_desired_speed(int16_t max_speed)
 {
 	/*
 			   |< WP Radius
@@ -215,7 +265,7 @@ static void calc_nav_rate(int max_speed)
 	           |< we should slow to 1.5 m/s as we hit the target
 	*/
 
-	// max_speed is default 400 or 4m/s
+	// max_speed is default 600 or 6m/s
 	// (wp_distance * 50) = 1/2 of the distance converted to speed
 	// wp_distance is always in m/s and not cm/s - I know it's stupid that way
 	// for example 4m from target = 200cm/s speed
@@ -225,7 +275,7 @@ static void calc_nav_rate(int max_speed)
 	// limit the ramp up of the speed
 	// waypoint_speed_gov is reset to 0 at each new WP command
 	if(waypoint_speed_gov < max_speed){
-		waypoint_speed_gov += (int)(100.0 * dTnav); // increase at 1.5/ms
+		waypoint_speed_gov += (int)(50.0 * dTnav); // increase at .5/ms
 
 		// go at least 50cm/s
 		max_speed 		= max(50, waypoint_speed_gov);
@@ -233,30 +283,28 @@ static void calc_nav_rate(int max_speed)
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
 
+	return max_speed;
+}
+
+static void calc_nav_rate(int max_speed)
+{
 	// push us towards the original track
 	update_crosstrack();
 
 	// nav_bearing includes crosstrack
 	float temp 		= (9000 - nav_bearing) * RADX100;
 
-	// heading laterally, we want a zero speed here
-	//x_actual_speed 	= -sin(temp) * (float)g_gps->ground_speed;
-
 	x_rate_error 		= (cos(temp) * max_speed) - x_actual_speed; // 413
 	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
 	int16_t x_iterm 	= g.pi_loiter_lon.get_i(x_rate_error, dTnav);
-
 	nav_lon_p		 	= g.pi_nav_lon.get_p(x_rate_error);
 	nav_lon				= nav_lon_p + x_iterm;
 	nav_lon				= constrain(nav_lon, -3000, 3000);
 
-	// heading towards target
-	//y_actual_speed 	= cos(temp) * (float)g_gps->ground_speed;
 
 	y_rate_error 		= (sin(temp) * max_speed) - y_actual_speed; // 413
 	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
 	int16_t y_iterm 	= g.pi_loiter_lat.get_i(y_rate_error, dTnav);
-
 	nav_lat_p		 	= g.pi_nav_lat.get_p(y_rate_error);
 	nav_lat				= nav_lat_p + y_iterm;
 	nav_lat				= constrain(nav_lat, -3000, 3000);

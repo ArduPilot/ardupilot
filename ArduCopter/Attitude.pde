@@ -185,8 +185,8 @@ get_nav_throttle(int32_t z_error)
 	// calculate rate error
 	rate_error 		= rate_error - climb_rate;
 
-	// limit the rate
-	output =  constrain((int)g.pi_throttle.get_pi(rate_error, .1), -160, 180);
+	// limit the rate - iterm is not used
+	output =  constrain((int)g.pi_throttle.get_p(rate_error), -160, 180);
 
 	// light filter of output
 	output = (old_output * 3 + output) / 4;
@@ -202,6 +202,7 @@ static int
 get_rate_roll(int32_t target_rate)
 {
 	int32_t error	= (target_rate * 3.5) - (omega.x * DEGX100);
+	error = constrain(error, -20000, 20000);
 	return g.pi_acro_roll.get_pi(error, G_Dt);
 }
 
@@ -209,6 +210,7 @@ static int
 get_rate_pitch(int32_t target_rate)
 {
 	int32_t error	= (target_rate * 3.5) - (omega.y * DEGX100);
+	error = constrain(error, -20000, 20000);
 	return  g.pi_acro_pitch.get_pi(error, G_Dt);
 }
 
@@ -232,31 +234,30 @@ static void reset_hold_I(void)
 	g.pi_loiter_lon.reset_I();
 }
 
-// Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
-// Keeps outdated data out of our calculations
+// Keeps old data out of our calculation / logs
 static void reset_nav(void)
 {
-	nav_throttle 			= 0;
 	invalid_throttle 		= true;
-
-	g.pi_nav_lat.reset_I();
-	g.pi_nav_lon.reset_I();
-
-	// considering not reseting wind control
-	g.pi_loiter_lat.reset_I();
-	g.pi_loiter_lon.reset_I();
-
+	nav_throttle 			= 0;
 	circle_angle			= 0;
 	crosstrack_error 		= 0;
-	nav_lat 				= 0;
-	nav_lon 				= 0;
-	nav_roll 				= 0;
-	nav_pitch 				= 0;
 	target_bearing 			= 0;
 	wp_distance 			= 0;
-	wp_totalDistance 		= 0;
 	long_error 				= 0;
 	lat_error  				= 0;
+}
+
+static void reset_rate_I()
+{
+	// balances the quad
+	g.pi_stabilize_roll.reset_I();
+	g.pi_stabilize_pitch.reset_I();
+
+	// compensates rate error
+	g.pi_rate_roll.reset_I();
+	g.pi_rate_pitch.reset_I();
+	g.pi_acro_roll.reset_I();
+	g.pi_acro_pitch.reset_I();
 }
 
 

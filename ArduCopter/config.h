@@ -193,18 +193,6 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// AIRSPEED_SENSOR
-// AIRSPEED_RATIO
-//
-#ifndef AIRSPEED_SENSOR
-# define AIRSPEED_SENSOR		DISABLED
-#endif
-#ifndef AIRSPEED_RATIO
-# define AIRSPEED_RATIO			1.9936		// Note - this varies from the value in ArduPilot due to the difference in ADC resolution
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
 
 #ifndef HIL_MODE

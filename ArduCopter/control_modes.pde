@@ -3,6 +3,7 @@
 static void read_control_switch()
 {
 	static bool switch_debouncer = false;
+
 	byte switchPosition = readSwitch();
 
 	if (oldSwitchPosition != switchPosition){

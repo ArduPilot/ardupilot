@@ -7,7 +7,8 @@ import mavutil, mavwp, random
 # get location of scripts
 testdir=os.path.dirname(os.path.realpath(__file__))
 
-
+FRAME='octa'
+TARGET='sitl-octa'
 HOME=location(-35.362938,149.165085,584,270)
 
 homeloc = None
@@ -224,7 +225,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     #wait_altitude(mav, 30, 40)
-    ret = wait_waypoint(mav, 0, num_wp-1, timeout=500)
+    ret = wait_waypoint(mav, 0, num_wp, timeout=500)
     print("test: MISSION COMPLETE: passed=%s" % ret)
     # wait here until ready
     mavproxy.send('switch 5\n')
@@ -280,11 +281,14 @@ def fly_ArduCopter(viewerip=None):
     '''
     global homeloc
 
-    simquad_cmd = util.reltopdir('Tools/autotest/pysim/sim_quad.py') + ' --rate=400 --home=%f,%f,%u,%u' % (
-        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    simquad_cmd += ' --wind=6,45,.3'
+    if TARGET != 'sitl':
+        util.build_SIL('ArduCopter', target=TARGET)
+
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --rate=400 --home=%f,%f,%u,%u' % (
+        FRAME, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    sim_cmd += ' --wind=6,45,.3'
     if viewerip:
-        simquad_cmd += ' --fgout=%s:5503' % viewerip
+        sim_cmd += ' --fgout=%s:5503' % viewerip
 
     sil = util.start_SIL('ArduCopter', wipe=True)
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
@@ -300,9 +304,9 @@ def fly_ArduCopter(viewerip=None):
     util.pexpect_close(sil)
 
     sil = util.start_SIL('ArduCopter', height=HOME.alt)
-    simquad = pexpect.spawn(simquad_cmd, logfile=sys.stdout, timeout=10)
-    simquad.delaybeforesend = 0
-    util.pexpect_autoclose(simquad)
+    sim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
+    sim.delaybeforesend = 0
+    util.pexpect_autoclose(sim)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
@@ -323,7 +327,7 @@ def fly_ArduCopter(viewerip=None):
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([simquad, sil, mavproxy])
+    expect_list_extend([sim, sil, mavproxy])
 
     # get a mavlink connection going
     try:
@@ -451,7 +455,7 @@ def fly_ArduCopter(viewerip=None):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(simquad)
+    util.pexpect_close(sim)
 
     if os.path.exists('ArduCopter-valgrind.log'):
         os.chmod('ArduCopter-valgrind.log', 0644)
@@ -462,3 +466,36 @@ def fly_ArduCopter(viewerip=None):
         return False
     return True
 
+
+
+
+
+
+#!	        mavproxy.send('rc 2 1390\n')
+#!	        #adjust till the rate is 0;
+#!
+#!	        mavproxy.send('rc 4 1610\n')
+#!	        if not wait_heading(mav, 0):
+#!	            return False
+#!	        mavproxy.send('rc 4 1500\n')
+#!
+#!	        mavproxy.send('rc 2 1455\n')
+#!	        #adjust till the rate is 0;
+#!	        pitch_test = 1455
+#!	        roll_test = 1500
+#!	        old_lat = 0
+#!	        old_lon = 0
+#!
+#!	        while(1):
+#!	            pos = current_location(mav)
+#!	            tmp = (pos.lat *10e7) - (old_lat *10e7)
+#!	            print("tmp %d " % tmp)
+#!	            if(tmp > 0 ):
+#!	                print("higher tmp %d " % (tmp))
+#!	                pitch_test += 1
+#!	            if(tmp < 0 ):
+#!	                print("lower tmp %d " % (tmp))
+#!	                pitch_test -= 1
+#!	            mavproxy.send('rc 2 %u\n' % math.floor(pitch_test))
+#!	            old_lat = pos.lat
+#!	            #old_lon = pos.lon

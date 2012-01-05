@@ -30,6 +30,15 @@ mavlink10:
 sitl:
 	make -f ../libraries/Desktop/Makefile.desktop
 
+sitl-octa:
+	make -f ../libraries/Desktop/Makefile.desktop octa
+
+sitl-hexa:
+	make -f ../libraries/Desktop/Makefile.desktop hexa
+
+sitl-y6:
+	make -f ../libraries/Desktop/Makefile.desktop y6
+
 etags:
 	cd .. && etags -f ArduCopter/TAGS --langmap=C++:.pde.cpp.h $$(git ls-files ArduCopter libraries)
 

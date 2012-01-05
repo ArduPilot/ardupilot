@@ -206,7 +206,7 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
         if (current_wp == wpnum_end and wp_dist < max_dist):
             print("Reached final waypoint %u" % seq)
             return True
-        if (current_wp == 255):
+        if (seq >= 255):
             print("Reached final waypoint %u" % seq)
             return True
         if seq > current_wp+1:
