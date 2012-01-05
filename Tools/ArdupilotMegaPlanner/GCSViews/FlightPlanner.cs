@@ -295,8 +295,8 @@ namespace ArdupilotMega.GCSViews
                     ans = (int)ans;
                     if (alt != 0)
                         cell.Value = alt.ToString();
-                    // is  absolute             online          verify height
-                    if (CHK_altmode.Checked && isonline && CHK_geheight.Checked)
+                    //   online          verify height
+                    if (isonline && CHK_geheight.Checked)
                     {
                         cell.Value = ((int)getGEAlt(lat, lng) + int.Parse(TXT_DefaultAlt.Text)).ToString();
                     }
