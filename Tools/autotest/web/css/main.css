@@ -11,11 +11,11 @@ body {
 	margin:0px;
 	padding:0px;
 	background-color: #fff;
-	background-image: url(images/bg.png);
+	background-image: url(/images/bg.png);
 }
 
 #logo {
-	background-image:url(images/logo.png);
+	background-image:url(/images/logo.png);
 	background-repeat:no-repeat;
 	height: 120px;
 	width: 420px;
