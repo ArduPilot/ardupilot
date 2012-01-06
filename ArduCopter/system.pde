@@ -450,11 +450,15 @@ static void set_mode(byte mode)
 	control_mode = constrain(control_mode, 0, NUM_MODES - 1);
 
 	// used to stop fly_aways
-	motor_auto_armed = (g.rc_3.control_in > 0) || failsafe;
+	motor_auto_armed = (g.rc_3.control_in > 0);
 
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
 
+	// do not auto_land if we are leaving RTL
+	auto_land_timer = 0;
+
+	// debug to Serial terminal
 	Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
@@ -547,6 +551,14 @@ static void set_mode(byte mode)
 			break;
 	}
 
+	if(failsafe){
+		// this is to allow us to fly home without interactive throttle control
+		throttle_mode = THROTTLE_AUTO;
+		// does not wait for us to be in high throttle, since the
+		// Receiver will be outputting low throttle
+		motor_auto_armed = true;
+	}
+
 	if(throttle_mode == THROTTLE_MANUAL){
 		// reset all of the throttle iterms
 		g.pi_alt_hold.reset_I();
@@ -592,7 +604,6 @@ static void set_failsafe(boolean mode)
 			// We've lost radio contact
 			// ------------------------
 			failsafe_on_event();
-
 		}
 	}
 }

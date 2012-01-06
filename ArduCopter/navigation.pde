@@ -5,8 +5,8 @@
 //****************************************************************
 static byte navigate()
 {
-	// waypoint distance from plane
-	// ----------------------------
+	// waypoint distance from plane in meters
+	// ---------------------------------------
 	wp_distance = get_distance(&current_loc, &next_WP);
 	home_distance = get_distance(&current_loc, &home);
 
