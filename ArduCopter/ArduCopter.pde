@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.1.1r6 alpha"
+#define THISFIRMWARE "ArduCopter V2.1.1r7 alpha"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -787,6 +787,8 @@ static uint32_t         nav_loopTimer;
 static float 			dTnav;
 // Counters for branching from 4 minute control loop used to save Compass offsets
 static int16_t			superslow_loopCounter;
+// RTL Autoland Timer
+static uint32_t 		auto_land_timer;
 
 
 // Tracks if GPS is enabled based on statup routine
@@ -1606,11 +1608,9 @@ static void update_navigation()
 
 		case RTL:
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
-				//lets just jump to Loiter Mode after RTL
-				//if(land after RTL)
-				//set_mode(LAND);
-				//else
+				// if this value > 0, we are set to trigger auto_land after 30 seconds
 				set_mode(LOITER);
+				auto_land_timer = millis();
 
 			}else{
 				// calculates desired Yaw
@@ -1640,6 +1640,12 @@ static void update_navigation()
 			}else{
 				// this is also set by GPS in update_nav
 				wp_control = LOITER_MODE;
+			}
+
+			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 20000){
+				// just to make sure we clear the timer
+				auto_land_timer = 0;
+				set_mode(LAND);
 			}
 
 			// calculates the desired Roll and Pitch
@@ -1824,7 +1830,7 @@ adjust_altitude()
 		//manual_boost = (g.rc_3.control_in == 800) ? 20 : 0;
 	}*/
 
-	if(g.rc_3.control_in <= 180 && !failsafe){
+	if(g.rc_3.control_in <= 180){
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
@@ -1832,7 +1838,7 @@ adjust_altitude()
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
-	}else if  (g.rc_3.control_in >= 650 && !failsafe){
+	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
 		g.throttle_cruise += g.pi_alt_hold.get_integrator();

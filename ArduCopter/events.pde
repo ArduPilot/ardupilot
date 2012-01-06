@@ -12,16 +12,23 @@ static void failsafe_on_event()
 		case AUTO:
 			if (g.throttle_fs_action == 1) {
 				set_mode(RTL);
+				// send up up 10m
+				next_WP.alt += 1000;
 			}
 			// 2 = Stay in AUTO and ignore failsafe
 
 		default:
 			if(home_is_set == true){
-				if ((get_distance(&current_loc, &home) > 15) && (current_loc.alt > 400)){
+				// home distance is in meters
+				// This is to prevent accidental RTL
+				if ((home_distance > 15) && (current_loc.alt > 400)){
 					set_mode(RTL);
-					// override safety
-					motor_auto_armed = true;
+					// send up up 10m
+					next_WP.alt += 1000;
 				}
+			}else{
+				// We have no GPS so we must land
+				set_mode(LAND);
 			}
 			break;
 	}
