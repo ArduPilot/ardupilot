@@ -177,6 +177,32 @@ def fly_RTL(mavproxy, mav, side=60):
             return True
     return True
 
+def fly_failsafe(mavproxy, mav, side=60):
+    '''Fly, Failsafe, return, land'''
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('rc 3 1430\n')
+    failed = False
+
+    print("# Going forward %u meters" % side)
+    mavproxy.send('rc 2 1350\n')
+    if not wait_distance(mav, side, 5, 60):
+        failed = True
+    mavproxy.send('rc 2 1500\n')
+
+    print("# Enter Failsafe")
+    mavproxy.send('rc 3 900\n')
+    tstart = time.time()
+    while time.time() < tstart + 120:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        pos = current_location(mav)
+        #delta = get_distance(start, pos)
+        print("Alt: %u" % m.alt)
+        if(m.alt <= 1):
+            mavproxy.send('rc 3 1100\n')
+            return True
+    return True
+
 
 def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly Simple, flying N then E'''
@@ -392,6 +418,16 @@ def fly_ArduCopter(viewerip=None):
         print("# Test RTL")
         if not fly_RTL(mavproxy, mav):
             print("RTL failed")
+            failed = True
+
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        print("# Test Failsafe")
+        if not fly_failsafe(mavproxy, mav):
+            print("FS failed")
             failed = True
 
         print("# Takeoff")
