@@ -1609,8 +1609,8 @@ static void update_navigation()
 		case RTL:
 			if((wp_distance <= g.waypoint_radius) || check_missed_wp()){
 				// if this value > 0, we are set to trigger auto_land after 30 seconds
-				auto_land_timer = millis();
 				set_mode(LOITER);
+				auto_land_timer = millis();
 
 			}else{
 				// calculates desired Yaw
@@ -1645,7 +1645,7 @@ static void update_navigation()
 			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 30000){
 				// just to make sure we clear the timer
 				auto_land_timer = 0;
-				set_mode(land);
+				set_mode(LAND);
 			}
 
 			// calculates the desired Roll and Pitch
