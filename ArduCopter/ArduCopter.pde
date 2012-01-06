@@ -1642,7 +1642,7 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
-			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 30000){
+			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 20000){
 				// just to make sure we clear the timer
 				auto_land_timer = 0;
 				set_mode(LAND);
@@ -1830,7 +1830,7 @@ adjust_altitude()
 		//manual_boost = (g.rc_3.control_in == 800) ? 20 : 0;
 	}*/
 
-	if(g.rc_3.control_in <= 180 && !failsafe){
+	if(g.rc_3.control_in <= 180){
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
@@ -1838,7 +1838,7 @@ adjust_altitude()
 		g.pi_alt_hold.reset_I();
 		g.pi_throttle.reset_I();
 
-	}else if  (g.rc_3.control_in >= 650 && !failsafe){
+	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
 		g.throttle_cruise += g.pi_alt_hold.get_integrator();
