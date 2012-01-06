@@ -142,6 +142,7 @@ static void read_radio()
 
 static void throttle_failsafe(uint16_t pwm)
 {
+	// Don't enter Failsafe if not enabled by user
 	if(g.throttle_fs_enabled == 0)
 		return;
 
@@ -155,7 +156,9 @@ static void throttle_failsafe(uint16_t pwm)
 			SendDebug("MSG FS ON ");
 			SendDebugln(pwm, DEC);
 		}else if(failsafeCounter == 10) {
-			set_failsafe(true);
+			// Don't enter Failsafe if we are not armed
+			if(motor_armed == true)
+				set_failsafe(true);
 		}else if (failsafeCounter > 10){
 			failsafeCounter = 11;
 		}
