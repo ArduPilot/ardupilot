@@ -455,6 +455,9 @@ static void set_mode(byte mode)
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
 
+	// do not auto_land if we are leaving RTL
+	auto_land_timer = 0;
+
 	Serial.println(flight_mode_strings[control_mode]);
 
 	// report the GPS and Motor arming status
