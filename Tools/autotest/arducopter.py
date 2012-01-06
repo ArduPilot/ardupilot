@@ -152,12 +152,11 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
 
     return not failed
 
-def fly_simple(mavproxy, mav, side=60, timeout=120):
-    '''fly a square, flying N then E'''
+def fly_RTL(mavproxy, mav, side=60):
+    '''Fly, return, land'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1430\n')
-    tstart = time.time()
     failed = False
 
     print("# Going forward %u meters" % side)
@@ -166,8 +165,35 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
         failed = True
     mavproxy.send('rc 2 1500\n')
 
+    print("# Enter RTL")
+    mavproxy.send('switch 3\n')
+    tstart = time.time()
+    while time.time() < tstart + 120:
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+        pos = current_location(mav)
+        #delta = get_distance(start, pos)
+        print("Alt: %u" % m.alt)
+        if(m.alt <= 1):
+            return True
+    return True
+
+
+def fly_simple(mavproxy, mav, side=60, timeout=120):
+    '''fly Simple, flying N then E'''
+    mavproxy.send('switch 6\n')
+    wait_mode(mav, 'STABILIZE')
+    mavproxy.send('rc 3 1430\n')
+    tstart = time.time()
+    failed = False
+
+    print("# Going forward %u meters" % side)
+    mavproxy.send('rc 2 1390\n')
+    if not wait_distance(mav, side, 5, 60):
+        failed = True
+    mavproxy.send('rc 2 1500\n')
+
     print("# Going east for 30 seconds")
-    mavproxy.send('rc 1 1650\n')
+    mavproxy.send('rc 1 1610\n')
     tstart = time.time()
     while time.time() < (tstart + 30):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
@@ -176,12 +202,13 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     mavproxy.send('rc 1 1500\n')
 
     print("# Going back %u meters" % side)
-    mavproxy.send('rc 2 1650\n')
+    mavproxy.send('rc 2 1610\n')
     if not wait_distance(mav, side, 5, 60):
         failed = True
     mavproxy.send('rc 2 1500\n')
     #restore to default
     mavproxy.send('param set SIMPLE 0\n')
+    mavproxy.send('rc 3 1430\n')
     return not failed
 
 
@@ -355,6 +382,16 @@ def fly_ArduCopter(viewerip=None):
         print("# Arm motors")
         if not arm_motors(mavproxy, mav):
             print("arm_motors failed")
+            failed = True
+
+        print("# Takeoff")
+        if not takeoff(mavproxy, mav, 10):
+            print("takeoff failed")
+            failed = True
+
+        print("# Test RTL")
+        if not fly_RTL(mavproxy, mav):
+            print("RTL failed")
             failed = True
 
         print("# Takeoff")
