@@ -50,7 +50,7 @@ def takeoff(mavproxy, mav, alt_min = 30):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1500\n')
+    mavproxy.send('rc 3 1510\n')
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
@@ -208,7 +208,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly Simple, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1450\n')
     tstart = time.time()
     failed = False
 
