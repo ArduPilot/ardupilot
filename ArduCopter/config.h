@@ -170,7 +170,7 @@
 # endif
 #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-#  define CONFIG_SONAR_SOURCE_ANALOG_PIN AN4
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A1
 # endif
 #else
 # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
