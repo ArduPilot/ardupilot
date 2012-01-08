@@ -1886,6 +1886,8 @@ static void tuning(){
 			g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pi_rate_roll.kP(tuning_value);
 			g.pi_rate_pitch.kP(tuning_value);
+			g.pi_acro_roll.kP(tuning_value);
+			g.pi_acro_pitch.kP(tuning_value);
 			break;
 
 		case CH6_RATE_KI:
