@@ -195,7 +195,7 @@ static void calc_loiter_pitch_roll()
 	nav_pitch = -nav_pitch;
 }
 
-// what's the update rate? 10hz GPS?
+#if WIND_COMP_STAB == 1
 static void calc_wind_compensation()
 {
 	// this idea is a function that converts user input into I term for position hold
@@ -216,8 +216,25 @@ static void calc_wind_compensation()
 
 	// filter the input and apply it to out integrator value
 	// nav_lon and nav_lat will be applied to normal flight
-	nav_lon = ((int32_t)g.pi_loiter_lon.get_integrator() * 15 + roll_tmp) / 16;
-	nav_lat = ((int32_t)g.pi_loiter_lat.get_integrator() * 15 + pitch_tmp) / 16;
+
+	// This filter is far too fast!!!
+	//nav_lon = ((int32_t)g.pi_loiter_lon.get_integrator() * 15 + roll_tmp) / 16;
+	//nav_lat = ((int32_t)g.pi_loiter_lat.get_integrator() * 15 + pitch_tmp) / 16;
+
+	nav_lon = g.pi_loiter_lon.get_integrator();
+	nav_lat = g.pi_loiter_lat.get_integrator();
+
+	// Maybe a slower filter would work?
+	if(g.pi_loiter_lon.get_integrator() > roll_tmp){
+		g.pi_loiter_lon.set_integrator(nav_lon - 5);
+	}else if(g.pi_loiter_lon.get_integrator() < roll_tmp){
+		g.pi_loiter_lon.set_integrator(nav_lon + 5);
+	}
+	if(g.pi_loiter_lat.get_integrator() > pitch_tmp){
+		g.pi_loiter_lat.set_integrator(nav_lat - 5);
+	}else if(g.pi_loiter_lat.get_integrator() < pitch_tmp){
+		g.pi_loiter_lat.set_integrator(nav_lat + 5);
+	}
 
 	// save smoothed input to integrator
 	g.pi_loiter_lon.set_integrator(nav_lon);		// X
@@ -243,16 +260,15 @@ static void reduce_wind_compensation()
 	tmp *= .98;
 	g.pi_loiter_lat.set_integrator(tmp);		// Y
 
-#if 0
 	// debug
-	int16_t t1 = g.pi_loiter_lon.get_integrator();
-	int16_t t2 = g.pi_loiter_lon.get_integrator();
+	//int16_t t1 = g.pi_loiter_lon.get_integrator();
+	//int16_t t2 = g.pi_loiter_lon.get_integrator();
 
 	//Serial.printf("reduce wind iterm X:%d  Y:%d \n",
 	//				t1,
 	//				t2);
-#endif
 }
+#endif
 
 static int16_t calc_desired_speed(int16_t max_speed)
 {
