@@ -65,10 +65,10 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
-# define FRAME_CONFIG		QUAD_FRAME
+# define FRAME_CONFIG	QUAD_FRAME
 #endif
 #ifndef FRAME_ORIENTATION
-# define FRAME_ORIENTATION		PLUS_FRAME
+# define FRAME_ORIENTATION	X_FRAME
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -467,6 +467,11 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+
+// experimental feature for
+#ifndef WIND_COMP_STAB
+# define WIND_COMP_STAB		0
+#endif
 
 
 
