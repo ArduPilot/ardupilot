@@ -58,7 +58,14 @@ static void update_commands()
 				command_nav_queue.id = NO_COMMAND;
 			}
 		}else{
+			// we are out of commands
 			g.command_index  = command_nav_index = 255;
+			// if we are on the ground, enter stabilize, else Land
+			if (land_complete == true){
+				set_mode(STABILIZE);
+			} else {
+				set_mode(LAND);
+			}
 		}
 	}
 
