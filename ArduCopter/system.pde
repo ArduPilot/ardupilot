@@ -426,10 +426,11 @@ static void startup_ground(void)
 
 static void set_mode(byte mode)
 {
-	if(control_mode == mode){
+	//if(control_mode == mode){
 		// don't switch modes if we are already in the correct mode.
-		return;
-	}
+	//	Serial.print("Double mode\n");
+		//return;
+	//}
 
 	// if we don't have GPS lock
 	if(home_is_set == false){
@@ -457,6 +458,9 @@ static void set_mode(byte mode)
 
 	// do not auto_land if we are leaving RTL
 	auto_land_timer = 0;
+
+	// if we change modes, we must clear landed flag
+	land_complete 	= false;
 
 	// debug to Serial terminal
 	Serial.println(flight_mode_strings[control_mode]);
@@ -531,12 +535,10 @@ static void set_mode(byte mode)
 			break;
 
 		case LAND:
-			land_complete 	= false;
-			yaw_mode 		= YAW_HOLD;
-			roll_pitch_mode = ROLL_PITCH_AUTO;
+			yaw_mode 		= LOITER_YAW;
+			roll_pitch_mode = LOITER_RP;
 			throttle_mode 	= THROTTLE_AUTO;
-			next_WP 		= current_loc;
-			next_WP.alt 	= 0;
+			do_land();
 			break;
 
 		case RTL:
