@@ -1390,15 +1390,17 @@ void update_roll_pitch_mode(void)
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
+
 			#if WIND_COMP_STAB == 1
-			// in this mode, nav_roll and nav_pitch = the iterm
-			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in  + nav_roll);
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in + nav_pitch);
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in  + nav_roll);
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in + nav_pitch);
 			#else
-			// in this mode, nav_roll and nav_pitch = the iterm
-			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			#endif
+
 			break;
 
 		case ROLL_PITCH_AUTO:
@@ -1612,6 +1614,10 @@ static void update_navigation()
 				set_mode(LOITER);
 				auto_land_timer = millis();
 
+			}else if(current_loc.alt < (next_WP.alt - 300)){
+				// don't navigate if we are below our target alt
+				wp_control = LOITER_MODE;
+
 			}else{
 				// calculates desired Yaw
 				#if FRAME_CONFIG ==	HELI_FRAME
@@ -1655,10 +1661,13 @@ static void update_navigation()
 		case LAND:
 			wp_control 		= LOITER_MODE;
 
-			if (current_loc.alt < 250){
-				wp_control = NO_NAV_MODE;
-				next_WP.alt = -200; // force us down
+			if(verify_land())  {  // JLN fix for auto land in RTL
+				set_mode(STABILIZE);
+			} else {
+				// calculates the desired Roll and Pitch
+				update_nav_wp();
 			}
+
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
@@ -2012,14 +2021,19 @@ static void update_nav_wp()
 
 	}else if(wp_control == NO_NAV_MODE){
 		// calc the Iterms for Loiter based on velocity
-		//if ((x_actual_speed + y_actual_speed) == 0)
-		if (g_gps->ground_speed < 50)
-			calc_wind_compensation();
-		else
-			reduce_wind_compensation();
+		#if WIND_COMP_STAB == 1
+			if (g_gps->ground_speed < 50)
+				calc_wind_compensation();
+			else
+				reduce_wind_compensation();
 
-		// rotate nav_lat, nav_lon to roll and pitch
-		calc_loiter_pitch_roll();
+			// rotate nav_lat, nav_lon to roll and pitch
+			calc_loiter_pitch_roll();
+		#else
+			// clear out our nav so we can do things like land straight
+			nav_pitch 	= 0;
+			nav_roll 	= 0;
+		#endif
 	}
 }
 
