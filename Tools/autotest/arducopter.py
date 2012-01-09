@@ -374,8 +374,9 @@ def fly_ArduCopter(viewerip=None):
         os.unlink(buildlog)
     os.link(logfile, buildlog)
 
-    mavproxy.expect('Received [0-9]+ parameters')
-    mavproxy.expect("Ready to FLY")
+    # the received parameters can come before or after the ready to fly message
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
 
     util.expect_setup_callback(mavproxy, expect_callback)
 
