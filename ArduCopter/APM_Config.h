@@ -2,6 +2,9 @@
 
 // Example config file. Take a look at config.h. Any term define there can be overridden by defining it here.
 
+// # define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+// # define APM2_BETA_HARDWARE
+
 // GPS is auto-selected
 
 #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
@@ -27,7 +30,7 @@
 	V_FRAME
 	*/
 
-# define CH7_OPTION		CH7_SAVE_WP
+//# define CH7_OPTION		CH7_SAVE_WP
 	/*
 	CH7_DO_NOTHING
 	CH7_SET_HOVER
@@ -41,9 +44,6 @@
 
 #define ACCEL_ALT_HOLD 0		// disabled by default, work in progress
 
-// lets use Manual throttle during Loiter
-//#define LOITER_THR			THROTTLE_MANUAL
-# define RTL_YAW 			YAW_HOLD
 
 //#define RATE_ROLL_I 	0.18
 //#define RATE_PITCH_I	0.18
@@ -70,6 +70,4 @@
 // #define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 // #define APM2_BETA_HARDWARE  // for developers who received an early beta board with the older BMP085
 
-
-// This is experimental!!, be caureful, effects stable mode
-#define WIND_COMP_STAB 0
+//# define LOGGING_ENABLED		DISABLED

@@ -348,7 +348,7 @@ static bool verify_land()
 	static int16_t	velocity_land = -1;
 
 	// land at .62 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 16);			// condition_value = our initial
+	next_WP.alt  = original_alt - ((millis() - land_start) / 32);			// condition_value = our initial
 
 	if (old_alt == 0)
 		old_alt = current_loc.alt;
@@ -357,15 +357,17 @@ static bool verify_land()
 		velocity_land = 2000;
 
 
-	if ((current_loc.alt - home.alt) < 500){
+	if ((current_loc.alt - home.alt) < 300){
 		// a LP filter used to tell if we have landed
 		// will drive to 0 if we are on the ground - maybe, the baro is noisy
 		velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
 	}
+
+	// remenber altitude for climb_rate
 	old_alt = current_loc.alt;
 
-	if ((current_loc.alt - home.alt) < 300){
-
+	if ((current_loc.alt - home.alt) < 200){
+		// don't bank to hold position
 		wp_control = NO_NAV_MODE;
 
 		// Update by JLN for a safe AUTO landing
@@ -375,21 +377,14 @@ static bool verify_land()
 		g.pi_throttle.reset_I();
 	}
 
-	if(g.sonar_enabled){
-		// decide which sensor we're using
-		if(sonar_alt < 40){
-			land_complete = true;
-			//Serial.println("Y");
-			return true;
-		}
-	}
-
-	if((current_loc.alt - home.alt)  < 300 && velocity_land <= 100){
+	if((current_loc.alt - home.alt)  < 100 && velocity_land <= 100){
 		land_complete = true;
+		// reset manual_boost hack
+		manual_boost = 0;
+
 		// reset old_alt
 		old_alt = 0;
-		init_disarm_motors();
-		return true;
+		return false;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);

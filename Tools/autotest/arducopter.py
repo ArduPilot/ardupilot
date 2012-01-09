@@ -50,7 +50,7 @@ def takeoff(mavproxy, mav, alt_min = 30):
     '''takeoff get to 30m altitude'''
     mavproxy.send('switch 6\n') # stabilize mode
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1500\n')
+    mavproxy.send('rc 3 1510\n')
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     if (m.alt < alt_min):
         wait_altitude(mav, alt_min, (alt_min + 5))
@@ -208,7 +208,7 @@ def fly_simple(mavproxy, mav, side=60, timeout=120):
     '''fly Simple, flying N then E'''
     mavproxy.send('switch 6\n')
     wait_mode(mav, 'STABILIZE')
-    mavproxy.send('rc 3 1430\n')
+    mavproxy.send('rc 3 1450\n')
     tstart = time.time()
     failed = False
 
@@ -374,8 +374,9 @@ def fly_ArduCopter(viewerip=None):
         os.unlink(buildlog)
     os.link(logfile, buildlog)
 
-    mavproxy.expect('Received [0-9]+ parameters')
-    mavproxy.expect("Ready to FLY")
+    # the received parameters can come before or after the ready to fly message
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
+    mavproxy.expect(['Received [0-9]+ parameters', 'Ready to FLY'])
 
     util.expect_setup_callback(mavproxy, expect_callback)
 

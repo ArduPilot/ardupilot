@@ -413,8 +413,9 @@ static void do_wait_delay()
 
 static void do_change_alt()
 {
-	condition_rate		= next_nonnav_command.lat;
+	condition_rate		= abs((int)next_nonnav_command.lat);
 	condition_value 	= next_nonnav_command.alt;
+	if(condition_value < current_loc.alt) condition_rate = -condition_rate;
 	target_altitude		= current_loc.alt + (condition_rate / 10);		// Divide by ten for 10Hz update
 	next_WP.alt 		= condition_value;								// For future nav calculations
 	offset_altitude 	= 0;											// For future nav calculations
