@@ -18,6 +18,7 @@
 #define ROLL_PITCH_STABLE 	0
 #define ROLL_PITCH_ACRO 	1
 #define ROLL_PITCH_AUTO		2
+#define ROLL_PITCH_STABLE_OF	3
 
 #define THROTTLE_MANUAL 	0
 #define THROTTLE_HOLD 		1
@@ -155,6 +156,10 @@
 #define CH6_Z_GAIN 15
 #define CH6_DAMP 16
 
+// optical flow controller
+#define CH6_OPTFLOW_KP 17
+#define CH6_OPTFLOW_KI 18
+
 
 // nav byte mask
 // -------------
@@ -283,8 +288,8 @@ enum gcs_severity {
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
 
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*VOLT_DIV_RATIO
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
+#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1023.0))*VOLT_DIV_RATIO
+#define CURRENT_AMPS(x) ((x*(g.input_voltage/1023.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
 //#define BARO_FILTER_SIZE 8
 
 /* ************************************************************** */

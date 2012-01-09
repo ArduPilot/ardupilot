@@ -65,10 +65,10 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
-# define FRAME_CONFIG		QUAD_FRAME
+# define FRAME_CONFIG	QUAD_FRAME
 #endif
 #ifndef FRAME_ORIENTATION
-# define FRAME_ORIENTATION		PLUS_FRAME
+# define FRAME_ORIENTATION	X_FRAME
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -170,7 +170,7 @@
 # endif
 #elif CONFIG_SONAR_SOURCE == SONAR_SOURCE_ANALOG_PIN
 # ifndef CONFIG_SONAR_SOURCE_ANALOG_PIN
-#  define CONFIG_SONAR_SOURCE_ANALOG_PIN AN4
+#  define CONFIG_SONAR_SOURCE_ANALOG_PIN A1
 # endif
 #else
 # warning Invalid value for CONFIG_SONAR_SOURCE, disabling sonar
@@ -310,6 +310,23 @@
 #ifndef OPTFLOW_FOV
 # define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_08_FOV
 #endif
+// optical flow based loiter PI values
+#ifndef OPTFLOW_ROLL_P
+  #define OPTFLOW_ROLL_P 6.4
+#endif
+#ifndef OPTFLOW_ROLL_I
+  #define OPTFLOW_ROLL_I 0.068
+#endif
+#ifndef OPTFLOW_PITCH_P
+  #define OPTFLOW_PITCH_P 6.4
+#endif
+#ifndef OPTFLOW_PITCH_I
+  #define OPTFLOW_PITCH_I 0.068
+#endif
+#ifndef OPTFLOW_IMAX
+  #define OPTFLOW_IMAX 4
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
@@ -467,6 +484,11 @@
 # define SUPER_SIMPLE		DISABLED
 #endif
 
+
+// experimental feature for
+#ifndef WIND_COMP_STAB
+# define WIND_COMP_STAB		0
+#endif
 
 
 

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.1.1r7 alpha"
+#define THISFIRMWARE "ArduCopter V2.1.1r8 alpha"
 /*
 ArduCopter Version 2.0 Beta
 Authors:	Jason Short
@@ -665,6 +665,11 @@ static int16_t	nav_lon;
 static int16_t	nav_lat_p;
 static int16_t	nav_lon_p;
 
+// The Commanded ROll from the autopilot based on optical flow sensor.
+static int32_t	of_roll = 0;
+// The Commanded pitch from the autopilot based on optical flow sensor. negative Pitch means go forward.
+static int32_t	of_pitch = 0;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation Throttle control
@@ -926,12 +931,6 @@ static void medium_loop()
 				update_GPS();
 			}
 
-			#ifdef OPTFLOW_ENABLED
-			if(g.optflow_enabled){
-				update_optical_flow();
-			}
-			#endif
-
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
 					if (compass.read()) {
@@ -975,13 +974,13 @@ static void medium_loop()
 					// If we have optFlow enabled we can grab a more accurate speed
 					// here and override the speed from the GPS
 					// ----------------------------------------
-					#ifdef OPTFLOW_ENABLED
-					if(g.optflow_enabled && current_loc.alt < 500){
-						// optflow wont be enabled on 1280's
-						x_GPS_speed 	= optflow.x_cm;
-						y_GPS_speed 	= optflow.y_cm;
-					}
-					#endif
+					//#ifdef OPTFLOW_ENABLED
+					//if(g.optflow_enabled && current_loc.alt < 500){
+					//	// optflow wont be enabled on 1280's
+					//	x_GPS_speed 	= optflow.x_cm;
+					//	y_GPS_speed 	= optflow.y_cm;
+					//}
+					//#endif
 
 					// control mode specific updates
 					// -----------------------------
@@ -1095,6 +1094,13 @@ static void fifty_hz_loop()
 		sonar_alt = sonar.read();
 	}
     #endif
+
+	// syncronise optical flow reads with altitude reads
+	#ifdef OPTFLOW_ENABLED
+	if(g.optflow_enabled){
+		update_optical_flow();
+	}
+	#endif
 
 	// agmatthews - USERHOOKS
 	#ifdef USERHOOK_50HZLOOP
@@ -1222,15 +1228,21 @@ static void super_slow_loop()
 #ifdef OPTFLOW_ENABLED
 static void update_optical_flow(void)
 {
+    static int log_counter = 0;
+
 	optflow.update();
 	optflow.update_position(dcm.roll, dcm.pitch, cos_yaw_x, sin_yaw_y, current_loc.alt);  // updates internal lon and lat with estimation based on optical flow
 
 	// write to log
-	if (g.log_bitmask & MASK_LOG_OPTFLOW){
-		Log_Write_Optflow();
+	log_counter++;
+	if( log_counter >= 5 ) {
+	    log_counter = 0;
+		if (g.log_bitmask & MASK_LOG_OPTFLOW){
+			Log_Write_Optflow();
+		}
 	}
 
-	if(g.optflow_enabled && current_loc.alt < 500){
+	/*if(g.optflow_enabled && current_loc.alt < 500){
 		if(GPS_enabled){
 			// if we have a GPS, we add some detail to the GPS
 			// XXX this may not ne right
@@ -1247,7 +1259,7 @@ static void update_optical_flow(void)
 		}
 		// OK to run the nav routines
 		nav_ok = true;
-	}
+	}*/
 }
 #endif
 
@@ -1390,15 +1402,17 @@ void update_roll_pitch_mode(void)
 			if(do_simple && new_radio_frame){
 				update_simple_mode();
 			}
+
 			#if WIND_COMP_STAB == 1
-			// in this mode, nav_roll and nav_pitch = the iterm
-			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in  + nav_roll);
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in + nav_pitch);
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in  + nav_roll);
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in + nav_pitch);
 			#else
-			// in this mode, nav_roll and nav_pitch = the iterm
-			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
-			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
+				// in this mode, nav_roll and nav_pitch = the iterm
+				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			#endif
+
 			break;
 
 		case ROLL_PITCH_AUTO:
@@ -1411,6 +1425,22 @@ void update_roll_pitch_mode(void)
 			control_pitch 		= g.rc_2.control_mix(nav_pitch);
 			g.rc_1.servo_out 	= get_stabilize_roll(control_roll);
 			g.rc_2.servo_out 	= get_stabilize_pitch(control_pitch);
+			break;
+
+		case ROLL_PITCH_STABLE_OF:
+			// apply SIMPLE mode transform
+			if(do_simple && new_radio_frame){
+				update_simple_mode();
+			}
+
+			// in this mode, nav_roll and nav_pitch = the iterm
+			#if WIND_COMP_STAB == 1
+			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in + nav_roll));
+			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in + nav_pitch));
+			#else
+			g.rc_1.servo_out = get_stabilize_roll(get_of_roll(g.rc_1.control_in));
+			g.rc_2.servo_out = get_stabilize_pitch(get_of_pitch(g.rc_2.control_in));
+			#endif
 			break;
 	}
 
@@ -1612,6 +1642,10 @@ static void update_navigation()
 				set_mode(LOITER);
 				auto_land_timer = millis();
 
+			}else if(current_loc.alt < (next_WP.alt - 300)){
+				// don't navigate if we are below our target alt
+				wp_control = LOITER_MODE;
+
 			}else{
 				// calculates desired Yaw
 				#if FRAME_CONFIG ==	HELI_FRAME
@@ -1655,10 +1689,13 @@ static void update_navigation()
 		case LAND:
 			wp_control 		= LOITER_MODE;
 
-			if (current_loc.alt < 250){
-				wp_control = NO_NAV_MODE;
-				next_WP.alt = -200; // force us down
+			if(verify_land())  {  // JLN fix for auto land in RTL
+				set_mode(STABILIZE);
+			} else {
+				// calculates the desired Roll and Pitch
+				update_nav_wp();
 			}
+
 			// calculates the desired Roll and Pitch
 			update_nav_wp();
 			break;
@@ -1877,6 +1914,8 @@ static void tuning(){
 			g.rc_6.set_range(40,300);		 // 0 to .3
 			g.pi_rate_roll.kP(tuning_value);
 			g.pi_rate_pitch.kP(tuning_value);
+			g.pi_acro_roll.kP(tuning_value);
+			g.pi_acro_pitch.kP(tuning_value);
 			break;
 
 		case CH6_RATE_KI:
@@ -1939,6 +1978,19 @@ static void tuning(){
 			g.rc_6.set_range(0,1000);     // 0 to 1
 			g.pi_alt_hold.kP(tuning_value);
 			break;
+
+		case CH6_OPTFLOW_KP:
+			g.rc_6.set_range(0,10000);     // 0 to 10
+			g.pi_optflow_roll.kP(tuning_value);
+			g.pi_optflow_pitch.kP(tuning_value);
+			break;
+
+		case CH6_OPTFLOW_KI:
+			g.rc_6.set_range(0,100);     // 0 to 0.1
+			g.pi_optflow_roll.kI(tuning_value);
+			g.pi_optflow_pitch.kI(tuning_value);
+			break;
+
 	}
 }
 
@@ -2012,14 +2064,19 @@ static void update_nav_wp()
 
 	}else if(wp_control == NO_NAV_MODE){
 		// calc the Iterms for Loiter based on velocity
-		//if ((x_actual_speed + y_actual_speed) == 0)
-		if (g_gps->ground_speed < 50)
-			calc_wind_compensation();
-		else
-			reduce_wind_compensation();
+		#if WIND_COMP_STAB == 1
+			if (g_gps->ground_speed < 50)
+				calc_wind_compensation();
+			else
+				reduce_wind_compensation();
 
-		// rotate nav_lat, nav_lon to roll and pitch
-		calc_loiter_pitch_roll();
+			// rotate nav_lat, nav_lon to roll and pitch
+			calc_loiter_pitch_roll();
+		#else
+			// clear out our nav so we can do things like land straight
+			nav_pitch 	= 0;
+			nav_roll 	= 0;
+		#endif
 	}
 }
 
