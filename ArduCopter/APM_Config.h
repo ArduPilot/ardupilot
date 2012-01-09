@@ -2,6 +2,9 @@
 
 // Example config file. Take a look at config.h. Any term define there can be overridden by defining it here.
 
+// # define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
+// # define APM2_BETA_HARDWARE
+
 // GPS is auto-selected
 
 //#define MAG_ORIENTATION		AP_COMPASS_COMPONENTS_DOWN_PINS_FORWARD
