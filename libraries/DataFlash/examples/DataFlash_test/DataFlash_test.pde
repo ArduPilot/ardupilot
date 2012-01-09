@@ -10,9 +10,14 @@
 #define HEAD_BYTE1 0xA3
 #define HEAD_BYTE2 0x95
 
+// NOTE:  You must uncomment one of the following two lines
+DataFlash_APM2 	DataFlash;			// Uncomment this line if using APM2 hardware
+//DataFlash_APM1	DataFlash;			// Uncomment this line if using APM1 hardware
+
+
 void setup()
 {
-	Serial.begin(38400);
+	Serial.begin(115200);
 	DataFlash.Init();			 // DataFlash initialization
 	
 	Serial.println("Dataflash Log Test 1.0");
@@ -24,14 +29,14 @@ void setup()
 	Serial.print("Manufacturer:");
 	Serial.print(int(DataFlash.df_manufacturer));
 	Serial.print(",");
-	Serial.print(int(DataFlash.df_device_0));
-	Serial.print(",");
-	Serial.print(int(DataFlash.df_device_1));
+	Serial.print(DataFlash.df_device);
 	Serial.println();
 	
 	// We start to write some info (sequentialy) starting from page 1
 	// This is similar to what we will do...
 	DataFlash.StartWrite(1);
+	Serial.println("After testing perform erase before using DataFlash for logging!");
+	Serial.println("");
 	Serial.println("Writing to flash... wait...");
 	for (int i = 0; i < 1000; i++){	 // Write 1000 packets...
 		// We write packets of binary data... (without worry about nothing more)
@@ -96,5 +101,8 @@ void loop()
 		}		
 		Serial.println();
 	}
-	delay(10000);
+	Serial.println("");
+	Serial.println("Test complete.  Test will repeat in 20 seconds");
+	Serial.println("");
+	delay(20000);
 }
