@@ -380,6 +380,8 @@ static void reset_I_all(void)
 	g.pi_throttle.reset_I();
 	g.pi_acro_roll.reset_I();
 	g.pi_acro_pitch.reset_I();
+	g.pi_optflow_roll.reset_I();
+	g.pi_optflow_pitch.reset_I();
 }
 
 
