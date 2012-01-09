@@ -63,6 +63,8 @@ static void update_commands()
 			// if we are on the ground, enter stabilize, else Land
 			if (land_complete == true){
 				set_mode(STABILIZE);
+				// disarm motors
+				//init_disarm_motors();
 			} else {
 				set_mode(LAND);
 			}
