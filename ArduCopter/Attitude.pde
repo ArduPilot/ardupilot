@@ -258,6 +258,8 @@ static void reset_rate_I()
 	g.pi_rate_pitch.reset_I();
 	g.pi_acro_roll.reset_I();
 	g.pi_acro_pitch.reset_I();
+	g.pi_optflow_roll.reset_I();
+	g.pi_optflow_pitch.reset_I();
 }
 
 
@@ -430,3 +432,69 @@ static void init_z_damper()
 {
 }
 #endif
+
+// calculate modified roll/pitch depending upon optical flow values
+static int32_t
+get_of_roll(int32_t control_roll)
+{
+#ifdef OPTFLOW_ENABLED
+	//static int32_t of_roll = 0;  // we use global variable to make logging easier
+    static unsigned long last_of_roll_update = 0;
+	static float prev_value = 0;
+	float x_cm;
+
+	// check if new optflow data available
+	if( optflow.last_update != last_of_roll_update) {
+	    last_of_roll_update = optflow.last_update;
+
+		// filter movement
+		x_cm = (optflow.x_cm + prev_value) / 2.0 * 50.0;
+
+		// only stop roll if caller isn't modifying roll
+		if( control_roll == 0 && current_loc.alt < 1500) {
+			of_roll = g.pi_optflow_roll.get_pi(-x_cm, 1.0);  // we could use the last update time to calculate the time change
+		}else{
+		    g.pi_optflow_roll.reset_I();
+			prev_value = 0;
+		}
+	}
+	// limit maximum angle
+	of_roll	= constrain(of_roll, -1000, 1000);
+
+    return control_roll+of_roll;
+#else
+    return control_roll;
+#endif
+}
+
+static int32_t
+get_of_pitch(int32_t control_pitch)
+{
+#ifdef OPTFLOW_ENABLED
+    //static int32_t of_pitch = 0;  // we use global variable to make logging easier
+    static unsigned long last_of_pitch_update = 0;
+	static float prev_value = 0;
+	float y_cm;
+
+	// check if new optflow data available
+	if( optflow.last_update != last_of_pitch_update ) {
+	    last_of_pitch_update = optflow.last_update;
+
+		// filter movement
+		y_cm = (optflow.y_cm + prev_value) / 2.0 * 50.0;
+
+		// only stop roll if caller isn't modifying roll
+		if( control_pitch == 0 && current_loc.alt < 1500 ) {
+			of_pitch = g.pi_optflow_pitch.get_pi(y_cm, 1.0);  // we could use the last update time to calculate the time change
+		}else{
+		    g.pi_optflow_pitch.reset_I();
+			prev_value = 0;
+		}
+	}
+	// limit maximum angle
+	of_pitch = constrain(of_pitch, -1000, 1000);
+    return control_pitch+of_pitch;
+#else
+    return control_pitch;
+#endif
+}

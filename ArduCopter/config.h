@@ -310,6 +310,23 @@
 #ifndef OPTFLOW_FOV
 # define OPTFLOW_FOV 			AP_OPTICALFLOW_ADNS3080_08_FOV
 #endif
+// optical flow based loiter PI values
+#ifndef OPTFLOW_ROLL_P
+  #define OPTFLOW_ROLL_P 6.4
+#endif
+#ifndef OPTFLOW_ROLL_I
+  #define OPTFLOW_ROLL_I 0.068
+#endif
+#ifndef OPTFLOW_PITCH_P
+  #define OPTFLOW_PITCH_P 6.4
+#endif
+#ifndef OPTFLOW_PITCH_I
+  #define OPTFLOW_PITCH_I 0.068
+#endif
+#ifndef OPTFLOW_IMAX
+  #define OPTFLOW_IMAX 4
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
