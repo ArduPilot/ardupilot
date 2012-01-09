@@ -348,7 +348,7 @@ static bool verify_land()
 	static int16_t	velocity_land = -1;
 
 	// land at .62 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 16);			// condition_value = our initial
+	next_WP.alt  = original_alt - ((millis() - land_start) / 32);			// condition_value = our initial
 
 	if (old_alt == 0)
 		old_alt = current_loc.alt;
@@ -384,8 +384,7 @@ static bool verify_land()
 
 		// reset old_alt
 		old_alt = 0;
-		//init_disarm_motors();
-		return true;
+		return false;
 	}
 	//Serial.printf("N, %d\n", velocity_land);
 	//Serial.printf("N_alt, %ld\n", next_WP.alt);
