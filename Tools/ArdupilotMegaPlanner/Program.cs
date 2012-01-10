@@ -26,6 +26,8 @@ namespace ArdupilotMega
 
             //MessageBox.Show("NOTE: This version may break advanced mission scripting");
 
+            //Common.linearRegression();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             try

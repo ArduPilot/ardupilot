@@ -123,16 +123,18 @@ dynamics model, and external 3D model.
       <script>
          setlistener("/sim/signals/fdm-initialized", func {
              var left  = screen.display.new(20, 10);
-             left.add("/surface-positions/right-aileron-pos-norm");
-             left.add("/surface-positions/elevator-pos-norm");
-             left.add("/surface-positions/rudder-pos-norm");
-             left.add("/engines/engine/rpm");
+             left.add("/apm/aileron");
+             left.add("/apm/elevator");
+             left.add("/apm/rudder");
+             left.add("/apm/throttle");
 
              var right = screen.display.new(-250, 20);
-             right.add("/orientation/pitch-deg");
-             right.add("/orientation/roll-deg");
-             right.add("/position/altitude-agl-ft");
-             right.add("/velocities/airspeed-kt");
+             right.add("/apm/pitch");
+             right.add("/apm/roll");
+             right.add("/apm/altitude");
+             right.add("/apm/heading");
+             right.add("/apm/airspeed");
+             right.add("/apm/groundspeed");
          });
         </script>
   </rascal>
