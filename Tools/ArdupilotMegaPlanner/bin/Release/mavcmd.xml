@@ -193,9 +193,9 @@
     </DO_SET_SERVO>
     <DO_REPEAT_SERVO>
       <P1>Ser No</P1>
-      <P2>Repeat#</P2>
-      <P3>Delay (s)</P3>
-      <P4>PWM</P4>
+      <P2>PWM</P2>
+      <P3>Repeat#</P3>
+      <P4>Delay (s)</P4>
       <X></X>
       <Y></Y>
       <Z></Z>
@@ -431,9 +431,9 @@
     </DO_SET_SERVO>
     <DO_REPEAT_SERVO>
       <P1>Ser No</P1>
-      <P2>Repeat#</P2>
-      <P3>Delay (s)</P3>
-      <P4>PWM</P4>
+      <P2>PWM</P2>
+      <P3>Repeat#</P3>
+      <P4>Delay (s)</P4>
       <X></X>
       <Y></Y>
       <Z></Z>

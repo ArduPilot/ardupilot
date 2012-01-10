@@ -32,6 +32,8 @@ namespace ArdupilotMega
         public Camera()
         {
             InitializeComponent();
+
+            doCalc();
         }
 
         void doCalc()

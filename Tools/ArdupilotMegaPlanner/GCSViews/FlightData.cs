@@ -432,7 +432,7 @@ namespace ArdupilotMega.GCSViews
                                 {
                                     if (plla == null || plla.Lng == 0 || plla.Lat == 0)
                                         break;
-                                    addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt);
+                                    addpolygonmarker(plla.Tag, plla.Lng, plla.Lat, (int)plla.Alt,plla.color);
                                 }
 
                                 RegeneratePolygon();
@@ -525,7 +525,7 @@ namespace ArdupilotMega.GCSViews
             });
         }
 
-        private void addpolygonmarker(string tag, double lng, double lat, int alt)
+        private void addpolygonmarker(string tag, double lng, double lat, int alt, Color? color)
         {
             try
             {
@@ -537,13 +537,18 @@ namespace ArdupilotMega.GCSViews
 
                 GMapMarkerRect mBorders = new GMapMarkerRect(point);
                 {
-                    mBorders.InnerMarker = m;
-                    mBorders.MainMap = gMapControl1;
-                    try
-                    {
-                        mBorders.wprad = (int)float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString());
-                    }
-                    catch { }
+                    
+                        mBorders.InnerMarker = m;
+                        try
+                        {
+                            mBorders.wprad = (int)float.Parse(ArdupilotMega.MainV2.config["TXT_WPRad"].ToString());
+                        }
+                        catch { }
+                        mBorders.MainMap = gMapControl1;
+                        if (color.HasValue)
+                        {
+                            mBorders.Color = color.Value;
+                        }
                 }
 
                 polygons.Markers.Add(m);
