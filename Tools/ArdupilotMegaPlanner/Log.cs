@@ -121,10 +121,11 @@ namespace ArdupilotMega
         {
             MethodInvoker m = delegate()
             {
-                CHK_logs.Items.Clear();
-                for (int a = 1; a <= logcount; a++)
+                //CHK_logs.Items.Clear();
+                //for (int a = 1; a <= logcount; a++)
+                if (!CHK_logs.Items.Contains(logcount))
                 {
-                    CHK_logs.Items.Add(a);
+                    CHK_logs.Items.Add(logcount);
                 }
             };
             try
@@ -189,23 +190,8 @@ namespace ArdupilotMega
                             if (line.Contains("reset to FLY") || line.Contains("interactive setup") || line.Contains("CLI:") || line.Contains("Ardu"))
                             {
                                 comPort.Write("logs\r");
-                            }
-                            if (line.Contains("logs"))
-                            {
-                                Regex regex2 = new Regex(@"^([0-9]+)", RegexOptions.IgnoreCase);
-                                if (regex2.IsMatch(line))
-                                {
-                                    MatchCollection matchs = regex2.Matches(line);
-                                    logcount = int.Parse(matchs[0].Groups[0].Value);
-                                    genchkcombo(logcount);
-                                    status = serialstatus.Done;
-                                }
-                            }
-                            if (line.Contains("No logs"))
-                            {
                                 status = serialstatus.Done;
                             }
-
                             break;
                         case serialstatus.Closefile:
                             sw.Close();
@@ -252,6 +238,21 @@ namespace ArdupilotMega
                             break;
                         case serialstatus.Done:
                             // 
+                            if (line.Contains("start") && line.Contains("end"))
+                            {
+                                Regex regex2 = new Regex(@"^Log ([0-9]+),", RegexOptions.IgnoreCase);
+                                if (regex2.IsMatch(line))
+                                {
+                                    MatchCollection matchs = regex2.Matches(line);
+                                    logcount = int.Parse(matchs[0].Groups[1].Value);
+                                    genchkcombo(logcount);
+                                    //status = serialstatus.Done;
+                                }
+                            }
+                            if (line.Contains("No logs"))
+                            {
+                                status = serialstatus.Done;
+                            }
                             break;
                         case serialstatus.Reading:
                             if (line.Contains("packets read") || line.Contains("Done") || line.Contains("logs enabled"))
@@ -774,6 +775,7 @@ namespace ArdupilotMega
             System.Threading.Thread.Sleep(100);
             TXT_seriallog.AppendText("!!Allow 30 seconds for erase\n");
             status = serialstatus.Done;
+            CHK_logs.Items.Clear();
         }
 
         private void BUT_redokml_Click(object sender, EventArgs e)
