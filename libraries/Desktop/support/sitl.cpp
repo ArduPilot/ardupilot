@@ -135,7 +135,7 @@ static void sitl_fdm_input(void)
 
 		count++;
 		if (millis() - last_report > 1000) {
-			printf("SIM %u FPS\n", count);
+			//printf("SIM %u FPS\n", count);
 			count = 0;
 			last_report = millis();
 		}

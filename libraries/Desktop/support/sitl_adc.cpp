@@ -111,11 +111,12 @@ void sitl_update_adc(float roll, float pitch, float yaw,
 	     (fabs(roll - dcm.roll_sensor/100.0) > 5.0 ||
 	      fabs(pitch - dcm.pitch_sensor/100.0) > 5.0))) {
 		last_report = tnow;
-		printf("roll=%5.1f / %5.1f  pitch=%5.1f / %5.1f  rr=%5.2f / %5.2f  pr=%5.2f / %5.2f\n",
+		/*printf("roll=%5.1f / %5.1f  pitch=%5.1f / %5.1f  rr=%5.2f / %5.2f  pr=%5.2f / %5.2f\n",
 		       roll, dcm.roll_sensor/100.0,
 		       pitch, dcm.pitch_sensor/100.0,
 		       rollRate, ToDeg(omega.x),
 		       pitchRate, ToDeg(omega.y));
+		*/
 	}
 }
 
