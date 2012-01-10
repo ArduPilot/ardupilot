@@ -153,12 +153,16 @@ static void throttle_failsafe(uint16_t pwm)
 		// throttle has dropped below the mark
 		failsafeCounter++;
 		if (failsafeCounter == 9){
-			SendDebug("MSG FS ON ");
-			SendDebugln(pwm, DEC);
+			//
 		}else if(failsafeCounter == 10) {
 			// Don't enter Failsafe if we are not armed
-			if(motor_armed == true)
+			// home distance is in meters
+			// This is to prevent accidental RTL
+			if((motor_armed == true) && (home_distance > 10) && (current_loc.alt > 400)){
+				SendDebug("MSG FS ON ");
+				SendDebugln(pwm, DEC);
 				set_failsafe(true);
+			}
 		}else if (failsafeCounter > 10){
 			failsafeCounter = 11;
 		}
