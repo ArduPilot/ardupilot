@@ -162,6 +162,9 @@ static void set_next_WP(struct Location *wp)
 	target_bearing 		= get_bearing(&prev_WP, &next_WP);
 	nav_bearing 		= target_bearing;
 
+	// calc the location error:
+	calc_location_error(&next_WP);
+
 	// to check if we have missed the WP
 	// ---------------------------------
 	original_target_bearing = target_bearing;
