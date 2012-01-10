@@ -680,9 +680,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="app.config" />
-    <None Include="arducopter-fgmodel.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="arducopter-xplane.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

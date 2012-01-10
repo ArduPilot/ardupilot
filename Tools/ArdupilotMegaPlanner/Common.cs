@@ -48,7 +48,9 @@ namespace ArdupilotMega
     /// </summary>
     public class GMapMarkerRect : GMapMarker
     {
-        public Pen Pen;
+        public Pen Pen = new Pen(Brushes.White, 2);
+
+        public Color Color { get { return Pen.Color; } set { Pen.Color = value; } }
 
         public GMapMarker InnerMarker;
 
@@ -58,8 +60,6 @@ namespace ArdupilotMega
         public GMapMarkerRect(PointLatLng p)
             : base(p)
         {
-            Pen = new Pen(Brushes.White, 2);
-
             Pen.DashStyle = DashStyle.Dash;
 
             // do not forget set Size of the marker
@@ -75,9 +75,9 @@ namespace ArdupilotMega
             if (wprad == 0 || MainMap == null)
                 return;
 
+            // undo autochange in mouse over
             if (Pen.Color == Color.Blue)
                 Pen.Color = Color.White;
-
             
                 double width = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Width, 0)) * 1000.0);
                 double height = (MainMap.Manager.GetDistance(MainMap.FromLocalToLatLng(0, 0), MainMap.FromLocalToLatLng(MainMap.Height, 0)) * 1000.0);
@@ -177,6 +177,7 @@ namespace ArdupilotMega
         public double Lng = 0;
         public double Alt = 0;
         public string Tag = "";
+        public Color color = Color.White;
 
         public PointLatLngAlt(double lat, double lng, double alt, string tag)
         {
@@ -263,7 +264,43 @@ namespace ArdupilotMega
             CIRCLE = 7,
             POSITION = 8
         }
-        
+
+        public static void linearRegression()
+        {
+            double[] values = { 4.8, 4.8, 4.5, 3.9, 4.4, 3.6, 3.6, 2.9, 3.5, 3.0, 2.5, 2.2, 2.6, 2.1, 2.2 };
+            
+            double xAvg = 0;
+            double yAvg = 0;
+
+            for (int x = 0; x < values.Length; x++)
+            {
+                xAvg += x;
+                yAvg += values[x];
+            }
+
+            xAvg = xAvg / values.Length;
+            yAvg = yAvg / values.Length;
+
+
+            double v1 = 0;
+            double v2 = 0;
+
+            for (int x = 0; x < values.Length; x++)
+            {
+                v1 += (x - xAvg) * (values[x] - yAvg);
+                v2 += Math.Pow(x - xAvg, 2);
+            }
+
+            double a = v1 / v2;
+            double b = yAvg - a * xAvg;
+
+            Console.WriteLine("y = ax + b");
+            Console.WriteLine("a = {0}, the slope of the trend line.", Math.Round(a, 2));
+            Console.WriteLine("b = {0}, the intercept of the trend line.", Math.Round(b, 2));
+
+            Console.ReadLine();
+        }
+       
 		#if MAVLINK10
 		
         public static bool translateMode(string modein, ref MAVLink.__mavlink_set_mode_t mode)
