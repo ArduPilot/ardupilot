@@ -386,8 +386,6 @@ static bool verify_land()
 		old_alt = 0;
 		return false;
 	}
-	//Serial.printf("N, %d\n", velocity_land);
-	//Serial.printf("N_alt, %ld\n", next_WP.alt);
 	return false;
 }
 
@@ -509,7 +507,7 @@ static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	condition_value	= command_cond_queue.alt;
+	//condition_value	= command_cond_queue.alt;
 	temp.alt		= command_cond_queue.alt;
 	set_next_WP(&temp);
 }
@@ -582,9 +580,9 @@ static void do_yaw()
 static bool verify_wait_delay()
 {
 	//Serial.print("vwd");
-	if ((unsigned)(millis() - condition_start) > condition_value){
+	if ((unsigned)(millis() - condition_start) > (unsigned)condition_value){
 		//Serial.println("y");
-		condition_value		= 0;
+		condition_value = 0;
 		return true;
 	}
 	//Serial.println("n");
@@ -597,13 +595,11 @@ static bool verify_change_alt()
 	if (condition_start < next_WP.alt){
 		// we are going higer
 		if(current_loc.alt > next_WP.alt){
-			condition_value = 0;
 			return true;
 		}
 	}else{
 		// we are going lower
 		if(current_loc.alt < next_WP.alt){
-			condition_value = 0;
 			return true;
 		}
 	}

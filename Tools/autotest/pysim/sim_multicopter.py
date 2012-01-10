@@ -168,10 +168,10 @@ while True:
     frame_count += 1
     t = time.time()
     if t - lastt > 1.0:
-        print("%.2f fps zspeed=%.2f zaccel=%.2f h=%.1f a=%.1f yaw=%.1f yawrate=%.1f" % (
-            frame_count/(t-lastt),
-            a.velocity.z, a.accel.z, a.position.z, a.altitude,
-            a.yaw, a.yaw_rate))
+        #print("%.2f fps zspeed=%.2f zaccel=%.2f h=%.1f a=%.1f yaw=%.1f yawrate=%.1f" % (
+         #   frame_count/(t-lastt),
+          #  a.velocity.z, a.accel.z, a.position.z, a.altitude,
+           # a.yaw, a.yaw_rate))
         lastt = t
         frame_count = 0
     frame_end = time.time()
