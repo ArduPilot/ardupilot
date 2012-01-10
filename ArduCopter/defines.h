@@ -106,6 +106,10 @@
 #define HIL_MODE_ATTITUDE			1
 #define HIL_MODE_SENSORS			2
 
+#define ASCENDING			1
+#define DESCENDING			-1
+#define REACHED_ALT			0
+
 // Auto Pilot modes
 // ----------------
 #define STABILIZE 0			// hold level position
