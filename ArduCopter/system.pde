@@ -579,11 +579,12 @@ static void set_mode(byte mode)
 		// removes the navigation from roll and pitch commands, but leaves the wind compensation
 		reset_nav();
 
-		// removes the navigation from roll and pitch commands, but leaves the wind compensation
-		if(GPS_enabled)
+		#if WIND_COMP_STAB == 1
+		if(GPS_enabled){
 			wp_control = NO_NAV_MODE;
 			update_nav_wp();
-
+		}
+		#endif
 	}
 
 	Log_Write_Mode(control_mode);
