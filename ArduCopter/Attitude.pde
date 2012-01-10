@@ -237,14 +237,28 @@ static void reset_hold_I(void)
 // Keeps old data out of our calculation / logs
 static void reset_nav(void)
 {
+	// forces us to update nav throttle
 	invalid_throttle 		= true;
 	nav_throttle 			= 0;
+
+	// always start Circle mode at same angle
 	circle_angle			= 0;
+
+	// We must be heading to a new WP, so XTrack must be 0
 	crosstrack_error 		= 0;
+
+	// Will be set by new command
 	target_bearing 			= 0;
+
+	// Will be set by new command
 	wp_distance 			= 0;
+
+	// Will be set by new command, used by loiter
 	long_error 				= 0;
 	lat_error  				= 0;
+
+	// Will be set by new command, used by loiter
+	next_WP.alt				= 0;
 }
 
 static void reset_rate_I()
