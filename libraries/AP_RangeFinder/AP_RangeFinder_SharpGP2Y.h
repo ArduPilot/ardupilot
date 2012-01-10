@@ -10,7 +10,12 @@ class AP_RangeFinder_SharpGP2Y : public RangeFinder
 {
   public:
 	AP_RangeFinder_SharpGP2Y(AP_AnalogSource *source, ModeFilter *filter);
-	int convert_raw_to_distance(int _raw_value) { if( _raw_value == 0 ) return max_distance; else return 14500/_raw_value; }   // read value from analog port and return distance in cm
+	int convert_raw_to_distance(int _raw_value) {
+		if( _raw_value == 0 )
+			return max_distance;
+		else
+			return 14500/_raw_value;
+	}   // read value from analog port and return distance in cm
 
 };
 #endif

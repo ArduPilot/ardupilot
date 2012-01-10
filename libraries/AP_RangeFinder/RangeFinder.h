@@ -24,8 +24,7 @@ class RangeFinder
   protected:
 	RangeFinder(AP_AnalogSource * source, ModeFilter *filter) :
 		_analog_source(source),
-		_mode_filter(filter)
-	{}
+		_mode_filter(filter) {}
   public:
 
 	int raw_value;     // raw value from the sensor
@@ -39,6 +38,6 @@ class RangeFinder
 	virtual int read();   // read value from sensor and return distance in cm
 
 	AP_AnalogSource *_analog_source;
-  	ModeFilter  *_mode_filter;
+	ModeFilter  *_mode_filter;
 };
 #endif
