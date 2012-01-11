@@ -2,7 +2,7 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+static int8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 static void default_dead_zones()
 {
