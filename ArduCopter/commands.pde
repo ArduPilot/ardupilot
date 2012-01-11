@@ -147,9 +147,13 @@ static void set_next_WP(struct Location *wp)
 	// ---------------------
 	next_WP = *wp;
 
-	// used to control and limit the rate of climb - not used right now!
-	// -----------------------------------------------------------------
-	target_altitude = current_loc.alt;
+	// used to control and limit the rate of climb
+	// -------------------------------------------
+	// We don't set next WP below 1m
+	next_WP.alt = max(next_WP.alt, 100);
+
+	// Save new altitude so we can track it for climb_rate
+	set_new_altitude(next_WP.alt);
 
 	// this is used to offset the shrinking longitude as we go towards the poles
 	float rads 			= (fabs((float)next_WP.lat)/t7) * 0.0174532925;
