@@ -170,9 +170,6 @@ get_nav_throttle(int32_t z_error)
 	int16_t rate_error;
 	int16_t output;
 
-	// XXX HACK, need a better way not to ramp this i term in large altitude changes.
-	float dt = (abs(z_error) < 400) ? .1 : 0.0;
-
 	// limit error to prevent I term run up
 	z_error 		= constrain(z_error, -ALT_ERROR_MAX, ALT_ERROR_MAX);
 
@@ -180,7 +177,7 @@ get_nav_throttle(int32_t z_error)
 	rate_error 	= g.pi_alt_hold.get_p(z_error); //_p = .85
 
 	// experiment to pipe iterm directly into the output
-	int16_t iterm = g.pi_alt_hold.get_i(z_error, dt);
+	int16_t iterm = g.pi_alt_hold.get_i(z_error, .1);
 
 	// calculate rate error
 	rate_error 		= rate_error - climb_rate;
@@ -228,11 +225,11 @@ get_rate_yaw(int32_t target_rate)
 
 // Zeros out navigation Integrators if we are changing mode, have passed a waypoint, etc.
 // Keeps outdated data out of our calculations
-static void reset_hold_I(void)
-{
-	g.pi_loiter_lat.reset_I();
-	g.pi_loiter_lon.reset_I();
-}
+//static void reset_hold_I(void)
+//{
+//	g.pi_loiter_lat.reset_I();
+//	g.pi_loiter_lon.reset_I();
+//}
 
 // Keeps old data out of our calculation / logs
 static void reset_nav(void)
