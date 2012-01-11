@@ -113,6 +113,7 @@
             this.RAD_aerosimrc = new System.Windows.Forms.RadioButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.RAD_JSBSim = new System.Windows.Forms.RadioButton();
+            this.CHK_xplane10 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.currentStateBindingSource)).BeginInit();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -701,10 +702,17 @@
             this.RAD_JSBSim.UseVisualStyleBackColor = true;
             this.RAD_JSBSim.CheckedChanged += new System.EventHandler(this.RAD_JSBSim_CheckedChanged);
             // 
+            // CHK_xplane10
+            // 
+            resources.ApplyResources(this.CHK_xplane10, "CHK_xplane10");
+            this.CHK_xplane10.Name = "CHK_xplane10";
+            this.CHK_xplane10.UseVisualStyleBackColor = true;
+            // 
             // Simulation
             // 
             resources.ApplyResources(this, "$this");
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.CHK_xplane10);
             this.Controls.Add(this.RAD_JSBSim);
             this.Controls.Add(this.RAD_aerosimrc);
             this.Controls.Add(this.CHK_heli);
@@ -836,5 +844,6 @@
         private System.Windows.Forms.RadioButton RAD_aerosimrc;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.RadioButton RAD_JSBSim;
+        private System.Windows.Forms.CheckBox CHK_xplane10;
     }
 }
