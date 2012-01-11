@@ -244,10 +244,7 @@ AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0)
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
 
-byte    control_mode        = INITIALISING;
-byte    oldSwitchPosition;              // for remembering the control mode switch
-bool    inverted_flight     = false;
-
+// APM2 only
 #if USB_MUX_PIN > 0
 static bool usb_connected;
 #endif
@@ -286,37 +283,76 @@ static const char* flight_mode_strings[] = {
 		See libraries/RC_Channel/RC_Channel_aux.h for more information
 */
 
-// Failsafe
-// --------
-static int 	failsafe;					// track which type of failsafe is being processed
-static bool 	ch3_failsafe;
-static byte    crash_timer;
-
+////////////////////////////////////////////////////////////////////////////////
 // Radio
-// -----
-static uint16_t elevon1_trim  = 1500; 	// TODO: handle in EEProm
+////////////////////////////////////////////////////////////////////////////////
+// This is the state of the flight control system
+// There are multiple states defined such as MANUAL, FBW-A, AUTO
+byte    control_mode        = INITIALISING;
+// Used to maintain the state of the previous control switch position
+// This is set to -1 when we need to re-read the switch
+byte 	oldSwitchPosition;
+// This is used to enable the inverted flight feature
+bool    inverted_flight     = false;
+// These are trim values used for elevon control
+// For elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
+static uint16_t elevon1_trim  = 1500; 	
 static uint16_t elevon2_trim  = 1500;
-static uint16_t ch1_temp      = 1500;     // Used for elevon mixing
+// These are used in the calculation of elevon1_trim and elevon2_trim
+static uint16_t ch1_temp      = 1500;     
 static uint16_t ch2_temp  	= 1500;
+// These are values received from the GCS if the user is using GCS joystick
+// control and are substituted for the values coming from the RC radio
 static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
+// A flag if GCS joystick control is in use
 static bool rc_override_active = false;
+
+////////////////////////////////////////////////////////////////////////////////
+// Failsafe
+////////////////////////////////////////////////////////////////////////////////
+// A tracking variable for type of failsafe active
+// Used for failsafe based on loss of RC signal or GCS signal
+static int 	failsafe;					
+// Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
+// RC receiver should be set up to output a low throttle value when signal is lost
+static bool 	ch3_failsafe;
+// A timer used to help recovery from unusual attitudes.  If we enter an unusual attitude 
+// while in autonomous flight this variable is used  to hold roll at 0 for a recovery period
+static byte    crash_timer;
+// A timer used to track how long since we have received the last GCS heartbeat or rc override message
 static uint32_t rc_override_fs_timer = 0;
+// A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
 static uint32_t ch3_failsafe_timer = 0;
 
-// for elevons radio_in[CH_ROLL] and radio_in[CH_PITCH] are equivalent aileron and elevator, not left and right elevon
-
+////////////////////////////////////////////////////////////////////////////////
 // LED output
-// ----------
-static bool GPS_light;							// status of the GPS light
+////////////////////////////////////////////////////////////////////////////////
+// state of the GPS light (on/off)
+static bool GPS_light;							
 
+////////////////////////////////////////////////////////////////////////////////
 // GPS variables
-// -------------
-static const 	float t7			= 10000000.0;	// used to scale GPS values for EEPROM storage
-static float 	scaleLongUp			= 1;			// used to reverse longitude scaling
-static float 	scaleLongDown 		= 1;			// used to reverse longitude scaling
-static byte 	ground_start_count	= 5;			// have we achieved first lock and set Home?
-static int     ground_start_avg;					// 5 samples to avg speed for ground start
-static bool	GPS_enabled 	= false;			// used to quit "looking" for gps with auto-detect if none present
+////////////////////////////////////////////////////////////////////////////////
+// This is used to scale GPS values for EEPROM storage
+// 10^7 times Decimal GPS means 1 == 1cm
+// This approximation makes calculations integer and it's easy to read
+static const 	float t7			= 10000000.0;	
+// We use atan2 and other trig techniques to calaculate angles
+// We need to scale the longitude up to make these calcs work
+// to account for decreasing distance between lines of longitude away from the equator
+static float 	scaleLongUp			= 1;			
+// Sometimes we need to remove the scaling for distance calcs
+static float 	scaleLongDown 		= 1;		
+// A counter used to count down valid gps fixes to allow the gps estimate to settle
+// before recording our home position (and executing a ground start if we booted with an air start)
+static byte 	ground_start_count	= 5;
+// Used to compute a speed estimate from the first valid gps fixes to decide if we are 
+// on the ground or in the air.  Used to decide if a ground start is appropriate if we
+// booted with an air start.
+static int     ground_start_avg;
+// Tracks if GPS is enabled based on statup routine
+// If we do not detect GPS at startup, we stop trying and assume GPS is not connected	
+static bool	GPS_enabled 	= false;			
 
 // Location & Navigation
 // ---------------------
