@@ -40,10 +40,28 @@ static uint16_t airspeed_sensor(float airspeed)
   average rates to cope with slow update rates.
 
   inputs are in degrees
+
+	phi - roll
+	theta - pitch
+	psi - true heading
+	alpha - angle of attack
+	beta - side slip
+	phidot - roll rate
+	thetadot - pitch rate
+	psidot - yaw rate
+	v_north - north velocity in local/body frame
+	v_east - east velocity in local/body frame
+	v_down - down velocity in local/body frame
+	A_X_pilot - X accel in body frame
+	A_Y_pilot - Y accel in body frame
+	A_Z_pilot - Z accel in body frame
+
+  Note: doubles on high prec. stuff are preserved until the last moment
+
  */
-void sitl_update_adc(float roll, float pitch, float yaw,
-		     float rollRate, float pitchRate, float yawRate,
-		     float xAccel, float yAccel, float zAccel,
+void sitl_update_adc(float roll, 	float pitch, 	float yaw,		// Relative to earth
+		     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
+		     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
 		     float airspeed)
 {
 	static const uint8_t sensor_map[6] = { 1, 2, 0, 4, 5, 6 };
@@ -55,9 +73,9 @@ void sitl_update_adc(float roll, float pitch, float yaw,
 	const float _gyro_gain_y = ToRad(0.41);
 	const float _gyro_gain_z = ToRad(0.41);
 	const float _accel_scale = 9.80665 / 423.8;
-	float adc[7];
-	float phi, theta, phiDot, thetaDot, psiDot;
-	float p, q, r;
+	double adc[7];
+	double phi, theta, phiDot, thetaDot, psiDot;
+	double p, q, r;
 
 	/* convert the angular velocities from earth frame to
 	   body frame. Thanks to James Goppert for the formula
