@@ -455,6 +455,7 @@ namespace ArdupilotMega
                         Array.Reverse(datearray);
                         logfile.Write(datearray, 0, datearray.Length);
                         logfile.Write(packet, 0, i);
+                        logfile.Flush();
                     }
                 }
 

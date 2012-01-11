@@ -641,6 +641,14 @@ namespace ArdupilotMega
         {
             givecomport = false;
 
+            if (comPort.BaseStream.IsOpen && cs.groundspeed > 4)
+            {
+                if (DialogResult.No == MessageBox.Show("Your model is still moving are you sure you want to disconnect?", "Disconnect", MessageBoxButtons.YesNo))
+                {
+                    return;
+                }
+            }
+
             if (comPort.BaseStream.IsOpen)
             {
                 try
