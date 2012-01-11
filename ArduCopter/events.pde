@@ -14,7 +14,8 @@ static void failsafe_on_event()
 				// do_rtl sets the altitude to the current altitude by default
 				set_mode(RTL);
 				// We add an additional 10m to the current altitude
-				next_WP.alt += 1000;
+				//next_WP.alt += 1000;
+				set_new_altitude(target_altitude + 1000);
 			}
 			// 2 = Stay in AUTO and ignore failsafe
 
@@ -24,7 +25,8 @@ static void failsafe_on_event()
 				// do_rtl sets the altitude to the current altitude by default
 				set_mode(RTL);
 				// We add an additional 10m to the current altitude
-				next_WP.alt += 1000;
+				//next_WP.alt += 1000;
+				set_new_altitude(target_altitude + 1000);
 			}else{
 				// We have no GPS so we must land
 				set_mode(LAND);
