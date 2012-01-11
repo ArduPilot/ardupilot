@@ -262,8 +262,9 @@ namespace ArdupilotMega
             LOITER = 5,		// Hold a single location
             RTL = 6,				// AUTO control
             CIRCLE = 7,
-            POSITION = 8
-        }
+            POSITION = 8,
+            LAND = 9				// AUTO control
+        }        
 
         public static void linearRegression()
         {

@@ -793,12 +793,24 @@ namespace ArdupilotMega.GCSViews
                     count += 36; // 8 * float
                 }
 
-                att.pitch = (DATA[18][0] * deg2rad);
-                att.roll = (DATA[18][1] * deg2rad);
-                att.yaw = (DATA[18][2] * deg2rad);
-                att.pitchspeed = (DATA[17][0]);
-                att.rollspeed = (DATA[17][1]);
-                att.yawspeed = (DATA[17][2]);
+                bool xplane9 = !CHK_xplane10.Checked;
+
+                if (xplane9)
+                {
+                    att.pitch = (DATA[18][0] * deg2rad);
+                    att.roll = (DATA[18][1] * deg2rad);
+                    att.yaw = (DATA[18][2] * deg2rad);
+                    att.pitchspeed = (DATA[17][0]);
+                    att.rollspeed = (DATA[17][1]);
+                    att.yawspeed = (DATA[17][2]);
+                } else {
+                    att.pitch = (DATA[17][0] * deg2rad);
+                    att.roll = (DATA[17][1] * deg2rad);
+                    att.yaw = (DATA[17][2] * deg2rad);
+                    att.pitchspeed = (DATA[16][0]);
+                    att.rollspeed = (DATA[16][1]);
+                    att.yawspeed = (DATA[16][2]);
+                }
 
                 TimeSpan timediff = DateTime.Now - oldtime;
 
@@ -809,10 +821,19 @@ namespace ArdupilotMega.GCSViews
                 //Console.WriteLine("{0:0.00000} {1:0.00000} {2:0.00000} \t {3:0.00000} {4:0.00000} {5:0.00000}", pdiff, rdiff, ydiff, DATA[17][0], DATA[17][1], DATA[17][2]);
 
                 oldatt = att;
+                if (xplane9)
+                {
+                    rdiff = DATA[17][1];
+                    pdiff = DATA[17][0];
+                    ydiff = DATA[17][2];
+                }
+                else
+                {
+                    rdiff = DATA[16][1];
+                    pdiff = DATA[16][0];
+                    ydiff = DATA[16][2];
 
-                rdiff = DATA[17][1];
-                pdiff = DATA[17][0];
-                ydiff = DATA[17][2];
+                }
 
                 Int16 xgyro = Constrain(rdiff * 1000.0, Int16.MinValue, Int16.MaxValue);
                 Int16 ygyro = Constrain(pdiff * 1000.0, Int16.MinValue, Int16.MaxValue);
@@ -1434,7 +1455,15 @@ namespace ArdupilotMega.GCSViews
                 {
                     if (RAD_softXplanes.Checked)
                     {
-                        updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[18][1] * deg2rad, DATA[18][0] * deg2rad, DATA[19][2] * deg2rad, DATA[18][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
+
+                        bool xplane9 = !CHK_xplane10.Checked;
+                        if (xplane9)
+                        {
+                            updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[18][1] * deg2rad, DATA[18][0] * deg2rad, DATA[19][2] * deg2rad, DATA[18][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
+                        } else {
+
+                            updateScreenDisplay(DATA[20][0] * deg2rad, DATA[20][1] * deg2rad, DATA[20][2] * .3048, DATA[17][1] * deg2rad, DATA[17][0] * deg2rad, DATA[18][2] * deg2rad, DATA[17][2] * deg2rad, roll_out, pitch_out, rudder_out, throttle_out);
+                        }
                     }
 
                     if (RAD_softFlightGear.Checked || RAD_JSBSim.Checked)
@@ -1558,7 +1587,7 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((float)(rudder_out * REV_rudder)), 0, Xplane, 53, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 57, 4);
 
-                Array.Copy(BitConverter.GetBytes((float)(roll_out * REV_roll * 5)), 0, Xplane, 61, 4);
+                Array.Copy(BitConverter.GetBytes((float)(roll_out * REV_roll * 0.5)), 0, Xplane, 61, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 65, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 69, 4);
                 Array.Copy(BitConverter.GetBytes((int)-999), 0, Xplane, 73, 4);
