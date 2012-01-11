@@ -195,7 +195,9 @@ def wait_waypoint(mav, wpnum_start, wpnum_end, allow_skip=True, max_dist=2, time
         seq = m.seq
         m = mav.recv_match(type='NAV_CONTROLLER_OUTPUT', blocking=True)
         wp_dist = m.wp_dist
-        print("test: WP %u (wp_dist=%u), current_wp: %u, wpnum_end: %u" % (seq, wp_dist, current_wp, wpnum_end))
+        m = mav.recv_match(type='VFR_HUD', blocking=True)
+
+        print("test: WP %u (wp_dist=%u Alt=%d), current_wp: %u, wpnum_end: %u" % (seq, wp_dist, m.alt, current_wp, wpnum_end))
         if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
             print("test: Starting new waypoint %u" % seq)
             tstart = time.time()

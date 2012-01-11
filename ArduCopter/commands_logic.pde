@@ -199,7 +199,7 @@ static void do_RTL(void)
 
 	//so we know where we are navigating from
 	// --------------------------------------
-	next_WP = current_loc;
+	next_WP 		= current_loc;
 
 	// Loads WP from Memory
 	// --------------------
@@ -265,19 +265,13 @@ static void do_land()
 {
 	wp_control = LOITER_MODE;
 
-	//Serial.println("dlnd ");
-
-	// not really used right now, might be good for debugging
 	land_complete		= false;
-
-	// used to limit decent rate
-	land_start 			= millis();
-
-	// used to limit decent rate
-	original_alt		= current_loc.alt;
 
 	// hold at our current location
 	set_next_WP(&current_loc);
+
+	// Set a new target altitude
+	set_new_altitude(0);
 }
 
 static void do_loiter_unlimited()
@@ -339,29 +333,28 @@ static bool verify_takeoff()
 		return false;
 	}
 	// are we above our target altitude?
-	return (current_loc.alt > next_WP.alt);
+	//return (current_loc.alt > next_WP.alt);
+	return (current_loc.alt > target_altitude);
 }
 
 static bool verify_land()
 {
+
 	static int32_t 	old_alt = 0;
 	static int16_t	velocity_land = -1;
 
-	// land at .62 meter per second
-	next_WP.alt  = original_alt - ((millis() - land_start) / 32);			// condition_value = our initial
-
-	if (old_alt == 0)
+	// landing detector
+	if ((current_loc.alt - home.alt) > 300){
 		old_alt = current_loc.alt;
-
-	if (velocity_land == -1)
 		velocity_land = 2000;
-
-
-	if ((current_loc.alt - home.alt) < 300){
+	}else{
 		// a LP filter used to tell if we have landed
 		// will drive to 0 if we are on the ground - maybe, the baro is noisy
-		velocity_land  = ((velocity_land * 7) + (old_alt - current_loc.alt)) / 8;
+		int16_t delta = (old_alt - current_loc.alt) << 3;
+		velocity_land = ((velocity_land * 7) + delta ) / 8;
 	}
+
+	//Serial.printf("velocity_land %d \n", velocity_land);
 
 	// remenber altitude for climb_rate
 	old_alt = current_loc.alt;
@@ -369,25 +362,15 @@ static bool verify_land()
 	if ((current_loc.alt - home.alt) < 200){
 		// don't bank to hold position
 		wp_control = NO_NAV_MODE;
-
-		// Update by JLN for a safe AUTO landing
-		manual_boost = -10;
-		g.throttle_cruise += g.pi_alt_hold.get_integrator();
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
 	}
 
-	if((current_loc.alt - home.alt)  < 100 && velocity_land <= 100){
+	if((current_loc.alt - home.alt)  < 100 && velocity_land <= 50){
 		land_complete = true;
-		// reset manual_boost hack
-		manual_boost = 0;
 
 		// reset old_alt
 		old_alt = 0;
-		return false;
+		return true;
 	}
-	//Serial.printf("N, %d\n", velocity_land);
-	//Serial.printf("N_alt, %ld\n", next_WP.alt);
 	return false;
 }
 
@@ -396,7 +379,9 @@ static bool verify_nav_wp()
 	// Altitude checking
 	if(next_WP.options & MASK_OPTIONS_RELATIVE_ALT){
 		// we desire a certain minimum altitude
-		if (current_loc.alt > next_WP.alt){
+		//if (current_loc.alt > next_WP.alt){
+		if (current_loc.alt > target_altitude){
+
 			// we have reached that altitude
 			wp_verify_byte |= NAV_ALTITUDE;
 		}
@@ -509,7 +494,7 @@ static void do_change_alt()
 {
 	Location temp	= next_WP;
 	condition_start = current_loc.alt;
-	condition_value	= command_cond_queue.alt;
+	//condition_value	= command_cond_queue.alt;
 	temp.alt		= command_cond_queue.alt;
 	set_next_WP(&temp);
 }
@@ -582,9 +567,9 @@ static void do_yaw()
 static bool verify_wait_delay()
 {
 	//Serial.print("vwd");
-	if ((unsigned)(millis() - condition_start) > condition_value){
+	if ((unsigned)(millis() - condition_start) > (unsigned)condition_value){
 		//Serial.println("y");
-		condition_value		= 0;
+		condition_value = 0;
 		return true;
 	}
 	//Serial.println("n");
@@ -594,16 +579,14 @@ static bool verify_wait_delay()
 static bool verify_change_alt()
 {
 	//Serial.printf("change_alt, ca:%d, na:%d\n", (int)current_loc.alt, (int)next_WP.alt);
-	if (condition_start < next_WP.alt){
+	if ((int32_t)condition_start < next_WP.alt){
 		// we are going higer
 		if(current_loc.alt > next_WP.alt){
-			condition_value = 0;
 			return true;
 		}
 	}else{
 		// we are going lower
 		if(current_loc.alt < next_WP.alt){
-			condition_value = 0;
 			return true;
 		}
 	}

@@ -367,11 +367,124 @@ static void update_crosstrack(void)
 	}
 }
 
-
 static int32_t get_altitude_error()
 {
+	// Next_WP alt is our target alt
+	// It changes based on climb rate
+	// until it reaches the target_altitude
 	return next_WP.alt - current_loc.alt;
 }
+
+static void clear_new_altitude()
+{
+	alt_change_flag = REACHED_ALT;
+}
+
+static void set_new_altitude(int32_t _new_alt)
+{
+	// just to be clear
+	next_WP.alt = current_loc.alt;
+
+	// for calculating the delta time
+	alt_change_timer = millis();
+
+	// save the target altitude
+	target_altitude = _new_alt;
+
+	// reset our altitude integrator
+	alt_change = 0;
+
+	// save the original altitude
+	original_altitude = current_loc.alt;
+
+	// to decide if we have reached the target altitude
+	if(target_altitude > original_altitude){
+		// we are below, going up
+		alt_change_flag = ASCENDING;
+		Serial.printf("go up\n");
+	}else if(target_altitude < original_altitude){
+		// we are above, going down
+		alt_change_flag = DESCENDING;
+		Serial.printf("go down\n");
+	}else{
+		// No Change
+		alt_change_flag = REACHED_ALT;
+		Serial.printf("reached alt\n");
+	}
+
+	//Serial.printf("new alt: %d Org alt: %d\n", target_altitude, original_altitude);
+}
+
+static int32_t get_new_altitude()
+{
+	// returns a new next_WP.alt
+
+	if(alt_change_flag == ASCENDING){
+		// we are below, going up
+		if(current_loc.alt >=  target_altitude){
+			alt_change_flag = REACHED_ALT;
+		}
+
+		// we shouldn't command past our target
+		if(next_WP.alt >=  target_altitude){
+			return target_altitude;
+		}
+	}else if (alt_change_flag == DESCENDING){
+		// we are above, going down
+		if(current_loc.alt <=  target_altitude)
+			alt_change_flag = REACHED_ALT;
+
+		// we shouldn't command past our target
+		if(next_WP.alt <=  target_altitude){
+			return target_altitude;
+		}
+	}
+
+	// if we have reached our target altitude, return the target alt
+	if(alt_change_flag == REACHED_ALT){
+		return target_altitude;
+	}
+
+	int32_t diff 	= abs(next_WP.alt - target_altitude);
+	int8_t			_scale 	= 4;
+
+	if (next_WP.alt < target_altitude){
+		// we are below the target alt
+
+		if(diff < 200){
+			// we are going up
+			_scale = 5;
+		} else {
+			_scale = 4;
+		}
+
+	}else {
+		// we are above the target
+		// stay at 16 for speed
+		//_scale = 16;
+
+		if(diff < 400){
+			// we are going down
+			_scale = 5;
+
+		}else if(diff < 100){
+			_scale = 6;
+		}
+	}
+
+	int32_t change = (millis() - alt_change_timer) >> _scale;
+
+	if(alt_change_flag == ASCENDING){
+		alt_change += change;
+	}else{
+		alt_change -= change;
+	}
+	// for generating delta time
+	alt_change_timer = millis();
+
+	return original_altitude + alt_change;
+}
+
 
 static int32_t wrap_360(int32_t error)
 {

@@ -39,7 +39,7 @@ static void update_commands()
 	//uint8_t tmp = g.command_index.get();
 	//Serial.printf("command_index %u \n", tmp);
 
-	if (g.command_total <= 1 || g.command_index == 255)
+	if (g.command_total <= 1 || g.command_index > 127)
 		return;
 
 	if(command_nav_queue.id == NO_COMMAND){
@@ -62,8 +62,14 @@ static void update_commands()
 			g.command_index  = command_nav_index = 255;
 			// if we are on the ground, enter stabilize, else Land
 			if (land_complete == true){
-				set_mode(STABILIZE);
-				// disarm motors
+				// So what state does this leave us in?
+				// We are still in the same mode as what landed us,
+				// so maybe we try to continue to descend just in case we are still in the air
+				// This will also drive down the Iterm to -300
+				set_new_altitude(-10000);
+
+				// We can't disarm the motors easily. We could very well be wrong
+				//
 				//init_disarm_motors();
 			} else {
 				set_mode(LAND);

@@ -2,7 +2,7 @@
 
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
-static byte failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
+static int8_t failsafeCounter = 0;		// we wait a second to take over the throttle and send the plane circling
 
 static void default_dead_zones()
 {
@@ -55,8 +55,8 @@ static void init_rc_out()
 	init_motors_out();
 
 	// this is the camera pitch5 and roll6
-	APM_RC.OutputCh(CH_5, 1500);
-	APM_RC.OutputCh(CH_6, 1500);
+	APM_RC.OutputCh(CH_CAM_PITCH, 1500);
+	APM_RC.OutputCh(CH_CAM_ROLL, 1500);
 
 	for(byte i = 0; i < 5; i++){
 		delay(20);
@@ -103,18 +103,18 @@ void output_min()
     #if FRAME_CONFIG ==	HELI_FRAME
         heli_move_servos_to_mid();
 	#else
-	    APM_RC.OutputCh(CH_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
-	    APM_RC.OutputCh(CH_2, 	g.rc_3.radio_min);
-	    APM_RC.OutputCh(CH_3, 	g.rc_3.radio_min);
-	    APM_RC.OutputCh(CH_4, 	g.rc_3.radio_min);
+	    APM_RC.OutputCh(MOT_1, 	g.rc_3.radio_min);					// Initialization of servo outputs
+	    APM_RC.OutputCh(MOT_2, 	g.rc_3.radio_min);
+	    APM_RC.OutputCh(MOT_3, 	g.rc_3.radio_min);
+	    APM_RC.OutputCh(MOT_4, 	g.rc_3.radio_min);
 	#endif
 
-	APM_RC.OutputCh(CH_7,   g.rc_3.radio_min);
-    APM_RC.OutputCh(CH_8,   g.rc_3.radio_min);
+	APM_RC.OutputCh(MOT_5,   g.rc_3.radio_min);
+  APM_RC.OutputCh(MOT_6,   g.rc_3.radio_min);
 
 	#if FRAME_CONFIG ==	OCTA_FRAME
-	APM_RC.OutputCh(CH_10,   g.rc_3.radio_min);
-    APM_RC.OutputCh(CH_11,   g.rc_3.radio_min);
+	APM_RC.OutputCh(MOT_7,   g.rc_3.radio_min);
+  APM_RC.OutputCh(MOT_8,   g.rc_3.radio_min);
 	#endif
 
 }
@@ -153,12 +153,16 @@ static void throttle_failsafe(uint16_t pwm)
 		// throttle has dropped below the mark
 		failsafeCounter++;
 		if (failsafeCounter == 9){
-			SendDebug("MSG FS ON ");
-			SendDebugln(pwm, DEC);
+			//
 		}else if(failsafeCounter == 10) {
 			// Don't enter Failsafe if we are not armed
-			if(motor_armed == true)
+			// home distance is in meters
+			// This is to prevent accidental RTL
+			if((motor_armed == true) && (home_distance > 10) && (current_loc.alt > 400)){
+				SendDebug("MSG FS ON ");
+				SendDebugln(pwm, DEC);
 				set_failsafe(true);
+			}
 		}else if (failsafeCounter > 10){
 			failsafeCounter = 11;
 		}

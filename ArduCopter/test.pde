@@ -167,7 +167,7 @@ test_eedump(uint8_t argc, const Menu::arg *argv)
 							g.rc_4.control_in,
 							g.rc_4.radio_out);
 
-		APM_RC.OutputCh(CH_7, g.rc_4.radio_out);
+		APM_RC.OutputCh(CH_TRI_YAW, g.rc_4.radio_out);
 
 		if(Serial.available() > 0){
 			return (0);
@@ -765,10 +765,10 @@ test_current(uint8_t argc, const Menu::arg *argv)
 						current_amps,
 						current_total);
 
-		APM_RC.OutputCh(CH_1, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_2, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_3, g.rc_3.radio_in);
-		APM_RC.OutputCh(CH_4, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_1, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_2, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_3, g.rc_3.radio_in);
+		APM_RC.OutputCh(MOT_4, g.rc_3.radio_in);
 
 		if(Serial.available() > 0){
 			return (0);
