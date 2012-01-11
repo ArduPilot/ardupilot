@@ -321,7 +321,7 @@ static void init_ardupilot()
 	#endif
 
 	// initialise sonar
-	#if HIL_MODE != HIL_MODE_ATTITUDE && CONFIG_SONAR == ENABLED
+	#if CONFIG_SONAR == ENABLED
 	init_sonar();
 	#endif
 
@@ -490,9 +490,7 @@ static void set_mode(byte mode)
 			roll_pitch_mode = ALT_HOLD_RP;
 			throttle_mode 	= ALT_HOLD_THR;
 
-			next_WP = current_loc;
-			// 1m is the alt hold limit
-			next_WP.alt = max(next_WP.alt, 100);
+			set_next_WP(&current_loc);
 			break;
 
 		case AUTO:
@@ -508,9 +506,7 @@ static void set_mode(byte mode)
 			yaw_mode 		= CIRCLE_YAW;
 			roll_pitch_mode = CIRCLE_RP;
 			throttle_mode 	= CIRCLE_THR;
-			next_WP 		= current_loc;
-
-			// reset the desired circle angle
+			set_next_WP(&current_loc);
 			circle_angle 	= 0;
 			break;
 
@@ -518,14 +514,14 @@ static void set_mode(byte mode)
 			yaw_mode 		= LOITER_YAW;
 			roll_pitch_mode = LOITER_RP;
 			throttle_mode 	= LOITER_THR;
-			next_WP 		= current_loc;
+			set_next_WP(&current_loc);
 			break;
 
 		case POSITION:
 			yaw_mode 		= YAW_HOLD;
 			roll_pitch_mode = ROLL_PITCH_AUTO;
 			throttle_mode 	= THROTTLE_MANUAL;
-			next_WP 		= current_loc;
+			set_next_WP(&current_loc);
 			break;
 
 		case GUIDED:
