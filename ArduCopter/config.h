@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
+#ifndef __ARDUCOPTER_CONFIG_H__
+#define __ARDUCOPTER_CONFIG_H__
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -855,3 +857,7 @@
 #ifndef MAVLINK_TELEMETRY_PORT_DELAY
 # define MAVLINK_TELEMETRY_PORT_DELAY 2000
 #endif
+
+
+
+#endif // __ARDUCOPTER_CONFIG_H__

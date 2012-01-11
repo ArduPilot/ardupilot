@@ -308,7 +308,7 @@ static void Log_Read_Raw()
 	for (int y = 0; y < 6; y++) {
 		logvar = (float)DataFlash.ReadLong() / t7;
 		Serial.print(logvar);
-		Serial.print(comma);
+		Serial.print(",");
 	}
 	Serial.println(" ");
 }

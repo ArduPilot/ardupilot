@@ -197,13 +197,13 @@ void APM_RC_APM2::Force_Out6_Out7(void) { }
 
 void APM_RC_APM2::SetFastOutputChannels(uint32_t chmask)
 {
-    if ((chmask & ( MSK_CH_1 | MSK_CH_2 )) != 0)
+    if ((chmask & ( _BV(CH_1) | _BV(CH_2))) != 0)
         _set_speed_ch1_ch2(OUTPUT_SPEED_400HZ);
 
-    if ((chmask & ( MSK_CH_3 | MSK_CH_4 | MSK_CH_5 )) != 0)
+    if ((chmask & ( _BV(CH_3) | _BV(CH_4) | _BV(CH_5))) != 0)
         _set_speed_ch3_ch4_ch5(OUTPUT_SPEED_400HZ);
 
-    if ((chmask & ( MSK_CH_6 | MSK_CH_7 | MSK_CH_8 )) != 0)
+    if ((chmask & ( _BV(CH_6) | _BV(CH_7) | _BV(CH_8))) != 0)
         _set_speed_ch6_ch7_ch8(OUTPUT_SPEED_400HZ);
 }
 
