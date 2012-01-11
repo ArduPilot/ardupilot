@@ -271,7 +271,7 @@ setup_flightmodes(uint8_t argc, const Menu::arg *argv)
 {
 	byte _switchPosition = 0;
 	byte _oldSwitchPosition = 0;
-	byte mode = 0;
+	int8_t mode = 0;
 
 	Serial.printf_P(PSTR("\nMode switch to edit, aileron: select modes, rudder: Simple on/off\n"));
 	print_hit_enter();
