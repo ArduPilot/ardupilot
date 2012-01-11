@@ -20,11 +20,11 @@ void sitl_setup(void);
 int sitl_gps_pipe(void);
 ssize_t sitl_gps_read(int fd, void *buf, size_t count);
 void sitl_update_compass(float heading, float roll, float pitch, float yaw);
-void sitl_update_gps(float latitude, float longitude, float altitude,
-		     float speedN, float speedE, bool have_lock);
+void sitl_update_gps(double latitude, double longitude, float altitude,
+		     double speedN, double speedE, bool have_lock);
 void sitl_update_adc(float roll, float pitch, float yaw,
-		     float rollRate, float pitchRate, float yawRate,
-		     float xAccel, float yAccel, float zAccel,
+		     double rollRate, double pitchRate, double yawRate,
+		     double xAccel, double yAccel, double zAccel,
 		     float airspeed);
 void sitl_setup_adc(void);
 void sitl_update_barometer(float altitude);

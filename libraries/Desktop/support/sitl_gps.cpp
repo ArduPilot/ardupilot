@@ -78,8 +78,8 @@ static void gps_send(uint8_t msgid, uint8_t *buf, uint16_t size)
 /*
   possibly send a new GPS UBLOX packet
  */
-void sitl_update_gps(float latitude, float longitude, float altitude,
-		     float speedN, float speedE, bool have_lock)
+void sitl_update_gps(double latitude, double longitude, float altitude,
+		     double speedN, double speedE, bool have_lock)
 {
 	struct ubx_nav_posllh {
 		uint32_t	time; // GPS msToW
@@ -113,7 +113,7 @@ void sitl_update_gps(float latitude, float longitude, float altitude,
         const uint8_t MSG_POSLLH = 0x2;
 	const uint8_t MSG_STATUS = 0x3;
 	const uint8_t MSG_VELNED = 0x12;
-	float lon_scale;
+	double lon_scale;
 
 	// 4Hz
 	if (millis() - gps_state.last_update < 250) {
