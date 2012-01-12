@@ -195,6 +195,7 @@ AP_DCM::accel_adjust(void)
 void
 AP_DCM::matrix_reset(void)
 {
+	_compass->null_offsets_disable();		
 	_dcm_matrix.a.x = 1.0f;
 	_dcm_matrix.a.y = 0.0f;
 	_dcm_matrix.a.z = 0.0f;
@@ -207,6 +208,8 @@ AP_DCM::matrix_reset(void)
 	_omega_I.x = 0.0f;
 	_omega_I.y = 0.0f;
 	_omega_I.z = 0.0f;
+	_compass->null_offsets_enable();	// This call is needed to restart the nulling
+										// Otherwise the reset in the DCM matrix can mess up the nulling
 }
 
 /*************************************************
