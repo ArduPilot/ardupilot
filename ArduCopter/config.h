@@ -615,10 +615,10 @@
 
 
 //////////////////////////////////////////////////////////////////////////////
-// Navigation control gains
+// Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			.25		//
+# define LOITER_P			2.4		// was .25 in previous
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.1	// Wind control
@@ -627,6 +627,9 @@
 # define LOITER_IMAX		30		// degrees°
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// WP Navigation control gains
+//
 #ifndef NAV_P
 # define NAV_P				2.2			// 3 was causing rapid oscillations in Loiter
 #endif
