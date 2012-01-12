@@ -66,7 +66,6 @@ static void update_commands()
 				// We are still in the same mode as what landed us,
 				// so maybe we try to continue to descend just in case we are still in the air
 				// This will also drive down the Iterm to -300
-				set_new_altitude(-10000);
 
 				// We can't disarm the motors easily. We could very well be wrong
 				//
