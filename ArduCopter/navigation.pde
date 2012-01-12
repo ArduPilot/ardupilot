@@ -44,7 +44,7 @@ static void calc_XY_velocity(){
 	// used for estimations below 1.5m/s
 	// our GPS is about 1m per
 	static int32_t last_longitude = 0;
-	static int32_t last_latutude  = 0;
+	static int32_t last_latitude  = 0;
 
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
@@ -54,11 +54,14 @@ static void calc_XY_velocity(){
 	//int8_t tmp = 5;
 
 	int16_t	x_diff	= (g_gps->longitude - last_longitude) * tmp;
-	int16_t	y_diff	= (g_gps->latitude  - last_latutude) * tmp;
+	int16_t	y_diff	= (g_gps->latitude  - last_latitude) * tmp;
 
 	// filter
-	x_GPS_speed = (x_GPS_speed * 3 + x_diff) / 4;
-	y_GPS_speed = (y_GPS_speed * 3 + y_diff) / 4;
+	x_GPS_speed = (x_GPS_speed  + x_diff) >> 1;
+	y_GPS_speed = (y_GPS_speed  + y_diff) >> 1;
+
+	//x_GPS_speed = x_diff;
+	//y_GPS_speed = y_diff;
 
 	// Above simply works better than GPS groundspeed
 	// which is proving to be problematic
@@ -72,7 +75,7 @@ static void calc_XY_velocity(){
 	}*/
 
 	last_longitude 	= g_gps->longitude;
-	last_latutude 	= g_gps->latitude;
+	last_latitude 	= g_gps->latitude;
 
 	//Serial.printf("GS: %d  \tx:%d \ty:%d\n", g_gps->ground_speed, x_GPS_speed, y_GPS_speed);
 }
@@ -95,9 +98,68 @@ static void calc_location_error(struct Location *next_loc)
 	lat_error	= next_loc->lat - current_loc.lat;							// 500 - 0 = 500 Go North
 }
 
+/*
+//static void calc_loiter3(int x_error, int y_error)
+{
+	static int32_t	gps_lat_I = 0;
+	static int32_t	gps_lon_I = 0;
+
+	// If close to goal <1m reset the I term
+	if (abs(x_error) < 50)
+		gps_lon_I = 0;
+	if (abs(y_error) < 50)
+		gps_lat_I = 0;
+
+	gps_lon_I += x_error;
+	gps_lat_I += y_error;
+
+	gps_lon_I = constrain(gps_lon_I,-3000,3000);
+	gps_lat_I = constrain(gps_lat_I,-3000,3000);
+
+	int16_t lon_P = 1.2 	* (float)x_error;
+	int16_t lon_I = 0.1 	* (float)gps_lon_I;  //.1
+	int16_t lon_D = 3 		* x_GPS_speed ; // this controls the small bumps
+
+	int16_t lat_P = 1.2 	* (float)y_error;
+	int16_t lat_I = 0.1 	* (float)gps_lat_I;
+	int16_t lat_D = 3 		* y_GPS_speed ;
+
+	//limit of terms
+	lon_I = constrain(lon_I,-3000,3000);
+	lat_I = constrain(lat_I,-3000,3000);
+	lon_D = constrain(lon_D,-500,500);  //this controls the long distance dampimg
+	lat_D = constrain(lat_D,-500,500);  //this controls the long distance dampimg
+
+	nav_lon 	= lon_P  + lon_I - lon_D;
+	nav_lat 	= lat_P  + lat_I - lat_D;
+
+	Serial.printf("%d, %d, %d, %d, %d, %d\n",
+				lon_P, lat_P,
+				lon_I, lat_I,
+				lon_D, lat_D);
+
+}
+*/
 
 #define NAV_ERR_MAX 800
 static void calc_loiter(int x_error, int y_error)
+{
+	int16_t lon_PI 	= g.pi_loiter_lon.get_pi(x_error, dTnav);
+	int16_t lon_D 	= 3 * x_actual_speed ; // this controls the small bumps
+
+	int16_t lat_PI 	= g.pi_loiter_lat.get_pi(y_error, dTnav);
+	int16_t lat_D 	= 3 * y_actual_speed ;
+
+	//limit of terms
+	lon_D = constrain(lon_D,-500,500);
+	lat_D = constrain(lat_D,-500,500);
+
+	nav_lon		= constrain(lon_PI - lon_D, -2500, 2500);
+	nav_lat		= constrain(lat_PI - lat_D, -2500, 2500);
+}
+
+
+static void calc_loiter1(int x_error, int y_error)
 {
 	// East/West
 	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);	//800
