@@ -46,38 +46,37 @@ static void calc_XY_velocity(){
 	static int32_t last_longitude = 0;
 	static int32_t last_latitude  = 0;
 
+	static int16_t x_speed_old = 0;
+	static int16_t y_speed_old = 0;
+
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
 
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
 	float tmp = 1.0/dTnav;
-	//int8_t tmp = 5;
+	//float tmp = 5;
 
-	int16_t	x_diff	= (g_gps->longitude - last_longitude) * tmp;
-	int16_t	y_diff	= (g_gps->latitude  - last_latitude) * tmp;
+	// straightforward approach:
+	/*
+	int16_t	x_estimate	= (float)(g_gps->longitude - last_longitude) * tmp;
+	int16_t	y_estimate	= (float)(g_gps->latitude  - last_latitude)  * tmp;
+	// slight averaging filter
+	x_GPS_speed = (x_GPS_speed  + x_estimate) >> 1;
+	y_GPS_speed = (y_GPS_speed  + y_estimate) >> 1;
+	*/
 
-	// filter
-	x_GPS_speed = (x_GPS_speed  + x_diff) >> 1;
-	y_GPS_speed = (y_GPS_speed  + y_diff) >> 1;
+	// Ryan Beall's forward estimator:
+	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * tmp;
+	int16_t	y_speed_new = (float)(g_gps->latitude  - last_latitude)  * tmp;
 
-	//x_GPS_speed = x_diff;
-	//y_GPS_speed = y_diff;
+	x_GPS_speed 	= x_speed_new + (x_speed_new - x_speed_old);
+	y_GPS_speed 	= y_speed_new + (y_speed_new - y_speed_old);
 
-	// Above simply works better than GPS groundspeed
-	// which is proving to be problematic
-
-	/*if(g_gps->ground_speed > 120){
-		// Derive X/Y speed from GPS
-		// this is far more accurate when traveling about 1.5m/s
-		float temp		= g_gps->ground_course * RADX100;
-		x_GPS_speed 	= sin(temp) * (float)g_gps->ground_speed;
-		y_GPS_speed 	= cos(temp) * (float)g_gps->ground_speed;
-	}*/
+	x_speed_old 	= x_speed_new;
+	y_speed_old 	= y_speed_new;
 
 	last_longitude 	= g_gps->longitude;
 	last_latitude 	= g_gps->latitude;
-
-	//Serial.printf("GS: %d  \tx:%d \ty:%d\n", g_gps->ground_speed, x_GPS_speed, y_GPS_speed);
 }
 
 static void calc_location_error(struct Location *next_loc)
@@ -257,81 +256,6 @@ static void calc_loiter_pitch_roll()
 	nav_pitch = -nav_pitch;
 }
 
-#if WIND_COMP_STAB == 1
-static void calc_wind_compensation()
-{
-	// this idea is a function that converts user input into I term for position hold
-	// the concept is simple. The iterms always act upon flight no matter what mode were in.
-	// when our velocity is 0, we call this function to update our iterms
-	// otherwise we slowly reduce out iterms to 0
-
-	// take the pitch and roll of the copter and,
-	float roll 	=  dcm.roll_sensor;
-	float pitch = -dcm.pitch_sensor; // flip pitch to make positive pitch forward
-
-	// rotate it to eliminate yaw of Copter
-	int32_t roll_tmp 	= roll *  sin_yaw_y  - pitch * -cos_yaw_x;
-	int32_t pitch_tmp 	= roll * -cos_yaw_x  + pitch *  sin_yaw_y;
-
-	roll_tmp  = constrain(roll_tmp, -2000, 2000);
-	pitch_tmp = constrain(pitch_tmp, -2000, 2000);
-
-	// filter the input and apply it to out integrator value
-	// nav_lon and nav_lat will be applied to normal flight
-
-	// This filter is far too fast!!!
-	//nav_lon = ((int32_t)g.pi_loiter_lon.get_integrator() * 15 + roll_tmp) / 16;
-	//nav_lat = ((int32_t)g.pi_loiter_lat.get_integrator() * 15 + pitch_tmp) / 16;
-
-	nav_lon = g.pi_loiter_lon.get_integrator();
-	nav_lat = g.pi_loiter_lat.get_integrator();
-
-	// Maybe a slower filter would work?
-	if(g.pi_loiter_lon.get_integrator() > roll_tmp){
-		g.pi_loiter_lon.set_integrator(nav_lon - 5);
-	}else if(g.pi_loiter_lon.get_integrator() < roll_tmp){
-		g.pi_loiter_lon.set_integrator(nav_lon + 5);
-	}
-	if(g.pi_loiter_lat.get_integrator() > pitch_tmp){
-		g.pi_loiter_lat.set_integrator(nav_lat - 5);
-	}else if(g.pi_loiter_lat.get_integrator() < pitch_tmp){
-		g.pi_loiter_lat.set_integrator(nav_lat + 5);
-	}
-
-	// save smoothed input to integrator
-	g.pi_loiter_lon.set_integrator(nav_lon);		// X
-	g.pi_loiter_lat.set_integrator(nav_lat);		// Y
-
-	//Serial.printf("build wind iterm X:%d  Y:%d, r:%d, p:%d\n",
-	//				nav_lon,
-	//				nav_lat,
-	//				nav_roll,
-	//				nav_pitch);
-}
-
-static void reduce_wind_compensation()
-{
-	//slow degradation of iterms
-	float tmp;
-
-	tmp = g.pi_loiter_lon.get_integrator();
-	tmp *= .98;
-	g.pi_loiter_lon.set_integrator(tmp);		// X
-
-	tmp = g.pi_loiter_lat.get_integrator();
-	tmp *= .98;
-	g.pi_loiter_lat.set_integrator(tmp);		// Y
-
-	// debug
-	//int16_t t1 = g.pi_loiter_lon.get_integrator();
-	//int16_t t2 = g.pi_loiter_lon.get_integrator();
-
-	//Serial.printf("reduce wind iterm X:%d  Y:%d \n",
-	//				t1,
-	//				t2);
-}
-#endif
-
 static int16_t calc_desired_speed(int16_t max_speed)
 {
 	/*
@@ -508,29 +432,22 @@ static int32_t get_new_altitude()
 	}
 
 	int32_t diff 	= abs(next_WP.alt - target_altitude);
-	int8_t			_scale 	= 4;
+	int8_t			_scale 	= 3;
 
 	if (next_WP.alt < target_altitude){
 		// we are below the target alt
-
 		if(diff < 200){
-			// we are going up
 			_scale = 5;
 		} else {
 			_scale = 4;
 		}
-
 	}else {
-		// we are above the target
-		// stay at 16 for speed
-		//_scale = 16;
-
-		if(diff < 400){
-			// we are going down
+		// we are above the target, going down
+		if(diff < 600){
+			_scale = 4;
+		}
+		if(diff < 300){
 			_scale = 5;
-
-		}else if(diff < 100){
-			_scale = 6;
 		}
 	}
 
