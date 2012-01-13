@@ -271,7 +271,7 @@ static void do_land()
 	set_next_WP(&current_loc);
 
 	// Set a new target altitude
-	set_new_altitude(0);
+	set_new_altitude(-200);
 }
 
 static void do_loiter_unlimited()
@@ -364,7 +364,7 @@ static bool verify_land()
 		wp_control = NO_NAV_MODE;
 		// try and come down faster
 		landing_boost++;
-		landing_boost 	= min(landing_boost, 20);
+		landing_boost 	= min(landing_boost, 30);
 	}else{
 		landing_boost 	= 0;
 		wp_control 		= LOITER_MODE;
