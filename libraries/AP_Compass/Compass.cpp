@@ -11,6 +11,7 @@ Compass::Compass(AP_Var::Key key) :
     _offset				(&_group, 1),
     _declination		(&_group, 2, 0.0, PSTR("DEC")),
     _null_init_done(false),
+    _null_enable(false),
 	product_id(AP_COMPASS_TYPE_UNKNOWN)
 {
     // Default the orientation matrix to none - will be overridden at group load time
@@ -146,6 +147,8 @@ Compass::null_offsets(const Matrix3f &dcm_matrix)
     float       weight;
 
     Vector3f mag_body_new = Vector3f(mag_x,mag_y,mag_z);
+    
+    if(_null_enable == false) return;
 
     if(_null_init_done) {
         dcm_new_from_last = dcm_matrix.transposed() * _last_dcm_matrix;      // Note 11/20/2010: transpose() is not working, transposed() is.
@@ -165,4 +168,19 @@ Compass::null_offsets(const Matrix3f &dcm_matrix)
     _mag_body_last = mag_body_new - calc;
     _last_dcm_matrix = dcm_matrix;
 
+}
+
+
+void
+Compass::null_offsets_enable(void)
+{
+	_null_init_done = false;
+	_null_enable = true;
+}
+
+void
+Compass::null_offsets_disable(void)
+{
+	_null_init_done = false;
+	_null_enable = false;
 }

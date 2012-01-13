@@ -22,7 +22,7 @@ static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
-//static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
+static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 #if HIL_MODE != HIL_MODE_ATTITUDE
 static int8_t	test_baro(uint8_t argc, 		const Menu::arg *argv);
@@ -70,7 +70,7 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"tune",		test_tuning},
 	//{"tri",			test_tri},
 	{"current",		test_current},
-//	{"relay",		test_relay},
+	{"relay",		test_relay},
 	{"wp",			test_wp},
 	//{"nav",			test_nav},
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -777,9 +777,8 @@ test_current(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-/*
-//static int8_t
-//test_relay(uint8_t argc, const Menu::arg *argv)
+
+static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -800,7 +799,7 @@ test_current(uint8_t argc, const Menu::arg *argv)
 		}
 	}
 }
-*/
+
 static int8_t
 test_wp(uint8_t argc, const Menu::arg *argv)
 {
