@@ -598,11 +598,12 @@ static boolean	takeoff_complete;
 static int32_t	takeoff_timer;
 // Used to see if we have landed and if we should shut our engines - not fully implemented
 static boolean	land_complete = true;
-
 // used to manually override throttle in interactive Alt hold modes
 static int16_t 	manual_boost;
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t 	angle_boost;
+// Push copter down for clean landing
+static uint8_t 	landing_boost;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1418,16 +1419,9 @@ void update_roll_pitch_mode(void)
 				update_simple_mode();
 			}
 
-			#if WIND_COMP_STAB == 1
-				// in this mode, nav_roll and nav_pitch = the iterm
-				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in  + nav_roll);
-				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in + nav_pitch);
-			#else
-				// in this mode, nav_roll and nav_pitch = the iterm
-				g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
-				g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
-			#endif
-
+			// in this mode, nav_roll and nav_pitch = the iterm
+			g.rc_1.servo_out = get_stabilize_roll(g.rc_1.control_in);
+			g.rc_2.servo_out = get_stabilize_pitch(g.rc_2.control_in);
 			break;
 
 		case ROLL_PITCH_AUTO:
@@ -1616,9 +1610,9 @@ void update_throttle_mode(void)
 				}
 
 				#if FRAME_CONFIG == HELI_FRAME
-					throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping());
+					throttle_out = heli_get_angle_boost(g.throttle_cruise + nav_throttle + get_z_damping() - landing_boost);
 				#else
-					throttle_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping();
+					throttle_out = g.throttle_cruise + nav_throttle + angle_boost + get_z_damping() - landing_boost;
 				#endif
 			}
 
@@ -1702,6 +1696,7 @@ static void update_navigation()
 				wp_control = LOITER_MODE;
 			}
 
+			// Kick us out of loiter and begin landing if the auto_land_timer is set
 			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 20000){
 				// just to make sure we clear the timer
 				auto_land_timer = 0;
@@ -1713,10 +1708,6 @@ static void update_navigation()
 			break;
 
 		case LAND:
-			wp_control 		= LOITER_MODE;
-
-			// verify land will override WP_control if we are below
-			// a certain altitude
 			verify_land();
 
 			// calculates the desired Roll and Pitch
@@ -1835,6 +1826,7 @@ static void update_altitude()
 		#else
 			// This is real life
 			// calc the vertical accel rate
+			// positive = going up.
 			sonar_rate 		= (sonar_alt - old_sonar_alt) * 10;
 			old_sonar_alt 	= sonar_alt;
 		#endif
@@ -2006,6 +1998,7 @@ static void tuning(){
 	}
 }
 
+// Outputs Nav_Pitch and Nav_Roll
 static void update_nav_wp()
 {
 	if(wp_control == LOITER_MODE){
@@ -2071,24 +2064,17 @@ static void update_nav_wp()
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
 		// rotate pitch and roll to the copter frame of reference
-		//calc_nav_pitch_roll();
 		calc_loiter_pitch_roll();
 
 	}else if(wp_control == NO_NAV_MODE){
-		// calc the Iterms for Loiter based on velocity
-		#if WIND_COMP_STAB == 1
-			if (g_gps->ground_speed < 50)
-				calc_wind_compensation();
-			else
-				reduce_wind_compensation();
+		// clear out our nav so we can do things like land straight down
 
-			// rotate nav_lat, nav_lon to roll and pitch
-			calc_loiter_pitch_roll();
-		#else
-			// clear out our nav so we can do things like land straight
-			nav_pitch 	= 0;
-			nav_roll 	= 0;
-		#endif
+		// We bring in our iterms for wind control, but we don't navigate
+		nav_lon	= g.pi_loiter_lon.get_integrator();
+		nav_lat = g.pi_loiter_lat.get_integrator();
+
+		// rotate pitch and roll to the copter frame of reference
+		calc_loiter_pitch_roll();
 	}
 }
 
