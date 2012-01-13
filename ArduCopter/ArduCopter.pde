@@ -858,6 +858,12 @@ void loop()
 		// -------------------------------------------------
 		estimate_velocity();
 
+		// check for new GPS messages
+		// --------------------------
+		if(GPS_enabled){
+			update_GPS();
+		}
+
 		// perform 10hz tasks
 		// ------------------
 		medium_loop();
@@ -879,7 +885,7 @@ void loop()
 				Log_Write_Performance();
 
 			gps_fix_count 		= 0;
-			perf_mon_counter 		= 0;
+			perf_mon_counter 	= 0;
         }
 		//PORTK &= B10111111;
 	}
@@ -900,10 +906,6 @@ static void fast_loop()
 
 	// IMU DCM Algorithm
 	read_AHRS();
-
-	if(GPS_enabled){
-		update_GPS();
-	}
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -1292,8 +1294,8 @@ static void update_GPS(void)
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  = 0;
-		nav_pitch = 0;
+		nav_roll  >>= 1;
+		nav_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
