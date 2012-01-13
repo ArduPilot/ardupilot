@@ -586,6 +586,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
         Serial.println_P(PSTR("Compass initialisation failed!"));
         return 0;
     }
+    compass.null_offsets_enable();
     dcm.set_compass(&compass);
     report_compass();
 
