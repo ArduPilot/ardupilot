@@ -190,7 +190,7 @@ get_nav_throttle(int32_t z_error)
 	rate_d =  ((rate_d + climb_rate)>>1) * 1; // replace with gain
 
 	// slight adjustment to alt hold output
-	output -= rate_d;
+	output -= constrain(rate_d, -25, 25);
 
 	// light filter of output
 	output = (old_output * 3 + output) / 4;
