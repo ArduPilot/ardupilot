@@ -359,16 +359,20 @@ static bool verify_land()
 	// remenber altitude for climb_rate
 	old_alt = current_loc.alt;
 
-	if ((current_loc.alt - home.alt) < 250){
+	if ((current_loc.alt - home.alt) < 200){
 		// don't bank to hold position
 		wp_control = NO_NAV_MODE;
 		// try and come down faster
-		// by setting next_WP really low.
-		set_new_altitude(-1000);
+		landing_boost++;
+		landing_boost 	= min(landing_boost, 20);
+	}else{
+		landing_boost 	= 0;
+		wp_control 		= LOITER_MODE;
 	}
 
 	if((current_loc.alt - home.alt)  < 100 && velocity_land <= 50){
 		land_complete = true;
+		landing_boost = 0;
 
 		// reset old_alt
 		old_alt = 0;
