@@ -901,6 +901,10 @@ static void fast_loop()
 	// IMU DCM Algorithm
 	read_AHRS();
 
+	if(GPS_enabled){
+		update_GPS();
+	}
+
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
 	update_yaw_mode();
@@ -931,10 +935,6 @@ static void medium_loop()
 		case 0:
 			medium_loopCounter++;
 
-			if(GPS_enabled){
-				update_GPS();
-			}
-
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
 					if (compass.read()) {
@@ -961,10 +961,6 @@ static void medium_loop()
 			if(nav_ok){
 				// clear nav flag
 				nav_ok = false;
-
-				// invalidate GPS data
-				// -------------------
-				g_gps->new_data 	= false;
 
 				// calculate the copter's desired bearing and WP distance
 				// ------------------------------------------------------
@@ -1296,11 +1292,15 @@ static void update_GPS(void)
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  >>= 1;
-		nav_pitch >>= 1;
+		nav_roll  = 0;
+		nav_pitch = 0;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
+
+		// clear new data flag
+    	g_gps->new_data = false;
+
 		gps_watchdog = 0;
 
 		// OK to run the nav routines
