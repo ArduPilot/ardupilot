@@ -428,12 +428,6 @@ static void startup_ground(void)
 
 static void set_mode(byte mode)
 {
-	//if(control_mode == mode){
-		// don't switch modes if we are already in the correct mode.
-	//	Serial.print("Double mode\n");
-		//return;
-	//}
-
 	// if we don't have GPS lock
 	if(home_is_set == false){
 		// our max mode should be
@@ -457,6 +451,9 @@ static void set_mode(byte mode)
 
 	// clearing value used in interactive alt hold
 	manual_boost = 0;
+
+	// clearing value used to force the copter down in landing mode
+	landing_boost = 0;
 
 	// do not auto_land if we are leaving RTL
 	auto_land_timer = 0;
@@ -574,13 +571,6 @@ static void set_mode(byte mode)
 		// We are under manual attitude control
 		// removes the navigation from roll and pitch commands, but leaves the wind compensation
 		reset_nav();
-
-		#if WIND_COMP_STAB == 1
-		if(GPS_enabled){
-			wp_control = NO_NAV_MODE;
-			update_nav_wp();
-		}
-		#endif
 	}
 
 	Log_Write_Mode(control_mode);
