@@ -166,7 +166,7 @@ static int16_t
 get_nav_throttle(int32_t z_error)
 {
 	static int16_t old_output = 0;
-	static int16_t rate_d = 0;
+	//static int16_t rate_d = 0;
 
 	int16_t rate_error;
 	int16_t output;
