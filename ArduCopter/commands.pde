@@ -101,7 +101,7 @@ static void set_cmd_with_index(struct Location temp, int i)
 	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
 
 	// Make sure our WP_total
-	if(g.command_total <= i)
+	if(g.command_total < (i+1))
 		g.command_total.set_and_save(i+1);
 }
 
