@@ -1289,7 +1289,7 @@ static void update_GPS(void)
 	//current_loc.lat = -1224318000;		// Lat * 10 * *7
 	//current_loc.alt = 100;				// alt * 10 * *7
 	//return;
-	if(gps_watchdog < 12){
+	if(gps_watchdog < 30){
 		gps_watchdog++;
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
@@ -1357,8 +1357,6 @@ static void update_GPS(void)
 			update_altitude();
 		#endif
 
-	} else {
-		g_gps->new_data = false;
 	}
 }
 
