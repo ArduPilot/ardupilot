@@ -558,9 +558,7 @@ static void set_mode(byte mode)
 
 	if(throttle_mode == THROTTLE_MANUAL){
 		// reset all of the throttle iterms
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
-
+		update_throttle_cruise();
 	}else {
 		// an automatic throttle
 		// todo: replace with a throttle cruise estimator
@@ -603,6 +601,16 @@ static void
 init_simple_bearing()
 {
 	initial_simple_bearing = dcm.yaw_sensor;
+}
+
+static void update_throttle_cruise()
+{
+	int16_t tmp = g.pi_alt_hold.get_integrator();
+	if(tmp != 0){
+		g.throttle_cruise += tmp;
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
+	}
 }
 
 static void
