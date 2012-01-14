@@ -271,7 +271,7 @@ static void do_land()
 	set_next_WP(&current_loc);
 
 	// Set a new target altitude
-	set_new_altitude(0);
+	set_new_altitude(-200);
 }
 
 static void do_loiter_unlimited()
@@ -290,7 +290,7 @@ static void do_loiter_turns()
 	wp_control = CIRCLE_MODE;
 
 	// reset desired location
-	circle_angle = 0;
+
 
 	if(command_nav_queue.lat == 0){
 		// allow user to specify just the altitude
@@ -305,6 +305,10 @@ static void do_loiter_turns()
 	loiter_total = command_nav_queue.p1 * 360;
 	loiter_sum	 = 0;
 	old_target_bearing = target_bearing;
+
+	circle_angle = target_bearing + 18000;
+	circle_angle = wrap_360(circle_angle);
+	circle_angle *= RADX100;
 }
 
 static void do_loiter_time()
@@ -364,7 +368,7 @@ static bool verify_land()
 		wp_control = NO_NAV_MODE;
 		// try and come down faster
 		landing_boost++;
-		landing_boost 	= min(landing_boost, 20);
+		landing_boost 	= min(landing_boost, 30);
 	}else{
 		landing_boost 	= 0;
 		wp_control 		= LOITER_MODE;
