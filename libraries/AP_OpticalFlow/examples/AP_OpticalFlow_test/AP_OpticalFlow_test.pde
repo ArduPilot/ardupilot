@@ -201,7 +201,7 @@ void set_resolution()
     Serial.print("resolution: ");
 	Serial.println(resolution);
 	Serial.println("Choose new value:");
-	Serial.println("    1) 1200");
+	Serial.println("    1) 1600");
 	Serial.println("    4) 400");
 	Serial.println("    x) exit");
 	Serial.println();
@@ -215,10 +215,9 @@ void set_resolution()
 	
 	// update resolution
 	if( value == '1' ) {
-	    flowSensor.set_resolution(ADNS3080_RESOLUTION_1200);
+	    flowSensor.set_resolution(ADNS3080_RESOLUTION_1600);
 	}
 	if( value == '4' ) {
-	    Serial.println("you want 1200!");
 	    flowSensor.set_resolution(ADNS3080_RESOLUTION_400);
 	}
 	

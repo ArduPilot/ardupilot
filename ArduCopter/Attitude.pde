@@ -166,7 +166,7 @@ static int16_t
 get_nav_throttle(int32_t z_error)
 {
 	static int16_t old_output = 0;
-	static int16_t rate_d = 0;
+	//static int16_t rate_d = 0;
 
 	int16_t rate_error;
 	int16_t output;
@@ -187,10 +187,10 @@ get_nav_throttle(int32_t z_error)
 	output =  constrain((int)g.pi_throttle.get_p(rate_error), -160, 180);
 
 	// a positive climb rate means we're going up
-	rate_d =  ((rate_d + climb_rate)>>1) * .1; // replace with gain
+	//rate_d =  ((rate_d + climb_rate)>>1) * .1; // replace with gain
 
 	// slight adjustment to alt hold output
-	output -= constrain(rate_d, -25, 25);
+	//output -= constrain(rate_d, -25, 25);
 
 	// light filter of output
 	output = (old_output * 3 + output) / 4;

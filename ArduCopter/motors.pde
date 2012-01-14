@@ -121,6 +121,8 @@ static void init_disarm_motors()
 	motor_armed 	= false;
 	compass.save_offsets();
 
+	g.throttle_cruise.save();
+
 	// we are not in the air
 	takeoff_complete = false;
 

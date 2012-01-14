@@ -558,9 +558,7 @@ static void set_mode(byte mode)
 
 	if(throttle_mode == THROTTLE_MANUAL){
 		// reset all of the throttle iterms
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
-
+		update_throttle_cruise();
 	}else {
 		// an automatic throttle
 		// todo: replace with a throttle cruise estimator
@@ -605,15 +603,27 @@ init_simple_bearing()
 	initial_simple_bearing = dcm.yaw_sensor;
 }
 
+static void update_throttle_cruise()
+{
+	int16_t tmp = g.pi_alt_hold.get_integrator();
+	if(tmp != 0){
+		g.throttle_cruise += tmp;
+		g.pi_alt_hold.reset_I();
+		g.pi_throttle.reset_I();
+	}
+}
+
 static void
 init_throttle_cruise()
 {
+#if AUTO_THROTTLE_HOLD == 0
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
 		g.pi_throttle.reset_I();
 		g.pi_alt_hold.reset_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}
+#endif
 }
 
 #if CLI_SLIDER_ENABLED == ENABLED && CLI_ENABLED == ENABLED
