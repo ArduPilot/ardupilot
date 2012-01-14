@@ -1494,6 +1494,10 @@ void update_throttle_mode(void)
 {
 	int16_t throttle_out;
 
+	#if AUTO_THROTTLE_HOLD != 0
+	static float throttle_avg = THROTTLE_CRUISE;
+	#endif
+
 	switch(throttle_mode){
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
@@ -1508,11 +1512,13 @@ void update_throttle_mode(void)
 					}
 				#endif
 
+				#if AUTO_THROTTLE_HOLD != 0
 				// calc average throttle
-				if ((g.rc_3.control_in > MINIMUM_THROTTLE)){
-					//throttle_avg = throttle_avg * .98 + rc_3.control_in * .02;
-					//g.throttle_cruise = throttle_avg;
+				if ((g.rc_3.control_in > MINIMUM_THROTTLE) && abs(climb_rate) < 60){
+					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
+					g.throttle_cruise = throttle_avg;
 				}
+				#endif
 
 				// Code to manage the Copter state
 				if ((millis() - takeoff_timer) > 5000){
