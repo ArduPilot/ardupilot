@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.2"
+#define THISFIRMWARE "ArduCopter V2.2 b2"
 /*
 ArduCopter Version 2.2
 Authors:	Jason Short
@@ -858,6 +858,12 @@ void loop()
 		// -------------------------------------------------
 		estimate_velocity();
 
+		// check for new GPS messages
+		// --------------------------
+		if(GPS_enabled){
+			update_GPS();
+		}
+
 		// perform 10hz tasks
 		// ------------------
 		medium_loop();
@@ -879,7 +885,7 @@ void loop()
 				Log_Write_Performance();
 
 			gps_fix_count 		= 0;
-			perf_mon_counter 		= 0;
+			perf_mon_counter 	= 0;
         }
 		//PORTK &= B10111111;
 	}
@@ -900,10 +906,6 @@ static void fast_loop()
 
 	// IMU DCM Algorithm
 	read_AHRS();
-
-	if(GPS_enabled){
-		update_GPS();
-	}
 
 	// custom code/exceptions for flight modes
 	// ---------------------------------------
@@ -1287,13 +1289,13 @@ static void update_GPS(void)
 	//current_loc.lat = -1224318000;		// Lat * 10 * *7
 	//current_loc.alt = 100;				// alt * 10 * *7
 	//return;
-	if(gps_watchdog < 12){
+	if(gps_watchdog < 30){
 		gps_watchdog++;
 	}else{
 		// after 12 reads we guess we may have lost GPS signal, stop navigating
 		// we have lost GPS signal for a moment. Reduce our error to avoid flyaways
-		nav_roll  = 0;
-		nav_pitch = 0;
+		nav_roll  >>= 1;
+		nav_pitch >>= 1;
 	}
 
     if (g_gps->new_data && g_gps->fix) {
@@ -1355,8 +1357,6 @@ static void update_GPS(void)
 			update_altitude();
 		#endif
 
-	} else {
-		g_gps->new_data = false;
 	}
 }
 
@@ -1460,7 +1460,7 @@ void update_roll_pitch_mode(void)
 // new radio frame is used to make sure we only call this at 50hz
 void update_simple_mode(void)
 {
-	float simple_sin_y=0, simple_cos_x=0;
+	static float simple_sin_y=0, simple_cos_x=0;
 
 	// used to manage state machine
 	// which improves speed of function
@@ -1494,6 +1494,10 @@ void update_throttle_mode(void)
 {
 	int16_t throttle_out;
 
+	#if AUTO_THROTTLE_HOLD != 0
+	static float throttle_avg = THROTTLE_CRUISE;
+	#endif
+
 	switch(throttle_mode){
 		case THROTTLE_MANUAL:
 			if (g.rc_3.control_in > 0){
@@ -1508,11 +1512,13 @@ void update_throttle_mode(void)
 					}
 				#endif
 
+				#if AUTO_THROTTLE_HOLD != 0
 				// calc average throttle
-				if ((g.rc_3.control_in > MINIMUM_THROTTLE)){
-					//throttle_avg = throttle_avg * .98 + rc_3.control_in * .02;
-					//g.throttle_cruise = throttle_avg;
+				if ((g.rc_3.control_in > MINIMUM_THROTTLE) && abs(climb_rate) < 60){
+					throttle_avg = throttle_avg * .98 + (float)g.rc_3.control_in * .02;
+					g.throttle_cruise = throttle_avg;
 				}
+				#endif
 
 				// Code to manage the Copter state
 				if ((millis() - takeoff_timer) > 5000){
@@ -1875,17 +1881,11 @@ adjust_altitude()
 		// we remove 0 to 100 PWM from hover
 		manual_boost = g.rc_3.control_in - 180;
 		manual_boost = max(-120, manual_boost);
-		g.throttle_cruise += g.pi_alt_hold.get_integrator();
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
-
+		update_throttle_cruise();
 	}else if  (g.rc_3.control_in >= 650){
 		// we add 0 to 100 PWM to hover
 		manual_boost = g.rc_3.control_in - 650;
-		g.throttle_cruise += g.pi_alt_hold.get_integrator();
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
-
+		update_throttle_cruise();
 	}else {
 		manual_boost = 0;
 	}

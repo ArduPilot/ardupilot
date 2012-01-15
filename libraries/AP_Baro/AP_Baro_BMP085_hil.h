@@ -17,7 +17,6 @@ public:
 	//int Altitude;
     bool healthy;
 
-	uint8_t oss;
 	bool init(AP_PeriodicProcess * scheduler);
 	uint8_t read();
 	int32_t get_pressure();
@@ -26,7 +25,6 @@ public:
 	int32_t get_raw_pressure();
 	int32_t get_raw_temp();
 	void setHIL(float Temp, float Press);
-	int32_t _offset_press;
 };
 
 #endif //  __AP_BARO_BMP085_HIL_H__

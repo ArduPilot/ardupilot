@@ -101,16 +101,19 @@ static void set_cmd_with_index(struct Location temp, int i)
 	eeprom_write_dword((uint32_t *)	mem, temp.lng); // Long is stored in decimal degrees * 10^7
 
 	// Make sure our WP_total
-	if(g.command_total <= i)
+	if(g.command_total < (i+1))
 		g.command_total.set_and_save(i+1);
 }
 
 static int32_t read_alt_to_hold()
 {
+	return current_loc.alt;
+	/*
 	if(g.RTL_altitude <= 0)
 		return current_loc.alt;
 	else
 		return g.RTL_altitude;// + home.alt;
+	*/
 }
 
 

@@ -614,7 +614,7 @@
 # define LOITER_P			2.0		// was .25 in previous
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.05	// Wind control
+# define LOITER_I			0.04	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
