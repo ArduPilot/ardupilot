@@ -51,7 +51,7 @@ namespace ArdupilotMega
                 }
                 catch (JpegProcessingException e)
                 {
-                    Console.Error.WriteLine(e.Message);
+                    Console.WriteLine(e.Message);
                     return dtaken;
                 }
 

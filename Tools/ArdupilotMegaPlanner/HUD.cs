@@ -27,6 +27,7 @@ namespace hud
         object paintlock = new object();
         object streamlock = new object();
         MemoryStream _streamjpg = new MemoryStream();
+        [System.ComponentModel.Browsable(false)]
         public MemoryStream streamjpg { get { lock (streamlock) { return _streamjpg; } } set { lock (streamlock) { _streamjpg = value; } } }
         /// <summary>
         /// this is to reduce cpu usage
@@ -44,7 +45,10 @@ namespace hud
         public HUD()
         {
             if (this.DesignMode)
-                return;
+            {
+                opengl = false;
+                //return;
+            }
 
             InitializeComponent();
 
@@ -237,7 +241,7 @@ namespace hud
             {
                 e.Graphics.Clear(this.BackColor);
                 e.Graphics.Flush();
-                return;
+                //return;
             }
 
             if ((DateTime.Now - starttime).TotalMilliseconds < 30 && (_bgimage == null))
@@ -277,7 +281,7 @@ namespace hud
             if (DateTime.Now.Second != countdate.Second)
             {
                 countdate = DateTime.Now;
-                Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
+               // Console.WriteLine("HUD " + count + " hz drawtime " + (huddrawtime / count) + " gl " + opengl);
                 if ((huddrawtime / count) > 1000)
                     opengl = false;
 
@@ -1202,19 +1206,19 @@ namespace hud
 
                 if (gpsfix == 0)
                 {
-                    gps = resources.GetString("GPS: No GPS.Text");
+                    gps = ("GPS: No GPS");
                 }
                 else if (gpsfix == 1)
                 {
-                    gps = resources.GetString("GPS: No Fix.Text");
+                    gps = ("GPS: No Fix");
                 }
                 else if (gpsfix == 2)
                 {
-                    gps = resources.GetString("GPS: 2D Fix.Text");
+                    gps = ("GPS: 3D Fix");
                 }
                 else if (gpsfix == 3)
                 {
-                    gps = resources.GetString("GPS: 3D Fix.Text");
+                    gps = ("GPS: 3D Fix");
                 }
 
                 drawstring(graphicsObject, gps, font, fontsize + 2, whiteBrush, this.Width - 10 * fontsize, this.Height - 30 - fontoffset);

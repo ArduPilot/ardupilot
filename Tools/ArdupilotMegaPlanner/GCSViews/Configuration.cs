@@ -550,13 +550,13 @@ namespace ArdupilotMega.GCSViews
             {
                 if (text.Length > 0)
                 {
-                        if (sender.GetType() == typeof(NumericUpDown))
+                    if (text[0].GetType() == typeof(NumericUpDown))
                         {
                             decimal option = (decimal)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
                             ((NumericUpDown)text[0]).Value = option;
                             ((NumericUpDown)text[0]).BackColor = Color.Green;
                         }
-                        else if (sender.GetType() == typeof(ComboBox))
+                    else if (text[0].GetType() == typeof(ComboBox))
                         {
                             int option = (int)(float.Parse(Params[e.ColumnIndex, e.RowIndex].Value.ToString()));
                             ((ComboBox)text[0]).SelectedIndex = option;
@@ -685,7 +685,7 @@ namespace ArdupilotMega.GCSViews
                         Control[] text = this.Controls.Find(value, true);
                         if (text.Length > 0)
                         {
-                            ((NumericUpDown)text[0]).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
+                            ((Control)text[0]).BackColor = Color.FromArgb(0x43, 0x44, 0x45);
                         }
                     }
                     catch { }

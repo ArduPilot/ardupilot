@@ -347,6 +347,8 @@ namespace ArdupilotMega
 
                     if (items.Length == 11 && items[6] == "0.0000")
                         alt = double.Parse(items[7], new System.Globalization.CultureInfo("en-US"));
+                    if (items.Length == 11 && items[6] == "0")
+                        alt = double.Parse(items[7], new System.Globalization.CultureInfo("en-US"));
 
 
                     position[positionindex].Add(new Point3D(double.Parse(items[5], new System.Globalization.CultureInfo("en-US")), double.Parse(items[4], new System.Globalization.CultureInfo("en-US")), alt));
