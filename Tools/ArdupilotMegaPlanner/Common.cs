@@ -299,7 +299,7 @@ namespace ArdupilotMega
             Console.WriteLine("a = {0}, the slope of the trend line.", Math.Round(a, 2));
             Console.WriteLine("b = {0}, the intercept of the trend line.", Math.Round(b, 2));
 
-            Console.ReadLine();
+            //Console.ReadLine();
         }
        
 		#if MAVLINK10
