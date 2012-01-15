@@ -165,10 +165,10 @@
 # endif
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
 # ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
-#  define CONFIG_PITOT_SOURCE_ANALOG_PIN AN4
+#  define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
 # endif
 #else
-# warning Invalid value for CONFIG_PITOT_SOURCE, disabling sonar
+# warning Invalid value for CONFIG_PITOT_SOURCE, disabling airspeed
 # undef PITOT_ENABLED
 # define PITOT_ENABLED DISABLED
 #endif
@@ -177,10 +177,9 @@
 # define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
 #endif
 
-/* In ArduPlane PITOT usually takes the place of SONAR, but some bits
- * still depend on SONAR.
- */
-#define SONAR_ENABLED PITOT_ENABLED
+#ifndef SONAR_ENABLED
+#define SONAR_ENABLED DISABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
