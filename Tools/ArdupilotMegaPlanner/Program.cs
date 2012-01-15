@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Net;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 
 namespace ArdupilotMega
@@ -32,9 +33,7 @@ namespace ArdupilotMega
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
-
-                Application.Run(new MainV2());
-
+                Application.Run(new MainV2());             
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
         }

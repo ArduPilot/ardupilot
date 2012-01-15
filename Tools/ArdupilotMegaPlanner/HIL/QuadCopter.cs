@@ -3,15 +3,105 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using YLScsDrawing.Drawing3d;
+using ArdupilotMega.HIL;
 
 namespace ArdupilotMega.HIL
 {
+    public class Motor : Utils
+    {
+        const bool True = true;
+        const bool False = false;
+
+        public Motor self;
+        public double angle;
+        public bool clockwise;
+        public double servo;
+
+        public Motor(double angle, bool clockwise, double servo)
+        {
+            self = this;
+            self.angle = angle;
+            self.clockwise = clockwise;
+            self.servo = servo;
+        }
+
+        public static Motor[] build_motors(string frame)
+        {
+            Motor[] motors = new HIL.Motor[8];
+            frame = frame.ToLower();
+            if (frame.Contains("quad") || frame.Contains("quadx"))
+            {
+                motors = new HIL.Motor[] {
+            new Motor(90,  False,  1),
+            new Motor(270, False,  2),
+            new Motor(0,   True,   3),
+            new Motor(180, True,   4),
+                };
+                if (frame.Contains("quadx"))
+                {
+                    foreach (int i in range(4))
+                        motors[i].angle -= 45.0;
+                }
+            }
+
+            else if (frame.Contains("y6"))
+            {
+                motors = new HIL.Motor[] {
+            new Motor(60,   False, 1),
+            new Motor(60,   True,  7),
+            new Motor(180,  True,  4),
+            new Motor(180,  False, 8),
+            new Motor(-60,  True,  2),
+            new Motor(-60,  False, 3),
+            };
+            }
+            else if (frame.Contains("hexa") || frame.Contains("hexax"))
+            {
+                motors = new HIL.Motor[] {
+            new Motor(0,   True,  1),
+            new Motor(60,  False, 4),
+            new Motor(120, True,  8),
+            new Motor(180, False, 2),
+            new Motor(240, True,  3),
+            new Motor(300, False, 7),
+           };
+            }
+            else if (frame.Contains("hexax"))
+            {
+                motors = new HIL.Motor[] {
+            new Motor(30,  False,  7),
+            new Motor(90,  True,   1),
+            new Motor(150, False,  4),
+            new Motor(210, True,   8),
+            new Motor(270, False,  2),
+            new Motor(330, True,   3),
+           };
+            }
+            else if (frame.Contains("octa") || frame.Contains("octax"))
+            {
+                motors = new HIL.Motor[] {
+            new Motor(0,    True,  1),
+            new Motor(180,  True,  2),
+            new Motor(45,   False, 3),
+            new Motor(135,  False, 4),
+            new Motor(-45,  False, 7),
+            new Motor(-135, False, 8),
+            new Motor(270,  True, 10),
+            new Motor(90,   True, 11),
+        };
+                if (frame.Contains("octax"))
+                {
+                    foreach (int i in range(8))
+                        motors[i].angle += 22.5;
+                }
+            }
+            return motors;
+        }
+    }
+
     public class QuadCopter : Aircraft
     {
-        const float ft2m = (float)(1.0 / 3.2808399);
-        const float rad2deg = (float)(180 / Math.PI);
-        const float deg2rad = (float)(1.0 / rad2deg);
-        const float kts2fps = (float)1.68780986;
+        QuadCopter self;
 
         int framecount = 0;
         DateTime seconds = DateTime.Now;
@@ -21,6 +111,7 @@ namespace ArdupilotMega.HIL
         double hover_throttle;
         double terminal_velocity;
         double terminal_rotation_rate;
+        Motor[] motors;
 
         Vector3d old_position;
 
@@ -31,16 +122,20 @@ namespace ArdupilotMega.HIL
 
         DateTime last_time;
 
-        public QuadCopter()
+        public QuadCopter(string frame = "quad")
         {
+            self = this;
+
+            motors = Motor.build_motors(frame);
+
             mass = 1.0;// # Kg
             frame_height = 0.1;
-            motor_speed = new double[] { 0.0, 0.0, 0.0, 0.0 };
+            motor_speed = new double[motors.Length];
             hover_throttle = 0.37;
             terminal_velocity = 30.0;
             terminal_rotation_rate = 4 * 360.0;
 
-            thrust_scale = (mass * gravity) / (4.0 * hover_throttle);
+            thrust_scale = (mass * gravity) / (motors.Length * hover_throttle);
 
             last_time = DateTime.Now;
         }
@@ -109,24 +204,52 @@ namespace ArdupilotMega.HIL
                 delta_time = new TimeSpan(0, 0, 0, 0, 20);
             }
 
-            //# rotational acceleration, in degrees/s/s
-            double roll_accel = (m[1] - m[0]) * 5000.0;
-            double pitch_accel = (m[2] - m[3]) * 5000.0;
-            double yaw_accel = -((m[2] + m[3]) - (m[0] + m[1])) * 400.0;
+             // rotational acceleration, in degrees/s/s, in body frame
+            double roll_accel = 0.0;
+            double pitch_accel = 0.0;
+            double yaw_accel = 0.0;
+            double thrust = 0.0;
+
+            foreach (var i in range((self.motors.Length)))
+            {
+                roll_accel += -5000.0 * sin(radians(self.motors[i].angle)) * m[i];
+                pitch_accel += 5000.0 * cos(radians(self.motors[i].angle)) * m[i];
+                if (self.motors[i].clockwise)
+                {
+                    yaw_accel -= m[i] * 400.0;
+                }
+                else
+                {
+                    yaw_accel += m[i] * 400.0;
+                }
+                thrust += m[i] * self.thrust_scale; // newtons
+            }
+
+        // rotational resistance
+        roll_accel  -= (self.pDeg / self.terminal_rotation_rate) * 5000.0;
+        pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0;
+        yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * 400.0;
 
             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
-            // rotational resistance   
-            roll_accel -= (roll_rate / terminal_rotation_rate) * 5000.0;
-            pitch_accel -= (pitch_rate / terminal_rotation_rate) * 5000.0;
-            yaw_accel -= (yaw_rate / terminal_rotation_rate) * 400.0;
-
-            //# update rotational rates
-            roll_rate += roll_accel * delta_time.TotalSeconds;
-            pitch_rate += pitch_accel * delta_time.TotalSeconds;
-            yaw_rate += yaw_accel * delta_time.TotalSeconds;
+            //# update rotational rates in body frame
+        self.pDeg  += roll_accel * delta_time.TotalSeconds;
+        self.qDeg  += pitch_accel * delta_time.TotalSeconds;
+        self.rDeg += yaw_accel * delta_time.TotalSeconds;
 
             // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
+
+                    // calculate rates in earth frame
+
+             var answer =  BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
+                                                      self.pDeg, self.qDeg, self.rDeg);
+                    self.roll_rate = answer.Item1;
+         self.pitch_rate = answer.Item2;
+         self.yaw_rate = answer.Item3;
+
+         //self.roll_rate = pDeg;
+         //self.pitch_rate = qDeg;
+         //self.yaw_rate = rDeg;
 
             //# update rotation
             roll += roll_rate * delta_time.TotalSeconds;
@@ -143,7 +266,6 @@ namespace ArdupilotMega.HIL
             //# normalise rotations
             normalise();
 
-            double thrust = (m[0] + m[1] + m[2] + m[3]) * thrust_scale;//# Newtons
             double accel = thrust / mass;
 
             //Console.WriteLine("in {0:0.000000} {1:0.000000} {2:0.000000} {3:0.000000}", roll, pitch, yaw, accel);

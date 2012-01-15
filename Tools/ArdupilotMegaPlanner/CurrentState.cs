@@ -361,6 +361,9 @@ namespace ArdupilotMega
                                 case (byte)(Common.ac2modes.CIRCLE):
                                     mode = "Circle";
                                     break;
+                                        case (byte)(Common.ac2modes.LAND):
+                            mode = "Land";
+                            break;
                                 default:
                                     mode = "Unknown";
                                     break;
@@ -392,7 +395,7 @@ namespace ArdupilotMega
 
                     //MAVLink.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] = null;
                 }
-				#else
+#else
 
                 if (mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS] != null)
                 {
