@@ -270,9 +270,11 @@ namespace ArdupilotMega.GCSViews
                             System.Threading.Thread.Sleep(2000);
 
                             SITLSEND = new UdpClient(simIP, 5501);
+
+                            SetupTcpJSBSim(); // old style
                         }
 
-                        SetupTcpJSBSim(); // old style
+
                         SetupUDPXplanes(); // fg udp style
                         SetupUDPMavLink(); // pass traffic - raw
                     }
@@ -591,7 +593,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (hzcounttime.Second != DateTime.Now.Second)
                 {
-                                        Console.WriteLine("SIM hz {0}", hzcount);
+//                                        Console.WriteLine("SIM hz {0}", hzcount);
                     hzcount = 0;
                     hzcounttime = DateTime.Now;
                 }
@@ -658,84 +660,6 @@ namespace ArdupilotMega.GCSViews
         {
             // setup sender
             MavLink = new UdpClient("127.0.0.1", 14550);
-        }
-
-        /// <summary>
-        /// From http://code.google.com/p/gentlenav/source/browse/trunk/Tools/XP_UDB_HILSIM/utility.cpp
-        /// Converts from xplanes to fixed body ref
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="z"></param>
-        /// <param name="alpha"></param>
-        /// <param name="beta"></param>
-        public static void FLIGHTtoBCBF(ref float x, ref float y, ref float z, float alpha, float beta)
-        {
-            ﻿float Ca = (float)Math.Cos(alpha);
-             float Cb = (float)Math.Cos(beta);
-             float Sa = (float)Math.Sin(alpha);
-             float Sb = (float)Math.Sin(beta);
-
-             float X_plane = (x * Ca * Cb) - (z * Sa * Cb) - (y * Sb);
-             float Y_plane = (z * Sa * Sb) - (x * Ca * Sb) - (y * Cb);
-             float Z_plane = (x * Sa) + (z * Ca);
-
-             x = X_plane;
-            ﻿y = Y_plane;
-            ﻿z = Z_plane;
-        }
-
-        void OGLtoBCBF(ref float x, ref float y, ref float z, float phi, float theta, float psi)
-        {
-            float x_NED, y_NED, z_NED;
-            float Cr, Cp, Cy;
-            float Sr, Sp, Sy;
-
-            //Accelerations in X-Plane are expressed in the local OpenGL reference frame, for whatever reason. 
-            //This coordinate system is defined as follows (taken from the X-Plane SDK Wiki):
-
-            //	The origin 0,0,0 is on the surface of the earth at sea level at some "reference point".
-            //	The +X axis points east from the reference point.
-            //	The +Z axis points south from the reference point.
-            //	The +Y axis points straight up away from the center of the earth at the reference point.
-
-            // First we shall convert from this East Up South frame, to a more conventional NED (North East Down) frame.
-            x_NED = -1.0f * z;
-            y_NED = x;
-            z_NED = -1.0f * y;
-
-            // Next calculate cos & sin of angles for use in the transformation matrix.
-            // r, p & y subscripts stand for roll pitch and yaw.
-
-            Cr = (float)Math.Cos(phi);
-            Cp = (float)Math.Cos(theta);
-            Cy = (float)Math.Cos(psi);
-            Sr = (float)Math.Sin(phi);
-            Sp = (float)Math.Sin(theta);
-            Sy = (float)Math.Sin(psi);
-
-            // Next we need to rotate our accelerations from the NED reference frame, into the body fixed reference frame
-
-            // THANKS TO GEORGE M SIOURIS WHOSE "MISSILE GUIDANCE AND CONTROL SYSTEMS" BOOK SEEMS TO BE THE ONLY EASY TO FIND REFERENCE THAT
-            // ACTUALLY GETS THE NED TO BODY FRAME ROTATION MATRIX CORRECT!!
-
-            // CpCy, CpSy, -Sp					| local_ax
-            // SrSpCy-CrSy, SrSpSy+CrCy, SrCp	| local_ay
-            // CrSpCy+SrSy, CrSpSy-SrCy, CrCp	| local_az
-
-            x = (x_NED * Cp * Cy) + (y_NED * Cp * Sy) - (z_NED * Sp);
-            y = (x_NED * ((Sr * Sp * Cy) - (Cr * Sy))) + (y_NED * ((Sr * Sp * Sy) + (Cr * Cy))) + (z_NED * Sr * Cp);
-            z = (x_NED * ((Cr * Sp * Cy) + (Sr * Sy))) + (y_NED * ((Cr * Sp * Sy) - (Sr * Cy))) + (z_NED * Cr * Cp);
-        }
-
-        double sin(double rad)
-        {
-            return Math.Sin(rad);
-        }
-
-        double cos(double rad)
-        {
-            return Math.Cos(rad);
         }
 
         float oldax =0, olday =0, oldaz = 0;

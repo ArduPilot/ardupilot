@@ -247,6 +247,7 @@
     <Compile Include="Controls\ImageLabel.Designer.cs">
       <DependentUpon>ImageLabel.cs</DependentUpon>
     </Compile>
+    <Compile Include="HIL\Utils.cs" />
     <Compile Include="ResEdit.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -402,6 +403,7 @@
       <DependentUpon>Splash.cs</DependentUpon>
     </Compile>
     <Compile Include="srtm.cs" />
+    <Compile Include="TCPConsole.cs" />
     <Compile Include="temp.cs">
       <SubType>Form</SubType>
     </Compile>

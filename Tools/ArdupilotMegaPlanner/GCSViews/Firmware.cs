@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
@@ -591,7 +590,7 @@ namespace ArdupilotMega.GCSViews
             UploadFlash(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + @"firmware.hex", board);
         }
 
-        void UploadFlash(string filename, string board)
+        public void UploadFlash(string filename, string board)
         {
             byte[] FLASH = new byte[1];
             StreamReader sr = null;
