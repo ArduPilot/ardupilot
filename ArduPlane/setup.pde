@@ -301,8 +301,11 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.compass_enabled = false;
 
+	} else if (!strcmp_P(argv[1].str, PSTR("reset"))) {
+		compass.set_offsets(0,0,0);
+
 	} else {
-		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
+		Serial.printf_P(PSTR("\nOptions:[on,off,reset]\n"));
 		report_compass();
 		return 0;
 	}
