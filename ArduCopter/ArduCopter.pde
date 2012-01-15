@@ -418,6 +418,7 @@ static byte	led_mode = NORMAL_LEDS;
 static const 	float t7			= 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // We need to scale the longitude up to make these calcs work
+// to account for decreasing distance between lines of longitude away from the equator
 static float 	scaleLongUp			= 1;
 // Sometimes we need to remove the scaling for distance calcs
 static float 	scaleLongDown 		= 1;
