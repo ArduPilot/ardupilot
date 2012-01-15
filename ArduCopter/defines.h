@@ -46,11 +46,13 @@
 // Frame types
 #define QUAD_FRAME 0
 #define TRI_FRAME 1
-#define HEXA_FRAME 2
+#define HEXA_X_FRAME 2
 #define Y6_FRAME 3
 #define OCTA_FRAME 4
 #define HELI_FRAME 5
 #define OCTA_QUAD_FRAME 6
+#define HEXA_PLUS_FRAME 7
+#define OCTA_V_FRAME 8
 
 #define PLUS_FRAME 0
 #define X_FRAME 1
