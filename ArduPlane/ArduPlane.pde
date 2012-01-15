@@ -354,14 +354,25 @@ static int     ground_start_avg;
 // If we do not detect GPS at startup, we stop trying and assume GPS is not connected	
 static bool	GPS_enabled 	= false;			
 
+////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
-// ---------------------
+////////////////////////////////////////////////////////////////////////////////
+// Constants
 const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
-static long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
-static long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
-static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
+// This is the currently calculated direction to fly.  
+// deg * 100 : 0 to 360
+static long	nav_bearing;
+// This is the direction to the next waypoint or loiter center 
+// deg * 100 : 0 to 360
+static long	target_bearing;	
+//This is the direction from the last waypoint to the next waypoint 
+// deg * 100 : 0 to 360
+static long	crosstrack_bearing;
+// A gain scaler to account for ground speed/headwind/tailwind
+static float	nav_gain_scaler 		= 1;		
+// Direction held during phases of takeoff and landing
+// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 
 static byte	nav_command_index;					// active nav command memory location
