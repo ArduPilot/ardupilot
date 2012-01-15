@@ -336,8 +336,6 @@ static void report_batt_monitor()
 	Serial.printf_P(PSTR("Batt Mointor\n"));
 	print_divider();
 	if(g.battery_monitoring == 0)	Serial.printf_P(PSTR("Batt monitoring disabled"));
-	if(g.battery_monitoring == 1)	Serial.printf_P(PSTR("Monitoring 3 cell"));
-	if(g.battery_monitoring == 2)	Serial.printf_P(PSTR("Monitoring 4 cell"));
 	if(g.battery_monitoring == 3)	Serial.printf_P(PSTR("Monitoring batt volts"));
 	if(g.battery_monitoring == 4)	Serial.printf_P(PSTR("Monitoring volts and current"));
 	print_blanks(2);

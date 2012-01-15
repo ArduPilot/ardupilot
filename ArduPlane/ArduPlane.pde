@@ -390,14 +390,14 @@ static float	crosstrack_error;					// meters we are off trackline
 
 // Battery Sensors
 // ---------------
-static float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cell 1, initialized above threshold for filter
-static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2, initialized above threshold for filter
-static float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
-static float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
+static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery 1 Voltage, initialized above threshold for filter
+static float	current_amps1;									// Current (Amperes) draw from battery 1
+static float	current_total1;									// Totalized current (Amp-hours) from battery 1
 
-static float	current_amps;
-static float	current_total;
+// To Do - Add support for second battery pack
+//static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
+//static float	current_amps2;									// Current (Amperes) draw from battery 2
+//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
 // Airspeed Sensors
 // ----------------
