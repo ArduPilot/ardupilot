@@ -237,17 +237,17 @@ AP_OpticalFlow_ADNS3080::set_led_always_on( bool alwaysOn )
 	write_register(ADNS3080_CONFIGURATION_BITS, regVal);
 }
 
-// returns resolution (either 400 or 1200 counts per inch)
+// returns resolution (either 400 or 1600 counts per inch)
 int
 AP_OpticalFlow_ADNS3080::get_resolution()
 {
     if( (read_register(ADNS3080_CONFIGURATION_BITS) & 0x10) == 0 )
 	    return 400;
 	else
-	    return 1200;
+	    return 1600;
 }
 
-// set parameter to 400 or 1200 counts per inch
+// set parameter to 400 or 1600 counts per inch
 void
 AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 {
@@ -255,12 +255,17 @@ AP_OpticalFlow_ADNS3080::set_resolution(int resolution)
 
     if( resolution == ADNS3080_RESOLUTION_400 )	{
 	    regVal &= ~0x10;
-	}else if( resolution == ADNS3080_RESOLUTION_1200) {
+		scaler = AP_OPTICALFLOW_ADNS3080_SCALER;
+	}else if( resolution == ADNS3080_RESOLUTION_1600) {
 	    regVal |= 0x10;
+		scaler = AP_OPTICALFLOW_ADNS3080_SCALER * 4;
 	}
 
 	delayMicroseconds(50);  // small delay
 	write_register(ADNS3080_CONFIGURATION_BITS, regVal);
+
+	// this will affect conversion factors so update them
+	update_conversion_factors();
 }
 
 // get_frame_rate_auto - return whether frame rate is set to "auto" or manual

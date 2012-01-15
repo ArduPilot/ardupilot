@@ -64,4 +64,10 @@
 #define USERHOOK_VARIABLES "UserVariables.h"
 
 
+// to enable, set to 1
+// to disable, set to 0
+#define AUTO_THROTTLE_HOLD 1
+
+
+
 //# define LOGGING_ENABLED		DISABLED

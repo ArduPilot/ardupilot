@@ -46,25 +46,26 @@ static void calc_XY_velocity(){
 	static int32_t last_longitude = 0;
 	static int32_t last_latitude  = 0;
 
-	static int16_t x_speed_old = 0;
-	static int16_t y_speed_old = 0;
+	//static int16_t x_speed_old = 0;
+	//static int16_t y_speed_old = 0;
 
 	// y_GPS_speed positve = Up
 	// x_GPS_speed positve = Right
 
 	// this speed is ~ in cm because we are using 10^7 numbers from GPS
 	float tmp = 1.0/dTnav;
-	//float tmp = 5;
 
 	// straightforward approach:
-	/*
+	///*
 	int16_t	x_estimate	= (float)(g_gps->longitude - last_longitude) * tmp;
 	int16_t	y_estimate	= (float)(g_gps->latitude  - last_latitude)  * tmp;
+
 	// slight averaging filter
 	x_GPS_speed = (x_GPS_speed  + x_estimate) >> 1;
 	y_GPS_speed = (y_GPS_speed  + y_estimate) >> 1;
-	*/
+	//*/
 
+	/*
 	// Ryan Beall's forward estimator:
 	int16_t	x_speed_new = (float)(g_gps->longitude - last_longitude) * tmp;
 	int16_t	y_speed_new = (float)(g_gps->latitude  - last_latitude)  * tmp;
@@ -74,6 +75,7 @@ static void calc_XY_velocity(){
 
 	x_speed_old 	= x_speed_new;
 	y_speed_old 	= y_speed_new;
+	*/
 
 	last_longitude 	= g_gps->longitude;
 	last_latitude 	= g_gps->latitude;
