@@ -1689,7 +1689,8 @@ static void update_navigation()
 				wp_control = NO_NAV_MODE;
 
 				// reset LOITER to current position
-				next_WP 	= current_loc;
+				next_WP.lat 	= current_loc.lat;
+				next_WP.lng 	= current_loc.lng;
 
 			}else{
 				// this is also set by GPS in update_nav
