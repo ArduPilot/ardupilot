@@ -198,7 +198,7 @@ public:
 	AP_Int16	RTL_altitude;
 	AP_Int8		sonar_enabled;
 	AP_Int8		sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m range)
-	AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
+	AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
 	AP_Int8		compass_enabled;
     AP_Int8		optflow_enabled;
