@@ -321,9 +321,9 @@ static void Log_Write_Current()
 
 	DataFlash.WriteInt(g.rc_3.control_in);			// 1
 	DataFlash.WriteLong(throttle_integrator);		// 2
-	DataFlash.WriteInt(battery_voltage 	* 100.0);	// 3
-	DataFlash.WriteInt(current_amps 	* 100.0);	// 4
-	DataFlash.WriteInt(current_total);				// 5
+	DataFlash.WriteInt(battery_voltage1 	* 100.0);	// 3
+	DataFlash.WriteInt(current_amps1 	* 100.0);	// 4
+	DataFlash.WriteInt(current_total1);				// 5
 
 	DataFlash.WriteByte(END_BYTE);
 }

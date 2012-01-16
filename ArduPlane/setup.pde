@@ -322,7 +322,7 @@ setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 		g.battery_monitoring.set_and_save(argv[1].i);
 
 	} else {
-		Serial.printf_P(PSTR("\nOptions: 0-4"));
+		Serial.printf_P(PSTR("\nOptions: 3-4"));
 	}
 
 	report_batt_monitor();
