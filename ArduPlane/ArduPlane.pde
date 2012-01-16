@@ -240,6 +240,15 @@ AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0)
 	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
+AP_Relay relay;
+
+// Camera/Antenna mount tracking and stabilisation stuff
+// --------------------------------------
+#if MOUNT == ENABLED
+AP_Mount camera_mount(g_gps, &dcm);
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -528,60 +537,89 @@ static long 	condition_start;
 // A value used in condition commands.  For example the rate at which to change altitude.
 static int 		condition_rate;
 
+////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
-// -------------------
-static struct 	Location home;						// home location
-static struct 	Location prev_WP;					// last waypoint
-static struct 	Location current_loc;				// current location
-static struct 	Location next_WP;					// next waypoint
-static struct  	Location guided_WP;					// guided mode waypoint
-static struct 	Location next_nav_command;			// command preloaded
-static struct 	Location next_nonnav_command;		// command preloaded
-static long 	target_altitude;					// used for altitude management between waypoints
-static long 	offset_altitude;					// used for altitude management between waypoints
-static bool	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
+// Location structure defined in AP_Common
+////////////////////////////////////////////////////////////////////////////////
+// The home location used for RTL.  The location is set when we first get stable GPS lock
+static struct 	Location home;
+// Flag for if we have g_gps lock and have set the home location
+static bool	home_is_set;
+// The location of the previous waypoint.  Used for track following and altitude ramp calculations
+static struct 	Location prev_WP;
+// The plane's current location
+static struct 	Location current_loc;
+// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
+static struct 	Location next_WP;
+// The location of the active waypoint in Guided mode.
+static struct  	Location guided_WP;
+// The location structure information from the Nav command being processed
+static struct 	Location next_nav_command;	
+// The location structure information from the Non-Nav command being processed
+static struct 	Location next_nonnav_command;
 
+////////////////////////////////////////////////////////////////////////////////
+// Altitude / Climb rate control
+////////////////////////////////////////////////////////////////////////////////
+// The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
+static long 	target_altitude;
+// Altitude difference between previous and current waypoint.  Centimeters
+static long 	offset_altitude;
 
+////////////////////////////////////////////////////////////////////////////////
 // IMU variables
-// -------------
-static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
+////////////////////////////////////////////////////////////////////////////////
+// The main loop execution time.  Seconds
+//This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
+static float G_Dt						= 0.02;		
 
-
+////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
-// ----------------------
-static long 	perf_mon_timer;						// Metric based on accel gain deweighting
-static int 	G_Dt_max = 0;						// Max main loop cycle time in milliseconds
+////////////////////////////////////////////////////////////////////////////////
+// Timer used to accrue data and trigger recording of the performanc monitoring log message
+static long 	perf_mon_timer;
+// The maximum main loop execution time recorded in the current performance monitoring interval
+static int 	G_Dt_max = 0;
+// The number of gps fixes recorded in the current performance monitoring interval
 static int 	gps_fix_count = 0;
+// A variable used by developers to track performanc metrics.
+// Currently used to record the number of GCS heartbeat messages received
 static int		pmTest1 = 0;
 
 
+////////////////////////////////////////////////////////////////////////////////
 // System Timers
-// --------------
-static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
-static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
-static uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
+////////////////////////////////////////////////////////////////////////////////
+// Time in miliseconds of start of main control loop.  Milliseconds
+static unsigned long 	fast_loopTimer;
+// Time Stamp when fast loop was complete.  Milliseconds
+static unsigned long 	fast_loopTimeStamp;
+// Number of milliseconds used in last main loop cycle
+static uint8_t 		delta_ms_fast_loop;
+// Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
-static unsigned long 	medium_loopTimer;			// Time in miliseconds of medium loop
-static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
+// Time in miliseconds of start of medium control loop.  Milliseconds
+static unsigned long 	medium_loopTimer;
+// Counters for branching from main control loop to slower loops
+static byte 			medium_loopCounter;	
+// Number of milliseconds used in last medium loop cycle
 static uint8_t			delta_ms_medium_loop;
 
+// Counters for branching from medium control loop to slower loops
 static byte 			slow_loopCounter;
+// Counter to trigger execution of very low rate processes
 static byte 			superslow_loopCounter;
-static byte			counter_one_herz;
+// Counter to trigger execution of 1 Hz processes
+static byte				counter_one_herz;
 
-static unsigned long 	nav_loopTimer;				// used to track the elapsed time for GPS nav
+// used to track the elapsed time for navigation PID integral terms
+static unsigned long 	nav_loopTimer;				
+// Elapsed time since last call to navigation pid functions
+static unsigned long 	dTnav;
+// % MCU cycles used
+static float 			load;
 
-static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
-static float 			load;						// % MCU cycles used
-
-AP_Relay relay;
-
-// Camera/Antenna mount tracking and stabilisation stuff
-// --------------------------------------
-#if MOUNT == ENABLED
-AP_Mount camera_mount(g_gps, &dcm);
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
