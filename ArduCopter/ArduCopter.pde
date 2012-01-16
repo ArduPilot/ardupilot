@@ -1891,7 +1891,7 @@ static void tuning(){
 	switch(g.radio_tuning){
 
 		case CH6_DAMP:
-			g.rc_6.set_range(0,1500); 		// 0 to 1
+			g.rc_6.set_range(0,900); 		// 0 to 1
 			g.stablize_d.set(tuning_value);
 			break;
 
