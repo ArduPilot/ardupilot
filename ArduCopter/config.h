@@ -525,7 +525,7 @@
 # define STABILIZE_ROLL_P 		4.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.02
+# define STABILIZE_ROLL_I 		0.01
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	40		// degrees
@@ -535,7 +535,7 @@
 # define STABILIZE_PITCH_P		4.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.02
+# define STABILIZE_PITCH_I		0.01
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	40		// degrees
