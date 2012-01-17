@@ -12,6 +12,16 @@ static void init_motors_out()
 	#endif
 }
 
+static void motors_output_enable()
+{
+  APM_RC.enable_out(MOT_1);
+  APM_RC.enable_out(MOT_2);
+  APM_RC.enable_out(MOT_3);
+  APM_RC.enable_out(MOT_4);
+  APM_RC.enable_out(MOT_5);
+  APM_RC.enable_out(MOT_6);
+}
+
 static void output_motors_armed()
 {
 	int out_min = g.rc_3.radio_min;
