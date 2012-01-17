@@ -155,6 +155,34 @@ void APM_RC_APM2::OutputCh(unsigned char ch, uint16_t pwm)
   }
 }
 
+void APM_RC_APM2::enable_out(uint8_t ch)
+{
+  switch(ch) {
+    case 0: TCCR1A |= (1<<COM1B1); break; // CH_1 : OC1B
+    case 1: TCCR1A |= (1<<COM1A1); break; // CH_2 : OC1A
+    case 2: TCCR4A |= (1<<COM4C1); break; // CH_3 : OC4C
+    case 3: TCCR4A |= (1<<COM4B1); break; // CH_4 : OC4B
+    case 4: TCCR4A |= (1<<COM4A1); break; // CH_5 : OC4A
+    case 5: TCCR3A |= (1<<COM3C1); break; // CH_6 : OC3C
+    case 6: TCCR3A |= (1<<COM3B1); break; // CH_7 : OC3B
+    case 7: TCCR3A |= (1<<COM3A1); break; // CH_8 : OC3A
+  }
+}
+
+void APM_RC_APM2::disable_out(uint8_t ch)
+{
+  switch(ch) {
+    case 0: TCCR1A &= ~(1<<COM1B1); break; // CH_1 : OC1B
+    case 1: TCCR1A &= ~(1<<COM1A1); break; // CH_2 : OC1A
+    case 2: TCCR4A &= ~(1<<COM4C1); break; // CH_3 : OC4C
+    case 3: TCCR4A &= ~(1<<COM4B1); break; // CH_4 : OC4B
+    case 4: TCCR4A &= ~(1<<COM4A1); break; // CH_5 : OC4A
+    case 5: TCCR3A &= ~(1<<COM3C1); break; // CH_6 : OC3C
+    case 6: TCCR3A &= ~(1<<COM3B1); break; // CH_7 : OC3B
+    case 7: TCCR3A &= ~(1<<COM3A1); break; // CH_8 : OC3A
+  }
+}
+
 uint16_t APM_RC_APM2::InputCh(unsigned char ch)
 {
   uint16_t result;
