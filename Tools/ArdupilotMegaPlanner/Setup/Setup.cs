@@ -240,7 +240,7 @@ namespace ArdupilotMega.Setup
                         MainV2.comPort.setParam("RC" + (a + 1).ToString("0") + "_MIN", rcmin[a]);
                         MainV2.comPort.setParam("RC" + (a + 1).ToString("0") + "_MAX", rcmax[a]);
                     }
-                    if (rctrim[a] < 1195 && rctrim[a] > 1205)
+                    if (rctrim[a] < 1195 || rctrim[a] > 1205)
                         MainV2.comPort.setParam("RC" + (a + 1).ToString("0") + "_TRIM", rctrim[a]);
                 }
                 catch { MessageBox.Show("Failed to set Channel " + (a + 1).ToString()); }
