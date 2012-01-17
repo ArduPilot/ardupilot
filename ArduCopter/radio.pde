@@ -100,6 +100,7 @@ static void init_rc_out()
 
 void output_min()
 {
+  motors_output_enable();
     #if FRAME_CONFIG ==	HELI_FRAME
         heli_move_servos_to_mid();
 	#else
