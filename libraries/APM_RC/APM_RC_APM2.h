@@ -22,6 +22,9 @@ class APM_RC_APM2 : public APM_RC_Class
     void Force_Out(void);
     void SetFastOutputChannels(uint32_t chmask);
 
+  void enable_out(uint8_t);
+  void disable_out(uint8_t);
+
 	void Force_Out0_Out1(void);
 	void Force_Out2_Out3(void);
 	void Force_Out6_Out7(void);
