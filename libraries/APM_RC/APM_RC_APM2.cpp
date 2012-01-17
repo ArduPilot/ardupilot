@@ -80,9 +80,8 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   pinMode(11,OUTPUT); // OUT2 (PB5/OC1A)
 
   // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR1.
-  // COM1A and COM1B enabled, set to low level on match.
   // CS11: prescale by 8 => 0.5us tick
-  TCCR1A =((1<<WGM11)|(1<<COM1A1)|(1<<COM1B1));
+  TCCR1A =((1<<WGM11));
   TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
   ICR1 = 40000; // 0.5us tick => 50hz freq
   OCR1A = 0xFFFF; // Init OCR registers to nil output signal
@@ -94,9 +93,8 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   pinMode(6,OUTPUT); // OUT5 (PH3/OC4A)
 
   // WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR4.
-  // COM4A, 4B, 4C enabled, set to low level on match.
   // CS41: prescale by 8 => 0.5us tick
-  TCCR4A =((1<<WGM41)|(1<<COM4A1)|(1<<COM4B1)|(1<<COM4C1));
+  TCCR4A =((1<<WGM41));
   TCCR4B = (1<<WGM43)|(1<<WGM42)|(1<<CS41);
   OCR4A = 0xFFFF; // Init OCR registers to nil output signal
   OCR4B = 0xFFFF;
@@ -109,9 +107,8 @@ void APM_RC_APM2::Init( Arduino_Mega_ISR_Registry * isr_reg )
   pinMode(5,OUTPUT); // OUT8 (PE3/OC3A)
 
   // WGM: 1 1 1 0. Clear timer on Compare, TOP is ICR3
-  // COM3A, 3B, 3C enabled, set to low level on match
   // CS31: prescale by 8 => 0.5us tick
-  TCCR3A =((1<<WGM31)|(1<<COM3A1)|(1<<COM3B1)|(1<<COM3C1));
+  TCCR3A =((1<<WGM31));
   TCCR3B = (1<<WGM33)|(1<<WGM32)|(1<<CS31);
   OCR3A = 0xFFFF; // Init OCR registers to nil output signal
   OCR3B = 0xFFFF;
