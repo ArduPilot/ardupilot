@@ -418,6 +418,7 @@ static byte	led_mode = NORMAL_LEDS;
 static const 	float t7			= 10000000.0;
 // We use atan2 and other trig techniques to calaculate angles
 // We need to scale the longitude up to make these calcs work
+// to account for decreasing distance between lines of longitude away from the equator
 static float 	scaleLongUp			= 1;
 // Sometimes we need to remove the scaling for distance calcs
 static float 	scaleLongDown 		= 1;
@@ -529,20 +530,12 @@ static int8_t CH7_wp_index;
 ////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
 ////////////////////////////////////////////////////////////////////////////////
-// Battery Voltage of total battery, initialized above threshold for filter
-static float	battery_voltage		= LOW_VOLTAGE * 1.05;
-// Battery Voltage of cell 1, initialized above threshold for filter
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;
-// Battery Voltage of cells 1 + 2, initialized above threshold for filter
-static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;
-// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
-static float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;
-// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
-static float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;
+// Battery Voltage of battery, initialized above threshold for filter
+static float	battery_voltage1		= LOW_VOLTAGE * 1.05;
 // refers to the instant amp draw – based on an Attopilot Current sensor
-static float	current_amps;
+static float	current_amps1;
 // refers to the total amps drawn – based on an Attopilot Current sensor
-static float	current_total;
+static float	current_total1;
 // Used to track if the battery is low - LED output flashes when the batt is low
 static bool		low_batt = false;
 

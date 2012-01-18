@@ -21,7 +21,6 @@ static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_wp_nav(uint8_t argc, 		const Menu::arg *argv);
 //static int8_t	test_reverse(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_tuning(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 #if HIL_MODE != HIL_MODE_ATTITUDE
@@ -69,7 +68,6 @@ const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"battery",		test_battery},
 	{"tune",		test_tuning},
 	//{"tri",			test_tri},
-	{"current",		test_current},
 	{"relay",		test_relay},
 	{"wp",			test_wp},
 	//{"nav",			test_nav},
@@ -714,26 +712,6 @@ test_gps(uint8_t argc, const Menu::arg *argv)
 //*/
 
 static int8_t
-test_battery(uint8_t argc, const Menu::arg *argv)
-{
-#if BATTERY_EVENT == 1
-	for (int i = 0; i < 20; i++){
-		delay(20);
-		read_battery();
-	}
-	Serial.printf_P(PSTR("Volts: 1:%2.2f, 2:%2.2f, 3:%2.2f, 4:%2.2f\n"),
-			battery_voltage1,
-			battery_voltage2,
-			battery_voltage3,
-			battery_voltage4);
-#else
-	Serial.printf_P(PSTR("Not enabled\n"));
-
-#endif
-	return (0);
-}
-
-static int8_t
 test_tuning(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
@@ -751,7 +729,7 @@ test_tuning(uint8_t argc, const Menu::arg *argv)
 }
 
 static int8_t
-test_current(uint8_t argc, const Menu::arg *argv)
+test_battery(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	//delta_ms_medium_loop = 100;
@@ -760,11 +738,17 @@ test_current(uint8_t argc, const Menu::arg *argv)
 		delay(100);
 		read_radio();
 		read_battery();
-		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-						battery_voltage,
-						current_amps,
-						current_total);
-
+		if (g.battery_monitoring == 3){
+			Serial.printf_P(PSTR("V: %4.4f\n"),
+								battery_voltage1,
+								current_amps1,
+								current_total1);
+		} else {
+			Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, Ah: %4.4f\n"),
+								battery_voltage1,
+								current_amps1,
+								current_total1);
+		}
 		APM_RC.OutputCh(MOT_1, g.rc_3.radio_in);
 		APM_RC.OutputCh(MOT_2, g.rc_3.radio_in);
 		APM_RC.OutputCh(MOT_3, g.rc_3.radio_in);

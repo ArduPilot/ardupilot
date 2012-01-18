@@ -325,15 +325,8 @@ enum gcs_severity {
 #define AN14  68 // NC
 #define AN15  69 // NC
 
-#define VOLTAGE_PIN_0 0 // These are the pins for current sensor: voltage
-#define CURRENT_PIN_1 1 // and current
-
 #define RELAY_PIN 47
 
-#define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
-#define BATTERY_PIN2 1
-#define BATTERY_PIN3 2
-#define BATTERY_PIN4 3
 #define PIEZO_PIN AN5           //Last pin on the back ADC connector
 
 

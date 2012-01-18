@@ -118,6 +118,8 @@
 # define USB_MUX_PIN      -1
 # define CLI_SLIDER_ENABLED DISABLED
 # define OPTFLOW_CS_PIN   34
+# define BATTERY_PIN_1      0
+# define CURRENT_PIN_1      1
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -129,6 +131,8 @@
 # define CLI_SLIDER_ENABLED DISABLED
 # define USB_MUX_PIN      23
 # define OPTFLOW_CS_PIN   A6
+# define BATTERY_PIN_1      1
+# define CURRENT_PIN_1      2
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

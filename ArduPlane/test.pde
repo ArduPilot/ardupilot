@@ -14,7 +14,6 @@ static int8_t	test_adc(uint8_t argc, 			const Menu::arg *argv);
 #endif
 static int8_t	test_imu(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_battery(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_current(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
 static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_airspeed(uint8_t argc, 	const Menu::arg *argv);
@@ -34,18 +33,18 @@ static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] PROGMEM = {
-	{"pwm",			test_radio_pwm},
-	{"radio",		test_radio},
-	{"passthru",	test_passthru},
-	{"failsafe",	test_failsafe},
-	{"battery",		test_battery},
-	{"relay",		test_relay},
-	{"waypoints",	test_wp},
-	{"xbee",		test_xbee},
-	{"eedump",		test_eedump},
-	{"modeswitch",	test_modeswitch},
+	{"pwm",				test_radio_pwm},
+	{"radio",			test_radio},
+	{"passthru",		test_passthru},
+	{"failsafe",		test_failsafe},
+	{"battery",	test_battery},
+	{"relay",			test_relay},
+	{"waypoints",		test_wp},
+	{"xbee",			test_xbee},
+	{"eedump",			test_eedump},
+	{"modeswitch",		test_modeswitch},
 #if CONFIG_APM_HARDWARE != APM_HARDWARE_APM2
-	{"dipswitches",	test_dipswitches},
+	{"dipswitches",		test_dipswitches},
 #endif
 
 	// Tests below here are for hardware sensors only present
@@ -60,7 +59,6 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 	{"airspeed",	test_airspeed},
 	{"airpressure",	test_pressure},
 	{"compass",		test_mag},
-	{"current",		test_current},
 #elif HIL_MODE == HIL_MODE_SENSORS
 	{"adc", 		test_adc},
 	{"gps",			test_gps},
@@ -260,26 +258,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 static int8_t
 test_battery(uint8_t argc, const Menu::arg *argv)
 {
-if (g.battery_monitoring >=1 && g.battery_monitoring < 4) {
-	for (int i = 0; i < 80; i++){	//  Need to get many samples for filter to stabilize
-		delay(20);
-		read_battery();
-	}
-	Serial.printf_P(PSTR("Volts: 1:%2.2f, 2:%2.2f, 3:%2.2f, 4:%2.2f\n"),
-			battery_voltage1,
-			battery_voltage2,
-			battery_voltage3,
-			battery_voltage4);
-} else {
-	Serial.printf_P(PSTR("Not enabled\n"));
-}
-	return (0);
-}
-
-static int8_t
-test_current(uint8_t argc, const Menu::arg *argv)
-{
-if (g.battery_monitoring == 4) {
+if (g.battery_monitoring == 3 || g.battery_monitoring == 4) {
 	print_hit_enter();
 	delta_ms_medium_loop = 100;
 
@@ -287,10 +266,17 @@ if (g.battery_monitoring == 4) {
 		delay(100);
 		read_radio();
 		read_battery();
-		Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
-						battery_voltage,
-						current_amps,
-						current_total);
+		if (g.battery_monitoring == 3){
+			Serial.printf_P(PSTR("V: %4.4f\n"),
+						battery_voltage1,
+						current_amps1,
+						current_total1);
+		} else {
+			Serial.printf_P(PSTR("V: %4.4f, A: %4.4f, mAh: %4.4f\n"),
+						battery_voltage1,
+						current_amps1,
+						current_total1);
+		}
 
 		// write out the servo PWM values
 		// ------------------------------

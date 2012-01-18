@@ -106,25 +106,21 @@ static void zero_airspeed(void)
 
 static void read_battery(void)
 {
-	battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN1)) * .1 + battery_voltage1 * .9;
-	battery_voltage2 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN2)) * .1 + battery_voltage2 * .9;
-	battery_voltage3 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN3)) * .1 + battery_voltage3 * .9;
-	battery_voltage4 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN4)) * .1 + battery_voltage4 * .9;
-
-	if(g.battery_monitoring == 1) 
-		battery_voltage = battery_voltage3; // set total battery voltage, for telemetry stream	
-	if(g.battery_monitoring == 2) 
-		battery_voltage = battery_voltage4;
+	if(g.battery_monitoring == 0) {
+		battery_voltage1 = 0;
+		return;
+	}
+	
 	if(g.battery_monitoring == 3 || g.battery_monitoring == 4) 
-		battery_voltage = battery_voltage1;
+		battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN_1)) * .1 + battery_voltage1 * .9;
 	if(g.battery_monitoring == 4) {
-		current_amps	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps * .9; //reads power sensor current pin
-		current_total	 += current_amps * (float)delta_ms_medium_loop * 0.000278;
+		current_amps1	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps1 * .9; 	//reads power sensor current pin
+		current_total1	 += current_amps1 * (float)delta_ms_medium_loop * 0.0002778;				// .0002778 is 1/3600 (conversion to hours)
 	}
 	
 	#if BATTERY_EVENT == ENABLED
-		if(battery_voltage < LOW_VOLTAGE)	low_battery_event();
-		if(g.battery_monitoring == 4 && current_total > g.pack_capacity)	low_battery_event();
+		if(battery_voltage1 < LOW_VOLTAGE)	low_battery_event();
+		if(g.battery_monitoring == 4 && current_total1 > g.pack_capacity)	low_battery_event();
 	#endif
 }
 
