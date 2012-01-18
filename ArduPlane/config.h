@@ -87,6 +87,8 @@
 # define PUSHBUTTON_PIN   41
 # define USB_MUX_PIN      -1
 # define CONFIG_RELAY     ENABLED
+# define BATTERY_PIN_1	  0
+# define CURRENT_PIN_1	  1
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 # define A_LED_PIN        27
 # define B_LED_PIN        26
@@ -97,6 +99,8 @@
 # define PUSHBUTTON_PIN   (-1)
 # define CLI_SLIDER_ENABLED DISABLED
 # define USB_MUX_PIN 23
+# define BATTERY_PIN_1	  1
+# define CURRENT_PIN_1	  2
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -161,10 +165,10 @@
 # endif
 #elif CONFIG_PITOT_SOURCE == PITOT_SOURCE_ANALOG_PIN
 # ifndef CONFIG_PITOT_SOURCE_ANALOG_PIN
-#  define CONFIG_PITOT_SOURCE_ANALOG_PIN AN4
+#  define CONFIG_PITOT_SOURCE_ANALOG_PIN 0
 # endif
 #else
-# warning Invalid value for CONFIG_PITOT_SOURCE, disabling sonar
+# warning Invalid value for CONFIG_PITOT_SOURCE, disabling airspeed
 # undef PITOT_ENABLED
 # define PITOT_ENABLED DISABLED
 #endif
@@ -173,10 +177,9 @@
 # define SONAR_TYPE             MAX_SONAR_LV	// MAX_SONAR_XL,  
 #endif
 
-/* In ArduPlane PITOT usually takes the place of SONAR, but some bits
- * still depend on SONAR.
- */
-#define SONAR_ENABLED PITOT_ENABLED
+#ifndef SONAR_ENABLED
+#define SONAR_ENABLED DISABLED
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
@@ -225,12 +228,17 @@
 # define LOW_VOLTAGE			9.6
 #endif
 #ifndef VOLT_DIV_RATIO
-# define VOLT_DIV_RATIO			3.56
+# define VOLT_DIV_RATIO			3.56	// This is the proper value for an on-board APM1 voltage divider with a 3.9kOhm resistor
+//# define VOLT_DIV_RATIO		15.70	// This is the proper value for the AttoPilot 50V/90A sensor
+//# define VOLT_DIV_RATIO		4.127	// This is the proper value for the AttoPilot 13.6V/45A sensor
+
 #endif
 
 #ifndef CURR_AMP_PER_VOLT
-# define CURR_AMP_PER_VOLT		27.32
+# define CURR_AMP_PER_VOLT		27.32	// This is the proper value for the AttoPilot 50V/90A sensor
+//# define CURR_AMP_PER_VOLT	13.66	// This is the proper value for the AttoPilot 13.6V/45A sensor
 #endif
+
 #ifndef CURR_AMPS_OFFSET
 # define CURR_AMPS_OFFSET		0.0
 #endif

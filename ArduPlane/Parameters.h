@@ -330,7 +330,7 @@ public:
     AP_Int32    ground_pressure;
     AP_Int8		compass_enabled;
     AP_Int16    angle_of_attack;
-    AP_Int8		battery_monitoring;	// 0=disabled, 1=3 cell lipo, 2=4 cell lipo, 3=total voltage only, 4=total voltage and current
+    AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Float	volt_div_ratio;
     AP_Float	curr_amp_per_volt;
     AP_Float	input_voltage;

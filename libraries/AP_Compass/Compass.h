@@ -102,8 +102,6 @@ public:
 
 	/// Program new offset values.
 	///
-	/// XXX DEPRECATED
-	///
 	/// @param  x                   Offset to the raw mag_x value.
 	/// @param  y                   Offset to the raw mag_y value.
 	/// @param  z                   Offset to the raw mag_z value.

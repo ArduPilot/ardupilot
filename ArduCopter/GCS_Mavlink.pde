@@ -78,7 +78,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         status 		= MAV_STATE_STANDBY;
     }
 
-    uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
+    uint16_t battery_remaining = 1000.0 * (float)(g.pack_capacity - current_total1)/(float)g.pack_capacity;	//Mavlink scaling 100% = 1000
 
     mavlink_msg_sys_status_send(
         chan,
@@ -86,7 +86,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan, uint16_t pack
         nav_mode,
         status,
         0,
-        battery_voltage * 1000,
+        battery_voltage1 * 1000,
         battery_remaining,
         packet_drops);
 }

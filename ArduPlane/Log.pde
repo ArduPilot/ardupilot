@@ -386,9 +386,9 @@ static void Log_Write_Current()
 	DataFlash.WriteByte(HEAD_BYTE2);
 	DataFlash.WriteByte(LOG_CURRENT_MSG);
 	DataFlash.WriteInt(g.channel_throttle.control_in);
-	DataFlash.WriteInt((int)(battery_voltage 	* 100.0));
-	DataFlash.WriteInt((int)(current_amps 		* 100.0));
-	DataFlash.WriteInt((int)current_total);
+	DataFlash.WriteInt((int)(battery_voltage1 	* 100.0));
+	DataFlash.WriteInt((int)(current_amps1 		* 100.0));
+	DataFlash.WriteInt((int)current_total1);
 	DataFlash.WriteByte(END_BYTE);
 }
 

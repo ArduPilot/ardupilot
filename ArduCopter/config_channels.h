@@ -61,10 +61,10 @@
 //
 //
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
-/* Camera Pitch and Camera Roll: Not yet defined for APM2 
+/* Camera Pitch and Camera Roll: Not yet defined for APM2
  * They will likely be dependent on the frame config */
-# define CH_CAM_PITCH (-1)
-# define CH_CAM_ROLL  (-1)
+# define CH_CAM_PITCH CH_11
+# define CH_CAM_ROLL  CH_10
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
 # define CH_CAM_PITCH CH_5
 # define CH_CAM_ROLL  CH_6

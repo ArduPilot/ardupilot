@@ -139,17 +139,17 @@ void APM_RC_APM1::OutputCh(uint8_t ch, uint16_t pwm)
 
  switch(ch)
   {
-    case 0:  OCR5B=pwm; break;  //ch0
-    case 1:  OCR5C=pwm; break;  //ch1
-    case 2:  OCR1B=pwm; break;  //ch2
-    case 3:  OCR1C=pwm; break;  //ch3
-    case 4:  OCR4C=pwm; break;  //ch4
-    case 5:  OCR4B=pwm; break;  //ch5
-    case 6:  OCR3C=pwm; break;  //ch6
-    case 7:  OCR3B=pwm; break;  //ch7
-    case 8:  OCR5A=pwm; break;  //ch8,  PL3
-    case 9:  OCR1A=pwm; break;  //ch9,  PB5
-    case 10: OCR3A=pwm; break;  //ch10, PE3
+    case 0:  OCR5B=pwm; break;  //ch1
+    case 1:  OCR5C=pwm; break;  //ch2
+    case 2:  OCR1B=pwm; break;  //ch3
+    case 3:  OCR1C=pwm; break;  //ch4
+    case 4:  OCR4C=pwm; break;  //ch5
+    case 5:  OCR4B=pwm; break;  //ch6
+    case 6:  OCR3C=pwm; break;  //ch7
+    case 7:  OCR3B=pwm; break;  //ch8
+    case 8:  OCR5A=pwm; break;  //ch9,  PL3
+    case 9:  OCR1A=pwm; break;  //ch10, PB5
+    case 10: OCR3A=pwm; break;  //ch11, PE3
   }
 }
 

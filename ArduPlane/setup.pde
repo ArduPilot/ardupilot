@@ -301,8 +301,11 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 	} else if (!strcmp_P(argv[1].str, PSTR("off"))) {
 		g.compass_enabled = false;
 
+	} else if (!strcmp_P(argv[1].str, PSTR("reset"))) {
+		compass.set_offsets(0,0,0);
+
 	} else {
-		Serial.printf_P(PSTR("\nOptions:[on,off]\n"));
+		Serial.printf_P(PSTR("\nOptions:[on,off,reset]\n"));
 		report_compass();
 		return 0;
 	}
@@ -319,7 +322,7 @@ setup_batt_monitor(uint8_t argc, const Menu::arg *argv)
 		g.battery_monitoring.set_and_save(argv[1].i);
 
 	} else {
-		Serial.printf_P(PSTR("\nOptions: 0-4"));
+		Serial.printf_P(PSTR("\nOptions: 3-4"));
 	}
 
 	report_batt_monitor();
@@ -336,8 +339,6 @@ static void report_batt_monitor()
 	Serial.printf_P(PSTR("Batt Mointor\n"));
 	print_divider();
 	if(g.battery_monitoring == 0)	Serial.printf_P(PSTR("Batt monitoring disabled"));
-	if(g.battery_monitoring == 1)	Serial.printf_P(PSTR("Monitoring 3 cell"));
-	if(g.battery_monitoring == 2)	Serial.printf_P(PSTR("Monitoring 4 cell"));
 	if(g.battery_monitoring == 3)	Serial.printf_P(PSTR("Monitoring batt volts"));
 	if(g.battery_monitoring == 4)	Serial.printf_P(PSTR("Monitoring volts and current"));
 	print_blanks(2);

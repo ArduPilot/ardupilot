@@ -265,12 +265,12 @@ endif
 #
 
 # Sketch source files
-SKETCHPDESRCS	:=	$(wildcard $(SRCROOT)/*.pde)
+SKETCHPDESRCS		:=	$(wildcard $(SRCROOT)/*.pde $(SRCROOT)/*.ino)
 SKETCHSRCS		:=	$(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
-SKETCHPDE		:=	$(wildcard $(SRCROOT)/$(SKETCH).pde)
+SKETCHPDE		:=	$(wildcard $(SRCROOT)/$(SKETCH).pde $(SRCROOT)/$(SKETCH).ino)
 SKETCHCPP		:=	$(BUILDROOT)/$(SKETCH).cpp
-ifeq ($(SKETCHPDE),)
-$(error ERROR: sketch $(SKETCH) is missing $(SKETCH).pde)
+ifneq ($(words $(SKETCHPDE)),1)
+$(error ERROR: sketch $(SKETCH) must contain exactly one of $(SKETCH).pde or $(SKETCH).ino)
 endif
 
 # Sketch object files
@@ -566,7 +566,7 @@ $(CORELIB): $(CORELIBOBJS)
 # This process strives to be as faithful to the Arduino implementation as
 # possible.  Conceptually, the process is as follows:
 #
-# * All of the .pde files are concatenated, starting with the file named 
+# * All of the .pde/.ino files are concatenated, starting with the file named 
 #   for the sketch and followed by the others in alphabetical order.
 # * An insertion point is created in the concatenated file at
 #   the first statement that isn't a preprocessor directive or comment.
@@ -590,7 +590,7 @@ $(SKETCHCPP):	$(SKETCHCPP_SRC)
 
 #
 # The sketch splitter is an awk script used to split off the
-# header and body of the concatenated .pde files.  It also
+# header and body of the concatenated .pde/.ino files.  It also
 # inserts #line directives to help in backtracking from compiler
 # and debugger messages to the original source file.
 #
@@ -626,7 +626,7 @@ endef
 
 #
 # The prototype scanner is an awk script used to generate function
-# prototypes from the concantenated .pde files.
+# prototypes from the concantenated .pde/.ino files.
 #
 # Function definitions are expected to follow the form
 #

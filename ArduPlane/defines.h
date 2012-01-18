@@ -183,17 +183,7 @@ enum gcs_severity {
 
 
 #define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
-
 #define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
-
-#define	AIRSPEED_CH 7			// The external ADC channel for the airspeed sensor
-#define BATTERY_PIN1 0		        // These are the pins for the voltage dividers
-#define BATTERY_PIN2 1
-#define BATTERY_PIN3 2
-#define BATTERY_PIN4 3
-
-#define VOLTAGE_PIN_0 0 // These are the pins for current sensor: voltage
-#define CURRENT_PIN_1 1 // and current
 
 #define RELAY_PIN 47
 

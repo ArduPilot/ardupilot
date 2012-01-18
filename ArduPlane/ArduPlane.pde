@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V2.27"
+#define THISFIRMWARE "ArduPlane V2.28"
 /*
 Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler
 Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
@@ -240,6 +240,15 @@ AP_AnalogSource_Arduino pitot_analog_source(CONFIG_PITOT_SOURCE_ANALOG_PIN, 4.0)
 	AP_RangeFinder_MaxsonarXL sonar(&pitot_analog_source, &sonar_mode_filter);
 #endif
 
+AP_Relay relay;
+
+// Camera/Antenna mount tracking and stabilisation stuff
+// --------------------------------------
+#if MOUNT == ENABLED
+AP_Mount camera_mount(g_gps, &dcm);
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Global variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -354,162 +363,263 @@ static int     ground_start_avg;
 // If we do not detect GPS at startup, we stop trying and assume GPS is not connected	
 static bool	GPS_enabled 	= false;			
 
+////////////////////////////////////////////////////////////////////////////////
 // Location & Navigation
-// ---------------------
+////////////////////////////////////////////////////////////////////////////////
+// Constants
 const	float radius_of_earth 	= 6378100;	// meters
 const	float gravity 			= 9.81;		// meters/ sec^2
-static long	nav_bearing;						// deg * 100 : 0 to 360 current desired bearing to navigate
-static long	target_bearing;						// deg * 100 : 0 to 360 location of the plane to the target
-static long	crosstrack_bearing;					// deg * 100 : 0 to 360 desired angle of plane to target
-static float	nav_gain_scaler 		= 1;		// Gain scaling for headwind/tailwind TODO: why does this variable need to be initialized to 1?
+// This is the currently calculated direction to fly.  
+// deg * 100 : 0 to 360
+static long	nav_bearing;
+// This is the direction to the next waypoint or loiter center 
+// deg * 100 : 0 to 360
+static long	target_bearing;	
+//This is the direction from the last waypoint to the next waypoint 
+// deg * 100 : 0 to 360
+static long	crosstrack_bearing;
+// A gain scaler to account for ground speed/headwind/tailwind
+static float	nav_gain_scaler 		= 1;		
+// Direction held during phases of takeoff and landing
+// deg * 100 dir of plane,  A value of -1 indicates the course has not been set/is not in use
 static long    hold_course       	 	= -1;		// deg * 100 dir of plane
 
-static byte	nav_command_index;					// active nav command memory location
-static byte	non_nav_command_index;				// active non-nav command memory location
-static byte	nav_command_ID		= NO_COMMAND;	// active nav command ID
-static byte	non_nav_command_ID	= NO_COMMAND;	// active non-nav command ID
+// There may be two active commands in Auto mode.  
+// This indicates the active navigation command by index number
+static byte	nav_command_index;					
+// This indicates the active non-navigation command by index number
+static byte	non_nav_command_index;				
+// This is the command type (eg navigate to waypoint) of the active navigation command
+static byte	nav_command_ID		= NO_COMMAND;	
+static byte	non_nav_command_ID	= NO_COMMAND;	
 
+////////////////////////////////////////////////////////////////////////////////
 // Airspeed
-// --------
-static int		airspeed;							// m/s * 100
-static int		airspeed_nudge;  					// m/s * 100 : additional airspeed based on throttle stick position in top 1/2 of range
-static long		target_airspeed;					// m/s * 100 (used for Auto-flap deployment in FBW_B mode)
-static float	airspeed_error;						// m/s * 100
-static long 	energy_error;                       // energy state error (kinetic + potential) for altitude hold
-static long		airspeed_energy_error;              // kinetic portion of energy error (m^2/s^2)
+////////////////////////////////////////////////////////////////////////////////
+// The current airspeed estimate/measurement in centimeters per second
+static int		airspeed;
+// The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
+// Also used for flap deployment criteria.  Centimeters per second.static long		target_airspeed;	
+static long		target_airspeed;
+// The difference between current and desired airspeed.  Used in the pitch controller.  Centimeters per second.
+static float	airspeed_error;	
+// The calculated total energy error (kinetic (altitude) plus potential (airspeed)).  
+// Used by the throttle controller
+static long 	energy_error;
+// kinetic portion of energy error (m^2/s^2)
+static long		airspeed_energy_error;
+// An amount that the airspeed should be increased in auto modes based on the user positioning the 
+// throttle stick in the top half of the range.  Centimeters per second.
+static int		airspeed_nudge;
+// Similar to airspeed_nudge, but used when no airspeed sensor.
+// 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
+static int     throttle_nudge = 0;                 
 
+////////////////////////////////////////////////////////////////////////////////
 // Ground speed
-static long		groundspeed_undershoot = 0;				// m/s * 100  (>=0, where > 0 => amount below min ground speed)
+////////////////////////////////////////////////////////////////////////////////
+// The amount current ground speed is below min ground speed.  Centimeters per second
+static long		groundspeed_undershoot = 0;
 
-
+////////////////////////////////////////////////////////////////////////////////
 // Location Errors
-// ---------------
-static long	bearing_error;						// deg * 100 : 0 to 36000
-static long	altitude_error;						// meters * 100 we are off in altitude
-static float	crosstrack_error;					// meters we are off trackline
+////////////////////////////////////////////////////////////////////////////////
+// Difference between current bearing and desired bearing.  Hundredths of a degree
+static long	bearing_error;
+// Difference between current altitude and desired altitude.  Centimeters
+static long	altitude_error;
+// Distance perpandicular to the course line that we are off trackline.  Meters 
+static float	crosstrack_error;
 
+////////////////////////////////////////////////////////////////////////////////
 // Battery Sensors
-// ---------------
-static float	battery_voltage		= LOW_VOLTAGE * 1.05;		// Battery Voltage of total battery, initialized above threshold for filter
-static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cell 1, initialized above threshold for filter
-static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2, initialized above threshold for filter
-static float 	battery_voltage3 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3, initialized above threshold for filter
-static float 	battery_voltage4 	= LOW_VOLTAGE * 1.05;		// Battery Voltage of cells 1 + 2+3 + 4, initialized above threshold for filter
+////////////////////////////////////////////////////////////////////////////////
+// Battery pack 1 voltage.  Initialized above the low voltage threshold to pre-load the filter and prevent low voltage events at startup.
+static float 	battery_voltage1 	= LOW_VOLTAGE * 1.05;
+// Battery pack 1 instantaneous currrent draw.  Amperes
+static float	current_amps1;
+// Totalized current (Amp-hours) from battery 1
+static float	current_total1;									
 
-static float	current_amps;
-static float	current_total;
+// To Do - Add support for second battery pack
+//static float 	battery_voltage2 	= LOW_VOLTAGE * 1.05;		// Battery 2 Voltage, initialized above threshold for filter
+//static float	current_amps2;									// Current (Amperes) draw from battery 2
+//static float	current_total2;									// Totalized current (Amp-hours) from battery 2
 
+////////////////////////////////////////////////////////////////////////////////
 // Airspeed Sensors
-// ----------------
-static float   airspeed_raw;                       // Airspeed Sensor - is a float to better handle filtering
-static float   airspeed_pressure;					// airspeed as a pressure value
+////////////////////////////////////////////////////////////////////////////////
+// Raw differential pressure measurement (filtered).  ADC units
+static float   airspeed_raw; 
+// Raw differential pressure less the zero pressure offset.  ADC units
+static float   airspeed_pressure;
 
-// Barometer Sensor variables
-// --------------------------
-static unsigned long 	abs_pressure;
-
+////////////////////////////////////////////////////////////////////////////////
 // Altitude Sensor variables
-// ----------------------
+////////////////////////////////////////////////////////////////////////////////
+// Raw absolute pressure measurement (filtered).  ADC units
+static unsigned long 	abs_pressure;
+// Altitude from the sonar sensor.  Meters.  Not yet implemented.
 static int		sonar_alt;
 
+////////////////////////////////////////////////////////////////////////////////
 // flight mode specific
-// --------------------
-static bool takeoff_complete    = true;         // Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command processes.
+////////////////////////////////////////////////////////////////////////////////
+// Flag for using gps ground course instead of IMU yaw.  Set false when takeoff command in process.
+static bool takeoff_complete    = true;   
+// Flag to indicate if we have landed.
+//Set land_complete if we are within 2 seconds distance or within 3 meters altitude of touchdown
 static bool	land_complete;
+// Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
 static long	takeoff_altitude;
-// static int			landing_distance;					// meters;
-static int			landing_pitch;						// pitch for landing set by commands
+// Pitch to hold during landing command in the no airspeed sensor case.  Hundredths of a degree
+static int			landing_pitch;
+// Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
 static int			takeoff_pitch;
 
+////////////////////////////////////////////////////////////////////////////////
 // Loiter management
-// -----------------
-static long 	old_target_bearing;					// deg * 100
-static int		loiter_total; 						// deg : how many times to loiter * 360
-static int 	loiter_delta;						// deg : how far we just turned
-static int		loiter_sum;							// deg : how far we have turned around a waypoint
-static long 	loiter_time;						// millis : when we started LOITER mode
-static int 	loiter_time_max;					// millis : how long to stay in LOITER mode
+////////////////////////////////////////////////////////////////////////////////
+// Previous target bearing.  Used to calculate loiter rotations.  Hundredths of a degree
+static long 	old_target_bearing;
+// Total desired rotation in a loiter.  Used for Loiter Turns commands.  Degrees
+static int		loiter_total; 
+// The amount in degrees we have turned since recording old_target_bearing
+static int 	loiter_delta;
+// Total rotation in a loiter.  Used for Loiter Turns commands and to check for missed waypoints.  Degrees
+static int		loiter_sum;
+// The amount of time we have been in a Loiter.  Used for the Loiter Time command.  Milliseconds.
+static long 	loiter_time;
+// The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
+static int 	loiter_time_max;
 
-// these are the values for navigation control functions
-// ----------------------------------------------------
-static long	nav_roll;							// deg * 100 : target roll angle
-static long	nav_pitch;							// deg * 100 : target pitch angle
-static int     throttle_nudge = 0;                 // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
+////////////////////////////////////////////////////////////////////////////////
+// Navigation control variables
+////////////////////////////////////////////////////////////////////////////////
+// The instantaneous desired bank angle.  Hundredths of a degree
+static long	nav_roll;
+// The instantaneous desired pitch angle.  Hundredths of a degree
+static long	nav_pitch;
 
-// Waypoints
-// ---------
-static long	wp_distance;						// meters - distance between plane and next waypoint
-static long	wp_totalDistance;					// meters - distance between old and next waypoint
+////////////////////////////////////////////////////////////////////////////////
+// Waypoint distances
+////////////////////////////////////////////////////////////////////////////////
+// Distance between plane and next waypoint.  Meters
+static long	wp_distance;
+// Distance between previous and next waypoint.  Meters
+static long	wp_totalDistance;
 
+////////////////////////////////////////////////////////////////////////////////
 // repeating event control
-// -----------------------
-static byte 		event_id; 							// what to do - see defines
-static long 		event_timer; 						// when the event was asked for in ms
-static uint16_t 	event_delay; 						// how long to delay the next firing of event in millis
-static int 		event_repeat = 0;					// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
-static int 		event_value; 						// per command value, such as PWM for servos
-static int 		event_undo_value;					// the value used to cycle events (alternate value to event_value)
+////////////////////////////////////////////////////////////////////////////////
+// Flag indicating current event type
+static byte 		event_id;
+// when the event was started in ms
+static long 		event_timer;
+// how long to delay the next firing of event in millis
+static uint16_t 	event_delay;					
+// how many times to cycle : -1 (or -2) = forever, 2 = do one cycle, 4 = do two cycles
+static int 		event_repeat = 0;
+// per command value, such as PWM for servos
+static int 		event_value; 
+// the value used to cycle events (alternate value to event_value)
+static int 		event_undo_value;
 
-// delay command
-// --------------
-static long 	condition_value;						// used in condition commands (eg delay, change alt, etc.)
+////////////////////////////////////////////////////////////////////////////////
+// Conditional command
+////////////////////////////////////////////////////////////////////////////////
+// A value used in condition commands (eg delay, change alt, etc.)
+// For example in a change altitude command, it is the altitude to change to.
+static long 	condition_value;
+// A starting value used to check the status of a conditional command.
+// For example in a delay command the condition_start records that start time for the delay
 static long 	condition_start;
-static int 	condition_rate;
+// A value used in condition commands.  For example the rate at which to change altitude.
+static int 		condition_rate;
 
+////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
-// -------------------
-static struct 	Location home;						// home location
-static struct 	Location prev_WP;					// last waypoint
-static struct 	Location current_loc;				// current location
-static struct 	Location next_WP;					// next waypoint
-static struct  	Location guided_WP;					// guided mode waypoint
-static struct 	Location next_nav_command;			// command preloaded
-static struct 	Location next_nonnav_command;		// command preloaded
-static long 	target_altitude;					// used for altitude management between waypoints
-static long 	offset_altitude;					// used for altitude management between waypoints
-static bool	home_is_set; 						// Flag for if we have g_gps lock and have set the home location
+// Location structure defined in AP_Common
+////////////////////////////////////////////////////////////////////////////////
+// The home location used for RTL.  The location is set when we first get stable GPS lock
+static struct 	Location home;
+// Flag for if we have g_gps lock and have set the home location
+static bool	home_is_set;
+// The location of the previous waypoint.  Used for track following and altitude ramp calculations
+static struct 	Location prev_WP;
+// The plane's current location
+static struct 	Location current_loc;
+// The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
+static struct 	Location next_WP;
+// The location of the active waypoint in Guided mode.
+static struct  	Location guided_WP;
+// The location structure information from the Nav command being processed
+static struct 	Location next_nav_command;	
+// The location structure information from the Non-Nav command being processed
+static struct 	Location next_nonnav_command;
 
+////////////////////////////////////////////////////////////////////////////////
+// Altitude / Climb rate control
+////////////////////////////////////////////////////////////////////////////////
+// The current desired altitude.  Altitude is linearly ramped between waypoints.  Centimeters
+static long 	target_altitude;
+// Altitude difference between previous and current waypoint.  Centimeters
+static long 	offset_altitude;
 
+////////////////////////////////////////////////////////////////////////////////
 // IMU variables
-// -------------
-static float G_Dt						= 0.02;		// Integration time for the gyros (DCM algorithm)
+////////////////////////////////////////////////////////////////////////////////
+// The main loop execution time.  Seconds
+//This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
+static float G_Dt						= 0.02;		
 
-
+////////////////////////////////////////////////////////////////////////////////
 // Performance monitoring
-// ----------------------
-static long 	perf_mon_timer;						// Metric based on accel gain deweighting
-static int 	G_Dt_max = 0;						// Max main loop cycle time in milliseconds
+////////////////////////////////////////////////////////////////////////////////
+// Timer used to accrue data and trigger recording of the performanc monitoring log message
+static long 	perf_mon_timer;
+// The maximum main loop execution time recorded in the current performance monitoring interval
+static int 	G_Dt_max = 0;
+// The number of gps fixes recorded in the current performance monitoring interval
 static int 	gps_fix_count = 0;
+// A variable used by developers to track performanc metrics.
+// Currently used to record the number of GCS heartbeat messages received
 static int		pmTest1 = 0;
 
 
+////////////////////////////////////////////////////////////////////////////////
 // System Timers
-// --------------
-static unsigned long 	fast_loopTimer;				// Time in miliseconds of main control loop
-static unsigned long 	fast_loopTimeStamp;			// Time Stamp when fast loop was complete
-static uint8_t 		delta_ms_fast_loop; 		// Delta Time in miliseconds
+////////////////////////////////////////////////////////////////////////////////
+// Time in miliseconds of start of main control loop.  Milliseconds
+static unsigned long 	fast_loopTimer;
+// Time Stamp when fast loop was complete.  Milliseconds
+static unsigned long 	fast_loopTimeStamp;
+// Number of milliseconds used in last main loop cycle
+static uint8_t 		delta_ms_fast_loop;
+// Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t			mainLoop_count;
 
-static unsigned long 	medium_loopTimer;			// Time in miliseconds of medium loop
-static byte 			medium_loopCounter;			// Counters for branching from main control loop to slower loops
+// Time in miliseconds of start of medium control loop.  Milliseconds
+static unsigned long 	medium_loopTimer;
+// Counters for branching from main control loop to slower loops
+static byte 			medium_loopCounter;	
+// Number of milliseconds used in last medium loop cycle
 static uint8_t			delta_ms_medium_loop;
 
+// Counters for branching from medium control loop to slower loops
 static byte 			slow_loopCounter;
+// Counter to trigger execution of very low rate processes
 static byte 			superslow_loopCounter;
-static byte			counter_one_herz;
+// Counter to trigger execution of 1 Hz processes
+static byte				counter_one_herz;
 
-static unsigned long 	nav_loopTimer;				// used to track the elapsed time for GPS nav
+// used to track the elapsed time for navigation PID integral terms
+static unsigned long 	nav_loopTimer;				
+// Elapsed time since last call to navigation pid functions
+static unsigned long 	dTnav;
+// % MCU cycles used
+static float 			load;
 
-static unsigned long 	dTnav;						// Delta Time in milliseconds for navigation computations
-static float 			load;						// % MCU cycles used
-
-AP_Relay relay;
-
-// Camera/Antenna mount tracking and stabilisation stuff
-// --------------------------------------
-#if MOUNT == ENABLED
-AP_Mount camera_mount(g_gps, &dcm);
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
