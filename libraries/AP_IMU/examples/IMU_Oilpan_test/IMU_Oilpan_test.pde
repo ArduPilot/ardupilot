@@ -14,14 +14,25 @@
 #include <AP_Math.h>
 #include <AP_Common.h>
 
+#define A_LED_PIN        27
+#define C_LED_PIN        25
+#define LED_ON           LOW
+#define LED_OFF          HIGH
+
 FastSerialPort(Serial, 0);
 
 Arduino_Mega_ISR_Registry isr_registry;
-AP_TimerPeriodicProcess  adc_scheduler;
+AP_TimerProcess  adc_scheduler;
 
 AP_ADC_ADS7844	adc;
 AP_InertialSensor_Oilpan oilpan_ins(&adc);
 AP_IMU_INS imu(&oilpan_ins,0);
+
+static void flash_leds(bool on)
+{
+    digitalWrite(A_LED_PIN, on?LED_OFF:LED_ON);
+    digitalWrite(C_LED_PIN, on?LED_ON:LED_OFF);
+}
 
 void setup(void)
 {
@@ -32,7 +43,8 @@ void setup(void)
     adc_scheduler.init(&isr_registry);
 
     /* Should also call ins.init and adc.init */
-	imu.init(IMU::COLD_START, delay, &adc_scheduler);
+	imu.init(IMU::COLD_START, delay, flash_leds, &adc_scheduler);
+	imu.init_accel(delay, flash_leds);
 }
 
 void loop(void)
@@ -45,6 +57,6 @@ void loop(void)
 	accel = imu.get_accel();
 	gyro = imu.get_gyro();
 
-	Serial.printf("AX: 0x%4.4f  AY: 0x%4.4f  AZ: 0x%4.4f  GX: 0x%4.4f  GY: 0x%4.4f  GZ: 0x%4.4f\n",
+	Serial.printf("AX: %4.4f  AY: %4.4f  AZ: %4.4f  GX: %4.4f  GY: %4.4f  GZ: %4.4f\n",
 				  accel.x, accel.y, accel.z, gyro.x, gyro.y, gyro.z);
 }
