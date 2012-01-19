@@ -409,20 +409,42 @@ namespace ArdupilotMega.GCSViews
 
         void findfirmware(string findwhat)
         {
+            List<software> items = new List<software>();
+            
             foreach (software temp in softwares)
             {
                 if (temp.url.ToLower().Contains(findwhat.ToLower()))
                 {
-                    DialogResult dr = MessageBox.Show("Are you sure you want to upload " + temp.name + "?", "Continue", MessageBoxButtons.YesNo);
-                    if (dr == System.Windows.Forms.DialogResult.Yes)
-                    {
-                        update(temp);
-                    }
-                    return;
+                    items.Add(temp);
                 }
             }
 
-            MessageBox.Show("The requested firmware was not found.");
+            if (items.Count == 0)
+            {
+                MessageBox.Show("The requested firmware was not found.");
+                return;
+            }
+            else if (items.Count == 1)
+            {
+                DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
+                if (dr == System.Windows.Forms.DialogResult.Yes)
+                {
+                    update(items[0]);
+                }
+                return;
+            }
+            else if (items.Count >= 2)
+            {
+                foreach (software temp in items)
+                {
+                    DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
+                    if (dr == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        update(items[0]);
+                        return;
+                    }
+                }
+            }
         }
 
         private void pictureBoxAPM_Click(object sender, EventArgs e)
