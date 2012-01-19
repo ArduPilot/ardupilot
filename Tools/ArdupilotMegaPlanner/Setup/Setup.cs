@@ -410,8 +410,10 @@ namespace ArdupilotMega.Setup
                 {
                     if (MainV2.comPort.param["BATT_MONITOR"].ToString() != "0")
                     {
-                        CMB_batmontype.SelectedIndex = (int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString());
+                        CMB_batmontype.SelectedIndex = getIndex(CMB_batmontype,(int)float.Parse(MainV2.comPort.param["BATT_MONITOR"].ToString()));
                     }
+
+                    CMB_batmonsensortype.SelectedIndex = 0;
                 }
 
 
@@ -500,6 +502,19 @@ namespace ArdupilotMega.Setup
                 startup = false;
             }
         }
+
+        int getIndex(ComboBox ctl, int no)
+        {
+            foreach (var item in ctl.Items)
+            {
+                int ans = int.Parse(item.ToString().Substring(0, 1));
+
+                if (ans == no)
+                    return ctl.Items.IndexOf(item);
+            }
+
+            return -1;
+        }        
 
         private void BUT_SaveModes_Click(object sender, EventArgs e)
         {
@@ -686,7 +701,31 @@ namespace ArdupilotMega.Setup
                 }
                 else
                 {
-                    MainV2.comPort.setParam("BATT_MONITOR", CMB_batmontype.SelectedIndex);
+                    int selection = int.Parse(CMB_batmontype.Text.Substring(0,1));
+
+                    CMB_batmonsensortype.Enabled = true;
+
+                    TXT_voltage.Enabled = false;
+
+                    if (selection == 0)
+                    {
+                        CMB_batmonsensortype.Enabled = false;
+                        groupBox4.Enabled = false;
+                    }
+                    else if (selection == 4)
+                    {
+                        CMB_batmonsensortype.Enabled = true;
+                        groupBox4.Enabled = true;
+                        TXT_ampspervolt.Enabled = true;
+                    }
+                    else if (selection == 3)
+                    {
+                        groupBox4.Enabled = true;
+                        CMB_batmonsensortype.Enabled = false;
+                        TXT_ampspervolt.Enabled = false;
+                    }
+
+                    MainV2.comPort.setParam("BATT_MONITOR", selection);
                 }
             }
             catch { MessageBox.Show("Set BATT_MONITOR Failed"); }
@@ -1396,6 +1435,79 @@ namespace ArdupilotMega.Setup
                 }
             }
             catch { MessageBox.Show("Set ELEVON_CH2_REV Failed"); }
+        }
+
+        private void CMB_batmonsensortype_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int selection = int.Parse(CMB_batmonsensortype.Text.Substring(0,1));
+
+
+            if (selection == 1) // atto 45
+            {
+                float maxvolt = 13.6f;
+                float maxamps = 44.7f;
+                float mvpervolt = 242.3f;
+                float mvperamp = 73.20f;
+
+                // ~ 3.295v
+                float topvolt = (maxvolt * mvpervolt) / 1000;
+                // ~ 3.294v
+                float topamps = (maxamps * mvperamp) / 1000;
+
+                TXT_divider.Text = (maxvolt / topvolt).ToString();
+                TXT_ampspervolt.Text = (maxamps / topamps).ToString();
+            }
+            else if (selection == 2) // atto 90
+            {
+                float maxvolt = 50f;
+                float maxamps = 89.4f;
+                float mvpervolt = 63.69f;
+                float mvperamp = 36.60f;
+
+                float topvolt = (maxvolt * mvpervolt) / 1000;
+                float topamps = (maxamps * mvperamp) / 1000;
+
+                TXT_divider.Text = (maxvolt / topvolt).ToString();
+                TXT_ampspervolt.Text = (maxamps / topamps).ToString();
+            }
+            else if (selection == 3) // atto 180
+            {
+                float maxvolt = 50f;
+                float maxamps = 178.8f;
+                float mvpervolt = 63.69f;
+                float mvperamp = 18.30f;
+
+                float topvolt = (maxvolt * mvpervolt) / 1000;
+                float topamps = (maxamps * mvperamp) / 1000;
+
+                TXT_divider.Text = (maxvolt / topvolt).ToString();
+                TXT_ampspervolt.Text = (maxamps / topamps).ToString();
+            }
+
+            // enable to update
+            TXT_divider.Enabled = true;
+            TXT_ampspervolt.Enabled = true;
+            TXT_measuredvoltage.Enabled = true;
+            TXT_inputvoltage.Enabled = true;
+
+            // update
+            TXT_ampspervolt_Validated(TXT_ampspervolt, null);
+
+            TXT_divider_Validated(TXT_divider, null);
+
+            // disable
+            TXT_divider.Enabled = false;
+            TXT_ampspervolt.Enabled = false;
+            TXT_measuredvoltage.Enabled = false;
+
+            //reenable if needed
+            if (selection == 0)
+            {
+                TXT_divider.Enabled = true;
+                TXT_ampspervolt.Enabled = true;
+                TXT_measuredvoltage.Enabled = true;
+                TXT_inputvoltage.Enabled = true;
+            }
         }
     }
 }
