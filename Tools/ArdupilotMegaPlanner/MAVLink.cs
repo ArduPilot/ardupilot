@@ -8,6 +8,7 @@ using System.Diagnostics; // stopwatch
 using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
+using System.Drawing;
 
 
 namespace ArdupilotMega
@@ -583,7 +584,13 @@ namespace ArdupilotMega
                 }
             }
         }
+        /*
+        public Bitmap getImage()
+        {
+            MemoryStream ms = new MemoryStream();
 
+        }
+        */
         /// <summary>
         /// Get param list from apm
         /// </summary>

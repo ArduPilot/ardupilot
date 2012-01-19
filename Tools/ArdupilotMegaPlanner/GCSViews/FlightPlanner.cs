@@ -2708,6 +2708,7 @@ namespace ArdupilotMega.GCSViews
             if (float.TryParse(heading, out ans))
             {
                 MainMap.Bearing = ans;
+                FlightData.mymap.Bearing = ans;
             }
         }
 
