@@ -143,7 +143,7 @@ static void calc_location_error(struct Location *next_loc)
 */
 
 #define NAV_ERR_MAX 800
-static void calc_loiter(int x_error, int y_error)
+static void calc_loiter1(int x_error, int y_error)
 {
 	int16_t lon_PI 	= g.pi_loiter_lon.get_pi(x_error, dTnav);
 	int16_t lon_D 	= 3 * x_actual_speed ; // this controls the small bumps
@@ -160,7 +160,7 @@ static void calc_loiter(int x_error, int y_error)
 }
 
 
-static void calc_loiter1(int x_error, int y_error)
+static void calc_loiter(int x_error, int y_error)
 {
 	// East/West
 	x_error 				= constrain(x_error, -NAV_ERR_MAX, NAV_ERR_MAX);	//800
@@ -389,15 +389,15 @@ static void set_new_altitude(int32_t _new_alt)
 	if(target_altitude > original_altitude){
 		// we are below, going up
 		alt_change_flag = ASCENDING;
-		Serial.printf("go up\n");
+		//Serial.printf("go up\n");
 	}else if(target_altitude < original_altitude){
 		// we are above, going down
 		alt_change_flag = DESCENDING;
-		Serial.printf("go down\n");
+		//Serial.printf("go down\n");
 	}else{
 		// No Change
 		alt_change_flag = REACHED_ALT;
-		Serial.printf("reached alt\n");
+		//Serial.printf("reached alt\n");
 	}
 
 	//Serial.printf("new alt: %d Org alt: %d\n", target_altitude, original_altitude);
