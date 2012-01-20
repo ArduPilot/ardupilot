@@ -93,6 +93,10 @@ static void init_arm_motors()
 	if(home_is_set)
 		init_home();
 
+	// all I terms are invalid
+	// -----------------------
+    reset_I_all();
+
 	if(did_ground_start == false){
 		did_ground_start = true;
 		startup_ground();
