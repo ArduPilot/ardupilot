@@ -248,10 +248,12 @@ RC_Channel::norm_input()
 float
 RC_Channel::norm_output()
 {
+    uint16_t mid = (radio_max + radio_min) / 2;
+    
 	if(radio_out < radio_trim)
-		return (float)(radio_out - radio_trim) / (float)(radio_trim - radio_min);
+		return (float)(radio_out - mid) / (float)(mid - radio_min);
 	else
-		return (float)(radio_out - radio_trim) / (float)(radio_max  - radio_trim);
+		return (float)(radio_out - mid) / (float)(radio_max  - mid);
 }
 
 void RC_Channel::set_apm_rc( APM_RC_Class * apm_rc )
