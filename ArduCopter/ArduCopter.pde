@@ -235,6 +235,7 @@ AP_TimerProcess timer_scheduler;
 	AP_DCM_HIL              dcm;
 	AP_GPS_HIL              g_gps_driver(NULL);
 	AP_Compass_HIL          compass; // never used
+    AP_Baro_BMP085_HIL      barometer;
 	AP_IMU_Shim             imu; // never used
     AP_InertialSensor_Stub ins;
     AP_PeriodicProcessStub timer_scheduler;
