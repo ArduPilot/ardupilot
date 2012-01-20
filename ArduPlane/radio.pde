@@ -33,18 +33,17 @@ static void init_rc_in()
 
 static void init_rc_out()
 {
-	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
-	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
-	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_min);
-	APM_RC.OutputCh(CH_4, 	g.channel_rudder.radio_trim);
-
-	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
-	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
-	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-	APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
-
 	APM_RC.Init( &isr_registry );		// APM Radio initialization
 
+  APM_RC.enable_out(CH_1);
+  APM_RC.enable_out(CH_2);
+  APM_RC.enable_out(CH_3);
+  APM_RC.enable_out(CH_4);
+  APM_RC.enable_out(CH_5);
+  APM_RC.enable_out(CH_6);
+  APM_RC.enable_out(CH_7);
+  APM_RC.enable_out(CH_8);
+
 	APM_RC.OutputCh(CH_1, 	g.channel_roll.radio_trim);					// Initialization of servo outputs
 	APM_RC.OutputCh(CH_2, 	g.channel_pitch.radio_trim);
 	APM_RC.OutputCh(CH_3, 	g.channel_throttle.radio_min);
@@ -53,7 +52,7 @@ static void init_rc_out()
 	APM_RC.OutputCh(CH_5, 	g.rc_5.radio_trim);
 	APM_RC.OutputCh(CH_6, 	g.rc_6.radio_trim);
 	APM_RC.OutputCh(CH_7,   g.rc_7.radio_trim);
-    APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
+  APM_RC.OutputCh(CH_8,   g.rc_8.radio_trim);
 }
 
 static void read_radio()
