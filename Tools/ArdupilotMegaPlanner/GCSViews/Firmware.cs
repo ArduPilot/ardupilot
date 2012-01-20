@@ -410,7 +410,8 @@ namespace ArdupilotMega.GCSViews
         void findfirmware(string findwhat)
         {
             List<software> items = new List<software>();
-            
+
+            // build list
             foreach (software temp in softwares)
             {
                 if (temp.url.ToLower().Contains(findwhat.ToLower()))
@@ -419,12 +420,13 @@ namespace ArdupilotMega.GCSViews
                 }
             }
 
+            // none found
             if (items.Count == 0)
             {
                 MessageBox.Show("The requested firmware was not found.");
                 return;
             }
-            else if (items.Count == 1)
+            else if (items.Count == 1) // 1 found so accept it
             {
                 DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
                 if (dr == System.Windows.Forms.DialogResult.Yes)
@@ -433,17 +435,46 @@ namespace ArdupilotMega.GCSViews
                 }
                 return;
             }
-            else if (items.Count >= 2)
+            else if (items.Count == 2)
             {
+                XorPlus select = new XorPlus();
+                MainV2.fixtheme(select);
+                select.ShowDialog();
+                int a = 0;
+
+                if (select.frame == "")
+                {
+                    return;
+                }
+
                 foreach (software temp in items)
                 {
-                    DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[0].name + "?", "Continue", MessageBoxButtons.YesNo);
-                    if (dr == System.Windows.Forms.DialogResult.Yes)
+                    if (select.frame == "+" && temp.name.Contains("Plus"))
                     {
-                        update(items[0]);
-                        return;
+                        DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
+                        if (dr == System.Windows.Forms.DialogResult.Yes)
+                        {
+                            update(items[a]);
+                            return;
+                        }
                     }
+                    else if (select.frame == "X" && temp.name.Contains("X"))
+                    {
+                        DialogResult dr = MessageBox.Show("Are you sure you want to upload " + items[a].name + "?", "Continue", MessageBoxButtons.YesNo);
+                        if (dr == System.Windows.Forms.DialogResult.Yes)
+                        {
+                            update(items[a]);
+                            return;
+                        }
+                    }
+
+                    a++;
                 }
+            }
+            else
+            {
+                MessageBox.Show("Something has gone wrong, to many firmware choices");
+                return;
             }
         }
 
