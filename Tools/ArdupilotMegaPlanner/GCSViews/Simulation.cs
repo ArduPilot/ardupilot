@@ -1328,7 +1328,7 @@ namespace ArdupilotMega.GCSViews
 
                 roll_out = (float)MainV2.cs.hilch1 / rollgain;
                 pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
-                throttle_out = ((float)MainV2.cs.hilch3 + 5000) / throttlegain;
+                throttle_out = ((float)MainV2.cs.hilch3 / 2 + 5000) / throttlegain;
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
             }
 
