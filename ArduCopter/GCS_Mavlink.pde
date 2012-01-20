@@ -904,11 +904,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 					result=1;
 					break;
 
-				/* Land is not an implemented flight mode in APM 2.0
 				case MAV_ACTION_LAND:
 					set_mode(LAND);
 					break;
-				*/
 
 				case MAV_ACTION_LOITER:
 					set_mode(LOITER);
