@@ -298,7 +298,14 @@ namespace ArdupilotMega.GCSViews
                     //   online          verify height
                     if (isonline && CHK_geheight.Checked)
                     {
-                        cell.Value = ((int)getGEAlt(lat, lng) + int.Parse(TXT_DefaultAlt.Text)).ToString();
+                        if (CHK_altmode.Checked)
+                        {
+                            cell.Value = ((int)getGEAlt(lat, lng) + int.Parse(TXT_DefaultAlt.Text)).ToString();
+                        }
+                        else
+                        {
+                            cell.Value = ((int)getGEAlt(lat, lng) + int.Parse(TXT_DefaultAlt.Text) - float.Parse(TXT_homealt.Text)).ToString();
+                        }
                     }
                     else
                     {
@@ -475,7 +482,7 @@ namespace ArdupilotMega.GCSViews
 
             // map center
             center = new GMapMarkerCross(MainMap.Position);
-            //top.Markers.Add(center);
+            top.Markers.Add(center);
 
             MainMap.Zoom = 3;
 
@@ -939,9 +946,11 @@ namespace ArdupilotMega.GCSViews
         /// </summary>
         private void writeKML()
         {
+            // quickadd is for when loading wps from eeprom or file, to prevent slow, loading times
             if (quickadd)
                 return;
 
+            // this is to share the current mission with the data tab
             pointlist = new List<PointLatLngAlt>();
 
             System.Diagnostics.Debug.WriteLine(DateTime.Now);
@@ -952,6 +961,7 @@ namespace ArdupilotMega.GCSViews
                     objects.Markers.Clear();
                 }
 
+                // process and add home to the list
                 string home;
                 if (TXT_homealt.Text != "" && TXT_homelat.Text != "" && TXT_homelng.Text != "")
                 {
@@ -967,6 +977,7 @@ namespace ArdupilotMega.GCSViews
                     home = "";
                 }
 
+                // setup for centerpoint calc etc.
                 double avglat = 0;
                 double avglong = 0;
                 double maxlat = -180;
@@ -986,6 +997,7 @@ namespace ArdupilotMega.GCSViews
 
                 int usable = 0;
 
+                // number rows 
                 System.Threading.Thread t1 = new System.Threading.Thread(delegate()
                 {
                     // thread for updateing row numbers
@@ -2965,7 +2977,7 @@ namespace ArdupilotMega.GCSViews
 
                 if (MainV2.cs.firmware == MainV2.Firmwares.ArduPlane)
                 {
-                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing));
+                    routes.Markers.Add(new GMapMarkerPlane(currentloc, MainV2.cs.yaw, MainV2.cs.groundcourse, MainV2.cs.nav_bearing, MainV2.cs.target_bearing) { ToolTipText = MainV2.cs.alt.ToString("0"), ToolTipMode = MarkerTooltipMode.Always });
                 }
                 else
                 {

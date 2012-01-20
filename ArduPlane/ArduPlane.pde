@@ -203,6 +203,7 @@ AP_DCM_HIL              dcm;
 AP_GPS_HIL              g_gps_driver(NULL);
 AP_Compass_HIL          compass; // never used
 AP_IMU_Shim             imu; // never used
+AP_Baro_BMP085_HIL      barometer;
 
 #else
  #error Unrecognised HIL_MODE setting.
