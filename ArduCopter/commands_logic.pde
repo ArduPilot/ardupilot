@@ -331,7 +331,6 @@ static void do_loiter_time()
 
 static bool verify_takeoff()
 {
-
 	// wait until we are ready!
 	if(g.rc_3.control_in == 0){
 		return false;
@@ -341,45 +340,46 @@ static bool verify_takeoff()
 	return (current_loc.alt > target_altitude);
 }
 
+// called at 10hz
 static bool verify_land()
 {
-
-	static int32_t 	old_alt = 0;
-	static int16_t	velocity_land = -1;
+	static int16_t 	velocity_land = -1;
+	static float 	icount = 0;
 
 	// landing detector
-	if ((current_loc.alt - home.alt) > 300){
-		old_alt = current_loc.alt;
+	if (current_loc.alt > 300){
 		velocity_land = 2000;
+		icount = 1;
+
 	}else{
 		// a LP filter used to tell if we have landed
 		// will drive to 0 if we are on the ground - maybe, the baro is noisy
-		int16_t delta = (old_alt - current_loc.alt) << 3;
-		velocity_land = ((velocity_land * 7) + delta ) / 8;
+		velocity_land = ((velocity_land * 7) + climb_rate ) / 8;
 	}
-
-	//Serial.printf("velocity_land %d \n", velocity_land);
-
-	// remenber altitude for climb_rate
-	old_alt = current_loc.alt;
 
 	if ((current_loc.alt - home.alt) < 200){
 		// don't bank to hold position
 		wp_control = NO_NAV_MODE;
 		// try and come down faster
-		landing_boost++;
-		landing_boost 	= min(landing_boost, 30);
+		//landing_boost++;
+		//landing_boost 	= min(landing_boost, 15);
+		float tmp = (1.75 * icount * icount) - (7.2 * icount);
+		landing_boost = tmp;
+		landing_boost = constrain(landing_boost, 0, 200);
+		icount += 0.4;
+
+		//Serial.printf("lb:%d, %1.4f, ic:%1.4f\n",landing_boost, tmp, icount);
+
 	}else{
 		landing_boost 	= 0;
 		wp_control 		= LOITER_MODE;
 	}
 
-	if((current_loc.alt - home.alt)  < 100 && velocity_land <= 50){
+	//if(/*(current_loc.alt < 100) && */ (velocity_land < 20)){
+	if((landing_boost > 150) ||  (velocity_land < 20)){
+		icount = 1;
 		land_complete = true;
 		landing_boost = 0;
-
-		// reset old_alt
-		old_alt = 0;
 		return true;
 	}
 	return false;
