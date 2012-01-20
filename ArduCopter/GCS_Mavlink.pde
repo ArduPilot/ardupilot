@@ -1520,6 +1520,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set dcm hil sensor
             dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
+        
+                    // rad/sec
+            Vector3f gyros;
+            gyros.x = (float)packet.rollspeed;
+            gyros.y = (float)packet.pitchspeed;
+            gyros.z = (float)packet.yawspeed;
+        
+            imu.set_gyro(gyros);
+
+            //imu.set_accel(accels);
             break;
         }
 #endif
@@ -1545,32 +1555,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 			// set gps hil sensor
 			g_gps->setHIL(packet.usec/1000.0,packet.lat,packet.lon,packet.alt,
 			packet.v,packet.hdg,0,0);
-			break;
-		}
-
-		//	Is this resolved? - MAVLink protocol change.....
-	case MAVLINK_MSG_ID_VFR_HUD:
-		{
-			// decode
-			mavlink_vfr_hud_t packet;
-			mavlink_msg_vfr_hud_decode(msg, &packet);
-
-			// set airspeed
-			airspeed = 100*packet.airspeed;
-			break;
-		}
-
-#endif
-#if HIL_MODE == HIL_MODE_ATTITUDE
-	case MAVLINK_MSG_ID_ATTITUDE:
-		{
-			// decode
-			mavlink_attitude_t packet;
-			mavlink_msg_attitude_decode(msg, &packet);
-
-			// set dcm hil sensor
-			dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
-			packet.pitchspeed,packet.yawspeed);
 			break;
 		}
 #endif
