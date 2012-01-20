@@ -532,7 +532,7 @@ namespace ArdupilotMega.GCSViews
                     Console.WriteLine("REQ streams - sim");
                     try
                     {
-                        if (CHK_quad.Checked)
+                        if (CHK_quad.Checked && !RAD_aerosimrc.Checked)
                         {
                             comPort.requestDatastream((byte)ArdupilotMega.MAVLink.MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, 0); // request servoout
                         }
@@ -919,7 +919,7 @@ namespace ArdupilotMega.GCSViews
                 imu.yacc = (Int16)((accel3D.Y + aeroin.Model_fAccelY) * 1000); // roll
                 imu.zacc = (Int16)((accel3D.Z + aeroin.Model_fAccelZ) * 1000);
 
-                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
+//                Console.WriteLine("x {0} y {1} z {2}", imu.xacc, imu.yacc, imu.zacc);
 
 #if MAVLINK10
                 gps.alt = ((int)(aeroin.Model_fPosZ) * 1000);
@@ -1076,7 +1076,7 @@ namespace ArdupilotMega.GCSViews
             }
 
             // write arduimu to ardupilot
-            if (CHK_quad.Checked) // quad does its own
+            if (CHK_quad.Checked && !RAD_aerosimrc.Checked) // quad does its own
             {
                 return;
             }
@@ -1240,7 +1240,7 @@ namespace ArdupilotMega.GCSViews
 
             bool heli = CHK_heli.Checked;
 
-            if (CHK_quad.Checked)
+            if (CHK_quad.Checked && !RAD_aerosimrc.Checked)
             {
 
                 double[] m = new double[4];
@@ -1255,6 +1255,7 @@ namespace ArdupilotMega.GCSViews
                     lastfdmdata.latitude = DATA[20][0] * deg2rad;
                     lastfdmdata.longitude = DATA[20][1] * deg2rad;
                     lastfdmdata.altitude = (DATA[20][2]);
+                    lastfdmdata.version = 999;
                 }
 
                 try
@@ -1281,7 +1282,7 @@ namespace ArdupilotMega.GCSViews
                 Array.Copy(BitConverter.GetBytes((double)(quad.pitch)), 0, FlightGear, 72, 8);
                 Array.Copy(BitConverter.GetBytes((double)(quad.yaw)), 0, FlightGear, 80, 8);
 
-                if (RAD_softFlightGear.Checked)
+                if (RAD_softFlightGear.Checked || RAD_softXplanes.Checked)
                 {
 
                     Array.Reverse(FlightGear, 0, 8);
@@ -1330,6 +1331,9 @@ namespace ArdupilotMega.GCSViews
                 pitch_out = (float)MainV2.cs.hilch2 / pitchgain;
                 throttle_out = ((float)MainV2.cs.hilch3 / 2 + 5000) / throttlegain;
                 rudder_out = (float)MainV2.cs.hilch4 / ruddergain;
+
+                if (RAD_aerosimrc.Checked && CHK_quad.Checked)
+                    throttle_out = (float)(MainV2.cs.hilch3 - 1100) / throttlegain;
             }
 
 
@@ -1403,7 +1407,6 @@ namespace ArdupilotMega.GCSViews
             }
             catch (Exception e) { Console.WriteLine("Error updateing screen stuff " + e.ToString()); }
 
-
             packetssent++;
 
             if (RAD_aerosimrc.Checked)
@@ -1475,6 +1478,8 @@ namespace ArdupilotMega.GCSViews
 
             if (RAD_softXplanes.Checked)
             {
+            
+
                 // sending only 1 packet instead of many.
 
                 byte[] Xplane = new byte[5 + 36 + 36];
