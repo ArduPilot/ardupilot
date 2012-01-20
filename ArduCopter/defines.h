@@ -291,9 +291,9 @@ enum gcs_severity {
 // Climb rate calculations
 #define	ALTITUDE_HISTORY_LENGTH 8	//Number of (time,altitude) points to regress a climb rate from
 
+#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1024.0))*g.volt_div_ratio
+#define CURRENT_AMPS(x) ((x*(g.input_voltage/1024.0))-CURR_AMPS_OFFSET)*g.curr_amp_per_volt
 
-#define BATTERY_VOLTAGE(x) (x*(g.input_voltage/1023.0))*VOLT_DIV_RATIO
-#define CURRENT_AMPS(x) ((x*(g.input_voltage/1023.0))-CURR_AMPS_OFFSET)*CURR_AMP_PER_VOLT
 //#define BARO_FILTER_SIZE 8
 
 /* ************************************************************** */
