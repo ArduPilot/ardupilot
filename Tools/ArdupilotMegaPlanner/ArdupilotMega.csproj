@@ -247,6 +247,12 @@
     <Compile Include="Controls\ImageLabel.Designer.cs">
       <DependentUpon>ImageLabel.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\XorPlus.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\XorPlus.Designer.cs">
+      <DependentUpon>XorPlus.cs</DependentUpon>
+    </Compile>
     <Compile Include="HIL\Utils.cs" />
     <Compile Include="ResEdit.cs">
       <SubType>Form</SubType>
@@ -419,6 +425,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Controls\ImageLabel.resx">
       <DependentUpon>ImageLabel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\XorPlus.resx">
+      <DependentUpon>XorPlus.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Configuration.fr.resx">
       <DependentUpon>Configuration.cs</DependentUpon>
