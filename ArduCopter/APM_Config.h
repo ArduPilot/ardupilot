@@ -66,7 +66,7 @@
 
 // to enable, set to 1
 // to disable, set to 0
-//#define AUTO_THROTTLE_HOLD 1
+#define AUTO_THROTTLE_HOLD 1
 
 
 
