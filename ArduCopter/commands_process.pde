@@ -39,7 +39,7 @@ static void update_commands()
 	//uint8_t tmp = g.command_index.get();
 	//Serial.printf("command_index %u \n", tmp);
 
-	if (g.command_total <= 1 || g.command_index > 127)
+	if (g.command_total <= 1 || g.command_index >= 127)
 		return;
 
 	if(command_nav_queue.id == NO_COMMAND){
