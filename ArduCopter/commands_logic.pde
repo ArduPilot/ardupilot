@@ -621,7 +621,7 @@ static bool verify_yaw()
 	if((millis() - command_yaw_start_time) > command_yaw_time){
 		// time out
 		// make sure we hold at the final desired yaw angle
-		nav_yaw = command_yaw_end;
+		nav_yaw 	= command_yaw_end;
 		auto_yaw 	= nav_yaw;
 
 		//Serial.println("Y");
