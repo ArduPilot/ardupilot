@@ -385,6 +385,10 @@
 # define MAXIMUM_THROTTLE	1000
 #endif
 
+#ifndef AUTO_LAND_TIME
+# define AUTO_LAND_TIME	20
+#endif
+
 
 
 //////////////////////////////////////////////////////////////////////////////
