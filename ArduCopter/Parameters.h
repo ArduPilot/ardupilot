@@ -115,6 +115,8 @@ public:
 	//
 	k_param_RTL_altitude = 160,
 	k_param_crosstrack_gain,
+	k_param_auto_land_timeout,
+
 
 	//
 	// 180: Radio settings
@@ -221,6 +223,8 @@ public:
 	AP_Int16	loiter_radius;
 	AP_Int16	waypoint_speed_max;
 	AP_Float	crosstrack_gain;
+	AP_Int32	auto_land_timeout;
+
 
 	// Throttle
 	//
@@ -341,6 +345,7 @@ public:
 	loiter_radius			(LOITER_RADIUS,	    		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
 	crosstrack_gain			(CROSSTRACK_GAIN * 100,		k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
+	auto_land_timeout		(AUTO_LAND_TIME * 1000,		k_param_auto_land_timeout,				PSTR("AUTO_LAND")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
 	throttle_max			(1000, 						k_param_throttle_max,					PSTR("THR_MAX")),
