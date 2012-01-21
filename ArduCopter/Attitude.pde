@@ -8,8 +8,6 @@ get_stabilize_roll(int32_t target_angle)
 
 	static float current_rate = 0;
 
-	current_rate = (current_rate *.7) + (omega.x * DEGX100) * .3;
-
 	// angle error
 	error 		= wrap_180(target_angle - dcm.roll_sensor);
 
@@ -38,7 +36,8 @@ get_stabilize_roll(int32_t target_angle)
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
 
 	// D term
-	int16_t d_temp = current_rate * g.stablize_d;
+	current_rate 	= (current_rate *.7) + (omega.x * DEGX100) * .3;
+	int16_t d_temp 	= current_rate * g.stablize_d;
 	rate -= d_temp;
 
 	// output control:
@@ -53,9 +52,6 @@ get_stabilize_pitch(int32_t target_angle)
 	int32_t error = 0;
 	int32_t rate = 0;
 	static float current_rate  = 0;
-
-	//current_rate 	= (omega.y * DEGX100);
-	current_rate = (current_rate *.7) + (omega.y * DEGX100) * .3;
 
 	// angle error
 	error 		= wrap_180(target_angle - dcm.pitch_sensor);
@@ -87,7 +83,8 @@ get_stabilize_pitch(int32_t target_angle)
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
 
 	// D term
-	int16_t d_temp = current_rate * g.stablize_d;
+	current_rate 	= (current_rate *.7) + (omega.y * DEGX100) * .3;
+	int16_t d_temp 	= current_rate * g.stablize_d;
 	rate -= d_temp;
 
 	// output control:
@@ -324,6 +321,8 @@ static int get_angle_boost(int value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
+//	int16_t output = temp * value;
+//	return constrain(output, 0, 100);
 	return (int)(temp * value);
 }
 
