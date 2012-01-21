@@ -1380,7 +1380,7 @@ void update_yaw_mode(void)
 			break;
 
 		case YAW_AUTO:
-			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20);
+			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20); // 40 deg a second
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
 	}
