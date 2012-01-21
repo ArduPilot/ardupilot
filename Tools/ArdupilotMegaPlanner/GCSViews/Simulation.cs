@@ -896,9 +896,10 @@ namespace ArdupilotMega.GCSViews
                 att.pitch = (aeroin.Model_fPitch);
                 att.roll = (aeroin.Model_fRoll * -1);
                 att.yaw = (float)((aeroin.Model_fHeading));
-                att.pitchspeed = (aeroin.Model_fAngVelX);
-                att.rollspeed = (aeroin.Model_fAngVelY);
-                att.yawspeed = (aeroin.Model_fAngVelZ);
+
+                att.pitchspeed = (float)-aeroin.Model_fAngVelX;
+                att.rollspeed = (float)-aeroin.Model_fAngVelY;
+                att.yawspeed = (float)-aeroin.Model_fAngVelZ;
 
 
 #if MAVLINK10
