@@ -1707,7 +1707,7 @@ static void update_navigation()
 			}
 
 			// Kick us out of loiter and begin landing if the auto_land_timer is set
-			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 20000){
+			if(auto_land_timer != 0 && (millis() - auto_land_timer) > (uint32_t)g.auto_land_timeout.get()){
 				// just to make sure we clear the timer
 				auto_land_timer = 0;
 				set_mode(LAND);
