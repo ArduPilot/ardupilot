@@ -168,6 +168,7 @@
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("navroll", this.bindingSource1, "nav_roll", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("pitch", this.bindingSource1, "pitch", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("roll", this.bindingSource1, "roll", true));
+            this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("status", this.bindingSource1, "armed", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("targetalt", this.bindingSource1, "targetalt", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("targetheading", this.bindingSource1, "nav_bearing", true));
             this.hud1.DataBindings.Add(new System.Windows.Forms.Binding("targetspeed", this.bindingSource1, "targetairspeed", true));
@@ -192,6 +193,7 @@
             this.hud1.opengl = true;
             this.hud1.pitch = 0F;
             this.hud1.roll = 0F;
+            this.hud1.status = 0;
             this.hud1.streamjpg = null;
             this.hud1.targetalt = 0F;
             this.hud1.targetheading = 0F;

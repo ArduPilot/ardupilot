@@ -385,6 +385,10 @@
 # define MAXIMUM_THROTTLE	1000
 #endif
 
+#ifndef AUTO_LAND_TIME
+# define AUTO_LAND_TIME	20
+#endif
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -517,7 +521,7 @@
 
 
 #ifndef STABILIZE_D
-# define STABILIZE_D 		.2
+# define STABILIZE_D 		.03
 #endif
 
 // Jasons default values that are good for smaller payload motors.
@@ -525,7 +529,7 @@
 # define STABILIZE_ROLL_P 		4.6
 #endif
 #ifndef STABILIZE_ROLL_I
-# define STABILIZE_ROLL_I 		0.02
+# define STABILIZE_ROLL_I 		0.1
 #endif
 #ifndef STABILIZE_ROLL_IMAX
 # define STABILIZE_ROLL_IMAX 	40		// degrees
@@ -535,7 +539,7 @@
 # define STABILIZE_PITCH_P		4.6
 #endif
 #ifndef STABILIZE_PITCH_I
-# define STABILIZE_PITCH_I		0.02
+# define STABILIZE_PITCH_I		0.1
 #endif
 #ifndef STABILIZE_PITCH_IMAX
 # define STABILIZE_PITCH_IMAX	40		// degrees
@@ -615,7 +619,7 @@
 // Loiter control gains
 //
 #ifndef LOITER_P
-# define LOITER_P			2.0		// was .25 in previous
+# define LOITER_P			1.5		// was .25 in previous
 #endif
 #ifndef LOITER_I
 # define LOITER_I			0.04	// Wind control

@@ -39,7 +39,7 @@ static void update_commands()
 	//uint8_t tmp = g.command_index.get();
 	//Serial.printf("command_index %u \n", tmp);
 
-	if (g.command_total <= 1 || g.command_index > 127)
+	if (g.command_total <= 1 || g.command_index >= 127)
 		return;
 
 	if(command_nav_queue.id == NO_COMMAND){
@@ -137,7 +137,7 @@ static void execute_nav_command(void)
 		Log_Write_Cmd(g.command_index, &command_nav_queue);
 
 	// clear navigation prameters
-	reset_nav();
+	reset_nav_params();
 
 	// Act on the new command
 	process_nav_command();

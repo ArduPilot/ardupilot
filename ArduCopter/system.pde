@@ -361,29 +361,6 @@ static void init_ardupilot()
 	SendDebug("\nReady to FLY ");
 }
 
-/*
-  reset all I integrators
- */
-static void reset_I_all(void)
-{
-	g.pi_rate_roll.reset_I();
-	g.pi_rate_pitch.reset_I();
-	g.pi_rate_yaw.reset_I();
-	g.pi_stabilize_roll.reset_I();
-	g.pi_stabilize_pitch.reset_I();
-	g.pi_stabilize_yaw.reset_I();
-	g.pi_loiter_lat.reset_I();
-	g.pi_loiter_lon.reset_I();
-	g.pi_nav_lat.reset_I();
-	g.pi_nav_lon.reset_I();
-	g.pi_alt_hold.reset_I();
-	g.pi_throttle.reset_I();
-	g.pi_acro_roll.reset_I();
-	g.pi_acro_pitch.reset_I();
-	g.pi_optflow_roll.reset_I();
-	g.pi_optflow_pitch.reset_I();
-}
-
 
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
@@ -405,8 +382,8 @@ static void startup_ground(void)
 	// ---------------------------
 	clear_leds();
 
-    // when we re-calibrate the gyros, all previous I values now
-    // make no sense
+    // when we re-calibrate the gyros,
+    // all previous I values are invalid
     reset_I_all();
 }
 
@@ -473,7 +450,6 @@ static void set_mode(byte mode)
 			yaw_mode 		= YAW_ACRO;
 			roll_pitch_mode = ROLL_PITCH_ACRO;
 			throttle_mode 	= THROTTLE_MANUAL;
-			reset_rate_I();
 			break;
 
 		case STABILIZE:
@@ -561,14 +537,19 @@ static void set_mode(byte mode)
 		update_throttle_cruise();
 	}else {
 		// an automatic throttle
-		// todo: replace with a throttle cruise estimator
 		init_throttle_cruise();
 	}
 
 	if(roll_pitch_mode <= ROLL_PITCH_ACRO){
 		// We are under manual attitude control
-		// removes the navigation from roll and pitch commands, but leaves the wind compensation
-		reset_nav();
+		// remove the navigation from roll and pitch command
+		reset_nav_params();
+		// remove the wind compenstaion
+		reset_wind_I();
+		// Clears the WP navigation speed compensation
+		reset_nav_I();
+		// Clears the alt hold compensation
+		reset_throttle_I();
 	}
 
 	Log_Write_Mode(control_mode);
@@ -608,8 +589,7 @@ static void update_throttle_cruise()
 	int16_t tmp = g.pi_alt_hold.get_integrator();
 	if(tmp != 0){
 		g.throttle_cruise += tmp;
-		g.pi_alt_hold.reset_I();
-		g.pi_throttle.reset_I();
+		reset_throttle_I();
 	}
 }
 
@@ -619,8 +599,7 @@ init_throttle_cruise()
 #if AUTO_THROTTLE_HOLD == 0
 	// are we moving from manual throttle to auto_throttle?
 	if((old_control_mode <= STABILIZE) && (g.rc_3.control_in > MINIMUM_THROTTLE)){
-		g.pi_throttle.reset_I();
-		g.pi_alt_hold.reset_I();
+		reset_throttle_I();
 		g.throttle_cruise.set_and_save(g.rc_3.control_in);
 	}
 #endif

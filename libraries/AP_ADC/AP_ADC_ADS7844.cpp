@@ -220,15 +220,6 @@ uint32_t AP_ADC_ADS7844::Ch6(const uint8_t *channel_numbers, uint16_t *result)
 	if(filter_result){
 		uint32_t _sum_accel;
 
-		// simple Gyro Filter
-		for (i = 0; i < 3; i++) {
-			// add prev filtered value to new raw value, divide by 2
-			result[i] = (_prev_gyro[i] + result[i]) >> 1;
-
-			// remember the filtered value
-			_prev_gyro[i] = result[i];
-		}
-
 		// Accel filter
 		for (i = 0; i < 3; i++) {
 			// move most recent result into filter

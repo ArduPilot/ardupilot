@@ -165,6 +165,7 @@ namespace ArdupilotMega
         public MainV2.Firmwares firmware = MainV2.Firmwares.ArduPlane;
         public float freemem { get; set; }
         public float brklevel { get; set; }
+        public int armed { get; set; }
 
         // stats
         public ushort packetdropremote { get; set; }
@@ -406,6 +407,8 @@ namespace ArdupilotMega
                     MAVLink.ByteArrayToStructure(mavinterface.packets[ArdupilotMega.MAVLink.MAVLINK_MSG_ID_SYS_STATUS], ref temp, 6);
 
                     sysstatus = (ArdupilotMega.MAVLink.__mavlink_sys_status_t)(temp);
+
+                    armed = sysstatus.status;
 
                     string oldmode = mode;
 

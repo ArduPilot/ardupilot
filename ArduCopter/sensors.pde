@@ -105,12 +105,11 @@ static void read_battery(void)
 		battery_voltage1 = 0;
 		return;
 	}
-
-	if(g.battery_monitoring == 3 || g.battery_monitoring == 4) {
+    
+    if(g.battery_monitoring == 3 || g.battery_monitoring == 4) 
 		battery_voltage1 = BATTERY_VOLTAGE(analogRead(BATTERY_PIN_1)) * .1 + battery_voltage1 * .9;
-	}
 	if(g.battery_monitoring == 4) {
-		current_amps1	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps1 * .9; //reads power sensor current pin
+		current_amps1	 = CURRENT_AMPS(analogRead(CURRENT_PIN_1)) * .1 + current_amps1 * .9; 	//reads power sensor current pin
 		current_total1	 += current_amps1 * 0.02778;	// called at 100ms on average, .0002778 is 1/3600 (conversion to hours)
 	}
 

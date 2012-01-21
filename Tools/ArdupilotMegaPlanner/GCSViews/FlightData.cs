@@ -391,6 +391,8 @@ namespace ArdupilotMega.GCSViews
 
                     if (tracklast.AddSeconds(1) < DateTime.Now)
                     {
+                        gMapControl1.HoldInvalidation = true;
+
                         if (trackPoints.Count > int.Parse(MainV2.config["NUM_tracklength"].ToString()))
                         {
                             trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(MainV2.config["NUM_tracklength"].ToString()));
@@ -410,7 +412,7 @@ namespace ArdupilotMega.GCSViews
                                 FlightPlanner.pointlist.AddRange(MainV2.comPort.wps);
                             }
 
-                            gMapControl1.HoldInvalidation = true;
+                            
 
                             routes.Markers.Clear();
                             routes.Routes.Clear();

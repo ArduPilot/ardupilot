@@ -212,8 +212,7 @@ A_off: 201.95, -24.00, -88.56
 
 static void trim_accel()
 {
-	g.pi_stabilize_roll.reset_I();
-	g.pi_stabilize_pitch.reset_I();
+	reset_stability_I();
 
 	float trim_roll  = (float)g.rc_1.control_in / 30000.0;
 	float trim_pitch = (float)g.rc_2.control_in / 30000.0;
