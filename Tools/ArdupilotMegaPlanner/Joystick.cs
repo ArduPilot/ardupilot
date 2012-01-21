@@ -514,6 +514,7 @@ namespace ArdupilotMega
             }
             if (chan == 3)
             {
+                trim = (min + max) / 2;
 //                trim = min; // throttle
             }
             

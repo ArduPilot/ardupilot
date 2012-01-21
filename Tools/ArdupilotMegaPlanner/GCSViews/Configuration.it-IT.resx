@@ -1,0 +1,604 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CHK_speechaltwarning.Text" xml:space="preserve">
+    <value>Altezza di allarme</value>
+  </data>
+  <data name="label12.Text" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="label48.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="BUT_videostop.Text" xml:space="preserve">
+    <value>Ferma</value>
+  </data>
+  <data name="label49.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="CHK_speechbattery.Text" xml:space="preserve">
+    <value>Allarme Batteria</value>
+  </data>
+  <data name="CHK_enablespeech.Text" xml:space="preserve">
+    <value>Attiva Voci</value>
+  </data>
+  <data name="label13.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label16.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label14.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label88.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label15.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label18.Text" xml:space="preserve">
+    <value>Guadagno</value>
+  </data>
+  <data name="label19.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label82.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label83.Text" xml:space="preserve">
+    <value>P to T</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label80.Text" xml:space="preserve">
+    <value>Guadagno (cm)</value>
+  </data>
+  <data name="Value.HeaderText" xml:space="preserve">
+    <value>Valore</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label81.Text" xml:space="preserve">
+    <value>Comp Passo</value>
+  </data>
+  <data name="label22.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label86.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>Lunghezza Traccia</value>
+  </data>
+  <data name="label87.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label56.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label24.Text" xml:space="preserve">
+    <value>Waypoints</value>
+  </data>
+  <data name="label84.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="CHK_speechcustom.Text" xml:space="preserve">
+    <value>Intervallo di Tempo</value>
+  </data>
+  <data name="label2.Text" xml:space="preserve">
+    <value>FBW max</value>
+  </data>
+  <data name="label25.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label54.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label3.Text" xml:space="preserve">
+    <value>FBW min</value>
+  </data>
+  <data name="label26.Text" xml:space="preserve">
+    <value>Formato Video</value>
+  </data>
+  <data name="label103.Text" xml:space="preserve">
+    <value>Posizione</value>
+  </data>
+  <data name="groupBox8.Text" xml:space="preserve">
+    <value>PID Servo Rollio</value>
+  </data>
+  <data name="label57.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label27.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label102.Text" xml:space="preserve">
+    <value>Assetto</value>
+  </data>
+  <data name="groupBox9.Text" xml:space="preserve">
+    <value>PID Servo Passo</value>
+  </data>
+  <data name="label52.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label1.Text" xml:space="preserve">
+    <value>Rapporto</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label101.Text" xml:space="preserve">
+    <value>Rateo telemetria</value>
+  </data>
+  <data name="groupBox6.Text" xml:space="preserve">
+    <value>Correzione Crosstrack</value>
+  </data>
+  <data name="myLabel1.Text" xml:space="preserve">
+    <value>Ch7 Opt</value>
+  </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>Massimo</value>
+  </data>
+  <data name="label55.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox7.Text" xml:space="preserve">
+    <value>Mantenimento Altitudine</value>
+  </data>
+  <data name="label50.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label7.Text" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="label107.Text" xml:space="preserve">
+    <value>RC</value>
+  </data>
+  <data name="groupBox4.Text" xml:space="preserve">
+    <value>Nav WP</value>
+  </data>
+  <data name="label4.Text" xml:space="preserve">
+    <value>Crociera</value>
+  </data>
+  <data name="label53.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="groupBox5.Text" xml:space="preserve">
+    <value>Rateo Motore</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Valore FS</value>
+  </data>
+  <data name="CHK_GDIPlus.ToolTip" xml:space="preserve">
+    <value>OpenGL = Disattiva 
+GDI+ = Attiva</value>
+  </data>
+  <data name="groupBox2.Text" xml:space="preserve">
+    <value>Angoli di Navigazione</value>
+  </data>
+  <data name="label51.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label104.Text" xml:space="preserve">
+    <value>Modo/Stato</value>
+  </data>
+  <data name="CHK_hudshow.Text" xml:space="preserve">
+    <value>Attiva Sovrapposizione HUD</value>
+  </data>
+  <data name="groupBox3.Text" xml:space="preserve">
+    <value>Motore 0-100%</value>
+  </data>
+  <data name="BUT_load.Text" xml:space="preserve">
+    <value>Carico</value>
+  </data>
+  <data name="label8.Text" xml:space="preserve">
+    <value>Crociera</value>
+  </data>
+  <data name="groupBox1.Text" xml:space="preserve">
+    <value>Velocità m/s</value>
+  </data>
+  <data name="label9.Text" xml:space="preserve">
+    <value>m/s</value>
+  </data>
+  <data name="Command.HeaderText" xml:space="preserve">
+    <value>Comando</value>
+  </data>
+  <data name="label108.Text" xml:space="preserve">
+    <value>Riavvia APM</value>
+  </data>
+  <data name="label58.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="CHK_loadwponconnect.Text" xml:space="preserve">
+    <value>Carica Waypoint alla connessione?</value>
+  </data>
+  <data name="label64.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label65.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="BUT_rerequestparams.ToolTip" xml:space="preserve">
+    <value>Ricarica parametri dal dispositivo</value>
+  </data>
+  <data name="label59.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label66.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label67.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label60.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label61.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="groupBox18.Text" xml:space="preserve">
+    <value>Rollio Acro</value>
+  </data>
+  <data name="label98.Text" xml:space="preserve">
+    <value>Unità di misura Velocità</value>
+  </data>
+  <data name="label62.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="CHK_speechwaypoint.Text" xml:space="preserve">
+    <value>Waypoint</value>
+  </data>
+  <data name="label63.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="BUT_load.ToolTip" xml:space="preserve">
+    <value>Carica i parametri da file</value>
+  </data>
+  <data name="groupBox16.Text" xml:space="preserve">
+    <value>Altri Mixaggi</value>
+  </data>
+  <data name="groupBox19.Text" xml:space="preserve">
+    <value>Loiter</value>
+  </data>
+  <data name="label99.Text" xml:space="preserve">
+    <value>NOTA: Il tab di configurazione non mostrerà queste unità di misura, questi sono valori grezzi</value>
+  </data>
+  <data name="groupBox14.Text" xml:space="preserve">
+    <value>Energia/Alt Pid</value>
+  </data>
+  <data name="groupBox17.Text" xml:space="preserve">
+    <value>Passo Acro</value>
+  </data>
+  <data name="groupBox12.Text" xml:space="preserve">
+    <value>Nav Passo AS Pid</value>
+  </data>
+  <data name="label92.Text" xml:space="preserve">
+    <value>Dispositivo Video</value>
+  </data>
+  <data name="label68.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="TabSetup.Text" xml:space="preserve">
+    <value>Imposta</value>
+  </data>
+  <data name="Default.HeaderText" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="groupBox15.Text" xml:space="preserve">
+    <value>Xtrack Pids</value>
+  </data>
+  <data name="label69.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox10.Text" xml:space="preserve">
+    <value>PID Servo Timone</value>
+  </data>
+  <data name="label90.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="groupBox13.Text" xml:space="preserve">
+    <value>Nav Pitch Alt Pid</value>
+  </data>
+  <data name="label93.Text" xml:space="preserve">
+    <value>Linguaggio UI</value>
+  </data>
+  <data name="label32.Text" xml:space="preserve">
+    <value>IMAX </value>
+  </data>
+  <data name="label96.Text" xml:space="preserve">
+    <value>Joystick</value>
+  </data>
+  <data name="CHK_GDIPlus.Text" xml:space="preserve">
+    <value>GDI+ (old type)</value>
+  </data>
+  <data name="label31.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="groupBox11.Text" xml:space="preserve">
+    <value>PID Rollio Nav</value>
+  </data>
+  <data name="label91.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label34.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label94.Text" xml:space="preserve">
+    <value>Colore OSD</value>
+  </data>
+  <data name="label33.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label97.Text" xml:space="preserve">
+    <value>Unità Dist</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label35.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label95.Text" xml:space="preserve">
+    <value>Voci</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>Passo Massimo</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>Banco Max</value>
+  </data>
+  <data name="groupBox24.Text" xml:space="preserve">
+    <value>Rateo Passo</value>
+  </data>
+  <data name="BUT_Joystick.Text" xml:space="preserve">
+    <value>Imposta Joystick</value>
+  </data>
+  <data name="groupBox25.Text" xml:space="preserve">
+    <value>Rateo Rollio</value>
+  </data>
+  <data name="label39.Text" xml:space="preserve">
+    <value>Passo Min</value>
+  </data>
+  <data name="CHK_mavdebug.Text" xml:space="preserve">
+    <value>Messa a Punto dei messaggi Mavlink</value>
+  </data>
+  <data name="groupBox20.Text" xml:space="preserve">
+    <value>Stabilizza Timone</value>
+  </data>
+  <data name="groupBox21.Text" xml:space="preserve">
+    <value>Stabilizza Passo</value>
+  </data>
+  <data name="groupBox22.Text" xml:space="preserve">
+    <value>Stabilizza Rollio</value>
+  </data>
+  <data name="groupBox23.Text" xml:space="preserve">
+    <value>Rateo Timone</value>
+  </data>
+  <data name="label74.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label76.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="BUT_save.Text" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="BUT_writePIDS.ToolTip" xml:space="preserve">
+    <value>Scrivi i parametri modificati sul dispositivo</value>
+  </data>
+  <data name="label75.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label70.Text" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="label77.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label72.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="CHK_lockrollpitch.Text" xml:space="preserve">
+    <value>Blocca i valori di Passo e Rollio</value>
+  </data>
+  <data name="label71.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label73.Text" xml:space="preserve">
+    <value>INT_MAX</value>
+  </data>
+  <data name="TabPlanner.Text" xml:space="preserve">
+    <value>Planner</value>
+  </data>
+  <data name="BUT_writePIDS.Text" xml:space="preserve">
+    <value>Scrivi Parametri</value>
+  </data>
+  <data name="TabAP.Text" xml:space="preserve">
+    <value>ArduPlane</value>
+  </data>
+  <data name="label78.Text" xml:space="preserve">
+    <value>Mix Timone</value>
+  </data>
+  <data name="NUM_tracklength.ToolTip" xml:space="preserve">
+    <value>Sul Tab Dati di volo</value>
+  </data>
+  <data name="label79.Text" xml:space="preserve">
+    <value>Angolo di ingresso</value>
+  </data>
+  <data name="CHK_resetapmonconnect.Text" xml:space="preserve">
+    <value>Riavvia APM alla connessione USB</value>
+  </data>
+  <data name="mavScale.HeaderText" xml:space="preserve">
+    <value>Scalamav</value>
+  </data>
+  <data name="TabAC.Text" xml:space="preserve">
+    <value>ArduCopter</value>
+  </data>
+  <data name="CHK_speechmode.Text" xml:space="preserve">
+    <value>Modo</value>
+  </data>
+  <data name="RawValue.HeaderText" xml:space="preserve">
+    <value>ValoriGrezzi</value>
+  </data>
+  <data name="BUT_compare.Text" xml:space="preserve">
+    <value>Confronta Parametri</value>
+  </data>
+  <data name="BUT_save.ToolTip" xml:space="preserve">
+    <value>Salva i parametri su file</value>
+  </data>
+  <data name="label46.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label47.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label44.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>P</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label40.Text" xml:space="preserve">
+    <value>IMAX</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="BUT_rerequestparams.Text" xml:space="preserve">
+    <value>Ricarica Parametri</value>
+  </data>
+  <data name="BUT_videostart.Text" xml:space="preserve">
+    <value>Start</value>
+  </data>
+</root>

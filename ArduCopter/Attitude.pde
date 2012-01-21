@@ -3,23 +3,10 @@
 static int
 get_stabilize_roll(int32_t target_angle)
 {
-	int32_t error;
-	int32_t rate;
-	int32_t current_rate;
+	int32_t error = 0;
+	int32_t rate = 0;
 
-	int16_t rate_d1 = 0;
-	static int16_t rate_d2 = 0;
-	static int16_t rate_d3 = 0;
-	static int32_t last_rate = 0;
-
-	current_rate 	= (omega.x * DEGX100);
-
-	// playing with double derivatives.
-	// History of last 3 dir
-	rate_d3			= rate_d2;
-	rate_d2			= rate_d1;
-	rate_d1 		= current_rate - last_rate;
-	last_rate 		= current_rate;
+	static float current_rate = 0;
 
 	// angle error
 	error 		= wrap_180(target_angle - dcm.roll_sensor);
@@ -45,15 +32,12 @@ get_stabilize_roll(int32_t target_angle)
 	int16_t iterm = g.pi_stabilize_roll.get_i(error, G_Dt);
 
 	// rate control
-	error 		= rate - current_rate;
+	error 		= rate - (omega.x * DEGX100);
 	rate 		= g.pi_rate_roll.get_pi(error, G_Dt);
 
 	// D term
-	// I had tried this before with little result. Recently, someone mentioned to me that
-	// MultiWii uses a filter of the last three to get around noise and get a stronger signal.
-	// Works well! Thanks!
-	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stablize_d;
-
+	current_rate 	= (current_rate *.7) + (omega.x * DEGX100) * .3;
+	int16_t d_temp 	= current_rate * g.stablize_d;
 	rate -= d_temp;
 
 	// output control:
@@ -65,23 +49,9 @@ get_stabilize_roll(int32_t target_angle)
 static int
 get_stabilize_pitch(int32_t target_angle)
 {
-	int32_t error;
-	int32_t rate;
-	int32_t current_rate;
-
-	int16_t rate_d1 = 0;
-	static int16_t rate_d2 = 0;
-	static int16_t rate_d3 = 0;
-	static int32_t last_rate = 0;
-
-	current_rate 	= (omega.y * DEGX100);
-
-	// playing with double derivatives.
-	// History of last 3 dir
-	rate_d3			= rate_d2;
-	rate_d2			= rate_d1;
-	rate_d1 		= current_rate - last_rate;
-	last_rate 		= current_rate;
+	int32_t error = 0;
+	int32_t rate = 0;
+	static float current_rate  = 0;
 
 	// angle error
 	error 		= wrap_180(target_angle - dcm.pitch_sensor);
@@ -108,11 +78,13 @@ get_stabilize_pitch(int32_t target_angle)
 
 	// rate control
 	error 		= rate - (omega.y * DEGX100);
+
+	//error 		= rate - (omega.y * DEGX100);
 	rate 		= g.pi_rate_pitch.get_pi(error, G_Dt);
 
-	// D term testing
-	int16_t d_temp =  (rate_d1 + rate_d2 + rate_d3) * g.stablize_d;
-
+	// D term
+	current_rate 	= (current_rate *.7) + (omega.y * DEGX100) * .3;
+	int16_t d_temp 	= current_rate * g.stablize_d;
 	rate -= d_temp;
 
 	// output control:
@@ -177,7 +149,7 @@ get_nav_throttle(int32_t z_error)
 	// convert to desired Rate:
 	rate_error 	= g.pi_alt_hold.get_p(z_error); //_p = .85
 
-	// experiment to pipe iterm directly into the output
+	// compensates throttle setpoint error for hovering
 	int16_t iterm = g.pi_alt_hold.get_i(z_error, .1);
 
 	// calculate rate error
@@ -230,7 +202,7 @@ get_rate_yaw(int32_t target_rate)
 }
 
 // Keeps old data out of our calculation / logs
-static void reset_nav(void)
+static void reset_nav_params(void)
 {
 	// forces us to update nav throttle
 	invalid_throttle 		= true;
@@ -256,19 +228,64 @@ static void reset_nav(void)
 	next_WP.alt				= 0;
 }
 
+/*
+  reset all I integrators
+ */
+static void reset_I_all(void)
+{
+	reset_rate_I();
+	reset_stability_I();
+	reset_nav_I();
+	reset_wind_I();
+	reset_throttle_I();
+	reset_optflow_I();
+
+	// This is the only place we reset Yaw
+	g.pi_stabilize_yaw.reset_I();
+}
+
 static void reset_rate_I()
 {
-	// balances the quad
-	g.pi_stabilize_roll.reset_I();
-	g.pi_stabilize_pitch.reset_I();
-
-	// compensates rate error
 	g.pi_rate_roll.reset_I();
 	g.pi_rate_pitch.reset_I();
 	g.pi_acro_roll.reset_I();
 	g.pi_acro_pitch.reset_I();
+	g.pi_rate_yaw.reset_I();
+}
+
+static void reset_optflow_I(void)
+{
 	g.pi_optflow_roll.reset_I();
 	g.pi_optflow_pitch.reset_I();
+}
+
+static void reset_wind_I(void)
+{
+	// Wind Compensation
+	g.pi_loiter_lat.reset_I();
+	g.pi_loiter_lon.reset_I();
+}
+
+static void reset_nav_I(void)
+{
+	// Rate control for WP navigation
+	g.pi_nav_lat.reset_I();
+	g.pi_nav_lon.reset_I();
+}
+
+static void reset_throttle_I(void)
+{
+	// For Altitude Hold
+	g.pi_alt_hold.reset_I();
+	g.pi_throttle.reset_I();
+}
+
+static void reset_stability_I(void)
+{
+	// Used to balance a quad
+	// This only needs to be reset during Auto-leveling in flight
+	g.pi_stabilize_roll.reset_I();
+	g.pi_stabilize_pitch.reset_I();
 }
 
 
@@ -304,6 +321,8 @@ static int get_angle_boost(int value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
+//	int16_t output = temp * value;
+//	return constrain(output, 0, 100);
 	return (int)(temp * value);
 }
 

@@ -17,7 +17,7 @@ public:
 	// The increment will prevent old parameters from being used incorrectly
 	// by newer code.
 	//
-	static const uint16_t k_format_version = 113;
+	static const uint16_t k_format_version = 114;
 
 	// The parameter software_type is set up solely for ground station use
 	// and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
@@ -94,7 +94,10 @@ public:
 	// 140: Sensor parameters
 	//
 	k_param_IMU_calibration = 140,
-	k_param_battery_monitoring,
+    k_param_battery_monitoring,
+    k_param_volt_div_ratio,
+    k_param_curr_amp_per_volt,
+    k_param_input_voltage,
 	k_param_pack_capacity,
 	k_param_compass_enabled,
 	k_param_compass,
@@ -102,17 +105,18 @@ public:
 	k_param_frame_orientation,
 	k_param_top_bottom_ratio,
 	k_param_optflow_enabled,
-	k_param_input_voltage,
 	k_param_low_voltage,
 	k_param_ch7_option,
-	k_param_sonar_type,  // 153
-	k_param_super_simple,
+	k_param_sonar_type,  
+	k_param_super_simple, //155
 
 	//
 	// 160: Navigation parameters
 	//
 	k_param_RTL_altitude = 160,
 	k_param_crosstrack_gain,
+	k_param_auto_land_timeout,
+
 
 	//
 	// 180: Radio settings
@@ -198,11 +202,13 @@ public:
 	AP_Int16	RTL_altitude;
 	AP_Int8		sonar_enabled;
 	AP_Int8		sonar_type;   // 0 = XL, 1 = LV, 2 = XLL (XL with 10m range)
-	AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Int8		battery_monitoring;	// 0=disabled, 3=voltage only, 4=voltage and current
+    AP_Float	volt_div_ratio;
+    AP_Float	curr_amp_per_volt;
+    AP_Float	input_voltage;
 	AP_Int16	pack_capacity;		// Battery pack capacity less reserve
 	AP_Int8		compass_enabled;
     AP_Int8		optflow_enabled;
-    AP_Float	input_voltage;
 	AP_Float	low_voltage;
 	AP_Int8		super_simple;
 
@@ -217,6 +223,8 @@ public:
 	AP_Int16	loiter_radius;
 	AP_Int16	waypoint_speed_max;
 	AP_Float	crosstrack_gain;
+	AP_Int32	auto_land_timeout;
+
 
 	// Throttle
 	//
@@ -319,11 +327,13 @@ public:
 	RTL_altitude			(ALT_HOLD_HOME * 100,		k_param_RTL_altitude,					PSTR("ALT_HOLD_RTL")),
 	sonar_enabled			(DISABLED,					k_param_sonar,							PSTR("SONAR_ENABLE")),
 	sonar_type				(AP_RANGEFINDER_MAXSONARXL,	k_param_sonar_type,						PSTR("SONAR_TYPE")),
-	battery_monitoring 		(DISABLED,					k_param_battery_monitoring,				PSTR("BATT_MONITOR")),
+    battery_monitoring 		(DISABLED,					k_param_battery_monitoring,		        PSTR("BATT_MONITOR")),
+    volt_div_ratio			(VOLT_DIV_RATIO,			k_param_volt_div_ratio,			        PSTR("VOLT_DIVIDER")),
+    curr_amp_per_volt		(CURR_AMP_PER_VOLT,			k_param_curr_amp_per_volt,		        PSTR("AMP_PER_VOLT")),
+    input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,			        PSTR("INPUT_VOLTS")),
 	pack_capacity			(HIGH_DISCHARGE,			k_param_pack_capacity,					PSTR("BATT_CAPACITY")),
 	compass_enabled			(MAGNETOMETER,				k_param_compass_enabled,				PSTR("MAG_ENABLE")),
 	optflow_enabled			(OPTFLOW,					k_param_optflow_enabled,				PSTR("FLOW_ENABLE")),
-	input_voltage			(INPUT_VOLTAGE,				k_param_input_voltage,					PSTR("IN_VOLT")),
 	low_voltage				(LOW_VOLTAGE,				k_param_low_voltage,					PSTR("LOW_VOLT")),
 	super_simple			(SUPER_SIMPLE,				k_param_super_simple,					PSTR("SUPER_SIMPLE")),
 
@@ -335,6 +345,7 @@ public:
 	loiter_radius			(LOITER_RADIUS,	    		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
 	crosstrack_gain			(CROSSTRACK_GAIN * 100,		k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
+	auto_land_timeout		(AUTO_LAND_TIME * 1000,		k_param_auto_land_timeout,				PSTR("AUTO_LAND")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
 	throttle_max			(1000, 						k_param_throttle_max,					PSTR("THR_MAX")),

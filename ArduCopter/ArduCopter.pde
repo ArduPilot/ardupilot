@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduCopter V2.2 b2"
+#define THISFIRMWARE "ArduCopter V2.2 b3"
 /*
 ArduCopter Version 2.2
 Authors:	Jason Short
@@ -597,8 +597,7 @@ static int16_t 	manual_boost;
 // An additional throttle added to keep the copter at the same altitude when banking
 static int16_t 	angle_boost;
 // Push copter down for clean landing
-static uint8_t 	landing_boost;
-
+static int16_t 	landing_boost;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Navigation general
@@ -789,7 +788,7 @@ static float 			dTnav;
 static int16_t			superslow_loopCounter;
 // RTL Autoland Timer
 static uint32_t 		auto_land_timer;
-// disarms the copter while in Acro or Stabilzie mode after 30 seconds of no flight
+// disarms the copter while in Acro or Stabilize mode after 30 seconds of no flight
 static uint8_t 			auto_disarming_counter;
 
 
@@ -930,6 +929,10 @@ static void medium_loop()
 		//-----------------------------------------
 		case 0:
 			medium_loopCounter++;
+
+			//if(GPS_enabled){
+			//	update_GPS();
+			//}
 
 			#if HIL_MODE != HIL_MODE_ATTITUDE					// don't execute in HIL mode
 				if(g.compass_enabled){
@@ -1377,7 +1380,7 @@ void update_yaw_mode(void)
 			break;
 
 		case YAW_AUTO:
-			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20);
+			nav_yaw += constrain(wrap_180(auto_yaw - nav_yaw), -20, 20); // 40 deg a second
 			nav_yaw  = wrap_360(nav_yaw);
 			break;
 	}
@@ -1520,8 +1523,9 @@ void update_throttle_mode(void)
 					takeoff_complete 	= true;
 					land_complete 		= false;
 				}else{
-					// reset these I terms to prevent flips on takeoff
+					// reset these I terms to prevent awkward tipping on takeoff
 					reset_rate_I();
+					reset_stability_I();
 				}
 			}else{
 				// we are on the ground
@@ -1537,6 +1541,7 @@ void update_throttle_mode(void)
 				// reset out i terms and takeoff timer
 				// -----------------------------------
 				reset_rate_I();
+				reset_stability_I();
 
 				// remember our time since takeoff
 				// -------------------------------
@@ -1594,8 +1599,12 @@ void update_throttle_mode(void)
 					// how far off are we
 					altitude_error = get_altitude_error();
 
-					// get the AP throttle
-					nav_throttle = get_nav_throttle(altitude_error);
+					// get the AP throttle, if landing boost > 0 we are actually Landing
+					// This allows us to grab just the compensation.
+					if(landing_boost > 0)
+						nav_throttle = get_nav_throttle(-100);
+					else
+						nav_throttle = get_nav_throttle(altitude_error);
 
 					// clear the new data flag
 					invalid_throttle = false;
@@ -1689,7 +1698,8 @@ static void update_navigation()
 				wp_control = NO_NAV_MODE;
 
 				// reset LOITER to current position
-				next_WP 	= current_loc;
+				next_WP.lat 	= current_loc.lat;
+				next_WP.lng 	= current_loc.lng;
 
 			}else{
 				// this is also set by GPS in update_nav
@@ -1697,7 +1707,7 @@ static void update_navigation()
 			}
 
 			// Kick us out of loiter and begin landing if the auto_land_timer is set
-			if(auto_land_timer != 0 && (millis() - auto_land_timer) > 20000){
+			if(auto_land_timer != 0 && (millis() - auto_land_timer) > (uint32_t)g.auto_land_timeout.get()){
 				// just to make sure we clear the timer
 				auto_land_timer = 0;
 				set_mode(LAND);
@@ -1891,7 +1901,7 @@ static void tuning(){
 	switch(g.radio_tuning){
 
 		case CH6_DAMP:
-			g.rc_6.set_range(0,1500); 		// 0 to 1
+			g.rc_6.set_range(0,80); 		// 0 to 1
 			g.stablize_d.set(tuning_value);
 			break;
 

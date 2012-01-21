@@ -144,6 +144,11 @@ namespace hud
         [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
         public DateTime datetime { get { return _datetime; } set { if (_datetime != value) { _datetime = value; this.Invalidate(); } } }
 
+        [System.ComponentModel.Browsable(true), System.ComponentModel.Category("Values")]
+        public int status { get; set; }
+        int statuslast = 0;
+        DateTime armedtimer = DateTime.MinValue;
+
         public bool bgon = true;
         public bool hudon = true;
 
@@ -738,6 +743,30 @@ namespace hud
 
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
                 graphicsObject.RotateTransform(-roll);
+
+                // draw armed
+
+                if (status != statuslast)
+                {
+                    armedtimer = DateTime.Now;
+                }
+
+                if (status == 3) // not armed
+                {
+                    //if ((armedtimer.AddSeconds(8) > DateTime.Now))
+                    {
+                        drawstring(graphicsObject, "DISARMED", font, fontsize + 10, Brushes.Red, -85, halfheight / -3);
+                        statuslast = status;
+                    }
+                }
+                else if (status == 4) // armed
+                {
+                    if ((armedtimer.AddSeconds(8) > DateTime.Now))
+                    {
+                        drawstring(graphicsObject, "ARMED", font, fontsize + 20, Brushes.Red, -70, halfheight / -3);
+                        statuslast = status;
+                    }
+                }
 
                 //draw pitch           
 

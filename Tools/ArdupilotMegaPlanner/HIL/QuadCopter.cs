@@ -226,9 +226,9 @@ namespace ArdupilotMega.HIL
             }
 
         // rotational resistance
-        roll_accel  -= (self.pDeg / self.terminal_rotation_rate) * 5000.0;
-        pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0;
-        yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * 400.0;
+            roll_accel -= (self.pDeg / self.terminal_rotation_rate) * 5000.0;
+            pitch_accel -= (self.qDeg / self.terminal_rotation_rate) * 5000.0;
+            yaw_accel -= (self.rDeg / self.terminal_rotation_rate) * 400.0;
 
             //Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
@@ -240,13 +240,13 @@ namespace ArdupilotMega.HIL
             // Console.WriteLine("roll {0} {1} {2}", roll_accel, roll_rate, roll);
 
                     // calculate rates in earth frame
-
+            
              var answer =  BodyRatesToEarthRates(self.roll, self.pitch, self.yaw,
                                                       self.pDeg, self.qDeg, self.rDeg);
                     self.roll_rate = answer.Item1;
          self.pitch_rate = answer.Item2;
          self.yaw_rate = answer.Item3;
-
+            
          //self.roll_rate = pDeg;
          //self.pitch_rate = qDeg;
          //self.yaw_rate = rDeg;
@@ -339,9 +339,9 @@ namespace ArdupilotMega.HIL
             att.roll = (float)roll * deg2rad;
             att.pitch = (float)pitch * deg2rad;
             att.yaw = (float)yaw * deg2rad;
-            att.rollspeed = (float)roll_rate * deg2rad;
-            att.pitchspeed = (float)pitch_rate * deg2rad;
-            att.yawspeed = (float)yaw_rate * deg2rad;
+            att.rollspeed = (float)roll_rate *deg2rad;
+            att.pitchspeed = (float)pitch_rate *deg2rad;
+            att.yawspeed = (float)yaw_rate *deg2rad;
 
 #if MAVLINK10
 
@@ -385,7 +385,7 @@ namespace ArdupilotMega.HIL
 
             MainV2.comPort.sendPacket(asp);
 
-            if (framecount % 12 == 0)
+            if (framecount % 120 == 0)
             {// 50 / 10 = 5 hz
                 MainV2.comPort.sendPacket(gps);
                 //Console.WriteLine(DateTime.Now.Millisecond + " GPS" );
