@@ -2007,7 +2007,7 @@ static void update_nav_wp()
 {
 	if(wp_control == LOITER_MODE){
 
-		// calc a pitch to the target
+		// calc error to target
 		calc_location_error(&next_WP);
 
 		// use error as the desired rate towards the target
@@ -2064,6 +2064,9 @@ static void update_nav_wp()
 		//Serial.printf("CIRCLE: angle:%d, dist:%d, X:%d, Y:%d, P:%d, R:%d  \n", angleTest, (int)wp_distance , (int)long_error, (int)lat_error, npitch, nroll);
 
 	}else if(wp_control == WP_MODE){
+		// calc error to target
+		calc_location_error(&next_WP);
+
 		int16_t speed = calc_desired_speed(g.waypoint_speed_max);
 		// use error as the desired rate towards the target
 		calc_nav_rate(speed);
