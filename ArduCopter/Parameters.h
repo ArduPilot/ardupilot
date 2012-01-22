@@ -107,7 +107,7 @@ public:
 	k_param_optflow_enabled,
 	k_param_low_voltage,
 	k_param_ch7_option,
-	k_param_sonar_type,  
+	k_param_sonar_type,
 	k_param_super_simple, //155
 
 	//
@@ -167,7 +167,7 @@ public:
 	//
 	// 235: PI/D Controllers
 	//
-	k_param_stablize_d = 234,
+	k_param_stabilize_d = 234,
 	k_param_pi_rate_roll = 235,
 	k_param_pi_rate_pitch,
 	k_param_pi_rate_yaw,
@@ -184,7 +184,7 @@ public:
 	k_param_pi_acro_pitch,
 	k_param_pi_optflow_roll,
 	k_param_pi_optflow_pitch,  // 250
-
+	k_param_loiter_d,
 
     // 254,255: reserved
 	};
@@ -286,6 +286,7 @@ public:
 	AP_Float	camera_pitch_gain;
 	AP_Float	camera_roll_gain;
 	AP_Float	stablize_d;
+	AP_Float	loiter_d;
 
 	// PI/D controllers
 	APM_PI		pi_rate_roll;
@@ -341,10 +342,10 @@ public:
 	command_total			(0,							k_param_command_total,					PSTR("WP_TOTAL")),
 	command_index			(0,							k_param_command_index,					PSTR("WP_INDEX")),
 	command_nav_index		(0,							k_param_command_nav_index,				PSTR("WP_MUST_INDEX")),
-	waypoint_radius			(WP_RADIUS_DEFAULT,			k_param_waypoint_radius,				PSTR("WP_RADIUS")),
+	waypoint_radius			(WP_RADIUS_DEFAULT * 100,	k_param_waypoint_radius,				PSTR("WP_RADIUS")),
 	loiter_radius			(LOITER_RADIUS,	    		k_param_loiter_radius,					PSTR("WP_LOITER_RAD")),
 	waypoint_speed_max		(WAYPOINT_SPEED_MAX,		k_param_waypoint_speed_max,				PSTR("WP_SPEED_MAX")),
-	crosstrack_gain			(CROSSTRACK_GAIN * 100,		k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
+	crosstrack_gain			(CROSSTRACK_GAIN,			k_param_crosstrack_gain,				PSTR("XTRK_GAIN_SC")),
 	auto_land_timeout		(AUTO_LAND_TIME * 1000,		k_param_auto_land_timeout,				PSTR("AUTO_LAND")),
 
 	throttle_min			(0,							k_param_throttle_min,					PSTR("THR_MIN")),
@@ -409,7 +410,8 @@ public:
 	camera_pitch_gain 		(CAM_PITCH_GAIN, 			k_param_camera_pitch_gain, 				PSTR("CAM_P_G")),
 	camera_roll_gain 		(CAM_ROLL_GAIN, 			k_param_camera_roll_gain,	 			PSTR("CAM_R_G")),
 
-	stablize_d 				(STABILIZE_D, 				k_param_stablize_d,	 					PSTR("STAB_D")),
+	stablize_d 				(STABILIZE_D, 				k_param_stabilize_d,	 				PSTR("STAB_D")),
+	loiter_d 				(LOITER_D, 					k_param_loiter_d,	 					PSTR("LOITER_D")),
 
 	// PI controller	group key						name				initial P			initial I			initial imax
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
