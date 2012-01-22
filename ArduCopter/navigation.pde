@@ -261,7 +261,7 @@ static void calc_loiter_pitch_roll()
 static int16_t calc_desired_speed(int16_t max_speed)
 {
 	/*
-			   |< WP Radius
+	|< WP Radius
 	0  1   2   3   4   5   6   7   8m
 	...|...|...|...|...|...|...|...|
 		  100  |  200	  300	  400cm/s
@@ -274,15 +274,15 @@ static int16_t calc_desired_speed(int16_t max_speed)
 	// wp_distance is always in m/s and not cm/s - I know it's stupid that way
 	// for example 4m from target = 200cm/s speed
 	// we choose the lowest speed based on disance
-	max_speed 		= min(max_speed, (wp_distance * 50));
+	max_speed 		= min(max_speed, (wp_distance * 100));
 
 	// limit the ramp up of the speed
 	// waypoint_speed_gov is reset to 0 at each new WP command
 	if(waypoint_speed_gov < max_speed){
-		waypoint_speed_gov += (int)(50.0 * dTnav); // increase at .5/ms
+		waypoint_speed_gov += (int)(100.0 * dTnav); // increase at .5/ms
 
-		// go at least 50cm/s
-		max_speed 		= max(50, waypoint_speed_gov);
+		// go at least 100cm/s
+		max_speed 		= max(100, waypoint_speed_gov);
 		// limit with governer
 		max_speed 		= min(max_speed, waypoint_speed_gov);
 	}
@@ -304,7 +304,6 @@ static void calc_nav_rate(int max_speed)
 	nav_lon_p		 	= g.pi_nav_lon.get_p(x_rate_error);
 	nav_lon				= nav_lon_p + x_iterm;
 	nav_lon				= constrain(nav_lon, -3000, 3000);
-
 
 	y_rate_error 		= (sin(temp) * max_speed) - y_actual_speed; // 413
 	y_rate_error 		= constrain(y_rate_error, -1000, 1000);	// added a rate error limit to keep pitching down to a minimum
