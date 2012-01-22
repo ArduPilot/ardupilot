@@ -528,15 +528,27 @@ static void Log_Write_Nav_Tuning()
 	DataFlash.WriteByte(LOG_NAV_TUNING_MSG);
 
 	DataFlash.WriteInt(wp_distance);						// 1
-	DataFlash.WriteInt(target_bearing/100);					// 2
+	DataFlash.WriteInt(nav_bearing/100);					// 2
 	DataFlash.WriteInt(long_error);							// 3
 	DataFlash.WriteInt(lat_error);							// 4
 	DataFlash.WriteInt(nav_lon);							// 5
 	DataFlash.WriteInt(nav_lat);							// 6
-	DataFlash.WriteInt(g.pi_nav_lon.get_integrator());		// 7
-	DataFlash.WriteInt(g.pi_nav_lat.get_integrator());	    // 8
+	DataFlash.WriteInt(x_actual_speed);						// 7
+	DataFlash.WriteInt(y_actual_speed);					    // 8
 	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
 	DataFlash.WriteInt(g.pi_loiter_lat.get_integrator());	// 10
+
+	/*DataFlash.WriteInt(wp_distance);						// 1
+	DataFlash.WriteInt(nav_bearing/100);					// 2
+	DataFlash.WriteInt(my_max_speed);						// 3
+	DataFlash.WriteInt(long_error);							// 4
+	DataFlash.WriteInt(x_actual_speed);						// 5
+	DataFlash.WriteInt(target_x_rate);						// 6
+	DataFlash.WriteInt(x_rate_error);						// 7
+	DataFlash.WriteInt(nav_lon_p);							// 8
+	DataFlash.WriteInt(g.pi_loiter_lon.get_integrator());	// 9
+	DataFlash.WriteInt(nav_lon);							// 10
+	*/
 
 	DataFlash.WriteByte(END_BYTE);
 }
