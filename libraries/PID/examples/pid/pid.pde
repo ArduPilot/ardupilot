@@ -4,20 +4,30 @@
 */
 
 #include <FastSerial.h>
+#include <avr/pgmspace.h>
 #include <AP_Common.h>
 #include <APM_RC.h> // ArduPilot RC Library
 #include <PID.h> // ArduPilot Mega RC Library
+#include <Arduino_Mega_ISR_Registry.h>
 
 long radio_in;
 long radio_trim;
 
-PID pid(10, "TEST1_");
+Arduino_Mega_ISR_Registry isr_registry;
+
+#if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    APM_RC_APM2 APM_RC;
+#else
+    APM_RC_APM1 APM_RC;
+#endif
+
+PID pid(AP_Var::k_key_none, NULL);
 
 void setup()
 {
 	Serial.begin(38400);
 	Serial.println("ArduPilot Mega PID library test");
-	APM_RC.Init();		// APM Radio initialization
+	APM_RC.Init(&isr_registry);		// APM Radio initialization
 
 	delay(1000);
 	//rc.trim();

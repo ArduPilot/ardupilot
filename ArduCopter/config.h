@@ -622,20 +622,23 @@
 # define LOITER_P			1.5		// was .25 in previous
 #endif
 #ifndef LOITER_I
-# define LOITER_I			0.04	// Wind control
+# define LOITER_I			0.09	// Wind control
 #endif
 #ifndef LOITER_IMAX
 # define LOITER_IMAX		30		// degrees°
+#endif
+#ifndef LOITER_D
+# define LOITER_D			3		// rate control
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // WP Navigation control gains
 //
 #ifndef NAV_P
-# define NAV_P				2.2			// 3 was causing rapid oscillations in Loiter
+# define NAV_P				3.0			// 3 was causing rapid oscillations in Loiter
 #endif
 #ifndef NAV_I
-# define NAV_I				0.15		// used in traverals
+# define NAV_I				0			//
 #endif
 #ifndef NAV_IMAX
 # define NAV_IMAX			30			// degrees
@@ -643,6 +646,10 @@
 
 #ifndef WAYPOINT_SPEED_MAX
 # define WAYPOINT_SPEED_MAX			600			// for 6m/s error = 13mph
+#endif
+
+#ifndef WAYPOINT_SPEED_MIN
+# define WAYPOINT_SPEED_MIN			100			// for 6m/s error = 13mph
 #endif
 
 

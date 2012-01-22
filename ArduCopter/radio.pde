@@ -100,6 +100,7 @@ static void init_rc_out()
 
 void output_min()
 {
+  motors_output_enable();
     #if FRAME_CONFIG ==	HELI_FRAME
         heli_move_servos_to_mid();
 	#else
@@ -158,7 +159,7 @@ static void throttle_failsafe(uint16_t pwm)
 			// Don't enter Failsafe if we are not armed
 			// home distance is in meters
 			// This is to prevent accidental RTL
-			if((motor_armed == true) && (home_distance > 10) && (current_loc.alt > 400)){
+			if((motor_armed == true) && (home_distance > 1000) && (current_loc.alt > 400)){
 				SendDebug("MSG FS ON ");
 				SendDebugln(pwm, DEC);
 				set_failsafe(true);

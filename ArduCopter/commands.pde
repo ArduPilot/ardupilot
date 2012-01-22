@@ -178,7 +178,7 @@ static void set_next_WP(struct Location *wp)
 
 	// reset speed governer
 	// --------------------
-	waypoint_speed_gov = 0;
+	waypoint_speed_gov = WAYPOINT_SPEED_MIN;
 }
 
 

@@ -365,7 +365,7 @@ static bool verify_land()
 		//landing_boost 	= min(landing_boost, 15);
 		float tmp = (1.75 * icount * icount) - (7.2 * icount);
 		landing_boost = tmp;
-		landing_boost = constrain(landing_boost, 0, 200);
+		landing_boost = constrain(landing_boost, 1, 200);
 		icount += 0.4;
 
 		//Serial.printf("lb:%d, %1.4f, ic:%1.4f\n",landing_boost, tmp, icount);
@@ -512,7 +512,7 @@ static void do_change_alt()
 
 static void do_within_distance()
 {
-	condition_value	 = command_cond_queue.lat;
+	condition_value	 = command_cond_queue.lat * 100;
 }
 
 static void do_yaw()

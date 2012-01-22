@@ -165,7 +165,8 @@ get_nav_throttle(int32_t z_error)
 	//output -= constrain(rate_d, -25, 25);
 
 	// light filter of output
-	output = (old_output * 3 + output) / 4;
+	//output = (old_output * 3 + output) / 4;
+	output = (old_output + output) / 2;
 
 	// save our output
 	old_output  = output;
