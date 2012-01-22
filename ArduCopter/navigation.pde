@@ -146,10 +146,10 @@ static void calc_location_error(struct Location *next_loc)
 static void calc_loiter1(int x_error, int y_error)
 {
 	int16_t lon_PI 	= g.pi_loiter_lon.get_pi(x_error, dTnav);
-	int16_t lon_D 	= 3 * x_actual_speed ; // this controls the small bumps
+	int16_t lon_D 	= g.loiter_d * x_actual_speed ; // this controls the small bumps
 
 	int16_t lat_PI 	= g.pi_loiter_lat.get_pi(y_error, dTnav);
-	int16_t lat_D 	= 3 * y_actual_speed ;
+	int16_t lat_D 	= g.loiter_d * y_actual_speed ;
 
 	//limit of terms
 	lon_D = constrain(lon_D,-500,500);
