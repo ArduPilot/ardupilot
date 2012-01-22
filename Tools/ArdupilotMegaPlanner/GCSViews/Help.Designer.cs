@@ -52,7 +52,7 @@
             resources.ApplyResources(this.BUT_updatecheck, "BUT_updatecheck");
             this.BUT_updatecheck.Name = "BUT_updatecheck";
             this.BUT_updatecheck.UseVisualStyleBackColor = true;
-            this.BUT_updatecheck.Click += new System.EventHandler(this.BUT_updatecheck_Click);
+            this.BUT_updatecheck.Click += new System.EventHandler(Help.BUT_updatecheck_Click);
             // 
             // Help
             // 

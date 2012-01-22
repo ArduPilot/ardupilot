@@ -328,6 +328,10 @@ namespace ArdupilotMega.GCSViews
                                 cell.Style.BackColor = Color.LightGreen;
                             }
                         }
+                        else
+                        {
+                            cell.Value = 100 ;
+                        }
 
                     }
                     cell.DataGridView.EndEdit();

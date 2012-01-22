@@ -22,7 +22,7 @@ namespace ArdupilotMega.GCSViews
             catch { }
         }
 
-        private void BUT_updatecheck_Click(object sender, EventArgs e)
+        public static void BUT_updatecheck_Click(object sender, EventArgs e)
         {
             Form loading = new Form();
             loading.Width = 400;
