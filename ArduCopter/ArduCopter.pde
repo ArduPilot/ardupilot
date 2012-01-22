@@ -323,6 +323,9 @@ static int16_t y_actual_speed;
 static int16_t x_rate_error;
 static int16_t y_rate_error;
 
+//static int16_t my_max_speed; // used for debugging logs
+//static int16_t target_x_rate;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Radio
 ////////////////////////////////////////////////////////////////////////////////
@@ -359,8 +362,6 @@ static int16_t rc_override[8] = {0,0,0,0,0,0,0,0};
 static bool rc_override_active = false;
 // Status flag that tracks whether we are under GCS control
 static uint32_t rc_override_fs_timer = 0;
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Heli
@@ -604,9 +605,9 @@ static int16_t 	landing_boost;
 ////////////////////////////////////////////////////////////////////////////////
 // The location of the copter in relation to home, updated every GPS read
 static int32_t	home_to_copter_bearing;
-// distance between plane and home in meters (not cm!!!)
+// distance between plane and home in cm
 static int32_t	home_distance;
-// distance between plane and next_WP in meters (not cm!!!)
+// distance between plane and next_WP in cm
 static int32_t	wp_distance;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1532,7 +1533,7 @@ void update_throttle_mode(void)
 				takeoff_complete = false;
 
 				// reset baro data if we are near home
-				if(home_distance < 4  || GPS_enabled == false){
+				if(home_distance < 400  || GPS_enabled == false){ // 4m from home
 					// causes Baro to do a quick recalibration
 					// XXX commented until further testing
 					// reset_baro();
@@ -1602,7 +1603,7 @@ void update_throttle_mode(void)
 					// get the AP throttle, if landing boost > 0 we are actually Landing
 					// This allows us to grab just the compensation.
 					if(landing_boost > 0)
-						nav_throttle = get_nav_throttle(-100);
+						nav_throttle = get_nav_throttle(-200);
 					else
 						nav_throttle = get_nav_throttle(altitude_error);
 
@@ -1743,7 +1744,7 @@ static void update_navigation()
 	// are we in SIMPLE mode?
 	if(do_simple && g.super_simple){
 		// get distance to home
-		if(home_distance > 10){ // 10m from home
+		if(home_distance > 1000){ // 10m from home
 			// we reset the angular offset to be a vector from home to the quad
 			initial_simple_bearing = home_to_copter_bearing;
 			//Serial.printf("ISB: %d\n", initial_simple_bearing);
