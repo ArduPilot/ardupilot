@@ -628,7 +628,7 @@
 # define LOITER_IMAX		30		// degrees°
 #endif
 #ifndef LOITER_D
-# define LOITER_D			3		// rate control
+# define LOITER_D			2.2		// rate control
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
