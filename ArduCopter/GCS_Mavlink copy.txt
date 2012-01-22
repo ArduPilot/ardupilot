@@ -270,7 +270,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
 		nav_pitch / 1.0e2,
 		target_bearing / 1.0e2,
 		dcm.yaw_sensor / 1.0e2, // was target_bearing
-		wp_distance,
+		wp_distance / 1.0e2,
 		altitude_error / 1.0e2,
 		0,
 		crosstrack_error);

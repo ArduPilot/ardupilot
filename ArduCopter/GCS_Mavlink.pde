@@ -118,7 +118,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_pitch / 1.0e2,
         nav_bearing / 1.0e2,
         target_bearing / 1.0e2,
-        wp_distance,
+        wp_distance / 1.0e2,
         altitude_error / 1.0e2,
         0,
         crosstrack_error);	// was 0
@@ -1518,13 +1518,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // set dcm hil sensor
             dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
-        
+
                     // rad/sec
             Vector3f gyros;
             gyros.x = (float)packet.rollspeed;
             gyros.y = (float)packet.pitchspeed;
             gyros.z = (float)packet.yawspeed;
-        
+
             imu.set_gyro(gyros);
 
             //imu.set_accel(accels);
