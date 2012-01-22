@@ -1519,14 +1519,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             dcm.setHil(packet.roll,packet.pitch,packet.yaw,packet.rollspeed,
             packet.pitchspeed,packet.yawspeed);
 
-                    // rad/sec
+            // rad/sec
+            /*
             Vector3f gyros;
             gyros.x = (float)packet.rollspeed;
             gyros.y = (float)packet.pitchspeed;
             gyros.z = (float)packet.yawspeed;
 
             imu.set_gyro(gyros);
-
+			*/
             //imu.set_accel(accels);
             break;
         }
