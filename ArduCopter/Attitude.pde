@@ -321,9 +321,9 @@ static int get_angle_boost(int value)
 {
 	float temp = cos_pitch_x * cos_roll_x;
 	temp = 1.0 - constrain(temp, .5, 1.0);
-//	int16_t output = temp * value;
-//	return constrain(output, 0, 100);
-	return (int)(temp * value);
+	int16_t output = temp * value;
+	return constrain(output, 0, 100);
+//	return (int)(temp * value);
 }
 
 #define NUM_G_SAMPLES 40
