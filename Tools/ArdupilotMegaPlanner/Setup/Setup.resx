@@ -1563,6 +1563,33 @@
   <data name="&gt;&gt;CHK_enableoptflow.ZOrder" xml:space="preserve">
     <value>2</value>
   </data>
+  <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Zoom</value>
+  </data>
+  <data name="pictureBox2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="pictureBox2.Location" type="System.Drawing.Point, System.Drawing">
+    <value>78, 271</value>
+  </data>
+  <data name="pictureBox2.Size" type="System.Drawing.Size, System.Drawing">
+    <value>75, 75</value>
+  </data>
+  <data name="pictureBox2.TabIndex" type="System.Int32, mscorlib">
+    <value>29</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Name" xml:space="preserve">
+    <value>pictureBox2</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.Parent" xml:space="preserve">
+    <value>tabHardware</value>
+  </data>
+  <data name="&gt;&gt;pictureBox2.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
   <data name="linkLabelmagdec.AutoSize" type="System.Boolean, mscorlib">
     <value>True</value>
   </data>
@@ -1591,7 +1618,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;linkLabelmagdec.ZOrder" xml:space="preserve">
-    <value>3</value>
+    <value>4</value>
   </data>
   <data name="label100.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -1618,7 +1645,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;label100.ZOrder" xml:space="preserve">
-    <value>4</value>
+    <value>5</value>
   </data>
   <data name="TXT_declination.Location" type="System.Drawing.Point, System.Drawing">
     <value>383, 57</value>
@@ -1642,7 +1669,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;TXT_declination.ZOrder" xml:space="preserve">
-    <value>5</value>
+    <value>6</value>
   </data>
   <data name="CHK_enableairspeed.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -1669,7 +1696,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enableairspeed.ZOrder" xml:space="preserve">
-    <value>6</value>
+    <value>7</value>
   </data>
   <data name="CHK_enablesonar.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -1696,7 +1723,7 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enablesonar.ZOrder" xml:space="preserve">
-    <value>7</value>
+    <value>8</value>
   </data>
   <data name="CHK_enablecompass.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -1723,33 +1750,6 @@
     <value>tabHardware</value>
   </data>
   <data name="&gt;&gt;CHK_enablecompass.ZOrder" xml:space="preserve">
-    <value>8</value>
-  </data>
-  <data name="pictureBox2.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
-    <value>Zoom</value>
-  </data>
-  <data name="pictureBox2.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="pictureBox2.Location" type="System.Drawing.Point, System.Drawing">
-    <value>78, 271</value>
-  </data>
-  <data name="pictureBox2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>75, 75</value>
-  </data>
-  <data name="pictureBox2.TabIndex" type="System.Int32, mscorlib">
-    <value>29</value>
-  </data>
-  <data name="&gt;&gt;pictureBox2.Name" xml:space="preserve">
-    <value>pictureBox2</value>
-  </data>
-  <data name="&gt;&gt;pictureBox2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.PictureBox, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;pictureBox2.Parent" xml:space="preserve">
-    <value>tabHardware</value>
-  </data>
-  <data name="&gt;&gt;pictureBox2.ZOrder" xml:space="preserve">
     <value>9</value>
   </data>
   <data name="pictureBox4.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
@@ -2940,6 +2940,9 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;label24.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
+  <data name="HS4_MIN.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="HS4_MIN.Location" type="System.Drawing.Point, System.Drawing">
     <value>21, 40</value>
   </data>
@@ -2963,6 +2966,9 @@ will work with hexa's etc</value>
   </data>
   <data name="&gt;&gt;HS4_MIN.ZOrder" xml:space="preserve">
     <value>1</value>
+  </data>
+  <data name="HS4_MAX.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="HS4_MAX.Location" type="System.Drawing.Point, System.Drawing">
     <value>106, 40</value>
@@ -3099,6 +3105,9 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;label21.ZOrder" xml:space="preserve">
     <value>1</value>
   </data>
+  <data name="COL_MIN_.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="COL_MIN_.Location" type="System.Drawing.Point, System.Drawing">
     <value>18, 173</value>
   </data>
@@ -3122,6 +3131,9 @@ will work with hexa's etc</value>
   </data>
   <data name="&gt;&gt;COL_MIN_.ZOrder" xml:space="preserve">
     <value>2</value>
+  </data>
+  <data name="COL_MID_.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="COL_MID_.Location" type="System.Drawing.Point, System.Drawing">
     <value>17, 117</value>
@@ -3147,6 +3159,9 @@ will work with hexa's etc</value>
   <data name="&gt;&gt;COL_MID_.ZOrder" xml:space="preserve">
     <value>3</value>
   </data>
+  <data name="COL_MAX_.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="COL_MAX_.Location" type="System.Drawing.Point, System.Drawing">
     <value>18, 45</value>
   </data>
@@ -3170,6 +3185,9 @@ will work with hexa's etc</value>
   </data>
   <data name="&gt;&gt;COL_MAX_.ZOrder" xml:space="preserve">
     <value>4</value>
+  </data>
+  <data name="BUT_0collective.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="BUT_0collective.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
     <value>NoControl</value>
@@ -4065,23 +4083,20 @@ will work with hexa's etc</value>
   <data name="$this.ClientSize" type="System.Drawing.Size, System.Drawing">
     <value>674, 419</value>
   </data>
-  <data name="$this.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
   <data name="$this.Text" xml:space="preserve">
     <value>APMSetup</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
-    <value>toolTip1</value>
-  </data>
-  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;currentStateBindingSource.Name" xml:space="preserve">
     <value>currentStateBindingSource</value>
   </data>
   <data name="&gt;&gt;currentStateBindingSource.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Name" xml:space="preserve">
+    <value>toolTip1</value>
+  </data>
+  <data name="&gt;&gt;toolTip1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>Setup</value>

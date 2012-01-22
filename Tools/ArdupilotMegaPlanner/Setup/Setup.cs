@@ -477,6 +477,12 @@ namespace ArdupilotMega.Setup
                                 string option = MainV2.comPort.param[value].ToString();
                                 temp.Text = option;
                             }
+                            if (control[0].GetType() == typeof(NumericUpDown))
+                            {
+                                NumericUpDown temp = (NumericUpDown)control[0];
+                                string option = MainV2.comPort.param[value].ToString();
+                                temp.Text = option;
+                            }
                             if (control[0].GetType() == typeof(CheckBox))
                             {
                                 CheckBox temp = (CheckBox)control[0];
@@ -670,7 +676,7 @@ namespace ArdupilotMega.Setup
         private void TXT_battcapacity_Validating(object sender, CancelEventArgs e)
         {
             float ans = 0;
-            e.Cancel = !float.TryParse(TXT_declination.Text, out ans);
+            e.Cancel = !float.TryParse(TXT_battcapacity.Text, out ans);
         }
         private void TXT_battcapacity_Validated(object sender, EventArgs e)
         {
@@ -1209,6 +1215,11 @@ namespace ArdupilotMega.Setup
                     MainV2.comPort.setParam("COL_MAX_", int.Parse(COL_MAX_.Text));
                     MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
                     BUT_swash_manual.Text = "Manual";
+
+                    COL_MAX_.Enabled = false;
+                    COL_MID_.Enabled = false;
+                    COL_MIN_.Enabled = false;
+                    BUT_0collective.Enabled = false;
                 }
                 else
                 {
@@ -1216,6 +1227,11 @@ namespace ArdupilotMega.Setup
                     COL_MIN_.Text = "1500";
                     MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                     BUT_swash_manual.Text = "Save";
+
+                    COL_MAX_.Enabled = true;
+                    COL_MID_.Enabled = true;
+                    COL_MIN_.Enabled = true;
+                    BUT_0collective.Enabled = true;
                 }
             }
             catch { MessageBox.Show("Failed to set HSV_MAN"); }
@@ -1231,6 +1247,9 @@ namespace ArdupilotMega.Setup
                     MainV2.comPort.setParam("HS4_MAX", int.Parse(HS4_MAX.Text));
                     MainV2.comPort.setParam("HSV_MAN", 0); // randy request - last
                     BUT_HS4save.Text = "Manual";
+
+                    HS4_MAX.Enabled = false;
+                    HS4_MIN.Enabled = false;
                 }
                 else
                 {
@@ -1238,6 +1257,10 @@ namespace ArdupilotMega.Setup
                     HS4_MAX.Text = "1500";
                     MainV2.comPort.setParam("HSV_MAN", 1); // randy request
                     BUT_HS4save.Text = "Save";
+
+
+                    HS4_MAX.Enabled = true;
+                    HS4_MIN.Enabled = true;
                 }
             }
             catch { MessageBox.Show("Failed to set HSV_MAN"); }

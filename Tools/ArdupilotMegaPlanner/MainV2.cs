@@ -104,6 +104,13 @@ namespace ArdupilotMega
 
             //talk.SpeakAsync("Welcome to APM Planner");
 
+            try
+            {
+                checkForUpdate();
+            }
+            catch { Console.WriteLine("update check failed"); }
+
+
             InitializeComponent();
 
             MyRenderer.currentpressed = MenuFlightData;
@@ -1578,11 +1585,12 @@ namespace ArdupilotMega
             temp.BackColor = Color.FromArgb(0x26, 0x27, 0x28);
         }
 
+        static string baseurl = "http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/bin/Release/";
+
         public static void updatecheck(Label loadinglabel)
         {
             try
             {
-                string baseurl = "http://ardupilot-mega.googlecode.com/git/Tools/ArdupilotMegaPlanner/bin/Release/";
                 bool update = updatecheck(loadinglabel, baseurl, "");
                 System.Diagnostics.Process P = new System.Diagnostics.Process();
                 if (MONO)
@@ -1627,6 +1635,67 @@ namespace ArdupilotMega
             });
 
             Application.DoEvents();
+        }
+
+        private static void checkForUpdate()
+        {
+              string path = Path.GetFileNameWithoutExtension(Application.ExecutablePath) + ".exe";
+
+                // Create a request using a URL that can receive a post. 
+                WebRequest request = WebRequest.Create(baseurl + path);
+                request.Timeout = 5000;
+                Console.Write(baseurl + path + " ");
+                // Set the Method property of the request to POST.
+                request.Method = "HEAD";
+
+                ((HttpWebRequest)request).IfModifiedSince = File.GetLastWriteTimeUtc(path);
+
+                // Get the response.
+                WebResponse response = request.GetResponse();
+                // Display the status.
+                Console.WriteLine(((HttpWebResponse)response).StatusDescription);
+                // Get the stream containing content returned by the server.
+                //dataStream = response.GetResponseStream();
+                // Open the stream using a StreamReader for easy access.
+
+                bool getfile = false;
+
+                if (File.Exists(path))
+                {
+                    FileInfo fi = new FileInfo(path);
+
+                    Console.WriteLine(response.Headers[HttpResponseHeader.ETag]);
+
+                    if (fi.Length != response.ContentLength) // && response.Headers[HttpResponseHeader.ETag] != "0")
+                    {
+                        StreamWriter sw = new StreamWriter(path + ".etag");
+                        sw.WriteLine(response.Headers[HttpResponseHeader.ETag]);
+                        sw.Close();
+                        getfile = true;
+                        Console.WriteLine("NEW FILE " + path);
+                    }
+                }
+                else
+                {
+                    getfile = true;
+                    Console.WriteLine("NEW FILE " + path);
+                    // get it
+                }
+
+                response.Close();
+
+                if (getfile)
+                {
+                    DialogResult dr = MessageBox.Show("Update Found\n\nDo you wish to update now?", "Update Now", MessageBoxButtons.YesNo);
+                    if (dr == DialogResult.Yes)
+                    {
+                        GCSViews.Help.BUT_updatecheck_Click(null, null);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
         }
 
         private static bool updatecheck(Label loadinglabel, string baseurl, string subdir)

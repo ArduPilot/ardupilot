@@ -29,6 +29,19 @@ namespace ArdupilotMega
 
             //Common.linearRegression();
 
+            var answer = HIL.Utils.EarthRatesToBodyRatesRyan(0, 0, 0, 0, 5, 0);
+            Console.WriteLine("roll {0:0.000} {1:0.000} {2:0.000} ", answer.Item1 , answer.Item2 , answer.Item3);
+
+            answer = HIL.Utils.EarthRatesToBodyRatesRyan(0, 0, 45, 2.5, 2.5, 0);
+            Console.WriteLine("roll {0:0.000} {1:0.000} {2:0.000} ", answer.Item1, answer.Item2, answer.Item3);
+
+            answer = HIL.Utils.EarthRatesToBodyRatesRyan(0, 0, 90, 5, 0, 0);
+            Console.WriteLine("roll {0:0.000} {1:0.000} {2:0.000} ", answer.Item1, answer.Item2, answer.Item3);
+
+           // Console.ReadLine();
+
+            //return;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             try

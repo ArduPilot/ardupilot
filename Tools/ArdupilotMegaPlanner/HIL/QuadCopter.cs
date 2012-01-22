@@ -402,7 +402,7 @@ namespace ArdupilotMega.HIL
             return v;
         }
 
-        static Quaternion new_rotate_euler(double heading, double attitude, double bank)
+        public static Quaternion new_rotate_euler(double heading, double attitude, double bank)
         {
             Quaternion Q = new Quaternion();
             double c1 = Math.Cos(heading / 2);
