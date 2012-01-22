@@ -167,7 +167,8 @@ static void calc_loiter(int x_error, int y_error)
 	int16_t x_target_speed 	= g.pi_loiter_lon.get_p(x_error);
 	int16_t x_iterm 		= g.pi_loiter_lon.get_i(x_error, dTnav);
 	x_rate_error 			= x_target_speed - x_actual_speed;
-	nav_lon_p		 		= g.pi_nav_lon.get_p(x_rate_error);
+	nav_lon_p		 		= x_rate_error * g.loiter_d;
+
 	nav_lon_p				= constrain(nav_lon_p, -1200, 1200);
 	nav_lon					= nav_lon_p + x_iterm;
 	nav_lon					= constrain(nav_lon, -2500, 2500);
@@ -177,7 +178,8 @@ static void calc_loiter(int x_error, int y_error)
 	int16_t y_target_speed 	= g.pi_loiter_lat.get_p(y_error);
 	int16_t y_iterm 		= g.pi_loiter_lat.get_i(y_error, dTnav);
 	y_rate_error 			= y_target_speed - y_actual_speed;
-	nav_lat_p	 			= g.pi_nav_lat.get_p(y_rate_error);
+	nav_lat_p		 		= y_rate_error * g.loiter_d;
+
 	nav_lat_p				= constrain(nav_lat_p, -1200, 1200);
 	nav_lat					= nav_lat_p + y_iterm;
 	nav_lat					= constrain(nav_lat, -2500, 2500);
@@ -270,21 +272,20 @@ static int16_t calc_desired_speed(int16_t max_speed)
 	*/
 
 	// max_speed is default 600 or 6m/s
-	// (wp_distance * 50) = 1/2 of the distance converted to speed
+	// (wp_distance * .5) = 1/2 of the distance converted to speed
 	// wp_distance is always in m/s and not cm/s - I know it's stupid that way
 	// for example 4m from target = 200cm/s speed
 	// we choose the lowest speed based on disance
-	max_speed 		= min(max_speed, (wp_distance * 100));
+	max_speed 		= min(max_speed, wp_distance);
+
+	// go at least 100cm/s
+	max_speed 		= max(max_speed, WAYPOINT_SPEED_MIN);
 
 	// limit the ramp up of the speed
 	// waypoint_speed_gov is reset to 0 at each new WP command
-	if(waypoint_speed_gov < max_speed){
+	if(max_speed > waypoint_speed_gov){
 		waypoint_speed_gov += (int)(100.0 * dTnav); // increase at .5/ms
-
-		// go at least 100cm/s
-		max_speed 		= max(100, waypoint_speed_gov);
-		// limit with governer
-		max_speed 		= min(max_speed, waypoint_speed_gov);
+		max_speed = waypoint_speed_gov;
 	}
 
 	return max_speed;
@@ -296,7 +297,7 @@ static void calc_nav_rate(int max_speed)
 	update_crosstrack();
 
 	// nav_bearing includes crosstrack
-	float temp 		= (9000 - nav_bearing) * RADX100;
+	float temp 			= (9000l - nav_bearing) * RADX100;
 
 	x_rate_error 		= (cos(temp) * max_speed) - x_actual_speed; // 413
 	x_rate_error 		= constrain(x_rate_error, -1000, 1000);
@@ -398,7 +399,6 @@ static void set_new_altitude(int32_t _new_alt)
 		alt_change_flag = REACHED_ALT;
 		//Serial.printf("reached alt\n");
 	}
-
 	//Serial.printf("new alt: %d Org alt: %d\n", target_altitude, original_altitude);
 }
 
@@ -490,16 +490,14 @@ static int32_t wrap_180(int32_t error)
 	return current_loc.alt - home.alt;
 }
 */
+
 // distance is returned in meters
 static int32_t get_distance(struct Location *loc1, struct Location *loc2)
 {
-	//if(loc1->lat == 0 || loc1->lng == 0)
-	//	return -1;
-	//if(loc2->lat == 0 || loc2->lng == 0)
-	//	return -1;
 	float dlat 		= (float)(loc2->lat - loc1->lat);
 	float dlong		= ((float)(loc2->lng - loc1->lng)) * scaleLongDown;
-	return sqrt(sq(dlat) + sq(dlong)) * .01113195;
+	dlong			= sqrt(sq(dlat) + sq(dlong)) * 1.113195;
+	return			dlong;
 }
 /*
 //static int32_t get_alt_distance(struct Location *loc1, struct Location *loc2)
